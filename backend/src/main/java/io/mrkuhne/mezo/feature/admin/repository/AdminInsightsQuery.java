@@ -3,12 +3,16 @@ package io.mrkuhne.mezo.feature.admin.repository;
 import io.mrkuhne.mezo.feature.admin.service.AdminSqlDialect;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminColumn;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminTable;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -90,6 +94,78 @@ public class AdminInsightsQuery {
         return count == null ? 0L : count;
     }
 
+    /** Total non-deleted rows each user owns, summed across every owned table. */
+    public Map<UUID, Long> rowCountsByUser(List<AdminTable> tables) {
+        String union = tables.stream()
+                .filter(t -> t.hasColumn("created_by"))
+                .map(t -> "select t.\"created_by\" as owner, count(*) as n from %s t where t.\"created_by\" is not null%s group by 1"
+                        .formatted(dialect.quote(t.name()), dialect.notDeleted(t, "t")))
+                .collect(Collectors.joining("\nunion all\n"));
+        if (union.isEmpty()) {
+            return Map.of();
+        }
+        String sql = "select owner, sum(n) as total from (\n%s\n) parts group by owner".formatted(union);
+        Map<UUID, Long> result = new HashMap<>();
+        jdbc.query(sql, new HashMap<>(), rs -> {
+            result.put(rs.getObject("owner", UUID.class), rs.getLong("total"));
+        });
+        return result;
+    }
+
+    /** The most recent moment each user logged anything, across the given feature sources. */
+    public Map<UUID, Instant> lastActivityByUser(List<TableColumn> sources, ZoneId zone) {
+        List<String> parts = new ArrayList<>();
+        for (TableColumn source : sources) {
+            AdminTable table = source.table();
+            AdminColumn column = source.column();
+            String moment = column.isDate()
+                    ? "(t.%s::timestamp at time zone :zone)".formatted(dialect.quote(column.name()))
+                    : "t.%s".formatted(dialect.quote(column.name()));
+            parts.add("select t.\"created_by\" as owner, max(%s) as at from %s t where t.\"created_by\" is not null%s group by 1"
+                    .formatted(moment, dialect.quote(table.name()), dialect.notDeleted(table, "t")));
+        }
+        if (parts.isEmpty()) {
+            return Map.of();
+        }
+        String sql = "select owner, max(at) as at from (\n%s\n) parts group by owner"
+                .formatted(String.join("\nunion all\n", parts));
+        Map<UUID, Instant> result = new HashMap<>();
+        jdbc.query(sql, Map.of("zone", zone.getId()), rs -> {
+            OffsetDateTime at = rs.getObject("at", OffsetDateTime.class);
+            result.put(rs.getObject("owner", UUID.class), at == null ? null : at.toInstant());
+        });
+        return result;
+    }
+
+    /** Distinct days each user logged something in the window, across the given feature sources. */
+    public Map<UUID, Integer> activeDaysByUser(List<TableColumn> sources, LocalDate from, ZoneId zone) {
+        List<String> parts = new ArrayList<>();
+        for (TableColumn source : sources) {
+            AdminTable table = source.table();
+            AdminColumn column = source.column();
+            String day = dialect.dayExpression(column, "t");
+            parts.add("select distinct t.\"created_by\" as owner, %s as d from %s t where %s >= :from and t.\"created_by\" is not null%s"
+                    .formatted(day, dialect.quote(table.name()), day, dialect.notDeleted(table, "t")));
+        }
+        if (parts.isEmpty()) {
+            return Map.of();
+        }
+        String sql = "select owner, count(distinct d) as n from (\n%s\n) parts group by owner"
+                .formatted(String.join("\nunion all\n", parts));
+        Map<UUID, Integer> result = new HashMap<>();
+        jdbc.query(sql, Map.of("from", from, "zone", zone.getId()), rs -> {
+            result.put(rs.getObject("owner", UUID.class), rs.getInt("n"));
+        });
+        return result;
+    }
+
     /** A day bucket and its count. */
     public record DayCountRow(LocalDate day, long count) {}
+
+    /**
+     * A resolved table/column pair backing one feature-map entry. Resolution (catalog lookups)
+     * happens in the calling service, so this repository stays dependency-free of
+     * {@link io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog}.
+     */
+    public record TableColumn(AdminTable table, AdminColumn column) {}
 }

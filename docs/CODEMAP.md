@@ -82,7 +82,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
   - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`
-  - **services:** `AdminOverviewService`, `AdminSqlDialect`, `AdminTableCatalog`
+  - **services:** `AdminOverviewService`, `AdminSqlDialect`, `AdminTableCatalog`, `AdminUserService`
   - **controllers→contract:** `AdminInsightsController`→`AdminInsightsApi`
   - **config:** `AdminProperties`
 - **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
@@ -91,8 +91,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 2 IT + 1 unit
-  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 3 IT + 1 unit
+  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUserInsightIT`
 
 ### appnotification
 
