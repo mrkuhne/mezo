@@ -17,7 +17,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [admin](#admin) | ✓ | · | ✓ | · | [beta-admin](features/beta-admin.md) |
+| [admin](#admin) | ✓ | 1 | ✓ | · | [beta-admin](features/beta-admin.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
@@ -78,17 +78,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
+*BE + API + FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
-  - **repositories:** `AdminCatalogQuery`
-  - **services:** `AdminSqlDialect`, `AdminTableCatalog`
+  - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`
+  - **services:** `AdminOverviewService`, `AdminSqlDialect`, `AdminTableCatalog`
+  - **controllers→contract:** `AdminInsightsController`→`AdminInsightsApi`
   - **config:** `AdminProperties`
+- **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
+  - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
+    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 1 IT + 1 unit
-  - **ITs:** `AdminTableCatalogIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 2 IT + 1 unit
+  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`
 
 ### appnotification
 
@@ -1444,7 +1448,6 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
-- **Contract fragment** `api/feature/admin-insights/admin-insights.yml` — tags `AdminInsights`; no backend controller implements the matching `<Tag>Api`
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
 - **Features with no `docs/features/` doc:** `medication`, `quickinput`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

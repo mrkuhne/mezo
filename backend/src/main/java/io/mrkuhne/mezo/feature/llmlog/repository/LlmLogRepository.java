@@ -53,6 +53,21 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
     List<LlmDailyAggregate> aggregatePerDaySinceForUser(@Param("since") Instant since,
             @Param("zone") String zone, @Param("userId") UUID userId);
 
+    /** Daily usage for the whole installation (admin overview, mezo-d5iy). Excludes ERROR calls —
+     *  failed calls are not cost. */
+    @Query(value = """
+        select (l.created_at at time zone :zone)::date as "day",
+               count(*) as "calls",
+               coalesce(sum(l.prompt_tokens), 0) as "inputTokens",
+               coalesce(sum(coalesce(l.candidates_tokens, 0) + coalesce(l.thoughts_tokens, 0)), 0) as "outputTokens",
+               sum(l.cost_usd) as "costUsd"
+        from llm_log_history l
+        where l.created_at >= :since and l.status <> 'ERROR'
+        group by 1
+        order by 1
+        """, nativeQuery = true)
+    List<LlmDailyAggregate> aggregatePerDaySince(@Param("since") Instant since, @Param("zone") String zone);
+
     /**
      * Per-status slice of a period (mezo-uakh) — call count, cost sum and unpriced count in ONE
      * grouped pass. Deliberately NOT filtered by {@code created_by}: cron- and stream-written rows
