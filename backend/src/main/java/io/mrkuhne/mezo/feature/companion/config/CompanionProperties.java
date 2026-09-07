@@ -114,8 +114,13 @@ public record CompanionProperties(
                 // The trailing "?" is load-bearing: an empty yml key (`chat:`) binds to "", not null,
                 // and the shipped config states both keys empty on purpose. The router reads blank
                 // as unset; the enumeration is here so a TYPO fails at boot instead of at the API.
-                @Pattern(regexp = "(none|minimal|low|medium|high|xhigh|max)?") String chat,
-                @Pattern(regexp = "(none|minimal|low|medium|high|xhigh|max)?") String smart
+                // The five values are the ones GPT-5.6 actually accepts, probed live against both
+                // tiers (mezo-641c S0): `minimal` and `max` were in the first draft on second-hand
+                // information and are rejected with HTTP 400 ("does not support ... Supported
+                // values are: 'none', 'low', 'medium', 'high', and 'xhigh'"), so allowing them here
+                // only moved a boot-time typo failure to a run-time outage.
+                @Pattern(regexp = "(none|low|medium|high|xhigh)?") String chat,
+                @Pattern(regexp = "(none|low|medium|high|xhigh)?") String smart
             ) {}
         }
     }
