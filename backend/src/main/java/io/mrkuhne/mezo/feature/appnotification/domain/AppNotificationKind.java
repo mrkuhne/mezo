@@ -33,7 +33,25 @@ public enum AppNotificationKind {
      *  {@code /me/goals} bázis mellé az emitter a konkrét cél id-jét teszi. */
     LIFE_GOAL_PLAN("life_goal_plan", null, "/me/goals"),
     /** mezo-ricj.4: feed-only; the concrete suggestion id is appended after commit. */
-    GOAL_SUGGESTION("goal_suggestion", null, "/me/goals/weight/suggestions");
+    GOAL_SUGGESTION("goal_suggestion", null, "/me/goals/weight/suggestions"),
+    /* ── mezo-0cbh: the four kinds the last week's features were missing. ALL feed-only
+     *  (familyKey null) BY REQUEST — these are things to find when you next open the app, not
+     *  things worth a phone buzz. Each rides a decision queue or a rare, earned moment. */
+    /** The nightly extraction pass proposed unknown names as candidates — a queue that waits for
+     *  an accept/reject, and until now only the Emberek hub tile ever said so. */
+    PERSON_CANDIDATE("person_candidate", null, "/me/people/jeloltek"),
+    /** An undecided graph candidate: LIFE_EVENT from the nightly pass, SEASON from the quarterly
+     *  deep read. Two producers, one kind — the {@code challenge_event} precedent. */
+    GRAPH_CANDIDATE("graph_candidate", null, "/mezo/knowledge"),
+    /** A habit crossed the automaticity threshold. The deeplink base takes the habit key at emit
+     *  time (the pattern kinds' idiom); once-ever per habit, enforced by the dedup key. */
+    HABIT_FORMATION("habit_formation", null, "/me/rutin/szokas"),
+    /** The monthly deep-read konzílium wrote a new portrait — the {@code memoir_ready} /
+     *  {@code weekly_review_ready} shape: "something about you is finished". */
+    CHARACTER_PORTRAIT("character_portrait", null, "/me/karakter"),
+    /** A heti konzílium ÉRDEMBEN változtatott a dossziédon (üres hét néma marad). Egy fejezet
+     *  nyitása ugyanennek a futásnak a része, ezért NEM külön fajta — a sor szövegét vezeti. */
+    KONZILIUM_VERDICT("konzilium_verdict", null, "/me/karakter/konzilium");
 
     private final String key;
     private final String familyKey;

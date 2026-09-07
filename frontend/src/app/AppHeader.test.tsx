@@ -169,15 +169,17 @@ test('az Üzenetek karika badge-e a szál TELJES hosszát viseli, a nudge-okkal 
 test('az értesítés-karika badge-e az olvasatlan értesítések számát viseli', async () => {
   renderAt('/nap')
   const btn = await screen.findByRole('button', { name: /^Értesítések/ })
-  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 3 olvasatlan')
-  expect(btn.querySelector('.nap-badge')).toHaveTextContent('3')
+  // 4 az `notificationFeedSeed` olvasatlan sorainak száma (mezo-0cbh adta a negyediket) —
+  // a szám a seedből SZÁRMAZIK, nem önálló tény.
+  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 4 olvasatlan')
+  expect(btn.querySelector('.nap-badge')).toHaveTextContent('4')
 })
 
 test('az értesítés-dropdown a /me/ertesitesek oldalra visz a lábléceről', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   renderAt('/nap')
   await user.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  await user.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  await user.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/ertesitesek')
 })
 
@@ -188,7 +190,7 @@ test('a két dropdown kölcsönösen kizárja egymást', async () => {
   expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: /^Értesítések/ }))
   expect(container.querySelector('.nap-dpmenu')).toBeNull()
-  expect(container.querySelector('.nap-ntfmenu')).not.toBeNull()
+  expect(container.querySelector('.nap-ntfpanel')).not.toBeNull()
 })
 
 // mezo-idz2: a jobb szélső orb a mai nap-oldalra visz; a profil az alsó „Én" fülön van.
@@ -234,9 +236,9 @@ test('az értesítés-menü kívülre kattintásra bezárul', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   const { container } = renderAt('/nap', <div data-testid="outside">kívül</div>)
   await user.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  expect(container.querySelector('.nap-ntfmenu')).not.toBeNull()
+  expect(container.querySelector('.nap-ntfpanel')).not.toBeNull()
   await user.click(screen.getByTestId('outside'))
-  expect(container.querySelector('.nap-ntfmenu')).toBeNull()
+  expect(container.querySelector('.nap-ntfpanel')).toBeNull()
 })
 
 test('a napszak-menü elemei rádió-menüelemek, a jelenlegi napszak bejelölve', async () => {
@@ -246,7 +248,9 @@ test('a napszak-menü elemei rádió-menüelemek, a jelenlegi napszak bejelölve
   expect(dpItem('Este')).toHaveAttribute('aria-checked', 'true')
   expect(dpItem('Nap')).toHaveAttribute('aria-checked', 'false')
   expect(screen.getByRole('button', { name: 'Napszak váltása' })).toHaveAttribute('aria-haspopup', 'menu')
-  expect(screen.getByRole('button', { name: /^Értesítések/ })).toHaveAttribute('aria-haspopup', 'menu')
+  // A csengő panelje `dialog` (szűrő-chipek + „Mind olvasott" gomb van benne), a napszak-váltó
+  // maradt igazi menü (mezo-g9fz).
+  expect(screen.getByRole('button', { name: /^Értesítések/ })).toHaveAttribute('aria-haspopup', 'dialog')
 })
 
 test('a fejléc gyökere <header> elem, a nap-head app-head osztályokkal', async () => {
@@ -261,8 +265,8 @@ test('a nyitott popover bezárul, amikor a fejléc máshová navigál', async ()
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   const { container } = renderAt('/nap')
   await user.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  expect(container.querySelector('.nap-ntfmenu')).not.toBeNull()
-  await user.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  expect(container.querySelector('.nap-ntfpanel')).not.toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   await user.click(screen.getByRole('button', { name: 'Napszak váltása' }))
   expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: /^A mai napod/ }))

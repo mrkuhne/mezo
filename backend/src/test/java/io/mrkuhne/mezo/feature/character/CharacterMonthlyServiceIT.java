@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -41,6 +42,7 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
     @Autowired private CharacterMonthlyService monthlyService;
     @Autowired private CharacterConferenceRepository conferenceRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private CharacterDimensionRepository dimensionRepository;
     @Autowired private CharacterClaimRepository claimRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -126,6 +128,18 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
         assertThat(conference.getOutcome().changes()).extracting(ConferenceOutcomeEnvelope.Change::kind)
                 .contains("CLAIM_ACCEPTED", "PORTRAIT_REWRITTEN");
+
+        // mezo-0cbh: a `memoir_ready`/`weekly_review_ready` alakja — „elkészült valami, ami
+        // rólad szól". Eddig csak az tudott a havi mélyolvasásról, aki magától benyitott a
+        // Konzílium oldalra.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> "character_portrait".equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getTitle()).isEqualTo("Új portré készült rólad");
+                    assertThat(n.getDeeplink()).isEqualTo("/me/karakter");
+                    assertThat(n.getRefId()).isEqualTo(conference.getId());
+                });
     }
 
     @Test
