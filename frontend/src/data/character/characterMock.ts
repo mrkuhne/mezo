@@ -630,9 +630,15 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
   // MONTHLY never runs a cross-talk round (CharacterMonthlyService assembles its envelope with
   // an honestly empty reaction list), so this is the exact shape C1's fix must treat as "nem
   // volt ilyen kör", never "0 hozzászólás". `changes[]` carries the 5 accepted / 2 retired / 1
-  // portrait-rewritten the `MOCK_CONFERENCES` row promises; the deliberation threads are a
-  // separate, smaller illustration of the month's own discussion — the two counts are never
-  // meant to match (round-map vs. dossier-card, §2's honesty rule).
+  // portrait-rewritten the `MOCK_CONFERENCES` row promises.
+  //
+  // Arithmetic-consistency fix (mezo-sp9w, branch review): the deliberation below is NOT a
+  // "smaller illustration" of the change list — every accepted NEW ruling here produces exactly
+  // one CLAIM_ACCEPTED change and every accepted RETIRE ruling exactly one CLAIM_RETIRED change,
+  // same rule the real system enforces (an accepted/rejected ruling with no matching change, or
+  // vice versa, is the exact defect this fixture used to have: 4 accepted rulings claiming to be
+  // 5 CLAIM_ACCEPTED changes). 5 accepted NEW rulings (physical, nutrition, discipline, recovery,
+  // mental) + 2 accepted RETIRE rulings (physical, life) match the 5/2 split below one-for-one.
   m1: {
     id: 'm1',
     kind: 'MONTHLY',
@@ -689,6 +695,46 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
             kind: 'RETIRE', claimId: 'c-life-old', sensitive: false, reactions: [],
             skeptic: { verdict: 'KEEP', argument: 'Két hónapja nem jelenik meg, nyugodtan nyugdíjazható.' },
             chair: { accepted: true, confidence: VALOSZINU, reason: 'Nyugdíjazom.' },
+          },
+        ],
+      },
+      // C-fix (mezo-sp9w, arithmetic-consistency fix): a monthly council reviewing a whole
+      // month plausibly discusses more claims than a weekly one — these three threads round the
+      // deliberation up to match the 5 CLAIM_ACCEPTED changes below (2 above + these 3), instead
+      // of shrinking the change list. Zero reactions everywhere, same as the rest of m1.
+      {
+        dimensionKey: 'discipline',
+        title: 'Havi áttekintés — Motiváció & fegyelem',
+        items: [
+          {
+            index: 5, expertKey: 'drill', text: 'A kitűzött heti fókuszok teljesítése négy hónapja stabilan magas — a hónap egésze alapján "biztos" szintre emelném.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Négy hónapnyi konzisztens adat, megalapozott az emelés.' },
+            chair: { accepted: true, confidence: BIZTOS, reason: 'Erősítem "biztos" szintre.' },
+          },
+        ],
+      },
+      {
+        dimensionKey: 'recovery',
+        title: 'Havi áttekintés — Alvás & regeneráció',
+        items: [
+          {
+            index: 6, expertKey: 'szomnologus', text: 'A hétvégi elalvás-eltolódás mintája a hónap egészében is tartja magát.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'A havi átlag megerősíti a heti megfigyelést.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Megerősítem.' },
+          },
+        ],
+      },
+      {
+        dimensionKey: 'mental',
+        title: 'Havi áttekintés — Mentális & érzelmi',
+        items: [
+          {
+            index: 7, expertKey: 'pszichologus', text: 'A hét vége felé jelentkező feszültség mintája a hónap minden hetében visszatért.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Négy hét egybehangzó jelzése, felvehető.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Felveszem.' },
           },
         ],
       },
