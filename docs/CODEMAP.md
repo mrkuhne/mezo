@@ -82,7 +82,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
   - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`
-  - **services:** `AdminOverviewService`, `AdminSeries`, `AdminSqlDialect`, `AdminTableCatalog`, `AdminUserService`
+  - **services:** `AdminOverviewService`, `AdminSeries`, `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`,
+    `AdminUserService`
   - **controllers→contract:** `AdminInsightsController`→`AdminInsightsApi`
   - **config:** `AdminProperties`
 - **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
@@ -91,8 +92,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 4 IT + 1 unit
-  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 5 IT + 1 unit
+  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
 
 ### appnotification
 
@@ -749,8 +750,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
-  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmGroupRow`, `LlmLogRepository`, `LlmStatusRow`,
-    `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
+  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmGroupRow`, `LlmLogRepository`,
+    `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
   - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmCallRecord`,
     `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`

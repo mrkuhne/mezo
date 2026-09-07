@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
 import io.mrkuhne.mezo.feature.admin.service.AdminOverviewService;
+import io.mrkuhne.mezo.feature.admin.service.AdminUsageService;
 import io.mrkuhne.mezo.feature.admin.service.AdminUserService;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -23,9 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>The generated {@link AdminInsightsApi} has no {@code default} method bodies, so every
  * operation must be implemented to compile. {@link #getAdminOverview()} (mezo-d5iy.3),
- * {@link #listAdminUserInsights(String, String, String)} (mezo-d5iy.4) and
- * {@link #getAdminUserInsight(UUID)} (mezo-d5iy.5) are real; the remaining two return an empty
- * response and are filled in by Task 6, each driven by its own IT.
+ * {@link #listAdminUserInsights(String, String, String)} (mezo-d5iy.4),
+ * {@link #getAdminUserInsight(UUID)} (mezo-d5iy.5), {@link #getAdminFeatureUsage(String)} and
+ * {@link #getAdminCostMatrix(String)} (both mezo-d5iy.6) are all real.
  */
 @RestController
 @RequiredArgsConstructor
@@ -34,6 +35,7 @@ public class AdminInsightsController implements AdminInsightsApi {
 
     private final AdminOverviewService overviewService;
     private final AdminUserService userService;
+    private final AdminUsageService usageService;
     private final CurrentUser currentUser;
 
     @Override
@@ -54,17 +56,15 @@ public class AdminInsightsController implements AdminInsightsApi {
         return userService.detail(id);
     }
 
-    // TODO(mezo-d5iy.5): implemented in a later task
     @Override
     public AdminFeatureUsageResponse getAdminFeatureUsage(String period) {
         currentUser.requireOwner();
-        return new AdminFeatureUsageResponse();
+        return usageService.featureUsage(period);
     }
 
-    // TODO(mezo-d5iy.6): implemented in a later task
     @Override
     public AdminCostMatrixResponse getAdminCostMatrix(String period) {
         currentUser.requireOwner();
-        return new AdminCostMatrixResponse();
+        return usageService.costMatrix(period);
     }
 }

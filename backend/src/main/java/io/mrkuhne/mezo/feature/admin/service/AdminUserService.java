@@ -193,7 +193,7 @@ public class AdminUserService {
         });
         llmFeatureRows.forEach(row -> {
             if (row.feature() != null) {
-                featureUsage30d.merge(row.feature(), row.callCount(), Long::sum);
+                featureUsage30d.merge(row.feature(), row.calls(), Long::sum);
             }
         });
 
@@ -203,7 +203,7 @@ public class AdminUserService {
                 .map(row -> {
                     var cost = new AdminFeatureCost();
                     cost.setFeature(row.feature());
-                    cost.setCalls(row.callCount());
+                    cost.setCalls(row.calls());
                     cost.setCostUsd(row.costUsd() == null ? 0.0 : row.costUsd().doubleValue());
                     cost.setUnknownCalls(row.unknownCalls());
                     return cost;

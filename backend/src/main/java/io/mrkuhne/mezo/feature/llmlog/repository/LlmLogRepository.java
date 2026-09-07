@@ -101,14 +101,43 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
      */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow(
-            l.feature, count(l), sum(l.costUsd),
+            l.createdBy, l.feature, count(l), sum(l.costUsd),
             sum(case when l.costUsd is null then 1L else 0L end))
         from LlmLogEntity l
         where l.createdAt >= :since and l.createdBy = :userId and l.status <> :errorStatus
-        group by l.feature
+        group by l.createdBy, l.feature
         """)
     List<LlmUserFeatureRow> aggregateByFeatureSinceForUser(@Param("since") Instant since, @Param("userId") UUID userId,
             @Param("errorStatus") CallStatus errorStatus);
+
+    /**
+     * User x feature cost since {@code since}, excluding failed calls (admin cost matrix,
+     * mezo-d5iy.6). A null {@code createdBy} is real cost (cron/stream traffic) and becomes its
+     * own row — the "Háttér" bucket the service renders as a synthetic user with a null id.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow(
+            l.createdBy, l.feature, count(l), sum(l.costUsd),
+            sum(case when l.costUsd is null then 1L else 0L end))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.status <> :excluded
+        group by l.createdBy, l.feature
+        """)
+    List<LlmUserFeatureRow> aggregateByUserAndFeatureSince(@Param("since") Instant since,
+            @Param("excluded") CallStatus excluded);
+
+    /** Feature x day call counts since {@code since}, excluding failed calls (admin feature-usage
+     *  matrix, mezo-d5iy.6). */
+    @Query(value = """
+        select (l.created_at at time zone :zone)::date as "day",
+               l.feature as "feature",
+               count(*) as "calls"
+        from llm_log_history l
+        where l.created_at >= :since and l.status <> 'ERROR'
+        group by 1, 2
+        order by 1, 2
+        """, nativeQuery = true)
+    List<LlmFeatureDayRow> aggregateByFeatureAndDaySince(@Param("since") Instant since, @Param("zone") String zone);
 
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""
