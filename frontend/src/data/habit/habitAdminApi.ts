@@ -36,12 +36,18 @@ export interface HabitDefCreateInput {
   celebration?: string | null
   identity?: string | null
 }
+/** PATCH semantics (mezo-pero): an omitted key leaves the field unchanged; for the optional
+ *  text fields a BLANK string clears the stored value back to null — the anchorHabitKey unlink
+ *  convention generalized. `mode`/`metric` are editable post-create: MANUAL forces metric to
+ *  "manual", DERIVED needs a supported metric in the same patch (or an already-derived stored one). */
 export interface HabitDefUpdateInput {
   title?: string
   why?: string | null
   anchorCopy?: string | null
   chainKey?: string
   position?: number
+  mode?: HabitDefInfo['mode']
+  metric?: string
   xp?: number
   linkUrl?: string | null
   isActive?: boolean
