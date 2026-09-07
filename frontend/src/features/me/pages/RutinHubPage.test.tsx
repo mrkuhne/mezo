@@ -2,11 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
-import type { HabitChainInfo } from '@/data/types'
+import type { HabitChainInfo, HabitFormation } from '@/data/types'
 
-// The page navigates a lot (back to Én, new-recipe wizard, habit detail rows), so useNavigate
-// is mocked at the react-router-dom boundary (GoalsPage.test.tsx's mockNavigate idiom) rather
-// than routed through real sibling probe routes.
 const navigate = vi.fn()
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -21,8 +18,6 @@ function renderPage(initialEntry = '/me/rutin') {
   )
 }
 
-// Three catalog defs covering all three framework badges (mezo-3zue): FOGG, CLEAR, and a
-// legacy pre-framework def (framework: null).
 function def(
   habitKey: string, title: string, framework: 'FOGG' | 'CLEAR' | null,
   overrides: Partial<HabitChainInfo['defs'][number]> = {},
@@ -48,9 +43,9 @@ const EVENING: HabitChainInfo = {
 }
 
 const habitsToday = [
-  { key: 'sun', chain: 'MORNING', title: 'Reggeli fény', status: 'done', xp: 5 },
-  { key: 'intent', chain: 'MORNING', title: 'Napi szándék', status: 'pending', xp: 5 },
-  { key: 'water', chain: 'MORNING', title: 'Hidratálás', status: 'pending', xp: 5 },
+  { key: 'sun', chain: 'MORNING', title: 'Reggeli fény', status: 'done', xp: 5, anchorCopy: 'ébredés után' },
+  { key: 'intent', chain: 'MORNING', title: 'Napi szándék', status: 'pending', xp: 5, anchorCopy: 'kávé után' },
+  { key: 'water', chain: 'MORNING', title: 'Hidratálás', status: 'pending', xp: 5, anchorCopy: '' },
 ]
 
 const mockHabitSummary = {
@@ -59,32 +54,41 @@ const mockHabitSummary = {
   habits: [{ key: 'sun', strengthPct: 71 }],
 }
 
+function formation(key: string, automaticityPct: number | null): HabitFormation {
+  return {
+    key, firstDate: '2026-06-01', reps: 40, missed: 5,
+    automaticityPct, curveK: 0.03, thresholdPct: 90, minReps: 5,
+    repsToThresholdLo: null, repsToThresholdHi: null,
+    weeksToThresholdLo: null, weeksToThresholdHi: null,
+    repsPerWeek: 5, consistencyPct: 70, timeConstancyPct: null, anchorConstancyPct: null,
+    days: [],
+  }
+}
+
 const {
-  useHabitDay, useHabitSummary, useHabitCatalog, useHabitCatalogActions, useProgressionProfile,
-  useHabitAiSuggest, updateChain, reorderChain,
+  useHabitDay, useHabitSummary, useHabitCatalog, useHabitFormations, useProgressionProfile,
+  useHabitAiSuggest, useHabitCatalogActions,
 } = vi.hoisted(() => ({
   useHabitDay: vi.fn(),
   useHabitSummary: vi.fn(),
   useHabitCatalog: vi.fn(),
-  useHabitCatalogActions: vi.fn(),
+  useHabitFormations: vi.fn(),
   useProgressionProfile: vi.fn(),
   useHabitAiSuggest: vi.fn(),
-  updateChain: vi.fn(() => Promise.resolve()),
-  reorderChain: vi.fn(() => Promise.resolve()),
+  useHabitCatalogActions: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
   useHabitDay: (d: string) => useHabitDay(d),
   useHabitSummary: () => useHabitSummary(),
   useHabitCatalog: () => useHabitCatalog(),
-  useHabitCatalogActions: () => useHabitCatalogActions(),
+  useHabitFormations: (keys: string[]) => useHabitFormations(keys),
   useProgressionProfile: () => useProgressionProfile(),
   useHabitAiSuggest: () => useHabitAiSuggest(),
+  useHabitCatalogActions: () => useHabitCatalogActions(),
 }))
 
 beforeEach(() => {
   navigate.mockClear()
-  updateChain.mockClear()
-  reorderChain.mockClear()
   useHabitDay.mockReset()
   useHabitDay.mockReturnValue({ habits: habitsToday })
   useHabitSummary.mockReset()
@@ -93,330 +97,148 @@ beforeEach(() => {
   useHabitCatalog.mockReturnValue({
     catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn(),
   })
-  useHabitCatalogActions.mockReset()
-  useHabitCatalogActions.mockReturnValue({
-    createChain: vi.fn(() => Promise.resolve()),
-    updateChain,
-    deleteChain: vi.fn(() => Promise.resolve()),
-    reorderChain,
-    createDef: vi.fn(() => Promise.resolve()),
-    deleteDef: vi.fn(() => Promise.resolve()),
-    pending: false,
-  })
+  useHabitFormations.mockReset()
+  useHabitFormations.mockReturnValue(new Map([
+    ['sun', formation('sun', 92)], // settled (past the 90% threshold)
+    ['intent', formation('intent', 40)],
+    ['water', formation('water', null)], // under minReps — no estimate
+  ]))
   useProgressionProfile.mockReset()
   useProgressionProfile.mockReturnValue({ data: { life: [] } })
   useHabitAiSuggest.mockReset()
   useHabitAiSuggest.mockReturnValue({ suggest: vi.fn(() => Promise.resolve([])), pending: false, unavailable: false })
+  useHabitCatalogActions.mockReset()
+  useHabitCatalogActions.mockReturnValue({
+    createChain: vi.fn(() => Promise.resolve()), updateChain: vi.fn(), deleteChain: vi.fn(),
+    reorderChain: vi.fn(), createDef: vi.fn(), updateDef: vi.fn(), deleteDef: vi.fn(), pending: false,
+  })
 })
 
-describe('RutinHubPage', () => {
-  test('shows the prototype statstrip instead of the 30-cell counter tiles', () => {
-    const { container } = renderPage()
+describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
+  test('the statstrip keeps the 30-day counters and the active-def cell', () => {
+    renderPage()
     expect(screen.getByText('tökéletes reggel · 30 n')).toBeInTheDocument()
     expect(screen.getByText('tökéletes este · 30 n')).toBeInTheDocument()
     expect(screen.getByText('aktív szokás')).toBeInTheDocument()
-    // each value is bound to ITS cell — a bare getByText('6') would also pass if the two
-    // 30-day counters were swapped (mezo-j6hg)
-    const cellFor = (label: string) => screen.getByText(label).closest('.mz-statcell') as HTMLElement
-    expect(within(cellFor('tökéletes reggel · 30 n')).getByText('6')).toBeInTheDocument()
-    expect(within(cellFor('tökéletes este · 30 n')).getByText('4')).toBeInTheDocument()
-    expect(within(cellFor('aktív szokás')).getByText('3')).toBeInTheDocument()
-    expect(container.querySelector('.gr-covtile')).toBeNull()
-    expect(container.querySelector('.gr-cells')).toBeNull()
+    expect(screen.getByText('3')).toBeInTheDocument()
   })
 
-  test('the habit list asks SortableList to hide its chevrons until focus', () => {
-    // without this, deleting `chevrons="focus"` would only fail the visual goldens — with a
-    // pixel diff nobody can read as "the prototype row grew two buttons" (mezo-j6hg)
-    const { container } = renderPage()
-    expect(container.querySelector('.srt-chev-focus')).not.toBeNull()
+  test('the hero sub counts the settled habits from the formation data', () => {
+    renderPage()
+    expect(screen.getByText('ma · 1 szokás már magától megy')).toBeInTheDocument()
+  })
+
+  test('a Következik sor a soron következő szokást mutatja, és a Nap oldalra NAVIGÁL, nem pipál', () => {
+    renderPage()
+    const card = screen.getByTestId('next-card')
+    expect(card).toHaveTextContent('Következik')
+    expect(card).toHaveTextContent('Napi szándék')
+    expect(card).toHaveTextContent('kávé után · Reggeli rutin lánc')
+    fireEvent.click(within(card).getByRole('button', { name: 'Pipálás a Nap oldalon' }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin?dp=reggel')
+    // the ADR's hard rule: no tick control anywhere on an Én surface
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  test('mind kész: a Következik kártya ünnepel és a Nap oldalra visz', () => {
+    useHabitDay.mockReturnValue({ habits: habitsToday.map((h) => ({ ...h, status: 'done' })) })
+    renderPage()
+    const card = screen.getByTestId('next-card')
+    expect(card).toHaveTextContent('A mai rutin kész')
+    fireEvent.click(within(card).getByRole('button', { name: /Nap oldal/ }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin?dp=reggel')
+  })
+
+  test('az aktív lánc csempe a következő szokás láncát mutatja, és a lánc-oldalra visz', () => {
+    renderPage()
+    const tile = screen.getByTestId('chain-tile')
+    expect(tile).toHaveTextContent('Aktív lánc · Reggeli rutin')
+    expect(tile).toHaveTextContent('1 / 3')
+    fireEvent.click(tile)
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/lanc/MORNING')
+  })
+
+  test('a Szokásaid csempe a saját oldalára visz, a beérett számmal', () => {
+    renderPage()
+    const tile = screen.getByRole('button', { name: 'Szokásaid' })
+    expect(tile).toHaveTextContent('3 aktív · 1 beérett')
+    fireEvent.click(tile)
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokasok')
+  })
+
+  test('az Építs csempe az egy létrehozó folyamot nyitja', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Építs' }))
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj')
+  })
+
+  test('a hub nem listáz szokás-sorokat — a lista a saját oldalán él', () => {
+    renderPage()
+    expect(screen.queryByText('Hidratálás')).toBeNull()
   })
 
   test('keeps the day navigator — the accepted extension over the prototype', () => {
     renderPage()
-    expect(screen.getByLabelText(/előző nap/i)).toBeInTheDocument()
-  })
-
-  test('the active-habit cell counts ACTIVE definitions only', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: {
-        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
-      },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage()
-    const cell = screen.getByText('aktív szokás').closest('.mz-statcell') as HTMLElement
-    expect(within(cell).getByText('2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Előző nap/ })).toBeInTheDocument()
   })
 
   test('the active-habit cell ignores the defs of a PAUSED chain', () => {
-    // A paused chain does not run, so its still-active defs are not active habits — counting
-    // them overstated the number the cell's own label claims (mezo-4kbl).
     useHabitCatalog.mockReturnValue({
       catalog: { chains: [{ ...MORNING, isActive: false }, EVENING] },
       isPending: false, isError: false, refetch: vi.fn(),
     })
     renderPage()
-    const cell = screen.getByText('aktív szokás').closest('.mz-statcell') as HTMLElement
-    expect(within(cell).getByText('0')).toBeInTheDocument()
-  })
-
-  test('badges each habit row with its framework, legacy rows included', () => {
-    renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
-    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
-    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
-  })
-
-  // ---- fix wave (mezo-3zue.10): prototype's .pw chain head (strength only) + .habnote ----
-
-  test('the chain head shows only the chain strength, not today\'s done/total', () => {
-    renderPage()
-    const morning = screen.getByText('Reggeli rutin').closest('.gr-chain') as HTMLElement
-    expect(within(morning).getByText('erő 71%')).toBeInTheDocument()
-    expect(within(morning).queryByText(/1 \/ 3/)).toBeNull()
-  })
-
-  test('a chain with no strength data shows no chip at all (honesty rule)', () => {
-    renderPage()
-    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
-    expect(evening.querySelector('.gr-band-chip')).toBeNull()
-  })
-
-  test('the honesty rule holds for a chain that HAS rows but no strength yet', () => {
-    // the case above has an empty chain, so it would pass even if the chip fabricated a zero
-    // for a real-but-unmeasured chain — this is that case (mezo-j6hg)
-    useHabitCatalog.mockReturnValue({
-      catalog: {
-        chains: [MORNING, { ...EVENING, defs: [def('tea', 'Esti tea', null, { chainKey: 'EVENING', position: 1 })] }],
-      },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    useHabitDay.mockReturnValue({
-      habits: [...habitsToday, { key: 'tea', chain: 'EVENING', title: 'Esti tea', status: 'pending', xp: 5 }],
-    })
-    renderPage()
-    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
-    expect(within(evening).getByText('Esti tea')).toBeInTheDocument()
-    expect(evening.querySelector('.gr-band-chip')).toBeNull()
-  })
-
-  test('closes with the prototype principle sentence', () => {
-    renderPage()
-    expect(screen.getByText(/A logolás maga a jutalom/)).toBeInTheDocument()
-    expect(screen.getByText(/a sor a szerkesztőt nyitja/)).toBeInTheDocument()
-  })
-
-  // ---- fix wave (mezo-3zue.4): spec §5's strength NUMBER, and the bar not being silent ----
-
-  test('a habit row shows the strength as a number beside the bar', () => {
-    const { container } = renderPage()
-    expect(screen.getByText('71%')).toBeInTheDocument()
-    expect(container.querySelector('.rt-strength')).toHaveAttribute('aria-hidden', 'true')
-  })
-
-  test('the row button names the strength — the bar alone is silent to a screen reader', () => {
-    renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
-    // a def with no summary row names no standing at all (honesty rule)
-    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
-  })
-
-  test('opens the habit page from a row and never renders a tick control', () => {
-    renderPage()
-    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész').click()
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/sun')
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-  })
-
-  test('routes the new-recipe CTA to the wizard', () => {
-    renderPage()
-    screen.getByRole('button', { name: /Új szokás-recept/ }).click()
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj')
+    expect(screen.getByText('0')).toBeInTheDocument()
   })
 
   test('goes back to the Én hub, not to Growth', () => {
     renderPage()
-    screen.getByRole('button', { name: 'Vissza' }).click()
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(navigate).toHaveBeenCalledWith('/me')
-  })
-
-  test('keeps chain editing: the active toggle and the chain edit sheet', () => {
-    renderPage()
-    screen.getByLabelText('Reggeli rutin aktív').click()
-    expect(updateChain).toHaveBeenCalledWith('chain-morning', { isActive: false })
-  })
-
-  test('shows the past-day branch without strength percentages', () => {
-    renderPage()
-    fireEvent.click(screen.getByLabelText(/előző nap/i))
-    expect(screen.queryByText(/erő \d+%/)).not.toBeInTheDocument()
-  })
-
-  // ---- past-day behaviour inherited from GrowthRutinPage (mezo-rmi0.1) ----
-
-  test('past day: the summary line reads `Reggel k/n · Este k/n · +XP`', () => {
-    useHabitDay.mockReturnValue({
-      habits: [
-        ...habitsToday,
-        { key: 'bed', chain: 'EVENING', title: 'Időben ágyban', status: 'missed', xp: 5 },
-      ],
-    })
-    const { container } = renderPage()
-    fireEvent.click(screen.getByLabelText(/előző nap/i))
-    expect(container.querySelector('.gr-daysum')?.textContent).toMatch(/Reggel 1\/3 · Este 0\/1 · \+5 XP/)
-    // status-only rows on a past day: no strength bar, no framework badge, no tap target
-    expect(container.querySelectorAll('.rt-strength')).toHaveLength(0)
-    expect(container.querySelectorAll('.rt-fw')).toHaveLength(0)
-  })
-
-  test('past day with a zero chain shows the soft note (never "megszakadt")', () => {
-    useHabitDay.mockReturnValue({
-      habits: [
-        { key: 'sun', chain: 'MORNING', title: 'Reggeli fény', status: 'pending', xp: 5 },
-        { key: 'bed', chain: 'EVENING', title: 'Időben ágyban', status: 'done', xp: 5 },
-      ],
-    })
-    renderPage()
-    fireEvent.click(screen.getByLabelText(/előző nap/i))
-    expect(screen.getByText(/Reggeli rutin kimaradt — a lánc másnap folytatódott\. A 30 napos erő ettől nem nullázódik\./)).toBeInTheDocument()
-    expect(screen.queryByText(/megszakadt/)).not.toBeInTheDocument()
-  })
-
-  test('empty past day: quiet ghost', () => {
-    renderPage()
-    useHabitDay.mockReturnValue({ habits: [] })
-    fireEvent.click(screen.getByLabelText(/előző nap/i))
-    expect(screen.getByText(/Nincs rutinadat erre a napra/i)).toBeInTheDocument()
-  })
-
-  // ---- catalog-driven today branch (the fix wave) ----
-
-  test('an inactive chain renders dimmed, it does not disappear', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, isActive: false }, EVENING] }, isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage()
-    const card = screen.getByText('Reggeli rutin').closest('.gr-chain')
-    expect(card).toHaveClass('is-inert')
-    // and its toggle is still there to turn it back on
-    fireEvent.click(screen.getByLabelText('Reggeli rutin aktív'))
-    expect(updateChain).toHaveBeenCalledWith('chain-morning', { isActive: true })
-  })
-
-  test('an inactive definition renders dimmed instead of vanishing with the day view', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: {
-        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
-      },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    // the day view returns ACTIVE defs only — the paused one is absent from it
-    useHabitDay.mockReturnValue({ habits: habitsToday.slice(0, 2) })
-    renderPage()
-    const row = screen.getByLabelText('Hidratálás · keret nélkül').closest('.row')
-    expect(row).toHaveClass('is-inert')
-  })
-
-  test('the row carries a read-only tick beside the bar and no per-def toggle', () => {
-    const { container } = renderPage()
-    const row = screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')
-    expect(within(row).getByText('✓')).toBeInTheDocument()
-    expect(row.closest('.row')).toHaveClass('rt-done')
-    // a toggle a soron soha többé — a szüneteltetés a HabitPage-en él
-    expect(screen.queryByLabelText('Napi szándék aktív')).toBeNull()
-    expect(container.querySelector('.rt-hrow .rt-bar')).not.toBeNull()
-  })
-
-  // ---- fix wave (mezo-3zue.10): the dead sr-only status span is not read by name-based
-  // queries — the tick's ✓ is aria-hidden, so today's done/open state must travel in the
-  // row's own accessible name (getByLabelText resolves it, unlike getByText on inner spans).
-
-  test('the accessible name of today\'s row carries its done/open status', () => {
-    renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
-    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
-  })
-
-  test('a paused definition dims but stays tappable through to its habit page', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: {
-        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
-      },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    useHabitDay.mockReturnValue({ habits: habitsToday.slice(0, 2) })
-    renderPage()
-    const paused = screen.getByLabelText('Hidratálás · keret nélkül')
-    expect(paused.closest('.row')).toHaveClass('is-inert')
-    expect(paused).not.toBeDisabled()
-    fireEvent.click(paused)
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/water')
-  })
-
-  test('＋ Új habit navigates to the ONE creation flow with the chain preselected (mezo-9k99)', () => {
-    // The create sheet is retired: the wizard's „Keret nélkül" branch is where a bare habit
-    // (and mode/metric) is born now — one door for every new habit.
-    renderPage()
-    fireEvent.click(screen.getAllByRole('button', { name: /új habit/i })[0])
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=MORNING')
-  })
-
-  test('reorder sends every definition id of the chain, including an inactive one', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: {
-        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
-      },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    useHabitDay.mockReturnValue({ habits: habitsToday.slice(0, 2) })
-    renderPage()
-    const firstRow = screen.getByText('Reggeli fény').closest('[data-sortable-row]') as HTMLElement
-    fireEvent.click(within(firstRow).getByRole('button', { name: /lejjebb/i }))
-    // a day-filtered subset would drop `def-water` and be rejected with HABIT_REORDER_MISMATCH
-    expect(reorderChain).toHaveBeenCalledWith('chain-morning', ['def-intent', 'def-sun', 'def-water'])
-  })
-
-  test('a chain with no habits today still renders with its ＋ Új habit row', () => {
-    renderPage()
-    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
-    expect(within(evening).getByRole('button', { name: /új habit/i })).toBeInTheDocument()
-  })
-
-  test('shows a loading ghost while the catalog is pending and empty', () => {
-    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: true, isError: false, refetch: vi.fn() })
-    renderPage()
-    expect(screen.getByText(/rutinok betöltése/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /új lánc/i })).not.toBeInTheDocument()
-  })
-
-  test('shows a retry ghost (not the create CTAs) when the catalog errored and is empty', () => {
-    const refetch = vi.fn()
-    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
-    renderPage()
-    expect(screen.queryByRole('button', { name: /új lánc/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /újra/i }))
-    expect(refetch).toHaveBeenCalled()
-  })
-
-  test('an error with stale-but-present chains still renders the normal view', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: true, refetch: vi.fn(),
-    })
-    renderPage()
-    expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
-    expect(screen.queryByText(/nem sikerült betölteni/i)).not.toBeInTheDocument()
-  })
-
-  test('?new= highlights the freshly created habit row', () => {
-    const { container } = renderPage('/me/rutin?new=intent')
-    expect(container.querySelectorAll('.rt-row-new')).toHaveLength(1)
-    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toHaveClass('rt-row-new')
   })
 
   test('suppresses the hero standing until the day view has something real', () => {
     useHabitDay.mockReturnValue({ habits: [] })
-    const { container } = renderPage()
-    expect(container.querySelector('.mz-bignum')).toBeNull()
+    renderPage()
+    expect(screen.queryByText('0 / 0')).toBeNull()
+  })
+
+  test('shows a loading ghost while the catalog is pending and empty', () => {
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: true, isError: false, refetch: vi.fn() })
+    useHabitFormations.mockReturnValue(new Map())
+    renderPage()
+    expect(screen.getByText(/Rutinok betöltése/)).toBeInTheDocument()
+  })
+
+  test('shows a retry ghost (not the create doors) when the catalog errored and is empty', () => {
+    const refetch = vi.fn()
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
+    useHabitFormations.mockReturnValue(new Map())
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+    expect(refetch).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Építs' })).toBeNull()
+  })
+
+  // ---- past-day branch (mezo-x9c2) — untouched by hub 2.0 ----
+
+  test('past day: the summary line reads `Reggel k/n · Este k/n · +XP`', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
+    expect(document.querySelector('.gr-daysum')).toHaveTextContent(/^Reggel 1\/3 · Este 0\/0 · \+5 XP$/)
+  })
+
+  test('past day shows the day rows read-only, no next card', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
+    expect(screen.getByText('Hidratálás')).toBeInTheDocument()
+    expect(screen.queryByTestId('next-card')).toBeNull()
+  })
+
+  test('empty past day: quiet ghost', () => {
+    useHabitDay.mockReturnValue({ habits: [] })
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
+    expect(screen.getByText('Nincs rutinadat erre a napra')).toBeInTheDocument()
   })
 })
