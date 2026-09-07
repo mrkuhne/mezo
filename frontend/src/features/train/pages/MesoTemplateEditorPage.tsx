@@ -1,9 +1,10 @@
 // ============================================================
 // Mezo · MesoTemplateEditorPage (mezo-meyc.1) — the template's own day-plan
 // editor at /train/mesocycles/templates/:id. Full-screen sibling route (no
-// sub-nav, MesoOverviewPage idiom): sticky back breadcrumb → header (title +
-// goal + weeks/split/run-count meta) → the shared MesoEditor over the
-// template's days, with the exercise picker.
+// sub-nav): the page resolves the template, then renders the UNIFIED
+// MesoWeekEditor (mezo-yty6) in `template` mode — the very same editor the
+// wizard's third step renders. The old `pghead-np` head + <details> chrome is
+// retired: one task, one UI.
 //
 // Persistence mirrors MesoExercises: local day-state is authoritative and
 // updates synchronously (instant UI), each add/remove/change/reorder fires a
@@ -12,31 +13,42 @@
 // reseeded into state: the server regenerates every exercise id on a full
 // write, so re-seeding would swap the ids out from under the open accordion.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMesoTemplates, useTimingProfile } from '@/data/hooks'
-import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
+import type { GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
-import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
+import { MesoWeekEditor } from '@/features/train/components/MesoWeekEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
-// shared here so the Cél select AND the Fókusz tier picker persist through the identical
-// upsert helper.
+// every edit on this page (day plan, rename, tiers) travels through this one helper.
+// Every full write regenerates every exercise id server-side (see the module doc), so an
+// edit fired straight from the editor's per-keystroke onChange would PUT the whole document
+// once per character. That is not just the rename: the redesign replaced ExerciseCard's
+// stepper buttons with free-text number inputs, so typing a weight of `82.5` used to fire
+// four full-document PUTs with no response re-seeding and no request ordering (mezo-yty6
+// final review, C1). EVERY write on this page is debounced here — local state stays
+// immediate/authoritative, only the network call is delayed.
+const WRITE_DEBOUNCE_MS = 400
+
 function toUpsert(
   template: MesoTemplate,
   days: MesoDay[],
   goalPreset = template.goalPreset,
   musclePriorities = template.musclePriorities,
+  // The unified editor renames the template in place, and the new title must ride the same
+  // full-replace body as everything else — defaulting to the cache copy would silently
+  // revert a rename on the very next day edit.
+  title = template.title,
 ): MesoTemplateUpsertRequest {
   return {
-    title: template.title,
+    title,
     shortTitle: template.shortTitle,
     goal: template.goal,
     goalPreset,
@@ -97,145 +109,154 @@ export function MesoTemplateEditorPage() {
     )
   }
 
+  // Remounts (and reseeds) only when the route points at another template.
   return (
-    // Inside AppLayout's .screen-content scroller — no nested wrapper (MesoOverviewPage idiom).
-    <div>
-      {backBar}
-      <div style={{ padding: '6px 24px 0' }}>
-        <span className="eyebrow">Sablon · {template.runCount}× futtatva</span>
-      </div>
-      <div className="pghead-np">
-        <div>
-          <div className="over">Edzés · Sablon</div>
-          <h1>{template.title}</h1>
-        </div>
-      </div>
-      {template.goal ? (
-        <div style={{ padding: '6px 24px 4px' }}>
-          <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>{template.goal}</span>
-        </div>
-      ) : null}
-      {/* Remounts (and reseeds) only when the route points at another template. */}
-      <TemplateDayEditor
-        key={template.id}
-        template={template}
-        onPersist={(days, goalPreset, musclePriorities) => updateTemplate(template.id, toUpsert(template, days, goalPreset, musclePriorities))
+    <TemplateDayEditor
+      key={template.id}
+      template={template}
+      onPersist={(days, goalPreset, musclePriorities, title) =>
+        updateTemplate(template.id, toUpsert(template, days, goalPreset, musclePriorities, title))
           // Failed mutations are toasted globally (§7a); the local edit stands and the
           // next change retries the whole document.
           .catch(() => {})}
-      />
-    </div>
+    />
   )
 }
 
-// The editable day plan. Mounted only once the template has resolved, so the
-// one-shot seed always sees real days (MesoExercises gets the same guarantee
-// from its parent resolving the meso first).
+// The editable day plan, rendered on the shared MesoWeekEditor in `template` mode.
+// Mounted only once the template has resolved, so the one-shot seed always sees real
+// days (MesoExercises gets the same guarantee from its parent resolving the meso first).
 //
-// The Cél select also lives here rather than on the parent page: it must build
-// its upsert from THIS component's live `days` state, not the parent's
-// `template` (query-cache) copy — otherwise a goal change between an exercise
-// edit and the refetch landing (or after a failed day PUT, whose local edit
-// deliberately stands) full-replaces the template with the pre-edit day list,
-// silently reverting an edit the UI still shows as applied.
+// Every write builds its upsert from THIS component's live state, never from the parent's
+// `template` (query-cache) copy: updateTemplate is invalidate-only, so between an edit and
+// the refetch landing (or after a failed PUT, whose local edit deliberately stands) the
+// cache copy is stale, and full-replacing from it would silently revert an edit the UI
+// still shows as applied.
+//
+// NOTE (mezo-yty6): the tier (`Fókusz`) picker moved into the wizard interview; there is no
+// tier editing on a saved template this round. `priorities` is still read off the template
+// and still rides along EVERY PUT below — dropping it from the body would reset the map to
+// all-grow on the next write (mezo-3m5m).
 function TemplateDayEditor({ template, onPersist }: {
   template: MesoTemplate
-  onPersist: (days: MesoDay[], goalPreset?: string | null, musclePriorities?: MusclePriorities | null) => void
+  onPersist: (
+    days: MesoDay[],
+    goalPreset?: string | null,
+    musclePriorities?: MusclePriorities | null,
+    title?: string,
+  ) => void
 }) {
+  const goBack = useBackNav('/train/mesocycles')
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(template.days ?? []))
-  // Same local-authoritative idiom as `days` above: seeded once from the prop, then the
-  // single source of truth for the picker AND the editor's budgets/lint. updateTemplate is
-  // invalidate-only (no optimistic cache write), so reading `template.musclePriorities`
-  // directly here would lag until refetch — two rapid picks would both build off the same
-  // stale map and the second onChange would full-replace away the first pick (mezo-3m5m
-  // final review, fix 2).
-  const [priorities, setPriorities] = useState<MusclePriorities>(() => template.musclePriorities ?? {})
+  const [priorities] = useState<MusclePriorities>(() => template.musclePriorities ?? {})
+  const [name, setName] = useState(template.title)
+  const [activeDay, setActiveDay] = useState<string | null>(null)
   const [pickerDay, setPickerDay] = useState<string | null>(null)
-  // Calibrated pacing (Task 12, mezo-dzbm) for the MesoEditor hero below — fetched here
-  // (a pages/ component) and passed down as a prop: components/ stay presentational, pages/
-  // own data fetching (frontend_conventions.md).
+  // Calibrated pacing (mezo-dzbm) fetched here (a pages/ component) and passed down as a
+  // prop: components/ stay presentational, pages/ own data fetching (frontend_conventions).
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
+
+  // EVERY edit here (rename, day rename, exercise add/change/move/remove) comes from a
+  // per-keystroke onChange or a tap, and each one would otherwise PUT the whole document —
+  // see WRITE_DEBOUNCE_MS above. Refs (not state) hold the latest write inputs so the
+  // debounced/unmount flush below always sends the CURRENT days/title/priorities, never a
+  // stale snapshot taken when the debounce was scheduled; the mutation sites below also
+  // write the refs eagerly, so a flush that fires before React has re-rendered still sees
+  // the newest value.
+  const onPersistRef = useRef(onPersist)
+  onPersistRef.current = onPersist
+  const prioritiesRef = useRef(priorities)
+  prioritiesRef.current = priorities
+  const daysRef = useRef(days)
+  daysRef.current = days
+  const nameRef = useRef(name)
+  nameRef.current = name
+  const pendingRef = useRef(false)
+  const writeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flushWrite = () => {
+    if (writeTimerRef.current) {
+      clearTimeout(writeTimerRef.current)
+      writeTimerRef.current = null
+    }
+    if (!pendingRef.current) return
+    pendingRef.current = false
+    onPersistRef.current(daysRef.current, undefined, prioritiesRef.current, nameRef.current)
+  }
+
+  // Flush a pending debounced write on unmount — otherwise navigating away right after
+  // typing silently drops the last edit, which is worse than the per-keystroke churn this
+  // debounce exists to avoid.
+  useEffect(() => () => flushWrite(), [])
+
+  const scheduleWrite = () => {
+    pendingRef.current = true
+    if (writeTimerRef.current) clearTimeout(writeTimerRef.current)
+    writeTimerRef.current = setTimeout(flushWrite, WRITE_DEBOUNCE_MS)
+  }
 
   const apply = (next: MesoDay[]) => {
     setDays(next)
-    onPersist(next)
+    daysRef.current = next
+    scheduleWrite()
   }
 
-  const removeExercise = (dayKey: string, exId: string) => {
-    apply(days.map((d) => {
-      if (d.day !== dayKey) return d
-      const exercises = d.exercises.filter((e) => e.id !== exId)
-      return { ...d, exercises, exerciseCount: exercises.length }
-    }))
-  }
+  const patchDay = (dayKey: string, fn: (d: MesoDay) => MesoDay) =>
+    apply(days.map((d) => (d.day === dayKey ? fn(d) : d)))
 
-  const updateExercise = (dayKey: string, exId: string, patch: Partial<GymExercise>) => {
-    apply(days.map((d) => {
-      if (d.day !== dayKey) return d
-      return { ...d, exercises: d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e)) }
-    }))
-  }
+  const withExercises = (d: MesoDay, exercises: GymExercise[]): MesoDay =>
+    ({ ...d, exercises, exerciseCount: exercises.length })
 
-  const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
-    apply(days.map((d) => (d.day === dayKey ? addExerciseWithDefaults(d, item, template.goalPreset) : d)))
-  }
-
-  const reorderExercises = (dayKey: string, ids: string[]) => {
-    apply(days.map((d) => {
-      if (d.day !== dayKey) return d
-      const byId = new Map(d.exercises.map((e) => [e.id, e]))
-      return { ...d, exercises: ids.map((i) => byId.get(i)).filter(Boolean) as GymExercise[] }
-    }))
-  }
+  const pickerLabel = (() => {
+    const d = pickerDay ? days.find((x) => x.day === pickerDay) : undefined
+    return d ? `${d.day} · ${d.type}` : undefined
+  })()
 
   return (
-    <div className="col">
-      <div className="row gap-md" style={{ padding: '4px 24px 8px', alignItems: 'center' }}>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.weeks} hét</span>
-        {template.split ? (
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.split}</span>
-        ) : null}
-      </div>
-      <details style={{ padding: '0 24px 8px' }}>
-        <summary className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
-          Fókusz
-        </summary>
-        <div style={{ marginTop: 8 }}>
-          <MusclePriorityPicker
-            value={priorities}
-            // Built from THIS render's `days` state — same stale-cache rule as the Cél
-            // select above (:121-130): never the parent's query-cache `template.days` copy.
-            onChange={(next) => {
-              setPriorities(next)
-              onPersist(days, undefined, next)
-            }}
-          />
-        </div>
-      </details>
-      <div style={{ padding: '12px 24px' }}>
-        <MesoEditor
-          days={days}
-          onAddClick={setPickerDay}
-          onRemove={removeExercise}
-          onChange={updateExercise}
-          onReorder={reorderExercises}
-          priorities={priorities}
-          volumePerMuscle={template.volumePerMuscle ?? undefined}
-          timingProfile={timingProfile}
-          timingProfilePending={timingProfilePending}
-        />
-      </div>
-
+    <>
+      <MesoWeekEditor
+        mode="template"
+        name={name}
+        meta={[`${template.weeks} hét`, template.split, `${template.runCount}× futtatva`]
+          .filter(Boolean).join(' · ')}
+        note={template.goal ?? undefined}
+        days={days}
+        priorities={priorities}
+        volumePerMuscle={template.volumePerMuscle ?? null}
+        timingProfile={timingProfile}
+        timingProfilePending={timingProfilePending}
+        activeDay={activeDay}
+        onOpenDay={(day) => {
+          setActiveDay(day)
+          // A closing day page must not leave the exercise picker able to reopen against a
+          // stale day (Task 9's rule, mirrored here).
+          if (day === null) setPickerDay(null)
+        }}
+        onBack={goBack}
+        onRename={(next) => { setName(next); nameRef.current = next; scheduleWrite() }}
+        onRenameDay={(dayKey, next) => apply(days.map((d) => (d.day === dayKey ? { ...d, type: next } : d)))}
+        onChangeExercise={(dayKey, exId, patch) => patchDay(dayKey, (d) =>
+          withExercises(d, d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e))))}
+        onMoveExercise={(dayKey, exId, dir) => patchDay(dayKey, (d) => {
+          const i = d.exercises.findIndex((e) => e.id === exId)
+          const j = i + dir
+          if (i < 0 || j < 0 || j >= d.exercises.length) return d
+          const next = [...d.exercises]
+          ;[next[i], next[j]] = [next[j], next[i]]
+          return withExercises(d, next)
+        })}
+        onRemoveExercise={(dayKey, exId) => patchDay(dayKey, (d) =>
+          withExercises(d, d.exercises.filter((e) => e.id !== exId)))}
+        onAddClick={setPickerDay}
+      />
       {pickerDay && (
         <ExercisePickerSheet
-          dayLabel={(() => {
-            const d = days.find((x) => x.day === pickerDay)
-            return d ? `${d.day} · ${d.type}` : undefined
-          })()}
+          dayLabel={pickerLabel}
           onClose={() => setPickerDay(null)}
-          onPick={(item) => addExercise(pickerDay, item)}
+          onPick={(item) => patchDay(pickerDay, (d) =>
+            addExerciseWithDefaults(d, item, template.goalPreset))}
         />
       )}
-    </div>
+    </>
   )
 }

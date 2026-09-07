@@ -3,7 +3,7 @@ import type { MesoDay, MesoPhase } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import type { MesoPlanProposal } from '@/data/train/mesoPlanHooks'
 import {
-  generateInput, initialWizardState, inputChanged, toUpsert, wizardReducer, type WizardState,
+  generateInput, initialWizardState, toUpsert, wizardReducer, type WizardState,
 } from './wizardState'
 
 const day = (d: string, type: string): MesoDay =>
@@ -29,9 +29,8 @@ function makeProposal(over: Partial<MesoTemplateUpsertRequest> = {}, days: MesoD
   return { template, days, rationale: 'r', llmUsed: false }
 }
 
-/** The generated action now carries the input that produced the proposal (mezo-d20.14, I3). */
 const generate = (s: WizardState, proposal = makeProposal()) =>
-  wizardReducer(s, { type: 'generated', proposal, input: generateInput(s) })
+  wizardReducer(s, { type: 'generated', proposal })
 
 describe('wizardReducer', () => {
   const s0 = initialWizardState('2026-09-02')
@@ -48,6 +47,19 @@ describe('wizardReducer', () => {
     const s = wizardReducer(s0, { type: 'setPriorities', priorities: { back: 'emphasize', chest: 'grow' } })
     expect(generateInput(s)).toEqual({ daysOfWeek: ['Hét', 'Sze', 'Pén', 'Szo'], weeks: 6, priorities: { back: 'emphasize' }, goalText: null })
   })
+  // mezo-yty6: the 3 numeric steps collapsed into interview → editor.
+  it('the wizard starts on the interview and generation moves it to the editor', () => {
+    expect(s0.step).toBe('interview')
+    const s1 = wizardReducer(s0, { type: 'step', step: 'editor' })
+    expect(s1.step).toBe('editor')
+    expect(s1.activeDay).toBeNull()
+  })
+  it('renaming a day rewrites only that day and marks the draft dirty', () => {
+    const base: WizardState = { ...s0, program: [day('Hét', 'Upper'), day('Kedd', 'Push')] }
+    const next = wizardReducer(base, { type: 'renameDay', day: 'Kedd', name: 'Nyomónap' })
+    expect(next.program.map((d) => d.type)).toEqual(['Upper', 'Nyomónap'])
+    expect(next.dirty).toBe(true)
+  })
   it('editProgram marks dirty; generated resets it and copies the days', () => {
     const g = generate(s0)
     expect(g.dirty).toBe(false)
@@ -61,36 +73,5 @@ describe('wizardReducer', () => {
     expect(saved.weeks).toBe(8)
     expect(saved.phaseCurve).toHaveLength(8)
     expect(saved.phaseCurve.at(-1)).toBe('Deload')
-  })
-
-  // I3: without proposalInput, a post-generation day/tier change was silent — toUpsert then
-  // wrote the NEW musclePriorities next to the OLD program.
-  describe('inputChanged', () => {
-    it('is false before a generation and right after one', () => {
-      expect(inputChanged(s0)).toBe(false)
-      expect(inputChanged(generate(s0))).toBe(false)
-    })
-    it('turns true when the days move after a generation', () => {
-      const g = generate(s0)
-      expect(inputChanged(wizardReducer(g, { type: 'setDayCount', n: 5 }))).toBe(true)
-      expect(inputChanged(wizardReducer(g, { type: 'setDays', days: ['Hét', 'Sze'] }))).toBe(true)
-    })
-    it('turns true when the tiers move after a generation, but ignores a grow-only no-op', () => {
-      const g = generate(s0)
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { back: 'emphasize' } }))).toBe(true)
-      // grow is the default tier — it never travels, so it is not a change
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { back: 'grow' } }))).toBe(false)
-    })
-    it('turns true when the length moves, and key ORDER alone never fakes a change', () => {
-      const withTiers = wizardReducer(s0, { type: 'setPriorities', priorities: { back: 'emphasize', chest: 'maintain' } })
-      const g = generate(withTiers)
-      expect(inputChanged(wizardReducer(g, { type: 'setWeeks', weeks: 8 }))).toBe(true)
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { chest: 'maintain', back: 'emphasize' } }))).toBe(false)
-    })
-    it('a re-generation re-baselines it', () => {
-      const changed = wizardReducer(generate(s0), { type: 'setDayCount', n: 3 })
-      expect(inputChanged(changed)).toBe(true)
-      expect(inputChanged(generate(changed))).toBe(false)
-    })
   })
 })

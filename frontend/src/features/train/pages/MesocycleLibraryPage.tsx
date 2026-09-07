@@ -155,7 +155,8 @@ export function MesocycleLibraryPage() {
               wash="coral"
               icon="i-edzes"
               eyebrow="Új blokk"
-              line="3 lépés · AI ›"
+              /* One screen since mezo-yty6 — the 3-step wizard is gone. */
+              line="Egy képernyő · AI ›"
               delayMs={160}
               onClick={openPlanner}
               aria-label="Új blokk tervezése"

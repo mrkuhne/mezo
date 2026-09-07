@@ -9154,14 +9154,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
   color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
 
-/* ── Mezociklus varázsló v2 (mezo-d20.14) — meso-body.html #page-wizard +
-      #page-day, px ×1.18. Három lépés: szekció-kártyák (01), tier-sorok (02),
-      kompakt hero + nap-mozaik (03). Minden szín meglévő --mz-* tokenből. ── */
-.mz-wprog { display: flex; gap: 5px; padding: 5px 17px 0; }
-.mz-wprog button { flex: 1; height: 5px; min-height: 5px; padding: 0; border: none; border-radius: 3px;
-  background: var(--mz-gbar-bg); cursor: pointer; }
-.mz-wprog button.on { background: var(--gradient-cta); }
-.mz-wprog button:disabled { cursor: default; }
+/* ── Mezociklus varázsló v3 (mezo-yty6) — EGY interjú-képernyő szekció-
+      kártyákkal, aztán a közös MesoWeekEditor. A régi 3-lépéses progress-sáv
+      (.mz-wprog) ezzel megszűnt. Minden szín meglévő --mz-* tokenből. ── */
 .mz-stepct { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--mz-ink-mut); }
 .mz-steptitle { font-size: 18px; font-weight: 700; padding: 7px 0 2px; }
@@ -9173,10 +9168,13 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mz-stepcard-coral { background: var(--mz-wash-coral); }
 .mz-stepcard-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
 .mz-stepcard-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+/* az interjú-képernyő fókusz-kártyája (mezo-yty6) */
+.mz-stepcard-rose { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
 .mz-stephead { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
 .mz-eb-coral { color: var(--mz-cell-coral-ink); }
 .mz-eb-lav { color: var(--mz-cell-lav-ink); }
 .mz-eb-gold { color: var(--mz-cell-gold-ink); }
+.mz-eb-rose { color: var(--mz-cell-rose-ink); }
 .mz-stepnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 8px; line-height: 1.45; }
 .mz-stepcard textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 14px;
   padding: 11px 13px; font-family: inherit; font-size: 13px; background: var(--mz-chipbg);
@@ -9208,16 +9206,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mz-coach .dot { width: 17px; height: 17px; border-radius: 50%; flex: none; margin-top: 1px;
   background: var(--gradient-cta); }
 .mz-coachsub { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
-
-/* 03 · generálás-várakozó */
-.mz-genwait { text-align: center; padding: 50px 0 35px; }
-.mz-genwait-orb { width: 61px; height: 61px; border-radius: 50%; margin: 0 auto 14px;
-  background: var(--gradient-cta); box-shadow: 0 17px 35px -9px rgba(255, 91, 54, 0.6);
-  animation: mz-genpulse 1.2s ease-in-out infinite; }
-@keyframes mz-genpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
-.mz-genwait b { display: block; font-size: 13px; font-weight: 700; }
-.mz-genwait small { display: block; font-size: 11px; color: var(--mz-ink-soft); margin-top: 4px; }
-@media (prefers-reduced-motion: reduce) { .mz-genwait-orb { animation: none; } }
 
 /* 03 · kompakt hero */
 .mz-edhero { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-trainhero);
@@ -9268,6 +9256,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
 .mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
 .mz-wfoot > :first-child { flex: 1; }
+/* A vázlat-szerkesztő lábléce (mezo-yty6): a MesoWeekEditor `footer` slotja EGY
+   elemet kap, ami a hibacsíkot/megerősítést a CTA-sor FÖLÉ teszi — a .mz-wfoot
+   sorlayoutja különben egymás mellé sodorná őket. */
+.mz-draftfoot { display: grid; gap: 9px; }
+.mz-draftfoot-row { display: flex; gap: 9px; }
+.mz-draftfoot-row > :first-child { flex: 1; }
 
 /* ---- aktív futam oldala (#page-run, mezo-d20.15) ----
    A blokk íve kártya alsó sora, a „Heti vizsgálat" csempe mini sáv-fürtje
@@ -10820,6 +10814,183 @@ button.mz-wtile:active { transform: scale(0.96); }
   .pdt-fold summary::after { transition: none; }
 }
 
+/* ===== mezo-szerkesztő · zóna-sáv (mezo-yty6) ===== */
+.mz-zb { position: relative; height: 14px; border-radius: 7px; overflow: hidden;
+  margin-top: 6px; background: var(--mz-gbar-bg); }
+.mz-zb-z2 { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--coral) 16%, transparent); }
+.mz-zb-z3 { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--coral) 32%, transparent); }
+.mz-zb-hl { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--text-primary) 25%, transparent); }
+.mz-zb-tg { position: absolute; top: 0; bottom: 0; width: 2px; background: color-mix(in srgb, var(--text-primary) 45%, transparent); }
+.mz-zb-mk { position: absolute; top: -2px; bottom: -2px; width: 4px; border-radius: 2px;
+  animation: mz-zb-pulse 2.6s ease-in-out 1.2s infinite; }
+.mz-zb-cap { display: flex; justify-content: space-between; margin-top: 3px;
+  font-size: 8px; font-weight: 700; color: var(--mz-ink-mut); }
+@keyframes mz-zb-pulse {
+  0%, 100% { box-shadow: 0 0 5px color-mix(in srgb, var(--amber) 50%, transparent); }
+  50% { box-shadow: 0 0 11px color-mix(in srgb, var(--amber) 90%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-zb-mk { animation: none; }
+}
+
+/* ===== mezo-szerkesztő · gyakorlat-kártya (mezo-yty6) ===== */
+.mz-exc { border-radius: 15px; margin-bottom: 8px; padding: 9px 11px 10px;
+  border: 0.5px solid var(--border-subtle); border-left: 5px solid var(--coral);
+  box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28); }
+.mz-exc-head { display: flex; align-items: center; gap: 7px; }
+.mz-exc-ico { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid;
+  place-items: center; background: color-mix(in srgb, var(--surface-1) 85%, transparent); }
+.mz-exc-nm { display: block; font-size: 12px; font-weight: 700; }
+.mz-exc-sub { display: block; font-size: 9px; color: var(--mz-ink-soft); }
+.mz-exc-mv { display: flex; gap: 3px; flex: none; }
+.mz-exc-mv button { width: 22px; height: 22px; border-radius: 7px; padding: 0; line-height: 1;
+  border: 1px solid var(--border-subtle); background: var(--surface-1);
+  font-size: 9px; color: var(--text-secondary); cursor: pointer; }
+.mz-exc-mv button:disabled { opacity: 0.3; cursor: default; }
+.mz-exc-del { flex: none; border: none; background: none; padding: 2px 5px;
+  font-size: 12px; font-weight: 700; color: var(--coral-deep); cursor: pointer; }
+.mz-exc-row { display: grid; grid-template-columns: 0.9fr 1.7fr 1.1fr 0.8fr; gap: 5px; margin-top: 8px; }
+.mz-exc-row > * { min-width: 0; }
+.mz-exc-row2 { display: flex; align-items: flex-end; gap: 6px; margin-top: 7px; }
+.mz-exc-fld { display: block; background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  border-radius: 11px; padding: 5px 5px 6px; min-width: 0; }
+.mz-exc-fld > span { display: block; margin-bottom: 3px; white-space: nowrap;
+  font-size: 7px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-exc-num { width: 100%; min-width: 0; border-radius: 8px; padding: 4px 1px; text-align: center;
+  border: 1px solid var(--border-subtle); background: var(--surface-1);
+  font-family: inherit; font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: inherit; -moz-appearance: textfield; appearance: textfield; }
+.mz-exc-num::-webkit-outer-spin-button,
+.mz-exc-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mz-exc-pair { display: flex; align-items: center; gap: 3px; }
+.mz-exc-pair i { flex: none; font-style: normal; font-size: 10px; color: var(--mz-ink-mut); }
+.mz-exc-fv { display: flex; gap: 4px; flex: 1; }
+.mz-exc-fv button { flex: 1; border: none; border-radius: 9px; padding: 5px 0;
+  background: var(--surface-2); color: var(--text-secondary);
+  font-family: inherit; font-size: 8.5px; font-weight: 700; cursor: pointer; }
+.mz-exc-fv button.on.fire { background: var(--gradient-cta); color: var(--text-inverse); }
+.mz-exc-fv button.on.leaf { background: var(--sage-deep); color: var(--text-inverse); }
+.mz-exc-row2 .mz-exc-fld { flex: none; }
+.mz-exc-row2 .mz-exc-num { width: 34px; }
+.mz-exc-ctx { margin-top: 7px; font-size: 8.5px; color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mz-exc-ctx b + b::before { content: ' · '; color: var(--mz-ink-mut); font-weight: 400; }
+
+/* ===== mezo-szerkesztő · kompakt csempék (mezo-yty6) ===== */
+.mz-lt { display: block; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+  border-radius: 17px; padding: 10px 11px; border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-lt:active { transform: scale(0.98); }
+.mz-lt-day { background: var(--mz-wash-coral); }
+.mz-lt-week { background: var(--mz-wash-gold); }
+.mz-lt-head { display: flex; align-items: center; gap: 6px; }
+.mz-lt-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-lt-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--amber-deep); }
+.mz-lt-chev { flex: none; font-size: 11px; color: var(--mz-ink-mut); }
+.mz-lt-body { display: flex; align-items: flex-end; gap: 12px; }
+.mz-lt-big { flex: none; margin-top: 3px; font-size: 20px; font-weight: 200;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mz-lt-big small { margin-left: 3px; font-size: 9px; font-weight: 600; color: var(--mz-ink-soft); }
+.mz-lt-gauges { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.mz-lt-g { display: grid; grid-template-columns: 34px 1fr 22px; align-items: center; gap: 5px;
+  font-size: 7.5px; font-weight: 700; }
+.mz-lt-g .bar { display: block; height: 5px; border-radius: 3px; overflow: hidden;
+  background: var(--mz-gbar-bg); }
+.mz-lt-g .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
+
+.mz-dayrow { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 -2px; padding: 2px 2px 8px; scroll-snap-type: x proximity; }
+.mz-dayrow::-webkit-scrollbar { display: none; }
+.mz-dst { position: relative; flex: none; width: 124px; scroll-snap-align: start;
+  text-align: left; font-family: inherit; cursor: pointer;
+  border-radius: 15px; padding: 9px 10px 10px; border: 0.5px solid var(--border-subtle);
+  background: var(--mz-wash-coral);
+  box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-dst:active { transform: scale(0.96); }
+.mz-dst-sage { background: var(--mz-wash-sage); }
+.mz-dst-rose { background: var(--mz-wash-rose); }
+.mz-dst-gold { background: var(--mz-wash-gold); }
+.mz-dst-dot { position: absolute; top: 8px; right: 9px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--amber-deep); }
+.mz-dst-tt { display: block; font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-dst-nm { display: block; font-size: 14px; font-weight: 700; line-height: 1.15; }
+.mz-dst-meta { display: block; margin-top: 4px; font-size: 8.5px; color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mz-dst-rail { display: flex; height: 6px; margin-top: 7px; border-radius: 3px;
+  overflow: hidden; background: var(--mz-gbar-bg); }
+.mz-dst-rail i { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .mz-lt, .mz-dst { transition: none; }
+}
+
+/* ===== mezo-szerkesztő · terhelés-oldalak poszter-kártyája (mezo-yty6) ===== */
+.mz-lcard { border-radius: 17px; padding: 10px 12px; margin-bottom: 9px;
+  border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28); }
+.mz-lcard-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.mz-lcard-pill { flex: none; border-radius: 999px; padding: 3px 10px;
+  font-size: 9.5px; font-weight: 700; }
+.mz-lcard-flag { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
+  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); }
+.mz-lcard-num { flex: none; font-size: 19px; font-weight: 200; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mz-lcard-num small { margin-left: 3px; font-size: 9px; font-weight: 600; color: var(--mz-ink-soft); }
+.mz-lcard-bar { height: 9px; margin-top: 6px; border-radius: 5px; overflow: hidden;
+  background: var(--mz-gbar-bg); }
+.mz-lcard-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.mz-lcard-chip { border-radius: 999px; padding: 3px 9px; font-size: 8.5px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
+.mz-lcard-stat { font-size: 8.5px; font-weight: 700; }
+.mz-lcard-body { display: none; margin-top: 7px; padding-top: 6px;
+  border-top: 0.5px solid var(--border-subtle); }
+.mz-lcard.open .mz-lcard-body { display: block; }
+.mz-lcard-cline { display: flex; align-items: flex-start; gap: 7px; padding: 4px 0; font-size: 9px; }
+.mz-lcard-cline > b { flex: none; width: 30px; color: var(--mz-ink-soft); }
+.mz-lcard-freq { flex: none; border-radius: 999px; padding: 2px 7px; font-size: 8px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
+
+/* ===== mezo-szerkesztő · heti kártya + lint-sorok (mezo-yty6) ===== */
+.mz-lcard-open { display: block; width: 100%; padding: 0; border: none; background: none;
+  text-align: left; font-family: inherit; color: inherit; cursor: pointer; }
+.mz-lcard-num b { font-weight: 200; }
+.mz-lcard-num i { font-style: normal; font-size: 12px; }
+.mz-lcard-tier { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
+.mz-lint { display: flex; align-items: flex-start; gap: 8px; border-radius: 12px;
+  padding: 8px 10px; margin-top: 6px; font-size: 9.5px; line-height: 1.45;
+  background: var(--mz-cell-gold-bg); }
+.mz-lint b { color: var(--mz-cell-gold-ink); }
+.mz-lint-ok { background: var(--mz-cell-sage-bg); }
+.mz-lint-ok b { color: var(--mz-cell-sage-ink); }
+
+/* ===== mezo-szerkesztő · nap-hero + hozzáadás gomb (mezo-yty6) ===== */
+.mz-dayhero { display: grid; justify-items: center; text-align: center; gap: 1px;
+  padding: 8px 14px 12px; }
+.mz-dayname { width: 100%; max-width: 260px; padding: 1px 0; border: none; background: transparent;
+  text-align: center; font-family: inherit; font-size: 17px; font-weight: 700; color: inherit; }
+.mz-dayname:focus { outline: none; border-bottom: 1.5px solid var(--coral); }
+.mz-dayhero-hint { font-size: 7.5px; color: var(--mz-ink-mut); }
+.mz-dayhero-sub { font-size: 10px; color: var(--mz-ink-soft); }
+.mz-addex { display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 2px; padding: 10px 0; border-radius: 15px;
+  border: 1.5px dashed color-mix(in srgb, var(--coral) 50%, transparent);
+  background: transparent; color: var(--coral-deep);
+  font-family: inherit; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+
+/* ===== mezo-szerkesztő · a szerkesztő heroja (mezo-yty6) ===== */
+.mz-wbhero { border-radius: 18px; padding: 11px 13px; background: var(--mz-wash-coral);
+  border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28); }
+.mz-wbname { width: 100%; padding: 2px 0; border: none; background: transparent;
+  font-family: inherit; font-size: 16px; font-weight: 700; color: inherit; }
+.mz-wbname:focus { outline: none; border-bottom: 1.5px solid var(--coral); }
+.mz-wbmeta { margin-top: 2px; font-size: 9.5px; color: var(--mz-ink-soft); }
 /* ===== Sablonok · poszter-kártya (mezo-3a9a) ==============================
    The `/train/templates` shelf, redressed from a flat list into Mozaik 2.0 posters
    (prototype docs/design_2.0/prototypes/sablonok.html). The card SHOWS the block —
@@ -10935,3 +11106,12 @@ button.mz-wtile:active { transform: scale(0.96); }
   .tpl-face { transition: none; }
   .tpl-menu { animation: none; }
 }
+
+/* ===== mezo-szerkesztő · irány-jelzés a heti terhelés-kártyán (mezo-yty6, C2) =====
+   Három szín, a jóváhagyott prototípus `.arr.up/.dn/.eq` skálája szerint. A borostyán
+   CSAK a `down` (cél FÖLÖTT) esetnek jár: az 1. héten minden ramping izom a célja alatt
+   van — ez a NORMÁLIS állapot, nem figyelmeztetés. Ugyanez az osztály festi a nyilat és
+   a mellette álló mondatot, hogy a kettő sose mondjon mást. */
+.mz-arr-up { color: var(--mz-cell-sage-ink); }
+.mz-arr-dn { color: var(--mz-cell-gold-ink); }
+.mz-arr-eq { color: var(--mz-ink-soft); }

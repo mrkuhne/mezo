@@ -96,11 +96,22 @@ test('Sablonok stays reachable on its own route', async () => {
 })
 
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
-  // wizard v2 (mezo-d20.14): three steps, the first one asking when + why.
+  // wizard v3 (mezo-yty6): the three steps collapsed into ONE interview screen that
+  // generates straight into the shared editor.
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(screen.getByText('Mikor edzel — és miért?')).toBeInTheDocument()
-  expect(screen.getByText('01 / 03 · Mikor és miért')).toBeInTheDocument()
+  expect(screen.getByText('Mikor edzel — és mire gyúrsz?')).toBeInTheDocument()
+  expect(screen.getByText('Új blokk · interjú')).toBeInTheDocument()
+})
+
+// The template editor moved off the pre-redesign DS page shell onto the same Mozaik
+// scaffold the wizard's editor uses (mezo-yty6 Task 10) — one editor, one face.
+test('the template editor is a full-screen Mozaik flow without the sub-nav', async () => {
+  const { container } = renderApp('/train/mesocycles/templates/b20f0000-0000-4000-8000-000000000000')
+  expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Upper/Lower Power')
+  expect(container.querySelector('.mz-page')).not.toBeNull()
+  expect(container.querySelector('.np-pills')).toBeNull()
+  expect(container.querySelector('.pghead-np')).toBeNull()
 })
 
 test('the mesocycle builder is a full-screen flow without the sub-nav', () => {
