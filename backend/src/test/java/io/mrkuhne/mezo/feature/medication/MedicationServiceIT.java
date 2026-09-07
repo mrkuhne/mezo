@@ -31,8 +31,10 @@ class MedicationServiceIT extends AbstractIntegrationTest {
     @Test
     void testLogDose_shouldAppendDoseAndShiftCycle_whenValid() {
         var med = medPop.createMedication(owner);
+        // MEDICATION_ZONE, nem UTC (mezo-al23) — lásd MedicationApiIT ugyanezen a ponton.
         var req = new MedicationDoseRequest().dose(new java.math.BigDecimal("6"))
-            .administeredAt(java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC));
+            .administeredAt(java.time.OffsetDateTime.now(
+                io.mrkuhne.mezo.feature.medication.service.MedicationCycleService.MEDICATION_ZONE));
         var saved = service.logDose(owner, med.getId(), req);
         assertThat(saved.getId()).isNotNull();
         var day = service.getDay(owner);

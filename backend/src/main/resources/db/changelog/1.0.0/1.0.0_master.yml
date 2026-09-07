@@ -1198,6 +1198,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609062100_mezo-d58h.7.7_flag_key_trace_energy_dip.sql
   - changeSet:
+      id: "1.0.0:202609062200_mezo-06o0.13_mention_source_ref_kind_training"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609062200_mezo-06o0.13_mention_source_ref_kind_training.sql
+  - changeSet:
       id: "1.0.0:202609071000_mezo-eq85.1_text_signal"
       author: daniel.kuhne
       changes:

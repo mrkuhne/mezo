@@ -62,4 +62,24 @@ public interface MealItemRepository extends JpaRepository<MealItemEntity, UUID> 
            and c.saturated_fat_g is not null
         """, nativeQuery = true)
     int backfillPantrySaturatedFat();
+
+    /**
+     * The meals a {@link #backfillPantrySaturatedFat} run is ABOUT to change — collected BEFORE the
+     * update, because afterwards the "was null" evidence is gone (mezo-mxmh).
+     *
+     * <p>Needed because healing a snapshot does not, by itself, heal the SCORE: the stored envelope
+     * was computed from the old null and only {@code MealRescoreRunner} can recompute it, and that
+     * runner's work list is "envelopes stamped below {@code FORMULA_VERSION}". On the boot that
+     * first filled the catalog, the stamp happened to be current, so 37 snapshots healed and not one
+     * score moved — the fix reached the data and stopped there.
+     */
+    @Query(value = """
+        select distinct mi.meal_id from meal_item mi
+          join pantry_item p on p.id = mi.pantry_item_id
+          join pantry_catalog c on c.id = p.catalog_id
+         where mi.source = 'pantry'
+           and mi.snapshot_saturated_fat_g is null
+           and c.saturated_fat_g is not null
+        """, nativeQuery = true)
+    List<UUID> mealIdsAwaitingSaturatedFatBackfill();
 }

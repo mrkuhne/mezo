@@ -326,7 +326,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
     `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`, `SustainedStressRule`, `TextSignalProvenanceEnvelope`,
     `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`,
-    `TrainTools`, `TurnVerdictCheck`, `WeekReviewSource`
+    `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -351,7 +351,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 188 IT + 36 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 189 IT + 36 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
@@ -404,7 +404,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`,
     `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `TextSignalCatchUpIT`,
     `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalSeriesIT`, `ToolSelectionEvalIT`,
-    `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
@@ -567,7 +567,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### habit
 
-*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done)
+*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
@@ -759,7 +759,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done) ·
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
-  [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
+  [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
@@ -783,18 +783,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CelWizardPage.tsx, CelokPage.tsx, EnHubPage.tsx, GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx,
     GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalSuggestionPage.tsx, GoalsPage.tsx,
     GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx,
-    HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx,
-    PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx,
-    PersonDetailPage.tsx, RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx,
+    HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
+    NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
+    PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx,
     WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
-    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
-    PersonLogSheet.tsx, PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
-    TempPasswordSheet.tsx, WeightLogSheet.tsx
+    DecisionReviewSheet.tsx, EditGoalSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx,
+    PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
+    WeightLogSheet.tsx
   - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
     AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
-    DetailStat.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
+    DetailStat.tsx, EffortGrid.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
     GoalDetailHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalMiniCard.tsx, GoalRecept.tsx,
     GoalSegmentRail.tsx, GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx,
     GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, HabitContextRings.tsx, HabitFormationCard.tsx,
@@ -807,11 +807,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, goalLabels.ts, goalOverviewCopy.ts, goalSkillChips.ts,
     goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
-    habitFormation.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts,
-    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
-    peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts,
-    sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts,
-    weekNav.ts, weightStats.ts
+    habitEffort.ts, habitFormation.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
+    lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts,
+    peopleDerive.ts, peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts,
+    sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
+    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 
@@ -1179,7 +1179,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### today
 
-*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
+*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done) ·

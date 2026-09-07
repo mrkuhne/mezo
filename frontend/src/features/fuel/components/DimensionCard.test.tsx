@@ -47,17 +47,24 @@ test('renders dim.note below the detail sentence once expanded, and nothing when
   expect(screen.getByText('Só szinte nincs — feldolgozatlan alapanyagok.')).toBeInTheDocument()
 })
 
-test('a degraded (weight 0, no per-kind payload) dimension renders without crashing and shows no panel (mezo-jcpt.1)', async () => {
+test('a degraded (weight 0) dimension renders as a compact, non-interactive row (mezo-jcpt.1, mezo-mxmh)', async () => {
   // Shape a real fromDimension/fromBreakdown now produces for a degraded dim: base fields only,
   // no macroRatio/micros/nova/context — DimensionCard must not assume any of those exist.
   const degraded = {
     id: 'who', label: 'Ajánlások · WHO', weight: 0, score: 0, color: 'var(--sky)',
     detail: 'Nincs elég adat ehhez a dimenzióhoz.',
   } as RowsDimension
-  render(<DimensionCard dim={degraded} defaultOpen />)
+  const { container } = render(<DimensionCard dim={degraded} defaultOpen />)
   expect(screen.getByText('Ajánlások · WHO')).toBeInTheDocument()
   expect(screen.getByText('Nincs elég adat ehhez a dimenzióhoz.')).toBeInTheDocument()
-  expect(screen.getByText(/súly/)).toHaveTextContent('súly 0% → 0 pont')
+  // A degraded dim has no panel to open and no sub-score to show, so it carries no toggle, no
+  // ring and no „súly 0% → 0 pont" (zero times zero is not news). Several of these can stand on
+  // one sheet while the pantry data is incomplete — they must take the least room and the fewest
+  // words, present and named but not pretending to score.
+  expect(container.querySelector('.sb-dim-ghostrow')).not.toBeNull()
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  expect(container.querySelector('.sb-sring')).toBeNull()
+  expect(screen.queryByText(/súly/)).not.toBeInTheDocument()
   // no ContextPanel rows (it has no `context` payload to render)
   expect(screen.queryByText('Cukor')).not.toBeInTheDocument()
 })

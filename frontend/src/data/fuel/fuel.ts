@@ -284,7 +284,8 @@ const m2Dimensions: MealDimension[] = [
     weight: 0,
     score: 0,
     color: 'var(--coral-deep)',
-    detail: 'Nincs elég adag-adat ehhez az ételhez — a dimenzió nem számít bele a pontba.',
+    // A „nem számít bele" a ghost-sor felépítéséből következik, nem kell kimondani (mezo-mxmh S4).
+    detail: 'Nincs adag-adat ehhez az ételhez.',
   },
 ]
 

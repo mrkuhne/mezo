@@ -16,11 +16,14 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -48,6 +51,8 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private JournalPopulator journalPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
@@ -148,6 +153,26 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(result).isEqualTo(PersonExtractionResult.ZERO);
         assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
+    }
+
+    @Test
+    void testExtractFor_shouldSeeTrainingNoteText_whenTheNameLivesOnlyThere() {
+        // mezo-06o0.13: the sport note is free text the user writes, so a face first named there
+        // has to be able to become a candidate. Same seam proof as the gratitude case — the
+        // sentinel's name is unicode-escaped, so only the sport row can ground "Nóri".
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Semmi különös a mai napban. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u004E\\u00F3ri\","
+            + "\"quotes\":[\"jó meccs volt\"]}]}]");
+        SportSessionEntity sport = trainPopulator.createSportSession(owner, DAY);
+        sport.setNotes("Nórival röpiztünk, jó meccs volt.");
+        sportSessionRepository.saveAndFlush(sport);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.candidates()).isEqualTo(1);
+        assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner))
+            .extracting(PersonEntity::getName).containsExactly("Nóri");
     }
 
     @Test
