@@ -46,6 +46,10 @@ Minden új felület ugyanabból a modulból olvas: heti izom-terhelés tier-cél
   - `function weekMuscleLoad(days: MesoDay[], priorities?: MusclePriorities | null, landmarks?: Record<string, Landmark> | null): WeekLoadRow[]`
   - `function dayMuscleLoad(day: MesoDay): DayLoadRow[]`
   - `function adjacentDayConflicts(days: MesoDay[]): AdjacentConflict[]`
+  - `type DayTone = 'coral' | 'sage' | 'rose' | 'gold'` and `function dayTone(type: string): DayTone`
+    — **moved here** from `wizard/dayTiles.ts`, because `components/` must not import from
+    `wizard/` (no such import exists in the codebase today, and Task 9 empties that folder).
+    `wizard/dayTiles.ts` re-exports it so `DayTile.tsx` and its other consumers keep working.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -223,6 +227,16 @@ import {
 
 export interface Landmark { mev: number; mav: number; mrv: number }
 
+/** The prototype's day-type washes (Upper/Pull keep the coral default). */
+export type DayTone = 'coral' | 'sage' | 'rose' | 'gold'
+
+export function dayTone(type: string): DayTone {
+  if (type === 'Lower' || type === 'Legs') return 'sage'
+  if (type === 'Push') return 'rose'
+  if (type === 'Full') return 'gold'
+  return 'coral'
+}
+
 export interface ExerciseContribution { exerciseId: string; name: string; sets: number }
 
 export interface DayContribution {
@@ -396,15 +410,31 @@ export function adjacentDayConflicts(days: MesoDay[]): AdjacentConflict[] {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: Re-point `dayTone` at the new home**
 
-Run: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/train/logic/mesoLoad.test.ts`
-Expected: PASS — 12 tests.
+In `frontend/src/features/train/wizard/dayTiles.ts`, delete the local `dayTone` definition and
+re-export it from the new module so `DayTile.tsx` and every other consumer keep compiling:
 
-- [ ] **Step 5: Commit**
+```ts
+import { dayTone, type DayTone } from '@/features/train/logic/mesoLoad'
+
+export { dayTone }
+export type { DayTone }
+```
+
+Then update `wizard/DayTile.tsx` to import `DayTone` from `@/features/train/logic/mesoLoad`
+(it currently declares the type itself) — keep `DayTileMuscle` where it is.
+
+- [ ] **Step 5: Run the tests to verify they pass**
+
+Run: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/train/logic src/features/train/wizard && pnpm build`
+Expected: PASS — 12 new tests plus the existing logic/wizard suites, and a clean `tsc -b`
+(proving the `dayTone` move broke no importer).
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add frontend/src/features/train/logic/mesoLoad.ts frontend/src/features/train/logic/mesoLoad.test.ts
+git add frontend/src/features/train/logic/mesoLoad.ts frontend/src/features/train/logic/mesoLoad.test.ts frontend/src/features/train/wizard/dayTiles.ts frontend/src/features/train/wizard/DayTile.tsx
 git commit -m "feat(train): mesoLoad derivations for the meso editor redesign (mezo-yty6)"
 ```
 
@@ -1221,7 +1251,7 @@ A napi drawer helyett teljes Mozaik-oldal: hero count-up szettszámmal, statstri
 - Modify: `frontend/src/styles/prototype.css` (a fájl végére)
 
 **Interfaces:**
-- Consumes: `dayMuscleLoad` (Task 1), `muscleColor`, `MozaikPage`/`PageHead`/`PageHero`/`PageBody`/`StatStrip`/`StatCell`/`PageTone` (`@/shared/ui/mozaik`), `EntranceGroup` (`@/shared/ui/mozaik/motion`), `dayTone` (`@/features/train/wizard/dayTiles`).
+- Consumes: `dayMuscleLoad` (Task 1), `muscleColor`, `MozaikPage`/`PageHead`/`PageHero`/`PageBody`/`StatStrip`/`StatCell`/`PageTone` (`@/shared/ui/mozaik`), `EntranceGroup` (`@/shared/ui/mozaik/motion`), `dayTone` (`@/features/train/logic/mesoLoad`).
 - Produces: `function DayLoadPanel(props: { day: MesoDay; minutes: number; onBack: () => void }): JSX.Element`
 
 - [ ] **Step 1: Write the failing test**
@@ -1299,9 +1329,8 @@ Create `frontend/src/features/train/components/DayLoadPanel.tsx`:
 // session-cap ellen, a hozzájáruló gyakorlatokkal.
 // ============================================================
 import type { MesoDay } from '@/data/types'
-import { dayMuscleLoad } from '@/features/train/logic/mesoLoad'
+import { dayMuscleLoad, dayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
-import { dayTone } from '@/features/train/wizard/dayTiles'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -1491,13 +1520,19 @@ describe('WeekLoadPanel', () => {
     expect(container.textContent).not.toMatch(/%/)
   })
 
-  test('tapping a card reveals the day-by-day contribution', async () => {
+  // jsdom loads no stylesheet, so the `.mz-lcard-body { display: none }` rule is not in
+  // effect here — assert the state the CSS keys off, not computed visibility.
+  test('tapping a card toggles the day-by-day contribution open', async () => {
     const user = userEvent.setup()
     render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
     const shoulder = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'shoulder')!
-    expect(within(shoulder).queryByText('Oldalemelés +4')).not.toBeVisible()
-    await user.click(within(shoulder).getByRole('button', { name: /Váll · lebontás/ }))
-    expect(within(shoulder).getByText('Oldalemelés +4')).toBeVisible()
+    const toggle = within(shoulder).getByRole('button', { name: 'Váll · lebontás' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(shoulder).not.toHaveClass('open')
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(shoulder).toHaveClass('open')
+    expect(within(shoulder).getByText('Oldalemelés +4')).toBeInTheDocument()
   })
 
   test('adjacent-day muscle overlap is reported as passive advice', () => {
@@ -1702,7 +1737,7 @@ Hero átnevezhető napnévvel, alatta a Napi terhelés csempe, majd a gyakorlat-
 - Modify: `frontend/src/styles/prototype.css` (a fájl végére)
 
 **Interfaces:**
-- Consumes: `ExerciseCard` (Task 3), `LoadTile` (Task 4), `DayLoadPanel` (Task 5), `dayMuscleLoad` (Task 1), `muscleColor`, `budgetGroup`/`BUDGET_GROUP_LABELS` (`@/features/train/logic/setBudget`), `dayTone`, mozaik kit.
+- Consumes: `ExerciseCard` (Task 3), `LoadTile` (Task 4), `DayLoadPanel` (Task 5), `dayMuscleLoad` (Task 1), `muscleColor`, `budgetGroup`/`BUDGET_GROUP_LABELS` (`@/features/train/logic/setBudget`), `dayTone` (`@/features/train/logic/mesoLoad`), mozaik kit.
 - Produces: `function MesoDayEditor(props: { day: MesoDay; minutes: number; onBack: () => void; onRename: (name: string) => void; onChangeExercise: (exId: string, patch: Partial<GymExercise>) => void; onMoveExercise: (exId: string, dir: -1 | 1) => void; onRemoveExercise: (exId: string) => void; onAdd: () => void }): JSX.Element`
 
 - [ ] **Step 1: Write the failing test**
@@ -1788,26 +1823,21 @@ describe('MesoDayEditor', () => {
     expect(props.onAdd).toHaveBeenCalled()
   })
 
-  test('editing does not replay the entrance choreography', async () => {
-    const user = userEvent.setup()
-    const { rerender } = render(
-      <MesoDayEditor
-        day={DAY} minutes={31} onBack={vi.fn()} onRename={vi.fn()} onChangeExercise={vi.fn()}
-        onMoveExercise={vi.fn()} onRemoveExercise={vi.fn()} onAdd={vi.fn()}
-      />,
-    )
-    const list = screen.getByTestId('exercise-list')
-    expect(list).toHaveAttribute('data-entered', 'false')
-    // after mount the list is marked entered and stays that way across edits
-    await user.click(screen.getByRole('button', { name: 'Evezés lejjebb' }))
+  test('the entrance choreography plays once and never replays on an edit', () => {
+    const props = {
+      day: DAY, minutes: 31, onBack: vi.fn(), onRename: vi.fn(), onChangeExercise: vi.fn(),
+      onMoveExercise: vi.fn(), onRemoveExercise: vi.fn(), onAdd: vi.fn(),
+    }
+    const { rerender, container } = render(<MesoDayEditor {...props} />)
+    // first paint: the cards carry the staggered entrance
+    expect(screen.getByTestId('exercise-list')).toHaveAttribute('data-entered', 'false')
+    expect(container.querySelectorAll('[data-testid="exercise-list"] > .rise')).toHaveLength(2)
+
+    // an edit re-renders the list — no entrance class, so nothing flashes
     const moved: MesoDay = { ...DAY, exercises: [DAY.exercises[1], DAY.exercises[0]] }
-    rerender(
-      <MesoDayEditor
-        day={moved} minutes={31} onBack={vi.fn()} onRename={vi.fn()} onChangeExercise={vi.fn()}
-        onMoveExercise={vi.fn()} onRemoveExercise={vi.fn()} onAdd={vi.fn()}
-      />,
-    )
+    rerender(<MesoDayEditor {...props} day={moved} />)
     expect(screen.getByTestId('exercise-list')).toHaveAttribute('data-entered', 'true')
+    expect(container.querySelectorAll('[data-testid="exercise-list"] > .rise')).toHaveLength(0)
   })
 })
 ```
@@ -1838,10 +1868,9 @@ import type { GymExercise, MesoDay } from '@/data/types'
 import { DayLoadPanel } from '@/features/train/components/DayLoadPanel'
 import { ExerciseCard } from '@/features/train/components/ExerciseCard'
 import { LoadTile } from '@/features/train/components/LoadTile'
-import { dayMuscleLoad } from '@/features/train/logic/mesoLoad'
+import { dayMuscleLoad, dayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { BUDGET_GROUP_LABELS, budgetGroup } from '@/features/train/logic/setBudget'
-import { dayTone } from '@/features/train/wizard/dayTiles'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozaik'
@@ -1865,13 +1894,13 @@ export function MesoDayEditor({
   day, minutes, onBack, onRename, onChangeExercise, onMoveExercise, onRemoveExercise, onAdd,
 }: MesoDayEditorProps) {
   const [loadOpen, setLoadOpen] = useState(false)
-  // One-shot entrance: true from the first effect tick onward, so re-renders caused by
-  // editing never re-run the stagger.
-  const [entered, setEntered] = useState(false)
-  const first = useRef(true)
-  useEffect(() => {
-    if (first.current) { first.current = false; setEntered(true) }
-  }, [])
+  // One-shot entrance, WITHOUT state: the first render paints the `rise` stagger, the
+  // post-mount effect clears the ref, and every LATER render (an edit, a reorder, a delete)
+  // renders without it. Deliberately not useState — a state flip would force an extra
+  // render and the staggered frame would never reach the screen.
+  const firstRender = useRef(true)
+  const entrance = firstRender.current
+  useEffect(() => { firstRender.current = false }, [])
 
   const rows = dayMuscleLoad(day)
   const sets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
@@ -1916,11 +1945,11 @@ export function MesoDayEditor({
             />
           </div>
 
-          <div data-testid="exercise-list" data-entered={entered ? 'true' : 'false'}>
+          <div data-testid="exercise-list" data-entered={entrance ? 'false' : 'true'}>
             {day.exercises.map((ex, i) => {
               const group = budgetGroup(ex.muscle)
               return (
-                <div key={ex.id} className={entered ? undefined : 'rise'} style={entered ? undefined : { ['--d' as string]: `${60 + i * 50}ms` }}>
+                <div key={ex.id} className={entrance ? 'rise' : undefined} style={entrance ? { ['--d' as string]: `${60 + i * 50}ms` } : undefined}>
                   <ExerciseCard
                     ex={ex}
                     contribution={group
@@ -2068,13 +2097,14 @@ function setup(overrides: Partial<Parameters<typeof MesoWeekEditor>[0]> = {}) {
 }
 
 describe('MesoWeekEditor', () => {
-  test('the mesocycle name is editable and the meta line shows', () => {
+  test('the mesocycle name is editable and the meta line shows', async () => {
+    const user = userEvent.setup()
     const { props } = setup()
     const field = screen.getByRole('textbox', { name: 'Mezociklus neve' })
     expect(field).toHaveValue('Hypertrophy · Ősz')
-    field.focus()
     expect(screen.getByText('6 hét · Upper/Lower · 3× futtatva')).toBeInTheDocument()
-    expect(props.onRename).not.toHaveBeenCalled()
+    await user.type(field, '!')
+    expect(props.onRename).toHaveBeenCalledWith('Hypertrophy · Ősz!')
   })
 
   test('one day tile per day, in a single horizontally scrollable row', () => {
@@ -2153,10 +2183,9 @@ import { DayStripTile } from '@/features/train/components/DayStripTile'
 import { LoadTile } from '@/features/train/components/LoadTile'
 import { MesoDayEditor } from '@/features/train/components/MesoDayEditor'
 import { WeekLoadPanel } from '@/features/train/components/WeekLoadPanel'
-import { adjacentDayConflicts, dayMuscleLoad, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
+import { adjacentDayConflicts, dayMuscleLoad, dayTone, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { estimateSessionMinutes, type SessionTimingProfile } from '@/features/train/logic/sessionLength'
-import { dayTone } from '@/features/train/wizard/dayTiles'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -2829,7 +2858,7 @@ In `frontend/src/features/train/pages/MesoTemplateEditorPage.test.tsx`, add to t
 
 ```tsx
 test('the template editor renders the unified editor, not the old page head', async () => {
-  renderEditor('t1')
+  setupPage(MOCK_TPL)
   expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toBeInTheDocument()
   expect(screen.getByText('Sablon · mentve')).toBeInTheDocument()
   expect(screen.getByText('A heted · koppints egy napra')).toBeInTheDocument()
@@ -2840,7 +2869,7 @@ test('the template editor renders the unified editor, not the old page head', as
 
 test('renaming a day persists through the full-template PUT', async () => {
   const user = userEvent.setup()
-  renderEditor('t1')
+  setupPage(MOCK_TPL)
   const tile = (await screen.findAllByRole('button', { name: /· szerkesztés$/ }))[0]
   await user.click(tile)
   const nameField = await screen.findByRole('textbox', { name: /nap neve$/ })
@@ -2850,7 +2879,7 @@ test('renaming a day persists through the full-template PUT', async () => {
 })
 ```
 
-(Use the file's existing `renderEditor` helper; if it is named differently, keep the file's own convention.)
+(The file's existing helper is `setupPage(id)` and `MOCK_TPL` is its mock-mode template id — reuse both.)
 
 - [ ] **Step 2: Run the test to verify it fails**
 
