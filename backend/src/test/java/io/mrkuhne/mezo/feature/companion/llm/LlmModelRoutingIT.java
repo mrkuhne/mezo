@@ -22,7 +22,10 @@ import org.springframework.test.context.TestPropertySource;
     "mezo.feature.companion.enabled=true",
     "mezo.companion.llm.openai.feature-models.[companion_weekly_review]=gpt-5.6-terra",
     "mezo.companion.llm.openai.call-kind-models.VISION=gpt-5.6-luna-vision",
-    "mezo.companion.llm.openai.reasoning-effort.smart=high"
+    // The shipped yaml sets BOTH tiers to high (mezo-641c), so `chat` is blanked here on purpose:
+    // this class has to exercise both branches — a set tier and an emptied one.
+    "mezo.companion.llm.openai.reasoning-effort.smart=high",
+    "mezo.companion.llm.openai.reasoning-effort.chat="
 })
 class LlmModelRoutingIT extends AbstractIntegrationTest {
 
@@ -67,6 +70,8 @@ class LlmModelRoutingIT extends AbstractIntegrationTest {
 
     @Test
     void testReasoningEffort_shouldBindPerTier_andStayUnsetWhereTheYamlLeavesItEmpty() {
+        // CHEAP is null here only because this class blanks it: an empty property binds to "" and
+        // the router must read blank as unset, which is what keeps a tier off the wire entirely.
         assertThat(llmModelRouter.reasoningEffortFor(LlmProvider.OPENAI, ModelTier.SMART)).isEqualTo("high");
         assertThat(llmModelRouter.reasoningEffortFor(LlmProvider.OPENAI, ModelTier.CHEAP)).isNull();
     }
