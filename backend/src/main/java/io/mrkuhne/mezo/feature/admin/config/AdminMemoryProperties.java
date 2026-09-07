@@ -22,8 +22,15 @@ import org.springframework.validation.annotation.Validated;
 public record AdminMemoryProperties(
         /** Server-side PCA output dimensionality handed to the client's UMAP. */
         @Min(2) @Max(200) int pcaTargetDims,
-        /** Above this many ready vectors the map samples (newest + most salient first). */
-        @Min(100) @Max(100_000) int vectorSampleThreshold,
+        /**
+         * Above this many ready vectors the map samples (newest + most salient first).
+         *
+         * <p>Lower bound 2, not 100: the bound exists to keep the value sane, and a deliberately
+         * tiny threshold is a legitimate setting — it is how the sampling path is exercised at all
+         * (both the projection service's and the endpoint's sampling ITs pin it to a handful of
+         * rows rather than seeding a hundred).
+         */
+        @Min(2) @Max(100_000) int vectorSampleThreshold,
         /** Default k for the neighbour probe. */
         @Min(1) @Max(50) int neighborDefaultK,
         /** SET LOCAL statement_timeout applied to every native/dynamic query in this slice. */

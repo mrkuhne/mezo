@@ -11444,3 +11444,143 @@ button.mz-wtile:active { transform: scale(0.96); }
 .mz-arr-up { color: var(--mz-cell-sage-ink); }
 .mz-arr-dn { color: var(--mz-cell-gold-ink); }
 .mz-arr-eq { color: var(--mz-ink-soft); }
+
+/* ============================================================
+   §Admin memory explorer (mezo-4qyt.3) — ported VERBATIM (light-only hexes, same
+   "outside §Mozaik" precedent as §Admin hub above) from
+   docs/design_2.0/prototypes/admin-memory.html's .am-* rules. New rules only; never let an
+   .am- rule collide with .ad-*. Sub-nav segment bar, the two-column content+inspector
+   layout, serving-mode badges, the candidate stacked contribution bar, prompt-trace /
+   replay box, and the Gráf/Térkép/Rétegek placeholders (`.am-degraded`) slices 4-6 target.
+   ============================================================ */
+
+/* sub-nav segment bar — Futások · Gráf · Térkép · Rétegek */
+.am-segbar { display: flex; gap: 4px; background: rgba(43,33,24,.05); border-radius: 999px; padding: 4px; margin: 2px 0 16px; width: fit-content; }
+.am-seg { border: none; background: none; font-family: inherit; cursor: pointer; border-radius: 999px;
+  padding: 7px 16px; font-size: 11.5px; font-weight: 600; color: #6E6257; }
+.am-seg.on { background: #FFFFFF; color: #A84A26; box-shadow: 0 4px 10px -6px rgba(43,33,24,.3); }
+
+/* the two-column body: content + persistent inspector */
+.am-layout { display: flex; gap: 16px; align-items: flex-start; min-width: 0; }
+.am-content { flex: 1; min-width: 0; }
+.am-inspector { width: 300px; flex: none; background: #FFFFFF; border-radius: 16px; padding: 14px 15px;
+  box-shadow: 0 18px 32px -16px rgba(43,33,24,.28), 0 2px 6px rgba(43,33,24,.05), inset 0 1px 0 rgba(255,255,255,.85);
+  max-height: 668px; overflow-y: auto; scrollbar-width: thin; }
+.am-inspector.collapsed { width: 44px; padding: 14px 8px; overflow: hidden; max-height: 44px; }
+.am-inspector.collapsed .hd b, .am-inspector.collapsed .row, .am-inspector.collapsed .sec,
+.am-inspector.collapsed .txt, .am-inspector.collapsed .empty { display: none; }
+.am-inspector .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.am-inspector .hd b { font-size: 12px; font-weight: 700; flex: 1; }
+.am-inspector .hd button { border: none; background: rgba(43,33,24,.06); border-radius: 999px; width: 22px; height: 22px;
+  font-size: 11px; cursor: pointer; color: #6E6257; flex: none; }
+.am-inspector .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(43,33,24,.06); font-size: 11px; }
+.am-inspector .row .k { color: #A2958A; font-weight: 600; }
+.am-inspector .row .v { text-align: right; font-weight: 600; }
+.am-inspector .empty { padding: 30px 6px; text-align: center; color: #A2958A; font-size: 11px; }
+.am-inspector .sec { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin: 12px 0 6px; }
+.am-inspector .txt { font-size: 11px; line-height: 1.55; color: #4A3F35; }
+
+/* serving-mode badges */
+.am-mode { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 7px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; cursor: help; }
+.am-mode.shadow { background: rgba(201,150,46,.2); color: #8A6612; }
+.am-mode.new { background: rgba(110,139,94,.18); color: #4E6B42; }
+.am-mode.old { background: rgba(43,33,24,.08); color: #6E6257; }
+
+/* retriever-trace strip */
+.am-trace { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+.am-trace .chip { display: flex; align-items: center; gap: 6px; background: rgba(43,33,24,.045); border-radius: 10px; padding: 6px 10px; font-size: 10px; }
+.am-trace .chip b { font-weight: 700; }
+.am-trace .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: #6E8B5E; flex: none; }
+.am-trace .chip.err .dot { background: #C4694F; }
+.am-trace .chip .n { color: #A2958A; }
+
+/* candidate list + stacked contribution bar */
+.am-cand { border: 1px solid rgba(43,33,24,.08); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+.am-cand > summary { list-style: none; cursor: pointer; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+.am-cand > summary::-webkit-details-marker { display: none; }
+.am-cand > summary .rk { font-weight: 700; font-size: 11px; color: #A2958A; width: 18px; flex: none; }
+.am-cand > summary .tt { flex: 1; min-width: 0; font-weight: 600; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.am-cand > summary .fs { font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; flex: none; }
+.am-cand[open] > summary { border-bottom: 1px solid rgba(43,33,24,.08); background: rgba(168,74,38,.03); }
+.am-cand .inner { padding: 10px 12px 12px; }
+.am-stack { display: flex; height: 20px; border-radius: 6px; overflow: hidden; background: rgba(43,33,24,.06); }
+.am-stack i { display: block; height: 100%; }
+.am-stack .absent { background: repeating-linear-gradient(135deg, rgba(43,33,24,.08) 0 4px, rgba(43,33,24,.03) 4px 8px);
+  display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #A2958A; flex: none; width: 34px; }
+.am-seglegend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font-size: 9.5px; }
+.am-seglegend span { display: inline-flex; align-items: center; gap: 4px; color: #6E6257; font-weight: 600; }
+.am-seglegend i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.am-candfoot { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 10.5px; }
+.am-delta { font-weight: 700; font-variant-numeric: tabular-nums; }
+.am-delta.up { color: #4E6B42; }
+.am-delta.down { color: #A8452A; }
+.am-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 9px; font-size: 9px; font-weight: 800; letter-spacing: 0.04em; }
+.am-pill.in { background: rgba(110,139,94,.18); color: #4E6B42; }
+.am-pill.out { background: rgba(43,33,24,.07); color: #6E6257; }
+
+/* prompt-trace / "amit az LLM látott" */
+.am-prompt { display: grid; gap: 8px; }
+.am-prompt .p { background: rgba(43,33,24,.035); border-radius: 10px; padding: 9px 11px; font-size: 11px; line-height: 1.5; }
+.am-prompt .p .rk { font-size: 9px; font-weight: 800; color: #A2958A; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 3px; }
+.am-empty { text-align: center; padding: 22px 16px; color: #A2958A; font-size: 11.5px; line-height: 1.55; background: rgba(43,33,24,.03); border-radius: 12px; }
+
+/* replay box */
+.am-replay { display: grid; gap: 10px; }
+.am-replay input[type=text] { width: 100%; border: 1px solid rgba(43,33,24,.15); border-radius: 10px; padding: 9px 12px;
+  font-family: inherit; font-size: 12px; background: #FFFFFF; }
+.am-toggles { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+.am-toggle { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: #6E6257; }
+.am-switch { border: none; padding: 0; width: 30px; height: 17px; border-radius: 999px; background: rgba(43,33,24,.14); position: relative; flex: none; cursor: pointer; }
+.am-switch.on { background: #A84A26; }
+.am-switch i { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: left .15s ease; }
+.am-switch.on i { left: 15px; }
+.am-btn { border: none; background: #A84A26; color: #fff; font-family: inherit; font-weight: 700; font-size: 11.5px;
+  border-radius: 999px; padding: 8px 18px; cursor: pointer; width: fit-content; }
+.am-btn:disabled { opacity: .55; cursor: default; }
+.am-dryrun { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 3px 8px; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+  background: repeating-linear-gradient(135deg, rgba(168,74,38,.16) 0 6px, rgba(168,74,38,.06) 6px 12px); color: #A84A26; }
+.am-caveat { font-size: 10.5px; color: #8A6612; background: rgba(201,150,46,.12); border-radius: 8px; padding: 7px 10px; line-height: 1.5; }
+.am-notes { display: flex; gap: 6px; flex-wrap: wrap; }
+.am-note-chip { font-size: 9.5px; font-weight: 700; color: #6E6257; background: rgba(43,33,24,.06); border-radius: 999px; padding: 3px 9px; }
+
+/* Gráf — SVG (slice 4) */
+.am-graphwrap { position: relative; background: #FFFFFF; border-radius: 14px; overflow: hidden; }
+.am-graphctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.am-graphctl .lbl { font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; }
+.am-slider { -webkit-appearance: none; width: 120px; height: 4px; border-radius: 2px; background: rgba(43,33,24,.14); }
+.am-search { border: 1px solid rgba(43,33,24,.15); border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 10.5px; width: 150px; }
+.am-kindchip { display: inline-flex; align-items: center; gap: 5px; }
+.am-kindchip i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.am-legend2 { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 9.5px; }
+.am-legend2 span { display: inline-flex; align-items: center; gap: 5px; color: #6E6257; font-weight: 600; }
+.am-legend2 i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.am-validity { margin-top: 4px; }
+.am-validity .track { height: 8px; border-radius: 5px; background: rgba(43,33,24,.08); position: relative; overflow: hidden; }
+.am-validity .fill { position: absolute; inset: 0; border-radius: 5px; background: linear-gradient(90deg, #6E8B5E, #C9962E); }
+.am-validity .lbls { display: flex; justify-content: space-between; font-size: 9px; color: #A2958A; margin-top: 4px; font-weight: 600; }
+
+/* Térkép — SVG scatter (slice 5) */
+.am-mapwrap { background: #FFFFFF; border-radius: 14px; position: relative; }
+.am-samplebanner { font-size: 10.5px; background: rgba(78,143,184,.12); color: #345E78; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; }
+.am-srckey { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 9.5px; }
+.am-srckey span { display: inline-flex; align-items: center; gap: 5px; color: #6E6257; font-weight: 600; }
+.am-srckey i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* Rétegek — health (slice 6) */
+.am-statgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.am-stat { background: rgba(43,33,24,.035); border-radius: 12px; padding: 11px 12px; }
+.am-stat b { display: block; font-weight: 200; font-size: 26px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.am-stat.linkable { cursor: pointer; }
+.am-stat.linkable:hover { background: rgba(168,74,38,.07); }
+.am-stat.linkable b { color: #A84A26; text-decoration: underline dotted; }
+.am-stat .lbl { font-size: 9.5px; color: #6E6257; font-weight: 600; margin-top: 2px; }
+.am-histobar { display: flex; align-items: flex-end; gap: 3px; height: 64px; }
+.am-histobar i { flex: 1; background: #5D4FA0; border-radius: 3px 3px 0 0; min-height: 3px; }
+.am-joblist { display: grid; gap: 5px; font-size: 10.5px; }
+.am-joblist .row { display: flex; justify-content: space-between; color: #6E6257; }
+.am-joblist .row b { color: #2B2118; font-weight: 600; }
+
+/* shared "this view/layer isn't built yet" placeholder (also used by slices 4-6's own
+   feature-off/degraded states) */
+.am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
+.am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
