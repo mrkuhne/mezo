@@ -106,4 +106,4 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 
 ## 9. Verify before you're done
 
-`cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — the build (`tsc -b`) catches broken imports; **both** test modes must stay green. Touched a feature? Update its `docs/features/<domain>.md` and run `node scripts/lint-docs.mjs`.
+`cd frontend && pnpm build && VITE_USE_MOCK=true pnpm test && VITE_USE_MOCK=false pnpm test` — the build (`tsc -b`) catches broken imports; **both** test modes must stay green, both set **explicitly**. A bare `pnpm test` is environment-dependent: `VITE_USE_MOCK` unset ⇒ mock, per `data/_client/mode.ts`, but a local `frontend/.env` copied from `.env.example` sets `VITE_USE_MOCK=false` ⇒ real — so depending on whether `.env` exists, a bare invocation silently picks one mode, and running it twice can leave the other mode's gate vacuous. `ci.yml`'s `test-frontend` job comment gives the same reasoning for setting the var explicitly in both CI steps. Touched a feature? Update its `docs/features/<domain>.md` and run `node scripts/lint-docs.mjs`.

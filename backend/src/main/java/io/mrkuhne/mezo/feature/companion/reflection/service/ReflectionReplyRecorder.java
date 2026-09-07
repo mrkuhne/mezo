@@ -2,8 +2,8 @@ package io.mrkuhne.mezo.feature.companion.reflection.service;
 
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
-import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.PatternEventAppender;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,8 @@ public class ReflectionReplyRecorder {
     private static final int MAX_TEXT_CHARS = 2000;
 
     private final PatternRepository patternRepository;
-    private final PatternEventRepository patternEventRepository;
+    /** S4 (mezo-eq85.4): one shared way to append a pattern event — see PatternEventAppender. */
+    private final PatternEventAppender patternEventAppender;
 
     /** Appends one {@code user_reply} event; a missing/foreign pattern or blank text writes nothing. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -64,12 +65,8 @@ public class ReflectionReplyRecorder {
                     patternId, userId);
             return;
         }
-        PatternEventEntity event = new PatternEventEntity();
-        event.setCreatedBy(userId);
-        event.setPatternId(patternId);
-        event.setKind(PatternEventEntity.KIND_USER_REPLY);
-        event.setPayload(PatternEventPayloadEnvelope.userReply(CHANNEL_CHAT, null, truncate(text)));
-        patternEventRepository.saveAndFlush(event);
+        patternEventAppender.append(userId, patternId, PatternEventEntity.KIND_USER_REPLY,
+                PatternEventPayloadEnvelope.userReply(CHANNEL_CHAT, null, truncate(text)));
     }
 
     private static String truncate(String text) {

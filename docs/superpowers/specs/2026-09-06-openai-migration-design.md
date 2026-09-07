@@ -175,15 +175,22 @@ Minden új kulcs egy blokkban, kommentelve, a repo mai stílusában. Vázlat:
 mezo:
   companion:
     llm:
-      chat-model: gpt-5.6-luna        # cheap/fast tier
-      smart-model: gpt-5.6-terra      # smart tier (19 completeSmart hívás)
-      per-feature: {}                 # <feature> -> model id; üres = tier-alapú
-      per-call-kind:                  # CallKind -> model id
-        TRANSCRIBE: gemini-2.5-flash  # audiónak nincs GPT-5.6 útja
-        VISION: gemini-2.5-flash      # amíg az A/B nem dönt
-      reasoning-effort:
-        chat: low
-        smart: medium
+      provider: gemini                # melyik adapter felel a chat-fordulóra
+      gemini:
+        chat-model: gemini-2.5-flash
+        smart-model: gemini-2.5-pro
+        feature-models: {}            # <feature> -> model id; üres = tier-alapú
+        call-kind-models: {}          # CallKind -> model id; erősebb a feature-modelsnél
+        reasoning-effort: { chat: , smart: }
+      openai:
+        chat-model: gpt-5.6-luna      # cheap/fast tier
+        smart-model: gpt-5.6-terra    # smart tier (19 completeSmart hívás)
+        feature-models: {}
+        call-kind-models: {}
+        reasoning-effort: { chat: , smart: }
+      per-call-kind:                  # CallKind -> PROVIDER (nem model id)
+        TRANSCRIBE: gemini            # audiónak nincs GPT-5.6 útja
+        VISION: gemini                # amíg az A/B nem dönt
   llm-log:
     pricing:
       models:
@@ -197,6 +204,16 @@ mezo:
       stop-at-percent: 100            # AI-szünet resetig
       degrade-model: gpt-5.6-luna
 ```
+
+**Amendment (S4, 2026-09-07).** A model-override táblák **szolgáltatónként** vannak, nem egy közös
+`per-feature`/`per-call-kind` lapban, ahogy ez a vázlat írta. Ok: egy model-azonosító csak annál a
+szolgáltatónál értelmes, aki ki tudja szolgálni, és a `gemini` blokk a `provider: openai` alatt is
+terhelt (audio, vision, fallback) — egy közös tábla tehát egy delegált transcribe-híváson GPT-idt
+adhatna a Gemini kliensnek, amit a config-review nem fogna meg, csak a futásidő. A §R1 döntés (a
+router az adapteren belül, a meglévő `feature` + `CallKind` kulcsokra) változatlan. A
+`per-call-kind` kulcs megmarad, de az továbbra is **szolgáltatót** választ, nem modellt; a modell-
+szintű megfelelője a `<provider>.call-kind-models`. A `feature-models` kulcsait — a pricing-
+kulcsokhoz hasonlóan — **szögletes zárójelbe** kell tenni (`"[companion_chat]"`).
 
 A pricing-kulcsok **szögletes zárójelben** kötelezőek (a binder a pontot map-kulcs-határolóként
 kezeli); a `mezo-2zyu` `LlmPricingPropertiesBindingTest` ezt őrzi. A Gemini pricing-sorok

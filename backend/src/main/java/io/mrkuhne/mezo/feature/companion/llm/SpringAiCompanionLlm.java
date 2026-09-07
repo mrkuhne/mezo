@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.ChatHistory;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
+import io.mrkuhne.mezo.feature.companion.config.ModelTier;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
@@ -40,12 +42,17 @@ import java.util.function.Supplier;
  * record emitted on every terminal — success, failure, and a mid-stream cancel. Tools ride the
  * ChatClient request spec; Spring AI runs the tool-execution loop internally (V0.5).
  *
- * <p>A subclass supplies four things and nothing else: the provider's {@link ChatModel}, the
- * provider's {@link LlmUsageExtractor}, and the two tiers' {@link ChatOptions} — whose
- * {@code model} doubles as the requested-model id recorded on every row, so each tier's identity is
- * stated exactly once. Anything a provider must do DIFFERENTLY — {@code OpenAiCompanionLlm} routing
- * audio and vision back to Gemini, for instance — is an override of the matching {@code complete}
- * overload.
+ * <p>A subclass supplies three things and nothing else: the provider's {@link ChatModel}, the
+ * provider's {@link LlmUsageExtractor}, and {@link #optionsFor} — the hook that turns one RESOLVED
+ * model id into that provider's options. Anything a provider must do DIFFERENTLY —
+ * {@code OpenAiCompanionLlm} routing audio and vision back to Gemini, for instance — is an override
+ * of the matching {@code complete} overload.
+ *
+ * <p><b>The model is per CALL, not per boot (mezo-ozri.4).</b> Until {@link LlmModelRouter} existed
+ * this class built one ChatClient per tier with the tier's model baked into its defaults; now there
+ * is ONE client and every request states its own options, so moving a feature to another model is a
+ * YAML edit. The resolved id is what the audit row records, or every cost report would name the
+ * tier default instead of what was actually asked for.
  *
  * <p><b>Audit logging (mezo-2zyu).</b> Every call path here is the LAST place that still sees the
  * provider's raw metadata, so every path reports one {@link LlmCallRecord} — SUCCESS with the token
@@ -56,9 +63,9 @@ import java.util.function.Supplier;
 public abstract class SpringAiCompanionLlm implements CompanionLlm {
 
     private final ChatClient chatClient;
-    private final ChatClient smartChatClient;
-    private final String chatModelId;
-    private final String smartModelId;
+    /** Resolves WHICH model serves each call; also read by {@link #optionsFor} for the effort. */
+    protected final LlmModelRouter llmModelRouter;
+    private final LlmProvider provider;
     private final LlmCallRecorder llmCallRecorder;
     private final LlmCallContextHolder llmCallContextHolder;
     private final LlmUsageExtractor llmUsageExtractor;
@@ -70,31 +77,41 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
      *                          ambiguous. Guarded by {@code ChatModelQualifierIT}.
      * @param llmUsageExtractor the provider's usage extractor — qualified for the same reason, the
      *                          port has one implementation per provider.
-     * @param chatOptions       the cheap tier's default options; its {@code model} is also the
-     *                          requested-model id recorded on every non-smart row.
-     * @param smartOptions      the smart tier's default options, same contract.
+     * @param llmModelRouter    resolves the model id of each call from config (mezo-ozri.4).
+     * @param provider          which provider's config block the router reads for this adapter — a
+     *                          Gemini call may never resolve an OpenAI model id (spec §A1).
      */
     protected SpringAiCompanionLlm(ChatModel chatModel, LlmUsageExtractor llmUsageExtractor,
-                                   ChatOptions chatOptions, ChatOptions smartOptions,
+                                   LlmModelRouter llmModelRouter, LlmProvider provider,
                                    LlmCallRecorder llmCallRecorder,
                                    LlmCallContextHolder llmCallContextHolder) {
         this.llmCallRecorder = llmCallRecorder;
         this.llmCallContextHolder = llmCallContextHolder;
         this.llmUsageExtractor = llmUsageExtractor;
-        this.chatModelId = chatOptions.getModel();
-        this.smartModelId = smartOptions.getModel();
-        // mezo-58ig: the per-round usage observer — stateless, so one instance serves both clients;
-        // the per-call state is the LlmRoundUsage tally each call plants in the request context.
-        LlmRoundUsageAdvisor roundUsageAdvisor = new LlmRoundUsageAdvisor(llmUsageExtractor);
+        this.llmModelRouter = llmModelRouter;
+        this.provider = provider;
+        // mezo-58ig: the per-round usage observer — stateless; the per-call state is the
+        // LlmRoundUsage tally each call plants in the request context.
         this.chatClient = ChatClient.builder(chatModel)
-            .defaultOptions(chatOptions.mutate())
-            .defaultAdvisors(roundUsageAdvisor)
+            .defaultAdvisors(new LlmRoundUsageAdvisor(llmUsageExtractor))
             .build();
-        // V3.2: the smart tier — weekly pipelines only, never chat turns
-        this.smartChatClient = ChatClient.builder(chatModel)
-            .defaultOptions(smartOptions.mutate())
-            .defaultAdvisors(roundUsageAdvisor)
-            .build();
+    }
+
+    /**
+     * The provider's options for ONE resolved call. Replaces both the tier options that used to be
+     * constructor arguments and the old {@code toolCallOptions()} hook (mezo-ozri.4): since the
+     * model is chosen per call, the options must be built per call too, and the only two things
+     * that vary besides the id are the tier — which reasoning effort applies — and whether the
+     * request carries function tools, which on OpenAI forces that effort to {@code none}
+     * (mezo-ozri.3).
+     *
+     * <p>A BUILDER, because that is what the 2.0 request spec's {@code options(..)} takes.
+     */
+    protected abstract ChatOptions.Builder<?> optionsFor(String model, ModelTier tier, boolean carriesTools);
+
+    /** The model this call resolves to — sent to the provider AND recorded on the audit row. */
+    private String route(ModelTier tier, CallKind kind) {
+        return llmModelRouter.modelFor(provider, tier, kind);
     }
 
     /**
@@ -104,10 +121,12 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
      */
     @Override
     public String completeSmart(String systemPrompt, String userMessage) {
-        CallSpec spec = CallSpec.of(CallKind.SMART, smartModel(), systemPrompt, userMessage);
+        String model = route(ModelTier.SMART, CallKind.SMART);
+        CallSpec spec = CallSpec.of(CallKind.SMART, model, systemPrompt, userMessage);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
-            () -> smartChatClient.prompt().system(systemPrompt).user(userMessage)
+            () -> chatClient.prompt().system(systemPrompt).user(userMessage)
+                .options(optionsFor(model, ModelTier.SMART, false))
                 .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
                 .call().chatResponse());
     }
@@ -118,21 +137,24 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
         // count arrives per-call via the LlmRoundUsage tally (mezo-58ig).
         CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
-        CallSpec spec = new CallSpec(kind, chatModel(), systemPrompt, userMessage,
+        String model = route(ModelTier.CHEAP, kind);
+        CallSpec spec = new CallSpec(kind, model, systemPrompt, userMessage,
             ChatHistory.render(history), null, null, null, false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
-            () -> request(systemPrompt, history, userMessage, tools, toolContext, tally)
+            () -> request(systemPrompt, history, userMessage, tools, toolContext, model, tally)
                 .call().chatResponse());
     }
 
     @Override
     public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
         // Image MARKERS only — the bytes are ephemeral by contract and must never reach the log.
-        CallSpec spec = new CallSpec(CallKind.VISION, chatModel(), systemPrompt, userMessage, null,
+        String model = route(ModelTier.CHEAP, CallKind.VISION);
+        CallSpec spec = new CallSpec(CallKind.VISION, model, systemPrompt, userMessage, null,
             images.size(), totalBytes(images), firstMimeType(images), false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
+            .options(optionsFor(model, ModelTier.CHEAP, false))
             .system(systemPrompt)
             .user(u -> {
                 u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
@@ -152,10 +174,12 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
         // Audio MARKERS only — like the vision path, the bytes are ephemeral and never logged.
         // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
-        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage, null,
+        String model = route(ModelTier.CHEAP, CallKind.TRANSCRIBE);
+        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, model, systemPrompt, userMessage, null,
             1, (long) (audio.bytes() == null ? 0 : audio.bytes().length), audio.mimeType(), false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
+            .options(optionsFor(model, ModelTier.CHEAP, false))
             .system(systemPrompt)
             .user(u -> {
                 u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
@@ -186,7 +210,10 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     @Override
     public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
-        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, chatModel(), systemPrompt, userMessage,
+        // Both the context and the routing decision are read HERE, on the caller's thread: a
+        // re-subscription runs the defer elsewhere, where the feature slug is no longer bound.
+        String model = route(ModelTier.CHEAP, CallKind.CHAT_STREAM);
+        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, model, systemPrompt, userMessage,
             ChatHistory.render(history), null, null, null, true);
         LlmCallContext context = llmCallContextHolder.get();
 
@@ -196,7 +223,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
             LlmRoundUsage tally = new LlmRoundUsage();
             StringBuilder answer = new StringBuilder();
-            return request(systemPrompt, history, userMessage, tools, toolContext, tally).stream().chatResponse()
+            return request(systemPrompt, history, userMessage, tools, toolContext, model, tally)
+                .stream().chatResponse()
                 .doOnNext(response -> {
                     lastChunk.set(response);
                     String text = textOf(response);
@@ -314,9 +342,10 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
 
     private ChatClient.ChatClientRequestSpec request(String systemPrompt, List<Turn> history,
                                                      String userMessage, List<ToolCallback> tools,
-                                                     Map<String, Object> toolContext,
+                                                     Map<String, Object> toolContext, String model,
                                                      LlmRoundUsage tally) {
         ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
+            .options(optionsFor(model, ModelTier.CHEAP, !tools.isEmpty()))
             .system(systemPrompt)
             .messages(toMessages(history))
             .user(userMessage)
@@ -335,14 +364,6 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
                 ? (Message) new UserMessage(turn.content())
                 : new AssistantMessage(turn.content()))
             .toList();
-    }
-
-    private String chatModel() {
-        return chatModelId;
-    }
-
-    private String smartModel() {
-        return smartModelId;
     }
 
     /** An app-level failure carries its SystemMessage code; a provider/transport failure has none. */

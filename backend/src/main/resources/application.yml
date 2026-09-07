@@ -83,6 +83,35 @@ mezo:
     owner-name: ${MEZO_OWNER_NAME:Owner}
     # mezo-5h9: refuse to boot with dev-default owner password / JWT secret. true in k8s.
     strict: ${MEZO_AUTH_STRICT:false}
+  admin:
+    # Admin hub insights + data browser tunables (mezo-d5iy). featureMap says, for every
+    # non-LLM feature, which owned table proves the feature was used and which column
+    # carries the moment of use.
+    report-zone: Europe/Budapest
+    browser:
+      max-page-size: 200
+    feature-map:
+      train:
+        table: workout_session
+        timestamp-column: started_at
+      food:
+        table: meal
+        timestamp-column: logged_at
+      sleep:
+        table: sleep_log
+        timestamp-column: date
+      journal:
+        table: journal_entry
+        timestamp-column: occurred_on
+      habits:
+        table: habit_day
+        timestamp-column: habit_date
+      water:
+        table: water_log
+        timestamp-column: log_date
+      weight:
+        table: weight_log
+        timestamp-column: date
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
@@ -379,6 +408,10 @@ mezo:
     # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
     lifegoal-ai-propose:
       enabled: true
+    # Admin hub insights + data browser (mezo-d5iy) — /api/admin/overview, /api/admin/data/**.
+    # Off ⇒ those endpoints 404; the existing invite/account admin API is unaffected.
+    admin-insights:
+      enabled: false
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -562,9 +595,30 @@ mezo:
       gemini:
         chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
         smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique)
+        # mezo-ozri.4 — per-call model overrides, resolved by LlmModelRouter at CALL time (until it
+        # existed the tiers were frozen at boot). Both maps are scoped to THIS provider: a model id
+        # only means something to the vendor that serves it, and this block still answers the
+        # audio/vision calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
+        # feature-models, then the tier defaults above — anything unmatched or blank falls through,
+        # so config can never be why a call fails. Keys MUST be bracket-quoted ("[companion_chat]"):
+        # the binder splits map keys on dots and relaxed-binds the rest.
+        feature-models: {}             # LlmCallContext.feature() -> model id
+        call-kind-models: {}           # CallKind -> model id
+        reasoning-effort:              # OpenAI-only concept; this adapter ignores it
+          chat:
+          smart:
       openai:
         chat-model: gpt-5.6-luna       # cheap/fast tier (spec §4: Terra as the default is -19% margin)
         smart-model: gpt-5.6-terra     # smart tier: the 19 completeSmart call sites
+        feature-models: {}             # LlmCallContext.feature() -> model id (bracket-quote the key)
+        call-kind-models: {}           # CallKind -> model id; wins over feature-models
+        # The quality lever of spec §Q1 — same token price, more thinking. Left EMPTY (= send
+        # nothing, the provider's own default stands) until mezo-641c measures what each tier should
+        # carry; a tool-carrying request pins `none` regardless, because /v1/chat/completions
+        # rejects function tools + reasoning effort outright (measured, mezo-ozri.3).
+        reasoning-effort:
+          chat:
+          smart:
       # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
       # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
       # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
@@ -650,6 +704,12 @@ mezo:
       # Missing/stale text signals are re-extracted for this many finished days each night.
       catch-up-days: 7
       notice:
+        # Silent launch (mezo-eq85.4). Mezo keeps COLLECTING observations exactly as before — the
+        # observation events are still written, still marked surfaced by the budget below, and the
+        # Észrevételek feed endpoint still returns them — but the "Mezo észrevett valamit" PUSH is
+        # held back, because its deeplink (/nap/uzenetek?tab=eszrevetelek) points at a tab that only
+        # ships in slice mezo-eq85.5. Flip this to true the day that tab lands; nothing else changes.
+        push-enabled: false
         max-per-day: 2
         min-gap-hours: 4
         quiet-from: "22:00"

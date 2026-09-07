@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.llm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
+import io.mrkuhne.mezo.feature.companion.config.ModelTier;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecorder;
@@ -52,36 +53,46 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
      *                  contributes {@code googleGenAiChatModel} in the same context, so an
      *                  unqualified injection point would be ambiguous.
      * @param llmUsageExtractor the OPENAI usage extractor, qualified for the same reason.
+     * @param llmModelRouter which model each call gets, out of the {@code llm.openai} block only.
      * @param geminiCompanionLlm the media delegate — see the class javadoc. Injected by CONCRETE
      *                  type on purpose: a {@code CompanionLlm} parameter would resolve to
      *                  {@code this}, since this bean is the primary one.
      */
     public OpenAiCompanionLlm(@Qualifier("openAiChatModel") ChatModel chatModel,
-                              CompanionProperties companionProperties,
+                              CompanionProperties companionProperties, LlmModelRouter llmModelRouter,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
                               @Qualifier("openAiUsageExtractor") LlmUsageExtractor llmUsageExtractor,
                               GeminiCompanionLlm geminiCompanionLlm) {
-        super(chatModel, llmUsageExtractor,
-            options(companionProperties.llm().openai().chatModel()),
-            options(companionProperties.llm().openai().smartModel()),
+        super(chatModel, llmUsageExtractor, llmModelRouter, LlmProvider.OPENAI,
             llmCallRecorder, llmCallContextHolder);
         this.geminiCompanionLlm = geminiCompanionLlm;
         this.perCallKind = companionProperties.llm().perCallKind();
     }
 
     /**
-     * One tier's default options. {@code streamOptions.includeUsage} is a CORRECTNESS invariant, not
-     * a tunable (spec §8.6): without it OpenAI sends no usage block on a streamed response, and every
+     * One call's options. {@code streamOptions.includeUsage} is a CORRECTNESS invariant, not a
+     * tunable (spec §8.6): without it OpenAI sends no usage block on a streamed response, and every
      * streamed row is persisted with null tokens and null cost — silently, because nothing fails. It
      * is stated HERE rather than in {@code spring.ai.openai.chat.stream-options.include-usage} so it
      * cannot depend on option-merge order or be lost to a YAML edit;
      * {@code OpenAiCompanionLlmOptionsTest} keeps it stated.
+     *
+     * <p>The reasoning effort comes from the tier's config (mezo-ozri.4, spec §Q1) EXCEPT on a
+     * tool-carrying request, where it is pinned to {@code none}. Measured against the live API, not
+     * inferred: {@code /v1/chat/completions} answers a GPT-5.6 request carrying BOTH tools and a
+     * reasoning effort with {@code 400: Function tools with reasoning_effort are not supported for
+     * gpt-5.6-luna … To use function tools, use /v1/responses or set reasoning_effort to 'none'} —
+     * all 42 eval cases failed on it, which is every chat turn the companion has, and Spring AI 2.0
+     * speaks Chat Completions only (the Responses API is a 2.1.x issue). An unset tier effort sends no
+     * effort key at all, leaving the provider's own default in place (mezo-641c).
      */
-    static OpenAiChatOptions options(String model) {
-        return OpenAiChatOptions.builder()
+    @Override
+    protected OpenAiChatOptions.Builder optionsFor(String model, ModelTier tier, boolean carriesTools) {
+        OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder()
             .model(model)
-            .streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build())
-            .build();
+            .streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build());
+        String effort = carriesTools ? "none" : llmModelRouter.reasoningEffortFor(LlmProvider.OPENAI, tier);
+        return effort == null ? builder : builder.reasoningEffort(effort);
     }
 
     /** Vision rides Gemini until the A/B decides otherwise (spec §10.3). */

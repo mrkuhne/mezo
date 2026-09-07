@@ -216,9 +216,19 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   tool name, kept in sync with the `@Tool` descriptions); (3) the enriched **snapshot-first**
   context (Component A above) removes most tool calls before they'd ever be needed; (4) a
   **measurement phase** — `ToolSelectionEvalIT` (`feature/companion/eval/`, `@Tag("eval")`,
-  opt-in, real `GeminiCompanionLlm` over a 40-case representative Hungarian question set) reports
-  selection-accuracy from the `RecordingToolCallback` audit: baseline **37/40 = 92.5%**, printed
-  via `log.info`, not a CI pass/fail gate. (5) **Tool-RAG is a prepared-but-INACTIVE escape
+  opt-in, the REAL provider adapter over a 42-case representative Hungarian question set) reports
+  selection accuracy, critical wrong tools, JSON validity, latency p50/p95 and USD per successful
+  action (the money read back out of `llm_log_history`), printed via `log.info` and written to
+  `backend/target/eval/`, not a CI pass/fail gate. **Which model** it measures comes from one
+  property — `-Dmezo.eval.model=gpt-5.6-luna` also switches the provider, that provider's cheap
+  tier and the API key the gate demands (`EvalTarget`); a requested model whose key is missing
+  FAILS the run instead of skipping it (mezo-ozri.3). Re-baselined 2026-09-07 on all three
+  models: incumbent `gemini-2.5-flash` 88.1% exact match / p95 6268 ms / $0.0033 per successful
+  action, **`gpt-5.6-luna` 90.5% / 5591 ms / $0.00047** (the chosen default), `gpt-5.6-terra`
+  95.2% / 8092 ms / $0.0047 (stays the smart tier) — see
+  [the re-baseline comparison](../research/comparisons/companion-chat-model-rebaseline-2026-09.md)
+  for the six gates and the decision.
+  Run: `./mvnw test -Dtest=ToolSelectionEvalIT -Dmezo.excludedTestGroups= [-Dmezo.eval.model=…]`. (5) **Tool-RAG is a prepared-but-INACTIVE escape
   hatch** on the existing pgvector `EmbeddingPort` — deliberately not built (YAGNI): its trigger
   is selection-accuracy dropping below ~85% (this baseline is comfortably above) **or** the
   toolset growing past ~20–25 (e.g. when write-tools land). Re-run the eval whenever tools are
@@ -1173,6 +1183,161 @@ chat on the other.
   `HypothesisEvaluationService.evaluateOne`'s explicit `TransactionTemplate` instead. Consequence,
   accepted on purpose: the reply commits on its own, so it survives even when the **synchronous**
   turn later rolls back on an LLM failure.
+
+**Reflexió S4 — the same-day loop (`mezo-eq85.4`) — the engine finally speaks, and the user can
+answer with one tap.** S1–S3 could read prose, test a hypothesis nightly and mention it in chat, but
+the user still had to open a chat to hear about any of it, and had no way to say "nem stimmel"
+without writing a sentence. S4 adds the *same-day* half: a cheap notice the moment something salient
+is written, the **Észrevételek** feed those notices land on, three chips to answer them, the reply
+feeding back into the nightly revision, and a one-line morning digest of what the night decided.
+
+- **Nothing is spent on an ordinary day.** `QuickNoticePreScreen` (`reflection/service/`) is a PURE
+  `@Component` — no repository, no LLM, every input a method argument — that decides whether a fresh
+  `text_signal` is worth an LLM call at all. Four rules in a fixed order, **first hit wins**:
+  `TOUCHES_OPEN` (an open row's `people:`/`topic:` series is named in the signal — a plan keyed on a
+  bare `MetricKey` is the nightly pass's job, not this one), `NEW_PERSON` (exactly two prior
+  mentions in the seven-day window, i.e. this is the third), `EXTREME_MOOD` (mood 1 or 5 **and**
+  `confidence = sure` — an unsure extreme is not a fact), `TOPIC_STREAK` (the topic on each of the
+  three preceding calendar days plus today). No hit ⇒ return, no call, no cost.
+- **`ObservationBudget` is what keeps a companion from becoming a notification machine.** Cap
+  (`notice.max-per-day`), minimum gap (`notice.min-gap-hours`) and a quiet window
+  `[quiet-from, quiet-to)` that may wrap midnight — all three from the `mezo.companion.reflection.notice.*`
+  block S1 reserved for exactly this. Only events the user actually SAW count: the budget filters on
+  `payload.surfaced == true`, so an over-budget notice is stored (the reasoning is not lost) but is
+  invisible to both the cap and the gap. `now` arrives as a **parameter** — there is no `Clock` bean
+  in this app, and that is what keeps the class unit-testable without one.
+- **`QuickNoticeService.onSignal` is the one same-day LLM stage**, hooked from `TextSignalListener`
+  after a signal was actually produced. It loads the open non-`statistical` rows, the last seven days
+  of signals **minus the triggering source's own versions** (the third-mention rule counts PRIOR
+  mentions; leaving today's row in would make every second mention look like a third), pre-screens,
+  and only then spends ONE cheap-tier call tagged `LlmCallContext("companion_reflection",
+  "quick_notice", …)`. The entry text is read through the journal/gratitude **repositories** — the
+  companion slice may not import journal services (ArchUnit); a `chat_day` signal has no single
+  source row, so its text is `""` and the prompt runs on the trigger and the touched rows alone.
+  Parsing is defensive in the `TextSignalExtractor.parse` shape: a null, blank or non-JSON answer
+  ends the run silently, and the failure branch logs the answer's LENGTH and first 40 characters —
+  never the answer, which mirrors the user's own journal entry, names included.
+- **What the model may write here, and what only code writes.** The answer supplies an
+  `observation` EVENT's prose and, at most, ONE `proposed` row carrying a falsifiable plan
+  (`origin=quick_notice`, `kind=reflection`, `category=trigger`, title = the notice's first sentence
+  capped at 200 chars), and the plan still has to survive `TestPlanValidator`. `pattern.status` on an
+  existing row, `pattern.belief`, `evidence_hits/misses`, `knowledge_fact` and
+  `memory_item.salience` are **never** touched by this stage — that is the epic's hard rule, and here
+  it is structural, not a prompt instruction. Target resolution is `hypothesisKey` → `newTestPlan` →
+  the first touched row → drop, and **BOTH row-resolving branches are guarded the same way**: a
+  fresh observation can never land on a row the engine or the user already settled
+  (`refuted`/`rejected`/`confirmed`/`dormant`), nor on a `statistical` catalog row. A model-named
+  key is looked up **inside the already-loaded open set** only; a `newTestPlan` derives the same
+  stable `ref-…` key, so it is the same door by another route (whole-branch review finding — that
+  branch had no status filter at first) and its lookup now takes only `proposed`/`monitoring` +
+  `isReflectionOwned()` rows. A settled match resolves to **nothing** rather than to a new row:
+  `uq_pattern_created_by_hypothesis_key` (partial unique index on `(created_by, hypothesis_key)`)
+  forbids a second live row with that key, so the notice falls through to the touched-row step and
+  is dropped if there is none. `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
+  is a fact the code knows, not something to leave to the model.
+- **The notification is the surfaced half.** `surfaced = observationBudget.allows(userId, now)` is
+  recorded ON the event; only a surfaced one emits `AppNotificationKind.OBSERVATION_NEW`
+  (`observation_new` · family `pattern` · `/nap/uzenetek?tab=eszrevetelek`), deduped on
+  `observation_new:<eventId>` ([`_platform-notifications.md`](_platform-notifications.md) §3b/§4).
+  No migration was needed: `app_notification.kind` is a bare `varchar(32)` with no CHECK constraint.
+- **SILENT LAUNCH — the push ships OFF (`mezo.companion.reflection.notice.push-enabled=false`).** The
+  deeplink above points at the Észrevételek tab, and that tab only ships in **S5 (`mezo-eq85.5`)**,
+  so on S4's merge a real push would land on an empty screen. The switch gates **exactly one line**,
+  the `appNotificationEmitter.emit(...)` call: the `observation` event is still appended, `surfaced`
+  is still computed from `ObservationBudget` and still stored on the payload, and `GET
+  /api/companion/observation` still returns the cards — so the tab has real history the day it
+  lands. The budget, the feed, the reply endpoint and the morning digest are NOT gated. Flipping
+  `push-enabled` to `true` with S5 is the whole rollout. `QuickNoticeServiceIT` turns it ON via
+  `@TestPropertySource` so the emit path keeps its coverage; `QuickNoticePushOffIT` pins the
+  shipped default (event written **with `surfaced=true`**, no `app_notification` row) — which is
+  what distinguishes it from `QuickNoticeBudgetOffIT`'s `surfaced=false` silence.
+- **One way to append a pattern event.** `companion/service/PatternEventAppender` (`@Component`,
+  deliberately neither `@Transactional` nor switch-gated — the caller's transaction and switch keep
+  deciding) replaced the **five** hand-rolled copies that had accumulated by S4
+  (`PatternService.recordEvent`, `HypothesisEvaluationService.record`, `ReflectionReplyRecorder`,
+  and `PatternDetectionService`'s `recordSnapshot` + `reinforcePromotedFact` — the last two migrated
+  in the S4 whole-branch fix wave, which is also where those two stopped writing an untruncated
+  `occurred_at`) before S4 could add two more. It returns the event FLUSHED (the notice needs its id
+  for the dedup key) and pins the detail the copies disagreed on: `occurred_at` truncated to MICROS, because
+  `timestamptz` ROUNDS nanos and the re-read row would otherwise differ by 1 µs (mezo-mfmb).
+- **`ObservationFeedService` is the Észrevételek tab's read model** — four card kinds in one fixed
+  order, newest first inside each group: `fresh` (today's surfaced observations), `return` (today's
+  observations on a row you had ALREADY answered before the event — the LLM text references that
+  reply because the prompt carried it), `watching` (every `monitoring` row with a test plan) and
+  `confirmed` (rows the day's window confirmed). An EVENT card's id is the event id, a ROW card's is
+  the pattern id; `text`/`question` are split on the payload's LAST `\n`, the exact inverse of what
+  the notice joined. Answering a card does not make it vanish — it fills `repliedChoice`, and the FE
+  decides what to do with an acknowledged card. `repliedChoice` on an event card is the newest reply
+  **at or after** its own moment; on a row card it is the row's newest reply outright — deliberately
+  NOT anchored on `lastDetectedAt`, which the nightly pass bumps, because that would silently drop
+  the user's answer and re-arm the chips, and a re-armed „nem stimmel” is what turns a first doubt
+  into a verdict.
+- **Only reflection-owned rows reach this surface, on the read AND the write side.**
+  `PatternEntity.REFLECTION_OWNED_KINDS = {reflection, ai_hypothesis}` + `isReflectionOwned()`: a
+  `statistical` catalog row can legitimately be `monitoring` with a stamped plan (`PatternDetectionService.stampTestPlan`,
+  the Minták "figyeld" button) or user-confirmed, but its lifecycle belongs to the nightly Pearson
+  job and nothing maintains its `belief` — so it never renders as an észrevétel, and a chip reply
+  aimed at it 404s exactly like a foreign row. `ObservationSourceIcon` (pure, static) maps the
+  plan's `seriesA` to the card's glyph (`people:`/`topic:` → `naplo`, `sleep*` → `alvas`,
+  `late-meal-hour` → `vacsora`, `train*`/`gym*` → `edzes`, no plan → `mezo`); `hold` is in the wire
+  vocabulary but has **no v1 producer**.
+- **`ReflectionReplyService` — three chips, and code owns every consequence.** The reply is always
+  appended as a `user_reply(channel="chip", choice, text≤500)` event; `watch` on a still-`proposed`
+  row starts `monitoring`; the **second** `reject` refutes it (one is a doubt, not a verdict — the
+  same `HypothesisLifecycle.NEGATIVE_REPLIES_TO_REFUTE` rule the nightly pass reads, moved there in
+  S4 together with the positive/negative choice vocabulary so the two can never disagree); `talk`
+  opens a `seedPatternId` conversation (S3) and returns its id. `belief` is recomputed by the pure
+  `HypothesisLifecycle` from the row's LAST `evidence` event plus the reply tallies. The service has
+  **no `CompanionLlm` dependency at all**, so no model answer can structurally reach `status` or
+  `belief`. Propagation is the default `REQUIRED` on purpose (the opposite call of
+  `ReflectionReplyRecorder`'s `REQUIRES_NEW`): the only caller is the controller, so there is no
+  caller transaction to poison, and the reply, the status move and the seeded conversation must
+  commit or fail as ONE act — a refuted row with no reply behind it is worse than an error.
+- **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
+  renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
+  NAME its row, the quote because the user's words are the most informative thing the nightly pass
+  has. The proposal JSON gained `revisesHypothesisKey` + `revisedTestPlan`; when both resolve (an
+  owned, reflection-owned row **and** a plan that survives `TestPlanValidator`) the run creates a NEW
+  `proposed` row with the new plan and appends ONE `revised` event to the old one. **The old row
+  keeps running** — its status, belief, tallies and plan are untouched; the revision's only effect on
+  it is that audit event. An unusable revision drops the WHOLE proposal (a model that answered
+  "change THIS test" did not offer a fresh hunch) and says so at `log.warn`.
+- **The morning digest, in code, in Hungarian, with no model in the loop.**
+  `ReflectionDigestService.digestFor(userId, date)` reads the `[date−1 05:00, date 05:00)` window —
+  derived from the ARGUMENT, never from `LocalDate.now()`. **05:00 is load-bearing:** the boundary
+  has to sit AFTER the nightly `ReflectionJob` (03:40) and BEFORE the morning message job (05:45),
+  so that the run of the requested morning falls INSIDE the window. The window originally ended at
+  03:00, i.e. 40 minutes before the very run it was meant to report, so the morning message
+  described the night BEFORE while saying „Ma éjjel…" (whole-branch review finding; every
+  `ReflectionDigestServiceIT` case seeded at 23:00, which is inside both windows, so no test could
+  see it — `testDigestFor_shouldReportTonightsRun_whenTheVerdictLandedAtTheNightlyJobHour` now
+  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted`/`dormant` verdict on a reflection-owned row, or failing that the
+  newest `evidence` of a `monitoring` row the user has actually ANSWERED (a row nobody asked about is
+  not "amit kértél"; an `evidence` event with a null `hit` is skipped, because "bejött / nem jött be"
+  would then be a claim the numbers never made). **`dormant` is a verdict like the other two**
+  (mezo-cuml): the hypothesis is not disproven, it just went quiet for lack of fresh data, and the
+  fourth sentence says so — „Félretettem: „…” — rég nem jött hozzá új adat. Ha visszatér, újra
+  ránézek." It used to carry no copy, so `verdictSentence` returned empty for it and the digest fell
+  THROUGH to an older `confirmed`/`refuted` — stale news reported in place of what the night actually
+  decided. Ordering among the three is by TIME alone, never by kind.
+- **The digest may never cost the user their morning message.** `CompanionMessageGenerator.generateMorning`
+  reaches it through an `ObjectProvider` (the digest bean is `REFLECTION_SWITCH`-gated, the generator
+  is not — absent bean ⇒ pre-S4 behaviour) and appends
+  `ÉSZREVÉTEL (egy mondatban utalj rá, ha illik a napba):` plus a `Ref("Pattern", title)` candidate
+  BEFORE the numbered candidate list. The direction is `proactive → companion`, the established one
+  (`ArchitectureTest.feature_slices_are_cycle_free` allows only one), which is why the digest lives
+  in the companion slice and the generator depends on it. Three mechanisms make failure free:
+  `REQUIRES_NEW` (a REQUIRED read that throws would mark the generator's own transaction
+  rollback-only at the moment Hibernate converts the exception — before any `catch` of ours runs —
+  and the briefing's `saveAndFlush` would die with `UnexpectedRollbackException`), an in-body
+  `catch → Optional.empty()`, and the generator's own second `catch`. **Known limitation
+  (bd `mezo-8ssp`):** a class-level `@Transactional` integration test that calls `generateMorning`
+  never gets a digest and pays the full 2-second query timeout, because the shared `ResetDatabase`
+  fixture's `TRUNCATE` holds an `ACCESS EXCLUSIVE` lock that its own transaction has not committed;
+  the `REQUIRES_NEW` read waits on it. `CompanionMessageGeneratorIT` stands Reflexió down with
+  `mezo.companion.reflection.enabled=false` for that reason; `ReflectionDigestMorningIT` (not
+  class-`@Transactional`) is what actually covers the digest path. Production is unaffected: under
+  MVCC a plain `SELECT` never waits on row locks, only on DDL/`VACUUM FULL`.
 
 ## 2. User-facing behavior
 
@@ -4405,6 +4570,30 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `GraphNodeResponse.proposedEdgeCount` — how many edges accepting this candidate would create
   (`0` for every non-candidate node).
 
+### REST endpoints — observation feed + chip reply (contract-first — tag `CompanionObservation` → `CompanionObservationApi`)
+
+Reflexió S4 (`mezo-eq85.4`), fragment `api/feature/companion/companion.yml`;
+`CompanionObservationController implements CompanionObservationApi`, gated on the companion **and**
+the reflection switch — with Reflexió off the surface honestly disappears (404) instead of returning
+an empty list that reads as "nothing happened today". Every non-2xx returns `SystemMessageList`.
+
+| Method + path | Returns | Status | Notes |
+|---|---|---|---|
+| `GET /api/companion/observation?date=` | `ObservationResponse[]` | 200 · 401 | The Észrevételek tab's cards for ONE day (`date` optional, default today) — `ObservationFeedService.forDay`, groups concatenated in the fixed order `fresh`, `return`, `watching`, `confirmed`, newest first inside each. Reflection-owned rows only (`reflection`/`ai_hypothesis`); a `statistical` catalog row never appears even when it is `monitoring` with a plan. |
+| `POST /api/companion/pattern/{patternId}/reply` | `PatternReplyResponse` | 200 · 400 · 401 · 404 | The chip answer — `PatternReplyRequest {choice: watch\|reject\|talk, text? ≤500}` (`ReflectionReplyService.reply`). `watch` on a `proposed` row ⇒ `monitoring`; the SECOND `reject` ⇒ `refuted`; `talk` ⇒ a `seedPatternId` conversation whose id rides back in `conversationId`. 404 `COMPANION_PATTERN_NOT_FOUND` for a missing, foreign **or** statistical row (no existence leak, no 403). |
+
+**Schemas:** `ObservationResponse {id, patternId, hypothesisKey, card fresh|return|watching|confirmed,
+occurredAt, title, text, question?, evidence[], status, evidenceHits, evidenceMisses, minN, belief?,
+repliedChoice watch|reject|talk?, sourceIcon naplo|alvas|edzes|vacsora|hold|mezo}` — `id` is the
+EVENT id on an event card (`fresh`/`return`) and the ROW id on a row card (`watching`/`confirmed`),
+while `patternId` is always the row the chip reply goes to; `text`/`question` are the observation
+payload split on its last newline (a row card carries `text: ""` and no question).
+`PatternReplyRequest {choice, text?}`, `PatternReplyResponse {pattern: PatternResponse,
+conversationId?}`. **No migration:** `card`/`choice`/`sourceIcon` are WIRE vocabularies — nothing
+stores them — and the two status moves (`monitoring`, `refuted`) plus the three event kinds
+(`user_reply`, `monitoring`, `refuted`) were already in `ck_pattern_status`/`ck_pattern_event_kind`
+since S2.
+
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
 | Tool (args) | Source (existing reads) | Ref |
@@ -4490,6 +4679,25 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   (mezo-ozri.2). Tiers are per provider because **both** providers stay live: the Gemini pair is
   load-bearing for audio, vision and the fallback whichever adapter answers a chat turn. Which model
   becomes the default is decided by the `mezo-ozri.3` eval re-baseline, not by the config default.
+- `mezo.companion.llm.<provider>.feature-models` = `{}` (`Map<String, String>`, mezo-ozri.4) —
+  `LlmCallContext.feature()` → model id, resolved by `LlmModelRouter` at **call** time (before it
+  the tiers were frozen at boot, so moving one feature onto another model meant a code change).
+  **Bracket-quote the key** — `"[companion_weekly_review]": gpt-5.6-terra` — the binder splits map
+  keys on dots and relaxed-binds the rest, so an unbracketed slug binds to something that never
+  matches and every call silently stays on the tier default (`LlmModelRoutingIT` guards this).
+- `mezo.companion.llm.<provider>.call-kind-models` = `{}` (`Map<CallKind, String>`, mezo-ozri.4) —
+  `CallKind` → model id. **Wins over `feature-models`**: a kind states a capability the model must
+  have (image input, an audio route), a feature only states a preference. Anything unmatched,
+  unknown or blank falls through to the tier default — config can never be why a call fails.
+  Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
+  serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
+  delegates to it, so one flat table could hand the Gemini client a GPT id.
+- `mezo.companion.llm.<provider>.reasoning-effort.chat` / `.smart` = **empty** (mezo-ozri.4,
+  spec §Q1) — per-tier reasoning effort, the cheapest quality lever there is (same token price,
+  more thinking). Empty = send no key at all, leaving the provider's own default in place; the
+  measurement that would fill these in is `mezo-641c`. Only `OpenAiCompanionLlm` honours it, and
+  **never on a tool-carrying request**: `/v1/chat/completions` answers tools + effort with a `400`
+  (measured, mezo-ozri.3 — all 42 eval cases failed), so that path pins `none` regardless.
 - `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
   `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
@@ -4894,8 +5102,18 @@ without a second properties class.
   MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
 - `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
   catch-up re-checks for missing/stale signals.
+- `mezo.companion.reflection.notice.push-enabled` = **false** — the S4 SILENT LAUNCH switch. It gates
+  ONLY the `OBSERVATION_NEW` push in `QuickNoticeService`; observations are still collected, still
+  marked `surfaced` by the budget, and still served by the feed. It stays `false` until the
+  Észrevételek tab the notification deep-links into ships in **S5 (`mezo-eq85.5`)**, at which point
+  flipping it to `true` is the entire rollout.
 - `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
-  **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
+  **2 / 4 / 22:00 / 07:00** — the quick-notice rate limits and quiet hours, **consumed since S4
+  (`mezo-eq85.4`) by `ObservationBudget`** and by nothing else: at most `max-per-day` observations
+  may be SURFACED in a server-zone day, at least `min-gap-hours` apart, never inside the
+  `[quiet-from, quiet-to)` window (which may wrap midnight). An over-budget notice is still written,
+  with `payload.surfaced=false`, and is invisible to both the cap and the gap — the reasoning is
+  kept, only the interruption is dropped.
 - `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per
   run; since S2 this is what `HypothesisPipelineService` reads (it replaced `hypotheses.max-per-run`).
 - `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
@@ -6523,6 +6741,55 @@ and `HypothesisGatherContextIT` (the pre-S3 qualitative path is unchanged), `Cha
 (`TextSignalListenerSwitchOffIT`, `ReflectionJobSwitchOffIT`, `CompanionSwitchOffIT`) that keeps the
 `ObjectProvider` gating honest.
 
+**Reflexió S4 — quick notice, observation feed, chip replies, morning digest (`mezo-eq85.4`).**
+Nine test classes, each at the lowest level that can still prove its claim.
+`QuickNoticePreScreenTest` and `ObservationBudgetTest` are **pure unit tests** (the pre-screen has no
+collaborators at all; the budget gets a Mockito `PatternEventRepository`): the four rules, the
+*first-hit-wins* order pinned once per adjacent pair, the "unsure extreme mood does not fire" case,
+and the budget's cap / gap / midnight-wrapping quiet window with an explicit exclusive-end boundary
+plus the "unsurfaced events count for neither" case.
+`QuickNoticeServiceIT` drives the real listener path over the fake's `[[NOTICE:…]]` sentinel and pins
+all of it (with `notice.push-enabled=true`, since the push ships OFF — see the silent launch in §1): the
+surfaced observation with the journal entry among its `evidenceRefs` and one
+`observation_new` notification; a scripted `newTestPlan` creating a `reflection` row with
+`origin=quick_notice`; a **null** answer persisting nothing at all; and a model-named
+`hypothesisKey` pointing at a `refuted` row NOT resurfacing it. The budget's other half needs a
+different value of a bound property, so it is its own class (`QuickNoticeBudgetOffIT`,
+`max-per-day=0` ⇒ the event exists with `surfaced=false` and no notification) — this repo's
+`*SwitchOffIT` idiom, since there is no `@Nested`-plus-property-override precedent here.
+`QuickNoticePushOffIT` is the same idiom for the shipped silent-launch default
+(`notice.push-enabled=false`) and asserts BOTH halves, which is the only thing that tells the two silences
+apart: the observation event IS written and IS `surfaced=true`, while no `app_notification` row
+exists.
+`CompanionObservationApiIT` proves the contract at HTTP level: the four card kinds in their fixed
+order, a replied card staying in the feed with `repliedChoice` set, `talk` returning a conversation
+whose `seedPatternId` is the row, a statistical `monitoring`/`confirmed` row appearing NOWHERE and
+404-ing on reply, and a stranger's observation being invisible while a reply to a stranger's row is
+404 rather than 403.
+`ReflectionReplyServiceIT` owns the same rules one layer down, where the belief arithmetic and the
+"first reject moves nothing, the second refutes" rule are readable.
+`HypothesisPipelineTestPlanIT` gained the Step 5 cases — a valid revision producing a NEW `proposed`
+row plus one `revised` event while the old row keeps its status, belief and original plan, and both
+unusable-revision shapes (an invalid plan, an unknown key) dropping the whole proposal.
+`ReflectionDigestServiceIT` asserts the four Hungarian sentences character for character and the
+four ways the digest is honestly empty (no `user_reply` on the evaluated row, a verdict older than
+the window, a `statistical` row, a night that decided nothing). Two ordering cases pin mezo-cuml
+from both sides: a `dormant` NEWER than the night's `confirmed` wins (before the fix the older
+`confirmed` was reported), and an OLDER `dormant` loses to a later `confirmed` — proving the
+ordering is by time, not by kind.
+`ReflectionDigestMorningIT` is the one that matters most, and it is deliberately **not**
+class-`@Transactional`: it proves the digest reaches the morning payload (a `@Primary` capturing
+`CompanionLlm` records the user message — the `LlmCallContextTaggingIT` seam, since `FakeCompanionLlm`
+answers and forgets), that a digest-less morning carries no `ÉSZREVÉTEL` block, and that a digest
+whose query marks its transaction rollback-only and throws still leaves the morning message
+generated AND saved. Revert the `REQUIRES_NEW` and that last case fails with exactly the
+`UnexpectedRollbackException` the boundary exists to prevent.
+**Regression coverage:** `AppNotificationKindTest` (the pinned catalog went 20 → 21),
+`TextSignalListenerIT` (the live AFTER_COMMIT path now also calls the notice),
+`HypothesisEvaluationServiceIT`/`HypothesisEvaluationRollbackIT`/`ChatSeedReplyIT`/`CompanionPatternApiIT`/`PatternDetectionServiceIT`
+(the five event-writing sites migrated to `PatternEventAppender`), and
+`CompanionMessageGeneratorIT`/`CompanionMessageMissedWorkoutsIT` for the morning generator.
+
 ## 9. Decisions, gotchas & deferred
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
@@ -7370,9 +7637,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SpringAiCompanionLlm.java` — the provider-neutral adapter base (mezo-ozri.2): the two tier-bound `ChatClient`s, the `LlmRoundUsageAdvisor` tally, `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration, the Spring AI `Media` image part (mezo-78rn), and **every call path recorded** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu) including `conversationHistory` on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds. Overrides `completeSmart` deliberately — the port's default would route the smart tier to the cheap model in silence (spec §8.3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — the Google adapter (`!companion-fake`), **always a bean**: the chat fallback and the `TRANSCRIBE`/`VISION` delegate. Constructor only; both its `ChatModel` and its `LlmUsageExtractor` are `@Qualifier`-ed (`googleGenAiChatModel` / `googleGenAiUsageExtractor`, mezo-ozri.1) so the second Spring AI starter cannot make any context ambiguous — guarded by `ChatModelQualifierIT`. Tiers from `mezo.companion.llm.gemini.*`, never from "the active provider".
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OpenAiCompanionLlm.java` — the OpenAI adapter (mezo-ozri.2): `@Primary` + `@ConditionalOnProperty(mezo.companion.llm.provider=openai)`, so it does not exist under the shipped `gemini` default. Overrides the two media `complete` overloads to delegate to `GeminiCompanionLlm` per `per-call-kind`; `options(String)` states `streamOptions.includeUsage(true)` unconditionally (without it every streamed row is written with null tokens and null cost — silently).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LlmModelRouter.java` — which model id serves THIS call (mezo-ozri.4): `modelFor(provider, tier, kind)` resolves call-kind override → feature override (read off `LlmCallContextHolder` itself, so no call site needed new plumbing) → tier default, scoped to the requesting provider's own config block; `reasoningEffortFor(provider, tier)` returns the tier's effort or `null` for "send nothing". Unit-covered by `LlmModelRouterTest`, bound end-to-end by `LlmModelRoutingIT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ModelTier.java` — `CHEAP` | `SMART`, the tier vocabulary the router and the adapters' `optionsFor` hook share (mezo-ozri.4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SpringAiCompanionLlm.java` — the provider-neutral adapter base (mezo-ozri.2): ONE `ChatClient` plus the per-call `optionsFor(model, tier, carriesTools)` hook (mezo-ozri.4 — the model is resolved per call by `LlmModelRouter` and recorded as `requestedModel`, so the audit row names what was actually asked for; on the streamed path the routing decision is taken beside the `LlmCallContext` read, on the caller's thread), the `LlmRoundUsageAdvisor` tally, `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration, the Spring AI `Media` image part (mezo-78rn), and **every call path recorded** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu) including `conversationHistory` on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds. Overrides `completeSmart` deliberately — the port's default would route the smart tier to the cheap model in silence (spec §8.3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — the Google adapter (`!companion-fake`), **always a bean**: the chat fallback and the `TRANSCRIBE`/`VISION` delegate. Constructor plus a one-line `optionsFor` (the model id is a Gemini request's whole option set — the reasoning effort is deliberately not read, it is an OpenAI concept); both its `ChatModel` and its `LlmUsageExtractor` are `@Qualifier`-ed (`googleGenAiChatModel` / `googleGenAiUsageExtractor`, mezo-ozri.1) so the second Spring AI starter cannot make any context ambiguous — guarded by `ChatModelQualifierIT`. Models from `mezo.companion.llm.gemini.*` only — it always asks the router as `GEMINI`, whatever the provider switch says, so a delegated audio call can never resolve a GPT id.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OpenAiCompanionLlm.java` — the OpenAI adapter (mezo-ozri.2): `@Primary` + `@ConditionalOnProperty(mezo.companion.llm.provider=openai)`, so it does not exist under the shipped `gemini` default. Overrides the two media `complete` overloads to delegate to `GeminiCompanionLlm` per `per-call-kind`; `optionsFor(model, tier, carriesTools)` states `streamOptions.includeUsage(true)` unconditionally (without it every streamed row is written with null tokens and null cost — silently) and carries the tier's configured reasoning effort except on a tool-carrying request, where it pins `none` (mezo-ozri.3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible. The plan-generator's `MesoPlanLlmAdapter` (`MARKER = "[meso-plan]"`) branch dispatches on the greedy `MESO_PLAN_SENTINEL` — `[fake-meso-plan:{json}]` planted in the request's `goalText` — with a default `{"rationale":"FAKE-INDOK","days":[]}` (a valid but empty-days answer — the un-scripted happy path still reaches the LLM branch and `MesoPlanMerger` runs, but an empty suggestion accepts no pick, so `MesoPlanGeneratorService` reports `llmUsed = false` and keeps the deterministic rationale, the same as no answer at all); failure injection rides the same shared `[fake-fail]`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
@@ -7406,7 +7675,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, model chosen by `-Dmezo.eval.model`, 42-case Hungarian question set, incumbent baseline 37/42 = 88.1% exact match). Support classes beside it: `EvalTarget`, `EvalApiKeyCondition`, `ToolDomains`, `ToolSelectionEvalMetrics`, `EvalReportWriter`, plus `ToneJudgeEvalIT`/`ToneJudgePairing` for the blind Hungarian tone A/B.
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
 
 **Backend — `[Célok]` life-goal snapshot block + `get_life_goals` tool (`mezo-iizd.10`)**
@@ -7467,7 +7736,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 24 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, 40-case set, baseline 37/40).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, 42-case set, incumbent baseline 37/42 exact match).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.

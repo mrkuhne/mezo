@@ -37,6 +37,12 @@ public record ReflectionProperties(
         @NotNull @Valid Lifecycle lifecycle) {
 
     public record Notice(
+            /**
+             * Whether a surfaced observation also PUSHES ({@code OBSERVATION_NEW}). False until the
+             * Észrevételek tab ships (mezo-eq85.5) — observations are still collected and still
+             * marked {@code surfaced}; only the notification is held back.
+             */
+            boolean pushEnabled,
             /** Hard cap on quick notices per day; 0 = notices off. */
             @Min(0) @Max(10) int maxPerDay,
             /** Minimum hours between two notices. */

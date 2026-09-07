@@ -181,11 +181,12 @@ export function RunPage() {
         )}
 
         {/* AI-napló mélylink (task-4 brief): AiCallFilters' `filters` state is a plain
-           useState in AiUsagePage (frontend/src/features/me/pages/AiUsagePage.tsx), not
-           URL-driven — there is no `?feature=` param it reads. Navigating unfiltered rather
-           than fabricating query-param support the target page doesn't have; an honest gap,
-           not a shortcut (task-4 brief's explicit fallback for this case). */}
-        <button type="button" className="kr-ainaplolink" onClick={() => navigate('/me/ai-usage')}>
+           useState in AdminCostPage (frontend/src/features/admin/pages/AdminCostPage.tsx,
+           moved from features/me under /admin in mezo-d5iy.13), not URL-driven — there is
+           no `?feature=` param it reads. Navigating unfiltered rather than fabricating
+           query-param support the target page doesn't have; an honest gap, not a shortcut
+           (task-4 brief's explicit fallback for this case). */}
+        <button type="button" className="kr-ainaplolink" onClick={() => navigate('/admin/cost')}>
           <ClayIcon name="i-tudas" size={22} />
           <div className="kr-tx">Ehhez a futáshoz tartozó nyers hívások az AI-naplóban</div>
           <span className="kr-chev" aria-hidden="true">›</span>

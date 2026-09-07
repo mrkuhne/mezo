@@ -10,7 +10,6 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
-import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -23,7 +22,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -46,7 +44,8 @@ public class PatternService {
 
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
-    private final PatternEventRepository patternEventRepository;
+    /** S4 (mezo-eq85.4): the shared event-append helper — see PatternEventAppender. */
+    private final PatternEventAppender patternEventAppender;
     private final CompanionMapper mapper;
     /** S2 (mezo-eq85.2): the test plan's series labels need a bean — see PatternTestPlanMapper. */
     private final PatternTestPlanMapper testPlanMapper;
@@ -149,12 +148,6 @@ public class PatternService {
 
     /** S1 (mezo-tk88.1): the L2 decisions are part of the pattern's durable story. */
     private void recordEvent(PatternEntity pattern, String kind, PatternEventPayloadEnvelope payload) {
-        PatternEventEntity event = new PatternEventEntity();
-        event.setCreatedBy(pattern.getCreatedBy());
-        event.setPatternId(pattern.getId());
-        event.setKind(kind);
-        event.setOccurredAt(Instant.now());
-        event.setPayload(payload);
-        patternEventRepository.saveAndFlush(event);
+        patternEventAppender.append(pattern.getCreatedBy(), pattern.getId(), kind, payload);
     }
 }

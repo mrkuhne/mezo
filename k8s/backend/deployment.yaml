@@ -28,7 +28,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.202.0
+          image: ghcr.io/mrkuhne/mezo-backend:2.206.0
           ports:
             - name: http
               containerPort: 8090
@@ -117,6 +117,10 @@ spec:
             # Default-on in application.yml since mezo-ozri.1 — this explicit pin is now
             # redundant with that default, kept deliberately as a production safeguard.
             - name: MEZO_FEATURE_LLM_LOG_ENABLED
+              value: "true"
+            # Admin hub insights + data browser (mezo-d5iy): OWNER-only installation
+            # counters, per-user footprint/cost, and the read-only data browser.
+            - name: MEZO_FEATURE_ADMIN_INSIGHTS_ENABLED
               value: "true"
             # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.
             - name: MEZO_LOG_FORMAT

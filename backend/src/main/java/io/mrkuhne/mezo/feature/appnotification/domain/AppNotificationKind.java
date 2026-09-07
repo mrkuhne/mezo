@@ -51,7 +51,11 @@ public enum AppNotificationKind {
     CHARACTER_PORTRAIT("character_portrait", null, "/me/karakter"),
     /** A heti konzílium ÉRDEMBEN változtatott a dossziédon (üres hét néma marad). Egy fejezet
      *  nyitása ugyanennek a futásnak a része, ezért NEM külön fajta — a sor szövegét vezeti. */
-    KONZILIUM_VERDICT("konzilium_verdict", null, "/me/karakter/konzilium");
+    KONZILIUM_VERDICT("konzilium_verdict", null, "/me/karakter/konzilium"),
+    /** Reflexió S4 (mezo-eq85.4): Mezo észrevett valamit a mai szövegedben. A {@code pattern}
+     *  családon utazik, mint a másik három minta-fajta — az észrevétel ugyanarról szól, csak a
+     *  felülete más (az Észrevételek fül, nem a Minták lista). */
+    OBSERVATION_NEW("observation_new", "pattern", "/nap/uzenetek?tab=eszrevetelek");
 
     private final String key;
     private final String familyKey;

@@ -95,7 +95,7 @@ argocd/
 |---|---|
 | Kubernetes (k3s), ArgoCD, pgAdmin | **Free** (OSS) |
 | GHCR image hosting | Free |
-| Hetzner CX32 VPS (~8 GB) | ~EUR 9–14 / month |
+| Hetzner CX33 VPS (~8 GB) | ~EUR 9–14 / month |
 | Domain | existing |
 
 ## Build / learn sequence (maps to mezo-ht3)
