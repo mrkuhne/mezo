@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -74,8 +75,16 @@ class MedicationApiIT extends ApiIntegrationTest {
         // -> cycleDay 1 (the first cycle day).
         MedicationDoseRequest req = new MedicationDoseRequest();
         req.setDose(new BigDecimal("6"));
+        // A dózist a MEDICATION_ZONE-ban kell bélyegezni, nem UTC-ben (mezo-al23): a nap-kulcs a
+        // beküldött offset helyi dátuma (MedicationService.logDose), a ciklusnapot viszont a
+        // MedicationCycleService Europe/Budapest-ben számolja. 22:00–24:00 UTC között a kettő külön
+        // napra esik, és a „ma adott dózis → 1. nap" állítás minden éjjel két órára megbukik. Egy
+        // VALÓDI kliens is így küldi: a LogDoseSheet szándékosan offset-hordozó helyi időt épít,
+        // pont azért, hogy a toLocalDate() a választott napot adja.
         req.setAdministeredAt(OffsetDateTime.of(
-            LocalDate.now(ZoneOffset.UTC).atStartOfDay(), ZoneOffset.UTC));
+            LocalDate.now(MedicationCycleService.MEDICATION_ZONE).atStartOfDay(),
+            MedicationCycleService.MEDICATION_ZONE.getRules()
+                .getOffset(java.time.Instant.now())));
 
         ResponseEntity<String> res = exchangeForResponse(
             HttpMethod.POST, "/api/medication/" + med.getId() + "/dose", req, ownerAuthHeaders());

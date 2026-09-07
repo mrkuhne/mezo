@@ -72,8 +72,15 @@ public class MealScoringService {
      * `3`-as bélyeg alatt futott a fő ágon, ez a generáció a KÖVETKEZŐ bélyeget veszi fel — a
      * backfill runner minden `4` ALATTI envelope-ot újrapontoz, tehát a 2-es és 3-as sorok egy
      * menetben gyógyulnak.
+     *
+     * <p>`5` (mezo-mxmh): NEM formula-változás — adat-változás, ami ugyanúgy elmozdítja a tárolt
+     * számokat, és a bélyeg pontosan erre való. A telítettzsír-backfill 37 pillanatképet gyógyított
+     * azon az induláson, amikor a bélyeg éppen naprakész volt, így a rescore nem nézett rájuk: 10
+     * étkezés máig „nincs adat"-ot mutat Zsírminőségre, pedig a tételei hordozzák a tényt. A
+     * mezo-mxmh fix ezt előre megakadályozza (a backfill maga érvényteleníti, amit érvénytelenít),
+     * de a két deploy közti ablakban keletkezett maradékot nem éri el — azt ez a bump viszi el.
      */
-    public static final int FORMULA_VERSION = 4;
+    public static final int FORMULA_VERSION = 5;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;

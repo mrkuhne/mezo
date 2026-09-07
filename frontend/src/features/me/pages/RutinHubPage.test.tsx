@@ -354,10 +354,12 @@ describe('RutinHubPage', () => {
     expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/water')
   })
 
-  test('＋ Új habit opens the habit sheet in create mode for that chain', () => {
+  test('＋ Új habit navigates to the ONE creation flow with the chain preselected (mezo-9k99)', () => {
+    // The create sheet is retired: the wizard's „Keret nélkül" branch is where a bare habit
+    // (and mode/metric) is born now — one door for every new habit.
     renderPage()
     fireEvent.click(screen.getAllByRole('button', { name: /új habit/i })[0])
-    expect(screen.getByRole('heading', { name: 'Új habit' })).toBeInTheDocument()
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=MORNING')
   })
 
   test('reorder sends every definition id of the chain, including an inactive one', () => {

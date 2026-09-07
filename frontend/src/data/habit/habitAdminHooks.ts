@@ -303,16 +303,28 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
   // fix wave, mezo-n5e9.2): a naive `{...def, ...patch}` spread would let `why: null` overwrite
   // a live value here while the real endpoint's `if (request.getWhy() != null)` guard leaves it
   // untouched — the two modes disagreeing about whether a field cleared. Strip null values
-  // before merging so BOTH modes consistently say "can't clear an optional field in v1".
+  // before merging; clearing is the BLANK string's job (below), never null's.
   const patchNoNulls = Object.fromEntries(
     Object.entries(patch).filter(([, v]) => v !== null),
   ) as HabitDefUpdateInput
   const updated: HabitDefInfo = { ...def, ...patchNoNulls }
-  // Mirrors the real arm twice over: the backend normalizes the blank unlink sentinel to null on
-  // write, and `toDefInfo` maps any blank that is already stored to null on read. Without this the
-  // mock would keep `anchorHabitKey: ''`, which `HabitPage` reads as "still linked" and locks.
-  if (updated.anchorHabitKey != null && updated.anchorHabitKey.trim() === '') {
-    updated.anchorHabitKey = null
+  // The anchorHabitKey blank-unlink convention, generalized to every optional text (mezo-pero):
+  // the backend blankToNull-s these on write, so the mock must not keep '' that would READ as
+  // set (HabitPage gates the anchor lock on `!= null`, and '' is truthy enough to render).
+  for (const field of ['why', 'anchorCopy', 'linkUrl', 'anchorHabitKey', 'cue', 'craving', 'reward', 'celebration', 'identity'] as const) {
+    if (updated[field] != null && updated[field].trim() === '') updated[field] = null
+  }
+  // Tick mode is editable post-create (mezo-pero) — HabitAdminService.updateDef's merged
+  // (patch-over-stored) pair through the same resolveMetric rules as createDef.
+  if (patch.mode !== undefined || patch.metric !== undefined) {
+    const metric = patch.metric ?? def.metric
+    if (updated.mode === 'MANUAL') {
+      updated.metric = 'manual' // any client value ignored, mirrors resolveMetric
+    } else if (metric === 'manual') {
+      throw new Error('HABIT_MODE_METRIC_MISMATCH')
+    } else {
+      updated.metric = metric
+    }
   }
   // A HabitAdminService.updateDef sorrendje: összefésülés → clearForeignFields → validate.
   // Enélkül egy FOGG→CLEAR átkeretezés mock módban bennhagyta a cue/celebration/anchorCopy-t,
