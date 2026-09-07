@@ -1,12 +1,10 @@
 package io.mrkuhne.mezo.feature.admin.service;
 
 import io.mrkuhne.mezo.api.dto.AdminDayAmount;
-import io.mrkuhne.mezo.api.dto.AdminDayCount;
 import io.mrkuhne.mezo.api.dto.AdminDaySeries;
 import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
 import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery;
-import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery.DayCountRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -43,7 +41,7 @@ public class AdminOverviewService {
         response.setActiveToday(query.activeUsersSince(today, properties.reportZone()));
         response.setActive7d(query.activeUsersSince(today.minusDays(6), properties.reportZone()));
         response.setActive30d(query.activeUsersSince(from, properties.reportZone()));
-        response.setActiveUserSeries(dense(days, query.activeUsersByDay(from, properties.reportZone())));
+        response.setActiveUserSeries(AdminSeries.dense(days, query.activeUsersByDay(from, properties.reportZone())));
 
         Map<String, Long> loggedToday = new LinkedHashMap<>();
         List<AdminDaySeries> domainSeries = new ArrayList<>();
@@ -53,7 +51,7 @@ public class AdminOverviewService {
             loggedToday.put(key, query.countSince(table, column, today, properties.reportZone()));
             var series = new AdminDaySeries();
             series.setKey(key);
-            series.setDays(dense(days, query.countByDay(table, column, from, properties.reportZone())));
+            series.setDays(AdminSeries.dense(days, query.countByDay(table, column, from, properties.reportZone())));
             domainSeries.add(series);
         });
         response.setLoggedToday(loggedToday);
@@ -81,17 +79,5 @@ public class AdminOverviewService {
 
     private static List<LocalDate> days(LocalDate from, LocalDate to) {
         return from.datesUntil(to.plusDays(1)).toList();
-    }
-
-    /** Every day in the window gets a bucket, so the frontend can draw without gap logic. */
-    private static List<AdminDayCount> dense(List<LocalDate> days, List<DayCountRow> rows) {
-        Map<LocalDate, Long> byDay = rows.stream()
-                .collect(Collectors.toMap(DayCountRow::day, DayCountRow::count, Long::sum));
-        return days.stream().map(day -> {
-            var count = new AdminDayCount();
-            count.setDay(day);
-            count.setCount(byDay.getOrDefault(day, 0L));
-            return count;
-        }).toList();
     }
 }

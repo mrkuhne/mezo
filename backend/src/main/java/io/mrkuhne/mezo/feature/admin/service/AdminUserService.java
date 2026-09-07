@@ -1,14 +1,21 @@
 package io.mrkuhne.mezo.feature.admin.service;
 
+import io.mrkuhne.mezo.api.dto.AdminDaySeries;
+import io.mrkuhne.mezo.api.dto.AdminFeatureCost;
+import io.mrkuhne.mezo.api.dto.AdminTableFootprint;
+import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
 import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery.TableColumn;
+import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery.TableFootprintRow;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminColumn;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminTable;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserRow;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -37,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminUserService {
 
     private static final int WINDOW_DAYS = 30;
+    private static final int SERIES_WINDOW_DAYS = 90;
 
     /** The only sortable keys; anything else is 400 ADMIN_COLUMN_UNKNOWN, same code the data
      *  browser uses for an unresolvable column. */
@@ -95,6 +103,120 @@ public class AdminUserService {
         boolean descending = !"asc".equalsIgnoreCase(effectiveDir);
         result.sort(comparator(effectiveSort, descending));
         return result;
+    }
+
+    /**
+     * One user's activity, inventory and cost (mezo-d5iy.5): the enriched row (same derivation
+     * as {@link #list}, for this id only), a 90-day activity series per feature-map key, the
+     * table-by-table data footprint, and 30-day usage/cost split by feature.
+     */
+    @Transactional(readOnly = true)
+    public AdminUserDetailResponse detail(UUID id) {
+        AppUserEntity user = appUserRepository.findById(id)
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("ADMIN_USER_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+
+        ZoneId zone = properties.reportZone();
+        LocalDate today = LocalDate.now(zone);
+        LocalDate from30 = today.minusDays(WINDOW_DAYS - 1L);
+        Instant since30 = from30.atStartOfDay(zone).toInstant();
+
+        List<AdminTable> tables = catalog.tables().values().stream().toList();
+        List<TableColumn> sources = properties.featureMap().values().stream()
+                .map(source -> {
+                    AdminTable table = catalog.require(source.table());
+                    AdminColumn column = catalog.requireColumn(table, source.timestampColumn());
+                    return new TableColumn(table, column);
+                })
+                .toList();
+
+        // 1. The enriched row: reuse the same derivation as list(), for this id only.
+        Map<UUID, Long> rowCounts = query.rowCountsByUser(tables);
+        Map<UUID, Instant> lastActivity = query.lastActivityByUser(sources, zone);
+        Map<UUID, Integer> activeDays = query.activeDaysByUser(sources, from30, zone);
+        Map<UUID, BigDecimal> costByUser = new HashMap<>();
+        for (LlmUserRow row : llmLogRepository.aggregateByUserSince(since30)) {
+            if (row.userId() != null) {
+                costByUser.put(row.userId(), row.costUsd());
+            }
+        }
+        AdminTable memoryVector = catalog.require("memory_vector");
+        AdminUserInsightResponse enriched =
+                toResponse(user, zone, rowCounts, lastActivity, activeDays, costByUser, memoryVector);
+
+        // 2. activitySeries: one AdminDaySeries per feature-map key, dense over the last 90 days.
+        LocalDate from90 = today.minusDays(SERIES_WINDOW_DAYS - 1L);
+        List<LocalDate> days90 = from90.datesUntil(today.plusDays(1)).toList();
+        List<AdminDaySeries> activitySeries = new ArrayList<>();
+        properties.featureMap().forEach((key, source) -> {
+            AdminTable table = catalog.require(source.table());
+            AdminColumn column = catalog.requireColumn(table, source.timestampColumn());
+            var series = new AdminDaySeries();
+            series.setKey(key);
+            series.setDays(AdminSeries.dense(days90, query.countByDayForUser(table, column, id, from90, zone)));
+            activitySeries.add(series);
+        });
+
+        // 3. inventory: query.footprint(table, id) for every catalog table, dropping tables the
+        //    user owns nothing in, sorted by rowCount descending. app_user is kept: it is matched
+        //    on `id` rather than `created_by`, but the single row IS the account's own footprint
+        //    (its live/deleted counts are meaningful the same way every other table's are), so
+        //    there is no reason to special-case it out of the inventory.
+        List<AdminTableFootprint> inventory = tables.stream()
+                .map(table -> query.footprint(table, id))
+                .filter(row -> row.rowCount() + row.deletedCount() > 0)
+                .sorted(Comparator.comparingLong(TableFootprintRow::rowCount).reversed())
+                .map(row -> {
+                    var footprint = new AdminTableFootprint();
+                    footprint.setTable(row.table());
+                    footprint.setRowCount(row.rowCount());
+                    footprint.setDeletedCount(row.deletedCount());
+                    footprint.setLastCreatedAt(toOffsetDateTime(row.lastCreatedAt(), zone));
+                    return footprint;
+                })
+                .toList();
+
+        // 4. featureUsage30d: per feature-map key, query.countByDayForUser summed over the
+        //    30-day window, merged with the per-user LLM call counts for that same feature key
+        //    (Task 6's LlmUserFeatureRow query doesn't exist yet; aggregateByFeatureSinceForUser,
+        //    added below, is this task's minimal per-user equivalent).
+        List<LlmUserFeatureRow> llmFeatureRows =
+                llmLogRepository.aggregateByFeatureSinceForUser(since30, id, CallStatus.ERROR);
+        Map<String, Long> featureUsage30d = new HashMap<>();
+        properties.featureMap().forEach((key, source) -> {
+            AdminTable table = catalog.require(source.table());
+            AdminColumn column = catalog.requireColumn(table, source.timestampColumn());
+            long total = query.countByDayForUser(table, column, id, from30, zone).stream()
+                    .mapToLong(AdminInsightsQuery.DayCountRow::count)
+                    .sum();
+            featureUsage30d.merge(key, total, Long::sum);
+        });
+        llmFeatureRows.forEach(row -> {
+            if (row.feature() != null) {
+                featureUsage30d.merge(row.feature(), row.callCount(), Long::sum);
+            }
+        });
+
+        // 5. costByFeature30d: the per-user feature rows, ERROR excluded, null cost_usd counted
+        //    into unknownCalls rather than reported as zero cost.
+        List<AdminFeatureCost> costByFeature30d = llmFeatureRows.stream()
+                .map(row -> {
+                    var cost = new AdminFeatureCost();
+                    cost.setFeature(row.feature());
+                    cost.setCalls(row.callCount());
+                    cost.setCostUsd(row.costUsd() == null ? 0.0 : row.costUsd().doubleValue());
+                    cost.setUnknownCalls(row.unknownCalls());
+                    return cost;
+                })
+                .toList();
+
+        return AdminUserDetailResponse.builder()
+                .user(enriched)
+                .activitySeries(activitySeries)
+                .inventory(inventory)
+                .featureUsage30d(featureUsage30d)
+                .costByFeature30d(costByFeature30d)
+                .build();
     }
 
     private AdminUserInsightResponse toResponse(AppUserEntity user, ZoneId zone,

@@ -159,8 +159,46 @@ public class AdminInsightsQuery {
         return result;
     }
 
+    /** One user's rows per day in one table, dense-filled by the caller. */
+    public List<DayCountRow> countByDayForUser(AdminTable table, AdminColumn dayColumn, UUID userId,
+            LocalDate from, ZoneId zone) {
+        String day = dialect.dayExpression(dayColumn, "t");
+        String sql = """
+                select %s as "day", count(*) as "count"
+                from %s t
+                where %s >= :from and t."created_by" = :userId%s
+                group by 1
+                order by 1
+                """.formatted(day, dialect.quote(table.name()), day, dialect.notDeleted(table, "t"));
+        return jdbc.query(sql, Map.of("from", from, "zone", zone.getId(), "userId", userId),
+                (rs, i) -> new DayCountRow(rs.getObject("day", LocalDate.class), rs.getLong("count")));
+    }
+
+    /** Live rows, reaped rows and the newest {@code created_at} for one user in one table.
+     *  {@code app_user} is matched on {@code id}, every other table on {@code created_by}. */
+    public TableFootprintRow footprint(AdminTable table, UUID userId) {
+        String owner = "app_user".equals(table.name()) ? "\"id\"" : "\"created_by\"";
+        String deleted = table.hasColumn("is_deleted")
+                ? "count(*) filter (where t.\"is_deleted\")"
+                : "0";
+        String live = table.hasColumn("is_deleted")
+                ? "count(*) filter (where not t.\"is_deleted\")"
+                : "count(*)";
+        String created = table.hasColumn("created_at") ? "max(t.\"created_at\")" : "null::timestamptz";
+        String sql = "select %s as live, %s as reaped, %s as last_created from %s t where t.%s = :userId"
+                .formatted(live, deleted, created, dialect.quote(table.name()), owner);
+        return jdbc.queryForObject(sql, Map.of("userId", userId), (rs, i) -> {
+            OffsetDateTime at = rs.getObject("last_created", OffsetDateTime.class);
+            return new TableFootprintRow(table.name(), rs.getLong("live"), rs.getLong("reaped"),
+                    at == null ? null : at.toInstant());
+        });
+    }
+
     /** A day bucket and its count. */
     public record DayCountRow(LocalDate day, long count) {}
+
+    /** One table's contribution to a user's data inventory. */
+    public record TableFootprintRow(String table, long rowCount, long deletedCount, Instant lastCreatedAt) {}
 
     /**
      * A resolved table/column pair backing one feature-map entry. Resolution (catalog lookups)

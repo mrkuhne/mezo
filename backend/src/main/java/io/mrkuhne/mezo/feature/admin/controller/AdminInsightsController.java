@@ -22,9 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
  * statement of every method and runs outside any transaction on purpose.
  *
  * <p>The generated {@link AdminInsightsApi} has no {@code default} method bodies, so every
- * operation must be implemented to compile. {@link #getAdminOverview()} (mezo-d5iy.3) and
- * {@link #listAdminUserInsights(String, String, String)} (mezo-d5iy.4) are real; the remaining
- * three return an empty response and are filled in by their own tasks, each driven by its own IT.
+ * operation must be implemented to compile. {@link #getAdminOverview()} (mezo-d5iy.3),
+ * {@link #listAdminUserInsights(String, String, String)} (mezo-d5iy.4) and
+ * {@link #getAdminUserInsight(UUID)} (mezo-d5iy.5) are real; the remaining two return an empty
+ * response and are filled in by Task 6, each driven by its own IT.
  */
 @RestController
 @RequiredArgsConstructor
@@ -47,11 +48,10 @@ public class AdminInsightsController implements AdminInsightsApi {
         return userService.list(q, sort, dir);
     }
 
-    // TODO(mezo-d5iy.4): implemented in a later task
     @Override
     public AdminUserDetailResponse getAdminUserInsight(UUID id) {
         currentUser.requireOwner();
-        return new AdminUserDetailResponse();
+        return userService.detail(id);
     }
 
     // TODO(mezo-d5iy.5): implemented in a later task

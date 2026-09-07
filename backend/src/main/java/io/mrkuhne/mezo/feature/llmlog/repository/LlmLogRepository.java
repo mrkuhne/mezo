@@ -93,6 +93,23 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """)
     List<LlmGroupRow> aggregateByFeatureSince(@Param("since") Instant since);
 
+    /**
+     * Per-feature rollup for ONE user (mezo-d5iy.5) — the admin user-detail cost breakdown.
+     * ERROR calls are excluded entirely (failed calls are not cost); a priced NULL among the
+     * remaining rows is counted into {@code unknownCalls} rather than folded into the sum as
+     * zero.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow(
+            l.feature, count(l), sum(l.costUsd),
+            sum(case when l.costUsd is null then 1L else 0L end))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.createdBy = :userId and l.status <> :errorStatus
+        group by l.feature
+        """)
+    List<LlmUserFeatureRow> aggregateByFeatureSinceForUser(@Param("since") Instant since, @Param("userId") UUID userId,
+            @Param("errorStatus") CallStatus errorStatus);
+
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
