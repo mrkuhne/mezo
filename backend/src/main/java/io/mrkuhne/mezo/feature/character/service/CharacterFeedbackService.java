@@ -37,6 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link CharacterObservationEntity} authored by {@link #USER_EXPERT_KEY} carrying a
  * {@value #SIGNAL_KEY} signal that references the claim — so the next konzílium sees the answer
  * as ordinary evidence, unconsumed until then.
+ *
+ * <p>The observation's user-facing {@code text} carries no claim id (mezo-xlvr) — the Karakter
+ * feed and run-detail views hand it straight to Daniel, and a raw uuid in a sentence about
+ * himself is a bug, not a feature. The claim the answer is ABOUT lives on the signal's
+ * {@code refIds} instead — its first (and only) entry — which is where
+ * {@link KonziliumProposalRound} reads it back from to restore the {@code [claimId] } marker its
+ * prompt contract needs.
  */
 @Service
 @RequiredArgsConstructor
@@ -120,10 +127,9 @@ public class CharacterFeedbackService {
         Instant now = Instant.now();
         String observationText;
         short salience;
-        String claimIdPrefix = "[" + claim.getId() + "] ";
         switch (kind) {
             case KIND_TALAL -> {
-                observationText = claimIdPrefix + "A felhasználó megerősítette: \"" + claim.getText() + "\""
+                observationText = "A felhasználó megerősítette: \"" + claim.getText() + "\""
                         + TALAL_PRICED_IN_SUFFIX;
                 salience = SALIENCE_TALAL;
                 BigDecimal newConfidence = bumpForTalal(claim.getConfidence());
@@ -134,14 +140,14 @@ public class CharacterFeedbackService {
                 }
             }
             case KIND_NEM_IGAZ -> {
-                observationText = claimIdPrefix + "A felhasználó cáfolta: \"" + claim.getText() + "\"";
+                observationText = "A felhasználó cáfolta: \"" + claim.getText() + "\"";
                 salience = SALIENCE_RETIRE;
                 claim.setStatus(RETIRED);
                 claim.setConfidenceHistory(
                         appendHistory(claim.getConfidenceHistory(), claim.getConfidence(), CAUSE_NEM_IGAZ, now));
             }
             case KIND_PONTOSITOM -> {
-                observationText = claimIdPrefix + "A felhasználó pontosította: \"" + claim.getText() + "\" — "
+                observationText = "A felhasználó pontosította: \"" + claim.getText() + "\" — "
                         + flatten(text);
                 salience = SALIENCE_CORRECTION;
             }

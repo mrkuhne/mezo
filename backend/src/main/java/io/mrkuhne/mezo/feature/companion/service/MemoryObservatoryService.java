@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.api.dto.MemorySummaryListResponse;
 import io.mrkuhne.mezo.api.dto.SimilarDayItem;
 import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
@@ -64,6 +65,8 @@ public class MemoryObservatoryService {
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
+    /** S2 (mezo-eq85.2): the nightly reflection pass owns the hypothesis schedule now. */
+    private final ReflectionProperties reflectionProperties;
     private final MemoryRecallService memoryRecallService;
     private final LlmUsageService llmUsageService;
 
@@ -153,7 +156,9 @@ public class MemoryObservatoryService {
                 .jobs(MemoryOverviewJobs.builder()
                         .summaryCron(properties.summary().cron())
                         .patternCron(patterns.cron())
-                        .hypothesisCron(properties.hypotheses().cron())
+                        // S2 (mezo-eq85.2): the weekly HypothesisJob is retired — the hypothesis
+                        // loop now runs inside the nightly ReflectionJob, so THAT is its schedule
+                        .hypothesisCron(reflectionProperties.cron())
                         .lastSummaryDate(lastDate)
                         .lastDetectedAt(lastDetectedAt == null ? null : lastDetectedAt.atOffset(ZoneOffset.UTC))
                         .build())

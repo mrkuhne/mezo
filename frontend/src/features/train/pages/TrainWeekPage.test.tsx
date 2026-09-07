@@ -133,12 +133,25 @@ test('renders a Pihenőnap rest row for the empty Vasárnap slot', () => {
 })
 
 test('a non-today weekly gym row navigates straight to the session (mezo-j3x0 / mezo-bxpg)', () => {
-  renderPage()
-  // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.
-  fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
-  // Mock MesoDay fixtures carry no `id` (real mode only), so the `!day.id` branch wins
-  // regardless of the non-today `?day=` rule — plain /train/session, not /train/session?day=.
-  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+  // Mock today = Csü (fixture flag), but mock mode's gymDoneDates marks the REAL
+  // calendar today as done (trainHooks.ts, mezo-idz2) — on a real Monday that
+  // collides with the Hét row's own date, flipping it to "kész" (onReviewGym,
+  // which is undefined with no persisted mock instances) and swallowing the
+  // click. Pin the clock to a Thursday so real-today ≠ Hét's date, matching the
+  // fixture's own Csü flag and making the row's non-today-ness independent of
+  // whatever day this actually runs on (house pattern, e.g. MesocycleLibraryPage.test.tsx).
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
+  try {
+    renderPage()
+    // The Hét row shows the Push Day slot → non-today gym row.
+    fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
+    // Mock MesoDay fixtures carry no `id` (real mode only), so the `!day.id` branch wins
+    // regardless of the non-today `?day=` rule — plain /train/session, not /train/session?day=.
+    expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('the Saját edzés footer opens the sheet (mezo-ws2x)', () => {

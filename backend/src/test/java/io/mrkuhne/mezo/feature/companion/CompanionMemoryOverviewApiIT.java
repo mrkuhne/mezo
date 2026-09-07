@@ -69,7 +69,8 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         assertThat(response.getL3().getFactsInPrompt()).isZero();
         assertThat(response.getJobs().getSummaryCron()).isEqualTo("0 20 2 * * *");
         assertThat(response.getJobs().getPatternCron()).isEqualTo("0 40 2 * * *");
-        assertThat(response.getJobs().getHypothesisCron()).isEqualTo("0 0 3 * * SUN");
+        // S2 (mezo-eq85.2): the hypothesis loop moved into the nightly 03:40 reflection pass
+        assertThat(response.getJobs().getHypothesisCron()).isEqualTo("0 40 3 * * *");
         assertThat(response.getJobs().getLastSummaryDate()).isNull();
         assertThat(response.getJobs().getLastDetectedAt()).isNull();
     }

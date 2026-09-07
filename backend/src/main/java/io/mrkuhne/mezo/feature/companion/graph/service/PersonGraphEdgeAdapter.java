@@ -4,7 +4,6 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.people.PersonGraphEdgeSource;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -47,18 +46,24 @@ public class PersonGraphEdgeAdapter implements PersonGraphEdgeSource {
         for (GraphNodeEntity node : active) {
             activeById.put(node.getId(), node);
         }
+        // EGY él-lekérdezés az összes személyre (bd mezo-06o0.6) — a korábbi node-onkénti
+        // edgesFrom + edgesTo a GET /api/people-t 2P+1 lekérdezésbe vitte. Ugyanaz az idióma,
+        // amin a GraphService.listActiveWithTopEdges áll, ugyanabból a közös segédből.
+        Map<UUID, List<GraphEdgeEntity>> touchingByNode =
+            graphService.touchingEdgesByNode(userId, activeById.keySet());
         Map<UUID, List<Edge>> byPerson = new HashMap<>();
         for (GraphNodeEntity node : active) {
             if (!GraphPromotionService.SOURCE_PERSON.equals(node.getSourceKind()) || node.getSourceId() == null) {
                 continue;
             }
-            List<GraphEdgeEntity> touching = new ArrayList<>(graphService.edgesFrom(userId, node.getId()));
-            touching.addAll(graphService.edgesTo(userId, node.getId()));
             // A rendezés a NYERS élsúlyon történik, MIELŐTT Edge-re mappelnénk: az Edge már csak
             // a durva „erős/közepes/gyenge" szót hordozza, azon rendezni elveszítené a sorrendet.
-            List<Edge> edges = touching.stream()
+            List<Edge> edges = touchingByNode.getOrDefault(node.getId(), List.of()).stream()
                 .sorted(Comparator.comparing(GraphEdgeEntity::getWeight,
-                    Comparator.nullsLast(Comparator.reverseOrder())))
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    // Az azonos súlyú élek sorrendje a listActiveWithTopEdges szabályát követi:
+                    // id szerint, hogy a csempe két hívás között ne cserélgesse a sorait.
+                    .thenComparing(GraphEdgeEntity::getId))
                 .map(e -> toEdge(node, e, activeById))
                 .filter(java.util.Objects::nonNull)
                 .limit(MAX_EDGES_PER_PERSON)
