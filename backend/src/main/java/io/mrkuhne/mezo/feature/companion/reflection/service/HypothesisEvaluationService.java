@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.PatternEventAppender;
 import io.mrkuhne.mezo.feature.companion.service.PatternGate;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -62,6 +63,8 @@ public class HypothesisEvaluationService {
 
     private final PatternRepository patternRepository;
     private final PatternEventRepository patternEventRepository;
+    /** S4 (mezo-eq85.4): one shared way to append a pattern event — see PatternEventAppender. */
+    private final PatternEventAppender patternEventAppender;
     private final DerivedSeriesService derivedSeriesService;
     private final PatternService patternService;
     private final ReflectionProperties properties;
@@ -205,12 +208,6 @@ public class HypothesisEvaluationService {
     }
 
     private void record(PatternEntity row, String kind, PatternEventPayloadEnvelope payload) {
-        PatternEventEntity event = new PatternEventEntity();
-        event.setCreatedBy(row.getCreatedBy());
-        event.setPatternId(row.getId());
-        event.setKind(kind);
-        event.setOccurredAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
-        event.setPayload(payload);
-        patternEventRepository.saveAndFlush(event);
+        patternEventAppender.append(row.getCreatedBy(), row.getId(), kind, payload);
     }
 }
