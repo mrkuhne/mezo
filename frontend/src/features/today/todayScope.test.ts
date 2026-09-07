@@ -44,7 +44,8 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
     expect(files.sort()).toEqual([
       'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx',
       'DailyQuestsSheet.tsx', 'EletjelStrip.tsx', 'LifeGoalTodayTile.tsx',
-      'MezoMessagesSheet.tsx',
+      // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája.
+      'MezoMessagesSheet.tsx', 'ObservationCard.tsx',
     ])
   })
 })

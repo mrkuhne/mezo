@@ -1958,3 +1958,34 @@ export interface CoachingTraceDay {
   rules: CoachingRule[]
   transitions: CoachingTransition[]
 }
+
+// --- Reflexió S5 · Észrevételek (mezo-eq85.5) ---
+/** A chip-válasz három ága (wire `PatternReplyRequest.choice`). */
+export type ObservationChoice = 'watch' | 'reject' | 'talk'
+/** Az észrevétel-kártya négy fajtája (wire `ObservationResponse.card`).
+ *  `fresh`/`return` ESEMÉNY-kártya (id = esemény), `watching`/`confirmed` SOR-kártya (id = minta). */
+export type ObservationCardKind = 'fresh' | 'return' | 'watching' | 'confirmed'
+/** Egy nap észrevétel-feedjének egy kártyája — a `GET /api/companion/observation` sora. */
+export interface Observation {
+  /** A lista stabil kulcsa: esemény-id (fresh/return) vagy minta-id (watching/confirmed).
+   *  Egy `monitoring` sor JOGOSAN szerepelhet kétszer (esemény + sor) — nem duplikátum. */
+  id: string
+  /** A sor, amire a chip-válasz megy. */
+  patternId: string
+  hypothesisKey?: string
+  card: ObservationCardKind
+  occurredAt: string
+  title: string
+  /** A `watching` kártyán ÜRES — ott a számok beszélnek. */
+  text: string
+  question?: string
+  evidence: string[]
+  status: PatternRowStatus
+  evidenceHits: number
+  evidenceMisses: number
+  minN?: number
+  belief?: number
+  repliedChoice?: ObservationChoice
+  /** A kártya clay-ikonja — ismeretlen wire-érték esetén `i-mezo`. */
+  sourceIcon: ClayIconName
+}

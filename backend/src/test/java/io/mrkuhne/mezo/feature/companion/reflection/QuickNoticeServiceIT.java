@@ -38,10 +38,10 @@ import org.springframework.test.context.TestPropertySource;
  * minute of a day could hit — instead of letting the production default (22:00→07:00) decide
  * whether the assertions hold.
  *
- * <p>{@code notice.push-enabled} is turned ON here on purpose. Production ships it OFF (the silent
- * launch: observations are collected and marked surfaced, but the push waits for the Észrevételek
- * tab in mezo-eq85.5) — this class keeps testing the REAL emit path so the day the switch flips
- * there is proven coverage behind it. The OFF half lives in {@code QuickNoticePushOffIT}.
+ * <p>{@code notice.push-enabled} is pinned ON here rather than inherited: production shipped it OFF
+ * through S4's silent launch and ships it ON since mezo-eq85.5 (the Észrevételek tab the push
+ * deep-links into), and this class must exercise the REAL emit path regardless of which way the
+ * default currently points. The OFF half lives in {@code QuickNoticePushOffIT}.
  */
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = {
