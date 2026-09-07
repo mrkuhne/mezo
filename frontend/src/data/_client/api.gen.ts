@@ -4414,6 +4414,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{userId}/memory/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One user's audited retrieval runs, newest first (AdminMemory) */
+        get: operations["listAdminMemoryRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/memory/runs/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One run with its ranked candidates and score decomposition (AdminMemory) */
+        get: operations["getAdminMemoryRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/memory/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Side-effect-free NEW-mode dry run for one query (AdminMemory) */
+        post: operations["replayAdminMemory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9250,6 +9301,17 @@ export interface components {
             dimensionKeys?: string[];
             text: string;
         };
+        /** @description What one konzílium changed in the dossier, counted from its stored outcome envelope. `other` exists so the surface never implies these three kinds are the whole truth — it counts every change kind that is not one of the named three. */
+        ConferenceOutcomeCounts: {
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            retired: number;
+            /** Format: int32 */
+            portraitRewritten: number;
+            /** Format: int32 */
+            other: number;
+        };
         CharacterConferenceSummary: {
             /** Format: uuid */
             id: string;
@@ -9259,6 +9321,7 @@ export interface components {
             weekStart?: string | null;
             /** Format: date-time */
             generatedAt: string;
+            outcome: components["schemas"]["ConferenceOutcomeCounts"];
         };
         ConferenceTurn: {
             persona: string;
@@ -9310,6 +9373,11 @@ export interface components {
             transcript: components["schemas"]["ConferenceTurn"][];
             /** @description The same meeting as a STRUCTURE — one thread per dossier chapter, each item carrying the chain that happened to it. Absent only when the row is neither stored structured nor derivable from its prose transcript; the client then renders `transcript`. */
             deliberation?: components["schemas"]["ConferenceThread"][] | null;
+            /**
+             * @description Where `deliberation` came from. STORED — the row carries the structured envelope its own konzílium wrote. DERIVED — the row predates the column and the threads were read back out of the prose transcript, so rounds that did not exist yet (cross-talk) must be shown as absent, never as zero. Null when there is no deliberation at all.
+             * @enum {string|null}
+             */
+            deliberationSource?: "STORED" | "DERIVED" | null;
             changes: {
                 kind: string;
                 dimensionKey?: string | null;
@@ -9818,8 +9886,222 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        AdminMemoryRetrieverTrace: {
+            /** @description dense | lexical | graph | facts */
+            retriever: string;
+            /** Format: int64 */
+            durationMs: number;
+            /** Format: int32 */
+            candidateCount: number;
+            /** @description TIMEOUT, INTERRUPTED, an exception simple name, or null */
+            error?: string | null;
+        };
+        AdminMemoryRunSummary: {
+            /**
+             * Format: uuid
+             * @description null on a dry run
+             */
+            id: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description CHAT_AMBIENT | MORNING_BRIEFING | WEEKLY_MEMOIR | PREDICTION_EVIDENCE | REFLECTION */
+            consumerPolicy: string;
+            /** @description OLD | SHADOW | NEW */
+            servingMode: string;
+            /** @description NONE | RAW | REWRITE */
+            queryMode: string;
+            rawQuery: string;
+            rewrittenQuery?: string | null;
+            /** Format: int32 */
+            candidateCount: number;
+            /** Format: int32 */
+            selectedCount: number;
+            /** Format: int64 */
+            durationMs: number;
+            embeddingVersion: string;
+            /** @description always null today */
+            shadowEmbeddingVersion?: string | null;
+            errorCode?: string | null;
+            /** Format: uuid */
+            traceId?: string | null;
+            retrieverTrace: components["schemas"]["AdminMemoryRetrieverTrace"][];
+        };
+        AdminMemoryRunPageResponse: {
+            /** Format: int32 */
+            page: number;
+            /**
+             * Format: int32
+             * @description the size actually used; clamped, never rejected
+             */
+            size: number;
+            /** Format: int64 */
+            total: number;
+            /**
+             * Format: int32
+             * @description mezo.companion.memory-platform.audit.retention-days — runs older than this are hard-deleted
+             */
+            retentionDays: number;
+            items: components["schemas"]["AdminMemoryRunSummary"][];
+        };
+        AdminMemoryScoreBreakdown: {
+            /** @description retriever name -> 1-based rank inside that retriever; an ABSENT key means the retriever did not return this candidate */
+            retrieverRanks: {
+                [key: string]: number;
+            };
+            /** Format: double */
+            rrf: number;
+            /** Format: double */
+            pinnedBoost?: number | null;
+            /** Format: double */
+            sourceReliabilityBoost?: number | null;
+            /** Format: double */
+            temporalBoost?: number | null;
+            /** Format: double */
+            salienceBoost?: number | null;
+            /** Format: double */
+            recencyBoost?: number | null;
+            /**
+             * Format: double
+             * @description NOT a model relevance score. The pipeline stores 1/postRerankRank, i.e. a restatement of `rank`. Render it as "ujrarangsorolt hely", never as a score.
+             */
+            rerankerScore?: number | null;
+            /** Format: double */
+            finalScore: number;
+        };
+        AdminMemoryCandidate: {
+            /**
+             * Format: uuid
+             * @description null on a dry run
+             */
+            resultId?: string | null;
+            /**
+             * Format: int32
+             * @description final (post-rerank) rank as stored
+             */
+            rank: number;
+            /**
+             * Format: int32
+             * @description rank the deterministic fusion order alone would have given, derived from finalScore
+             */
+            fusionRank?: number;
+            /**
+             * Format: int32
+             * @description fusionRank - rank; null when the run was not reranked
+             */
+            rerankDelta?: number | null;
+            /** @description made it into the rendered context */
+            selected: boolean;
+            candidateKind: string;
+            /** Format: uuid */
+            candidateRefId: string;
+            /** Format: uuid */
+            memoryItemId?: string | null;
+            contentSnapshot: string;
+            /** Format: date */
+            occurredOn?: string | null;
+            scoreBreakdown: components["schemas"]["AdminMemoryScoreBreakdown"];
+        };
+        /** @description Read live from mezo.companion.memory-platform.fusion. Never duplicated in mezo.admin.memory: the client draws contributions with the SAME constants the pipeline fused with. A run stored before a weight change was fused with the OLD weights, so a recomputed contribution can differ from the stored rrf — the surface says so. */
+        AdminMemoryFusionConfig: {
+            /** Format: int32 */
+            rrfK: number;
+            retrieverWeights: {
+                [key: string]: number;
+            };
+            /** Format: double */
+            pinnedBoost?: number;
+            /** Format: double */
+            sourceReliabilityMaxBoost?: number;
+            /** Format: double */
+            temporalMaxBoost?: number;
+            /** Format: double */
+            salienceMaxAdjustment?: number;
+            /** Format: double */
+            recencyMaxBoost?: number;
+        };
+        AdminMemoryPromptTraceItem: {
+            kind: string;
+            /** Format: uuid */
+            refId: string;
+            /** Format: date */
+            occurredOn?: string | null;
+            label: string;
+            gist?: string | null;
+            /** Format: double */
+            similarity?: number;
+            /** Format: uuid */
+            retrievalResultId?: string | null;
+            /** Format: uuid */
+            memoryItemId?: string | null;
+            indicator?: string | null;
+        };
+        AdminMemoryRunDetailResponse: {
+            run: components["schemas"]["AdminMemoryRunSummary"];
+            candidates: components["schemas"]["AdminMemoryCandidate"][];
+            fusion: components["schemas"]["AdminMemoryFusionConfig"];
+            /** @description ai_message.recalled_memories for this run; null when no prompt imprint exists */
+            promptTrace?: components["schemas"]["AdminMemoryPromptTraceItem"][] | null;
+            /** @description SHADOW_RUN | NO_PROMPT_IMPRINT | DRY_RUN — why promptTrace is null */
+            promptTraceReason?: string | null;
+            dryRun: boolean;
+            /** @description dry run only: the query vector in the PCA-50 space, for the map */
+            queryProjection?: number[] | null;
+            /** @description honesty flags, e.g. reranker_skipped, rewrite_skipped, rewrite_unreachable_no_history (a replay carries no conversation history, so the query analyzer can never report CONTEXT_DEPENDENT and the rewrite toggle cannot fire), projection_embed_extra_call, pca_unavailable */
+            replayNotes: string[];
+        };
+        AdminMemoryReplayRequest: {
+            query: string;
+            /**
+             * @description ALLOW the LLM reranker (costs a smart-tier call); the pipeline still decides whether it is needed
+             * @default false
+             */
+            reranker: boolean;
+            /**
+             * @description ALLOW the LLM query rewrite (costs a call). Currently inert for a replay: the rewrite only runs for a CONTEXT_DEPENDENT query, which requires usable conversation history, and a replay has none by design. Allowing it adds the rewrite_unreachable_no_history note instead of silently doing nothing.
+             * @default false
+             */
+            rewrite: boolean;
+            /**
+             * @default CHAT_AMBIENT
+             * @enum {string}
+             */
+            consumerPolicy: "CHAT_AMBIENT" | "MORNING_BRIEFING" | "WEEKLY_MEMOIR" | "PREDICTION_EVIDENCE" | "REFLECTION";
+            /**
+             * Format: date
+             * @description defaults to today in the server zone
+             */
+            asOf?: string | null;
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Missing/invalid token */
+        AdminMemoryUnauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SystemMessageList"];
+            };
+        };
+        /** @description Not the owner (AUTH_FORBIDDEN) */
+        AdminMemoryForbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SystemMessageList"];
+            };
+        };
+        /** @description Feature or its companion dependency is off (ADMIN_MEMORY_DISABLED) */
+        AdminMemoryDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SystemMessageList"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -22426,6 +22708,106 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+        };
+    };
+    listAdminMemoryRuns: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of runs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryRunPageResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
+        };
+    };
+    getAdminMemoryRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Run detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryRunDetailResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            /** @description No such run for this user, or the feature is off (ADMIN_MEMORY_RUN_NOT_FOUND / ADMIN_MEMORY_DISABLED) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replayAdminMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMemoryReplayRequest"];
+            };
+        };
+        responses: {
+            /** @description Dry-run detail, same shape as a run detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryRunDetailResponse"];
+                };
+            };
+            /** @description Blank or over-long query (ADMIN_MEMORY_REPLAY_QUERY_INVALID) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
         };
     };
 }

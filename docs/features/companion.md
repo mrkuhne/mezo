@@ -1311,11 +1311,15 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   described the night BEFORE while saying „Ma éjjel…" (whole-branch review finding; every
   `ReflectionDigestServiceIT` case seeded at 23:00, which is inside both windows, so no test could
   see it — `testDigestFor_shouldReportTonightsRun_whenTheVerdictLandedAtTheNightlyJobHour` now
-  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted` verdict on a reflection-owned row, or failing that the
+  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted`/`dormant` verdict on a reflection-owned row, or failing that the
   newest `evidence` of a `monitoring` row the user has actually ANSWERED (a row nobody asked about is
   not "amit kértél"; an `evidence` event with a null `hit` is skipped, because "bejött / nem jött be"
-  would then be a claim the numbers never made). `dormant` is deliberately silent — the product has
-  written no sentence for "the engine gave up for lack of data".
+  would then be a claim the numbers never made). **`dormant` is a verdict like the other two**
+  (mezo-cuml): the hypothesis is not disproven, it just went quiet for lack of fresh data, and the
+  fourth sentence says so — „Félretettem: „…” — rég nem jött hozzá új adat. Ha visszatér, újra
+  ránézek." It used to carry no copy, so `verdictSentence` returned empty for it and the digest fell
+  THROUGH to an older `confirmed`/`refuted` — stale news reported in place of what the night actually
+  decided. Ordering among the three is by TIME alone, never by kind.
 - **The digest may never cost the user their morning message.** `CompanionMessageGenerator.generateMorning`
   reaches it through an `ObjectProvider` (the digest bean is `REFLECTION_SWITCH`-gated, the generator
   is not — absent bean ⇒ pre-S4 behaviour) and appends
@@ -6796,9 +6800,12 @@ whose `seedPatternId` is the row, a statistical `monitoring`/`confirmed` row app
 `HypothesisPipelineTestPlanIT` gained the Step 5 cases — a valid revision producing a NEW `proposed`
 row plus one `revised` event while the old row keeps its status, belief and original plan, and both
 unusable-revision shapes (an invalid plan, an unknown key) dropping the whole proposal.
-`ReflectionDigestServiceIT` asserts the three Hungarian sentences character for character and the
+`ReflectionDigestServiceIT` asserts the four Hungarian sentences character for character and the
 four ways the digest is honestly empty (no `user_reply` on the evaluated row, a verdict older than
-the window, a `statistical` row, a night that decided nothing).
+the window, a `statistical` row, a night that decided nothing). Two ordering cases pin mezo-cuml
+from both sides: a `dormant` NEWER than the night's `confirmed` wins (before the fix the older
+`confirmed` was reported), and an OLDER `dormant` loses to a later `confirmed` — proving the
+ordering is by time, not by kind.
 `ReflectionDigestMorningIT` is the one that matters most, and it is deliberately **not**
 class-`@Transactional`: it proves the digest reaches the morning payload (a `@Primary` capturing
 `CompanionLlm` records the user message — the `LlmCallContextTaggingIT` seam, since `FakeCompanionLlm`
