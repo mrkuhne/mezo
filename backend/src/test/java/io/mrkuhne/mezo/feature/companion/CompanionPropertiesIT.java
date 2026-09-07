@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
@@ -15,8 +17,27 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
 
     @Test
     void testLlmConfig_shouldBindModelTiersFromYaml_whenContextStarts() {
-        assertThat(properties.llm().chatModel()).isEqualTo("gemini-2.5-flash");
-        assertThat(properties.llm().smartModel()).isEqualTo("gemini-2.5-pro");
+        assertThat(properties.llm().gemini().chatModel()).isEqualTo("gemini-2.5-flash");
+        assertThat(properties.llm().gemini().smartModel()).isEqualTo("gemini-2.5-pro");
+        assertThat(properties.llm().openai().chatModel()).isEqualTo("gpt-5.6-luna");
+        assertThat(properties.llm().openai().smartModel()).isEqualTo("gpt-5.6-terra");
+    }
+
+    /** mezo-ozri.2: the shipped default stays Gemini — flipping providers is a YAML edit, not a deploy. */
+    @Test
+    void testLlmConfig_shouldDefaultToTheGeminiProvider_whenContextStarts() {
+        assertThat(properties.llm().provider()).isEqualTo(LlmProvider.GEMINI);
+    }
+
+    /**
+     * mezo-ozri.2 (spec §A1): no GPT-5.6 model has an audio endpoint at all, and the vision A/B is
+     * unmeasured — so both kinds stay on Gemini even once OpenAI answers the chat turns.
+     */
+    @Test
+    void testLlmConfig_shouldPinAudioAndVisionToGemini_whenContextStarts() {
+        assertThat(properties.llm().perCallKind())
+            .containsEntry(CallKind.TRANSCRIBE, LlmProvider.GEMINI)
+            .containsEntry(CallKind.VISION, LlmProvider.GEMINI);
     }
 
     @Test

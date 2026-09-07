@@ -4,7 +4,7 @@ import io.mrkuhne.mezo.feature.llmlog.service.TokenUsage;
 
 /**
  * Per-call tally of the provider's PER-ROUND usage reports (mezo-58ig). One instance is created for
- * each {@link GeminiCompanionLlm} call and rides the ChatClient request context to
+ * each {@link SpringAiCompanionLlm} call and rides the ChatClient request context to
  * {@link LlmRoundUsageAdvisor}, which adds every tool-loop round's own usage block into it.
  *
  * <p>Why summing is the honest record: each tool round is a separately billed provider call (round

@@ -1751,12 +1751,50 @@ still boots (the app is fully usable without companion), and the whole `/api/com
 **404s** (there is no controller to route to — `CompanionApiSwitchOffIT`). Because the port bean is
 absent when off, **nothing outside the switch may inject `CompanionLlm`** (see §9 gotcha).
 
-**LLM adapter selection (ADR 0008).** With the switch on, exactly one `CompanionLlm` bean is
-active: `GeminiCompanionLlm` (`llm/GeminiCompanionLlm.java`, `@Profile("!companion-fake")`) for
-real traffic over the autoconfigured Gemini `ChatModel`, or `FakeCompanionLlm`
-(`llm/FakeCompanionLlm.java`, `@Profile("companion-fake")`) in tests. The Gemini starter builds its
-`ChatModel` **regardless** of the mezo switch, so a dummy `GEMINI_API_KEY` default keeps every
-context bootable key-less (ADR 0008 consequence).
+**LLM adapter selection (ADR 0008 + its `mezo-ozri.2` amendment).** With the switch on, tests get
+exactly one `CompanionLlm` bean — `FakeCompanionLlm` (`llm/FakeCompanionLlm.java`,
+`@Profile("companion-fake")`) — while real traffic gets one of **two** provider adapters, both
+`@Profile("!companion-fake")` and both extending `SpringAiCompanionLlm`:
+
+| | bean | when | tiers from |
+|---|---|---|---|
+| Google | `llm/GeminiCompanionLlm.java` | **always** | `mezo.companion.llm.gemini.*` |
+| OpenAI | `llm/OpenAiCompanionLlm.java` | `mezo.companion.llm.provider: openai`, and then `@Primary` | `mezo.companion.llm.openai.*` |
+
+`SpringAiCompanionLlm` (`llm/SpringAiCompanionLlm.java`) holds everything that was never
+provider-specific: the two tier-bound `ChatClient`s, the `LlmRoundUsageAdvisor` tally, and every
+audit-record path (success / error / mid-stream cancel). A subclass supplies four things — a
+**qualified** `ChatModel`, a **qualified** `LlmUsageExtractor`, and the two tiers' `ChatOptions`,
+whose `model` doubles as the requested-model id on each row.
+
+Three things about this that are easy to get wrong:
+
+- **The Gemini adapter is a bean even under `provider: openai`.** It is the chat fallback and, via
+  `mezo.companion.llm.per-call-kind`, the delegate for `TRANSCRIBE` and `VISION` — the OpenAI
+  adapter overrides those two `complete` overloads and hands them straight to it, so the row lands
+  with a `gemini-*` served model. No GPT-5.6 model has an audio endpoint at all, and
+  `TranscriptionService` sends its inline audio through the CHAT port, so feature-level routing
+  could never have caught it. This is also why the tiers are held **per provider** rather than as
+  one flat pair: a single pair would hand the Gemini adapter a GPT model id it cannot serve.
+- **`completeSmart` is overridden on the base, never inherited from the port.** The `CompanionLlm`
+  interface default routes it to the cheap tier, so an adapter that leaves it alone sends all 19
+  smart-tier call sites to the wrong model in silence. `OpenAiProviderWiringIT` asserts the
+  override structurally, because nothing else would notice.
+- **Both starters build their `ChatModel` regardless of the mezo switch**, so dummy
+  `GEMINI_API_KEY` **and** `OPENAI_API_KEY` defaults keep every context bootable key-less. Which
+  also means every injection point for `ChatModel` and `LlmUsageExtractor` must be `@Qualifier`-ed
+  (`googleGenAiChatModel` / `openAiChatModel`, `googleGenAiUsageExtractor` /
+  `openAiUsageExtractor`) — an unqualified one makes **every** context ambiguous, the ~178
+  fake-profile ones included. `ChatModelQualifierIT` guards it.
+
+**Two OpenAI-specific facts the audit log encodes** (`llm/OpenAiUsageExtractor.java`): reasoning
+tokens are reported *inside* `completion_tokens` (unlike Gemini's `thoughtsTokenCount`, which sits
+beside `candidatesTokenCount`), so the GPT price rows carry `reasoning-billing:
+INCLUDED_IN_OUTPUT` and the reasoning count is recorded but never billed a second time; and a
+streamed response carries **no usage block at all** unless `stream_options.include_usage` is
+requested — `OpenAiCompanionLlm.options` states it unconditionally rather than relying on the
+`spring.ai.openai.chat.stream-options.include-usage` property, because the failure mode is silent
+(null tokens, null cost on every streamed row).
 
 **Ownership.** Both entities extend `OwnedEntity` (`techcore/persistence/OwnedEntity.java` —
 `created_by`, `is_deleted`, `created_at`), soft-deleted via `@SQLDelete`/`@SQLRestriction`. The
@@ -4443,8 +4481,18 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.transcription.allowed-mime-types` = `[audio/wav, audio/x-wav, audio/webm,
   audio/ogg, audio/mp4, audio/mpeg, audio/aac]` (`@NotEmpty`) — matched on the BASE type: the FE
   normalizes to wav where it can, but Chrome records webm/opus and iOS Safari mp4/aac.
-- `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
-  `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
+- `mezo.companion.llm.provider` = **`gemini`** (`gemini` | `openai`, `@NotNull`) — which adapter is
+  the primary `CompanionLlm`. Under `gemini` the OpenAI adapter bean does not exist at all. Do not
+  flip it before a real `OPENAI_API_KEY` is in the environment: the dummy default fails every call.
+- `mezo.companion.llm.gemini.chat-model` = `gemini-2.5-flash` (every turn) / `.smart-model` =
+  `gemini-2.5-pro` (heavy pipelines) — model tiers are config, not code (ADR 0008).
+- `mezo.companion.llm.openai.chat-model` = `gpt-5.6-luna` / `.smart-model` = `gpt-5.6-terra`
+  (mezo-ozri.2). Tiers are per provider because **both** providers stay live: the Gemini pair is
+  load-bearing for audio, vision and the fallback whichever adapter answers a chat turn. Which model
+  becomes the default is decided by the `mezo-ozri.3` eval re-baseline, not by the config default.
+- `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
+  (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
+  `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
 - `mezo.companion.embedding.model` = `gemini-embedding-001` (`@NotBlank`) — the V2.1 embedding
   model behind `EmbeddingPort`; the **768 dimension is structural** (the `vector(768)` schema +
   `EmbeddingPort.DIMENSIONS` constant), deliberately NOT config.
@@ -6687,8 +6735,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **Two rows per turn need distinct `created_at`.** `ChatService.persistMessage` uses
   `saveAndFlush` so the user and assistant rows of one turn get separate timestamps — the history
   ordering key (`idx_ai_message_conversation_id_created_at`) depends on it.
-- **The Gemini `ChatModel` is autoconfigured regardless of the mezo switch** — the dummy
-  `GEMINI_API_KEY` default is what keeps every context bootable key-less (ADR 0008). Keep it.
+- **BOTH provider `ChatModel`s are autoconfigured regardless of the mezo switch** — the dummy
+  `GEMINI_API_KEY` and (since mezo-ozri.2) `OPENAI_API_KEY` defaults are what keep every context
+  bootable key-less (ADR 0008 + amendment). Keep them. The corollary is the qualifier rule: every
+  `ChatModel` / `LlmUsageExtractor` injection point must name its bean, or every context turns
+  ambiguous at once (`ChatModelQualifierIT`).
 - **`companion-fake` merges, not replaces.** `@ActiveProfiles("companion-fake")` adds to the base
   `demodata` profile — don't expect it to strip other profiles.
 - **`FakeCompanionLlm` failure sentinels (V0.4):** a test message containing `[fake-fail]`
@@ -7319,14 +7370,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); its `ChatModel` constructor injection is `@Qualifier("googleGenAiChatModel")` (mezo-ozri.1) so a second Spring AI starter on the classpath cannot make the bean ambiguous, guarded by `ChatModelQualifierIT`, which plants a second `ChatModel` bean; `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SpringAiCompanionLlm.java` — the provider-neutral adapter base (mezo-ozri.2): the two tier-bound `ChatClient`s, the `LlmRoundUsageAdvisor` tally, `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration, the Spring AI `Media` image part (mezo-78rn), and **every call path recorded** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu) including `conversationHistory` on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds. Overrides `completeSmart` deliberately — the port's default would route the smart tier to the cheap model in silence (spec §8.3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — the Google adapter (`!companion-fake`), **always a bean**: the chat fallback and the `TRANSCRIBE`/`VISION` delegate. Constructor only; both its `ChatModel` and its `LlmUsageExtractor` are `@Qualifier`-ed (`googleGenAiChatModel` / `googleGenAiUsageExtractor`, mezo-ozri.1) so the second Spring AI starter cannot make any context ambiguous — guarded by `ChatModelQualifierIT`. Tiers from `mezo.companion.llm.gemini.*`, never from "the active provider".
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OpenAiCompanionLlm.java` — the OpenAI adapter (mezo-ozri.2): `@Primary` + `@ConditionalOnProperty(mezo.companion.llm.provider=openai)`, so it does not exist under the shipped `gemini` default. Overrides the two media `complete` overloads to delegate to `GeminiCompanionLlm` per `per-call-kind`; `options(String)` states `streamOptions.includeUsage(true)` unconditionally (without it every streamed row is written with null tokens and null cost — silently).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible. The plan-generator's `MesoPlanLlmAdapter` (`MARKER = "[meso-plan]"`) branch dispatches on the greedy `MESO_PLAN_SENTINEL` — `[fake-meso-plan:{json}]` planted in the request's `goalText` — with a default `{"rationale":"FAKE-INDOK","days":[]}` (a valid but empty-days answer — the un-scripted happy path still reaches the LLM branch and `MesoPlanMerger` runs, but an empty suggestion accepts no pick, so `MesoPlanGeneratorService` reports `llmUsed = false` and keeps the deterministic rationale, the same as no answer at all); failure injection rides the same shared `[fake-fail]`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
 
 **Backend — LLM call audit log (mezo-2zyu, [ADR 0014](../decisions/0014-llm-call-audit-log.md))**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LlmUsageExtractor.java` — the port (owns the nested `UsageInfo` record, mezo-ozri.1); `GoogleGenAiUsageExtractor.java` is the ONE implementation that reads Gemini's response metadata (served model, service tier, prompt/candidates/thoughts/cached tokens); absent usage → null, never 0.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LlmUsageExtractor.java` — the port (owns the nested `UsageInfo` record, mezo-ozri.1), with ONE implementation per provider, each the only file allowed to know that provider's types: `GoogleGenAiUsageExtractor.java` (thoughts/cached off `GoogleGenAiUsage` or the native payload) and `OpenAiUsageExtractor.java` (mezo-ozri.2 — cached portably off `Usage#getCacheReadInputTokens`, reasoning only off the native `CompletionUsage`, where it sits INSIDE the completion count). Absent usage → null, never 0, in both.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/{LlmRoundUsage,LlmRoundUsageAdvisor}.java` — the per-round usage capture (`mezo-58ig`, provider-neutral names since mezo-ozri.1): a per-call tally rides the ChatClient request context to a CallAdvisor/StreamAdvisor ordered between ToolCallingAdvisor's loop and the model, which sums each round's own native usage; the adapter prefers the tally over the final-response read and derives `tool_rounds` from it.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiEmbeddingAdapter.java` — records the embedding calls (character-based `EmbedUsage`, `billableCharacterCount`) around its `EmbedContentResponse`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecorder,EventPublishingLlmCallRecorder,NoOpLlmCallRecorder}.java` — the seam the adapters call; switch on ⇒ publish, off ⇒ no-op.
@@ -7345,7 +7398,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/repository/{LlmStatusRow,LlmGroupRow,LlmCallRow,LlmUsageAggregate}.java` — the JPQL constructor-expression projections behind `aggregateByStatusSince`/`aggregateByFeatureSince`/`aggregateByModelSince`/`findCalls`/`aggregateSince` (`LlmLogRepository`); `findCalls` fetches `limit + 1` rows so the service can derive `hasMore` without a second `count(*)`.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GoogleGenAiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest,ChatModelQualifierIT}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GoogleGenAiUsageExtractorTest,OpenAiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest,ChatModelQualifierIT,OpenAiCompanionLlmOptionsTest,OpenAiProviderWiringIT}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs. Since **mezo-ozri.2**: `ChatModelQualifierIT` asserts BOTH real provider `ChatModel`s and BOTH `LlmUsageExtractor` beans (an unqualified injection point breaks every context); `OpenAiProviderWiringIT` flips `mezo.companion.llm.provider=openai` and proves the OpenAI adapter becomes primary, the Gemini adapter SURVIVES (fallback + audio route), and `completeSmart` is really overridden — asserted structurally, since inheriting the port default would fail silently.
 
 **Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
@@ -7393,7 +7446,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above); **`mezo-b3pp.2`** added `findByKindAndRefIdIncludingDeleted` (native — `@SQLRestriction` applies to JPQL too — the revive lookup `upsert` now reads through).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingAnnQuery.java` — **`mezo-b3pp.12`** the W3.1 kind-set ANN search, deliberately OUTSIDE Hibernate: a `NamedParameterJdbcTemplate` query on the CALLER's connection under a hand-taken JDBC savepoint, so a failed statement never poisons the turn's transaction (§9 — not a `@Query` finder, and `PROPAGATION_NESTED` does not work on Hibernate). Returns `Hit(id, kind, refId, content, occurredOn, distance)`; `kinds` must be non-empty. The statement is COMPOSED, not picked from a menu: `SQL_HEAD` + the optional `SQL_NOT_BEFORE` (W3.2 coverage floor) + the optional `SQL_EXCLUDE_CONVERSATION` (**W3.3 / `mezo-b3pp.27`** — `ref_id not in (select m.id from ai_message m where m.conversation_id = :excludeConversationId)`, applied only to the chat_turn group) + `SQL_TAIL`; a `null` argument simply leaves its fragment out, because an `(:param is null or …)` predicate would be an untyped-parameter cast headache and a muddier plan.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.12`** added the nested `AmbientRecall` record on `mezo.companion.ambient-recall.*`; **`mezo-b3pp.14`** (W3.3) reshaped it to `(enabled, weeklyShadowDays, maxTokens, excludeCurrentConversation, dailySummary, periodSummary, journal, chatTurn, other)` where each of the five groups is a `@NotNull @Valid Group(cap @Min(0) @Max(10), minSimilarity 0..1, decayDays @Min(1) @Max(3650))` — the flat `cap-*` keys and the single `minSimilarity` are gone, and ambient recall no longer borrows `Recall.decayDays`. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.12`** added the nested `AmbientRecall` record on `mezo.companion.ambient-recall.*`; **`mezo-b3pp.14`** (W3.3) reshaped it to `(enabled, weeklyShadowDays, maxTokens, excludeCurrentConversation, dailySummary, periodSummary, journal, chatTurn, other)` where each of the five groups is a `@NotNull @Valid Group(cap @Min(0) @Max(10), minSimilarity 0..1, decayDays @Min(1) @Max(3650))` — the flat `cap-*` keys and the single `minSimilarity` are gone, and ambient recall no longer borrows `Recall.decayDays`. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed. **`mezo-ozri.2`** reshaped `Llm` into `(provider, gemini, openai, perCallKind)` with a nested `Tier(chatModel, smartModel)` — tiers per PROVIDER, because both providers stay live at once.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/LlmProvider.java` — the `GEMINI`/`OPENAI` enum that `mezo.companion.llm.provider` and `.per-call-kind` speak (mezo-ozri.2).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/config/JournalProperties.java` — `decisionReviewDays` (ADR 0029; see above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionContextPort.java` — the journal-owned port for the reverse (companion→journal) context-snapshot read (ADR 0029).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java` — the companion-side adapter implementing `DecisionContextPort` (ADR 0029), gated `COMPANION_SWITCH`.

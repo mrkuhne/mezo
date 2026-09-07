@@ -80,3 +80,34 @@ Constraints found during research (2026-07-03, web-verified):
 - **Spring AI 1.1.x** — Boot 3.5-only; does not load on Boot 4. Not viable.
 - **Direct Google Gen AI SDK (no Spring AI)** — loses ChatClient, the Advisor chain (V1.3),
   tool-calling infra (V0.5) and provider portability. Rejected.
+
+## Amendment — 2026-09-07 (`mezo-ozri.2`)
+
+Gemini is no longer the only chat provider. `spring-ai-starter-model-openai` joins
+`spring-ai-starter-model-google-genai` (spring-ai bumped 2.0.0 → 2.0.1);
+`mezo.companion.llm.provider` selects which adapter is the primary `CompanionLlm`, and each
+provider carries its own `{chat-model, smart-model}` tier pair — a single flat pair cannot work,
+because both providers are live at once and the Gemini tiers must stay addressable even when
+OpenAI answers the chat turns. The two adapters share `SpringAiCompanionLlm`, a provider-neutral
+base holding the ChatClients, the tool-loop round tally and every audit-record path; a subclass
+supplies only its qualified `ChatModel`, its `LlmUsageExtractor` and its two tiers' `ChatOptions`.
+
+The "OpenAI — rejected on cost" line above was written against `gpt-5.4-mini` in July 2026 and is
+superseded: `gpt-5.6-luna` prices at $0.20/$1.20 per 1M (cached input $0.02), i.e. **below**
+`gemini-2.5-flash`'s $0.30/$2.50 — see the unit economics in the migration spec §4.
+
+**What did NOT change.** The google-genai starter stays in the build: it is what defines the
+`com.google.genai.Client` bean `GeminiEmbeddingAdapter` injects, so removing it would kill
+embedding too. `GEMINI_API_KEY` stays and gains `OPENAI_API_KEY` beside it. Embedding remains
+`gemini-embedding-001` @768 (spec §E1); audio transcription remains Gemini because no GPT-5.6
+model has an audio endpoint at all, and vision stays Gemini until the A/B measures it — both via
+`mezo.companion.llm.per-call-kind`. The shipped default is still `provider: gemini`; **which model
+becomes the default is decided by the eval re-baseline in `mezo-ozri.3`**, not by this slice.
+
+Two OpenAI-specific facts the audit log now encodes: reasoning tokens are reported *inside*
+`completion_tokens` (so the GPT price rows carry `reasoning-billing: INCLUDED_IN_OUTPUT` — billing
+them again would charge the same tokens twice), and a streamed response carries no usage block
+unless `stream_options.include_usage` is requested, which `OpenAiCompanionLlm.options` states
+unconditionally.
+
+Full reasoning: [`2026-09-06-openai-migration-design.md`](../superpowers/specs/2026-09-06-openai-migration-design.md).

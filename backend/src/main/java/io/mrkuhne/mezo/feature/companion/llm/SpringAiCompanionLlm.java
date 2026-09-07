@@ -1,0 +1,389 @@
+package io.mrkuhne.mezo.feature.companion.llm;
+
+import io.mrkuhne.mezo.feature.companion.ChatHistory;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
+import io.mrkuhne.mezo.feature.companion.llm.LlmUsageExtractor.UsageInfo;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecord;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecorder;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
+/**
+ * Everything a Spring AI {@link CompanionLlm} adapter does that is NOT provider-specific
+ * (mezo-ozri.2): the two tier-bound {@link ChatClient}s, the tool-loop round tally, and the audit
+ * record emitted on every terminal — success, failure, and a mid-stream cancel. Tools ride the
+ * ChatClient request spec; Spring AI runs the tool-execution loop internally (V0.5).
+ *
+ * <p>A subclass supplies four things and nothing else: the provider's {@link ChatModel}, the
+ * provider's {@link LlmUsageExtractor}, and the two tiers' {@link ChatOptions} — whose
+ * {@code model} doubles as the requested-model id recorded on every row, so each tier's identity is
+ * stated exactly once. Anything a provider must do DIFFERENTLY — {@code OpenAiCompanionLlm} routing
+ * audio and vision back to Gemini, for instance — is an override of the matching {@code complete}
+ * overload.
+ *
+ * <p><b>Audit logging (mezo-2zyu).</b> Every call path here is the LAST place that still sees the
+ * provider's raw metadata, so every path reports one {@link LlmCallRecord} — SUCCESS with the token
+ * breakdown, or ERROR with the exception's identity, always rethrowing unchanged. The adapter never
+ * checks whether logging is on: with the switch off the injected {@link LlmCallRecorder} is the
+ * no-op, so the audit trail can never fail (or slow) a user's call.
+ */
+public abstract class SpringAiCompanionLlm implements CompanionLlm {
+
+    private final ChatClient chatClient;
+    private final ChatClient smartChatClient;
+    private final String chatModelId;
+    private final String smartModelId;
+    private final LlmCallRecorder llmCallRecorder;
+    private final LlmCallContextHolder llmCallContextHolder;
+    private final LlmUsageExtractor llmUsageExtractor;
+
+    /**
+     * @param chatModel         the provider's ChatModel. Subclasses MUST inject it with a
+     *                          {@code @Qualifier} (mezo-ozri.1): each Spring AI starter contributes
+     *                          its own, so an unqualified injection point turns every context
+     *                          ambiguous. Guarded by {@code ChatModelQualifierIT}.
+     * @param llmUsageExtractor the provider's usage extractor — qualified for the same reason, the
+     *                          port has one implementation per provider.
+     * @param chatOptions       the cheap tier's default options; its {@code model} is also the
+     *                          requested-model id recorded on every non-smart row.
+     * @param smartOptions      the smart tier's default options, same contract.
+     */
+    protected SpringAiCompanionLlm(ChatModel chatModel, LlmUsageExtractor llmUsageExtractor,
+                                   ChatOptions chatOptions, ChatOptions smartOptions,
+                                   LlmCallRecorder llmCallRecorder,
+                                   LlmCallContextHolder llmCallContextHolder) {
+        this.llmCallRecorder = llmCallRecorder;
+        this.llmCallContextHolder = llmCallContextHolder;
+        this.llmUsageExtractor = llmUsageExtractor;
+        this.chatModelId = chatOptions.getModel();
+        this.smartModelId = smartOptions.getModel();
+        // mezo-58ig: the per-round usage observer — stateless, so one instance serves both clients;
+        // the per-call state is the LlmRoundUsage tally each call plants in the request context.
+        LlmRoundUsageAdvisor roundUsageAdvisor = new LlmRoundUsageAdvisor(llmUsageExtractor);
+        this.chatClient = ChatClient.builder(chatModel)
+            .defaultOptions(chatOptions.mutate())
+            .defaultAdvisors(roundUsageAdvisor)
+            .build();
+        // V3.2: the smart tier — weekly pipelines only, never chat turns
+        this.smartChatClient = ChatClient.builder(chatModel)
+            .defaultOptions(smartOptions.mutate())
+            .defaultAdvisors(roundUsageAdvisor)
+            .build();
+    }
+
+    /**
+     * The smart tier, overridden ON PURPOSE (spec §8.3): the {@link CompanionLlm} interface default
+     * routes this straight to the cheap tier, so an adapter that inherits it sends all 19
+     * smart-tier call sites to the wrong model — silently, with no error anywhere.
+     */
+    @Override
+    public String completeSmart(String systemPrompt, String userMessage) {
+        CallSpec spec = CallSpec.of(CallKind.SMART, smartModel(), systemPrompt, userMessage);
+        LlmRoundUsage tally = new LlmRoundUsage();
+        return recorded(spec, tally,
+            () -> smartChatClient.prompt().system(systemPrompt).user(userMessage)
+                .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
+                .call().chatResponse());
+    }
+
+    @Override
+    public String complete(String systemPrompt, List<Turn> history, String userMessage,
+                           List<ToolCallback> tools, Map<String, Object> toolContext) {
+        // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
+        // count arrives per-call via the LlmRoundUsage tally (mezo-58ig).
+        CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
+        CallSpec spec = new CallSpec(kind, chatModel(), systemPrompt, userMessage,
+            ChatHistory.render(history), null, null, null, false);
+        LlmRoundUsage tally = new LlmRoundUsage();
+        return recorded(spec, tally,
+            () -> request(systemPrompt, history, userMessage, tools, toolContext, tally)
+                .call().chatResponse());
+    }
+
+    @Override
+    public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
+        // Image MARKERS only — the bytes are ephemeral by contract and must never reach the log.
+        CallSpec spec = new CallSpec(CallKind.VISION, chatModel(), systemPrompt, userMessage, null,
+            images.size(), totalBytes(images), firstMimeType(images), false);
+        LlmRoundUsage tally = new LlmRoundUsage();
+        return recorded(spec, tally, () -> chatClient.prompt()
+            .system(systemPrompt)
+            .user(u -> {
+                u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
+                for (InlineImage img : images) {
+                    u.media(Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(img.mimeType()))
+                        .data(new ByteArrayResource(img.bytes()))
+                        .build());
+                }
+            })
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
+            .call()
+            .chatResponse());
+    }
+
+    @Override
+    public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
+        // Audio MARKERS only — like the vision path, the bytes are ephemeral and never logged.
+        // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
+        CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage, null,
+            1, (long) (audio.bytes() == null ? 0 : audio.bytes().length), audio.mimeType(), false);
+        LlmRoundUsage tally = new LlmRoundUsage();
+        return recorded(spec, tally, () -> chatClient.prompt()
+            .system(systemPrompt)
+            .user(u -> {
+                u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
+                u.media(Media.builder()
+                    .mimeType(MimeTypeUtils.parseMimeType(audio.mimeType()))
+                    .data(new ByteArrayResource(audio.bytes()))
+                    .build());
+            })
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
+            .call()
+            .chatResponse());
+    }
+
+    /**
+     * The streamed twin of {@link #recorded}: the outcome is only known when the Flux terminates, so
+     * the record is emitted from the terminal signals instead of a try/catch.
+     *
+     * <p>The context is read HERE (the caller's thread still owns it); everything per-subscription
+     * lives inside the {@code defer} so a re-subscribed stream is timed and recorded on its own. The
+     * provider attaches the usage block to the LAST chunk only — hence the running reference; if the
+     * stream ends without one, the token columns stay null rather than fabricated.
+     *
+     * <p>Three mutually exclusive terminals, each recording exactly once (the CAS guard): complete
+     * ⇒ SUCCESS, error ⇒ ERROR, and — mezo-1rz9 — a downstream cancel (the SSE client
+     * disconnected) ⇒ CANCELLED with the partial answer, because the provider billed the tokens
+     * generated up to that point even though neither complete nor error will ever fire.
+     */
+    @Override
+    public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
+                               List<ToolCallback> tools, Map<String, Object> toolContext) {
+        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, chatModel(), systemPrompt, userMessage,
+            ChatHistory.render(history), null, null, null, true);
+        LlmCallContext context = llmCallContextHolder.get();
+
+        return Flux.defer(() -> {
+            long startedAt = System.nanoTime();
+            AtomicReference<ChatResponse> lastChunk = new AtomicReference<>();
+            AtomicBoolean recordedOnce = new AtomicBoolean(false);
+            LlmRoundUsage tally = new LlmRoundUsage();
+            StringBuilder answer = new StringBuilder();
+            return request(systemPrompt, history, userMessage, tools, toolContext, tally).stream().chatResponse()
+                .doOnNext(response -> {
+                    lastChunk.set(response);
+                    String text = textOf(response);
+                    if (text != null) {
+                        answer.append(text);
+                    }
+                })
+                .doOnError(ex -> {
+                    if (recordedOnce.compareAndSet(false, true)) {
+                        llmCallRecorder.record(failureRecord(spec, ex, startedAt, context));
+                    }
+                })
+                .doOnComplete(() -> {
+                    if (recordedOnce.compareAndSet(false, true)) {
+                        llmCallRecorder.record(
+                            successRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally));
+                    }
+                })
+                .doOnCancel(() -> {
+                    if (recordedOnce.compareAndSet(false, true)) {
+                        llmCallRecorder.record(
+                            cancelRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally));
+                    }
+                });
+        }).handle((response, sink) -> {
+            // Same emission shape as ChatClient's own stream().content(): null AND empty chunks are
+            // dropped (the final usage-only chunk carries no text) — the SSE contract is unchanged.
+            String text = textOf(response);
+            if (StringUtils.hasLength(text)) {
+                sink.next(text);
+            }
+        });
+    }
+
+    /** Times one blocking call, reports it either way, and hands the caller exactly what it had before. */
+    private String recorded(CallSpec spec, LlmRoundUsage tally, Supplier<ChatResponse> call) {
+        long startedAt = System.nanoTime();
+        LlmCallContext context = llmCallContextHolder.get();
+        try {
+            ChatResponse response = call.get();
+            String text = textOf(response);
+            llmCallRecorder.record(successRecord(spec, response, text, startedAt, context, tally));
+            return text;
+        } catch (RuntimeException ex) {
+            llmCallRecorder.record(failureRecord(spec, ex, startedAt, context));
+            throw ex;
+        }
+    }
+
+    private LlmCallRecord successRecord(CallSpec spec, ChatResponse response, String responseText,
+                                        long startedAt, LlmCallContext context, LlmRoundUsage tally) {
+        return usageRecord(spec, response, startedAt, context, tally)
+            .status(CallStatus.SUCCESS)
+            .responseText(responseText)
+            .build();
+    }
+
+    /**
+     * mezo-1rz9: the subscriber cancelled mid-stream. What the provider revealed up to that point IS
+     * recorded — the partial answer and any usage the tally caught from completed rounds — because
+     * those tokens were billed; what never arrived (usually the final usage chunk) stays null.
+     */
+    private LlmCallRecord cancelRecord(CallSpec spec, ChatResponse lastChunk, String partialAnswer,
+                                       long startedAt, LlmCallContext context, LlmRoundUsage tally) {
+        return usageRecord(spec, lastChunk, startedAt, context, tally)
+            .status(CallStatus.CANCELLED)
+            .responseText(partialAnswer.isEmpty() ? null : partialAnswer)
+            .build();
+    }
+
+    /**
+     * The shared usage resolution (mezo-58ig): the per-round tally WINS whenever it saw a round,
+     * because Spring AI 2.0's tool loop returns the last round's response as the final one — its
+     * usage covers one round, not the turn — while the tally holds every billed round's own counts
+     * (on a single-round call the two are the same numbers). The observed round count also makes
+     * {@code tool_rounds} recordable at last: N usage-reporting rounds ⇒ N-1 tool-execution rounds.
+     */
+    private LlmCallRecord.LlmCallRecordBuilder usageRecord(CallSpec spec, ChatResponse response,
+                                                           long startedAt, LlmCallContext context,
+                                                           LlmRoundUsage tally) {
+        UsageInfo usage = llmUsageExtractor.extract(response);
+        boolean tallied = tally.hasRounds();
+        return baseRecord(spec, startedAt, context)
+            .servedModel(usage.servedModel())
+            .serviceTier(usage.serviceTier())
+            // mezo-8z79: read from the SAME response the usage came from — on a streamed call that
+            // is the last chunk, which is where the finish reason lives.
+            .finishReason(llmUsageExtractor.finishReason(response))
+            .tokens(tallied ? tally.toTokenUsage() : usage.tokens())
+            .toolRounds(tallied ? tally.rounds() - 1 : null);
+    }
+
+    private LlmCallRecord failureRecord(CallSpec spec, Throwable failure, long startedAt, LlmCallContext context) {
+        return baseRecord(spec, startedAt, context)
+            .status(CallStatus.ERROR)
+            .errorClass(failure.getClass().getSimpleName())
+            .errorCode(errorCodeOf(failure))
+            .build();
+    }
+
+    private LlmCallRecord.LlmCallRecordBuilder baseRecord(CallSpec spec, long startedAt, LlmCallContext context) {
+        return LlmCallRecord.builder()
+            .callKind(spec.kind())
+            .requestedModel(spec.requestedModel())
+            .latencyMs(elapsedMillis(startedAt))
+            .streamed(spec.streamed())
+            .systemPrompt(spec.systemPrompt())
+            .conversationHistory(spec.conversationHistory())
+            .userMessage(spec.userMessage())
+            .imageCount(spec.imageCount())
+            .imageBytesTotal(spec.imageBytesTotal())
+            .imageMime(spec.imageMime())
+            .context(context);
+    }
+
+    private ChatClient.ChatClientRequestSpec request(String systemPrompt, List<Turn> history,
+                                                     String userMessage, List<ToolCallback> tools,
+                                                     Map<String, Object> toolContext,
+                                                     LlmRoundUsage tally) {
+        ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
+            .system(systemPrompt)
+            .messages(toMessages(history))
+            .user(userMessage)
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally));
+        if (!tools.isEmpty()) {
+            // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
+            spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);
+        }
+        return spec;
+    }
+
+    /** A port provider-független Turn-jei -> spring-ai üzenetek. Üres history -> üres lista. */
+    private static List<Message> toMessages(List<Turn> history) {
+        return history.stream()
+            .map(turn -> turn.role() == Role.USER
+                ? (Message) new UserMessage(turn.content())
+                : new AssistantMessage(turn.content()))
+            .toList();
+    }
+
+    private String chatModel() {
+        return chatModelId;
+    }
+
+    private String smartModel() {
+        return smartModelId;
+    }
+
+    /** An app-level failure carries its SystemMessage code; a provider/transport failure has none. */
+    private static String errorCodeOf(Throwable failure) {
+        if (failure instanceof SystemRuntimeErrorException system && !system.getMessages().isEmpty()) {
+            SystemMessage first = system.getMessages().get(0);
+            return first != null ? first.getCode() : null;
+        }
+        return null;
+    }
+
+    private static String textOf(ChatResponse response) {
+        if (response == null) {
+            return null;
+        }
+        Generation generation = response.getResult();
+        return generation == null || generation.getOutput() == null ? null : generation.getOutput().getText();
+    }
+
+    private static long elapsedMillis(long startedAtNanos) {
+        return (System.nanoTime() - startedAtNanos) / 1_000_000L;
+    }
+
+    private static long totalBytes(List<InlineImage> images) {
+        return images.stream().mapToLong(img -> img.bytes() == null ? 0L : img.bytes().length).sum();
+    }
+
+    private static String firstMimeType(List<InlineImage> images) {
+        return images.isEmpty() ? null : images.get(0).mimeType();
+    }
+
+    /**
+     * Everything about a call that is known BEFORE it runs — kept as one value so each path states
+     * its identity once and the record builders stay uniform across success, failure and stream.
+     */
+    private record CallSpec(CallKind kind, String requestedModel, String systemPrompt, String userMessage,
+                            String conversationHistory, Integer imageCount, Long imageBytesTotal,
+                            String imageMime, boolean streamed) {
+
+        static CallSpec of(CallKind kind, String requestedModel, String systemPrompt, String userMessage) {
+            return new CallSpec(kind, requestedModel, systemPrompt, userMessage, null, null, null, null, false);
+        }
+    }
+}
