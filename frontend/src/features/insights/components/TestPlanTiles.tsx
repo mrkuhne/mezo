@@ -41,14 +41,16 @@ function PlanTile({ side, label, name, kind, domain }: {
   )
 }
 
-export function TestPlanTiles({ plan, pair }: { plan: PatternTestPlan; pair: PatternMonitorPair | null }) {
+/** A `pair` a drótról MINDIG megjön (`PatternPairDetail.pair` nem nullázható) — reflexiós sorra a
+ *  backend a teszt-tervből épít szintetikus párt, ezért az érték-fajta és a domén sosem hiányzik. */
+export function TestPlanTiles({ plan, pair }: { plan: PatternTestPlan; pair: PatternMonitorPair }) {
   return (
     <>
       <section className="pdt-plan-grid" aria-label="A teszt-terv két fele">
         <PlanTile side="a" label="Ha…" name={plan.seriesALabel}
-          kind={pair?.metricAValueKind} domain={pair?.metricADomain} />
+          kind={pair.metricAValueKind} domain={pair.metricADomain} />
         <PlanTile side="b" label="…akkor" name={plan.seriesBLabel}
-          kind={pair?.metricBValueKind} domain={pair?.metricBDomain} />
+          kind={pair.metricBValueKind} domain={pair.metricBDomain} />
       </section>
       <div className="pdt-plan-strip">
         <span><b>+{plan.lagDays} nap</b>eltolás</span>

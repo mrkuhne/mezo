@@ -275,7 +275,7 @@ function patternWire(p: Pattern) {
     confidence: p.confidence ?? null,
     critique: p.critique,
     status: p.status ?? 'proposed',
-    lastDetectedAt: '2026-07-03T02:40:00Z',
+    lastDetectedAt: p.lastDetectedAt ?? '2026-07-03T02:40:00Z',
     hypothesisKey: p.hypothesisKey ?? null,
     testPlan: p.testPlan ?? null,
     belief: p.belief ?? null,

@@ -23,6 +23,13 @@ describe('formatMetricValue', () => {
     expect(formatMetricValue('ritual-closed', 1)).toBe('igen')
   })
 
+  // Reflexió S6 (mezo-eq85.6): egy `people:`/`topic:` jelenlét-széria ugyanúgy 0/1 a dróton,
+  // mint a katalógus bináris metrikái — a napok listája sem mutathat nyers számot.
+  test.each(['people:anna', 'topic:munka'])('%s presence renders igen/nem, never 0/1', (key) => {
+    expect(formatMetricValue(key, 1)).toBe('igen')
+    expect(formatMetricValue(key, 0)).toBe('nem')
+  })
+
   test('plain numerics trim to at most one decimal', () => {
     expect(formatMetricValue('daily-kcal', 2350)).toBe('2350')
     expect(formatMetricValue('sleep-quality', 7.6)).toBe('7.6')
@@ -37,6 +44,10 @@ describe('axisEndLabels', () => {
 
   test('hour-kind metrics read as earlier/later', () => {
     expect(axisEndLabels('late-meal-hour')).toEqual({ low: 'korábban', high: 'később' })
+  })
+
+  test.each(['people:anna', 'topic:munka'])('%s ends read as the mention itself', (key) => {
+    expect(axisEndLabels(key)).toEqual({ low: 'nincs említve', high: 'említve' })
   })
 
   test('everything else keeps the generic ends', () => {

@@ -107,6 +107,8 @@ export const patterns: Pattern[] = [
     belief: 0.38,
     evidenceHits: 4,
     evidenceMisses: 1,
+    // az ÉJSZAKAI REFLEXIÓ utolsó futása — nem a statisztikai pár-job `lastRunAt`-je
+    lastDetectedAt: '2026-09-12T01:40:00Z',
   },
 ]
 
@@ -551,9 +553,12 @@ const reflectionDetail: PatternPairDetail = {
       text: 'Igen, figyeld — de nem Anna miatt, hanem mert olyankor szabadnapos vagyok.' },
     { kind: 'revised', occurredAt: '2026-09-07T01:40:00Z',
       text: 'A válaszod nyomán új mellék-hipotézis nyílt: **szabadnap → több alvás**. Ez marad, az is fut.' },
-    { kind: 'evidence', occurredAt: '2026-09-08T01:40:00Z', hit: true, n: 5, verdict: 'FEW_DAYS' },
-    { kind: 'evidence', occurredAt: '2026-09-09T01:40:00Z', hit: false, n: 6, verdict: 'FEW_DAYS' },
-    { kind: 'evidence', occurredAt: '2026-09-10T01:40:00Z', hit: true, n: 7, verdict: 'FEW_DAYS' },
+    { kind: 'evidence', occurredAt: '2026-09-08T01:40:00Z', hit: true, n: 5, verdict: 'LIVE' },
+    { kind: 'evidence', occurredAt: '2026-09-09T01:40:00Z', hit: false, n: 6, verdict: 'LIVE' },
+    { kind: 'evidence', occurredAt: '2026-09-10T01:40:00Z', hit: true, n: 7, verdict: 'LIVE' },
+    // két néma éjszaka: a kapu írt, de nem lett belőle bizonyíték — a naplóban EGY sorrá olvad
+    { kind: 'evidence', occurredAt: '2026-09-11T01:40:00Z', verdict: 'FEW_DAYS' },
+    { kind: 'evidence', occurredAt: '2026-09-12T01:40:00Z', verdict: 'FEW_DAYS' },
   ],
   // 16 illesztett nap: 4 Annás (a=1) és 12 másik — az Annás napok után hosszabb alvás.
   days: [

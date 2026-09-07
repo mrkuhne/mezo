@@ -66,7 +66,7 @@ function pattern(patch: Partial<Pattern> = {}): Pattern {
 }
 
 test('the card carries the eyebrow, the hypothesis question and the human answer', () => {
-  render(<HypothesisStateCard pattern={pattern()} pair={pair} onDecide={vi.fn()} />)
+  render(<HypothesisStateCard pattern={pattern()} pair={pair} plan={plan} onDecide={vi.fn()} />)
   expect(screen.getByText('Kapcsolatok · alvás')).toBeInTheDocument()
   expect(screen.getByText('Anna és az alvásod')).toBeInTheDocument()
   expect(screen.getByText('Hipotézis: Ha Anna szerepel a naplódban, másnap többet alszol?')).toBeInTheDocument()
@@ -82,7 +82,7 @@ test.each([
   ['dormant', 'PIHEN'],
   ['rejected', 'ELVETVE'],
 ] as [PatternRowStatus, string][])('status %s shows the %s pill', (status, pill) => {
-  render(<HypothesisStateCard pattern={pattern({ status })} pair={pair} onDecide={vi.fn()} />)
+  render(<HypothesisStateCard pattern={pattern({ status })} pair={pair} plan={plan} onDecide={vi.fn()} />)
   expect(screen.getByText(pill)).toBeInTheDocument()
 })
 
@@ -92,26 +92,26 @@ test.each([
   ['bukik', { evidenceHits: 3, evidenceMisses: 6 }, 'Nem igazolódik.'],
   ['beépült', { evidenceHits: 9, evidenceMisses: 0, status: 'confirmed' as const }, 'Beépült.'],
 ])('the human answer for %s', (_name, patch, answer) => {
-  render(<HypothesisStateCard pattern={pattern(patch)} pair={pair} onDecide={vi.fn()} />)
+  render(<HypothesisStateCard pattern={pattern(patch)} pair={pair} plan={plan} onDecide={vi.fn()} />)
   expect(screen.getByText(answer)).toBeInTheDocument()
 })
 
 test('the sub-line compares the two groups and names the minimum the plan asks for', () => {
-  const { container } = render(<HypothesisStateCard pattern={pattern()} pair={pair} onDecide={vi.fn()} />)
+  const { container } = render(<HypothesisStateCard pattern={pattern()} pair={pair} plan={plan} onDecide={vi.fn()} />)
   const sub = container.querySelector('.pdt-answer-sub') as HTMLElement
   expect(sub.textContent).toBe('4 ilyen napot tudok összevetni 12 másikkal. 8 napnál mondok többet.')
 })
 
 test('the sub-line stays honest without group counts', () => {
   const { container } = render(
-    <HypothesisStateCard pattern={pattern()} pair={{ ...pair, groupZeroDays: null, groupOneDays: null }} onDecide={vi.fn()} />,
+    <HypothesisStateCard pattern={pattern()} pair={{ ...pair, groupZeroDays: null, groupOneDays: null }} plan={plan} onDecide={vi.fn()} />,
   )
   const sub = container.querySelector('.pdt-answer-sub') as HTMLElement
   expect(sub.textContent).toBe('5 nap bizonyíték gyűlt eddig. 8 napnál mondok többet.')
 })
 
 test('the belief ring shows the percentage as a conic gradient and never a raw statistic', () => {
-  const { container } = render(<HypothesisStateCard pattern={pattern()} pair={pair} onDecide={vi.fn()} />)
+  const { container } = render(<HypothesisStateCard pattern={pattern()} pair={pair} plan={plan} onDecide={vi.fn()} />)
   const ring = container.querySelector('.pdt-belief-ring') as HTMLElement
   expect(ring.style.getPropertyValue('--v')).toBe('38%')
   expect(screen.getByText('38%')).toBeInTheDocument()
@@ -122,14 +122,14 @@ test('the belief ring shows the percentage as a conic gradient and never a raw s
 
 test('no belief on the row means no ring at all — never an invented number', () => {
   const { container } = render(
-    <HypothesisStateCard pattern={pattern({ belief: undefined })} pair={pair} onDecide={vi.fn()} />,
+    <HypothesisStateCard pattern={pattern({ belief: undefined })} pair={pair} plan={plan} onDecide={vi.fn()} />,
   )
   expect(container.querySelector('.pdt-belief-ring')).toBeNull()
 })
 
 test('the three decide buttons report the decision verbs', () => {
   const onDecide = vi.fn()
-  render(<HypothesisStateCard pattern={pattern()} pair={pair} onDecide={onDecide} />)
+  render(<HypothesisStateCard pattern={pattern()} pair={pair} plan={plan} onDecide={onDecide} />)
   fireEvent.click(screen.getByRole('button', { name: 'Megerősítem' }))
   fireEvent.click(screen.getByRole('button', { name: 'Figyeljük' }))
   fireEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
@@ -137,13 +137,7 @@ test('the three decide buttons report the decision verbs', () => {
 })
 
 test.each(['confirmed', 'rejected'] as PatternRowStatus[])('a %s row is a read-only status hero', (status) => {
-  render(<HypothesisStateCard pattern={pattern({ status })} pair={pair} onDecide={vi.fn()} />)
+  render(<HypothesisStateCard pattern={pattern({ status })} pair={pair} plan={plan} onDecide={vi.fn()} />)
   expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Elvetem' })).not.toBeInTheDocument()
-})
-
-test('a pairless reflection row still renders — the plan carries the labels', () => {
-  render(<HypothesisStateCard pattern={pattern()} pair={null} onDecide={vi.fn()} />)
-  expect(screen.getByText('Kapcsolatok · egyéb')).toBeInTheDocument()
-  expect(screen.getByText('Ha Anna szerepel a naplódban, másnap többet alszol')).toBeInTheDocument()
 })

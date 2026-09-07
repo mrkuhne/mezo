@@ -295,15 +295,32 @@ notebook. Rows without a plan are untouched by this branch.
 4. **„Bizonyíték-napló" (`EvidenceLog`)** — everything that happened, oldest first, stamped
    `Szept. 6. · 14:12` (LOCAL time; the wire is UTC). Per kind: `observation` (coral),
    `user_reply` (lavender, your own words quoted in serif italic, `te`), `revised` (gold),
-   `evidence` (gold — `Bejött` / `Nem jött be` + `· n nap` from `hit`, or `Kevés nap` / `Nincs adat`
-   from `verdict` when the gate could not say). Decision/engine events keep the `PatternJournal`
-   copy (`Megerősítetted.`, `Megnéztük — nem igazolódott.`, `Pihen — várom az adatot.` …). Empty
-   ⇒ one honest line, never an empty rail.
-5. **„Háttér"** — the unchanged `Diagnostics` fold; raw `r`/`n`/`p` stay behind its nested
-   „Technikai számok" disclosure.
+   `evidence` (gold — `Bejött` / `Nem jött be` + `· n nap` from `hit`, or, when the gate could not
+   say, ONE sentence per `PatternGate.Verdict`: `Kevés nap` (`FEW_DAYS`), `Még vékony csoport`
+   (`IMBALANCED_GROUPS`), `Nem mozdult` (`DEGENERATE`), `Nincs adat` (`NO_DATA` and any unknown
+   verdict)). Decision/engine events keep the `PatternJournal` copy **verbatim**, bold included
+   (`**Megerősítetted.**`, `Újra előjött ugyanabban az irányban — a tudás megerősödött (×N).`,
+   `Először számolhatóvá vált — N közös nap.`, `Megnéztük — nem igazolódott.`,
+   `Pihen — várom az adatot.` …) — the two readings of the same event must never drift.
+   **The log is filtered the way `patternHistory.journalEntries` filters the catalog's:** the
+   nightly job writes an `evidence` row for EVERY hypothesis EVERY night, so a run of consecutive
+   silent nights with the same verdict collapses into ONE row carrying the latest stamp and the
+   night count (`Kevés nap · 12 éjszaka`), and only the FIRST `snapshot` gets a line. Every
+   user-meaningful event survives untouched. Empty ⇒ one honest line, never an empty rail.
+5. **„Háttér"** — the same `Diagnostics` fold, but its window and „utolsó számítás" are **passed in
+   by the page, not read off the pair monitor**: a hypothesis is computed by the nightly reflection
+   run with its OWN window, so the fold shows `testPlan.windowDays` and the row's `lastDetectedAt`
+   (the catalog branch still passes `monitor.lookbackDays` / `monitor.lastRunAt`). Raw `r`/`n`/`p`
+   stay behind its nested „Technikai számok" disclosure.
+
+**A `people:`/`topic:` presence series is binary everywhere it is read.** `metricFormat`'s
+`isPresenceSeries` is the single predicate: `formatMetricValue` renders it `igen`/`nem` (never a raw
+`0`/`1` in the „Napok listája" table), `axisEndLabels` gives `nincs említve` / `említve`, and
+`binaryGroupLabels` the group copy.
 
 Mock seed: `ref-anna-sleep` (`data/insights/insights.ts` — the row, its test plan and a synthetic
-pair detail with six events and 16 aligned days), served in real mode by the shared MSW default for
+pair detail with eight events — three live evidence nights plus two silent ones that collapse to a
+single log row — and 16 aligned days), served in real mode by the shared MSW default for
 `GET /api/companion/pattern/pair/:pairKey` so both modes read the same hypothesis.
 
 ### 2.2 Weekly — **RETIRED** (`mezo-t16y.1`/D′ → retired `mezo-p2tr`)

@@ -8,7 +8,7 @@
 // ============================================================
 import { ClayIcon } from '@/shared/ui/clay'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
-import type { Pattern, PatternMonitorPair, PatternRowStatus, PatternStatus } from '@/data/types'
+import type { Pattern, PatternMonitorPair, PatternRowStatus, PatternStatus, PatternTestPlan } from '@/data/types'
 
 /** A prototípus állapot-pirulái — a hat perzisztált sor-státusz emberi szava. */
 const STATE_PILL: Record<PatternRowStatus, string> = {
@@ -28,27 +28,30 @@ export function hypothesisQuestion(title: string): string {
 /**
  * Az EGY mondat, ami kimondja, hol tart a hipotézis. A sorrend számít: a felhasználó döntése
  * (`confirmed`) mindent felülír, utána a terv minimuma (addig egyetlen irány sem állítható),
- * és csak azután beszélhet a találat/nem-találat arány.
+ * és csak azután beszélhet a találat/nem-találat arány. A `minN` mindig az ELŐRE rögzített
+ * tervből jön — alapértelmezett szám itt hazugság lenne (a terv a falszifikálhatóság horgonya).
  */
-export function hypothesisAnswer(pattern: Pattern): string {
+export function hypothesisAnswer(pattern: Pattern, minN: number): string {
   if (pattern.status === 'confirmed') return 'Beépült.'
   const hits = pattern.evidenceHits
   const misses = pattern.evidenceMisses
-  const minN = pattern.testPlan?.minN ?? 8
   if (hits + misses < minN) return 'Ígéretes, de még gyűlik.'
   if (misses > hits) return 'Nem igazolódik.'
   if (hits >= 3 * misses) return 'Tartja magát.'
   return 'Vegyes kép — még figyelem.'
 }
 
-export function HypothesisStateCard({ pattern, pair, onDecide }: {
+export function HypothesisStateCard({ pattern, pair, plan, onDecide }: {
   pattern: Pattern
-  pair: PatternMonitorPair | null
+  /** A drót MINDIG ad párt (`PatternPairDetail.pair` nem nullázható) — reflexiós sorra a
+   *  teszt-tervből épített szintetikus párt. */
+  pair: PatternMonitorPair
+  plan: PatternTestPlan
   onDecide: (status: PatternStatus) => void
 }) {
   const status = pattern.status ?? 'proposed'
-  const domain = DOMAIN_META[pair?.metricBDomain ?? 'other']
-  const minN = pattern.testPlan?.minN ?? 8
+  const domain = DOMAIN_META[pair.metricBDomain ?? 'other']
+  const minN = plan.minN
   const seen = pattern.evidenceHits + pattern.evidenceMisses
   const belief = pattern.belief == null ? null : Math.round(pattern.belief * 100)
   // A már megítélt sor olvasható állapot-hero: a döntést nem lehet kétszer meghozni (a
@@ -61,15 +64,15 @@ export function HypothesisStateCard({ pattern, pair, onDecide }: {
         <span className="pdt-hero-icon"><ClayIcon name="i-lombik" size={26} /></span>
         <span>
           <small>{pattern.categoryLabel} · {domain.label.toLowerCase()}</small>
-          <b>{pair?.title ?? pattern.title}</b>
+          <b>{pair.title}</b>
         </span>
         <span className="pdt-state-pill">{STATE_PILL[status]}</span>
       </div>
 
       <p className="pdt-hypothesis">{hypothesisQuestion(pattern.title)}</p>
-      <h1 id="pdt-answer">{hypothesisAnswer(pattern)}</h1>
+      <h1 id="pdt-answer">{hypothesisAnswer(pattern, minN)}</h1>
       <p className="pdt-answer-sub">
-        {pair?.groupOneDays != null && pair.groupZeroDays != null
+        {pair.groupOneDays != null && pair.groupZeroDays != null
           ? <><b>{pair.groupOneDays}</b> ilyen napot tudok összevetni <b>{pair.groupZeroDays}</b> másikkal.{' '}</>
           : <><b>{seen}</b> nap bizonyíték gyűlt eddig.{' '}</>}
         <b>{minN}</b> napnál mondok többet.

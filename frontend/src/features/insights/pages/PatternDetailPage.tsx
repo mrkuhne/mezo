@@ -132,9 +132,14 @@ function StoryTiles({ pair }: { pair: PatternMonitorPair }) {
   )
 }
 
-function Diagnostics({ pair, monitor }: {
+/** A háttér-fold. Az ablak és az „utolsó számítás" NEM a monitorból jön automatikusan: a
+ *  laborfüzet sorát egy MÁSIK futás (az éjszakai reflexió) számolja, a saját ablakával — ezért
+ *  mindkettőt a hívó adja meg, hogy a fold sose a másik motor adatát mutassa (mezo-eq85.6 review). */
+function Diagnostics({ pair, monitor, windowDays, lastComputedAt }: {
   pair: PatternMonitorPair
   monitor: ReturnType<typeof usePatternMonitor>['monitor']
+  windowDays: number | null | undefined
+  lastComputedAt: string | null | undefined
 }) {
   const coverage = new Map((monitor?.metrics ?? []).map((metric) => [metric.key, metric]))
   const pairing = pair.lagDays === 0 ? 'azonos nap' : `${pair.lagDays} nappal később`
@@ -143,10 +148,10 @@ function Diagnostics({ pair, monitor }: {
       <summary><span className="pdt-fold-icon">⌁</span><span><b>Hogyan számoltuk?</b><small>ablak, források és technikai adatok</small></span></summary>
       <div className="pdt-fold-body">
         <div className="pdt-diag-grid">
-          <div><small>Adatablak</small><b>{monitor?.lookbackDays ?? '—'} nap</b></div>
+          <div><small>Adatablak</small><b>{windowDays ?? '—'} nap</b></div>
           <div><small>Párosított nap</small><b>{pair.alignedDays}</b></div>
           <div><small>Csoportarány</small><b>{pair.groupZeroDays != null ? `${pair.groupZeroDays} : ${pair.groupOneDays}` : 'nem csoportos'}</b></div>
-          <div><small>Utolsó számítás</small><b>{lastRunLabel(monitor?.lastRunAt)}</b></div>
+          <div><small>Utolsó számítás</small><b>{lastRunLabel(lastComputedAt)}</b></div>
         </div>
         <div className="pdt-source-row">
           <span>{coverage.get(pair.metricAKey)?.sourceHu ?? pair.metricALabel}</span>
@@ -198,7 +203,7 @@ export function PatternDetailPage() {
   if (pattern?.testPlan) {
     return (
       <DetailFrame>
-        <HypothesisStateCard pattern={pattern} pair={pair}
+        <HypothesisStateCard pattern={pattern} pair={pair} plan={pattern.testPlan}
           onDecide={(status: PatternStatus) => decide(pattern.id, status)} />
 
         <SectionHead title="A teszt-terv" meta="előre rögzítve" />
@@ -211,7 +216,9 @@ export function PatternDetailPage() {
         <EvidenceLog events={events} />
 
         <SectionHead title="Háttér" meta="csak ha érdekel" />
-        <Diagnostics pair={pair} monitor={monitor} />
+        {/* a reflexiós sor a SAJÁT tervének ablakát és a saját éjszakai futását mutatja */}
+        <Diagnostics pair={pair} monitor={monitor}
+          windowDays={pattern.testPlan.windowDays} lastComputedAt={pattern.lastDetectedAt} />
       </DetailFrame>
     )
   }
@@ -251,7 +258,8 @@ export function PatternDetailPage() {
       </details>
 
       {hasImpact && <PatternImpactCard pattern={pattern} impact={impact} />}
-      <Diagnostics pair={pair} monitor={monitor} />
+      <Diagnostics pair={pair} monitor={monitor}
+        windowDays={monitor?.lookbackDays} lastComputedAt={monitor?.lastRunAt} />
     </DetailFrame>
   )
 }
