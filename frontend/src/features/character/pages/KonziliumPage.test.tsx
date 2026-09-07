@@ -1,4 +1,5 @@
-// KonziliumPage — conference list + `?id=` transcript view (mezo-1gim.13, Task 5).
+// KonziliumPage — döntés-első felület: `?id=` nélkül a legutóbbi konzílium, léptető + archívum
+// lap a korábbiakhoz, Áttekintés/Beszélgetés nézetváltó (mezo-sp9w).
 // Mode-agnostic via the DimensionsPage.test.tsx hook-override idiom.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -45,19 +46,11 @@ function renderAt(path: string) {
 beforeEach(() => {
   hoisted.experts = MOCK_EXPERTS
   hoisted.conferences = MOCK_CONFERENCES
-  hoisted.detail = MOCK_CONFERENCE_DETAIL
+  hoisted.detail = { ...MOCK_CONFERENCE_DETAIL, b0: MOCK_BOOTSTRAP_CONFERENCE }
   mockNavigate.mockReset()
 })
 
-describe('KonziliumPage — list', () => {
-  test('renders one row per conference, with a date and a HU kind badge — no fabricated outcome counts', () => {
-    renderAt('/me/karakter/konzilium')
-    expect(screen.getAllByRole('button', { name: /vasárnap|szept|aug|júl/i }).length).toBeGreaterThan(0)
-    expect(screen.getAllByText('HETI').length).toBe(4)
-    expect(screen.getByText('HAVI')).toBeInTheDocument()
-    expect(screen.getByText('BOOTSTRAP')).toBeInTheDocument()
-  })
-
+describe('KonziliumPage — üres archívum', () => {
   test('an empty conference list renders the honest empty state, never a crash', () => {
     hoisted.conferences = []
     renderAt('/me/karakter/konzilium')
@@ -71,23 +64,45 @@ describe('KonziliumPage — list', () => {
   })
 })
 
-describe('KonziliumPage — transcript (?id=)', () => {
-  test('opens the transcript for ?id=w2: outcome cells, phase labels, persona-railed turns, honesty note', () => {
-    hoisted.detail = {
-      ...MOCK_CONFERENCE_DETAIL,
-      w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null } satisfies CharacterConferenceResponse,
-    }
-    renderAt('/me/karakter/konzilium?id=w2')
-    expect(screen.getByText('Kimenet')).toBeInTheDocument()
-    expect(screen.getByText('elfogadva')).toBeInTheDocument()
-    expect(screen.getByText('nyugdíjazva')).toBeInTheDocument()
-    expect(screen.getByText('portré átírva')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument() // CLAIM_ACCEPTED count
+describe('KonziliumPage — döntés-első nézet', () => {
+  test('id nélkül a legutóbbi konzílium nyílik, nem lista', () => {
+    renderAt('/me/karakter/konzilium')
+    expect(screen.getByText('Hogyan zajlott')).toBeInTheDocument()
+    expect(screen.queryByText(/vissza a listához/)).not.toBeInTheDocument()
+  })
+
+  test('pontosan egy visszalépő vezérlő van a lapon', () => {
+    renderAt('/me/karakter/konzilium')
+    expect(screen.getAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
+  })
+
+  test('a legutóbbi konzíliumon a későbbi-nyíl le van tiltva', () => {
+    renderAt('/me/karakter/konzilium')
+    expect(screen.getByRole('button', { name: 'Későbbi tanácskozás' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Korábbi tanácskozás' })).toBeEnabled()
+  })
+
+  test('a legrégebbi konzíliumon a korábbi-nyíl le van tiltva', () => {
+    renderAt('/me/karakter/konzilium?id=b0')
+    expect(screen.getByRole('button', { name: 'Korábbi tanácskozás' })).toBeDisabled()
+  })
+
+  test('a dátum-gomb megnyitja az archívum lapot', async () => {
+    renderAt('/me/karakter/konzilium')
+    await userEvent.click(screen.getByRole('button', { name: /augusztus 30/ }))
+    expect(await screen.findByText('Korábbi tanácskozások')).toBeInTheDocument()
+  })
+
+  test('a Beszélgetés váltó a kör-nézetre vált', async () => {
+    renderAt('/me/karakter/konzilium')
+    await userEvent.click(screen.getByRole('button', { name: 'Beszélgetés' }))
     expect(screen.getByText('Javaslatok')).toBeInTheDocument()
-    expect(screen.getByText('A Szkeptikus')).toBeInTheDocument()
-    expect(screen.getByText('Döntés')).toBeInTheDocument()
-    expect(screen.getByText('Doki')).toBeInTheDocument()
-    expect(screen.getByText(/A fenti a valódi beszélgetés/)).toBeInTheDocument()
+    expect(screen.queryByText('Hogyan zajlott')).not.toBeInTheDocument()
+  })
+
+  test('visszafejtett szálnál a kereszt-vita kör nem létezőként jelenik meg', () => {
+    renderAt('/me/karakter/konzilium?id=w1')
+    expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
   })
 
   test('an unknown id renders an honest not-found face, never a crash', () => {
@@ -95,14 +110,8 @@ describe('KonziliumPage — transcript (?id=)', () => {
     expect(screen.getByText(/nem található/)).toBeInTheDocument()
   })
 
-  test('‹ vissza a listához clears ?id and returns to the list', async () => {
-    renderAt('/me/karakter/konzilium?id=w2')
-    await userEvent.click(screen.getByRole('button', { name: /vissza a listához/ }))
-    expect(screen.getByText('BOOTSTRAP')).toBeInTheDocument()
-  })
-
   test('a conference with a deliberation renders threads, collapsed', async () => {
-    hoisted.detail = { w2: MOCK_CONFERENCE_DETAIL.w2 }
+    hoisted.detail = { ...hoisted.detail, w2: MOCK_CONFERENCE_DETAIL.w2 }
     renderAt('/me/karakter/konzilium?id=w2')
 
     expect(screen.getByText('Fizikai')).toBeInTheDocument()
@@ -113,7 +122,7 @@ describe('KonziliumPage — transcript (?id=)', () => {
   })
 
   test('a conference without a deliberation still renders the prose transcript', () => {
-    hoisted.detail = { b0: MOCK_BOOTSTRAP_CONFERENCE }
+    hoisted.detail = { ...hoisted.detail, b0: MOCK_BOOTSTRAP_CONFERENCE }
     renderAt('/me/karakter/konzilium?id=b0')
 
     expect(screen.getByText(/A teljes eddigi történet beolvasva/)).toBeInTheDocument()

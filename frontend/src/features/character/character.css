@@ -217,16 +217,7 @@
 .kr-pinfo .kr-pwatch { font-size: 8.5px; margin-top: 6px; line-height: 1.5; opacity: 0.85; }
 .kr-pchip { display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-top: 6px; background: var(--pcw); color: var(--pc); }
 
-/* ── Konzílium list (.konzrow / .kbadge) ── */
-.kr-konzlist { padding: 4px 12px 4px; }
-.kr-konzrow {
-  display: flex; align-items: center; gap: 10px; background: var(--surface-card); border-radius: 15px;
-  padding: 10px 12px; margin-bottom: 9px; cursor: pointer; width: 100%; text-align: left;
-  border: 0.5px solid var(--divider); box-shadow: 0 10px 20px -13px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  font-family: inherit;
-}
-.kr-konzrow:active { transform: scale(0.97); }
-.kr-konzrow .kr-kd { font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+/* ── Konzílium kind-badge (.kbadge) — the archive sheet uses this ── */
 .kr-kbadge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 6px; flex: none; }
 .kr-kbadge.weekly { background: rgba(93, 79, 160, 0.14); color: #5D4FA0; }
 .kr-kbadge.monthly { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
@@ -268,15 +259,7 @@
   font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 9.5px; color: var(--text-muted);
   text-align: center; padding: 6px 22px 10px; line-height: 1.5;
 }
-.kr-tminiback {
-  border: none; background: none; font-family: inherit; color: #A8801F; font-weight: 700;
-  font-size: 9.5px; cursor: pointer; padding: 0 12px 8px; margin: 0;
-}
 .kr-konz-empty { padding: 20px 24px; text-align: center; color: var(--text-secondary); font-size: 12px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .kr-konzrow:hover { transform: none; }
-}
 
 /* ============================================================
    Task 4 — Gépterem hub / Futások / futás-részlet (mezo-1gim.14)
@@ -557,3 +540,13 @@
 .kr-cvorb { flex: none; width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 7px -3px var(--c); }
 .kr-cvquote { font-size: 11px; font-weight: 600; color: var(--text-muted); border-left: 2px solid var(--divider); padding-left: 9px; margin-bottom: 8px; line-height: 1.45; }
 .kr-cvempty { margin: 0 12px 11px; padding: 13px 16px; border-radius: 18px; background: rgba(43, 33, 24, 0.04); font-size: 11.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── konzílium fejléc-léptető és nézetváltó (mezo-sp9w) ── */
+.kr-stepper { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
+.kr-navbtn { border: none; background: var(--surface-card); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; font-family: inherit; color: var(--text-secondary); box-shadow: 0 6px 14px -11px rgba(43, 33, 24, 0.9); cursor: pointer; }
+.kr-navbtn:disabled { opacity: 0.32; cursor: default; }
+.kr-datebtn { border: none; background: var(--surface-card); border-radius: 20px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: inherit; box-shadow: 0 6px 14px -11px rgba(43, 33, 24, 0.9); cursor: pointer; }
+.kr-datecv { color: var(--text-muted); margin-left: 3px; }
+.kr-seg { display: flex; gap: 4px; margin: 2px 12px 12px; background: rgba(43, 33, 24, 0.06); border-radius: 20px; padding: 3px; }
+.kr-seg button { flex: 1; border: none; background: none; font-family: inherit; text-align: center; font-size: 12px; font-weight: 700; padding: 7px 0; border-radius: 18px; color: var(--text-secondary); cursor: pointer; }
+.kr-seg button.on { background: var(--surface-card); color: inherit; box-shadow: 0 4px 10px -8px rgba(43, 33, 24, 0.8); }

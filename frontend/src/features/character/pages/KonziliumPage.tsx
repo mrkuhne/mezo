@@ -1,42 +1,44 @@
 // ============================================================
-// Mezo · Karakter — KonziliumPage (mezo-1gim.13, Task 5)
-// Source: docs/design_2.0/prototypes/src/karakter-body.html `#page-konz` (`konzList` /
-// `konzTranscript`) — a list of conference summaries; `?id=` opens one transcript (the
-// WeekHub sibling idiom — `useSearchParams`, WeekLessonsPage's `?start=` precedent).
+// Mezo · Karakter — KonziliumPage (mezo-sp9w)
+// Döntés-első felület. A régi lista+részlet kettősség megszűnt: `?id=` nélkül a LEGUTÓBBI
+// tanácskozás nyílik, a korábbiakat a fejléc léptetője és az archívum lap éri el. Ezért van a
+// lapon pontosan EGY visszalépő vezérlő (`PageHead`) — a "vissza a listához" gomb megszűnt.
 //
-// List row — deliberate deviation from the prototype's per-row outcome summary
-// ("2 elfogadva · 1 nyugdíjazva · 3 portré átírva"): `CharacterConferenceSummary`
-// (GET /api/character/conference) carries `id`/`kind`/`weekStart`/`generatedAt` only — no
-// outcome/change count (the same gap KarakterHubPage's Konzílium tile already documents for
-// the hub). Only the FULL `CharacterConferenceResponse.changes[]`, fetched per-id, has that —
-// so the list row shows date + kind badge only; the outcome only exists once a row is opened.
+// A lap három rétege, ebben a sorrendben: kontextus (Mi ez + Hogyan zajlott) → eredmény
+// (Mi változott a dossziédban) → a vita (szálak, vagy a Beszélgetés nézet köreiben).
 //
-// Outcome cells — binding ruling: three cells map the change kinds this DTO actually carries
-// (`ClaimLifecycle`/`CharacterConferenceService`, backend/.../character/service/):
-// elfogadva=CLAIM_ACCEPTED, nyugdíjazva=CLAIM_RETIRED, portré=PORTRAIT_REWRITTEN. Every other
-// kind that can appear (CLAIM_CONFIDENCE_UP/DOWN, CHAPTER_OPENED, CHAPTER_RETIRED, BOOTSTRAP)
-// renders as an extra text line below the cells — never folded into a fabricated 4th cell.
+// Két forrás, két címke, soha nem összevonva:
+// - "Mi változott a dossziédban" a `changes[]`-ből számol — ez a TARTÓS hatás;
+// - a kör-térkép 4. cellája a `deliberation`-ből — ezek a tanácskozás DÖNTÉSEI.
 // ============================================================
+import { useState, type CSSProperties } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageHead } from '@/shared/ui/mozaik'
 import { useCharacterConference, useCharacterConferences, useCharacterExperts } from '@/data/hooks'
 import { TranscriptTurn } from '@/features/character/components/TranscriptTurn'
 import { ConferenceThreadCard } from '@/features/character/components/ConferenceThreadCard'
+import { ConferenceArchiveSheet } from '@/features/character/components/ConferenceArchiveSheet'
+import { KonziliumRoundMap, KonziliumWhatIs } from '@/features/character/components/KonziliumRoundMap'
+import { KonziliumConversationView } from '@/features/character/components/KonziliumConversationView'
 import { expertColor } from '@/features/character/expertColors'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
 
-const KIND_BADGE: Record<CharacterConferenceSummary['kind'], string> = {
-  WEEKLY: 'HETI',
-  MONTHLY: 'HAVI',
-  BOOTSTRAP: 'BOOTSTRAP',
+const KIND_WORD: Record<CharacterConferenceSummary['kind'], string> = {
+  WEEKLY: 'heti',
+  MONTHLY: 'havi',
+  BOOTSTRAP: 'első beolvasás',
 }
 
 const HONESTY_NOTE = 'A fenti a valódi beszélgetés, ami lezajlott — a felület sosem dramatizálja '
   + 'utólag; amit itt olvasol, azt a csapat pontosan így mondta.'
 
-function rowDateLabel(iso: string): string {
-  return new Date(iso).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })
+const ACCEPTED = 'CLAIM_ACCEPTED'
+const RETIRED = 'CLAIM_RETIRED'
+const REWRITTEN = 'PORTRAIT_REWRITTEN'
+
+function headerDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })
 }
 
 type TurnKind = 'EXPERT' | 'SKEPTIC' | 'CHAIR'
@@ -57,9 +59,7 @@ type Block =
   | { block: 'group'; turns: ConferenceTurn[]; kinds: TurnKind[] }
   | { block: 'ruling'; turn: ConferenceTurn }
 
-/** Groups turns the way the prototype's render loop does: consecutive non-CHAIR turns share
- *  one dashed-rail `.turnsgroup`, a phase label is inserted whenever the phase changes, and a
- *  CHAIR (mezo) turn always breaks out into its own full-width ruling block. */
+/** The prose fallback for a conference whose threads could not be derived at all. */
 function buildBlocks(turns: ConferenceTurn[], experts: CharacterExpertDto[]): Block[] {
   const blocks: Block[] = []
   let lastPhase: string | null = null
@@ -88,129 +88,189 @@ function buildBlocks(turns: ConferenceTurn[], experts: CharacterExpertDto[]): Bl
   return blocks
 }
 
-const ACCEPTED = 'CLAIM_ACCEPTED'
-const RETIRED = 'CLAIM_RETIRED'
-const REWRITTEN = 'PORTRAIT_REWRITTEN'
-
 export function KonziliumPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const id = params.get('id')
   const { conferences, isLoading: listLoading } = useCharacterConferences()
-  const { conference, isLoading: detailLoading } = useCharacterConference(id)
   const { experts, isLoading: expertsLoading } = useCharacterExperts()
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [view, setView] = useState<'overview' | 'conversation'>('overview')
 
-  // Fix round (final review, I5): without folding expertsLoading in, the pending window between
-  // the conference/list data settling and the experts catalog arriving derived turnKindOf() off
-  // a still-empty `experts` array — every turn (including Mezo's ruling) misclassified as plain
-  // EXPERT, collapsing the phase labels and losing the CHAIR/ruling face.
-  if (listLoading || (id != null && detailLoading) || expertsLoading) return null
+  // `?id=` absent means "the latest" — the list arrives generatedAt DESC, so index 0 is it.
+  const requestedId = params.get('id')
+  const currentId = requestedId ?? (conferences.length > 0 ? conferences[0].id : null)
+  const { conference, isLoading: detailLoading } = useCharacterConference(currentId)
 
-  const showList = id == null
+  // Folding expertsLoading in matters: without it the window between the conference settling and
+  // the expert catalog arriving misclassifies every turn as a plain EXPERT (mezo-xlvr, I5).
+  if (listLoading || (currentId != null && detailLoading) || expertsLoading) return null
+
+  const index = conferences.findIndex((c) => c.id === currentId)
+  const olderId = index >= 0 && index + 1 < conferences.length ? conferences[index + 1].id : null
+  const newerId = index > 0 ? conferences[index - 1].id : null
+
+  function go(id: string | null) {
+    if (id == null) return
+    setParams({ id })
+    setView('overview')
+  }
+
+  if (conferences.length === 0) {
+    return (
+      <div className="kr-hub">
+        <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+        <div className="mz-page-hero"><div className="mz-hero-nm">Konzílium</div></div>
+        <div className="mz-page-body">
+          <div className="kr-konz-empty">Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</div>
+        </div>
+      </div>
+    )
+  }
+
+  const summary = index >= 0 ? conferences[index] : null
+  const crossTalkRan = conference?.deliberationSource === 'STORED'
+  const threads = conference?.deliberation ?? null
 
   return (
     <div className="kr-hub">
       <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Konzílium</div>
-        <div className="mz-hero-sb">a csapat heti tanácskozásai</div>
+        {summary != null && (
+          <div className="kr-stepper">
+            <button
+              type="button"
+              className="kr-navbtn"
+              aria-label="Korábbi tanácskozás"
+              disabled={olderId == null}
+              onClick={() => go(olderId)}
+            >‹</button>
+            <button
+              type="button"
+              className="kr-datebtn"
+              aria-haspopup="dialog"
+              onClick={() => setArchiveOpen(true)}
+            >
+              {`${headerDate(summary.generatedAt)} · ${KIND_WORD[summary.kind]}`}
+              <span className="kr-datecv" aria-hidden="true">⌄</span>
+            </button>
+            <button
+              type="button"
+              className="kr-navbtn"
+              aria-label="Későbbi tanácskozás"
+              disabled={newerId == null}
+              onClick={() => go(newerId)}
+            >›</button>
+          </div>
+        )}
       </div>
 
-      {showList && (
-        <div className="mz-page-body kr-konzlist">
-          {conferences.length === 0 && (
-            <div className="kr-konz-empty">Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</div>
-          )}
-          {conferences.map((k, i) => (
-            <button
-              key={k.id}
-              type="button"
-              className="kr-konzrow rise"
-              style={{ '--d': `${i * 50}ms` } as React.CSSProperties}
-              onClick={() => setParams({ id: k.id })}
-            >
-              <div style={{ flex: 1 }}>
-                <div className="kr-kd">{rowDateLabel(k.generatedAt)}.</div>
-              </div>
-              <span className={`kr-kbadge ${k.kind.toLowerCase()}`}>{KIND_BADGE[k.kind]}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!showList && conference == null && (
+      {conference == null && (
         <div className="mz-page-body">
           <div className="kr-konz-empty">Ez a konzílium nem található.</div>
-          <button type="button" className="kr-tminiback" onClick={() => setParams({})}>‹ vissza a listához</button>
         </div>
       )}
 
-      {!showList && conference != null && (
+      {conference != null && (
         <div className="mz-page-body">
-          <button type="button" className="kr-tminiback" onClick={() => setParams({})}>‹ vissza a listához</button>
-          {(() => {
-            const accepted = conference.changes.filter((c) => c.kind === ACCEPTED).length
-            const retired = conference.changes.filter((c) => c.kind === RETIRED).length
-            const rewritten = conference.changes.filter((c) => c.kind === REWRITTEN).length
-            const extras = conference.changes.filter((c) => ![ACCEPTED, RETIRED, REWRITTEN].includes(c.kind))
-            return (
-              <div className="kr-outcomehd">
-                <div className="kr-oh-title">Kimenet</div>
-                <div className="kr-outcells">
-                  <div className="kr-outcell" style={{ '--ow': 'rgba(143,175,126,0.2)', '--oc': '#4E6B42' } as React.CSSProperties}>
-                    <b>{accepted}</b><small>elfogadva</small>
-                  </div>
-                  <div className="kr-outcell" style={{ '--ow': 'rgba(201,150,46,0.18)', '--oc': '#A8801F' } as React.CSSProperties}>
-                    <b>{retired}</b><small>nyugdíjazva</small>
-                  </div>
-                  <div className="kr-outcell" style={{ '--ow': 'rgba(138,118,204,0.16)', '--oc': '#5D4FA0' } as React.CSSProperties}>
-                    <b>{rewritten}</b><small>portré átírva</small>
-                  </div>
-                </div>
-                {extras.map((c, i) => <div className="kr-outcome-extra" key={i}>{c.summary}</div>)}
-              </div>
-            )
-          })()}
-          {conference.deliberation != null && conference.deliberation.length > 0
-            ? conference.deliberation.map((thread, i) => (
-                <ConferenceThreadCard
-                  key={`${thread.title}-${i}`}
-                  thread={thread}
-                  experts={experts}
-                  crossTalkRan={conference.deliberationSource === 'STORED'}
-                />
-              ))
-            : buildBlocks(conference.transcript, experts).map((b, i) => {
-                if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>
-                if (b.block === 'ruling') {
-                  return (
-                    <TranscriptTurn
-                      key={i}
-                      turn={b.turn}
-                      kind="CHAIR"
-                      displayName={experts.find((e) => e.key === b.turn.persona)?.displayName ?? 'Mezo'}
-                      color={expertColor(b.turn.persona)}
-                      delayMs={i * 90}
-                    />
-                  )
-                }
-                return (
-                  <div className="kr-turnsgroup" key={i}>
-                    {b.turns.map((turn, ti) => (
-                      <TranscriptTurn
-                        key={ti}
-                        turn={turn}
-                        kind={b.kinds[ti]}
-                        displayName={experts.find((e) => e.key === turn.persona)?.displayName ?? turn.persona}
-                        color={expertColor(turn.persona)}
-                        delayMs={(i + ti) * 90}
-                      />
-                    ))}
-                  </div>
-                )
-              })}
+          {threads != null && (
+            <div className="kr-seg" role="group" aria-label="Nézet">
+              <button
+                type="button"
+                className={view === 'overview' ? 'on' : ''}
+                onClick={() => setView('overview')}
+              >Áttekintés</button>
+              <button
+                type="button"
+                className={view === 'conversation' ? 'on' : ''}
+                onClick={() => setView('conversation')}
+              >Beszélgetés</button>
+            </div>
+          )}
+
+          {view === 'conversation' && threads != null
+            ? <KonziliumConversationView threads={threads} experts={experts} crossTalkRan={crossTalkRan} />
+            : (
+                <>
+                  <KonziliumWhatIs kind={conference.kind} />
+                  {threads != null && <KonziliumRoundMap threads={threads} crossTalkRan={crossTalkRan} />}
+
+                  {(() => {
+                    const accepted = conference.changes.filter((c) => c.kind === ACCEPTED).length
+                    const retired = conference.changes.filter((c) => c.kind === RETIRED).length
+                    const rewritten = conference.changes.filter((c) => c.kind === REWRITTEN).length
+                    const extras = conference.changes.filter((c) => ![ACCEPTED, RETIRED, REWRITTEN].includes(c.kind))
+                    return (
+                      <div className="kr-outcomehd">
+                        <div className="kr-oh-title">Mi változott a dossziédban</div>
+                        <div className="kr-outcells">
+                          <div className="kr-outcell" style={{ '--ow': 'rgba(143,175,126,0.2)', '--oc': '#4E6B42' } as CSSProperties}>
+                            <b>{accepted}</b><small>bekerült</small>
+                          </div>
+                          <div className="kr-outcell" style={{ '--ow': 'rgba(201,150,46,0.18)', '--oc': '#A8801F' } as CSSProperties}>
+                            <b>{retired}</b><small>nyugdíjazva</small>
+                          </div>
+                          <div className="kr-outcell" style={{ '--ow': 'rgba(138,118,204,0.16)', '--oc': '#5D4FA0' } as CSSProperties}>
+                            <b>{rewritten}</b><small>portré átírva</small>
+                          </div>
+                        </div>
+                        {extras.map((c, i) => <div className="kr-outcome-extra" key={i}>{c.summary}</div>)}
+                      </div>
+                    )
+                  })()}
+
+                  {threads != null
+                    ? threads.map((thread, i) => (
+                        <ConferenceThreadCard
+                          key={`${thread.title}-${i}`}
+                          thread={thread}
+                          experts={experts}
+                          crossTalkRan={crossTalkRan}
+                        />
+                      ))
+                    : buildBlocks(conference.transcript, experts).map((b, i) => {
+                        if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>
+                        if (b.block === 'ruling') {
+                          return (
+                            <TranscriptTurn
+                              key={i}
+                              turn={b.turn}
+                              kind="CHAIR"
+                              displayName={experts.find((e) => e.key === b.turn.persona)?.displayName ?? 'Mezo'}
+                              color={expertColor(b.turn.persona)}
+                              delayMs={i * 90}
+                            />
+                          )
+                        }
+                        return (
+                          <div className="kr-turnsgroup" key={i}>
+                            {b.turns.map((turn, ti) => (
+                              <TranscriptTurn
+                                key={ti}
+                                turn={turn}
+                                kind={b.kinds[ti]}
+                                displayName={experts.find((e) => e.key === turn.persona)?.displayName ?? turn.persona}
+                                color={expertColor(turn.persona)}
+                                delayMs={(i + ti) * 90}
+                              />
+                            ))}
+                          </div>
+                        )
+                      })}
+                </>
+              )}
+
           <p className="kr-honestynote">{HONESTY_NOTE}</p>
         </div>
+      )}
+
+      {archiveOpen && (
+        <ConferenceArchiveSheet
+          conferences={conferences}
+          currentId={currentId}
+          onPick={(id) => go(id)}
+          onClose={() => setArchiveOpen(false)}
+        />
       )}
     </div>
   )
