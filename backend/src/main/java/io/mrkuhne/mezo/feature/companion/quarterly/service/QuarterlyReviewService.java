@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.quarterly.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
@@ -93,6 +95,8 @@ public class QuarterlyReviewService {
         """;
 
     private final CompanionLlm companionLlm;
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final GraphService graphService;
     private final GraphNodeRepository nodeRepository;
     private final PeriodSummaryRepository periodSummaryRepository;
@@ -140,7 +144,9 @@ public class QuarterlyReviewService {
             return 0;
         }
         try {
-            return self.getObject().persistCandidates(userId, quarterStart, suggestions);
+            int created = self.getObject().persistCandidates(userId, quarterStart, suggestions);
+            emitCandidateNotification(userId, quarterStart, created);
+            return created;
         } catch (Exception e) {
             log.warn("Quarterly candidate persistence failed for {} on {} — degrading to zero so "
                 + "the quarter stays reprocessable", userId, quarterStart, e);
@@ -275,4 +281,23 @@ public class QuarterlyReviewService {
     private static String truncateTitle(String text) {
         return text.length() <= 120 ? text : text.substring(0, 117) + "…";
     }
+
+    /**
+     * mezo-0cbh — a {@code graph_candidate} feed-sor a negyedéves szezon-passzra. Ugyanaz a
+     * fajta, mint a {@code LifeEventExtractionService} éjszakai köre (két termelő, egy fajta —
+     * a {@code challenge_event} precedense), de a SZAVAI mások: ez negyedévente egyszer szólal
+     * meg, és épp ezért az a sor, aminek a legnagyobb esélye volt sosem eljutni hozzád.
+     */
+    private void emitCandidateNotification(UUID userId, LocalDate quarterStart, int created) {
+        if (created == 0) {
+            return;
+        }
+        String title = created == 1
+            ? "Egy szezon vár döntésre" : created + " szezon vár döntésre";
+        notificationEmitter.emit(userId, AppNotificationKind.GRAPH_CANDIDATE, title,
+            "A negyedéves mélyolvasás nevet adott egy időszakodnak — fogadd el vagy vesd el.",
+            AppNotificationKind.GRAPH_CANDIDATE.deeplink(), null,
+            "graph_candidate:season:" + quarterStart);
+    }
+
 }

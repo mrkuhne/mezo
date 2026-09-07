@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.Logger;
@@ -46,6 +47,7 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
 
     @Autowired private CharacterConferenceService conferenceService;
     @Autowired private CharacterConferenceRepository conferenceRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private CharacterObservationRepository observationRepository;
     @Autowired private CharacterDimensionRepository dimensionRepository;
     @Autowired private CharacterClaimRepository claimRepository;
@@ -94,6 +96,11 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
         assertThat(result).isNull();
         assertThat(conferenceRepository.findByCreatedByAndKindAndWeekStart(owner, "WEEKLY", WEEK_START)).isEmpty();
         assertThat(claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, "ACTIVE")).isEmpty();
+        // A néma ág: „lefutott a konzílium, és nem történt semmi" pontosan az a sor, amitől a
+        // csengő elértéktelenedik (mezo-0cbh).
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> "konzilium_verdict".equals(n.getKind()))
+                .isEmpty();
     }
 
     @Test
@@ -225,6 +232,18 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
                 .anySatisfy(c -> {
                     assertThat(c.kind()).isEqualTo("CHAPTER_OPENED");
                     assertThat(c.dimensionKey()).isEqualTo("uj-fejezet");
+                });
+
+        // mezo-0cbh: a fejezetnyitás NEM külön értesítés-fajta — a fejezet a konzílium ugyanazon
+        // futásán belül nyílik, tehát két fajta két sort írna EGY eseményre. A fejezet a verdikt-
+        // sor SZÖVEGÉT vezeti, mert ez a legritkább és narratívan a legsúlyosabb változás.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> "konzilium_verdict".equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getTitle()).isEqualTo("Új fejezet nyílt rólad");
+                    assertThat(n.getBody()).startsWith("„Uj Fejezet”");
+                    assertThat(n.getDeeplink()).isEqualTo("/me/karakter/konzilium");
                 });
     }
 

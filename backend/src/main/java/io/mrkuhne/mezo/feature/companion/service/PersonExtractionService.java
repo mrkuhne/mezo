@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
@@ -184,6 +186,9 @@ public class PersonExtractionService {
     // ezek a beanek nem léteznek, és az él-passz egyszerűen kimarad.
     private final ObjectProvider<GraphService> graphService;
     private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
+    // Az emit-fasád MINDIG létezik (AppNotificationEmitter): kikapcsolt feed mellett néma no-op,
+    // tehát nem kell ObjectProvider, és a jelölt-írás sosem bukhat el egy értesítés miatt.
+    private final AppNotificationEmitter notificationEmitter;
 
     public PersonExtractionResult extractFor(UUID userId, LocalDate day) {
         Instant from = day.atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -230,6 +235,11 @@ public class PersonExtractionService {
         PersonExtractionResult night;
         try {
             night = self.getObject().persistNight(userId, toneless, enrichments, candidates);
+            // mezo-0cbh — a HÍVÓBAN, a persistNight tranzakcióján KÍVÜL: egy értesítés sosem
+            // ülhet bent abban a tranzakcióban, amit nem szabad elvinnie (IDENT-3), és a `day`
+            // is csak itt van kézben. A `candidates` első neve a sor értéke.
+            emitCandidateNotification(userId, day, night.candidates(),
+                candidates.isEmpty() ? null : candidates.get(0).name());
         } catch (Exception e) {
             log.warn("Person-extraction persistence failed for {} on {} — degrading to zero so the"
                 + " night stays reprocessable", userId, day, e);
@@ -582,4 +592,26 @@ public class PersonExtractionService {
     public record Enrichment(Integer index, String tone, Integer intensity, String context) { }
 
     public record CandidateProposal(String name, List<String> quotes) { }
+
+    /**
+     * mezo-0cbh — EGY sor az éjszakai passz egész termésére, nem jelöltenként egy: a Jelöltek
+     * doboz maga a lista, ez a sor csak odavezet. A dedup-kulcs a NAP, tehát egy catch-up
+     * újrafutás sem duplázza. A jelölt eddig csak akkor derült ki, ha benyitottál az Emberek
+     * hubra — a `status='candidate'` sor viszont a döntésedre vár.
+     */
+    private void emitCandidateNotification(UUID userId, LocalDate day, int created, String firstName) {
+        if (created == 0 || firstName == null) {
+            return;
+        }
+        String title = created == 1 ? "Új arc a szövegeidben" : created + " új arc a szövegeidben";
+        // A név a sor ÉRTÉKE: „Ancsi · …" azonnal megmondja, kiről kell dönteni. Egynél több
+        // jelöltnél az elsőt nevezzük meg és a többit megszámoljuk — a teljes lista a doboz dolga.
+        String body = created == 1
+            ? firstName + " · egy említés a tegnapi szövegeidben — felveszed a köreidbe?"
+            : firstName + " és még " + (created - 1) + " név várja a döntésedet.";
+        notificationEmitter.emit(userId, AppNotificationKind.PERSON_CANDIDATE, title, body,
+            AppNotificationKind.PERSON_CANDIDATE.deeplink(), null,
+            "person_candidate:" + day);
+    }
+
 }

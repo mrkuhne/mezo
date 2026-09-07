@@ -9,19 +9,19 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 
 describe('useNotificationFeed', () => {
-  it('serves the 6-item seed with 3 unread', async () => {
+  it('serves the 11-item seed with 4 unread', async () => {
     server.use(http.get(`${API_BASE}/api/notification/feed`, () =>
       HttpResponse.json({ items: notificationFeedSeed })))
     const { result } = renderHook(() => useNotificationFeed(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.items).toHaveLength(6))
-    expect(result.current.items.filter((n) => !n.readAt)).toHaveLength(3)
+    await waitFor(() => expect(result.current.items).toHaveLength(11))
+    expect(result.current.items.filter((n) => !n.readAt)).toHaveLength(4)
   })
 
   it('mock mode never reaches the network', async () => {
     if (!isMockMode()) return
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const { result } = renderHook(() => useNotificationFeed(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.items).toHaveLength(6))
+    await waitFor(() => expect(result.current.items).toHaveLength(11))
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -38,7 +38,7 @@ describe('useNotificationFeed', () => {
       () => ({ feed: useNotificationFeed(), actions: useNotificationFeedActions() }),
       { wrapper: makeHookWrapper() },
     )
-    await waitFor(() => expect(result.current.feed.items).toHaveLength(6))
+    await waitFor(() => expect(result.current.feed.items).toHaveLength(11))
 
     await act(async () => { await result.current.actions.markAllRead() })
 
@@ -57,10 +57,10 @@ describe('useNotificationFeed', () => {
       () => ({ feed: useNotificationFeed(), actions: useNotificationFeedActions() }),
       { wrapper: makeHookWrapper() },
     )
-    await waitFor(() => expect(result.current.feed.items).toHaveLength(6))
+    await waitFor(() => expect(result.current.feed.items).toHaveLength(11))
 
     await act(async () => { await result.current.actions.markAllRead().catch(() => {}) })
 
-    await waitFor(() => expect(result.current.feed.items.filter((n) => !n.readAt)).toHaveLength(3))
+    await waitFor(() => expect(result.current.feed.items.filter((n) => !n.readAt)).toHaveLength(4))
   })
 })

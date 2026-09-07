@@ -2990,6 +2990,11 @@ button.itemrow { cursor: pointer; }
 .nf-ico.memoir { background: color-mix(in srgb, var(--primary-base) 12%, transparent); }
 .nf-ico.memory { background: var(--surface-recess); }
 .nf-ico.goal { background: color-mix(in srgb, var(--dv-coral) 18%, transparent); }
+/* mezo-0cbh — a négy új fajta három új tintje. `people` az emberi/gráf jelölteké,
+   `habit` a formálódásé, `character` a havi portréé. */
+.nf-ico.people { background: color-mix(in srgb, var(--dv-sky) 22%, transparent); }
+.nf-ico.habit { background: color-mix(in srgb, var(--dv-sage) 24%, transparent); }
+.nf-ico.character { background: color-mix(in srgb, var(--dv-lav) 24%, transparent); }
 
 /* ===== Habit routine =====
    The `.hab-chain`/`.hab-row`/`.hab-node`/`.hab-main`/`.hab-anchor`/`.hab-title`/`.hab-link`/
@@ -5085,6 +5090,9 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntfico.memoir     { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 .nap-ntfico.memory     { background: var(--surface-recess); }
 .nap-ntfico.goal       { background: color-mix(in srgb, var(--dv-coral) 20%, transparent); }
+.nap-ntfico.people     { background: color-mix(in srgb, var(--dv-sky) 24%, transparent); }
+.nap-ntfico.habit      { background: color-mix(in srgb, var(--dv-sage) 26%, transparent); }
+.nap-ntfico.character  { background: color-mix(in srgb, var(--dv-lav) 26%, transparent); }
 .nap-ntftxt { min-width: 0; flex: 1; }
 .nap-ntf-t { display: block; font: 700 12.5px/1.3 var(--ff-body); color: var(--text-primary); }
 .nap-ntf-x { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;

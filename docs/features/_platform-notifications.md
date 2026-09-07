@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-06
+updated: 2026-09-07
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -226,6 +226,48 @@ bell, showing three ikon-less rows. Four things changed, all of them because a 3
   panel falls back to `Mind` BEFORE the list renders — see §9.
 - **`Mind olvasott` is the second `markAllRead()` call site**, and the first one reachable without
   leaving the current page.
+
+### 2b. The five kinds the last week's features were missing (mezo-0cbh)
+
+Every one of the original 15 kinds came out of the pattern/companion/proactive era. A week of
+shipping (`mezo-06o0` people/graph, `mezo-08zl` habit formation, `mezo-1gim` Karakter,
+`mezo-b3pp.20` the quarterly pass) added surfaces that produce **decisions waiting on the user**
+and **rare, earned moments** — and not one of them emitted into the feed. Five kinds close that,
+all `familyKey = null` by request.
+
+**Two of them are decision queues** — a row that literally waits for an accept/reject, and until
+now only a hub tile ever said so. `person_candidate` fires once per nightly extraction pass,
+naming the first candidate (`Ancsi · egy említés…`) and counting the rest — the Jelöltek inbox is
+the list, this row just points at it. `graph_candidate` covers the undecided graph rows from BOTH
+producers: the nightly LIFE_EVENT pass and the quarterly SEASON deep read. Same kind, separate
+dedup keys, different words — the quarterly one speaks once a quarter and was the row most likely
+never to reach anyone.
+
+**Three are milestones.** `habit_formation` fires when a habit crosses the automaticity
+threshold. The four STAGE labels live in the frontend (`habitFormation.ts`), so the backend's
+honest event is the **threshold crossing**, not a "stage change" it has no vocabulary for — and
+the "already told them" state is NOT a new column but the dedup key
+(`habit_formation:{habitKey}`) on the feed's own partial-unique index: crossing happens once by
+construction, so the once-ever emit IS the fact. `character_portrait` is the `memoir_ready` shape
+for the monthly deep read. `konzilium_verdict` is the weekly konzílium — **but only when its
+`changes` list is non-empty**: "the konzílium ran and nothing happened" is exactly the row that
+devalues a bell.
+
+**A chapter opening is not its own kind, on purpose.** `CHAPTER_OPENED` — the rarest and
+narratively heaviest thing the dossier ever says — happens INSIDE a konzílium run, so a separate
+kind would put two rows on one event. Instead it leads the verdict row's copy
+(`Új fejezet nyílt rólad` / `„A visszatérés" — és 4 változás a dossziédban`) and the numbers take
+over when no chapter opened.
+
+**Two new filter categories** carry them on the header panel: `Emberek` (both candidate kinds —
+one gesture, a row waiting on your decision) and `Karakter` (formation, portrait, verdict — rare
+milestones), plus three new tints (`people`/`habit`/`character`) in both row families.
+
+**What deliberately stays silent: the coaching observer** (`mezo-6269`). Its daily card is a
+`CompanionMessageEntity` with `kind = advice`, so it already arrives on the header's *messages*
+badge; a feed row would say the same thing twice, on two badges, in one header. The observer page
+itself (`/mezo/coaching/megfigyelo`) is a diagnostic read — there is no event in it — and
+`cardOutcome` (won/lost) is DERIVED at read time, not stored, so there is nothing to emit.
 
 **The 30-row window is the source of everything the panel shows.** Sorting happens first, the
 `slice(0, 30)` second (the other order is the mezo-tdzy bug at larger scale), and the chip counts are
@@ -791,12 +833,14 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 15-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 20-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 15 rows are wired to producers**
+deeplink base — pinned by `AppNotificationKindTest`. **All 20 rows are wired to producers**
 (the original 12 by F2, plus three later domain slices), and **every non-null `familyKey` now maps onto a live push category as of F3**
-(bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end.
+(bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end. **The five kinds added by
+`mezo-0cbh` are all deliberately `familyKey = null`**: they carry things you find when you next
+open the app, not things worth a phone buzz — see §9's "what deliberately stays silent".
 
 | Key | familyKey (→ push category, F3) | Deeplink base | Producer |
 |---|---|---|---|
@@ -815,6 +859,11 @@ deeplink base — pinned by `AppNotificationKindTest`. **All 15 rows are wired t
 | `weekly_review_ready` | **null** | `/me/week` | `mezo-p2tr` — `WeeklyReviewGenerator` |
 | `life_goal_plan` | **null** | `/me/goals/{goalId}` | `mezo-iizd.7` — `LifeGoalTriggerService` |
 | `goal_suggestion` | **null** | `/me/goals/weight/suggestions/{suggestionId}` | `mezo-ricj.4` — `GoalSuggestionNotificationListener`, after a committed `GoalSuggestionProposedEvent` |
+| `person_candidate` | **null** | `/me/people/jeloltek` | `mezo-0cbh` — `PersonExtractionService` (the nightly `GraphMaintenanceJob` 4th phase), ONE row per night's whole crop |
+| `graph_candidate` | **null** | `/mezo/knowledge` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
+| `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
+| `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
+| `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
 
 ### API contract (`api/feature/notification/notification.yml`)
 
@@ -1121,10 +1170,20 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   feed showing neither an `Olvasatlan` chip nor the button, and the panel being the `<header>`'s
   direct child (the full width depends on it). Both hooks are mocked — the mock seed's rows cannot
   distinguish read from unread, and `markAllRead` needs a spy
+- Backend emit pins for the mezo-0cbh kinds, each added to the PRODUCER's own IT rather than a
+  new class (the per-producer idiom above): `PersonExtractionServiceIT` (the row names the
+  candidate — plus the silent branch: a candidate-less night writes nothing),
+  `LifeEventExtractionServiceIT` + `QuarterlyReviewServiceIT` (the two `graph_candidate`
+  producers), `HabitServiceIT` (the threshold crossing writes ONE row, and calling again writes
+  no second one — the dedup key IS the "already told them" state), `CharacterMonthlyServiceIT`
+  (`refId` is the conference), `CharacterConferenceServiceIT` (a chapter leads the verdict copy;
+  an empty week stays silent).
 - `features/notification/logic/category.test.ts` — the totality pin: EVERY key of
   `APP_NOTIFICATION_KIND_META` falls in exactly one category (a kind missing from the map would show
   under `Mind` but be unreachable by any chip), and an unknown wire kind maps to `null` rather than
   into a wrong category
+- `data/notificationKindMeta.test.ts` — the 20-key BACKEND_KINDS list and the per-kind clay
+  icon + tint (a mistyped tint name would silently render a token with no background)
 - `features/notification/logic/groupByDay.test.ts` — Ma/Tegnap plus every older day getting its own
   dated label (no `Korábban` bucket any more), newest-first sorting, pure and deterministic (`today`
   injected, no `new Date()` inside).
@@ -1559,8 +1618,18 @@ cycle, §9)**
   from here, so no two surfaces can label the same day differently
 - `frontend/src/features/notification/logic/groupByDay.ts` — the pure day-bucketer (Ma/Tegnap, then
   one dated label per older day)
-- `frontend/src/features/notification/logic/category.ts` — the six filter categories
-  (`Minták`/`Tudás`/`Kísérletek`/`Jóslatok`/`Célok`/`Összegzés`), each with its clay icon, plus the
+- Producers added by mezo-0cbh (all outside `feature/appnotification`, injecting
+  `AppNotificationEmitter` plainly — the facade holds the optionality, §3a/§5):
+  `feature/companion/service/PersonExtractionService.java` (`person_candidate`, emitted from
+  `extractFor`, OUTSIDE `persistNight`'s transaction), `feature/companion/graph/service/
+  LifeEventExtractionService.java` + `feature/companion/quarterly/service/QuarterlyReviewService.java`
+  (`graph_candidate`), `feature/habit/service/{HabitService,HabitJob}.java` (`habit_formation` —
+  the service holds the threshold check, the job sweeps every habit nightly),
+  `feature/character/service/{CharacterMonthlyService,CharacterConferenceService}.java`
+  (`character_portrait`, `konzilium_verdict`)
+- `frontend/src/features/notification/logic/category.ts` — the eight filter categories
+  (`Minták`/`Tudás`/`Kísérletek`/`Jóslatok`/`Célok`/`Összegzés`/`Emberek`/`Karakter`), each with
+  its clay icon, plus the
   TOTAL `notificationCategory()` reader (unknown kind → `null`, never a wrong category) (mezo-g9fz)
 - `frontend/src/app/AppHeader.tsx` — `.nap-ntfpanel`, the shell header's scrollable full-width panel
   into the same feed cache: newest 30, day-grouped, filter chips, `Mind olvasott`, each row carrying
