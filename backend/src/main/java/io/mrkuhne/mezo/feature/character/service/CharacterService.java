@@ -325,12 +325,18 @@ public class CharacterService {
                 .skeptic(item.skeptic() == null ? null : ConferenceSkepticVerdict.builder()
                         .verdict(ConferenceSkepticVerdict.VerdictEnum.fromValue(item.skeptic().verdict()))
                         .argument(item.skeptic().argument())
+                        .suggestedConfidence(item.skeptic().suggestedConfidence() == null
+                                ? null : item.skeptic().suggestedConfidence().doubleValue())
                         .build())
                 .chair(item.chair() == null ? null : ConferenceChairRuling.builder()
                         .accepted(item.chair().accepted())
                         .confidence(item.chair().confidence() == null
                                 ? null : item.chair().confidence().doubleValue())
                         .reason(item.chair().reason())
+                        .dissent(item.chair().dissent())
+                        .note(item.chair().note() == null
+                                ? null : ConferenceChairRuling.NoteEnum.fromValue(item.chair().note()))
+                        .suggestedDimensionKey(item.chair().suggestedDimensionKey())
                         .build())
                 .build();
     }

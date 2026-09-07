@@ -44,9 +44,9 @@ class ConferenceDeliberationEnvelopeIT extends ApiIntegrationTest {
                                 null, false,
                                 List.of(new ConferenceDeliberationEnvelope.PeerReaction(
                                         "pszichologus", "CHALLENGE", "Lehet stressz is.")),
-                                new ConferenceDeliberationEnvelope.SkepticVerdict("KILL", "Kevés adat."),
+                                new ConferenceDeliberationEnvelope.SkepticVerdict("KILL", "Kevés adat.", null),
                                 new ConferenceDeliberationEnvelope.ChairRuling(
-                                        false, new BigDecimal("0.40"), "Nem engedem be.")))))));
+                                        false, new BigDecimal("0.40"), "Nem engedem be.", null, null, null)))))));
 
         UUID id = conferenceRepository.saveAndFlush(conference).getId();
         conferenceRepository.flush();

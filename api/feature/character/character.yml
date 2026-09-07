@@ -390,8 +390,9 @@ components:
       type: object
       required: [verdict, argument]
       properties:
-        verdict: { type: string, enum: [KEEP, KILL] }
+        verdict: { type: string, enum: [KEEP, WEAKEN, KILL] }
         argument: { type: string }
+        suggestedConfidence: { type: number, format: double, nullable: true }
     ConferenceChairRuling:
       type: object
       required: [accepted, reason]
@@ -399,6 +400,12 @@ components:
         accepted: { type: boolean }
         confidence: { type: number, format: double, nullable: true }
         reason: { type: string }
+        dissent: { type: boolean, nullable: true }
+        note:
+          type: string
+          nullable: true
+          enum: [DUPLICATE, CONTRADICTS, NOT_FOR_DOSSIER, REHOME]
+        suggestedDimensionKey: { type: string, nullable: true }
     ConferenceItem:
       type: object
       required: [index, expertKey, text, sensitive, reactions]

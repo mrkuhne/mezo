@@ -173,7 +173,7 @@ public final class LegacyTranscriptParser {
             Matcher matcher = SKEPTIC_LINE.matcher(line.strip());
             if (matcher.matches()) {
                 verdicts.put(Integer.parseInt(matcher.group(1)),
-                        new ConferenceDeliberationEnvelope.SkepticVerdict(matcher.group(2), matcher.group(3)));
+                        new ConferenceDeliberationEnvelope.SkepticVerdict(matcher.group(2), matcher.group(3), null));
             }
         }
     }
@@ -194,7 +194,7 @@ public final class LegacyTranscriptParser {
                         new ConferenceDeliberationEnvelope.ChairRuling(
                                 ACCEPTED.equals(matcher.group(2)),
                                 confidenceOrNull(matcher.group(3)),
-                                matcher.group(4)));
+                                matcher.group(4), null, null, null));
             }
         }
     }

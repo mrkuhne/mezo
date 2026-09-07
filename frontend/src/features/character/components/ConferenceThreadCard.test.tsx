@@ -53,7 +53,217 @@ describe('ConferenceThreadCard', () => {
 
     expect(screen.getByText('Lehet stressz is.')).toBeInTheDocument()
     expect(screen.getByText(/Kevés adat\./)).toBeInTheDocument()
-    expect(screen.getByText(/Nem engedem be\./)).toBeInTheDocument()
+    // Item 0 is a ratified KILL rejection (no dissent, no note) — the chair added nothing beyond
+    // the Szkeptikus's own verdict, so the card shows the honest short form instead of paraphrasing
+    // the reason 'Nem engedem be.' (mezo-lghn).
+    expect(screen.getByText(/nem teszek hozzá/)).toBeInTheDocument()
+  })
+
+  test('a WEAKEN verdikt saját címkét kap, a chair dissent és note megjelenik', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'WEAKEN', argument: 'Kevés adat.', suggestedConfidence: 0.55 },
+          chair: {
+            accepted: true,
+            confidence: 0.6,
+            reason: 'A dosszié ezt erősíti.',
+            dissent: true,
+            note: 'CONTRADICTS',
+          },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/Gyengítette/)).toBeInTheDocument()
+    expect(screen.getByText(/a Szkeptikus döntése ellenében/)).toBeInTheDocument()
+    expect(screen.getByText(/ellentmond a dossziénak/)).toBeInTheDocument()
+  })
+
+  test('a dissent önmagában is felfedi a döntést, akkor is ha az erősség szava egyezik', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KEEP', argument: 'Elfogadható.', suggestedConfidence: 0.6 },
+          chair: {
+            accepted: true,
+            confidence: 0.6,
+            reason: 'Mégis ez az erősség indokolt.',
+            dissent: true,
+            note: null,
+          },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/a Szkeptikus döntése ellenében/)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  // A fired sensitivity guardrail (KonziliumVerdictRound.lacksSensitiveClearance) drops an accept
+  // to a rejection carrying a system-authored note — that ruling must stay visible even though it
+  // ratifies the Szkeptikus's KILL and never sets `dissent` (mezo-lghn).
+  test('egy kiváltott érzékenységi korlát megjelenik, dissent nélkül is', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KILL', argument: 'Kevés adat.' },
+          chair: {
+            accepted: false,
+            confidence: null,
+            reason: 'Érzékeny állítás, amit a Szkeptikus nem hagyott jóvá — a rendszer nem írja a dossziéba.',
+            dissent: false,
+            note: 'NOT_FOR_DOSSIER',
+          },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/nem dossziéba való/)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  // A rejection has nothing to ratify when the Szkeptikus gave NO answer at all — that is a real
+  // disagreement, not a ratified KILL, and must be shown in full (mirrors the backend's
+  // `addsSomething`: "a rejection over KEEP/WEAKEN or over no answer at all is always shown").
+  test('egy elutasítás akkor is látszik, ha a Szkeptikus egyáltalán nem válaszolt', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: null,
+          chair: {
+            accepted: false,
+            confidence: null,
+            reason: 'A dosszié már tartalmaz ehhez hasonlót.',
+            dissent: false,
+            note: null,
+          },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/A dosszié már tartalmaz ehhez hasonlót\./)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  // An accepted ruling that carries no confidence at all (e.g. a DOWN/UP that steps the lifecycle's
+  // own ±0.10 off the claim's current value, per KonziliumVerdictRound) is always shown — there is
+  // no chair number to compare against the Szkeptikus's suggestion, so this can never collapse into
+  // the ratification short form even if a suggestion happens to map to the same word as `null` would.
+  test('egy elfogadás megjelenik, ha a chair egyáltalán nem adott erősséget', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KEEP', argument: 'Elfogadható.', suggestedConfidence: 0.3 },
+          chair: { accepted: true, confidence: null, reason: 'A lépés a saját szabálya szerint mozdul.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/A lépés a saját szabálya szerint mozdul\./)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  // No suggestion to compare against is itself new information, even when the chair's own
+  // confidence happens to land in the same WORD bucket a missing suggestion would coerce to.
+  test('egy elfogadás megjelenik akkor is, ha a Szkeptikus nem javasolt erősséget', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KEEP', argument: 'Elfogadható.' },
+          chair: { accepted: true, confidence: 0.3, reason: 'Csak enyhén emelem.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/Csak enyhén emelem\./)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  test('egy elfogadás megjelenik, ha a chair erősség-szava eltér a javasolttól', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KEEP', argument: 'Elfogadható.', suggestedConfidence: 0.3 },
+          chair: { accepted: true, confidence: 0.8, reason: 'Erősebbnek látom, mint a Szkeptikus.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/Erősebbnek látom, mint a Szkeptikus\./)).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  test('egy elfogadás elrejtőzik a rövid forma mögé, ha a chair pontosan a javasolt erősséget hagyja jóvá', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KEEP', argument: 'Elfogadható.', suggestedConfidence: 0.6 },
+          chair: { accepted: true, confidence: 0.65, reason: 'Ezt a szintet hagyom jóvá.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/nem teszek hozzá/)).toBeInTheDocument()
+    expect(screen.queryByText(/Ezt a szintet hagyom jóvá\./)).not.toBeInTheDocument()
+  })
+
+  test('a puszta ratifikáció nem parafrazál, hanem kimondja hogy nincs hozzátenni való', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KILL', argument: 'Két megfigyelés egy napról.' },
+          chair: { accepted: false, confidence: null, reason: 'Egyetértek.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/nem teszek hozzá/)).toBeInTheDocument()
   })
 
   test('confidence is shown as a word, never as a number', async () => {

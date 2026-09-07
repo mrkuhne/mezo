@@ -393,9 +393,9 @@ class CharacterApiIT extends ApiIntegrationTest {
                 new ConferenceDeliberationEnvelope.Thread("recovery", "Regeneráció", List.of(
                         new ConferenceDeliberationEnvelope.Item(0, "szomnologus", "Romlik az alvás.", "NEW",
                                 null, false, List.of(),
-                                new ConferenceDeliberationEnvelope.SkepticVerdict("KEEP", "Rendben."),
+                                new ConferenceDeliberationEnvelope.SkepticVerdict("KEEP", "Rendben.", null),
                                 new ConferenceDeliberationEnvelope.ChairRuling(
-                                        true, new BigDecimal("0.60"), "Elfogadom.")))))));
+                                        true, new BigDecimal("0.60"), "Elfogadom.", null, null, null)))))));
         conferenceRepository.save(conf);
 
         CharacterConferenceResponse res = getForBody("/api/character/conference/" + conf.getId(),

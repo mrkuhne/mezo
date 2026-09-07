@@ -36,10 +36,15 @@ public record ConferenceDeliberationEnvelope(List<Thread> threads) {
     public record PeerReaction(String expertKey, String stance, String argument) {
     }
 
-    /** {@code verdict} is {@code KEEP} or {@code KILL}. */
-    public record SkepticVerdict(String verdict, String argument) {
+    /** {@code verdict} is {@code KEEP}, {@code WEAKEN} or {@code KILL}. {@code suggestedConfidence}
+     *  is the strength the Szkeptikus thinks the evidence carries, null when it gave none. */
+    public record SkepticVerdict(String verdict, String argument, BigDecimal suggestedConfidence) {
     }
 
-    public record ChairRuling(boolean accepted, BigDecimal confidence, String reason) {
+    /** {@code dissent} is a boxed Boolean and {@code note}/{@code suggestedDimensionKey} are
+     *  nullable so a conference persisted before mezo-lghn deserializes with them absent (Jackson
+     *  reads that as null) — no migration. */
+    public record ChairRuling(boolean accepted, BigDecimal confidence, String reason,
+                              Boolean dissent, String note, String suggestedDimensionKey) {
     }
 }

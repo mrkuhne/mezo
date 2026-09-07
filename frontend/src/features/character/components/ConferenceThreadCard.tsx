@@ -23,6 +23,39 @@ const STANCE_LABEL: Record<string, string> = {
 
 const NO_ANSWER = 'Ez a kör nem adott választ erre az állításra.'
 
+const SKEPTIC_LABEL: Record<string, string> = {
+  KILL: 'Kukázta',
+  WEAKEN: 'Gyengítette',
+  KEEP: 'Meghagyta',
+}
+
+const NOTE_LABEL: Record<string, string> = {
+  DUPLICATE: 'már tartunk ilyet',
+  CONTRADICTS: 'ellentmond a dossziénak',
+  NOT_FOR_DOSSIER: 'nem dossziéba való',
+  REHOME: 'máshová tartozik',
+}
+
+const NOTHING_TO_ADD = 'A Szkeptikus érvét elfogadom, nem teszek hozzá.'
+
+/** What the chair CONTRIBUTED, or the honest short form when it only ratified. Mirrors the
+ *  backend's `addsSomething` (KonziliumVerdictRound.java) — the two run on different surfaces
+ *  with no shared runtime, so this copy is deliberate, not accidental duplication (mezo-lghn).
+ *  A rejection that ratifies a KILL, and an acceptance at the strength the Szkeptikus suggested,
+ *  both add nothing — paraphrasing the Szkeptikus there is the theater this card exists to avoid.
+ *  `dissent` is read with `=== true` (never as a truthy check) because it arrives as a nullable
+ *  boolean and the model's self-report cannot be trusted either way. */
+function chairAddedSomething(item: ConferenceItem): boolean {
+  const chair = item.chair
+  if (chair == null) return false
+  if (chair.dissent === true || chair.note != null) return true
+  if (!chair.accepted) return item.skeptic == null || item.skeptic.verdict !== 'KILL'
+  if (chair.confidence == null) return true
+  const suggested = item.skeptic?.suggestedConfidence
+  if (suggested == null) return true
+  return confidenceWord(chair.confidence) !== confidenceWord(suggested)
+}
+
 // What an ACCEPTED item actually means depends on what was proposed (`item.kind`, on the wire
 // from the backend's ClaimProposal): a RETIRE the chair accepted retired a claim, it did not add
 // one. Labelling every accepted item "Bekerült" would tell the user the opposite of what
@@ -101,16 +134,28 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
       <ChainStep who="Szkeptikus" color={expertColor('szkeptikus')}>
         {item.skeptic == null
           ? NO_ANSWER
-          : `${item.skeptic.verdict === 'KILL' ? 'Kukázta' : 'Meghagyta'} — ${item.skeptic.argument}`}
+          : `${SKEPTIC_LABEL[item.skeptic.verdict] ?? 'Válaszolt'}${
+              item.skeptic.suggestedConfidence != null && item.skeptic.verdict !== 'KILL'
+                ? ` · ${confidenceWord(item.skeptic.suggestedConfidence)}`
+                : ''
+            } — ${item.skeptic.argument}`}
       </ChainStep>
       <ChainStep who="Mezo" color={expertColor('mezo')}>
         {item.chair == null
           ? NO_ANSWER
-          : `${item.chair.accepted ? 'Elfogadva' : 'Elvetve'}${
-              item.chair.accepted && item.chair.confidence != null
-                ? ` · ${confidenceWord(item.chair.confidence)}`
-                : ''
-            } — ${item.chair.reason}`}
+          : !chairAddedSomething(item)
+            ? NOTHING_TO_ADD
+            : `${item.chair.accepted ? 'Elfogadva' : 'Elvetve'}${
+                item.chair.accepted && item.chair.confidence != null
+                  ? ` · ${confidenceWord(item.chair.confidence)}`
+                  : ''
+              }${item.chair.dissent === true ? ' · a Szkeptikus döntése ellenében' : ''}${
+                item.chair.note != null && NOTE_LABEL[item.chair.note] != null
+                  ? ` · ${NOTE_LABEL[item.chair.note]}${
+                      item.chair.suggestedDimensionKey != null ? `: ${item.chair.suggestedDimensionKey}` : ''
+                    }`
+                  : ''
+              } — ${item.chair.reason}`}
       </ChainStep>
     </div>
   )

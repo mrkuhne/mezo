@@ -9273,14 +9273,20 @@ export interface components {
         };
         ConferenceSkepticVerdict: {
             /** @enum {string} */
-            verdict: "KEEP" | "KILL";
+            verdict: "KEEP" | "WEAKEN" | "KILL";
             argument: string;
+            /** Format: double */
+            suggestedConfidence?: number | null;
         };
         ConferenceChairRuling: {
             accepted: boolean;
             /** Format: double */
             confidence?: number | null;
             reason: string;
+            dissent?: boolean | null;
+            /** @enum {string|null} */
+            note?: "DUPLICATE" | "CONTRADICTS" | "NOT_FOR_DOSSIER" | "REHOME" | null;
+            suggestedDimensionKey?: string | null;
         };
         ConferenceItem: {
             index: number;

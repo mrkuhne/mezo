@@ -119,6 +119,27 @@ class DeliberationAssemblerTest {
     }
 
     @Test
+    void theChairsDissentAndNoteReachTheEnvelope() {
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", "physical", null,
+                "Rekompozíció zajlik.", new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
+                List.of(proposal),
+                List.of(),
+                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "WEAKEN", "Kevés adat.",
+                        new BigDecimal("0.55"))),
+                List.of(new ClaimRuling(proposal, true, new BigDecimal("0.60"), "A dosszié ezt erősíti.",
+                        true, "CONTRADICTS", null)),
+                KonziliumChapters.empty());
+
+        ConferenceDeliberationEnvelope.Item item = envelope.threads().get(0).items().get(0);
+        assertThat(item.skeptic().verdict()).isEqualTo("WEAKEN");
+        assertThat(item.skeptic().suggestedConfidence()).isEqualByComparingTo("0.55");
+        assertThat(item.chair().dissent()).isTrue();
+        assertThat(item.chair().note()).isEqualTo("CONTRADICTS");
+    }
+
+    @Test
     void assemble_claimIdMissingFromChapterMap_fallsBackToHumanTitledBucket() {
         UUID claimId = UUID.randomUUID();
         ClaimProposal orphan = new ClaimProposal("drill", "DOWN", null, claimId, "Ez már nem áll.",
