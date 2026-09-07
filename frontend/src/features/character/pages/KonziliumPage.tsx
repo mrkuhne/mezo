@@ -173,7 +173,12 @@ export function KonziliumPage() {
           })()}
           {conference.deliberation != null && conference.deliberation.length > 0
             ? conference.deliberation.map((thread, i) => (
-                <ConferenceThreadCard key={`${thread.title}-${i}`} thread={thread} experts={experts} />
+                <ConferenceThreadCard
+                  key={`${thread.title}-${i}`}
+                  thread={thread}
+                  experts={experts}
+                  crossTalkRan={conference.deliberationSource === 'STORED'}
+                />
               ))
             : buildBlocks(conference.transcript, experts).map((b, i) => {
                 if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>

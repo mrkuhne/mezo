@@ -48,6 +48,9 @@ function outcomeBadge(item: ConferenceItem): { label: string; tone: 'acc' | 'rej
 export interface ConferenceThreadCardProps {
   thread: ConferenceThread
   experts: CharacterExpertDto[]
+  /** Lefutott-e egyáltalán a kereszt-vita kör ezen a konzíliumon (a szál TÁROLT, nem visszafejtett).
+   *  Ha nem, a fejléc nem mondhat "nem vitatták"-at — az azt sugallná, hogy volt kör és senki nem szólt. */
+  crossTalkRan: boolean
   defaultOpen?: boolean
 }
 
@@ -73,52 +76,78 @@ function acceptedCount(thread: ConferenceThread): number {
   return thread.items.filter((item) => item.chair?.accepted === true).length
 }
 
-function ChainStep({ who, color, children }: { who: string; color: string; children: React.ReactNode }) {
+function reactionCount(thread: ConferenceThread): number {
+  return thread.items.reduce((sum, item) => sum + item.reactions.length, 0)
+}
+
+type ChipTone = 'sup' | 'cha' | 'nua' | 'acc' | 'rej' | 'non'
+
+function ChainStep({ expertKey, who, chip, chipTone, children }: {
+  expertKey: string
+  who: string
+  chip?: string
+  chipTone?: ChipTone
+  children: React.ReactNode
+}) {
   return (
-    <div className="kr-thstep" style={{ '--c': color } as CSSProperties}>
-      <span className="kr-thdot" aria-hidden="true" />
-      <div className="kr-thwho">{who}</div>
+    <div className="kr-thstep" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
+      <span className="kr-thorb" aria-hidden="true"><PersonaOrb expertKey={expertKey} size={22} /></span>
+      <div className="kr-thwho">
+        {who}
+        {chip != null && <span className={`kr-thchip ${chipTone ?? 'non'}`}>{chip}</span>}
+      </div>
       <div className="kr-thsaid">{children}</div>
     </div>
   )
 }
 
+const STANCE_TONE: Record<string, ChipTone> = { SUPPORT: 'sup', CHALLENGE: 'cha', NUANCE: 'nua' }
+
 function ItemChain({ item, experts }: { item: ConferenceItem; experts: CharacterExpertDto[] }) {
+  const badge = outcomeBadge(item)
+  const confidence = item.chair?.accepted === true && item.chair.confidence != null
+    ? ` · ${confidenceWord(item.chair.confidence)}`
+    : ''
   return (
     <div className="kr-thitem">
-      <ChainStep who={`${displayName(experts, item.expertKey)} felvetette`} color={expertColor(item.expertKey)}>
+      <ChainStep expertKey={item.expertKey} who={displayName(experts, item.expertKey)} chip="felvetette">
         {item.text}
       </ChainStep>
       {item.reactions.map((reaction, i) => (
         <ChainStep
           key={i}
-          who={`${displayName(experts, reaction.expertKey)} ${STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}`}
-          color={expertColor(reaction.expertKey)}
+          expertKey={reaction.expertKey}
+          who={displayName(experts, reaction.expertKey)}
+          chip={STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}
+          chipTone={STANCE_TONE[reaction.stance]}
         >
           {reaction.argument}
         </ChainStep>
       ))}
-      <ChainStep who="Szkeptikus" color={expertColor('szkeptikus')}>
-        {item.skeptic == null
-          ? NO_ANSWER
-          : `${item.skeptic.verdict === 'KILL' ? 'Kukázta' : 'Meghagyta'} — ${item.skeptic.argument}`}
+      <ChainStep
+        expertKey="szkeptikus"
+        who="Szkeptikus"
+        chip={item.skeptic == null ? undefined : item.skeptic.verdict === 'KILL' ? 'kukázta' : 'meghagyta'}
+        chipTone={item.skeptic?.verdict === 'KILL' ? 'cha' : 'sup'}
+      >
+        {item.skeptic == null ? NO_ANSWER : item.skeptic.argument}
       </ChainStep>
-      <ChainStep who="Mezo" color={expertColor('mezo')}>
-        {item.chair == null
-          ? NO_ANSWER
-          : `${item.chair.accepted ? 'Elfogadva' : 'Elvetve'}${
-              item.chair.accepted && item.chair.confidence != null
-                ? ` · ${confidenceWord(item.chair.confidence)}`
-                : ''
-            } — ${item.chair.reason}`}
+      <ChainStep
+        expertKey="mezo"
+        who="Mezo"
+        chip={item.chair == null ? undefined : `${badge.label}${confidence}`}
+        chipTone={badge.tone}
+      >
+        {item.chair == null ? NO_ANSWER : item.chair.reason}
       </ChainStep>
     </div>
   )
 }
 
-export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: ConferenceThreadCardProps) {
+export function ConferenceThreadCard({ thread, experts, crossTalkRan, defaultOpen = false }: ConferenceThreadCardProps) {
   const [open, setOpen] = useState(defaultOpen)
   const accepted = acceptedCount(thread)
+  const reactions = reactionCount(thread)
 
   return (
     <div className="kr-thread">
@@ -137,7 +166,14 @@ export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: C
         </span>
         <span className="kr-thtitle">
           <span className="kr-thtt">{thread.title}</span>
-          <span className="kr-thts">{`${thread.items.length} állítás · ${accepted} elfogadva`}</span>
+          <span className="kr-thts">
+            {`${thread.items.length} állítás`}
+            {reactions > 0
+              ? <> · <span className="kr-thdeb">{`${reactions} hozzászólás`}</span></>
+              : crossTalkRan
+                ? ' · nem vitatták'
+                : ` · ${accepted} elfogadva`}
+          </span>
         </span>
         <span className="kr-thchev" aria-hidden="true">{open ? '⌄' : '›'}</span>
       </button>
