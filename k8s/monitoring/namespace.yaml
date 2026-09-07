@@ -1,0 +1,8 @@
+# Observability lives in its own namespace (mezo-ibxy): the VictoriaMetrics k8s-stack Helm
+# release (argocd/monitoring-application.yaml) plus the plain manifests in this directory.
+# The mezo ArgoCD Application defaults to namespace `mezo`, so every file here names its
+# namespace explicitly.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.techcore.security;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import java.util.List;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,7 +41,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/actuator/health").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                // mezo-ibxy: actuator endpoints are mapped ONLY on the management port
+                // (management.server.port); EndpointRequest matches nothing on the app port,
+                // so /actuator/* there falls through to authenticated() → 401.
+                .requestMatchers(EndpointRequest.to("health", "prometheus")).permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(o -> o.jwt(jwt -> {}));
         return http.build();
