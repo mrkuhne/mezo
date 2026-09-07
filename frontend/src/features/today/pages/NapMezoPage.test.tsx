@@ -7,6 +7,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import type { FeedMessage } from '@/data/types'
 import { lastSeenMessage } from '@/shared/lib/seenMessages'
 import { localDateString } from '@/shared/lib/dates'
+import { observations as obsSeed } from '@/data/insights/observations'
 
 // Mezo üzenetei page (mezo-d20.2.2) — the Nap hub's Mezo tile → own full page
 // (prototype nap-body.html #page-mezo): p-coral tone, breathing-orb hero, the day's
@@ -24,6 +25,17 @@ const adviceMock = vi.hoisted(() => ({
   pending: false,
   failedId: undefined as string | undefined,
 }))
+// Reflexió S5 (mezo-eq85.5): az Észrevételek fül adatai — mód-agnosztikusan stubolva,
+// mint a feed fent (ez a suite az OLDALT teszteli, nem az adatréteget).
+const obsMock = vi.hoisted(() => ({
+  observations: [] as import('@/data/types').Observation[],
+  degraded: false,
+  isPending: false,
+  isError: false,
+  refetch: vi.fn(),
+  reply: vi.fn(),
+  pendingPatternId: undefined as string | undefined,
+}))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -34,6 +46,17 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       apply: adviceMock.apply,
       pending: adviceMock.pending,
       failedId: adviceMock.failedId,
+    }),
+    useObservations: () => ({
+      observations: obsMock.observations,
+      degraded: obsMock.degraded,
+      isPending: obsMock.isPending,
+      isError: obsMock.isError,
+      refetch: obsMock.refetch,
+    }),
+    useObservationReply: () => ({
+      reply: obsMock.reply,
+      pendingPatternId: obsMock.pendingPatternId,
     }),
   }
 })
@@ -90,6 +113,14 @@ beforeEach(() => {
   adviceMock.failedId = undefined
   needsMock.states = []
   tickMock.now = new Date('2026-05-22T13:42:00')
+  obsMock.observations = []
+  obsMock.degraded = false
+  obsMock.isPending = false
+  obsMock.isError = false
+  obsMock.refetch.mockClear()
+  obsMock.reply.mockReset()
+  obsMock.reply.mockResolvedValue({})
+  obsMock.pendingPatternId = undefined
   localStorage.clear()
 })
 
@@ -588,4 +619,115 @@ test('minden olvasottnak jelölve → egyik tabon sincs pötty', async () => {
   renderPage()
   await screen.findByText('07:05 · Reggeli briefing')
   expect(document.querySelector('.nap-mzdot')).toBeNull()
+})
+
+// ── Észrevételek fül (Reflexió S5, mezo-eq85.5) ──────────────────────────────
+function renderTab(search = '?tab=eszrevetelek') {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/nap/uzenetek${search}`]}>
+        <MezoThreadProvider>
+          <Routes>
+            <Route path="/nap/uzenetek" element={<NapMezoPage />} />
+            <Route path="/mezo/chat" element={<div>chat-page</div>} />
+          </Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+test('?tab=eszrevetelek megnyitja a harmadik fület és kirajzolja a kártyákat', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [obsSeed[0], obsSeed[2]]
+  renderTab()
+  expect(await screen.findByText('Anna és az alvásod')).toBeInTheDocument()
+  expect(screen.getByText('Késői vacsora → rosszabb alvás')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Észrevételek/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.queryByText('07:05 · Reggeli briefing')).toBeNull()
+})
+
+test('az Észrevételek fülre a fülsávból is át lehet váltani', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [obsSeed[0]]
+  renderTab('')
+  await screen.findByText('07:05 · Reggeli briefing')
+  await userEvent.click(screen.getByRole('tab', { name: /Észrevételek/ }))
+  expect(await screen.findByText('Anna és az alvásod')).toBeInTheDocument()
+})
+
+test('friss, még megválaszolatlan észrevétel pöttyöt gyújt a fülön — az aktív fülön nem', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [obsSeed[0]]
+  renderTab('')
+  await screen.findByText('07:05 · Reggeli briefing')
+  const tabBtn = screen.getByRole('tab', { name: /Észrevételek/ })
+  expect(tabBtn.querySelector('.nap-mzdot')).not.toBeNull()
+  await userEvent.click(tabBtn)
+  expect(tabBtn.querySelector('.nap-mzdot')).toBeNull()
+})
+
+test('már megválaszolt friss kártya nem gyújt pöttyöt', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [{ ...obsSeed[0], repliedChoice: 'watch' as const }, obsSeed[2]]
+  renderTab('')
+  await screen.findByText('07:05 · Reggeli briefing')
+  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.nap-mzdot')).toBeNull()
+})
+
+test('a lábjegyzet a maradék napi keretet mondja, és nem megy nulla alá', async () => {
+  obsMock.observations = [obsSeed[0]]
+  const { unmount } = renderTab()
+  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+    .toBeInTheDocument()
+  unmount()
+
+  obsMock.observations = [obsSeed[0], { ...obsSeed[0], id: 'obs-fresh-2', patternId: 'op-2' }, { ...obsSeed[0], id: 'obs-fresh-3', patternId: 'op-3' }]
+  renderTab()
+  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+    .toBeInTheDocument()
+})
+
+test('üres feed: őszinte üres sor, keret-lábjegyzet nélküli kártyák helyett', async () => {
+  renderTab()
+  expect(await screen.findByText('Még nincs észrevétel — Mezo figyel.')).toBeInTheDocument()
+})
+
+test('töltés közben csontváz, nem üres állapot', async () => {
+  obsMock.isPending = true
+  renderTab()
+  await screen.findByRole('tab', { name: /Észrevételek/ })
+  expect(document.querySelector('.sk')).not.toBeNull()
+  expect(screen.queryByText('Még nincs észrevétel — Mezo figyel.')).toBeNull()
+})
+
+test('hiba esetén újrapróbálható ghost-állapot jön, nem néma üresség', async () => {
+  obsMock.isError = true
+  renderTab()
+  expect(await screen.findByText(/nem sikerült betölteni/i)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(obsMock.refetch).toHaveBeenCalled()
+})
+
+test('kikapcsolt társ esetén őszinte sor jön, üres állapot helyett', async () => {
+  obsMock.degraded = true
+  renderTab()
+  expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
+  expect(screen.queryByText('Még nincs észrevétel — Mezo figyel.')).toBeNull()
+})
+
+test('a chip-válasz a sor azonosítójával megy tovább a hookhoz', async () => {
+  obsMock.observations = [obsSeed[0]]
+  renderTab()
+  await userEvent.click(await screen.findByRole('button', { name: 'Igen, figyeld' }))
+  expect(obsMock.reply).toHaveBeenCalledWith(obsSeed[0].patternId, 'watch')
+})
+
+test('a ?n= deeplink az Észrevételek fület is felülírja — mindig az Üzenetek nyílik', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [obsSeed[0]]
+  renderTab('?tab=eszrevetelek&n=fm-1')
+  expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.queryByText('Anna és az alvásod')).toBeNull()
 })

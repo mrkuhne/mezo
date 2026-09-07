@@ -20,13 +20,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { GhostState } from '@/shared/ui/GhostState'
+import { SkeletonCard, SkeletonText } from '@/shared/ui/Skeleton'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip } from '@/features/today/components/EletjelStrip'
-import { useAdviceActions, useCompanionFeed, useFeedback } from '@/data/hooks'
+import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply } from '@/data/hooks'
+import { ObservationCard } from '@/features/today/components/ObservationCard'
+import { OBSERVATION_BUDGET } from '@/data/insights/observations'
 import { feedToMessageItem, isQuestionCard, partitionMezoThread, questionAnswers, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useNeeds } from '@/features/today/logic/useNeeds'
@@ -94,7 +98,7 @@ export function NapMezoPage() {
 
   // Üzenetek | Életjelek tab-váltó (mezo-ho9k): a szál (sorrend, tartalom, a hero számláló
   // forrása) érintetlen — ez CSAK megjelenítési bontás a `?tab=` URL-en keresztül.
-  type MezoTab = 'uzenetek' | 'eletjelek'
+  type MezoTab = 'uzenetek' | 'eletjelek' | 'eszrevetelek'
   // ?n= jelenlétekor a tab MINDIG Üzenetek — felülírja a ?tab=eletjelek-et is (mezo-ho9k):
   // a deeplink mindig egy üzenetre (vagy a b3pp.36 intervenció-push kártyájára) mutat, sosem
   // egy Életjel-nudge-ra, tehát a cél csak az Üzenetek pane-ben létezhet.
@@ -106,12 +110,19 @@ export function NapMezoPage() {
   // felhasználó még nem választott kézzel.
   const [tabOverride, setTabOverride] = useState<MezoTab | null>(null)
   const tab: MezoTab =
-    tabOverride ?? (deepLinkId ? 'uzenetek' : params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek')
+    tabOverride
+    ?? (deepLinkId
+      ? 'uzenetek'
+      : params.get('tab') === 'eletjelek'
+        ? 'eletjelek'
+        : params.get('tab') === 'eszrevetelek'
+          ? 'eszrevetelek'
+          : 'uzenetek')
   const setTab = (t: MezoTab) => {
     setTabOverride(t)
     const next = new URLSearchParams(params)
-    if (t === 'eletjelek') next.set('tab', 'eletjelek')
-    else next.delete('tab')
+    if (t === 'uzenetek') next.delete('tab')
+    else next.set('tab', t)
     setParams(next, { replace: true })
   }
   // Belépéskori olvasatlan-pillanatkép (mezo-ho9k): a szál utolsó `unread` eleme az
@@ -132,8 +143,22 @@ export function NapMezoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- egyszeri pillanatkép
   }, [messages, unread, dots])
   useEffect(() => {
-    if (dots?.[tab]) setDots((d) => (d ? { ...d, [tab]: false } : d))
+    // Az Észrevételek fül pöttye NEM ebből a pillanatképből jön (lásd lent) — ezért marad ki.
+    if (tab !== 'eszrevetelek' && dots?.[tab]) setDots((d) => (d ? { ...d, [tab]: false } : d))
   }, [tab, dots])
+
+  // Észrevételek fül (Reflexió S5, mezo-eq85.5). A pöttye MÁS FAJTA, mint a fenti kettőé: nem
+  // a szál belépéskori olvasatlan-pillanatképéből származik (az egyszeri, `null`-őrzött effect,
+  // az észrevételek viszont aszinkron érkeznek), hanem SZÁRMAZTATOTT — akkor ég, ha van
+  // válaszra váró friss kártya. A fül megnyitásával magától elalszik, mert a válasz után a
+  // kártya `repliedChoice`-t kap.
+  const obs = useObservations()
+  const observationReply = useObservationReply()
+  const freshUnanswered = obs.observations.filter((o) => o.card === 'fresh' && !o.repliedChoice).length
+  // A napi keret maradéka: a backend `mezo.companion.reflection.notice` konfigjának emberi
+  // tükre — a szám és a 22:00 nincs a dróton, ezért az `OBSERVATION_BUDGET` konstansból jön.
+  const freshToday = obs.observations.filter((o) => o.card === 'fresh').length
+  const budgetLeft = Math.max(0, OBSERVATION_BUDGET.perDay - freshToday)
 
   const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the
@@ -321,6 +346,11 @@ export function NapMezoPage() {
             Életjelek
             {dots?.eletjelek && tab !== 'eletjelek' && <span className="nap-mzdot" />}
           </button>
+          <button type="button" role="tab" aria-selected={tab === 'eszrevetelek'}
+            className={cn(tab === 'eszrevetelek' && 'on')} onClick={() => setTab('eszrevetelek')}>
+            Észrevételek
+            {freshUnanswered > 0 && tab !== 'eszrevetelek' && <span className="nap-mzdot" />}
+          </button>
         </div>
         {tab === 'uzenetek' && (
           <EntranceGroup>
@@ -377,6 +407,52 @@ export function NapMezoPage() {
             </EntranceGroup>
           )
         })()}
+        {tab === 'eszrevetelek' && (
+          <EntranceGroup>
+            {/* Az oldal-állapotok háziszabály szerinti sorrendje: töltés → hiba → kikapcsolt
+                társ → üres → tartalom. */}
+            {obs.isPending && !obs.degraded && (
+              <SkeletonCard><SkeletonText lines={3} /></SkeletonCard>
+            )}
+            {!obs.isPending && obs.isError && (
+              <GhostState
+                message="Az észrevételeket most nem sikerült betölteni."
+                ctaLabel="Újra"
+                onCta={() => obs.refetch()}
+              />
+            )}
+            {!obs.isPending && !obs.isError && obs.degraded && (
+              <p className="nap-obs-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                A társ jelenleg nincs bekapcsolva — most nincs mit észrevennem. A napló, az
+                edzés és a Fuel változatlanul működik.
+              </p>
+            )}
+            {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length === 0 && (
+              <p className="nap-obs-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                Még nincs észrevétel — Mezo figyel.
+              </p>
+            )}
+            {/* A lista kulcsa `item.id`: egy figyelt sor JOGOSAN jelenhet meg kétszer
+                (esemény-kártya + sor-kártya) — ez a feed szándéka, nem duplikátum. */}
+            {!obs.isPending && !obs.isError && obs.observations.map((o, i) => (
+              <div key={o.id} className="rise" style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}>
+                <ObservationCard
+                  item={o}
+                  pending={observationReply.pendingPatternId === o.patternId}
+                  onReply={observationReply.reply}
+                />
+              </div>
+            ))}
+            {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length > 0 && (
+              <div className="nap-obs-quiet rise"
+                style={{ '--d': `${40 + obs.observations.length * 60}ms` } as React.CSSProperties}>
+                <ClayIcon name="i-hold" size={16} />
+                Ma még {budgetLeft} észrevétel fér a keretbe · {OBSERVATION_BUDGET.quietFrom} után
+                csendben maradok
+              </div>
+            )}
+          </EntranceGroup>
+        )}
       </PageBody>
     </MozaikPage>
   )
