@@ -234,7 +234,7 @@ export function replyPatternStub(patternId: string) {
     id: patternId,
     kind: 'reflection',
     pairKey: `ref-${patternId}`,
-    category: 'sleep',
+    category: 'physiology',
     categoryLabel: 'Alvás',
     title: 'Teszt-minta',
     mechanism: null,
