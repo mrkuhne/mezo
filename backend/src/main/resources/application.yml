@@ -696,6 +696,9 @@ mezo:
       # OpenAiCompanionLlm the @Primary CompanionLlm — the Gemini adapter stays a bean either way,
       # because it is both the fallback and the only audio route. Do NOT flip it before a real
       # OPENAI_API_KEY is in the environment: the dummy default would fail every call.
+      # mezo-kdhn: PRODUCTION overrides this to `openai` via MEZO_COMPANION_LLM_PROVIDER on the
+      # k3s Deployment. This default stays `gemini` ON PURPOSE, so local dev, CI and the whole
+      # test suite keep running without an OpenAI key in the environment.
       provider: gemini
       # Tiers are per PROVIDER, not one flat pair: both providers are live at once, so the Gemini
       # models must stay addressable even when OpenAI is answering the chat turns.

@@ -5001,12 +5001,19 @@ since S2.
 - `mezo.companion.llm.provider` = **`gemini`** (`gemini` | `openai`, `@NotNull`) — which adapter is
   the primary `CompanionLlm`. Under `gemini` the OpenAI adapter bean does not exist at all. Do not
   flip it before a real `OPENAI_API_KEY` is in the environment: the dummy default fails every call.
+  **`mezo-kdhn`: production runs `openai`**, set as `MEZO_COMPANION_LLM_PROVIDER` on the k3s
+  Deployment rather than by moving this default — so local dev, CI and the test suite keep booting
+  with no OpenAI key, and the rollback is one deleted env entry
+  ([`deployment-k3s-argocd.md`](../infrastructure/deployment-k3s-argocd.md)).
 - `mezo.companion.llm.gemini.chat-model` = `gemini-2.5-flash` (every turn) / `.smart-model` =
   `gemini-2.5-pro` (heavy pipelines) — model tiers are config, not code (ADR 0008).
 - `mezo.companion.llm.openai.chat-model` = `gpt-5.6-luna` / `.smart-model` = `gpt-5.6-terra`
   (mezo-ozri.2). Tiers are per provider because **both** providers stay live: the Gemini pair is
   load-bearing for audio, vision and the fallback whichever adapter answers a chat turn. Which model
-  becomes the default is decided by the `mezo-ozri.3` eval re-baseline, not by the config default.
+  becomes the default is decided by the `mezo-ozri.3` eval re-baseline, not by the config default —
+  it picked `gpt-5.6-luna` (exact match 90.5% vs the incumbent's 88.1%, at 7.2× lower cost per
+  successful action;
+  [re-baseline](../research/comparisons/companion-chat-model-rebaseline-2026-09.md)).
 - `mezo.companion.llm.<provider>.feature-models` = `{}` (`Map<String, String>`, mezo-ozri.4) —
   `LlmCallContext.feature()` → model id, resolved by `LlmModelRouter` at **call** time (before it
   the tiers were frozen at boot, so moving one feature onto another model meant a code change).
