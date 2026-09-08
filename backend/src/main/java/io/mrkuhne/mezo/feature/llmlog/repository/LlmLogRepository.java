@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.llmlog.repository;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -111,6 +112,27 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """)
     List<LlmUserFeatureRow> aggregateByFeatureSinceForUser(@Param("since") Instant since, @Param("userId") UUID userId,
             @Param("errorStatus") CallStatus errorStatus);
+
+    /**
+     * ONE user's priced spend inside the rolling budget window (mezo-ozri.6) — the only read the
+     * per-user USD cap makes, and it makes it on the PRE-FLIGHT path of every tagged LLM call, so it
+     * must stay a single indexed scalar (idx_llm_log_history_created_by_created_at).
+     *
+     * <p>Coalesced to zero rather than left null, unlike every other aggregation here: elsewhere a
+     * null cost honestly means "unknown", but a ceiling has to DECIDE on every call, and "unknown"
+     * would either block a user who has spent nothing or wave through one who has spent everything.
+     * An unpriced row therefore contributes nothing and the sum stays a number.
+     *
+     * <p>ERROR rows are excluded (bd mezo-ozri.6): a provider failure or an internal retry is not
+     * the user's money.
+     */
+    @Query("""
+        select coalesce(sum(coalesce(l.costUsd, 0)), 0)
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.createdBy = :userId and l.status <> :excluded
+        """)
+    BigDecimal sumCostSince(@Param("since") Instant since, @Param("userId") UUID userId,
+            @Param("excluded") CallStatus excluded);
 
     /**
      * User x feature cost since {@code since}, excluding failed calls (admin cost matrix,

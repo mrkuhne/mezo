@@ -43,3 +43,26 @@ Postgres RLS (two DB roles + datasource proxy + silent-empty failure mode — di
 users); session cookie + one-time-token magic link (SMTP infra and a full auth-stack rewrite for zero
 beta value); a quest-row-existence cron presence check (see S6 build-finding row above — rejected
 after implementation for self-latching). Sources: spec §13.
+
+## Amendment — 2026-09-08 (`mezo-ozri.6`): L2 adopted after all, as a graded cap
+
+§L1 above rejected a monthly per-account cost cap (L2) and shipped cost **visibility** only. The
+OpenAI migration's unit economics reversed that: at
+[the migration spec's](../superpowers/specs/2026-09-06-openai-migration-design.md) §4 numbers a heavy
+account costs ~$51/month against $10.46 of net revenue per subscription, so an unbounded ceiling
+became a business risk rather than a theoretical one.
+
+What shipped is **not** the L2 that was rejected. L2 was a hard monthly quota — one line between full
+service and none. This is a **rolling $5 / 30-day ceiling with three graded steps**: at 70% every
+call routes onto the provider's cheap tier, at 90% the expensive background generators
+(memoir, diagnosis, prediction, experiment, challenge, weekly/quarterly review, hypothesis critique)
+are suspended, and only at 100% do capped calls stop. The deterministic engine — logging, scoring,
+plans, every non-LLM surface — is untouched at every step; that was the objection to L2 and it still
+stands.
+
+Enforcement is a single PRE-FLIGHT point, `LlmCallContextHolder.runWith`, which every tagged call
+already passes through with its feature slug known and the provider not yet called. All numbers live
+in `mezo.llm-log.budget.*`; the measurement §L1 *did* adopt (per-user cost, `aggregateByUserSince`)
+is exactly what the cap reads, through the new `sumCostSince` scalar. Consequence worth naming: with
+`mezo.feature.llm-log.enabled=false` nothing is recorded, so the cap is **inert** — turning the audit
+log off turns the ceiling off (spec §L1; fail-closed was considered and rejected).

@@ -3162,6 +3162,72 @@ but it is documented here because both recording adapters live in `feature/compa
   NOT apply the usual `created_by = currentUser` ownership filter (it would hide exactly the
   invisible cron and streaming volume).
 
+### Per-user rolling USD cap (✅ `mezo-ozri.6`, spec §C1/§C2)
+
+The audit table above is not only a report any more — it is what a **ceiling** reads. Every account
+gets a rolling **$5 per 30 days** of LLM spend, and crossing it degrades service in three steps
+instead of cutting it off:
+
+| Spent | Level | What actually happens | What the person notices |
+|---|---|---|---|
+| < 70% | `OK` | nothing | — |
+| ≥ 70% | `DEGRADED` | `LlmModelRouter` returns the provider's cheap tier (or `<provider>.degrade-model`) for EVERY call, smart-tier ones included | shorter, plainer answers |
+| ≥ 90% | `THROTTLED` | the `throttled-features` slugs are refused outright | the weekly memoir, the diagnoses and the deep reviews stop arriving |
+| ≥ 100% | `STOPPED` | every capped call is refused until the window rolls | the assistant declines with a 429 |
+
+**The deterministic engine is untouched at every step** — logging, scoring, plans, mezociklus,
+notifications and every non-LLM surface keep working exactly as before. That is the whole reason the
+cap grades rather than switches.
+
+- **Where it is enforced.** One place: `LlmCallContextHolder.runWith` (`feature/llmlog/context`), the
+  single pre-flight chokepoint all 56 tagged calls already pass through with the feature slug known
+  and the provider not yet called. The refusal is thrown BEFORE the context is bound, so nothing is
+  tagged, nothing is sent and no audit row is written — there is no call to attribute. `runWith` also
+  binds the resolved level to the thread, which is how `LlmModelRouter` degrades a model without a
+  second spend read.
+- **How it is measured.** `LlmBudgetService` (implements the `LlmBudgetGate` port) resolves the actor
+  via `LlmActorContext.capture()` and reads `LlmLogRepository.sumCostSince(since, userId, ERROR)` —
+  one indexed scalar over `idx_llm_log_history_created_by_created_at`
+  (`202609081100_mezo-ozri.6_llm_log_created_by_index.sql`). Thresholds are **inclusive**: 70% spent
+  is already the degraded state.
+- **What never counts.** `status = ERROR` rows (a provider failure or an internal retry is not the
+  user's money), and any call with **no actor** — cron traffic outside a `UserFanOut` iteration has
+  nobody to bill and nothing to measure, so it is waved through without even a database read.
+- **What is never capped.** The `exempt-features` list: `admin_replay` (the owner's dry-run
+  inspection bills the INSPECTED user, so capping it would make exactly the accounts worth inspecting
+  the ones that cannot be inspected) and `companion_smoke` (the boot smoke call is how we find out
+  the provider works at all).
+- **Cron callers are safe by construction.** A refusal is a `SystemRuntimeErrorException`;
+  `UserFanOut` isolates every user and each job keeps its own try/catch, and every throttled generator
+  is an idempotent catch-up, so a refusal skips one run rather than breaking a job.
+- **Error codes** (both HTTP 429, because the same request works again once the window rolls):
+  `LLM_BUDGET_EXHAUSTED` (stopped) and `LLM_BUDGET_THROTTLED` (a suspended background feature). The
+  FE renders them generically today — dedicated Hungarian copy is filed separately.
+- **The audit switch is the master switch.** With `mezo.feature.llm-log.enabled=false` nothing is
+  recorded, so the cap has nothing to read and is **inert**; it says so once at WARN. Fail-closed was
+  considered and rejected: a ceiling that blocks everything the moment its own measurement is turned
+  off turns one config mistake into a total outage ([ADR 0035 amendment](../decisions/0035-multi-user-account-model.md)).
+- **Honest limit.** The audit row is written asynchronously, so a burst can overshoot the ceiling by
+  whatever it issues before the writer catches up — bounded by concurrency, not by time (the writer's
+  lag is milliseconds against an LLM call's seconds), and well inside the $5's 1.6–2.3x of headroom.
+  A cache would trade that bounded overshoot for a staleness window that behaves worse under exactly
+  the burst it would exist to catch.
+
+Config (`mezo.llm-log.budget.*`, bound by `LlmLogProperties.Budget`, `@Validated`; the three
+percentages must ascend or the context fails to boot):
+
+| Key | Shipped | Meaning |
+|---|---|---|
+| `enabled` | `true` | master switch for the cap itself |
+| `hard-cap-usd` | `5.00` | the ceiling for one account per cycle |
+| `cycle-days` | `30` | ROLLING window ending now — deliberately not a calendar month |
+| `degrade-at-percent` | `70` | cheap-tier routing |
+| `throttle-cron-at-percent` | `90` | suspend `throttled-features` |
+| `stop-at-percent` | `100` | refuse every capped call |
+| `throttled-features` | 8 slugs | expensive generators nobody is waiting on |
+| `exempt-features` | `admin_replay`, `companion_smoke` | never capped |
+| `mezo.companion.llm.<provider>.degrade-model` | empty | where a degraded call lands; empty ⇒ that provider's `chat-model` |
+
 ### Backend tables (W4.1 feedback, ✅ `mezo-b3pp.15`)
 
 Migration `202608211200_mezo-b3pp.15_create_message_feedback.sql` (in `1.0.0_master.yml`) — Phase 5

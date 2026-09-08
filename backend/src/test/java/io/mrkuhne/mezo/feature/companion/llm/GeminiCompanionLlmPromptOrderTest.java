@@ -160,7 +160,7 @@ class GeminiCompanionLlmPromptOrderTest {
 
     /** Egy szolgáltató tiere, model-override nélkül (mezo-ozri.4). */
     private static Llm.Tier tier(String chatModel, String smartModel) {
-        return new Llm.Tier(chatModel, smartModel, Map.of(), Map.of(),
+        return new Llm.Tier(chatModel, smartModel, null, Map.of(), Map.of(),
                 new Llm.Tier.ReasoningEffort(null, null));
     }
 

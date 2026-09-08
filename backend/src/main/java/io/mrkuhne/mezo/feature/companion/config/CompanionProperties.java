@@ -78,6 +78,14 @@ public record CompanionProperties(
             @NotBlank String chatModel,   // cheap/fast — every conversational turn
             @NotBlank String smartModel,  // smart tier — the 19 completeSmart call sites
             /**
+             * Where a BUDGET-DEGRADED call lands (mezo-ozri.6, spec §C1's 70% step). Blank or absent
+             * ⇒ this provider's own {@code chatModel}, which is already the cheap tier. Per PROVIDER
+             * and never one flat key: a model id only means something to the vendor that serves it,
+             * and the Gemini block still answers the audio and vision calls the OpenAI adapter
+             * delegates here.
+             */
+            String degradeModel,
+            /**
              * {@code LlmCallContext.feature()} -> model id. Bracket-quote the key in YAML
              * ({@code "[companion_chat]"}): the binder splits map keys on dots and relaxed-binds the
              * rest. An unmatched or blank value means the tier default — config never fails a call.

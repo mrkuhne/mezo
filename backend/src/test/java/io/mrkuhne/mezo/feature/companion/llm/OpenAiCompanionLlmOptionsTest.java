@@ -118,7 +118,7 @@ class OpenAiCompanionLlmOptionsTest {
     }
 
     private OpenAiCompanionLlm adapter(Tier openai, UUID actor) {
-        Tier gemini = new Tier("gemini-2.5-flash", "gemini-2.5-pro", Map.of(), Map.of(),
+        Tier gemini = new Tier("gemini-2.5-flash", "gemini-2.5-pro", null, Map.of(), Map.of(),
             new Tier.ReasoningEffort(null, null));
         LlmModelRouter router = new LlmModelRouter(gemini, openai, contextHolder);
         // Neither the ChatModel nor the recorder is ever reached: only the options hook is exercised.
@@ -145,6 +145,6 @@ class OpenAiCompanionLlmOptionsTest {
     }
 
     private static Tier tier(Tier.ReasoningEffort reasoningEffort) {
-        return new Tier("gpt-5.6-luna", "gpt-5.6-terra", Map.of(), Map.of(), reasoningEffort);
+        return new Tier("gpt-5.6-luna", "gpt-5.6-terra", null, Map.of(), Map.of(), reasoningEffort);
     }
 }
