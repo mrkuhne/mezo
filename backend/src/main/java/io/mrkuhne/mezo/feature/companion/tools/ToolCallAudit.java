@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,10 +31,17 @@ public class ToolCallAudit {
     private record RefKey(String kind, String id) {
     }
 
+    /** One executed tool call as the verdict judge sees it (mezo-indo). {@code result} is the raw
+     *  tool output — the digest that renders it into the judge payload owns truncation. */
+    public record ToolOutcome(String name, String args, String result) {
+    }
+
     private final int maxCalls;
     private final int maxRefs;
     private final List<ToolCallsEnvelope.ToolCall> calls = new ArrayList<>();
     private final Map<RefKey, RefsEnvelope.Ref> refs = new LinkedHashMap<>();
+    /** Positionally parallel to {@link #calls}; a null entry is a call whose output never arrived. */
+    private final List<String> results = new ArrayList<>();
 
     public ToolCallAudit(int maxCalls, int maxRefs) {
         this.maxCalls = maxCalls;
@@ -59,9 +67,11 @@ public class ToolCallAudit {
         this.listener = listener;
     }
 
-    public void recordCall(String name, String args) {
+    /** @return the call's index, the handle {@link #recordResult(int, String)} attaches its output to. */
+    public int recordCall(String name, String args) {
         ToolCallsEnvelope.ToolCall call = new ToolCallsEnvelope.ToolCall(TYPE_READ, name, args);
         calls.add(call);
+        results.add(null);
         if (listener != null) {
             try {
                 listener.accept(call);
@@ -69,6 +79,22 @@ public class ToolCallAudit {
                 log.warn("Companion tool-call listener failed for {}", name, e);
             }
         }
+        return calls.size() - 1;
+    }
+
+    /**
+     * mezo-indo: attaches what the tool actually RETURNED to an already-recorded call. Two steps
+     * rather than one because {@link #recordCall} fires the live SSE listener BEFORE the tool runs
+     * — the chip must appear while the read is in flight, the result only exists afterwards.
+     * Out-of-range indices are ignored: the audit is the turn's record and must never throw into a
+     * streamed answer.
+     */
+    public void recordResult(int callIndex, String result) {
+        if (callIndex < 0 || callIndex >= results.size()) {
+            log.warn("Companion tool-result recorded for unknown call index {}", callIndex);
+            return;
+        }
+        results.set(callIndex, result);
     }
 
     /** Deduped on (kind, id) and capped — the first {@code maxRefs} distinct refs win. Label-less
@@ -96,9 +122,17 @@ public class ToolCallAudit {
         return calls.size();
     }
 
-    /** Names of the calls recorded so far — the V1.3 verdict payload's tool-call list. */
-    public List<String> callNames() {
-        return calls.stream().map(ToolCallsEnvelope.ToolCall::name).toList();
+    /**
+     * Name + args + OUTPUT of every call recorded so far — the verdict payload's tool block
+     * (mezo-indo). The v1 payload listed names only, which made every tool-derived number
+     * structurally unsupported to the judge (measured: 0% pass at every reasoning-effort level,
+     * mezo-9yqq class 1). {@code result} is null when no output was ever recorded for the call.
+     * NOT persisted — the tool_calls jsonb envelope deliberately keeps only {type,name,args}.
+     */
+    public List<ToolOutcome> toolOutcomes() {
+        return IntStream.range(0, calls.size())
+                .mapToObj(i -> new ToolOutcome(calls.get(i).name(), calls.get(i).args(), results.get(i)))
+                .toList();
     }
 
     /** Null when no tool ran — a tool-less turn persists exactly like V0.2 (null envelope → [] on the wire). */
