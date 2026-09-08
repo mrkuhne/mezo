@@ -73,11 +73,25 @@ public class AdminFeatureService {
      * LlmCallContext#FEATURE_ADMIN_REPLAY} regardless of which sources saw them, {@code both} when
      * a slug is both a domain key AND an LLM feature, {@code domain}/{@code ai} otherwise.
      *
-     * <p>{@code usesPerWeek} and the habit-share numerator use a FIXED trailing window (12 ISO
-     * weeks / the last 4 ISO weeks respectively) that is always contained within the selected
-     * {@code period} (30d/90d are both >= 12 weeks), so one {@code since} bound per source safely
-     * covers both the period-scoped metrics (uniqueUsers, cost, errorPct, p90) and these two
-     * fixed-window ones.
+     * <p>THREE separate {@code since}-style bounds are in play, not one:
+     * <ul>
+     *   <li>{@code since} (period-scoped, from the selected {@code period}=30d/90d) — feeds the
+     *       period metrics: {@code uniqueUsers}, cost/unknownCalls, errorPct, p90 latency.</li>
+     *   <li>{@code weeksFrom} (the Monday of the ISO week {@link #HABIT_WINDOW_WEEKS}-1 weeks
+     *       back, i.e. a FIXED trailing 4-ISO-week window) — feeds the habit-share numerator.
+     *       This window is always contained inside a 30d/90d {@code since}, so it is safe to
+     *       reuse the domain/LLM queries already bounded by {@code since} and just additionally
+     *       filter/aggregate on {@code weeksFrom} inside them.</li>
+     *   <li>{@code trendFrom} (the Monday {@link #TREND_WEEKS}-1 weeks back, a FIXED trailing
+     *       12-ISO-week window) — passed DIRECTLY as its own {@code since} bound to the
+     *       day-matrix queries ({@code insightsQuery.countByDay}, {@code
+     *       aggregateByFeatureAndDaySince}) that build {@code usesPerWeek}. This one can NOT be
+     *       collapsed into the period {@code since}: {@code usesPerWeek} is contractually a
+     *       FIXED 12-week trend regardless of the selected period, and 12 weeks is 84 days —
+     *       wider than a {@code period=30d} selection's 30-day {@code since}. Reusing the
+     *       period {@code since} for the day-matrix queries would silently truncate the
+     *       sparkline's oldest 8 weeks to zero whenever an owner picks the 30-day view.</li>
+     * </ul>
      */
     @Transactional(readOnly = true)
     public AdminFeatureBoardResponse board(String period) {

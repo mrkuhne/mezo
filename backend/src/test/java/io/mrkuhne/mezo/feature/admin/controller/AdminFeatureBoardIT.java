@@ -11,9 +11,11 @@ import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
+import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -30,6 +32,7 @@ class AdminFeatureBoardIT extends ApiIntegrationTest {
     private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
 
     @Autowired private LlmLogRepository llmLogRepository;
+    @Autowired private LlmLogPopulator llmLogPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private FeedbackPopulator feedbackPopulator;
 
@@ -142,6 +145,48 @@ class AdminFeatureBoardIT extends ApiIntegrationTest {
                 .satisfies(r -> {
                     assertThat(r.getUniqueUsers()).isEqualTo(2L);
                     assertThat(r.getHabitUserShare()).isEqualTo(0.5); // 1 habitual / 2 tried
+                });
+    }
+
+    /**
+     * Pins {@code usesPerWeek}'s FIXED 12-ISO-week trend window against being "simplified" into
+     * reusing the period-scoped {@code since} bound (mezo-clgz fix round 1). With {@code
+     * period=30d}, the period {@code since} only reaches back ~4.3 ISO weeks — a row dated 6 or 8
+     * weeks back sits OUTSIDE that period window but INSIDE the 12-week trend window, on both the
+     * domain and the LLM side. If {@code trendFrom} were ever collapsed into {@code since}, both
+     * assertions below would fail (the older weeks would read back as zero).
+     */
+    @Test
+    void testBoard_shouldKeepOlderWeeksNonZeroInUsesPerWeek_whenPeriodIs30dAndRowsAreFiveToElevenWeeksOld() {
+        RegisteredUser anna = registerUser("Anna");
+        LocalDate currentWeekMonday = LocalDate.now(ZONE).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        // 8 weeks back (LLM side) and 6 weeks back (domain side) — both well past a 30d period's
+        // ~4.3-week reach, both well inside the fixed 12-week trend window.
+        LocalDate llmWeek = currentWeekMonday.minusWeeks(8);
+        LocalDate domainWeek = currentWeekMonday.minusWeeks(6);
+        Instant llmAt = llmWeek.plusDays(1).atTime(LocalTime.NOON).atZone(ZONE).toInstant();
+        llmLogPopulator.logAt(llmAt, anna.id(), CallKind.CHAT, "meal_draft", "gemini-2.5-flash", 10, 5, null,
+                new BigDecimal("0.01"));
+        mealPopulator.createBareMealAt(anna.id(), domainWeek.plusDays(1), "lunch", LocalTime.NOON);
+
+        AdminFeatureBoardResponse body =
+                getForBody(URI + "?period=30d", ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        // weekStarts[i] = trendFrom + i weeks, trendFrom = currentWeekMonday - 11 weeks, so a week
+        // that is N weeks back from the current week sits at index (11 - N).
+        int llmIndex = 11 - 8;
+        int domainIndex = 11 - 6;
+        assertThat(body.getRows()).filteredOn(r -> "meal_draft".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getUsesPerWeek()).hasSize(12);
+                    assertThat(r.getUsesPerWeek().get(llmIndex)).isGreaterThan(0);
+                });
+        assertThat(body.getRows()).filteredOn(r -> "food".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getUsesPerWeek()).hasSize(12);
+                    assertThat(r.getUsesPerWeek().get(domainIndex)).isGreaterThan(0);
                 });
     }
 
