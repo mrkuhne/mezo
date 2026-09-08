@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
@@ -88,5 +89,36 @@ class ToolCallAuditTest {
         assertThat(audit.callCount()).isEqualTo(1);
         assertThat(audit.toToolCallsEnvelope().calls()).singleElement()
                 .extracting(ToolCallsEnvelope.ToolCall::name).isEqualTo("get_recipes");
+    }
+
+    @Test
+    void testToolOutcomes_shouldCarryResultText_whenResultRecordedForACall() {
+        // mezo-indo: the verdict judge needs WHAT a tool returned, not just that it ran. The
+        // result arrives after the call is recorded (recordCall fires the live SSE listener
+        // BEFORE the delegate runs), so it must be attachable to the call by its index.
+        ToolCallAudit audit = new ToolCallAudit(6, 10);
+        int first = audit.recordCall("get_weight_trend", "weeks=4");
+        int second = audit.recordCall("get_sleep", "days=7");
+        audit.recordResult(second, "Alvás (7 nap): 7,1 óra átlag");
+        audit.recordResult(first, "Súlytrend (4 hét): trendsúly 85,5 kg");
+
+        assertThat(audit.toolOutcomes())
+                .extracting(ToolCallAudit.ToolOutcome::name, ToolCallAudit.ToolOutcome::args,
+                        ToolCallAudit.ToolOutcome::result)
+                .containsExactly(
+                        tuple("get_weight_trend", "weeks=4", "Súlytrend (4 hét): trendsúly 85,5 kg"),
+                        tuple("get_sleep", "days=7", "Alvás (7 nap): 7,1 óra átlag"));
+    }
+
+    @Test
+    void testToolOutcomes_shouldLeaveResultNull_whenNoResultWasRecorded() {
+        // A call whose result never arrives (a thrown listener path, a future caller that forgets)
+        // must still surface as an outcome — the judge is told the output is unknown, not that the
+        // call never happened.
+        ToolCallAudit audit = new ToolCallAudit(6, 10);
+        audit.recordCall("get_sleep", "days=7");
+
+        assertThat(audit.toolOutcomes()).singleElement()
+                .extracting(ToolCallAudit.ToolOutcome::result).isNull();
     }
 }

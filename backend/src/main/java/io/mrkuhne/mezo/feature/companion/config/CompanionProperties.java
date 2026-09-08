@@ -183,7 +183,17 @@ public record CompanionProperties(
         /** Corrective re-prompts a violating answer gets before shipping degraded (old docs §4.5: 1). */
         @Min(0) @Max(2) int maxRetries,
         /** Prescription-med terms the clinical check guards (accent-folded contains-match). */
-        @NotEmpty List<String> rxTerms
+        @NotEmpty List<String> rxTerms,
+        /**
+         * mezo-indo: per-tool-output character cap in the verdict judge's payload. The judge runs
+         * on the cheap tier and already carries the system prompt + the whole history, while tool
+         * outputs are unbounded per turn (a 30-day weight log is one line per day). A cut output is
+         * MARKED, and the judge prompt tells the judge not to read the cut as fabrication.
+         */
+        @Min(0) @Max(4000) int toolResultMaxChars,
+        /** mezo-indo: budget across ALL tool outputs in one verdict payload; past it a call keeps
+         *  its line and its output is replaced with the honest "omitted" marker. */
+        @Min(0) @Max(20000) int toolResultsTotalMaxChars
     ) {}
 
     /** V2.1 embedding port — which provider model produces memory vectors (+ V2.2 pipeline tuning). */

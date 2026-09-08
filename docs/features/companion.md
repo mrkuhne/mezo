@@ -756,7 +756,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
-| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
+| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s`, tool outputs in the judge payload `mezo-indo` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. The judge now sees the tool OUTPUTS (budgeted, lossy cases marked), which removed the last measured structural false-positive class (`mezo-9yqq` class 1). |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Canonical dual-write + vector generations | ✅ `mezo-6dii.2` | Every OLD memory write projects AFTER_COMMIT into source-addressable `memory_item` + versioned `memory_vector`; isolated failure preserves OLD. Optional resumable re-embedding builds a target generation without switching serving. |
@@ -1826,8 +1826,8 @@ an `advisors.rx-terms` term AND a dose-change verb (`emeld|emeljük|csökkentsd|
 skips `TurnVerdictCheck` that round. The verdict is ONE cheap-tier call through the history-less
 two-string port (`VERDICT_MARKER`-prefixed judge prompt; payload = `"KONTEXTUS:
 " + turnSystemPrompt
-+ ChatHistory.render(history)` + the tool-call name list from `ToolCallAudit.callNames()` + the
-user message + the answer, `TurnVerdictCheck.check`, `advisor/TurnVerdictCheck.java:52-60`) —
++ ChatHistory.render(history)` + the tool block from `ToolOutcomeDigest.render(audit.toolOutcomes(),
+…)` + the user message + the answer, `TurnVerdictCheck.check`, `advisor/TurnVerdictCheck.java`) —
 **since mezo-q71s the history is no longer inside `turnSystemPrompt`** (§3 "Prompt assembly"), so
 the payload renders it explicitly with `ChatHistory.render`; without this the judge would go blind
 to the conversation and fire false `redundantQuestion`/`unmarkedClaim` verdicts. Parsed
@@ -1840,7 +1840,32 @@ invented concrete number still is, hedged or not. Violations map to `redundancy`
 (`AdvisorViolation.check` — was `"grounding"`); retry = `systemPrompt +
 AdvisorRetry.block(violations)` with the same tools and the SAME audit (chips reflect the whole
 turn), re-checked; after `advisors.max-retries` rounds a still-violating answer returns
-`AdvisedAnswer(answer, degraded=true)`. `AdvisorRetry.block` gained a closing tone-preservation
+`AdvisedAnswer(answer, degraded=true)`.
+
+**The judge sees the tool OUTPUTS, not just the tool names (`mezo-indo`).** The v1 payload listed
+call names only, and the javadoc owned that as a known limit — so every number a tool produced was
+*structurally* unsupported to the judge, however well grounded. That was measured, not assumed:
+two such cases passed **0% of the time at every reasoning-effort level, xhigh included**
+(`mezo-641c` S2/A, 144 live judge calls; write-up on `mezo-9yqq`), because it is a missing-INPUT
+problem — more thinking cannot supply an input that is not in the payload. It was the last known
+structural false-positive source in the chain, and each false positive costs a whole extra
+streamed answer (the retry). The fix: `RecordingToolCallback` — the only place that sees a tool's
+output — hands it to `ToolCallAudit.recordResult(callIndex, result)`, two steps rather than one
+because `recordCall` fires the live SSE chip listener BEFORE the tool runs. `toolOutcomes()`
+(name + args + output) replaced `callNames()`, and `ToolOutcomeDigest` renders the
+`ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:` block under a per-output cap
+(`advisors.tool-result-max-chars`) and a total cap (`advisors.tool-results-total-max-chars`) —
+the judge runs on the cheap tier and its payload already carries the system prompt plus the whole
+rendered history, while tool outputs are unbounded per turn (a 30-day weight log is one line per
+day). **Both lossy outcomes stay visible**: a cut output is marked `[…a kimenet innen levágva]`, an
+output past the total budget becomes `[a kimenet helyhiány miatt kimaradt]` while its CALL keeps
+its line, and a call with no recorded output reads `[a kimenet nem ismert]`. Silent loss would let
+the judge conclude "the tool did not return this number" from an artifact of our truncation, or
+read a dropped output as a tool that returned nothing — misleading in exactly the direction the
+change exists to remove — so the judge prompt names the three markers and says not to infer
+fabrication from them. A tool that THREW is recorded with its honest `TOOL_FAILED` text, so a
+failed read never looks like support. The outputs are **not persisted** — the `tool_calls` jsonb
+envelope still carries only `{type, name, args}`. `AdvisorRetry.block` gained a closing tone-preservation
 sentence (mezo-q71s, `advisor/AdvisorRetry.java:24-25`): *"A hangnem NE változzon — ugyanaz az élő,
 beszélgetős stílus; a javítás kizárólag a fent megjelölt problémára vonatkozzon."* — without it a
 corrective retry structurally flattened the whole answer, not just the flagged problem. Both
@@ -4664,6 +4689,11 @@ since S2.
   (`COMPANION_ADVISORS_SWITCH`); off ⇒ the chain/check beans do not exist (V1.2 behavior).
 - `mezo.companion.advisors.max-retries` = **1** (`@Min(0) @Max(2)`) — corrective re-prompts
   before a violating answer ships `degraded` (0 = check-only flagging; old docs §4.5: 1).
+- `mezo.companion.advisors.tool-result-max-chars` = **700** (`@Min(0) @Max(4000)`, `mezo-indo`) —
+  per-tool-output character cap in the verdict payload; a longer output is cut and MARKED.
+- `mezo.companion.advisors.tool-results-total-max-chars` = **3000** (`@Min(0) @Max(20000)`,
+  `mezo-indo`) — budget across ALL tool outputs in one verdict payload; past it a call keeps its
+  line and its output is replaced by the honest "omitted" marker.
 - `mezo.companion.advisors.rx-terms` (`@NotEmpty`) — the clinical check's owner-curated
   GLP-1-family drug-name dictionary (7 terms, `application.yml`) — the guard's vocabulary, not
   user data, so it was deliberately left untouched by the medication-retirement pass ([ADR
