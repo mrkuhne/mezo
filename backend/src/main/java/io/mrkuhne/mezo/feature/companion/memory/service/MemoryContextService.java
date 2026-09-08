@@ -197,12 +197,13 @@ public class MemoryContextService {
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
         // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a
-        // pool thread sees neither the actor nor the feature. Capture them HERE, on the calling
-        // thread, and re-bind them inside the task — but only the admin replay's, deliberately:
-        // for a chat turn the override is null and the ambient context is not the replay, so that
-        // path's rows keep exactly the (unattributed) shape they have today. Widening this to
-        // every caller would retroactively re-label all existing embed traffic.
-        UUID actorOverride = LlmActorContext.override();
+        // pool thread sees neither the actor nor the feature — capture them HERE, on the calling
+        // thread, and re-bind them inside the task. The two are deliberately NOT symmetric:
+        // mezo-ozri.7 widens the ACTOR to every caller (an embed made for a user must book against
+        // that user, or the per-user cap cannot see it), while the CONTEXT label stays replay-only,
+        // because widening the label would retroactively re-file all existing embed traffic under a
+        // different feature and corrupt the shipped cost matrix.
+        UUID actor = LlmActorContext.capture();
         LlmCallContext ambient = llmCallContextHolder.get();
         LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
         retrievers.values().stream()
@@ -211,7 +212,7 @@ public class MemoryContextService {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
                         Future<RetrieverOutcome> future = applicationTaskExecutor.submit(
-                                () -> executeInScope(retriever, input, actorOverride, propagated));
+                                () -> executeInScope(retriever, input, actor, propagated));
                         tasks.put(retriever.name(), new RetrieverTask(future, deadline, null));
                     } catch (RuntimeException exception) {
                         tasks.put(retriever.name(), new RetrieverTask(null, deadline,
@@ -276,14 +277,12 @@ public class MemoryContextService {
 
     /** Re-binds the captured breadcrumbs (if any) around one retriever's work on the pool thread. */
     private RetrieverOutcome executeInScope(MemoryRetriever retriever, RetrievalInput input,
-            UUID actorOverride, LlmCallContext context) {
+            UUID actor, LlmCallContext context) {
         Supplier<RetrieverOutcome> work = () -> execute(retriever, input);
         Supplier<RetrieverOutcome> labelled = context == null
                 ? work
                 : () -> llmCallContextHolder.runWith(context, work);
-        return actorOverride == null
-                ? labelled.get()
-                : LlmActorContext.runAsOverride(actorOverride, labelled);
+        return LlmActorContext.runAsCaptured(actor, labelled);
     }
 
     private static RetrieverOutcome execute(MemoryRetriever retriever, RetrievalInput input) {

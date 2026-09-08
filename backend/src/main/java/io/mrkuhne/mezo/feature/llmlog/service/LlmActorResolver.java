@@ -2,9 +2,6 @@ package io.mrkuhne.mezo.feature.llmlog.service;
 
 import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.util.UUID;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,32 +16,21 @@ import org.springframework.stereotype.Component;
  * account is the actor; a request principal always wins over the context.
  *
  * <p>Precedence, highest first (mezo-4qyt): {@link LlmActorContext#override()}, then the JWT
- * principal, then {@link LlmActorContext#current()}. The override tier exists for the admin
- * explorer's dry-run replay only — the caller is the owner, but the spend belongs to the
- * inspected user.
+ * principal, then {@link LlmActorContext#current()}. The override tier carries the admin explorer's
+ * dry-run replay (the caller is the owner, but the spend belongs to the inspected user) and, since
+ * mezo-ozri.7, an actor captured on a submitting thread and re-bound inside a pooled task.
+ *
+ * <p>The rules themselves live in {@link LlmActorContext#capture()} and this class delegates to
+ * them, so the memory platform's cross-thread capture and the recorder's own resolution are by
+ * construction the same decision.
  */
 @Component
 public class LlmActorResolver {
 
     /** The authenticated user's id, or null on an unauthenticated/anonymous (cron) thread. */
     public UUID currentActor() {
-        UUID override = LlmActorContext.override();
-        if (override != null) {
-            // mezo-4qyt: an explicit override outranks even a request principal — see
-            // LlmActorContext#override for why the admin replay needs exactly that.
-            return override;
-        }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-            || !authentication.isAuthenticated()
-            || !(authentication.getPrincipal() instanceof Jwt jwt)
-            || jwt.getSubject() == null) {
-            return LlmActorContext.current();
-        }
-        try {
-            return UUID.fromString(jwt.getSubject());
-        } catch (IllegalArgumentException ex) {
-            return LlmActorContext.current(); // a non-UUID subject is not ours to reject here — the caller is already running
-        }
+        // mezo-ozri.7: the precedence rules moved to LlmActorContext so the cross-thread capture
+        // used by the memory platform's pool hops cannot drift from what the recorder resolves.
+        return LlmActorContext.capture();
     }
 }
