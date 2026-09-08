@@ -288,8 +288,17 @@ export const ADMIN_ALERTS_EMPTY: AdminAlertsResponse = {
 // newest ISO week), dense-filled. `helped` is null on `meal_draft` and `food` — meal_draft is a
 // real AI feature simply not yet mapped to message_feedback, `food` is a domain feature with no
 // companion feedback at all — matching the schema's "null when unmapped/companion-off" rulings.
+// Fix round 1 (mezo-kxnn Task 2/3 visual pass, Finding 4): the ORIGINAL multiplier here was `i *
+// 7` — for `spread === 3` that is `modulus === 7`, and `i * 7 mod 7` is 0 for every `i`, so
+// `companion_chat`'s series (`FEATURE_WEEKS_12(6, 3)`) came out CONSTANT (`[3,3,3,...]`) despite
+// the file's own comment above claiming these are varied. That flat series is exactly what fed
+// `AdminFeatureDetailPage`'s "Használat · 12 hét" `Sparkline` (`usageByWeek` is this row's own
+// `usesPerWeek`), rendering as a flat line pinned to the bottom of its viewBox (the sparkline's
+// y-scale falls back to a degenerate `range = 1` when `max === min`). `i * 2` is coprime with
+// every modulus this file actually calls with (3, 5, 7 — the `spread` values in use are 1, 2, 3),
+// so it always cycles through multiple residues instead of collapsing to a single one.
 const FEATURE_WEEKS_12 = (base: number, spread: number): number[] =>
-  Array.from({ length: 12 }, (_, i) => Math.max(0, base + ((i * 7) % (spread * 2 + 1)) - spread))
+  Array.from({ length: 12 }, (_, i) => Math.max(0, base + ((i * 2) % (spread * 2 + 1)) - spread))
 
 export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
   period: '30d',

@@ -110,7 +110,7 @@ export function AdminFeaturesPage() {
           </div>
 
           <MosaicDesktop>
-            <AdminTile query={board} wash="lav" eyebrow="Érték / költség négyesmátrix" span={12}>
+            <AdminTile query={board} wash="lav" eyebrow="Érték–költség térkép" span={12}>
               <ValueCostQuadrant rows={rows} />
             </AdminTile>
           </MosaicDesktop>

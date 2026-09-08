@@ -11591,7 +11591,10 @@ button.mz-wtile:active { transform: scale(0.96); }
 
 /* ---- value/cost quadrant (mezo-kxnn Task 2) — hand-rolled SVG scatter, no charting lib. ---- */
 .ad-quadrant { display: flex; flex-direction: column; gap: 4px; }
-.ad-quad-svg { width: 100%; height: auto; display: block; }
+/* Fix round 1 (visual pass): capped at ~2.4:1 (the component's own 720×300 viewBox) via
+   `aspect-ratio` + a hard `max-height`, so the tile reads like the other ~400px chart tiles
+   instead of stretching to ~900px on a wide desktop mosaic column. */
+.ad-quad-svg { width: 100%; aspect-ratio: 2.4; height: auto; max-height: 420px; display: block; }
 .ad-quad-svg .split { stroke: rgba(43, 33, 24, .16); stroke-width: 1; stroke-dasharray: 4 4; }
 .ad-quad-svg .cap {
   font-size: 8.5px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
@@ -11599,6 +11602,7 @@ button.mz-wtile:active { transform: scale(0.96); }
 }
 .ad-quad-svg .pt { stroke: #fff; stroke-width: 1.5; opacity: 0.9; cursor: pointer; }
 .ad-quad-svg .pt:hover { opacity: 1; }
+.ad-quad-svg .pt-label { font-size: 9px; font-weight: 600; fill: #6E6257; pointer-events: none; }
 .ad-quad-note { font-size: 10.5px; margin: 2px 0 0; }
 
 /* ---- feature detail page (mezo-kxnn Task 3) ---- */
@@ -11607,6 +11611,8 @@ button.mz-wtile:active { transform: scale(0.96); }
   gap: 10px; padding: 10px 4px 14px;
 }
 .ad-feature-head .nm { display: flex; align-items: center; gap: 10px; }
+.ad-trend-wrap { flex: 1; display: flex; align-items: center; min-height: 0; }
+.ad-trend-wrap .ad-spark { width: 100%; }
 .ad-funnelrow { display: flex; align-items: center; gap: 9px; padding: 5px 0; }
 .ad-funnelrow .lb { font-size: 10.5px; font-weight: 600; width: 78px; flex: none; }
 .ad-funnelrow .vv { font-size: 10.5px; font-weight: 700; color: #6E6257; width: 26px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }

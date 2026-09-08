@@ -109,7 +109,14 @@ export function AdminFeatureDetailPage() {
                 </AdminTile>
 
                 <AdminTile query={detail} wash="lav" eyebrow="Használat · 12 hét" span={6}>
-                  <Sparkline points={d.usageByWeek} tone="lav" ariaLabel={`${label.label} · 12 hét`} />
+                  {/* Fix round 1: the tile sits next to the Tölcsér tile in the same 12-col
+                      grid row, which is naturally taller (3 funnel bars + name chips) — the
+                      CSS grid stretches both sp6 tiles to match, and a compact ~96px sparkline
+                      pinned to the top of a flex column left a big empty gap below it. `flex: 1`
+                      + vertical centering fills that leftover space instead of leaving it bare. */}
+                  <div className="ad-trend-wrap">
+                    <Sparkline points={d.usageByWeek} tone="lav" ariaLabel={`${label.label} · 12 hét`} />
+                  </div>
                 </AdminTile>
 
                 <AdminTile query={detail} wash="sky" eyebrow="Tölcsér" span={6}>
@@ -215,7 +222,7 @@ function FunnelBar({ label, value, max }: { label: string; value: number; max: n
     <div className="ad-funnelrow">
       <span className="lb">{label}</span>
       <div className="ad-bar" style={{ flex: 1 }}>
-        <i style={{ width: `${pct}%`, background: '#2E6E96' }} />
+        <i style={{ width: `${pct}%`, background: '#4E8FB8' }} />
       </div>
       <span className="vv">{huInt(value)}</span>
     </div>

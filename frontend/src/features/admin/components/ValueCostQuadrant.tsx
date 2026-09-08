@@ -25,16 +25,26 @@ import { huInt, usd } from '@/shared/lib/huNum'
 // scorecard's own reading, not a fourth palette). `<title>` gives every point a hover tooltip
 // (RTL's `getByTitle` finds the child `<title>` element same as an attribute — see the test);
 // click navigates to the feature's detail page, same target as a scorecard row's `Link`.
-
+//
+// Fix round 1 (visual pass, controller browser check @1440px): the viewBox aspect was ~2:1
+// (640×320), and with no height cap on the sp12 tile it rendered ~900px tall, pushing the
+// scorecard below the fold — widened to a ~2.4:1 aspect (720×300) AND capped via CSS
+// `max-height` (`.ad-quad-svg`, prototype.css) so the tile reads like the other chart tiles.
+// The right-side corner captions were clipping ("EZÉRT KÉRHETÜNK PÉ…") even though they already
+// used `textAnchor="end"` at `x = W - PAD` — SVG `letter-spacing` (`.cap`'s CSS) adds trailing
+// space AFTER the last glyph even under `text-anchor="end"` in some engines, pushing the visible
+// glyphs past the anchor point; `CAP_INSET_RIGHT` below adds extra clearance beyond the plot's
+// own `PAD` specifically for the caption anchors (the plot lines/points still use `PAD`).
 const KIND_COLOR: Record<'ai' | 'domain' | 'both', string> = {
   ai: '#5D4FA0',
   domain: '#4E6B42',
   both: '#C9962E',
 }
 
-const W = 640
-const H = 320
+const W = 720
+const H = 300
 const PAD = 46
+const CAP_INSET_RIGHT = 18
 
 function median(values: number[]): number {
   if (values.length === 0) return 0
@@ -83,27 +93,43 @@ export function ValueCostQuadrant({ rows }: { rows: AdminFeatureRow[] }) {
       >
         <line className="split" x1={scaleX(xMed)} y1={PAD} x2={scaleX(xMed)} y2={H - PAD} />
         <line className="split" x1={PAD} y1={scaleY(yMed)} x2={W - PAD} y2={scaleY(yMed)} />
-        <text className="cap" x={W - PAD} y={PAD + 14} textAnchor="end">ezért kérhetünk pénzt</text>
-        <text className="cap" x={W - PAD} y={H - PAD - 8} textAnchor="end">ingyenes csali</text>
+        <text className="cap" x={W - PAD - CAP_INSET_RIGHT} y={PAD + 14} textAnchor="end">ezért kérhetünk pénzt</text>
+        <text className="cap" x={W - PAD - CAP_INSET_RIGHT} y={H - PAD - 8} textAnchor="end">ingyenes csali</text>
         <text className="cap" x={PAD} y={PAD + 14} textAnchor="start">spórolni itt lehet</text>
         <text className="cap" x={PAD} y={H - PAD - 8} textAnchor="start">figyelni</text>
         {points.map(({ row, x, y }) => {
           const label = featureLabel(row.key)
           const kind = row.kind as 'ai' | 'domain' | 'both'
+          const cx = scaleX(x)
+          const cy = scaleY(y)
+          const r = radius(row.uniqueUsers)
+          // Naive label placement (no collision solver, per the fix-round ask): to the right of
+          // the dot by default, flipped to the left for a dot close enough to the right edge
+          // that a right-side label would clip the same way the corner captions did above.
+          const nearRightEdge = cx > W - PAD * 1.6
           return (
-            <circle
-              key={row.key}
-              className="pt"
-              cx={scaleX(x)}
-              cy={scaleY(y)}
-              r={radius(row.uniqueUsers)}
-              fill={KIND_COLOR[kind]}
-              onClick={() => navigate(`/admin/features/${row.key}`)}
-            >
-              <title>
-                {`${label.label}${label.missing ? ' (nincs címke)' : ''} · érték ${huInt(Math.round(x))} · ${usd(row.costUsd)} · ${huInt(row.uniqueUsers)} felhasználó`}
-              </title>
-            </circle>
+            <g key={row.key}>
+              <circle
+                className="pt"
+                cx={cx}
+                cy={cy}
+                r={r}
+                fill={KIND_COLOR[kind]}
+                onClick={() => navigate(`/admin/features/${row.key}`)}
+              >
+                <title>
+                  {`${label.label}${label.missing ? ' (nincs címke)' : ''} · érték ${huInt(Math.round(x))} · ${usd(row.costUsd)} · ${huInt(row.uniqueUsers)} felhasználó`}
+                </title>
+              </circle>
+              <text
+                className="pt-label"
+                x={nearRightEdge ? cx - r - 4 : cx + r + 4}
+                y={cy + 3}
+                textAnchor={nearRightEdge ? 'end' : 'start'}
+              >
+                {label.label}
+              </text>
+            </g>
           )
         })}
       </svg>

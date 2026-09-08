@@ -30,7 +30,10 @@ describe('AdminFeaturesPage (mock mode)', () => {
   it('renders a Hungarian row name from the mock seed', async () => {
     renderPage()
     await screen.findByText('Aktívan használt funkciók')
-    expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument()
+    // Fix round 1: the value/cost quadrant now ALSO labels its own points with the feature name
+    // (Task 2 visual-pass fix), so a bare `getByText` on the shared name string is ambiguous —
+    // scope to the scorecard row's own label span.
+    expect(screen.getByText('Beszélgetés a társsal', { selector: '.ad-scorerow .lb' })).toBeInTheDocument()
   })
 
   it('groups system-kind rows under a muted "Rendszer" divider, below the regular rows', async () => {
@@ -100,7 +103,10 @@ describe('AdminFeaturesPage (real mode)', () => {
     renderPage()
     await screen.findByText('Aktívan használt funkciók')
     await waitFor(() => {
-      expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument()
+      // Fix round 1: the value/cost quadrant now ALSO labels its own points with the feature name
+    // (Task 2 visual-pass fix), so a bare `getByText` on the shared name string is ambiguous —
+    // scope to the scorecard row's own label span.
+    expect(screen.getByText('Beszélgetés a társsal', { selector: '.ad-scorerow .lb' })).toBeInTheDocument()
     })
   })
 
@@ -124,7 +130,10 @@ describe('AdminFeaturesPage (real mode)', () => {
     server.use(http.get(`${API_BASE}/api/admin/usage/screens`, () => new HttpResponse(null, { status: 500 })))
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument()
+      // Fix round 1: the value/cost quadrant now ALSO labels its own points with the feature name
+    // (Task 2 visual-pass fix), so a bare `getByText` on the shared name string is ambiguous —
+    // scope to the scorecard row's own label span.
+    expect(screen.getByText('Beszélgetés a társsal', { selector: '.ad-scorerow .lb' })).toBeInTheDocument()
     })
     expect(await screen.findByText(/nem elérhető/i)).toBeInTheDocument()
   })
