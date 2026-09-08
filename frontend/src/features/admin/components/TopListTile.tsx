@@ -9,11 +9,19 @@ import { Link } from 'react-router-dom'
 // page passed the same/overlapping text to both — three renders of the same caption on screen.
 // Removed both; `title` survives only as the card's accessible name (`aria-label`), invisible.
 //
-// `share` (0..1) drives the bar width when present; `topNFromEntries` (adminViz.ts) is the one
-// place that computes it. A row can omit `share` entirely (undefined) for a bar-less variant —
-// "Csendes tesztelők"'s day counts aren't a share of anything, so a bar there would be a lie.
-// `tone` colors the value text instead (`warn` for an actual quiet-day count, `mut` for the
-// honest "még nem aktív" rows — never a fabricated day count for a user who has never been seen).
+// `share` (0..1) drives the bar's resting WIDTH when present (fix round 2: an inline
+// `transform: scaleX(share)` does NOT work here — `.mz-play .ad-toprow .sharebar i`'s `adGrow`
+// entrance animation ends at `transform: scaleX(1)` with fill-mode `both`, which permanently
+// overrides any inline `transform` the instant the animation plays, so every bar rendered full
+// width regardless of `share`. `width` is a different property: the animation only ever touches
+// `transform`, so setting the resting size via `width` composes with the entrance's
+// `scaleX(0→1)` instead of being clobbered by it — the same fix already used by `.ad-bar i`
+// (AdminUserDetailPage's footprint bars); see prototype.css's `adGrow`/"nyugalmi állapot MINDIG
+// a végállapot" rule). `topNFromEntries` (adminViz.ts) is the one place that computes `share`.
+// A row can omit `share` entirely (undefined) for a bar-less variant — "Csendes tesztelők"'s day
+// counts aren't a share of anything, so a bar there would be a lie. `tone` colors the value text
+// instead (`warn` for an actual quiet-day count, `mut` for the honest "még nem aktív" rows —
+// never a fabricated day count for a user who has never been seen).
 export interface TopRow {
   key: string
   label: string
@@ -56,7 +64,7 @@ export function TopListTile({
                 <div className="lb">{row.label}</div>
                 {row.sub && <div className="sub">{row.sub}</div>}
                 {row.share !== undefined && (
-                  <div className="sharebar"><i style={{ transform: `scaleX(${row.share})` }} /></div>
+                  <div className="sharebar"><i style={{ width: `${row.share * 100}%` }} /></div>
                 )}
               </div>
               <span className={row.tone ? `val ${row.tone}` : 'val'}>{row.value}{unit ? ` ${unit}` : ''}</span>

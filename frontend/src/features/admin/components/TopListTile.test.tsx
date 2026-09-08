@@ -47,11 +47,18 @@ describe('TopListTile', () => {
     expect(screen.getByText('$0.50')).toBeInTheDocument()
   })
 
-  it('sets the share bar width from row.share', () => {
+  it('sets the share bar RESTING size via width, not transform (fix round 2)', () => {
+    // The entrance animation (`.mz-play .ad-toprow .sharebar i { animation: adGrow ... both }`,
+    // prototype.css) ends at `transform: scaleX(1)` with fill-mode `both`, which permanently
+    // overrides any inline `transform` once it plays — an inline `transform: scaleX(share)` was
+    // silently clobbered, rendering every bar full width regardless of `share` (fix round 2).
+    // `width` is a different property the animation never touches, so it must carry the share.
     const { container } = renderTile()
     const bars = container.querySelectorAll('.sharebar i')
-    expect(bars[0]).toHaveStyle({ transform: 'scaleX(1)' })
-    expect(bars[1]).toHaveStyle({ transform: 'scaleX(0.08)' })
+    expect(bars[0]).toHaveStyle({ width: '100%' })
+    expect(bars[1]).toHaveStyle({ width: '8%' })
+    expect(bars[0]).not.toHaveAttribute('style', expect.stringContaining('transform'))
+    expect(bars[1]).not.toHaveAttribute('style', expect.stringContaining('transform'))
   })
 
   it('omits the share bar entirely for a bar-less row (share undefined), per its own tone', () => {
