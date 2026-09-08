@@ -4329,6 +4329,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One user's per-surface companion feedback and recall totals (AdminInsights) */
+        get: operations["getAdminUserFeedback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/usage/features": {
         parameters: {
             query?: never;
@@ -9976,6 +9993,18 @@ export interface components {
             cost30dUsd: number;
             /** Format: int32 */
             activeDays30d: number;
+            /** @description Fixed length 90, oldest -> newest reportZone day, summed across every feature-map domain. Not enforced by the schema. */
+            activityByDay: number[];
+            /**
+             * Format: int32
+             * @description 30d message_feedback up votes, live state (updated_at-windowed), summed across every artifact kind.
+             */
+            feedbackUp: number;
+            /**
+             * Format: int32
+             * @description 30d message_feedback down votes, same windowing as feedbackUp.
+             */
+            feedbackDown: number;
         };
         AdminTableFootprint: {
             table: string;
@@ -10230,6 +10259,21 @@ export interface components {
             period: string;
             features: components["schemas"]["AdminFeedbackFeatureSummary"][];
             /** @description null when the companion feature switch is off */
+            recall: components["schemas"]["AdminFeedbackRecall"] | null;
+        };
+        AdminUserFeedbackSurface: {
+            /** @description raw message_feedback.artifact_kind, e.g. chat_message, feed_message — HU surface names are a client-side SURFACE_LABELS lookup, not this field */
+            kind: string;
+            /** Format: int32 */
+            up: number;
+            /** Format: int32 */
+            down: number;
+            reasons: components["schemas"]["AdminFeatureDownReason"][];
+        };
+        AdminUserFeedbackResponse: {
+            /** @description null when companion-off; empty when on but this user cast no votes */
+            surfaces: components["schemas"]["AdminUserFeedbackSurface"][] | null;
+            /** @description null when the companion feature switch is off; this user's live memory-retrieval-feedback totals otherwise */
             recall: components["schemas"]["AdminFeedbackRecall"] | null;
         };
         AdminColumnDescriptor: {
@@ -23030,6 +23074,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUserDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such user (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminUserFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User feedback */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserFeedbackResponse"];
                 };
             };
             /** @description Missing/invalid token */

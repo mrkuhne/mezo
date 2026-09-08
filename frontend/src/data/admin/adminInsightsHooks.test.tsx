@@ -12,6 +12,8 @@ import {
   useAdminFeatureBoard,
   useAdminFeatureDetail,
   useAdminFeedbackSummary,
+  useAdminUserInsights,
+  useAdminUserFeedback,
 } from '@/data/admin/adminInsightsHooks'
 import {
   ADMIN_OVERVIEW_EMPTY,
@@ -23,8 +25,14 @@ import {
   ADMIN_FEATURE_BOARD_MOCK,
   ADMIN_FEATURE_DETAIL_EMPTY,
   ADMIN_FEEDBACK_SUMMARY_MOCK,
+  ADMIN_USER_FEEDBACK_ANNA_MOCK,
+  ADMIN_USER_FEEDBACK_DANIEL_MOCK,
+  ADMIN_USER_FEEDBACK_EMPTY,
+  ADMIN_USER_FEEDBACK_NONE_MOCK,
+  ADMIN_USER_INSIGHTS_MOCK,
   featureBoardMockFor,
 } from '@/data/admin/adminInsightsMock'
+import { MOCK_ANNA_ID, MOCK_BELA_ID, MOCK_OWNER_ID } from '@/data/admin/adminMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -106,6 +114,28 @@ describe('adminInsights hooks (mock mode)', () => {
     const reasons = result.current.data.features.flatMap((f) => f.reasons.map((r) => r.reason))
     expect(reasons.every((r) => ['inaccurate', 'too_much', 'bad_timing', 'not_about_me'].includes(r))).toBe(true)
   })
+
+  // Emberek list (mezo-zde2) — 90-int activityByDay + 30d feedback totals on every row.
+  it('seeds every user-insight row with a 90-int activityByDay and non-negative feedback totals', () => {
+    const { result } = renderHook(() => useAdminUserInsights(null, 'lastActivityAt', 'desc', true), { wrapper: QueryWrapper })
+    expect(result.current.data).toEqual(ADMIN_USER_INSIGHTS_MOCK)
+    expect(result.current.data.every((u) => u.activityByDay.length === 90)).toBe(true)
+    expect(result.current.data.every((u) => u.feedbackUp >= 0 && u.feedbackDown >= 0)).toBe(true)
+    // Béla never logged anything — the honest all-zero array, not a fabricated one.
+    const bela = result.current.data.find((u) => u.id === MOCK_BELA_ID)!
+    expect(bela.activityByDay.every((n) => n === 0)).toBe(true)
+  })
+
+  it('serves the per-user feedback seed for Daniel/Anna, and the honest empty-but-on shape for Béla', () => {
+    const daniel = renderHook(() => useAdminUserFeedback(MOCK_OWNER_ID, true), { wrapper: QueryWrapper })
+    const anna = renderHook(() => useAdminUserFeedback(MOCK_ANNA_ID, true), { wrapper: QueryWrapper })
+    const bela = renderHook(() => useAdminUserFeedback(MOCK_BELA_ID, true), { wrapper: QueryWrapper })
+    expect(daniel.result.current.data).toEqual(ADMIN_USER_FEEDBACK_DANIEL_MOCK)
+    expect(anna.result.current.data).toEqual(ADMIN_USER_FEEDBACK_ANNA_MOCK)
+    expect(bela.result.current.data).toEqual(ADMIN_USER_FEEDBACK_NONE_MOCK)
+    expect(bela.result.current.data.surfaces).toEqual([])
+    expect(bela.result.current.data.recall).toEqual({ useful: 0, irrelevant: 0, suppress: 0 })
+  })
 })
 
 describe('adminInsights hooks (real mode)', () => {
@@ -166,6 +196,31 @@ describe('adminInsights hooks (real mode)', () => {
   it('fetches the feedback summary from the API', async () => {
     const { result } = renderHook(() => useAdminFeedbackSummary('30d', true), { wrapper: QueryWrapper })
     await waitFor(() => expect(result.current.data.features.length).toBeGreaterThan(0))
+  })
+
+  it('fetches a user-insight list row with a 90-int activityByDay from the API', async () => {
+    const { result } = renderHook(() => useAdminUserInsights(null, 'lastActivityAt', 'desc', true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.length).toBeGreaterThan(0))
+    expect(result.current.data.every((u) => u.activityByDay.length === 90)).toBe(true)
+  })
+
+  it('fetches a user feedback surface list from the API', async () => {
+    const { result } = renderHook(() => useAdminUserFeedback(MOCK_OWNER_ID, true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.surfaces).not.toBeNull())
+  })
+
+  it('never leaves isPending stuck true when no user id is given', () => {
+    const { result } = renderHook(() => useAdminUserFeedback('', true), { wrapper: QueryWrapper })
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.data).toEqual(ADMIN_USER_FEEDBACK_EMPTY)
+  })
+
+  it('does not fetch user feedback when the caller is not the owner', () => {
+    // Folds `enabled` into `isPending` (same precedent as useAdminUserDetail/useAdminFeatureDetail)
+    // so a disabled query never gets stuck reporting isPending: true forever.
+    const { result } = renderHook(() => useAdminUserFeedback(MOCK_OWNER_ID, false), { wrapper: QueryWrapper })
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.data).toEqual(ADMIN_USER_FEEDBACK_EMPTY)
   })
 })
 

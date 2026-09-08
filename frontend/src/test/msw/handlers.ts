@@ -16,6 +16,7 @@ import {
   ADMIN_USER_INSIGHTS_MOCK,
   featureBoardMockFor,
   featureDetailMockFor,
+  userFeedbackMockFor,
 } from '@/data/admin/adminInsightsMock'
 import { ADMIN_TABLES_MOCK, ADMIN_VIEWS_MOCK, adminRowsMockFor } from '@/data/admin/adminDataMock'
 import {
@@ -361,6 +362,11 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/overview`, () => HttpResponse.json(ADMIN_OVERVIEW_MOCK)),
   http.get(`${API_BASE}/api/admin/users-insight`, () => HttpResponse.json(ADMIN_USER_INSIGHTS_MOCK)),
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
+  // Per-user companion feedback (mezo-zde2) — real per-id seeds for Daniel/Anna, the honest
+  // empty-but-on shape for anyone else, matching `userFeedbackMockFor`'s own fallback.
+  http.get(`${API_BASE}/api/admin/users/:id/feedback`, ({ params }) =>
+    HttpResponse.json(userFeedbackMockFor(String(params.id))),
+  ),
   // Final review F6a: period-aware, mirroring `costMatrixMockFor` (adminInsightsHooks.ts) —
   // a real 7-day window must not read back as the 30-day fixture in mock mode.
   http.get(`${API_BASE}/api/admin/usage/cost-matrix`, ({ request }) => {

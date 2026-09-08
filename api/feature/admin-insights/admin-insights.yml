@@ -87,6 +87,34 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/users/{id}/feedback:
+    get:
+      tags: [AdminInsights]
+      operationId: getAdminUserFeedback
+      summary: One user's per-surface companion feedback and recall totals (AdminInsights)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: User feedback
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUserFeedbackResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such user (ADMIN_USER_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/admin/usage/features:
     get:
       tags: [AdminInsights]
@@ -303,7 +331,9 @@ components:
           items: { $ref: '#/components/schemas/AdminDayAmount' }
     AdminUserInsightResponse:
       type: object
-      required: [id, email, name, role, status, createdAt, rowCount, vectorCount, cost30dUsd, activeDays30d]
+      required:
+        [id, email, name, role, status, createdAt, rowCount, vectorCount, cost30dUsd, activeDays30d,
+         activityByDay, feedbackUp, feedbackDown]
       properties:
         id: { type: string, format: uuid }
         email: { type: string }
@@ -318,6 +348,12 @@ components:
         vectorCount: { type: integer, format: int64 }
         cost30dUsd: { type: number, format: double }
         activeDays30d: { type: integer, format: int32 }
+        activityByDay:
+          type: array
+          items: { type: integer, format: int32 }
+          description: 'Fixed length 90, oldest -> newest reportZone day, summed across every feature-map domain. Not enforced by the schema.'
+        feedbackUp: { type: integer, format: int32, description: '30d message_feedback up votes, live state (updated_at-windowed), summed across every artifact kind.' }
+        feedbackDown: { type: integer, format: int32, description: '30d message_feedback down votes, same windowing as feedbackUp.' }
     AdminTableFootprint:
       type: object
       required: [table, rowCount, deletedCount]
@@ -590,3 +626,26 @@ components:
           allOf: [ { $ref: '#/components/schemas/AdminFeedbackRecall' } ]
           nullable: true
           description: 'null when the companion feature switch is off'
+    AdminUserFeedbackSurface:
+      type: object
+      required: [kind, up, down, reasons]
+      properties:
+        kind: { type: string, description: 'raw message_feedback.artifact_kind, e.g. chat_message, feed_message — HU surface names are a client-side SURFACE_LABELS lookup, not this field' }
+        up: { type: integer, format: int32 }
+        down: { type: integer, format: int32 }
+        reasons:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureDownReason' }
+    AdminUserFeedbackResponse:
+      type: object
+      required: [surfaces, recall]
+      properties:
+        surfaces:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/AdminUserFeedbackSurface' }
+          description: 'null when companion-off; empty when on but this user cast no votes'
+        recall:
+          allOf: [ { $ref: '#/components/schemas/AdminFeedbackRecall' } ]
+          nullable: true
+          description: 'null when the companion feature switch is off; this user''s live memory-retrieval-feedback totals otherwise'

@@ -128,6 +128,60 @@ public class AdminFeatureQuery {
     }
 
     /**
+     * The users-LIST equivalent of {@link #feedbackByFeature} (mezo-zde2): 30d up/down vote counts
+     * per user, bucketed on {@code updated_at} same as {@link #feedbackTrendByKind} ("current
+     * state within the window" — a flipped vote re-dates), grouped across every artifact kind. One
+     * query for ALL users, filtered by {@code created_by is not null}; a user with zero votes in
+     * the window is simply absent (the caller's {@code getOrDefault} supplies the honest zero).
+     */
+    public List<UserVerdictRow> feedbackCountsByUserSince(Instant since) {
+        String sql = """
+            select created_by as "owner", verdict as "verdict", count(*) as "count"
+            from message_feedback
+            where is_deleted = false and updated_at >= :since and created_by is not null
+            group by 1, 2
+            """;
+        return jdbc.query(sql, Map.of("since", Timestamp.from(since)), (rs, i) -> new UserVerdictRow(
+                (UUID) rs.getObject("owner"), rs.getString("verdict"), rs.getLong("count")));
+    }
+
+    /**
+     * The per-user equivalent of {@link #feedbackByFeature} (mezo-zde2, {@code GET
+     * /api/admin/users/{id}/feedback}) — live verdict/reason state for ONE user, filtered by
+     * {@code created_by}, isolated from every other user's votes. Same "current state, not
+     * windowed" idiom as the un-filtered variant.
+     */
+    public List<FeedbackKindRow> feedbackByKindForUser(UUID userId) {
+        String sql = """
+            select artifact_kind as "kind", verdict as "verdict", reason as "reason", count(*) as "count"
+            from message_feedback
+            where is_deleted = false and created_by = :userId
+            group by 1, 2, 3
+            """;
+        return jdbc.query(sql, Map.of("userId", userId), (rs, i) -> new FeedbackKindRow(
+                rs.getString("kind"), rs.getString("verdict"), rs.getString("reason"), rs.getLong("count")));
+    }
+
+    /**
+     * The per-user equivalent of {@link #recallFeedbackTotals} (mezo-zde2) — this user's live
+     * {@code memory_retrieval_feedback} totals, unwindowed (the per-user feedback endpoint takes no
+     * {@code period}), isolated by {@code created_by}. Missing actions are absent from the map.
+     */
+    public Map<String, Long> recallFeedbackTotalsForUser(UUID userId) {
+        String sql = """
+            select action as "action", count(*) as "count"
+            from memory_retrieval_feedback
+            where is_deleted = false and created_by = :userId
+            group by 1
+            """;
+        Map<String, Long> result = new HashMap<>();
+        jdbc.query(sql, Map.of("userId", userId), rs -> {
+            result.put(rs.getString("action"), rs.getLong("count"));
+        });
+        return result;
+    }
+
+    /**
      * Per-user usage stats for one domain feature-map table since {@code since}: call count, first/
      * last day, and the set of ISO-week labels ({@code IYYY-IW}) the user was active in on or after
      * {@code weeksSince} — the raw material for the "tried" (any row) and "habit" (>= 3 of the last
@@ -224,6 +278,9 @@ public class AdminFeatureQuery {
 
     /** One ISO-week bucket of one artifact kind's feedback trend. */
     public record FeedbackTrendRow(String week, String verdict, long count) {}
+
+    /** One user's one-verdict bucket, as returned by {@link #feedbackCountsByUserSince}. */
+    public record UserVerdictRow(UUID owner, String verdict, long count) {}
 
     /** One user's usage footprint in one domain feature-map table.
      *

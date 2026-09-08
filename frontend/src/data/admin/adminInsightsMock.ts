@@ -12,6 +12,7 @@ import type {
   AdminOverviewResponse,
   AdminScreenUsageResponse,
   AdminUserDetailResponse,
+  AdminUserFeedbackResponse,
   AdminUserInsightResponse,
 } from '@/data/admin/adminInsightsApi'
 
@@ -45,6 +46,16 @@ function daysAgoIso(daysAgo: number): string {
   const d = new Date()
   d.setDate(d.getDate() - daysAgo)
   return d.toISOString()
+}
+
+/**
+ * A deterministic 90-int `activityByDay` array (mezo-zde2), oldest -> newest, index-driven (no
+ * `Math.random`) so the fixture never flakes — active only within `[fromIndex, toIndex]`
+ * (inclusive), everything else zero. `intensity` varies by index so the heat strip has real
+ * texture instead of a flat block.
+ */
+function activityByDayPattern(fromIndex: number, toIndex: number, intensity: (i: number) => number): number[] {
+  return Array.from({ length: 90 }, (_, i) => (i >= fromIndex && i <= toIndex ? intensity(i) : 0))
 }
 
 const OVERVIEW_DAYS = lastNDays(30)
@@ -98,16 +109,25 @@ export const ADMIN_USER_INSIGHTS_MOCK: AdminUserInsightResponse[] = [
     id: MOCK_OWNER_ID, email: 'daniel@mezo.local', name: 'Daniel', role: 'OWNER', status: 'ACTIVE',
     createdAt: '2026-06-01T08:00:00Z', onboardedAt: '2026-06-01T08:00:00Z', lastSeenAt: daysAgoIso(0),
     lastActivityAt: daysAgoIso(0), rowCount: 2140, vectorCount: 812, cost30dUsd: 14.62, activeDays30d: 27,
+    // Active through the last 30 days (index 60..89 — 89 is "today"), varied intensity.
+    activityByDay: activityByDayPattern(60, 89, (i) => 1 + (i % 4)),
+    feedbackUp: 14, feedbackDown: 2,
   },
   {
     id: MOCK_ANNA_ID, email: 'anna@test.local', name: 'Anna', role: 'USER', status: 'ACTIVE',
     createdAt: '2026-08-02T18:20:00Z', onboardedAt: '2026-08-02T18:35:00Z', lastSeenAt: daysAgoIso(25),
     lastActivityAt: daysAgoIso(25), rowCount: 356, vectorCount: 140, cost30dUsd: 3.21, activeDays30d: 11,
+    // Active index 30..64 (64 == 89 - 25, matching lastActivityAt's "25 days ago"), nothing since.
+    activityByDay: activityByDayPattern(30, 64, (i) => (i % 3 === 0 ? 2 : 1)),
+    feedbackUp: 5, feedbackDown: 1,
   },
   {
     id: MOCK_BELA_ID, email: 'bela@test.local', name: 'Béla', role: 'USER', status: 'DISABLED',
     createdAt: '2026-08-05T09:00:00Z', onboardedAt: null, lastSeenAt: null,
     lastActivityAt: null, rowCount: 4, vectorCount: 0, cost30dUsd: 0, activeDays30d: 0,
+    // Never active — honest all-zero, matching the null lastActivityAt above.
+    activityByDay: activityByDayPattern(1, 0, () => 0),
+    feedbackUp: 0, feedbackDown: 0,
   },
 ]
 
@@ -128,11 +148,16 @@ export const ADMIN_USER_DETAIL_MOCK: AdminUserDetailResponse = {
     { table: 'food_log', rowCount: 210, deletedCount: 0, lastCreatedAt: '2026-08-14T06:40:00Z' },
     { table: 'journal_note', rowCount: 22, deletedCount: 1, lastCreatedAt: '2026-08-10T21:00:00Z' },
   ],
-  featureUsage30d: { chat: 18, coach: 6, vision: 2 },
+  // Final review — real feature slugs (were fake `chat`/`coach`/`vision`, which have no
+  // FEATURE_LABELS entry and rendered "(nincs címke)" in mock mode). `train_meso_plan: 0` is a
+  // GENUINE zero — a feature the user has never actually called — so the Funkciók tab's
+  // "Ezeket még nem találta meg" section (which must only count n > 0 as "used", F1) has a real
+  // fixture to prove it: this key still shows up there even though it's a key in this map.
+  featureUsage30d: { companion_chat: 34, meal_draft: 12, train_meso_plan: 0, food: 9 },
   costByFeature30d: [
-    { feature: 'chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
-    { feature: 'coach', calls: 6, costUsd: 0.81, unknownCalls: 0 },
-    { feature: 'vision', calls: 2, costUsd: 0, unknownCalls: 2 },
+    { feature: 'companion_chat', calls: 34, costUsd: 2.4, unknownCalls: 0 },
+    { feature: 'meal_draft', calls: 12, costUsd: 0.81, unknownCalls: 0 },
+    { feature: 'food', calls: 9, costUsd: 0, unknownCalls: 2 },
   ],
 }
 
@@ -140,6 +165,7 @@ const EMPTY_USER_INSIGHT: AdminUserInsightResponse = {
   id: '', email: '', name: '', role: 'USER', status: 'ACTIVE',
   createdAt: '', onboardedAt: null, lastSeenAt: null, lastActivityAt: null,
   rowCount: 0, vectorCount: 0, cost30dUsd: 0, activeDays30d: 0,
+  activityByDay: Array.from({ length: 90 }, () => 0), feedbackUp: 0, feedbackDown: 0,
 }
 
 export const ADMIN_USER_DETAIL_EMPTY: AdminUserDetailResponse = {
@@ -457,5 +483,48 @@ export const ADMIN_FEEDBACK_SUMMARY_MOCK: AdminFeedbackSummaryResponse = {
 export const ADMIN_FEEDBACK_SUMMARY_EMPTY: AdminFeedbackSummaryResponse = {
   period: '30d',
   features: [],
+  recall: null,
+}
+
+// Per-user companion feedback (mezo-zde2) — the Emberek detail's Visszajelzések tab. Surfaces
+// group on the RAW artifact_kind (message_feedback.artifact_kind), never a feature slug — Task 3's
+// SURFACE_LABELS maps that to a Hungarian name client-side. Real reason keys throughout.
+export const ADMIN_USER_FEEDBACK_DANIEL_MOCK: AdminUserFeedbackResponse = {
+  surfaces: [
+    { kind: 'chat_message', up: 12, down: 2, reasons: [{ reason: 'inaccurate', count: 1 }, { reason: 'too_much', count: 1 }] },
+    { kind: 'feed_message', up: 2, down: 0, reasons: [] },
+  ],
+  recall: { useful: 9, irrelevant: 2, suppress: 1 },
+}
+
+export const ADMIN_USER_FEEDBACK_ANNA_MOCK: AdminUserFeedbackResponse = {
+  surfaces: [
+    { kind: 'chat_message', up: 4, down: 1, reasons: [{ reason: 'bad_timing', count: 1 }] },
+    { kind: 'weekly_suggestion', up: 1, down: 0, reasons: [] },
+  ],
+  recall: { useful: 3, irrelevant: 1, suppress: 0 },
+}
+
+// Béla never cast a vote — companion switch on, honestly empty (never a fabricated seed).
+export const ADMIN_USER_FEEDBACK_NONE_MOCK: AdminUserFeedbackResponse = {
+  surfaces: [],
+  recall: { useful: 0, irrelevant: 0, suppress: 0 },
+}
+
+/** Serves the seeded feedback for Daniel/Anna, the honest empty-but-on shape for anyone else
+ *  (Béla, an unknown id) — same "populated defaults, never a fake fallback" idiom as
+ *  `featureDetailMockFor`, but here the fallback is a real empty state rather than a reused seed,
+ *  since an unseeded user genuinely cast no votes. */
+export function userFeedbackMockFor(id: string): AdminUserFeedbackResponse {
+  if (id === MOCK_OWNER_ID) return ADMIN_USER_FEEDBACK_DANIEL_MOCK
+  if (id === MOCK_ANNA_ID) return ADMIN_USER_FEEDBACK_ANNA_MOCK
+  return ADMIN_USER_FEEDBACK_NONE_MOCK
+}
+
+// The `useAdminUserFeedback` hook's disabled-query fallback (non-owner, or no id yet) — null
+// surfaces/recall, same shape the real API answers when the companion switch is off (matches
+// `ADMIN_FEATURE_DETAIL_EMPTY`'s null feedbackTrend/downReasons precedent).
+export const ADMIN_USER_FEEDBACK_EMPTY: AdminUserFeedbackResponse = {
+  surfaces: null,
   recall: null,
 }

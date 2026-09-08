@@ -94,10 +94,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `AdminMemoryProperties`, `AdminProperties`
 - **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
   - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
-- **Contract** `api/feature/admin-insights/admin-insights.yml` — 10 operations
+- **Contract** `api/feature/admin-insights/admin-insights.yml` — 11 operations
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
-    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix · GET /api/admin/usage/screens ·
-    GET /api/admin/alerts · GET /api/admin/features · GET /api/admin/features/{key} · GET /api/admin/feedback/summary
+    GET /api/admin/users/{id}/feedback · GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix ·
+    GET /api/admin/usage/screens · GET /api/admin/alerts · GET /api/admin/features · GET /api/admin/features/{key} ·
+    GET /api/admin/feedback/summary
 - **Contract** `api/feature/admin-memory/admin-memory.yml` — 7 operations
   - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
     POST /api/admin/users/{userId}/memory/replay · GET /api/admin/users/{userId}/memory/graph ·
@@ -115,17 +116,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     AdminUsersPage.tsx
   - **components:** AdminStatusBand.tsx, AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx,
     AiModelBreakdown.tsx, AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, FeatureScoreRow.tsx, JsonCell.tsx,
-    ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx, TopListTile.tsx, UserPicker.tsx, ValueCostQuadrant.tsx
+    ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx, TesterCard.tsx, TopListTile.tsx, UserPicker.tsx,
+    ValueCostQuadrant.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
     MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
     RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts, projection.ts,
     umap.worker.ts, umapConstants.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 20 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 22 IT + 3 unit
   - **ITs:** `AdminAlertsCompanionOffIT`, `AdminAlertsIT`, `AdminDataBrowserIT`, `AdminFeatureBoardIT`,
     `AdminFeatureDetailIT`, `AdminFeatureQueryIT`, `AdminFeaturesCompanionOffIT`, `AdminMemoryGraphIT`,
     `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`, `AdminMemoryReplayIT`, `AdminMemoryRunsIT`,
     `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`, `AdminOverviewIT`, `AdminScreenUsageIT`,
-    `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+    `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserFeedbackCompanionOffIT`,
+    `AdminUserFeedbackIT`, `AdminUserInsightIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `DailySummaryPopulator`, `FeedbackPopulator`,
     `GraphPopulator`, `LlmLogPopulator`, `MealPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`,
     `UserPopulator`

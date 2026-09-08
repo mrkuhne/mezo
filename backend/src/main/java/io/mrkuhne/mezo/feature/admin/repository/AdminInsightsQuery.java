@@ -159,6 +159,26 @@ public class AdminInsightsQuery {
         return result;
     }
 
+    /**
+     * Every user's rows per day in one table, grouped by {@code (created_by, day)} (mezo-zde2) —
+     * the users-LIST equivalent of {@link #countByDayForUser}: one query per feature-map table for
+     * ALL users at once, rather than one query per (table, user) pair. At beta scale (dozens of
+     * users, single-digit feature-map tables) this is one query per table, merged by the caller
+     * across tables into each user's dense 90-day {@code activityByDay} array — acceptable per the
+     * plan ruling; a real per-table-per-user query would be {@code tables x users}, far worse.
+     */
+    public List<UserDayCountRow> countByDayAllUsers(AdminTable table, AdminColumn dayColumn, LocalDate from, ZoneId zone) {
+        String day = dialect.dayExpression(dayColumn, "t");
+        String sql = """
+                select t."created_by" as "owner", %s as "day", count(*) as "count"
+                from %s t
+                where %s >= :from and t."created_by" is not null%s
+                group by 1, 2
+                """.formatted(day, dialect.quote(table.name()), day, dialect.notDeleted(table, "t"));
+        return jdbc.query(sql, Map.of("from", from, "zone", zone.getId()), (rs, i) -> new UserDayCountRow(
+                (UUID) rs.getObject("owner"), rs.getObject("day", LocalDate.class), rs.getLong("count")));
+    }
+
     /** One user's rows per day in one table, dense-filled by the caller. */
     public List<DayCountRow> countByDayForUser(AdminTable table, AdminColumn dayColumn, UUID userId,
             LocalDate from, ZoneId zone) {
@@ -196,6 +216,9 @@ public class AdminInsightsQuery {
 
     /** A day bucket and its count. */
     public record DayCountRow(LocalDate day, long count) {}
+
+    /** One user's one-day row count, as returned by {@link #countByDayAllUsers}. */
+    public record UserDayCountRow(UUID owner, LocalDate day, long count) {}
 
     /** One table's contribution to a user's data inventory. */
     public record TableFootprintRow(String table, long rowCount, long deletedCount, Instant lastCreatedAt) {}
