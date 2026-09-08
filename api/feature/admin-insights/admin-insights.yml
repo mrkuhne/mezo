@@ -178,6 +178,81 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/features:
+    get:
+      tags: [AdminInsights]
+      operationId: getAdminFeatureBoard
+      summary: Feature scorecard — usage, feedback, cost and reliability per feature (AdminInsights)
+      parameters:
+        - { name: period, in: query, required: false, schema: { type: string, enum: ['30d','90d'], default: '30d' } }
+      responses:
+        '200':
+          description: Feature scorecard
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminFeatureBoardResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/features/{key}:
+    get:
+      tags: [AdminInsights]
+      operationId: getAdminFeatureDetail
+      summary: One feature's usage, funnel, feedback trend, reliability and cost breakdown (AdminInsights)
+      parameters:
+        - { name: key, in: path, required: true, schema: { type: string } }
+        - { name: period, in: query, required: false, schema: { type: string, enum: ['30d','90d'], default: '30d' } }
+      responses:
+        '200':
+          description: Feature detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminFeatureDetailResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such feature key (ADMIN_FEATURE_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/feedback/summary:
+    get:
+      tags: [AdminInsights]
+      operationId: getAdminFeedbackSummary
+      summary: Per-feature feedback (helped/didn't) and recall totals (AdminInsights)
+      parameters:
+        - { name: period, in: query, required: false, schema: { type: string, enum: ['30d','90d'], default: '30d' } }
+      responses:
+        '200':
+          description: Feedback summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminFeedbackSummaryResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     AdminDayCount:
@@ -360,3 +435,158 @@ components:
         subject:
           type: string
           description: 'raw technical key the alert is about, e.g. a feature slug — the client renders its label'
+    AdminFeatureHelped:
+      type: object
+      required: [up, down]
+      properties:
+        up: { type: integer, format: int32 }
+        down: { type: integer, format: int32 }
+    AdminFeatureRow:
+      type: object
+      required:
+        [key, kind, uniqueUsers, usesPerWeek, habitUserShare, helped, acceptedShare, costUsd,
+         costPerUse, unknownCalls, errorPct, p90LatencyMs, screenViews]
+      properties:
+        key: { type: string, description: 'feature slug (LLM feature or domain featureMap key)' }
+        kind: { type: string, enum: [ai, domain, both, system] }
+        uniqueUsers: { type: integer, format: int64 }
+        usesPerWeek:
+          type: array
+          items: { type: integer, format: int32 }
+          description: 'Fixed length 12, oldest -> newest ISO week, dense-filled (0 for silent weeks). Not enforced by the schema.'
+        habitUserShare: { type: number, format: double, description: 'habit users / tried users in period; 0 when nobody tried' }
+        helped:
+          allOf: [ { $ref: '#/components/schemas/AdminFeatureHelped' } ]
+          nullable: true
+          description: 'null when the companion feature switch is off'
+        acceptedShare:
+          type: number
+          format: double
+          nullable: true
+          description: 'Always null until ai_draft_outcome ships (slice 8) — the contract carries the field now.'
+        costUsd: { type: number, format: double }
+        costPerUse: { type: number, format: double, nullable: true, description: 'null when there were zero non-ERROR calls' }
+        unknownCalls: { type: integer, format: int64 }
+        errorPct: { type: number, format: double, nullable: true, description: 'null below the minimum-calls floor' }
+        p90LatencyMs: { type: integer, format: int32, nullable: true, description: 'null when there is no latency sample in period' }
+        screenViews: { type: integer, format: int64, nullable: true, description: 'null until a feature-to-screen mapping exists (slice 4 decides)' }
+    AdminFeatureBoardResponse:
+      type: object
+      required: [period, rows]
+      properties:
+        period: { type: string }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureRow' }
+    AdminFeatureFunnel:
+      type: object
+      required: [tried, repeated, habitual, triedUsers]
+      properties:
+        tried: { type: integer, format: int32, description: '>=1 use in the period' }
+        repeated: { type: integer, format: int32, description: 'uses on >=2 distinct days' }
+        habitual: { type: integer, format: int32, description: 'active in >=3 of the last 4 ISO weeks' }
+        triedUsers:
+          type: array
+          items: { type: string }
+          description: 'names, beta-scale — never paginated'
+    AdminFeatureFeedbackPoint:
+      type: object
+      required: [week, up, down]
+      properties:
+        week: { type: string, description: 'ISO week, e.g. 2026-W12' }
+        up: { type: integer, format: int32 }
+        down: { type: integer, format: int32 }
+    AdminFeatureDownReason:
+      type: object
+      required: [reason, count]
+      properties:
+        reason: { type: string }
+        count: { type: integer, format: int32 }
+    AdminFeatureTopError:
+      type: object
+      required: [code, count]
+      properties:
+        code: { type: string }
+        count: { type: integer, format: int32 }
+    AdminFeatureReliability:
+      type: object
+      required: [errorPct, p90LatencyMs, p50LatencyMs, topErrors]
+      properties:
+        errorPct: { type: number, format: double, nullable: true }
+        p90LatencyMs: { type: integer, format: int32, nullable: true }
+        p50LatencyMs: { type: integer, format: int32, nullable: true }
+        topErrors:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureTopError' }
+    AdminFeatureModelCost:
+      type: object
+      required: [model, costUsd, calls]
+      properties:
+        model: { type: string }
+        costUsd: { type: number, format: double }
+        calls: { type: integer, format: int64 }
+    AdminFeatureTopUser:
+      type: object
+      required: [name, costUsd, uses]
+      properties:
+        name: { type: string, description: 'deleted users fall back to an id-string, per AdminUsageService' }
+        costUsd: { type: number, format: double }
+        uses: { type: integer, format: int64 }
+    AdminFeatureDetailResponse:
+      type: object
+      required:
+        [key, kind, usageByWeek, funnel, feedbackTrend, downReasons, reliability, costByModel, topUsers]
+      properties:
+        key: { type: string }
+        kind: { type: string, enum: [ai, domain, both, system] }
+        usageByWeek:
+          type: array
+          items: { type: integer, format: int32 }
+          description: 'Fixed length 12, oldest -> newest ISO week. Not enforced by the schema.'
+        funnel: { $ref: '#/components/schemas/AdminFeatureFunnel' }
+        feedbackTrend:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/AdminFeatureFeedbackPoint' }
+          description: 'Bucketed on message_feedback.updated_at — a flipped vote re-dates. null when companion-off or the feature is unmapped.'
+        downReasons:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/AdminFeatureDownReason' }
+          description: 'null when companion-off or the feature is unmapped'
+        reliability: { $ref: '#/components/schemas/AdminFeatureReliability' }
+        costByModel:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureModelCost' }
+        topUsers:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureTopUser' }
+    AdminFeedbackRecall:
+      type: object
+      required: [useful, irrelevant, suppress]
+      properties:
+        useful: { type: integer, format: int32 }
+        irrelevant: { type: integer, format: int32 }
+        suppress: { type: integer, format: int32 }
+    AdminFeedbackFeatureSummary:
+      type: object
+      required: [key, up, down, reasons]
+      properties:
+        key: { type: string }
+        up: { type: integer, format: int32 }
+        down: { type: integer, format: int32 }
+        reasons:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureDownReason' }
+    AdminFeedbackSummaryResponse:
+      type: object
+      required: [period, features, recall]
+      properties:
+        period: { type: string }
+        features:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeedbackFeatureSummary' }
+        recall:
+          allOf: [ { $ref: '#/components/schemas/AdminFeedbackRecall' } ]
+          nullable: true
+          description: 'null when the companion feature switch is off'

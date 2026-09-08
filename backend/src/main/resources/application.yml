@@ -115,6 +115,17 @@ mezo:
       weight:
         table: weight_log
         timestamp-column: date
+    # artifact_kind (message_feedback) -> feature slug (llm_log_history.feature / featureMap key)
+    # for the Funkciók scorecard (mezo-l096.1). All seven pairs verified at the real generation
+    # call sites (recon 2026-09-08).
+    artifact-feature-map:
+      chat_message: companion_chat
+      feed_message: proactive_feed
+      weekly_suggestion: proactive_weekly
+      weekly_review: proactive_weekly_review
+      memoir: proactive_memoir
+      prediction: proactive_prediction
+      day_review: day_review
     # RAG memory explorer tunables (mezo-4qyt). NOTE the deliberate omissions: the RRF
     # constant, the per-retriever fusion weights and the graph decay factor are the
     # companion's (mezo.companion.memory-platform.fusion / mezo.companion.graph) and are

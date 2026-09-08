@@ -3,12 +3,16 @@ package io.mrkuhne.mezo.feature.admin.controller;
 import io.mrkuhne.mezo.api.controller.AdminInsightsApi;
 import io.mrkuhne.mezo.api.dto.AdminAlertsResponse;
 import io.mrkuhne.mezo.api.dto.AdminCostMatrixResponse;
+import io.mrkuhne.mezo.api.dto.AdminFeatureBoardResponse;
+import io.mrkuhne.mezo.api.dto.AdminFeatureDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminFeatureUsageResponse;
+import io.mrkuhne.mezo.api.dto.AdminFeedbackSummaryResponse;
 import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
 import io.mrkuhne.mezo.api.dto.AdminScreenUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
 import io.mrkuhne.mezo.feature.admin.service.AdminAlertService;
+import io.mrkuhne.mezo.feature.admin.service.AdminFeatureService;
 import io.mrkuhne.mezo.feature.admin.service.AdminOverviewService;
 import io.mrkuhne.mezo.feature.admin.service.AdminUsageService;
 import io.mrkuhne.mezo.feature.admin.service.AdminUserService;
@@ -40,6 +44,7 @@ public class AdminInsightsController implements AdminInsightsApi {
     private final AdminUserService userService;
     private final AdminUsageService usageService;
     private final AdminAlertService alertService;
+    private final AdminFeatureService featureService;
     private final CurrentUser currentUser;
 
     @Override
@@ -89,5 +94,26 @@ public class AdminInsightsController implements AdminInsightsApi {
     public AdminAlertsResponse getAdminAlerts() {
         currentUser.requireOwner();
         return alertService.alerts();
+    }
+
+    /** Funkciók scorecard (mezo-l096.3). */
+    @Override
+    public AdminFeatureBoardResponse getAdminFeatureBoard(String period) {
+        currentUser.requireOwner();
+        return featureService.board(period);
+    }
+
+    /** Funkciók detail (mezo-l096.4). */
+    @Override
+    public AdminFeatureDetailResponse getAdminFeatureDetail(String key, String period) {
+        currentUser.requireOwner();
+        return featureService.detail(key, period);
+    }
+
+    /** Funkciók feedback summary (mezo-l096.4). */
+    @Override
+    public AdminFeedbackSummaryResponse getAdminFeedbackSummary(String period) {
+        currentUser.requireOwner();
+        return featureService.feedbackSummary(period);
     }
 }
