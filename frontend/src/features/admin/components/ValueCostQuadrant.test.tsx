@@ -49,4 +49,25 @@ describe('ValueCostQuadrant', () => {
     expect(screen.getByText('Nincs használt funkció ebben az időszakban.')).toBeInTheDocument()
     expect(screen.getByText('csak a használt funkciók')).toBeInTheDocument()
   })
+
+  // Final review Finding 2 — the on-screen point label used to drop the missing-marker the
+  // <title> tooltip already carried. `getByTitle` isn't usable here: RTL's own `isSvgTitle` check
+  // requires the `<title>`'s parentElement to literally be `<svg>` (`svg > title`), which never
+  // matches a title nested inside a `<circle>` — hence reading the tooltip text via the same
+  // `querySelectorAll` idiom the point-count test above already uses.
+  it('renders the missing-marker on an unlabelled feature\'s on-screen point label, not just its tooltip', () => {
+    renderQuadrant([
+      ...ADMIN_FEATURE_BOARD_MOCK.rows,
+      {
+        key: 'brand_new_unlabelled_slug', kind: 'ai', uniqueUsers: 2,
+        usesPerWeek: Array(12).fill(1), habitUserShare: 0.1, helped: null, acceptedShare: null,
+        costUsd: 1, costPerUse: 0.5, unknownCalls: 0, errorPct: 0, p90LatencyMs: 100, screenViews: null,
+      },
+    ])
+    expect(screen.getByText('brand_new_unlabelled_slug (nincs címke)')).toBeInTheDocument()
+    const titles = Array.from(
+      screen.getByRole('img', { name: 'Érték/költség négyesmátrix' }).querySelectorAll('circle.pt title'),
+    )
+    expect(titles.some((t) => /brand_new_unlabelled_slug \(nincs címke\)/.test(t.textContent ?? ''))).toBe(true)
+  })
 })

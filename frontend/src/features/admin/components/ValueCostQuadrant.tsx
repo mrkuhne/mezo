@@ -127,7 +127,7 @@ export function ValueCostQuadrant({ rows }: { rows: AdminFeatureRow[] }) {
                 y={cy + 3}
                 textAnchor={nearRightEdge ? 'end' : 'start'}
               >
-                {label.label}
+                {label.missing ? `${label.label} (nincs címke)` : label.label}
               </text>
             </g>
           )

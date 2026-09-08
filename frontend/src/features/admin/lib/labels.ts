@@ -110,7 +110,10 @@ export const SCREEN_LABELS: Record<string, Entry> = {
   '/admin/users': { label: 'Admin · emberek' },
   '/admin/users/:id': { label: 'Admin · tesztelő-részlet' },
   '/admin/users/:id/memory': { label: 'Admin · emlék-böngésző' },
-  '/admin/usage': { label: 'Admin · használati adatok' },
+  // '/admin/usage' is a redirect-only route (mezo-kxnn) — `/admin/features` is the live screen
+  // now; the old entry is gone rather than kept as a second label for a route nothing renders.
+  '/admin/features': { label: 'Admin · funkciók' },
+  '/admin/features/:key': { label: 'Admin · funkció-részlet' },
   '/admin/data': { label: 'Admin · adatböngésző' },
   '/admin/cost': { label: 'Admin · költség-áttekintés' },
   '/admin/cost/:id': { label: 'Admin · költség-részlet' },

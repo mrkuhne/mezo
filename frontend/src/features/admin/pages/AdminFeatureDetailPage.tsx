@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useMe } from '@/data/hooks'
-import { useAdminFeatureDetail } from '@/data/admin/adminInsightsHooks'
+import { useAdminFeatureBoard, useAdminFeatureDetail } from '@/data/admin/adminInsightsHooks'
 import type { AdminFeaturePeriod } from '@/data/admin/adminInsightsApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
 import { KIND_LABEL, KIND_TAG_TONE } from '@/features/admin/components/FeatureScoreRow'
@@ -36,6 +36,13 @@ export function AdminFeatureDetailPage() {
   const isOwner = me.data?.role === 'OWNER'
   const [period, setPeriod] = useState<AdminFeaturePeriod>('30d')
   const detail = useAdminFeatureDetail(key, period, isOwner)
+  // `acceptedShare` (mezo-kxnn final review Finding 3) lives on the BOARD row, not the detail
+  // response's own contract — `AdminFeatureDetailResponse` carries no such field. Always null
+  // until `ai_draft_outcome` ships (slice 8; see the schema's own doc comment on
+  // `AdminFeatureRow.acceptedShare`), so this degrades to the honest "még nem mérjük" line even
+  // while the board query is loading/empty — never a fabricated 0%.
+  const board = useAdminFeatureBoard(period, isOwner)
+  const acceptedShare = board.data.rows.find((r) => r.key === key)?.acceptedShare ?? null
 
   const label = featureLabel(key)
   const notFound = !detail.isPending && !detail.isError && detail.data.key === ''
@@ -99,6 +106,9 @@ export function AdminFeatureDetailPage() {
                       <span className="down">▼ {huInt(feedbackTotals.down)}</span>
                     </span>
                   )}
+                  <p className="ad-mut ad-accepted-share">
+                    Elfogadási arány: {acceptedShare === null ? 'még nem mérjük' : `${hu1(acceptedShare * 100)}%`}
+                  </p>
                 </AdminTile>
                 <AdminTile query={detail} wash="coral" eyebrow="p90 válaszidő" span={3}>
                   <div className="ad-poster">

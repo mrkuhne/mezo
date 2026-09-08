@@ -28,6 +28,12 @@ const PERIODS: { key: AdminFeaturePeriod; label: string }[] = [
   { key: '90d', label: '90 nap' },
 ]
 
+// Final review Finding 5 — a bare `${period}` rendered the raw API value ("30d"/"90d") into
+// Hungarian copy ("Összköltség · 30d"); this is the one place that turns it into "30 nap"/
+// "90 nap", reused both by the summary-strip cell and the hero subtitle so the two never drift.
+const periodLabel = (period: AdminFeaturePeriod): string =>
+  PERIODS.find((p) => p.key === period)?.label ?? period
+
 type SortKey = 'ertek' | 'koltseg' | 'hasznalat'
 const SORTS: { key: SortKey; label: string }[] = [
   { key: 'ertek', label: 'érték' },
@@ -60,7 +66,9 @@ export function AdminFeaturesPage() {
   }, [rows, sort])
 
   const activeCount = rows.filter((r) => r.kind !== 'system' && r.uniqueUsers > 0).length
-  const feedbackCount = rows.filter((r) => r.helped !== null).length
+  // Final review Finding 4 — must match the sibling "aktívan használt" cell's own system
+  // exclusion: a system row (the `unknown` bucket) never has real user feedback to report.
+  const feedbackCount = rows.filter((r) => r.kind !== 'system' && r.helped !== null).length
   const totalCostUsd = rows.reduce((sum, r) => sum + r.costUsd, 0)
 
   // Top-8 bar-less TopListTile rows (Rulings) — `share` is deliberately omitted: a screen's
@@ -80,7 +88,7 @@ export function AdminFeaturesPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHero name="Funkciók" sub={`${period} · ${rows.length} funkció · ${usd(totalCostUsd)}`} />
+      <PageHero name="Funkciók" sub={`${periodLabel(period)} · ${rows.length} funkció · ${usd(totalCostUsd)}`} />
       <PageBody>
         <EntranceGroup>
           <MosaicDesktop>
@@ -90,7 +98,7 @@ export function AdminFeaturesPage() {
             <AdminTile query={board} wash="sage" eyebrow="Van visszajelzése" span={4}>
               <div className="ad-poster"><div className="ad-big">{huInt(feedbackCount)}</div></div>
             </AdminTile>
-            <AdminTile query={board} wash="gold" eyebrow={`Összköltség · ${period}`} span={4}>
+            <AdminTile query={board} wash="gold" eyebrow={`Összköltség · ${periodLabel(period)}`} span={4}>
               <div className="ad-poster"><div className="ad-big">{usd(totalCostUsd)}</div></div>
             </AdminTile>
           </MosaicDesktop>

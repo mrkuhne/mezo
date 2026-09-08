@@ -11471,14 +11471,6 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-table tbody tr.ad-row-hl td { background: rgba(168, 74, 38, 0.12); box-shadow: inset 2px 0 0 #A84A26; }
 .ad-table tbody tr.ad-row-hl:hover td { background: rgba(168, 74, 38, 0.16); }
 
-/* feature × nap mátrix — a MatrixGrid <table> saját, letapadó első oszloppal */
-.ad-matrixwrap { overflow-x: auto; scrollbar-width: thin; }
-.ad-matrixtable { border-collapse: separate; border-spacing: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
-.ad-matrixtable th { font-weight: 700; color: #6E6257; font-size: 9px; letter-spacing: 0.04em; padding: 2px 4px; white-space: nowrap; }
-.ad-matrixtable th.rowh, .ad-matrixtable td.rowh {
-  position: sticky; left: 0; background: #FFFFFF; text-align: left; font-weight: 600; padding: 3px 8px; z-index: 1; }
-.ad-matrixtable td.cell { border-radius: 3px; min-width: 16px; height: 15px; padding: 0; }
-
 /* ---- grafikonok: sparkline ---- */
 .ad-spark { width: 100%; display: block; overflow: visible; }
 /* a nyugalmi állapot MINDIG a végállapot — a .mz-play csak beúsztatja (from-keyframe + both) */
@@ -11626,6 +11618,7 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-updown { display: flex; gap: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ad-updown .up { color: #4E6B42; }
 .ad-updown .down { color: #A8452A; }
+.ad-accepted-share { font-size: 9.5px; margin: 6px 0 0; }
 
 /* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
    van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster

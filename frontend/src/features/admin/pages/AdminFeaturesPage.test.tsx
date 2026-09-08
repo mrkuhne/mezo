@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -36,6 +36,27 @@ describe('AdminFeaturesPage (mock mode)', () => {
     expect(screen.getByText('Beszélgetés a társsal', { selector: '.ad-scorerow .lb' })).toBeInTheDocument()
   })
 
+  // Final review Finding 4 — the mock seed's `unknown` system row already has `helped: null`
+  // (so it never inflated the count in mock mode either way); this asserts the CORRECT total
+  // (4: companion_chat/meal_coach/train_meso_plan/proactive_feed) against the "aktívan használt"
+  // cell's own exclusion, and the real-mode block below proves the exclusion actually holds by
+  // giving the system row a non-null `helped`.
+  it('excludes system-kind rows from the "Van visszajelzése" summary cell', async () => {
+    renderPage()
+    await screen.findByText('Aktívan használt funkciók')
+    const tile = screen.getByText('Van visszajelzése').closest('.mz-tile') as HTMLElement
+    expect(within(tile).getByText('4')).toBeInTheDocument()
+  })
+
+  // Final review Finding 5 — a bare `${period}` used to leak the raw API value ("30d") into
+  // Hungarian copy.
+  it('renders "30 nap" in Hungarian copy, never the raw "30d" API value', async () => {
+    renderPage()
+    await screen.findByText('Aktívan használt funkciók')
+    expect(screen.getByText('Összköltség · 30 nap')).toBeInTheDocument()
+    expect(screen.queryByText(/30d/)).not.toBeInTheDocument()
+  })
+
   it('groups system-kind rows under a muted "Rendszer" divider, below the regular rows', async () => {
     renderPage()
     await screen.findByText('Aktívan használt funkciók')
@@ -69,7 +90,7 @@ describe('AdminFeaturesPage (mock mode)', () => {
     const btn90 = screen.getByRole('button', { name: '90 nap' })
     fireEvent.click(btn90)
     expect(btn90).toHaveAttribute('aria-pressed', 'true')
-    expect(await screen.findByText('Összköltség · 90d')).toBeInTheDocument()
+    expect(await screen.findByText('Összköltség · 90 nap')).toBeInTheDocument()
   })
 
   it('changing the sort control reorders the scorecard', async () => {
@@ -123,7 +144,28 @@ describe('AdminFeaturesPage (real mode)', () => {
       ],
     })))
     renderPage()
-    expect(await screen.findByText('brand_new_unlabelled_slug (nincs címke)')).toBeInTheDocument()
+    // Fix round 2: the quadrant now ALSO shows this label on its own point (Finding 2), so a
+    // bare `findByText` is ambiguous again — scope to the scorecard row's own label span.
+    expect(await screen.findByText('brand_new_unlabelled_slug (nincs címke)', { selector: '.ad-scorerow .lb' }))
+      .toBeInTheDocument()
+  })
+
+  // Final review Finding 4 — proves the exclusion actually holds: a system row with a non-null
+  // `helped` (never happens on the real backend, but the mock seed's own `unknown` row already
+  // has `helped: null` so it can't distinguish "excluded" from "just happens to be null") must
+  // NOT inflate the "Van visszajelzése" count past the 4 non-system rows that really have it.
+  it('still excludes a system row from "Van visszajelzése" even if it somehow carries helped feedback', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/features`, () => HttpResponse.json({
+      ...ADMIN_FEATURE_BOARD_MOCK,
+      rows: ADMIN_FEATURE_BOARD_MOCK.rows.map((r) =>
+        r.kind === 'system' ? { ...r, helped: { up: 1, down: 0 } } : r),
+    })))
+    renderPage()
+    await screen.findByText('Aktívan használt funkciók')
+    const tile = await screen.findByText('Van visszajelzése')
+    await waitFor(() => {
+      expect(within(tile.closest('.mz-tile') as HTMLElement).getByText('4')).toBeInTheDocument()
+    })
   })
 
   it('degrades only the screen tile when the screens endpoint fails', async () => {
