@@ -1,3 +1,5 @@
+A saját kontúrcsalád és a napi lenyomat is kipróbálható: [Életem · a napjaid lenyomata](http://127.0.0.1:5193/?v=boop#presence/life/today). Válassz napot, majd bontsd ki az eseményeit.
+
 A Boop tanulmány most közös ritmusívet használ a kezdőlapon és a mezociklusnál; az étkezési keretet összefutó forrásszálak mutatják. [Kipróbálás](http://127.0.0.1:5193/?v=boop).
 
 # Boop vizuális iteráció

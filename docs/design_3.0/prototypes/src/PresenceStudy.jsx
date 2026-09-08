@@ -13,6 +13,7 @@ import {
 import { BoopAvatar as Avatar, BoopIcon as Icon, BoopPet } from "./BoopIdentity.jsx";
 import "./presence.css";
 import "./boop.css";
+import { DailyImprint } from "./DailyImprint.jsx";
 import { RhythmArc, CycleSignature, FuelSignature, DayConnection } from "./SignatureVisuals.jsx";
 const STORAGE = "mezo-presence-v1";
 function readState() {
@@ -767,6 +768,7 @@ function Home({ api, mood }) {
           onClick={() => navigate("understanding", "patterns")}
         />
       </section>
+      <DailyImprint state={s} compact onOpen={() => navigate("life", "today")} />
       <p className="pr-quiet-foot">
         Nem mindenből lesz teendő.
         <br />
@@ -782,7 +784,7 @@ function Workspace({ api }) {
   return (
     <div className="pr-workspace">
       <div className="pr-workspace-intro">
-        <SectionTitle kicker={role.eyebrow} title={role.name} />
+        <SectionTitle kicker={role.eyebrow} title={s.role === "life" && tab === "today" ? "A napjaid lenyomata." : role.name} />
         <Orb role={s.role} size={74} />
       </div>
       {s.role === "movement" ? (
@@ -1050,14 +1052,7 @@ function Life({ api }) {
     tab = s.tabs.life;
   return tab === "today" ? (
     <>
-      <p className="pr-lead">Nem csak az számít, mit teljesítettél.</p>
-      <div className="pr-life-note">
-        <span className="pr-eyebrow">A LEGUTÓBBI SZAVAID</span>
-        <blockquote>
-          „{s.checkins.at(-1).note || "Most így vagyok."}”
-        </blockquote>
-        <span>{s.checkins.at(-1).slot} · check-in</span>
-      </div>
+      <DailyImprint state={s} onJournal={() => navigate("life", "journal")} />
       <Row
         icon="sun"
         title={`${s.checkins.length} mai bejelentkezés`}
@@ -1104,6 +1099,7 @@ function Life({ api }) {
           maxLength={2000}
         />
       </label>
+      <DailyImprint state={s} compact onOpen={() => navigate("life", "today")} />
       <span className="pr-saved-note">
         <Icon name="check" size={13} />
         Helyben, írás közben megőrizve

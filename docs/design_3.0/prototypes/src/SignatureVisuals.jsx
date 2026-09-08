@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { rhythmPoints, budgetFraction } from './signature-model.mjs';
 import { BoopIcon } from './BoopIdentity.jsx';
 import './signature.css';
+import { ContourSurface } from './ContourSurface.jsx';
 
 export function RhythmArc({ labels, completed, title, selected, onSelect }) {
   const points = rhythmPoints(labels.length, completed);
@@ -24,6 +25,7 @@ export function RhythmArc({ labels, completed, title, selected, onSelect }) {
 export function CycleSignature({ cycle, onOpen }) {
   const [week, setWeek] = useState(cycle.week - 1);
   return <section className="sig-cycle sig-sculpted">
+    <ContourSurface variant="progression"/>
     <div className="sig-section-top"><span className="pr-eyebrow">A MUNKÁD ÍVE</span><BoopIcon name="layers" size={20} /></div>
     <h2>{cycle.name}</h2>
     <div className="sig-cycle-number"><strong>{cycle.week}<small> / {cycle.weeks}</small></strong><span>hét<br/>Hypertrophy</span></div>
@@ -38,7 +40,7 @@ export function FuelSignature({ budget, sportActive, onSport, onExplain }) {
   const changed = previousTarget.current !== budget.target;
   useEffect(() => { previousTarget.current = budget.target; }, [budget.target]);
   return <section className={`sig-fuel sig-sculpted ${changed ? 'sig-updated' : ''}`}>
-    <svg className="sig-surface-shape" viewBox="0 0 360 560" preserveAspectRatio="none" aria-hidden="true"><path d="M32 1H328Q359 1 359 32V190C359 210 341 214 341 230S359 250 359 270V518Q359 559 318 559H26Q1 559 1 534V270C1 250 19 246 19 230S1 210 1 190V32Q1 1 32 1Z"/></svg>
+    <ContourSurface variant="connection"/>
     <div className="sig-section-top"><span className="pr-eyebrow">AMIBŐL A MAI KERETED ÖSSZEÁLL</span><BoopIcon name="utensils" size={20}/></div>
     <div className="sig-sources">
       <div><BoopIcon name="sun" size={24}/><strong>{budget.base}</strong><span>alapkeret · kcal</span></div>
