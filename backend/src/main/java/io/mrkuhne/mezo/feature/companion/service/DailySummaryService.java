@@ -64,13 +64,9 @@ public class DailySummaryService {
     /** Prompt prefix the fake LLM dispatches on (the EXTRACTION_MARKER precedent). */
     public static final String SUMMARY_MARKER = "NAPI-ÖSSZEFOGLALÓ-FELADAT";
 
-    // mezo-a64t: display precision belongs to the QUANTITY, not the call site — a body weight is
-    // one decimal and sleep hours one wherever they appear, so this digest and the context snapshot
-    // render the same number identically. NOTE for a follow-up: these three precisions now live
-    // privately in ContextSnapshotAssembler, GoalTools and here; their real home is beside
-    // ToolText.huNum, whose own javadoc already states the per-quantity rule.
-    private static final int WEIGHT_DECIMALS = 1;
-    private static final int SLEEP_HOURS_DECIMALS = 1;
+    // mezo-a64t: figures the model QUOTES BACK to the user go through ToolText.huWeight/huRate/
+    // huHours — the precision is bound to the QUANTITY by name, so this renderer and every other
+    // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
 
     private static final String NARRATIVE_PROMPT = SUMMARY_MARKER + "\n"
             + "Írj rövid (3-5 mondatos), múlt idejű, magyar összefoglalót {{NÉV}} napjáról az alábbi "
@@ -202,7 +198,7 @@ public class DailySummaryService {
                     // this line hardcoded "/5", so an 8 was written into the day's memory as "8/5".
                     // The fragment is null when unrated, which keeps the old "omit entirely" branch.
                     String quality = ToolText.sleepQuality(s.getQuality());
-                    blocks.add("Alvás: " + ToolText.huNum(s.getDurationH(), SLEEP_HOURS_DECIMALS) + " óra"
+                    blocks.add("Alvás: " + ToolText.huHours(s.getDurationH()) + " óra"
                             + (quality != null ? ", minőség " + quality : "")
                             + (s.getAwakenings() != null && s.getAwakenings() > 0
                                     ? ", " + s.getAwakenings() + " ébredés" : "")
@@ -216,7 +212,7 @@ public class DailySummaryService {
                 // formatter and the same precision — one number must not reach the model as
                 // "83.694" here and "83,7" there.
                 .ifPresent(w -> blocks.add(
-                        "Súly: " + ToolText.huNum(w.getWeightKg(), WEIGHT_DECIMALS) + " kg"));
+                        "Súly: " + ToolText.huWeight(w.getWeightKg()) + " kg"));
     }
 
     private void addMedication(List<String> blocks, UUID userId, LocalDate date) {

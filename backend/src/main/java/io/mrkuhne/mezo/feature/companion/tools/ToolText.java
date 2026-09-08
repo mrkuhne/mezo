@@ -107,6 +107,30 @@ public final class ToolText {
         return v == null ? "?" : String.format(HU, "%." + decimals + "f", v);
     }
 
+    /*
+     * The three quantities the companion surfaces actually quote to the user, each bound to its
+     * precision BY NAME. These started as a private `WEIGHT_DECIMALS = 1` in five classes — the
+     * exact shape of the bug this whole slice was fixing (a value rendered by N call sites that
+     * drift), one refactor away from becoming the next "83.694 vs 83,7". A named method also
+     * removes the failure `huNum(v, RATE_DECIMALS)` allows: passing a weight the rate precision.
+     * Anything that is NOT one of these three keeps calling huNum directly and says why.
+     */
+
+    /** A body weight, or a delta between two of them, as the user should read it. */
+    public static String huWeight(BigDecimal kg) {
+        return huNum(kg, 1);
+    }
+
+    /** A rate of change per week — kg/week or %/week. Finer than a weight: 0,24 is not 0,2. */
+    public static String huRate(BigDecimal perWeek) {
+        return huNum(perWeek, 2);
+    }
+
+    /** A duration in hours (slept, or a sleep target). */
+    public static String huHours(BigDecimal hours) {
+        return huNum(hours, 1);
+    }
+
     /** Null-safe window clamp: the model may omit the arg (fallback) or overshoot (min/max). */
     static int clamp(Integer value, int min, int max, int fallback) {
         return value == null ? fallback : Math.clamp(value, min, max);

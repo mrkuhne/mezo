@@ -235,11 +235,9 @@ public class CompanionMessageGenerator {
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
 
     // mezo-a64t: display precision belongs to the QUANTITY, not to the call site — a body weight
-    // (measurement AND smoothed trend) is one decimal, a weekly rate two. Named the same way as
-    // ContextSnapshotAssembler's twins, so the reaction message and the snapshot beside it in the
+    // (measurement AND smoothed trend) is one decimal, a weekly rate two. Both bindings live in
+    // ToolText.huWeight/huRate, so this reaction message and the snapshot sitting beside it in the
     // same prompt cannot render one figure two ways.
-    private static final int WEIGHT_DECIMALS = 1;
-    private static final int RATE_DECIMALS = 2;
 
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
@@ -493,12 +491,12 @@ public class CompanionMessageGenerator {
         // a heti súlytrended (83.694 kg) alatt van, ami heti -0.244 kg-os csökkenést mutat":
         // decimal POINTS inside Hungarian prose and a raw EWMA at gram precision. Precision is
         // per QUANTITY — a weight 1 decimal, a weekly rate 2 — never per call site.
-        String trendLine = ToolText.huNum(weight.getWeightKg(), WEIGHT_DECIMALS) + " kg"
+        String trendLine = ToolText.huWeight(weight.getWeightKg()) + " kg"
                 + (trend.getLatestTrendKg() != null
                         ? "; trendérték (EWMA, simított): "
-                                + ToolText.huNum(trend.getLatestTrendKg(), WEIGHT_DECIMALS) + " kg" : "")
+                                + ToolText.huWeight(trend.getLatestTrendKg()) + " kg" : "")
                 + (trend.getWeeklyRateKgPerWeek() != null
-                        ? ", heti " + ToolText.huNum(trend.getWeeklyRateKgPerWeek(), RATE_DECIMALS) + " kg" : "");
+                        ? ", heti " + ToolText.huRate(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
         payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ").append(trendLine);
         String weightQuery = "súly " + trendLine + freeTextSuffix(weight.getNote());
         MemoryContextBlock.Rendered mem = memoryBlock(

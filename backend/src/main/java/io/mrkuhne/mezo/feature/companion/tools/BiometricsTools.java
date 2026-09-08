@@ -63,16 +63,9 @@ public class BiometricsTools {
     private final CheckInService checkInService;
     private final CompanionProperties properties;
 
-    // mezo-a64t: get_weight_trend / get_weight_log / get_recovery hand the model the SAME body
-    // weights, weekly rates and sleep hours the context snapshot renders, inside the SAME
-    // conversation — so "83.694 kg" from a tool beside "83,7 kg" from the snapshot is one number
-    // arriving two ways, which IS the defect. Precision belongs to the QUANTITY, not the call site.
-    // NOTE for a follow-up: the same three precisions are now declared privately here, in GoalTools,
-    // ContextSnapshotAssembler and DailySummaryService; their real home is beside ToolText.huNum,
-    // whose javadoc already states the per-quantity rule.
-    private static final int WEIGHT_DECIMALS = 1;
-    private static final int RATE_DECIMALS = 2;
-    private static final int SLEEP_HOURS_DECIMALS = 1;
+    // mezo-a64t: figures the model QUOTES BACK to the user go through ToolText.huWeight/huRate/
+    // huHours — the precision is bound to the QUANTITY by name, so this renderer and every other
+    // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
 
     @Tool(name = "get_weight_trend", description = "Súlytrend az elmúlt hetekre: EWMA trendsúly, "
             + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Használd, amikor a user a súlyáról, "
@@ -89,18 +82,18 @@ public class BiometricsTools {
             return "Súlytrend (" + w + " hét): " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder("Súlytrend (").append(w).append(" hét): trendsúly ")
-                .append(ToolText.huNum(trend.getLatestTrendKg(), WEIGHT_DECIMALS)).append(" kg");
+                .append(ToolText.huWeight(trend.getLatestTrendKg())).append(" kg");
         if (trend.getWeeklyRateKgPerWeek() != null) {
             b.append(", heti ütem ")
-                    .append(ToolText.huNum(trend.getWeeklyRateKgPerWeek(), RATE_DECIMALS)).append(" kg");
+                    .append(ToolText.huRate(trend.getWeeklyRateKgPerWeek())).append(" kg");
         }
         if (trend.getWeeklyRatePctPerWeek() != null) {
             b.append(" (")
-                    .append(ToolText.huNum(trend.getWeeklyRatePctPerWeek(), RATE_DECIMALS)).append("%/hét)");
+                    .append(ToolText.huRate(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
         }
         if (trend.getLast4wRateKgPerWeek() != null) {
             b.append(", 4 hetes ütem ")
-                    .append(ToolText.huNum(trend.getLast4wRateKgPerWeek(), RATE_DECIMALS)).append(" kg/hét");
+                    .append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét");
         }
         LocalDate from = LocalDate.now().minusWeeks(w);
         // one point per ISO week (the last EWMA point of each week) — token budget by construction
@@ -111,7 +104,7 @@ public class BiometricsTools {
                         p.getDate().get(WeekFields.ISO.weekBasedYear()) * 100
                                 + p.getDate().get(WeekFields.ISO.weekOfWeekBasedYear()),
                         p.getDate() + ": "
-                                + ToolText.huNum(p.getTrendKg(), WEIGHT_DECIMALS) + " kg"));
+                                + ToolText.huWeight(p.getTrendKg()) + " kg"));
         if (!weekly.isEmpty()) {
             b.append("\nHeti trendpontok: ").append(String.join("; ", weekly.values()));
         }
@@ -139,7 +132,7 @@ public class BiometricsTools {
         for (int i = 0; i < rows.size(); i++) {
             WeightLogEntity row = rows.get(i);
             b.append('\n').append(row.getDate()).append(": ")
-                    .append(ToolText.huNum(row.getWeightKg(), WEIGHT_DECIMALS)).append(" kg");
+                    .append(ToolText.huWeight(row.getWeightKg())).append(" kg");
             // Day-over-day delta against the NEXT row (the list is newest-first), i.e. the previous
             // weigh-in — this is the fluctuation the trend tool smooths away. The oldest row in the
             // window has no predecessor here, so it gets no delta rather than a fabricated zero.
@@ -148,7 +141,7 @@ public class BiometricsTools {
                 // a weight DELTA is still a body weight — same precision; huNum renders the minus
                 // itself, so only the positive sign needs the explicit prefix it always had
                 b.append(" (").append(delta.signum() > 0 ? "+" : "")
-                        .append(ToolText.huNum(delta, WEIGHT_DECIMALS)).append(" kg)");
+                        .append(ToolText.huWeight(delta)).append(" kg)");
             }
             if (row.getNote() != null && !row.getNote().isBlank()) {
                 b.append(" — ").append(row.getNote());
@@ -221,7 +214,7 @@ public class BiometricsTools {
         StringBuilder b = new StringBuilder(header);
         for (SleepLogEntity row : rows) {
             b.append('\n').append(row.getDate()).append(": ")
-                    .append(ToolText.huNum(row.getDurationH(), SLEEP_HOURS_DECIMALS)).append(" h");
+                    .append(ToolText.huHours(row.getDurationH())).append(" h");
             // mezo-b6zt: the scale's ceiling is 10 (sleep.yml SleepLogRequest.quality), not the "/5"
             // this line hardcoded — the shared fragment owns the denominator now.
             String quality = ToolText.sleepQuality(row.getQuality());

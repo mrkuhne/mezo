@@ -93,11 +93,8 @@ public class ContextSnapshotAssembler {
     private static final int TOP_SKILLS_LIMIT = 3;
     // mezo-a64t: display precision belongs to the QUANTITY, not to the call site — a body weight is
     // one decimal wherever it appears ([Profil] measurement, súlytrend, [Cél] start → target), a
-    // weekly rate two, sleep hours one. Named constants so the same quantity can never again render
-    // two ways in one snapshot.
-    private static final int WEIGHT_DECIMALS = 1;
-    private static final int RATE_DECIMALS = 2;
-    private static final int SLEEP_HOURS_DECIMALS = 1;
+    // weekly rate two, sleep hours one. That binding lives in ToolText.huWeight/huRate/huHours, so
+    // the same quantity cannot render two ways here, in the tools, or in the day narrative.
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
@@ -220,7 +217,7 @@ public class ContextSnapshotAssembler {
         // prose one card above a "4,5 óra" — a decimal point and gram precision nobody asked for.
         weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
                 .ifPresentOrElse(
-                        w -> b.append(ToolText.huNum(w.getWeightKg(), WEIGHT_DECIMALS))
+                        w -> b.append(ToolText.huWeight(w.getWeightKg()))
                                 .append(" kg (").append(w.getDate()).append(')'),
                         () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
@@ -229,15 +226,15 @@ public class ContextSnapshotAssembler {
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
         } else {
-            b.append(ToolText.huNum(trend.getLatestTrendKg(), WEIGHT_DECIMALS)).append(" kg");
+            b.append(ToolText.huWeight(trend.getLatestTrendKg())).append(" kg");
             // rates are only defined from 2+ distinct days (NONE = no slope yet)
             if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
                 if (trend.getWeeklyRateKgPerWeek() != null) {
-                    b.append(", heti ").append(ToolText.huNum(trend.getWeeklyRateKgPerWeek(), RATE_DECIMALS))
+                    b.append(", heti ").append(ToolText.huRate(trend.getWeeklyRateKgPerWeek()))
                             .append(" kg");
                 }
                 if (trend.getWeeklyRatePctPerWeek() != null) {
-                    b.append(" (").append(ToolText.huNum(trend.getWeeklyRatePctPerWeek(), RATE_DECIMALS))
+                    b.append(" (").append(ToolText.huRate(trend.getWeeklyRatePctPerWeek()))
                             .append("%/hét)");
                 }
             }
@@ -253,10 +250,10 @@ public class ContextSnapshotAssembler {
         }
         StringBuilder b = new StringBuilder("[Cél] ");
         b.append(goal.getTitle()).append(" (").append(huTrajectory(goal.getTrajectory())).append("): ")
-                // mezo-a64t: body weight, so WEIGHT_DECIMALS — huNum already renders "?" for a null
-                // target, which is exactly what the old ternary did by hand.
-                .append(ToolText.huNum(goal.getStartWeightKg(), WEIGHT_DECIMALS)).append(" → ")
-                .append(ToolText.huNum(goal.getTargetWeightKg(), WEIGHT_DECIMALS))
+                // mezo-a64t: a body weight, so huWeight — which already renders "?" for a null
+                // target, exactly what the old ternary did by hand.
+                .append(ToolText.huWeight(goal.getStartWeightKg())).append(" → ")
+                .append(ToolText.huWeight(goal.getTargetWeightKg()))
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         b.append(", ").append(week).append(". hét");
@@ -267,7 +264,7 @@ public class ContextSnapshotAssembler {
             if (seg.sleepTargetH() != null) {
                 // mezo-a64t: sleep hours — the same quantity the [Regeneráció] block renders, so the
                 // same precision; the kcal/protein figures beside it are integers and stay untouched.
-                b.append(", alvás ").append(ToolText.huNum(seg.sleepTargetH(), SLEEP_HOURS_DECIMALS)).append(" h");
+                b.append(", alvás ").append(ToolText.huHours(seg.sleepTargetH())).append(" h");
             }
             if (seg.restDays() != null && !seg.restDays().isEmpty()) {
                 b.append(", pihenőnap: ").append(seg.restDays().stream()
@@ -612,7 +609,7 @@ public class ContextSnapshotAssembler {
                 // mezo-a64t: sleep hours are quoted back to the user; mezo-b6zt: the denominator was
                 // a hardcoded "/5" against a 1..10 contract scale, so an 8 reached the prompt as "8/5".
                 b.append(" (").append(sleep.getDate()).append("): ")
-                        .append(ToolText.huNum(sleep.getDurationH(), SLEEP_HOURS_DECIMALS)).append(" h");
+                        .append(ToolText.huHours(sleep.getDurationH())).append(" h");
                 String quality = ToolText.sleepQuality(sleep.getQuality());
                 if (quality != null) {
                     b.append(", minőség ").append(quality);
