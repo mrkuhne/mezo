@@ -407,7 +407,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 211 IT + 59 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 211 IT + 60 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -810,11 +810,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 15 IT + 5 unit
-  - **ITs:** `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`,
-    `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
-    `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`,
-    `LlmUsageBreakdownMidnightIT`, `LlmUsageControllerIT`, `LlmUsageIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 16 IT + 5 unit
+  - **ITs:** `LlmActorPropagationIT`, `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`,
+    `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`,
+    `LlmLogRetentionJobSwitchOffIT`, `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`,
+    `LlmUsageBreakdownIT`, `LlmUsageBreakdownMidnightIT`, `LlmUsageControllerIT`, `LlmUsageIT`
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
