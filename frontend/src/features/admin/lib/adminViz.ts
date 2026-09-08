@@ -218,6 +218,27 @@ export function costDeltaCopy(delta: { pct: number; direction: 'up' | 'down' | '
  *  for a different UI, not a replacement. */
 export type TesterStatus = 'aktiv' | 'csendesedik' | 'lemorzsolodott' | 'meg_nem_aktiv'
 
+/** First/last active day, in "days ago" form, across a user's per-domain activity series
+ *  (AdminUserDetailPage's Aktivitás tab, mezo-zde2 Task 3) — reuses `sumSeriesByDay` rather than
+ *  re-summing, so this always agrees with what the per-domain heat strips visually show. `null`
+ *  for both when the user was never active a single day in the window (honest — no invented day
+ *  count), matching the `quietTesters`/`TesterCard` "még nem aktív" precedent. Index-based, not
+ *  date-based, so unlike the other helpers in this file it needs no injectable clock. */
+export function firstLastActivity(
+  series: { days: { count: number }[] }[],
+): { firstDaysAgo: number | null; lastDaysAgo: number | null } {
+  const totals = sumSeriesByDay(series)
+  if (totals.length === 0) return { firstDaysAgo: null, lastDaysAgo: null }
+  const activeIdx: number[] = []
+  totals.forEach((v, i) => { if (v > 0) activeIdx.push(i) })
+  if (activeIdx.length === 0) return { firstDaysAgo: null, lastDaysAgo: null }
+  const n = totals.length
+  return {
+    firstDaysAgo: n - 1 - activeIdx[0],
+    lastDaysAgo: n - 1 - activeIdx[activeIdx.length - 1],
+  }
+}
+
 export function testerStatus(lastActivityAt: string | null, now: Date = new Date()): TesterStatus {
   if (lastActivityAt === null) return 'meg_nem_aktiv'
   const days = Math.floor((now.getTime() - new Date(lastActivityAt).getTime()) / 86_400_000)

@@ -7,8 +7,13 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage'
-import { ADMIN_USER_DETAIL_MOCK } from '@/data/admin/adminInsightsMock'
+import {
+  ADMIN_USER_DETAIL_MOCK,
+  ADMIN_USER_FEEDBACK_NONE_MOCK,
+  userFeedbackMockFor,
+} from '@/data/admin/adminInsightsMock'
 import { ADMIN_ROWS_MOCK } from '@/data/admin/adminDataMock'
+import { MOCK_BELA_ID } from '@/data/admin/adminMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -43,12 +48,15 @@ function renderPageWithoutId() {
 describe('AdminUserDetailPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('renders the five tabs, opening on Aktivitás', async () => {
+  it('renders the six tabs (Funkciók renamed, Visszajelzések new before Memória), opening on Aktivitás', async () => {
     renderPage()
     expect(await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)).toBeInTheDocument()
-    for (const t of ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória']) {
+    const tabs = ['Aktivitás', 'Adatok', 'Funkciók', 'Költség', 'Visszajelzések', 'Memória']
+    for (const t of tabs) {
       expect(screen.getByRole('tab', { name: t })).toBeInTheDocument()
     }
+    // Order matters — Visszajelzések sits right before Memória (plan Task 3).
+    expect(screen.getAllByRole('tab').map((el) => el.textContent)).toEqual(tabs)
     expect(screen.getByRole('tab', { name: 'Aktivitás' })).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -69,6 +77,69 @@ describe('AdminUserDetailPage (mock mode)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Adatok' }))
     expect(await screen.findByText(ADMIN_USER_DETAIL_MOCK.inventory[0].table)).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Adatok' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  // mezo-zde2 Task 3 — per-domain heat strips replace the old single summed strip; each of
+  // ADMIN_USER_DETAIL_MOCK's two domains (train/food) gets its own labelled row, and the
+  // first/last-seen line is computed from the same series (firstLastActivity: index 0 and 88
+  // active -> daysAgo 89 and 1, see adminViz.test.ts's hand-worked fixture for the arithmetic).
+  it('Aktivitás tab renders one heat strip per domain, HU-labelled, plus a first/last seen line', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    expect(screen.getByText('Edzés')).toBeInTheDocument() // featureLabel('train')
+    expect(screen.getByText('Étkezés')).toBeInTheDocument() // featureLabel('food')
+    // two independent heat strips, not one summed strip
+    expect(document.querySelectorAll('.ad-heat').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText(/89 napja/)).toBeInTheDocument()
+    expect(screen.getByText(/1 napja/)).toBeInTheDocument()
+  })
+
+  // mezo-zde2 Task 3 — adoption list (HU labels, count desc) + the "never discovered" section
+  // sourced from `useAdminFeatureBoard('30d', ...)`'s non-system row keys minus the ones the
+  // user's own featureUsage30d already covers. None of ADMIN_FEATURE_BOARD_MOCK's non-system
+  // keys (companion_chat/meal_draft/meal_coach/train_meso_plan/proactive_feed/food) overlap
+  // ADMIN_USER_DETAIL_MOCK.featureUsage30d's keys (chat/coach/vision), so every board key shows
+  // up there — a deterministic fixture, not a coincidence to preserve.
+  it('Funkciók tab lists the user\'s feature adoption plus a never-discovered section from the board', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    fireEvent.click(screen.getByRole('tab', { name: 'Funkciók' }))
+    expect(await screen.findByText('Ezeket még nem találta meg')).toBeInTheDocument()
+    // adoption list still shows the user's own usage counts
+    expect(screen.getByText('18')).toBeInTheDocument()
+    // never-discovered: a non-system board key HU-labelled, none of which the user has used
+    expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument() // companion_chat
+    expect(screen.getByText('Étel-felismerés')).toBeInTheDocument() // meal_draft
+    // the system row never appears in either section
+    expect(screen.queryByText('Ismeretlen hívás')).toBeNull()
+  })
+
+  // mezo-zde2 Task 3 — the new Visszajelzések tab: surface names, ▲/▼ counts, reasons, recall %.
+  // renderPage() mounts Anna's row (ADMIN_USER_DETAIL_MOCK.user is Anna's insight per the mock's
+  // own comment), so `userFeedbackMockFor` serves ADMIN_USER_FEEDBACK_ANNA_MOCK.
+  it('Visszajelzések tab lists surfaces with reasons and the recall ratio line', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    fireEvent.click(screen.getByRole('tab', { name: 'Visszajelzések' }))
+    expect(await screen.findByText('Beszélgetés')).toBeInTheDocument() // surfaceLabel('chat_message')
+    expect(screen.getByText('Heti javaslat')).toBeInTheDocument() // surfaceLabel('weekly_suggestion')
+    expect(screen.getByText('▲4')).toBeInTheDocument()
+    expect(screen.getByText('▼1')).toBeInTheDocument()
+    expect(screen.getByText('Rossz időzítés')).toBeInTheDocument() // feedbackReasonLabel('bad_timing')
+    // recall: useful 3, irrelevant 1 -> 3/(3+1) = 75%
+    expect(screen.getByText(/75%-a volt hasznos/)).toBeInTheDocument()
+  })
+
+  // On-but-empty: `surfaces: []` (Béla in the real seed) is a real, honest zero — never a fake
+  // fallback. Route this render at Béla's id directly against `userFeedbackMockFor`'s own
+  // fallback (mock mode reads through the real fetch fn regardless of VITE_USE_MOCK's msw wiring
+  // for this id, since MOCK_BELA_ID has no detail seed — assert against the feedback fetch only
+  // by hitting the tab and relying on `userFeedbackMockFor(MOCK_BELA_ID)` === NONE_MOCK).
+  it('Visszajelzések tab shows the honest empty state when companion is on but no votes were cast', async () => {
+    expect(userFeedbackMockFor(MOCK_BELA_ID)).toEqual(ADMIN_USER_FEEDBACK_NONE_MOCK)
+    renderPage(MOCK_BELA_ID)
+    fireEvent.click(await screen.findByRole('tab', { name: 'Visszajelzések' }))
+    expect(await screen.findByText('Még nem adott visszajelzést.')).toBeInTheDocument()
   })
 
   it('navigates back to the users list', async () => {
@@ -92,6 +163,17 @@ describe('AdminUserDetailPage (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/nem elérhető/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /újra/i })).toBeInTheDocument()
+  })
+
+  // Companion-off override: `surfaces: null` renders the honest "ki van kapcsolva" tile instead
+  // of an empty list (which would be indistinguishable from "on but no votes"). Real mode only —
+  // mock mode never touches MSW, so this override would be silently ignored there.
+  it('Visszajelzések tab shows "ki van kapcsolva" when the companion switch is off (surfaces null)', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/users/:id/feedback`, () => HttpResponse.json({ surfaces: null, recall: null })))
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    fireEvent.click(screen.getByRole('tab', { name: 'Visszajelzések' }))
+    expect(await screen.findByText('ki van kapcsolva')).toBeInTheDocument()
   })
 
   // Fix round 1 (Finding 1): with no `:id` in the route, `useAdminUserDetail`'s query is

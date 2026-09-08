@@ -11510,6 +11510,12 @@ button.mz-wtile:active { transform: scale(0.96); }
 @keyframes adHeat { from { transform: scaleY(.12); } to { transform: scaleY(1); } }
 .ad-heatax { display: flex; justify-content: space-between; font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: #A2958A; margin-top: 6px; }
 
+/* ---- per-domén hő-szalag sor (User részlet · Aktivitás, mezo-zde2 Task 3) — one `.ad-heat`
+   per activity domain instead of one summed strip; `.hd` carries the HU domain label above it. */
+.ad-heatrow + .ad-heatrow { margin-top: 16px; }
+.ad-heatrow .hd { margin-bottom: 5px; }
+.ad-heatrow .hd .lb { font-size: 11px; font-weight: 700; color: #6E6257; }
+
 /* ---- domén-megoszlás sor (Áttekintés) ---- */
 .ad-domrow { display: flex; align-items: center; gap: 9px; padding: 3.5px 0; }
 .ad-domrow .lb { font-size: 10px; font-weight: 600; width: 74px; flex: none; }
@@ -11642,6 +11648,16 @@ button.mz-wtile:active { transform: scale(0.96); }
   padding: 3px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.06);
 }
 .ad-errorlist code { color: #6E6257; font-size: 10.5px; }
+
+/* ---- Visszajelzések tab: one row per companion feedback surface (mezo-zde2 Task 3), same
+   up/down color vocabulary as `.ad-testercard .foot .helped`. ---- */
+.ad-surfacerow { padding: 8px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.08); }
+.ad-surfacerow:last-child { border-bottom: none; }
+.ad-surfacerow .hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ad-surfacerow .hd .lb { font-size: 12px; font-weight: 700; }
+.ad-surfacerow .hd .cnt { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-surfacerow .hd .cnt .up { color: #4E6B42; }
+.ad-surfacerow .hd .cnt .down { color: #A8452A; }
 .ad-reasonlist .num, .ad-errorlist .num { font-variant-numeric: tabular-nums; font-weight: 700; color: #6E6257; }
 .ad-updown { display: flex; gap: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ad-updown .up { color: #4E6B42; }

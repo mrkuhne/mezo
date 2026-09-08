@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
-import { useAdminUserDetail } from '@/data/admin/adminInsightsHooks'
+import { useAdminUserDetail, useAdminUserFeedback, useAdminFeatureBoard } from '@/data/admin/adminInsightsHooks'
 import { useAdminRows } from '@/data/admin/adminDataHooks'
 import type { AdminRowSortDir } from '@/data/admin/adminDataApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
@@ -10,7 +10,10 @@ import { ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { huInt, usd } from '@/shared/lib/huNum'
-import { footprintShare, heatColor, maxOf } from '@/features/admin/lib/adminViz'
+import { firstLastActivity, footprintShare, heatColor, maxOf } from '@/features/admin/lib/adminViz'
+import { featureLabel, feedbackReasonLabel, surfaceLabel } from '@/features/admin/lib/labels'
+
+const MISSING_MARK = ' (nincs címke)'
 
 // User részlet — ported from admin-body.html's #d-detail (the "opened" state of the Huawei
 // slide-in, minus the slide: this task registers it as its own react-router page). The hero
@@ -20,7 +23,15 @@ import { footprintShare, heatColor, maxOf } from '@/features/admin/lib/adminViz'
 //
 // Adatok tab: the inventory list stays here; clicking a row selects that table and mounts a
 // `DataTable` below it, bound to `useAdminRows({ table, userId: id, ... })` (mezo-d5iy.12).
-const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória'] as const
+//
+// Funkciók tab (renamed from Feature-ök, mezo-zde2 Task 3): the adoption list is the existing
+// `detail.featureUsage30d`; the "Ezeket még nem találta meg" section is a SECOND, independent
+// query (`useAdminFeatureBoard('30d', ...)`) — its own AdminTile, not folded into the adoption
+// tile's `query={detail}`, so a board-endpoint failure degrades only that one section.
+//
+// Visszajelzések tab (new, mezo-zde2 Task 3): per-user companion feedback via
+// `useAdminUserFeedback`, inserted right before Memória.
+const TABS = ['Aktivitás', 'Adatok', 'Funkciók', 'Költség', 'Visszajelzések', 'Memória'] as const
 type Tab = (typeof TABS)[number]
 
 export function AdminUserDetailPage() {
@@ -30,6 +41,8 @@ export function AdminUserDetailPage() {
   const isOwner = me.data?.role === 'OWNER'
   const navigate = useNavigate()
   const detail = useAdminUserDetail(userId, isOwner)
+  const board = useAdminFeatureBoard('30d', isOwner)
+  const feedback = useAdminUserFeedback(userId, isOwner)
   const [tab, setTab] = useState<Tab>('Aktivitás')
 
   // Embedded per-table row browser (Adatok tab). Local component state, not URL search params —
@@ -115,12 +128,30 @@ export function AdminUserDetailPage() {
             <EntranceGroup>
               {tab === 'Aktivitás' && (
                 <MosaicDesktop>
-                  <AdminTile query={detail} wash="coral" eyebrow="Aktivitás · 90 nap" span={12}>
+                  <AdminTile query={detail} wash="coral" eyebrow="Aktivitás · 90 nap, domainenként" span={12}>
                     <div className="ad-cell" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                       <div className="ad-big">{user.activeDays30d}<u>aktív nap a 30-ból</u></div>
                       <ClaySpot name="s-hajtas" size={48} />
                     </div>
-                    <HeatStrip series={detail.data.activitySeries} />
+                    {(() => {
+                      const { firstDaysAgo, lastDaysAgo } = firstLastActivity(detail.data.activitySeries)
+                      return (
+                        <p className={firstDaysAgo === null ? 'ad-mut' : undefined} style={{ margin: '2px 0 12px' }}>
+                          {firstDaysAgo === null
+                            ? 'még nem aktív'
+                            : `első aktivitás: ${firstDaysAgo} napja · utolsó aktivitás: ${lastDaysAgo} napja`}
+                        </p>
+                      )
+                    })()}
+                    {detail.data.activitySeries.map((s) => {
+                      const lbl = featureLabel(s.key)
+                      return (
+                        <div key={s.key} className="ad-heatrow">
+                          <div className="hd"><span className="lb">{lbl.label}{lbl.missing && MISSING_MARK}</span></div>
+                          <HeatStrip days={s.days} />
+                        </div>
+                      )
+                    })}
                   </AdminTile>
                 </MosaicDesktop>
               )}
@@ -187,15 +218,50 @@ export function AdminUserDetailPage() {
                 </MosaicDesktop>
               )}
 
-              {tab === 'Feature-ök' && (
+              {tab === 'Funkciók' && (
                 <MosaicDesktop>
                   <AdminTile query={detail} wash="lav" eyebrow="Feature-használat · 30 nap" span={12}>
                     <div className="ad-big">{huInt(Object.values(detail.data.featureUsage30d).reduce((a, b) => a + b, 0))}<u>hívás</u></div>
                     <div style={{ marginTop: 6 }}>
-                      {Object.entries(detail.data.featureUsage30d).map(([feature, count]) => (
-                        <FeatureRow key={feature} label={feature} value={count} max={maxOf(detail.data.featureUsage30d)} />
-                      ))}
+                      {Object.entries(detail.data.featureUsage30d)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([feature, count]) => {
+                          const lbl = featureLabel(feature)
+                          return (
+                            <FeatureRow
+                              key={feature}
+                              label={`${lbl.label}${lbl.missing ? MISSING_MARK : ''}`}
+                              value={count}
+                              max={maxOf(detail.data.featureUsage30d)}
+                            />
+                          )
+                        })}
                     </div>
+                  </AdminTile>
+
+                  {/* Own AdminTile (own query) so a board-endpoint failure never takes down the
+                      adoption list above it — the plan's "AdminTile isolation where new queries
+                      mount" rule. Board keys per Rulings: non-system (kind ai/domain/both) rows
+                      the user's own featureUsage30d never used. Per-user first-use/habit flags
+                      are deliberately deferred (plan Rulings, bd note) — no fake data here. */}
+                  <AdminTile query={board} wash="sage" eyebrow="Ezeket még nem találta meg" span={12}>
+                    {(() => {
+                      const used = new Set(Object.keys(detail.data.featureUsage30d))
+                      const undiscovered = board.data.rows.filter((r) => r.kind !== 'system' && !used.has(r.key))
+                      if (undiscovered.length === 0) {
+                        return <p className="ad-mut">Minden elérhető funkciót kipróbált.</p>
+                      }
+                      return (
+                        <div className="ad-chiprow">
+                          {undiscovered.map((r) => {
+                            const lbl = featureLabel(r.key)
+                            return (
+                              <span key={r.key} className="ad-tag mut">{lbl.label}{lbl.missing && MISSING_MARK}</span>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
                   </AdminTile>
                 </MosaicDesktop>
               )}
@@ -222,6 +288,66 @@ export function AdminUserDetailPage() {
                   </AdminTile>
                 </MosaicDesktop>
               )}
+
+              {tab === 'Visszajelzések' && (
+                <MosaicDesktop>
+                  <AdminTile query={feedback} wash="rose" eyebrow="Visszajelzések" span={12}>
+                    {feedback.data.surfaces === null ? (
+                      <p className="ad-mut">ki van kapcsolva</p>
+                    ) : (
+                      <>
+                        {feedback.data.surfaces.length === 0 ? (
+                          <p className="ad-mut">Még nem adott visszajelzést.</p>
+                        ) : (
+                          feedback.data.surfaces.map((s) => {
+                            const lbl = surfaceLabel(s.kind)
+                            return (
+                              <div key={s.kind} className="ad-surfacerow">
+                                <div className="hd">
+                                  <span className="lb">{lbl.label}{lbl.missing && MISSING_MARK}</span>
+                                  <span className="cnt">
+                                    <span className="up">▲{huInt(s.up)}</span>{' '}
+                                    <span className="down">▼{huInt(s.down)}</span>
+                                  </span>
+                                </div>
+                                {s.reasons.length > 0 && (
+                                  <ul className="ad-reasonlist">
+                                    {s.reasons.map((r) => {
+                                      const rl = feedbackReasonLabel(r.reason)
+                                      return (
+                                        <li key={r.reason}>
+                                          <span>{rl.label}{rl.missing && MISSING_MARK}</span>
+                                          <span className="num">{huInt(r.count)}</span>
+                                        </li>
+                                      )
+                                    })}
+                                  </ul>
+                                )}
+                              </div>
+                            )
+                          })
+                        )}
+
+                        <div style={{ marginTop: 14 }}>
+                          {feedback.data.recall !== null && feedback.data.recall.useful + feedback.data.recall.irrelevant > 0 ? (
+                            <>
+                              <p>
+                                A felidézett emlékek {Math.round(
+                                  (100 * feedback.data.recall.useful) /
+                                    (feedback.data.recall.useful + feedback.data.recall.irrelevant),
+                                )}%-a volt hasznos.
+                              </p>
+                              <p className="ad-mut">elnémítva: {huInt(feedback.data.recall.suppress)}</p>
+                            </>
+                          ) : (
+                            <p className="ad-mut">Még nincs elég emlék-felidézési visszajelzés.</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </AdminTile>
+                </MosaicDesktop>
+              )}
             </EntranceGroup>
           </>
         )}
@@ -240,15 +366,16 @@ function FeatureRow({ label, value, max }: { label: string; value: number; max: 
   )
 }
 
-/** 90-day activity heat strip — one column per day, summed across every activity series. */
-function HeatStrip({ series }: { series: { key: string; days: { day: string; count: number }[] }[] }) {
-  const n = series[0]?.days.length ?? 0
-  const totals = Array.from({ length: n }, (_, i) => series.reduce((sum, s) => sum + (s.days[i]?.count ?? 0), 0))
-  const max = Math.max(1, ...totals)
+/** A single domain's 90-day activity heat strip — one column per day (mezo-zde2 Task 3: was a
+ *  cross-domain sum, now called once per domain so each gets its own row; the per-cell entrance
+ *  stagger is unchanged). */
+function HeatStrip({ days }: { days: { day: string; count: number }[] }) {
+  const counts = days.map((d) => d.count)
+  const max = Math.max(1, ...counts)
   return (
     <>
       <div className="ad-heat">
-        {totals.map((v, i) => (
+        {counts.map((v, i) => (
           <i key={i} style={{ background: heatColor(v, max), ['--d' as string]: `${(0.25 + i * 0.006).toFixed(3)}s` } as CSSProperties} />
         ))}
       </div>

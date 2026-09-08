@@ -5,6 +5,7 @@ import {
   costMatrixTotals,
   domainTotals,
   featureLegend,
+  firstLastActivity,
   quietTesters,
   testerStatus,
   topNFromEntries,
@@ -302,5 +303,32 @@ describe('costDeltaCopy', () => {
 
   it('reads a neutral copy for a flat (non-zero-base) delta', () => {
     expect(costDeltaCopy({ pct: 0.1, direction: 'flat', fromZero: false })).toBe('– megegyezik a heti átlaggal')
+  })
+})
+
+// mezo-zde2 Task 3 — the Emberek detail's Aktivitás tab "first seen / last seen" line.
+describe('firstLastActivity', () => {
+  it('finds the earliest and latest active day across every domain, summed by index', () => {
+    // domain A active only at index 1, domain B active only at index 3 — the sum is active at
+    // both, so first active index is 1 (daysAgo 5-1-1=3) and last is 3 (daysAgo 5-1-3=1).
+    const series = [
+      { days: [{ count: 0 }, { count: 1 }, { count: 0 }, { count: 0 }, { count: 0 }] },
+      { days: [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 2 }, { count: 0 }] },
+    ]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: 3, lastDaysAgo: 1 })
+  })
+
+  it('reports both as null when no domain was ever active', () => {
+    const series = [{ days: [{ count: 0 }, { count: 0 }] }, { days: [{ count: 0 }, { count: 0 }] }]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: null, lastDaysAgo: null })
+  })
+
+  it('reports both as null for an empty series list', () => {
+    expect(firstLastActivity([])).toEqual({ firstDaysAgo: null, lastDaysAgo: null })
+  })
+
+  it('collapses to a single day when the only active day is the last one (today)', () => {
+    const series = [{ days: [{ count: 0 }, { count: 0 }, { count: 5 }] }]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: 0, lastDaysAgo: 0 })
   })
 })
