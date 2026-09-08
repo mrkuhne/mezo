@@ -133,6 +133,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/usage/screens:
+    get:
+      tags: [AdminInsights]
+      operationId: getAdminScreenUsage
+      summary: Screen views/uniques from the lean screen_event log (AdminInsights)
+      parameters:
+        - { name: period, in: query, required: false, schema: { type: string, enum: ['7d','30d','90d'], default: '30d' } }
+      responses:
+        '200':
+          description: Screen usage
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminScreenUsageResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     AdminDayCount:
@@ -272,3 +295,26 @@ components:
           type: array
           items: { $ref: '#/components/schemas/AdminCostMatrixCell' }
         totalUsd: { type: number, format: double }
+    AdminScreenUsageRow:
+      type: object
+      required: [screen, views, uniqueUsers, days]
+      properties:
+        screen: { type: string, description: 'The matched route pattern the client reported' }
+        views: { type: integer, format: int64 }
+        uniqueUsers: { type: integer, format: int64 }
+        lastSeenAt: { type: string, format: date-time, nullable: true }
+        days:
+          type: array
+          description: Dense daily view counts over the window (AdminSeries.dense) — the sparkline
+          items: { $ref: '#/components/schemas/AdminDayCount' }
+    AdminScreenUsageResponse:
+      type: object
+      required: [period, days, screens]
+      properties:
+        period: { type: string }
+        days:
+          type: array
+          items: { type: string, format: date }
+        screens:
+          type: array
+          items: { $ref: '#/components/schemas/AdminScreenUsageRow' }

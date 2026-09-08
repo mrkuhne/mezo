@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useMe } from '@/data/hooks'
-import { useAdminFeatureUsage } from '@/data/admin/adminInsightsHooks'
+import { useAdminFeatureUsage, useAdminScreenUsage } from '@/data/admin/adminInsightsHooks'
 import type { AdminPeriod } from '@/data/admin/adminInsightsApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
 import { MatrixGrid } from '@/features/admin/components/MatrixGrid'
+import { ScreenUsageTable } from '@/features/admin/components/ScreenUsageTable'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
 import { huInt } from '@/shared/lib/huNum'
@@ -22,6 +23,10 @@ export function AdminUsagePage() {
   const isOwner = me.data?.role === 'OWNER'
   const [period, setPeriod] = useState<AdminPeriod>('30d')
   const usage = useAdminFeatureUsage(period, isOwner)
+  // Képernyők (mezo-o5cz): an INDEPENDENT query on the same period chip, in its own tile — a
+  // failing screen-usage endpoint must degrade only its own tile, never the feature matrix
+  // (AdminTile's per-tile error isolation, mezo-d5iy.11).
+  const screens = useAdminScreenUsage(period, isOwner)
   const callTotal = usage.data.features.reduce((sum, f) => sum + f.days.reduce((a, d) => a + d.count, 0), 0)
 
   return (
@@ -60,6 +65,9 @@ export function AdminUsagePage() {
                 valueOf={(r, day) => r.days.find((d) => d.day === day)?.count ?? 0}
                 formatValue={(v) => `${v} hívás`}
               />
+            </AdminTile>
+            <AdminTile query={screens} wash="sky" eyebrow="Képernyők · megnyitások" span={12}>
+              <ScreenUsageTable screens={screens.data.screens} />
             </AdminTile>
           </MosaicDesktop>
         </EntranceGroup>

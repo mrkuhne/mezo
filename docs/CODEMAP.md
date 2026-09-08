@@ -47,6 +47,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [quickinput](#quickinput) | · | · | · | ✓ | · |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
+| [telemetry](#telemetry) | ✓ | 1 | ✓ | · | · |
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [lifegoal](features/lifegoal.md), [needs](features/needs.md), [proactive](features/proactive.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
@@ -91,9 +92,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `AdminMemoryProperties`, `AdminProperties`
 - **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
   - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
-- **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
+- **Contract** `api/feature/admin-insights/admin-insights.yml` — 6 operations
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
-    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
+    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix · GET /api/admin/usage/screens
 - **Contract** `api/feature/admin-memory/admin-memory.yml` — 7 operations
   - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
     POST /api/admin/users/{userId}/memory/replay · GET /api/admin/users/{userId}/memory/graph ·
@@ -109,15 +110,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
     AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
   - **components:** AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
-    AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
-    UserPicker.tsx
+    AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, ScreenUsageTable.tsx,
+    Sparkline.tsx, TablePicker.tsx, UserPicker.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
     MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
     RunsView.tsx, adminRoutes.tsx, contribution.ts, graphLayout.ts, projection.ts, umap.worker.ts, umapConstants.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 13 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 14 IT + 3 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminMemoryGraphIT`, `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`,
     `AdminMemoryReplayIT`, `AdminMemoryRunsIT`, `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`,
-    `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+    `AdminOverviewIT`, `AdminScreenUsageIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
+    `AdminUserInsightIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `GraphPopulator`, `MemoryEmbeddingPopulator`,
     `MemoryItemPopulator`
 
@@ -1233,6 +1235,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RitualReflectionEventIT`, `RitualSwitchOffIT`
   - **populators:** `RitualPopulator`, `SleepGoalPopulator`, `UserPopulator`
 
+### telemetry
+
+*BE + API + FE-data* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/telemetry`
+  - **entities→tables:** `ScreenEventEntity`→`screen_event`
+  - **repositories:** `ScreenDayRow`, `ScreenEventRepository`, `ScreenUsageRow`
+  - **services:** `ScreenEventRetentionJob`, `ScreenEventService`
+  - **controllers→contract:** `TelemetryController`→`TelemetryApi`
+  - **config:** `TelemetryProperties`
+- **Contract** `api/feature/telemetry/telemetry.yml` — 1 operation
+  - **endpoints:** POST /api/telemetry/screen-events
+- **FE data** `frontend/src/data/telemetry`
+  - **modules:** telemetryClient.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/telemetry` — 3 IT + 1 unit
+  - **ITs:** `ScreenEventIngestIT`, `ScreenEventRetentionJobIT`, `TelemetrySwitchOffIT`
+  - **populators:** `UserPopulator`
+
 ### today
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done) ·
@@ -1458,7 +1478,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`,
   `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
-- **`ResetDatabase` TRUNCATE list** — 108 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 109 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1474,7 +1494,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `notification_pref`, `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`, `pattern`,
     `pattern_event`, `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
     `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
-    `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
+    `screen_event`, `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
     `sport_slot_skip`, `supplement_intake`, `text_signal`, `tutorial_progress`, `water_log`, `weekly_review`,
     `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
@@ -1490,5 +1510,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`, `quickinput`
+- **Features with no `docs/features/` doc:** `medication`, `quickinput`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

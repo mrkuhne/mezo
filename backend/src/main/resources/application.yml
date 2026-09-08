@@ -436,6 +436,12 @@ mezo:
     # 404; the admin hub's own endpoints are unaffected.
     admin-memory:
       enabled: false
+    # Lean screen-event telemetry (mezo-o5cz) — off (the DEFAULT, spec T2): POST
+    # /api/telemetry/screen-events 404s, no ingest/retention bean exists, screen_event stays
+    # empty and the admin "Képernyők" panel reads zeros. Enabled explicitly in
+    # k8s/backend/deployment.yaml, nowhere else.
+    screen-telemetry:
+      enabled: false
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -565,6 +571,22 @@ mezo:
       # retention; nothing else changes). Previously gated ONLY by mezo.feature.companion.enabled.
       memory-retrieval-retention-job:
         enabled: true
+  # Lean screen-event telemetry (mezo-o5cz, spec 2026-09-07 §5) — binds TelemetryProperties.
+  # Bound regardless of mezo.feature.screen-telemetry.enabled: the switch gates BEANS, these are
+  # the numbers those beans read, so a typo here is a startup failure, not a silent default.
+  telemetry:
+    # Rows older than this are HARD-deleted (no soft delete — a screen view is disposable).
+    retention-days: 90
+    # 03:45 — inside the dawn cron cluster but on its own minute (02:20/02:40/03:00 SUN,
+    # 03:10 feedback-learning, 03:20 graph, 03:40 llm-log retention). One bounded DELETE.
+    retention-cron: "0 45 3 * * *"
+    # Largest accepted batch; a bigger one is a 400 TELEMETRY_BATCH_TOO_LARGE, never a silent
+    # truncation. The FE flushes far below this (a handful of route changes per interval).
+    batch-max: 50
+    # Per-user ingest budget in EVENTS per rolling minute (in-memory token bucket; single replica).
+    rate-limit-per-minute: 120
+    # The client clock is trusted but pinned into now +/- this many hours (spec T4).
+    occurred-at-clamp-hours: 24
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting

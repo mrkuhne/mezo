@@ -126,6 +126,11 @@ spec:
             # dry-run replay, knowledge graph, vector map and store health.
             - name: MEZO_FEATURE_ADMIN_MEMORY_ENABLED
               value: "true"
+            # Lean screen-event telemetry (mezo-o5cz): default-OFF in application.yml, ON
+            # here — this is the ONLY place it is enabled. Ingest writes one row per route
+            # change; the nightly job (03:45) hard-deletes past 90 days.
+            - name: MEZO_FEATURE_SCREEN_TELEMETRY_ENABLED
+              value: "true"
             # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.
             - name: MEZO_LOG_FORMAT
               value: ecs
