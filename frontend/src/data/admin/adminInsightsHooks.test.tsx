@@ -5,13 +5,25 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
-import { useAdminOverview, useAdminCostMatrix, useAdminAlerts } from '@/data/admin/adminInsightsHooks'
+import {
+  useAdminOverview,
+  useAdminCostMatrix,
+  useAdminAlerts,
+  useAdminFeatureBoard,
+  useAdminFeatureDetail,
+  useAdminFeedbackSummary,
+} from '@/data/admin/adminInsightsHooks'
 import {
   ADMIN_OVERVIEW_EMPTY,
   ADMIN_OVERVIEW_MOCK,
   ADMIN_ALERTS_MOCK,
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_COST_MATRIX_7D_MOCK,
+  ADMIN_FEATURE_BOARD_EMPTY,
+  ADMIN_FEATURE_BOARD_MOCK,
+  ADMIN_FEATURE_DETAIL_EMPTY,
+  ADMIN_FEEDBACK_SUMMARY_MOCK,
+  featureBoardMockFor,
 } from '@/data/admin/adminInsightsMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
@@ -47,6 +59,53 @@ describe('adminInsights hooks (mock mode)', () => {
     expect(cm7.result.current.data.period).toBe('7d')
     expect(cm7.result.current.data.totalUsd).toBeLessThan(cm30.result.current.data.totalUsd)
   })
+
+  it('serves the feature board seed synchronously, with real slugs and 12-week series', () => {
+    const { result } = renderHook(() => useAdminFeatureBoard('30d', true), { wrapper: QueryWrapper })
+    expect(result.current.data).toEqual(ADMIN_FEATURE_BOARD_MOCK)
+    expect(result.current.data.rows.length).toBeGreaterThanOrEqual(6)
+    expect(result.current.data.rows.every((r) => r.usesPerWeek.length === 12)).toBe(true)
+    expect(result.current.data.rows.some((r) => r.kind === 'system' && r.key === 'unknown')).toBe(true)
+    expect(result.current.data.rows.some((r) => r.key === 'meal_draft' && r.helped === null)).toBe(true)
+  })
+
+  it('serves a distinct, larger feature-board seed for 90d than for 30d', () => {
+    const b30 = renderHook(() => useAdminFeatureBoard('30d', true), { wrapper: QueryWrapper })
+    const b90 = renderHook(() => useAdminFeatureBoard('90d', true), { wrapper: QueryWrapper })
+    expect(b90.result.current.data).toEqual(featureBoardMockFor('90d'))
+    expect(b90.result.current.data.period).toBe('90d')
+    const total30 = b30.result.current.data.rows.reduce((s, r) => s + r.costUsd, 0)
+    const total90 = b90.result.current.data.rows.reduce((s, r) => s + r.costUsd, 0)
+    expect(total90).toBeGreaterThan(total30)
+  })
+
+  it('serves the companion_chat detail seed with a consistent funnel/feedback/reliability shape', () => {
+    const { result } = renderHook(() => useAdminFeatureDetail('companion_chat', '30d', true), { wrapper: QueryWrapper })
+    expect(result.current.data.key).toBe('companion_chat')
+    expect(result.current.data.usageByWeek).toHaveLength(12)
+    expect(result.current.data.funnel).toEqual({ tried: 3, repeated: 2, habitual: 1, triedUsers: ['Daniel', 'Anna', 'Béla'] })
+    expect(result.current.data.feedbackTrend).toHaveLength(12)
+    const upTotal = result.current.data.feedbackTrend!.reduce((s, p) => s + p.up, 0)
+    const downTotal = result.current.data.feedbackTrend!.reduce((s, p) => s + p.down, 0)
+    expect(upTotal).toBe(14)
+    expect(downTotal).toBe(3)
+    expect(result.current.data.downReasons!.reduce((s, r) => s + r.count, 0)).toBe(downTotal)
+    expect(result.current.data.costByModel).toHaveLength(2)
+  })
+
+  it('serves the same detail seed for an unmapped key, with `key` swapped to match', () => {
+    const { result } = renderHook(() => useAdminFeatureDetail('meal_draft', '30d', true), { wrapper: QueryWrapper })
+    expect(result.current.data.key).toBe('meal_draft')
+    expect(result.current.data.funnel.tried).toBe(3)
+  })
+
+  it('serves the feedback summary seed synchronously, with real reason keys', () => {
+    const { result } = renderHook(() => useAdminFeedbackSummary('30d', true), { wrapper: QueryWrapper })
+    expect(result.current.data).toEqual(ADMIN_FEEDBACK_SUMMARY_MOCK)
+    expect(result.current.data.recall).toEqual({ useful: 35, irrelevant: 6, suppress: 2 })
+    const reasons = result.current.data.features.flatMap((f) => f.reasons.map((r) => r.reason))
+    expect(reasons.every((r) => ['inaccurate', 'too_much', 'bad_timing', 'not_about_me'].includes(r))).toBe(true)
+  })
 })
 
 describe('adminInsights hooks (real mode)', () => {
@@ -81,6 +140,33 @@ describe('adminInsights hooks (real mode)', () => {
     await waitFor(() => expect(result.current.data.alerts.length).toBeGreaterThan(0))
     expect(result.current.data.alerts.some((a) => a.key === 'cost_spike')).toBe(true)
   })
+
+  it('fetches the feature board from the API', async () => {
+    const { result } = renderHook(() => useAdminFeatureBoard('30d', true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.rows.length).toBeGreaterThan(0))
+  })
+
+  it('does not fetch the feature board when the caller is not the owner', () => {
+    const { result } = renderHook(() => useAdminFeatureBoard('30d', false), { wrapper: QueryWrapper })
+    expect(result.current.isPending).toBe(true)
+    expect(result.current.data).toEqual(ADMIN_FEATURE_BOARD_EMPTY)
+  })
+
+  it('fetches a feature detail from the API', async () => {
+    const { result } = renderHook(() => useAdminFeatureDetail('companion_chat', '30d', true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.key).toBe('companion_chat'))
+  })
+
+  it('never leaves isPending stuck true when no feature key is given', () => {
+    const { result } = renderHook(() => useAdminFeatureDetail('', '30d', true), { wrapper: QueryWrapper })
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.data).toEqual(ADMIN_FEATURE_DETAIL_EMPTY)
+  })
+
+  it('fetches the feedback summary from the API', async () => {
+    const { result } = renderHook(() => useAdminFeedbackSummary('30d', true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.features.length).toBeGreaterThan(0))
+  })
 })
 
 // Sanity check that the MSW handler wiring itself is reachable (belt-and-suspenders alongside
@@ -93,5 +179,10 @@ describe('adminInsights MSW handler wiring', () => {
     server.use(http.get(`${API_BASE}/api/admin/overview`, () => HttpResponse.json(ADMIN_OVERVIEW_MOCK)))
     const { result } = renderHook(() => useAdminOverview(true), { wrapper: QueryWrapper })
     await waitFor(() => expect(result.current.data).toEqual(ADMIN_OVERVIEW_MOCK))
+  })
+
+  it('answers /api/admin/features/:key with the detail seed for a real path param', async () => {
+    const { result } = renderHook(() => useAdminFeatureDetail('proactive_feed', '30d', true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.key).toBe('proactive_feed'))
   })
 })

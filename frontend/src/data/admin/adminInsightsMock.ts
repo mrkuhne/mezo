@@ -5,7 +5,11 @@ import type {
   AdminDayAmount,
   AdminDayCount,
   AdminDaySeries,
+  AdminFeatureBoardResponse,
+  AdminFeatureDetailResponse,
+  AdminFeatureRow,
   AdminFeatureUsageResponse,
+  AdminFeedbackSummaryResponse,
   AdminOverviewResponse,
   AdminScreenUsageResponse,
   AdminUserDetailResponse,
@@ -292,4 +296,169 @@ export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
 export const ADMIN_ALERTS_EMPTY: AdminAlertsResponse = {
   generatedAt: new Date(0).toISOString(),
   alerts: [],
+}
+
+// Feature scorecard (mezo-clgz) — the Funkciók tab's board/detail/feedback-summary seeds.
+// REAL slugs throughout (see FEATURE_LABELS at features/admin/lib/labels.ts): companion_chat,
+// meal_draft, meal_coach, train_meso_plan, proactive_feed are LLM feature-context slugs; `food`
+// is a domain featureMap key with no LLM cost attached; `unknown` is the system bucket for calls
+// that left no feature id. `usesPerWeek`/`usageByWeek` are always exactly 12 entries (oldest ->
+// newest ISO week), dense-filled. `helped` is null on `meal_draft` and `food` — meal_draft is a
+// real AI feature simply not yet mapped to message_feedback, `food` is a domain feature with no
+// companion feedback at all — matching the schema's "null when unmapped/companion-off" rulings.
+const FEATURE_WEEKS_12 = (base: number, spread: number): number[] =>
+  Array.from({ length: 12 }, (_, i) => Math.max(0, base + ((i * 7) % (spread * 2 + 1)) - spread))
+
+export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
+  period: '30d',
+  rows: [
+    {
+      key: 'companion_chat', kind: 'ai', uniqueUsers: 8,
+      usesPerWeek: FEATURE_WEEKS_12(6, 3),
+      habitUserShare: 0.5, helped: { up: 14, down: 3 }, acceptedShare: null,
+      costUsd: 42.3, costPerUse: 0.62, unknownCalls: 0, errorPct: 2.1, p90LatencyMs: 1400, screenViews: null,
+    },
+    {
+      key: 'meal_draft', kind: 'ai', uniqueUsers: 5,
+      usesPerWeek: FEATURE_WEEKS_12(2, 2),
+      habitUserShare: 0.2, helped: null, acceptedShare: null,
+      // errorPct ~20 — meal_draft (photo/text -> draft) is the flakiest of the bunch.
+      costUsd: 6.75, costPerUse: 0.34, unknownCalls: 0, errorPct: 19.8, p90LatencyMs: 2200, screenViews: null,
+    },
+    {
+      key: 'meal_coach', kind: 'ai', uniqueUsers: 6,
+      usesPerWeek: FEATURE_WEEKS_12(3, 2),
+      habitUserShare: 0.33, helped: { up: 9, down: 1 }, acceptedShare: null,
+      // unknownCalls > 0 — a few calls without a resolvable cost mapping.
+      costUsd: 8.1, costPerUse: 0.42, unknownCalls: 3, errorPct: 1.0, p90LatencyMs: 900, screenViews: null,
+    },
+    {
+      key: 'train_meso_plan', kind: 'ai', uniqueUsers: 4,
+      usesPerWeek: FEATURE_WEEKS_12(1, 1),
+      habitUserShare: 0.25, helped: { up: 5, down: 0 }, acceptedShare: null,
+      costUsd: 3.2, costPerUse: 0.53, unknownCalls: 0, errorPct: 0, p90LatencyMs: 1600, screenViews: null,
+    },
+    {
+      key: 'proactive_feed', kind: 'ai', uniqueUsers: 7,
+      usesPerWeek: FEATURE_WEEKS_12(5, 2),
+      habitUserShare: 0.57, helped: { up: 11, down: 2 }, acceptedShare: null,
+      costUsd: 2.4, costPerUse: 0.09, unknownCalls: 0, errorPct: 0.5, p90LatencyMs: 700, screenViews: null,
+    },
+    {
+      key: 'food', kind: 'domain', uniqueUsers: 9,
+      usesPerWeek: FEATURE_WEEKS_12(14, 2),
+      habitUserShare: 0.78, helped: null, acceptedShare: null,
+      costUsd: 0, costPerUse: null, unknownCalls: 0, errorPct: null, p90LatencyMs: null, screenViews: null,
+    },
+    {
+      key: 'unknown', kind: 'system', uniqueUsers: 2,
+      usesPerWeek: FEATURE_WEEKS_12(0, 1),
+      habitUserShare: 0, helped: null, acceptedShare: null,
+      costUsd: 0.15, costPerUse: null, unknownCalls: 3, errorPct: null, p90LatencyMs: null, screenViews: null,
+    },
+  ],
+}
+
+export const ADMIN_FEATURE_BOARD_EMPTY: AdminFeatureBoardResponse = { period: '30d', rows: [] }
+
+/** period-aware selection, mirroring `costMatrixMockFor` (mezo-m079 final review F6a) — the
+ *  90d board is a strict superset-flavoured scale-up of 30d, never the identical object. */
+export function featureBoardMockFor(period: string | null | undefined): AdminFeatureBoardResponse {
+  if (period !== '90d') return ADMIN_FEATURE_BOARD_MOCK
+  return {
+    period: '90d',
+    rows: ADMIN_FEATURE_BOARD_MOCK.rows.map((r) => ({
+      ...r,
+      uniqueUsers: Math.round(r.uniqueUsers * 1.4),
+      costUsd: Number((r.costUsd * 2.6).toFixed(2)),
+    })),
+  }
+}
+
+const COMPANION_CHAT_ROW: AdminFeatureRow = ADMIN_FEATURE_BOARD_MOCK.rows[0]
+
+// Only companion_chat carries a full detail seed (brief scope) — `featureDetailMockFor` below
+// serves it for ANY requested key (matching `adminRowsMockFor`'s fallback-to-a-populated-default
+// idiom at adminDataMock.ts), with `key` swapped to the one actually asked for.
+export const ADMIN_FEATURE_DETAIL_MOCK: AdminFeatureDetailResponse = {
+  key: 'companion_chat',
+  kind: 'ai',
+  usageByWeek: COMPANION_CHAT_ROW.usesPerWeek,
+  funnel: { tried: 3, repeated: 2, habitual: 1, triedUsers: ['Daniel', 'Anna', 'Béla'] },
+  // 12 ISO weeks; up/down sum to the board row's helped totals (14/3) — internally consistent.
+  feedbackTrend: [
+    { week: '2026-W01', up: 1, down: 0 },
+    { week: '2026-W02', up: 1, down: 0 },
+    { week: '2026-W03', up: 1, down: 1 },
+    { week: '2026-W04', up: 2, down: 0 },
+    { week: '2026-W05', up: 1, down: 0 },
+    { week: '2026-W06', up: 1, down: 1 },
+    { week: '2026-W07', up: 2, down: 0 },
+    { week: '2026-W08', up: 1, down: 0 },
+    { week: '2026-W09', up: 1, down: 0 },
+    { week: '2026-W10', up: 1, down: 1 },
+    { week: '2026-W11', up: 1, down: 0 },
+    { week: '2026-W12', up: 1, down: 0 },
+  ],
+  // Real reason keys (message_feedback.reason) — counts sum to the 3 downs above.
+  downReasons: [
+    { reason: 'inaccurate', count: 1 },
+    { reason: 'too_much', count: 1 },
+    { reason: 'bad_timing', count: 1 },
+  ],
+  reliability: {
+    errorPct: 2.1, p90LatencyMs: 1400, p50LatencyMs: 700,
+    topErrors: [
+      { code: 'TIMEOUT', count: 2 },
+      { code: 'RATE_LIMIT', count: 1 },
+    ],
+  },
+  costByModel: [
+    { model: 'gpt-4o-mini', costUsd: 30.1, calls: 500 },
+    { model: 'gpt-4o', costUsd: 12.2, calls: 40 },
+  ],
+  topUsers: [
+    { name: 'Daniel', costUsd: 30.0, uses: 300 },
+    { name: 'Anna', costUsd: 10.0, uses: 150 },
+    { name: 'Béla', costUsd: 2.3, uses: 20 },
+  ],
+}
+
+export const ADMIN_FEATURE_DETAIL_EMPTY: AdminFeatureDetailResponse = {
+  key: '',
+  kind: 'ai',
+  usageByWeek: [],
+  funnel: { tried: 0, repeated: 0, habitual: 0, triedUsers: [] },
+  feedbackTrend: null,
+  downReasons: null,
+  reliability: { errorPct: null, p90LatencyMs: null, p50LatencyMs: null, topErrors: [] },
+  costByModel: [],
+  topUsers: [],
+}
+
+/** Serves the (single) detail seed for ANY key, `key` swapped to match — same "populated
+ *  default, never a special-case empty/404" idiom as `adminRowsMockFor`. */
+export function featureDetailMockFor(key: string): AdminFeatureDetailResponse {
+  return { ...ADMIN_FEATURE_DETAIL_MOCK, key }
+}
+
+export const ADMIN_FEEDBACK_SUMMARY_MOCK: AdminFeedbackSummaryResponse = {
+  period: '30d',
+  features: [
+    { key: 'companion_chat', up: 14, down: 3, reasons: ADMIN_FEATURE_DETAIL_MOCK.downReasons ?? [] },
+    { key: 'meal_coach', up: 9, down: 1, reasons: [{ reason: 'inaccurate', count: 1 }] },
+    {
+      key: 'proactive_feed', up: 11, down: 2,
+      reasons: [{ reason: 'too_much', count: 1 }, { reason: 'bad_timing', count: 1 }],
+    },
+    { key: 'train_meso_plan', up: 5, down: 0, reasons: [] },
+  ],
+  // Recall totals — useful/irrelevant/suppress across the period, companion feature switch on.
+  recall: { useful: 35, irrelevant: 6, suppress: 2 },
+}
+
+export const ADMIN_FEEDBACK_SUMMARY_EMPTY: AdminFeedbackSummaryResponse = {
+  period: '30d',
+  features: [],
+  recall: null,
 }

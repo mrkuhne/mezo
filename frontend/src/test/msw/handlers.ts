@@ -10,10 +10,13 @@ import {
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_COST_MATRIX_7D_MOCK,
   ADMIN_FEATURE_USAGE_MOCK,
+  ADMIN_FEEDBACK_SUMMARY_MOCK,
   ADMIN_OVERVIEW_MOCK,
   ADMIN_SCREEN_USAGE_MOCK,
   ADMIN_USER_DETAIL_MOCK,
   ADMIN_USER_INSIGHTS_MOCK,
+  featureBoardMockFor,
+  featureDetailMockFor,
 } from '@/data/admin/adminInsightsMock'
 import { ADMIN_TABLES_MOCK, ADMIN_VIEWS_MOCK, adminRowsMockFor } from '@/data/admin/adminDataMock'
 import {
@@ -368,6 +371,17 @@ export const handlers = [
   }),
   http.get(`${API_BASE}/api/admin/usage/screens`, () => HttpResponse.json(ADMIN_SCREEN_USAGE_MOCK)),
   http.get(`${API_BASE}/api/admin/alerts`, () => HttpResponse.json(ADMIN_ALERTS_MOCK)),
+  // Feature scorecard (mezo-clgz) — same "populated defaults" idiom as every sibling above; the
+  // detail handler serves the seed for ANY key (matching `adminRowsMockFor`'s fallback
+  // precedent), never a 404, since that shape is a backend-only concern (AdminFeaturesIT).
+  http.get(`${API_BASE}/api/admin/features`, ({ request }) => {
+    const period = new URL(request.url).searchParams.get('period')
+    return HttpResponse.json(featureBoardMockFor(period))
+  }),
+  http.get(`${API_BASE}/api/admin/features/:key`, ({ params }) =>
+    HttpResponse.json(featureDetailMockFor(params.key as string)),
+  ),
+  http.get(`${API_BASE}/api/admin/feedback/summary`, () => HttpResponse.json(ADMIN_FEEDBACK_SUMMARY_MOCK)),
   // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not
   // surface as an unhandled request, and answers 202 with no body like the backend does.
   http.post(`${API_BASE}/api/telemetry/screen-events`, () => new HttpResponse(null, { status: 202 })),

@@ -3,7 +3,11 @@ import {
   adminInsightsApi,
   type AdminAlertsResponse,
   type AdminCostMatrixResponse,
+  type AdminFeatureBoardResponse,
+  type AdminFeatureDetailResponse,
+  type AdminFeaturePeriod,
   type AdminFeatureUsageResponse,
+  type AdminFeedbackSummaryResponse,
   type AdminOverviewResponse,
   type AdminPeriod,
   type AdminScreenUsageResponse,
@@ -18,8 +22,12 @@ import {
   ADMIN_COST_MATRIX_EMPTY,
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_COST_MATRIX_7D_MOCK,
+  ADMIN_FEATURE_BOARD_EMPTY,
+  ADMIN_FEATURE_DETAIL_EMPTY,
   ADMIN_FEATURE_USAGE_EMPTY,
   ADMIN_FEATURE_USAGE_MOCK,
+  ADMIN_FEEDBACK_SUMMARY_EMPTY,
+  ADMIN_FEEDBACK_SUMMARY_MOCK,
   ADMIN_OVERVIEW_EMPTY,
   ADMIN_SCREEN_USAGE_EMPTY,
   ADMIN_SCREEN_USAGE_MOCK,
@@ -28,6 +36,8 @@ import {
   ADMIN_USER_DETAIL_MOCK,
   ADMIN_USER_INSIGHTS_EMPTY,
   ADMIN_USER_INSIGHTS_MOCK,
+  featureBoardMockFor,
+  featureDetailMockFor,
 } from '@/data/admin/adminInsightsMock'
 
 // Admin hub insights hooks (mezo-d5iy.10). Every hook takes an `isOwner` flag and passes it as
@@ -44,6 +54,9 @@ export const ADMIN_FEATURE_USAGE_KEY = ['admin', 'insights', 'usage', 'features'
 export const ADMIN_COST_MATRIX_KEY = ['admin', 'insights', 'usage', 'cost-matrix'] as const
 export const ADMIN_SCREEN_USAGE_KEY = ['admin', 'insights', 'usage', 'screens'] as const
 export const ADMIN_ALERTS_KEY = ['admin', 'insights', 'alerts'] as const
+export const ADMIN_FEATURE_BOARD_KEY = ['admin', 'insights', 'features', 'board'] as const
+export const ADMIN_FEATURE_DETAIL_KEY = ['admin', 'insights', 'features', 'detail'] as const
+export const ADMIN_FEEDBACK_SUMMARY_KEY = ['admin', 'insights', 'feedback', 'summary'] as const
 
 export function useAdminOverview(isOwner: boolean) {
   return useDualQuery<AdminOverviewResponse>({
@@ -154,6 +167,47 @@ export function useAdminAlerts(isOwner: boolean) {
     mockData: ADMIN_ALERTS_MOCK,
     realFetch: adminInsightsApi.alerts,
     realEmpty: ADMIN_ALERTS_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled: isOwner,
+  })
+}
+
+// Feature scorecard (mezo-clgz) — the Funkciók tab's board/detail/feedback-summary hooks. Same
+// recipe as every sibling above: `enabled: isOwner`, explicit `realStaleTime` (an omitted one
+// overwrites the client default and leaves the query permanently stale — see the note at the
+// top of this file).
+export function useAdminFeatureBoard(period: AdminFeaturePeriod, isOwner: boolean) {
+  return useDualQuery<AdminFeatureBoardResponse>({
+    queryKey: [...ADMIN_FEATURE_BOARD_KEY, period],
+    mockData: featureBoardMockFor(period),
+    realFetch: () => adminInsightsApi.featureBoard(period),
+    realEmpty: ADMIN_FEATURE_BOARD_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled: isOwner,
+  })
+}
+
+export function useAdminFeatureDetail(key: string, period: AdminFeaturePeriod, isOwner: boolean) {
+  // Same fold-`enabled`-into-`isPending` precedent as `useAdminUserDetail` above — a disabled
+  // query (no key, or a non-owner) would otherwise report `isPending: true` forever.
+  const enabled = isOwner && key !== ''
+  const q = useDualQuery<AdminFeatureDetailResponse>({
+    queryKey: [...ADMIN_FEATURE_DETAIL_KEY, key, period],
+    mockData: featureDetailMockFor(key),
+    realFetch: () => adminInsightsApi.featureDetail(key, period),
+    realEmpty: ADMIN_FEATURE_DETAIL_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled,
+  })
+  return { ...q, isPending: enabled && q.isPending }
+}
+
+export function useAdminFeedbackSummary(period: AdminFeaturePeriod, isOwner: boolean) {
+  return useDualQuery<AdminFeedbackSummaryResponse>({
+    queryKey: [...ADMIN_FEEDBACK_SUMMARY_KEY, period],
+    mockData: ADMIN_FEEDBACK_SUMMARY_MOCK,
+    realFetch: () => adminInsightsApi.feedbackSummary(period),
+    realEmpty: ADMIN_FEEDBACK_SUMMARY_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled: isOwner,
   })
