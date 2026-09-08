@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.AdminAlert;
 import io.mrkuhne.mezo.api.dto.AdminAlertsResponse;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
@@ -31,6 +32,7 @@ class AdminAlertsIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;
     @Autowired private MemoryItemPopulator memoryItemPopulator;
+    @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @Test
@@ -86,6 +88,48 @@ class AdminAlertsIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testAlerts_shouldFireCostSpike_whenThePriorWeekAverageIsZero() {
+        // No cost rows at all on the prior 7 days — the zero-average branch (avg == 0 &&
+        // yesterday >= floor) rather than the ratio branch.
+        LocalDate today = LocalDate.now(ZONE);
+        LocalDate yesterday = today.minusDays(1);
+        seedCost(yesterday, new BigDecimal("0.60"));
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "cost_spike".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> {
+                    assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.WARN);
+                    assertThat(a.getLink()).contains("/admin/cost?day=" + yesterday);
+                });
+    }
+
+    @Test
+    void testAlerts_shouldAverageThePriorWeekOverSevenDays_whenMostOfTheWeekHasNoCostRows() {
+        // Only 3 of the 7 prior days have any spend ($1.00 each, sum $3.00); the other 4 are
+        // empty. Averaging over 7 gives ~0.43 (factor*avg ~0.857) — $1.50 clears that and fires.
+        // Averaging over only the 3 seeded days would give 1.00 (factor*avg 2.00) — $1.50 would
+        // NOT clear that. A green result here proves the divisor is 7, not "however many days
+        // actually had rows".
+        LocalDate today = LocalDate.now(ZONE);
+        LocalDate yesterday = today.minusDays(1);
+        seedCost(today.minusDays(2), new BigDecimal("1.00"));
+        seedCost(today.minusDays(4), new BigDecimal("1.00"));
+        seedCost(today.minusDays(6), new BigDecimal("1.00"));
+        seedCost(yesterday, new BigDecimal("1.50"));
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "cost_spike".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> {
+                    assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.WARN);
+                    assertThat(a.getDetail()).contains("$0.43");
+                });
+    }
+
+    @Test
     void testAlerts_shouldFireLlmErrors_whenAFeatureErrorRateExceedsThreshold() {
         Instant now = Instant.now();
         llmLogPopulator.logAt(now.minus(1, ChronoUnit.HOURS), null, CallKind.CHAT, "companion_chat",
@@ -134,6 +178,43 @@ class AdminAlertsIT extends ApiIntegrationTest {
                     assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.BAD);
                     assertThat(a.getLink()).contains("/admin/users");
                 });
+    }
+
+    @Test
+    void testAlerts_shouldFireMemoryStuckAsWarn_whenAVectorIsStaleButNotFailed() {
+        RegisteredUser anna = registerUser("Anna");
+        MemoryItemEntity item = memoryItemPopulator.item(anna.id(), "journal_entry", UUID.randomUUID(),
+                "friss", LocalDate.of(2026, 6, 3));
+        // ready + a deliberately mismatched embedded_content_hash: the item's content moved on
+        // but nothing re-embedded it yet — present, but ANN-ineligible. No failed rows anywhere.
+        memoryItemPopulator.vector(item, "gemini-embedding-001-768-v1", MemoryEmbeddingPopulator.axisVector(0),
+                MemoryVectorEntity.STATUS_READY, null, "0".repeat(64));
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "memory_stuck".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> {
+                    assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.WARN);
+                    assertThat(a.getLink()).contains("/admin/users");
+                });
+    }
+
+    @Test
+    void testAlerts_shouldFireJobMissed_whenTheNewestDailySummaryIsOlderThanTheThreshold() {
+        RegisteredUser anna = registerUser("Anna");
+        var summary = dailySummaryPopulator.summary(anna.id(), LocalDate.now(ZONE).minusDays(2));
+        // jobMissedAfterHours defaults to 26 (mezo.admin.alerts.job-missed-after-hours) — 30h
+        // back is comfortably past it.
+        Instant staleAt = Instant.now().minus(30, ChronoUnit.HOURS);
+        jdbcTemplate.update("update daily_summary set created_at = ? where id = ?",
+                java.sql.Timestamp.from(staleAt), summary.getId());
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).filteredOn(a -> "job_missed".equals(a.getKey()))
+                .singleElement()
+                .satisfies(a -> assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.WARN));
     }
 
     @Test
