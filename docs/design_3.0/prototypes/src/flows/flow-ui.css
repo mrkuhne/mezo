@@ -1,0 +1,363 @@
+.flow-page {
+  padding: 24px 24px 34px;
+}
+.flow-head {
+  margin-bottom: 24px;
+}
+.flow-kicker {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.25px;
+  line-height: 1.6;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+.flow-title {
+  font-family: var(--font-display);
+  font-size: 33px;
+  letter-spacing: -1.1px;
+  line-height: 1.13;
+  font-weight: 500;
+  margin: 12px 0;
+}
+.flow-copy {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.flow-section {
+  margin: 28px 0;
+}
+.flow-section h2 {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+  margin: 0 0 14px;
+}
+.flow-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.flow-section-heading h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+.flow-tabs {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.flow-tabs button {
+  min-height: 44px;
+  padding: 10px 13px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.flow-tabs button.selected {
+  background: var(--ink);
+  color: var(--app-bg);
+  border-color: var(--ink);
+}
+.flow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 18px 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  font-family: inherit;
+  color: var(--ink);
+  min-height: 64px;
+}
+.flow-row-icon {
+  width: 38px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--panel);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.flow-row-copy {
+  flex: 1;
+  min-width: 0;
+}
+.flow-row-copy strong {
+  display: block;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.flow-row-copy small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+  margin-top: 3px;
+}
+.flow-row-value {
+  font-size: 13px;
+  white-space: nowrap;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flow-row > svg {
+  color: var(--muted);
+}
+.flow-list {
+  border-top: 1px solid var(--line);
+}
+.flow-companion {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  padding: 20px 0;
+  margin: 22px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.flow-companion > div {
+  flex: 1;
+  min-width: 0;
+}
+.flow-companion .flow-kicker {
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin: 0 0 5px;
+}
+.flow-companion-copy {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.flow-companion-copy p {
+  margin: 0;
+}
+.flow-companion .text-button {
+  margin: 3px 0 -6px;
+}
+.flow-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 18px 0;
+  line-height: 1.5;
+}
+.flow-field input,
+.flow-field select,
+.flow-field textarea {
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 14px;
+  min-height: 48px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.flow-field textarea {
+  min-height: 105px;
+  resize: vertical;
+  line-height: 1.7;
+}
+.flow-field input[type="checkbox"] {
+  width: 22px;
+  min-height: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+.flow-form {
+  margin: 24px 0;
+}
+.flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.flow-grid > * {
+  min-width: 0;
+}
+.flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.flow-actions > button {
+  flex: 1;
+  min-width: 100px;
+  margin: 0;
+}
+.flow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+}
+.flow-status {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 18px 0;
+}
+.flow-status[role="alert"] {
+  background: #f5e6df;
+  color: #873a29;
+}
+.flow-empty {
+  padding: 32px 14px;
+  text-align: center;
+}
+.flow-empty > svg {
+  color: var(--accent);
+}
+.flow-empty h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  margin: 18px 0 12px;
+}
+.flow-empty p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.flow-page .primary-button,
+.flow-page .secondary-button {
+  min-height: 50px;
+}
+.flow-sheet {
+  background: var(--panel);
+  padding: 20px;
+  border-radius: 18px;
+  margin: 22px 0;
+}
+.flow-page input[type="range"] {
+  accent-color: var(--accent);
+}
+.flow-page input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.flow-page .evidence-note {
+  font-size: 11px;
+  line-height: 1.7;
+}
+.flow-chart-caption {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.flow-page .icon-button {
+  height: 44px;
+  width: 44px;
+  border: 1px solid var(--line);
+  background: none;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+.flow-steps {
+  display: flex;
+  gap: 5px;
+  margin: 20px 0;
+}
+.flow-steps i {
+  height: 4px;
+  background: var(--line);
+  flex: 1;
+  border-radius: 5px;
+}
+.flow-steps i.done {
+  background: var(--accent);
+}
+.flow-feature-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+  margin: 24px 0;
+}
+.flow-feature-links .flow-row {
+  align-items: start;
+  gap: 8px;
+}
+.flow-feature-links .flow-row-icon {
+  background: none;
+  width: 24px;
+  height: 24px;
+}
+.flow-feature-links .flow-row-copy strong {
+  font-size: 13px;
+}
+.flow-feature-links .flow-row-copy small {
+  font-size: 11px;
+}
+.flow-page button {
+  touch-action: manipulation;
+}
+.flow-page img {
+  max-width: 100%;
+}
+.flow-page .primary-button:disabled {
+  opacity: 0.45;
+}
+.theme-companion .flow-head .flow-title {
+  font-family: Newsreader, Georgia, serif;
+  font-size: 36px;
+  letter-spacing: -0.8px;
+}
+.theme-companion .flow-companion {
+  border: 0;
+  padding: 18px;
+  background: var(--panel);
+  border-radius: 22px;
+}
+.theme-companion .flow-tabs button {
+  border-radius: 16px;
+}
+.flow-checkline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 12px 0;
+  min-height: 48px;
+}
+.flow-checkline input {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--accent);
+}

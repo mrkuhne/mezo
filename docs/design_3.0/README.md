@@ -1,8 +1,8 @@
-# Mezo — három bejárható UX irány
+# Mezo — Mérték és Mezo veled
 
-2026. szeptember 8. · `mezo-88jw.2` · első vizuális iteráció, döntés előtt.
+2026. szeptember 8. · `mezo-88jw.3` · gazdag funkcionális UX-prototípus, vizuális döntés előtt.
 
-A cél három eltérő élmény kipróbálása azonos feladatokon. A kiinduló [kutatás](../research/queries/mezo-ux-direction.md) és a [jóváhagyott prototípus-scope](../superpowers/specs/2026-09-08-three-ux-prototypes-design.md) rögzíti az indokokat. A production design iránya még nincs kiválasztva.
+Az első három irány túl kis alkalmazásszeletet mutatott. Daniel visszajelzése alapján az eredeti meleg, semleges palettát tartjuk meg; a Mérték formáit lágyítjuk, és külön, világos karakterközpontú alternatívát építünk. A zöld Liget nem szerepel az aktuális összehasonlítóban. A [kutatás](../research/queries/mezo-ux-direction.md) és a [jóváhagyott kibővített scope](../superpowers/specs/2026-09-08-complete-ux-exploration-design.md) rögzíti az előzményeket. Production irány még nincs kiválasztva.
 
 ## Kipróbálás
 
@@ -12,58 +12,76 @@ npm ci
 npm run dev
 ```
 
-Összehasonlító oldal: **http://127.0.0.1:5193/**. A felső választó ugyanazt a felületet nyitja meg mindhárom beágyazott, interaktív példányban. A „Kipróbálom” önálló nézetet ad, nagy képernyőn gyors útvonalválasztóval, mobilon teljes szélességben.
+[Összehasonlító](http://127.0.0.1:5193/) · [Mérték](http://127.0.0.1:5193/?v=measure#home) · [Mezo veled](http://127.0.0.1:5193/?v=companion#home)
 
-| Irány | URL | Saját formanyelv |
+A helyi szerver a 5193-as porton fut. A felső területválasztó mindkét beágyazott példányt átváltja, az önálló nézetben a teljes alkalmazás végigjárható. A `width=360` URL-paraméter asztali nézetben is 360 pixel széles alkalmazáskeretet ad vizuális ellenőrzéshez. Mobilon az alkalmazás a rendelkezésre álló szélességet használja.
+
+| Irány | Szervezőelv | Saját megjelenés |
 | --- | --- | --- |
-| Mérték | http://127.0.0.1:5193/?v=measure#home | Papír, műszerjelzések, szerkesztett tipográfia, lapos elválasztók, technikai edzésfelület |
-| Ritmus | http://127.0.0.1:5193/?v=rhythm#home | Meleg tónusok, karakteres antikva, személyes következő lépés, napi idővonal |
-| Liget | http://127.0.0.1:5193/?v=grove#home | Mély zöld tér, saját SVG-táj és pályák, fényes pontok, hangsúlyos Clay társ |
+| Mérték | Állapot → napi prioritás → közvetlen eszközök | Papírszín, szerkesztett sans tipográfia, finom elválasztók, puhább 15–23 px formák, sötét fókusz az aktuális edzésen |
+| Mezo veled | Közérzet → megbeszélt következő lépés → kapcsolódó eszközök | Világos meleg háttér, Clay és saját orbitális motívum, antikva a részletes bevezetőkben, beszélgetőbb hang és helyi kísérőüzenetek |
 
-A cím helyi: azon a gépen működik, ahol a fejlesztői szerver fut. A port nem publikus deployment.
+A karakteres főoldalon a **Jól vagyok / Fáradtabban / Sűrű a nap** válasz módosítja a következő javaslatot. A pihenés előtérbe helyezése külön döntés; a teremi terv nem változik észrevétlenül. Naplózni és edzeni közvetlenül is lehet, nem kell minden feladatot chatben kezdeni.
 
-## Mit lehet végigjárni?
+## Mi került bele?
 
-Mindhárom irány öt külön megkomponált főfelületet kapott: **Nap, Edzés, Fuel, Mezo, Chat**. További kilenc részletes nézet közös folyamatot használ, az adott irány színeivel, betűivel és felületeivel: edzésnapló, ételkereső/adagválasztó, AI-megfigyelés, heti összkép, napi rutin, karakterbemutató, alvás, napló és célok.
+Öt stabil fül: **Nap, Edzés, Fuel, Mezo, Én**. A felső Clay minden oldalon a chatet nyitja, a csengő az értesítéseket. A Karakter a felhasználóról alakuló dosszié; a kis Clay ennek nem helyettesítője.
 
-- Edzés: négy gyakorlat, tizenkét sorozat; súly és ismétlés szerkesztése, kész/visszavonás, pihenőszámláló, lezárás és összesítés.
-- Étkezés: öt mintaétel, szöveges keresés, szűrés, fél–három adag, naplózás. A napi kcal és makrók frissülnek.
-- Folyadék: 250 ml-es gyors naplózás a napi felületekről.
-- Mezo: a megfigyelés indoklása és forrásai, megerősítés, heti történet, napló és célok.
-- Chat: gépelt üzenetek, három javasolt téma, írásjelzés, a naplózott állapotot felhasználó **előre megírt** válaszok. A mikrofon gomb mintaátiratot tesz a szerkesztőbe; nem rögzít hangot.
-- Clay: öt kipróbálható állapot, három méret; az alkalmazásban gondolkodás és siker visszajelzése.
+A közös útvonaltérkép 94 címezhető nézetet tartalmaz. A mennyiség nem kész production képernyők számát jelenti: közös munkafelületek, szerkesztők és részletek két eltérő megjelenésben, szemléltető adatokkal.
 
-Az állapot irányonként külön, a böngésző localStorage tárolójában marad meg. A „Mock nap visszaállítása” újraindítja az adott variánst. A fejléc visszagombja valódi böngészőelőzményt használ; egy részlet közvetlen megnyitásakor a szülőnézetre visz. Navigáción belül a görgetési helyet is megőrzi, teljes újratöltésen át a görgetési pozíció nincs mentve. Nincs egyedi, rendszer-gesztust elfogó swipe implementáció.
+| Terület | Végigjárható munkafolyamat |
+| --- | --- |
+| Nap | Prioritás, legutóbbi alvás/súly, megmaradt étkezési keret, víz, rutin, emberek, heti történet; külön közérzetalapú karakteres kezdés |
+| Mezo | Minták hat életciklusállapottal, bizonyíték/előzmény/visszajelzés; előrejelzések és kimenetelük; kereshető, javítható/kikapcsolható Tudástár és kategóriakapcsolatok |
+| Karakter | Dimenziók, portrék, állítás elfogadása/pontosítása/elvetése, alakuló kép, szakértői csapat, konzílium, feldolgozás/adatforrás/detektor nézetek |
+| Heti és mélyebb Mezo | Heti történet, napok, területi részletek, külön adatokkal rendelkező korábbi hét; memoár, kísérletek indítása/követése, memóriaeredet |
+| Fuel | Szöveges/fotópéldás/kamrából induló ételnapló, hozzávaló- és adagjavítás, mentés, étkezési olvasat; Kamra/készlet, recept/hozzávaló/adag/főzés, hiánylista/bevásárlás/visszatöltés, étkezési terv és célok |
+| Edzés | Aktív sorozatnapló szerkesztéssel/pihenővel, ténylegesen rögzített sorozatok összegzése; mezociklus építése/vázlat/szerkesztés/aktiválás/hetek/napok; sportnaptár és napló; futóterv és futásnapló/átlagtempó; gyakorlatkereső, képpárok, rekordok, medálok |
+| Én | Alvásrögzítés éjfélkezeléssel, minőség/tényezők/előzmények; súlyrögzítés és trend; személyek, jegyzetek/fontos dátumok, kapcsolódási napló, külön közös tervek; rutinok, lépések, napok, kézi és naplóadatból következő teljesítés |
+| Chat és értesítések | Állapotot olvasó előre megírt válaszok és konkrét részletre nyíló akciók; olvasott/olvasatlan és témaszűrés, pontos objektumra mutató értesítések, új jelzéseket szabályozó beállítások |
 
-## Karakter és saját grafika
+A részletes viselkedés- és forrástérképek: [Mezo](mezo-coverage.md), [Fuel](fuel-coverage.md), [Edzés](train-coverage.md), [Én és értesítések](personal-coverage.md).
 
-A Clay logó színét, anyagérzetét és egyszerű gömbformáját továbbvivő új karakterdefiníció készült. A szemek, kifejezések és állapotátmenetek a valódi **Bible Strong Avatar Lab** runtime-ban mozognak: `@bible-strong/avatar-react` és `@bible-strong/avatar-core`, rögzített `0.1.0` verzióval. A bőr SVG sugárirányú színátmenetet kap; az alak és a tekintet a rendereré.
+## Mit használtunk a referenciákból?
 
-Állapotok: `idle`, `listening`, `thinking`, `happy`, `sleeping`. A [letölthető definíció](prototypes/public/mezo-clay.avatar.json) a runtime formátuma; **nem a Studio projektmentése**. A [betöltött definíció](prototypes/src/avatar-definition.json) ugyanazt az adatot tartalmazza.
+A referenciák a működést és a hierarchiát adják; képernyőket nem másolunk át. A forrásokat és korábbi megfigyeléseket a [kutatási összefoglaló](../research/queries/mezo-ux-direction.md) őrzi.
 
-Az ételillusztrációk, a súlyzó, a műszerjelzések és a Liget táj/pálya SVG-i a prototípus saját grafikái. A kezelőikonok Lucide ikonok. A saját CSS mozgás csökkentett mozgás beállítás mellett kikapcsol; az Avatar Lab szintén figyeli ezt a rendszerbeállítást.
+| Referencia | Konkrét megjelenés ebben a prototípusban |
+| --- | --- |
+| Hevy | Az aktív edzésben előző érték, szerkeszthető kg/ismétlés, sorozatpipa és pihenő egy munkafelületen; lezáráskor csak az elvégzett sorozatok kerülnek a részletbe |
+| Strava | Heti történetből napokra és konkrét mozgásnaplókra vezető út; a sport/futás a terheléssel együtt értelmezhető |
+| Yazio | Fuel napló mint napi központ; a receptek, a Kamra és az olvasat külön feladat, köztük a tényleges étkezés/hozzávaló kapcsolja össze az utat |
+| Huawei Health | Visszatérő gyűrűk, időívek, trendek és állapotjelzések; saját SVG-k, nem a Health Clovers másolata |
+| Nike Training Club | Cél/idő/terhelés → szerkeszthető program → aktuális nap; út közben érkező támogatás, a következő lépés kimondása |
+| Bevel | A közérzetet, alvást, mozgást és étkezést egy történetben olvasó Nap/Mezo/Heti felület; az adatból elérhető értelmezés és cselekvés |
+| Tide Guide | Az orbitális vonal, körív, puha fény és Clay mozgás ismétlődő formai nyelve; nem külön témaszín minden funkciónak |
+| Harvee | Az állapot értelmezéséhez kapcsolódó karakter: figyel a közérzetválaszra, gondolkodik a chatben, örül a mentésnek |
+| Bears Gratitude | Saját étel- és tárgyillusztrációk, személyes hangú napló/memoár és csendesebb átvezetések |
 
-A runtime eredete és licence: [THIRD_PARTY.md](prototypes/THIRD_PARTY.md). A runtime használata ebben a különálló laborban nem döntés a production alkalmazás függőségeiről.
+## Állapot és navigáció
 
-## Technikai határ és folytatás
+A két irány külön localStorage állapotot használ. A **Mintanap visszaállítása** csak az adott bemutatót kezdi újra. Mentés után az azonos objektum részlete nyílik meg: az AI ételnapló javítása például ugyanazt az étkezést módosítja. A teljesített edzés a naplóba és az értesítésekbe kerül. A Tudástárban kikapcsolt tényre a chat sem hivatkozik használható közös tudásként.
 
-Önálló React/Vite alkalmazás, külön package-lockkal; nincs import a production frontendből, nincs API-hívás vagy backend. A betűk Google Fonts-ról töltődnek, rendszerbetűs fallbackkel. A teljes alkalmazás forrása a `prototypes/src/` alatt van; `main.jsx` az összehasonlító és közös navigáció, `model.mjs` a mock működés, `shared.jsx` a karakter/chat/grafika, `variants/` a három art direction. Az [integrációs szerződés](prototypes/CONTRACT.md) segít egy új részfolyamat vagy vizuális iteráció hozzáadásában.
+A fejléc az egyetlen globális visszalépési hely. A hash útvonal megőrzi a részletazonosítókat; a böngészőelőzmény és az oldalhoz tartozó görgetési pozíció működik. Közvetlen részletnyitásnál a szülőre lépés nem hoz létre oda-vissza hurkot. Teljes újratöltésen át a görgetési helyet nem mentjük. Az iOS PWA rendszer-swipe külön készülékes ellenőrzés tárgya; nincs rátelepedő saját gesztusfelismerő.
 
-Ez funkcionális design-prototípus: nem reprodukálja az összes éles modult, a valódi AI eszközeit, az ételkatalógust, a teljes edzéstervezést vagy az egészségadatok szinkronját. Néhány másodlagos interakció rövid demo-visszajelzést vagy közös részletnézetet nyit. A részletes nézetek most közös kompozíciót használnak, hogy a fő irányok és az alapfolyamatok összevethetők legyenek.
+## Clay és média
 
-A következő vizuális körben oldalanként érdemes megjelölni, melyik hierarchia, sűrűség, karakterjelenlét és forma működik. A keverés is lehetséges: például Ritmus napi vezetés, Mérték edzésnapló és Liget karaktervilág. A production átvezetés külön döntés és munka a szülő `mezo-88jw` feladatban.
+A saját Clay-definíció a valódi Bible Strong Avatar Lab `0.1.0` React/core runtime-jában jelenik meg. Öt állapot: jelen van, figyel, gondolkodik, örül, pihen. A karakteroldalon választható korall/kék agyag/homok szín az alkalmazás minden Clay példányára vonatkozik. Az alkalmazás eredeti meleg palettája ettől külön marad.
 
-## Ellenőrzés
+A [letölthető karakterdefiníció](prototypes/public/mezo-clay.avatar.json) runtime JSON, nem Studio-projekt. A kezelőikonok Lucide-ból jönnek; az ételillusztrációk, súlyzó és orbitális motívumok saját SVG/CSS elemek. Csökkentett mozgásnál a dekoratív mozgás kikapcsol.
 
-2026-09-08, Codex böngészőben:
+Hét gyakorlat 14 helyi képe a már vendorizált, public-domain exercise adatbázisból származik. A lejátszás **kétképes mozdulattanulmány**, nem videófelvétel. Források és licencek: [THIRD_PARTY.md](prototypes/THIRD_PARTY.md).
 
-- Mind a 15 főoldal/irány kombináció betöltött, öt navigációs ponttal, 390 × 844 nézetben, dokumentumszintű vízszintes túlcsordulás nélkül.
-- A kilenc részletnézet 360 × 800 méretben betöltött, dokumentumszintű vízszintes túlcsordulás nélkül.
-- Vizuálisan ellenőrizve: három főoldal összehasonlítva 1440 × 1080 méretben, Ritmus főoldal és Mezo, Mérték edzés, Liget főoldal/Fuel/chat, Clay állapotválasztó.
-- Valódi kattintásokkal: 12 sorozat rögzítése és edzés lezárása → 12 sorozat/4 gyakorlat és négy edzéses heti összesítés; 1,5 adag lazac → 2070 kcal/146 g fehérje, visszatérés Fuelre; chat ezt követően 330 kcal fennmaradó keretet látott.
-- Alvás → megfigyelés → oldal újratöltése → visszagomb helyesen az Alvásra vitt. A főnézetek közötti váltás és az összehasonlító oldal választója is működött.
-- Rutin pipálása/lezárása és karakterállapot választása kipróbálva. A natív iOS PWA swipe gesztus külön készülékes ellenőrzést igényel; itt a browser-history mechanizmust ellenőriztük.
+## Határok
 
-`npm test`: **8/8 pass** (állapot, naplózás, szerkesztés, chat kontextus és magyar témaválasztás). `npm run build`: **pass**. Az Avatar Lab core validátora elfogadta az öt animációs állapotot tartalmazó definíciót.
+Ez külön React/Vite labor, sem a production frontendbe, sem a backendbe nem importál. A fotóértelmezés előre megadott illusztráció és szerkeszthető minta; nincs valós felismerés, AI-hívás, GPS, eszközszinkron, valódi üzenetküldés vagy külső naptármódosítás. A receptek és gyakorlatok kis, bejárható készletet képviselnek. A tervezőből megnyitható aktív edzés egy megjelölt közös Pull Day mintamenet. A szakértői szövegek, következtetések és múltbeli háttéradatok előre megírt példák.
 
-Repoellenőrzés: `node scripts/lint-docs.mjs --errors-only --quiet` — **0 error**, 3 figyelmeztetés, 14 korábban is fennálló stale jelzés. A teljes doc-lint ezért nem nevezhető zöldnek. `node scripts/gen-codemap.mjs --check` — naprakész. A production frontend és backend nem változott; azok teljes tesztcsomagját ez a prototípusmunka nem futtatja.
+A két változat teljes információs szerkezete közös. A kezdőélmény, a tónus, a karakterjelenlét és a tipográfia különbözik; a sűrű naplóeszközök tudatosan hasonlóak. Ez lehetővé teszi annak eldöntését is, hogy egy hibrid irány működik-e jobban.
+
+## Forrástérkép és ellenőrzés
+
+`prototypes/src/main.jsx` az entry; `lab-app.jsx` a két irány, útvonalak, history és közös API; `exploration-model.mjs` a keresztfunkciós állapot; `flows/` a négy domain; `shared.jsx` a Clay/chat/grafika; `LegacyDetails.jsx` a továbbvitt aktív edzés, napló, célok és avatarlabor. Az előző három irány forrásai a `variants/` alatt megmaradtak, az aktuális launcher kettőt kínál. [Integrációs szerződés](prototypes/EXPANSION_CONTRACT.md).
+
+Validáció: `npm test` — **46/46 pass**; `npm run build` — **pass**; a részletek mindkét témában renderelve, a fő és domainnézetek böngészőben 360 px kereten vízszintes túlcsordulás nélkül. Valódi kattintásokkal ellenőrizve az étel/adag/olvasat/javítás, alvás és súly, közös terv, mezociklus aktiválás, futásnapló, részleges edzés és pontos összegzése, minta → tudástár → értesítés, chat → heti nézet, egymás utáni visszalépések és a gyakorlatmédia. A build egy nagy prototípuschunkra figyelmeztet; production teljesítményhangolás nem történt.
+
+A repo doc-lintben 14, a változtatás előtt is fennálló stale dokumentum van; ez külön baseline-ellenőrzéssel igazolt. A teljes doc-lint nem nevezhető zöldnek. A hibaszűrt lint és a CODEMAP-ellenőrzés eredményét a PR rögzíti. Production tesztcsomagot a külön labor miatt nem futtatunk.

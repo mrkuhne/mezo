@@ -41,6 +41,27 @@ const icons = {
   rotate: L.RotateCcw,
   wind: L.Wind,
   zap: L.Zap,
+  bell: L.Bell,
+  users: L.Users,
+  scale: L.Scale,
+  camera: L.Camera,
+  scan: L.ScanLine,
+  box: L.Package,
+  chef: L.ChefHat,
+  medal: L.Medal,
+  run: L.Footprints,
+  layers: L.Layers,
+  edit: L.Pencil,
+  trash: L.Trash2,
+  info: L.Info,
+  "chevron-left": L.ChevronLeft,
+  filter: L.ListFilter,
+  image: L.Image,
+  video: L.Video,
+  lightbulb: L.Lightbulb,
+  brain: L.Brain,
+  message: L.MessageCircle,
+  "check-circle": L.CircleCheck,
 };
 export function Icon({ name, size = 20, ...props }) {
   const C = icons[name] || L.Sparkles;
@@ -75,10 +96,10 @@ export function Avatar({ state = "idle", size = 120, className = "" }) {
       >
         <defs>
           <radialGradient id={id} cx="29%" cy="21%" r="83%">
-            <stop offset="0" stopColor="#ffdfc6" />
-            <stop offset=".25" stopColor="#ffb28d" />
-            <stop offset=".64" stopColor="#f17b53" />
-            <stop offset="1" stopColor="#b43d25" />
+            <stop offset="0" stopColor="var(--clay-highlight,#ffdfc6)" />
+            <stop offset=".25" stopColor="var(--clay-light,#ffb28d)" />
+            <stop offset=".64" stopColor="var(--clay-body,#f17b53)" />
+            <stop offset="1" stopColor="var(--clay-shadow,#b43d25)" />
           </radialGradient>
         </defs>
       </svg>
@@ -417,9 +438,23 @@ export function Chat({ api }) {
             {m.role === "assistant" && <Avatar size={34} />}
             <div>
               <p>{m.text}</p>
+              {m.actions?.length > 0 && (
+                <div className="chat-action-list">
+                  {m.actions.map((a) => (
+                    <button
+                      key={a.page + a.label}
+                      onClick={() => api.go(a.page, a.params)}
+                    >
+                      {a.label}
+                      <Icon name="arrow-up-right" size={16} />
+                    </button>
+                  ))}
+                </div>
+              )}
               {m.role === "assistant" && (
                 <span className="chat-source">
-                  <Icon name="sparkles" size={12} /> A napod összefüggései
+                  <Icon name="sparkles" size={12} />{" "}
+                  {m.source || "A napod összefüggései"}
                 </span>
               )}
             </div>

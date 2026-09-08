@@ -1,0 +1,859 @@
+.fuel-flow {
+  --fuel-wash: color-mix(in srgb, var(--accent) 8%, var(--app-bg));
+  --fuel-gold: #a67d48;
+}
+.fuel-flow h2 {
+  font-family: var(--font-display);
+  font-size: 23px;
+  line-height: 1.2;
+  margin: 0 0 12px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+}
+.fuel-flow button {
+  cursor: pointer;
+}
+.fuel-flow button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.fuel-flow .primary-button,
+.fuel-flow .secondary-button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 14px;
+  gap: 8px;
+}
+.fuel-flow .flow-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 23px 0;
+}
+.fuel-flow .text-button {
+  min-height: 44px;
+  gap: 7px;
+  font-size: 13px;
+}
+.fuel-flow .flow-tabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  margin: 20px 0;
+}
+.fuel-flow .flow-tabs button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.fuel-flow .flow-field {
+  margin-bottom: 15px;
+}
+.fuel-flow .flow-grid {
+  align-items: start;
+  gap: 12px;
+}
+.fuel-flow .flow-grid > * {
+  min-width: 0;
+}
+.fuel-flow input,
+.fuel-flow select,
+.fuel-flow textarea {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+.fuel-flow .flow-section-heading h2 {
+  margin-bottom: 0;
+}
+.fuel-flow .flow-section-heading {
+  margin-bottom: 15px;
+}
+.fuel-energy {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 23px auto 25px;
+  width: 220px;
+  height: 204px;
+}
+.fuel-energy > div {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.fuel-energy span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fuel-energy strong {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 1.25;
+  letter-spacing: -2px;
+  font-weight: 450;
+}
+.fuel-energy small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 17px;
+  margin: 0 0 24px;
+}
+.fuel-targets > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fuel-targets span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-targets strong {
+  font-size: 15px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.fuel-targets small {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.fuel-targets progress {
+  width: 100%;
+  height: 4px;
+  border: none;
+  background: var(--line);
+  border-radius: 4px;
+  appearance: none;
+}
+.fuel-targets progress::-webkit-progress-bar {
+  background: var(--line);
+  border-radius: 4px;
+}
+.fuel-targets progress::-webkit-progress-value {
+  background: var(--accent);
+  border-radius: 4px;
+}
+.fuel-targets progress::-moz-progress-bar {
+  background: var(--accent);
+  border-radius: 4px;
+}
+.fuel-meal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  color: var(--ink);
+}
+.fuel-meal-row > .food-art {
+  width: 73px;
+  height: 68px;
+  flex-shrink: 0;
+}
+.fuel-meal-row > span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.fuel-meal-row strong {
+  font-size: 15px;
+  font-weight: 550;
+}
+.fuel-meal-row small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-meal-row > span > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fuel-meal-row > svg:last-child {
+  flex-shrink: 0;
+}
+.fuel-water {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 19px 0;
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.fuel-water-icon {
+  color: var(--accent);
+}
+.fuel-water > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fuel-water strong {
+  font-size: 18px;
+  font-weight: 500;
+}
+.fuel-water div span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-water button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 10px;
+  border-radius: 12px;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.fuel-doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+.fuel-doors > button {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  padding: 15px 14px 17px;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  text-align: left;
+  color: var(--ink);
+  overflow: hidden;
+}
+.fuel-doors .food-art {
+  width: 130px;
+  height: 105px;
+  align-self: center;
+  margin: -8px -10px 8px;
+}
+.fuel-doors strong {
+  font-size: 24px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  margin: 6px 0 9px;
+}
+.fuel-doors .flow-kicker {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+}
+.fuel-doors > button > span:last-child {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-shelf-art {
+  position: relative;
+  width: 116px;
+  height: 105px;
+  align-self: center;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 19px;
+}
+.fuel-shelf-art:after {
+  content: "";
+  position: absolute;
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: #c4af92;
+  border-radius: 3px;
+  box-shadow: 0 7px 10px #30201812;
+}
+.fuel-shelf-art i {
+  width: 23px;
+  height: 53px;
+  background: linear-gradient(90deg, #e4d2b6, #f2e6d4 50%, #ceb796);
+  border: 1px solid #bda689;
+  border-radius: 5px 5px 8px 8px;
+  position: relative;
+}
+.fuel-shelf-art i:before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -2px;
+  right: -2px;
+  height: 7px;
+  border-radius: 3px;
+  background: #9c785d;
+}
+.fuel-shelf-art i:after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 18px;
+  height: 18px;
+  background: #f7f1e7;
+  border-radius: 2px;
+}
+.fuel-shelf-art i:nth-child(2) {
+  height: 67px;
+  background: linear-gradient(90deg, #b77c56, #dca577, #ac7852);
+}
+.fuel-shelf-art i:nth-child(3) {
+  height: 43px;
+  background: linear-gradient(90deg, #cec1a9, #eee5d5, #c1b097);
+}
+.fuel-shelf-art i:nth-child(4) {
+  display: none;
+}
+.fuel-macros {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 19px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin: 16px 0 21px;
+}
+.fuel-macros > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fuel-macros strong {
+  font-size: 24px;
+  font-weight: 450;
+  letter-spacing: -1px;
+}
+.fuel-macros span {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.fuel-example {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.fuel-example button {
+  font-size: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--ink);
+}
+.fuel-honesty {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 19px 0 24px;
+}
+.fuel-honesty > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.fuel-photo {
+  background: var(--fuel-wash);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: 26px;
+  padding: 15px 12px;
+}
+.fuel-photo .food-art {
+  width: 230px;
+  height: 180px;
+}
+.fuel-photo span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-ingredients {
+  margin: 14px 0 20px;
+}
+.fuel-ingredient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fuel-ingredient > div,
+.fuel-ingredient > strong {
+  flex: 1;
+  min-width: 0;
+}
+.fuel-ingredient strong {
+  font-size: 14px;
+  font-weight: 550;
+}
+.fuel-ingredient > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fuel-ingredient small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fuel-ingredient > label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fuel-ingredient input {
+  width: 72px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 8px;
+  text-align: center;
+}
+.fuel-ingredient > label > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fuel-icon-button {
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+.fuel-message {
+  border-left: 3px solid var(--accent);
+  background: var(--fuel-wash);
+  padding: 15px 17px;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.55;
+  border-radius: 0 12px 12px 0;
+}
+.fuel-message > .text-button {
+  display: flex;
+  margin-top: 8px;
+}
+.fuel-error {
+  color: #a34732;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #a3473210;
+  padding: 12px;
+  border-radius: 10px;
+}
+.fuel-dish-hero {
+  display: grid;
+  place-items: center;
+  margin-top: -14px;
+}
+.fuel-dish-hero .food-art {
+  width: 250px;
+  height: 200px;
+}
+.fuel-suggestion {
+  background: var(--fuel-wash);
+  border-radius: 17px;
+  padding: 21px;
+}
+.fuel-suggestion h2 {
+  margin-top: 13px;
+  font-size: 25px;
+}
+.fuel-suggestion p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.fuel-sources > p {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 14px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.fuel-sources > p > span {
+  color: var(--muted);
+}
+.fuel-ask {
+  margin-top: 15px;
+}
+.fuel-stock-low {
+  color: var(--accent);
+}
+.fuel-stock-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 10px;
+}
+.fuel-stock-hero > svg {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.fuel-stock-hero strong {
+  font-size: 55px;
+  font-family: var(--font-display);
+  font-weight: 450;
+  letter-spacing: -2px;
+}
+.fuel-stock-hero strong small {
+  font-size: 22px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.fuel-stock-hero > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fuel-recipe-library {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 23px;
+}
+.fuel-recipe-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+}
+.fuel-recipe-picture {
+  height: 172px;
+  background: #ede4d7;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  margin-bottom: 15px;
+}
+.fuel-recipe-picture.oats {
+  background: #ece3d2;
+}
+.fuel-recipe-picture.bowl {
+  background: #e8e3d9;
+}
+.fuel-recipe-picture .food-art {
+  width: 230px;
+  height: 195px;
+  transform: rotate(-8deg);
+}
+.fuel-recipe-picture > span {
+  position: absolute;
+  right: 13px;
+  bottom: 13px;
+  background: #fffaf0de;
+  border-radius: 14px;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: #554e44;
+}
+.fuel-recipe-card h2 {
+  font-size: 24px;
+  margin: 7px 0;
+}
+.fuel-recipe-card p {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.fuel-recipe-card .flow-kicker {
+  font-size: 11px;
+  letter-spacing: 0.75px;
+}
+.fuel-recipe-detail-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--fuel-wash);
+  border-radius: 19px;
+  margin-bottom: 24px;
+}
+.fuel-recipe-detail-art .food-art {
+  width: 265px;
+  height: 214px;
+}
+.fuel-save {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+}
+.fuel-save.active {
+  color: var(--accent);
+}
+.fuel-save.active svg {
+  fill: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+.fuel-portion {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0;
+  margin-top: 16px;
+}
+.fuel-portion > span {
+  flex: 1;
+  font-size: 14px;
+  color: var(--muted);
+}
+.fuel-portion button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 23px;
+  color: var(--ink);
+}
+.fuel-portion strong {
+  font-size: 18px;
+  font-weight: 500;
+  min-width: 22px;
+  text-align: center;
+}
+.fuel-step-preview {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.fuel-step-preview li {
+  display: flex;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fuel-step-preview li > span {
+  color: var(--accent);
+  font-size: 13px;
+  padding-top: 2px;
+}
+.fuel-step-preview strong {
+  font-size: 15px;
+  font-weight: 550;
+}
+.fuel-step-preview p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+  margin: 7px 0 0;
+}
+.fuel-cook-progress {
+  display: flex;
+  gap: 7px;
+  margin: 28px 0;
+}
+.fuel-cook-progress > span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+}
+.fuel-cook-progress > span.active {
+  background: var(--accent);
+}
+.fuel-cook-step {
+  padding: 8px 0 20px;
+}
+.fuel-step-number {
+  font-family: var(--font-display);
+  font-size: 88px;
+  color: var(--accent);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -5px;
+  display: block;
+  margin-bottom: 24px;
+}
+.fuel-cook-step h2 {
+  font-size: 32px;
+  line-height: 1.12;
+  margin-top: 15px;
+  letter-spacing: -1.3px;
+}
+.fuel-cook-step p {
+  font-size: 17px;
+  line-height: 1.75;
+  margin: 16px 0;
+  color: var(--muted);
+}
+.fuel-cook-ingredients {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 10px 0 20px;
+}
+.fuel-cook-ingredients > span:not(:first-child) {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 12px;
+}
+.fuel-cook-ingredients strong {
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.fuel-checkbox {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 50px;
+  margin-top: 22px;
+}
+.fuel-checkbox input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.fuel-cook-finished {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+  padding: 20px 0 30px;
+}
+.fuel-cook-finished .food-art {
+  width: 270px;
+  height: 220px;
+}
+.fuel-cook-finished h1 {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 450;
+  letter-spacing: -2px;
+  margin: 17px 0 5px;
+}
+.fuel-cook-finished p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.fuel-shopping-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding: 17px 0;
+}
+.fuel-shopping-check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--line);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fuel-shopping-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+.fuel-shopping-row strong {
+  font-size: 15px;
+  font-weight: 500;
+}
+.fuel-shopping-row span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fuel-shopping-list {
+  margin: 15px 0 27px;
+}
+.fuel-plan > section {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fuel-plan > section > .flow-kicker {
+  display: block;
+  margin-bottom: 16px;
+}
+.fuel-plan .flow-grid {
+  grid-template-columns: 95px minmax(0, 1fr);
+}
+.fuel-plan {
+  margin-bottom: 25px;
+}
+@media (max-width: 380px) {
+  .fuel-flow .flow-title {
+    font-size: 33px;
+  }
+  .fuel-doors {
+    gap: 10px;
+  }
+  .fuel-doors > button {
+    padding: 13px 11px;
+  }
+  .fuel-macros {
+    gap: 7px;
+  }
+  .fuel-macros strong {
+    font-size: 22px;
+  }
+  .fuel-macros span {
+    font-size: 11px;
+  }
+  .fuel-ingredient input {
+    width: 63px;
+  }
+  .fuel-recipe-card .flow-kicker {
+    letter-spacing: 0.3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fuel-flow * {
+    scroll-behavior: auto !important;
+  }
+}
