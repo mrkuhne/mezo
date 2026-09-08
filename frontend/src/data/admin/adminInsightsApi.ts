@@ -20,7 +20,27 @@ export type AdminCostMatrixUser = components['schemas']['AdminCostMatrixUser']
 export type AdminAlertsResponse = components['schemas']['AdminAlertsResponse']
 export type AdminAlert = components['schemas']['AdminAlert']
 
+// Feature scorecard (mezo-clgz) — the Funkciók tab's board/detail/feedback-summary reads.
+// OWNER-only, same 403 AUTH_FORBIDDEN concern as every other admin read (backend IT territory).
+export type AdminFeatureBoardResponse = components['schemas']['AdminFeatureBoardResponse']
+export type AdminFeatureRow = components['schemas']['AdminFeatureRow']
+export type AdminFeatureHelped = components['schemas']['AdminFeatureHelped']
+export type AdminFeatureDetailResponse = components['schemas']['AdminFeatureDetailResponse']
+export type AdminFeatureFunnel = components['schemas']['AdminFeatureFunnel']
+export type AdminFeatureFeedbackPoint = components['schemas']['AdminFeatureFeedbackPoint']
+export type AdminFeatureDownReason = components['schemas']['AdminFeatureDownReason']
+export type AdminFeatureReliability = components['schemas']['AdminFeatureReliability']
+export type AdminFeatureTopError = components['schemas']['AdminFeatureTopError']
+export type AdminFeatureModelCost = components['schemas']['AdminFeatureModelCost']
+export type AdminFeatureTopUser = components['schemas']['AdminFeatureTopUser']
+export type AdminFeedbackSummaryResponse = components['schemas']['AdminFeedbackSummaryResponse']
+export type AdminFeedbackFeatureSummary = components['schemas']['AdminFeedbackFeatureSummary']
+export type AdminFeedbackRecall = components['schemas']['AdminFeedbackRecall']
+
 export type AdminPeriod = '7d' | '30d' | '90d'
+// The feature-scorecard endpoints only ever accept 30d/90d (see api.gen.ts's
+// getAdminFeatureBoard/getAdminFeatureDetail/getAdminFeedbackSummary query types) — no 7d.
+export type AdminFeaturePeriod = '30d' | '90d'
 export type AdminUserInsightSort = 'name' | 'createdAt' | 'lastActivityAt' | 'rowCount' | 'cost30dUsd' | 'activeDays30d'
 export type AdminSortDir = 'asc' | 'desc'
 
@@ -48,4 +68,12 @@ export const adminInsightsApi = {
     apiFetch<AdminScreenUsageResponse>(`/api/admin/usage/screens${qs({ period })}`),
   // Alerts (mezo-kjwa) — owner-facing rule-based warnings surfaced on the admin hub.
   alerts: (): Promise<AdminAlertsResponse> => apiFetch<AdminAlertsResponse>('/api/admin/alerts'),
+  // Feature scorecard (mezo-clgz) — board (all features), one feature's detail, and the
+  // companion feedback summary. All three are period-scoped to 30d/90d only.
+  featureBoard: (period: AdminFeaturePeriod): Promise<AdminFeatureBoardResponse> =>
+    apiFetch<AdminFeatureBoardResponse>(`/api/admin/features${qs({ period })}`),
+  featureDetail: (key: string, period: AdminFeaturePeriod): Promise<AdminFeatureDetailResponse> =>
+    apiFetch<AdminFeatureDetailResponse>(`/api/admin/features/${encodeURIComponent(key)}${qs({ period })}`),
+  feedbackSummary: (period: AdminFeaturePeriod): Promise<AdminFeedbackSummaryResponse> =>
+    apiFetch<AdminFeedbackSummaryResponse>(`/api/admin/feedback/summary${qs({ period })}`),
 }

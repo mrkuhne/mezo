@@ -176,6 +176,23 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """, nativeQuery = true)
     List<LlmFeatureErrorRow> aggregateErrorRateByFeatureSince(@Param("since") Instant since);
 
+    /**
+     * Per (feature, user) usage rollup (Funkciók scorecard/detail, mezo-l096.3/.4) — the "who
+     * tried this feature, and when" primitive. ERROR-status calls are excluded (uses = non-ERROR
+     * calls); a null {@code createdBy} groups background/cron traffic into its own row, which the
+     * calling service must exclude from adoption/user counts (it is kept elsewhere for cost, but
+     * that is not this query's concern).
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureUserRow(
+            l.feature, l.createdBy, count(l), min(l.createdAt), max(l.createdAt))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.status <> :errorStatus
+        group by l.feature, l.createdBy
+        """)
+    List<LlmFeatureUserRow> aggregateByFeatureAndUserSince(@Param("since") Instant since,
+            @Param("errorStatus") CallStatus errorStatus);
+
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
@@ -185,6 +202,34 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         group by l.servedModel
         """)
     List<LlmGroupRow> aggregateByModelSince(@Param("since") Instant since);
+
+    /**
+     * Served-model rollup for ONE feature (Funkciók detail, mezo-l096.4) — the {@code costByModel}
+     * panel. ERROR-status calls are excluded (failed calls are not cost, same rule as every other
+     * cost aggregate over this table); a non-ERROR row always carries a served model, so unlike
+     * {@link #aggregateByModelSince} the group key is never null here.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
+            l.servedModel, count(l), sum(l.costUsd))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.feature = :feature and l.status <> :errorStatus
+        group by l.servedModel
+        """)
+    List<LlmGroupRow> aggregateByModelForFeatureSince(@Param("since") Instant since, @Param("feature") String feature,
+            @Param("errorStatus") CallStatus errorStatus);
+
+    /**
+     * Whether ANY row for {@code feature} exists at or after {@code since} (Funkciók detail,
+     * mezo-l096.4) — the unknown-key 404 primitive for LLM-side features (domain feature-map keys
+     * never need this: they are known by config, not by having logged a row).
+     */
+    @Query("""
+        select case when count(l) > 0 then true else false end
+        from LlmLogEntity l
+        where l.feature = :feature and l.createdAt >= :since
+        """)
+    boolean existsByFeatureSince(@Param("feature") String feature, @Param("since") Instant since);
 
     /**
      * Per-account rollup (mezo-qw37.3). Ad-hoc left join onto {@code AppUserEntity} for the display

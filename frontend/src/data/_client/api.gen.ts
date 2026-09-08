@@ -4397,6 +4397,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feature scorecard — usage, feedback, cost and reliability per feature (AdminInsights) */
+        get: operations["getAdminFeatureBoard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/features/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One feature's usage, funnel, feedback trend, reliability and cost breakdown (AdminInsights) */
+        get: operations["getAdminFeatureDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/feedback/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-feature feedback (helped/didn't) and recall totals (AdminInsights) */
+        get: operations["getAdminFeedbackSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/data/tables": {
         parameters: {
             query?: never;
@@ -10020,6 +10071,166 @@ export interface components {
             link: string;
             /** @description raw technical key the alert is about, e.g. a feature slug — the client renders its label */
             subject?: string;
+        };
+        AdminFeatureHelped: {
+            /** Format: int32 */
+            up: number;
+            /** Format: int32 */
+            down: number;
+        };
+        AdminFeatureRow: {
+            /** @description feature slug (LLM feature or domain featureMap key) */
+            key: string;
+            /** @enum {string} */
+            kind: "ai" | "domain" | "both" | "system";
+            /** Format: int64 */
+            uniqueUsers: number;
+            /** @description Fixed length 12, oldest -> newest ISO week, dense-filled (0 for silent weeks). Not enforced by the schema. */
+            usesPerWeek: number[];
+            /**
+             * Format: double
+             * @description habit users / tried users in period; 0 when nobody tried
+             */
+            habitUserShare: number;
+            /** @description null when the companion switch is off OR the feature has no mapped feedback surface */
+            helped: components["schemas"]["AdminFeatureHelped"] | null;
+            /**
+             * Format: double
+             * @description Always null until ai_draft_outcome ships (slice 8) — the contract carries the field now.
+             */
+            acceptedShare: number | null;
+            /** Format: double */
+            costUsd: number;
+            /**
+             * Format: double
+             * @description null when there were zero non-ERROR calls
+             */
+            costPerUse: number | null;
+            /** Format: int64 */
+            unknownCalls: number;
+            /**
+             * Format: double
+             * @description null below the minimum-calls floor
+             */
+            errorPct: number | null;
+            /**
+             * Format: int32
+             * @description null when there is no latency sample in period. Latency percentiles include failed (ERROR) calls — they measure experienced latency.
+             */
+            p90LatencyMs: number | null;
+            /**
+             * Format: int64
+             * @description null until a feature-to-screen mapping exists (slice 4 decides)
+             */
+            screenViews: number | null;
+        };
+        AdminFeatureBoardResponse: {
+            period: string;
+            rows: components["schemas"]["AdminFeatureRow"][];
+        };
+        AdminFeatureFunnel: {
+            /**
+             * Format: int32
+             * @description >=1 use in the period
+             */
+            tried: number;
+            /**
+             * Format: int32
+             * @description uses on >=2 distinct days
+             */
+            repeated: number;
+            /**
+             * Format: int32
+             * @description active in >=3 of the last 4 ISO weeks
+             */
+            habitual: number;
+            /** @description names, beta-scale — never paginated */
+            triedUsers: string[];
+        };
+        AdminFeatureFeedbackPoint: {
+            /** @description ISO week, e.g. 2026-W12 */
+            week: string;
+            /** Format: int32 */
+            up: number;
+            /** Format: int32 */
+            down: number;
+        };
+        AdminFeatureDownReason: {
+            reason: string;
+            /** Format: int32 */
+            count: number;
+        };
+        AdminFeatureTopError: {
+            code: string;
+            /** Format: int32 */
+            count: number;
+        };
+        AdminFeatureReliability: {
+            /** Format: double */
+            errorPct: number | null;
+            /**
+             * Format: int32
+             * @description Latency percentiles include failed (ERROR) calls — they measure experienced latency.
+             */
+            p90LatencyMs: number | null;
+            /**
+             * Format: int32
+             * @description Latency percentiles include failed (ERROR) calls — they measure experienced latency.
+             */
+            p50LatencyMs: number | null;
+            topErrors: components["schemas"]["AdminFeatureTopError"][];
+        };
+        AdminFeatureModelCost: {
+            model: string;
+            /** Format: double */
+            costUsd: number;
+            /** Format: int64 */
+            calls: number;
+        };
+        AdminFeatureTopUser: {
+            /** @description deleted users fall back to an id-string, per AdminUsageService */
+            name: string;
+            /** Format: double */
+            costUsd: number;
+            /** Format: int64 */
+            uses: number;
+        };
+        AdminFeatureDetailResponse: {
+            key: string;
+            /** @enum {string} */
+            kind: "ai" | "domain" | "both" | "system";
+            /** @description Fixed length 12, oldest -> newest ISO week. Not enforced by the schema. */
+            usageByWeek: number[];
+            funnel: components["schemas"]["AdminFeatureFunnel"];
+            /** @description Bucketed on message_feedback.updated_at — a flipped vote re-dates. null when companion-off or the feature is unmapped. */
+            feedbackTrend: components["schemas"]["AdminFeatureFeedbackPoint"][] | null;
+            /** @description null when companion-off or the feature is unmapped */
+            downReasons: components["schemas"]["AdminFeatureDownReason"][] | null;
+            reliability: components["schemas"]["AdminFeatureReliability"];
+            costByModel: components["schemas"]["AdminFeatureModelCost"][];
+            topUsers: components["schemas"]["AdminFeatureTopUser"][];
+        };
+        AdminFeedbackRecall: {
+            /** Format: int32 */
+            useful: number;
+            /** Format: int32 */
+            irrelevant: number;
+            /** Format: int32 */
+            suppress: number;
+        };
+        AdminFeedbackFeatureSummary: {
+            key: string;
+            /** Format: int32 */
+            up: number;
+            /** Format: int32 */
+            down: number;
+            reasons: components["schemas"]["AdminFeatureDownReason"][];
+        };
+        AdminFeedbackSummaryResponse: {
+            period: string;
+            features: components["schemas"]["AdminFeedbackFeatureSummary"][];
+            /** @description null when the companion feature switch is off */
+            recall: components["schemas"]["AdminFeedbackRecall"] | null;
         };
         AdminColumnDescriptor: {
             name: string;
@@ -22986,6 +23197,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminAlertsResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminFeatureBoard: {
+        parameters: {
+            query?: {
+                period?: "30d" | "90d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feature scorecard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFeatureBoardResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminFeatureDetail: {
+        parameters: {
+            query?: {
+                period?: "30d" | "90d";
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feature detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFeatureDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such feature key (ADMIN_FEATURE_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminFeedbackSummary: {
+        parameters: {
+            query?: {
+                period?: "30d" | "90d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feedback summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFeedbackSummaryResponse"];
                 };
             };
             /** @description Missing/invalid token */

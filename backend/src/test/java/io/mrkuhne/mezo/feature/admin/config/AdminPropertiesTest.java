@@ -9,7 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
 /** The shipped mezo.admin defaults must name columns that really exist (mezo-d5iy). */
-@TestPropertySource(properties = "mezo.admin.alerts.cost-spike-factor=3.0")
+@TestPropertySource(properties = {
+        "mezo.admin.alerts.cost-spike-factor=3.0",
+        "mezo.admin.artifact-feature-map.chat_message=companion_chat_override"
+})
 class AdminPropertiesTest extends AbstractIntegrationTest {
 
     @Autowired private AdminProperties properties;
@@ -33,5 +36,17 @@ class AdminPropertiesTest extends AbstractIntegrationTest {
         assertThat(properties.alerts().llmErrorMinCalls()).isEqualTo(5);
         assertThat(properties.alerts().jobMissedAfterHours()).isEqualTo(26);
         assertThat(properties.alerts().testerQuietDays()).isEqualTo(7);
+    }
+
+    @Test
+    void testArtifactFeatureMap_shouldBindOverrideAndDefaults_whenChatMessageIsOverridden() {
+        assertThat(properties.artifactFeatureMap())
+                .containsEntry("chat_message", "companion_chat_override")
+                .containsEntry("feed_message", "proactive_feed")
+                .containsEntry("weekly_suggestion", "proactive_weekly")
+                .containsEntry("weekly_review", "proactive_weekly_review")
+                .containsEntry("memoir", "proactive_memoir")
+                .containsEntry("prediction", "proactive_prediction")
+                .containsEntry("day_review", "day_review");
     }
 }
