@@ -458,7 +458,7 @@ components:
         helped:
           allOf: [ { $ref: '#/components/schemas/AdminFeatureHelped' } ]
           nullable: true
-          description: 'null when the companion feature switch is off'
+          description: 'null when the companion switch is off OR the feature has no mapped feedback surface'
         acceptedShare:
           type: number
           format: double
@@ -468,7 +468,7 @@ components:
         costPerUse: { type: number, format: double, nullable: true, description: 'null when there were zero non-ERROR calls' }
         unknownCalls: { type: integer, format: int64 }
         errorPct: { type: number, format: double, nullable: true, description: 'null below the minimum-calls floor' }
-        p90LatencyMs: { type: integer, format: int32, nullable: true, description: 'null when there is no latency sample in period' }
+        p90LatencyMs: { type: integer, format: int32, nullable: true, description: 'null when there is no latency sample in period. Latency percentiles include failed (ERROR) calls — they measure experienced latency.' }
         screenViews: { type: integer, format: int64, nullable: true, description: 'null until a feature-to-screen mapping exists (slice 4 decides)' }
     AdminFeatureBoardResponse:
       type: object
@@ -513,8 +513,8 @@ components:
       required: [errorPct, p90LatencyMs, p50LatencyMs, topErrors]
       properties:
         errorPct: { type: number, format: double, nullable: true }
-        p90LatencyMs: { type: integer, format: int32, nullable: true }
-        p50LatencyMs: { type: integer, format: int32, nullable: true }
+        p90LatencyMs: { type: integer, format: int32, nullable: true, description: 'Latency percentiles include failed (ERROR) calls — they measure experienced latency.' }
+        p50LatencyMs: { type: integer, format: int32, nullable: true, description: 'Latency percentiles include failed (ERROR) calls — they measure experienced latency.' }
         topErrors:
           type: array
           items: { $ref: '#/components/schemas/AdminFeatureTopError' }

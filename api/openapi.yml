@@ -25042,7 +25042,9 @@ components:
           allOf:
             - $ref: '#/components/schemas/AdminFeatureHelped'
           nullable: true
-          description: null when the companion feature switch is off
+          description: >-
+            null when the companion switch is off OR the feature has no mapped
+            feedback surface
         acceptedShare:
           type: number
           format: double
@@ -25070,7 +25072,9 @@ components:
           type: integer
           format: int32
           nullable: true
-          description: null when there is no latency sample in period
+          description: >-
+            null when there is no latency sample in period. Latency percentiles
+            include failed (ERROR) calls — they measure experienced latency.
         screenViews:
           type: integer
           format: int64
@@ -25167,10 +25171,16 @@ components:
           type: integer
           format: int32
           nullable: true
+          description: >-
+            Latency percentiles include failed (ERROR) calls — they measure
+            experienced latency.
         p50LatencyMs:
           type: integer
           format: int32
           nullable: true
+          description: >-
+            Latency percentiles include failed (ERROR) calls — they measure
+            experienced latency.
         topErrors:
           type: array
           items:

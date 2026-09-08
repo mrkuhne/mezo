@@ -348,13 +348,19 @@ export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
       key: 'food', kind: 'domain', uniqueUsers: 9,
       usesPerWeek: FEATURE_WEEKS_12(14, 2),
       habitUserShare: 0.78, helped: null, acceptedShare: null,
-      costUsd: 0, costPerUse: null, unknownCalls: 0, errorPct: null, p90LatencyMs: null, screenViews: null,
+      // costPerUse 0, not null — real API parity: a domain feature with calls > 0 and no LLM
+      // cost attached still has a defined (zero) cost-per-use; null is reserved for zero calls.
+      costUsd: 0, costPerUse: 0, unknownCalls: 0, errorPct: null, p90LatencyMs: null, screenViews: null,
     },
     {
-      key: 'unknown', kind: 'system', uniqueUsers: 2,
+      // system bucket (LlmCallContext.UNKNOWN's slug) — no real human user attribution, so
+      // uniqueUsers is 0, not a fabricated count. Every call landing here is by definition
+      // unmapped, so calls == unknownCalls and costPerUse is the honest costUsd/unknownCalls
+      // quotient rather than null (null would imply zero calls, which contradicts costUsd > 0).
+      key: 'unknown', kind: 'system', uniqueUsers: 0,
       usesPerWeek: FEATURE_WEEKS_12(0, 1),
       habitUserShare: 0, helped: null, acceptedShare: null,
-      costUsd: 0.15, costPerUse: null, unknownCalls: 3, errorPct: null, p90LatencyMs: null, screenViews: null,
+      costUsd: 0.15, costPerUse: 0.05, unknownCalls: 3, errorPct: null, p90LatencyMs: null, screenViews: null,
     },
   ],
 }

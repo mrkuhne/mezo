@@ -10092,7 +10092,7 @@ export interface components {
              * @description habit users / tried users in period; 0 when nobody tried
              */
             habitUserShare: number;
-            /** @description null when the companion feature switch is off */
+            /** @description null when the companion switch is off OR the feature has no mapped feedback surface */
             helped: components["schemas"]["AdminFeatureHelped"] | null;
             /**
              * Format: double
@@ -10115,7 +10115,7 @@ export interface components {
             errorPct: number | null;
             /**
              * Format: int32
-             * @description null when there is no latency sample in period
+             * @description null when there is no latency sample in period. Latency percentiles include failed (ERROR) calls — they measure experienced latency.
              */
             p90LatencyMs: number | null;
             /**
@@ -10168,9 +10168,15 @@ export interface components {
         AdminFeatureReliability: {
             /** Format: double */
             errorPct: number | null;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Latency percentiles include failed (ERROR) calls — they measure experienced latency.
+             */
             p90LatencyMs: number | null;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Latency percentiles include failed (ERROR) calls — they measure experienced latency.
+             */
             p50LatencyMs: number | null;
             topErrors: components["schemas"]["AdminFeatureTopError"][];
         };

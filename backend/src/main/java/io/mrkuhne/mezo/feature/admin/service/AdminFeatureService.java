@@ -115,6 +115,17 @@ public class AdminFeatureService {
      *       period {@code since} for the day-matrix queries would silently truncate the
      *       sparkline's oldest 8 weeks to zero whenever an owner picks the 30-day view.</li>
      * </ul>
+     *
+     * <p><b>Row-set deviation:</b> because the {@code trendFrom}-bound day-matrix queries
+     * ({@code aggregateByFeatureAndDaySince}) also seed new rows via {@code
+     * acc.computeIfAbsent}, the actual row set is the union of every {@code feature-map}
+     * domain key and every feature slug seen within the {@code trendFrom} 12-week window —
+     * not merely "in the period" as stated above. A feature idle for the whole selected
+     * period (e.g. the last 30d) but used at some point in the trailing 12 weeks still gets
+     * a row: all period-scoped numbers (calls, cost, errorPct, uniqueUsers) are zero while
+     * {@code usesPerWeek} carries a non-zero sparkline. This is a deliberate deviation from
+     * "in the period" — it lets an owner see a feature's usage tail off toward zero instead
+     * of the row vanishing abruptly once its last use falls outside the period.
      */
     @Transactional(readOnly = true)
     public AdminFeatureBoardResponse board(String period) {
