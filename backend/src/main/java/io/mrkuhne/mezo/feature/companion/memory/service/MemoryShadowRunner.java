@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.memory.service;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,8 +22,13 @@ public class MemoryShadowRunner {
     private final AsyncTaskExecutor applicationTaskExecutor;
 
     public void submit(MemoryRequest request) {
+        // mezo-ozri.7: applicationTaskExecutor carries neither the security context nor the actor
+        // ThreadLocals, and this is the FIRST hop — an actor lost here cannot be recovered by the
+        // retriever and rerank hops the shadow run triggers downstream, so their llm_log rows would
+        // book against nobody and S6's per-user cap would not see this traffic.
+        UUID actor = LlmActorContext.capture();
         try {
-            applicationTaskExecutor.submit(() -> run(request));
+            applicationTaskExecutor.submit(() -> LlmActorContext.runAsCaptured(actor, () -> run(request)));
         } catch (RuntimeException exception) {
             log.warn("Shadow memory retrieval could not be submitted for conversation {}",
                     request.conversationId(), exception);
