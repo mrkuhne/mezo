@@ -100,12 +100,12 @@ public class LlmMemoryReranker implements MemoryReranker {
             // does not exist on the pool thread.
             LlmCallContext context = callContext();
             // Same reason, second ThreadLocal: LlmActorContext does not propagate into the pool
-            // either, so the admin replay's actor override is captured here and re-bound inside
-            // the task. Only the OVERRIDE travels — for a chat turn it is null, so that path stays
-            // byte-identical to today (its rerank row's created_by is still resolved by the
-            // adapter's own thread).
-            UUID actorOverride = LlmActorContext.override();
-            call = applicationTaskExecutor.submit(() -> withActorOverride(actorOverride,
+            // either. mezo-ozri.7 widens this from the admin replay's override to the FULL actor
+            // (override -> JWT principal -> cron actor): a chat turn's rerank is a real smart-tier
+            // call made FOR a user, and leaving it unattributed both blanks its llm_log created_by
+            // and hides it from the per-user USD cap (mezo-ozri.6).
+            UUID actor = LlmActorContext.capture();
+            call = applicationTaskExecutor.submit(() -> LlmActorContext.runAsCaptured(actor,
                     () -> llmCallContextHolder.runWith(
                             context, () -> llm.completeSmart(SYSTEM_PROMPT, render(exposed)))));
             String answer = call.get(properties.reranker().timeoutMs(), TimeUnit.MILLISECONDS);
@@ -159,11 +159,6 @@ public class LlmMemoryReranker implements MemoryReranker {
      * {@code companion_recall} and corrupt the shipped cost matrix. Only the replay label is
      * honoured.
      */
-    /** Binds {@code override} for the body when there is one; a null override is a plain call. */
-    private static <T> T withActorOverride(UUID override, java.util.function.Supplier<T> body) {
-        return override == null ? body.get() : LlmActorContext.runAsOverride(override, body);
-    }
-
     private LlmCallContext callContext() {
         LlmCallContext ambient = llmCallContextHolder.get();
         return ambient.isAdminReplay()
