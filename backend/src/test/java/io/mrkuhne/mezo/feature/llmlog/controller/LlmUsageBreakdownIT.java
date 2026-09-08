@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageGroup;
+import io.mrkuhne.mezo.api.dto.LlmUsageModelGroup;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
@@ -112,6 +113,35 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
                 assertThat(g.getKey()).isEqualTo("quest_flavor");
                 assertThat(g.getCostUsd()).isNull();
             });
+    }
+
+    /**
+     * mezo-pfdv: the model-mix table's token columns are exact sums over the group's rows;
+     * a row that reported no tokens (the unpriced/no-usage row) contributes 0, not null.
+     */
+    @Test
+    void testGetBreakdown_shouldSumPromptAndTotalTokensPerModel_whenRowsReportThem() {
+        UUID owner = ownerId();
+        llmLogPopulator.log(owner, CallKind.CHAT, "companion_chat", "gemini-2.5-flash", 1_000, 200,
+            snapshot(), new BigDecimal("0.010000"));
+        llmLogPopulator.log(owner, CallKind.CHAT, "meal_coach", "gemini-2.5-flash", 500, 100,
+            snapshot(), new BigDecimal("0.005000"));
+        llmLogPopulator.log(owner, CallKind.EMBED_QUERY, "companion_recall", "unpriced-model", 50, 0);
+
+        LlmUsageBreakdownResponse body = breakdown("DAY");
+
+        assertThat(body.getModels()).extracting(LlmUsageModelGroup::getKey)
+            .containsExactlyInAnyOrder("gemini-2.5-flash", "unpriced-model");
+        LlmUsageModelGroup flash = body.getModels().stream()
+            .filter(m -> "gemini-2.5-flash".equals(m.getKey())).findFirst().orElseThrow();
+        assertThat(flash.getCallCount()).isEqualTo(2);
+        assertThat(flash.getPromptTokens()).isEqualTo(1_500);
+        assertThat(flash.getTotalTokens()).isEqualTo(1_500 + 300);
+        LlmUsageModelGroup unpriced = body.getModels().stream()
+            .filter(m -> "unpriced-model".equals(m.getKey())).findFirst().orElseThrow();
+        assertThat(unpriced.getPromptTokens()).isEqualTo(50);
+        assertThat(unpriced.getTotalTokens()).isEqualTo(50);
+        assertThat(unpriced.getCostUsd()).isNull();
     }
 
     /** An ERROR row has no served model — it becomes its own null-keyed model group, not a drop. */

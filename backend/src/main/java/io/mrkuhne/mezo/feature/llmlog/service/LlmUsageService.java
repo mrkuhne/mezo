@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.LlmCallListItem;
 import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageGroup;
+import io.mrkuhne.mezo.api.dto.LlmUsageModelGroup;
 import io.mrkuhne.mezo.api.dto.LlmUsagePeriod;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageTotals;
@@ -18,6 +19,7 @@ import io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmModelGroupRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmStatusRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUsageAggregate;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserRow;
@@ -26,6 +28,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Comparator;
@@ -77,7 +80,25 @@ public class LlmUsageService {
             .day(period(UsagePeriod.DAY.startDate(zone), zone))
             .week(period(UsagePeriod.WEEK.startDate(zone), zone))
             .month(period(UsagePeriod.MONTH.startDate(zone), zone))
+            .prevMonthToSameDayUsd(prevMonthToSameDayUsd(zone))
             .build();
+    }
+
+    /**
+     * The KPI strip's "vs last month" comparator (mezo-pfdv): the previous calendar month's PRICED
+     * cost from its 1st through the SAME day-of-month boundary as today, in the report zone.
+     *
+     * <p>Clamped to the prior month's length: if today is later in its month than the prior month
+     * is long (e.g. today the 31st, prior month only 30 days), the boundary is the prior month's
+     * last day rather than overflowing into the month after it.
+     */
+    private Double prevMonthToSameDayUsd(ZoneId zone) {
+        LocalDate today = LocalDate.now(zone);
+        YearMonth priorMonth = YearMonth.from(today).minusMonths(1);
+        int boundaryDay = Math.min(today.getDayOfMonth(), priorMonth.lengthOfMonth());
+        Instant since = priorMonth.atDay(1).atStartOfDay(zone).toInstant();
+        Instant until = priorMonth.atDay(boundaryDay).plusDays(1).atStartOfDay(zone).toInstant();
+        return toDouble(llmLogRepository.aggregateBetween(since, until).costUsd());
     }
 
     /**
@@ -95,7 +116,7 @@ public class LlmUsageService {
             .from(from)
             .totals(totals(llmLogRepository.aggregateByStatusSince(since)))
             .features(groups(llmLogRepository.aggregateByFeatureSince(since)))
-            .models(groups(llmLogRepository.aggregateByModelSince(since)))
+            .models(modelGroups(llmLogRepository.aggregateByModelSince(since)))
             .byUser(userGroups(llmLogRepository.aggregateByUserSince(since)))
             .build();
     }
@@ -106,14 +127,21 @@ public class LlmUsageService {
      * the log and rows can neither duplicate nor be skipped as new calls arrive.
      */
     @Transactional(readOnly = true)
-    public LlmCallListResponse listCalls(String rawPeriod, String feature, String rawStatus,
+    public LlmCallListResponse listCalls(String rawPeriod, LocalDate day, String feature, String rawStatus,
                                          String rawCallKind, UUID userId, Integer rawLimit) {
         ZoneId zone = llmLogProperties.reportZone();
         Instant since = UsagePeriod.parse(rawPeriod).startDate(zone).atStartOfDay(zone).toInstant();
         int limit = Math.clamp(rawLimit == null ? DEFAULT_LIMIT : rawLimit, 1, MAX_LIMIT);
 
+        boolean hasDay = day != null;
+        Instant dayStart = hasDay ? day.atStartOfDay(zone).toInstant() : since;
+        Instant dayEnd = hasDay ? day.plusDays(1).atStartOfDay(zone).toInstant() : since;
+
         List<LlmCallRow> rows = llmLogRepository.findCalls(
             since,
+            hasDay,
+            dayStart,
+            dayEnd,
             blankToNull(feature),
             parseEnum(rawStatus, CallStatus::valueOf, "status"),
             parseEnum(rawCallKind, CallKind::valueOf, "callKind"),
@@ -226,6 +254,22 @@ public class LlmUsageService {
                 .key(r.key())
                 .callCount(r.callCount())
                 .costUsd(toDouble(r.costUsd()))
+                .build())
+            .toList();
+    }
+
+    /** Same ordering rule as {@link #groups}, plus the per-model token sums (mezo-pfdv). */
+    private List<LlmUsageModelGroup> modelGroups(List<LlmModelGroupRow> rows) {
+        return rows.stream()
+            .sorted(Comparator
+                .comparing(LlmModelGroupRow::costUsd, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Comparator.comparingLong(LlmModelGroupRow::callCount).reversed()))
+            .map(r -> LlmUsageModelGroup.builder()
+                .key(r.key())
+                .callCount(r.callCount())
+                .costUsd(toDouble(r.costUsd()))
+                .promptTokens(r.promptTokens())
+                .totalTokens(r.totalTokens())
                 .build())
             .toList();
     }

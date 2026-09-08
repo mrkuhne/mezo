@@ -8901,6 +8901,11 @@ export interface components {
             day: components["schemas"]["LlmUsagePeriod"];
             week: components["schemas"]["LlmUsagePeriod"];
             month: components["schemas"]["LlmUsagePeriod"];
+            /**
+             * Format: double
+             * @description Previous calendar month's PRICED cost from its 1st through the same day-of-month boundary as today (report zone) — the "vs last month" comparator for the current month-to-date figure. Clamped: if today is later in its month than the prior month is long (e.g. today is the 31st and the prior month only had 30 days), the boundary is the prior month's last day. Null when the prior month's window holds no priced row at all (never coalesced to 0 — same ADR 0014 rule as every other cost sum here).
+             */
+            prevMonthToSameDayUsd?: number | null;
         };
         LlmUsagePeriod: {
             /**
@@ -8926,7 +8931,7 @@ export interface components {
             /** @description one entry per feature slug, cost-descending (unpriced last) */
             features: components["schemas"]["LlmUsageGroup"][];
             /** @description one entry per SERVED model; key is null for calls that never reached one */
-            models: components["schemas"]["LlmUsageGroup"][];
+            models: components["schemas"]["LlmUsageModelGroup"][];
             /** @description one entry per calling account, cost-descending (unpriced last); the null-user entry is the background (cron/stream) traffic */
             byUser: components["schemas"]["LlmUsageUserGroup"][];
         };
@@ -8972,6 +8977,24 @@ export interface components {
             callCount: number;
             /** Format: double */
             costUsd?: number | null;
+        };
+        LlmUsageModelGroup: {
+            /** @description served model id; null = calls that never reached one (ERROR rows) */
+            key?: string | null;
+            /** Format: int64 */
+            callCount: number;
+            /** Format: double */
+            costUsd?: number | null;
+            /**
+             * Format: int64
+             * @description summed raw prompt tokens over the group's rows; a row with no reported tokens counts as 0
+             */
+            promptTokens: number;
+            /**
+             * Format: int64
+             * @description summed total tokens over the group's rows; a row with no reported tokens counts as 0
+             */
+            totalTokens: number;
         };
         LlmUsageUserGroup: {
             /**
@@ -20470,6 +20493,8 @@ export interface operations {
         parameters: {
             query: {
                 period: string;
+                /** @description ISO date (yyyy-MM-dd); narrows to just that report-zone calendar day, composed (AND'd) with period and every other filter — the anomaly-dot deep link from the 30d trend (mezo-pfdv) */
+                day?: string;
                 /** @description exact feature slug, e.g. companion_chat */
                 feature?: string;
                 status?: string;
@@ -20494,7 +20519,7 @@ export interface operations {
                     "application/json": components["schemas"]["LlmCallListResponse"];
                 };
             };
-            /** @description Unknown period, status or call kind */
+            /** @description Unknown period, day, status or call kind */
             400: {
                 headers: {
                     [name: string]: unknown;

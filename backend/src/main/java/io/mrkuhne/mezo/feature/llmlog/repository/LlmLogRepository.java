@@ -38,6 +38,20 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """)
     LlmUsageAggregate aggregateSince(@Param("since") Instant since);
 
+    /**
+     * Call count + summed cost over a BOUNDED window {@code [since, until)} (mezo-pfdv) — the
+     * previous-month-to-same-day comparator, the only usage read here that needs an upper bound
+     * as well as a lower one. Same null-cost semantics as {@link #aggregateSince}: an empty or
+     * all-unpriced window reports {@code costUsd = null}, never a confident 0.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUsageAggregate(
+            count(l), sum(l.costUsd))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.createdAt < :until
+        """)
+    LlmUsageAggregate aggregateBetween(@Param("since") Instant since, @Param("until") Instant until);
+
     /** Per-user napi rollup (mezo-qw37.7) — a Memória/Audit panel csak a saját hívásait látja;
      *  a created_by IS NULL sorok (S6 előtti cron-forgalom) senkihez sem tartoznak. */
     @Query(value = """
@@ -193,15 +207,21 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
     List<LlmFeatureUserRow> aggregateByFeatureAndUserSince(@Param("since") Instant since,
             @Param("errorStatus") CallStatus errorStatus);
 
-    /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
+    /**
+     * Served-model rollup for the breakdown's model-mix table (mezo-pfdv adds the token sums). A
+     * null {@code servedModel} (ERROR rows) forms its own group; null-token rows contribute 0 to
+     * the sums (coalesced), unlike the cost sum which stays null when nothing is priced.
+     */
     @Query("""
-        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
-            l.servedModel, count(l), sum(l.costUsd))
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmModelGroupRow(
+            l.servedModel, count(l), sum(l.costUsd),
+            coalesce(sum(coalesce(l.promptTokens, 0)), 0L),
+            coalesce(sum(coalesce(l.totalTokens, 0)), 0L))
         from LlmLogEntity l
         where l.createdAt >= :since
         group by l.servedModel
         """)
-    List<LlmGroupRow> aggregateByModelSince(@Param("since") Instant since);
+    List<LlmModelGroupRow> aggregateByModelSince(@Param("since") Instant since);
 
     /**
      * Served-model rollup for ONE feature (Funkciók detail, mezo-l096.4) — the {@code costByModel}
@@ -250,6 +270,16 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
      * The browsable list (mezo-uakh): newest first, metadata only, every filter optional via the
      * {@code (:param is null or …)} idiom. No owner filter — same reason as the aggregates.
      *
+     * <p>{@code hasDay}/{@code dayStart}/{@code dayEnd} (mezo-pfdv) are the optional {@code day}
+     * query param's report-zone calendar-day bounds — a bounded window ANDed onto the period's
+     * {@code since}, not a replacement for it, so a caller narrowing to one day still respects the
+     * period filter. Gated on a boolean flag rather than {@code dayStart is null}: binding a null
+     * {@code Instant} into a bare {@code ? is null} check (with no other typed usage to pin it)
+     * makes Postgres fail with "could not determine data type of parameter" — the other filters
+     * avoid this because their null branch always also compares the SAME parameter against a typed
+     * column, but {@code dayStart}/{@code dayEnd} are combined with AND, not reused solo. When
+     * {@code hasDay} is false, {@code dayStart}/{@code dayEnd} are unused dummies (never null).
+     *
      * <p>The caller asks for {@code limit + 1} rows: getting that many is how the service knows
      * more exist, without paying for a second {@code count(*)} on every load-more.
      */
@@ -261,6 +291,7 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
             l.costUsd, l.errorClass, l.errorCode)
         from LlmLogEntity l
         where l.createdAt >= :since
+          and (:hasDay = false or (l.createdAt >= :dayStart and l.createdAt < :dayEnd))
           and (:feature is null or l.feature = :feature)
           and (:status is null or l.status = :status)
           and (:callKind is null or l.callKind = :callKind)
@@ -268,6 +299,9 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         order by l.createdAt desc
         """)
     List<LlmCallRow> findCalls(@Param("since") Instant since,
+                               @Param("hasDay") boolean hasDay,
+                               @Param("dayStart") Instant dayStart,
+                               @Param("dayEnd") Instant dayEnd,
                                @Param("feature") String feature,
                                @Param("status") CallStatus status,
                                @Param("callKind") CallKind callKind,

@@ -6,12 +6,17 @@ import static org.assertj.core.api.Assertions.within;
 import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageUserGroup;
+import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +28,7 @@ import org.springframework.http.HttpStatus;
 class LlmUsageControllerIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;
+    @Autowired private LlmLogProperties llmLogProperties;
 
     @Test
     void testEveryRead_shouldReturn403_whenCallerIsUser() {
@@ -76,6 +82,52 @@ class LlmUsageControllerIT extends ApiIntegrationTest {
         LlmCallListResponse onlyAnna = getForBody("/api/llm-usage/calls?period=DAY&userId=" + anna.id(), ownerAuthHeaders(),
             HttpStatus.OK, LlmCallListResponse.class);
         assertThat(onlyAnna.getItems()).singleElement().satisfies(i -> assertThat(i.getCreatedBy()).isEqualTo(anna.id()));
+    }
+
+    /**
+     * mezo-pfdv: {@code day} narrows the list to one report-zone calendar day. A row seeded at
+     * 23:45 LOCAL on the boundary day is still within it (the edge the report zone matters for);
+     * the same wall-clock time one day later must be excluded.
+     */
+    @Test
+    void testListCalls_shouldNarrowToOneReportZoneDay_whenDayGiven() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate boundaryDay = LocalDate.now(zone).minusDays(5);
+        Instant lateOnBoundaryDay = boundaryDay.atTime(23, 45).atZone(zone).toInstant();
+        Instant sameWallClockNextDay = boundaryDay.plusDays(1).atTime(23, 45).atZone(zone).toInstant();
+
+        llmLogPopulator.logCall(lateOnBoundaryDay, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.010000"));
+        llmLogPopulator.logCall(sameWallClockNextDay, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.020000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=MONTH&day=" + boundaryDay, ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.01, within(1e-9)));
+    }
+
+    /** day composes with the other filters: it narrows further, it does not replace them. */
+    @Test
+    void testListCalls_shouldComposeDayWithFeatureFilter_whenBothGiven() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate today = LocalDate.now(zone);
+
+        llmLogPopulator.logCall(null, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.010000"));
+        llmLogPopulator.logCall(null, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "meal_coach", "send", "gemini-2.5-flash", new BigDecimal("0.020000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=DAY&day=" + today + "&feature=meal_coach", ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getFeature()).isEqualTo("meal_coach"));
     }
 
     private static PricingSnapshot snapshot() {
