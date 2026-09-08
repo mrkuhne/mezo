@@ -1,0 +1,374 @@
+{
+  "schema": "bible-strong/avatar-definition",
+  "schemaVersion": 1,
+  "name": "Mezo Clay",
+  "body": {
+    "primary": {
+      "type": "sphere",
+      "width": 240,
+      "height": 232,
+      "depth": 240,
+      "roundness": 1
+    },
+    "nodes": []
+  },
+  "colors": {
+    "body": "#f5805e",
+    "eyes": "#482c23"
+  },
+  "expressions": {
+    "neutral": {
+      "head": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "eyes": {
+        "left": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "left": {
+      "head": {
+        "x": 0,
+        "y": -10,
+        "z": -3
+      },
+      "eyes": {
+        "left": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "right": {
+      "head": {
+        "x": 0,
+        "y": 10,
+        "z": 3
+      },
+      "eyes": {
+        "left": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 22,
+          "height": 42,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "attentive": {
+      "head": {
+        "x": 4,
+        "y": 5,
+        "z": 0
+      },
+      "eyes": {
+        "left": {
+          "width": 24,
+          "height": 48,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 24,
+          "height": 48,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "wonder": {
+      "head": {
+        "x": 6,
+        "y": -13,
+        "z": -5
+      },
+      "eyes": {
+        "left": {
+          "width": 24,
+          "height": 39,
+          "x": 0,
+          "y": -12,
+          "angle": 0
+        },
+        "right": {
+          "width": 24,
+          "height": 39,
+          "x": 0,
+          "y": -12,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "happy": {
+      "head": {
+        "x": -4,
+        "y": 0,
+        "z": 5
+      },
+      "eyes": {
+        "left": {
+          "width": 32,
+          "height": 16,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 32,
+          "height": 16,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 52
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    },
+    "settled": {
+      "head": {
+        "x": -8,
+        "y": 0,
+        "z": -3
+      },
+      "eyes": {
+        "left": {
+          "width": 30,
+          "height": 10,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "right": {
+          "width": 30,
+          "height": 10,
+          "x": 0,
+          "y": -5,
+          "angle": 0
+        },
+        "spacing": 48
+      },
+      "perspective": 1,
+      "motion": {
+        "eyes": "microSaccades",
+        "body": "slowDrift"
+      }
+    }
+  },
+  "expressionOrder": [
+    "neutral",
+    "left",
+    "right",
+    "attentive",
+    "wonder",
+    "happy",
+    "settled"
+  ],
+  "animations": {
+    "idle": {
+      "playbackMode": "loop",
+      "steps": [
+        {
+          "expression": "neutral",
+          "holdMs": 2400,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "left",
+          "holdMs": 2400,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "neutral",
+          "holdMs": 2400,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "right",
+          "holdMs": 2400,
+          "transitionMs": 600,
+          "transition": "smooth"
+        }
+      ],
+      "blink": {
+        "enabled": true,
+        "initialDelayMs": 2200,
+        "minIntervalMs": 3500,
+        "maxIntervalMs": 6200,
+        "durationMs": 160
+      }
+    },
+    "listening": {
+      "playbackMode": "loop",
+      "steps": [
+        {
+          "expression": "attentive",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "neutral",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        }
+      ],
+      "blink": {
+        "enabled": true,
+        "initialDelayMs": 2200,
+        "minIntervalMs": 3500,
+        "maxIntervalMs": 6200,
+        "durationMs": 160
+      }
+    },
+    "thinking": {
+      "playbackMode": "loop",
+      "steps": [
+        {
+          "expression": "wonder",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "left",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "wonder",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        }
+      ],
+      "blink": {
+        "enabled": true,
+        "initialDelayMs": 2200,
+        "minIntervalMs": 3500,
+        "maxIntervalMs": 6200,
+        "durationMs": 160
+      }
+    },
+    "happy": {
+      "playbackMode": "loop",
+      "steps": [
+        {
+          "expression": "happy",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "neutral",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        }
+      ],
+      "blink": {
+        "enabled": true,
+        "initialDelayMs": 2200,
+        "minIntervalMs": 3500,
+        "maxIntervalMs": 6200,
+        "durationMs": 160
+      }
+    },
+    "sleeping": {
+      "playbackMode": "loop",
+      "steps": [
+        {
+          "expression": "settled",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        },
+        {
+          "expression": "settled",
+          "holdMs": 1300,
+          "transitionMs": 600,
+          "transition": "smooth"
+        }
+      ],
+      "blink": {
+        "enabled": false,
+        "initialDelayMs": 2200,
+        "minIntervalMs": 3500,
+        "maxIntervalMs": 6200,
+        "durationMs": 160
+      }
+    }
+  },
+  "animationOrder": ["idle", "listening", "thinking", "happy", "sleeping"]
+}
