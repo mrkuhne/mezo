@@ -16,7 +16,17 @@ A `SignatureVisuals.jsx` újrahasználható elemei a közös ív–pont–szál 
 
 A `FuelSignature` bemetszett SVG felületén az alapkeret és sport szála a napi célnál találkozik. A naplózott mennyiség alatti sáv a célhoz viszonyít, a maradék számmal is szerepel. A sport forrása megnyitható, a kapcsolat magyarázata lenyitható, onnan a meglévő mintachat elérhető. A sport törlését továbbra is az eredeti chattool végzi; a grafika ugyanazt az állapotot követi. A kezdőlap `DayConnection` eleme közvetlenül összekapcsolja az edzés és táplálás bejáratát.
 
-A mozgás rögzítéshez és értékváltozáshoz kapcsolódik, a reduced-motion szabály kikapcsolja az új animációkat. A napi lenyomat és a Minták összefüggés-ábrája még nincs kidolgozva ebben a körben. [Specifikáció](../superpowers/specs/2026-09-09-boop-signature-design.md).
+A mozgás rögzítéshez és értékváltozáshoz kapcsolódik, a reduced-motion szabály kikapcsolja az új animációkat. A Minták összefüggés-ábrája még nincs kidolgozva ebben a körben. [Specifikáció](../superpowers/specs/2026-09-09-boop-signature-design.md).
+
+## Kontúrcsalád és napi lenyomat
+
+A `ContourSurface.jsx` három rokon SVG kontúrt ad: kapcsolat (étkezési keret, középen két bemetszés), előrehaladás (mezociklus, nagyobb felső ív), visszatekintés (napi lenyomat, puha alsó ív és visszahajló vonal). Mindhárom a tartalom magasságát követi és a terület színét örökli; az egyszerű listák keret nélkül maradnak.
+
+A `DailyImprint.jsx` teljes nézete az Életem/Ma oldalon található; a kezdőlapon és a naplóban kompakt, kattintható előnézet vezet ide. A hét hét napja választható, a nagy lenyomat mellett kategória-jelmagyarázat és kibontató forrásesemények szerepelnek. A pont check-in, az ív mozgás, a hosszúkás jel napló, a csillagszerű jel hála. A tervezett mozgás szaggatott és szöveggel is jelölt.
+
+Az `imprint-model.mjs` a keddi mintanap check-injeiből, szabad naplójából, hálájából és tervezett edzéséből/sportjából származtatja a kompozíciót; nincs véletlen rajzolás vagy kitalált egészségpontszám. A hétfő jelölt történeti fixture, a későbbi napok üresek. A jelenlegi mintanap továbbra is 2026. szeptember 8., nem a futtatás valós dátuma. A grafika egyelőre az itt rendelkezésre álló eseményeket mutatja, étkezési és alvásnapló-események még nincsenek bekötve.
+
+[Specifikáció](../superpowers/specs/2026-09-09-boop-imprints-design.md). Ellenőrzés: 59 teszt és build sikeres; böngészőben napválasztás, hétfői forrás kibontása, üres jövőbeli nap, hét nap és vízszintes kilógás nélküli 360 px-es keret ellenőrizve.
 
 ## Termékértelmezés
 
@@ -63,6 +73,6 @@ A prototípus nem kapcsolódik valódi AI-hoz vagy személyes adatokhoz. Nem fut
 
 ## Boop ellenőrzés
 
-Az editorial körben a kezdőoldalt és a Kamrát böngészőben ellenőriztük; a karakter ismét csak két szemből áll, a területi menü saját vonalas ikonokat használ. A prototípus 56 viselkedési és geometriai tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.
+Az editorial körben a kezdőoldalt és a Kamrát böngészőben ellenőriztük; a karakter ismét csak két szemből áll, a területi menü saját vonalas ikonokat használ. A prototípus 59 viselkedési és geometriai tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.
 
 Az új elemeknél böngészőben ellenőrizve: hétválasztás, étkezési magyarázat/chat, a sport átvezetése után 2750 → 2400 kcal és inaktív forrásszál, check-in mentés. A 360 px-es keretben nincs vízszintes kilógás, a közérzetgombok láthatóak.
