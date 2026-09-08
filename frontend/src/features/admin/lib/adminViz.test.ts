@@ -6,6 +6,7 @@ import {
   domainTotals,
   featureLegend,
   quietTesters,
+  testerStatus,
   topNFromEntries,
   deltaVsTrailingAvg,
   valueScore,
@@ -258,6 +259,30 @@ describe('quietTesters', () => {
     const rows = quietTesters(users, NOW, 3, 1)
     expect(rows).toHaveLength(1)
     expect(rows[0].key).toBe('never')
+  })
+})
+
+describe('testerStatus', () => {
+  const NOW = new Date('2026-09-08T12:00:00Z')
+
+  it('reads meg_nem_aktiv for a never-active user (null lastActivityAt), no invented day count', () => {
+    expect(testerStatus(null, NOW)).toBe('meg_nem_aktiv')
+  })
+
+  it('reads aktiv at 0/1/2 days (the boundary)', () => {
+    expect(testerStatus(NOW.toISOString(), NOW)).toBe('aktiv')
+    expect(testerStatus(new Date(NOW.getTime() - 1 * 86_400_000).toISOString(), NOW)).toBe('aktiv')
+    expect(testerStatus(new Date(NOW.getTime() - 2 * 86_400_000).toISOString(), NOW)).toBe('aktiv')
+  })
+
+  it('reads csendesedik at the 3-day boundary and still at 6 days', () => {
+    expect(testerStatus(new Date(NOW.getTime() - 3 * 86_400_000).toISOString(), NOW)).toBe('csendesedik')
+    expect(testerStatus(new Date(NOW.getTime() - 6 * 86_400_000).toISOString(), NOW)).toBe('csendesedik')
+  })
+
+  it('reads lemorzsolodott at the 7-day boundary and beyond', () => {
+    expect(testerStatus(new Date(NOW.getTime() - 7 * 86_400_000).toISOString(), NOW)).toBe('lemorzsolodott')
+    expect(testerStatus(new Date(NOW.getTime() - 30 * 86_400_000).toISOString(), NOW)).toBe('lemorzsolodott')
   })
 })
 

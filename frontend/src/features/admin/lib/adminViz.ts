@@ -209,6 +209,23 @@ export function costDeltaCopy(delta: { pct: number; direction: 'up' | 'down' | '
   return `${glyph} ${pct}%-kal ${word} a heti átlagnál`
 }
 
+/** Tester status bucket (mezo-zde2 Rulings) — the Emberek list's summary strip + cards' single
+ *  source of truth. Boundaries: aktív ≤2 days since last activity, csendesedik 3–6 days,
+ *  lemorzsolódott 7+ days, meg_nem_aktiv when `lastActivityAt` is null (never active — no
+ *  invented day count). `now` is injectable so callers/tests never depend on the real clock.
+ *  Deliberately NOT wired into the Pulzus "Csendes tesztelők" tile (`quietTesters` above) — that
+ *  tile keeps its own 3-day threshold per the plan Rulings; this is a second, sibling threshold
+ *  for a different UI, not a replacement. */
+export type TesterStatus = 'aktiv' | 'csendesedik' | 'lemorzsolodott' | 'meg_nem_aktiv'
+
+export function testerStatus(lastActivityAt: string | null, now: Date = new Date()): TesterStatus {
+  if (lastActivityAt === null) return 'meg_nem_aktiv'
+  const days = Math.floor((now.getTime() - new Date(lastActivityAt).getTime()) / 86_400_000)
+  if (days <= 2) return 'aktiv'
+  if (days < 7) return 'csendesedik'
+  return 'lemorzsolodott'
+}
+
 /** Value-score heuristic v1 (mezo-kxnn Task 2, plan Rulings) — the Funkciók scorecard's default
  *  sort AND the value/cost quadrant's x-axis. `uniqueUsers × (1 + habitUserShare)` is the reach ×
  *  stickiness base; `helped` then nudges it by feedback sentiment: `null` (no feedback source —
