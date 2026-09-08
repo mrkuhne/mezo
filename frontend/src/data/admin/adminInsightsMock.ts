@@ -1,5 +1,6 @@
 import { MOCK_ANNA_ID, MOCK_BELA_ID, MOCK_OWNER_ID } from '@/data/admin/adminMock'
 import type {
+  AdminAlertsResponse,
   AdminCostMatrixResponse,
   AdminDayAmount,
   AdminDayCount,
@@ -221,4 +222,32 @@ export const ADMIN_SCREEN_USAGE_EMPTY: AdminScreenUsageResponse = {
   period: '30d',
   days: [],
   screens: [],
+}
+
+// Alerts (mezo-kjwa) — rule-based owner-facing warnings on the admin hub. One `warn` (cost
+// spike) and one `bad` (stuck memory processing), so slice 2's UI has both severities to render
+// against. `generatedAt` is computed at module load — no test asserts its exact value.
+export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
+  generatedAt: new Date().toISOString(),
+  alerts: [
+    {
+      key: 'cost_spike',
+      severity: 'warn',
+      title: 'Tegnapi AI-költés kiugróan magas',
+      detail: 'Tegnap $1.84 ment el — a korábbi 7 nap átlaga $0.33 volt.',
+      link: '/admin/cost?day=2026-09-07',
+    },
+    {
+      key: 'memory_stuck',
+      severity: 'bad',
+      title: 'Elakadt emlék-feldolgozás',
+      detail: '3 emlék beágyazása hibára futott.',
+      link: '/admin/users',
+    },
+  ],
+}
+
+export const ADMIN_ALERTS_EMPTY: AdminAlertsResponse = {
+  generatedAt: new Date(0).toISOString(),
+  alerts: [],
 }

@@ -83,8 +83,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-07, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
-  - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
-  - **services:** `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminMemoryGraphMapper`,
+  - **repositories:** `AdminAlertQuery`, `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
+  - **services:** `AdminAlertService`, `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminMemoryGraphMapper`,
     `AdminMemoryReplayService`, `AdminMemoryRunMapper`, `AdminMemoryService`, `AdminOverviewService`, `AdminSeries`,
     `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`, `AdminUserService`
   - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`,
@@ -92,9 +92,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `AdminMemoryProperties`, `AdminProperties`
 - **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
   - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
-- **Contract** `api/feature/admin-insights/admin-insights.yml` — 6 operations
+- **Contract** `api/feature/admin-insights/admin-insights.yml` — 7 operations
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
-    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix · GET /api/admin/usage/screens
+    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix · GET /api/admin/usage/screens ·
+    GET /api/admin/alerts
 - **Contract** `api/feature/admin-memory/admin-memory.yml` — 7 operations
   - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
     POST /api/admin/users/{userId}/memory/replay · GET /api/admin/users/{userId}/memory/graph ·
@@ -116,13 +117,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
     RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts, projection.ts,
     umap.worker.ts, umapConstants.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 14 IT + 3 unit
-  - **ITs:** `AdminDataBrowserIT`, `AdminMemoryGraphIT`, `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`,
-    `AdminMemoryReplayIT`, `AdminMemoryRunsIT`, `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`,
-    `AdminOverviewIT`, `AdminScreenUsageIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
-    `AdminUserInsightIT`
-  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `GraphPopulator`, `MemoryEmbeddingPopulator`,
-    `MemoryItemPopulator`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 16 IT + 3 unit
+  - **ITs:** `AdminAlertsCompanionOffIT`, `AdminAlertsIT`, `AdminDataBrowserIT`, `AdminMemoryGraphIT`,
+    `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`, `AdminMemoryReplayIT`, `AdminMemoryRunsIT`,
+    `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`, `AdminOverviewIT`, `AdminScreenUsageIT`,
+    `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `DailySummaryPopulator`, `GraphPopulator`,
+    `LlmLogPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`
 
 ### appnotification
 
@@ -354,9 +355,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MeWeekController`→`MeWeekApi`, `MemoryRetrievalController`→`MemoryRetrievalApi`
   - **mappers:** `CompanionFlagMapper`, `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`,
     `PatternTestPlanMapper`
-  - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
-    `LlmProvider`, `MemoryPlatformProperties`, `ModelTier`, `ProfileProperties`, `QuarterlyProperties`,
-    `ReflectionProperties`
+  - **config:** `CompanionFeatureFlag`, `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`,
+    `FlagProperties`, `LlmProvider`, `MemoryPlatformProperties`, `ModelTier`, `ProfileProperties`,
+    `QuarterlyProperties`, `ReflectionProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `LifeGoalStatusChangedEvent`, `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`,
@@ -796,8 +797,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
-  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmGroupRow`, `LlmLogRepository`,
-    `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
+  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmFeatureErrorRow`, `LlmGroupRow`,
+    `LlmLogRepository`, `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
   - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmBudgetService`,
     `LlmCallRecord`, `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`

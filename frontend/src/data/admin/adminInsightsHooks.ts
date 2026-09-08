@@ -1,6 +1,7 @@
 import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import {
   adminInsightsApi,
+  type AdminAlertsResponse,
   type AdminCostMatrixResponse,
   type AdminFeatureUsageResponse,
   type AdminOverviewResponse,
@@ -12,6 +13,8 @@ import {
   type AdminUserInsightSort,
 } from '@/data/admin/adminInsightsApi'
 import {
+  ADMIN_ALERTS_EMPTY,
+  ADMIN_ALERTS_MOCK,
   ADMIN_COST_MATRIX_EMPTY,
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_FEATURE_USAGE_EMPTY,
@@ -39,6 +42,7 @@ export const ADMIN_USER_DETAIL_KEY = ['admin', 'insights', 'user'] as const
 export const ADMIN_FEATURE_USAGE_KEY = ['admin', 'insights', 'usage', 'features'] as const
 export const ADMIN_COST_MATRIX_KEY = ['admin', 'insights', 'usage', 'cost-matrix'] as const
 export const ADMIN_SCREEN_USAGE_KEY = ['admin', 'insights', 'usage', 'screens'] as const
+export const ADMIN_ALERTS_KEY = ['admin', 'insights', 'alerts'] as const
 
 export function useAdminOverview(isOwner: boolean) {
   return useDualQuery<AdminOverviewResponse>({
@@ -127,6 +131,20 @@ export function useAdminScreenUsage(period: AdminPeriod, isOwner: boolean) {
     mockData: ADMIN_SCREEN_USAGE_MOCK,
     realFetch: () => adminInsightsApi.screenUsage(period),
     realEmpty: ADMIN_SCREEN_USAGE_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled: isOwner,
+  })
+}
+
+// Alerts (mezo-kjwa) — owner-facing rule-based warnings on the admin hub. Same recipe as its
+// siblings: `enabled: isOwner`, explicit `realStaleTime` (an omitted one overwrites the client
+// default and leaves the query permanently stale — see the note at the top of this file).
+export function useAdminAlerts(isOwner: boolean) {
+  return useDualQuery<AdminAlertsResponse>({
+    queryKey: ADMIN_ALERTS_KEY,
+    mockData: ADMIN_ALERTS_MOCK,
+    realFetch: adminInsightsApi.alerts,
+    realEmpty: ADMIN_ALERTS_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled: isOwner,
   })

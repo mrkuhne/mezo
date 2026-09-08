@@ -163,6 +163,19 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """, nativeQuery = true)
     List<LlmFeatureDayRow> aggregateByFeatureAndDaySince(@Param("since") Instant since, @Param("zone") String zone);
 
+    /** Per-feature call/error counts over a window (owner alerts, mezo-kjwa) — the llm_errors
+     *  rule's primitive. Every status counts toward {@code total}; native to match this file's
+     *  other windowed aggregates ({@link #aggregatePerDaySince}). */
+    @Query(value = """
+        select l.feature as "feature",
+               count(*) as "total",
+               coalesce(sum(case when l.status = 'ERROR' then 1 else 0 end), 0) as "errors"
+        from llm_log_history l
+        where l.created_at >= :since
+        group by l.feature
+        """, nativeQuery = true)
+    List<LlmFeatureErrorRow> aggregateErrorRateByFeatureSince(@Param("since") Instant since);
+
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
