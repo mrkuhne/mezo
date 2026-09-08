@@ -11375,15 +11375,13 @@ button.mz-wtile:active { transform: scale(0.96); }
 
 /* Three owner pages moved into /admin verbatim from the phone shell — LLM költség
    (AdminCostPage), its call detail, and Meghívók és fiókok — so they still use the PHONE
-   scaffold (MozaikPage/PageBody, no MosaicDesktop). Their rows are built for a ~430px
-   column: `label … value` with the value pushed right by `justify-content: space-between`.
-   At full desktop width that put every label at the far left edge and its number ~1800px
-   away, which reads as "nothing is padded, everything is stretched" — the complaint that
-   surfaced right after mezo-n87u made these pages scrollable and therefore visible.
-   Constraining them to a readable column is the stopgap; mezo-4qyt.14 tracks giving them
-   the real desktop mosaic treatment (which is a redesign, not a width). No-op below
-   880px, so the phone rendering of the same components is untouched. */
-.ad-page-narrow { max-width: 880px; }
+   scaffold (MozaikPage/PageBody, no MosaicDesktop). Full desktop width is CORRECT for them
+   (the owner asked for it explicitly); what was actually missing is vertical rhythm: PageBody
+   sets no gap, `.card`/`.aiu-fcard` carry no margin, so the period tabs, the rollup hero and
+   the "Feature szerint" breakdown butted straight into each other with only the segtabs' own
+   4px between them. The pages that needed it now pass `col gap-md` to PageBody — the surface's
+   own spacing utility, not a new one — so the phone rendering keeps the same rhythm.
+   mezo-4qyt.14 still tracks the real desktop mosaic treatment (a redesign, not spacing). */
 
 /* the loading state shown while the /admin lazy chunk (and its pages) are still fetching */
 .ad-loading { padding: 40px; text-align: center; color: #6E6257; font-size: 12px; }
