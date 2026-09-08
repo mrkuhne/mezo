@@ -957,6 +957,9 @@ export interface Pattern {
   belief?: number
   evidenceHits: number
   evidenceMisses: number
+  /** Mikor számolta a sort utoljára a SAJÁT motorja (reflexiós sorra az éjszakai
+   *  hipotézis-futás, statisztikaira a Pearson-job) — a részletező háttér-foldjának forrása. */
+  lastDetectedAt?: string
   origin?: 'pair_catalog' | 'weekly_hypothesis' | 'quick_notice' | 'nightly_reflection'
 }
 

@@ -43,6 +43,7 @@ export function toPattern(w: PatternResponse): Pattern {
     belief: w.belief ?? undefined,
     evidenceHits: w.evidenceHits,
     evidenceMisses: w.evidenceMisses,
+    lastDetectedAt: w.lastDetectedAt ?? undefined,
     origin: (w.origin as Pattern['origin']) ?? undefined,
   }
 }
