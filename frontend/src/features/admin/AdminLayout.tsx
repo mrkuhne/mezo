@@ -4,6 +4,7 @@ import { useMe } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
 import { AdminRail } from '@/features/admin/AdminRail'
 import { ClaySprites } from '@/shared/ui/clay'
+import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { emitToast } from '@/shared/lib/toastBus'
@@ -13,17 +14,25 @@ import { emitToast } from '@/shared/lib/toastBus'
 // QuickLogFab/AppHeader/CircadianTheme/LevelUpProvider/TutorialProvider/MezoThreadProvider —
 // those are the phone-shell's furniture, and the admin surface is a desktop mosaic instead.
 //
-// Two things AppLayout gets for free that this layout must supply itself, because both are
-// mounted ONLY by AppLayout today and the two route trees are mutually exclusive (never both
-// mounted at once, so no duplicate-DOM-id risk):
+// Three things AppLayout gets for free that this layout must supply itself, because all three
+// are mounted ONLY by AppLayout today and the two route trees are mutually exclusive (never both
+// mounted at once, so no duplicate-DOM-id/duplicate-context risk):
 //  - <ClaySprites/> — the only mount point for the clay <symbol> defs; every ClayIcon's
 //    <use> resolves against it, so AdminRail's icons would render empty boxes without it.
 //  - <ToastProvider/> — useToast() itself works providerless (falls back to the toastBus),
 //    but nothing RENDERS a toast without a host mounted somewhere above the caller.
+//  - <ArrivalProvider/> (Task 20, mezo-d5iy.20) — without it every `useArrival()`/
+//    `useSettledArrival()` consumer (every admin page's `EntranceGroup`) falls back to
+//    arrival.tsx's context default of 'push', so the entrance choreography replayed on EVERY
+//    route change here, including back/forward (POP) navigation. Mounted once, above the
+//    `AdminLayoutInner` early-return (`!me.data || !isOwner` → null) so it doesn't remount
+//    across that toggle — same "mount once, above every page" placement AppLayout uses.
 export function AdminLayout() {
   return (
     <ToastProvider>
-      <AdminLayoutInner />
+      <ArrivalProvider>
+        <AdminLayoutInner />
+      </ArrivalProvider>
     </ToastProvider>
   )
 }

@@ -9,7 +9,8 @@ import { DataTable } from '@/features/admin/components/DataTable'
 import { ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { huInt } from '@/shared/lib/huNum'
+import { huInt, usd } from '@/shared/lib/huNum'
+import { footprintShare, heatColor, maxOf } from '@/features/admin/lib/adminViz'
 
 // User részlet — ported from admin-body.html's #d-detail (the "opened" state of the Huawei
 // slide-in, minus the slide: this task registers it as its own react-router page). The hero
@@ -19,7 +20,6 @@ import { huInt } from '@/shared/lib/huNum'
 //
 // Adatok tab: the inventory list stays here; clicking a row selects that table and mounts a
 // `DataTable` below it, bound to `useAdminRows({ table, userId: id, ... })` (mezo-d5iy.12).
-const usd = (v: number) => `$${v.toFixed(2)}`
 const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória'] as const
 type Tab = (typeof TABS)[number]
 
@@ -230,16 +230,6 @@ export function AdminUserDetailPage() {
   )
 }
 
-function footprintShare(n: number, all: { rowCount: number }[]): number {
-  const max = Math.max(1, ...all.map((r) => r.rowCount))
-  return Math.round((n / max) * 1000) / 10
-}
-
-function maxOf(rec: Record<string, number>): number {
-  const vals = Object.values(rec)
-  return vals.length ? Math.max(...vals) : 1
-}
-
 function FeatureRow({ label, value, max }: { label: string; value: number; max: number }) {
   return (
     <div className="ad-domrow">
@@ -265,12 +255,6 @@ function HeatStrip({ series }: { series: { key: string; days: { day: string; cou
       <div className="ad-heatax"><span>90 NAPJA</span><span>60</span><span>30</span><span>MA</span></div>
     </>
   )
-}
-
-function heatColor(v: number, max: number): string {
-  if (!v) return 'rgba(43,33,24,.07)'
-  const t = 0.22 + 0.78 * (v / max)
-  return `rgba(216,72,31,${t.toFixed(2)})`
 }
 
 /** The user-detail hero's ring gauge — admin-only, `.ad-ring` (prototype.css §Admin hub

@@ -6,14 +6,12 @@ import type { AdminSortDir, AdminUserInsightSort } from '@/data/admin/adminInsig
 import { AdminTile } from '@/features/admin/components/AdminTile'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
-import { huInt } from '@/shared/lib/huNum'
+import { huInt, usd } from '@/shared/lib/huNum'
 
 // Userek — the account list (mezo-d5iy.11), ported from admin-body.html's #d-users: one sp12
 // tile, a dense table, sortable column headers, rows that navigate to /admin/users/:id (a real
 // route push, not the prototype's Huawei-slide-in panel — the admin surface here uses ordinary
 // react-router pages per task 11's route registration, not an in-page overlay).
-const usd = (v: number) => `$${v.toFixed(2)}`
-
 export function AdminUsersPage() {
   const me = useMe()
   const isOwner = me.data?.role === 'OWNER'

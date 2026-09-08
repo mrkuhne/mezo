@@ -6,7 +6,8 @@ import { Sparkline } from '@/features/admin/components/Sparkline'
 import { ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
-import { huInt } from '@/shared/lib/huNum'
+import { huInt, usd } from '@/shared/lib/huNum'
+import { peak, sumSeriesByDay } from '@/features/admin/lib/adminViz'
 
 // Áttekintés — the installation-wide overview (mezo-d5iy.11), ported from admin-body.html's
 // #d-overview: four poster StatCells, two sp6 sparkline tiles, one sp12 cost sparkline.
@@ -17,7 +18,6 @@ import { huInt } from '@/shared/lib/huNum'
 // prototype's own comment: "a 30 napos összköltség egyetlen forrása — a költség-mátrixban" —
 // summing `costSeries` would double-count differently from the cost matrix's cell sum). A tile
 // that needs both degrades if EITHER fails; every other tile only depends on the overview query.
-const usd = (v: number) => `$${v.toFixed(2)}`
 
 export function AdminOverviewPage() {
   const me = useMe()
@@ -91,16 +91,6 @@ export function AdminOverviewPage() {
       </PageBody>
     </MozaikPage>
   )
-}
-
-function sumSeriesByDay(series: { days: { count: number }[] }[]): number[] {
-  if (series.length === 0) return []
-  const n = series[0].days.length
-  return Array.from({ length: n }, (_, i) => series.reduce((sum, s) => sum + (s.days[i]?.count ?? 0), 0))
-}
-
-function peak(vals: number[]): number {
-  return vals.length ? Math.max(...vals) : 0
 }
 
 function Poster({ spot, big, unit, foot }: { spot: Parameters<typeof ClaySpot>[0]['name']; big: string; unit: string; foot: ReactNode }) {
