@@ -17,7 +17,9 @@ import java.util.List;
  * @param eyebrow         the card's eyebrow — the source's own ("Mezo · észrevétel" /
  *                        "Mezo · beállítás"), so the two tiers stay visually distinct.
  * @param facts           deterministic, rule-provided evidence lines; may be empty (honest absence).
- * @param suggestions     config-provided suggestion texts; at least one.
+ * @param suggestions     config-provided suggestion texts; at least one. Always the model's
+ *                        GROUNDING ({@link AdviceProseGenerator}); they reach the card's own
+ *                        display only when {@code verbatim} is true (mezo-wtl0).
  * @param fallbackProse   the exact text that would have shipped pre-S4 — used verbatim whenever the
  *                        LLM fails, answers blank, or invents a number.
  * @param verbatim        true when the card's body must be {@code fallbackProse} EXACTLY — the
@@ -26,6 +28,8 @@ import java.util.List;
  *                        numerals; a QUESTION run through it comes back as advice with the 👍/👎
  *                        answer key dissolved out of it. False for every flag- and setup-sourced
  *                        candidate: those ARE advice, and their wording is the model's job.
+ *                        Doubles as the DISPLAY discriminator for {@code suggestions} above
+ *                        (mezo-wtl0) — a generated body already carries them.
  */
 public record AdviceCandidate(String adviceKey, String interventionKey, String setupKey,
                               String eyebrow, List<String> facts, List<String> suggestions,

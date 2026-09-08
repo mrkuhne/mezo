@@ -140,12 +140,18 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed).extracting(FeedMessageResponse::getId).doesNotContainNull();
     }
 
+    /**
+     * mezo-wtl0: a flag- or setup-sourced advice card ships its EVIDENCE on the wire and no
+     * suggestion list. The frontend renders the suggestions as a bullet list directly under the
+     * body, and since the body is generated FROM those suggestions, that list was the library
+     * sentence appearing a second time under its own paraphrase. Facts are a different thing —
+     * they are the „Miből gondolom" evidence, which the body never repeats.
+     */
     @Test
-    void testGetFeed_shouldExposeTheAdviceCardsFactsAndSuggestions() {
+    void testGetFeed_shouldExposeTheAdviceCardsFacts_andNoSuggestions() {
         companionMessagePopulator.createAdvice(ownerId(), LocalDate.now(), "sleep_debt",
                 "sleep_recover_tonight", "Mezo · észrevétel", "kártya szöveg",
-                List.of("Alvásadósság: 1,6 óra/éjszaka"), List.of("Told előre a villanyoltást."),
-                Instant.now());
+                List.of("Alvásadósság: 1,6 óra/éjszaka"), List.of(), Instant.now());
 
         List<FeedMessageResponse> feed = getForList(
                 "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
@@ -153,8 +159,29 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed).hasSize(1);
         assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
         assertThat(feed.get(0).getFacts()).containsExactly("Alvásadósság: 1,6 óra/éjszaka");
-        assertThat(feed.get(0).getSuggestions()).containsExactly("Told előre a villanyoltást.");
+        assertThat(feed.get(0).getSuggestions()).isNotNull().isEmpty();
         assertThat(feed.get(0).getFlagKey()).isEqualTo("sleep_debt");
+    }
+
+    /** The once-ever QUESTION card (mezo-d58h.7.5) is the one {@code advice} row that still puts
+     *  suggestions on the wire: they are its two one-tap ANSWERS, which the frontend reads as the
+     *  answer key rather than rendering as a bullet list. Losing them here would leave a question
+     *  on screen with nothing to tap. */
+    @Test
+    void testGetFeed_shouldExposeTheQuestionCardsAnswersAsSuggestions() {
+        companionMessagePopulator.createQuestion(ownerId(), LocalDate.now(),
+                "question_feature_abandonment", "Mezo · kérdés",
+                "Tudatosan tetted félre, vagy csak kikopott? 👍 / 👎",
+                List.of("Az elmúlt 30 napban nem volt bejegyzés."),
+                List.of("👍 — igen", "👎 — nem"), Instant.now());
+
+        List<FeedMessageResponse> feed = getForList(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
+
+        assertThat(feed).hasSize(1);
+        assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
+        assertThat(feed.get(0).getSuggestions()).containsExactly("👍 — igen", "👎 — nem");
+        assertThat(feed.get(0).getFacts()).containsExactly("Az elmúlt 30 napban nem volt bejegyzés.");
     }
 
     @Test

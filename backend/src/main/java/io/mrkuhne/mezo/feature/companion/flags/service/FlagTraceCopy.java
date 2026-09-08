@@ -77,8 +77,14 @@ public final class FlagTraceCopy {
         Double threshold = evidence.threshold();
         String detail = evidence.detail();
         return switch (metric == null ? "" : metric) {
-            case "deficit_hours" -> "Alvásadósság %s óra/éjszaka — a %s órás küszöb alatt."
-                .formatted(num(observed), num(threshold));
+            // bd mezo-btmc: same metric, same mislabel as FlagFactRenderer.sleepDebt — both the
+            // observed value and the threshold are CUMULATIVE window hours (SleepDebtRule hands
+            // back d.deficitHours() vs cfg.deficitHours()), never a per-night rate. No per-night
+            // average is offered here: ClearEvidence carries no loggedNights to divide by, and
+            // this family never estimates.
+            case "deficit_hours" ->
+                "Alvásadósság: az ablakban összesen %s óra hiány — a %s órás összesített küszöb alatt."
+                    .formatted(num(observed), num(threshold));
             case "stress_days_over" -> "%s nap a stresszküszöb fölött — a jelzéshez %s kellene."
                 .formatted(num(observed), num(threshold));
             case "bad_checkins" -> "%s rossz check-in ma — a jelzéshez %s kellene."

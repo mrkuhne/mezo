@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-07
+updated: 2026-09-08
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -153,7 +153,13 @@ this redesign and remain as shipped.
     `weight` kinds keep the tool-free overload.
   - All four share `earlierMessagesBlock` (a "MAI KORÁBBI ÜZENETEK (ne ismételd):" block listing
     every already-persisted message of the day) — the heartbeat's dedupe idiom generalized from one
-    source (briefing) to all of them.
+    source (briefing) to all of them. **It only ever covers messages that ALREADY EXIST when a
+    generator runs, which is why two same-minute sleep-topic cards can still repeat each other**
+    (§9 decision (q)/(qq), bd `mezo-a26e`).
+  - **The three hardcoded ref-candidate lists above are all filtered by `presentCandidates`
+    (`mezo-4jux`)** before the model ever sees them: a source that rendered as `nincs adat` in the
+    snapshot is not OFFERED, so it cannot be cited. Fail-closed, probe-per-kind — §3 below for the
+    mechanism and the marker-coupling risk it buys.
   - **Since Memória mindenhol S7 (`mezo-eq85.7`) all four gathers also append an `[Emlékek]`-style
     memory block** — in practice the platform's `[Hosszú távú memória]` header — via
     `MemoryContextBlock.render(userId, ConsumerPolicy.MORNING_BRIEFING, query, date, false,
@@ -959,12 +965,32 @@ AdviceCardService.deliver(userId, candidate):        service/AdviceCardService.j
                                                             the reinsert below in the SAME tx
       (the superseded card's „Segített?" votes are left dangling BY DESIGN — spec §8.1 names a
        dangling feedback artifact harmless in a single-user app; nothing re-points them)
-  prose = adviceProseGenerator.write(userId, candidate)  (§5.2 below)
+  prose = candidate.verbatim() ? candidate.fallbackProse()
+                               : adviceProseGenerator.write(userId, candidate)   (§5.2 below)
+  displayedSuggestions = candidate.verbatim() ? candidate.suggestions() : []     ── mezo-wtl0
   saveAndFlush CompanionMessageEntity{kind=advice,
       content = Envelope.advice(eyebrow, prose, candidate.adviceKey(),
                                  candidate.interventionKey(), candidate.setupKey(),
-                                 candidate.facts(), candidate.suggestions())}
+                                 candidate.facts(), displayedSuggestions,
+                                 adviceActionCatalog.forCard(userId, candidate.adviceKey()))}
 ```
+
+**`suggestions` GROUND the model; they are not what the card DISPLAYS (bd `mezo-wtl0`).** The
+one-line ternary above is the seam that separates the two, and the split is the whole subtlety:
+`AdviceProseGenerator` is still handed `candidate.suggestions()` **unchanged** — they are the
+model's only source for what the actual recommendation IS, so withholding them there would leave
+prose with no next step in it — but the prompt asks for 2-3 sentences built from exactly those
+facts + suggestions, so a generated body is BY CONSTRUCTION a paraphrase of the suggestion.
+Rendering the suggestion list under that body printed the same instruction **twice, in two
+registers**: the model's own paragraph, then the library sentence verbatim beneath it. So a card
+whose body was generated from its suggestions now displays none of them, and the envelope's
+`suggestions` array is EMPTY on every such row. **The `verbatim` candidates are the exact opposite
+and MUST keep them:** a once-ever question card's body IS the question, the model never saw it, and
+its two suggestions are the one-tap ANSWERS the frontend reads as the answer key (§5.16 below).
+`verbatim` therefore doubles as the DISPLAY discriminator for `suggestions`, not just as the
+skip-the-LLM flag it was introduced as. The `InterventionService` call site passes the library text
+TWICE on purpose — once as the suggestion (grounding) and once as `fallbackProse` (the text that
+ships when the model's answer is unusable) — and neither copy reaches the suggestion list any more.
 
 `AdvicePriority.outranks(candidateKey, incumbentKey)` is a pure static lookup over `AdvicePriority.ORDER`
 — the spec §4 severity order as an editorial ranking IN CODE, not config (thresholds stay in
@@ -1054,7 +1080,9 @@ generateMorning(userId, date)                           @Transactional
        payload = ContextSnapshotAssembler.renderWithoutBiometrics(userId, date)   ── NOT .render:
                sleep/weight stripped AT THE SOURCE, not just prompt-forbidden (companion.md)
                + KnowledgeFactService.renderPromptBlock + "KORÁBBI NAPOK" + numbered candidates
-       candidates = Goal/Workout/FuelDay/Medication (NO WeightTrend/Sleep) + one Memory per summary
+       candidates = presentCandidates(Goal/Workout/FuelDay/Medication, snapshot)   ── mezo-4jux
+               (NO WeightTrend/Sleep by design; each survivor's source RENDERED in the snapshot)
+               + one Memory per summary
        + missedWorkoutsBlock(userId, date) (S4, spec §4 row 3): a live `missed_workouts` raise's
          OWN frozen `companion_flag_log.payload`, inside the same feed.past-days lookback window —
          "no more blind cheering" — never re-derived, "" when no raise is in-window
@@ -1075,7 +1103,9 @@ generateSleepReaction(userId, date)                      @Transactional
                                                                     no daily_summary window check)
   3. gather: ContextSnapshotAssembler.render (FULL — sleep IS the topic) + facts +
        earlierMessagesBlock(today's already-persisted messages, "ne ismételd") +
-       "MOST RÖGZÍTETT ALVÁS" (duration/quality/awakenings) + Sleep/Goal/Workout candidates
+       "MOST RÖGZÍTETT ALVÁS" (duration/quality/awakenings — quality against ToolText.RATING_MAX,
+       the contract's 1..10, NOT the "/5" that stood here until mezo-b6zt)
+       + presentCandidates(Sleep/Goal/Workout, snapshot)
   4-6. same complete → parse → resolveRefs → saveAndFlush shape as morning (SLEEP_PROMPT)
 
 generateWeightReaction(userId, date)                     @Transactional
@@ -1084,7 +1114,8 @@ generateWeightReaction(userId, date)                     @Transactional
   3. gather: render (FULL) + facts + earlierMessagesBlock + "MOST RÖGZÍTETT MÉRÉS" (the raw kg,
        labelled "mérés:") + WeightTrendService's EWMA trend (labelled "trendérték (EWMA, simított):"
        — the two numbers explicitly distinguished so the model can't conflate a measurement with a
-       trend) + WeightTrend/Goal/FuelDay candidates
+       trend; all three figures through ToolText.huWeight/huRate, mezo-a64t — see below)
+       + presentCandidates(WeightTrend/Goal/FuelDay, snapshot)
   4-6. same shape (WEIGHT_PROMPT)
 
 generateWindow(userId, date, kind)                       @Transactional   kind = midday | evening
@@ -1105,7 +1136,59 @@ heartbeat's `MAI BRIEFING` dedupe block, generalized from ONE hardcoded source t
 = pure code (IT-asserted LLM-free), prose = pure LLM (NFR-M-4, unchanged from the old briefing
 split). Each kind's prompt (`MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + HU
 rules: invent-no-numbers, never suggest med-dose changes) mirrors the companion clinical/honest-
-number guardrails the retired briefing prompt carried.
+number guardrails the retired briefing prompt carried. **Since bd `mezo-m4m0` all five feed prompts
+also end with `PromptPersona.VOICE_HU`**, the shared informal-register rule — see §5.2 below for
+why it is appended to the instruction BODY and why the feed has no register GUARD.
+
+**The reference-candidate presence filter (bd `mezo-4jux`) — a card may only cite a source the
+snapshot actually rendered.** `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` are still
+hardcoded lists, but the DATA behind them is not, and until this fix the whole list was offered to
+the model regardless of what the snapshot contained. The shipped consequence: a morning card whose
+body correctly said „Gyógyszerre vonatkozó adat nincs rögzítve" — the snapshot had honestly
+rendered `[Gyógyszer] nincs adat` — still shipped a „Gyógyszer ×1" chip in its „Amire épült" row.
+A grounding row that can assert a provenance the snapshot explicitly DENIED is unfalsifiable, and
+letting the user audit where a claim came from is that row's only purpose.
+
+```
+presentCandidates(candidates, snapshot):            service/CompanionMessageGenerator.java  (static)
+  keep ref where rendered(snapshot, SNAPSHOT_PROBES.get(ref.kind()))
+
+SNAPSHOT_PROBES = { Goal: "[Cél] ", Workout: "[Edzés] mezociklus: ", FuelDay: "[Mai üzemanyag] ",
+                    Medication: "[Gyógyszer] ", Sleep: "[Regeneráció] alvás",
+                    WeightTrend: "; súlytrend: " }        ── keyed by ref KIND, so a kind shared
+                                                              across lists has exactly ONE probe
+rendered(snapshot, probe):
+  probe == null ⇒ false                                 ── FAIL-CLOSED (no probe = absent)
+  probe not found ⇒ false
+  datum = text after the probe up to that block's next ';' or line end, ':'/whitespace stripped
+  return !datum.isEmpty() && !ToolText.NO_DATA.equals(datum)
+```
+
+Four properties are the point, and each is a defect if inverted:
+
+- **Prevention, not correction.** A candidate that is never OFFERED cannot be cited, so no answer
+  needs second-guessing afterwards. `resolveRefs` stays as the SECOND belt — the filter decides what
+  MAY be cited, `resolveRefs` decides that a returned index actually points at something, so a model
+  answering a stale index can never resolve onto a neighbouring candidate.
+- **Fail-CLOSED.** A probe missing from this snapshot variant, or a candidate kind with no probe at
+  all, DROPS the candidate. Losing a chip costs the user one audit link; keeping an unjustifiable
+  one costs the whole grounding row its meaning.
+- **It reads the SNAPSHOT, not the whole payload.** A check-in note, a daily summary and a log note
+  all land in the payload too, and no text the user can type may decide whether a provenance chip
+  appears.
+- **The absence marker is REFERENCED, never re-spelled** — `ToolText.NO_DATA` went `public` for
+  exactly this ([companion.md](companion.md) §3), so the snapshot and this check cannot drift apart
+  on the literal. The `Memory`/`Pattern` refs the gathers append are already presence-derived (they
+  are built FROM rows that rendered), so this map gives the hardcoded lists the same property rather
+  than a second mechanism.
+
+**The coupling this buys, and it is a real one:** the probe literals are `ContextSnapshotAssembler`'s
+block markers, owned in another package. Renaming a marker there silently costs that source ALL its
+chips — nothing fails, the cards just quietly stop citing it, which is indistinguishable from the
+model choosing not to. The unit test asserts every hardcoded kind HAS a probe, not that a probe
+MATCHES anything, so it cannot catch a rename; `Workout` appears to have no end-to-end cover at all.
+Tracked as bd `mezo-qp1x` (render a real snapshot for a fully-populated user and assert every probe
+literal is found — better still, expose the markers as constants the probes reference).
 
 **The weekly-suggestion read (W1 — persisted row · lazy generate; NO staleness/regen):**
 
@@ -1462,10 +1545,15 @@ per check (§3 above); `null` on every other row. **`adviceKey`/`facts`/`suggest
 `mezo-d58h.4`) are set ONLY on `kind=advice` rows.** `adviceKey` is the SEVERITY key
 `AdvicePriority` ranks — the flag key or the setup-check key — deliberately NOT the same identifier
 as `interventionKey` (one flag can be served by several library entries). `facts` is
-`AdviceFactRenderer`'s deterministic, numeric lines rendered from the raise's own frozen
+`FlagFactRenderer`'s deterministic, numeric lines rendered from the raise's own frozen
 `companion_flag_log.payload` (empty for a setup-sourced card, or for a flag with no payload — never
-a placeholder). `suggestions` is config text (the library entry's `textHu`, or the setup check's own
-text) — the ONLY facts/suggestions `AdviceProseGenerator` is allowed to lean on. The record's
+a placeholder). **`suggestions` is DISPLAY, not grounding, and since bd `mezo-wtl0` it is EMPTY on
+every card whose body the model wrote.** The candidate's config text (the library entry's `textHu`,
+or the setup check's own text) is still the ONLY facts/suggestions `AdviceProseGenerator` is allowed
+to lean on — but a generated body is a paraphrase of exactly that text, so writing it into the
+envelope as well printed the same advice twice, in two registers. It is written ONLY for a
+`verbatim` candidate, where the two strings are the once-ever question's one-tap ANSWERS rather than
+advice (§3 "One card per day" for the seam, §5.16 for the question card). The record's
 CANONICAL constructor is now the 10-arg `(eyebrow, body, refs, interventionKey, setupKey, adviceKey,
 facts, suggestions, actions, applied)` shape (S5, `mezo-d58h.5`); the pre-W5.2 3-arg, the W5.2 4-arg,
 the S3 5-arg and the S4 8-arg constructors are ALL kept as overloads delegating to it (with `null`/
@@ -1556,9 +1644,17 @@ candidates (§3.x below) — `WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|
 always `[]` for the `midday`/`evening`/`intervention`/`setup`/`advice` kinds (the retired heartbeat
 generator carried no refs either; config text and deterministic facts have no refs to select).
 **`facts`/`suggestions` (S4) are OPTIONAL string arrays, present ONLY on `advice` rows** — `facts`
-is `AdviceFactRenderer`'s deterministic evidence lines (empty for a setup-sourced card), `suggestions`
-is the config text the card's prose was grounded on; the thread card renders `suggestions` as a
-suggestion list and `facts` as a „Miből gondolom" evidence list. **Neither `interventionKey` nor
+is `FlagFactRenderer`'s deterministic evidence lines (empty for a setup-sourced card), which the
+thread card renders as its „Miből gondolom" evidence list. **`suggestions` since bd `mezo-wtl0`
+carries the once-ever QUESTION card's two one-tap ANSWERS and nothing else** — on every other
+`advice` row it is present but EMPTY (`[]`, never absent), because the body is model prose written
+FROM the library suggestion and shipping both put the same advice on screen twice, in two registers
+(§3 "One card per day"; the contract fragment's `suggestions` description says the same). The
+suggestion still reaches the MODEL as grounding — it simply stopped reaching the wire.
+Consequence for the FE: `NapMezoPage`'s suggestion bullet list is now reached only by data that no
+longer exists (a question card's suggestions are diverted into the answer chips instead, §5.16), so
+in practice the list renders for no card at all — the block is a live guard, not a live feature.
+**Neither `interventionKey` nor
 `setupKey`/`adviceKey` reaches the wire** — the FE branches on `kind === 'intervention' || kind ===
 'advice'` for the „Segített?" feedback variant ([companion.md](companion.md) §10); the keys only
 matter server-side — `interventionKey` for the feedback rollup (§4 below,
@@ -1846,7 +1942,7 @@ hidden by the port; proactive adds no new adapter.
 **S4's `AdviceProseGenerator` adds one more cheap-tier call, over the candidate's OWN code-gathered
 grounding — never a fresh companion snapshot.** `AdviceCardService.deliver` calls
 `AdviceProseGenerator.write(userId, candidate)`, which renders `candidate.facts()` +
-`candidate.suggestions()` (already deterministic — `AdviceFactRenderer` off the raise's frozen
+`candidate.suggestions()` (already deterministic — `FlagFactRenderer` off the raise's frozen
 payload for flag-sourced candidates, config text for setup-sourced ones) into a `TÉNYEK`/`JAVASLATOK`
 block and makes ONE `CompanionLlm.complete` call tagged with the `TANACS-KARTYA-FELADAT` marker
 (mirrored in `FakeCompanionLlm` the same literal way every other marker is, since a companion→
@@ -1858,9 +1954,33 @@ bullets). `ProseNumberGuard.grounded(prose, grounding)` enforces the "no invente
 deterministically afterwards (the refs-by-index idiom has no analogue for free prose): every numeral
 TOKEN in the answer must be a token of the grounding text itself (decimal comma/dot normalised, so a
 model answering with either is not punished). **The card is never dropped, only its wording
-downgraded** — an exception from the LLM call, a blank answer, or an ungrounded numeral all fall back
-to `candidate.fallbackProse()`, the exact config text that shipped pre-S4, so an LLM outage costs the
-card's wording, never its delivery.
+downgraded** — an exception from the LLM call, a blank answer, an ungrounded numeral, **or formal
+address (bd `mezo-m4m0`)** all fall back to `candidate.fallbackProse()`, the exact config text that
+shipped pre-S4, so an LLM outage or a register slip costs the card's wording, never its delivery.
+**The grounding the model gets and what the card SHOWS are two different things** (bd `mezo-wtl0`):
+`write` keeps receiving the candidate's suggestions in full, while `AdviceCardService` writes an
+empty suggestion list into the envelope for exactly these generated bodies — see §3 "One card per
+day" for why, since getting that split backwards is what shipped the same advice twice.
+
+**The register rule and its deterministic post-check (bd `mezo-m4m0`).** The advice prompt ends with
+`PromptPersona.VOICE_HU` — the shared "always address the user informally; formal address is
+forbidden" rule — and `AdviceProseGenerator` then VERIFIES it the same way it verifies numerals: a
+`FORMAL_ADDRESS` regex over the answer, a violation reusing the SAME `fallbackProse()` path
+(`ProseNumberGuard`'s shape, one class over). That is safe here precisely because every
+`fallbackProse` is hand-written library/config text in the informal register, so a rejected answer
+still leaves a shippable card. Three properties of the guard are load-bearing and easy to break:
+it matches the polite PRONOUN forms only (`Ön`, `Önt`, `önnek`, `önnél`, …), which are the only
+unmistakable markers Hungarian has; it uses explicit Unicode lookarounds rather than `\b`, because
+Java's `\b` is ASCII-only and would fire on the „ön" inside „köszönöm"; and it deliberately does
+**not** check the formal imperative (`-jon/-jen/-jön`), because that suffix is also the ordinary
+third-person subjunctive of perfectly informal sentences („hogy a tested pihenjen") — downgrading
+correct prose to the template is the one failure mode this guard must never have. **The FEED prompts
+carry the same rule but NO such guard, on purpose:** they have no fallback text at all, so a
+rejected answer means no message ships at all, which is worse than a formally-worded one. Doing it
+properly there needs a retry (re-ask once with the rule restated, then accept the answer) rather
+than a rejection, tracked as bd `mezo-6wfo` — and only THEN is the check worth extracting into a
+shared `ProseVoiceGuard` beside `ProseNumberGuard`. It is private to `AdviceProseGenerator` today
+precisely so a second copy cannot appear before there is a second caller.
 
 ### 5.3 Proactive ↔ API contract & backend platform (wired)
 On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backend.md)):
@@ -1901,8 +2021,14 @@ rows (S4, bd `mezo-d58h.4`, widened the branch to cover the new kind alongside i
 predecessor), still through the same `useFeedback('feed_message')` chips every other persisted card
 uses — no new feedback machinery. **S4 also carries the card's `facts`/`suggestions` (§4 above)
 through `MezoMessageItem`** (`buildMezoMessages` copies both straight from `m.facts`/`m.suggestions`)
-— `NapMezoPage.tsx` renders `suggestions` as an action-less bullet list and `facts` as a „Miből
-gondolom" evidence list, the FE's only consumer of those two optional fields.
+— `NapMezoPage.tsx` renders `facts` as the „Miből gondolom" evidence list, and has a suggestion
+bullet-list block gated on `m.suggestions?.length && !questionAnswers(m)`. **That block no longer
+has any data to render (bd `mezo-wtl0`):** a generated advice card now arrives with `suggestions:
+[]` (the body already says it — §3/§4 above), and the one row that still carries suggestions, the
+once-ever question card, diverts them into its answer chips through exactly that `questionAnswers`
+exclusion (§5.16). The block is deliberately left in place as the guard for a future row that
+carries display-worthy suggestions; do NOT "restore" the bullets by re-populating the envelope —
+that is the defect, not the feature.
 
 ### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read) — **consumer RETIRED, endpoint unaffected (`mezo-p2tr`)**
 **As originally shipped at W1:** the Insights Weekly „Mezo · heti tervjavaslat" card
@@ -2233,6 +2359,9 @@ card, no day gate, no migration, no new feed kind, no FE change.
   reads „A válaszod", the two chips wear the question's own answers (parsed off its `suggestions`,
   which are therefore no longer also listed as bullets — the button says what tapping it means), and
   `FeedbackChips`' new `answers` mode records a 👎 straight away instead of opening the reason row.
+  **Since bd `mezo-wtl0` the question card is the ONLY `advice` row that carries `suggestions` on
+  the wire at all** (§3/§4 above) — which is why the backend keys that write on the candidate's
+  `verbatim` flag, the same flag that makes this card skip the LLM: they are the same population.
   A malformed suggestion pair falls back to the default „Segített"/„Nem talált" wording rather than
   rendering a guess. Mock mode is untouched by design: `useCompanionFeed` returns `[]` there
   (Phase-1 byte parity), so no advice or question card exists on the mock surface at all.
@@ -2377,6 +2506,17 @@ dual-mode.
   (mezo-106s — the retired-heartbeat no-refs precedent is superseded); the prediction/experiment
   carry pattern candidates — the prediction resolves them to CONFIDENCE, the experiment only
   uses them for grounding.
+  **Two rules when EDITING a feed prose prompt (bd `mezo-m4m0`):** keep `PromptPersona.VOICE_HU`
+  (or the tone drifts back to formal address — the feed was the only prose family with no register
+  rule at all), and keep it in the instruction BODY — never in front of the marker (the fake LLM
+  dispatches on the prefix with `startsWith`, so a shifted prefix unhooks every fake-backed feed IT
+  at once) and never after the strict-JSON contract (the model follows the LAST formatting
+  instruction it read, so that trades a register defect for a parse defect, and an unparseable
+  answer persists no row at all). `CompanionFeedPromptTest` pins all three properties.
+  **To add a new hardcoded ref candidate (bd `mezo-4jux`):** add its kind to the list AND a probe
+  to `SNAPSHOT_PROBES` naming the snapshot literal that introduces that source's own datum. The
+  filter is fail-closed, so a candidate with no probe is silently never offered — the addition
+  looks like it works and produces no chip, ever.
 - **To add a new once-ever QUESTION (round 2 S5, `mezo-d58h.7.5`)**, in this order: (1) a detector in
   `proactive/service` returning `Optional<…>` with its own honesty gate ("too little data" is
   silence, never a finding); (2) a `QUESTION_*` constant + its two answer texts + its `answerFact`
@@ -2403,7 +2543,7 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
 - **`CompanionMessagePersistenceIT` (5)** — envelope jsonb round-trip; the partial unique index
   rejects a second LIVE row for the same (user, day, **kind**) but allows another kind the same day;
   soft-delete allows regeneration; owner-scoped finder isolation; the generation-order finder.
-- **`CompanionMessageGeneratorIT` (17)** — per kind: `generateMorning` persists when the summary
+- **`CompanionMessageGeneratorIT` (23)** — per kind: `generateMorning` persists when the summary
   window has data / returns null on an empty window / idempotent on a second call;
   `generateSleepReaction` persists when a fresh sleep log exists / returns null without one /
   idempotent / includes the `earlierMessagesBlock` when a morning message already exists;
@@ -2411,7 +2551,30 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   `generateWindow` persists for midday / persists for evening / returns null on a blank answer /
   returns null on an empty summary window / idempotent; **Emberek S6** (`mezo-06o0.8`) added
   `generatePeopleObservation` persists a message built from the week's per-person aggregates /
-  returns null with no mention this week (the data gate) / idempotent on a second call.
+  returns null with no mention this week (the data gate) / idempotent on a second call. **The
+  2026-09-08 morning-feed slice added three:** `generateMorning` does NOT offer a source whose
+  snapshot block rendered as `nincs adat` (`mezo-4jux` — the payload must state `[Gyógyszer] nincs
+  adat` AND, precisely because it does, must not offer `Medication`; the four out-of-range
+  `refIndexes` in the same fixture exercise `resolveRefs` as the second belt); `generateSleepReaction`
+  renders sleep quality against the contract's 1..10 (`mezo-b6zt` — never `8/5`);
+  `generateWeightReaction` renders the measurement, EWMA trend and weekly rate with Hungarian
+  decimals at the quantity's precision (`mezo-a64t`).
+- **`CompanionFeedCandidatePresenceTest` (9, pure unit — `proactive/service/`)** — the
+  `presentCandidates` filter over hand-written snapshot lines in `ContextSnapshotAssembler`'s exact
+  shape (`mezo-4jux`): the source that rendered as `nincs adat` is not offered, every source that
+  rendered IS, a brand-new account offers only the fuel day, a block missing from this snapshot
+  variant entirely is absence rather than "offer it anyway" (fail-closed), sleep is offered only
+  when the night rendered, `WeightTrend` only once a trend line exists (a first-ever weigh-in has
+  none) — plus the guard that every hardcoded candidate KIND has a probe at all, since a missing
+  probe is a silent feature loss rather than a loud failure. **It cannot catch a probe RENAME** —
+  see §3's coupling note and bd `mezo-qp1x`.
+- **`CompanionFeedPromptTest` (4, pure unit — `proactive/service/`)** — the three properties the
+  five feed prose prompts must hold TOGETHER (`mezo-m4m0`, the `MemoirPromptTest` precedent): the
+  register rule is present in all five; each prompt still STARTS with `FakeCompanionLlm`'s own
+  marker MIRROR literal (asserted against the mirrors, not this class' markers — the mirror is the
+  condition that actually runs, and a drift silently sends every feed IT down the fake's default
+  branch); and in the four JSON-answering prompts the strict-JSON contract stays AFTER the register
+  rule, with the window prompt (flat prose, no JSON) ending on the rule instead.
 - **`CompanionMessageJobIT` (6)** — `runMorning` generates today's morning message for a user with
   narrative memory / is idempotent / skips a user without memory and still serves others (per-user
   isolation) / does NOT generate the sleep reaction even when a fresh sleep log already exists
@@ -2433,13 +2596,15 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
   `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` path end-to-end over HTTP (`ApiIntegrationTest`),
   not a mocked listener.
-- **`ProactiveApiFeedIT` (7)** — `GET /api/proactive/feed`: empty list when no messages and no
+- **`ProactiveApiFeedIT` (10)** — `GET /api/proactive/feed`: empty list when no messages and no
   narrative memory (honest empty, not 404); returns persisted rows in `generatedAt` order; lazily
   generates the morning message when missing for today; lazily generates elapsed window kinds
   (midday, via a midday-or-later clock override) when missing; does **NOT** generate for a past date;
   **still serves the messages that exist when a lazy generate throws** (`[fake-fail]` planted in the
   check-in note — the §9 read-path-isolation guard; it fails if `getFeed` is made `@Transactional`
-  again).
+  again). **On the wire shape of an advice row (bd `mezo-wtl0`):** a flag-/setup-sourced card
+  exposes its `facts` and an EMPTY (present, not absent) `suggestions` array, while a once-ever
+  QUESTION card is the one row that still exposes suggestions — its two one-tap answers.
 - **`ProactiveApiSwitchOffIT`/`ProactiveApiCompanionOffIT` (feed cases, mezo-8g61)** —
   `GET /api/proactive/feed` 404s (`RESOURCE_NOT_FOUND`) with `mezo.feature.proactive.enabled=false`
   and with `mezo.feature.companion.enabled=false` — the dual-switch `@ConditionalOnProperty`
@@ -2535,8 +2700,18 @@ of the day's coaching card, unifying the W5.2 intervention and S3 setup-check de
 - **`AdviceProseGeneratorIT`** — asserts `ADVICE_MARKER` matches `FakeCompanionLlm`'s mirror; a
   scripted grounded answer is used verbatim; an exception/blank/ungrounded-numeral answer each fall
   back to `candidate.fallbackProse()`. `@ActiveProfiles("companion-fake")` (§9 decision kk trap #3).
+  **Since bd `mezo-m4m0`** it also pins `ADVICE_PROMPT`'s two load-bearing halves (the unchanged
+  marker PREFIX + `PromptPersona.VOICE_HU` in the body) and the register guard's behaviour in both
+  directions: formal address (capitalised AND lowercase pronoun forms) falls back to the template,
+  informal prose survives untouched, and the false-positive battery („köszönöm", „önbizalom",
+  „ösztönöz", „önként", the verb „önt") must NOT trip it — downgrading correct prose is the one
+  failure mode this guard may not have.
 - **`CompanionMessageAdvicePersistenceIT`** — the ninth kind round-trips with its envelope
   `adviceKey`/`facts`/`suggestions`; an unrecognized `kind` value still trips the widened CHECK.
+  **Since bd `mezo-wtl0`** it also pins the display/grounding split end to end: `deliver` writes NO
+  suggestions when the body was generated FROM them, still GROUNDS the model on those same
+  suggestions while displaying none (the two assertions belong together — either one alone permits
+  the other half to regress), and keeps the answer chips for a `verbatim` question candidate.
 - **`CompanionMessageMissedWorkoutsIT`** — `CompanionMessageGenerator.missedWorkoutsBlock` renders
   the fact block from an in-window `missed_workouts` raise's own frozen payload; renders `""` when
   the raise is outside the `feed.past-days` lookback window or there is no raise at all.
@@ -2825,7 +3000,33 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   of the day under `MAI KORÁBBI ÜZENETEK (ne ismételd):` and each kind's prompt forbids repeating
   it — deterministic, zero infra, the retired heartbeat's `MAI BRIEFING` idiom generalized from ONE
   hardcoded source (the briefing) to ALL earlier same-day messages (morning/sleep/weight/midday). If
-  today has no earlier message the block is simply absent.
+  today has no earlier message the block is simply absent. **It can only dedupe against rows that
+  are already PERSISTED when the generator runs — see (qq) for the case where that is not enough.**
+- **(qq) KNOWN LIMITATION, confirmed and NOT fixed: one sleep save fans out into TWO independent
+  async chains, so two sleep-topic cards can ship in the same minute unaware of each other (bd
+  `mezo-a26e`).** `SleepLogSavedEvent` is consumed by two unrelated `@Async` `AFTER_COMMIT`
+  listeners, both ending in a feed card about sleep:
+  1. `CompanionMessageEventListener.onSleepLogged` → `CompanionMessageGenerator.generateSleepReaction`
+     ⇒ the `sleep` card;
+  2. companion's `FlagEvaluationListener.onSleepLogged` → `FlagService.evaluateAndLog` → a
+     `SLEEP_DEBT` raise → `FlagRaisedEvent` → `InterventionEventListener.onFlagRaised` (`@Async`,
+     `AFTER_COMMIT`) → `InterventionService.deliverForFlag` → `AdviceCardService.deliver`
+     ⇒ the `advice` card.
+
+  Both run on `applicationTaskExecutor` with NO ordering between them. Observed 2026-09-08: an
+  advice card and a sleep-reaction card both stamped 07:22, both about accumulated sleep debt, both
+  prescribing an earlier bedtime. **`@Order` cannot fix this** — it sequences DISPATCH, not
+  completion, so with `@Async` the second chain still starts before the first finishes. Chain 2
+  carries an extra hop (flag evaluation, its own commit, a second async dispatch), so chain 1
+  almost always wins the race — which means **the card that lands second is the one that COULD have
+  known and does not:** `AdviceProseGenerator`'s grounding is facts + suggestions only, so the
+  advice path never reads the day's earlier messages AT ALL. Decision (q)'s „ne ismételd" block does
+  NOT cover this pair. The cheap seam, when it is picked up, is to give the advice path the same
+  `earlierMessagesBlock` grounding every other feed generator already has — not to try to order two
+  `@Async` chains. Rejected alternatives, recorded so they are not re-proposed: dropping `@Async`
+  from the flag listener puts an LLM call on the sleep-save request path; gating the sleep card on a
+  same-day advice row checks too early (that row does not exist yet); FE-side topic dedupe changes
+  what a card MEANS rather than fixing a defect.
 - **(r) The lazy path derives window fire-times from the SAME job crons (`CronExpression`), only
   for TODAY, only the elapsed windows; no staleness/regen for ANY kind (not just the window ones).**
   One source of truth for the schedule (`ProactiveFeedService.elapsed`, unchanged idiom from the
@@ -3065,6 +3266,16 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     (a single-user app has nobody to confuse), not a new risk this slice introduces — recorded here
     because supersession is the first place `companion_message` rows are soft-deleted WHILE having
     live feedback attached to them.
+  - **The envelope's `suggestions` are DISPLAY; the candidate's are GROUNDING — and mixing the two
+    up printed the same advice twice (bd `mezo-wtl0`, 2026-09-08).** The card's body IS a paraphrase
+    of its own suggestion (the prompt asks for 2-3 sentences built from exactly those facts +
+    suggestions), so echoing the suggestion under the prose shipped the library sentence verbatim
+    beneath the model's paragraph — the same instruction in two registers. `deliver` therefore
+    writes `[]` for any non-`verbatim` candidate while `AdviceProseGenerator` keeps receiving the
+    suggestions in full. **Both halves are load-bearing:** strip them from the generator too and the
+    prose loses its only source for what the next step actually is; put them back in the envelope
+    and the duplication returns. `verbatim` (the question cards) is the ONE population that keeps
+    them, because there they are answer chips rather than advice (§3/§4/§5.16).
 - **(ll) S5 (bd `mezo-d58h.5`) gives the advice card a mutation set — buttons that DO something,
   not just prose.** `AdviceActionCatalog.forCard(userId, adviceKey)` decides what a card offers, at
   GENERATION time, per `adviceKey`; round 1 offers exactly one action, `shift_sleep_anchor` on a
@@ -3191,7 +3402,9 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   label above the chips for every `kind=advice` row, question cards included; the answer mapping is
   spelled out in the card's own suggestion lines instead. Fixing the label needs the advice key on
   the feed contract and both `VITE_USE_MOCK` modes — filed as bd `mezo-d58h.7.6`, deliberately out of
-  this backend-only slice.
+  this backend-only slice. **(That follow-up SHIPPED — §5.16: the live thread `NapMezoPage` reads
+  „A válaszod" and wears the answers as chips. This paragraph is the S5-era state; `MezoMessagesSheet`
+  is the dead twin, `mezo-1esk`.)**
   **No DB change for the keys themselves:** `setupKey` is unconstrained jsonb and this slice adds no
   flag key, so neither the flag-key CHECK nor any "setup-key set" was touched (the spec's
   §error-handling sentence assumed both; there is no setup-key CHECK in the schema). The one
@@ -3260,7 +3473,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Backend — controller / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveFeedService.java` — `mezo-gst9` the unified feed read path (persisted rows in `generatedAt` order · `ensureTodayCronKinds` lazy miss-recovery for morning/midday/evening only · `200 []` = honest, never 404); replaces `ProactiveBriefingService` + `ProactiveHeartbeatService` (both DELETED).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13). **Memória mindenhol S7** (`mezo-eq85.7`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryRefCandidates`/`firstChars`/`planLine` helpers so all four gathers append a `[Hosszú távú memória]` block and its ref candidates (§1).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13). **Memória mindenhol S7** (`mezo-eq85.7`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryRefCandidates`/`firstChars`/`planLine` helpers so all four gathers append a `[Hosszú távú memória]` block and its ref candidates (§1). **The 2026-09-08 morning-feed slice** made the five `*_PROMPT`s package-private and appended `PromptPersona.VOICE_HU` to each (`mezo-m4m0`, §5.2), and added `SNAPSHOT_PROBES` + `presentCandidates`/`rendered` — the fail-closed presence filter every hardcoded candidate list passes through (`mezo-4jux`, §3); the sleep line now renders quality via `ToolText.sleepQuality` (`mezo-b6zt`) and the weight line its three quoted figures via `ToolText.huWeight`/`huRate` — the precision bound to the quantity by name (`mezo-a64t`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, morning message only — the sleep reaction is event-kind, mezo-qn3z) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added a `generatePeopleObservation` call into `runMorning`, its own try/catch (§5.13).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PeopleMezoNoteAdapter.java` — **Emberek S6** (`mezo-06o0.8`) implements `feature/people`'s `PeopleMezoNoteSource` port (§5.13): joins today's `people` message body into one line for `PeopleResponse.mezoNote`, `Optional.empty()` when blank/absent; `@ConditionalOnProperty` on COMPANION ∧ PROACTIVE.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageEventListener.java` — `mezo-gst9` NEW: `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent`, each gated on log freshness before calling the matching `generate*Reaction`.
@@ -3311,7 +3524,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §3/§4/§9, spec §9.2; the trigger side, `FlagService`/`FlagRaisedEvent`, is companion's own — see [companion.md](companion.md) §10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`; never propagates. Final-review fix (mezo-b3pp.19): catches `DataIntegrityViolationException` BEFORE the generic `Exception` and logs it at info, no stack trace — two concurrent same-day raises legitimately race the check-then-insert on the one-card-per-day partial unique index (that race now lives inside `AdviceCardService.deliver`, S4, not `InterventionService.deliverForFlag`; the class javadoc still names the pre-S4 location), and the loser hitting that index is expected, not a bug; the generic `Exception` catch (warn + stack trace) still covers real failures.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionService.java` — `deliverForFlag(userId, flagKey)`: the library filter + per-key cooldown off recent card envelope keys (reading BOTH `advice`/`intervention` kinds, S4) + `OPTIMISTIC_PRIOR = 1.5` + max-effectiveness pick, then hands the picked entry + `AdviceFactRenderer.render(…)` facts to `AdviceCardService.deliver` (S4) — the one-card-per-day gate and the severity comparison moved OUT of this class in S4 (§9 decision kk). No `CompanionLlm` call anywhere in the class (§9 decision ii).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionService.java` — `deliverForFlag(userId, flagKey)`: the library filter + per-key cooldown off recent card envelope keys (reading BOTH `advice`/`intervention` kinds, S4) + `OPTIMISTIC_PRIOR = 1.5` + max-effectiveness pick, then hands the picked entry + `FlagFactRenderer.render(…)` facts to `AdviceCardService.deliver` (S4) — the one-card-per-day gate and the severity comparison moved OUT of this class in S4 (§9 decision kk). No `CompanionLlm` call anywhere in the class (§9 decision ii). The picked library text is passed TWICE on purpose — as the suggestion (the model's GROUNDING) and as `fallbackProse` (the text that ships when the answer is unusable); neither copy reaches the card's suggestion LIST any more (`mezo-wtl0`, §3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{CompanionMessageEntity,CompanionMessageEnvelope}.java` — `KIND_INTERVENTION` + `interventionKey` (both above, W5.2 additions to the `mezo-gst9` entity/envelope).
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `INTERVENTION_SWITCH` (`mezo.feature.intervention.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql` — the `kind` CHECK widening (CK-swap only).
@@ -3330,11 +3543,11 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - The `setup` kind (pre-S4 rows only) reaches the wire through the SAME `FeedMessageResponse.kind`/`FeedMessageKind` mirrors every other kind uses (§4 above; `api/openapi.yml` → `api.gen.ts`, and the FE `frontend/src/data/types.ts` union).
 
 **Backend — advice card (S4, `mezo-d58h.4` — §3/§4/§9 decision kk; the ONE writer of the coaching card)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceCardService.java` — `deliver(userId, candidate)`: the day gate + `AdvicePriority.outranks` severity comparison + soft-delete-and-reinsert supersession, then `AdviceProseGenerator.write` + `saveAndFlush`. NOT conditioned on `INTERVENTION_SWITCH` (`SetupCheckService` is one of its two callers and runs without that switch).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceCardService.java` — `deliver(userId, candidate)`: the day gate + `AdvicePriority.outranks` severity comparison + soft-delete-and-reinsert supersession, then `AdviceProseGenerator.write` (skipped for a `verbatim` candidate) + `saveAndFlush`. NOT conditioned on `INTERVENTION_SWITCH` (`SetupCheckService` is one of its two callers and runs without that switch). **Owns the GROUNDING-vs-DISPLAY seam for `suggestions`** (`mezo-wtl0`): the envelope gets `candidate.suggestions()` only for a `verbatim` candidate and `List.of()` otherwise, while the generator above keeps receiving them either way (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdvicePriority.java` — `ORDER` (the spec §4 severity order as a pure static `List<String>`, editorial ranking IN CODE, not config) + `rankOf`/`outranks` (strict `<`, unmapped key ranks last + logs a warning).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceCandidate.java` — the candidate record `InterventionService`/`SetupCheckService` build (`adviceKey`, `interventionKey?`, `setupKey?`, `eyebrow`, `facts`, `suggestions`, `fallbackProse`) + its `fromFlag`/`fromSetupCheck` factories.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceCandidate.java` — the candidate record `InterventionService`/`SetupCheckService` build (`adviceKey`, `interventionKey?`, `setupKey?`, `eyebrow`, `facts`, `suggestions`, `fallbackProse`, `verbatim`) + its `fromFlag`/`fromSetupCheck`/`fromQuestion` factories. `suggestions` are ALWAYS the model's grounding; `verbatim` doubles as the DISPLAY discriminator for them (`mezo-wtl0`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceFactRenderer.java` — `render(flagKey, payload)`: deterministic numeric fact lines per `FlagKey`, off the raise's own frozen `FlagPayloadEnvelope` (never re-derives a rule); unmapped key or null payload ⇒ `[]`, never a placeholder.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceProseGenerator.java` — `write(userId, candidate)`: renders `facts`+`suggestions` into a grounding block, ONE cheap-tier `CompanionLlm.complete` call (`ADVICE_MARKER = "TANACS-KARTYA-FELADAT"`, the numbers-forbidden HU prompt), `ProseNumberGuard.grounded` check; exception/blank/ungrounded ⇒ `candidate.fallbackProse()` (§5.2 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceProseGenerator.java` — `write(userId, candidate)`: renders `facts`+`suggestions` into a grounding block, ONE cheap-tier `CompanionLlm.complete` call (`ADVICE_MARKER = "TANACS-KARTYA-FELADAT"`, the numbers-forbidden HU prompt now ending on `PromptPersona.VOICE_HU`), `ProseNumberGuard.grounded` + the `FORMAL_ADDRESS` register post-check; exception/blank/ungrounded/formal ⇒ `candidate.fallbackProse()` (§5.2 above). `ADVICE_PROMPT` is public so the IT can pin the marker prefix and the register rule.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProseNumberGuard.java` — `grounded(prose, grounding)`: every numeral TOKEN in `prose` must be a token of `grounding` (decimal comma/dot normalised); pure, static, no I/O.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{CompanionMessageEntity,CompanionMessageEnvelope}.java` — `KIND_ADVICE` + `adviceKey`/`facts`/`suggestions` (S4 additions to the `mezo-gst9` entity/envelope; the envelope's canonical constructor is now the 8-arg form, §4 above) + `CompanionMessageEnvelope.advice(…)` factory.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041000_mezo-d58h.4_companion_message_advice_kind.sql` — the `kind` CHECK widening to nine values (CK-swap only).
@@ -3363,7 +3576,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `frontend/src/data/today/feedHooks.ts` — `useCompanionFeed()` (`['companionFeed', date]`; dual-mode: mock `[]` synchronous, real GET with 60s `refetchInterval`); re-exported by `data/hooks.ts`; replaces `briefingHooks.ts` + `heartbeatHooks.ts` (both DELETED).
 - `frontend/src/features/today/logic/mezoMessages.ts` — `buildMezoMessages({feed, demoBriefing})`: maps each `FeedMessage` to a thread bubble, prepends the labelled demo card only while no `morning` kind exists. **W5.2:** `MezoMessageItem` gains an optional `kind: FeedMessageKind`, copied straight from `m.kind`, so `MezoMessagesSheet.tsx` can render the „Segített?" variant on `kind === 'intervention' || kind === 'advice'` (§5.4 above). **S4:** also copies `facts`/`suggestions` through onto `MezoMessageItem`.
 - `frontend/src/features/today/components/MezoMessagesSheet.tsx` — the „Segített?" label branch, `kind === 'intervention' || kind === 'advice'` (S4 widened the W5.2 branch); every other kind keeps the generic feedback label. Same `useFeedback('feed_message')` chips either way — no new feedback machinery ([companion.md](companion.md) §5.7).
-- `frontend/src/features/today/pages/NapMezoPage.tsx` — S4: renders `m.suggestions` as an action-less bullet list and `m.facts` as the „Miből gondolom" evidence list when either is present.
+- `frontend/src/features/today/pages/NapMezoPage.tsx` — S4: renders `m.facts` as the „Miből gondolom" evidence list, and has a suggestion bullet-list block gated on `m.suggestions?.length && !questionAnswers(m)`. **Since `mezo-wtl0` no card reaches that block** — a generated advice row arrives with `suggestions: []` and a question card's suggestions become its answer chips instead (§4/§5.4).
 - `frontend/src/features/today/pages/TodayPage.tsx` — calls `useCompanionFeed()` directly and passes the result + `resolveBriefing(scenario.dayState)` into `buildMezoMessages`; renders `MezoChip`/`MezoMessagesSheet` (see [today.md](today.md)); the retired `BriefingCard.tsx`/`CompanionNoteCard.tsx` are DELETED.
 - `frontend/src/data/types.ts` — `FeedMessage{kind, eyebrow, body, refs, generatedAt}` (NEW);
   `FeedMessageKind` gained `'intervention'` as its sixth value (W5.2, `mezo-b3pp.19`);
@@ -3408,6 +3621,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{CompanionMessagePersistenceIT,CompanionMessageGeneratorIT,CompanionMessageJobIT,CompanionMessageJobSwitchOffIT,CompanionMessageEventIT,ProactiveApiFeedIT}.java` — `mezo-gst9`, replacing the DELETED `{Briefing,Heartbeat}{PersistenceIT,GeneratorIT,JobIT,JobSwitchOffIT},BriefingFreshnessIT,HeartbeatLazyIT`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/service/{CompanionFeedCandidatePresenceTest,CompanionFeedPromptTest}.java` — the two Spring-free unit guards the 2026-09-08 morning-feed slice added: the ref-candidate presence filter over hand-written snapshot lines (`mezo-4jux`) and the five feed prompts' register rule / marker prefix / JSON-contract ordering (`mezo-m4m0`) — §8.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{…P1 classes…,ExperimentPersistenceIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ExperimentJobIT,ExperimentJobSwitchOffIT,ProactiveApiExperimentIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{CompanionMessagePopulator,WeeklySuggestionPopulator,MemoirPopulator,PredictionPopulator,ExperimentPopulator}.java` (`CompanionMessagePopulator` replaces the deleted `BriefingPopulator`+`HeartbeatNotePopulator`) + `support/ResetDatabase.java` (`companion_message` in the TRUNCATE list, `briefing`/`heartbeat_note` removed from it).
 - FE: `frontend/src/data/today/feedHooks.test.tsx` + `frontend/src/features/today/logic/mezoMessages.test.ts` (replace `briefingHooks.test.tsx`/`heartbeatHooks.test.tsx`/`CompanionNoteCard.test.tsx`, all DELETED), `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,insights.nav.test.tsx}` (`InsightsSubNav.test.tsx` deleted with the component, compact-header redesign `mezo-ugqb`), `frontend/src/test/msw/handlers.ts` (`/api/proactive/feed` → `200 []`, weekly-suggestion/memoir → 404, prediction/experiment `200 []` + experiment POST handlers).

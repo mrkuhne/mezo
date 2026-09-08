@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,12 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>Verbatim candidates</b> (round 2 S5, bd mezo-d58h.7.5) skip the LLM call entirely, so for
  * a question card the lock hold time above collapses to the two queries around it.
+ *
+ * <p><b>The envelope's {@code suggestions} are DISPLAY, not grounding</b> (mezo-wtl0): they are
+ * written only for a {@code verbatim} candidate, where they are the question's two one-tap
+ * answers. A generated body already paraphrases the candidate's suggestions — the model is given
+ * them as grounding either way — so echoing them under the prose shipped the same instruction
+ * twice. See {@link #deliver}'s comment at that assignment for the full reasoning.
  *
  * <p><b>Supersession and cooldowns/re-emit windows:</b> a superseded row is soft-deleted, and both
  * {@code InterventionService.inCooldown} and {@code SetupCheckService.inReEmitWindow} read
@@ -116,13 +123,26 @@ public class AdviceCardService {
         String prose = candidate.verbatim()
             ? candidate.fallbackProse()
             : adviceProseGenerator.write(userId, candidate);
+        // mezo-wtl0 — GROUNDING and DISPLAY are two different things, and this is the seam that
+        // separates them. AdviceProseGenerator above is still handed candidate.suggestions()
+        // UNCHANGED: they are the model's only source for the actual recommendation, so removing
+        // them there would leave prose with no next step in it. But the prompt asks for 2-3
+        // sentences built from exactly those facts + suggestions, so a generated body is BY
+        // CONSTRUCTION a paraphrase of the suggestion — and displaying the suggestion list under
+        // it printed the same instruction twice, in two registers (the model's paragraph, then
+        // the library sentence verbatim). So a card whose body was generated from its suggestions
+        // displays none of them.
+        // The verbatim case is the exact opposite and MUST keep them: a question card's body is
+        // the question itself, the model never saw it, and its suggestions are the two one-tap
+        // answers the frontend reads as the answer key (mezo-d58h.7.5).
+        List<String> displayedSuggestions = candidate.verbatim() ? candidate.suggestions() : List.of();
         CompanionMessageEntity row = new CompanionMessageEntity();
         row.setCreatedBy(userId);
         row.setMessageDate(today);
         row.setKind(CompanionMessageEntity.KIND_ADVICE);
         row.setContent(CompanionMessageEnvelope.advice(candidate.eyebrow(), prose,
             candidate.adviceKey(), candidate.interventionKey(), candidate.setupKey(),
-            candidate.facts(), candidate.suggestions(),
+            candidate.facts(), displayedSuggestions,
             adviceActionCatalog.forCard(userId, candidate.adviceKey())));
         row.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);

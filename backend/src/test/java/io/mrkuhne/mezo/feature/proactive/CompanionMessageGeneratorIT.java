@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.proactive;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.feature.proactive.service.CompanionMessageGenerator;
@@ -33,6 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code [fake-feed-morning:{…}]} sentinel (planted via a check-in note, the {@code
  * [fake-briefing:…]} trick) scripts the strict-JSON answer; no summaries in the window or a
  * broken answer produce NO row (honest absence).
+ *
+ * <p>mezo-4jux: the candidate block is presence-filtered, so these tests also pin WHICH sources
+ * are offered — a source whose snapshot block rendered as {@code nincs adat} must not appear
+ * among the candidates, and therefore cannot end up as a provenance chip on the card.
  *
  * <p>Reflexió is switched OFF here (this class asserts nothing about the digest): the class is
  * itself {@code @Transactional}, so {@code ResetDatabase}'s fixture {@code TRUNCATE} never commits
@@ -70,11 +76,15 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
+    @Autowired private FakeCompanionLlm fakeLlm;
 
     @Test
     void testGenerateMorning_shouldPersistEnvelope_whenNarrativeWindowHasSummaries() {
         UUID user = userPopulator.createUser("morning-gen@test.local").getId();
         dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        // mezo-4jux: the Goal candidate is offered only because the [Cél] block actually renders a
+        // goal — without this row the snapshot says "nincs adat" and index 0 is a different source.
+        goalPopulator.createGoal(user, "active");
         // the check-in note rides into the snapshot's [Regeneráció] block -> the fake sees it
         checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
                 "[fake-feed-morning:{\"eyebrow\":\"Jó reggelt\",\"body\":[\"Mai terv.\"],\"refIndexes\":[0]}]");
@@ -110,6 +120,38 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
 
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(companionMessageRepository.count()).isEqualTo(1);
+    }
+
+    /**
+     * mezo-4jux: the defect that shipped — the card's body said no medication was recorded while
+     * its "Amire épült" row still showed a "Gyógyszer ×1" chip. The snapshot's honest absence and
+     * the candidate list are asserted TOGETHER: the payload must state {@code [Gyógyszer] nincs
+     * adat} and, precisely because it does, must not offer {@code [Medication]} as a candidate.
+     * The four out-of-range indexes also exercise the second belt ({@code resolveRefs}) — a model
+     * answering a stale index must resolve to nothing, not to a neighbouring candidate.
+     */
+    @Test
+    void testGenerateMorning_shouldNotOfferASourceThatRenderedAsAbsent() {
+        UUID user = userPopulator.createUser("morning-absent-source@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        // no goal, no mesocycle, no medication for this user — only the fuel day renders
+        checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
+                "[fake-feed-morning:{\"eyebrow\":\"Jó reggelt\",\"body\":[\"Mai terv.\"],"
+                        + "\"refIndexes\":[0,1,2,3]}]");
+
+        CompanionMessageEntity message = companionMessageGenerator.generateMorning(user, DAY);
+
+        assertThat(fakeLlm.lastUserMessage())
+                .contains("[Gyógyszer] " + ToolText.NO_DATA)
+                .doesNotContain("[Medication]")
+                .doesNotContain("[Goal]")
+                .doesNotContain("[Workout]");
+        assertThat(message).isNotNull();
+        assertThat(message.getContent().refs())
+                .extracting("kind", "label")
+                .containsExactly(
+                        tuple("FuelDay", "mai üzemanyag"),
+                        tuple("Memory", DAY.minusDays(1).toString()));
     }
 
     @Test
@@ -191,6 +233,64 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
 
         assertThat(message).isNotNull();
         assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_SLEEP);
+    }
+
+    /**
+     * mezo-b6zt: the quality denominator is the CONTRACT's 10 ({@code api/feature/sleep/sleep.yml},
+     * {@code SleepLogRequest.quality}: 1..10) and what the FE selector offers. The "/5" that stood
+     * here made a quality of 8 reach the prompt as the impossible "8/5", and the model echoed
+     * "a minőségét 8/5-re értékelted" back to the user.
+     */
+    @Test
+    void testGenerateSleepReaction_shouldRenderSleepQualityAgainstTheContractScale() {
+        UUID user = userPopulator.createUser("sleep-quality@test.local").getId();
+        sleepLogPopulator.createSleepLog(user, DAY, new BigDecimal("7.50"), 8);
+        checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
+                "[fake-feed-sleep:{\"eyebrow\":\"Jó alvás\",\"body\":[\"Pihenten kelsz.\"],\"refIndexes\":[]}]");
+
+        assertThat(companionMessageGenerator.generateSleepReaction(user, DAY)).isNotNull();
+
+        // Scoped to the generator's OWN block: the snapshot's [Regeneráció] line renders the same
+        // quality and is owned by ContextSnapshotAssembler, so asserting on the whole payload would
+        // make this test speak for a file it does not test.
+        // The "10" is spelled out on purpose: it is the CONTRACT's own bound, so this test still
+        // fails if the shared ceiling constant itself is ever changed to something else.
+        assertThat(tail(fakeLlm.lastUserMessage(), "MOST RÖGZÍTETT ALVÁS"))
+                .contains("minőség 8/10")
+                .doesNotContain("8/5");
+    }
+
+    /**
+     * mezo-a64t: the measurement, the EWMA trend value and the weekly rate are the figures the
+     * model QUOTES BACK, so they render Hungarian (decimal comma) at the precision of the quantity.
+     * The card read "A mai mérésed 83.3 kg volt … a heti súlytrended (83.694 kg) alatt van, ami
+     * heti -0.244 kg-os csökkenést mutat": decimal points inside Hungarian prose, plus a raw EWMA
+     * at gram precision.
+     */
+    @Test
+    void testGenerateWeightReaction_shouldRenderQuotedFiguresWithHungarianDecimals() {
+        UUID user = userPopulator.createUser("weight-figures@test.local").getId();
+        weightLogPopulator.createWeightLog(user, DAY, new BigDecimal("83.30"));
+        checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
+                "[fake-feed-weight:{\"eyebrow\":\"Mérés kész\",\"body\":[\"Stabil úton vagy.\"],\"refIndexes\":[]}]");
+
+        assertThat(companionMessageGenerator.generateWeightReaction(user, DAY)).isNotNull();
+
+        assertThat(tail(fakeLlm.lastUserMessage(), "MOST RÖGZÍTETT MÉRÉS"))
+                .contains("83,3 kg")
+                .contains("trendérték (EWMA, simított): 83,3 kg")
+                // a single weigh-in defines no slope yet — 0 still has to render as a HU rate
+                .contains("heti 0,00 kg")
+                .doesNotContain("83.3")
+                .doesNotContain("83,300");
+    }
+
+    /** Everything from {@code marker} on — the generator's own gather block, without the snapshot
+     *  that precedes it (whose rendering other classes own). */
+    private static String tail(String payload, String marker) {
+        int at = payload.indexOf(marker);
+        assertThat(at).isNotNegative();
+        return payload.substring(at);
     }
 
     @Test

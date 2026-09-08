@@ -40,7 +40,12 @@ describe('CoachingObserverPage (mock mode)', () => {
     // The mock's sole fact for this rule repeats its `reasonText` verbatim (the always-visible
     // evidence line), so scope to the expandable body — the thing this test actually verifies is
     // that opening the tile reveals the frozen numbers row, not just that the string exists.
-    expect(screen.getByText(/Alvásadósság: 1,4 óra\/éjszaka/, { selector: '.mzp-evrow .vl' }))
+    // Matches the CORRECTED copy: the leading figure is the window TOTAL, and the per-night rate
+    // is a separate, derived clause. A regex that would still pass against "1,4 óra/éjszaka" is
+    // exactly what let the pre-fix mislabel sit in the fixture unnoticed (bd mezo-btmc).
+    expect(screen.getByText(/Alvásadósság: összesen 1,4 óra hiány/, { selector: '.mzp-evrow .vl' }))
+      .toBeVisible()
+    expect(screen.getByText(/átlagosan 0,2 óra\/éjszaka/, { selector: '.mzp-evrow .vl' }))
       .toBeVisible()
   })
 

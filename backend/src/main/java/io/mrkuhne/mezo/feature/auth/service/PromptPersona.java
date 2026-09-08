@@ -25,6 +25,24 @@ public class PromptPersona {
      *  stored rows must not vary with a display name. */
     public static final String USER_TURN_LABEL = "Felhasználó: ";
 
+    /**
+     * The companion's Hungarian register, appended by the PROSE prompt templates (mezo-m4m0).
+     *
+     * <p>Deliberately NOT injected by {@link #render}: that method has ~36 call sites, many of
+     * them JSON-extraction prompts (fact/person/life-event extraction, profile assembly) where a
+     * tone rule is noise at best and a formatting risk at worst. A prose template opts IN.
+     *
+     * <p>Why the constant exists at all: five non-feed prose prompts already pinned this inline
+     * ({@code RecipeBreakdownProseService}, {@code QuestFlavor}, {@code MealCoachService},
+     * {@code DayReviewService}, {@code QuickNoticeService}), which is exactly what made the feed's
+     * silence invisible — the companion FEED was the only prose family with no register rule, so
+     * its register was left to model chance and drifted to formal address in production on
+     * 2026-09-08 (one advice card said "Önnél" / "feküdjön le" between two informal cards).
+     */
+    public static final String VOICE_HU =
+            " A felhasználót MINDIG tegezd — magyar tegező alak; a magázás (Ön, Önnek, "
+            + "felszólító magázó alak) tilos.";
+
     private final AppUserRepository appUserRepository;
 
     @Transactional(readOnly = true)

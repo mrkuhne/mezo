@@ -102,6 +102,12 @@ public class InterventionService {
             .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(userId, flagKey)
             .map(CompanionFlagLogEntity::getPayload)
             .orElse(null);
+        // The library text is passed TWICE on purpose, and the two uses are not the same thing
+        // (mezo-wtl0): as the suggestion it is the model's GROUNDING — the only place the prose
+        // can learn what the actual recommendation is — and as the fallbackProse it is the exact
+        // text that ships whenever the model's answer is unusable. Neither reaches the card's
+        // suggestion LIST any more; AdviceCardService drops that for a generated body, which is
+        // what stopped the card printing the same instruction twice.
         return adviceCardService.deliver(userId, AdviceCandidate.fromFlag(
             flagKey, picked.key(), EYEBROW,
             FlagFactRenderer.render(flagKey, payload),

@@ -42,6 +42,10 @@ public class GoalTools {
     /** The honest placeholder for recept/guards/feasibility before the goal's first evaluate (G5). */
     private static final String NOT_EVALUATED = "még nincs kiértékelve";
 
+    // mezo-a64t: figures the model QUOTES BACK to the user go through ToolText.huWeight/huRate/
+    // huHours — the precision is bound to the QUANTITY by name, so this renderer and every other
+    // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
+
     private final GoalRepository goalRepository;
     private final WeightTrendService weightTrendService;
     private final GoalTimelineService goalTimelineService;
@@ -93,26 +97,37 @@ public class GoalTools {
         // week derived from startDate (the snapshot's idiom) — the stored week can lag
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         StringBuilder b = new StringBuilder("Cél: ").append(goal.getTitle())
-                .append(" (").append(goal.getTrajectory()).append("), ").append(week).append(". hét; ")
-                .append(ToolText.num(goal.getStartWeightKg())).append(" → ")
-                .append(goal.getTargetWeightKg() != null ? ToolText.num(goal.getTargetWeightKg()) : "?")
+                // mezo-padz: the SAME raw cut|bulk|maintain the context snapshot's [Cél] block
+                // renders, so it goes through the SAME translator — emitting it verbatim here left
+                // the model to invent its own Hungarian for it, and "maintain" is recomp, not idleness.
+                .append(" (").append(ToolText.huTrajectory(goal.getTrajectory())).append("), ")
+                .append(week).append(". hét; ")
+                // huNum already renders "?" for a null target, which is what the old ternary did
+                .append(ToolText.huWeight(goal.getStartWeightKg())).append(" → ")
+                .append(ToolText.huWeight(goal.getTargetWeightKg()))
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         if (trend.getLatestTrendKg() != null && !trend.getEwmaSeries().isEmpty()
                 && trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
-            b.append("; trendsúly most ").append(ToolText.num(trend.getLatestTrendKg())).append(" kg");
+            b.append("; trendsúly most ")
+                    .append(ToolText.huWeight(trend.getLatestTrendKg())).append(" kg");
             if (goal.getStartWeightKg() != null) {
-                b.append(" (eddig ").append(ToolText.num(
-                        trend.getLatestTrendKg().subtract(goal.getStartWeightKg()))).append(" kg)");
+                // a weight DELTA is still a body weight — same precision, or the sentence mixes two
+                b.append(" (eddig ").append(ToolText.huWeight(
+                        trend.getLatestTrendKg().subtract(goal.getStartWeightKg())))
+                        .append(" kg)");
             }
             if (trend.getWeeklyRateKgPerWeek() != null) {
-                b.append(", tényleges ütem ").append(ToolText.num(trend.getWeeklyRateKgPerWeek())).append(" kg/hét");
+                b.append(", tényleges ütem ")
+                        .append(ToolText.huRate(trend.getWeeklyRateKgPerWeek()))
+                        .append(" kg/hét");
             }
         } else {
             b.append("; trendsúly: ").append(ToolText.NO_DATA);
         }
         if (goal.getRateTargetPctPerWeek() != null) {
-            b.append(", terv-ütem ").append(ToolText.num(goal.getRateTargetPctPerWeek())).append("%/hét");
+            b.append(", terv-ütem ")
+                    .append(ToolText.huRate(goal.getRateTargetPctPerWeek())).append("%/hét");
         }
         GoalPrescriptionJson.Segment seg = GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
         if (seg != null) {
@@ -143,14 +158,16 @@ public class GoalTools {
                     .append(seg.kcal() != null ? seg.kcal() : "?").append(" kcal, ")
                     .append(seg.proteinG() != null ? seg.proteinG() : "?").append(" g fehérje");
             if (seg.sleepTargetH() != null) {
-                b.append(", alvás ").append(ToolText.num(seg.sleepTargetH())).append(" h");
+                b.append(", alvás ")
+                        .append(ToolText.huHours(seg.sleepTargetH())).append(" h");
             }
             if (seg.restDays() != null && !seg.restDays().isEmpty()) {
                 b.append(", pihenőnapok: ").append(seg.restDays().stream()
                         .map(String::valueOf).collect(Collectors.joining(", ")));
             }
             if (seg.projectedRateKgPerWk() != null) {
-                b.append(", ütem ").append(ToolText.num(seg.projectedRateKgPerWk())).append(" kg/hét");
+                b.append(", ütem ")
+                        .append(ToolText.huRate(seg.projectedRateKgPerWk())).append(" kg/hét");
             }
             if (seg.rationale() != null && !seg.rationale().isBlank()) {
                 b.append(" — ").append(seg.rationale());

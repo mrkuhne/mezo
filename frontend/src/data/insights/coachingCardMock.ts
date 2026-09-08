@@ -18,7 +18,11 @@ export function mockCoachingCard(date: string): FeedMessage {
     body: [{ type: 'p', text: 'A heti terhelésed magas, a bevitel viszont a cél alatt maradt. Ma tegyél be egy tisztességes ebédet — nem hősködés, csak fedezet.' }],
     refs: [],
     facts: winner?.facts ?? [],
-    suggestions: ['Egy plusz szénhidrátos fogás ebédre.', 'Edzés után 30 percen belül egyél.'],
+    // Empty on purpose (bd mezo-wtl0): a generated advice body is prose written FROM the
+    // suggestion, so the backend stopped SHOWING it — displaying both printed the same advice
+    // twice. Only a once-ever question card still carries suggestions, as its answer chips.
+    // Seeding them here would make mock mode — the DEFAULT mode — still show the fixed bug.
+    suggestions: [],
     flagKey: winner?.flagKey,
     actions: [{ key: 'lighten_tomorrow', label: 'Könnyítsd a holnapot' }],
     generatedAt: `${date}T08:00:00Z`,

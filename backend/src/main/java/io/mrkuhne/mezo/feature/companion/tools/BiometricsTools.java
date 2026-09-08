@@ -63,6 +63,10 @@ public class BiometricsTools {
     private final CheckInService checkInService;
     private final CompanionProperties properties;
 
+    // mezo-a64t: figures the model QUOTES BACK to the user go through ToolText.huWeight/huRate/
+    // huHours — the precision is bound to the QUANTITY by name, so this renderer and every other
+    // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
+
     @Tool(name = "get_weight_trend", description = "Súlytrend az elmúlt hetekre: EWMA trendsúly, "
             + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Használd, amikor a user a súlyáról, "
             + "súlyváltozásáról, fogyásról vagy annak üteméről kérdez.")
@@ -78,15 +82,18 @@ public class BiometricsTools {
             return "Súlytrend (" + w + " hét): " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder("Súlytrend (").append(w).append(" hét): trendsúly ")
-                .append(ToolText.num(trend.getLatestTrendKg())).append(" kg");
+                .append(ToolText.huWeight(trend.getLatestTrendKg())).append(" kg");
         if (trend.getWeeklyRateKgPerWeek() != null) {
-            b.append(", heti ütem ").append(ToolText.num(trend.getWeeklyRateKgPerWeek())).append(" kg");
+            b.append(", heti ütem ")
+                    .append(ToolText.huRate(trend.getWeeklyRateKgPerWeek())).append(" kg");
         }
         if (trend.getWeeklyRatePctPerWeek() != null) {
-            b.append(" (").append(ToolText.num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+            b.append(" (")
+                    .append(ToolText.huRate(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
         }
         if (trend.getLast4wRateKgPerWeek() != null) {
-            b.append(", 4 hetes ütem ").append(ToolText.num(trend.getLast4wRateKgPerWeek())).append(" kg/hét");
+            b.append(", 4 hetes ütem ")
+                    .append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét");
         }
         LocalDate from = LocalDate.now().minusWeeks(w);
         // one point per ISO week (the last EWMA point of each week) — token budget by construction
@@ -96,7 +103,8 @@ public class BiometricsTools {
                 .forEach(p -> weekly.put(
                         p.getDate().get(WeekFields.ISO.weekBasedYear()) * 100
                                 + p.getDate().get(WeekFields.ISO.weekOfWeekBasedYear()),
-                        p.getDate() + ": " + ToolText.num(p.getTrendKg()) + " kg"));
+                        p.getDate() + ": "
+                                + ToolText.huWeight(p.getTrendKg()) + " kg"));
         if (!weekly.isEmpty()) {
             b.append("\nHeti trendpontok: ").append(String.join("; ", weekly.values()));
         }
@@ -124,13 +132,16 @@ public class BiometricsTools {
         for (int i = 0; i < rows.size(); i++) {
             WeightLogEntity row = rows.get(i);
             b.append('\n').append(row.getDate()).append(": ")
-                    .append(ToolText.num(row.getWeightKg())).append(" kg");
+                    .append(ToolText.huWeight(row.getWeightKg())).append(" kg");
             // Day-over-day delta against the NEXT row (the list is newest-first), i.e. the previous
             // weigh-in — this is the fluctuation the trend tool smooths away. The oldest row in the
             // window has no predecessor here, so it gets no delta rather than a fabricated zero.
             if (i + 1 < rows.size()) {
                 BigDecimal delta = row.getWeightKg().subtract(rows.get(i + 1).getWeightKg());
-                b.append(" (").append(delta.signum() > 0 ? "+" : "").append(ToolText.num(delta)).append(" kg)");
+                // a weight DELTA is still a body weight — same precision; huNum renders the minus
+                // itself, so only the positive sign needs the explicit prefix it always had
+                b.append(" (").append(delta.signum() > 0 ? "+" : "")
+                        .append(ToolText.huWeight(delta)).append(" kg)");
             }
             if (row.getNote() != null && !row.getNote().isBlank()) {
                 b.append(" — ").append(row.getNote());
@@ -202,9 +213,13 @@ public class BiometricsTools {
         }
         StringBuilder b = new StringBuilder(header);
         for (SleepLogEntity row : rows) {
-            b.append('\n').append(row.getDate()).append(": ").append(ToolText.num(row.getDurationH())).append(" h");
-            if (row.getQuality() != null) {
-                b.append(", minőség ").append(row.getQuality()).append("/5");
+            b.append('\n').append(row.getDate()).append(": ")
+                    .append(ToolText.huHours(row.getDurationH())).append(" h");
+            // mezo-b6zt: the scale's ceiling is 10 (sleep.yml SleepLogRequest.quality), not the "/5"
+            // this line hardcoded — the shared fragment owns the denominator now.
+            String quality = ToolText.sleepQuality(row.getQuality());
+            if (quality != null) {
+                b.append(", minőség ").append(quality);
             }
             if (row.getAwakenings() != null) {
                 b.append(", ébredés: ").append(row.getAwakenings());
@@ -324,11 +339,13 @@ public class BiometricsTools {
             }
             b.append(String.join(" · ", stages));
         }
-        if (row.getQuality() != null) {
+        // mezo-b6zt: same fix as renderSleep above — one denominator, owned by ToolText.
+        String quality = ToolText.sleepQuality(row.getQuality());
+        if (quality != null) {
             if (b.length() > 0) {
                 b.append("; ");
             }
-            b.append("minőség ").append(row.getQuality()).append("/5");
+            b.append("minőség ").append(quality);
         }
         if (row.getAwakenings() != null) {
             if (b.length() > 0) {
@@ -414,23 +431,27 @@ public class BiometricsTools {
         StringBuilder b = new StringBuilder(header);
         for (CheckInResponse c : rows) {
             b.append('\n').append(c.getDate()).append(' ').append(c.getSlotTime()).append(": ");
+            // mezo-b6zt siblings: all four sliders are 1..10 (api/feature/checkin/checkin.yml) and
+            // were already correct — but as four separate literals. Referenced once now, so this
+            // renderer cannot drift from the day narrative the way the sleep denominator did.
             List<String> parts = new ArrayList<>();
-            if (c.getEnergy() != null) {
-                parts.add("energia " + c.getEnergy() + "/10");
-            }
-            if (c.getStress() != null) {
-                parts.add("stressz " + c.getStress() + "/10");
-            }
-            if (c.getBody() != null) {
-                parts.add("testi " + c.getBody() + "/10");
-            }
-            if (c.getMental() != null) {
-                parts.add("mentális " + c.getMental() + "/10");
-            }
+            addRating(parts, "energia", c.getEnergy());
+            addRating(parts, "stressz", c.getStress());
+            addRating(parts, "testi", c.getBody());
+            addRating(parts, "mentális", c.getMental());
             b.append(parts.isEmpty() ? ToolText.NO_DATA : String.join(", ", parts));
         }
         rows.stream().limit(5).forEach(c ->
                 ToolContexts.audit(toolContext).addRef("CheckIn", c.getDate().toString()));
         return b.toString();
+    }
+
+    /** One "{label} {n}/10" slider reading, or nothing at all when the slot was left unanswered —
+     *  a fabricated default (or the literal "null/10") in a tool payload is worse than silence. */
+    private static void addRating(List<String> parts, String label, Integer value) {
+        String rendered = ToolText.rating(value);
+        if (rendered != null) {
+            parts.add(label + " " + rendered);
+        }
     }
 }
