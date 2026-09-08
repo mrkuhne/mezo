@@ -14,16 +14,21 @@ export const LLM_USAGE_MOCK: LlmUsageSummaryResponse = {
   day: { callCount: 12, costUsd: 0.04, currency: 'USD' },
   week: { callCount: 78, costUsd: 0.31, currency: 'USD' },
   month: { callCount: 305, costUsd: 1.22, currency: 'USD' },
+  // mezo-pfdv: the KPI strip's "vs last month" comparator — a plausible prior month, lower than
+  // this month's running total so the demo shows a rising Δ chip.
+  prevMonthToSameDayUsd: 1.05,
 }
 
 /**
  * Honest empty for real mode (never the seed): zero calls and NO cost — a null
- * `costUsd` renders as "—", so an unresolved read can't imply a $0.00 spend.
+ * `costUsd` renders as "—", so an unresolved read can't imply a $0.00 spend. Same honesty for
+ * `prevMonthToSameDayUsd`: an unresolved read must not claim "no prior month data" either.
  */
 export const LLM_USAGE_EMPTY: LlmUsageSummaryResponse = {
   day: { callCount: 0, costUsd: null, currency: 'USD' },
   week: { callCount: 0, costUsd: null, currency: 'USD' },
   month: { callCount: 0, costUsd: null, currency: 'USD' },
+  prevMonthToSameDayUsd: null,
 }
 
 /**
@@ -88,11 +93,15 @@ export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
     { key: 'companion_fact_extract', callCount: 43, costUsd: 0.06 },
     { key: 'quest_flavor', callCount: 6, costUsd: null },
   ],
+  // mezo-pfdv: promptTokens sums to totals.promptTokens exactly (1_840_000) — an ERROR row never
+  // reached a model, so it reports 0 tokens, not null. totalTokens has no matching totals field
+  // to reconcile against, but stays >= promptTokens per row (candidates/thoughts add on top;
+  // gemini-embedding-001 has none, so its totalTokens equals its promptTokens).
   models: [
-    { key: 'gemini-2.5-flash', callCount: 217, costUsd: 1.12 },
-    { key: 'gemini-2.5-pro', callCount: 23, costUsd: 0.65 },
-    { key: 'gemini-embedding-001', callCount: 148, costUsd: 0.09 },
-    { key: null, callCount: 24, costUsd: null }, // the errorCount rows: no served model, no cost
+    { key: 'gemini-2.5-flash', callCount: 217, costUsd: 1.12, promptTokens: 1_050_000, totalTokens: 1_320_000 },
+    { key: 'gemini-2.5-pro', callCount: 23, costUsd: 0.65, promptTokens: 520_000, totalTokens: 650_000 },
+    { key: 'gemini-embedding-001', callCount: 148, costUsd: 0.09, promptTokens: 270_000, totalTokens: 270_000 },
+    { key: null, callCount: 24, costUsd: null, promptTokens: 0, totalTokens: 0 }, // the errorCount rows: no served model, no cost, no usage
   ],
   // Per-account split (mezo-qw37.3) — sums to the totals like features[]/models[]; the null
   // group is the cron/stream traffic that has no principal (ids match adminMock).
@@ -133,7 +142,8 @@ export const LLM_CALLS_MOCK: LlmCallListResponse = {
  */
 function mockCalls(filters: LlmCallFilters, limit: number): LlmCallListResponse {
   const matched = LLM_CALLS_MOCK.items.filter((call) =>
-    (filters.feature == null || call.feature === filters.feature)
+    (filters.day == null || call.createdAt.slice(0, 10) === filters.day)
+    && (filters.feature == null || call.feature === filters.feature)
     && (filters.status == null || call.status === filters.status)
     && (filters.callKind == null || call.callKind === filters.callKind)
     && (filters.userId == null || call.createdBy === filters.userId))
@@ -198,7 +208,7 @@ export function useLlmUsageBreakdown(period: LlmUsagePeriodKey) {
  */
 export function useLlmCalls(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: number) {
   return useDualQuery({
-    queryKey: ['llmCalls', period, filters.feature ?? null, filters.status ?? null, filters.callKind ?? null, filters.userId ?? null, limit],
+    queryKey: ['llmCalls', period, filters.day ?? null, filters.feature ?? null, filters.status ?? null, filters.callKind ?? null, filters.userId ?? null, limit],
     mockData: mockCalls(filters, limit),
     realFetch: () => llmUsageApi.listCalls(period, filters, limit),
     realEmpty: LLM_CALLS_EMPTY,

@@ -10,6 +10,7 @@ export type LlmUsagePeriod = components['schemas']['LlmUsagePeriod']
 // never by the client.
 export type LlmUsageBreakdownResponse = components['schemas']['LlmUsageBreakdownResponse']
 export type LlmUsageGroup = components['schemas']['LlmUsageGroup']
+export type LlmUsageModelGroup = components['schemas']['LlmUsageModelGroup']
 export type LlmCallListResponse = components['schemas']['LlmCallListResponse']
 export type LlmCallListItem = components['schemas']['LlmCallListItem']
 export type LlmCallDetailResponse = components['schemas']['LlmCallDetailResponse']
@@ -19,6 +20,8 @@ export type LlmUsagePeriodKey = 'DAY' | 'WEEK' | 'MONTH'
 
 /** Server-side filters — an omitted key means "don't narrow on this axis". */
 export interface LlmCallFilters {
+  /** ISO date (yyyy-MM-dd), report-zone calendar day — the anomaly-dot deep link (mezo-pfdv). */
+  day?: string
   feature?: string
   status?: string
   callKind?: string
@@ -28,6 +31,7 @@ export interface LlmCallFilters {
 
 function callsQuery(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: number): string {
   const params = new URLSearchParams({ period, limit: String(limit) })
+  if (filters.day) params.set('day', filters.day)
   if (filters.feature) params.set('feature', filters.feature)
   if (filters.status) params.set('status', filters.status)
   if (filters.callKind) params.set('callKind', filters.callKind)

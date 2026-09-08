@@ -345,6 +345,7 @@ export const handlers = [
       day: { callCount: 9, costUsd: 0.03, currency: 'USD' },
       week: { callCount: 61, costUsd: 0.24, currency: 'USD' },
       month: { callCount: 240, costUsd: 0.95, currency: 'USD' },
+      prevMonthToSameDayUsd: 0.81,
     }),
   ),
   // Beta admin (mezo-qw37.3) — populated defaults mirroring the mock seed; tests override with
