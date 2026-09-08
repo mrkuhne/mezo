@@ -5,8 +5,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
-import { useAdminOverview, useAdminCostMatrix } from '@/data/admin/adminInsightsHooks'
-import { ADMIN_OVERVIEW_EMPTY, ADMIN_OVERVIEW_MOCK } from '@/data/admin/adminInsightsMock'
+import { useAdminOverview, useAdminCostMatrix, useAdminAlerts } from '@/data/admin/adminInsightsHooks'
+import { ADMIN_OVERVIEW_EMPTY, ADMIN_OVERVIEW_MOCK, ADMIN_ALERTS_MOCK } from '@/data/admin/adminInsightsMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -23,6 +23,12 @@ describe('adminInsights hooks (mock mode)', () => {
     const { result } = renderHook(() => useAdminOverview(true), { wrapper: QueryWrapper })
     expect(result.current.data.costSeries).toHaveLength(30)
     expect(result.current.data.costSeries.some((d) => d.amountUsd > 0)).toBe(true)
+  })
+
+  it('serves the alerts seed synchronously', () => {
+    const { result } = renderHook(() => useAdminAlerts(true), { wrapper: QueryWrapper })
+    expect(result.current.data).toEqual(ADMIN_ALERTS_MOCK)
+    expect(result.current.data.alerts).toHaveLength(2)
   })
 })
 
@@ -51,6 +57,12 @@ describe('adminInsights hooks (real mode)', () => {
     const { result } = renderHook(() => useAdminCostMatrix('30d', true), { wrapper: QueryWrapper })
     await waitFor(() => expect(result.current.data.users.length).toBeGreaterThan(0))
     expect(result.current.data.users.some((u) => u.id === null && u.label === 'Háttér')).toBe(true)
+  })
+
+  it('fetches alerts from the API', async () => {
+    const { result } = renderHook(() => useAdminAlerts(true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.alerts.length).toBeGreaterThan(0))
+    expect(result.current.data.alerts.some((a) => a.key === 'cost_spike')).toBe(true)
   })
 })
 

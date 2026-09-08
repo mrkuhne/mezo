@@ -17,6 +17,8 @@ export type AdminFeatureCost = components['schemas']['AdminFeatureCost']
 export type AdminTableFootprint = components['schemas']['AdminTableFootprint']
 export type AdminCostMatrixCell = components['schemas']['AdminCostMatrixCell']
 export type AdminCostMatrixUser = components['schemas']['AdminCostMatrixUser']
+export type AdminAlertsResponse = components['schemas']['AdminAlertsResponse']
+export type AdminAlert = components['schemas']['AdminAlert']
 
 export type AdminPeriod = '7d' | '30d' | '90d'
 export type AdminUserInsightSort = 'name' | 'createdAt' | 'lastActivityAt' | 'rowCount' | 'cost30dUsd' | 'activeDays30d'
@@ -44,4 +46,6 @@ export const adminInsightsApi = {
   // the screen-telemetry switch is off, so the page never has to special-case a 404.
   screenUsage: (period: AdminPeriod): Promise<AdminScreenUsageResponse> =>
     apiFetch<AdminScreenUsageResponse>(`/api/admin/usage/screens${qs({ period })}`),
+  // Alerts (mezo-kjwa) — owner-facing rule-based warnings surfaced on the admin hub.
+  alerts: (): Promise<AdminAlertsResponse> => apiFetch<AdminAlertsResponse>('/api/admin/alerts'),
 }
