@@ -10,7 +10,7 @@ import {
   presenceReply,
   applyPresenceTool,
 } from "./presence-model.mjs";
-import { BoopAvatar as Avatar, BoopIcon as Icon, BoopSprites, BoopPet } from "./BoopIdentity.jsx";
+import { BoopAvatar as Avatar, BoopIcon as Icon, BoopPet } from "./BoopIdentity.jsx";
 import "./presence.css";
 import "./boop.css";
 const STORAGE = "mezo-presence-v1";
@@ -228,7 +228,7 @@ export default function PresenceStudy() {
         <a href="/" className="pr-lab-link">
           ← Korábbi irányok
         </a>
-        <span className="pr-eyebrow">BOOP / VIZUÁLIS TANULMÁNY 06</span>
+        <span className="pr-eyebrow">BOOP / EDITORIAL TANULMÁNY 07</span>
         <h1>
           Egy társ.
           <br />
@@ -266,7 +266,6 @@ export default function PresenceStudy() {
           "--clay-shadow": role.shadow,
         }}
       >
-        <BoopSprites />
         <header className="pr-header">
           <div>
             {s.role === "home" ? (

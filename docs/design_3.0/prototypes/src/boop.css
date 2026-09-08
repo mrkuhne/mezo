@@ -1,68 +1,31 @@
-/* Boop: warm intelligence. Scoped to the presence study. */
-.presence-study {
-  --pr-bg: #faf8f5;
-  --pr-ink: #343441;
-  --pr-muted: #777581;
-  --pr-line: #e8e3e1;
-  background: radial-gradient(ellipse at 45% 12%, #f5e5e2 0, transparent 48%), radial-gradient(ellipse at 85% 70%, #e3e6f1 0, transparent 48%), #eeedf0;
-  font-family: Manrope, "DM Sans", sans-serif;
-}
-.presence-study em { font-style: normal; }
-.pr-device { border: 1px solid #fff; border-radius: 38px; box-shadow: 0 24px 70px #48445c17, 0 2px 8px #48445c09; background: radial-gradient(ellipse at 50% 0, #f5eae766, transparent 45%), var(--pr-bg); }
-.pr-wordmark { font-size: 30px; font-weight: 800; letter-spacing: -1.8px; }
-.pr-wordmark span { font-size: 11px; letter-spacing: .1px; }
-.pr-header { height: 68px; }
-.pr-chat-open { padding: 8px 12px; border-radius: 24px; background: #ffffffb3; box-shadow: 0 2px 8px #41394706; color: #585566; }
-.pr-chat-open span { font-size: 11px; font-weight: 600; }
-.pr-study-note h1 { font-weight: 650; letter-spacing: -1.5px; }
-.pr-study-note h1 em { color: #ad746b; font-weight: 650; }
-.pr-study-note p, .pr-study-right p { color: #777581; }
-.pr-eyebrow { letter-spacing: 1px; font-weight: 650; }
-.pr-date { color: #87828d; font-size: 10px; letter-spacing: 1px; }
-.pr-home > h1 { font-size: 30px; line-height: 1.22; font-weight: 700; letter-spacing: -1.1px; margin-top: 10px; }
-.pr-home > h1 em { color: #a96858; font-weight: 700; }
-.pr-home-sub { font-size: 12px; color: #817985; }
-.pr-home-hero { overflow: visible; }
-.pr-halo { border-color: #d6c6d641; }
-.pr-halo-a { background: radial-gradient(circle, #f3d7c55c, transparent 65%); }
-.pr-day-rhythm > div { font-size: 10px; color: #8d8490; }
-.pr-day-rhythm .next { color: #9d604f; }
-.pr-feelings button { background: #fffaf8; border-color: #ece4e1; border-radius: 23px; box-shadow: 0 3px 10px #53475704; font-size: 11px; color: #68606c; }
-.pr-feelings .boop-icon { width: 28px; height: 28px; }
-.pr-feelings button[aria-pressed="true"] { background: #f5e2d8; border-color: #d3a58e; color: #8e5243; }
-.pr-home-talk { background: #f0e9ef; border-radius: 24px; }
-.pr-dock { margin: 0 10px 10px; border-radius: 27px; background: #ffffffed; border: 1px solid #eee8ed; box-shadow: 0 5px 24px #6253720b; }
-.pr-dock-tabs button { border-radius: 19px; }
-.pr-dock-tabs button.active { background: color-mix(in srgb, var(--pr-tint) 30%, #fff); }
-.pr-dock-tabs .boop-icon { width: 25px; height: 25px; }
-.pr-dock-tabs button:not(.active) .boop-icon { filter: grayscale(.85) opacity(.6); }
+/* Boop editorial: original two-eye character and original line icons. */
+.presence-study { --pr-bg: #f9f5ee; --pr-ink: #35332e; --pr-muted: #817b72; --pr-line: #e4dfd5; background: #eeece5; }
+.pr-device { border-radius: 34px; }
+.pr-wordmark { font-size: 27px; font-weight: 700; letter-spacing: -1.4px; }
+.pr-wordmark span { font-size: 11px; font-weight: 400; letter-spacing: .1px; }
+.pr-home > h1 { font-size: 36px; font-weight: 400; line-height: 1.08; letter-spacing: -.7px; }
+.pr-home > h1 em { color: #a56f57; }
+.pr-home-sub { font-size: 12px; }
+.pr-eyebrow { letter-spacing: 1.4px; }
+.pr-feelings button { background: #fcf9f3; border-radius: 22px; font-size: 11px; color: #87735f; }
+.pr-feelings .boop-icon { width: 23px; height: 23px; }
+.pr-dock { margin: 0 10px 10px; border-radius: 25px; border: 1px solid #e7dfd3; background: #fcf9f3; box-shadow: 0 4px 18px #66523c06; }
+.pr-dock-tabs button { border-radius: 17px; }
+.pr-dock-tabs button.active { background: color-mix(in srgb, var(--pr-tint) 28%, #fcf9f3); }
+.pr-dock-tabs .boop-icon { width: 22px; height: 22px; }
+.pr-dock-tabs button:not(.active) { color: #948b7e; }
 .pr-dock-tabs button span { font-size: 10px; }
 .pr-role-toggle { border-radius: 20px; }
-.pr-workspace h1 { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -1px; }
-.pr-lead { font-size: 16px; line-height: 1.6; color: #78727d; font-weight: 450; }
-.pr-fuel-total, .pr-pattern-study, .pr-cycle-study, .pr-life-note { border-radius: 25px; }
-.pr-budget-equation { border-radius: 20px; background: #ffffff91; }
-.pr-row strong { font-weight: 600; }
-.pr-bridge { border-radius: 21px; background: color-mix(in srgb, var(--pr-tint) 18%, #fff); }
-.pr-primary { box-shadow: 0 4px 12px color-mix(in srgb, var(--pr-accent) 13%, transparent); font-weight: 650 !important; }
-.pr-dialog { background: #faf8f5; border-color: #fff; }
-.pr-dialog h2 { font-weight: 700; letter-spacing: -.7px; }
-.pr-message { border-radius: 23px; }
-.pr-chat-header { background: #ffffff80; }
-.boop-icon { flex-shrink: 0; overflow: visible; }
+.pr-bridge { border-radius: 21px; }
+.boop-icon { flex-shrink: 0; }
 .boop-avatar { display: inline-block; position: relative; vertical-align: middle; }
-.boop-face { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.boop-brows { transform-origin: 50% 33%; transition: transform .3s; }
-.boop-avatar[data-expression="happy"] .boop-brows { transform: translateY(-2px); }
-.boop-avatar[data-expression="thinking"] .boop-brows { transform: rotate(-5deg); }
-.boop-avatar[data-expression="sleeping"] .boop-brows { opacity: .6; }
+@media (max-width:500px) { .pr-device { border-radius: 0; } }
+@media (min-width:501px) and (max-height:760px) { .pr-home > h1 { font-size: 33px; } }
 .boop-pet { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
 .boop-touch { position: relative; display: block; background: none; padding: 0; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
 .boop-touch:hover .boop-avatar { transform: translateY(-3px); }
 .boop-touch .boop-avatar { transition: transform .25s; }
 .boop-pet[data-happy="true"] .boop-avatar { animation: boopSquish .65s cubic-bezier(.25,.8,.4,1); }
-.boop-pet-spark { position: absolute; right: -6px; top: 12px; color: #b97983; font-size: 27px; opacity: 0; transform: translateY(9px) scale(.5); transition: .3s; }
-.boop-pet[data-happy="true"] .boop-pet-spark { opacity: 1; transform: translateY(-4px) scale(1); }
 .boop-status { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #8b7380; height: 22px; letter-spacing: .2px; }
 .boop-status i { width: 5px; height: 5px; background: #b88796; border-radius: 50%; box-shadow: 0 0 0 3px #b8879614; }
 @keyframes boopSquish { 0%,100% { transform: scale(1); } 28% { transform: scale(1.1,.89) translateY(4px); } 60% { transform: scale(.96,1.05) translateY(-6px); } }

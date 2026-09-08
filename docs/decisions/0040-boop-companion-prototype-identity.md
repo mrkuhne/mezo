@@ -1,6 +1,6 @@
 # 0040 — Boop companion identity in the UX prototype
 
-- **Status:** Accepted for prototype; production migration deferred
+- **Status:** Visual details superseded by [0041](0041-boop-editorial-and-line-icons.md); Boop naming retained
 - **Date:** 2026-09-08
 - **Driver:** mezo-88jw.5
 
