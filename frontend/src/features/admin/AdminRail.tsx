@@ -8,12 +8,14 @@ import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 interface RailItem { to: string; label: string; icon: ClayIconName; end?: boolean }
 const RAIL: RailItem[] = [
   { to: '/admin', label: 'Áttekintés', icon: 'i-nap', end: true },
-  { to: '/admin/users', label: 'Userek', icon: 'i-emberek' },
+  { to: '/admin/users', label: 'Emberek', icon: 'i-emberek' },
   { to: '/admin/usage', label: 'Feature-használat', icon: 'i-minta' },
-  { to: '/admin/cost', label: 'LLM költség', icon: 'i-erme' },
-  { to: '/admin/data', label: 'Adatböngésző', icon: 'i-tudas' },
+  { to: '/admin/cost', label: 'Költés', icon: 'i-erme' },
   { to: '/admin/accounts', label: 'Meghívók és fiókok', icon: 'i-beallitas' },
 ]
+// The data browser is a drill-through TOOL, not a destination (mezo-l096): it moves out
+// of the main list into the rail foot, under an "Eszközök" caption.
+const TOOLS: RailItem[] = [{ to: '/admin/data', label: 'Nyers adatok', icon: 'i-tudas' }]
 
 export function AdminRail() {
   return (
@@ -33,6 +35,19 @@ export function AdminRail() {
           <span>{item.label}</span>
         </NavLink>
       ))}
+      <div className="ad-rail-tools">
+        <span className="tools-cap">Eszközök</span>
+        {TOOLS.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) => cn('ad-rail-link', isActive && 'on')}
+          >
+            <ClayIcon name={item.icon} size={18} />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
     </nav>
   )
 }

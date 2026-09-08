@@ -43,7 +43,7 @@ describe('legacy owner routes (mock mode)', () => {
   it('redirects me/ai-usage to /admin/cost (AdminCostPage)', async () => {
     const { router } = renderAt('/me/ai-usage')
     expect(await screen.findByText('AI-napló')).toBeInTheDocument()
-    expect(screen.getByText('LLM költség')).toBeInTheDocument() // AdminRail, confirms /admin/cost is active
+    expect(screen.getByText('Költés')).toBeInTheDocument() // AdminRail, confirms /admin/cost is active
     expect(router.state.location.pathname).toBe('/admin/cost')
   })
 
