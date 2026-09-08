@@ -84,10 +84,7 @@ public class AdminInsightsController implements AdminInsightsApi {
         return usageService.screenUsage(period);
     }
 
-    /**
-     * Owner status band — evaluated alert rules (mezo-kjwa). Skeleton: always returns the
-     * empty alert list until a later slice fills in the rules.
-     */
+    /** Owner status band — evaluated alert rules (mezo-kjwa). */
     @Override
     public AdminAlertsResponse getAdminAlerts() {
         currentUser.requireOwner();
