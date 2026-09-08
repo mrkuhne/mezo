@@ -7978,7 +7978,7 @@ export interface components {
             refs: components["schemas"]["FeedRef"][];
             /** @description Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these. */
             facts?: string[];
-            /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
+            /** @description The one-tap ANSWER CHIPS of a once-ever question card. Empty on every other advice row since mezo-wtl0: a generated body is prose written FROM the suggestion, so displaying both printed the same advice twice, in two registers. The suggestion still reaches the model as grounding — it is no longer part of the response. */
             suggestions?: string[];
             /** @description The SEVERITY key this card came from (spec 2026-09-05 §4.4) — a flag key for a flag-sourced card, or a setup-check key for a setup-sourced one. Present only on advice rows. Lets the coaching observer correlate the day's winner against the raised rules. */
             flagKey?: string;

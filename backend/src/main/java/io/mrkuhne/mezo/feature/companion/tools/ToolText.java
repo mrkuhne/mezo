@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Shared render helpers for the V0.5 toolsets — the snapshot's num() idiom + arg clamping.
@@ -14,7 +15,11 @@ import java.util.List;
  */
 public final class ToolText {
 
-    static final String NO_DATA = "nincs adat";
+    /** The snapshot's honest-absence marker. PUBLIC since mezo-4jux: the feed generators must be
+     *  able to tell that a block rendered as absent, so they stop offering the model a reference
+     *  candidate for a source that produced nothing (a "Gyógyszer" provenance chip appeared on a
+     *  card whose own body said no medication was recorded). Referenced, never re-spelled. */
+    public static final String NO_DATA = "nincs adat";
 
     private ToolText() {
     }
@@ -24,6 +29,82 @@ public final class ToolText {
      *  copy-pasted into three of them while this helper stayed package-private. */
     public static String num(BigDecimal v) {
         return v == null ? "?" : v.stripTrailingZeros().toPlainString();
+    }
+
+    /** Hungarian locale for figures that end up QUOTED BACK to the user — the same
+     *  {@code Locale.of("hu")} {@code FlagFactRenderer} uses, so the two cannot disagree. */
+    private static final Locale HU = Locale.of("hu");
+
+    /**
+     * The ceiling of every hand-entered 1..10 self-rating in the product, declared once.
+     *
+     * <p>Each of these is 1..10 at its own source of truth — sleep quality
+     * ({@code api/feature/sleep/sleep.yml}), check-in energy and stress
+     * ({@code api/feature/checkin/checkin.yml}), sport intensity
+     * ({@code ck_sport_session_intensity}) — and each was ALSO rendered against a hardcoded "/5"
+     * in at least one renderer (mezo-b6zt and its siblings). The worst shape it took: the day
+     * narrative said "energia 8/5" while the context snapshot said "energia 8/10", so two prompts
+     * feeding the same model contradicted each other. The ceiling lives here so a fourth drift has
+     * nowhere to live.
+     */
+    public static final int RATING_MAX = 10;
+
+    /** "8/10" — the shared self-rating fragment. Null-safe: an unrated field must render NOTHING,
+     *  and "null/10" must never reach a prompt, so callers keep their "omit entirely" branch. */
+    public static String rating(Integer value) {
+        return value == null ? null : value + "/" + RATING_MAX;
+    }
+
+    /** Sleep quality — {@link #rating} under the name its five call sites read best. */
+    public static String sleepQuality(Integer quality) {
+        return rating(quality);
+    }
+
+    /**
+     * The goal trajectory in Hungarian (mezo-padz). {@code GoalEntity.trajectory} stores the raw
+     * {@code cut|bulk|maintain} (DB CHECK), and the renderers used to emit it verbatim — the ONE
+     * non-Hungarian label in otherwise fully Hungarian blocks, so the model invented its own
+     * phrasing instead of reading one ("a Lean Gain célod, ami a súlyod fenntartását célozza").
+     *
+     * <p>{@code maintain} is spelled out as RECOMP on the repo owner's own definition: hold body
+     * weight while strength and muscle go UP. Rendered as a bare "súlytartás" it reads as "do
+     * nothing", the opposite of the prescription.
+     *
+     * <p>Lives HERE, not privately in one renderer, because two of them need it — the context
+     * snapshot's {@code [Cél]} block and {@code GoalTools}' goal line — and a second copy is
+     * exactly how the wording would drift apart. (Deliberately NOT the wording of
+     * {@code goal.service.GoalSuggestionTriggerService#huTrajectory}, whose bare "tartás" for
+     * {@code maintain} is precisely the reading these blocks must not produce; that one serves a
+     * different feature slice and its own surface.)
+     *
+     * <p>An unrecognised value falls through verbatim rather than throwing: a widened DB CHECK
+     * must degrade to an untranslated label, never take a whole snapshot down.
+     */
+    public static String huTrajectory(String trajectory) {
+        if (trajectory == null) {
+            return NO_DATA;
+        }
+        return switch (trajectory) {
+            case "cut" -> "fogyás";
+            case "bulk" -> "tömegelés";
+            case "maintain" -> "súlytartás (recomp: testsúly tartása mellett erő- és "
+                    + "izomgyarapodás, hízás nélkül)";
+            default -> trajectory;
+        };
+    }
+
+    /**
+     * Display figure for a number the model will QUOTE BACK to the user: Hungarian decimal comma,
+     * fixed precision. The deliberate counterpart to {@link #num}, which is locale-INDEPENDENT and
+     * unrounded because it feeds payloads the model only parses. Using {@code num} for
+     * user-destined figures put "83.694 kg" and "-0.244 kg" on the same screen as "4,5 óra"
+     * (mezo-a64t) — a decimal point inside Hungarian prose, at a precision nobody asked for.
+     *
+     * @param decimals how precise the user's own sentence should be — pick this per QUANTITY, not
+     *                 per call site (a weight 1, a weekly rate 2), or one figure renders two ways
+     */
+    public static String huNum(BigDecimal v, int decimals) {
+        return v == null ? "?" : String.format(HU, "%." + decimals + "f", v);
     }
 
     /** Null-safe window clamp: the model may omit the arg (fallback) or overshoot (min/max). */

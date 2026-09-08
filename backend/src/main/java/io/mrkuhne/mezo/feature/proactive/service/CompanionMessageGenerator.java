@@ -80,7 +80,15 @@ public class CompanionMessageGenerator {
      *  (a companion→proactive import would be a new package cycle). Keep the two in sync. */
     public static final String MORNING_MARKER = "REGGELI-ELIGAZITAS-FELADAT";
 
-    private static final String MORNING_PROMPT = MORNING_MARKER + "\n"
+    /** mezo-m4m0: every feed prose template carries {@link PromptPersona#VOICE_HU}'s
+     *  informal-register rule. The feed was the only prose family with NO register rule at all
+     *  (five non-feed prose prompts already pinned it inline), so its register was model chance —
+     *  and one card shipped in formal address between two informal ones. Appended INSIDE the
+     *  instruction body: the marker prefix the fake LLM dispatches on must stay byte-identical,
+     *  and the strict-JSON contract must stay the LAST instruction. Package-private (the
+     *  {@code MemoirGenerator#PROMPT} precedent) so {@code CompanionFeedPromptTest} can pin all
+     *  three properties without a Spring context. */
+    static final String MORNING_PROMPT = MORNING_MARKER + "\n"
             + "Írj rövid magyar reggeli eligazítást {{NÉV}} számára a mai napra, kizárólag a megadott "
             + "tényadatokból. Ez a nap ELSŐ üzenete, még az alvás és a testsúly rögzítése ELŐTT "
             + "készül: (1) az éjszakai alvásról és a testsúlyról/súlytrendről NE írj — azokról "
@@ -89,12 +97,15 @@ public class CompanionMessageGenerator {
             + "fókuszponttal; (4) számot vagy adatot kitalálni tilos; (5) gyógyszer adagolására "
             + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés; (6) a [Célok] blokk "
             + "életcéljaira támogatóan utalhatsz, de a ha–akkor tervek emlékeztetőit külön "
-            + "értesítés viszi — azok szövegét NE ismételd. "
-            + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
+            + "értesítés viszi — azok szövegét NE ismételd."
+            + PromptPersona.VOICE_HU
+            + " Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
 
-    /** Morning ref candidates — deliberately NO WeightTrend / Sleep (spec §3). */
+    /** Morning ref candidates — deliberately NO WeightTrend / Sleep (spec §3). The list is
+     *  hardcoded; the DATA behind it is not, so it only ever reaches the model through
+     *  {@link #presentCandidates} (mezo-4jux). */
     static final List<CompanionMessageEnvelope.Ref> MORNING_CANDIDATES = List.of(
             new CompanionMessageEnvelope.Ref("Goal", "cél"),
             new CompanionMessageEnvelope.Ref("Workout", "edzés"),
@@ -105,27 +116,31 @@ public class CompanionMessageGenerator {
      *  (see {@link #MORNING_MARKER}'s doc for the cycle rationale). */
     public static final String SLEEP_MARKER = "ALVAS-REAKCIO-FELADAT";
 
-    private static final String SLEEP_PROMPT = SLEEP_MARKER + "\n"
+    static final String SLEEP_PROMPT = SLEEP_MARKER + "\n"
             + "{{NÉV}} most rögzítette a ma éjszakai alvását. Írj rövid magyar reakciót "
             + "társ-szemszögből, kizárólag a megadott tényadatokból: (1) értékeld a MOST RÖGZÍTETT "
             + "ALVÁS blokk adatait (időtartam, minőség) a cél és a szokásos mintázat tükrében; "
             + "(2) mondd ki, mit jelent ez a mai napra (edzés, fókusz, energia); (3) ha volt már "
             + "MAI KORÁBBI ÜZENET, ne ismételd. Számot kitalálni tilos; gyógyszer-adagolás "
-            + "változtatást SOHA ne javasolj. Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
+            + "változtatást SOHA ne javasolj."
+            + PromptPersona.VOICE_HU
+            + " Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
 
     /** Prompt prefix the fake LLM dispatches on — MIRRORED as a literal in FakeCompanionLlm. */
     public static final String WEIGHT_MARKER = "SULY-REAKCIO-FELADAT";
 
-    private static final String WEIGHT_PROMPT = WEIGHT_MARKER + "\n"
+    static final String WEIGHT_PROMPT = WEIGHT_MARKER + "\n"
             + "{{NÉV}} most mérte meg a testsúlyát. Írj rövid magyar reakciót társ-szemszögből, "
             + "kizárólag a megadott tényadatokból: (1) a MOST RÖGZÍTETT MÉRÉS a kiindulópont — a "
             + "trendérték (EWMA) simított szám, a kettőt ne keverd össze, és a mérést nevezd "
             + "mérésnek, a trendet trendnek; (2) helyezd a mérést a heti trend és a cél "
             + "kontextusába; (3) egyetlen mérésből messzemenő következtetést ne vonj le; (4) ha "
             + "volt már MAI KORÁBBI ÜZENET, ne ismételd. Számot kitalálni tilos; gyógyszer-"
-            + "adagolás változtatást SOHA ne javasolj. Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
+            + "adagolás változtatást SOHA ne javasolj."
+            + PromptPersona.VOICE_HU
+            + " Válaszolj KIZÁRÓLAG szigorú JSON-nal: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
 
@@ -139,12 +154,40 @@ public class CompanionMessageGenerator {
             new CompanionMessageEnvelope.Ref("Goal", "cél"),
             new CompanionMessageEnvelope.Ref("FuelDay", "mai üzemanyag"));
 
+    /**
+     * mezo-4jux: per hardcoded candidate, the snapshot literal that introduces THAT source's own
+     * datum in the rendered {@link ContextSnapshotAssembler} block — the seam {@link
+     * #presentCandidates} reads presence from.
+     *
+     * <p>Why this exists: the three lists above were offered to the model whole, whatever the
+     * snapshot actually contained. So a morning card whose body correctly said "Gyógyszerre
+     * vonatkozó adat nincs rögzítve" (the snapshot had honestly rendered {@code [Gyógyszer] nincs
+     * adat}) still shipped a "Gyógyszer ×1" chip in its "Amire épült" row. A grounding row that
+     * can assert a provenance the snapshot explicitly denied is unfalsifiable — and letting the
+     * user audit where a claim came from is its only purpose.
+     *
+     * <p>The Memory and Pattern refs the morning path appends are already presence-derived: they
+     * are built FROM the rows that rendered, so they cannot exist without their source. This map
+     * gives the hardcoded lists the SAME property instead of a second mechanism.
+     *
+     * <p>Keyed by ref kind, so a candidate kind shared across lists ({@code Goal}, {@code
+     * FuelDay}) has ONE probe. A kind with no entry here is treated as absent — a new hardcoded
+     * candidate must declare where its data renders before it can ever be cited.
+     */
+    static final Map<String, String> SNAPSHOT_PROBES = Map.of(
+            "Goal", "[Cél] ",
+            "Workout", "[Edzés] mezociklus: ",
+            "FuelDay", "[Mai üzemanyag] ",
+            "Medication", "[Gyógyszer] ",
+            "Sleep", "[Regeneráció] alvás",
+            "WeightTrend", "; súlytrend: ");
+
     /** Prompt prefix the fake LLM dispatches on — the retired heartbeat generator's original
      *  marker/sentinel ({@code [fake-heartbeat:…]} in {@code FakeCompanionLlm}), reused verbatim
      *  so no new fake-LLM wiring is needed for the window kinds (midday/evening). */
     public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
 
-    private static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
+    static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
             + "Írj magyar napközbeni jegyzetet {{NÉV}} számára társ-szemszögből, 2-4 rövid bekezdésben, "
             + "kizárólag a megadott tényadatokból és a te eszközeidből (tool-hívások) származó "
             + "adatokból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
@@ -171,12 +214,13 @@ public class CompanionMessageGenerator {
             + "felszólítás nélkül. "
             + "- Ha van MAI KORÁBBI ÜZENETEK blokk, annak tartalmát NE ismételd. "
             + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
-            + "- Sima folyószöveg, markdown és felsorolás nélkül.";
+            + "- Sima folyószöveg, markdown és felsorolás nélkül."
+            + PromptPersona.VOICE_HU;
 
     /** Emberek S6 (mezo-06o0.8) — a fake LLM erre a prefixre diszpécsel. */
     public static final String PEOPLE_MARKER = "EMBEREK-ESZREVETEL-FELADAT";
 
-    private static final String PEOPLE_PROMPT = PEOPLE_MARKER + "\n"
+    static final String PEOPLE_PROMPT = PEOPLE_MARKER + "\n"
             + "Írj EGYETLEN rövid magyar mondatot {{NÉV}} számára társ-szemszögből az emberi köréről, "
             + "kizárólag a megadott heti összesítésből. "
             + "Szabályok: "
@@ -184,10 +228,18 @@ public class CompanionMessageGenerator {
             + "- Csak azt állítsd, amit az összesítés kimond; nevet, számot kitalálni tilos. "
             + "- Ha valakinél lefelé fordult a hangulat vagy elhallgatott, azt emeld ki — "
             + "  ez a mondat arra való, hogy {{NÉV}} észrevegye, kire érdemes ránéznie. "
-            + "- Ne adj utasítást és ne moralizálj; egy megfigyelés, nem feladat. "
-            + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
+            + "- Ne adj utasítást és ne moralizálj; egy megfigyelés, nem feladat."
+            + PromptPersona.VOICE_HU
+            + " Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"a mondat\"], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
+
+    // mezo-a64t: display precision belongs to the QUANTITY, not to the call site — a body weight
+    // (measurement AND smoothed trend) is one decimal, a weekly rate two. Named the same way as
+    // ContextSnapshotAssembler's twins, so the reaction message and the snapshot beside it in the
+    // same prompt cannot render one figure two ways.
+    private static final int WEIGHT_DECIMALS = 1;
+    private static final int RATE_DECIMALS = 2;
 
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
@@ -243,10 +295,13 @@ public class CompanionMessageGenerator {
                     userId, properties.feed().pastDays(), date);
             return null;
         }
-        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(MORNING_CANDIDATES);
         StringBuilder payload = new StringBuilder();
         String snapshot = contextSnapshotAssembler.renderWithoutBiometrics(userId, date);
         payload.append(snapshot);
+        // mezo-4jux: seeded from the SNAPSHOT's presence, so a source that rendered as absent is
+        // never offered — the model cannot cite what it was not given.
+        List<CompanionMessageEnvelope.Ref> candidates =
+                new ArrayList<>(presentCandidates(MORNING_CANDIDATES, snapshot));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append("\n\nKORÁBBI NAPOK (legfrissebb elöl):\n");
         for (DailySummaryEntity summary : past) {
@@ -364,13 +419,18 @@ public class CompanionMessageGenerator {
             log.debug("No fresh sleep log for {} on {} — no sleep-reaction message", userId, date);
             return null;
         }
-        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(SLEEP_CANDIDATES);
+        String snapshot = contextSnapshotAssembler.render(userId, date);
+        List<CompanionMessageEnvelope.Ref> candidates =
+                new ArrayList<>(presentCandidates(SLEEP_CANDIDATES, snapshot));
         StringBuilder payload = new StringBuilder();
-        payload.append(contextSnapshotAssembler.render(userId, date));
+        payload.append(snapshot);
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(earlierMessagesBlock(userId, date));
+        // mezo-b6zt: the quality scale is the CONTRACT's 1..10 (api/feature/sleep/sleep.yml) and
+        // what the FE selector offers. The "/5" that stood here turned a quality of 8 into the
+        // impossible "8/5", and the model echoed "a minőségét 8/5-re értékelted" back to the user.
         String sleepLine = ToolText.num(sleep.getDurationH()) + " h"
-                + (sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
+                + (sleep.getQuality() != null ? ", minőség " + ToolText.sleepQuality(sleep.getQuality()) : "")
                 + (sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
         payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ").append(sleepLine);
         String sleepQuery = "alvás " + sleepLine + freeTextSuffix(sleep.getNotes());
@@ -419,17 +479,26 @@ public class CompanionMessageGenerator {
             log.debug("No today's weigh-in for {} on {} — no weight-reaction message", userId, date);
             return null;
         }
-        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(WEIGHT_CANDIDATES);
+        String snapshot = contextSnapshotAssembler.render(userId, date);
+        List<CompanionMessageEnvelope.Ref> candidates =
+                new ArrayList<>(presentCandidates(WEIGHT_CANDIDATES, snapshot));
         StringBuilder payload = new StringBuilder();
-        payload.append(contextSnapshotAssembler.render(userId, date));
+        payload.append(snapshot);
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(earlierMessagesBlock(userId, date));
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
-        String trendLine = ToolText.num(weight.getWeightKg()) + " kg"
+        // mezo-a64t: these three figures are the ones the model QUOTES BACK, so they render with
+        // ToolText.huNum (Hungarian comma, fixed precision), not the locale-independent, unrounded
+        // ToolText.num every parse-only payload uses. The card read "A mai mérésed 83.3 kg volt …
+        // a heti súlytrended (83.694 kg) alatt van, ami heti -0.244 kg-os csökkenést mutat":
+        // decimal POINTS inside Hungarian prose and a raw EWMA at gram precision. Precision is
+        // per QUANTITY — a weight 1 decimal, a weekly rate 2 — never per call site.
+        String trendLine = ToolText.huNum(weight.getWeightKg(), WEIGHT_DECIMALS) + " kg"
                 + (trend.getLatestTrendKg() != null
-                        ? "; trendérték (EWMA, simított): " + ToolText.num(trend.getLatestTrendKg()) + " kg" : "")
+                        ? "; trendérték (EWMA, simított): "
+                                + ToolText.huNum(trend.getLatestTrendKg(), WEIGHT_DECIMALS) + " kg" : "")
                 + (trend.getWeeklyRateKgPerWeek() != null
-                        ? ", heti " + ToolText.num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
+                        ? ", heti " + ToolText.huNum(trend.getWeeklyRateKgPerWeek(), RATE_DECIMALS) + " kg" : "");
         payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ").append(trendLine);
         String weightQuery = "súly " + trendLine + freeTextSuffix(weight.getNote());
         MemoryContextBlock.Rendered mem = memoryBlock(
@@ -831,7 +900,57 @@ public class CompanionMessageGenerator {
         }
     }
 
-    /** Bounds-checked, order-preserving, deduped index→candidate resolution. */
+    /**
+     * mezo-4jux: the candidates whose source actually RENDERED — the presence filter every
+     * hardcoded list passes through before the model ever sees it. Prevention, not correction:
+     * a candidate that is never offered cannot be cited, so no answer needs second-guessing
+     * afterwards.
+     *
+     * <p>Fail-CLOSED. A probe missing from this snapshot variant (or a candidate kind with no
+     * probe at all) drops the candidate: losing a chip costs the user one audit link, while
+     * keeping an unjustifiable one costs the whole grounding row its meaning.
+     *
+     * <p>Reads the SNAPSHOT, not the whole payload: the user's own free text (a check-in note, a
+     * daily summary, a log note) also lands in the payload, and no text a user can type may
+     * decide whether a provenance chip appears.
+     */
+    static List<CompanionMessageEnvelope.Ref> presentCandidates(
+            List<CompanionMessageEnvelope.Ref> candidates, String snapshot) {
+        return candidates.stream()
+                .filter(ref -> rendered(snapshot, SNAPSHOT_PROBES.get(ref.kind())))
+                .toList();
+    }
+
+    /**
+     * True when {@code probe}'s own datum is present in the snapshot: the probe occurs, and what
+     * follows it — up to that block's next {@code ';'} or its line end — is neither empty nor
+     * {@link ToolText#NO_DATA}. The absence marker is REFERENCED, never re-spelled, so the
+     * snapshot and this check cannot drift apart on the literal.
+     *
+     * <p>The leading {@code ':'}/whitespace strip is what lets a probe stop before its block's own
+     * separator ({@code [Regeneráció] alvás} is followed by either {@code ": nincs adat"} or
+     * {@code " (2026-09-08): 7 h"}).
+     */
+    private static boolean rendered(String snapshot, String probe) {
+        if (probe == null) {
+            return false;
+        }
+        int at = snapshot.indexOf(probe);
+        if (at < 0) {
+            return false;
+        }
+        int from = at + probe.length();
+        int semi = snapshot.indexOf(';', from);
+        int newline = snapshot.indexOf('\n', from);
+        int end = Math.min(semi < 0 ? snapshot.length() : semi, newline < 0 ? snapshot.length() : newline);
+        String datum = snapshot.substring(from, end).replaceFirst("^[:\\s]+", "").strip();
+        return !datum.isEmpty() && !ToolText.NO_DATA.equals(datum);
+    }
+
+    /** Bounds-checked, order-preserving, deduped index→candidate resolution. Kept as the SECOND
+     *  belt after {@link #presentCandidates} (mezo-4jux): the filter decides what MAY be cited,
+     *  this decides that a returned index actually points at something — a model answering a
+     *  stale index must never resolve to a neighbouring candidate. */
     private List<CompanionMessageEnvelope.Ref> resolveRefs(
             List<Integer> indexes, List<CompanionMessageEnvelope.Ref> candidates) {
         if (indexes == null) {

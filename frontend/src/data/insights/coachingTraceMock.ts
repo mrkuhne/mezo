@@ -27,8 +27,14 @@ const RULES: Omit<CoachingRule, 'changedAt'>[] = [
       'Mért érték: 1,0 · küszöb: 3,0'] },
   { flagKey: 'sleep_debt', label: 'Alvásadósság', domain: 'sleep', rank: 6,
     outcome: 'raised', disposition: 'logged', cardOutcome: 'lost',
-    reasonText: 'Alvásadósság: 1,4 óra/éjszaka (cél 8,0 óra, 6 rögzített éjszaka 7-ből)',
-    facts: ['Alvásadósság: 1,4 óra/éjszaka (cél 8,0 óra, 6 rögzített éjszaka 7-ből)'] },
+    // Mirrors backend FlagFactRenderer.sleepDebt VERBATIM — keep the two in sync by hand, there
+    // is no gate comparing them. This fixture froze the pre-fix copy ("1,4 óra/éjszaka") and drifted:
+    // that number is the WINDOW TOTAL, so the per-night unit made the mock-mode observer state
+    // something false, and mock mode is the DEFAULT (bd mezo-btmc + the mock-parity issue).
+    reasonText: 'Alvásadósság: összesen 1,4 óra hiány a rögzített éjszakákon '
+      + '(átlagosan 0,2 óra/éjszaka, cél 8,0 óra/éjszaka, 6 rögzített éjszaka a 7 közül)',
+    facts: ['Alvásadósság: összesen 1,4 óra hiány a rögzített éjszakákon '
+      + '(átlagosan 0,2 óra/éjszaka, cél 8,0 óra/éjszaka, 6 rögzített éjszaka a 7 közül)'] },
   { flagKey: 'logging_gap', label: 'Rögzítési hiány', domain: 'logging', rank: 7,
     outcome: 'clear', reasonText: '1,0 elavult napló — a jelzéshez 2,0 kellene (étkezés).',
     facts: ['1,0 elavult napló — a jelzéshez 2,0 kellene (étkezés).', 'Mért érték: 1,0 · küszöb: 2,0'] },

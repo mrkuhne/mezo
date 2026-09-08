@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
+import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
@@ -163,7 +164,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("mérés: 96.4 kg (" + today + ")");
+        assertThat(snapshot).contains("mérés: 96,4 kg (" + today + ")");
         assertThat(snapshot).contains("súlytrend:");
     }
 
@@ -180,8 +181,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("mérés: 95.8 kg (" + today + ")");
-        assertThat(snapshot).doesNotContain("mérés: 96.4 kg");
+        assertThat(snapshot).contains("mérés: 95,8 kg (" + today + ")");
+        assertThat(snapshot).doesNotContain("mérés: 96,4 kg");
     }
 
     @Test
@@ -192,6 +193,36 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String snapshot = assembler.render(owner, today);
 
         assertThat(snapshot).contains("mérés: nincs adat");
+    }
+
+    /**
+     * mezo-a64t: the production weight card read "83.3 kg … 83.694 kg … heti -0.244 kg" — decimal
+     * POINTS inside Hungarian prose, at gram precision, one card above a "4,5 óra". Every figure on
+     * this line is quoted back to the user, so all of them go through the Hungarian display
+     * formatter at the precision of the QUANTITY: a body weight one decimal, a weekly rate two.
+     * The whole line is asserted free of "." — a single missed call site is the entire defect.
+     */
+    @Test
+    void testRender_shouldRenderWeightFiguresWithHungarianDecimals_whenWeighInsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        biometricProfilePopulator.create(owner);
+        // a full week of daily weigh-ins so the trend has a defined slope (2+ distinct days), and a
+        // gram-precision last entry — the exact shape that produced "83.694 kg" in production
+        for (int i = 6; i >= 1; i--) {
+            weightLogPopulator.createWeightLog(owner, today.minusDays(i),
+                new BigDecimal("84.10").subtract(new BigDecimal("0.07").multiply(BigDecimal.valueOf(6 - i))));
+        }
+        weightLogPopulator.createWeightLog(owner, today, new BigDecimal("83.694"));
+
+        String profileLine = assembler.render(owner, today).lines()
+            .filter(l -> l.startsWith("[Profil]")).findFirst().orElseThrow();
+
+        assertThat(profileLine).contains("mérés: 83,7 kg (" + today + ")");
+        // the ISO dates on this line use dashes, so a "." here can only be a mis-rendered figure
+        assertThat(profileLine).contains("súlytrend: ").doesNotContain(".");
+        // a week of weigh-ins ⇒ a defined slope, rendered at RATE precision (two decimals)
+        assertThat(profileLine).matches(".*heti -?\\d+,\\d{2} kg.*");
     }
 
     @Test
@@ -211,13 +242,58 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String block = assembler.render(owner, today);
 
-        assertThat(block).contains("[Cél] Nyári cut (cut): 84.2 → 80 kg");
+        assertThat(block).contains("[Cél] Nyári cut (fogyás): 84,2 → 80,0 kg");
         assertThat(block).contains("3. hét");
-        assertThat(block).contains("e heti recept: 2100 kcal, 180 g fehérje, alvás 7.5 h, pihenőnap: Szo, V");
+        assertThat(block).contains("e heti recept: 2100 kcal, 180 g fehérje, alvás 7,5 h, pihenőnap: Szo, V");
         // The day anchor now comes from the sleep goal, not the retired goal wake/bed columns
         // (createGoalFull passed 06:30/22:30). With no sleep_goal row the config ghost renders.
         assertThat(block).contains("étkezés/nap: 4, ébredés: 06:00, lefekvés: 22:00");
         assertThat(block).doesNotContain("06:30").doesNotContain("22:30");
+    }
+
+    /**
+     * mezo-padz: {@code GoalEntity.trajectory} stores the raw {@code cut|bulk|maintain}, and the
+     * block used to emit it verbatim — the ONE non-Hungarian label in an otherwise fully Hungarian
+     * snapshot, so the model wrote its own Hungarian for it. Each value is pinned, and the raw
+     * token is asserted GONE: a partial translation would leave the same gap.
+     */
+    @Test
+    void testRender_shouldRenderTheTrajectoryInHungarian_whenGoalIsCut() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoal(owner, "cut", "active");
+
+        String block = assembler.render(owner, LocalDate.now());
+
+        assertThat(block).contains("[Cél] Nyári cut (fogyás):").doesNotContain("(cut):");
+    }
+
+    @Test
+    void testRender_shouldRenderTheTrajectoryInHungarian_whenGoalIsBulk() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoal(owner, "bulk", "active");
+
+        String block = assembler.render(owner, LocalDate.now());
+
+        assertThat(block).contains("[Cél] Nyári cut (tömegelés): 84,2 → 90,0 kg")
+            .doesNotContain("(bulk)");
+    }
+
+    /**
+     * {@code maintain} is RECOMP on the repo owner's own definition — hold body weight while
+     * strength and muscle go UP. A bare "súlytartás" reads as "do nothing", the opposite of the
+     * prescription, so the parenthetical is part of the contract, not decoration. The populator's
+     * maintain goal carries no target weight, which also pins huNum's "?" for a null figure.
+     */
+    @Test
+    void testRender_shouldSpellOutRecomp_whenGoalTrajectoryIsMaintain() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoal(owner, "maintain", "active");
+
+        String block = assembler.render(owner, LocalDate.now());
+
+        assertThat(block).contains("[Cél] Nyári cut (súlytartás (recomp: testsúly tartása mellett "
+            + "erő- és izomgyarapodás, hízás nélkül)): 84,2 → ? kg");
+        assertThat(block).doesNotContain("(maintain)");
     }
 
     @Test
@@ -268,6 +344,29 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("sport-rend: K 19:00");
         assertThat(snapshot).contains("1 gym-edzés (" + today.minusDays(2) + ")");
         assertThat(snapshot).contains("1 sportalkalom").contains("1 futás");
+    }
+
+    /**
+     * mezo-f1x1: the digest window is TRAILING (today - digestDays + 1 .. today), and an
+     * unlabelled "elmúlt 7 nap" was re-attributed by the model to the CALENDAR week — on a Tuesday
+     * the morning card reported last week's sessions as "a héten eddig". The label must state the
+     * period it really covers, so nothing is left to re-attribute. The bare "elmúlt N nap:" form is
+     * asserted absent: that exact string is what the hallucination fed on.
+     */
+    @Test
+    void testRender_shouldLabelTheDigestWindowWithItsInclusiveBounds_whenRenderingTheTrainBlock() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String snapshot = assembler.render(owner, today);
+
+        // digest-days: 7 → a 7-day window whose first day is today - 6, both ends inclusive
+        assertThat(snapshot).contains("elmúlt 7 nap (gördülő ablak, " + today.minusDays(6)
+            + " – " + today + ", nem a naptári hét): 0 gym-edzés");
+        assertThat(snapshot).doesNotContain("elmúlt 7 nap:");
+        // the morning message is the surface that shipped the false claim, so it must carry it too
+        assertThat(assembler.renderWithoutBiometrics(owner, today))
+            .contains("gördülő ablak, " + today.minusDays(6) + " – " + today);
     }
 
     /**
@@ -619,8 +718,31 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String snapshot = assembler.render(owner, today);
 
         assertThat(snapshot).contains("víz 500/");
-        assertThat(snapshot).contains("protokoll: v2 aktív, mai bevitel: 1");
+        assertThat(snapshot).contains(
+            "protokoll: v2 aktív (nincs neve — csak a verziószám azonosítja), mai bevitel: 1");
         assertThat(snapshot).doesNotContain("[Mai üzemanyag] 0/"); // the meal's kcal landed
+    }
+
+    /**
+     * mezo-padz: ProtocolResponse (api/feature/fuel/fuel.yml) carries id/version/builtAt/status/items
+     * and nothing name-like, so "v3 aktív" was the entire label — and the model filled the gap by
+     * borrowing the GOAL's title, writing "a Lean Gain protokollod szerint" about a protocol with no
+     * such name. With a named goal present, the fuel block must state the absence outright and must
+     * NOT carry the goal's title.
+     */
+    @Test
+    void testRender_shouldStateTheProtocolHasNoName_whenAnActiveGoalCouldLendItsTitle() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        goalPopulator.createGoal(owner, "cut", "active");
+        var supplement = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        protocolPopulator.createProtocol(owner, 3, "active", List.of(supplement.getId()));
+
+        String fuelLine = assembler.render(owner, today).lines()
+            .filter(l -> l.startsWith("[Mai üzemanyag]")).findFirst().orElseThrow();
+
+        assertThat(fuelLine).contains("protokoll: v3 aktív (nincs neve — csak a verziószám azonosítja)");
+        assertThat(fuelLine).doesNotContain("Nyári cut");
     }
 
     @Test
@@ -645,9 +767,85 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7.2 h, minőség 4/5");
+        assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7,2 h, minőség 4/10");
         assertThat(snapshot).contains(
             "check-in (" + today + " 08:00): energia 4/10, stressz 2/10, megjegyzés: \"fáradtan ébredtem\"");
+    }
+
+    /**
+     * mezo-b6zt: the quality scale is 1..10 (sleep.yml SleepLogRequest.quality; the FE offers a
+     * 1..10 selector), but this block hardcoded "/5" — so a 9 reached the prompt as the impossible
+     * "9/5" and the model judged sleep against half the real ceiling. 9 is the pinning value
+     * precisely because it cannot exist on the old denominator.
+     *
+     * <p>mezo-a64t: the duration on the same line is quoted back to the user, so it renders with a
+     * Hungarian comma at one decimal — never the unrounded, locale-independent form that put
+     * "7.25 h" one card above a "4,5 óra".
+     */
+    @Test
+    void testRender_shouldRenderSleepQualityAgainstTen_whenSleepIsRatedAboveFive() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.25"), 9);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7,3 h, minőség 9/10");
+        assertThat(snapshot).doesNotContain("minőség 9/5");
+    }
+
+    /** An unrated row must still emit NOTHING for quality — the shared fragment is null there, and
+     *  "null/10" or a fabricated default in a prompt is worse than silence (ADR 0010). */
+    @Test
+    void testRender_shouldOmitTheQualityFragment_whenSleepIsUnrated() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("6.0"), null);
+
+        String snapshot = assembler.render(owner, today);
+
+        String recoveryLine = snapshot.lines()
+            .filter(l -> l.startsWith("[Regeneráció]")).findFirst().orElseThrow();
+        assertThat(recoveryLine).contains("alvás (" + today.minusDays(1) + "): 6,0 h;")
+            .doesNotContain("minőség");
+    }
+
+    /**
+     * mezo-b6zt siblings: the two check-in figures were already /10 but as LITERALS, and this test
+     * pins them against {@link ToolText#RATING_MAX} rather than re-spelling the ceiling — the day
+     * narrative disagreed with this block precisely because each renderer owned its own copy.
+     */
+    @Test
+    void testRender_shouldRenderCheckInRatingsAgainstTheSharedCeiling_whenRatedAboveFive() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 8, 7, null);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(
+            "energia 8/" + ToolText.RATING_MAX + ", stressz 7/" + ToolText.RATING_MAX);
+        assertThat(snapshot).doesNotContain("8/5").doesNotContain("7/5");
+    }
+
+    /**
+     * {@code check_in.energy} and {@code .stress} are both nullable, and this block used to append
+     * them unguarded — so an unanswered slider reached the prompt as the literal "energia null/10",
+     * a fabricated-looking figure in a block whose whole contract is honest absence (ADR 0010).
+     * A slot with neither reading now renders "nincs adat", the BiometricsTools idiom.
+     */
+    @Test
+    void testRender_shouldRenderNoDataForCheckIn_whenBothSlidersUnanswered() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", null, null, null);
+
+        String snapshot = assembler.render(owner, today);
+
+        String recoveryLine = snapshot.lines()
+            .filter(l -> l.startsWith("[Regeneráció]")).findFirst().orElseThrow();
+        assertThat(recoveryLine).contains("check-in (" + today + " 08:00): nincs adat")
+            .doesNotContain("null");
     }
 
     @Test

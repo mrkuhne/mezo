@@ -33,6 +33,23 @@ class FlagTraceCopyTest {
         assertThat(text).contains("0,4").contains("1,0");
     }
 
+    /**
+     * Morning-feed defect (bd mezo-btmc): the quiet half of the same mislabel. {@code
+     * SleepDebtRule} hands this metric its CUMULATIVE window deficit and its CUMULATIVE
+     * threshold ({@code d.deficitHours()} vs {@code cfg.deficitHours()}), so neither number may
+     * be printed with a per-night unit. {@code ClearEvidence} carries no logged-night count, so
+     * no per-night average is derivable here — and this family never estimates one.
+     */
+    @Test
+    void testClearText_shouldStateTheSleepDeficitAsAWindowTotalNotAPerNightRate() {
+        String text = FlagTraceCopy.clearText(new ClearEvidence("deficit_hours", 0.4, 1.0, null));
+
+        assertThat(text)
+            .isEqualTo("Alvásadósság: az ablakban összesen 0,4 óra hiány — a 1,0 órás "
+                + "összesített küszöb alatt.");
+        assertThat(text).doesNotContain("óra/éjszaka");
+    }
+
     @Test
     void a_non_numeric_clear_carries_its_detail_and_no_fabricated_number() {
         String text = FlagTraceCopy.clearText(new ClearEvidence("trajectory", null, null, "cut"));

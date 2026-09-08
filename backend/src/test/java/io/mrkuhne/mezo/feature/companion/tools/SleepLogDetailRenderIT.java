@@ -72,7 +72,7 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).isEqualTo("Alvás — részletes nézet:\n"
                 + d + ": lefekvés 23:15, ébredés 06:45; 7h 30p; ágyban 480p; ébren 12p · könnyű 210p · REM 90p · mély 68p; "
-                + "minőség 4/5; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDLRA; megjegyzés: korán keltem");
+                + "minőség 4/10; ébredések 2; forrás: screenshot (87%); hypnogram: 10 DDRRLDLRA; megjegyzés: korán keltem");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Sleep", d.toString()));
     }
@@ -182,7 +182,7 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
         String out = biometricsTools.getRecovery("sleep", null, List.of(d), null, null, ctx(owner));
 
         assertThat(out).isEqualTo("Alvás — részletes nézet:\n"
-                + d + ": lefekvés 23:40, ébredés 07:05; 7h 24p; minőség 3/5; ébredések 1; forrás: manual");
+                + d + ": lefekvés 23:40, ébredés 07:05; 7h 24p; minőség 3/10; ébredések 1; forrás: manual");
         assertThat(out).doesNotContain("ágyban").doesNotContain("hypnogram")
                 .doesNotContain("megjegyzés").doesNotContain("forrás: screenshot");
     }
@@ -228,6 +228,42 @@ class SleepLogDetailRenderIT extends AbstractIntegrationTest {
         String out = biometricsTools.getRecovery("sleep", 7, null, null, null, ctx(owner));
 
         assertThat(out).isEqualTo("Alvás (utolsó 7 nap):\n"
-                + LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5");
+                + LocalDate.now().minusDays(1) + ": 7,5 h, minőség 4/10");
+    }
+
+    /**
+     * mezo-b6zt: BOTH sleep renderers in this tool — the compact window list and the detail line —
+     * hardcoded a "/5" denominator against a scale the contract declares as 1..10 (sleep.yml,
+     * SleepLogRequest.quality; the FE offers a 1..10 selector). A quality of 9 therefore reached
+     * the prompt as the impossible "9/5", and the model judged sleep against half the real ceiling.
+     * 9 is the pinning value precisely because it cannot exist on the old denominator, and both
+     * renderers are asserted here because fixing only one is how the drift started.
+     */
+    @Test
+    void testRenderSleep_shouldRenderQualityAgainstTen_whenRatedAboveFive() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate d = LocalDate.now().minusDays(1);
+        sleepLogPopulator.createSleepLog(owner, d, new BigDecimal("7.5"), 9);
+
+        String compact = biometricsTools.getRecovery("sleep", 7, null, null, null, ctx(owner));
+        String detail = biometricsTools.getRecovery("sleep", null, List.of(d), null, null, ctx(owner));
+
+        assertThat(compact).contains("minőség 9/10").doesNotContain("minőség 9/5");
+        assertThat(detail).contains("minőség 9/10").doesNotContain("minőség 9/5");
+    }
+
+    /** An unrated row omits the fragment entirely — the shared helper is null there, and "null/10"
+     *  (or a fabricated default) in a tool payload is worse than silence. */
+    @Test
+    void testRenderSleep_shouldOmitQuality_whenRowIsUnrated() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate d = LocalDate.now().minusDays(1);
+        sleepLogPopulator.createSleepLog(owner, d, new BigDecimal("7.5"), null);
+
+        String compact = biometricsTools.getRecovery("sleep", 7, null, null, null, ctx(owner));
+        String detail = biometricsTools.getRecovery("sleep", null, List.of(d), null, null, ctx(owner));
+
+        assertThat(compact).isEqualTo("Alvás (utolsó 7 nap):\n" + d + ": 7,5 h");
+        assertThat(detail).doesNotContain("minőség");
     }
 }

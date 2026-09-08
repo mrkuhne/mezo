@@ -513,7 +513,11 @@ components:
           items: { type: string }
         suggestions:
           type: array
-          description: Advice-card suggestion texts (config-provided). Present only on advice rows.
+          description: >
+            The one-tap ANSWER CHIPS of a once-ever question card. Empty on every other advice
+            row since mezo-wtl0: a generated body is prose written FROM the suggestion, so
+            displaying both printed the same advice twice, in two registers. The suggestion still
+            reaches the model as grounding — it is no longer part of the response.
           items: { type: string }
         flagKey:
           type: string

@@ -64,6 +64,14 @@ public class DailySummaryService {
     /** Prompt prefix the fake LLM dispatches on (the EXTRACTION_MARKER precedent). */
     public static final String SUMMARY_MARKER = "NAPI-ÖSSZEFOGLALÓ-FELADAT";
 
+    // mezo-a64t: display precision belongs to the QUANTITY, not the call site — a body weight is
+    // one decimal and sleep hours one wherever they appear, so this digest and the context snapshot
+    // render the same number identically. NOTE for a follow-up: these three precisions now live
+    // privately in ContextSnapshotAssembler, GoalTools and here; their real home is beside
+    // ToolText.huNum, whose own javadoc already states the per-quantity rule.
+    private static final int WEIGHT_DECIMALS = 1;
+    private static final int SLEEP_HOURS_DECIMALS = 1;
+
     private static final String NARRATIVE_PROMPT = SUMMARY_MARKER + "\n"
             + "Írj rövid (3-5 mondatos), múlt idejű, magyar összefoglalót {{NÉV}} napjáról az alábbi "
             + "tényadatokból. Csak a megadott adatokra támaszkodj, semmit ne találj ki; a számokat "
@@ -150,9 +158,17 @@ public class DailySummaryService {
         }
         sportSessionRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                 .stream().filter(s -> date.equals(s.getDate()))
-                .forEach(s -> blocks.add("Sport: " + s.getSport()
-                        + (s.getDurationMin() != null ? ", " + s.getDurationMin() + " perc" : "")
-                        + (s.getIntensity() != null ? ", intenzitás " + s.getIntensity() + "/5" : "")));
+                .forEach(s -> {
+                    // mezo-b6zt sibling: sport intensity is a 1..10 self-rating (the DB's own
+                    // ck_sport_session_intensity CHECK), and "/5" halved its ceiling. This digest is
+                    // PERSISTED as the day's narrative and later prompts read it back as history, so
+                    // the false figure outlives the message that produced it — hence the shared
+                    // ToolText.rating seam rather than another literal.
+                    String intensity = ToolText.rating(s.getIntensity());
+                    blocks.add("Sport: " + s.getSport()
+                            + (s.getDurationMin() != null ? ", " + s.getDurationMin() + " perc" : "")
+                            + (intensity != null ? ", intenzitás " + intensity : ""));
+                });
         runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
                 .stream().filter(r -> date.equals(r.getDate()))
                 .forEach(r -> {
@@ -182,8 +198,12 @@ public class DailySummaryService {
                 .stream().filter(s -> date.equals(s.getDate())).findFirst()
                 .ifPresent(s -> {
                     String notes = cap(s.getNotes());
-                    blocks.add("Alvás: " + ToolText.num(s.getDurationH()) + " óra"
-                            + (s.getQuality() != null ? ", minőség " + s.getQuality() + "/5" : "")
+                    // mezo-b6zt: the quality scale runs 1..10 (sleep.yml SleepLogRequest.quality) —
+                    // this line hardcoded "/5", so an 8 was written into the day's memory as "8/5".
+                    // The fragment is null when unrated, which keeps the old "omit entirely" branch.
+                    String quality = ToolText.sleepQuality(s.getQuality());
+                    blocks.add("Alvás: " + ToolText.huNum(s.getDurationH(), SLEEP_HOURS_DECIMALS) + " óra"
+                            + (quality != null ? ", minőség " + quality : "")
                             + (s.getAwakenings() != null && s.getAwakenings() > 0
                                     ? ", " + s.getAwakenings() + " ébredés" : "")
                             + (notes.isBlank() ? "" : " — \"" + notes + "\""));
@@ -192,7 +212,11 @@ public class DailySummaryService {
 
     private void addWeight(List<String> blocks, UUID userId, LocalDate date) {
         weightLogRepository.findFirstByCreatedByAndDeletedFalseAndDateOrderByCreatedAtDesc(userId, date)
-                .ifPresent(w -> blocks.add("Súly: " + ToolText.num(w.getWeightKg()) + " kg"));
+                // mezo-a64t: the same body weight the context snapshot renders, so the same
+                // formatter and the same precision — one number must not reach the model as
+                // "83.694" here and "83,7" there.
+                .ifPresent(w -> blocks.add(
+                        "Súly: " + ToolText.huNum(w.getWeightKg(), WEIGHT_DECIMALS) + " kg"));
     }
 
     private void addMedication(List<String> blocks, UUID userId, LocalDate date) {
@@ -218,9 +242,17 @@ public class DailySummaryService {
     private void addCheckIns(List<String> blocks, UUID userId, LocalDate date) {
         for (CheckInEntity c : checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, date)) {
             String note = cap(c.getNote());
+            // mezo-b6zt sibling, and the worst shape of it: energy and stress are 1..10
+            // (api/feature/checkin/checkin.yml), and rendering them "/5" HERE while
+            // ContextSnapshotAssembler#checkInValues rendered the very same two fields "/10" put two
+            // prompts feeding one model in direct contradiction. This digest is PERSISTED as the
+            // day's narrative and read back as history by later prompts, so the wrong figure
+            // outlives the message that produced it. One referenced ceiling, no literals.
+            String energy = ToolText.rating(c.getEnergy());
+            String stress = ToolText.rating(c.getStress());
             blocks.add("Check-in" + (c.getSlotTime() != null ? " (" + c.getSlotTime() + ")" : "") + ":"
-                    + (c.getEnergy() != null ? " energia " + c.getEnergy() + "/5" : "")
-                    + (c.getStress() != null ? ", stressz " + c.getStress() + "/5" : "")
+                    + (energy != null ? " energia " + energy : "")
+                    + (stress != null ? ", stressz " + stress : "")
                     + (note.isBlank() ? "" : " — \"" + note + "\""));
         }
     }

@@ -91,6 +91,13 @@ public class ContextSnapshotAssembler {
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
     /** [Növekedés]'s skill highlight cap — terse, not a full profile dump. */
     private static final int TOP_SKILLS_LIMIT = 3;
+    // mezo-a64t: display precision belongs to the QUANTITY, not to the call site — a body weight is
+    // one decimal wherever it appears ([Profil] measurement, súlytrend, [Cél] start → target), a
+    // weekly rate two, sleep hours one. Named constants so the same quantity can never again render
+    // two ways in one snapshot.
+    private static final int WEIGHT_DECIMALS = 1;
+    private static final int RATE_DECIMALS = 2;
+    private static final int SLEEP_HOURS_DECIMALS = 1;
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
@@ -207,9 +214,14 @@ public class ContextSnapshotAssembler {
             return b.toString();
         }
         b.append("; mérés: ");
+        // mezo-a64t: every figure on this line is one the model QUOTES BACK verbatim, so all of them
+        // go through huNum (Hungarian comma, fixed precision) with the precision of the QUANTITY, not
+        // of the stored value. The unrounded num() put "83.694 kg" and "heti -0.244 kg" into Hungarian
+        // prose one card above a "4,5 óra" — a decimal point and gram precision nobody asked for.
         weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
                 .ifPresentOrElse(
-                        w -> b.append(ToolText.num(w.getWeightKg())).append(" kg (").append(w.getDate()).append(')'),
+                        w -> b.append(ToolText.huNum(w.getWeightKg(), WEIGHT_DECIMALS))
+                                .append(" kg (").append(w.getDate()).append(')'),
                         () -> b.append(NO_DATA));
         b.append("; súlytrend: ");
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
@@ -217,14 +229,16 @@ public class ContextSnapshotAssembler {
         if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
         } else {
-            b.append(ToolText.num(trend.getLatestTrendKg())).append(" kg");
+            b.append(ToolText.huNum(trend.getLatestTrendKg(), WEIGHT_DECIMALS)).append(" kg");
             // rates are only defined from 2+ distinct days (NONE = no slope yet)
             if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
                 if (trend.getWeeklyRateKgPerWeek() != null) {
-                    b.append(", heti ").append(ToolText.num(trend.getWeeklyRateKgPerWeek())).append(" kg");
+                    b.append(", heti ").append(ToolText.huNum(trend.getWeeklyRateKgPerWeek(), RATE_DECIMALS))
+                            .append(" kg");
                 }
                 if (trend.getWeeklyRatePctPerWeek() != null) {
-                    b.append(" (").append(ToolText.num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+                    b.append(" (").append(ToolText.huNum(trend.getWeeklyRatePctPerWeek(), RATE_DECIMALS))
+                            .append("%/hét)");
                 }
             }
         }
@@ -238,9 +252,11 @@ public class ContextSnapshotAssembler {
             return "[Cél] " + NO_DATA;
         }
         StringBuilder b = new StringBuilder("[Cél] ");
-        b.append(goal.getTitle()).append(" (").append(goal.getTrajectory()).append("): ")
-                .append(ToolText.num(goal.getStartWeightKg())).append(" → ")
-                .append(goal.getTargetWeightKg() != null ? ToolText.num(goal.getTargetWeightKg()) : "?")
+        b.append(goal.getTitle()).append(" (").append(huTrajectory(goal.getTrajectory())).append("): ")
+                // mezo-a64t: body weight, so WEIGHT_DECIMALS — huNum already renders "?" for a null
+                // target, which is exactly what the old ternary did by hand.
+                .append(ToolText.huNum(goal.getStartWeightKg(), WEIGHT_DECIMALS)).append(" → ")
+                .append(ToolText.huNum(goal.getTargetWeightKg(), WEIGHT_DECIMALS))
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         b.append(", ").append(week).append(". hét");
@@ -249,7 +265,9 @@ public class ContextSnapshotAssembler {
             b.append("; e heti recept: ").append(seg.kcal()).append(" kcal, ")
                     .append(seg.proteinG()).append(" g fehérje");
             if (seg.sleepTargetH() != null) {
-                b.append(", alvás ").append(ToolText.num(seg.sleepTargetH())).append(" h");
+                // mezo-a64t: sleep hours — the same quantity the [Regeneráció] block renders, so the
+                // same precision; the kcal/protein figures beside it are integers and stay untouched.
+                b.append(", alvás ").append(ToolText.huNum(seg.sleepTargetH(), SLEEP_HOURS_DECIMALS)).append(" h");
             }
             if (seg.restDays() != null && !seg.restDays().isEmpty()) {
                 b.append(", pihenőnap: ").append(seg.restDays().stream()
@@ -311,7 +329,16 @@ public class ContextSnapshotAssembler {
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
         int runCount = runSessionLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
-        b.append("; elmúlt ").append(digestDays).append(" nap: ").append(gymDone.size()).append(" gym-edzés");
+        // mezo-f1x1: the window is TRAILING (from = today - digestDays + 1), and an unlabelled
+        // "elmúlt 7 nap" was re-attributed by the model to the calendar week: on a TUESDAY the
+        // morning card said "a héten eddig egy gym edzést zártál és három sportalkalmad volt", while
+        // by Tuesday morning the calendar week holds Monday alone — the counts were mostly LAST
+        // week's. The inclusive bounds make the block state the period it actually covers, so there
+        // is nothing left to re-attribute. Deliberately still a rolling window: other surfaces read
+        // the same trailing digest, and a week-anchored variant is a separate change.
+        b.append("; elmúlt ").append(digestDays).append(" nap (gördülő ablak, ").append(from)
+                .append(" – ").append(today).append(", nem a naptári hét): ")
+                .append(gymDone.size()).append(" gym-edzés");
         if (!gymDone.isEmpty()) {
             b.append(" (").append(gymDone.stream()
                     .map(w -> w.getDate() + workoutNoteSuffix(w))
@@ -519,6 +546,14 @@ public class ContextSnapshotAssembler {
         return b.toString();
     }
 
+    /** Delegates to {@link ToolText#huTrajectory} (mezo-padz): {@code GoalTools} renders the same
+     *  goal line from the same raw {@code cut|bulk|maintain}, and a private copy here is exactly
+     *  how the two wordings would drift apart. Kept as a named method so {@link #goalBlock} still
+     *  reads as prose. */
+    private static String huTrajectory(String trajectory) {
+        return ToolText.huTrajectory(trajectory);
+    }
+
     /** Raw enum value ("yes"/"partial"/"no") would leak English into an otherwise-Hungarian block. */
     private static String huReflection(IntentionDayResponse.ReflectionEnum reflection) {
         return switch (reflection) {
@@ -539,7 +574,13 @@ public class ContextSnapshotAssembler {
                 .append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g, víz ")
                 .append(ToolText.num(c.getWater())).append('/').append(ToolText.num(t.getWater())).append(" ml");
         ProtocolResponse active = protocolService.getView(userId).getActive();
-        b.append("; protokoll: ").append(active == null ? NO_DATA : "v" + active.getVersion() + " aktív");
+        // mezo-padz: the protocol has NO name — the contract (api/feature/fuel/fuel.yml,
+        // ProtocolResponse) carries id/version/builtAt/status/items and nothing name-like, so a
+        // version number was the entire label. The model filled that gap by borrowing the GOAL's
+        // title and wrote "a Lean Gain protokollod szerint" about a protocol with no such name.
+        // Stating the absence closes the gap; inventing a name here would only move the fiction.
+        b.append("; protokoll: ").append(active == null ? NO_DATA
+                : "v" + active.getVersion() + " aktív (nincs neve — csak a verziószám azonosítja)");
         b.append(", mai bevitel: ").append(intakeService.listForDay(userId, today).getIntakes().size());
         return b.toString();
     }
@@ -568,9 +609,13 @@ public class ContextSnapshotAssembler {
             if (sleep == null) {
                 b.append(": ").append(NO_DATA);
             } else {
-                b.append(" (").append(sleep.getDate()).append("): ").append(ToolText.num(sleep.getDurationH())).append(" h");
-                if (sleep.getQuality() != null) {
-                    b.append(", minőség ").append(sleep.getQuality()).append("/5");
+                // mezo-a64t: sleep hours are quoted back to the user; mezo-b6zt: the denominator was
+                // a hardcoded "/5" against a 1..10 contract scale, so an 8 reached the prompt as "8/5".
+                b.append(" (").append(sleep.getDate()).append("): ")
+                        .append(ToolText.huNum(sleep.getDurationH(), SLEEP_HOURS_DECIMALS)).append(" h");
+                String quality = ToolText.sleepQuality(sleep.getQuality());
+                if (quality != null) {
+                    b.append(", minőség ").append(quality);
                 }
             }
             b.append(";");
@@ -616,10 +661,30 @@ public class ContextSnapshotAssembler {
         return " — \"" + (trimmed.length() <= max ? trimmed : trimmed.substring(0, max) + "…") + '"';
     }
 
-    /** One check-in's rendered values — shared by the today and the MA MÉG NINCS branch above. */
+    /**
+     * One check-in's rendered values — shared by the today and the MA MÉG NINCS branch above.
+     *
+     * <p>The two figures were already /10 (correct), but as LITERALS. They go through
+     * {@link ToolText#rating} because the ceiling having two homes is exactly what let the day
+     * narrative say "energia 8/5" about the same two columns this block rendered as "energia 8/10"
+     * (mezo-b6zt siblings) — one referenced ceiling, no fourth place to drift.
+     *
+     * <p>Reading {@code rating()}'s null also closes a latent hole: {@code check_in.energy} and
+     * {@code .stress} are both nullable, so an unanswered slider used to reach the prompt as the
+     * literal "energia null/10". An absent reading is now omitted, and a slot with neither renders
+     * the honest {@link #NO_DATA} — the {@code BiometricsTools#renderCheckIns} idiom.
+     */
     private String checkInValues(CheckInEntity checkIn) {
-        StringBuilder b = new StringBuilder("energia ").append(checkIn.getEnergy())
-                .append("/10, stressz ").append(checkIn.getStress()).append("/10");
+        List<String> ratings = new ArrayList<>();
+        String energy = ToolText.rating(checkIn.getEnergy());
+        if (energy != null) {
+            ratings.add("energia " + energy);
+        }
+        String stress = ToolText.rating(checkIn.getStress());
+        if (stress != null) {
+            ratings.add("stressz " + stress);
+        }
+        StringBuilder b = new StringBuilder(ratings.isEmpty() ? NO_DATA : String.join(", ", ratings));
         if (checkIn.getNote() != null && !checkIn.getNote().isBlank()) {
             int max = properties.snapshot().checkinNoteMaxChars();
             String note = checkIn.getNote();
