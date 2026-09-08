@@ -132,7 +132,7 @@ describe('AdminCostPage (real mode)', () => {
       http.get(`${API_BASE}/api/llm-usage/breakdown`, () =>
         HttpResponse.json({
           from: '2026-08-14',
-          totals: { callCount: 60, successCount: 60, errorCount: 0, cancelledCount: 0, unpricedCount: 0, costUsd: 1, currency: 'USD' },
+          totals: { callCount: 60, successCount: 60, errorCount: 0, cancelledCount: 0, unpricedCount: 0, promptTokens: 0, cachedTokens: 0, costUsd: 1, currency: 'USD' },
           features: [], models: [], byUser: [],
         }),
       ),

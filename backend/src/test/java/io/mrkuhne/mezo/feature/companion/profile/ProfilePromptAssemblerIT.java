@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.PromptMemoryAssembler;
@@ -95,7 +96,7 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
     /**
      * No production test seam was added (per the review's ambiguity resolution) — instead this
      * pins the block's POSITION the same way {@code ChatServiceGraphBlockIT} pins [Összefüggések]:
-     * a real turn through {@link ChatService#prepareTurn}, asserting on its {@code systemPrompt()}.
+     * a real turn through {@link ChatService#prepareTurn}, asserting on its joined instructions.
      */
     @Test
     void the_chat_prompt_carries_the_block_after_the_fact_blocks_and_before_memories() {
@@ -109,7 +110,10 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
         ChatService.PreparedTurn turn = chatService.prepareTurn(owner, conversation.getId(),
                 SendMessageRequest.builder().content("[fake-embed:1] mi a mai terv?").build());
 
-        String prompt = turn.systemPrompt();
+        // mezo-ozri.5: the instructions now travel in two halves (stable prompt for the provider's
+        // cache prefix, volatile context behind it) — the ordering claim is about what the model
+        // reads, which is the join.
+        String prompt = CompanionLlm.joinInstructions(turn.systemPrompt(), turn.turnContext());
         String factsHeader = KnowledgeFactService.FACTS_HEADER
                 .replace(PromptPersona.NAME_TOKEN, "profile-prompt-order@test.local");
         assertThat(prompt).contains(ProfilePromptAssembler.PROFILE_HEADER);

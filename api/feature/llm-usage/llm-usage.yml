@@ -178,13 +178,15 @@ components:
           items: { $ref: '#/components/schemas/LlmUsageUserGroup' }
     LlmUsageTotals:
       type: object
-      required: [callCount, successCount, errorCount, cancelledCount, unpricedCount, currency]
+      required: [callCount, successCount, errorCount, cancelledCount, unpricedCount, promptTokens, cachedTokens, currency]
       properties:
         callCount: { type: integer, format: int64, description: "every audited call in the period, all statuses" }
         successCount: { type: integer, format: int64 }
         errorCount: { type: integer, format: int64 }
         cancelledCount: { type: integer, format: int64 }
         unpricedCount: { type: integer, format: int64, description: "rows with a null cost_usd — why the sum is an estimate" }
+        promptTokens: { type: integer, format: int64, description: "summed raw prompt tokens; INCLUDES the cached slice" }
+        cachedTokens: { type: integer, format: int64, description: "summed cache-read prompt tokens — a SUBSET of promptTokens; the prompt-cache hit ratio is cachedTokens/promptTokens (mezo-ozri.5)" }
         costUsd: { type: number, format: double, nullable: true, description: "summed cost of the PRICED rows; null when none is priced" }
         currency: { type: string, example: USD }
     LlmUsageGroup:

@@ -30,6 +30,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -134,15 +135,22 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return complete(systemPrompt, null, history, userMessage, tools, toolContext);
+    }
+
+    @Override
+    public String complete(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+                           List<ToolCallback> tools, Map<String, Object> toolContext) {
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
         // count arrives per-call via the LlmRoundUsage tally (mezo-58ig).
         CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
         String model = route(ModelTier.CHEAP, kind);
-        CallSpec spec = new CallSpec(kind, model, systemPrompt, userMessage,
+        CallSpec spec = new CallSpec(kind, model,
+            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
             ChatHistory.render(history), null, null, null, false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
-            () -> request(systemPrompt, history, userMessage, tools, toolContext, model, tally)
+            () -> request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model, tally)
                 .call().chatResponse());
     }
 
@@ -210,10 +218,17 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     @Override
     public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return stream(systemPrompt, null, history, userMessage, tools, toolContext);
+    }
+
+    @Override
+    public Flux<String> stream(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+                               List<ToolCallback> tools, Map<String, Object> toolContext) {
         // Both the context and the routing decision are read HERE, on the caller's thread: a
         // re-subscription runs the defer elsewhere, where the feature slug is no longer bound.
         String model = route(ModelTier.CHEAP, CallKind.CHAT_STREAM);
-        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, model, systemPrompt, userMessage,
+        CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, model,
+            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
             ChatHistory.render(history), null, null, null, true);
         LlmCallContext context = llmCallContextHolder.get();
 
@@ -223,7 +238,7 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
             LlmRoundUsage tally = new LlmRoundUsage();
             StringBuilder answer = new StringBuilder();
-            return request(systemPrompt, history, userMessage, tools, toolContext, model, tally)
+            return request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model, tally)
                 .stream().chatResponse()
                 .doOnNext(response -> {
                     lastChunk.set(response);
@@ -340,14 +355,30 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             .context(context);
     }
 
-    private ChatClient.ChatClientRequestSpec request(String systemPrompt, List<Turn> history,
+    /**
+     * <b>Where the volatile half goes, and why (mezo-ozri.5).</b> Spring AI lays a request out as
+     * {@code [system] + messages + [user]}, so appending the turn context to the message list puts it
+     * after the history and immediately before the user's turn — BEHIND the provider's cacheable
+     * prefix rather than inside it. OpenAI renders that prefix as instructions → tool definitions →
+     * conversation (verified 2026-09-07 against the prompt-caching guide), so while the volatile
+     * blocks lived in the leading system message they changed the prefix on every single turn and
+     * re-billed all 46 tool schemas at the full input rate.
+     */
+    private ChatClient.ChatClientRequestSpec request(String systemPrompt, String turnContext,
+                                                     List<Turn> history,
                                                      String userMessage, List<ToolCallback> tools,
                                                      Map<String, Object> toolContext, String model,
                                                      LlmRoundUsage tally) {
+        List<Message> messages = new ArrayList<>(toMessages(history));
+        if (turnContext != null && !turnContext.isBlank()) {
+            // FULLY QUALIFIED: this file already imports the app's own SystemMessage (the error
+            // envelope) — two unrelated types, one simple name.
+            messages.add(new org.springframework.ai.chat.messages.SystemMessage(turnContext));
+        }
         ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
             .options(optionsFor(model, ModelTier.CHEAP, !tools.isEmpty()))
             .system(systemPrompt)
-            .messages(toMessages(history))
+            .messages(messages)
             .user(userMessage)
             .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally));
         if (!tools.isEmpty()) {

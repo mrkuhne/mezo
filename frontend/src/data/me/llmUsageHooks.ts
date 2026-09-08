@@ -52,7 +52,7 @@ export function useLlmUsageSummary(options?: { enabled?: boolean }) {
 /** Honest empty for real mode: zero everything and NULL cost — an unresolved read must not read as $0. */
 export const LLM_BREAKDOWN_EMPTY: LlmUsageBreakdownResponse = {
   from: '',
-  totals: { callCount: 0, successCount: 0, errorCount: 0, cancelledCount: 0, unpricedCount: 0, costUsd: null, currency: 'USD' },
+  totals: { callCount: 0, successCount: 0, errorCount: 0, cancelledCount: 0, unpricedCount: 0, promptTokens: 0, cachedTokens: 0, costUsd: null, currency: 'USD' },
   features: [],
   models: [],
   byUser: [],
@@ -74,7 +74,9 @@ export const LLM_BREAKDOWN_EMPTY: LlmUsageBreakdownResponse = {
  */
 export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
   from: '2026-08-10',
-  totals: { callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7, unpricedCount: 38, costUsd: 1.86, currency: 'USD' },
+  // mezo-ozri.5: a plausible post-caching period — the cached slice is a SUBSET of the prompt
+  // tokens, so the header renders 62%.
+  totals: { callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7, unpricedCount: 38, promptTokens: 1_840_000, cachedTokens: 1_140_800, costUsd: 1.86, currency: 'USD' },
   features: [
     { key: 'companion_chat', callCount: 96, costUsd: 0.74 },
     { key: 'companion_hypothesis', callCount: 21, costUsd: 0.39 },

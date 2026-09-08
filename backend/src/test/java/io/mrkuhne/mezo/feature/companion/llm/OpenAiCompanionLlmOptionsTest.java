@@ -7,8 +7,11 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Llm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Llm.Tier;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.ModelTier;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmActorResolver;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -74,12 +77,47 @@ class OpenAiCompanionLlmOptionsTest {
         assertThat(options.getStreamOptions().includeUsage()).isTrue();
     }
 
+    /**
+     * mezo-ozri.5: the prompt-cache ROUTING hint. Verified 2026-09-07 against
+     * developers.openai.com/api/docs/guides/prompt-caching — the key "influence[s] routing; [it
+     * does] not pin requests to a machine or guarantee a cache read hit", so requests that share a
+     * stable prefix are worth steering at the same cache. Feature slug + account id, never a name
+     * or anything else identifying.
+     */
+    @Test
+    void testOptionsFor_shouldSetPromptCacheKeyFromFeatureAndActor_whenAnActorIsResolved() {
+        UUID actor = UUID.fromString("00000000-0000-0000-0000-0000000000aa");
+        OpenAiCompanionLlm llm = adapter(tier(new Tier.ReasoningEffort("low", "medium")), actor);
+
+        OpenAiChatOptions options = contextHolder.runWith(
+            new LlmCallContext("companion_chat", "send", "conversation", UUID.randomUUID()),
+            () -> (OpenAiChatOptions) llm.optionsFor("gpt-5.6-luna", ModelTier.CHEAP, true).build());
+
+        assertThat(options.getPromptCacheKey()).isEqualTo("companion_chat:" + actor);
+    }
+
+    /** A cron thread has no principal — the feature slug alone is then the honest key. */
+    @Test
+    void testOptionsFor_shouldFallBackToTheFeatureAlone_whenNoActorIsResolved() {
+        OpenAiCompanionLlm llm = adapter(tier(new Tier.ReasoningEffort("low", "medium")), null);
+
+        OpenAiChatOptions options = contextHolder.runWith(
+            new LlmCallContext("companion_chat", "send", null, null),
+            () -> (OpenAiChatOptions) llm.optionsFor("gpt-5.6-luna", ModelTier.CHEAP, true).build());
+
+        assertThat(options.getPromptCacheKey()).isEqualTo("companion_chat");
+    }
+
     private OpenAiChatOptions optionsFor(String model, ModelTier tier, boolean carriesTools) {
         OpenAiCompanionLlm llm = adapter(tier(new Tier.ReasoningEffort("low", "medium")));
         return (OpenAiChatOptions) llm.optionsFor(model, tier, carriesTools).build();
     }
 
     private OpenAiCompanionLlm adapter(Tier openai) {
+        return adapter(openai, null);
+    }
+
+    private OpenAiCompanionLlm adapter(Tier openai, UUID actor) {
         Tier gemini = new Tier("gemini-2.5-flash", "gemini-2.5-pro", Map.of(), Map.of(),
             new Tier.ReasoningEffort(null, null));
         LlmModelRouter router = new LlmModelRouter(gemini, openai, contextHolder);
@@ -96,8 +134,14 @@ class OpenAiCompanionLlmOptionsTest {
             new Llm(LlmProvider.OPENAI, gemini, openai, Map.of()),
             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
             null, null, null);
+        LlmActorResolver actorResolver = new LlmActorResolver() {
+            @Override
+            public UUID currentActor() {
+                return actor;
+            }
+        };
         return new OpenAiCompanionLlm(chatModel, properties, router, record -> { }, contextHolder,
-            new OpenAiUsageExtractor(), null);
+            new OpenAiUsageExtractor(), null, actorResolver);
     }
 
     private static Tier tier(Tier.ReasoningEffort reasoningEffort) {

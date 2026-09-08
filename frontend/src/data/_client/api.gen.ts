@@ -8863,6 +8863,16 @@ export interface components {
              */
             unpricedCount: number;
             /**
+             * Format: int64
+             * @description summed raw prompt tokens; INCLUDES the cached slice
+             */
+            promptTokens: number;
+            /**
+             * Format: int64
+             * @description summed cache-read prompt tokens — a SUBSET of promptTokens; the prompt-cache hit ratio is cachedTokens/promptTokens (mezo-ozri.5)
+             */
+            cachedTokens: number;
+            /**
              * Format: double
              * @description summed cost of the PRICED rows; null when none is priced
              */
