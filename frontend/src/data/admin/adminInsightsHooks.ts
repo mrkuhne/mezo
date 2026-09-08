@@ -1,3 +1,4 @@
+import { ApiError } from '@/data/_client/api'
 import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import {
   adminInsightsApi,
@@ -179,7 +180,18 @@ export function useAdminFeatureDetail(key: string, period: AdminFeaturePeriod, i
   const q = useDualQuery<AdminFeatureDetailResponse>({
     queryKey: [...ADMIN_FEATURE_DETAIL_KEY, key, period],
     mockData: featureDetailMockFor(key),
-    realFetch: () => adminInsightsApi.featureDetail(key, period),
+    // An unknown feature key (mezo-kxnn Task 3) answers 404 — the `patternDetailHooks.ts`/
+    // `memoirHooks.ts` precedent: caught here and folded into the honest `ADMIN_FEATURE_DETAIL_EMPTY`
+    // (`key: ''`) instead of surfacing as `isError`, so the page's "ismeretlen funkció" state is a
+    // plain `data.key === ''` read, not a distinct error branch to special-case everywhere.
+    realFetch: async () => {
+      try {
+        return await adminInsightsApi.featureDetail(key, period)
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return ADMIN_FEATURE_DETAIL_EMPTY
+        throw e
+      }
+    },
     realEmpty: ADMIN_FEATURE_DETAIL_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled,

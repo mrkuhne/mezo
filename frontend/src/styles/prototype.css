@@ -11601,6 +11601,26 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-quad-svg .pt:hover { opacity: 1; }
 .ad-quad-note { font-size: 10.5px; margin: 2px 0 0; }
 
+/* ---- feature detail page (mezo-kxnn Task 3) ---- */
+.ad-feature-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 10px; padding: 10px 4px 14px;
+}
+.ad-feature-head .nm { display: flex; align-items: center; gap: 10px; }
+.ad-funnelrow { display: flex; align-items: center; gap: 9px; padding: 5px 0; }
+.ad-funnelrow .lb { font-size: 10.5px; font-weight: 600; width: 78px; flex: none; }
+.ad-funnelrow .vv { font-size: 10.5px; font-weight: 700; color: #6E6257; width: 26px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.ad-reasonlist, .ad-errorlist { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ad-reasonlist li, .ad-errorlist li {
+  display: flex; align-items: center; justify-content: space-between; font-size: 11px;
+  padding: 3px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.06);
+}
+.ad-errorlist code { color: #6E6257; font-size: 10.5px; }
+.ad-reasonlist .num, .ad-errorlist .num { font-variant-numeric: tabular-nums; font-weight: 700; color: #6E6257; }
+.ad-updown { display: flex; gap: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ad-updown .up { color: #4E6B42; }
+.ad-updown .down { color: #A8452A; }
+
 /* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
    van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster
    Tile — no eyebrow, its own washes per state). `.off` (grey, unavailable) MUST look

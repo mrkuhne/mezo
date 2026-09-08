@@ -23,6 +23,8 @@ const AdminMemoryPage = lazy(() =>
   import('@/features/admin/memory/AdminMemoryPage').then((m) => ({ default: m.AdminMemoryPage })))
 const AdminFeaturesPage = lazy(() =>
   import('@/features/admin/pages/AdminFeaturesPage').then((m) => ({ default: m.AdminFeaturesPage })))
+const AdminFeatureDetailPage = lazy(() =>
+  import('@/features/admin/pages/AdminFeatureDetailPage').then((m) => ({ default: m.AdminFeatureDetailPage })))
 const AdminDataPage = lazy(() =>
   import('@/features/admin/pages/AdminDataPage').then((m) => ({ default: m.AdminDataPage })))
 const AdminCostPage = lazy(() =>
@@ -44,6 +46,7 @@ export const adminRoutes: RouteObject[] = [
       // Funkciók (mezo-kxnn) replaces the Feature-használat matrix page; /admin/usage is a
       // bookmark-preserving redirect, not a live route.
       { path: 'features', element: <AdminFeaturesPage /> },
+      { path: 'features/:key', element: <AdminFeatureDetailPage /> },
       { path: 'usage', element: <Navigate to="/admin/features" replace /> },
       { path: 'data', element: <AdminDataPage /> },
       { path: 'cost', element: <AdminCostPage /> },

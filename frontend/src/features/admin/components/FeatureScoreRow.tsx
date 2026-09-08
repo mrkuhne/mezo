@@ -13,7 +13,9 @@ import { hu1, huInt, usd } from '@/shared/lib/huNum'
 
 const MISSING_MARK = ' (nincs címke)'
 
-const KIND_LABEL: Record<AdminFeatureRow['kind'], string> = {
+// Exported: the feature detail page's head (mezo-kxnn Task 3) reuses the same kind vocabulary
+// for its chip rather than re-deriving a second copy.
+export const KIND_LABEL: Record<AdminFeatureRow['kind'], string> = {
   ai: 'AI',
   domain: 'napló',
   both: 'AI + napló',
@@ -22,7 +24,7 @@ const KIND_LABEL: Record<AdminFeatureRow['kind'], string> = {
 
 // Reuses the shared `.ad-tag` tone vocabulary (prototype.css) rather than inventing new colors
 // for a fourth axis of meaning.
-const KIND_TAG_TONE: Record<AdminFeatureRow['kind'], string> = {
+export const KIND_TAG_TONE: Record<AdminFeatureRow['kind'], string> = {
   ai: 'bg',
   domain: 'ok',
   both: 'warn',
