@@ -338,10 +338,19 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/data/views`, () => HttpResponse.json(ADMIN_VIEWS_MOCK)),
   http.get(`${API_BASE}/api/admin/data/tables/:table/rows`, ({ params, request }) => {
     const table = String(params.table)
-    const base = adminRowsMockFor(table)
     const url = new URL(request.url)
-    const page = Number(url.searchParams.get('page') ?? base.page)
-    return HttpResponse.json({ ...base, table, page })
+    const sizeParam = url.searchParams.get('size')
+    return HttpResponse.json(
+      adminRowsMockFor({
+        table,
+        userId: url.searchParams.get('userId'),
+        page: Number(url.searchParams.get('page') ?? '0'),
+        size: sizeParam != null ? Number(sizeParam) : undefined,
+        sort: url.searchParams.get('sort'),
+        dir: url.searchParams.get('dir') === 'asc' ? 'asc' : 'desc',
+        includeDeleted: url.searchParams.get('includeDeleted') === 'true',
+      }),
+    )
   }),
   // RAG memory explorer (mezo-4qyt) — populated defaults mirroring the mock seed. The
   // "switched off" (404 with no ADMIN_MEMORY_* code) path is exercised via server.use() in the
