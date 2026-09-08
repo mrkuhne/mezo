@@ -57,7 +57,7 @@ export function AdminCostPage() {
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? ''
 
   return (
-    <MozaikPage tone="gold">
+    <MozaikPage tone="gold" className="ad-page-narrow">
       <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
       <EntranceGroup>
         {/* Minimal hero — just the icon + title. Count, cost and the status split live

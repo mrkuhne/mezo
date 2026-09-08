@@ -110,6 +110,62 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: 'Figyeljük' })).not.toBeInTheDocument()
   })
 
+  // Reflexió S6 (mezo-eq85.6) — a laborfüzet: a `ref-anna-sleep` mock-sor teszt-tervvel jön.
+  test('a hypothesis with a test plan opens the laborfüzet instead of the catalog layout', () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    // állapot-kártya
+    expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
+    expect(screen.getByText('Hipotézis: Ha Anna szerepel a hála-naplóban, másnap többet alszol?')).toBeInTheDocument()
+    expect(screen.getByText('Ígéretes, de még gyűlik.')).toBeInTheDocument()
+    expect(screen.getByText('38%')).toBeInTheDocument()
+    // a négy szekció, a prototípus sorrendjében
+    expect(screen.getByText('A teszt-terv')).toBeInTheDocument()
+    expect(screen.getByText('Az eddigi napok')).toBeInTheDocument()
+    expect(screen.getByText('Bizonyíték-napló')).toBeInTheDocument()
+    expect(screen.getByText('Hogyan számoltuk?')).toBeInTheDocument()
+    // a terv előre rögzített számai
+    expect(screen.getByText('Ha…')).toBeInTheDocument()
+    expect(document.querySelector('.pdt-plan-tile-a .pdt-plan-nm')?.textContent).toBe('„Anna” a szövegeidben')
+    expect(document.querySelector('.pdt-plan-strip')?.textContent)
+      .toBe('+1 napeltolás8 napkell minimumtöbbvárt irány60 napablak')
+    // a napló: a két néma éjszaka EGY sorrá olvadt, a te válaszod és az élő éjszakák maradtak
+    expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Bejött/)).toHaveLength(2)
+    expect(screen.getByText('Kevés nap · 2 éjszaka')).toBeInTheDocument()
+    // a katalógus-elrendezés darabjai NEM jelennek meg
+    expect(screen.queryByText('A minta története')).not.toBeInTheDocument()
+    expect(screen.queryByText('Mit vigyél magaddal?')).not.toBeInTheDocument()
+  })
+
+  // A jelenlét-széria a dróton 0/1 — a napok listája ezt sosem mutathatja nyersen (mezo-eq85.6 review).
+  test('the days table reads a presence series as igen/nem, never 0/1', () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    fireEvent.click(screen.getByText('Napok listája →'))
+    const rows = document.querySelectorAll('.pdt-days-fold tbody tr')
+    expect([...rows].slice(0, 2).map((row) => row.children[1].textContent)).toEqual(['nem', 'igen'])
+    expect([...rows].every((row) => !['0', '1'].includes(row.children[1].textContent ?? ''))).toBe(true)
+  })
+
+  // A háttér-fold a REFLEXIÓS futásról beszél: a terv ablaka és a hipotézis-job utolsó futása —
+  // sosem a statisztikai pár-job ablaka/ideje (mezo-eq85.6 review).
+  test('the laborfüzet background fold names the plan window and the reflection run', () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    fireEvent.click(screen.getByText('Hogyan számoltuk?'))
+    const grid = document.querySelector('.pdt-diag-grid') as HTMLElement
+    expect(within(grid).getByText('Adatablak').nextSibling?.textContent).toBe('60 nap')
+    const expected = new Date('2026-09-12T01:40:00Z')
+      .toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
+    expect(within(grid).getByText('Utolsó számítás').nextSibling?.textContent).toBe(expected)
+  })
+
+  test('the laborfüzet decision buttons reach the decide mutation', async () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    fireEvent.click(screen.getByRole('button', { name: 'Megerősítem' }))
+    expect(await screen.findByText('Beépült.')).toBeInTheDocument()
+    expect(screen.getByText('BEÉPÜLT')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+  })
+
   test('unknown key renders the honest not-found state with a back chip', () => {
     renderAt('/mezo/patterns/nonsense~key')
     // mezo-d20.11: the ad-hoc chevron became the house PageHead chip, and it goes back to the
@@ -298,6 +354,20 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.getByText('7 nap megfigyelés')).toBeInTheDocument()
     expect(screen.queryByText('Az eddigi napok')).not.toBeInTheDocument()
     expect(screen.queryByText('Hogyan számoltuk?')).not.toBeInTheDocument()
+  })
+
+  // Reflexió S6 (mezo-eq85.6): a laborfüzet a KÖZÖS MSW alapértelmezésből jön — nincs
+  // teszt-lokális `server.use`, tehát a drót-alak maga a szerződés, nem a teszt kényelme.
+  test('the shared MSW default serves the laborfüzet for the reflection key', async () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    expect(await screen.findByText('Bizonyíték-napló')).toBeInTheDocument()
+    expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
+    expect(screen.getByText('A teszt-terv')).toBeInTheDocument()
+    expect(screen.getByText('Ígéretes, de még gyűlik.')).toBeInTheDocument()
+    expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
+    // nyers r/p sosem a kártya arcán — csak a becsukott Háttér fold alatt
+    expect(document.querySelector('.pdt-state-card')?.textContent).not.toContain('0.31')
+    expect(screen.getByText('0.31').closest('details.pdt-fold')).not.toBeNull()
   })
 
   test('a 404 renders the honest not-found state', async () => {

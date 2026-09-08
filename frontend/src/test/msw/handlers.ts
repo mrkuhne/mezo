@@ -2,13 +2,14 @@ import { http, HttpResponse } from 'msw'
 import { API_BASE } from '@/data/_client/api'
 import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
-import { patterns as patternSeed } from '@/data/insights/insights'
+import { mockPatternPairDetail, patterns as patternSeed, REFLECTION_KEY } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import {
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_OVERVIEW_MOCK,
+  ADMIN_SCREEN_USAGE_MOCK,
   ADMIN_USER_DETAIL_MOCK,
   ADMIN_USER_INSIGHTS_MOCK,
 } from '@/data/admin/adminInsightsMock'
@@ -26,6 +27,7 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
+import type { Pattern } from '@/data/types'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -258,6 +260,32 @@ export function replyPatternStub(patternId: string) {
   }
 }
 
+/** Mock-seed sor → `PatternResponse` drót-alak. A régi hipotézis-seedek `kind`/`status` mezője
+ *  hiányzik, azoknak a korábbi alapértelmezés (`ai_hypothesis` / `proposed`) marad; a Reflexió
+ *  sorok (mezo-eq85.6) a SAJÁT fajtájukkal, státuszukkal és teszt-tervükkel mennek ki. */
+function patternWire(p: Pattern) {
+  return {
+    id: p.id,
+    kind: p.kind ?? 'ai_hypothesis',
+    pairKey: p.pairKey,
+    category: p.category,
+    categoryLabel: p.categoryLabel,
+    title: p.title,
+    mechanism: p.mechanism,
+    evidence: p.evidence,
+    confidence: p.confidence ?? null,
+    critique: p.critique,
+    status: p.status ?? 'proposed',
+    lastDetectedAt: p.lastDetectedAt ?? '2026-07-03T02:40:00Z',
+    hypothesisKey: p.hypothesisKey ?? null,
+    testPlan: p.testPlan ?? null,
+    belief: p.belief ?? null,
+    evidenceHits: p.evidenceHits,
+    evidenceMisses: p.evidenceMisses,
+    origin: p.origin ?? null,
+  }
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
   http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
@@ -331,6 +359,10 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/features`, () => HttpResponse.json(ADMIN_FEATURE_USAGE_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/cost-matrix`, () => HttpResponse.json(ADMIN_COST_MATRIX_MOCK)),
+  http.get(`${API_BASE}/api/admin/usage/screens`, () => HttpResponse.json(ADMIN_SCREEN_USAGE_MOCK)),
+  // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not
+  // surface as an unhandled request, and answers 202 with no body like the backend does.
+  http.post(`${API_BASE}/api/telemetry/screen-events`, () => new HttpResponse(null, { status: 202 })),
   // Admin data browser (mezo-d5iy.12) — populated defaults from the same mock seed, never a
   // 404 for an unknown table: an unrecognised `:table` falls back to the food_log fixture
   // rather than answering empty/error, matching "MSW handlers answer populated defaults".
@@ -338,10 +370,19 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/data/views`, () => HttpResponse.json(ADMIN_VIEWS_MOCK)),
   http.get(`${API_BASE}/api/admin/data/tables/:table/rows`, ({ params, request }) => {
     const table = String(params.table)
-    const base = adminRowsMockFor(table)
     const url = new URL(request.url)
-    const page = Number(url.searchParams.get('page') ?? base.page)
-    return HttpResponse.json({ ...base, table, page })
+    const sizeParam = url.searchParams.get('size')
+    return HttpResponse.json(
+      adminRowsMockFor({
+        table,
+        userId: url.searchParams.get('userId'),
+        page: Number(url.searchParams.get('page') ?? '0'),
+        size: sizeParam != null ? Number(sizeParam) : undefined,
+        sort: url.searchParams.get('sort'),
+        dir: url.searchParams.get('dir') === 'asc' ? 'asc' : 'desc',
+        includeDeleted: url.searchParams.get('includeDeleted') === 'true',
+      }),
+    )
   }),
   // RAG memory explorer (mezo-4qyt) — populated defaults mirroring the mock seed. The
   // "switched off" (404 with no ADMIN_MEMORY_* code) path is exercised via server.use() in the
@@ -1398,23 +1439,12 @@ export const handlers = [
       })),
     ),
   ),
-  // Companion patterns (V3.1) — wire fixtures mirror the mock seeds (proposed, hypothesis-shaped).
+  // Companion patterns (V3.1) — wire fixtures mirror the mock seeds. A seed row's OWN kind and
+  // status win where it has them (Reflexió S6, mezo-eq85.6: the `reflection` row would otherwise
+  // arrive as a plain proposed hypothesis and lose its test plan), the older hypothesis seeds keep
+  // the proposed/ai_hypothesis defaults they were written for.
   http.get(`${API_BASE}/api/companion/pattern`, () =>
-    HttpResponse.json(
-      patternSeed.map((p) => ({
-        id: p.id,
-        kind: 'ai_hypothesis',
-        category: p.category,
-        categoryLabel: p.categoryLabel,
-        title: p.title,
-        mechanism: p.mechanism,
-        evidence: p.evidence,
-        confidence: p.confidence,
-        critique: p.critique,
-        status: 'proposed',
-        lastDetectedAt: '2026-07-03T02:40:00Z',
-      })),
-    ),
+    HttpResponse.json(patternSeed.map(patternWire)),
   ),
   http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
     const body = (await request.json()) as { decision: 'confirm' | 'monitor' | 'reject' }
@@ -1443,6 +1473,20 @@ export const handlers = [
   http.post(`${API_BASE}/api/companion/pattern/:id/reply`, ({ params }) =>
     HttpResponse.json({ pattern: replyPatternStub(String(params.id)), conversationId: null }),
   ),
+  // Reflexió S6 (mezo-eq85.6) — a laborfüzet pár-részlete. A mock-seed EGYETLEN forrás: a
+  // valós módú alapértelmezés ugyanazt a hipotézist szolgálja ki, mint a mock mód. Minden más
+  // kulcs őszintén 404 (ez a `notFound` ág, nem hiba).
+  http.get(`${API_BASE}/api/companion/pattern/pair/:pairKey`, ({ params }) => {
+    const detail = String(params.pairKey) === REFLECTION_KEY ? mockPatternPairDetail(REFLECTION_KEY) : null
+    if (!detail) return HttpResponse.json([{ code: 'COMPANION_PATTERN_PAIR_NOT_FOUND' }], { status: 404 })
+    return HttpResponse.json({
+      pair: detail.pair,
+      pattern: detail.pattern ? patternWire(detail.pattern) : null,
+      events: detail.events,
+      days: detail.days,
+      impact: detail.impact,
+    })
+  }),
   http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
     HttpResponse.json({
       windowFrom: '2026-06-13',

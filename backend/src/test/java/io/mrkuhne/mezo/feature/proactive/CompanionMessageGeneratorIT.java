@@ -40,10 +40,21 @@ import org.springframework.transaction.annotation.Transactional;
  * whole {@code DIGEST_TIMEOUT_SECONDS} on that lock before failing soft — 2 seconds burned per test
  * for a digest nobody here checks. {@code ReflectionDigestMorningIT} is the class that covers the
  * digest path (including the timeout/rollback behaviour) with a non-class-transactional fixture.
+ *
+ * <p>Memória mindenhol S7 (mezo-eq85.7): for the SAME reason, the shared {@code MORNING_BRIEFING}
+ * memory policy is switched OFF here too (this class asserts nothing about the memory block
+ * either) — a real retrieval spawns retriever tasks on {@code applicationTaskExecutor} that each
+ * need their OWN pooled JDBC connection while this class' single test connection sits inside the
+ * still-open outer transaction, and 17 tests' worth of that contention turns a sub-second class
+ * into a multi-minute one. {@code CompanionMessageGeneratorMemoryIT} (not class-transactional) is
+ * what actually covers the memory-block path.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
-@TestPropertySource(properties = "mezo.companion.reflection.enabled=false")
+@TestPropertySource(properties = {
+    "mezo.companion.reflection.enabled=false",
+    "mezo.companion.memory-platform.policies.morning-briefing.enabled=false"
+})
 class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 7, 6);

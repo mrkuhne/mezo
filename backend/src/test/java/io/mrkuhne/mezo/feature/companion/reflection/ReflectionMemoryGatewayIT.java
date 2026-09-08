@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionMemoryGateway;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -64,8 +65,8 @@ class ReflectionMemoryGatewayIT extends AbstractIntegrationTest {
     @Test
     void testContextFor_shouldReturnEmptyAndNotThrow_whenRetrievalBlowsUp() {
         UUID owner = databasePopulator.populateUser("reflection-gateway-fail@test.local");
-        ReflectionMemoryGateway failing = new ReflectionMemoryGateway(
-                new ThrowingMemoryContextService(), properties, llmCallContextHolder);
+        ReflectionMemoryGateway failing = new ReflectionMemoryGateway(new MemoryContextBlock(
+                new ThrowingMemoryContextService(), properties, llmCallContextHolder));
 
         assertThat(failing.contextFor(owner, "Anna és az alvás", false)).isEmpty();
     }

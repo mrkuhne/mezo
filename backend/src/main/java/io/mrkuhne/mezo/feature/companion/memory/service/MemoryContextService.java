@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.companion.memory.service;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
-import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
@@ -189,11 +188,10 @@ public class MemoryContextService {
     }
 
     private RetrievalBatch retrieveCandidates(MemoryRequest request, PreparedMemoryQuery query) {
-        // mezo-eq85.3: the offline reflection consumer gets its OWN (deeper) pool — nobody waits
-        // for a 03:40 answer, so the chat latency gate must not cap it.
-        int candidateLimit = request.consumerPolicy() == ConsumerPolicy.REFLECTION
-                ? properties.policies().reflection().candidateLimit()
-                : properties.serving().candidateLimit();
+        // mezo-eq85.7: every consumer's candidate pool comes from its own policy limits now —
+        // REFLECTION and CHAT_AMBIENT are adapted from their pre-existing config shapes so their
+        // numbers stay byte-identical to before this shared seam existed.
+        int candidateLimit = properties.limitsFor(request.consumerPolicy()).candidateLimit();
         RetrievalInput input = new RetrievalInput(
                 request, query, properties.servingEmbeddingVersion(), candidateLimit);
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
@@ -308,11 +306,10 @@ public class MemoryContextService {
     private int boundedTokenBudget(MemoryRequest request) {
         int requested = request.maxTokenBudget() > 0
                 ? request.maxTokenBudget() : properties.serving().chatMaxTokens();
-        if (request.consumerPolicy() == ConsumerPolicy.REFLECTION) {
-            return Math.min(requested, properties.policies().reflection().maxTokens());
-        }
-        return request.consumerPolicy() == ConsumerPolicy.CHAT_AMBIENT
-                ? Math.min(requested, properties.serving().chatMaxTokens()) : requested;
+        // mezo-eq85.7: REFLECTION and CHAT_AMBIENT keep exactly today's numbers (adapted from
+        // their pre-existing config shapes by limitsFor); every other policy is now bounded the
+        // same way, by its own configured maxTokens.
+        return Math.min(requested, properties.limitsFor(request.consumerPolicy()).maxTokens());
     }
 
     private static long elapsedMillis(long startedNanos) {

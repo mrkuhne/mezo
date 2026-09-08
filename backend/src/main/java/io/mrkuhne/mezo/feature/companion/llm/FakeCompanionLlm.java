@@ -104,6 +104,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  scripted verdict goes back to clean. */
     public static final String UNMARKED_CLAIM_SENTINEL = "[fake-unmarked-claim]";
 
+    /** Scripted verdicts (mezo-indo): proves the judge's payload carries the tool RESULTS, not just
+     *  the tool NAMES. Planted in a recorded tool outcome's result text, this string reaches the
+     *  payload ONLY through the tool-outcome digest inside {@code TurnVerdictCheck.check(...)} —
+     *  drop that render (the v1 behaviour this ticket fixed) and the sentinel disappears, the
+     *  scripted verdict goes back to clean, and every tool-derived number is structurally suspect
+     *  to the judge again. */
+    public static final String TOOL_RESULT_SEEN_SENTINEL = "[fake-verdict-saw-tool-result]";
+
     /** Scripted tool execution: {@code [fake-tool:get_recovery {"scope":"sleep","days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
@@ -1006,6 +1014,9 @@ public class FakeCompanionLlm implements CompanionLlm {
     private String verdictAnswer(String userMessage) {
         if (userMessage.contains(VERDICT_BROKEN)) {
             return "ez nem json";
+        }
+        if (userMessage.contains(TOOL_RESULT_SEEN_SENTINEL)) {
+            return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"tool-result-seen\"}";
         }
         if (userMessage.contains(HISTORY_SEEN_SENTINEL)) {
             return "{\"redundantQuestion\":true,\"unmarkedClaim\":false,\"reason\":\"history-seen\"}";

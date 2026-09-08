@@ -436,6 +436,12 @@ mezo:
     # 404; the admin hub's own endpoints are unaffected.
     admin-memory:
       enabled: false
+    # Lean screen-event telemetry (mezo-o5cz) — off (the DEFAULT, spec T2): POST
+    # /api/telemetry/screen-events 404s, no ingest/retention bean exists, screen_event stays
+    # empty and the admin "Képernyők" panel reads zeros. Enabled explicitly in
+    # k8s/backend/deployment.yaml, nowhere else.
+    screen-telemetry:
+      enabled: false
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
     # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
@@ -565,6 +571,22 @@ mezo:
       # retention; nothing else changes). Previously gated ONLY by mezo.feature.companion.enabled.
       memory-retrieval-retention-job:
         enabled: true
+  # Lean screen-event telemetry (mezo-o5cz, spec 2026-09-07 §5) — binds TelemetryProperties.
+  # Bound regardless of mezo.feature.screen-telemetry.enabled: the switch gates BEANS, these are
+  # the numbers those beans read, so a typo here is a startup failure, not a silent default.
+  telemetry:
+    # Rows older than this are HARD-deleted (no soft delete — a screen view is disposable).
+    retention-days: 90
+    # 03:45 — inside the dawn cron cluster but on its own minute (02:20/02:40/03:00 SUN,
+    # 03:10 feedback-learning, 03:20 graph, 03:40 llm-log retention). One bounded DELETE.
+    retention-cron: "0 45 3 * * *"
+    # Largest accepted batch; a bigger one is a 400 TELEMETRY_BATCH_TOO_LARGE, never a silent
+    # truncation. The FE flushes far below this (a handful of route changes per interval).
+    batch-max: 50
+    # Per-user ingest budget in EVENTS per rolling minute (in-memory token bucket; single replica).
+    rate-limit-per-minute: 120
+    # The client clock is trusted but pinned into now +/- this many hours (spec T4).
+    occurred-at-clamp-hours: 24
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
@@ -839,6 +861,61 @@ mezo:
           candidate-limit: 30
           max-tokens: 800
           rerank: true
+        # mezo-eq85.7 "Memória mindenhol S7": one PolicyLimits per Part-B consumer, each
+        # individually switchable so a surface can be rolled back to "no memory context" purely
+        # by config. morning-briefing is shared by ALL FOUR proactive companion messages
+        # (morning/sleep/weight/window) — none of the other six is specific to one of those kinds.
+        morning-briefing:
+          enabled: true
+          candidate-limit: 20
+          max-tokens: 600
+          rerank: false
+          deep: false
+        # Weekly memoir consolidation (a later Part-B task): deep, reranked, generous budget —
+        # nobody waits for a weekly write-up either.
+        weekly-memoir:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 1200
+          rerank: true
+          deep: true
+        # Prediction-evidence retrieval backing a forecast (a later Part-B task).
+        prediction-evidence:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 800
+          rerank: true
+          deep: false
+        # "Find similar past days" episodic-recall retrieval (a later Part-B task).
+        similar-days:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 600
+          rerank: false
+          deep: false
+        # Character-evidence retrieval backing a proposal/observation (a later Part-B task): deep
+        # and reranked, same reasoning as weekly-memoir.
+        character-evidence:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 1200
+          rerank: true
+          deep: true
+        # Post-turn fact-extraction's own retrieval (a later Part-B task) — deliberately lean and
+        # cheap, extraction runs on every turn.
+        extraction:
+          enabled: true
+          candidate-limit: 10
+          max-tokens: 300
+          rerank: false
+          deep: false
+        # Personal-context retrieval for a non-chat, non-reflection surface (a later Part-B task).
+        personal-context:
+          enabled: true
+          candidate-limit: 15
+          max-tokens: 400
+          rerank: false
+          deep: false
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)
@@ -1724,6 +1801,13 @@ mezo:
       max-retries: 1
       # Prescription-med terms the clinical check guards (accent-folded match; dose-CHANGE verbs only)
       rx-terms: [retatrutid, reta, tirzepatid, mounjaro, szemaglutid, ozempic, wegovy]
+      # mezo-indo: the judge sees the tool OUTPUTS, not just the tool names — without them every
+      # tool-derived number is structurally unsupported to it (measured 0% pass at every
+      # reasoning-effort level, mezo-9yqq class 1). Budgeted, because the judge runs on the cheap
+      # tier and its payload already carries the system prompt + the whole history; a cut or
+      # dropped output is MARKED, never silently removed.
+      tool-result-max-chars: 700
+      tool-results-total-max-chars: 3000
     habit-suggest:
       # AI habit suggester (mezo-n5e9.3) — smart-model propose-only chain-fill suggestions; caps
       # how many suggestions the Task 2 adapter asks the model for / returns (HabitAiService's

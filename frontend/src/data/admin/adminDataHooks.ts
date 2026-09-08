@@ -70,7 +70,7 @@ export function useAdminRows(params: AdminRowsParams, isOwner: boolean) {
       params.dir ?? 'desc',
       !!params.includeDeleted,
     ],
-    mockData: adminRowsMockFor(params.table),
+    mockData: adminRowsMockFor(params),
     realFetch: () => adminDataApi.rows(params),
     realEmpty: ADMIN_ROWS_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,

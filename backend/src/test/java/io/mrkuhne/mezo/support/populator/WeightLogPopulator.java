@@ -32,10 +32,18 @@ public class WeightLogPopulator {
 
     /** Persists a single weigh-in for {@code owner} on {@code date}. */
     public WeightLogEntity createWeightLog(UUID owner, LocalDate date, BigDecimal weightKg) {
+        return createWeightLog(owner, date, weightKg, null);
+    }
+
+    /** Weigh-in with a free-text note (mezo-eq85.7 fix round: the ONLY free-text field a weigh-in
+     *  carries — lets an IT plant a sentinel that reaches {@code CompanionMessageGenerator}'s
+     *  memory-retrieval query, which is otherwise built entirely from numeric fields). */
+    public WeightLogEntity createWeightLog(UUID owner, LocalDate date, BigDecimal weightKg, String note) {
         WeightLogEntity e = new WeightLogEntity();
         e.setCreatedBy(owner); // ownership set server-side style
         e.setDate(date);
         e.setWeightKg(weightKg);
+        e.setNote(note);
         return weightLogRepository.saveAndFlush(e);
     }
 

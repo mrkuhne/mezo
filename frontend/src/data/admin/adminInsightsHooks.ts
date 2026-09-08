@@ -5,6 +5,7 @@ import {
   type AdminFeatureUsageResponse,
   type AdminOverviewResponse,
   type AdminPeriod,
+  type AdminScreenUsageResponse,
   type AdminSortDir,
   type AdminUserDetailResponse,
   type AdminUserInsightResponse,
@@ -16,6 +17,8 @@ import {
   ADMIN_FEATURE_USAGE_EMPTY,
   ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_OVERVIEW_EMPTY,
+  ADMIN_SCREEN_USAGE_EMPTY,
+  ADMIN_SCREEN_USAGE_MOCK,
   ADMIN_OVERVIEW_MOCK,
   ADMIN_USER_DETAIL_EMPTY,
   ADMIN_USER_DETAIL_MOCK,
@@ -35,6 +38,7 @@ export const ADMIN_USER_INSIGHTS_KEY = ['admin', 'insights', 'users'] as const
 export const ADMIN_USER_DETAIL_KEY = ['admin', 'insights', 'user'] as const
 export const ADMIN_FEATURE_USAGE_KEY = ['admin', 'insights', 'usage', 'features'] as const
 export const ADMIN_COST_MATRIX_KEY = ['admin', 'insights', 'usage', 'cost-matrix'] as const
+export const ADMIN_SCREEN_USAGE_KEY = ['admin', 'insights', 'usage', 'screens'] as const
 
 export function useAdminOverview(isOwner: boolean) {
   return useDualQuery<AdminOverviewResponse>({
@@ -106,6 +110,23 @@ export function useAdminCostMatrix(period: AdminPeriod, isOwner: boolean) {
     mockData: ADMIN_COST_MATRIX_MOCK,
     realFetch: () => adminInsightsApi.costMatrix(period),
     realEmpty: ADMIN_COST_MATRIX_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled: isOwner,
+  })
+}
+
+/**
+ * Screen usage (mezo-o5cz) — the Feature-használat page's "Képernyők" panel. Same recipe as its
+ * siblings: `enabled: isOwner` so a non-owner never fires the request, and an EXPLICIT
+ * `realStaleTime` (an omitted one overwrites the client default and leaves the query permanently
+ * stale — see the note at the top of this file).
+ */
+export function useAdminScreenUsage(period: AdminPeriod, isOwner: boolean) {
+  return useDualQuery<AdminScreenUsageResponse>({
+    queryKey: [...ADMIN_SCREEN_USAGE_KEY, period],
+    mockData: ADMIN_SCREEN_USAGE_MOCK,
+    realFetch: () => adminInsightsApi.screenUsage(period),
+    realEmpty: ADMIN_SCREEN_USAGE_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled: isOwner,
   })

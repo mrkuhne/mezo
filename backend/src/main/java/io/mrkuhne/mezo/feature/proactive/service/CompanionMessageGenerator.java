@@ -14,6 +14,8 @@ import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionDigestService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -214,6 +216,11 @@ public class CompanionMessageGenerator {
      *  message is exactly the pre-S4 one. The dependency runs proactive → companion, the direction
      *  ArchUnit's {@code feature_slices_are_cycle_free} allows. */
     private final ObjectProvider<ReflectionDigestService> reflectionDigestService;
+    /** Memória mindenhol S7 (mezo-eq85.7): same lazy idiom as {@link #reflectionDigestService} —
+     *  the memory-platform beans are {@code COMPANION_SWITCH}-gated while this generator is not
+     *  (it also runs with companion off), so the bean can be absent. Absent ⇒ every message ships
+     *  exactly as it did pre-S7, with no {@code [Hosszú távú memória]} block. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -238,7 +245,8 @@ public class CompanionMessageGenerator {
         }
         List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>(MORNING_CANDIDATES);
         StringBuilder payload = new StringBuilder();
-        payload.append(contextSnapshotAssembler.renderWithoutBiometrics(userId, date));
+        String snapshot = contextSnapshotAssembler.renderWithoutBiometrics(userId, date);
+        payload.append(snapshot);
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append("\n\nKORÁBBI NAPOK (legfrissebb elöl):\n");
         for (DailySummaryEntity summary : past) {
@@ -254,6 +262,11 @@ public class CompanionMessageGenerator {
                     .append(digest.sentence());
             candidates.add(new CompanionMessageEnvelope.Ref("Pattern", digest.title()));
         }
+        String morningQuery = firstChars(snapshot, 400) + "\nma: " + planLine(snapshot);
+        MemoryContextBlock.Rendered mem =
+                memoryBlock(userId, date, morningQuery, CompanionMessageEntity.KIND_MORNING, null);
+        payload.append(mem.block());
+        candidates.addAll(memoryRefCandidates(mem));
         payload.append("\nHIVATKOZÁS-JELÖLTEK (a refIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             CompanionMessageEnvelope.Ref ref = candidates.get(i);
@@ -356,10 +369,15 @@ public class CompanionMessageGenerator {
         payload.append(contextSnapshotAssembler.render(userId, date));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(earlierMessagesBlock(userId, date));
-        payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ")
-                .append(ToolText.num(sleep.getDurationH())).append(" h")
-                .append(sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
-                .append(sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
+        String sleepLine = ToolText.num(sleep.getDurationH()) + " h"
+                + (sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
+                + (sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
+        payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ").append(sleepLine);
+        String sleepQuery = "alvás " + sleepLine + freeTextSuffix(sleep.getNotes());
+        MemoryContextBlock.Rendered mem = memoryBlock(
+                userId, date, sleepQuery, CompanionMessageEntity.KIND_SLEEP, null);
+        payload.append(mem.block());
+        candidates.addAll(memoryRefCandidates(mem));
         appendCandidates(payload, candidates);
 
         String answer = llmCallContextHolder.runWith(
@@ -407,12 +425,17 @@ public class CompanionMessageGenerator {
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(earlierMessagesBlock(userId, date));
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
-        payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ")
-                .append(ToolText.num(weight.getWeightKg())).append(" kg")
-                .append(trend.getLatestTrendKg() != null
+        String trendLine = ToolText.num(weight.getWeightKg()) + " kg"
+                + (trend.getLatestTrendKg() != null
                         ? "; trendérték (EWMA, simított): " + ToolText.num(trend.getLatestTrendKg()) + " kg" : "")
-                .append(trend.getWeeklyRateKgPerWeek() != null
+                + (trend.getWeeklyRateKgPerWeek() != null
                         ? ", heti " + ToolText.num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
+        payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ").append(trendLine);
+        String weightQuery = "súly " + trendLine + freeTextSuffix(weight.getNote());
+        MemoryContextBlock.Rendered mem = memoryBlock(
+                userId, date, weightQuery, CompanionMessageEntity.KIND_WEIGHT, null);
+        payload.append(mem.block());
+        candidates.addAll(memoryRefCandidates(mem));
         appendCandidates(payload, candidates);
 
         String answer = llmCallContextHolder.runWith(
@@ -462,12 +485,15 @@ public class CompanionMessageGenerator {
         boolean evening = CompanionMessageEntity.KIND_EVENING.equals(kind);
         String window = evening ? "este (closing)" : "dél (nudge)";
         String eyebrow = evening ? "Napzárás" : "Napközi jegyzet";
+        MemoryContextBlock.Rendered mem = memoryBlock(
+                userId, date, firstChars(latest.getNarrative(), 300), kind, null);
         String payload = contextSnapshotAssembler.render(userId, date)
                 + knowledgeFactService.renderPromptBlock(userId)
                 + "\n\nUTOLSÓ NAPI ÖSSZEFOGLALÓ:\n- " + latest.getSummaryDate() + ": " + latest.getNarrative()
                 + earlierMessagesBlock(userId, date)
                 + hydrationBlock(userId, date, LocalTime.now())
                 + batchLoggerBlock(userId, date)
+                + mem.block()
                 + "\n\nABLAK: " + window;
 
         ToolCallAudit audit = toolRegistry.newTurnAudit();
@@ -480,11 +506,12 @@ public class CompanionMessageGenerator {
             return null;
         }
         RefsEnvelope toolRefs = audit.toRefsEnvelope();
-        List<CompanionMessageEnvelope.Ref> refs = toolRefs == null
-                ? List.of()
+        List<CompanionMessageEnvelope.Ref> refs = new ArrayList<>(toolRefs == null
+                ? List.<CompanionMessageEnvelope.Ref>of()
                 : toolRefs.refs().stream()
                         .map(r -> new CompanionMessageEnvelope.Ref(r.kind(), r.id()))
-                        .toList();
+                        .toList());
+        refs.addAll(memoryRefCandidates(mem));
         CompanionMessageEntity message = new CompanionMessageEntity();
         message.setCreatedBy(userId);
         message.setMessageDate(date);
@@ -698,6 +725,70 @@ public class CompanionMessageGenerator {
             case PersonAffectTrend.DIRECTION_DOWN -> "romló";
             default -> "stagnáló";
         };
+    }
+
+    /**
+     * Memória mindenhol S7 (mezo-eq85.7): the {@code [Hosszú távú memória]} block for one
+     * proactive-feed message, or {@link MemoryContextBlock.Rendered#EMPTY} when the bean is
+     * absent, the {@code MORNING_BRIEFING} policy is disabled, or retrieval fails — {@link
+     * MemoryContextBlock#render} is itself fail-open, so no try/catch is needed here. All four
+     * proactive-feed kinds (morning/sleep/weight/midday/evening) share the ONE {@code
+     * MORNING_BRIEFING} policy: none of the platform's other configured policies is specific to a
+     * single proactive-feed kind, only the LLM billing {@code operation} label differs per kind.
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate date, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.MORNING_BRIEFING, query, date, false,
+                "proactive_feed", operation, entityId);
+    }
+
+    /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' two-component {@link
+     *  CompanionMessageEnvelope.Ref} shape — the numbered candidate list is label-only, so the
+     *  memory ref's id is dropped, only its kind and label survive. */
+    private static List<CompanionMessageEnvelope.Ref> memoryRefCandidates(MemoryContextBlock.Rendered mem) {
+        return mem.refs().stream()
+                .map(ref -> new CompanionMessageEnvelope.Ref(ref.kind(), ref.label()))
+                .toList();
+    }
+
+    /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string
+     *  when it is shorter — the memory-query truncation every proactive-feed kind uses. */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
+    }
+
+    /** Fix round (mezo-eq85.7, task-7 review finding 1): the user's own free-text note on a sleep
+     *  or weight log, appended to that surface's memory-retrieval query when present — the ONLY
+     *  free-text signal {@link #generateSleepReaction}/{@link #generateWeightReaction} carry (the
+     *  rest of {@code sleepLine}/{@code trendLine} is purely numeric), so without this a genuinely
+     *  matching memory could never be found by anything but coincidence. Users already set this
+     *  note today, through the weight and sleep log sheets ({@code WeightLogService#setNote},
+     *  {@code SleepLogService#setNotes}), so this is a real, live behaviour change: whenever a note
+     *  is present, the memory query, the retrieved memories and the audited {@code raw_query} for
+     *  that message now change too — the whole point, since a numeric-only query retrieves nothing
+     *  useful. "" (no-op) only when the note is null or blank. Truncated to 200 chars, independent
+     *  of the entity column length, like every other query-builder truncation in this class. */
+    private static String freeTextSuffix(String note) {
+        return note == null || note.isBlank() ? "" : " " + firstChars(note, 200);
+    }
+
+    /** The "Ma (terv): …" line out of a rendered {@link ContextSnapshotAssembler} snapshot, or ""
+     *  when the marker is not present — used so the morning memory query still carries today's
+     *  training plan even when it falls outside the snapshot's first 400 characters. */
+    private static String planLine(String snapshot) {
+        int start = snapshot.indexOf("Ma (terv):");
+        if (start < 0) {
+            return "";
+        }
+        int end = snapshot.indexOf(';', start);
+        return end < 0 ? snapshot.substring(start) : snapshot.substring(start, end);
     }
 
     /** Numbered HIVATKOZÁS-JELÖLTEK block, identical shape to {@link #generateMorning}'s. */

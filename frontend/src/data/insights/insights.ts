@@ -4,6 +4,7 @@ import type {
   PatternImpact,
   PatternMonitor,
   PatternPairDetail,
+  PatternTestPlan,
   Prediction,
   Experiment,
   Memoir, MemoirEntry,
@@ -18,6 +19,23 @@ export const STRONG_SIGNAL = { minAbsR: 0.3, maxP: 0.15 }
 
 export function patternCategoryColor(cat: PatternCategory): string {
   return `var(--cat-${cat})`
+}
+
+/** A laborfüzet demó-hipotézisének stabil kulcsa (Reflexió S6, mezo-eq85.6) — a sor és a
+ *  hozzá tartozó szintetikus pár-részlet ezen a kulcson találkozik. */
+export const REFLECTION_KEY = 'ref-anna-sleep'
+
+/** Az előre rögzített teszt-terv — a falszifikálhatóság horgonya: a napok gyűlése UTÁN már
+ *  nem lehet átírni, ezért külön konstans, amit a sor és a szintetikus pár is ugyanígy lát. */
+const reflectionTestPlan: PatternTestPlan = {
+  seriesA: 'people:anna',
+  seriesB: 'sleep-duration-h',
+  seriesALabel: '„Anna” a szövegeidben',
+  seriesBLabel: 'alváshossz',
+  lagDays: 1,
+  expectedDirection: 'positive',
+  minN: 8,
+  windowDays: 60,
 }
 
 export const patterns: Pattern[] = [
@@ -69,6 +87,28 @@ export const patterns: Pattern[] = [
     critique: { statistical: 0.69, confounders: 0.78, l3align: 0.74, actionability: 0.91 },
     evidenceHits: 0,
     evidenceMisses: 0,
+  },
+  // Reflexió S6 (mezo-eq85.6): a laborfüzet demó-sora — a motor SAJÁT, éjszakai hipotézise
+  // előre rögzített teszt-tervvel. Statisztikai `confidence`-e nincs (nem korreláció-pár, a
+  // bizonyossága a determinisztikus `belief`), ezért a bizonyosság-küszöb rá nem értelmezhető.
+  {
+    id: 'ref-anna-1',
+    pairKey: REFLECTION_KEY,
+    hypothesisKey: REFLECTION_KEY,
+    category: 'trigger',
+    categoryLabel: 'Kapcsolatok',
+    title: 'Ha Anna szerepel a hála-naplóban, másnap többet alszol',
+    mechanism: 'Az Annás napok után eddig átlagosan 40 perccel hosszabb alvás jött ki.',
+    evidence: ['4 Annás nap', '12 másik nap', '5 / 8 bizonyíték-nap'],
+    kind: 'reflection',
+    status: 'monitoring',
+    origin: 'nightly_reflection',
+    testPlan: reflectionTestPlan,
+    belief: 0.38,
+    evidenceHits: 4,
+    evidenceMisses: 1,
+    // az ÉJSZAKAI REFLEXIÓ utolsó futása — nem a statisztikai pár-job `lastRunAt`-je
+    lastDetectedAt: '2026-09-12T01:40:00Z',
   },
 ]
 
@@ -481,6 +521,59 @@ const showcaseDetail: PatternPairDetail = {
   },
 }
 
+/** A laborfüzet demó-részlete (Reflexió S6, mezo-eq85.6) — SZINTETIKUS pár: nem a
+ *  katalógusból jön, hanem a sor teszt-tervéből, pontosan úgy, ahogy a backend
+ *  `PatternMonitorService.toPair(plan, …)` overloadja építi (`people:` kulcs, `mind` domén,
+ *  generikus irány-sablonok). Hat esemény: az észrevétel, a te válaszod, az átfogalmazás és
+ *  három bizonyíték-éjszaka. */
+const reflectionDetail: PatternPairDetail = {
+  pair: {
+    key: REFLECTION_KEY,
+    title: 'Anna és az alvásod',
+    category: 'trigger', categoryLabel: 'Kapcsolatok', lagDays: 1,
+    metricAKey: 'people:anna', metricALabel: '„Anna” a szövegeidben',
+    metricAValueKind: 'binary',
+    metricBKey: 'sleep-duration-h', metricBLabel: 'alváshossz',
+    metricBValueKind: 'number',
+    mechanismHu: 'Az Annás napok után eddig átlagosan 40 perccel hosszabb alvás jött ki.',
+    questionHu: 'Ha Anna szerepel a hála-naplóban, másnap többet alszol?',
+    expectedDirection: 'positive',
+    whenPositiveHu: '{erősség} pozitív együttjárás',
+    whenNegativeHu: '{erősség} fordított együttjárás',
+    metricADomain: 'mind', metricBDomain: 'sleep',
+    verdict: 'live', alignedDays: 16, missingDays: null, bottleneckMetricKey: null,
+    groupZeroDays: 12, groupOneDays: 4, requiredPerGroup: 3,
+    r: 0.31, n: 16, p: 0.24, status: null,
+  },
+  pattern: patterns.find((p) => p.pairKey === REFLECTION_KEY)!,
+  events: [
+    { kind: 'observation', occurredAt: '2026-09-06T12:12:00Z',
+      text: 'Négy Annás nap után átlag 40 perc többlet-alvás. Megkérdeztem, figyeljem-e.' },
+    { kind: 'user_reply', occurredAt: '2026-09-06T12:15:00Z', choice: 'watch', channel: 'observation',
+      text: 'Igen, figyeld — de nem Anna miatt, hanem mert olyankor szabadnapos vagyok.' },
+    { kind: 'revised', occurredAt: '2026-09-07T01:40:00Z',
+      text: 'A válaszod nyomán új mellék-hipotézis nyílt: **szabadnap → több alvás**. Ez marad, az is fut.' },
+    { kind: 'evidence', occurredAt: '2026-09-08T01:40:00Z', hit: true, n: 5, verdict: 'LIVE' },
+    { kind: 'evidence', occurredAt: '2026-09-09T01:40:00Z', hit: false, n: 6, verdict: 'LIVE' },
+    { kind: 'evidence', occurredAt: '2026-09-10T01:40:00Z', hit: true, n: 7, verdict: 'LIVE' },
+    // két néma éjszaka: a kapu írt, de nem lett belőle bizonyíték — a naplóban EGY sorrá olvad
+    { kind: 'evidence', occurredAt: '2026-09-11T01:40:00Z', verdict: 'FEW_DAYS' },
+    { kind: 'evidence', occurredAt: '2026-09-12T01:40:00Z', verdict: 'FEW_DAYS' },
+  ],
+  // 16 illesztett nap: 4 Annás (a=1) és 12 másik — az Annás napok után hosszabb alvás.
+  days: [
+    { date: '2026-08-26', a: 0, b: 6.7 }, { date: '2026-08-27', a: 1, b: 7.4 },
+    { date: '2026-08-28', a: 0, b: 6.4 }, { date: '2026-08-29', a: 0, b: 6.9 },
+    { date: '2026-08-30', a: 0, b: 7.1 }, { date: '2026-08-31', a: 1, b: 7.6 },
+    { date: '2026-09-01', a: 0, b: 6.2 }, { date: '2026-09-02', a: 0, b: 6.8 },
+    { date: '2026-09-03', a: 0, b: 7.0 }, { date: '2026-09-04', a: 1, b: 7.3 },
+    { date: '2026-09-05', a: 0, b: 6.5 }, { date: '2026-09-06', a: 0, b: 6.6 },
+    { date: '2026-09-07', a: 0, b: 7.2 }, { date: '2026-09-08', a: 1, b: 7.5 },
+    { date: '2026-09-09', a: 0, b: 6.3 }, { date: '2026-09-10', a: 0, b: 6.9 },
+  ],
+  impact: EMPTY_IMPACT,
+}
+
 /** Két kézzel írt detail-seed (spec-mockup a forrás): egy megerősített pár teljes történettel
  *  + a katalógus minden MÁS párjára minimál-detail (pair a patternMonitor-ból, pattern: null,
  *  üres history/days/impact — gyűjtögető pár, még nem ment át a kapun). Ismeretlen kulcsra
@@ -488,6 +581,7 @@ const showcaseDetail: PatternPairDetail = {
 export function mockPatternPairDetail(pairKey: string): PatternPairDetail | null {
   if (pairKey === SHOWCASE_PAIR_KEY) return showcaseDetail
   if (pairKey === 'weekend~late-meal-hour') return weekendDetail
+  if (pairKey === REFLECTION_KEY) return reflectionDetail
   const pair = patternMonitor.pairs.find((p) => p.key === pairKey)
   if (!pair) return null
   return { pair, pattern: null, events: [], days: [], impact: EMPTY_IMPACT }

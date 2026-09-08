@@ -85,6 +85,6 @@ public class CompanionAdvisorChain {
         if (clinical.isPresent()) {
             return List.of(clinical.get());
         }
-        return turnVerdictCheck.check(systemPrompt, history, userMessage, answer, audit.callNames());
+        return turnVerdictCheck.check(systemPrompt, history, userMessage, answer, audit.toolOutcomes());
     }
 }

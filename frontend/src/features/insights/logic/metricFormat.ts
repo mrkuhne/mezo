@@ -11,6 +11,13 @@ import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
 const HOUR_KEYS = new Set(['late-meal-hour', 'bedtime-hour', 'wakeup-hour'])
 const BINARY_KEYS = new Set(['weekend', 'ritual-closed'])
 
+/** Reflexió S6 (mezo-eq85.6): a `people:`/`topic:` jelenlét-szériák nem katalógus-metrikák, de a
+ *  dróton ugyanúgy 0/1-ek (`DerivedSeriesService.valueKindOf` → BINARY) — minden bináris ág
+ *  (érték, tengely, csoport-felirat) ugyanezen az egy prédikátumon keresztül ismeri fel őket. */
+export function isPresenceSeries(metricKey: string): boolean {
+  return metricKey.startsWith('people:') || metricKey.startsWith('topic:')
+}
+
 /** Raw aligned-day value → what the days table shows: "15:41", "igen"/"nem", or "7.6". */
 export function formatMetricValue(metricKey: string, value: number): string {
   if (HOUR_KEYS.has(metricKey)) {
@@ -20,7 +27,7 @@ export function formatMetricValue(metricKey: string, value: number): string {
     const m = totalMin % 60
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
   }
-  if (BINARY_KEYS.has(metricKey)) return value >= 0.5 ? 'igen' : 'nem'
+  if (BINARY_KEYS.has(metricKey) || isPresenceSeries(metricKey)) return value >= 0.5 ? 'igen' : 'nem'
   return String(Math.round(value * 10) / 10)
 }
 
@@ -29,6 +36,7 @@ export function formatMetricValue(metricKey: string, value: number): string {
 export function axisEndLabels(metricKey: string): { low: string; high: string } {
   if (metricKey === 'weekend') return { low: 'hétköznap', high: 'hétvége' }
   if (metricKey === 'ritual-closed') return { low: 'kimaradt', high: 'megvolt' }
+  if (isPresenceSeries(metricKey)) return { low: 'nincs említve', high: 'említve' }
   if (HOUR_KEYS.has(metricKey)) return { low: 'korábban', high: 'később' }
   return { low: 'alacsony', high: 'magas' }
 }
@@ -50,6 +58,15 @@ export function binaryGroupLabels(metricKey: string): BinaryGroupLabels {
     return {
       zero: { axis: 'kimaradt', day: 'lezárás nélküli' },
       one: { axis: 'megvolt', day: 'lezárt esti' },
+    }
+  }
+  // Reflexió S6 (mezo-eq85.6): egy `people:`/`topic:` jelenlét-széria BINARY párja nem
+  // katalógus-metrika — a „0-s csoport" felirat rá értelmetlen. A széria maga az említés,
+  // ezért a két csoport: volt-e említés azon a napon.
+  if (isPresenceSeries(metricKey)) {
+    return {
+      zero: { axis: 'nincs említve', day: 'említés nélküli' },
+      one: { axis: 'említve', day: 'említéses' },
     }
   }
   return {
