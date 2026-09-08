@@ -1118,14 +1118,20 @@ chat on the other.
   for a 03:40 answer — so it must not inherit chat's latency gate. `ConsumerPolicy.REFLECTION` gets
   its own candidate pool, token budget and reranker allowance under
   `mezo.companion.memory-platform.policies.reflection` (30 / 800 / `rerank: true`), read by
-  `MemoryContextService.retrieveCandidates` + `boundedTokenBudget` and by
-  `LlmMemoryReranker.shouldRerank` next to the existing `deep || WEEKLY_MEMOIR` condition. The value
-  lands in `memory_retrieval_run.consumer_policy`, so **every reflection retrieval is separable from
-  a chat turn's in the audit** — which is the whole reason it is a policy and not a flag.
-- **`ReflectionMemoryGateway` is the single door, and it FAILS OPEN.** One audited request per call
-  (`LlmCallContext("companion_reflection", "memory", …)`), and any runtime blow-up below it becomes
-  `""` plus a warning. A memory platform that cannot answer must not cost the user tonight's
-  reflection — the whole nightly pass is best-effort by design.
+  `MemoryContextService.retrieveCandidates` + `boundedTokenBudget` and, as of S7's `limitsFor`
+  refactor below, by `LlmMemoryReranker.shouldRerank` via `properties.limitsFor(request.consumerPolicy()).rerank()`
+  (the S3-era hard-coded `deep || WEEKLY_MEMOIR` condition is gone — see the S7 section for the
+  full switch). The value lands in `memory_retrieval_run.consumer_policy`, so **every reflection
+  retrieval is separable from a chat turn's in the audit** — which is the whole reason it is a
+  policy and not a flag.
+- **`ReflectionMemoryGateway` is the single door, and it FAILS OPEN.** One audited request per call,
+  and any runtime blow-up below it becomes `""` plus a warning. A memory platform that cannot
+  answer must not cost the user tonight's reflection — the whole nightly pass is best-effort by
+  design. S7 refactors this gateway into a thin caller of the shared `MemoryContextBlock` seam (see
+  below); the persisted `llm_call.operation` label changes as part of that from the S3-era literal
+  `"memory"` to `"reflection_memory"` (`MemoryContextBlock.render` always appends `"_memory"` to its
+  `operation` argument) — **a cost report grouped by that label shows a split series across the
+  cutover**, not a real change in call volume.
 - **`TestPlanValidator` is where "Gemini phrases, code decides" bites hardest.** The model may name
   two series, a lag and a direction (`RawTestPlan`); **everything that decides whether the resulting
   hypothesis can ever be confirmed** — `minN`, `minGroupN`, `windowDays` — comes from
@@ -1379,13 +1385,20 @@ window).
   existing knowledge-facts block, and maps `mem.refs()` (`RefsEnvelope.Ref`, three components) onto
   its own two-component `CompanionMessageEnvelope.Ref` — the numbered candidate list is label-only,
   so the memory ref's id is dropped. Per-kind query: morning = the biometrics-free snapshot's first
-  400 chars + the "Ma (terv):" plan line; sleep = "alvás " + the freshly logged sleep line; weight =
-  "súly " + the trend line; window = the latest daily-summary narrative's first 300 chars.
+  400 chars + the "Ma (terv):" plan line; sleep = "alvás " + the freshly logged sleep line + the
+  sleep log's own free-text note when present; weight = "súly " + the trend line + the weigh-in's
+  own free-text note when present; window = the latest daily-summary narrative's first 300 chars.
+  (Fix round, task-7 review: the sleep/weight note suffix — `CompanionMessageGenerator#freeTextSuffix`
+  — was added because their query is otherwise built entirely from numeric fields, which made
+  `CompanionMessageGeneratorMemoryIT`'s own FAIL_EMBED case impossible to exercise honestly; "" when
+  the note is null/blank, so no caller's behaviour changes.)
 - **A failed embed degrades, it does not empty the block.** `MemoryContextService`'s retrievers run
   independently — a `FakeEmbeddingAdapter.FAIL_EMBED` query only kills the DENSE retriever; lexical/
   facts/graph still run, so a query that shares a keyword with a seeded item can still surface it.
-  `MemoryContextBlockIT` and `CompanionMessageGeneratorMemoryIT` assert the run row and the dense
-  retriever's recorded error, not an empty block, for this case.
+  `MemoryContextBlockIT` asserts the run row and the dense retriever's recorded error for this case;
+  `CompanionMessageGeneratorMemoryIT` does the same per proactive-feed kind, with the marker planted
+  where each surface's own query actually reads it (morning: the `[Cél]` goal title; sleep/weight:
+  the log's free-text note above; window: the daily-summary narrative).
 
 ## 2. User-facing behavior
 

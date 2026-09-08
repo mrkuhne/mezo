@@ -373,8 +373,9 @@ public class CompanionMessageGenerator {
                 + (sleep.getQuality() != null ? ", minőség " + sleep.getQuality() + "/5" : "")
                 + (sleep.getAwakenings() != null ? ", ébredések: " + sleep.getAwakenings() : "");
         payload.append("\n\nMOST RÖGZÍTETT ALVÁS (").append(sleep.getDate()).append("): ").append(sleepLine);
+        String sleepQuery = "alvás " + sleepLine + freeTextSuffix(sleep.getNotes());
         MemoryContextBlock.Rendered mem = memoryBlock(
-                userId, date, "alvás " + sleepLine, CompanionMessageEntity.KIND_SLEEP, null);
+                userId, date, sleepQuery, CompanionMessageEntity.KIND_SLEEP, null);
         payload.append(mem.block());
         candidates.addAll(memoryRefCandidates(mem));
         appendCandidates(payload, candidates);
@@ -430,8 +431,9 @@ public class CompanionMessageGenerator {
                 + (trend.getWeeklyRateKgPerWeek() != null
                         ? ", heti " + ToolText.num(trend.getWeeklyRateKgPerWeek()) + " kg" : "");
         payload.append("\n\nMOST RÖGZÍTETT MÉRÉS (").append(weight.getDate()).append("): ").append(trendLine);
+        String weightQuery = "súly " + trendLine + freeTextSuffix(weight.getNote());
         MemoryContextBlock.Rendered mem = memoryBlock(
-                userId, date, "súly " + trendLine, CompanionMessageEntity.KIND_WEIGHT, null);
+                userId, date, weightQuery, CompanionMessageEntity.KIND_WEIGHT, null);
         payload.append(mem.block());
         candidates.addAll(memoryRefCandidates(mem));
         appendCandidates(payload, candidates);
@@ -760,6 +762,17 @@ public class CompanionMessageGenerator {
             return "";
         }
         return text.length() <= maxChars ? text : text.substring(0, maxChars);
+    }
+
+    /** Fix round (mezo-eq85.7, task-7 review finding 1): the user's own free-text note on a sleep
+     *  or weight log, appended to that surface's memory-retrieval query when present — the ONLY
+     *  free-text signal {@link #generateSleepReaction}/{@link #generateWeightReaction} carry (the
+     *  rest of {@code sleepLine}/{@code trendLine} is purely numeric), so without this a genuinely
+     *  matching memory could never be found by anything but coincidence. "" (no-op) when the note
+     *  is null or blank, which is the normal case today (no caller sets it), so no existing
+     *  behaviour changes. */
+    private static String freeTextSuffix(String note) {
+        return note == null || note.isBlank() ? "" : " " + note;
     }
 
     /** The "Ma (terv): …" line out of a rendered {@link ContextSnapshotAssembler} snapshot, or ""
