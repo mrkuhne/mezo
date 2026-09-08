@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.AdminFeedbackSummaryResponse;
 import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
 import io.mrkuhne.mezo.api.dto.AdminScreenUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
+import io.mrkuhne.mezo.api.dto.AdminUserFeedbackResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
 import io.mrkuhne.mezo.feature.admin.service.AdminAlertService;
 import io.mrkuhne.mezo.feature.admin.service.AdminFeatureService;
@@ -63,6 +64,13 @@ public class AdminInsightsController implements AdminInsightsApi {
     public AdminUserDetailResponse getAdminUserInsight(UUID id) {
         currentUser.requireOwner();
         return userService.detail(id);
+    }
+
+    /** One user's per-surface companion feedback and recall totals (mezo-zde2). */
+    @Override
+    public AdminUserFeedbackResponse getAdminUserFeedback(UUID id) {
+        currentUser.requireOwner();
+        return userService.feedback(id);
     }
 
     @Override
