@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Avatar, Icon, Sparkline, FoodArt, WorkoutArt } from "./shared.jsx";
+import { Sparkline, FoodArt, WorkoutArt } from "./shared.jsx";
 import {
   ROLES,
   createPresence,
@@ -10,7 +10,9 @@ import {
   presenceReply,
   applyPresenceTool,
 } from "./presence-model.mjs";
+import { BoopAvatar as Avatar, BoopIcon as Icon, BoopSprites, BoopPet } from "./BoopIdentity.jsx";
 import "./presence.css";
+import "./boop.css";
 const STORAGE = "mezo-presence-v1";
 function readState() {
   try {
@@ -226,7 +228,7 @@ export default function PresenceStudy() {
         <a href="/" className="pr-lab-link">
           ← Korábbi irányok
         </a>
-        <span className="pr-eyebrow">MEZO / INTERAKCIÓS TANULMÁNY 05</span>
+        <span className="pr-eyebrow">BOOP / VIZUÁLIS TANULMÁNY 06</span>
         <h1>
           Egy társ.
           <br />
@@ -240,7 +242,7 @@ export default function PresenceStudy() {
         </p>
         <div className="pr-note-rule" />
         <p className="pr-note-small">
-          Kezdd egy check-innel. A lenti Mezo-buborékkal válts területet, majd
+          Kezdd egy check-innel. A lenti Boop-buborékkal válts területet, majd
           térj vissza a beszélgetéshez.
         </p>
         <button onClick={reset}>
@@ -264,11 +266,12 @@ export default function PresenceStudy() {
           "--clay-shadow": role.shadow,
         }}
       >
+        <BoopSprites />
         <header className="pr-header">
           <div>
             {s.role === "home" ? (
               <span className="pr-wordmark">
-                mezo<span>veled</span>
+                boop<span>veled.</span>
               </span>
             ) : (
               <>
@@ -339,7 +342,7 @@ export default function PresenceStudy() {
         )}
       </div>
       <aside className="pr-study-right">
-        <span className="pr-eyebrow">UGYANAZ A MEZO</span>
+        <span className="pr-eyebrow">UGYANAZ A BOOP</span>
         <div className="pr-role-line">
           {Object.entries(ROLES)
             .filter(([id]) => id !== "home")
@@ -386,9 +389,9 @@ export default function PresenceStudy() {
         style={{ "--pr-accent": role.color, "--pr-tint": role.light }}
         aria-label={
           panel === "talk"
-            ? "Beszélgetés Mezóval"
+            ? "Beszélgetés Booppal"
             : panel === "roles"
-              ? "Mezo terei"
+              ? "Boop terei"
               : "Gyors rögzítés"
         }
       >
@@ -475,7 +478,7 @@ export default function PresenceStudy() {
                 className="pr-secondary"
                 onClick={() => navigate(s.role, tab, "talk", true)}
               >
-                Inkább elmondom Mezónak
+                Inkább elmondom Boopnak
                 <Icon name="message" size={18} />
               </button>
             </>
@@ -511,7 +514,7 @@ export default function PresenceStudy() {
                 {s.messages.map((m) => (
                   <article className={`pr-message ${m.role}`} key={m.id}>
                     {m.role === "assistant" && (
-                      <span className="pr-message-author">MEZO</span>
+                      <span className="pr-message-author">BOOP</span>
                     )}
                     <p>{m.text}</p>
                     {m.sources && (
@@ -588,7 +591,7 @@ export default function PresenceStudy() {
                   }}
                 >
                   <input
-                    aria-label="Üzenet Mezónak"
+                    aria-label="Üzenet Boopnak"
                     placeholder="Nem kell az elejéről kezdened…"
                     value={s.draft}
                     onChange={(e) =>
@@ -658,8 +661,7 @@ function Home({ api, mood }) {
       <div className="pr-home-hero">
         <div className="pr-halo pr-halo-a" />
         <div className="pr-halo pr-halo-b" />
-        <Orb role="home" size={144} state={feeling ? "listening" : mood} />
-        <span>Mezo veled</span>
+        <BoopPet state={feeling ? "listening" : mood} />
       </div>
       <h1>
         {saved ? (

@@ -1,3 +1,7 @@
+# Boop vizuális iteráció
+
+A kiválasztott jelenlét-központú tanulmány új neve **Boop**. Modernebb, meleg UI, a saját Clay ikonok és érintésre reagáló karakter: [prototípus](http://127.0.0.1:5193/?v=boop), [működés és határok](presence-navigation.md).
+
 # Mezo — Mérték és Mezo veled
 
 **Aktuális továbbfejlesztés:** Daniel a Mezo veled irányt választotta. Az [egy társ, több tér navigációs tanulmány](presence-navigation.md) külön prototípusban vizsgálja a színes szerepváltót, az átalakuló helyi menüt és az állandó beszélgetést: [megnyitás](http://127.0.0.1:5193/?v=presence). A lenti két korábbi változat összehasonlításként megmarad.

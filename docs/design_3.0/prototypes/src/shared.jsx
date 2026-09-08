@@ -80,7 +80,7 @@ const stateMap = {
   calm: "sleeping",
   sleep: "sleeping",
 };
-export function Avatar({ state = "idle", size = 120, className = "" }) {
+export function Avatar({ state = "idle", size = 120, className = "", avatarDefinition = definition, name = "Mezo Clay" }) {
   const id = `clay-${useId().replace(/:/g, "")}`;
   return (
     <span
@@ -104,10 +104,10 @@ export function Avatar({ state = "idle", size = 120, className = "" }) {
         </defs>
       </svg>
       <LabAvatar
-        definition={definition}
+        definition={avatarDefinition}
         animation={stateMap[state] || "idle"}
         size={size}
-        ariaLabel={`Mezo Clay — ${state === "thinking" ? "gondolkodik" : state === "listening" ? "figyel" : state === "happy" ? "örül" : state === "sleeping" ? "pihen" : "jelen van"}`}
+        ariaLabel={`${name} — ${state === "thinking" ? "gondolkodik" : state === "listening" ? "figyel" : state === "happy" ? "örül" : state === "sleeping" ? "pihen" : "jelen van"}`}
       />
     </span>
   );

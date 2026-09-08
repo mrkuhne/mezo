@@ -61,7 +61,7 @@
   margin: 19px 0 24px;
 }
 .pr-study-note h1 em {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   color: #9d7059;
   font-weight: 400;
 }
@@ -125,7 +125,7 @@
 .pr-demo-prompt {
   background: transparent;
   text-align: left;
-  font-family: Newsreader, Georgia, serif !important;
+  font-family: Manrope, "DM Sans", sans-serif !important;
   font-size: 22px !important;
   line-height: 1.35;
   padding: 15px 0;
@@ -381,7 +381,7 @@
   z-index: -1;
 }
 .pr-home > h1 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 39px;
   line-height: 1.05;
   letter-spacing: -1.15px;
@@ -563,7 +563,7 @@
 }
 .pr-conversation-invite strong {
   display: block;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 23px;
   font-weight: 400;
   letter-spacing: -0.4px;
@@ -578,7 +578,7 @@
   color: #ab8c6e;
 }
 .pr-home-thread > h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 29px;
   line-height: 1.13;
   font-weight: 400;
@@ -636,7 +636,7 @@
 .pr-quiet-foot {
   text-align: center;
   color: #a1998a;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 19px;
   line-height: 1.6;
   margin: 32px 0 12px;
@@ -657,7 +657,7 @@
   color: var(--pr-accent);
 }
 .pr-section-title h1 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 40px;
   font-weight: 400;
   letter-spacing: -1.2px;
@@ -679,7 +679,7 @@
   margin: 0 0 13px;
 }
 .pr-focus-card h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 29px;
   line-height: 1.15;
   letter-spacing: -0.7px;
@@ -774,7 +774,7 @@
   padding: 18px 0 26px;
 }
 .pr-program-heading > span {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 78px;
   letter-spacing: -4px;
   line-height: 1;
@@ -856,7 +856,7 @@
   gap: 17px;
 }
 .pr-sport-art span {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 33px;
   color: var(--pr-ink);
 }
@@ -873,7 +873,7 @@
 }
 .pr-run-art strong {
   font-size: 61px;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-weight: 400;
   display: block;
 }
@@ -891,7 +891,7 @@
   font-size: 10px;
 }
 .pr-fuel-total > strong {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 73px;
   font-weight: 400;
   letter-spacing: -3px;
@@ -988,7 +988,7 @@
   color: #a68b61;
 }
 .pr-recipe-cover h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 28px;
   font-weight: 400;
   margin: 12px 0;
@@ -1009,7 +1009,7 @@
   font-size: 9px;
 }
 .pr-life-note blockquote {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 28px;
   line-height: 1.25;
   margin: 15px 0 17px;
@@ -1021,7 +1021,7 @@
 }
 .pr-journal-field {
   display: block;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 23px;
   letter-spacing: -0.3px;
   margin: 24px 0;
@@ -1065,7 +1065,7 @@
   color: var(--pr-accent);
 }
 .pr-body-pair strong {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 35px;
   letter-spacing: -1px;
   font-weight: 400;
@@ -1091,7 +1091,7 @@
   color: #9e85ad;
 }
 .pr-goal-art h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 30px;
   font-weight: 400;
   line-height: 1.25;
@@ -1113,7 +1113,7 @@
   color: #b48c86;
 }
 .pr-pattern-study h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 29px;
   line-height: 1.2;
   letter-spacing: -0.5px;
@@ -1149,7 +1149,7 @@
   place-items: center;
 }
 .pr-memory-layers h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 30px;
   letter-spacing: -0.5px;
   font-weight: 400;
@@ -1192,7 +1192,7 @@
 }
 .pr-profile-caption {
   text-align: center;
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 24px;
   line-height: 1.35;
   color: #9e7778;
@@ -1203,7 +1203,7 @@
   color: var(--pr-accent);
 }
 .pr-outlook h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 31px;
   font-weight: 400;
   line-height: 1.2;
@@ -1265,7 +1265,7 @@
   gap: 12px;
 }
 .pr-sheet-heading h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 33px;
   line-height: 1.1;
   letter-spacing: -0.8px;
@@ -1377,7 +1377,7 @@
   flex: 1;
 }
 .pr-talk-header h2 {
-  font-family: Newsreader, Georgia, serif;
+  font-family: Manrope, "DM Sans", sans-serif;
   font-size: 27px;
   font-weight: 400;
   margin: 0 0 3px;
