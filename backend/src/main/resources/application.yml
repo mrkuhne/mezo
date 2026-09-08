@@ -636,13 +636,38 @@ mezo:
         smart-model: gpt-5.6-terra     # smart tier: the 19 completeSmart call sites
         feature-models: {}             # LlmCallContext.feature() -> model id (bracket-quote the key)
         call-kind-models: {}           # CallKind -> model id; wins over feature-models
-        # The quality lever of spec §Q1 — same token price, more thinking. Left EMPTY (= send
-        # nothing, the provider's own default stands) until mezo-641c measures what each tier should
-        # carry; a tool-carrying request pins `none` regardless, because /v1/chat/completions
+        # The quality lever of spec §Q1 — same token price, more thinking. MEASURED (mezo-641c);
+        # a tool-carrying request still pins `none` regardless, because /v1/chat/completions
         # rejects function tools + reasoning effort outright (measured, mezo-ozri.3).
+        #
+        # chat: high. The one place in the whole sweep where more thinking bought accuracy is the
+        # cheap-tier advisor judge (companion_advisor/verdict_check). On a 12-case labelled set it
+        # held recall at 1.00 everywhere, but its unmarkedClaim PRECISION went 0.50 (none) → 0.55
+        # (provider default) → 0.60 (high, unchanged at xhigh): `high` is the first level that
+        # reliably stops reading a qualitative judgement ("ez nagyjából a tervezett ütem") as a
+        # fabricated number — the mezo-9yqq false-positive class (2). It buys that for ~+33% output
+        # tokens on the CHEAPEST model, while each false positive it removes costs a whole extra
+        # streamed chat turn (the advisor retry). Redundancy detection was already perfect at every
+        # level. mezo-9yqq class (1) — tool-derived numbers — is NOT fixable here: it failed 100% of
+        # the time at every level including xhigh, because the judge never sees the tool OUTPUT.
+        #
+        # smart: high. The first pass read this wrong. Scoring the mesocycle plan for STRUCTURAL
+        # validity found nothing to separate the levels (it is perfect even at `none`), and the
+        # konzílium skeptic's KEEP/KILL pattern looked like noise at n=2 — so the first draft left
+        # this unset. A blind read of the prose (the repo owner, labels hidden) then ranked
+        # high > provider-default > none on BOTH smart-tier tasks, and named the reason: at `none`
+        # the skeptic KEEPS a claim that generalises two weekends of data into a lasting trait
+        # ("hétvégén szisztematikusan"). That is a scoreable calibration error, not a taste
+        # difference, so it was re-run at n=8 per level. Over-permissive KEEPs, out of 40 possible:
+        #   none 13 (P3 6/8, P4 7/8) · low 0 (but missed the one true KEEP once) · default 3 ·
+        #   medium 2 · high 0 · xhigh 2
+        # `high` is the only level that is clean on both sides — it never waves through a
+        # thin-evidence trait claim and never rejects the well-supported one — for +2% output
+        # tokens over the provider default on this task. `none` is the level to stay away from on
+        # any judgement call: it is the cheapest and by far the most credulous.
         reasoning-effort:
-          chat:
-          smart:
+          chat: high
+          smart: high
       # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
       # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
       # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
@@ -728,12 +753,11 @@ mezo:
       # Missing/stale text signals are re-extracted for this many finished days each night.
       catch-up-days: 7
       notice:
-        # Silent launch (mezo-eq85.4). Mezo keeps COLLECTING observations exactly as before — the
-        # observation events are still written, still marked surfaced by the budget below, and the
-        # Észrevételek feed endpoint still returns them — but the "Mezo észrevett valamit" PUSH is
-        # held back, because its deeplink (/nap/uzenetek?tab=eszrevetelek) points at a tab that only
-        # ships in slice mezo-eq85.5. Flip this to true the day that tab lands; nothing else changes.
-        push-enabled: false
+        # LIVE as of mezo-eq85.5. History: S4 (mezo-eq85.4) shipped this false — a silent launch —
+        # ONLY because the "Mezo észrevett valamit" push deep-links to /nap/uzenetek?tab=eszrevetelek,
+        # a tab that did not exist yet; collecting was never gated, so the feed had content from day
+        # one. That tab ships in S5, so the push is on and the deeplink lands on real cards.
+        push-enabled: true
         max-per-day: 2
         min-gap-hours: 4
         quiet-from: "22:00"

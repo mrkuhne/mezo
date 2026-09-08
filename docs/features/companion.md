@@ -1240,17 +1240,18 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   (`observation_new` · family `pattern` · `/nap/uzenetek?tab=eszrevetelek`), deduped on
   `observation_new:<eventId>` ([`_platform-notifications.md`](_platform-notifications.md) §3b/§4).
   No migration was needed: `app_notification.kind` is a bare `varchar(32)` with no CHECK constraint.
-- **SILENT LAUNCH — the push ships OFF (`mezo.companion.reflection.notice.push-enabled=false`).** The
-  deeplink above points at the Észrevételek tab, and that tab only ships in **S5 (`mezo-eq85.5`)**,
-  so on S4's merge a real push would land on an empty screen. The switch gates **exactly one line**,
-  the `appNotificationEmitter.emit(...)` call: the `observation` event is still appended, `surfaced`
-  is still computed from `ObservationBudget` and still stored on the payload, and `GET
-  /api/companion/observation` still returns the cards — so the tab has real history the day it
-  lands. The budget, the feed, the reply endpoint and the morning digest are NOT gated. Flipping
-  `push-enabled` to `true` with S5 is the whole rollout. `QuickNoticeServiceIT` turns it ON via
-  `@TestPropertySource` so the emit path keeps its coverage; `QuickNoticePushOffIT` pins the
-  shipped default (event written **with `surfaced=true`**, no `app_notification` row) — which is
-  what distinguishes it from `QuickNoticeBudgetOffIT`'s `surfaced=false` silence.
+- **The push is LIVE (`mezo.companion.reflection.notice.push-enabled=true`, since S5 `mezo-eq85.5`).**
+  It shipped OFF for exactly one release — S4's **silent launch** — because the deeplink above points
+  at the Észrevételek tab, which only landed in S5; a push merged with S4 would have opened an empty
+  screen. The switch gates **exactly one line**, the `appNotificationEmitter.emit(...)` call: the
+  `observation` event is appended, `surfaced` is computed from `ObservationBudget` and stored on the
+  payload, and `GET /api/companion/observation` returns the cards whichever way the flag points — so
+  the tab had real history the day it landed. The budget, the feed, the reply endpoint and the
+  morning digest are NOT gated. The switch stays in place so the push can be silenced again without
+  a code change. `QuickNoticeServiceIT` pins it ON via `@TestPropertySource`; `QuickNoticePushOffIT`
+  pins it OFF and asserts the event is still written **with `surfaced=true`** and no
+  `app_notification` row — which is what distinguishes it from `QuickNoticeBudgetOffIT`'s
+  `surfaced=false` silence.
 - **One way to append a pattern event.** `companion/service/PatternEventAppender` (`@Component`,
   deliberately neither `@Transactional` nor switch-gated — the caller's transaction and switch keep
   deciding) replaced the **five** hand-rolled copies that had accumulated by S4
@@ -4696,12 +4697,41 @@ since S2.
   Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
   serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
   delegates to it, so one flat table could hand the Gemini client a GPT id.
-- `mezo.companion.llm.<provider>.reasoning-effort.chat` / `.smart` = **empty** (mezo-ozri.4,
-  spec §Q1) — per-tier reasoning effort, the cheapest quality lever there is (same token price,
-  more thinking). Empty = send no key at all, leaving the provider's own default in place; the
-  measurement that would fill these in is `mezo-641c`. Only `OpenAiCompanionLlm` honours it, and
-  **never on a tool-carrying request**: `/v1/chat/completions` answers tools + effort with a `400`
-  (measured, mezo-ozri.3 — all 42 eval cases failed), so that path pins `none` regardless.
+- `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **`high`**
+  (mezo-ozri.4 built the lever, mezo-641c measured it; the `gemini` block keeps both empty — the
+  concept is OpenAI-only). Per-tier reasoning effort, the cheapest quality lever there is (same
+  token price, more thinking). Empty = send no key at all, leaving the provider's own default in
+  place. Only `OpenAiCompanionLlm` honours it, and **never on a tool-carrying request**:
+  `/v1/chat/completions` answers tools + effort with a `400` (measured, mezo-ozri.3 — all 42 eval
+  cases failed), so that path pins `none` regardless.
+  - **Accepted values are `none | low | medium | high | xhigh`**, probed live against both GPT-5.6
+    tiers (mezo-641c S0) and pinned by `ReasoningEffortValidationTest`. `minimal` and `max` were in
+    the first draft of the `@Pattern` on second-hand information and are answered with a `400`;
+    allowing them only moved a boot-time typo failure into a run-time outage.
+  - **Why `chat: high`.** The only measured accuracy gain in the whole sweep is the cheap-tier
+    advisor judge (`companion_advisor`/`verdict_check`). On a 12-case labelled set its
+    `unmarkedClaim` recall was `1.00` at every level, but precision went `0.50` (none) → `0.55`
+    (provider default) → `0.60` (high, unchanged at xhigh): `high` is the first level that reliably
+    stops reading a qualitative judgement as a fabricated number — the mezo-9yqq false-positive
+    class (2). Cost: ~+33% output tokens on the CHEAPEST model, against a false positive that costs
+    a whole extra streamed chat turn (the advisor retry). `redundantQuestion` was already perfect at
+    every level. mezo-9yqq class (1), tool-derived numbers, is **not fixable here** — it failed
+    100% of the time at every level including `xhigh`, because the judge never sees the tool OUTPUT.
+  - **Why `smart: high`, and why the first pass got it wrong.** Scoring the mesocycle plan for
+    STRUCTURAL validity separates nothing — it is perfect even at `none` — and the konzílium
+    skeptic's KEEP/KILL pattern looks like noise at n=2, so the first draft left this unset. A
+    blind read of the prose (the repo owner, labels hidden) then ranked `high` >
+    provider-default > `none` on **both** smart-tier tasks and named the mechanism: at `none` the
+    skeptic KEEPs a claim that generalises two weekends of data into a lasting trait
+    ("hétvégén szisztematikusan"). That is a scoreable calibration error, so the round was re-run
+    at n=8 per level. Over-permissive KEEPs, out of 40 possible: `none` **13** (P3 6/8, P4 7/8),
+    `low` 0 (but missed the one true KEEP once), default 3, `medium` 2, `high` **0**, `xhigh` 2.
+    `high` is the only level clean on both sides — it never waves through a thin-evidence trait
+    claim and never rejects the well-supported one — for **+2% output tokens** over the provider
+    default on that task. The lesson is methodological and worth keeping: a structural pass over a
+    judgement call measures whether the answer is well-FORMED, not whether it is well-JUDGED, and
+    those two came apart here. `none` is the level to avoid on any judgement call — cheapest and by
+    far the most credulous.
 - `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
   `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
@@ -5106,11 +5136,11 @@ without a second properties class.
   MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
 - `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
   catch-up re-checks for missing/stale signals.
-- `mezo.companion.reflection.notice.push-enabled` = **false** — the S4 SILENT LAUNCH switch. It gates
-  ONLY the `OBSERVATION_NEW` push in `QuickNoticeService`; observations are still collected, still
-  marked `surfaced` by the budget, and still served by the feed. It stays `false` until the
-  Észrevételek tab the notification deep-links into ships in **S5 (`mezo-eq85.5`)**, at which point
-  flipping it to `true` is the entire rollout.
+- `mezo.companion.reflection.notice.push-enabled` = **true** (since S5, `mezo-eq85.5`) — the
+  `OBSERVATION_NEW` push switch. It gates ONLY that push in `QuickNoticeService`; observations are
+  collected, marked `surfaced` by the budget and served by the feed either way. It shipped **false**
+  for one release — S4's silent launch (`mezo-eq85.4`) — until the Észrevételek tab the notification
+  deep-links into existed.
 - `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
   **2 / 4 / 22:00 / 07:00** — the quick-notice rate limits and quiet hours, **consumed since S4
   (`mezo-eq85.4`) by `ObservationBudget`** and by nothing else: at most `max-per-day` observations
@@ -6753,7 +6783,7 @@ collaborators at all; the budget gets a Mockito `PatternEventRepository`): the f
 and the budget's cap / gap / midnight-wrapping quiet window with an explicit exclusive-end boundary
 plus the "unsurfaced events count for neither" case.
 `QuickNoticeServiceIT` drives the real listener path over the fake's `[[NOTICE:…]]` sentinel and pins
-all of it (with `notice.push-enabled=true`, since the push ships OFF — see the silent launch in §1): the
+all of it (pinning `notice.push-enabled=true` rather than inheriting the default — see §1): the
 surfaced observation with the journal entry among its `evidenceRefs` and one
 `observation_new` notification; a scripted `newTestPlan` creating a `reflection` row with
 `origin=quick_notice`; a **null** answer persisting nothing at all; and a model-named
@@ -6761,8 +6791,8 @@ surfaced observation with the journal entry among its `evidenceRefs` and one
 different value of a bound property, so it is its own class (`QuickNoticeBudgetOffIT`,
 `max-per-day=0` ⇒ the event exists with `surfaced=false` and no notification) — this repo's
 `*SwitchOffIT` idiom, since there is no `@Nested`-plus-property-override precedent here.
-`QuickNoticePushOffIT` is the same idiom for the shipped silent-launch default
-(`notice.push-enabled=false`) and asserts BOTH halves, which is the only thing that tells the two silences
+`QuickNoticePushOffIT` is the same idiom for the push switched OFF (S4's silent-launch default,
+`notice.push-enabled=false`) and asserts BOTH halves, which is the only thing that tells the two silences
 apart: the observation event IS written and IS `surfaced=true`, while no `app_notification` row
 exists.
 `CompanionObservationApiIT` proves the contract at HTTP level: the four card kinds in their fixed

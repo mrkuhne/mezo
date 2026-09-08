@@ -217,16 +217,7 @@
 .kr-pinfo .kr-pwatch { font-size: 8.5px; margin-top: 6px; line-height: 1.5; opacity: 0.85; }
 .kr-pchip { display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-top: 6px; background: var(--pcw); color: var(--pc); }
 
-/* ── Konzílium list (.konzrow / .kbadge) ── */
-.kr-konzlist { padding: 4px 12px 4px; }
-.kr-konzrow {
-  display: flex; align-items: center; gap: 10px; background: var(--surface-card); border-radius: 15px;
-  padding: 10px 12px; margin-bottom: 9px; cursor: pointer; width: 100%; text-align: left;
-  border: 0.5px solid var(--divider); box-shadow: 0 10px 20px -13px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  font-family: inherit;
-}
-.kr-konzrow:active { transform: scale(0.97); }
-.kr-konzrow .kr-kd { font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+/* ── Konzílium kind-badge (.kbadge) — the archive sheet uses this ── */
 .kr-kbadge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 6px; flex: none; }
 .kr-kbadge.weekly { background: rgba(93, 79, 160, 0.14); color: #5D4FA0; }
 .kr-kbadge.monthly { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
@@ -268,15 +259,7 @@
   font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 9.5px; color: var(--text-muted);
   text-align: center; padding: 6px 22px 10px; line-height: 1.5;
 }
-.kr-tminiback {
-  border: none; background: none; font-family: inherit; color: #A8801F; font-weight: 700;
-  font-size: 9.5px; cursor: pointer; padding: 0 12px 8px; margin: 0;
-}
 .kr-konz-empty { padding: 20px 24px; text-align: center; color: var(--text-secondary); font-size: 12px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .kr-konzrow:hover { transform: none; }
-}
 
 /* ============================================================
    Task 4 — Gépterem hub / Futások / futás-részlet (mezo-1gim.14)
@@ -501,9 +484,71 @@
 .kr-thtx.dim { color: var(--text-secondary); }
 .kr-thbody { padding: 0 14px 13px; }
 .kr-thitem + .kr-thitem { border-top: 0.5px solid var(--divider); margin-top: 10px; padding-top: 6px; }
-.kr-thstep { position: relative; padding: 9px 0 9px 20px; }
-.kr-thstep::before { content: ''; position: absolute; left: 5px; top: 15px; bottom: -9px; width: 1px; background: var(--divider); }
+.kr-thstep { position: relative; padding: 8px 0 9px 32px; }
+.kr-thstep::before { content: ''; position: absolute; left: 11px; top: 30px; bottom: -8px; width: 1px; background: var(--divider); }
 .kr-thitem .kr-thstep:last-child::before { display: none; }
-.kr-thdot { position: absolute; left: 0; top: 12px; width: 11px; height: 11px; border-radius: 50%; background: var(--c); }
-.kr-thwho { font-size: 9.5px; font-weight: 800; color: var(--c); }
-.kr-thsaid { font-size: 11.5px; line-height: 1.55; font-weight: 300; margin-top: 2px; }
+.kr-thstep .kr-thorb {
+  position: absolute; left: 0; top: 7px; width: 23px; height: 23px; border-radius: 50%;
+  display: grid; place-items: center; overflow: hidden; margin-left: 0; border: none;
+  box-shadow: 0 3px 7px -3px var(--c);
+}
+.kr-thwho { font-size: 10.5px; font-weight: 800; color: var(--c); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.kr-thsaid { font-size: 11.5px; line-height: 1.55; font-weight: 300; margin-top: 3px; color: var(--text-primary); }
+.kr-thchip { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.02em; }
+.kr-thchip.sup { background: rgba(78, 107, 66, 0.16); color: #4E6B42; }
+.kr-thchip.cha { background: rgba(192, 86, 58, 0.15); color: #C0563A; }
+.kr-thchip.nua { background: rgba(168, 128, 31, 0.16); color: #A8801F; }
+.kr-thchip.acc { background: rgba(255, 91, 54, 0.14); color: #C0442A; }
+.kr-thchip.rej { background: rgba(43, 33, 24, 0.08); color: var(--text-secondary); }
+.kr-thchip.non { background: transparent; box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary); }
+.kr-thdeb { background: rgba(255, 91, 54, 0.13); color: #C0442A; font-weight: 800; padding: 2px 8px; border-radius: 20px; font-size: 9.5px; }
+
+/* ── konzílium kontextus-réteg (mezo-sp9w) ── */
+.kr-konzcard { background: var(--surface-card); border-radius: 22px; margin: 0 12px 11px; overflow: hidden; box-shadow: 0 12px 26px -20px rgba(43, 33, 24, 0.65), 0 1px 3px -2px rgba(43, 33, 24, 0.22); }
+.kr-konzcap { font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 13px 16px 8px; }
+.kr-whatis { margin: 0; padding: 0 16px 15px; font-size: 12.5px; line-height: 1.6; font-weight: 300; color: var(--text-secondary); }
+.kr-rail { display: flex; gap: 6px; padding: 0 12px 14px; }
+.kr-rst { flex: 1; background: rgba(43, 33, 24, 0.04); border-radius: 13px; padding: 9px 5px 8px; text-align: center; }
+.kr-rst.hot { background: rgba(255, 91, 54, 0.10); box-shadow: inset 0 0 0 1px rgba(255, 91, 54, 0.28); }
+.kr-rn { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); font-size: 9px; font-weight: 800; margin-bottom: 4px; }
+.kr-rst.hot .kr-rn { background: var(--primary-base, #FF5B36); color: #fff; }
+.kr-rst b { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: -0.01em; }
+.kr-rst i { display: block; font-style: normal; font-size: 8.5px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
+
+/* ── konzílium archívum lap (mezo-sp9w) ── */
+.kr-archd { font-size: 15px; font-weight: 800; padding: 4px 18px 10px; display: flex; align-items: center; gap: 8px; }
+.kr-arccnt { font-size: 10px; font-weight: 800; background: rgba(43, 33, 24, 0.07); color: var(--text-muted); padding: 3px 9px; border-radius: 20px; }
+.kr-arcscroll { max-height: 62vh; overflow: auto; padding: 0 12px 4px; }
+.kr-arcmh { font-size: 9.5px; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-muted); padding: 11px 6px 5px; }
+.kr-arcyr { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-align: center; padding: 14px 0 4px; border-top: 0.5px solid var(--divider); margin-top: 10px; }
+.kr-arcrow { display: flex; align-items: center; gap: 9px; width: 100%; padding: 11px 12px; border: none; background: none; font-family: inherit; text-align: left; color: inherit; border-radius: 14px; cursor: pointer; }
+.kr-arcrow.on { background: rgba(255, 91, 54, 0.10); box-shadow: inset 0 0 0 1px rgba(255, 91, 54, 0.25); }
+.kr-arcday { font-size: 13.5px; font-weight: 600; flex: none; }
+.kr-arcrow.on .kr-arcday { font-weight: 800; }
+.kr-arcout { flex: 1; font-size: 10px; font-weight: 600; color: var(--text-secondary); }
+.kr-arcout-other { color: var(--text-muted); font-weight: 400; }
+
+/* ── konzílium beszélgetés-nézet (mezo-sp9w) ── */
+.kr-cvlbl { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 14px 16px 8px; }
+.kr-cvlbl.hot { color: #C0442A; }
+.kr-cvlbl .kr-rn { margin-bottom: 0; }
+.kr-cvlbl.hot .kr-rn { background: var(--primary-base, #FF5B36); color: #fff; }
+.kr-cvcard { padding: 12px 15px 13px; }
+.kr-cvmezo { box-shadow: 0 12px 26px -20px rgba(255, 91, 54, 0.9), inset 0 0 0 1px rgba(255, 91, 54, 0.2); }
+.kr-cvturn { display: flex; gap: 11px; align-items: flex-start; padding: 7px 0; }
+.kr-cvturn + .kr-cvturn { border-top: 0.5px solid var(--divider); }
+.kr-cvorb { flex: none; width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 7px -3px var(--c); }
+.kr-cvquote { font-size: 11px; font-weight: 600; color: var(--text-muted); border-left: 2px solid var(--divider); padding-left: 9px; margin-bottom: 8px; line-height: 1.45; }
+.kr-cvempty { margin: 0 12px 11px; padding: 13px 16px; border-radius: 18px; background: rgba(43, 33, 24, 0.04); font-size: 11.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── konzílium fejléc-léptető és nézetváltó (mezo-sp9w) ── */
+.kr-stepper { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; }
+.kr-navbtn { border: none; background: var(--surface-card); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; font-family: inherit; color: var(--text-secondary); box-shadow: 0 6px 14px -11px rgba(43, 33, 24, 0.9); cursor: pointer; }
+.kr-navbtn:disabled { opacity: 0.32; cursor: default; }
+.kr-datebtn { border: none; background: var(--surface-card); border-radius: 20px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: inherit; box-shadow: 0 6px 14px -11px rgba(43, 33, 24, 0.9); cursor: pointer; }
+.kr-datecv { color: var(--text-muted); margin-left: 3px; }
+/* Fix round 1 (mezo-sp9w, review finding 2): renamed from `.kr-seg` — that name collided with
+   the unrelated maturity-ring SVG segments (`.kr-ring .kr-seg`) on the Karakter hub. */
+.kr-viewseg { display: flex; gap: 4px; margin: 2px 12px 12px; background: rgba(43, 33, 24, 0.06); border-radius: 20px; padding: 3px; }
+.kr-viewseg button { flex: 1; border: none; background: none; font-family: inherit; text-align: center; font-size: 12px; font-weight: 700; padding: 7px 0; border-radius: 18px; color: var(--text-secondary); cursor: pointer; }
+.kr-viewseg button.on { background: var(--surface-card); color: inherit; box-shadow: 0 4px 10px -8px rgba(43, 33, 24, 0.8); }
