@@ -268,6 +268,7 @@ function SleepOverview({ api }) {
     mean = Math.round(
       s.logs.reduce((a, x) => a + x.minutes, 0) / s.logs.length,
     );
+  if (!latest) return <><FlowHead title="Milyen volt az éjszakád?"/><button className="primary-button" onClick={()=>api.go("me-sleep-log")}>Alvás rögzítése</button></>;
   return (
     <>
       <FlowHead
@@ -602,6 +603,7 @@ function WeightOverview({ api }) {
   const s = api.state.personal.weight;
   const [range, setRange] = useState("week");
   const logs = range === "week" ? s.logs.slice(0, 7) : s.logs;
+  if (!logs.length) return <><FlowHead title="Az első mérésedtől indulunk."/><button className="primary-button" onClick={()=>api.go("me-weight-log")}>Testsúly rögzítése</button></>;
   const change = logs[0].value - logs.at(-1).value;
   return (
     <>

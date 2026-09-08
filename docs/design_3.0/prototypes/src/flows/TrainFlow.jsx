@@ -349,7 +349,7 @@ function TrainHub({ api }) {
 function Gym({ api }) {
   const s = api.state.training,
     c = activeCycle(s),
-    [day, setDay] = useState(2),
+    [day, setDay] = useState(1),
     d = c?.days.find((x) => x.day === day);
   return (
     <>
@@ -375,15 +375,15 @@ function Gym({ api }) {
           {d.exercises.map((e) => (
             <ExerciseRow key={e.id} item={e} api={api} />
           ))}
-          <Action onClick={() => api.go("workout")}>Edzés indítása</Action>
+          <Action onClick={() => api.go("workout", {id:c.id,day:d.id})}>{api.state.session?.status === "active" ? "Edzés folytatása" : "Edzés indítása"}</Action>
         </>
       ) : (
         <EmptyState
           icon="sun"
           title="Ma nincs tervezett teremi edzés."
           description="Van hely a sportnak és a pihenésnek is."
-          action="Saját edzés indítása"
-          onClick={() => api.go("workout")}
+          action={api.state.session?.status === "active" ? "Edzés folytatása" : "Saját edzés indítása"}
+          onClick={() => api.go("workout", {custom:"true"})}
         />
       )}
       <Section title="Edzésnapló">
@@ -966,8 +966,8 @@ function Day({ api }) {
       </Section>
       <Action onClick={() => api.go("workout")}>Edzés megnyitása</Action>
       <p className="evidence-note">
-        Az aktív edzés a közös demó edzésnapját nyitja meg. A mezociklusvázlat
-        szerkesztése ettől külön kipróbálható.
+        Az edzés sorozatai ebből a napból indulnak. A félretett edzésed
+        változatlanul folytatható.
       </p>
       <Action
         secondary
@@ -2192,7 +2192,7 @@ function Exercise({ api }) {
           api.ask(`Segíts a ${e.name} gyakorlat technikáját átgondolni.`)
         }
       >
-        Mezót kérdezem
+        Boopot kérdezem
       </Action>
     </>
   );

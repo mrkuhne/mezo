@@ -1,9 +1,10 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState, createContext, useContext } from "react";
 import { Avatar as LabAvatar } from "@bible-strong/avatar-react";
 import "@bible-strong/avatar-react/styles.css";
 import * as L from "lucide-react";
 import definition from "./avatar-definition.json";
 
+export const IdentityContext = createContext(null);
 const icons = {
   sun: L.Sun,
   moon: L.Moon,
@@ -64,6 +65,8 @@ const icons = {
   "check-circle": L.CircleCheck,
 };
 export function Icon({ name, size = 20, ...props }) {
+  const identity = useContext(IdentityContext);
+  if (identity?.Icon) return <identity.Icon name={name} size={size} {...props}/>;
   const C = icons[name] || L.Sparkles;
   return <C size={size} strokeWidth={1.7} aria-hidden="true" {...props} />;
 }
@@ -81,6 +84,8 @@ const stateMap = {
   sleep: "sleeping",
 };
 export function Avatar({ state = "idle", size = 120, className = "", avatarDefinition = definition, name = "Mezo Clay" }) {
+  const identity = useContext(IdentityContext);
+  name = identity?.name || name;
   const id = `clay-${useId().replace(/:/g, "")}`;
   return (
     <span

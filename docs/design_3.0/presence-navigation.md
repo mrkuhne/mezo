@@ -1,5 +1,7 @@
 # Boop — egy társ, több tér
 
+Az alapfunkciók részletes munkafelületei és aloldalai is ebben a shellben működnek: [aktuális lefedés, kipróbálás és mock határok](boop-core-coverage.md).
+
 2026-09-08 · `mezo-88jw.4` · navigációs és kommunikációs prototípus. [Megnyitás](http://127.0.0.1:5193/?v=presence).
 
 ## Boop vizuális irány
@@ -48,7 +50,7 @@ Az alsó Boop-buborék kinyitja a területválasztót. Ugyanaz a karakter öt sz
 | Életem | Ma, Napló, Testem, Célok |
 | A közös kép | Minták, Tudástár, Karakter, Kilátás |
 
-A 17 tartalmi nézet szándékosan sekély: a kapcsolódásokat és a helyi menü működését mutatja. Az Életem Napló fülén a szabad szöveg és a hála szerkeszthető, helyben megmarad, és bekerül a mintabeszélgetés kontextusába. A Testem áttekintés a súlyt/alvást helyezi el, nem mérési űrlapot nyit.
+A kezdő munkafelületek a kapcsolódásokat és a helyi menüt mutatják; belőlük a 103 részletes funkciónézet érhető el. Az Életem Napló fülén a szabad szöveg és a hála szerkeszthető, helyben megmarad, és bekerül a mintabeszélgetés kontextusába. A Testem áttekintésből a súly- és alvásnapló, a rögzítő és szerkesztő űrlap is elérhető.
 
 A felső Beszélgessünk gomb ugyanazt a chatet nyitja minden térből. A korábbi üzenetek és a be nem küldött vázlat megmaradnak. A chat bezárásakor visszakapjuk az alatta lévő munkafelületet. Az egyes válaszokból az eredeti program vagy másik releváns tér megnyitható; a „Miből indulok ki?” lenyitás a kontextus forrásait külön mutatja.
 

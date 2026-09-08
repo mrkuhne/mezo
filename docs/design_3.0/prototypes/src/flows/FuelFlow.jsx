@@ -1,3 +1,4 @@
+import MealScore from "../MealScore.jsx";
 import React, { useState } from "react";
 import { Icon, FoodArt, Ring } from "../shared.jsx";
 import {
@@ -25,7 +26,7 @@ export const FUEL_ROUTES = {
   "fuel-log": { title: "Étkezés hozzáadása", parent: "fuel" },
   "fuel-review": { title: "Adag ellenőrzése", parent: "fuel-log" },
   "fuel-meal": { title: "Étkezés", parent: "fuel" },
-  "fuel-evaluation": { title: "Mezo értékelése", parent: "fuel-meal" },
+  "fuel-evaluation": { title: "Boop értékelése", parent: "fuel-meal" },
   "fuel-pantry": { title: "Kamra", parent: "fuel" },
   "fuel-item": { title: "A kamrádban", parent: "fuel-pantry" },
   "fuel-item-edit": { title: "Kamra szerkesztése", parent: "fuel-pantry" },
@@ -632,7 +633,7 @@ function Meal({ api, evaluation = false }) {
     <>
       <FlowHead
         eyebrow={
-          evaluation ? "MEZO · ÉTKEZÉSI OLVASAT" : `${m.time} · MAI NAPLÓ`
+          evaluation ? "BOOP · ÉTKEZÉSI OLVASAT" : `${m.time} · MAI NAPLÓ`
         }
         title={evaluation ? "Mit ad ez a tányér?" : m.name}
         description={evaluation ? m.name : undefined}
@@ -645,7 +646,7 @@ function Meal({ api, evaluation = false }) {
       <Macros values={m} />
       {evaluation ? (
         <>
-          <CompanionNote state="attentive">
+          <MealScore meal={m}/><CompanionNote state="attentive">
             {high
               ? `Ebben az étkezésben ${m.protein} g fehérje van a napló szerint. A mennyiség és az összetevők pontosítása segít értelmezni a teljes napot.`
               : "Egy étkezésnek nem kell mindent tudnia. Nézzük meg, mit ad hozzá a napodhoz, és mire van még kedved."}
@@ -732,7 +733,7 @@ function Meal({ api, evaluation = false }) {
               )
             }
           >
-            Beszéljük át Mezoval
+            Beszéljük át Booppal
             <Icon name="message" size={17} />
           </button>
         </>
@@ -741,7 +742,7 @@ function Meal({ api, evaluation = false }) {
           <div className="flow-actions">
             <Action onClick={() => api.go("fuel-evaluation", { id: m.id })}>
               <Icon name="sparkles" />
-              Mezo olvasata
+              Boop olvasata
             </Action>
             <Action secondary onClick={edit}>
               <Icon name="edit" />

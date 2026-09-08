@@ -158,9 +158,9 @@ export function recordPresenceCheckin(s, mood, note) {
   };
 }
 export function foodBudget(s) {
-  const base = 2400,
+  const base = s.full?.baseKcal ?? 2400,
     sport = s.training.sportActive ? 350 : 0,
-    logged = 1440;
+    logged = s.full ? s.full.meals.reduce((n,m)=>n+m.kcal,0) : 1440;
   return {
     base,
     sport,
@@ -173,6 +173,7 @@ export function applyPresenceTool(s, tool) {
   if (tool === "cancel-sport" && s.training.sportActive)
     return {
       ...s,
+      ...(s.full ? {full:{...s.full,fuel:{...s.full.fuel,targets:{...s.full.fuel.targets,kcal:s.full.baseKcal}}}} : {}),
       training: { ...s.training, sportActive: false },
       toolEvents: [
         ...s.toolEvents,

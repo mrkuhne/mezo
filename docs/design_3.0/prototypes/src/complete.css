@@ -1,0 +1,216 @@
+.boop-complete {
+  --font-display: Newsreader, Georgia, serif;
+  --accent: var(--pr-accent);
+  --ink: var(--pr-ink);
+  --muted: #8a7e72;
+  --line: #e6ded2;
+  --paper: var(--pr-bg);
+  --bg: var(--pr-bg);
+  --tint: var(--pr-tint);
+  --surface: #fcf9f4;
+  --accent-soft: color-mix(in srgb, var(--pr-tint) 35%, transparent);
+  padding: 18px 25px 35px;
+  overflow-wrap: anywhere;
+}
+.boop-complete .flow-page {
+  padding: 0;
+}
+.boop-complete .flow-title {
+  font:
+    400 34px/1.15 Newsreader,
+    Georgia,
+    serif;
+}
+.boop-complete input,
+.boop-complete textarea,
+.boop-complete select {
+  max-width: 100%;
+  font-size: 14px !important;
+  background: #fffaf4;
+  border: 1px solid #ddd2c5;
+  border-radius: 13px;
+  padding: 12px;
+  min-width: 0;
+}
+.boop-complete .flow-row {
+  border-radius: 0;
+}
+.boop-complete .primary-button,
+.boop-complete .secondary-button {
+  border-radius: 20px;
+  font-size: 13px !important;
+  min-height: 46px;
+}
+.boop-complete .primary-button {
+  background: var(--pr-accent);
+  color: #fffaf4;
+}
+.boop-complete .secondary-button {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--pr-accent);
+}
+.boop-complete button:disabled {
+  opacity: 0.4;
+}
+.boop-complete .flow-companion {
+  border-radius: 25px;
+  background: color-mix(in srgb, var(--pr-tint) 23%, transparent);
+}
+.core-pillar,
+.core-exercise {
+  padding: 16px 0 23px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.core-pillar h2 {
+  font:
+    400 25px Newsreader,
+    Georgia,
+    serif;
+}
+.core-large {
+  font:
+    400 55px Newsreader,
+    Georgia,
+    serif;
+  margin: 15px 0;
+}
+.core-large small {
+  font-size: 20px;
+  color: var(--muted);
+}
+.core-pillar progress {
+  width: 100%;
+  height: 5px;
+  accent-color: var(--pr-accent);
+}
+.core-actions,
+.core-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.core-set,
+.core-set-labels {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr 1fr 38px;
+  gap: 6px;
+  align-items: center;
+}
+.core-set {
+  margin: 8px 0;
+}
+.core-set input {
+  width: 100%;
+  padding: 10px 4px;
+  text-align: center;
+}
+.core-set button {
+  min-height: 42px;
+  background: none;
+  color: var(--pr-accent);
+  font-size: 20px;
+}
+.core-set.done {
+  background: color-mix(in srgb, var(--pr-tint) 22%, transparent);
+  border-radius: 12px;
+}
+.core-set-labels {
+  font-size: 9px;
+  color: var(--muted);
+  text-align: center;
+}
+.core-rest {
+  position: sticky;
+  bottom: 5px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f2e4ce;
+  border-radius: 20px;
+  padding: 15px;
+  font-size: 12px;
+  box-shadow: 0 2px 15px #6a513418;
+}
+.core-rest button {
+  margin-left: auto;
+  background: none;
+  color: var(--pr-accent);
+  font-size: 11px;
+}
+.core-shortcuts {
+  margin-top: 25px;
+}
+.core-hub-links {
+  padding: 5px 25px 20px;
+}
+.core-hub-links button {
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+  background: none;
+  border-bottom: 1px solid var(--pr-line);
+  color: var(--pr-accent);
+  font-size: 13px;
+  padding: 10px 0;
+}
+.core-summary {
+  padding: 20px;
+  border-radius: 35px 20px;
+  background: var(--accent-soft);
+}
+.boop-complete [role="alert"] {
+  color: #ac493d;
+  font-size: 13px;
+}
+.boop-complete .flow-tabs button {
+  font-size: 12px;
+}
+.boop-complete img {
+  max-width: 100%;
+}
+
+.core-score {
+  padding: 24px;
+  background: var(--tint);
+  border-radius: 36px 18px 36px 18px;
+  margin: 24px 0;
+}
+.core-score-hero {
+  width: 144px;
+  height: 144px;
+  position: relative;
+  margin: 16px auto;
+  color: var(--accent);
+}
+.core-score-hero svg {
+  width: 100%;
+}
+.core-score-hero strong {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 48px Newsreader;
+}
+.core-score-hero small {
+  font: 12px Manrope;
+  margin-top: 20px;
+}
+.core-score-row {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+  text-align: left;
+  color: inherit;
+}
+.core-score-row span:first-child {
+  flex: 1;
+}
