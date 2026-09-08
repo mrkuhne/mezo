@@ -11471,14 +11471,6 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-table tbody tr.ad-row-hl td { background: rgba(168, 74, 38, 0.12); box-shadow: inset 2px 0 0 #A84A26; }
 .ad-table tbody tr.ad-row-hl:hover td { background: rgba(168, 74, 38, 0.16); }
 
-/* feature × nap mátrix — a MatrixGrid <table> saját, letapadó első oszloppal */
-.ad-matrixwrap { overflow-x: auto; scrollbar-width: thin; }
-.ad-matrixtable { border-collapse: separate; border-spacing: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
-.ad-matrixtable th { font-weight: 700; color: #6E6257; font-size: 9px; letter-spacing: 0.04em; padding: 2px 4px; white-space: nowrap; }
-.ad-matrixtable th.rowh, .ad-matrixtable td.rowh {
-  position: sticky; left: 0; background: #FFFFFF; text-align: left; font-weight: 600; padding: 3px 8px; z-index: 1; }
-.ad-matrixtable td.cell { border-radius: 3px; min-width: 16px; height: 15px; padding: 0; }
-
 /* ---- grafikonok: sparkline ---- */
 .ad-spark { width: 100%; display: block; overflow: visible; }
 /* a nyugalmi állapot MINDIG a végállapot — a .mz-play csak beúsztatja (from-keyframe + both) */
@@ -11549,6 +11541,84 @@ button.mz-wtile:active { transform: scale(0.96); }
    zeroed counters/empty sparklines — a subtle pulsing placeholder instead, reusing the
    app-wide `.sk` shimmer idiom) ---- */
 .ad-tile-pending { display: flex; flex-direction: column; gap: 8px; min-height: 80px; justify-content: center; }
+
+/* ---- Funkciók scorecard (mezo-kxnn Task 1) ---- */
+.ad-period-row { margin: 2px 0 4px; }
+.ad-scorecard { display: flex; flex-direction: column; }
+.ad-scorerow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.6fr) 46px 110px 76px 100px 90px 14px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+}
+.ad-scorerow + .ad-scorerow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+.ad-scorerow:hover { background: rgba(93, 79, 160, 0.06); }
+.ad-scorerow:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-scorerow .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ad-scorerow .name .lb { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-scorerow .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.ad-scorerow .spark { display: block; width: 100%; height: 24px; overflow: hidden; }
+.ad-scorerow .spark svg { height: 24px; }
+.ad-scorerow .habit { display: flex; align-items: center; gap: 6px; }
+.ad-scorerow .habit .pct { font-size: 10.5px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; width: 30px; text-align: right; }
+.ad-scorerow .helped { display: flex; gap: 8px; font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-scorerow .helped .up { color: #4E6B42; }
+.ad-scorerow .helped .down { color: #A8452A; }
+.ad-scorerow .cost { display: flex; flex-direction: column; align-items: flex-end; }
+.ad-scorerow .cost .v { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ad-scorerow .cost .per { font-size: 9px; }
+.ad-reliability-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; justify-self: center; }
+.ad-reliability-dot.sage { background: #4E6B42; box-shadow: 0 0 0 3px rgba(78, 107, 66, .16); }
+.ad-reliability-dot.gold { background: #C9962E; box-shadow: 0 0 0 3px rgba(201, 150, 46, .18); }
+.ad-reliability-dot.coral { background: #C4694F; box-shadow: 0 0 0 3px rgba(196, 105, 79, .2); }
+.ad-reliability-dot.grey { background: #C9C1B8; }
+.ad-score-divider {
+  margin-top: 10px; padding: 6px 4px 4px; font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #A2958A; border-top: 0.5px solid rgba(43, 33, 24, 0.1);
+}
+
+/* ---- value/cost quadrant (mezo-kxnn Task 2) — hand-rolled SVG scatter, no charting lib. ---- */
+.ad-quadrant { display: flex; flex-direction: column; gap: 4px; }
+/* Fix round 1 (visual pass): capped at ~2.4:1 (the component's own 720×300 viewBox) via
+   `aspect-ratio` + a hard `max-height`, so the tile reads like the other ~400px chart tiles
+   instead of stretching to ~900px on a wide desktop mosaic column. */
+.ad-quad-svg { width: 100%; aspect-ratio: 2.4; height: auto; max-height: 420px; display: block; }
+.ad-quad-svg .split { stroke: rgba(43, 33, 24, .16); stroke-width: 1; stroke-dasharray: 4 4; }
+.ad-quad-svg .cap {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
+  fill: #A2958A;
+}
+.ad-quad-svg .pt { stroke: #fff; stroke-width: 1.5; opacity: 0.9; cursor: pointer; }
+.ad-quad-svg .pt:hover { opacity: 1; }
+.ad-quad-svg .pt-label { font-size: 9px; font-weight: 600; fill: #6E6257; pointer-events: none; }
+.ad-quad-note { font-size: 10.5px; margin: 2px 0 0; }
+
+/* ---- feature detail page (mezo-kxnn Task 3) ---- */
+.ad-feature-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 10px; padding: 10px 4px 14px;
+}
+.ad-feature-head .nm { display: flex; align-items: center; gap: 10px; }
+.ad-trend-wrap { flex: 1; display: flex; align-items: center; min-height: 0; }
+.ad-trend-wrap .ad-spark { width: 100%; }
+.ad-funnelrow { display: flex; align-items: center; gap: 9px; padding: 5px 0; }
+.ad-funnelrow .lb { font-size: 10.5px; font-weight: 600; width: 78px; flex: none; }
+.ad-funnelrow .vv { font-size: 10.5px; font-weight: 700; color: #6E6257; width: 26px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.ad-reasonlist, .ad-errorlist { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ad-reasonlist li, .ad-errorlist li {
+  display: flex; align-items: center; justify-content: space-between; font-size: 11px;
+  padding: 3px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.06);
+}
+.ad-errorlist code { color: #6E6257; font-size: 10.5px; }
+.ad-reasonlist .num, .ad-errorlist .num { font-variant-numeric: tabular-nums; font-weight: 700; color: #6E6257; }
+.ad-updown { display: flex; gap: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ad-updown .up { color: #4E6B42; }
+.ad-updown .down { color: #A8452A; }
+.ad-accepted-share { font-size: 9.5px; margin: 6px 0 0; }
 
 /* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
    van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster

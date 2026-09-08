@@ -1,3 +1,4 @@
+import { ApiError } from '@/data/_client/api'
 import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import {
   adminInsightsApi,
@@ -6,7 +7,6 @@ import {
   type AdminFeatureBoardResponse,
   type AdminFeatureDetailResponse,
   type AdminFeaturePeriod,
-  type AdminFeatureUsageResponse,
   type AdminFeedbackSummaryResponse,
   type AdminOverviewResponse,
   type AdminPeriod,
@@ -24,8 +24,6 @@ import {
   ADMIN_COST_MATRIX_7D_MOCK,
   ADMIN_FEATURE_BOARD_EMPTY,
   ADMIN_FEATURE_DETAIL_EMPTY,
-  ADMIN_FEATURE_USAGE_EMPTY,
-  ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_FEEDBACK_SUMMARY_EMPTY,
   ADMIN_FEEDBACK_SUMMARY_MOCK,
   ADMIN_OVERVIEW_EMPTY,
@@ -50,7 +48,6 @@ import {
 export const ADMIN_OVERVIEW_KEY = ['admin', 'insights', 'overview'] as const
 export const ADMIN_USER_INSIGHTS_KEY = ['admin', 'insights', 'users'] as const
 export const ADMIN_USER_DETAIL_KEY = ['admin', 'insights', 'user'] as const
-export const ADMIN_FEATURE_USAGE_KEY = ['admin', 'insights', 'usage', 'features'] as const
 export const ADMIN_COST_MATRIX_KEY = ['admin', 'insights', 'usage', 'cost-matrix'] as const
 export const ADMIN_SCREEN_USAGE_KEY = ['admin', 'insights', 'usage', 'screens'] as const
 export const ADMIN_ALERTS_KEY = ['admin', 'insights', 'alerts'] as const
@@ -111,17 +108,6 @@ export function useAdminUserDetail(id: string, isOwner: boolean) {
   return { ...q, isPending: enabled && q.isPending }
 }
 
-export function useAdminFeatureUsage(period: AdminPeriod, isOwner: boolean) {
-  return useDualQuery<AdminFeatureUsageResponse>({
-    queryKey: [...ADMIN_FEATURE_USAGE_KEY, period],
-    mockData: ADMIN_FEATURE_USAGE_MOCK,
-    realFetch: () => adminInsightsApi.featureUsage(period),
-    realEmpty: ADMIN_FEATURE_USAGE_EMPTY,
-    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
-    enabled: isOwner,
-  })
-}
-
 // Final review F6a: mock mode used to serve the SAME 30-day object for every `period`, so
 // Pulzus's "· 7 nap" top-list tiles (`useAdminCostMatrix('7d', ...)`) were fed 30-day totals in
 // mock mode — not what a real 7-day window would ever look like next to the 30-day one.
@@ -142,7 +128,7 @@ export function useAdminCostMatrix(period: AdminPeriod, isOwner: boolean) {
 }
 
 /**
- * Screen usage (mezo-o5cz) — the Feature-használat page's "Képernyők" panel. Same recipe as its
+ * Screen usage (mezo-o5cz) — the Funkciók scorecard's "Képernyők" panel. Same recipe as its
  * siblings: `enabled: isOwner` so a non-owner never fires the request, and an EXPLICIT
  * `realStaleTime` (an omitted one overwrites the client default and leaves the query permanently
  * stale — see the note at the top of this file).
@@ -194,7 +180,18 @@ export function useAdminFeatureDetail(key: string, period: AdminFeaturePeriod, i
   const q = useDualQuery<AdminFeatureDetailResponse>({
     queryKey: [...ADMIN_FEATURE_DETAIL_KEY, key, period],
     mockData: featureDetailMockFor(key),
-    realFetch: () => adminInsightsApi.featureDetail(key, period),
+    // An unknown feature key (mezo-kxnn Task 3) answers 404 — the `patternDetailHooks.ts`/
+    // `memoirHooks.ts` precedent: caught here and folded into the honest `ADMIN_FEATURE_DETAIL_EMPTY`
+    // (`key: ''`) instead of surfacing as `isError`, so the page's "ismeretlen funkció" state is a
+    // plain `data.key === ''` read, not a distinct error branch to special-case everywhere.
+    realFetch: async () => {
+      try {
+        return await adminInsightsApi.featureDetail(key, period)
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return ADMIN_FEATURE_DETAIL_EMPTY
+        throw e
+      }
+    },
     realEmpty: ADMIN_FEATURE_DETAIL_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled,

@@ -96,6 +96,21 @@ describe('TopListTile', () => {
     expect(screen.getByText('Nincs adat.')).toBeInTheDocument()
   })
 
+  it('renders no footer link when moreTo/moreLabel are both omitted (fix round 1, mezo-kxnn)', () => {
+    // A caller whose "teljes lista" affordance is a CollapsibleStrip (not a drill-through
+    // route) must not be forced to invent a fake `moreTo` target.
+    const { container } = render(
+      <MemoryRouter>
+        <TopListTile
+          title="Képernyők · megnyitások"
+          rows={[{ key: '/nap', label: 'Ma fül (kezdőlap)', value: '128' }]}
+        />
+      </MemoryRouter>,
+    )
+    expect(container.querySelector('.ad-more')).not.toBeInTheDocument()
+    expect(screen.getByText('Ma fül (kezdőlap)')).toBeInTheDocument()
+  })
+
   it('appends the unit to the value when given', () => {
     render(
       <MemoryRouter>

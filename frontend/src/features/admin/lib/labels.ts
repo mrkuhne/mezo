@@ -110,7 +110,10 @@ export const SCREEN_LABELS: Record<string, Entry> = {
   '/admin/users': { label: 'Admin · emberek' },
   '/admin/users/:id': { label: 'Admin · tesztelő-részlet' },
   '/admin/users/:id/memory': { label: 'Admin · emlék-böngésző' },
-  '/admin/usage': { label: 'Admin · használati adatok' },
+  // '/admin/usage' is a redirect-only route (mezo-kxnn) — `/admin/features` is the live screen
+  // now; the old entry is gone rather than kept as a second label for a route nothing renders.
+  '/admin/features': { label: 'Admin · funkciók' },
+  '/admin/features/:key': { label: 'Admin · funkció-részlet' },
   '/admin/data': { label: 'Admin · adatböngésző' },
   '/admin/cost': { label: 'Admin · költség-áttekintés' },
   '/admin/cost/:id': { label: 'Admin · költség-részlet' },
@@ -143,6 +146,16 @@ export const TABLE_LABELS: Record<string, Entry> = {
   screen_event: { label: 'Képernyő-megnyitások' },
 }
 
+// Message-feedback down-reason keys (`message_feedback.reason`) — the feature detail page's
+// downReasons list (mezo-kxnn Task 3). 4 entries per the plan's self-review note; `not_about_me`
+// has no seeded mock row today but is a real reason key, so it is labelled here regardless.
+export const FEEDBACK_REASON_LABELS: Record<string, Entry> = {
+  inaccurate: { label: 'Pontatlan' },
+  too_much: { label: 'Túl sok' },
+  bad_timing: { label: 'Rossz időzítés' },
+  not_about_me: { label: 'Nem rólam szól' },
+}
+
 function resolve(record: Record<string, Entry>, key: string): AdminLabel {
   const hit = record[key]
   return hit ? { ...hit } : { label: key, missing: true }
@@ -158,4 +171,8 @@ export function screenLabel(pattern: string): AdminLabel {
 
 export function tableLabel(name: string): AdminLabel {
   return resolve(TABLE_LABELS, name)
+}
+
+export function feedbackReasonLabel(reason: string): AdminLabel {
+  return resolve(FEEDBACK_REASON_LABELS, reason)
 }

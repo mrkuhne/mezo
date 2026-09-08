@@ -22,6 +22,10 @@ import { Link } from 'react-router-dom'
 // counts aren't a share of anything, so a bar there would be a lie. `tone` colors the value text
 // instead (`warn` for an actual quiet-day count, `mut` for the honest "még nem aktív" rows —
 // never a fabricated day count for a user who has never been seen).
+//
+// Fix round 1 (mezo-kxnn): `moreTo`/`moreLabel` are optional — a caller whose "teljes lista"
+// affordance is a `CollapsibleStrip` (not a drill-through route) renders no footer link at all,
+// rather than being forced to invent a fake `moreTo` target or hand-roll its own `.ad-top` markup.
 export interface TopRow {
   key: string
   label: string
@@ -44,8 +48,9 @@ export function TopListTile({
    *  caption is the enclosing AdminTile's own eyebrow; see the file-level comment). */
   title: string
   rows: TopRow[]
-  moreLabel: string
-  moreTo: string
+  /** Both omitted together renders no footer link (see the file-level fix-round-1 comment). */
+  moreLabel?: string
+  moreTo?: string
   unit?: string
   /** Override the generic "Nincs adat." empty copy — a list whose emptiness is itself good
    *  news (mezo-m079 Task 3's "Csendes tesztelők": nobody quiet) needs its own honest phrasing. */
@@ -77,7 +82,7 @@ export function TopListTile({
           )
         })
       )}
-      <Link to={moreTo} className="ad-more">{moreLabel}</Link>
+      {moreTo && moreLabel && <Link to={moreTo} className="ad-more">{moreLabel}</Link>}
     </div>
   )
 }

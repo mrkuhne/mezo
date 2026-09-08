@@ -8,7 +8,6 @@ import type {
   AdminFeatureBoardResponse,
   AdminFeatureDetailResponse,
   AdminFeatureRow,
-  AdminFeatureUsageResponse,
   AdminFeedbackSummaryResponse,
   AdminOverviewResponse,
   AdminScreenUsageResponse,
@@ -151,28 +150,10 @@ export const ADMIN_USER_DETAIL_EMPTY: AdminUserDetailResponse = {
   costByFeature30d: [],
 }
 
+// Shared day axis for the screen-usage seed below (also used to have fed the now-deleted
+// feature×day matrix mock — AdminUsagePage/mezo-kxnn dissolved that page into the Funkciók
+// scorecard, which reads `useAdminFeatureBoard` instead).
 const FEATURE_USAGE_DAYS = lastNDays(30)
-
-export const ADMIN_FEATURE_USAGE_MOCK: AdminFeatureUsageResponse = {
-  period: '30d',
-  days: FEATURE_USAGE_DAYS,
-  features: [
-    { key: 'chat', days: FEATURE_USAGE_DAYS.map((day, i) => ({ day, count: 3 + (i % 4) })) },
-    { key: 'coach', days: FEATURE_USAGE_DAYS.map((day, i) => ({ day, count: 1 + (i % 2) })) },
-    { key: 'vision', days: FEATURE_USAGE_DAYS.map((day, i) => ({ day, count: i % 6 === 0 ? 1 : 0 })) },
-  ],
-}
-
-// `period` here is unavoidably a real `AdminPeriod` value (the type is `'7d' | '30d' | '90d'`,
-// no neutral/unset member) — final review Finding 4 fixed the one place this was displayed
-// (AdminUsagePage) to render its own `period` state instead of this field, so the hardcoded
-// '30d' no longer reaches the screen; it survives here only as an unused placeholder to satisfy
-// the response shape while real-mode data is unresolved.
-export const ADMIN_FEATURE_USAGE_EMPTY: AdminFeatureUsageResponse = {
-  period: '30d',
-  days: [],
-  features: [],
-}
 
 // Cost matrix: one "Háttér" (background/cron) bucket with a null user id, and one cell that is
 // unpriced (costUsd: 0, unknownCalls > 0) so "unknown ≠ zero cost" has a fixture Task 11's
@@ -224,8 +205,9 @@ export const ADMIN_COST_MATRIX_7D_MOCK: AdminCostMatrixResponse = {
   totalUsd: 2.6,
 }
 
-// Same caveat as ADMIN_FEATURE_USAGE_EMPTY above — no consumer renders this field directly (a
-// real-mode cold load never reaches AdminOverviewPage's own '30d'/'7d' legends/labels either way).
+// `period` is unavoidably a real `AdminPeriod` value here (no neutral/unset member) — no
+// consumer renders this field directly (a real-mode cold load never reaches AdminOverviewPage's
+// own '30d'/'7d' legends/labels either way), so the hardcoded '30d' never reaches the screen.
 export const ADMIN_COST_MATRIX_EMPTY: AdminCostMatrixResponse = {
   period: '30d',
   users: [],
@@ -261,9 +243,9 @@ export const ADMIN_SCREEN_USAGE_MOCK: AdminScreenUsageResponse = {
   }),
 }
 
-// Same caveat as ADMIN_FEATURE_USAGE_EMPTY — AdminUsagePage renders its own `period` state, so
-// this hardcoded value never reaches the screen; it exists to satisfy the response shape while
-// real-mode data is unresolved.
+// `period` is unavoidably a real `AdminPeriod` value here — AdminFeaturesPage renders its own
+// `period` state, so this hardcoded '30d' never reaches the screen; it exists to satisfy the
+// response shape while real-mode data is unresolved.
 export const ADMIN_SCREEN_USAGE_EMPTY: AdminScreenUsageResponse = {
   period: '30d',
   days: [],
@@ -306,8 +288,17 @@ export const ADMIN_ALERTS_EMPTY: AdminAlertsResponse = {
 // newest ISO week), dense-filled. `helped` is null on `meal_draft` and `food` — meal_draft is a
 // real AI feature simply not yet mapped to message_feedback, `food` is a domain feature with no
 // companion feedback at all — matching the schema's "null when unmapped/companion-off" rulings.
+// Fix round 1 (mezo-kxnn Task 2/3 visual pass, Finding 4): the ORIGINAL multiplier here was `i *
+// 7` — for `spread === 3` that is `modulus === 7`, and `i * 7 mod 7` is 0 for every `i`, so
+// `companion_chat`'s series (`FEATURE_WEEKS_12(6, 3)`) came out CONSTANT (`[3,3,3,...]`) despite
+// the file's own comment above claiming these are varied. That flat series is exactly what fed
+// `AdminFeatureDetailPage`'s "Használat · 12 hét" `Sparkline` (`usageByWeek` is this row's own
+// `usesPerWeek`), rendering as a flat line pinned to the bottom of its viewBox (the sparkline's
+// y-scale falls back to a degenerate `range = 1` when `max === min`). `i * 2` is coprime with
+// every modulus this file actually calls with (3, 5, 7 — the `spread` values in use are 1, 2, 3),
+// so it always cycles through multiple residues instead of collapsing to a single one.
 const FEATURE_WEEKS_12 = (base: number, spread: number): number[] =>
-  Array.from({ length: 12 }, (_, i) => Math.max(0, base + ((i * 7) % (spread * 2 + 1)) - spread))
+  Array.from({ length: 12 }, (_, i) => Math.max(0, base + ((i * 2) % (spread * 2 + 1)) - spread))
 
 export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
   period: '30d',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FEATURE_LABELS, featureLabel, screenLabel, tableLabel } from './labels'
+import { FEATURE_LABELS, featureLabel, feedbackReasonLabel, screenLabel, tableLabel } from './labels'
 
 describe('admin label dictionary', () => {
   it('maps LLM feature slugs to Hungarian labels', () => {
@@ -33,5 +33,20 @@ describe('admin label dictionary', () => {
       expect(v.label.trim().length, key).toBeGreaterThan(0)
       expect(v.label, key).not.toBe(key)
     }
+  })
+
+  // mezo-kxnn Task 3 — the feature detail page's downReasons list.
+  it('maps the 4 message-feedback down-reason keys to Hungarian labels', () => {
+    expect(feedbackReasonLabel('inaccurate').label).toBe('Pontatlan')
+    expect(feedbackReasonLabel('too_much').label).toBe('Túl sok')
+    expect(feedbackReasonLabel('bad_timing').label).toBe('Rossz időzítés')
+    expect(feedbackReasonLabel('not_about_me').label).toBe('Nem rólam szól')
+    expect(feedbackReasonLabel('inaccurate').missing).toBeUndefined()
+  })
+
+  it('falls back honestly on an unknown down-reason key', () => {
+    const l = feedbackReasonLabel('brand_new_reason')
+    expect(l.label).toBe('brand_new_reason')
+    expect(l.missing).toBe(true)
   })
 })

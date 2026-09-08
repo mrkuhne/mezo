@@ -9,7 +9,6 @@ import {
   ADMIN_ALERTS_MOCK,
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_COST_MATRIX_7D_MOCK,
-  ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_FEEDBACK_SUMMARY_MOCK,
   ADMIN_OVERVIEW_MOCK,
   ADMIN_SCREEN_USAGE_MOCK,
@@ -362,7 +361,6 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/overview`, () => HttpResponse.json(ADMIN_OVERVIEW_MOCK)),
   http.get(`${API_BASE}/api/admin/users-insight`, () => HttpResponse.json(ADMIN_USER_INSIGHTS_MOCK)),
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
-  http.get(`${API_BASE}/api/admin/usage/features`, () => HttpResponse.json(ADMIN_FEATURE_USAGE_MOCK)),
   // Final review F6a: period-aware, mirroring `costMatrixMockFor` (adminInsightsHooks.ts) —
   // a real 7-day window must not read back as the 30-day fixture in mock mode.
   http.get(`${API_BASE}/api/admin/usage/cost-matrix`, ({ request }) => {

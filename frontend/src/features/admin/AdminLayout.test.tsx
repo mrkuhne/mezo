@@ -58,6 +58,13 @@ describe('AdminLayout (mock mode)', () => {
     expect(screen.queryByRole('link', { name: /^Userek$/ })).not.toBeInTheDocument()
   })
 
+  // mezo-kxnn Task 1: the Funkciók scorecard replaces the Feature-használat matrix page.
+  it('renames the rail\'s Feature-használat item to Funkciók, pointing at /admin/features', async () => {
+    renderLayout()
+    expect(await screen.findByRole('link', { name: /Funkciók/ })).toHaveAttribute('href', '/admin/features')
+    expect(screen.queryByRole('link', { name: /Feature-használat/ })).not.toBeInTheDocument()
+  })
+
   // Task 20 (mezo-d5iy.20): AdminLayout used to mount no ArrivalProvider at all, so every
   // `useArrival()`/`useSettledArrival()` consumer under it (every admin page's `EntranceGroup`)
   // fell back to arrival.tsx's context default of 'push' — ALWAYS, regardless of navigation —

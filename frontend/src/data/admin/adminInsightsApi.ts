@@ -6,7 +6,6 @@ import type { components } from '@/data/_client/api.gen'
 export type AdminOverviewResponse = components['schemas']['AdminOverviewResponse']
 export type AdminUserInsightResponse = components['schemas']['AdminUserInsightResponse']
 export type AdminUserDetailResponse = components['schemas']['AdminUserDetailResponse']
-export type AdminFeatureUsageResponse = components['schemas']['AdminFeatureUsageResponse']
 export type AdminCostMatrixResponse = components['schemas']['AdminCostMatrixResponse']
 export type AdminScreenUsageResponse = components['schemas']['AdminScreenUsageResponse']
 export type AdminScreenUsageRow = components['schemas']['AdminScreenUsageRow']
@@ -58,8 +57,6 @@ export const adminInsightsApi = {
     apiFetch<AdminUserInsightResponse[]>(`/api/admin/users-insight${qs({ q, sort, dir })}`),
   userDetail: (id: string): Promise<AdminUserDetailResponse> =>
     apiFetch<AdminUserDetailResponse>(`/api/admin/users/${id}/insight`),
-  featureUsage: (period: AdminPeriod): Promise<AdminFeatureUsageResponse> =>
-    apiFetch<AdminFeatureUsageResponse>(`/api/admin/usage/features${qs({ period })}`),
   costMatrix: (period: AdminPeriod): Promise<AdminCostMatrixResponse> =>
     apiFetch<AdminCostMatrixResponse>(`/api/admin/usage/cost-matrix${qs({ period })}`),
   // Screen usage (mezo-o5cz) — reads the lean screen_event log. Answers 200 with zero rows when

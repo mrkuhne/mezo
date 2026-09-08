@@ -1,4 +1,4 @@
-import type { AdminCostMatrixResponse, AdminUserInsightResponse } from '@/data/admin/adminInsightsApi'
+import type { AdminCostMatrixResponse, AdminUserInsightResponse, AdminFeatureRow } from '@/data/admin/adminInsightsApi'
 import { featureLabel } from '@/features/admin/lib/labels'
 import type { TopRow } from '@/features/admin/components/TopListTile'
 
@@ -41,24 +41,11 @@ export function maxOf(rec: Record<string, number>): number {
 }
 
 /** Fixed-hue (admin coral) heat color for the 90-day activity heat strip: alpha alone carries the
- *  value, scaled 0.22–1.0 against the strip's own max, a flat neutral tint at zero. This is NOT
- *  `hexToRgba` below — different color, different alpha curve, kept as its own function rather
- *  than forced through a single "heat" abstraction the two call sites don't actually share. */
+ *  value, scaled 0.22–1.0 against the strip's own max, a flat neutral tint at zero. */
 export function heatColor(v: number, max: number): string {
   if (!v) return 'rgba(43,33,24,.07)'
   const t = 0.22 + 0.78 * (v / max)
   return `rgba(216,72,31,${t.toFixed(2)})`
-}
-
-/** Any hex color at a given alpha, as an rgba() string (MatrixGrid's feature×day cell tint —
- *  `color` is caller-supplied, unlike `heatColor`'s fixed coral, so this stays a general hex→rgba
- *  conversion rather than another fixed-hue heat function). */
-export function hexToRgba(hex: string, alpha: number): string {
-  const n = Number.parseInt(hex.replace('#', ''), 16)
-  const r = (n >> 16) & 255
-  const g = (n >> 8) & 255
-  const b = n & 255
-  return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
 }
 
 /** Per-axis totals from the user×feature cost matrix (mezo-m079 Task 2) — the sole aggregation
@@ -220,4 +207,20 @@ export function costDeltaCopy(delta: { pct: number; direction: 'up' | 'down' | '
   const glyph = delta.direction === 'up' ? '▲' : '▼'
   const word = delta.direction === 'up' ? 'több' : 'kevesebb'
   return `${glyph} ${pct}%-kal ${word} a heti átlagnál`
+}
+
+/** Value-score heuristic v1 (mezo-kxnn Task 2, plan Rulings) — the Funkciók scorecard's default
+ *  sort AND the value/cost quadrant's x-axis. `uniqueUsers × (1 + habitUserShare)` is the reach ×
+ *  stickiness base; `helped` then nudges it by feedback sentiment: `null` (no feedback source —
+ *  companion off or the feature is unmapped) is deliberately NEUTRAL (×1, never a penalty for a
+ *  feature that simply isn't measured yet), a real `{up, down}` scales between ×0.5 (all-down)
+ *  and ×1.5 (all-up) via `0.5 + up/(up+down)`. `up + down === 0` (an object present but empty —
+ *  not the same as `null`) also reads as neutral rather than dividing by zero. This is explicitly
+ *  a v1 heuristic, not a scored/blessed metric — documented here rather than hidden in a page. */
+export function valueScore(row: Pick<AdminFeatureRow, 'uniqueUsers' | 'habitUserShare' | 'helped'>): number {
+  const helped = row.helped
+  const helpedFactor = helped === null || helped.up + helped.down === 0
+    ? 1
+    : 0.5 + helped.up / (helped.up + helped.down)
+  return row.uniqueUsers * (1 + row.habitUserShare) * helpedFactor
 }
