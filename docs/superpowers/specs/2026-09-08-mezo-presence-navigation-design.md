@@ -1,0 +1,17 @@
+# Mezo presence — one companion, several workspaces
+
+Driver: mezo-88jw.4. User approved the proposed one-Mezo/multiple-coloured-roles navigation prototype and narrowed this iteration to navigation and communication. Their clarification is authoritative: Mezo accompanies a complete hypertrophy mesocycle/sport application, a Yazio-like nutrition application with sport-linked goals, sleep/weight logging and mental wellbeing (free journal, at least four daily check-ins, gratitude and life goals). The AI learns across these, builds a multidimensional profile in layered memory, and chats with personal context and tools. It does not replace the established training programme with ad-hoc session generation.
+
+## Experience
+
+An independent `?v=presence` study preserves both existing prototypes. Home opens with Clay, a four-part daily check-in rhythm, a conversation invitation and a small next-context summary. One persistent bottom Clay button expands a labelled role chooser: Home, Movement, Fuel, Life and Understanding. Selecting a role morphs the adjacent navigation; the character changes accent, retaining the same identity. Role/tab identities are fixed; AI suggestions never reorder them. Each workspace remembers its selected tab and scroll position. The chooser is an accessible modal with Escape, focus return and reduced-motion support.
+
+Workspace tabs show shallow, deliberately curated summaries; no detailed editors or subpages are added. Movement always references the existing hypertrophy block and sport/running load. Fuel shows an explicit illustrative baseline + sport energy budget, linked to the same sport state. Life presents check-ins, journal/gratitude, physical logs and goals/people. Understanding makes observations, layered memory and physical/mental/social/medical/spiritual profile visible without implying live medical diagnosis.
+
+Conversation is a persistent overlay reachable from the header and home. It has one history and draft across roles, keeps the originating workspace underneath, and shows context sources separately from prose. Scripted tool-result samples can open a matching workspace or, on explicit user request, change a demo sport plan and the linked nutrition budget. Check-in recording visibly adds context and one daily entry; passive domain switches never add messages or mutate plans. No live AI, real messaging, new workouts, or medical conclusions are generated.
+
+## Implementation and verification
+
+`presence-model.mjs` owns isolated state, role/tab transitions and deterministic conversation/tool examples; meaningful node tests prove state preservation, check-in updates and explicit-action nutrition coupling. `PresenceStudy.jsx` owns the shell, chooser, workspace summaries, chat and accessible focus/history handling. `presence.css` scopes the new visual language, reusing the existing Avatar Lab Clay. A standalone README documents interactions and prototype limits. Beads holds executable task tracking, rather than a parallel markdown checklist.
+
+Verify primary journeys in the browser: check-in → contextual chat; domain selection → local tab → different domain → return; chat tool opens existing programme; explicit sport cancellation → changed Fuel budget; back/Escape/focus return; responsive no-overflow layout. Existing tests and prototype build must remain green. Delivery is local preview, documented source, pushed branch and draft PR. No production migration or final UI decision is implied.

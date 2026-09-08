@@ -1,5 +1,7 @@
 # Mezo — Mérték és Mezo veled
 
+**Aktuális továbbfejlesztés:** Daniel a Mezo veled irányt választotta. Az [egy társ, több tér navigációs tanulmány](presence-navigation.md) külön prototípusban vizsgálja a színes szerepváltót, az átalakuló helyi menüt és az állandó beszélgetést: [megnyitás](http://127.0.0.1:5193/?v=presence). A lenti két korábbi változat összehasonlításként megmarad.
+
 2026. szeptember 8. · `mezo-88jw.3` · gazdag funkcionális UX-prototípus, vizuális döntés előtt.
 
 Az első három irány túl kis alkalmazásszeletet mutatott. Daniel visszajelzése alapján az eredeti meleg, semleges palettát tartjuk meg; a Mérték formáit lágyítjuk, és külön, világos karakterközpontú alternatívát építünk. A zöld Liget nem szerepel az aktuális összehasonlítóban. A [kutatás](../research/queries/mezo-ux-direction.md) és a [jóváhagyott kibővített scope](../superpowers/specs/2026-09-08-complete-ux-exploration-design.md) rögzíti az előzményeket. Production irány még nincs kiválasztva.
