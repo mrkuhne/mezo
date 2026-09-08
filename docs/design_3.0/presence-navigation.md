@@ -10,6 +10,14 @@ Boop az eredeti Avatar Lab definíciót használja, változatlan szemmérettel: 
 
 Belépés: [Boop](http://127.0.0.1:5193/?v=boop). A korábbi `?v=presence` cím továbbra is működik, a mentett mintanap megmarad. A két régebbi összehasonlító irány változatlan. [Vizuális specifikáció](../superpowers/specs/2026-09-08-boop-visual-design.md).
 
+## Ritmus és kapcsolódás
+
+A `SignatureVisuals.jsx` újrahasználható elemei a közös ív–pont–szál nyelvet használják. A kezdőlapi `RhythmArc` a tényleges check-in darabszámból jelöli a négy állomást, extra check-in után is mind a négy kész marad. Mentéskor az új pont egyszeri átmenetet kap. A `CycleSignature` ugyanezt az ívet a program heteire alkalmazza; a hétgomb rövid, szándékosan általános összegzést választ, nem módosítja az edzéstervet.
+
+A `FuelSignature` bemetszett SVG felületén az alapkeret és sport szála a napi célnál találkozik. A naplózott mennyiség alatti sáv a célhoz viszonyít, a maradék számmal is szerepel. A sport forrása megnyitható, a kapcsolat magyarázata lenyitható, onnan a meglévő mintachat elérhető. A sport törlését továbbra is az eredeti chattool végzi; a grafika ugyanazt az állapotot követi. A kezdőlap `DayConnection` eleme közvetlenül összekapcsolja az edzés és táplálás bejáratát.
+
+A mozgás rögzítéshez és értékváltozáshoz kapcsolódik, a reduced-motion szabály kikapcsolja az új animációkat. A napi lenyomat és a Minták összefüggés-ábrája még nincs kidolgozva ebben a körben. [Specifikáció](../superpowers/specs/2026-09-09-boop-signature-design.md).
+
 ## Termékértelmezés
 
 Daniel a Mezo veled irányt választotta. A társ a teljes meglévő alkalmazást ismeri: hypertrophy mezociklus és sport; sporttal együtt változó étkezési célok és teljes ételnapló; súly/alvás; mentális jóllét szabad naplóval, napi legalább négy check-innel, hálával és életcélokkal. Az AI folyamatos megfigyelésből, visszajelzésből és rétegzett memóriából építi a személy fizikai, mentális, szociális, egészségi és lelki képét. A toolokkal működő chat ezt a kontextust viszi tovább. Az ad-hoc edzésjavaslat-generálás nem a termék szervezőelve.
@@ -55,4 +63,6 @@ A prototípus nem kapcsolódik valódi AI-hoz vagy személyes adatokhoz. Nem fut
 
 ## Boop ellenőrzés
 
-Az editorial körben a kezdőoldalt és a Kamrát böngészőben ellenőriztük; a karakter ismét csak két szemből áll, a területi menü saját vonalas ikonokat használ. A prototípus 53 meglévő viselkedési tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.
+Az editorial körben a kezdőoldalt és a Kamrát böngészőben ellenőriztük; a karakter ismét csak két szemből áll, a területi menü saját vonalas ikonokat használ. A prototípus 56 viselkedési és geometriai tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.
+
+Az új elemeknél böngészőben ellenőrizve: hétválasztás, étkezési magyarázat/chat, a sport átvezetése után 2750 → 2400 kcal és inaktív forrásszál, check-in mentés. A 360 px-es keretben nincs vízszintes kilógás, a közérzetgombok láthatóak.
