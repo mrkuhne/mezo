@@ -6,7 +6,13 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { useAdminOverview, useAdminCostMatrix, useAdminAlerts } from '@/data/admin/adminInsightsHooks'
-import { ADMIN_OVERVIEW_EMPTY, ADMIN_OVERVIEW_MOCK, ADMIN_ALERTS_MOCK } from '@/data/admin/adminInsightsMock'
+import {
+  ADMIN_OVERVIEW_EMPTY,
+  ADMIN_OVERVIEW_MOCK,
+  ADMIN_ALERTS_MOCK,
+  ADMIN_COST_MATRIX_MOCK,
+  ADMIN_COST_MATRIX_7D_MOCK,
+} from '@/data/admin/adminInsightsMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -29,6 +35,17 @@ describe('adminInsights hooks (mock mode)', () => {
     const { result } = renderHook(() => useAdminAlerts(true), { wrapper: QueryWrapper })
     expect(result.current.data).toEqual(ADMIN_ALERTS_MOCK)
     expect(result.current.data.alerts).toHaveLength(2)
+  })
+
+  // Final review F6a: mock mode used to serve the SAME 30-day cost-matrix object for '7d', so
+  // Pulzus's "· 7 nap" tiles were fed 30-day totals in mock mode.
+  it('serves a distinct, smaller cost-matrix seed for the 7d period than for 30d', () => {
+    const cm30 = renderHook(() => useAdminCostMatrix('30d', true), { wrapper: QueryWrapper })
+    const cm7 = renderHook(() => useAdminCostMatrix('7d', true), { wrapper: QueryWrapper })
+    expect(cm30.result.current.data).toEqual(ADMIN_COST_MATRIX_MOCK)
+    expect(cm7.result.current.data).toEqual(ADMIN_COST_MATRIX_7D_MOCK)
+    expect(cm7.result.current.data.period).toBe('7d')
+    expect(cm7.result.current.data.totalUsd).toBeLessThan(cm30.result.current.data.totalUsd)
   })
 })
 

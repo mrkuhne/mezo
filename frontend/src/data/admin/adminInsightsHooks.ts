@@ -17,6 +17,7 @@ import {
   ADMIN_ALERTS_MOCK,
   ADMIN_COST_MATRIX_EMPTY,
   ADMIN_COST_MATRIX_MOCK,
+  ADMIN_COST_MATRIX_7D_MOCK,
   ADMIN_FEATURE_USAGE_EMPTY,
   ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_OVERVIEW_EMPTY,
@@ -108,10 +109,18 @@ export function useAdminFeatureUsage(period: AdminPeriod, isOwner: boolean) {
   })
 }
 
+// Final review F6a: mock mode used to serve the SAME 30-day object for every `period`, so
+// Pulzus's "· 7 nap" top-list tiles (`useAdminCostMatrix('7d', ...)`) were fed 30-day totals in
+// mock mode — not what a real 7-day window would ever look like next to the 30-day one.
+// `period`-aware mock selection; MSW's own handler mirrors this same mapping.
+function costMatrixMockFor(period: AdminPeriod): AdminCostMatrixResponse {
+  return period === '7d' ? ADMIN_COST_MATRIX_7D_MOCK : ADMIN_COST_MATRIX_MOCK
+}
+
 export function useAdminCostMatrix(period: AdminPeriod, isOwner: boolean) {
   return useDualQuery<AdminCostMatrixResponse>({
     queryKey: [...ADMIN_COST_MATRIX_KEY, period],
-    mockData: ADMIN_COST_MATRIX_MOCK,
+    mockData: costMatrixMockFor(period),
     realFetch: () => adminInsightsApi.costMatrix(period),
     realEmpty: ADMIN_COST_MATRIX_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,

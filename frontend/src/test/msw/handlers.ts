@@ -8,6 +8,7 @@ import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import {
   ADMIN_ALERTS_MOCK,
   ADMIN_COST_MATRIX_MOCK,
+  ADMIN_COST_MATRIX_7D_MOCK,
   ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_OVERVIEW_MOCK,
   ADMIN_SCREEN_USAGE_MOCK,
@@ -359,7 +360,12 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/users-insight`, () => HttpResponse.json(ADMIN_USER_INSIGHTS_MOCK)),
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/features`, () => HttpResponse.json(ADMIN_FEATURE_USAGE_MOCK)),
-  http.get(`${API_BASE}/api/admin/usage/cost-matrix`, () => HttpResponse.json(ADMIN_COST_MATRIX_MOCK)),
+  // Final review F6a: period-aware, mirroring `costMatrixMockFor` (adminInsightsHooks.ts) —
+  // a real 7-day window must not read back as the 30-day fixture in mock mode.
+  http.get(`${API_BASE}/api/admin/usage/cost-matrix`, ({ request }) => {
+    const period = new URL(request.url).searchParams.get('period')
+    return HttpResponse.json(period === '7d' ? ADMIN_COST_MATRIX_7D_MOCK : ADMIN_COST_MATRIX_MOCK)
+  }),
   http.get(`${API_BASE}/api/admin/usage/screens`, () => HttpResponse.json(ADMIN_SCREEN_USAGE_MOCK)),
   http.get(`${API_BASE}/api/admin/alerts`, () => HttpResponse.json(ADMIN_ALERTS_MOCK)),
   // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not

@@ -26,11 +26,6 @@ export function sumSeriesByDay(series: { days: { count: number }[] }[]): number[
   return Array.from({ length: n }, (_, i) => series.reduce((sum, s) => sum + (s.days[i]?.count ?? 0), 0))
 }
 
-/** Max of a plain number array, 0 for an empty one (AdminOverviewPage's sparkline "csúcs" stat). */
-export function peak(vals: number[]): number {
-  return vals.length ? Math.max(...vals) : 0
-}
-
 /** A row's share of the table with the most rows, as a 0–100 percentage rounded to 1 decimal
  *  (AdminUserDetailPage's per-table footprint bar). */
 export function footprintShare(n: number, all: { rowCount: number }[]): number {
@@ -179,10 +174,12 @@ export function featureLegend(matrix: AdminCostMatrixResponse, n: number): Admin
   return result
 }
 
-/** Non-owner users quiet for at least `minDays`, quietest first — the Pulzus "Csendes
- *  tesztelők" tile (mezo-m079 Task 3). A user who has NEVER been active (`lastActivityAt: null`)
- *  is the quietest of all, sorted first, but gets an honest "még nem aktív" row instead of an
- *  invented day count. `now` is injectable so a test never depends on the real clock.
+/** Non-owner users quiet for at least `minDays`, quietest first, capped at `maxRows` (final
+ *  review F5 — like the two cost top-lists, this list is uncapped otherwise; the tile's own
+ *  "Minden tesztelő aktivitása →" link already covers the rest) — the Pulzus "Csendes tesztelők"
+ *  tile (mezo-m079 Task 3). A user who has NEVER been active (`lastActivityAt: null`) is the
+ *  quietest of all, sorted first, but gets an honest "még nem aktív" row instead of an invented
+ *  day count. `now` is injectable so a test never depends on the real clock.
  *
  *  Fix round 1: these rows carry NO `share` — a day count is not a share of anything, and the
  *  mockup's quiet-testers tile has no bars at all (name left, day count right, in warning
@@ -192,6 +189,7 @@ export function quietTesters(
   users: Pick<AdminUserInsightResponse, 'id' | 'name' | 'role' | 'lastActivityAt'>[],
   now: Date = new Date(),
   minDays = 3,
+  maxRows = 5,
 ): TopRow[] {
   const withDays = users
     .filter((u) => u.role !== 'OWNER')
@@ -201,6 +199,7 @@ export function quietTesters(
     }))
     .filter((x) => x.days === null || x.days >= minDays)
     .sort((a, b) => (b.days ?? Number.POSITIVE_INFINITY) - (a.days ?? Number.POSITIVE_INFINITY))
+    .slice(0, maxRows)
 
   return withDays.map(({ u, days }) => ({
     key: u.id,

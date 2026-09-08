@@ -203,6 +203,30 @@ describe('quietTesters', () => {
     const rows = quietTesters([{ id: 'a', name: 'A', role: 'USER', lastActivityAt: NOW.toISOString() }], NOW)
     expect(rows).toEqual([])
   })
+
+  // Final review F5: uncapped otherwise — the tile's own "Minden tesztelő aktivitása →" link
+  // already covers the rest, same reasoning as the two cost top-lists' own `topNFromEntries(…, 5, …)`.
+  it('caps the list at maxRows (default 5), keeping the quietest ones', () => {
+    const many: Pick<AdminUserInsightResponse, 'id' | 'name' | 'role' | 'lastActivityAt'>[] = Array.from(
+      { length: 8 },
+      (_, i) => ({
+        id: `u${i}`,
+        name: `U${i}`,
+        role: 'USER' as const,
+        // quiet for 3..10 days, i=0 quietest (10 days) .. i=7 least quiet (3 days)
+        lastActivityAt: new Date(NOW.getTime() - (10 - i) * 86_400_000).toISOString(),
+      }),
+    )
+    const rows = quietTesters(many, NOW)
+    expect(rows).toHaveLength(5)
+    expect(rows.map((r) => r.key)).toEqual(['u0', 'u1', 'u2', 'u3', 'u4'])
+  })
+
+  it('honors an explicit maxRows override', () => {
+    const rows = quietTesters(users, NOW, 3, 1)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].key).toBe('never')
+  })
 })
 
 describe('costDeltaCopy', () => {

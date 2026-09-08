@@ -77,4 +77,28 @@ describe('AdminStatusBand (real mode)', () => {
     renderBand()
     expect(await screen.findByText(/Beszélgetés a társsal/)).toBeInTheDocument()
   })
+
+  // Final review F1: `llm_errors` fires once PER FEATURE — same `key`, different `subject` —
+  // which used to collide into duplicate React keys (`key={a.key}`). Both rows must still
+  // render distinctly; this is the closest a test gets to proving the key collision is gone
+  // (React swallows the dev-only duplicate-key warning rather than failing the render, so the
+  // real assertion is that BOTH alerts survive onto the screen).
+  it('renders every alert distinctly even when several share the same rule key (llm_errors per feature)', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/alerts`, () => HttpResponse.json({
+      generatedAt: new Date().toISOString(),
+      alerts: [
+        {
+          key: 'llm_errors', severity: 'bad', title: 'Magas hibaarány',
+          detail: 'A beszélgetés hívások 24%-a hibára futott.', link: '/admin/cost', subject: 'companion_chat',
+        },
+        {
+          key: 'llm_errors', severity: 'bad', title: 'Magas hibaarány',
+          detail: 'Az étkezés-tanácsadó hívások 30%-a hibára futott.', link: '/admin/cost', subject: 'meal_coach',
+        },
+      ],
+    })))
+    renderBand()
+    expect(await screen.findByText(/Beszélgetés a társsal/)).toBeInTheDocument()
+    expect(await screen.findByText(/Étkezési tanácsadó/)).toBeInTheDocument()
+  })
 })

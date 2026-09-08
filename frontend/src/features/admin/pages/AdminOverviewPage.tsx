@@ -43,9 +43,16 @@ export function AdminOverviewPage() {
   const testers = useAdminUserInsights(null, 'lastActivityAt', 'asc', isOwner)
 
   const alertsList = alerts.data.alerts
+  // Final review F2: 'info' is a real severity (AdminAlert.severity), and an info-only alert
+  // set (e.g. a lone `tester_quiet`) must NOT read as "N figyelmeztetés" on a coral wash — the
+  // Rendszer KPI counts only the two ACTIONABLE severities as "figyelmeztetés"; `null` here
+  // means "nothing actionable", which still needs its own info-only rendering below (not the
+  // same as truly zero alerts).
   const worstSeverity: 'bad' | 'warn' | null = alertsList.some((a) => a.severity === 'bad')
     ? 'bad'
     : alertsList.some((a) => a.severity === 'warn') ? 'warn' : null
+  const warnOrBadCount = alertsList.filter((a) => a.severity === 'bad' || a.severity === 'warn').length
+  const infoCount = alertsList.filter((a) => a.severity === 'info').length
   const memoryStuck = alertsList.find((a) => a.key === 'memory_stuck')
 
   const costDelta = deltaVsTrailingAvg(ov.data.costSeries.map((d) => d.amountUsd), 7)
@@ -87,14 +94,16 @@ export function AdminOverviewPage() {
             <AdminStatusBand />
 
             <AdminTile query={alerts} wash={worstSeverity ? 'coral' : 'sage'} eyebrow="Rendszer" span={3}>
-              {alertsList.length === 0 ? (
+              {worstSeverity === null ? (
                 <div className="ad-cell" style={{ justifyContent: 'space-between' }}>
                   <SystemOkRing />
-                  <span className="ad-mut">Nincs figyelmeztetés</span>
+                  {infoCount > 0
+                    ? <span className="ad-tag mut">{infoCount} információ</span>
+                    : <span className="ad-mut">Nincs figyelmeztetés</span>}
                 </div>
               ) : (
                 <div className="ad-poster">
-                  <div className="ad-big">{huInt(alertsList.length)}<u>{alertsList.length === 1 ? 'figyelmeztetés' : 'figyelmeztetés'}</u></div>
+                  <div className="ad-big">{huInt(warnOrBadCount)}<u>figyelmeztetés</u></div>
                   <div className="foot"><span className={`ad-tag ${worstSeverity}`}>{worstSeverity === 'bad' ? 'kritikus' : 'figyelem'}</span></div>
                 </div>
               )}

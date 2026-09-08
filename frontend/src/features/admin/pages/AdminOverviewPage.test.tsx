@@ -108,4 +108,25 @@ describe('AdminOverviewPage / Pulzus (real mode)', () => {
     expect(screen.getByText('Pulzus')).toBeInTheDocument()
     expect(await screen.findByText(/^aktív ma$/i)).toBeInTheDocument()
   })
+
+  // Final review F2: an info-only alert set (nothing actionable) must NOT read as
+  // "N figyelmeztetés" on a coral wash — it renders the all-good ring plus a muted info tag.
+  it('renders the Rendszer KPI as all-good + a muted info tag when every alert is info-only severity', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/alerts`, () => HttpResponse.json({
+      generatedAt: new Date().toISOString(),
+      alerts: [{
+        key: 'tester_quiet', severity: 'info', title: 'Egy tesztelő régóta nem jelentkezett be',
+        detail: 'Anna 25 napja nem aktív.', link: '/admin/users',
+      }],
+    })))
+    renderPage()
+    await screen.findByText('Pulzus')
+    const rendszerTile = (await screen.findByText(/^rendszer$/i)).closest('.mz-tile') as HTMLElement
+    await waitFor(() => expect(rendszerTile.querySelector('.ad-tag')).toBeInTheDocument())
+    // no bogus "N figyelmeztetés" numeral, and no unstyled `ad-tag null`
+    expect(rendszerTile.querySelector('.ad-big')).not.toBeInTheDocument()
+    expect(rendszerTile.querySelector('.ad-tag')).toHaveClass('ad-tag', 'mut')
+    expect(rendszerTile.querySelector('.ad-tag')).toHaveTextContent('1 információ')
+    expect(rendszerTile).toHaveClass('mz-w-sage')
+  })
 })

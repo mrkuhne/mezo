@@ -57,7 +57,11 @@ export function AdminStatusBand() {
       <div className="ad-alertrow">
         {items.map((a) => (
           <button
-            key={a.key}
+            // Final review F1: `llm_errors` emits one alert PER feature — all sharing the SAME
+            // `key` ("llm_errors") with only `subject` (the feature slug) distinguishing them.
+            // `a.key` alone collided into duplicate React keys; `subject` is optional on other
+            // rule keys (e.g. cost_spike), so it's appended rather than relied on alone.
+            key={`${a.key}:${a.subject ?? ''}`}
             type="button"
             className={cn('ad-alert', a.severity)}
             onClick={() => navigate(a.link)}
