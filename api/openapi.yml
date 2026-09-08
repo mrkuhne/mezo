@@ -22050,6 +22050,8 @@ components:
         - errorCount
         - cancelledCount
         - unpricedCount
+        - promptTokens
+        - cachedTokens
         - currency
       properties:
         callCount:
@@ -22069,6 +22071,16 @@ components:
           type: integer
           format: int64
           description: rows with a null cost_usd — why the sum is an estimate
+        promptTokens:
+          type: integer
+          format: int64
+          description: summed raw prompt tokens; INCLUDES the cached slice
+        cachedTokens:
+          type: integer
+          format: int64
+          description: >-
+            summed cache-read prompt tokens — a SUBSET of promptTokens; the
+            prompt-cache hit ratio is cachedTokens/promptTokens (mezo-ozri.5)
         costUsd:
           type: number
           format: double

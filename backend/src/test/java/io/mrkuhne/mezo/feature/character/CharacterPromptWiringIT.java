@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.proactive.service.MemoirGenerator;
 import io.mrkuhne.mezo.feature.proactive.service.PredictionGenerator;
@@ -110,7 +111,10 @@ class CharacterPromptWiringIT {
             ChatService.PreparedTurn turn = chatService.prepareTurn(owner, conversation.getId(),
                     SendMessageRequest.builder().content("mi a mai terv?").build());
 
-            assertThat(turn.systemPrompt()).contains(CLAIM_TEXT);
+            // mezo-ozri.5: the [Karakter] block is in the VOLATILE half now — what the model reads
+            // is the join of the two.
+            assertThat(CompanionLlm.joinInstructions(turn.systemPrompt(), turn.turnContext()))
+                    .contains(CLAIM_TEXT);
         }
 
         @Test
@@ -166,7 +170,8 @@ class CharacterPromptWiringIT {
             ChatService.PreparedTurn turn = chatService.prepareTurn(owner, conversation.getId(),
                     SendMessageRequest.builder().content("mi a mai terv?").build());
 
-            assertThat(turn.systemPrompt()).doesNotContain("[Karakter");
+            assertThat(CompanionLlm.joinInstructions(turn.systemPrompt(), turn.turnContext()))
+                    .doesNotContain("[Karakter");
         }
     }
 }

@@ -201,6 +201,10 @@ public class LlmUsageService {
             .errorCount(countOf(rows, CallStatus.ERROR))
             .cancelledCount(countOf(rows, CallStatus.CANCELLED))
             .unpricedCount(rows.stream().mapToLong(LlmStatusRow::unpricedCount).sum())
+            // mezo-ozri.5: the prompt-cache meter. Raw counts, cached INSIDE prompt — the header
+            // renders the quotient, so the two must be reported from the same rows or the ratio lies.
+            .promptTokens(rows.stream().mapToLong(LlmStatusRow::promptTokens).sum())
+            .cachedTokens(rows.stream().mapToLong(LlmStatusRow::cachedTokens).sum())
             .costUsd(toDouble(sumCost(rows.stream().map(LlmStatusRow::costUsd).toList())))
             .currency(llmPricingProperties.currency())
             .build();

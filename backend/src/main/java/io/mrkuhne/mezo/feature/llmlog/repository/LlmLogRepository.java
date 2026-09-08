@@ -69,14 +69,16 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
     List<LlmDailyAggregate> aggregatePerDaySince(@Param("since") Instant since, @Param("zone") String zone);
 
     /**
-     * Per-status slice of a period (mezo-uakh) — call count, cost sum and unpriced count in ONE
-     * grouped pass. Deliberately NOT filtered by {@code created_by}: cron- and stream-written rows
+     * Per-status slice of a period (mezo-uakh) — call count, cost sum, unpriced count and the
+     * prompt/cached token sums (mezo-ozri.5) in ONE grouped pass. Deliberately NOT filtered by {@code created_by}: cron- and stream-written rows
      * carry a null owner, and an ownership filter would hide the highest-volume traffic.
      */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmStatusRow(
             l.status, count(l), sum(l.costUsd),
-            sum(case when l.costUsd is null then 1L else 0L end))
+            sum(case when l.costUsd is null then 1L else 0L end),
+            coalesce(sum(coalesce(l.promptTokens, 0)), 0L),
+            coalesce(sum(coalesce(l.cachedTokens, 0)), 0L))
         from LlmLogEntity l
         where l.createdAt >= :since
         group by l.status

@@ -49,6 +49,8 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
         assertThat(body.getFrom()).isIn(dayBefore, dayAfter);
         assertThat(body.getTotals().getCallCount()).isZero();
         assertThat(body.getTotals().getUnpricedCount()).isZero();
+        assertThat(body.getTotals().getPromptTokens()).isZero();
+        assertThat(body.getTotals().getCachedTokens()).isZero();
         assertThat(body.getTotals().getCostUsd()).isNull();
         assertThat(body.getTotals().getCurrency()).isEqualTo("USD");
         assertThat(body.getFeatures()).isEmpty();
@@ -75,6 +77,23 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
             .containsExactly("companion_chat", "meal_coach");
         assertThat(body.getFeatures().getFirst().getCallCount()).isEqualTo(2);
         assertThat(body.getFeatures().getFirst().getCostUsd()).isEqualTo(0.0125, within(1e-9));
+    }
+
+    /**
+     * mezo-ozri.5: the prompt-cache meter. The two sums are the RAW provider counts — cached is a
+     * SUBSET of prompt — so the ratio the header renders is cached/prompt, and a period with no
+     * cache read reports 0 rather than a missing field.
+     */
+    @Test
+    void testGetBreakdown_shouldSumPromptAndCachedTokens_whenRowsReportThem() {
+        UUID owner = ownerId();
+        llmLogPopulator.logCached(owner, CallKind.CHAT, "companion_chat", "gpt-5.6-luna", 1_000, 800, 100);
+        llmLogPopulator.log(owner, CallKind.CHAT, "companion_chat", "gpt-5.6-luna", 1_000, 100);
+
+        LlmUsageBreakdownResponse body = breakdown("DAY");
+
+        assertThat(body.getTotals().getPromptTokens()).isEqualTo(2_000);
+        assertThat(body.getTotals().getCachedTokens()).isEqualTo(800);
     }
 
     /** An unpriced row is COUNTED and reported as unpriced — its cost stays null, never 0.00. */

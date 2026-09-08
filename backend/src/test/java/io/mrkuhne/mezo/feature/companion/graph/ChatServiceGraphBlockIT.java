@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.graph;
 
+import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.MessageRef;
@@ -99,8 +101,11 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
         ChatService.PreparedTurn turn = chatService.prepareTurn(userId, conversation.getId(),
                 request("a stressz mit csinál velem?"));
 
-        assertThat(turn.systemPrompt()).contains(GraphPromptAssembler.CONNECTIONS_HEADER);
-        assertThat(turn.systemPrompt()).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-stream@test.local"));
+        // mezo-ozri.5: the turn's instructions now travel in two halves — stable prompt for the
+        // provider's cache prefix, volatile context behind it. What the model sees is the join.
+        String instructions = CompanionLlm.joinInstructions(turn.systemPrompt(), turn.turnContext());
+        assertThat(instructions).contains(GraphPromptAssembler.CONNECTIONS_HEADER);
+        assertThat(instructions).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-stream@test.local"));
         // mezo-b3pp.33: each ref carries its node's title as the label
         assertThat(turn.recalledRefs()).containsExactly(
                 new RefsEnvelope.Ref("GraphNode", a.getId().toString(), "Stressz"),

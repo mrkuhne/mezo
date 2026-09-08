@@ -24,6 +24,8 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Tools;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Transcription;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecord;
+import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecorder;
 import io.mrkuhne.mezo.feature.llmlog.service.NoOpLlmCallRecorder;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.Message;
@@ -34,6 +36,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,6 +90,72 @@ class GeminiCompanionLlmPromptOrderTest {
         assertThat(sent.get(1).getText()).isEqualTo("korábbi kérdés");
         assertThat(sent.get(2).getText()).isEqualTo("korábbi válasz");
         assertThat(sent.get(3).getText()).isEqualTo("mostani kérdés");
+    }
+
+    /**
+     * mezo-ozri.5: the volatile half of the instructions must land AFTER the history and
+     * immediately before the user's turn — behind the provider's cacheable prefix (stable system
+     * message + tool definitions + closed history), never inside it.
+     */
+    @Test
+    void testComplete_shouldPlaceTurnContextAfterHistoryAndBeforeUser_whenTurnContextIsGiven() {
+        CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
+        GeminiCompanionLlm adapter = adapter(chatModel, contextHolder, new NoOpLlmCallRecorder());
+
+        adapter.complete("RENDSZER", "[Ma] friss adat", List.of(
+                new Turn(Role.USER, "korábbi kérdés"),
+                new Turn(Role.ASSISTANT, "korábbi válasz")), "mostani kérdés", List.of(), Map.of());
+
+        List<Message> sent = chatModel.captured.get().getInstructions();
+        assertThat(sent).extracting(Message::getMessageType).containsExactly(
+                MessageType.SYSTEM, MessageType.USER, MessageType.ASSISTANT,
+                MessageType.SYSTEM, MessageType.USER);
+        assertThat(sent.get(0).getText()).isEqualTo("RENDSZER");
+        assertThat(sent.get(3).getText()).isEqualTo("[Ma] friss adat");
+        assertThat(sent.get(4).getText()).isEqualTo("mostani kérdés");
+    }
+
+    /** A blank volatile half reproduces the pre-split shape exactly — one system message. */
+    @Test
+    void testComplete_shouldSendOneSystemMessage_whenTurnContextIsBlank() {
+        CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
+        GeminiCompanionLlm adapter = adapter(chatModel, contextHolder, new NoOpLlmCallRecorder());
+
+        adapter.complete("RENDSZER", "  ", List.of(), "mostani kérdés", List.of(), Map.of());
+
+        assertThat(chatModel.captured.get().getInstructions())
+                .extracting(Message::getMessageType)
+                .containsExactly(MessageType.SYSTEM, MessageType.USER);
+    }
+
+    /**
+     * The audit row keeps showing every instruction the model got, in the order it got them — the
+     * split is a transport detail, not a change to what the log can prove (mezo-ozri.5).
+     */
+    @Test
+    void testComplete_shouldRecordStablePromptAndTurnContextJoined_whenTurnContextIsGiven() {
+        CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
+        List<LlmCallRecord> recorded = new ArrayList<>();
+        GeminiCompanionLlm adapter = adapter(chatModel, contextHolder, recorded::add);
+
+        adapter.complete("RENDSZER", "[Ma] friss adat", List.of(), "kérdés", List.of(), Map.of());
+
+        assertThat(recorded).hasSize(1);
+        assertThat(recorded.get(0).systemPrompt()).isEqualTo("RENDSZER[Ma] friss adat");
+    }
+
+    private static GeminiCompanionLlm adapter(CapturingChatModel chatModel,
+                                              LlmCallContextHolder contextHolder,
+                                              LlmCallRecorder recorder) {
+        return new GeminiCompanionLlm(
+                chatModel,
+                new LlmModelRouter(minimalCompanionProperties(), contextHolder),
+                recorder,
+                contextHolder,
+                new GoogleGenAiUsageExtractor());
     }
 
     /** Egy szolgáltató tiere, model-override nélkül (mezo-ozri.4). */
