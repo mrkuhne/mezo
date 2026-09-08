@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
+import { useScreenTracking } from '@/app/useScreenTracking'
 import { AdminRail } from '@/features/admin/AdminRail'
 import { ClaySprites } from '@/shared/ui/clay'
 import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
@@ -37,6 +38,9 @@ export function AdminLayout() {
 }
 
 function AdminLayoutInner() {
+  // The admin route tree is a SIBLING of AppLayout, never nested inside it, so its screens would
+  // otherwise be invisible to telemetry (mezo-o5cz). Mounted once, like AppLayout's copy.
+  useScreenTracking()
   const me = useMe()
   const navigate = useNavigate()
   const location = useLocation()

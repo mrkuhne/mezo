@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.controller.AdminInsightsApi;
 import io.mrkuhne.mezo.api.dto.AdminCostMatrixResponse;
 import io.mrkuhne.mezo.api.dto.AdminFeatureUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
+import io.mrkuhne.mezo.api.dto.AdminScreenUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
 import io.mrkuhne.mezo.feature.admin.service.AdminOverviewService;
@@ -66,5 +67,17 @@ public class AdminInsightsController implements AdminInsightsApi {
     public AdminCostMatrixResponse getAdminCostMatrix(String period) {
         currentUser.requireOwner();
         return usageService.costMatrix(period);
+    }
+
+    /**
+     * The screen-usage panel (mezo-o5cz). Sits on the ADMIN_INSIGHTS switch like every other
+     * operation here, NOT on the screen-telemetry one: with telemetry off the log is empty and
+     * this answers an honest zero-row 200, rather than a 404 the admin UI would have to
+     * special-case.
+     */
+    @Override
+    public AdminScreenUsageResponse getAdminScreenUsage(String period) {
+        currentUser.requireOwner();
+        return usageService.screenUsage(period);
     }
 }
