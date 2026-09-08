@@ -13,6 +13,7 @@ import {
 import { BoopAvatar as Avatar, BoopIcon as Icon, BoopPet } from "./BoopIdentity.jsx";
 import "./presence.css";
 import "./boop.css";
+import { RhythmArc, CycleSignature, FuelSignature, DayConnection } from "./SignatureVisuals.jsx";
 const STORAGE = "mezo-presence-v1";
 function readState() {
   try {
@@ -228,7 +229,7 @@ export default function PresenceStudy() {
         <a href="/" className="pr-lab-link">
           ← Korábbi irányok
         </a>
-        <span className="pr-eyebrow">BOOP / EDITORIAL TANULMÁNY 07</span>
+        <span className="pr-eyebrow">BOOP / RITMUS ÉS KAPCSOLÓDÁS</span>
         <h1>
           Egy társ.
           <br />
@@ -682,28 +683,7 @@ function Home({ api, mood }) {
           ? "Ez is része a mai történetednek."
           : "A napod számai mellett te is itt vagy."}
       </p>
-      <div
-        className="pr-day-rhythm"
-        aria-label={`${Math.min(4, s.checkins.length)} a négy napi bejelentkezésből`}
-      >
-        {["Reggel", "Délben", "Délután", "Este"].map((label, i) => (
-          <div
-            key={label}
-            className={
-              i < s.checkins.length
-                ? "done"
-                : i === s.checkins.length
-                  ? "next"
-                  : ""
-            }
-          >
-            <i>
-              {i < s.checkins.length ? <Icon name="check" size={11} /> : null}
-            </i>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
+      <RhythmArc labels={["Reggel", "Délben", "Délután", "Este"]} completed={s.checkins.length} title={`${s.checkins.length} napi bejelentkezés`} />
       {!saved ? (
         <div className="pr-checkin">
           <span className="pr-eyebrow">{next} · EGY PILLANAT MAGADRA</span>
@@ -779,23 +759,7 @@ function Home({ api, mood }) {
           <br />
           <em>összeérnek.</em>
         </h2>
-        <Row
-          icon="dumbbell"
-          title="Pull A · a 3. hétben"
-          sub="A meglévő hypertrophy mezociklusod"
-          value="17:30"
-          onClick={() => navigate("movement", "gym")}
-        />
-        <Row
-          icon="utensils"
-          title={`${api.budget.target} kcal · mai mintakeret`}
-          sub={
-            s.training.sportActive
-              ? "Az alapod és a röplabda együtt"
-              : "A sportváltozás után frissítve"
-          }
-          onClick={() => navigate("fuel", "today")}
-        />
+        <DayConnection cycle={s.training.cycle} budget={api.budget} onMovement={() => navigate("movement", "gym")} onFuel={() => navigate("fuel", "today")} />
         <Row
           icon="sparkles"
           title="Egy alakuló összefüggés"
@@ -826,26 +790,7 @@ function Workspace({ api }) {
           {tab === "today" ? (
             <>
               <p className="pr-lead">A sportjaid egy közös nap részei.</p>
-              <div className="pr-focus-card pr-training-focus">
-                <span className="pr-eyebrow">A MEGLÉVŐ PROGRAMOD</span>
-                <h2>Őszi építkezés</h2>
-                <p>Hypertrophy · 3 / 6. hét</p>
-                <div className="pr-week-track">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <span
-                      key={i}
-                      className={i === 3 ? "current" : i < 3 ? "done" : ""}
-                    >
-                      {i < 3 ? <Icon name="check" size={13} /> : i}
-                    </span>
-                  ))}
-                </div>
-                <button onClick={() => navigate("movement", "gym")}>
-                  A mezociklusom
-                  <Icon name="arrow-right" size={17} />
-                </button>
-                <WorkoutArt />
-              </div>
+              <CycleSignature cycle={s.training.cycle} onOpen={() => navigate("movement", "gym")} />
               <Row
                 icon="dumbbell"
                 title="Pull A"
@@ -874,15 +819,7 @@ function Workspace({ api }) {
           ) : tab === "gym" ? (
             <>
               <p className="pr-lead">A következetes munka íve.</p>
-              <div className="pr-program-heading">
-                <span>
-                  3<span>/6</span>
-                </span>
-                <div>
-                  <h2>Őszi építkezés</h2>
-                  <p>Hypertrophy mezociklus</p>
-                </div>
-              </div>
+              <CycleSignature cycle={s.training.cycle} />
               <div className="pr-program-days">
                 {[
                   ["H", "Push A", "Teljesítve"],
@@ -988,37 +925,7 @@ function Workspace({ api }) {
           {tab === "today" ? (
             <>
               <p className="pr-lead">A célod együtt mozog a napoddal.</p>
-              <div className="pr-fuel-total">
-                <span className="pr-eyebrow">MAI ENERGIAKERET</span>
-                <strong>
-                  {budget.target}
-                  <small> kcal</small>
-                </strong>
-                <div className="pr-budget-bar">
-                  <i
-                    style={{
-                      width: (budget.logged / budget.target) * 100 + "%",
-                    }}
-                  />
-                </div>
-                <span>
-                  {budget.logged} kcal naplózva{" "}
-                  <b>{budget.remaining} kcal maradt</b>
-                </span>
-              </div>
-              <div className="pr-budget-equation">
-                <span>
-                  <b>{budget.base}</b>alapkeret
-                </span>
-                <i>+</i>
-                <span className={!s.training.sportActive ? "muted" : ""}>
-                  <b>{budget.sport}</b>mai sport
-                </span>
-                <i>=</i>
-                <span>
-                  <b>{budget.target}</b>mai cél
-                </span>
-              </div>
+              <FuelSignature budget={budget} sportActive={s.training.sportActive} onSport={() => navigate("movement", "sport")} onExplain={() => ask("Mi lenne, ha elmaradna ma a röplabda?")} />
               <p className="pr-small-note">
                 Szemléltető összefüggés, nem személyre számított táplálkozási
                 előírás.

@@ -1,0 +1,73 @@
+/* Shared signature grammar: open arcs, source points and joining contours. */
+.sig-rhythm { margin: 8px 0 22px; }
+.sig-rhythm svg { display:block; width:100%; overflow:visible; }
+.sig-track,.sig-ghost { fill:none;stroke:var(--pr-accent);stroke-width:1;opacity:.3; }
+.sig-ghost { opacity:.12; }
+.sig-point circle { fill:var(--pr-bg);stroke:var(--pr-accent);stroke-width:1; }
+.sig-point.future circle { stroke-dasharray:2 3;opacity:.5; }
+.sig-point.done circle { fill:var(--pr-accent); }
+.sig-point .sig-point-halo { fill:var(--pr-tint);stroke:none;opacity:.5; }
+.sig-point .sig-tick { fill:none;stroke:#fffaf4;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round; }
+.sig-rhythm-labels { display:flex;justify-content:space-between;margin-top:-5px; }
+.sig-rhythm-labels > * { text-align:center; width:56px; font-size:10px; color:#958779; }
+.sig-rhythm-labels button { background:none;padding:6px 0;min-height:44px;border-radius:10px; }
+.sig-rhythm-labels small { display:block;margin-top:5px;font-size:9px;opacity:.8; }
+.sig-rhythm-labels .current,.sig-rhythm-labels [aria-pressed=true] { color:var(--pr-accent);font-weight:650; }
+.sig-rhythm-labels [aria-pressed=true] { background:color-mix(in srgb,var(--pr-tint) 35%,transparent); }
+.sig-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%); }
+.sig-sculpted { position:relative;isolation:isolate;padding:23px 20px;margin:22px 0 24px;border-radius:32px 32px 48px 20px;background:color-mix(in srgb,var(--pr-tint) 23%,var(--pr-bg)); }
+.sig-sculpted:before { content:'';position:absolute;inset:7px;z-index:-1;border:1px solid color-mix(in srgb,var(--pr-accent) 13%,transparent);border-radius:27px 27px 43px 15px;pointer-events:none; }
+.sig-section-top { display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--pr-accent); }
+.sig-section-top .pr-eyebrow { font-size:9px;letter-spacing:1.1px; }
+.sig-cycle h2 { font:400 30px/1.1 Newsreader,Georgia,serif;margin:22px 0 12px;letter-spacing:-.5px; }
+.sig-cycle-number { display:flex;align-items:center;gap:15px; }
+.sig-cycle-number strong { font:400 68px/1 Newsreader,Georgia,serif;color:var(--pr-accent); }
+.sig-cycle-number strong small { font-size:29px;opacity:.5; }
+.sig-cycle-number > span { font-size:11px;color:#8d8175;line-height:1.8; }
+.sig-cycle .sig-rhythm { margin:15px -5px 8px; }
+.sig-week-detail { min-height:37px;font-size:11px;line-height:1.6;color:#7f766c;border-top:1px solid #b6a38b25;padding-top:14px; }
+.sig-text-button { display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;text-align:left;background:none;color:var(--pr-accent);font-size:11px!important;padding:9px 0; }
+.sig-sources { display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;text-align:center; }
+.sig-sources > * { background:none;color:var(--pr-accent);display:flex;align-items:center;flex-direction:column;gap:8px;padding:0; }
+.sig-sources strong { font:400 30px/1 Newsreader,Georgia,serif; }
+.sig-sources span { font-size:9px;color:#8b7a62; }
+.sig-joining { width:100%;display:block;height:77px;margin-top:10px;fill:var(--pr-accent); }
+.sig-joining path { fill:none;stroke:var(--pr-accent);stroke-width:1.4; }
+.sig-joining .sig-sport-thread { stroke:#627f9e;transition:opacity .5s; }
+.sig-joining .inactive { opacity:.25;stroke-dasharray:3 5; }
+.sig-joining .sig-join-halo { fill:var(--pr-tint);opacity:.6; }
+.sig-budget { text-align:center;margin-top:-4px; }
+.sig-budget strong { display:block;font:400 64px/1 Newsreader,Georgia,serif;letter-spacing:-2px; }
+.sig-budget > span { font-size:10px;color:#95836e; }
+.sig-budget-meter { height:6px;border-radius:10px;background:#d9c8aa65;overflow:hidden;margin-top:25px; }
+.sig-budget-meter i { display:block;height:100%;background:var(--pr-accent);border-radius:10px;transition:width .6s ease; }
+.sig-budget-labels { display:flex;justify-content:space-between;font-size:10px;margin:11px 0;color:#95836e; }
+.sig-budget-labels b { font-weight:500;color:var(--pr-accent); }
+.sig-explanation { font-size:12px;line-height:1.7;border-top:1px solid #b6a38b25;color:#857763; }
+.sig-day-connection { margin:28px 0 10px; }
+.sig-day-pair { display:grid;grid-template-columns:1fr 46px 1fr;align-items:center;margin-top:18px; }
+.sig-day-pair button { display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:none;text-align:left;color:#627f9e;min-height:95px;padding:8px 4px; }
+.sig-day-pair button:last-child { color:#a18148;align-items:flex-end;text-align:right; }
+.sig-day-pair strong { font:400 27px/1.1 Newsreader,Georgia,serif; }
+.sig-day-pair small { font:400 10px/1.5 'DM Sans',sans-serif;color:#938573; }
+.sig-day-knot { position:relative;height:44px; }
+.sig-day-knot i { width:33px;height:25px;border:1px solid #627f9e66;border-radius:50%;position:absolute;left:0;top:8px;transform:rotate(-25deg); }
+.sig-day-knot i:last-child { left:14px;border-color:#a1814877;transform:rotate(25deg); }
+.sig-day-connection > p { font-size:11px;color:#938573;line-height:1.6;margin-top:14px; }
+.pr-home .sig-rhythm { margin-top:-4px;margin-bottom:20px; }
+.pr-home .pr-home-hero { height:180px; }
+.sig-point.arrived { animation:sigArrive .45s ease-out; }
+@keyframes sigArrive { from{transform:scale(1.7);opacity:.4}to{transform:scale(1);opacity:1} }
+@media (max-height:760px) { .pr-home .pr-home-hero{height:161px} .pr-home .sig-rhythm{margin-bottom:14px} }
+@media (prefers-reduced-motion:reduce) { .sig-point.arrived{animation:none} .sig-budget-meter i,.sig-joining .sig-sport-thread{transition:none} }
+.pr-home .sig-rhythm svg { height:65px; }
+.pr-home .pr-home-sub { margin-bottom:15px; }
+.sig-fuel { background:none; }
+.sig-fuel:before { display:none; }
+.sig-surface-shape { position:absolute;inset:0;width:100%;height:100%;z-index:-1;fill:color-mix(in srgb,var(--pr-tint) 23%,var(--pr-bg));stroke:color-mix(in srgb,var(--pr-accent) 18%,transparent);stroke-width:1; }
+.sig-updated .sig-sport-thread { animation:sigThread .65s ease-out; }
+.sig-updated .sig-budget { animation:sigValue .65s ease-out; }
+@keyframes sigThread { from { stroke-dasharray:8 5;stroke-dashoffset:40;stroke-width:3; } to {stroke-dashoffset:0;stroke-width:1.4;} }
+@keyframes sigValue { from {transform:translateY(5px);opacity:.5} to {transform:translateY(0);opacity:1} }
+@media(prefers-reduced-motion:reduce) { .sig-updated * {animation:none!important} }
+.sig-rhythm-labels button { font-size:10px!important;font-family:'DM Sans',sans-serif!important; }
