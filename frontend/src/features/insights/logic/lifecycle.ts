@@ -17,6 +17,18 @@ export function isStrongSignal(r: number | null | undefined, p: number | null | 
   return r != null && p != null && Math.abs(r) >= STRONG_SIGNAL.minAbsR && p <= STRONG_SIGNAL.maxP
 }
 
+/**
+ * A motor SAJÁT két státuszának sor-szövege (Reflexió S6, mezo-eq85.6). A kosár címe a
+ * statisztikai olvasat („nincs kapcsolat" / „még gyűlik"), a sor viszont elmondja, hogy ezt a
+ * REFLEXIÓS motor mondta ki — a `refuted` egy lezárt, megcáfolt hipotézis, a `dormant` pedig
+ * nem bukás, csak adatra vár. Bármi más státuszon `null`: ott a lelet/kapu mondata a helyes.
+ */
+export function engineStatusCopy(status: Pattern['status']): string | null {
+  if (status === 'refuted') return 'Megnéztük — nem igazolódott'
+  if (status === 'dormant') return 'Pihen — várom az adatot'
+  return null
+}
+
 function bucketFor(pattern: Pattern, pair: PatternMonitorPair | null): LifecycleBucket {
   switch (pattern.status ?? 'proposed') {
     case 'confirmed': return 'confirmed'

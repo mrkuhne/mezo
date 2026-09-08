@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.PatternMonitorPair;
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.reflection.service.DerivedSeriesService;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,12 @@ public class PatternMonitorService {
     static final String VERDICT_DEGENERATE = "degenerate";
     static final String VERDICT_IMBALANCED_GROUPS = "imbalanced_groups";
     static final String VERDICT_FROZEN = "frozen";
+
+    /** S6 (mezo-eq85.6): a self-proposed hypothesis has no hand-written direction reading — the
+     *  catalog's per-pair prose does not exist for a plan the engine invented last night. These
+     *  keep the {@code {erősség}} slot the FE substitutes, and say only what the number says. */
+    private static final String WHEN_POSITIVE_HU = "{erősség} pozitív együttjárás";
+    private static final String WHEN_NEGATIVE_HU = "{erősség} fordított együttjárás";
 
     private static final Set<String> FROZEN_STATUSES =
             Set.of(PatternEntity.STATUS_CONFIRMED, PatternEntity.STATUS_REJECTED);
@@ -171,6 +179,91 @@ public class PatternMonitorService {
             case IMBALANCED_GROUPS -> builder.verdict(VERDICT_IMBALANCED_GROUPS);
         };
         return verdicted.build();
+    }
+
+    /**
+     * Reflexió S6 (mezo-eq85.6): the SAME pair shape for a row that has no catalog pair at all —
+     * a {@code reflection} hypothesis, described by its own {@link TestPlanEnvelope}. The detail
+     * page must be able to render it exactly like a catalog pair, so the gate math, the verdict
+     * vocabulary and the bottleneck naming stay here rather than growing a second copy next door.
+     *
+     * <p>Two deliberate differences from the catalog overload:
+     * <ul>
+     *   <li>the series are STRINGS, not {@link MetricKey}s — a {@code people:Anna} presence series
+     *       is a real series for this user but will never be an enum constant; label, value kind
+     *       and domain are therefore resolved through {@link DerivedSeriesService}, passed in as a
+     *       parameter because that bean only exists while the Reflexió switch is on;</li>
+     *   <li>there is no {@code frozen} short-circuit. A statistical row's {@code r}/{@code n}/
+     *       {@code p} columns are the frozen statistic the Pearson job wrote; a reflection row's
+     *       are not maintained at all (its evidence lives in {@code evidence} events), so freezing
+     *       would serve an empty gate. A user-judged hypothesis still shows today's honest days.</li>
+     * </ul>
+     */
+    PatternMonitorPair toPair(TestPlanEnvelope plan, String key, String title,
+                              Map<String, Map<LocalDate, Double>> seriesByKey,
+                              PatternEntity row, LocalDate from, LocalDate to,
+                              DerivedSeriesService labels) {
+        MetricValueKind valueKindA = labels.valueKindOf(plan.seriesA());
+        PatternMonitorPair.PatternMonitorPairBuilder builder = PatternMonitorPair.builder()
+                .key(key)
+                .title(title)
+                .category(row.getCategory())
+                .categoryLabel(row.getCategoryLabel())
+                .lagDays(plan.lagDays())
+                .metricAKey(plan.seriesA())
+                .metricALabel(labels.labelOf(plan.seriesA()))
+                .metricAValueKind(valueKindA.wireKey())
+                .metricBKey(plan.seriesB())
+                .metricBLabel(labels.labelOf(plan.seriesB()))
+                .metricBValueKind(labels.valueKindOf(plan.seriesB()).wireKey())
+                .mechanismHu(row.getMechanism() == null ? title : row.getMechanism())
+                .questionHu(title)
+                .expectedDirection(plan.expectedDirection())
+                .whenPositiveHu(WHEN_POSITIVE_HU)
+                .whenNegativeHu(WHEN_NEGATIVE_HU)
+                .metricADomain(domainOf(plan.seriesA()))
+                .metricBDomain(domainOf(plan.seriesB()));
+
+        Map<LocalDate, Double> seriesA = PatternGate.window(
+                seriesByKey.getOrDefault(plan.seriesA(), Map.of()), from, to);
+        Map<LocalDate, Double> seriesB = PatternGate.window(
+                seriesByKey.getOrDefault(plan.seriesB(), Map.of()),
+                from.plusDays(plan.lagDays()), to.plusDays(plan.lagDays()));
+        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, plan.lagDays(),
+                plan.minN(), plan.minGroupN(), valueKindA);
+        builder.alignedDays(outcome.alignedDays());
+        if (outcome.groupZeroDays() != null) {
+            builder.groupZeroDays(outcome.groupZeroDays())
+                    .groupOneDays(outcome.groupOneDays())
+                    .requiredPerGroup(plan.minGroupN());
+        }
+
+        // Switch EXPRESSION for the same reason as the catalog overload: a future Verdict constant
+        // must be a compile error, not a silently null `verdict` on a schema-required field.
+        PatternMonitorPair.PatternMonitorPairBuilder verdicted = switch (outcome.verdict()) {
+            case LIVE -> builder.verdict(VERDICT_LIVE)
+                    .r(outcome.result().r())
+                    .n(outcome.result().n())
+                    .p(outcome.result().p());
+            case FEW_DAYS -> builder.verdict(VERDICT_FEW_DAYS)
+                    .missingDays(plan.minN() - outcome.alignedDays())
+                    .bottleneckMetricKey(seriesA.size() <= seriesB.size() ? plan.seriesA() : plan.seriesB());
+            case NO_DATA -> builder.verdict(VERDICT_NO_DATA)
+                    .bottleneckMetricKey(seriesA.size() <= seriesB.size() ? plan.seriesA() : plan.seriesB());
+            case DEGENERATE -> builder.verdict(VERDICT_DEGENERATE)
+                    .bottleneckMetricKey(outcome.constantSide() == PatternGate.Side.B
+                            ? plan.seriesB() : plan.seriesA());
+            case IMBALANCED_GROUPS -> builder.verdict(VERDICT_IMBALANCED_GROUPS);
+        };
+        return verdicted.build();
+    }
+
+    /** A metric key carries its own life domain; a {@code people:}/{@code topic:} presence series
+     *  is about the user's inner and social life, so it lands in {@code MIND}. */
+    private static String domainOf(String seriesKey) {
+        return DerivedSeriesService.metricKey(seriesKey)
+                .map(metric -> metric.domain().wireKey())
+                .orElse(MetricDomain.MIND.wireKey());
     }
 
     /** A pár kevesebb lefedett nappal rendelkező metrikája (döntetlen → A) — a „mit logolj" alanya. */

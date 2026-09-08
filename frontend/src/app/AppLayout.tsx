@@ -14,6 +14,7 @@ import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { useTodayScenario, useScheduleSnapshotWriter } from '@/data/hooks'
+import { useScreenTracking } from '@/app/useScreenTracking'
 
 export function AppLayout() {
   const scenario = useTodayScenario()
@@ -24,6 +25,11 @@ export function AppLayout() {
   // main.tsx), so a data hook can be called here directly. Real-mode-only, fire-and-forget,
   // once per mount — see notificationScheduleWriter.ts for the full rationale.
   useScheduleSnapshotWriter()
+  // Screen telemetry (mezo-o5cz): mounted here for the same reason as the snapshot writer above —
+  // AppLayout is the root route element and mounts exactly once per session, so the hook's
+  // route-change effect sees every navigation without re-registering. Reports the matched route
+  // PATTERN only, is a hard no-op in mock mode, and swallows every backend failure.
+  useScreenTracking()
   const location = useLocation()
   const anchor = scenario.anchorMode && location.pathname.startsWith('/nap')
   // Full-screen surfaces where the app chrome is dead weight: the active workout session,

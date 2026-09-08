@@ -23,6 +23,7 @@ export { useDiagnoses, useDiagnosis, useDiagnosisActions } from '@/data/insights
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
 export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions, useGraphEdgeCount } from '@/data/insights/graphHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
+export { useObservations, useObservationReply } from '@/data/insights/observationsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
 export { useCoachingTrace } from '@/data/insights/coachingTraceHooks'
@@ -71,6 +72,7 @@ export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } fro
 export { useAdminInvites, useAdminUsers, useAdminActions } from '@/data/admin/adminHooks'
 export {
   useAdminOverview, useAdminUserInsights, useAdminUserDetail, useAdminFeatureUsage, useAdminCostMatrix,
+  useAdminScreenUsage,
 } from '@/data/admin/adminInsightsHooks'
 export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
 export {

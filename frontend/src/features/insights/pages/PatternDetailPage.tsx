@@ -5,6 +5,9 @@ import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { usePatternActions, usePatternMonitor, usePatternPairDetail, usePatterns } from '@/data/hooks'
 import { PatternArtifactDetail } from '@/features/insights/components/PatternArtifactDetail'
 import { PatternDetailHero } from '@/features/insights/components/PatternDetailHero'
+import { EvidenceLog } from '@/features/insights/components/EvidenceLog'
+import { HypothesisStateCard } from '@/features/insights/components/HypothesisStateCard'
+import { TestPlanTiles } from '@/features/insights/components/TestPlanTiles'
 import { PatternEvidenceChart } from '@/features/insights/components/PatternEvidenceChart'
 import { PatternImpactCard } from '@/features/insights/components/PatternImpactCard'
 import { PatternJournal } from '@/features/insights/components/PatternJournal'
@@ -88,6 +91,24 @@ function DaysTable({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorPai
   )
 }
 
+/** „Az eddigi napok" kártya — a szórásdiagram és az őszinte üres/legenda sora. A katalógus-
+ *  és a laborfüzet-elrendezés UGYANEZT a kártyát mutatja, hogy a két olvasat sose különbözzön. */
+function DaysCard({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorPair }) {
+  return (
+    <section className="pdt-card">
+      <div className="pdt-chart-title">
+        <b>{pair.metricBLabel}</b><span>{pair.metricAValueKind === 'binary' && pair.groupZeroDays != null
+          ? `${pair.groupZeroDays} + ${pair.groupOneDays} nap` : `${days.length} nap`}</span>
+      </div>
+      <PatternEvidenceChart days={days} pair={pair} />
+      {days.length < 2
+        ? <p className="pdt-note">Még nincs elég nap az összevetéshez — ahogy gyűlnek, itt jelennek meg.</p>
+        : <p className="pdt-chart-legend">Minden pont egy nap. <span>Az arany kör a legutóbbi.</span></p>}
+      {days.length > 0 && <DaysTable days={days} pair={pair} />}
+    </section>
+  )
+}
+
 function StoryTiles({ pair }: { pair: PatternMonitorPair }) {
   const collecting = pair.verdict === 'imbalanced_groups'
   return (
@@ -111,9 +132,14 @@ function StoryTiles({ pair }: { pair: PatternMonitorPair }) {
   )
 }
 
-function Diagnostics({ pair, monitor }: {
+/** A háttér-fold. Az ablak és az „utolsó számítás" NEM a monitorból jön automatikusan: a
+ *  laborfüzet sorát egy MÁSIK futás (az éjszakai reflexió) számolja, a saját ablakával — ezért
+ *  mindkettőt a hívó adja meg, hogy a fold sose a másik motor adatát mutassa (mezo-eq85.6 review). */
+function Diagnostics({ pair, monitor, windowDays, lastComputedAt }: {
   pair: PatternMonitorPair
   monitor: ReturnType<typeof usePatternMonitor>['monitor']
+  windowDays: number | null | undefined
+  lastComputedAt: string | null | undefined
 }) {
   const coverage = new Map((monitor?.metrics ?? []).map((metric) => [metric.key, metric]))
   const pairing = pair.lagDays === 0 ? 'azonos nap' : `${pair.lagDays} nappal később`
@@ -122,10 +148,10 @@ function Diagnostics({ pair, monitor }: {
       <summary><span className="pdt-fold-icon">⌁</span><span><b>Hogyan számoltuk?</b><small>ablak, források és technikai adatok</small></span></summary>
       <div className="pdt-fold-body">
         <div className="pdt-diag-grid">
-          <div><small>Adatablak</small><b>{monitor?.lookbackDays ?? '—'} nap</b></div>
+          <div><small>Adatablak</small><b>{windowDays ?? '—'} nap</b></div>
           <div><small>Párosított nap</small><b>{pair.alignedDays}</b></div>
           <div><small>Csoportarány</small><b>{pair.groupZeroDays != null ? `${pair.groupZeroDays} : ${pair.groupOneDays}` : 'nem csoportos'}</b></div>
-          <div><small>Utolsó számítás</small><b>{lastRunLabel(monitor?.lastRunAt)}</b></div>
+          <div><small>Utolsó számítás</small><b>{lastRunLabel(lastComputedAt)}</b></div>
         </div>
         <div className="pdt-source-row">
           <span>{coverage.get(pair.metricAKey)?.sourceHu ?? pair.metricALabel}</span>
@@ -170,6 +196,33 @@ export function PatternDetailPage() {
   }
 
   const { pair, pattern, events, days, impact } = detail
+
+  // Laborfüzet (Reflexió S6, mezo-eq85.6): egy előre rögzített teszt-tervvel bíró sor SAJÁT
+  // olvasatot kap — állapot-kártya, a terv, a napok, a bizonyíték-napló, és a háttér. A terv
+  // nélküli (katalógus-) sorok elrendezése változatlan.
+  if (pattern?.testPlan) {
+    return (
+      <DetailFrame>
+        <HypothesisStateCard pattern={pattern} pair={pair} plan={pattern.testPlan}
+          onDecide={(status: PatternStatus) => decide(pattern.id, status)} />
+
+        <SectionHead title="A teszt-terv" meta="előre rögzítve" />
+        <TestPlanTiles plan={pattern.testPlan} pair={pair} />
+
+        <SectionHead title="Az eddigi napok" meta="pont = egy nap" />
+        <DaysCard days={days} pair={pair} />
+
+        <SectionHead title="Bizonyíték-napló" meta="minden, ami történt" />
+        <EvidenceLog events={events} />
+
+        <SectionHead title="Háttér" meta="csak ha érdekel" />
+        {/* a reflexiós sor a SAJÁT tervének ablakát és a saját éjszakai futását mutatja */}
+        <Diagnostics pair={pair} monitor={monitor}
+          windowDays={pattern.testPlan.windowDays} lastComputedAt={pattern.lastDetectedAt} />
+      </DetailFrame>
+    )
+  }
+
   const entries = journalEntries(events, pair)
   const snapshotRange = firstLastSnapshotN(events)
   const validHistory = (pair.verdict === 'live' || pair.verdict === 'frozen') && snapshotRange != null
@@ -192,17 +245,7 @@ export function PatternDetailPage() {
       )}
 
       <SectionHead title="Az eddigi napok" meta="pont = egy nap" />
-      <section className="pdt-card">
-        <div className="pdt-chart-title">
-          <b>{pair.metricBLabel}</b><span>{pair.metricAValueKind === 'binary' && pair.groupZeroDays != null
-            ? `${pair.groupZeroDays} + ${pair.groupOneDays} nap` : `${days.length} nap`}</span>
-        </div>
-        <PatternEvidenceChart days={days} pair={pair} />
-        {days.length < 2
-          ? <p className="pdt-note">Még nincs elég nap az összevetéshez — ahogy gyűlnek, itt jelennek meg.</p>
-          : <p className="pdt-chart-legend">Minden pont egy nap. <span>Az arany kör a legutóbbi.</span></p>}
-        {days.length > 0 && <DaysTable days={days} pair={pair} />}
-      </section>
+      <DaysCard days={days} pair={pair} />
 
       <StoryTiles pair={pair} />
 
@@ -215,7 +258,8 @@ export function PatternDetailPage() {
       </details>
 
       {hasImpact && <PatternImpactCard pattern={pattern} impact={impact} />}
-      <Diagnostics pair={pair} monitor={monitor} />
+      <Diagnostics pair={pair} monitor={monitor}
+        windowDays={monitor?.lookbackDays} lastComputedAt={monitor?.lastRunAt} />
     </DetailFrame>
   )
 }

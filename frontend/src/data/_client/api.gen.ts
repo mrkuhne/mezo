@@ -4363,6 +4363,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/usage/screens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Screen views/uniques from the lean screen_event log (AdminInsights) */
+        get: operations["getAdminScreenUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/data/tables": {
         parameters: {
             query?: never;
@@ -4533,6 +4550,23 @@ export interface paths {
         get: operations["getAdminMemoryHealth"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/telemetry/screen-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Batch-ingest the caller's own screen views, fire-and-forget (Telemetry) */
+        post: operations["ingestScreenEvents"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7453,6 +7487,7 @@ export interface components {
             pairs: components["schemas"]["PatternMonitorPair"][];
             metrics: components["schemas"]["PatternMetricCoverage"][];
         };
+        /** @description Egy pár élő kapu-állapota. Reflexió S6 (mezo-eq85.6) óta NEM csak katalógus-pár lehet: egy self-proposed hipotézis (reflection sor) saját teszt-tervéből épített SZINTETIKUS pár is ugyanezt az alakot ölti, hogy a részletező oldal egyformán tudja rajzolni. Ilyenkor a metric-kulcsok nem a fix metrika-katalógusból jönnek — lehetnek people:<név> / topic:<téma> jelenlét-szériák is —, a domén ezekre mind mind, a when-positive-hu / when-negative-hu pedig általános együttjárás-sablon a párra kézzel írt olvasat helyett. */
         PatternMonitorPair: {
             /** @description A pár stabil identitása (pair_key). */
             key: string;
@@ -9923,6 +9958,23 @@ export interface components {
             /** Format: double */
             totalUsd: number;
         };
+        AdminScreenUsageRow: {
+            /** @description The matched route pattern the client reported */
+            screen: string;
+            /** Format: int64 */
+            views: number;
+            /** Format: int64 */
+            uniqueUsers: number;
+            /** Format: date-time */
+            lastSeenAt?: string | null;
+            /** @description Dense daily view counts over the window (AdminSeries.dense) — the sparkline */
+            days: components["schemas"]["AdminDayCount"][];
+        };
+        AdminScreenUsageResponse: {
+            period: string;
+            days: string[];
+            screens: components["schemas"]["AdminScreenUsageRow"][];
+        };
         AdminColumnDescriptor: {
             name: string;
             type: string;
@@ -10308,6 +10360,23 @@ export interface components {
             jobs: {
                 [key: string]: string | null;
             };
+        };
+        ScreenEventInput: {
+            /** @description The MATCHED ROUTE PATTERN, never a concrete URL (`/admin/users/:id`, not `/admin/users/42`) — no PII-bearing path param ever leaves the client (spec T3). */
+            screen: string;
+            /**
+             * Format: date-time
+             * @description Client clock. Trusted but CLAMPED server-side to `now ± mezo.telemetry.occurred-at-clamp-hours`.
+             */
+            occurredAt: string;
+            /** @description Free-form rider for a future event kind; v1 emits nothing here. */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ScreenEventBatchRequest: {
+            /** @description At most `mezo.telemetry.batch-max` items; more is a 400. */
+            events: components["schemas"]["ScreenEventInput"][];
         };
     };
     responses: {
@@ -22815,6 +22884,46 @@ export interface operations {
             };
         };
     };
+    getAdminScreenUsage: {
+        parameters: {
+            query?: {
+                period?: "7d" | "30d" | "90d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Screen usage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminScreenUsageResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listAdminTables: {
         parameters: {
             query?: never;
@@ -23176,6 +23285,55 @@ export interface operations {
             403: components["responses"]["AdminMemoryForbidden"];
             404: components["responses"]["AdminMemoryDisabled"];
             504: components["responses"]["AdminMemoryQueryTimeout"];
+        };
+    };
+    ingestScreenEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScreenEventBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted (no body — loss is acceptable, the client never reads a result) */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure; TELEMETRY_BATCH_TOO_LARGE when the batch exceeds `mezo.telemetry.batch-max` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Per-user rate limit exceeded (TELEMETRY_RATE_LIMITED) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
 }

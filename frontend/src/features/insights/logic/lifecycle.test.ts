@@ -1,4 +1,4 @@
-import { bucketize, isStrongSignal } from '@/features/insights/logic/lifecycle'
+import { bucketize, engineStatusCopy, isStrongSignal } from '@/features/insights/logic/lifecycle'
 import { patternMonitor } from '@/data/insights/insights'
 import type { Pattern, PatternMonitor, PatternMonitorPair } from '@/data/types'
 
@@ -99,6 +99,20 @@ describe('bucketize', () => {
     expect(buckets.get(bucket)!.map((e) => e.key)).toEqual(['k1'])
     expect(buckets.get('decide')).toHaveLength(0)
   })
+
+  // Reflexió S6 (mezo-eq85.6): a kosár címe statisztikai, a SOR mondja meg, hogy a motor
+  // zárta le (`refuted`) vagy parkolta (`dormant`) — a többi státuszon a lelet/kapu beszél.
+  test.each([
+    ['refuted', 'Megnéztük — nem igazolódott'],
+    ['dormant', 'Pihen — várom az adatot'],
+  ] as const)('engine status %s has its own row copy', (status, copy) => {
+    expect(engineStatusCopy(status)).toBe(copy)
+  })
+
+  test.each(['proposed', 'monitoring', 'confirmed', 'rejected', undefined] as const)(
+    'status %s keeps the finding/gate sentence (no engine copy)', (status) => {
+      expect(engineStatusCopy(status)).toBeNull()
+    })
 
   test('decide sorts by |r| desc (strongest asks first)', () => {
     const monitor: PatternMonitor = { ...patternMonitor, pairs: [

@@ -7,7 +7,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { AdminUsagePage } from '@/features/admin/pages/AdminUsagePage'
-import { ADMIN_FEATURE_USAGE_MOCK } from '@/data/admin/adminInsightsMock'
+import { ADMIN_FEATURE_USAGE_MOCK, ADMIN_SCREEN_USAGE_MOCK } from '@/data/admin/adminInsightsMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -25,6 +25,15 @@ describe('AdminUsagePage (mock mode)', () => {
     // every cell carries its own aria-label — MatrixGrid.tsx
     const cells = document.querySelectorAll('.ad-matrixtable td.cell')
     expect(cells.length).toBe(expected)
+  })
+
+  it('renders the Képernyők table from the screen-usage seed', async () => {
+    renderPage()
+    expect(await screen.findByText('Képernyők · megnyitások')).toBeInTheDocument()
+    expect(screen.getByText(ADMIN_SCREEN_USAGE_MOCK.screens[0].screen)).toBeInTheDocument()
+    // The route PATTERN is what the panel shows — a concrete id must never appear (spec T3).
+    expect(screen.getByText('/admin/users/:id')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Képernyő-megnyitások naponta' })).toBeInTheDocument()
   })
 
   it('changing the period button selects it', async () => {
@@ -46,6 +55,25 @@ describe('AdminUsagePage (real mode)', () => {
       const cells = document.querySelectorAll('.ad-matrixtable td.cell')
       expect(cells.length).toBe(ADMIN_FEATURE_USAGE_MOCK.features.length * ADMIN_FEATURE_USAGE_MOCK.days.length)
     })
+  })
+
+  it('renders the fetched Képernyők rows', async () => {
+    renderPage()
+    await screen.findByText('Feature-használat')
+    await waitFor(() => {
+      expect(screen.getByText(ADMIN_SCREEN_USAGE_MOCK.screens[0].screen)).toBeInTheDocument()
+    })
+  })
+
+  it('degrades only the Képernyők tile when the screen endpoint fails', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/usage/screens`, () => new HttpResponse(null, { status: 500 })))
+    renderPage()
+    // The feature matrix must still render — per-tile error isolation, not a page-level failure.
+    await waitFor(() => {
+      const cells = document.querySelectorAll('.ad-matrixtable td.cell')
+      expect(cells.length).toBe(ADMIN_FEATURE_USAGE_MOCK.features.length * ADMIN_FEATURE_USAGE_MOCK.days.length)
+    })
+    expect(await screen.findByText(/nem elérhető/i)).toBeInTheDocument()
   })
 
   it('refetches when the period changes', async () => {

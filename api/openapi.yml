@@ -170,6 +170,15 @@ tags:
       a given endpoint needs) is off. Read-only apart from POST /replay, which
       is itself side-effect-free: it writes no memory_retrieval_* row and never
       touches the inspected user's memory.
+  - name: Telemetry
+    description: >
+      Lean screen-event telemetry (part 4, spec 2026-09-07). WRITE side only:
+      any authenticated client posts its OWN screen views; `created_by` always
+      comes from the JWT, never from the payload. Default OFF
+      (`mezo.feature.screen-telemetry.enabled`) — every operation 404s when the
+      switch is off, and the frontend must fail silent on any error. The
+      OWNER-only READ side lives on the AdminInsights tag (`GET
+      /api/admin/usage/screens`).
 paths:
   /api/auth/login:
     post:
@@ -10532,6 +10541,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/admin/usage/screens:
+    get:
+      tags:
+        - AdminInsights
+      operationId: getAdminScreenUsage
+      summary: Screen views/uniques from the lean screen_event log (AdminInsights)
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - 7d
+              - 30d
+              - 90d
+            default: 30d
+      responses:
+        '200':
+          description: Screen usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminScreenUsageResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/admin/data/tables:
     get:
       tags:
@@ -10954,6 +10999,43 @@ paths:
           $ref: '#/components/responses/AdminMemoryDisabled'
         '504':
           $ref: '#/components/responses/AdminMemoryQueryTimeout'
+  /api/telemetry/screen-events:
+    post:
+      tags:
+        - Telemetry
+      operationId: ingestScreenEvents
+      summary: 'Batch-ingest the caller''s own screen views, fire-and-forget (Telemetry)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScreenEventBatchRequest'
+      responses:
+        '202':
+          description: >-
+            Accepted (no body — loss is acceptable, the client never reads a
+            result)
+        '400':
+          description: >
+            Validation failure; TELEMETRY_BATCH_TOO_LARGE when the batch exceeds
+            `mezo.telemetry.batch-max`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '429':
+          description: Per-user rate limit exceeded (TELEMETRY_RATE_LIMITED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -18605,6 +18687,15 @@ components:
             $ref: '#/components/schemas/PatternMetricCoverage'
     PatternMonitorPair:
       type: object
+      description: >-
+        Egy pár élő kapu-állapota. Reflexió S6 (mezo-eq85.6) óta NEM csak
+        katalógus-pár lehet: egy self-proposed hipotézis (reflection sor) saját
+        teszt-tervéből épített SZINTETIKUS pár is ugyanezt az alakot ölti, hogy
+        a részletező oldal egyformán tudja rajzolni. Ilyenkor a metric-kulcsok
+        nem a fix metrika-katalógusból jönnek — lehetnek people:<név> /
+        topic:<téma> jelenlét-szériák is —, a domén ezekre mind mind, a
+        when-positive-hu / when-negative-hu pedig általános együttjárás-sablon a
+        párra kézzel írt olvasat helyett.
       required:
         - key
         - title
@@ -24642,6 +24733,52 @@ components:
         totalUsd:
           type: number
           format: double
+    AdminScreenUsageRow:
+      type: object
+      required:
+        - screen
+        - views
+        - uniqueUsers
+        - days
+      properties:
+        screen:
+          type: string
+          description: The matched route pattern the client reported
+        views:
+          type: integer
+          format: int64
+        uniqueUsers:
+          type: integer
+          format: int64
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        days:
+          type: array
+          description: >-
+            Dense daily view counts over the window (AdminSeries.dense) — the
+            sparkline
+          items:
+            $ref: '#/components/schemas/AdminDayCount'
+    AdminScreenUsageResponse:
+      type: object
+      required:
+        - period
+        - days
+        - screens
+      properties:
+        period:
+          type: string
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        screens:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminScreenUsageRow'
     AdminColumnDescriptor:
       type: object
       required:
@@ -25447,6 +25584,42 @@ components:
             it writes (lastDailySummary, lastPatternDetection,
             lastEdgeReinforcement, lastRetrievalRun, lastVectorWrite) — there is
             no job-run table, and the surface says "inferred".
+    ScreenEventInput:
+      type: object
+      required:
+        - screen
+        - occurredAt
+      properties:
+        screen:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: >
+            The MATCHED ROUTE PATTERN, never a concrete URL (`/admin/users/:id`,
+            not `/admin/users/42`) — no PII-bearing path param ever leaves the
+            client (spec T3).
+        occurredAt:
+          type: string
+          format: date-time
+          description: >
+            Client clock. Trusted but CLAMPED server-side to `now ±
+            mezo.telemetry.occurred-at-clamp-hours`.
+        meta:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Free-form rider for a future event kind; v1 emits nothing here.
+    ScreenEventBatchRequest:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ScreenEventInput'
+          description: At most `mezo.telemetry.batch-max` items; more is a 400.
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token
