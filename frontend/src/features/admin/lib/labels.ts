@@ -11,7 +11,8 @@ export interface AdminLabel {
   missing?: boolean
 }
 
-type Entry = { label: string; hint?: string }
+export type AdminLabelEntry = { label: string; hint?: string }
+type Entry = AdminLabelEntry
 
 export const FEATURE_LABELS: Record<string, Entry> = {
   // ── LLM feature slugs (source of truth: `new LlmCallContext("<slug>"` call sites) ──
@@ -42,11 +43,14 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   companion_reflection: { label: 'Napló-jelzés kiolvasás', hint: 'napló-szövegek hangulat/energia jelzéseinek felismerése' },
   companion_smoke: { label: 'Rendszer-próbahívás', hint: 'technikai ellenőrző hívás' },
   day_review: { label: 'Napi értékelés' },
-  embed_memory: { label: 'Emlék-beágyazás', hint: 'emlékek kereshetővé tétele' },
+  embed_memory: { label: 'Emlék indexelése', hint: 'emlékek kereshetővé tétele (beágyazás/embedding)' },
   habit_ai_suggest: { label: 'Szokás-javaslat' },
   lifegoal_propose: { label: 'Életcél-javaslat' },
   meal_coach: { label: 'Étkezési tanácsadó' },
   meal_draft: { label: 'Étel-felismerés', hint: 'fotóból/szövegből étkezés-vázlat' },
+  // VERIFIED: MesoReviewGenerator — a lezárt mezociklus (edzésblokk) VÉGÉRTÉKELÉSÉNEK
+  // AI-narratívája a frissen összeállított kontextusból (deterministikus riport + életmód-adatok).
+  meso_review: { label: 'Edzésblokk-értékelés', hint: 'a lezárt mezociklus AI-végértékelése (LlmCallContext: meso_review)' },
   pantry_photo: { label: 'Kamra-fotó felismerés' },
   // VERIFIED: ScrapeExtractionService — nem letöltés, hanem a már letöltött termékoldal
   // szövegéből tápérték-adatok kinyerése (kiolvasás/értelmezés).
@@ -129,9 +133,9 @@ export const TABLE_LABELS: Record<string, Entry> = {
   pattern_event: { label: 'Minta-események' },
   llm_log_history: { label: 'AI-hívások naplója' },
   memory_item: { label: 'Emlékek' },
-  memory_vector: { label: 'Emlék-beágyazások' },
-  knowledge_node: { label: 'Tudásgráf-csomópontok' },
-  knowledge_edge: { label: 'Tudásgráf-kapcsolatok' },
+  memory_vector: { label: 'Emlék-keresőindex', hint: 'emlékek beágyazás (embedding) alapú keresőindexe' },
+  knowledge_node: { label: 'Tudástár-elemek', hint: 'tudásgráf-csomópontok' },
+  knowledge_edge: { label: 'Tudástár-kapcsolatok', hint: 'tudásgráf-élek' },
   learned_fact: { label: 'Tanult tények' },
   message_feedback: { label: 'Visszajelzések' },
   ai_message: { label: 'AI-üzenetek' },

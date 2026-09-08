@@ -9,6 +9,11 @@ import { FEATURE_LABELS } from './labels'
 
 const BACKEND_SRC = resolve(__dirname, '../../../../../backend/src/main/java')
 const SLUG_RE = /new LlmCallContext\(\s*"([a-z0-9_]+)"/g
+// Some call sites pass a named constant instead of an inline literal, e.g.
+// `private static final String LLM_FEATURE = "meso_review";` used as
+// `new LlmCallContext(LLM_FEATURE, ...)`. Collect those slugs too, in files that also
+// contain a `new LlmCallContext(` call, and union them with the literal scan.
+const CONST_SLUG_RE = /(?:FEATURE[A-Z_]*|LLM_FEATURE)\s*=\s*"([a-z0-9_]+)"/g
 
 function javaFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -24,6 +29,9 @@ describe('label dictionary completeness', () => {
     for (const file of javaFiles(BACKEND_SRC)) {
       const src = readFileSync(file, 'utf8')
       for (const m of src.matchAll(SLUG_RE)) slugs.add(m[1])
+      if (src.includes('new LlmCallContext(')) {
+        for (const m of src.matchAll(CONST_SLUG_RE)) slugs.add(m[1])
+      }
     }
     expect(slugs.size).toBeGreaterThan(30) // sanity: the scan actually found the call sites
     const unlabelled = [...slugs].filter((s) => !(s in FEATURE_LABELS))
