@@ -443,7 +443,14 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
   (NFR-M-4). Empty day ⇒ no row; existing day ⇒ returned untouched (no LLM call). Uniqueness is
   a PARTIAL index (`where is_deleted = false`) so soft-deleting a summary lets the next night
-  regenerate it.
+  regenerate it. **The digest's figures go through the SAME `ToolText` seams the context snapshot
+  uses** (§3 "Three render seams"): `ToolText.rating` for sleep quality, check-in energy/stress and
+  sport intensity — all 1..10, all previously rendered `"/5"` HERE (bd `mezo-b6zt` and siblings) —
+  and `ToolText.huWeight`/`huHours` for body weight and sleep hours. This one matters more than the other
+  renderers: **the narrative is PERSISTED and later prompts read it back as history**, so a false
+  figure outlives the message that produced it. Rendering `energia 8/5` here while the snapshot
+  rendered the very same two columns as `energia 8/10` had two prompts feeding one model in direct
+  contradiction.
 - **The app's first `@Scheduled` cron** — `DailySummaryJob` (nightly, `mezo.companion.summary.cron`,
   default 02:20; switch `mezo.techcore.cron.daily-summary-job.enabled`; `SchedulingConfiguration`
   born in techcore): for every user × every finished day in the catch-up window
@@ -1832,8 +1839,77 @@ active med with no dose would render `nincs rögzített dózis` — honest zero 
 `snapshot.checkin-note-max-chars`; **a check-in older than `today` renders `check-in: MA MÉG NINCS
 (utolsó: {date} {slot} — energia x/10, stressz y/10)`, mezo-xrhd** — it used to render the latest
 row ever, dated but with no today-status, so "no check-in today" was something the model had to
-derive from the date and silently didn't; no check-in row at all still renders `nincs adat`). Every lookup uses `Optional`/status-filtered repo finders —
-the assembler NEVER throws for missing data.
+derive from the date and silently didn't; no check-in row at all still renders `nincs adat` — and
+since the 2026-09-08 morning-feed slice a check-in row carrying NEITHER reading renders `nincs adat`
+too, and a single unanswered slider is omitted rather than printed: `check_in.energy`/`.stress` are
+both nullable, and the literal `energia null/10` used to reach the prompt). Every lookup uses
+`Optional`/status-filtered repo finders — the assembler NEVER throws for missing data.
+
+**Three render seams every prompt-facing figure now goes through — and picking the wrong one IS the
+defect (the 2026-09-08 morning-feed slice, `ToolText`).** The nine blocks above are read by the chat
+turn AND by the companion feed's generators in the same conversation, so a figure that renders two
+ways in two places is a figure the model contradicts itself about:
+
+- **`ToolText.rating(value)` + `ToolText.RATING_MAX` (=10) — every hand-entered 1..10 self-rating,
+  one declared ceiling** (bd `mezo-b6zt` and its siblings). Sleep quality
+  (`api/feature/sleep/sleep.yml`), check-in energy/stress/body/mental
+  (`api/feature/checkin/checkin.yml`) and sport intensity (the DB's own
+  `ck_sport_session_intensity`) are each 1..10 at their own source of truth, and each was ALSO
+  rendered against a hardcoded `"/5"` in at least one renderer — so an 8 reached the prompt as the
+  impossible `8/5` and the model judged the night against half the real ceiling, then echoed
+  „a minőségét 8/5-re értékelted" back to the user. Worst shape: the day narrative said
+  `energia 8/5` while THIS block rendered the very same two columns as `energia 8/10`, so two
+  prompts feeding one model directly contradicted each other. `rating` is null-safe and returns
+  `null` for an unrated field, which is what keeps every caller's "omit entirely" branch honest.
+- **`ToolText.huWeight`/`huRate`/`huHours` vs `ToolText.num` — a deliberate split by AUDIENCE, not a
+  duplicate** (bd `mezo-a64t`). The three `hu*` helpers are for figures the model QUOTES BACK to the
+  user: Hungarian decimal comma, fixed precision (they all delegate to `huNum(value, decimals)`,
+  which anything outside these three quantities may still call directly). `num` stays
+  locale-INDEPENDENT and unrounded, for payloads the model only PARSES. Using `num` for
+  user-destined figures put „83.694 kg" and „heti -0.244 kg" into Hungarian prose one card above a
+  „4,5 óra" — a decimal point inside Hungarian, at gram precision nobody asked for. **Precision
+  belongs to the QUANTITY, and it is bound BY NAME:** `huWeight` = a body weight or any delta of two
+  (1 decimal), `huRate` = a per-week rate, kg/week or %/week (2 — 0,24 is not 0,2), `huHours` = a
+  duration in hours (1). The three started life as a private `WEIGHT_DECIMALS = 1` in FIVE classes —
+  the exact shape of the bug the slice was fixing — and were folded into named helpers immediately
+  after, which also removes a failure the constant form allowed: `huNum(weight, RATE_DECIMALS)`
+  compiled fine. Now `[Profil]`'s `mérés`/`súlytrend`, `[Cél]`'s start → target, `GoalTools`' goal
+  line, `BiometricsTools`' trend/log/recovery reads, the feed's weight-reaction line and the day
+  narrative cannot render one number two ways.
+- **`ToolText.huTrajectory(trajectory)` — the goal's `cut|bulk|maintain` in Hungarian** (bd
+  `mezo-padz`). `GoalEntity.trajectory` stores the raw DB-CHECK value and `[Cél]` used to emit it
+  verbatim — the ONE non-Hungarian label in otherwise fully Hungarian blocks — so the model invented
+  its own phrasing for it. `maintain` deliberately spells out RECOMP **on the repo owner's own
+  definition** (hold body weight while strength and muscle go UP, no fat gain): rendered as a bare
+  „súlytartás" it reads as „do nothing", the opposite of the prescription. An unrecognised value
+  falls through verbatim rather than throwing — a widened DB CHECK must degrade to an untranslated
+  label, never take a whole snapshot down. Shared with `GoalTools` because both render the same goal
+  line; deliberately NOT the wording of `goal.service.GoalSuggestionTriggerService#huTrajectory`,
+  whose bare „tartás" for `maintain` is precisely the reading these blocks must not produce.
+
+**Two more block-level statements the same slice added, both about what the model kept inventing:**
+`[Mai üzemanyag]`'s protocol line now says the protocol **has no name** (`v3 aktív (nincs neve — csak
+a verziószám azonosítja)`) — the contract (`api/feature/fuel/fuel.yml`, `ProtocolResponse`) carries
+`id`/`version`/`builtAt`/`status`/`items` and nothing name-like, so a version number was the entire
+label and the model filled the gap by borrowing the GOAL's title („a Lean Gain protokollod");
+stating the absence closes the gap, where inventing a name would only move the fiction. And
+`[Edzés]`'s trailing digest now carries its own inclusive bounds and says what it is not
+(`elmúlt 7 nap (gördülő ablak, 2026-09-02 – 2026-09-08, nem a naptári hét)`, bd `mezo-f1x1`) — the
+window is TRAILING (`from = today - digestDays + 1`), and an unlabelled „elmúlt 7 nap" was
+re-attributed by the model to the calendar week: on a TUESDAY a card said „a héten eddig egy gym
+edzést zártál", while by Tuesday morning the calendar week holds Monday alone and the counts were
+mostly LAST week's. It stays a ROLLING window on purpose — other surfaces read the same trailing
+digest, and a week-anchored variant is a separate change.
+
+**`ToolText.NO_DATA` is `public` since bd `mezo-4jux`, and that is a cross-feature contract now.**
+The proactive feed generators read it to tell that a block rendered as absent, so they stop offering
+the model a reference candidate for a source that produced nothing (a „Gyógyszer" provenance chip
+appeared on a card whose own body said no medication was recorded). Their probes match this
+assembler's own block-marker literals from another package — see [`proactive.md` §3](proactive.md)
+for the filter and bd `mezo-qp1x` for the coupling: renaming a marker here silently costs that
+source all its chips, because the filter is fail-closed. `ContextSnapshotAssembler` still keeps a
+private `NO_DATA` duplicating the now-public one; delegating removes the last place that literal can
+drift (same issue).
 
 **The workout closing note in the snapshot (`mezo-d20.13`).** The `[Edzés]` block's `elmúlt N nap`
 digest listed only *dates*; it now reads the instances themselves
@@ -2455,6 +2531,40 @@ two outcomes `FlagFactRenderer` does not: one Hungarian sentence for CLEAR (the 
 observed value and threshold, read straight off `FlagVerdict.ClearEvidence` — never a fabricated
 number) and one for UNAVAILABLE (one sentence per `UnavailableReason` gate). Both fall back safely
 on an unmapped code, same argument as `FlagCatalog`.
+
+**The `sleep_debt` fact was FALSE, in both renderers, and the fix is worth understanding rather than
+copying (bd `mezo-btmc`, 2026-09-08).** `FlagPayloadEnvelope.SleepDebt.deficitHours` is the WINDOW
+TOTAL — `SleepDeficitCalculator.over` sums `max(0, goal - hours)` across the logged mornings and
+`SleepDebtRule` compares it against a CUMULATIVE threshold — but the headline fact wore a PER-NIGHT
+unit (`"Alvásadósság: 4,5 óra/éjszaka"` for 4.5 hours across 2 nights), so the card asserted roughly
+three times the real nightly shortfall and the model amplified the mislabel into prose about nightly
+rest that contradicted the same minute's sleep card. Both quantities now carry **their own** unit:
+`Alvásadósság: összesen 1,4 óra hiány a rögzített éjszakákon (átlagosan 0,2 óra/éjszaka, cél 8,0
+óra/éjszaka, 6 rögzített éjszaka a 7 közül)`. Three deliberate choices in that string:
+- **The per-night mean is derived in the RENDERER**, because `FlagPayloadEnvelope.SleepDebt` froze
+  only the total — the calculator's own `Deficit.deficitPerLoggedNight()` is not among the
+  components this arm persists (the `LoggingGap` arm does persist one, as
+  `observedDeficitPerLoggedNight`; this one does not) — and it is the LOGGED nights that divide it,
+  the same honest denominator the calculator itself uses.
+- **With no logged night the average clause is DROPPED, not printed as `0,0`** (the honest-numbers
+  rule: a fact the renderer cannot ground is omitted, never estimated).
+  `SleepDebtRule` cannot raise in that state (it gates on `minNights`), but the renderer is the last
+  thing between a malformed log row and the card — the same reason `protocolLapse` tolerates nulls.
+- **„a N közül", not „N-ből"** (bd `mezo-o6ah`): the elative suffix follows Hungarian vowel harmony
+  on the numeral WORD, so három/hat/nyolc take `-ból`, and the DEFAULT window is 3 nights — the old
+  literal shipped „3-ből" on the headline fact every single time. It survived because the FE mock
+  fixture uses a 7-night window, where „7-ből" happens to be correct. „közül" is invariant, which
+  retires the whole bug class instead of adding a digit→suffix helper that would still have to key
+  off the numeral's vowels (20 = húsz → `-ból`).
+
+`FlagTraceCopy` carried the SAME mislabel on the same metric and got the same treatment:
+`deficit_hours`' observed value AND threshold are both cumulative window hours (`SleepDebtRule` hands
+back `d.deficitHours()` vs `cfg.deficitHours()`), never a per-night rate, so the CLEAR sentence now
+reads `Alvásadósság: az ablakban összesen %s óra hiány — a %s órás összesített küszöb alatt.` No
+per-night average is offered there: `ClearEvidence` carries no `loggedNights` to divide by, and this
+family never estimates. **The FE `coachingTraceMock.ts` fixture mirrors `FlagFactRenderer.sleepDebt`
+VERBATIM and nothing gates the two against each other** — it had frozen the pre-fix copy, so mock
+mode (the DEFAULT mode) went on stating something false; keep them in sync by hand.
 
 **Closing state and the day's transitions fall out of the same rows.** A rule's closing state is
 simply its newest trace row at or before the day's cutoff — which may predate the day entirely,
@@ -5867,6 +5977,16 @@ so ArchUnit's frozen `feature_slices_are_cycle_free` rule is untouched. See
 [`proactive.md`](proactive.md) §3/§5 for the receiving side and
 [`_platform-notifications.md`](_platform-notifications.md) §3d for the push anchor + quiet hours.
 
+**KNOWN LIMITATION worth knowing from this side too (bd `mezo-a26e`, confirmed, not fixed).** ONE
+`SleepLogSavedEvent` starts TWO independent `@Async` `AFTER_COMMIT` chains that both end in a
+sleep-topic feed card: proactive's own `CompanionMessageEventListener` → the `sleep` card, and this
+seam — `FlagEvaluationListener` → `FlagService.evaluateAndLog` → a `SLEEP_DEBT` raise →
+`FlagRaisedEvent` → `InterventionEventListener` → the `advice` card. Nothing orders them (`@Order`
+sequences DISPATCH, not completion, so with `@Async` the second chain still starts before the first
+finishes), and the chain through THIS seam carries an extra hop — flag evaluation, its own commit, a
+second async dispatch — so it usually lands second, unaware of the card that already shipped. Full
+mechanism, consequences and the rejected fixes: [`proactive.md` §9 (qq)](proactive.md).
+
 ## 6. How to use it (consume)
 
 **From the FE:** import `useChat` / `useChatActions` from `@/data/hooks` (implementations in
@@ -5969,6 +6089,17 @@ execution checklist"). The house recipe, **contract-first**:
   into `CompanionToolRegistry.callbacks(...)`, keep it read-only + `ToolContexts.userId`-scoped,
   add its render test to `CompanionToolsRenderIT` and the registry-batch assert in
   `CompanionToolRegistryIT`. The decorator gives audit/budget/error-shielding for free.
+- **Rendering a figure, a 1..10 rating or an enum into ANY prompt-facing text?** — go through the
+  shared `ToolText` seam, never a local literal: `rating`/`RATING_MAX` for a self-rating (and keep
+  the caller's omit-branch — `rating(null)` is `null` on purpose), `huWeight`/`huRate`/`huHours` for
+  a figure the model QUOTES BACK vs `num` for one it only PARSES (`huNum(value, decimals)` directly
+  only for a quantity outside those three — and say why), `huTrajectory` for the goal's
+  `cut|bulk|maintain`, `NO_DATA` for absence. Precision is bound to the QUANTITY by the helper's
+  NAME, never re-declared at the call site. A second copy of any of these is how the day narrative
+  and the context snapshot came to
+  contradict each other about the same two columns — §3 and §9's render-seam rule have the full
+  reasoning, and the same rule binds the proactive feed's own renderers
+  ([`proactive.md`](proactive.md) §3).
 
 ## 8. Testing
 
@@ -6098,7 +6229,7 @@ two-part echo with the history rendered INSIDE `system=[…]`; the three-way spl
 test surface that would fail if the history were ever accidentally reglued into the system prompt
 (see also the dedicated history-separation IT below).
 
-**`ContextSnapshotAssemblerIT` (V0.3, 24 tests)** — the snapshot is fully assertable without any
+**`ContextSnapshotAssemblerIT` (V0.3, 48 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all ten blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
 `nincs adat` with no weigh-in row vs. two same-day weigh-ins, where only `created_at` breaks the
@@ -6112,6 +6243,25 @@ creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, cycle
 (`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
 from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
 goal exists, and determinism (two renders are `equals`).
+**The 2026-09-08 morning-feed slice added the render seams' cover here** (§3 "Three render seams"):
+sleep quality against the contract's 1..10 and never an impossible fraction; the check-in slot
+rendering only the sliders that were answered, and `nincs adat` when neither was; the goal
+trajectory in Hungarian with `maintain` spelled out as recomp; the fuel protocol stating that it has
+no name; the `[Edzés]` digest carrying its own inclusive bounds and the „nem a naptári hét"
+disclaimer; and every quoted figure with a Hungarian decimal comma at the quantity's precision —
+plus the same-figure agreement between blocks that used to disagree.
+**`ToolTextTest` (16 tests, pure unit, `tools/`)** is the seam's own guard: the ceiling, the
+null-safety of `rating` (an unanswered slider must render NOTHING — neither `0/10` nor the literal
+`null/10`, which really did reach prompts), `huNum`'s comma/precision/trailing zeros/`?`-on-absent
+behaviour against `num`'s locale-independent unrounded output, and `huTrajectory`'s four branches.
+**Two honest limits, both worth knowing before trusting it as the seam's contract.**
+`testRatingMax_shouldMatchEveryContractBoundItStandsFor` asserts the literal `10` and names the
+contracts in its javadoc — it does NOT read `sleep.yml`/`checkin.yml` or the
+`ck_sport_session_intensity` CHECK, so widening one of those scales would not fail this test. And
+the three named quantity helpers (`huWeight`/`huRate`/`huHours`) have **no direct unit case here at
+all** — the class still exercises `huNum(value, decimals)` — so each helper's precision is pinned
+only indirectly, by the renderer ITs that call it (`ContextSnapshotAssemblerIT`,
+`DailySummaryServiceIT`, `CompanionToolsRenderIT`, `SleepLogDetailRenderIT` and the feed ITs).
 `ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndFacts_whenSending` —
 the fake's `system=[…]` echo proves voice → `AKTUÁLIS ÁLLAPOT` → facts ordering in the real prompt.
 (**Since mezo-q71s** this ordering ends at the facts/pattern-ack/`TONE_REMINDER` blocks — history
@@ -6166,10 +6316,18 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **V0.5 test additions (grown to 15 tools' worth by mezo-xixu):**
 
-- **`CompanionToolsRenderIT`** (77 tests, `@Transactional` + fake profile) — every tool's rendered
+- **`CompanionToolsRenderIT`** (106 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
   with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
   clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero medication cycle.
+  **Since 2026-09-08** also the render seams (§3): sleep quality against the shared 1..10 ceiling in
+  BOTH `get_recovery` renderers, an unanswered check-in slider omitted rather than printed, the goal
+  line's Hungarian trajectory, and every quoted weight/rate/sleep-hours figure with a Hungarian
+  decimal comma at the quantity's precision. Two assertion tricks are worth reusing: the weight and
+  goal payloads are asserted **free of any `"."` at all** (their dates are ISO, so a dot can only be
+  a mis-rendered figure — and ONE missed call site is the whole defect), and the trajectory is
+  asserted as an IDENTITY against `ToolText.huTrajectory` rather than against a second copy of the
+  Hungarian wording, which is what keeps the tool and the snapshot from drifting apart on it.
 - **`CompanionToolRegistryIT`** — exactly the 15-tool batch registered, every callback wrapped in
   `RecordingToolCallback`; the tool-context carries `userId` + audit.
 - **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,
@@ -7022,6 +7180,18 @@ hand-built `MemoryContextBlock`), `CompanionMessageGeneratorIT`, `CompanionMessa
 10. **Budget by construction, no hard truncation** — the block is bounded by `digest-days` and
     one-line-per-block rendering (~0.5–1k token, well under the 2–4k spec budget).
 
+**Render-seam rule (the 2026-09-08 morning-feed slice, §3 "Three render seams"): every
+prompt-facing figure goes through a SHARED `ToolText` seam, never a local literal.** A scale
+ceiling, a decimal convention or an enum translation duplicated per call site WILL drift — a
+hardcoded `"/5"` sat in five renderers against 1..10 contracts, and the day narrative ended up
+telling the model `energia 8/5` about the exact columns this snapshot rendered as `energia 8/10`.
+Two rules follow. **Pick the formatter by AUDIENCE:** the `hu*` helpers for a figure the model will
+QUOTE BACK to the user (Hungarian comma, fixed precision), `num` for a payload the model only PARSES
+(locale-independent, unrounded) — choosing wrong is the whole `mezo-a64t` defect. **Bind the
+precision to the QUANTITY BY NAME, never to the call site** — `huWeight` / `huRate` / `huHours`, not
+a `WEIGHT_DECIMALS` constant re-declared per class (that shape is what let one number reach the
+model two ways inside one conversation, and it also let `huNum(weight, RATE_DECIMALS)` compile).
+
 **V0.3 gotcha:** the assembler runs inside EVERY chat turn (`ChatService.sendMessage` is one
 transaction) — its reads are cheap single-row/short-list lookups by design; anything heavier
 (full-history scans) belongs behind a V0.5 tool, not in the snapshot.
@@ -7815,7 +7985,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` (named blocks, mezo-q71s) + `TONE_REMINDER` + the sync turn + the V0.4 `prepareTurn`/`completeTurn` halves; `toTurns`/`loadWindow` produce the `List<Turn> history` that now travels SEPARATELY from the prompt. **`mezo-b3pp.12`** folded the snapshot/facts/pattern-ack/`[Emlékek]`/tone assembly into ONE private `assembleSystemPrompt(userId, today, memoriesBlock, graphBlock, contextKind, contextDate)` (the last two params added by `mezo-p2tr` for the `[Heti adatok]` anchored block, both `null` for a plain conversation) that both paths call — it had been two byte-identical copies, one per path, and a third block would have made the drift inevitable; the helper also pins ONE `LocalDate.now()` per turn, shared by the snapshot and the recall. `PreparedTurn` gained `recalledRefs`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/ChatHistory.java` — **mezo-q71s** the `List<Turn>` → "Daniel: … / Mezo: …" text renderer, the sole source for the three non-model consumers (advisor judge payload, fake LLM echo, `llm_log_history.conversation_history`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`tool`/`done`/`error` Flux over the port; the `tool` sink since mezo-280).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences). Every prompt-facing figure now goes through `ToolText` (§3 "Three render seams"): `huWeight`/`huRate`/`huHours` for `[Profil]`'s mérés/súlytrend, `[Cél]`'s start → target and its sleep-hours target, `rating` for sleep quality and the check-in sliders (honest absence instead of the literal `null/10`), `huTrajectory` for the goal's `cut|bulk|maintain`; plus the `[Edzés]` digest's own inclusive bounds + „nem a naptári hét" and the `[Mai üzemanyag]` protocol's stated namelessness.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PromptMemoryAssembler.java` — **`mezo-b3pp.12`** W3.1 ambient recall: embed-once → five kind-group ANN queries (W3.2 added the rungs) → per-group floor/decay/cap (**per group since W3.3, `mezo-b3pp.14`**) → `(kind, ref_id)` dedupe → the `MEMORIES_HEADER` (`[Emlékek]`) render under the token cap, plus the `Memory`/date refs. **Never throws** — any `RuntimeException` becomes a `log.warn` + `AmbientRecall.EMPTY`, so the block is optional and the turn is not (IDENT-3). Not `@Transactional` (the ANN carries its own savepoint, §9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
@@ -7878,7 +8048,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools,MemoryTools}.java` — the 12 `@Tool` reads from the V0.5–V2.3 batch.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam. **`ToolText` is also the shared render seam every prompt-facing figure passes through** (§3): `RATING_MAX`/`rating`/`sleepQuality` (one declared 1..10 ceiling), `huWeight`/`huRate`/`huHours` (Hungarian comma, precision bound to the quantity by NAME — for figures the model QUOTES BACK) over the shared `huNum`, beside the locale-independent `num` (for payloads the model only PARSES), `huTrajectory`, and the now-`public` `NO_DATA` the proactive presence probes read.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, model chosen by `-Dmezo.eval.model`, 42-case Hungarian question set, incumbent baseline 37/42 = 88.1% exact match). Support classes beside it: `EvalTarget`, `EvalApiKeyCondition`, `ToolDomains`, `ToolSelectionEvalMetrics`, `EvalReportWriter`, plus `ToneJudgeEvalIT`/`ToneJudgePairing` for the blind Hungarian tone A/B.
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
@@ -7939,8 +8109,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 24 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 48 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest,ToolTextTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools) + `ToolTextTest`, the 2026-09-08 render-seam guard (§8).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, 42-case set, incumbent baseline 37/42 exact match).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.

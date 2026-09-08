@@ -140,6 +140,44 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .extracting(r -> r.kind()).containsExactly("WeightTrend");
     }
 
+    /**
+     * mezo-a64t: the weight tools and the context snapshot's [Profil] line render the SAME body
+     * weights and weekly rates into the SAME conversation. The card that shipped read
+     * "83.3 kg … 83.694 kg … heti -0.244 kg" — decimal POINTS in Hungarian prose at gram
+     * precision, one card above a "4,5 óra". Every figure here is one the model quotes back, so
+     * every one goes through the Hungarian display formatter: a body weight at one decimal, a
+     * weekly rate at two. The whole payload is asserted free of "." — the ISO dates use dashes, so
+     * a "." can only be a mis-rendered figure, and one missed call site is the entire defect.
+     */
+    @Test
+    void testGetWeightTrend_shouldRenderEveryFigureWithHungarianDecimals_whenHistoryExists() {
+        UUID owner = userPopulator.createUser().getId();
+        for (int i = 0; i < 21; i++) {
+            weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(20 - i),
+                    BigDecimal.valueOf(88.0 - i * 0.1));
+        }
+
+        String out = biometricsTools.getWeightTrend(2, ctx(owner));
+
+        assertThat(out).doesNotContain(".");
+        assertThat(out).matches("(?s).*trendsúly \\d+,\\d kg.*")
+                .matches("(?s).*heti ütem -?\\d+,\\d{2} kg.*")
+                .matches("(?s).*\\(-?\\d+,\\d{2}%/hét\\).*")
+                .matches("(?s).*Heti trendpontok: .*\\d+,\\d kg.*");
+    }
+
+    /** Gram precision is what actually shipped, so it is what the test seeds: 85.437 must reach the
+     *  model as "85,4", the same figure the snapshot shows for the same weigh-in. */
+    @Test
+    void testGetWeightLog_shouldRoundToWeightPrecision_whenGramPrecisionLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.437"));
+
+        String out = biometricsTools.getWeightLog(7, ctx(owner));
+
+        assertThat(out).contains(": 85,4 kg").doesNotContain("85.437").doesNotContain("85,437");
+    }
+
     @Test
     void testGetWeightLog_shouldRenderNincsAdat_whenNoWeighInsInWindow() {
         UUID owner = userPopulator.createUser().getId();
@@ -159,9 +197,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = biometricsTools.getWeightLog(90, ctx(owner)); // clamps to max-window-days=30
 
         assertThat(out).startsWith("Napi súlymérések (utolsó 30 nap):")
-                .contains(LocalDate.now().minusDays(1) + ": 85.4 kg")
-                .contains(LocalDate.now().minusDays(2) + ": 86.1 kg")
-                .doesNotContain("88 kg");
+                .contains(LocalDate.now().minusDays(1) + ": 85,4 kg")
+                .contains(LocalDate.now().minusDays(2) + ": 86,1 kg")
+                .doesNotContain("88,0 kg");
         // newest first — the day-1 line precedes the day-2 line
         assertThat(out.indexOf(LocalDate.now().minusDays(1).toString()))
                 .isLessThan(out.indexOf(LocalDate.now().minusDays(2).toString()));
@@ -177,7 +215,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = biometricsTools.getWeightLog(7, ctx(owner));
 
         // the newest row's delta against the row below it: 85.4 - 86.1 = -0.7
-        assertThat(out).contains("-0.7 kg");
+        // mezo-a64t: a weight delta is a body weight, so a Hungarian comma at one decimal —
+        // huNum renders the minus itself, the explicit "+" prefix only guards the positive case
+        assertThat(out).contains("-0,7 kg");
     }
 
     @Test
@@ -188,7 +228,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = biometricsTools.getRecovery("sleep", 90, null, null, null, ctx(owner));
         // clamps to max-window-days=30
         assertThat(out).startsWith("Alvás (utolsó 30 nap):")
-                .contains(LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5")
+                .contains(LocalDate.now().minusDays(1) + ": 7,5 h, minőség 4/10")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
         assertThat(audit.toRefsEnvelope().refs()).extracting(r -> r.kind()).containsExactly("Sleep");
     }
@@ -858,11 +898,83 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = goalTools.getGoal("progress", ctx(owner));
 
-        assertThat(out).startsWith("Cél: Nyári cut (cut), 3. hét; 84.2 → 80 kg")
+        assertThat(out).startsWith("Cél: Nyári cut (fogyás), 3. hét; 84,2 → 80,0 kg")
                 .contains("trendsúly most ").contains("eddig ")
                 .contains("e heti recept: 2100 kcal, 160 g fehérje");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    /**
+     * mezo-a64t: this tool and the context snapshot's [Cél] block render the SAME goal figures into
+     * the SAME conversation, so "83.3" from one and "83,3" from the other IS the defect. Every
+     * decimal on the progress line is a quantity the model quotes back: body weight (start, target,
+     * trend, and the delta) at one decimal, the weekly rates at two. Everything past the week
+     * ordinal is asserted free of "." — the dates on it are ISO, so a "." there can only be a
+     * mis-rendered figure, and one missed call site is all it takes.
+     */
+    @Test
+    void testGetGoal_shouldRenderEveryFigureWithHungarianDecimals_whenScopeProgress() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+                List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160, null, null,
+                        new BigDecimal("7.5"), List.of(5, 6), null, null, null, null, null)),
+                null, null);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(2).minusDays(1),
+                LocalDate.now().plusWeeks(10), prescription, 4, "06:30", "22:30");
+        // a week of weigh-ins so the trend has a defined slope, ending at gram precision
+        for (int i = 7; i >= 1; i--) {
+            weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(i),
+                    new BigDecimal("87.10").subtract(
+                            new BigDecimal("0.09").multiply(BigDecimal.valueOf(7 - i))));
+        }
+        weightLogPopulator.createWeightLog(owner, LocalDate.now(), new BigDecimal("86.437"));
+
+        String out = goalTools.getGoal("progress", ctx(owner));
+
+        assertThat(out).startsWith("Cél: Nyári cut (fogyás), 3. hét; 84,2 → 80,0 kg");
+        // every figure lives after the week ordinal, and the "3." ordinal is the one legitimate
+        // period on this line — so past it a "." can only be a mis-rendered number (the dates are
+        // ISO, with dashes). One missed call site is all this defect ever needed.
+        assertThat(out.substring(out.indexOf("hét; "))).doesNotContain(".");
+        assertThat(out).matches("(?s).*trendsúly most \\d+,\\d kg.*")
+                .matches("(?s).*\\(eddig -?\\d+,\\d kg\\).*")
+                .matches("(?s).*tényleges ütem -?\\d+,\\d{2} kg/hét.*")
+                // createGoalFull's rateTargetPctPerWeek is 0.70 — a rate, so two decimals
+                .contains("terv-ütem 0,70%/hét");
+    }
+
+    /**
+     * mezo-padz: {@code GoalEntity.trajectory} stores the raw {@code cut|bulk|maintain}, and this
+     * tool emitted it verbatim — the same gap the context snapshot had, in the same conversation,
+     * so the model invented its own Hungarian for it. {@code maintain} is RECOMP on the repo
+     * owner's definition (hold weight, gain strength and muscle); a bare "súlytartás" reads as "do
+     * nothing", the opposite of the prescription. The populator's maintain goal has no target
+     * weight, which also pins huNum's "?" for a null figure.
+     */
+    @Test
+    void testGetGoal_shouldRenderTheTrajectoryInHungarian_whenScopeProgressAndMaintainGoal() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoal(owner, "maintain", "active");
+
+        String out = goalTools.getGoal("progress", ctx(owner));
+
+        assertThat(out).startsWith("Cél: Nyári cut (súlytartás (recomp: testsúly tartása mellett "
+                + "erő- és izomgyarapodás, hízás nélkül)), ");
+        assertThat(out).contains("84,2 → ? kg").doesNotContain("(maintain)");
+    }
+
+    /** The tool and the snapshot must render one trajectory ONE way — asserted as an identity
+     *  against the shared translator, not as a second copy of the Hungarian wording. */
+    @Test
+    void testGetGoal_shouldRenderTheTrajectoryTheSameWayAsToolText_whenScopeProgressAndCutGoal() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoal(owner, "cut", "active");
+
+        String out = goalTools.getGoal("progress", ctx(owner));
+
+        assertThat(out).startsWith("Cél: Nyári cut (" + ToolText.huTrajectory("cut") + "), ");
+        assertThat(out).doesNotContain("(cut),");
     }
 
     @Test
@@ -892,8 +1004,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).startsWith("Cél receptje: Nyári cut (formula)")
                 .contains("1-6. hét: 2100 kcal, 160 g fehérje")
-                .contains("alvás 7.5 h").contains("pihenőnapok: 5, 6")
-                .contains("ütem -0.5 kg/hét").contains("kalóriahiány a cut elején");
+                .contains("alvás 7,5 h").contains("pihenőnapok: 5, 6")
+                .contains("ütem -0,50 kg/hét").contains("kalóriahiány a cut elején");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
     }
@@ -924,7 +1036,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         // basis()==null -> no "(...)" after the title; the segment line still renders in full.
         assertThat(out).isEqualTo(
-                "Cél receptje: Nyári cut\n1-6. hét: 2100 kcal, 160 g fehérje, alvás 7.5 h, pihenőnapok: 5, 6")
+                "Cél receptje: Nyári cut\n1-6. hét: 2100 kcal, 160 g fehérje, alvás 7,5 h, pihenőnapok: 5, 6")
                 .doesNotContain("(");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));

@@ -15,7 +15,7 @@ describe('CoachingCardPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('shows the card with its facts and suggestions', () => {
+  test('shows the card with its facts, and no suggestion list beside a generated body', () => {
     const { container } = renderPage()
     // The winner's label ("Terhelés–táplálás") appears twice on the page — once as the
     // PageHero subtitle, once as the card's own eyebrow — so this scopes to the card itself
@@ -23,7 +23,10 @@ describe('CoachingCardPage (mock mode)', () => {
     const cardEl = container.querySelector('.propcard') as HTMLElement
     expect(within(cardEl).getByText('Terhelés–táplálás')).toBeInTheDocument()
     expect(screen.getByText(/7 napos terhelés 412 perc/)).toBeInTheDocument()
-    expect(screen.getByText('Egy plusz szénhidrátos fogás ebédre.')).toBeInTheDocument()
+    // bd mezo-wtl0: a generated advice body is prose written FROM the suggestion, so the backend
+    // stopped returning it — the card must show the body ONCE, not the same advice twice. This
+    // used to assert the duplicate was on screen.
+    expect(cardEl.querySelector('li')).toBeNull()
   })
 
   test('„Miért ez nyert" ranks the beaten candidates — this exists nowhere else in the app', () => {

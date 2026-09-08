@@ -58,7 +58,11 @@ class AdviceCardServiceIT extends AbstractIntegrationTest {
         assertThat(card.orElseThrow().getContent().adviceKey()).isEqualTo(FlagKey.SLEEP_DEBT);
         assertThat(card.orElseThrow().getContent().interventionKey()).isEqualTo("sleep_debt_entry");
         assertThat(card.orElseThrow().getContent().facts()).containsExactly("tény");
-        assertThat(card.orElseThrow().getContent().suggestions()).containsExactly("javaslat");
+        // mezo-wtl0: this fixture is NON-verbatim, so its body is model prose written FROM the
+        // suggestion — displaying the suggestion too is what printed the same advice twice on the
+        // card. The suggestion still reaches the model as grounding; it just no longer reaches the
+        // screen. A verbatim (question) card keeps its chips — pinned at the bottom of this class.
+        assertThat(card.orElseThrow().getContent().suggestions()).isEmpty();
     }
 
     @Test

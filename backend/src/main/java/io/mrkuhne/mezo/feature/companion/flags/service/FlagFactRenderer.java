@@ -67,12 +67,38 @@ public final class FlagFactRenderer {
         };
     }
 
+    /** Morning-feed defect (bd mezo-btmc): {@code deficitHours} is the WINDOW TOTAL — {@code
+     *  SleepDeficitCalculator.over} sums {@code max(0, goal - hours)} across the logged mornings,
+     *  and {@code SleepDebtRule} compares it against a CUMULATIVE threshold — so the old
+     *  "%s óra/éjszaka" unit made the headline fact false (4,5 hours over 2 nights was read as
+     *  4,5 hours EVERY night), and the model amplified the mislabel into prose about nightly
+     *  rest that contradicted the same minute's sleep card. Both quantities are now stated with
+     *  their own unit. The per-night mean is derived HERE because the envelope froze only the
+     *  total ({@code Deficit.deficitPerLoggedNight()} is not one of its components) — and it is
+     *  the LOGGED nights that divide it, the same honest denominator the calculator uses. */
     private static List<String> sleepDebt(FlagPayloadEnvelope.SleepDebt p) {
         if (p == null) {
             return List.of();
         }
-        return List.of("Alvásadósság: %s óra/éjszaka (cél %s óra, %d rögzített éjszaka %d-ből)"
-            .formatted(num(p.deficitHours()), num(p.goalHours()), p.loggedNights(), p.nights()));
+        String total = "Alvásadósság: összesen %s óra hiány a rögzített éjszakákon"
+            .formatted(num(p.deficitHours()));
+        // "a N közül", not "N-ből" (bd mezo-o6ah): the elative suffix follows Hungarian vowel
+        // harmony on the numeral WORD, so három/hat/nyolc take -ból — and the DEFAULT window is 3
+        // nights, so the old literal shipped "3-ből" on the card's headline fact every time. It
+        // survived because the FE mock fixture uses a 7-night window, where "7-ből" is correct.
+        // "közül" is invariant, which retires the whole class of bug instead of adding a digit→
+        // suffix helper that would still have to key off the numeral's vowels (20 = húsz → -ból).
+        String nights = "%d rögzített éjszaka a %d közül".formatted(p.loggedNights(), p.nights());
+        if (p.loggedNights() <= 0) {
+            // No logged night means no honest denominator, so the average clause is DROPPED
+            // rather than printed as 0,0 (spec §7: never estimate). SleepDebtRule cannot raise
+            // in that state (it gates on minNights), but the renderer is the last thing between
+            // a malformed log row and the card — same reason protocolLapse tolerates nulls.
+            return List.of("%s (cél %s óra/éjszaka, %s)"
+                .formatted(total, num(p.goalHours()), nights));
+        }
+        return List.of("%s (átlagosan %s óra/éjszaka, cél %s óra/éjszaka, %s)".formatted(
+            total, num(p.deficitHours() / p.loggedNights()), num(p.goalHours()), nights));
     }
 
     private static List<String> missedWorkouts(FlagPayloadEnvelope.MissedWorkouts p) {

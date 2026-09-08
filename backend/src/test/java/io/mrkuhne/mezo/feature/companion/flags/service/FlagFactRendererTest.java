@@ -23,8 +23,62 @@ class FlagFactRendererTest {
 
         List<String> facts = FlagFactRenderer.render(FlagKey.SLEEP_DEBT, payload);
 
+        // ONE line on purpose: FlagTraceReadService appends its own frozen-numbers row to a
+        // cooldown-suppressed raise's facts and pins the total at 2 rows.
         assertThat(facts).hasSize(1);
-        assertThat(facts.get(0)).contains("1,6").contains("8,0").contains("5");
+        assertThat(facts.get(0)).isEqualTo("Alvásadósság: összesen 1,6 óra hiány a rögzített "
+            + "éjszakákon (átlagosan 0,3 óra/éjszaka, cél 8,0 óra/éjszaka, 5 rögzített éjszaka "
+            + "a 7 közül)");
+    }
+
+    /**
+     * Morning-feed defect (bd mezo-btmc), pinned with the exact payload the user was shown on
+     * 2026-09-08: 4,5 hours of deficit summed over 2 logged nights out of a 3-night window. The
+     * old copy printed that cumulative total with a PER-NIGHT unit ("4,5 óra/éjszaka"), the model
+     * amplified it into prose about averaging hours less rest every night, and the claim
+     * contradicted the same minute's sleep card. The cumulative number may never again carry the
+     * per-night unit, and the per-night mean must be the total divided by the LOGGED nights.
+     */
+    @Test
+    void testRender_shouldNotLabelTheCumulativeSleepDeficitPerNight() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.sleepDebt(
+            new FlagPayloadEnvelope.SleepDebt(8.0, 3, 2, 3.0, 4.5, Map.of()));
+
+        List<String> facts = FlagFactRenderer.render(FlagKey.SLEEP_DEBT, payload);
+
+        assertThat(facts).hasSize(1);
+        assertThat(facts.get(0)).isEqualTo("Alvásadósság: összesen 4,5 óra hiány a rögzített "
+            + "éjszakákon (átlagosan 2,3 óra/éjszaka, cél 8,0 óra/éjszaka, 2 rögzített éjszaka "
+            + "a 3 közül)");
+        // The regression itself: the WINDOW TOTAL must never be the number in front of the
+        // per-night unit, and the goal must stay marked as a per-night target.
+        assertThat(facts.get(0))
+            .doesNotContain("4,5 óra/éjszaka")
+            .contains("2,3 óra/éjszaka")
+            .contains("cél 8,0 óra/éjszaka");
+    }
+
+    /**
+     * The zero-logged-nights guard (bd mezo-btmc): no logged night means no honest denominator,
+     * so the per-night clause is DROPPED rather than divided by zero (which would print an
+     * "∞ óra/éjszaka" fact) or estimated as 0,0. Unreachable through {@code SleepDebtRule}, which
+     * gates on {@code minNights} — but the renderer never trusts its caller.
+     */
+    @Test
+    void testRender_shouldOmitThePerNightAverage_whenNoNightWasLogged() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.sleepDebt(
+            new FlagPayloadEnvelope.SleepDebt(8.0, 3, 0, 3.0, 4.5, Map.of()));
+
+        List<String> facts = FlagFactRenderer.render(FlagKey.SLEEP_DEBT, payload);
+
+        assertThat(facts).hasSize(1);
+        assertThat(facts.get(0)).isEqualTo("Alvásadósság: összesen 4,5 óra hiány a rögzített "
+            + "éjszakákon (cél 8,0 óra/éjszaka, 0 rögzített éjszaka a 3 közül)");
+        assertThat(facts.get(0))
+            .doesNotContain("átlagosan")
+            .doesNotContain("Infinity")
+            .doesNotContain("∞")
+            .doesNotContain("NaN");
     }
 
     @Test
@@ -53,7 +107,11 @@ class FlagFactRendererTest {
         assertThat(String.join(" ", facts)).contains("étkezés").contains("52");
     }
 
-    /** The sleep-suspicion variant (S2): the gap card says the logged nights ALSO look short. */
+    /** The sleep-suspicion variant (S2): the gap card says the logged nights ALSO look short.
+     *  Pinned verbatim while fixing bd mezo-btmc: unlike {@code SleepDebt.deficitHours}, THIS
+     *  field is per-night at the source ({@code LoggingGapRule} freezes
+     *  {@code Deficit.deficitPerLoggedNight()}), so the per-night unit here is the correct one
+     *  and must not be "fixed" into a window total. */
     @Test
     void testRender_shouldAddTheSleepSuspicionFact_whenTheGapCarriesIt() {
         FlagPayloadEnvelope payload = FlagPayloadEnvelope.loggingGap(
@@ -62,7 +120,8 @@ class FlagFactRendererTest {
 
         List<String> facts = FlagFactRenderer.render(FlagKey.LOGGING_GAP, payload);
 
-        assertThat(String.join(" ", facts)).contains("1,4");
+        assertThat(facts).last().asString()
+            .isEqualTo("A rögzített éjszakák is rövidek: 1,4 óra hiány/éjszaka 3 éjszakán");
     }
 
     /** The rendered fact must surface the payload's OWN {@code tomorrowMuscle} — the value
