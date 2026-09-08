@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-06
+updated: 2026-09-08
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights/pages/MezoHubPage.tsx
@@ -114,6 +114,17 @@ gate is `|r| ≥ 0.3 && p ≤ 0.15`** (`STRONG_SIGNAL` in `insights.ts`; distinc
 n-gate that decides whether a pair even reaches the monitor at all). A pair with no matching
 pattern row always lands in `gathering`, whatever its own verdict/status — the nightly job hasn't
 produced a row for it yet.
+
+**The engine's own two statuses (Reflexió S2 `mezo-eq85.2` buckets, S6 `mezo-eq85.6` copy).**
+`refuted` and `dormant` are verdicts the *reflection engine* reached, not the user: `refuted` ⇒
+the **`noRelationship`** bucket (a real "we looked, it did not hold" answer), `dormant` ⇒
+**`gathering`** (not a failure — it is parked for lack of data). Both win outright over a live,
+strong pair, exactly like a user verdict. Because the bucket headline is the *statistical* reading
+("nincs kapcsolat" / "még gyűlik"), the **row** says who spoke: `engineStatusCopy(status)`
+(`logic/lifecycle.ts`) returns `Megnéztük — nem igazolódott` for `refuted` and
+`Pihen — várom az adatot` for `dormant`, and `PatternsPage` prefers it over the finding/gate
+sentence on those two tiles. Every other status returns `null` — there the finding line is the
+honest one.
 
 **Stale rows never reach the inbox (`mezo-mqdj`).** The nightly job's gate-fail path is an early
 return: when a pair stops passing (data deleted, window slid), `PatternDetectionService` neither
@@ -253,6 +264,64 @@ paired days, history or statistics.
    days, group ratio, last calculation and sources; raw `r/n/p` sit in a nested „Technikai számok”
    disclosure. Non-live current pairs never present stale stats as today's result; frozen rows show
    the decision-time numbers and freeze note.
+
+**The laborfüzet — a hypothesis with a pre-registered test plan (Reflexió S6, `mezo-eq85.6`;
+visual truth: `docs/design_2.0/prototypes/eszrevetelek.html` `#labScreen`).** When
+`detail.pattern?.testPlan` exists (any `kind`), the page renders a **different layout** — the six
+catalog blocks above are for correlation pairs; a self-proposed, falsifiable hypothesis is a lab
+notebook. Rows without a plan are untouched by this branch.
+
+1. **`HypothesisStateCard`** replaces `PatternDetailHero`: clay `i-lombik` disc + eyebrow
+   (`{categoryLabel} · {domén}`) + a state pill off the persisted row status — `FIGYELEM`
+   (`monitoring`), `GYŰLIK` (`proposed`), `BEÉPÜLT` (`confirmed`), `ELENGEDVE` (`refuted`),
+   `PIHEN` (`dormant`), `ELVETVE` (`rejected`). Then `Hipotézis: {cím}?`, ONE human answer
+   (`hypothesisAnswer`: `Beépült.` when confirmed → `Ígéretes, de még gyűlik.` while
+   `evidenceHits + evidenceMisses < testPlan.minN` → `Nem igazolódik.` when misses beat hits →
+   `Tartja magát.` at hits ≥ 3×misses → otherwise `Vegyes kép — még figyelem.`), a sub-line that
+   compares the two groups (`groupOneDays` vs `groupZeroDays`, falling back to the evidence-day
+   count) and names `minN`, and the **belief ring** — a conic gradient at `--v: {belief×100}%`
+   with the percentage, the word `bizonyosság` and the "a számítás és a te válaszaid mozgatják"
+   line. `belief` is the backend's deterministic number; **no ring at all when it is absent**,
+   never an invented one, and raw `r`/`p` never reach the card. The three decision buttons
+   (`confirm`/`monitor`/`reject` → `usePatternActions().decide`) disappear on a
+   `confirmed`/`rejected` row — the same read-only rule the catalog hero has.
+2. **„A teszt-terv" (`TestPlanTiles`)** — the pre-registered plan, so the hypothesis cannot be
+   invented after the fact: a coral `Ha…` tile (`seriesALabel`) and a lavender `…akkor` tile
+   (`seriesBLabel`), each with a clay icon picked from the series' **domain** (a `people:`/`topic:`
+   series has no metric-catalog entry to look up) and a value-kind line, plus the strip
+   `+{lagDays} nap eltolás · {minN} nap kell minimum · {több|kevesebb} várt irány · {windowDays} nap ablak`.
+3. **„Az eddigi napok"** — the same `DaysCard` (`PatternEvidenceChart` + `Napok listája →`) the
+   catalog layout uses, so the two readings can never disagree.
+4. **„Bizonyíték-napló" (`EvidenceLog`)** — everything that happened, oldest first, stamped
+   `Szept. 6. · 14:12` (LOCAL time; the wire is UTC). Per kind: `observation` (coral),
+   `user_reply` (lavender, your own words quoted in serif italic, `te`), `revised` (gold),
+   `evidence` (gold — `Bejött` / `Nem jött be` + `· n nap` from `hit`, or, when the gate could not
+   say, ONE sentence per `PatternGate.Verdict`: `Kevés nap` (`FEW_DAYS`), `Még vékony csoport`
+   (`IMBALANCED_GROUPS`), `Nem mozdult` (`DEGENERATE`), `Nincs adat` (`NO_DATA` and any unknown
+   verdict)). Decision/engine events keep the `PatternJournal` copy **verbatim**, bold included
+   (`**Megerősítetted.**`, `Újra előjött ugyanabban az irányban — a tudás megerősödött (×N).`,
+   `Először számolhatóvá vált — N közös nap.`, `Megnéztük — nem igazolódott.`,
+   `Pihen — várom az adatot.` …) — the two readings of the same event must never drift.
+   **The log is filtered the way `patternHistory.journalEntries` filters the catalog's:** the
+   nightly job writes an `evidence` row for EVERY hypothesis EVERY night, so a run of consecutive
+   silent nights with the same verdict collapses into ONE row carrying the latest stamp and the
+   night count (`Kevés nap · 12 éjszaka`), and only the FIRST `snapshot` gets a line. Every
+   user-meaningful event survives untouched. Empty ⇒ one honest line, never an empty rail.
+5. **„Háttér"** — the same `Diagnostics` fold, but its window and „utolsó számítás" are **passed in
+   by the page, not read off the pair monitor**: a hypothesis is computed by the nightly reflection
+   run with its OWN window, so the fold shows `testPlan.windowDays` and the row's `lastDetectedAt`
+   (the catalog branch still passes `monitor.lookbackDays` / `monitor.lastRunAt`). Raw `r`/`n`/`p`
+   stay behind its nested „Technikai számok" disclosure.
+
+**A `people:`/`topic:` presence series is binary everywhere it is read.** `metricFormat`'s
+`isPresenceSeries` is the single predicate: `formatMetricValue` renders it `igen`/`nem` (never a raw
+`0`/`1` in the „Napok listája" table), `axisEndLabels` gives `nincs említve` / `említve`, and
+`binaryGroupLabels` the group copy.
+
+Mock seed: `ref-anna-sleep` (`data/insights/insights.ts` — the row, its test plan and a synthetic
+pair detail with eight events — three live evidence nights plus two silent ones that collapse to a
+single log row — and 16 aligned days), served in real mode by the shared MSW default for
+`GET /api/companion/pattern/pair/:pairKey` so both modes read the same hypothesis.
 
 ### 2.2 Weekly — **RETIRED** (`mezo-t16y.1`/D′ → retired `mezo-p2tr`)
 `pages/WeeklyPage.tsx`, `data/insights/weeklyHooks.ts`'s `useWeekly()`, `components/GrowthWeekCard.tsx` and `data/insights/growthWeekApi.ts` are **all deleted**. The score hero, the bordered `weekly.items` list (label · value · trend arrow), the "Mezo · heti tervjavaslat" card (including its `FeedbackChips` row, W4.1 `mezo-b3pp.15`) and the growth-week card all moved **verbatim** to **`/me/week`** — score composition is **no longer client-composed** but reads the backend-computed `GET /api/me/week/{start}` (owned by the `me` feature, not Insights) instead of `useWeekly`'s client-side fan-out over Fuel/Train/biometrics reads (§3's old "Exception" pipeline is gone with it). That destination was itself later split by `mezo-d20.6.10` into a `Heti` hub + sibling view-pages — see [`me.md`](me.md) §2 for the current shape and which page reads which hook. The weekly tervjavaslat prose keeps its **same** proactive-owned source (`GET /api/proactive/weekly-suggestion`, [`proactive.md`](proactive.md)), read directly by the hub rather than through the retired `useWeekly`. **`/mezo/weekly` is an honest `<Navigate to="/me/week" replace />`** (`router.tsx`), and `/insights/weekly` reaches it through `LegacyPathRedirect` first. The review is now the **`Heti` tile on the Mezo hub** (§2.0) *and* on the Én hub — one page, two doors, no duplicated content.

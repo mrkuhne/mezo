@@ -7487,6 +7487,7 @@ export interface components {
             pairs: components["schemas"]["PatternMonitorPair"][];
             metrics: components["schemas"]["PatternMetricCoverage"][];
         };
+        /** @description Egy pár élő kapu-állapota. Reflexió S6 (mezo-eq85.6) óta NEM csak katalógus-pár lehet: egy self-proposed hipotézis (reflection sor) saját teszt-tervéből épített SZINTETIKUS pár is ugyanezt az alakot ölti, hogy a részletező oldal egyformán tudja rajzolni. Ilyenkor a metric-kulcsok nem a fix metrika-katalógusból jönnek — lehetnek people:<név> / topic:<téma> jelenlét-szériák is —, a domén ezekre mind mind, a when-positive-hu / when-negative-hu pedig általános együttjárás-sablon a párra kézzel írt olvasat helyett. */
         PatternMonitorPair: {
             /** @description A pár stabil identitása (pair_key). */
             key: string;

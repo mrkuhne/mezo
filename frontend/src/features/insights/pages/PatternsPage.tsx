@@ -29,7 +29,7 @@ import { PatternDomainMark } from '@/features/insights/components/PatternDomainM
 import { PatternFilterSheet } from '@/features/insights/components/PatternFilterSheet'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { DOMAIN_ORDER } from '@/features/insights/logic/domains'
-import { bucketize, BUCKET_ORDER, type LifecycleBucket, type LifecycleEntry } from '@/features/insights/logic/lifecycle'
+import { bucketize, BUCKET_ORDER, engineStatusCopy, type LifecycleBucket, type LifecycleEntry } from '@/features/insights/logic/lifecycle'
 import {
   entryDomain,
   filterSortEntries,
@@ -386,7 +386,8 @@ export function PatternsPage() {
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="dashed"
-                sb={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : ''}
+                sb={engineStatusCopy(entry.pattern?.status)
+                  ?? (entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : '')}
                 delayMs={310 + i * 30} />
             ))}
           </div>
@@ -404,7 +405,8 @@ export function PatternsPage() {
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="mute"
-                sb={findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''} delayMs={390 + i * 30} />
+                sb={engineStatusCopy(entry.pattern?.status)
+                  ?? findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''} delayMs={390 + i * 30} />
             ))}
           </div>
           <p className="mnt-foot rise" style={{ '--d': '410ms' } as React.CSSProperties}>

@@ -105,7 +105,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Tools(15, 30, 26, 10),
                 new Facts(10, 3),
                 new Extraction(true, 3),
-                new Advisors(true, 1, List.of("teszt-anyag")),
+                new Advisors(true, 1, List.of("teszt-anyag"), 700, 3000),
                 new Embedding("gemini-embedding-001", true, 2000, true, 80, 200),
                 new Summary("0 20 2 * * *", 7, 200),
                 new Consolidation("0 30 3 * * MON", "0 50 3 1 * *", 8, 3),

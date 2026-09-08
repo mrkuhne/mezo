@@ -23,6 +23,13 @@ describe('formatMetricValue', () => {
     expect(formatMetricValue('ritual-closed', 1)).toBe('igen')
   })
 
+  // Reflexió S6 (mezo-eq85.6): egy `people:`/`topic:` jelenlét-széria ugyanúgy 0/1 a dróton,
+  // mint a katalógus bináris metrikái — a napok listája sem mutathat nyers számot.
+  test.each(['people:anna', 'topic:munka'])('%s presence renders igen/nem, never 0/1', (key) => {
+    expect(formatMetricValue(key, 1)).toBe('igen')
+    expect(formatMetricValue(key, 0)).toBe('nem')
+  })
+
   test('plain numerics trim to at most one decimal', () => {
     expect(formatMetricValue('daily-kcal', 2350)).toBe('2350')
     expect(formatMetricValue('sleep-quality', 7.6)).toBe('7.6')
@@ -39,6 +46,10 @@ describe('axisEndLabels', () => {
     expect(axisEndLabels('late-meal-hour')).toEqual({ low: 'korábban', high: 'később' })
   })
 
+  test.each(['people:anna', 'topic:munka'])('%s ends read as the mention itself', (key) => {
+    expect(axisEndLabels(key)).toEqual({ low: 'nincs említve', high: 'említve' })
+  })
+
   test('everything else keeps the generic ends', () => {
     expect(axisEndLabels('sleep-quality')).toEqual({ low: 'alacsony', high: 'magas' })
   })
@@ -49,6 +60,14 @@ describe('binaryGroupLabels', () => {
     expect(binaryGroupLabels('weekend')).toEqual({
       zero: { axis: 'hétköznap', day: 'hétköznapi' },
       one: { axis: 'hétvége', day: 'hétvégi' },
+    })
+  })
+
+  // Reflexió S6 (mezo-eq85.6): a jelenlét-szériák a saját szavukat kapják.
+  test.each(['people:anna', 'topic:munka'])('%s reads as mentioned / not mentioned', (key) => {
+    expect(binaryGroupLabels(key)).toEqual({
+      zero: { axis: 'nincs említve', day: 'említés nélküli' },
+      one: { axis: 'említve', day: 'említéses' },
     })
   })
 

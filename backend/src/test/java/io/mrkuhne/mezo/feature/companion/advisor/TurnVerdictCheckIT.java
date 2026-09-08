@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.advisor;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit.ToolOutcome;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,21 @@ class TurnVerdictCheckIT extends AbstractIntegrationTest {
 
         List<AdvisorViolation> violations =
                 verdictCheck.check("PROMPT", history, "kérdés", "tiszta válasz", List.of());
+
+        assertThat(violations).extracting(AdvisorViolation::check).containsExactly("redundancy");
+    }
+
+    @Test
+    void testCheck_shouldRenderToolResultsIntoJudgePayload_whenToolsRan() {
+        // mezo-indo: the sentinel lives ONLY in a recorded tool outcome's RESULT text — it can
+        // reach the judge's payload exclusively through the tool-outcome digest inside check(...).
+        // Under the v1 behaviour (names only) the judge never saw it and every tool-derived number
+        // was structurally unsupported; a violation here proves the output itself now arrives.
+        List<ToolOutcome> outcomes = List.of(new ToolOutcome(
+                "get_weight_trend", "weeks=4", FakeCompanionLlm.TOOL_RESULT_SEEN_SENTINEL));
+
+        List<AdvisorViolation> violations =
+                verdictCheck.check("PROMPT", List.of(), "kérdés", "tiszta válasz", outcomes);
 
         assertThat(violations).extracting(AdvisorViolation::check).containsExactly("redundancy");
     }

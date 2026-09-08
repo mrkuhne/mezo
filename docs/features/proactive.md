@@ -154,6 +154,21 @@ this redesign and remain as shipped.
   - All four share `earlierMessagesBlock` (a "MAI KORÁBBI ÜZENETEK (ne ismételd):" block listing
     every already-persisted message of the day) — the heartbeat's dedupe idiom generalized from one
     source (briefing) to all of them.
+  - **Since Memória mindenhol S7 (`mezo-eq85.7`) all four gathers also append an `[Emlékek]`-style
+    memory block** — in practice the platform's `[Hosszú távú memória]` header — via
+    `MemoryContextBlock.render(userId, ConsumerPolicy.MORNING_BRIEFING, query, date, false,
+    "proactive_feed", <kind>, null)`, reached through an `ObjectProvider<MemoryContextBlock>` (same
+    idiom as the S4 digest). All four kinds share the ONE `MORNING_BRIEFING` policy (20 candidates /
+    600 tokens / no rerank by default, config `mezo.companion.memory-platform.policies
+    .morning-briefing`) — only the LLM billing `operation` label differs per kind. Per-kind query:
+    morning = the biometrics-free snapshot's first 400 chars + the "Ma (terv):" plan line; sleep =
+    "alvás " + the freshly logged sleep line; weight = "súly " + the trend line; window = the latest
+    daily-summary narrative's first 300 chars. The returned `refs` (`RefsEnvelope.Ref`, three
+    components) are mapped onto this class' own two-component `CompanionMessageEnvelope.Ref` — kind
+    and label survive, the id is dropped — and appended at the END of each candidate list, so
+    existing candidate indexes never shift. Fail-open like the digest: `MemoryContextBlock.render`
+    itself never throws, so a memory-platform outage never costs the user their message. Details:
+    [`companion.md`](companion.md) §1 "Memória mindenhol S7".
 - **`CompanionMessageJob`** (`service/CompanionMessageJob.java`) — the old `BriefingJob` +
   `HeartbeatJob` merged into one `@Scheduled`-methods-one-switch bean: `runMorning` (05:45,
   `feed.morning-cron`) generates only the morning message (+ the people-observation branch); the
@@ -2404,6 +2419,15 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   user with memory.
 - **`CompanionMessageJobSwitchOffIT` (2)** — `mezo.techcore.cron.feed-job.enabled=false` ⇒ no
   `CompanionMessageJob` bean (the third switch, now covering all three crons at once).
+- **`CompanionMessageGeneratorMemoryIT` (5, `mezo-eq85.7`)** — deliberately **not**
+  `@Transactional` (the `MemoryContextServiceIT`/`ReflectionMemoryGatewayIT` rule: the memory
+  retrievers run on pooled threads and must see committed fixtures). Per kind: a seeded
+  `memory_item`/`memory_vector` reaches the fake LLM's recorded payload as the
+  `[Hosszú távú memória]` block and the audited run carries `MORNING_BRIEFING`; morning additionally
+  proves a `FakeEmbeddingAdapter.FAIL_EMBED` query still persists the message (the dense retriever
+  degrades, lexical/facts/graph still ran). The "policy disabled ⇒ no block, no run row" case is
+  proven ONCE at the seam (`MemoryContextBlockIT`, [`companion.md`](companion.md) §8), not repeated
+  per kind — all four generators reach the identical `MemoryContextBlock.render` call.
 - **`CompanionMessageEventIT` (4)** — logging fresh sleep creates the sleep-reaction message;
   logging a backfilled sleep date does NOT (freshness guard); logging today's weight creates the
   weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
@@ -3236,7 +3260,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Backend — controller / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveFeedService.java` — `mezo-gst9` the unified feed read path (persisted rows in `generatedAt` order · `ensureTodayCronKinds` lazy miss-recovery for morning/midday/evening only · `200 []` = honest, never 404); replaces `ProactiveBriefingService` + `ProactiveHeartbeatService` (both DELETED).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13). **Memória mindenhol S7** (`mezo-eq85.7`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryRefCandidates`/`firstChars`/`planLine` helpers so all four gathers append a `[Hosszú távú memória]` block and its ref candidates (§1).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, morning message only — the sleep reaction is event-kind, mezo-qn3z) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added a `generatePeopleObservation` call into `runMorning`, its own try/catch (§5.13).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PeopleMezoNoteAdapter.java` — **Emberek S6** (`mezo-06o0.8`) implements `feature/people`'s `PeopleMezoNoteSource` port (§5.13): joins today's `people` message body into one line for `PeopleResponse.mezoNote`, `Optional.empty()` when blank/absent; `@ConditionalOnProperty` on COMPANION ∧ PROACTIVE.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageEventListener.java` — `mezo-gst9` NEW: `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent`, each gated on log freshness before calling the matching `generate*Reaction`.
