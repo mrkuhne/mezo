@@ -10577,6 +10577,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/admin/alerts:
+    get:
+      tags:
+        - AdminInsights
+      operationId: getAdminAlerts
+      summary: Owner status band — evaluated alert rules
+      responses:
+        '200':
+          description: Evaluated alerts (empty list = all good)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAlertsResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/admin/data/tables:
     get:
       tags:
@@ -24794,6 +24819,46 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdminScreenUsageRow'
+    AdminAlertsResponse:
+      type: object
+      required:
+        - generatedAt
+        - alerts
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAlert'
+    AdminAlert:
+      type: object
+      required:
+        - key
+        - severity
+        - title
+        - detail
+        - link
+      properties:
+        key:
+          type: string
+          description: 'stable rule key, e.g. cost_spike'
+        severity:
+          type: string
+          enum:
+            - info
+            - warn
+            - bad
+        title:
+          type: string
+          description: 'Hungarian, owner-facing'
+        detail:
+          type: string
+          description: 'Hungarian, one sentence'
+        link:
+          type: string
+          description: in-admin deep link with query params
     AdminColumnDescriptor:
       type: object
       required:

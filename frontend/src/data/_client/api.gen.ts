@@ -4380,6 +4380,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owner status band — evaluated alert rules */
+        get: operations["getAdminAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/data/tables": {
         parameters: {
             query?: never;
@@ -9984,6 +10001,23 @@ export interface components {
             period: string;
             days: string[];
             screens: components["schemas"]["AdminScreenUsageRow"][];
+        };
+        AdminAlertsResponse: {
+            /** Format: date-time */
+            generatedAt: string;
+            alerts: components["schemas"]["AdminAlert"][];
+        };
+        AdminAlert: {
+            /** @description stable rule key, e.g. cost_spike */
+            key: string;
+            /** @enum {string} */
+            severity: "info" | "warn" | "bad";
+            /** @description Hungarian, owner-facing */
+            title: string;
+            /** @description Hungarian, one sentence */
+            detail: string;
+            /** @description in-admin deep link with query params */
+            link: string;
         };
         AdminColumnDescriptor: {
             name: string;
@@ -22912,6 +22946,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminScreenUsageResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminAlerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evaluated alerts (empty list = all good) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAlertsResponse"];
                 };
             };
             /** @description Missing/invalid token */

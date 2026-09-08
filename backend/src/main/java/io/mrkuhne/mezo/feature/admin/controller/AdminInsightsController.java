@@ -1,12 +1,14 @@
 package io.mrkuhne.mezo.feature.admin.controller;
 
 import io.mrkuhne.mezo.api.controller.AdminInsightsApi;
+import io.mrkuhne.mezo.api.dto.AdminAlertsResponse;
 import io.mrkuhne.mezo.api.dto.AdminCostMatrixResponse;
 import io.mrkuhne.mezo.api.dto.AdminFeatureUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminOverviewResponse;
 import io.mrkuhne.mezo.api.dto.AdminScreenUsageResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminUserInsightResponse;
+import io.mrkuhne.mezo.feature.admin.service.AdminAlertService;
 import io.mrkuhne.mezo.feature.admin.service.AdminOverviewService;
 import io.mrkuhne.mezo.feature.admin.service.AdminUsageService;
 import io.mrkuhne.mezo.feature.admin.service.AdminUserService;
@@ -37,6 +39,7 @@ public class AdminInsightsController implements AdminInsightsApi {
     private final AdminOverviewService overviewService;
     private final AdminUserService userService;
     private final AdminUsageService usageService;
+    private final AdminAlertService alertService;
     private final CurrentUser currentUser;
 
     @Override
@@ -79,5 +82,15 @@ public class AdminInsightsController implements AdminInsightsApi {
     public AdminScreenUsageResponse getAdminScreenUsage(String period) {
         currentUser.requireOwner();
         return usageService.screenUsage(period);
+    }
+
+    /**
+     * Owner status band — evaluated alert rules (mezo-kjwa). Skeleton: always returns the
+     * empty alert list until a later slice fills in the rules.
+     */
+    @Override
+    public AdminAlertsResponse getAdminAlerts() {
+        currentUser.requireOwner();
+        return alertService.alerts();
     }
 }
