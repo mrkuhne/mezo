@@ -111,10 +111,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     adminMock.ts
 - **FE ui** `frontend/src/features/admin`
   - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
-    AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
+    AdminFeatureDetailPage.tsx, AdminFeaturesPage.tsx, AdminOverviewPage.tsx, AdminUserDetailPage.tsx,
+    AdminUsersPage.tsx
   - **components:** AdminStatusBand.tsx, AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx,
-    AiModelBreakdown.tsx, AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx,
-    ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx, TopListTile.tsx, UserPicker.tsx
+    AiModelBreakdown.tsx, AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, FeatureScoreRow.tsx, JsonCell.tsx,
+    ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx, TopListTile.tsx, UserPicker.tsx, ValueCostQuadrant.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
     MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
     RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts, projection.ts,
