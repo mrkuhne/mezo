@@ -33,6 +33,17 @@ function lastNDays(n: number): string[] {
   return days
 }
 
+/** An ISO timestamp `daysAgo` days before now (final review F6b) — `ADMIN_USER_INSIGHTS_MOCK`'s
+ *  `lastActivityAt`/`lastSeenAt` used to be hardcoded absolute dates that drift further into the
+ *  past every day the fixture goes unedited (no test asserts the absolute value, only relative
+ *  ordering/formatting), which the Pulzus "Csendes tesztelők" tile's day-count math would
+ *  eventually read as an ever-growing, increasingly wrong number of quiet days. */
+function daysAgoIso(daysAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  return d.toISOString()
+}
+
 const OVERVIEW_DAYS = lastNDays(30)
 
 // Deterministic (day-index-driven, no Math.random) so the fixture never flakes.
@@ -75,16 +86,20 @@ export const ADMIN_OVERVIEW_EMPTY: AdminOverviewResponse = {
   costSeries: [],
 }
 
+// lastSeenAt/lastActivityAt are relative to "now" (final review F6b) — Daniel (the owner) is
+// recently active, Anna is quiet enough (>3 days) to land in the Pulzus "Csendes tesztelők"
+// tile, Béla has never been seen at all (null, not an invented date). createdAt/onboardedAt stay
+// absolute — nothing reads them relative to "today", and no test asserts either literal value.
 export const ADMIN_USER_INSIGHTS_MOCK: AdminUserInsightResponse[] = [
   {
     id: MOCK_OWNER_ID, email: 'daniel@mezo.local', name: 'Daniel', role: 'OWNER', status: 'ACTIVE',
-    createdAt: '2026-06-01T08:00:00Z', onboardedAt: '2026-06-01T08:00:00Z', lastSeenAt: '2026-08-14T12:32:00Z',
-    lastActivityAt: '2026-08-14T12:32:00Z', rowCount: 2140, vectorCount: 812, cost30dUsd: 14.62, activeDays30d: 27,
+    createdAt: '2026-06-01T08:00:00Z', onboardedAt: '2026-06-01T08:00:00Z', lastSeenAt: daysAgoIso(0),
+    lastActivityAt: daysAgoIso(0), rowCount: 2140, vectorCount: 812, cost30dUsd: 14.62, activeDays30d: 27,
   },
   {
     id: MOCK_ANNA_ID, email: 'anna@test.local', name: 'Anna', role: 'USER', status: 'ACTIVE',
-    createdAt: '2026-08-02T18:20:00Z', onboardedAt: '2026-08-02T18:35:00Z', lastSeenAt: '2026-08-14T07:10:00Z',
-    lastActivityAt: '2026-08-14T07:10:00Z', rowCount: 356, vectorCount: 140, cost30dUsd: 3.21, activeDays30d: 11,
+    createdAt: '2026-08-02T18:20:00Z', onboardedAt: '2026-08-02T18:35:00Z', lastSeenAt: daysAgoIso(25),
+    lastActivityAt: daysAgoIso(25), rowCount: 356, vectorCount: 140, cost30dUsd: 3.21, activeDays30d: 11,
   },
   {
     id: MOCK_BELA_ID, email: 'bela@test.local', name: 'Béla', role: 'USER', status: 'DISABLED',
@@ -157,7 +172,9 @@ export const ADMIN_FEATURE_USAGE_EMPTY: AdminFeatureUsageResponse = {
 
 // Cost matrix: one "Háttér" (background/cron) bucket with a null user id, and one cell that is
 // unpriced (costUsd: 0, unknownCalls > 0) so "unknown ≠ zero cost" has a fixture Task 11's
-// rendering can exercise.
+// rendering can exercise. Feature slugs are REAL `LlmCallContext` slugs (see labels.ts's
+// FEATURE_LABELS) — mezo-m079 Task 3 fix round: the fake 'chat'/'coach'/'vision' placeholders
+// had no dictionary entry, so mock mode silently rendered raw slugs instead of Hungarian labels.
 export const ADMIN_COST_MATRIX_MOCK: AdminCostMatrixResponse = {
   period: '30d',
   users: [
@@ -166,20 +183,45 @@ export const ADMIN_COST_MATRIX_MOCK: AdminCostMatrixResponse = {
     { id: MOCK_BELA_ID, label: 'Béla' },
     { id: null, label: 'Háttér' },
   ],
-  features: ['chat', 'coach', 'vision'],
+  features: ['companion_chat', 'meal_coach', 'meal_draft', 'train_meso_plan', 'proactive_feed'],
   cells: [
-    { userId: MOCK_OWNER_ID, feature: 'chat', calls: 40, costUsd: 5.6, unknownCalls: 0 },
-    { userId: MOCK_OWNER_ID, feature: 'coach', calls: 12, costUsd: 1.9, unknownCalls: 0 },
-    { userId: MOCK_ANNA_ID, feature: 'chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
-    { userId: MOCK_ANNA_ID, feature: 'vision', calls: 2, costUsd: 0, unknownCalls: 2 },
-    { userId: MOCK_BELA_ID, feature: 'chat', calls: 1, costUsd: 0.1, unknownCalls: 0 },
-    { userId: null, feature: 'chat', calls: 6, costUsd: 0, unknownCalls: 6 },
+    { userId: MOCK_OWNER_ID, feature: 'companion_chat', calls: 40, costUsd: 5.6, unknownCalls: 0 },
+    { userId: MOCK_OWNER_ID, feature: 'meal_coach', calls: 12, costUsd: 1.9, unknownCalls: 0 },
+    { userId: MOCK_OWNER_ID, feature: 'train_meso_plan', calls: 4, costUsd: 0.6, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'companion_chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'meal_draft', calls: 2, costUsd: 0, unknownCalls: 2 },
+    { userId: MOCK_ANNA_ID, feature: 'proactive_feed', calls: 5, costUsd: 0.4, unknownCalls: 0 },
+    { userId: MOCK_BELA_ID, feature: 'companion_chat', calls: 1, costUsd: 0.1, unknownCalls: 0 },
+    { userId: null, feature: 'companion_chat', calls: 6, costUsd: 0, unknownCalls: 6 },
   ],
-  totalUsd: 10.0,
+  totalUsd: 11.0,
 }
 
-// Same caveat as ADMIN_FEATURE_USAGE_EMPTY above — no consumer currently renders this field
-// directly (the one cost-matrix caller, AdminOverviewPage, pins the period to '30d' itself).
+// A distinct, genuinely SMALLER 7-day fixture (final review F6a) — the Pulzus "· 7 nap" top-list
+// tiles used to be fed this exact 30-day object regardless of the `period` they asked for
+// (`useAdminCostMatrix('7d', ...)` got the 30d seed back), which is not what a real 7-day window
+// would ever look like next to the 30-day one. Same real feature slugs, a strict subset of
+// cells/users, smaller calls/costUsd throughout.
+export const ADMIN_COST_MATRIX_7D_MOCK: AdminCostMatrixResponse = {
+  period: '7d',
+  users: [
+    { id: MOCK_OWNER_ID, label: 'Daniel' },
+    { id: MOCK_ANNA_ID, label: 'Anna' },
+    { id: null, label: 'Háttér' },
+  ],
+  features: ['companion_chat', 'meal_coach', 'proactive_feed'],
+  cells: [
+    { userId: MOCK_OWNER_ID, feature: 'companion_chat', calls: 9, costUsd: 1.3, unknownCalls: 0 },
+    { userId: MOCK_OWNER_ID, feature: 'meal_coach', calls: 3, costUsd: 0.5, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'companion_chat', calls: 4, costUsd: 0.6, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'proactive_feed', calls: 2, costUsd: 0.2, unknownCalls: 0 },
+    { userId: null, feature: 'companion_chat', calls: 2, costUsd: 0, unknownCalls: 2 },
+  ],
+  totalUsd: 2.6,
+}
+
+// Same caveat as ADMIN_FEATURE_USAGE_EMPTY above — no consumer renders this field directly (a
+// real-mode cold load never reaches AdminOverviewPage's own '30d'/'7d' legends/labels either way).
 export const ADMIN_COST_MATRIX_EMPTY: AdminCostMatrixResponse = {
   period: '30d',
   users: [],

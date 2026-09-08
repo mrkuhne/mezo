@@ -11429,6 +11429,7 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-tag { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 7px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .ad-tag.bg { background: rgba(93,79,160,.14); color: #5D4FA0; }
 .ad-tag.warn { background: rgba(201,150,46,.2); color: #8A6612; }
+.ad-tag.bad { background: rgba(196,105,79,.18); color: #A8452A; }
 .ad-tag.ok { background: rgba(110,139,94,.18); color: #4E6B42; }
 .ad-tag.mut { background: rgba(43,33,24,.07); color: #6E6257; }
 .ad-mut { color: #A2958A; }
@@ -11548,6 +11549,85 @@ button.mz-wtile:active { transform: scale(0.96); }
    zeroed counters/empty sparklines — a subtle pulsing placeholder instead, reusing the
    app-wide `.sk` shimmer idiom) ---- */
 .ad-tile-pending { display: flex; flex-direction: column; gap: 8px; min-height: 80px; justify-content: center; }
+
+/* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
+   van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster
+   Tile — no eyebrow, its own washes per state). `.off` (grey, unavailable) MUST look
+   nothing like `.allok` (green) — a failed check must never read as an all-clear. ---- */
+.ad-status {
+  grid-column: span 12;
+  border-radius: 20px;
+  padding: 14px 18px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-gold);
+  box-shadow: var(--mz-shadow-gold);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ad-status .headline { font-size: 13px; font-weight: 700; }
+.ad-status .ico { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.ad-status .ico.off { background: #A2958A; }
+.ad-status.off {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  background: rgba(43, 33, 24, .05);
+  box-shadow: none;
+  color: #6E6257;
+}
+.ad-status.allok {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  background: var(--mz-wash-sage);
+  box-shadow: var(--mz-shadow-sage);
+}
+.ad-status.allok .ico.ok { background: #4E6B42; box-shadow: 0 0 0 4px rgba(110, 139, 94, .22); }
+.ad-status.allok h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.ad-alertrow { display: flex; flex-direction: column; gap: 8px; }
+.ad-alert {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  border: 0.5px solid rgba(43, 33, 24, 0.08); background: #fff;
+  border-radius: 14px; padding: 10px 12px; font: inherit; text-align: left; cursor: pointer;
+  box-shadow: 0 8px 18px -13px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, .7);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.ad-alert:active { transform: scale(0.98); }
+.ad-alert:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-alert > i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ad-alert.warn > i { background: #C9962E; box-shadow: 0 0 0 3px rgba(201, 150, 46, .18); }
+.ad-alert.bad > i { background: #C4694F; box-shadow: 0 0 0 3px rgba(196, 105, 79, .2); }
+/* mezo-m079 Task 3 fix round: 'info'-severity alerts (AdminAlert.severity) had no dot color —
+   the sky/muted tone the rest of the admin hub uses for neutral/informational tags. */
+.ad-alert.info > i { background: #4E8FB8; box-shadow: 0 0 0 3px rgba(78, 143, 184, .2); }
+.ad-alert > span:first-of-type { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 600; }
+.ad-alert .go { flex: none; font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: #A84A26; white-space: nowrap; }
+
+/* ---- top-N tile row (mezo-m079 Task 2) — rank + label/sub + share bar + right-aligned
+   value + a trailing "összes →" drill link, ported from the approved Pulzus mockup's
+   .ad-top block. ---- */
+.ad-top { display: flex; flex-direction: column; }
+.ad-toprow { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.ad-toprow + .ad-toprow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+.ad-toprow .rank { width: 14px; flex: none; font-size: 10px; font-weight: 800; color: #A2958A; font-variant-numeric: tabular-nums; }
+.ad-toprow .info { flex: 1; min-width: 0; }
+.ad-toprow .lb { font-size: 11.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-toprow .sub { font-size: 9.5px; color: #A2958A; }
+.ad-toprow .sharebar { height: 5px; border-radius: 4px; background: rgba(43, 33, 24, .07); margin-top: 4px; overflow: hidden; }
+.ad-toprow .sharebar i { display: block; height: 100%; border-radius: 4px; background: #A84A26; transform-origin: left; transform: scaleX(1); }
+.mz-play .ad-toprow .sharebar i { animation: adGrow .6s cubic-bezier(.25,.8,.35,1) both; animation-delay: var(--d, .3s); }
+.ad-toprow .val { flex: none; min-width: 48px; text-align: right; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* mezo-m079 Task 3 fix round 1 — a bar-less row's value carries its own tone instead of a
+   share bar (e.g. "Csendes tesztelők": a day count is not a share of anything). */
+.ad-toprow .val.warn { color: #8A6612; }
+.ad-toprow .val.mut { color: #A2958A; font-weight: 600; }
+.ad-more {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 10px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: #A84A26; text-decoration: none;
+}
+.ad-more:hover { text-decoration: underline; }
+.ad-top-empty { font-size: 11px; color: #A2958A; padding: 10px 0; }
 
 /* ---- User részlet: a saját sor-elrendezésű hero (NEM a mobil .mz-page-hero középre
    igazított verziója) + fülek ---- */
