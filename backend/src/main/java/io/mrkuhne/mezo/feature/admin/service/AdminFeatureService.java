@@ -2,42 +2,60 @@ package io.mrkuhne.mezo.feature.admin.service;
 
 import io.mrkuhne.mezo.api.dto.AdminFeatureBoardResponse;
 import io.mrkuhne.mezo.api.dto.AdminFeatureDetailResponse;
+import io.mrkuhne.mezo.api.dto.AdminFeatureDownReason;
+import io.mrkuhne.mezo.api.dto.AdminFeatureFeedbackPoint;
 import io.mrkuhne.mezo.api.dto.AdminFeatureFunnel;
 import io.mrkuhne.mezo.api.dto.AdminFeatureHelped;
+import io.mrkuhne.mezo.api.dto.AdminFeatureModelCost;
 import io.mrkuhne.mezo.api.dto.AdminFeatureReliability;
 import io.mrkuhne.mezo.api.dto.AdminFeatureRow;
 import io.mrkuhne.mezo.api.dto.AdminFeatureRow.KindEnum;
+import io.mrkuhne.mezo.api.dto.AdminFeatureTopError;
+import io.mrkuhne.mezo.api.dto.AdminFeatureTopUser;
+import io.mrkuhne.mezo.api.dto.AdminFeedbackFeatureSummary;
+import io.mrkuhne.mezo.api.dto.AdminFeedbackRecall;
 import io.mrkuhne.mezo.api.dto.AdminFeedbackSummaryResponse;
 import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
 import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery;
 import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery.DomainFeatureUserStatsRow;
 import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery.FeedbackKindRow;
+import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery.FeedbackTrendRow;
 import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery.LlmFeatureUserActivityRow;
+import io.mrkuhne.mezo.feature.admin.repository.AdminFeatureQuery.TopErrorRow;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery.DayCountRow;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminColumn;
 import io.mrkuhne.mezo.feature.admin.service.AdminTableCatalog.AdminTable;
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionFeatureFlag;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureDayRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureErrorRow;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureUserRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +82,11 @@ public class AdminFeatureService {
     private final AdminFeatureQuery featureQuery;
     private final LlmLogRepository llmLogRepository;
     private final CompanionFeatureFlag companionFeatureFlag;
+    private final AppUserRepository appUserRepository;
+
+    /** Funnel/unknown-key window (mezo-l096.4 ruling: fixed 90d, independent of the endpoint's
+     *  {@code period} selector). */
+    private static final int FUNNEL_WINDOW_DAYS = 90;
 
     /** {@code GET /api/admin/features} — feature scorecard (mezo-l096.3).
      *
@@ -215,13 +238,20 @@ public class AdminFeatureService {
     }
 
     private static KindEnum kindOf(String key, FeatureAcc a) {
+        return KindEnum.valueOf(kindName(key, a.isDomain, a.isLlm));
+    }
+
+    /** Same {@code ai/domain/both/system} rule as {@link AdminFeatureRow#getKind}, but returned as
+     *  a plain name — {@link AdminFeatureDetailResponse} generates its OWN nested {@code KindEnum}
+     *  (same values, different Java type), so the shared logic can't return either enum directly. */
+    private static String kindName(String key, boolean isDomain, boolean isLlm) {
         if ("unknown".equals(key) || LlmCallContext.FEATURE_ADMIN_REPLAY.equals(key)) {
-            return KindEnum.SYSTEM;
+            return "SYSTEM";
         }
-        if (a.isDomain && a.isLlm) {
-            return KindEnum.BOTH;
+        if (isDomain && isLlm) {
+            return "BOTH";
         }
-        return a.isDomain ? KindEnum.DOMAIN : KindEnum.AI;
+        return isDomain ? "DOMAIN" : "AI";
     }
 
     private static LocalDate weekStart(LocalDate day) {
@@ -261,35 +291,285 @@ public class AdminFeatureService {
         }
     }
 
-    /** {@code GET /api/admin/features/{key}} — one feature's detail (mezo-l096.4). Skeleton:
-     *  null-filled response regardless of {@code key}/{@code period} — the unknown-key 404 is
-     *  wired in Task 4 alongside the real lookup. */
+    /**
+     * {@code GET /api/admin/features/{key}} — one feature's detail (mezo-l096.4).
+     *
+     * <p>Two windows, same split as {@link #board}, minus the trend one collapsed to a single key:
+     * <ul>
+     *   <li>{@code since} (period-scoped) feeds {@code reliability}, {@code costByModel},
+     *       {@code topUsers} and {@code feedbackTrend} — all "how has this been doing lately"
+     *       panels.</li>
+     *   <li>{@code funnelSince} (a FIXED trailing {@link #FUNNEL_WINDOW_DAYS}-day window,
+     *       independent of the selected {@code period} — plan ruling) feeds {@code funnel} and the
+     *       unknown-key existence check. {@code weeksFrom} (trailing {@link #HABIT_WINDOW_WEEKS}
+     *       ISO weeks off today) feeds the habit sub-rule inside it, same as {@code board}.</li>
+     *   <li>{@code trendFrom} (the fixed {@link #TREND_WEEKS}-week window) feeds
+     *       {@code usageByWeek}, same fixed-length contract as {@code board}'s {@code usesPerWeek}.</li>
+     * </ul>
+     *
+     * <p>{@code helped}-style feedback panels ({@code feedbackTrend}, {@code downReasons}) are
+     * {@code null} when the companion switch is off, and an empty list (not null) when the switch
+     * is on but this key has no {@code mezo.admin.artifact-feature-map} entry mapping to it.
+     *
+     * @throws SystemRuntimeErrorException 404 {@code ADMIN_FEATURE_NOT_FOUND} when {@code key} is
+     *     neither a domain feature-map key nor has ANY {@code llm_log_history} row in the fixed
+     *     90-day funnel window
+     */
+    @Transactional(readOnly = true)
     public AdminFeatureDetailResponse detail(String key, String period) {
+        featureQuery.applyStatementTimeout(properties.statementTimeoutSql());
+        ZoneId zone = properties.reportZone();
+        LocalDate today = LocalDate.now(zone);
+
+        boolean isDomainKey = properties.featureMap().containsKey(key);
+        LocalDate funnelFrom = today.minusDays(FUNNEL_WINDOW_DAYS - 1L);
+        Instant funnelSince = funnelFrom.atStartOfDay(zone).toInstant();
+        boolean hasLlmRows = llmLogRepository.existsByFeatureSince(key, funnelSince);
+        if (!isDomainKey && !hasLlmRows) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("ADMIN_FEATURE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+        }
+
+        int days = AdminUsageService.periodDays(period);
+        LocalDate periodFrom = today.minusDays(days - 1L);
+        Instant since = periodFrom.atStartOfDay(zone).toInstant();
+        LocalDate weeksFrom = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .minusWeeks(HABIT_WINDOW_WEEKS - 1L);
+        LocalDate trendFrom = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .minusWeeks(TREND_WEEKS - 1L);
+        List<LocalDate> weekStarts = new ArrayList<>();
+        for (int i = 0; i < TREND_WEEKS; i++) {
+            weekStarts.add(trendFrom.plusWeeks(i));
+        }
+
+        AdminTable table = null;
+        AdminColumn column = null;
+        if (isDomainKey) {
+            AdminProperties.FeatureSource source = properties.featureMap().get(key);
+            table = catalog.require(source.table());
+            column = catalog.requireColumn(table, source.timestampColumn());
+        }
+
+        // ── usageByWeek (fixed 12-ISO-week trend) ───────────────────────────────
+        FeatureAcc weekAcc = new FeatureAcc();
+        if (isDomainKey) {
+            for (DayCountRow day : insightsQuery.countByDay(table, column, trendFrom, zone)) {
+                weekAcc.addToWeek(weekStart(day.day()), day.count());
+            }
+        }
+        for (LlmFeatureDayRow row : llmLogRepository.aggregateByFeatureAndDaySince(
+                trendFrom.atStartOfDay(zone).toInstant(), zone.getId())) {
+            if (key.equals(row.getFeature())) {
+                weekAcc.addToWeek(weekStart(row.getDay()), row.getCalls());
+            }
+        }
+
+        // ── funnel (fixed 90d window; habit sub-rule fixed 4-ISO-week window) ───
+        Set<UUID> triedUsers = new LinkedHashSet<>();
+        Set<UUID> repeatedUsers = new HashSet<>();
+        Set<UUID> habitualUsers = new HashSet<>();
+        if (isDomainKey) {
+            for (DomainFeatureUserStatsRow row : featureQuery.domainFeatureUserStats(table, column, funnelSince, weeksFrom, zone)) {
+                triedUsers.add(row.createdBy());
+                if (!row.firstDay().equals(row.lastDay())) {
+                    repeatedUsers.add(row.createdBy());
+                }
+                if (row.activeWeeks().size() >= HABIT_MIN_WEEKS) {
+                    habitualUsers.add(row.createdBy());
+                }
+            }
+        }
+        for (LlmFeatureUserRow row : llmLogRepository.aggregateByFeatureAndUserSince(funnelSince, CallStatus.ERROR)) {
+            if (!key.equals(row.feature()) || row.createdBy() == null) {
+                continue;
+            }
+            triedUsers.add(row.createdBy());
+            if (!row.firstAt().atZone(zone).toLocalDate().equals(row.lastAt().atZone(zone).toLocalDate())) {
+                repeatedUsers.add(row.createdBy());
+            }
+        }
+        for (LlmFeatureUserActivityRow row : featureQuery.llmActiveWeeksByFeatureAndUser(funnelSince, zone, weeksFrom)) {
+            if (key.equals(row.feature()) && row.activeWeeks().size() >= HABIT_MIN_WEEKS) {
+                habitualUsers.add(row.createdBy());
+            }
+        }
+        Map<UUID, AppUserEntity> resolvedTriedUsers = appUserRepository.findAllById(triedUsers).stream()
+                .collect(Collectors.toMap(AppUserEntity::getId, u -> u));
+        List<String> triedUserNames = triedUsers.stream()
+                .map(id -> userLabel(id, resolvedTriedUsers))
+                .sorted()
+                .toList();
+
+        // ── feedback trend + down reasons (companion-gated, current-state reasons) ─
+        List<AdminFeatureFeedbackPoint> feedbackTrend = null;
+        List<AdminFeatureDownReason> downReasons = null;
+        if (companionFeatureFlag.enabled()) {
+            String mappedKind = properties.artifactFeatureMap().entrySet().stream()
+                    .filter(e -> e.getValue().equals(key))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse(null);
+            if (mappedKind == null) {
+                feedbackTrend = List.of();
+                downReasons = List.of();
+            } else {
+                Map<String, int[]> upDownByWeek = new LinkedHashMap<>();
+                for (FeedbackTrendRow row : featureQuery.feedbackTrendByKind(mappedKind, since, zone)) {
+                    int[] counts = upDownByWeek.computeIfAbsent(row.week(), w -> new int[2]);
+                    if (MessageFeedbackVerdict.UP.equals(row.verdict())) {
+                        counts[0] += (int) row.count();
+                    } else if (MessageFeedbackVerdict.DOWN.equals(row.verdict())) {
+                        counts[1] += (int) row.count();
+                    }
+                }
+                feedbackTrend = upDownByWeek.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(e -> new AdminFeatureFeedbackPoint().week(e.getKey()).up(e.getValue()[0]).down(e.getValue()[1]))
+                        .toList();
+
+                Map<String, Long> reasonCounts = new LinkedHashMap<>();
+                for (FeedbackKindRow row : featureQuery.feedbackByFeature()) {
+                    if (!mappedKind.equals(row.kind()) || !MessageFeedbackVerdict.DOWN.equals(row.verdict())
+                            || row.reason() == null) {
+                        continue;
+                    }
+                    reasonCounts.merge(row.reason(), row.count(), Long::sum);
+                }
+                downReasons = reasonCounts.entrySet().stream()
+                        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                        .map(e -> new AdminFeatureDownReason().reason(e.getKey()).count(e.getValue().intValue()))
+                        .toList();
+            }
+        }
+
+        // ── reliability ──────────────────────────────────────────────────────────
+        AdminFeatureReliability reliability = new AdminFeatureReliability();
+        int[] latency = featureQuery.p90LatencyByFeature(since).get(key);
+        reliability.setP50LatencyMs(latency == null ? null : latency[0]);
+        reliability.setP90LatencyMs(latency == null ? null : latency[1]);
+        Long errorTotal = null;
+        Long errorErrors = null;
+        for (LlmFeatureErrorRow row : llmLogRepository.aggregateErrorRateByFeatureSince(since)) {
+            if (key.equals(row.getFeature())) {
+                errorTotal = row.getTotal();
+                errorErrors = row.getErrors();
+                break;
+            }
+        }
+        reliability.setErrorPct(errorTotal == null || errorTotal == 0 ? null : errorErrors * 100.0 / errorTotal);
+        reliability.setTopErrors(featureQuery.topErrorsByFeature(key, since).stream()
+                .map(r -> new AdminFeatureTopError().code(r.code()).count((int) r.count()))
+                .toList());
+
+        // ── cost by model ────────────────────────────────────────────────────────
+        List<AdminFeatureModelCost> costByModel = llmLogRepository
+                .aggregateByModelForFeatureSince(since, key, CallStatus.ERROR).stream()
+                .map(r -> new AdminFeatureModelCost()
+                        .model(r.key())
+                        .costUsd(r.costUsd() == null ? 0.0 : r.costUsd().doubleValue())
+                        .calls(r.callCount()))
+                .toList();
+
+        // ── top users ────────────────────────────────────────────────────────────
+        List<LlmUserFeatureRow> userRows = llmLogRepository.aggregateByUserAndFeatureSince(since, CallStatus.ERROR)
+                .stream()
+                .filter(r -> key.equals(r.feature()) && r.userId() != null)
+                .toList();
+        Map<UUID, AppUserEntity> resolvedTopUsers = appUserRepository
+                .findAllById(userRows.stream().map(LlmUserFeatureRow::userId).toList()).stream()
+                .collect(Collectors.toMap(AppUserEntity::getId, u -> u));
+        List<AdminFeatureTopUser> topUsers = userRows.stream()
+                .map(r -> new AdminFeatureTopUser()
+                        .name(userLabel(r.userId(), resolvedTopUsers))
+                        .costUsd(r.costUsd() == null ? 0.0 : r.costUsd().doubleValue())
+                        .uses(r.calls()))
+                .sorted(Comparator.comparingDouble(AdminFeatureTopUser::getCostUsd).reversed())
+                .toList();
+
         return new AdminFeatureDetailResponse()
                 .key(key)
-                .usageByWeek(List.of())
+                .kind(AdminFeatureDetailResponse.KindEnum.valueOf(kindName(key, isDomainKey, hasLlmRows)))
+                .usageByWeek(weekAcc.denseWeeks(weekStarts))
                 .funnel(new AdminFeatureFunnel()
-                        .tried(0)
-                        .repeated(0)
-                        .habitual(0)
-                        .triedUsers(List.of()))
-                .feedbackTrend(null)
-                .downReasons(null)
-                .reliability(new AdminFeatureReliability()
-                        .errorPct(null)
-                        .p90LatencyMs(null)
-                        .p50LatencyMs(null)
-                        .topErrors(List.of()))
-                .costByModel(List.of())
-                .topUsers(List.of());
+                        .tried(triedUsers.size())
+                        .repeated(repeatedUsers.size())
+                        .habitual(habitualUsers.size())
+                        .triedUsers(triedUserNames))
+                .feedbackTrend(feedbackTrend)
+                .downReasons(downReasons)
+                .reliability(reliability)
+                .costByModel(costByModel)
+                .topUsers(topUsers);
     }
 
-    /** {@code GET /api/admin/feedback/summary} — per-feature feedback + recall totals
-     *  (mezo-l096.4). Skeleton: empty features, null recall regardless of {@code period}. */
+    /**
+     * {@code GET /api/admin/feedback/summary} — per-feature feedback + recall totals
+     * (mezo-l096.4). Both panels are companion-gated: switch off -> empty {@code features} and
+     * {@code null} recall, still a 200. {@code features}/{@code reasons} use the same "current
+     * state" live read as {@code board}'s {@code helped} (plan ruling), never a windowed count;
+     * only {@code recall} is windowed by the selected {@code period}.
+     */
+    @Transactional(readOnly = true)
     public AdminFeedbackSummaryResponse feedbackSummary(String period) {
+        featureQuery.applyStatementTimeout(properties.statementTimeoutSql());
+        int days = AdminUsageService.periodDays(period);
+        ZoneId zone = properties.reportZone();
+        Instant since = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant();
+
+        List<AdminFeedbackFeatureSummary> features = List.of();
+        AdminFeedbackRecall recall = null;
+        if (companionFeatureFlag.enabled()) {
+            Map<String, int[]> upDownBySlug = new LinkedHashMap<>();
+            Map<String, Map<String, Long>> reasonsBySlug = new LinkedHashMap<>();
+            for (FeedbackKindRow row : featureQuery.feedbackByFeature()) {
+                String slug = properties.artifactFeatureMap().get(row.kind());
+                if (slug == null) {
+                    continue;
+                }
+                int[] counts = upDownBySlug.computeIfAbsent(slug, k -> new int[2]);
+                if (MessageFeedbackVerdict.UP.equals(row.verdict())) {
+                    counts[0] += (int) row.count();
+                } else if (MessageFeedbackVerdict.DOWN.equals(row.verdict())) {
+                    counts[1] += (int) row.count();
+                    if (row.reason() != null) {
+                        reasonsBySlug.computeIfAbsent(slug, k -> new LinkedHashMap<>())
+                                .merge(row.reason(), row.count(), Long::sum);
+                    }
+                }
+            }
+            features = upDownBySlug.entrySet().stream()
+                    .map(e -> new AdminFeedbackFeatureSummary()
+                            .key(e.getKey())
+                            .up(e.getValue()[0])
+                            .down(e.getValue()[1])
+                            .reasons(reasonsBySlug.getOrDefault(e.getKey(), Map.of()).entrySet().stream()
+                                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                                    .map(r -> new AdminFeatureDownReason().reason(r.getKey()).count(r.getValue().intValue()))
+                                    .toList()))
+                    .sorted(Comparator.comparing(AdminFeedbackFeatureSummary::getKey))
+                    .toList();
+
+            Map<String, Long> recallTotals = featureQuery.recallFeedbackTotals(since);
+            recall = new AdminFeedbackRecall()
+                    .useful(recallTotals.getOrDefault("useful", 0L).intValue())
+                    .irrelevant(recallTotals.getOrDefault("irrelevant", 0L).intValue())
+                    .suppress(recallTotals.getOrDefault("suppress", 0L).intValue());
+        }
+
         return new AdminFeedbackSummaryResponse()
-                .period(period)
-                .features(List.of())
-                .recall(null);
+                .period(days + "d")
+                .features(features)
+                .recall(recall);
+    }
+
+    /** Display label for a user id: name (or email if the name is blank) for a live account, the
+     *  raw id as a string when the account no longer exists (mirrors
+     *  {@code AdminUsageService#costMatrix}'s deleted-user fallback). */
+    private static String userLabel(UUID userId, Map<UUID, AppUserEntity> resolved) {
+        AppUserEntity account = resolved.get(userId);
+        if (account == null) {
+            return userId.toString();
+        }
+        return account.getName() != null && !account.getName().isBlank() ? account.getName() : account.getEmail();
     }
 }

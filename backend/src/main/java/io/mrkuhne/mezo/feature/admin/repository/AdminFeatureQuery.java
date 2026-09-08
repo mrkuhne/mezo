@@ -184,6 +184,23 @@ public class AdminFeatureQuery {
                         toStringList(rs.getArray("activeWeeks"))));
     }
 
+    /**
+     * Error-code histogram for ONE feature since {@code since} (Funkciók detail, mezo-l096.4) —
+     * the {@code reliability.topErrors} panel. {@code error_code} is coalesced to {@code "unknown"}
+     * since the contract field is non-nullable, ordered by count descending.
+     */
+    public List<TopErrorRow> topErrorsByFeature(String feature, Instant since) {
+        String sql = """
+            select coalesce(error_code, 'unknown') as "code", count(*) as "count"
+            from llm_log_history
+            where feature = :feature and status = 'ERROR' and created_at >= :since
+            group by 1
+            order by 2 desc
+            """;
+        return jdbc.query(sql, Map.of("feature", feature, "since", Timestamp.from(since)),
+                (rs, i) -> new TopErrorRow(rs.getString("code"), rs.getLong("count")));
+    }
+
     private static List<String> toStringList(Array array) throws java.sql.SQLException {
         if (array == null) {
             return List.of();
@@ -217,4 +234,8 @@ public class AdminFeatureQuery {
 
     /** The LLM-side equivalent of {@link DomainFeatureUserStatsRow}, one row per (feature, user). */
     public record LlmFeatureUserActivityRow(String feature, UUID createdBy, long calls, List<String> activeWeeks) {}
+
+    /** One error-code bucket of {@link #topErrorsByFeature}; {@code code} is never null
+     *  ({@code "unknown"} stands in for a missing {@code error_code}). */
+    public record TopErrorRow(String code, long count) {}
 }
