@@ -22,7 +22,7 @@ import {
 } from "./insight-state.mjs";
 import "./insight-flow.css";
 export const INSIGHT_ROUTES = {
-  mezo: { title: "Mezo", parent: "home" },
+  mezo: { title: "Boop", parent: "home" },
   patterns: { title: "Minták", parent: "mezo" },
   pattern: { title: "Minta részletei", parent: "patterns" },
   predictions: { title: "Előrejelzések", parent: "mezo" },
@@ -751,7 +751,7 @@ function Fact({ api }) {
           checked={enabled}
           onChange={(e) => setEnabled(e.target.checked)}
         />
-        Mezo használhatja a válaszaiban
+        Boop használhatja a válaszaiban
       </label>
       {error && (
         <p className="flow-status" role="alert">
@@ -970,7 +970,7 @@ function Dossier({ api }) {
             "Alakuló kép",
             "Új észrevételek és a pontosításaid",
           ],
-          ["team", "users", "A csapat", "Hét nézőpont, egy szkeptikus, Mezo"],
+          ["team", "users", "A csapat", "Hét nézőpont, egy szkeptikus, Boop"],
           [
             "conference",
             "message",
@@ -1157,7 +1157,7 @@ const EXPERTS = [
   {
     id: "mezo",
     name: "A kép összerendezése",
-    expert: "Mezo",
+    expert: "Boop",
     icon: "sparkles",
     portrait:
       "Összekötöm a nézőpontokat, és én beszélek veled. A csapat belső munkájába te is belenézhetsz.",
@@ -1173,7 +1173,7 @@ function Team({ api, detail }) {
         description={
           detail
             ? e.name
-            : "A szakértői szerepek az AI eltérő nézőpontjai. Veled Mezo beszél; ez nem valódi szakemberek konzultációja."
+            : "A szakértői szerepek az AI eltérő nézőpontjai. Veled Boop beszél; ez nem valódi szakemberek konzultációja."
         }
       />
       {detail ? (
@@ -1280,7 +1280,7 @@ function Conference({ api }) {
               "Ebből még nem tudjuk, melyik okozta a változást. A személyes preferenciát és a megfigyelést válasszuk külön.",
             ],
             [
-              "Mezo",
+              "Boop",
               "Döntés",
               "Az előre tervezésről szóló állítást pontosítjuk. A séta és az alvás kapcsolatát tovább figyeljük, és Daniel visszajelzését kérjük.",
             ],
@@ -1817,7 +1817,7 @@ function Week({ api, page }) {
             "memoir",
             "book",
             "A heted személyes fejezete",
-            "Mezo összefűzi a megfigyeléseket",
+            "Boop összefűzi a megfigyeléseket",
             archived ? { id: "earlier" } : {},
           ],
         ]}
