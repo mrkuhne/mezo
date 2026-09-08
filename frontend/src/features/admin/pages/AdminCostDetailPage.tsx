@@ -51,7 +51,7 @@ export function AdminCostDetailPage() {
   return (
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): sky shell, hero = feature·operation,
     // stat strip with the three headline numbers, then the existing cards on mz-qcard.
-    <MozaikPage tone="sky">
+    <MozaikPage tone="sky" className="ad-page-narrow">
       <PageHead onBack={() => navigate('/admin/cost')} label="‹ AI-használat" />
       <EntranceGroup>
       <PageBody className="col gap-md">
