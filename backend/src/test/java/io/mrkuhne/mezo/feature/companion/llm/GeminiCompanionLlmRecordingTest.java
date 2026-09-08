@@ -379,7 +379,7 @@ class GeminiCompanionLlmRecordingTest {
     private static CompanionProperties.Llm.Tier tier(String chatModel, String smartModel,
                                                      Map<String, String> featureModels,
                                                      Map<CallKind, String> callKindModels) {
-        return new CompanionProperties.Llm.Tier(chatModel, smartModel, featureModels, callKindModels,
+        return new CompanionProperties.Llm.Tier(chatModel, smartModel, null, featureModels, callKindModels,
             new CompanionProperties.Llm.Tier.ReasoningEffort(null, null));
     }
 

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.llm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.ModelTier;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmBudgetLevel;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,8 @@ import org.springframework.util.StringUtils;
  * {@link CallKind} is already computed on the adapter's method heads. The router reads the slug
  * itself, so no adapter has to remember to pass it.
  *
- * <p><b>Precedence:</b> call-kind override, then feature override, then the tier default. A kind
+ * <p><b>Precedence:</b> call-kind override, then — since mezo-ozri.6 — the budget degrade target,
+ * then feature override, then the tier default. A kind
  * states a capability the model must HAVE (an audio route, an image input); a feature only states a
  * preference, so capability wins — otherwise "run this feature on the text model" would silently
  * break that feature's vision turn. Anything unmatched, unknown or blank falls through to the tier
@@ -56,6 +58,14 @@ public class LlmModelRouter {
         String byKind = config.callKindModels().get(kind);
         if (StringUtils.hasText(byKind)) {
             return byKind.trim();
+        }
+        // mezo-ozri.6: past the degrade threshold the cheap tier is the ONLY answer. Feature
+        // overrides are skipped deliberately — a feature entry is a preference, and honouring one
+        // here would let a single yml line turn the degrade step into a no-op. The call-kind branch
+        // above still wins, because that one states a capability the model must HAVE.
+        if (llmCallContextHolder.budgetLevel().atLeast(LlmBudgetLevel.DEGRADED)) {
+            return StringUtils.hasText(config.degradeModel())
+                ? config.degradeModel().trim() : config.chatModel();
         }
         String byFeature = config.featureModels().get(llmCallContextHolder.get().feature());
         if (StringUtils.hasText(byFeature)) {
