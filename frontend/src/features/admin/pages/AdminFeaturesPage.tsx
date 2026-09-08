@@ -5,6 +5,7 @@ import type { AdminFeaturePeriod, AdminFeatureRow } from '@/data/admin/adminInsi
 import { AdminTile } from '@/features/admin/components/AdminTile'
 import { FeatureScoreRow } from '@/features/admin/components/FeatureScoreRow'
 import { ScreenUsageTable } from '@/features/admin/components/ScreenUsageTable'
+import { TopListTile, type TopRow } from '@/features/admin/components/TopListTile'
 import { screenLabel } from '@/features/admin/lib/labels'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { CollapsibleStrip, MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
@@ -67,7 +68,20 @@ export function AdminFeaturesPage() {
   const feedbackCount = rows.filter((r) => r.helped !== null).length
   const totalCostUsd = rows.reduce((sum, r) => sum + r.costUsd, 0)
 
-  const topScreens = [...screens.data.screens].sort((a, b) => b.views - a.views).slice(0, 8)
+  // Top-8 bar-less TopListTile rows (Rulings) — `share` is deliberately omitted: a screen's
+  // view count isn't a share of anything meaningful here (the shared component's bar-less
+  // variant, same as "Csendes tesztelők" on Pulzus).
+  const topScreenRows: TopRow[] = [...screens.data.screens]
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 8)
+    .map((row) => {
+      const label = screenLabel(row.screen)
+      return {
+        key: row.screen,
+        label: `${label.label}${label.missing ? ' (nincs címke)' : ''}`,
+        value: huInt(row.views),
+      }
+    })
 
   return (
     <MozaikPage tone="lav">
@@ -127,24 +141,11 @@ export function AdminFeaturesPage() {
             </AdminTile>
 
             <AdminTile query={screens} wash="sky" eyebrow="Képernyők · megnyitások" span={4}>
-              <div className="ad-top" aria-label="Képernyők · megnyitások">
-                {topScreens.length === 0 ? (
-                  <div className="ad-top-empty">Még nincs képernyő-esemény.</div>
-                ) : (
-                  topScreens.map((row, i) => {
-                    const label = screenLabel(row.screen)
-                    return (
-                      <div key={row.screen} className="ad-toprow">
-                        <span className="rank">{i + 1}.</span>
-                        <div className="info">
-                          <div className="lb">{label.label}{label.missing && ' (nincs címke)'}</div>
-                        </div>
-                        <span className="val">{huInt(row.views)}</span>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
+              <TopListTile
+                title="Képernyők · megnyitások"
+                rows={topScreenRows}
+                emptyLabel="Még nincs képernyő-esemény."
+              />
               {screens.data.screens.length > 8 && (
                 <CollapsibleStrip eyebrow="Teljes lista" summary={`${screens.data.screens.length} képernyő`}>
                   <ScreenUsageTable screens={screens.data.screens} />
