@@ -5,7 +5,9 @@ import {
   costMatrixTotals,
   domainTotals,
   featureLegend,
+  firstLastActivity,
   quietTesters,
+  testerStatus,
   topNFromEntries,
   deltaVsTrailingAvg,
   valueScore,
@@ -261,6 +263,30 @@ describe('quietTesters', () => {
   })
 })
 
+describe('testerStatus', () => {
+  const NOW = new Date('2026-09-08T12:00:00Z')
+
+  it('reads meg_nem_aktiv for a never-active user (null lastActivityAt), no invented day count', () => {
+    expect(testerStatus(null, NOW)).toBe('meg_nem_aktiv')
+  })
+
+  it('reads aktiv at 0/1/2 days (the boundary)', () => {
+    expect(testerStatus(NOW.toISOString(), NOW)).toBe('aktiv')
+    expect(testerStatus(new Date(NOW.getTime() - 1 * 86_400_000).toISOString(), NOW)).toBe('aktiv')
+    expect(testerStatus(new Date(NOW.getTime() - 2 * 86_400_000).toISOString(), NOW)).toBe('aktiv')
+  })
+
+  it('reads csendesedik at the 3-day boundary and still at 6 days', () => {
+    expect(testerStatus(new Date(NOW.getTime() - 3 * 86_400_000).toISOString(), NOW)).toBe('csendesedik')
+    expect(testerStatus(new Date(NOW.getTime() - 6 * 86_400_000).toISOString(), NOW)).toBe('csendesedik')
+  })
+
+  it('reads lemorzsolodott at the 7-day boundary and beyond', () => {
+    expect(testerStatus(new Date(NOW.getTime() - 7 * 86_400_000).toISOString(), NOW)).toBe('lemorzsolodott')
+    expect(testerStatus(new Date(NOW.getTime() - 30 * 86_400_000).toISOString(), NOW)).toBe('lemorzsolodott')
+  })
+})
+
 describe('costDeltaCopy', () => {
   it('reads "új költés" when there is no trailing average to compare against', () => {
     expect(costDeltaCopy({ pct: 0, direction: 'up', fromZero: true })).toBe('új költés')
@@ -277,5 +303,32 @@ describe('costDeltaCopy', () => {
 
   it('reads a neutral copy for a flat (non-zero-base) delta', () => {
     expect(costDeltaCopy({ pct: 0.1, direction: 'flat', fromZero: false })).toBe('– megegyezik a heti átlaggal')
+  })
+})
+
+// mezo-zde2 Task 3 — the Emberek detail's Aktivitás tab "first seen / last seen" line.
+describe('firstLastActivity', () => {
+  it('finds the earliest and latest active day across every domain, summed by index', () => {
+    // domain A active only at index 1, domain B active only at index 3 — the sum is active at
+    // both, so first active index is 1 (daysAgo 5-1-1=3) and last is 3 (daysAgo 5-1-3=1).
+    const series = [
+      { days: [{ count: 0 }, { count: 1 }, { count: 0 }, { count: 0 }, { count: 0 }] },
+      { days: [{ count: 0 }, { count: 0 }, { count: 0 }, { count: 2 }, { count: 0 }] },
+    ]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: 3, lastDaysAgo: 1 })
+  })
+
+  it('reports both as null when no domain was ever active', () => {
+    const series = [{ days: [{ count: 0 }, { count: 0 }] }, { days: [{ count: 0 }, { count: 0 }] }]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: null, lastDaysAgo: null })
+  })
+
+  it('reports both as null for an empty series list', () => {
+    expect(firstLastActivity([])).toEqual({ firstDaysAgo: null, lastDaysAgo: null })
+  })
+
+  it('collapses to a single day when the only active day is the last one (today)', () => {
+    const series = [{ days: [{ count: 0 }, { count: 0 }, { count: 5 }] }]
+    expect(firstLastActivity(series)).toEqual({ firstDaysAgo: 0, lastDaysAgo: 0 })
   })
 })

@@ -11510,6 +11510,12 @@ button.mz-wtile:active { transform: scale(0.96); }
 @keyframes adHeat { from { transform: scaleY(.12); } to { transform: scaleY(1); } }
 .ad-heatax { display: flex; justify-content: space-between; font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: #A2958A; margin-top: 6px; }
 
+/* ---- per-domén hő-szalag sor (User részlet · Aktivitás, mezo-zde2 Task 3) — one `.ad-heat`
+   per activity domain instead of one summed strip; `.hd` carries the HU domain label above it. */
+.ad-heatrow + .ad-heatrow { margin-top: 16px; }
+.ad-heatrow .hd { margin-bottom: 5px; }
+.ad-heatrow .hd .lb { font-size: 11px; font-weight: 700; color: #6E6257; }
+
 /* ---- domén-megoszlás sor (Áttekintés) ---- */
 .ad-domrow { display: flex; align-items: center; gap: 9px; padding: 3.5px 0; }
 .ad-domrow .lb { font-size: 10px; font-weight: 600; width: 74px; flex: none; }
@@ -11541,6 +11547,34 @@ button.mz-wtile:active { transform: scale(0.96); }
    zeroed counters/empty sparklines — a subtle pulsing placeholder instead, reusing the
    app-wide `.sk` shimmer idiom) ---- */
 .ad-tile-pending { display: flex; flex-direction: column; gap: 8px; min-height: 80px; justify-content: center; }
+
+/* ---- Emberek tester cards + summary strip (mezo-zde2 Task 2) ---- */
+/* Clickable summary-strip cell (the poster-anatomy `.ad-poster` numeral, made into a real
+   button) — toggled filter state uses the same `.ad-chip.on` accent color rather than a fifth
+   "active" language. */
+.ad-poster-btn { display: block; width: 100%; border: none; background: none; padding: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 10px; }
+.ad-poster-btn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-poster-btn.on { box-shadow: inset 0 0 0 1.5px #D98A66; }
+/* summary-strip count tone (reuses the `.ad-tag` tone hexes on the big numeral itself) */
+.ad-count-ok { color: #4E6B42; }
+.ad-count-warn { color: #8A6612; }
+.ad-count-bad { color: #A8452A; }
+.ad-count-mut { color: #A2958A; }
+
+.ad-testergrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 4px; }
+.ad-testercard { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px;
+  background: rgba(255,255,255,.55); box-shadow: inset 0 0 0 1px rgba(43,33,24,.08); text-decoration: none; color: inherit; }
+.ad-testercard:hover { background: rgba(255,255,255,.85); box-shadow: inset 0 0 0 1px rgba(168,74,38,.28); }
+.ad-testercard:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-testercard .nm { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.ad-testercard .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 10.5px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.ad-testercard .foot .helped { display: inline-flex; gap: 5px; }
+.ad-testercard .foot .helped .up { color: #4E6B42; }
+.ad-testercard .foot .helped .down { color: #A8452A; }
+/* card-scale heat strip: same `.ad-heat` idiom, shorter bars */
+.ad-heat.sm i { height: 16px; }
 
 /* ---- Funkciók scorecard (mezo-kxnn Task 1) ---- */
 .ad-period-row { margin: 2px 0 4px; }
@@ -11614,6 +11648,16 @@ button.mz-wtile:active { transform: scale(0.96); }
   padding: 3px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.06);
 }
 .ad-errorlist code { color: #6E6257; font-size: 10.5px; }
+
+/* ---- Visszajelzések tab: one row per companion feedback surface (mezo-zde2 Task 3), same
+   up/down color vocabulary as `.ad-testercard .foot .helped`. ---- */
+.ad-surfacerow { padding: 8px 0; border-bottom: 0.5px solid rgba(43, 33, 24, 0.08); }
+.ad-surfacerow:last-child { border-bottom: none; }
+.ad-surfacerow .hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ad-surfacerow .hd .lb { font-size: 12px; font-weight: 700; }
+.ad-surfacerow .hd .cnt { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-surfacerow .hd .cnt .up { color: #4E6B42; }
+.ad-surfacerow .hd .cnt .down { color: #A8452A; }
 .ad-reasonlist .num, .ad-errorlist .num { font-variant-numeric: tabular-nums; font-weight: 700; color: #6E6257; }
 .ad-updown { display: flex; gap: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ad-updown .up { color: #4E6B42; }

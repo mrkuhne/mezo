@@ -156,6 +156,20 @@ export const FEEDBACK_REASON_LABELS: Record<string, Entry> = {
   not_about_me: { label: 'Nem rólam szól' },
 }
 
+// Companion feedback surfaces (`message_feedback.artifact_kind`) — the Emberek detail's
+// Visszajelzések tab (mezo-zde2 Task 3). 7 artifact kinds per the plan; a raw kind never renders
+// without going through `surfaceLabel` first, same honest-fallback contract as every other
+// dictionary here.
+export const SURFACE_LABELS: Record<string, Entry> = {
+  chat_message: { label: 'Beszélgetés' },
+  feed_message: { label: 'Üzenőfal' },
+  weekly_suggestion: { label: 'Heti javaslat' },
+  weekly_review: { label: 'Heti értékelés' },
+  memoir: { label: 'Memoár' },
+  prediction: { label: 'Előrejelzés' },
+  day_review: { label: 'Napi értékelés' },
+}
+
 function resolve(record: Record<string, Entry>, key: string): AdminLabel {
   const hit = record[key]
   return hit ? { ...hit } : { label: key, missing: true }
@@ -175,4 +189,8 @@ export function tableLabel(name: string): AdminLabel {
 
 export function feedbackReasonLabel(reason: string): AdminLabel {
   return resolve(FEEDBACK_REASON_LABELS, reason)
+}
+
+export function surfaceLabel(kind: string): AdminLabel {
+  return resolve(SURFACE_LABELS, kind)
 }

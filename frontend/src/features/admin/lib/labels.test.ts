@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FEATURE_LABELS, featureLabel, feedbackReasonLabel, screenLabel, tableLabel } from './labels'
+import { FEATURE_LABELS, featureLabel, feedbackReasonLabel, screenLabel, surfaceLabel, tableLabel } from './labels'
 
 describe('admin label dictionary', () => {
   it('maps LLM feature slugs to Hungarian labels', () => {
@@ -47,6 +47,24 @@ describe('admin label dictionary', () => {
   it('falls back honestly on an unknown down-reason key', () => {
     const l = feedbackReasonLabel('brand_new_reason')
     expect(l.label).toBe('brand_new_reason')
+    expect(l.missing).toBe(true)
+  })
+
+  // mezo-zde2 Task 3 — the Emberek detail's Visszajelzések tab surface names.
+  it('maps the 7 companion feedback surface kinds to Hungarian labels', () => {
+    expect(surfaceLabel('chat_message').label).toBe('Beszélgetés')
+    expect(surfaceLabel('feed_message').label).toBe('Üzenőfal')
+    expect(surfaceLabel('weekly_suggestion').label).toBe('Heti javaslat')
+    expect(surfaceLabel('weekly_review').label).toBe('Heti értékelés')
+    expect(surfaceLabel('memoir').label).toBe('Memoár')
+    expect(surfaceLabel('prediction').label).toBe('Előrejelzés')
+    expect(surfaceLabel('day_review').label).toBe('Napi értékelés')
+    expect(surfaceLabel('chat_message').missing).toBeUndefined()
+  })
+
+  it('falls back honestly on an unknown surface kind', () => {
+    const l = surfaceLabel('brand_new_kind')
+    expect(l.label).toBe('brand_new_kind')
     expect(l.missing).toBe(true)
   })
 })

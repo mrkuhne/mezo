@@ -13,6 +13,7 @@ import {
   type AdminScreenUsageResponse,
   type AdminSortDir,
   type AdminUserDetailResponse,
+  type AdminUserFeedbackResponse,
   type AdminUserInsightResponse,
   type AdminUserInsightSort,
 } from '@/data/admin/adminInsightsApi'
@@ -32,10 +33,12 @@ import {
   ADMIN_OVERVIEW_MOCK,
   ADMIN_USER_DETAIL_EMPTY,
   ADMIN_USER_DETAIL_MOCK,
+  ADMIN_USER_FEEDBACK_EMPTY,
   ADMIN_USER_INSIGHTS_EMPTY,
   ADMIN_USER_INSIGHTS_MOCK,
   featureBoardMockFor,
   featureDetailMockFor,
+  userFeedbackMockFor,
 } from '@/data/admin/adminInsightsMock'
 
 // Admin hub insights hooks (mezo-d5iy.10). Every hook takes an `isOwner` flag and passes it as
@@ -48,6 +51,7 @@ import {
 export const ADMIN_OVERVIEW_KEY = ['admin', 'insights', 'overview'] as const
 export const ADMIN_USER_INSIGHTS_KEY = ['admin', 'insights', 'users'] as const
 export const ADMIN_USER_DETAIL_KEY = ['admin', 'insights', 'user'] as const
+export const ADMIN_USER_FEEDBACK_KEY = ['admin', 'insights', 'user', 'feedback'] as const
 export const ADMIN_COST_MATRIX_KEY = ['admin', 'insights', 'usage', 'cost-matrix'] as const
 export const ADMIN_SCREEN_USAGE_KEY = ['admin', 'insights', 'usage', 'screens'] as const
 export const ADMIN_ALERTS_KEY = ['admin', 'insights', 'alerts'] as const
@@ -102,6 +106,24 @@ export function useAdminUserDetail(id: string, isOwner: boolean) {
     mockData: ADMIN_USER_DETAIL_MOCK,
     realFetch: () => adminInsightsApi.userDetail(id),
     realEmpty: ADMIN_USER_DETAIL_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled,
+  })
+  return { ...q, isPending: enabled && q.isPending }
+}
+
+/**
+ * Per-user companion feedback (mezo-zde2) — the Emberek detail's Visszajelzések tab. Same
+ * fold-`enabled`-into-`isPending` precedent as `useAdminUserDetail`/`useAdminFeatureDetail`: a
+ * disabled query (no id, or a non-owner) would otherwise report `isPending: true` forever.
+ */
+export function useAdminUserFeedback(id: string, isOwner: boolean) {
+  const enabled = isOwner && id !== ''
+  const q = useDualQuery<AdminUserFeedbackResponse>({
+    queryKey: [...ADMIN_USER_FEEDBACK_KEY, id],
+    mockData: userFeedbackMockFor(id),
+    realFetch: () => adminInsightsApi.userFeedback(id),
+    realEmpty: ADMIN_USER_FEEDBACK_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled,
   })

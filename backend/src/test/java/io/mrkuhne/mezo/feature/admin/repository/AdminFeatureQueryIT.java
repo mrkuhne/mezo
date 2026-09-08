@@ -88,6 +88,75 @@ class AdminFeatureQueryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFeedbackCountsByUserSince_shouldExcludeSoftDeletedRows_whenAVerdictWasRetracted() {
+        UUID user = userPopulator.createUser().getId();
+        Instant since = Instant.now().minus(1, ChronoUnit.HOURS);
+        feedbackPopulator.createVerdict(user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "up", null);
+        feedbackPopulator.createVerdict(user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "down",
+                MessageFeedbackEntity.REASON_INACCURATE);
+        // A retracted vote (soft-deleted) must never surface in a native read.
+        MessageFeedbackEntity retracted = feedbackPopulator.createVerdict(
+                user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "down", null);
+        jdbcTemplate.update("update message_feedback set is_deleted = true where id = ?", retracted.getId());
+
+        List<AdminFeatureQuery.UserVerdictRow> rows = query.feedbackCountsByUserSince(since);
+
+        long upCount = rows.stream()
+                .filter(r -> user.equals(r.owner()) && "up".equals(r.verdict()))
+                .mapToLong(AdminFeatureQuery.UserVerdictRow::count).sum();
+        long downCount = rows.stream()
+                .filter(r -> user.equals(r.owner()) && "down".equals(r.verdict()))
+                .mapToLong(AdminFeatureQuery.UserVerdictRow::count).sum();
+
+        assertThat(upCount).isEqualTo(1);
+        assertThat(downCount).isEqualTo(1); // the retracted 2nd down row is excluded
+    }
+
+    @Test
+    void testFeedbackByKindForUser_shouldExcludeSoftDeletedRows_whenAVerdictWasRetracted() {
+        UUID user = userPopulator.createUser().getId();
+        feedbackPopulator.createVerdict(user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "up", null);
+        feedbackPopulator.createVerdict(user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "down",
+                MessageFeedbackEntity.REASON_INACCURATE);
+        // A retracted vote (soft-deleted) must never surface in a native read.
+        MessageFeedbackEntity retracted = feedbackPopulator.createVerdict(
+                user, MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "down", null);
+        jdbcTemplate.update("update message_feedback set is_deleted = true where id = ?", retracted.getId());
+
+        List<AdminFeatureQuery.FeedbackKindRow> rows = query.feedbackByKindForUser(user);
+
+        long upCount = rows.stream()
+                .filter(r -> MessageFeedbackEntity.KIND_CHAT_MESSAGE.equals(r.kind()) && "up".equals(r.verdict()))
+                .mapToLong(AdminFeatureQuery.FeedbackKindRow::count).sum();
+        long downCount = rows.stream()
+                .filter(r -> MessageFeedbackEntity.KIND_CHAT_MESSAGE.equals(r.kind()) && "down".equals(r.verdict()))
+                .mapToLong(AdminFeatureQuery.FeedbackKindRow::count).sum();
+
+        assertThat(upCount).isEqualTo(1);
+        assertThat(downCount).isEqualTo(1); // the retracted 2nd down row is excluded
+    }
+
+    @Test
+    void testRecallFeedbackTotalsForUser_shouldExcludeSoftDeletedRows_whenAFeedbackRowWasRetracted() {
+        UUID user = userPopulator.createUser().getId();
+        MemoryItemEntity item = memoryItemPopulator.item(user, "journal_entry", UUID.randomUUID(),
+                "friss", LocalDate.of(2026, 6, 3));
+        MemoryRetrievalRunEntity run = memoryItemPopulator.run(user, UUID.randomUUID());
+        MemoryRetrievalResultEntity result1 = memoryItemPopulator.result(user, run, item, 1, true,
+                ScoreBreakdownEnvelope.empty());
+        MemoryRetrievalResultEntity result2 = memoryItemPopulator.result(user, run, item, 2, true,
+                ScoreBreakdownEnvelope.empty());
+        memoryItemPopulator.feedback(user, run, result1, item, "useful");
+        // A retracted recall vote (soft-deleted) must never surface in a native read.
+        var retracted = memoryItemPopulator.feedback(user, run, result2, item, "useful");
+        jdbcTemplate.update("update memory_retrieval_feedback set is_deleted = true where id = ?", retracted.getId());
+
+        Map<String, Long> totals = query.recallFeedbackTotalsForUser(user);
+
+        assertThat(totals).containsEntry("useful", 1L); // the retracted 2nd useful row is excluded
+    }
+
+    @Test
     void testRecallFeedbackTotals_shouldGroupByAction_whenRowsExist() {
         UUID user = userPopulator.createUser().getId();
         MemoryItemEntity item = memoryItemPopulator.item(user, "journal_entry", UUID.randomUUID(),
