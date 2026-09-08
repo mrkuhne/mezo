@@ -39,4 +39,5 @@ cat src/mezo-szerkeszto-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/me
 cat src/sablonok-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/sablonok-body.html > sablonok.html
 cat src/ntf-dropdown-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/ntf-dropdown-body.html > ertesites-dropdown.html
 cat src/admin-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-body.html > admin-hub.html
-echo "OK — 34 prototype files assembled."
+cat src/admin-memory-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-memory-body.html > admin-memory.html
+echo "OK — 35 prototype files assembled."

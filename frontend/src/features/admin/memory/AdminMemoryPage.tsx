@@ -109,7 +109,7 @@ export function AdminMemoryPage() {
             {view === 'map' && (
               <MapView userId={userId} isOwner={isOwner} sel={sel} onSelect={select} onInspect={setInspector} />
             )}
-            {view === 'layers' && <LayersView />}
+            {view === 'layers' && <LayersView userId={userId} isOwner={isOwner} />}
           </div>
 
           <MemoryInspector

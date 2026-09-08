@@ -1,0 +1,652 @@
+<style>
+  /* ============ oldal-specifikus (admin-memory only) ============ */
+  .ad-rail a.soon { opacity: 0.55; cursor: default; }
+  .ad-rail a.soon:hover { background: none; color: #6E6257; }
+  .ad-rail a .v11 { margin-left: auto; font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em;
+    background: rgba(43,33,24,.08); color: #A2958A; border-radius: 5px; padding: 2px 5px; }
+  .ad-rail a svg { flex: none; }
+  .ad-scroll { overflow-x: auto; scrollbar-width: thin; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · admin · Memória-felfedező</p>
+  <h1>Admin memory explorer</h1>
+  <p class="lede">A <code>/admin/users/:id/memory</code> útvonalcsalád — az <strong>admin hub</strong>
+  ötödik füle (<code>Memória</code>) egy adott user RAG-memóriáját nyitja meg. Négy nézet egy
+  közös jobb oldali <strong>inspector</strong> mellett: <strong>Futások</strong> (audit + élő
+  próbafutás), <strong>Gráf</strong> (tudásgráf force-layout), <strong>Térkép</strong>
+  (pgvector-szomszédság UMAP-vetülete), <strong>Rétegek</strong> (vektor/gráf egészség). Minden
+  becsléssel és árnyékfutással kapcsolatos felirat szó szerint az, amit a backend ad vissza — ez a
+  felület csak annyit tesz hozzá, hogy <strong>látszik</strong>.</p>
+
+  <div class="stage">
+    <div style="flex:0 0 100%;min-width:0;">
+
+      <!-- ═══════════ 1 · FUTÁSOK ═══════════ -->
+      <div class="deskblock" id="d-futasok">
+        <div class="shotlbl"><b>1 · Futások</b><code>/admin/users/:id/memory?view=runs</code>
+          <span>futáslista · kibontott jelölt-bontás · "amit az LLM látott" · próbafutás</span></div>
+        <div class="desk"><div class="deskscreen"><div class="ad-shell">
+          <nav class="ad-rail">
+            <div class="brand"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-mezo"/></svg><div>Mezo<small>admin</small></div></div>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span>Áttekintés</span></a>
+            <a class="on" data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><span>Userek</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-minta"/></svg><span>Feature-használat</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-erme"/></svg><span>LLM költség</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-tudas"/></svg><span>Adatböngésző</span></a>
+            <a class="soon"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-beallitas"/></svg><span>Meghívók</span><span class="v11">v1.1</span></a>
+            <div class="railfoot"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><div><div class="nm">Kertész Dániel</div><div class="rl">owner</div></div></div>
+          </nav>
+          <main class="ad-main">
+            <div class="ad-page">
+              <div class="pgtop"><button class="ad-back">‹ Userek</button><span class="ad-tag mut">/admin/users/8f21-a0c3/memory</span></div>
+              <div class="ad-hero">
+                <span class="ad-avatar lg" style="background:#6C5FA3">NP</span>
+                <div><div class="nm">Nagy Petra</div><div class="em">petra.nagy@example.com · user · regisztrált 2026-02-02 · utolsó aktivitás 6 perce</div></div>
+                <div class="stats">
+                  <div><span class="v">1 842</span><span class="ad-eyebrow">memória-elem</span></div>
+                  <div><span class="v">3 106</span><span class="ad-eyebrow">él</span></div>
+                  <div><span class="v">92</span><span class="ad-eyebrow">futás · 30n</span></div>
+                </div>
+              </div>
+              <div class="ad-tabs">
+                <button class="ad-tab">Aktivitás</button><button class="ad-tab">Adatok</button>
+                <button class="ad-tab">Feature-ök</button><button class="ad-tab">Költség</button>
+                <button class="ad-tab on">Memória</button>
+              </div>
+              <div class="am-segbar">
+                <button class="am-seg on" data-go="d-futasok">Futások</button>
+                <button class="am-seg" data-go="d-graf">Gráf</button>
+                <button class="am-seg" data-go="d-terkep">Térkép</button>
+                <button class="am-seg" data-go="d-retegek">Rétegek</button>
+              </div>
+
+              <div class="am-layout">
+                <div class="am-content">
+                  <div class="ad-eyebrow">Futáslista · 92 futás · a futások 30 nap után törlődnek</div>
+                  <div class="ad-scroll" style="margin:8px 0 14px;">
+                  <table class="ad-table" style="min-width:820px;"><thead><tr>
+                    <th>Idő</th><th>Policy</th><th>Mód</th><th>Lekérdezés mód</th><th>Nyers → átfogalmazott</th>
+                    <th class="num">Jelöltek</th><th class="num">Ideje</th><th>Hiba</th>
+                  </tr></thead><tbody>
+                    <tr style="background:rgba(168,74,38,.05);">
+                      <td class="ad-mut">09:41:12</td><td>balanced</td>
+                      <td><span class="am-mode shadow" title="Árnyékfutás — nem ezt látta a modell">árnyék</span></td>
+                      <td>hybrid</td>
+                      <td style="white-space:normal;max-width:260px;">„mennyit aludtam tegnap” → <em>„alvásidő és alvásminőség tegnap”</em></td>
+                      <td class="num">24</td><td class="num">187 ms</td>
+                      <td><span class="ad-tag warn">graph timeout</span></td>
+                    </tr>
+                    <tr class="norow">
+                      <td class="ad-mut">09:38:05</td><td>balanced</td>
+                      <td><span class="am-mode new" title="Egységes visszakeresés szolgálta ki">élő</span></td>
+                      <td>hybrid</td>
+                      <td style="white-space:normal;max-width:260px;">„mit egyek edzés előtt” <span class="ad-mut">— nincs átírás</span></td>
+                      <td class="num">18</td><td class="num">142 ms</td><td class="ad-mut">—</td>
+                    </tr>
+                    <tr class="norow">
+                      <td class="ad-mut">09:20:44</td><td>balanced</td>
+                      <td><span class="am-mode shadow" title="Árnyékfutás — nem ezt látta a modell">árnyék</span></td>
+                      <td>hybrid</td>
+                      <td style="white-space:normal;max-width:260px;">„hogy állok a célommal” → <em>„havi cél haladás státusza”</em></td>
+                      <td class="num">31</td><td class="num">203 ms</td><td class="ad-mut">—</td>
+                    </tr>
+                    <tr class="norow">
+                      <td class="ad-mut">09:02:11</td><td>strict</td>
+                      <td><span class="am-mode old" title="A régi visszakeresési út">legacy</span></td>
+                      <td>keyword</td>
+                      <td style="white-space:normal;max-width:260px;">„vízfogyasztás” <span class="ad-mut">— nincs átírás</span></td>
+                      <td class="num">9</td><td class="num">64 ms</td><td class="ad-mut">—</td>
+                    </tr>
+                  </tbody></table>
+                  </div>
+                  <div class="ad-note9" style="font-size:9.5px;color:#A2958A;margin:-8px 0 14px;">SHADOW a
+                  <code style="font-family:ui-monospace,monospace;">mezo.companion.memory-platform.serving-mode</code>
+                  éles alapértéke — a legtöbb sor ezért árnyékfutás: a pipeline háttérben futott, a chatet a LEGACY út szolgálta ki.</div>
+
+                  <div class="ad-eyebrow">09:41:12 futás részletei · retriever-nyomvonal</div>
+                  <div class="am-trace">
+                    <span class="chip"><span class="dot"></span><b>dense</b><span class="n">92 ms · 24 db</span></span>
+                    <span class="chip"><span class="dot"></span><b>lexical</b><span class="n">41 ms · 18 db</span></span>
+                    <span class="chip err"><span class="dot"></span><b>graph</b><span class="n">187 ms · 0 db · timeout</span></span>
+                    <span class="chip"><span class="dot"></span><b>facts</b><span class="n">12 ms · 4 db</span></span>
+                  </div>
+
+                  <details class="am-cand" open>
+                    <summary><span class="rk">1.</span><span class="tt">Alvásidő-cél: 7,5 óra, gyakran alulteljesítve</span><span class="fs">0.524</span></summary>
+                    <div class="inner">
+                      <div class="am-stack">
+                        <i style="width:31%;background:#4E8FB8;" title="dense · rank 2 · 0.146"></i>
+                        <i style="width:35%;background:#C9962E;" title="lexical · rank 1 · 0.164"></i>
+                        <span class="absent" title="graph — nincs találat ennél a jelöltnél">–</span>
+                        <i style="width:35%;background:#5D4FA0;" title="facts · rank 1 · 0.164"></i>
+                        <i style="width:11%;background:#6E8B5E;" title="recencyBoost · +0.05"></i>
+                      </div>
+                      <div class="am-seglegend">
+                        <span><i style="background:#4E8FB8"></i>dense · rank 2 · 0.146</span>
+                        <span><i style="background:#C9962E"></i>lexical · rank 1 · 0.164</span>
+                        <span><i style="background:rgba(43,33,24,.15)"></i>graph · hiányzik</span>
+                        <span><i style="background:#5D4FA0"></i>facts · rank 1 · 0.164</span>
+                        <span><i style="background:#6E8B5E"></i>recencyBoost · +0.05</span>
+                      </div>
+                      <div class="am-candfoot">
+                        <span>újrarangsorolt hely: <b>1</b> · <span class="am-delta up">Δ +1</span></span>
+                        <span class="am-pill in">bekerült</span>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details class="am-cand">
+                    <summary><span class="rk">2.</span><span class="tt">Késői vacsora mintázat rontja a mélyalvást</span><span class="fs">0.344</span></summary>
+                    <div class="inner">
+                      <div class="am-stack">
+                        <i style="width:39%;background:#4E8FB8;" title="dense · rank 1 · 0.164"></i>
+                        <span class="absent" title="lexical — nincs találat ennél a jelöltnél">–</span>
+                        <i style="width:39%;background:#D8481F;" title="graph · rank 1 · 0.164"></i>
+                        <i style="width:15%;background:#5D4FA0;" title="facts · rank 3 · 0.0159"></i>
+                      </div>
+                      <div class="am-seglegend">
+                        <span><i style="background:#4E8FB8"></i>dense · rank 1 · 0.164</span>
+                        <span><i style="background:rgba(43,33,24,.15)"></i>lexical · hiányzik</span>
+                        <span><i style="background:#D8481F"></i>graph · rank 1 · 0.164</span>
+                        <span><i style="background:#5D4FA0"></i>facts · rank 3 · 0.016</span>
+                      </div>
+                      <div class="am-candfoot">
+                        <span>újrarangsorolt hely: <b>2</b> · <span class="am-delta" style="color:#A2958A;">Δ 0</span></span>
+                        <span class="am-pill in">bekerült</span>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details class="am-cand">
+                    <summary><span class="rk">3.</span><span class="tt">Heti edzésszám cél: 4</span><span class="fs">0.095</span></summary>
+                    <div class="inner">
+                      <div class="am-stack">
+                        <i style="width:20%;background:#4E8FB8;" title="dense · rank 5 · 0.0345"></i>
+                        <i style="width:23%;background:#C9962E;" title="lexical · rank 4 · 0.040"></i>
+                        <span class="absent" title="graph — nincs találat ennél a jelöltnél">–</span>
+                        <span class="absent" title="facts — nincs találat ennél a jelöltnél">–</span>
+                        <i style="width:12%;background:#6E8B5E;" title="salienceBoost · +0.02"></i>
+                      </div>
+                      <div class="am-seglegend">
+                        <span><i style="background:#4E8FB8"></i>dense · rank 5 · 0.035</span>
+                        <span><i style="background:#C9962E"></i>lexical · rank 4 · 0.040</span>
+                        <span><i style="background:rgba(43,33,24,.15)"></i>graph · hiányzik</span>
+                        <span><i style="background:rgba(43,33,24,.15)"></i>facts · hiányzik</span>
+                        <span><i style="background:#6E8B5E"></i>salienceBoost · +0.02</span>
+                      </div>
+                      <div class="am-candfoot">
+                        <span class="ad-mut">újrarangsorolás nem futott erre a jelöltre</span>
+                        <span class="am-pill out">kimaradt · token-limit</span>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details class="am-cand">
+                    <summary><span class="rk">4.</span><span class="tt">Reggeli rutin: kávé + 10 perc olvasás</span><span class="fs">0.000</span></summary>
+                    <div class="inner">
+                      <div class="am-stack">
+                        <span class="absent" title="dense — retriever hiba">–</span>
+                        <span class="absent" title="lexical — retriever hiba">–</span>
+                        <span class="absent" title="graph — retriever hiba">–</span>
+                        <span class="absent" title="facts — retriever hiba">–</span>
+                      </div>
+                      <div class="am-candfoot">
+                        <span class="ad-tag warn">RETRIEVER_TIMEOUT</span>
+                        <span class="ad-mut">mind a négy forrás időtúllépéssel tért vissza ennél a jelöltnél</span>
+                        <span class="am-pill out">kimaradt</span>
+                      </div>
+                    </div>
+                  </details>
+
+                  <div class="ad-mosaic" style="margin-top:16px;">
+                    <div class="ad-tile sp6">
+                      <div class="ad-eyebrow">Amit az LLM látott · 09:38:05 (élő)</div>
+                      <div class="am-prompt" style="margin-top:8px;">
+                        <div class="p"><div class="rk">SYSTEM</div>„A companion memóriablokkja: az alábbi tényeket és mintákat használd a válaszban, ha relevánsak…”</div>
+                        <div class="p"><div class="rk">MEMORY BLOCK · 3 tétel</div>„• Edzés előtt könnyű szénhidrátot kedvel · • Reggeli rutin rövid, konkrét üzenetet vár · • Fehérje-cél: 120 g/nap”</div>
+                        <div class="p"><div class="rk">USER</div>„mit egyek edzés előtt”</div>
+                      </div>
+                    </div>
+                    <div class="ad-tile sp6 w-gold">
+                      <div class="ad-eyebrow">Amit az LLM látott · 09:41:12 (árnyék)</div>
+                      <div class="am-empty" style="margin-top:8px;">Ehhez a futáshoz nincs prompt-lenyomat:
+                      árnyékfutás sosem ért el a modellig.</div>
+                    </div>
+                  </div>
+
+                  <div class="ad-tile sp12 w-sky" style="margin-top:13px;">
+                    <div class="ad-eyebrow">Próbafutás · replay</div>
+                    <div class="am-replay" style="margin-top:8px;">
+                      <input type="text" value="mennyit aludtam az elmúlt héten átlagosan" maxlength="500">
+                      <div class="am-toggles">
+                        <span class="am-toggle"><span class="am-switch on"><i></i></span>Újraírás — engedélyezve</span>
+                        <span class="am-toggle"><span class="am-switch on"><i></i></span>Újrarangsorolás — engedélyezve</span>
+                        <button class="am-btn">Futtatás</button>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                        <span class="am-dryrun">DRY-RUN</span>
+                        <span class="ad-mut" style="font-size:10.5px;">— nem ír <code style="font-family:ui-monospace,monospace;">memory_retrieval_*</code> sort</span>
+                      </div>
+                      <div class="am-caveat">Azt mutatja, mit adna a NEW mód — nem azt, amit a kísérő ténylegesen kiszolgált.</div>
+                      <div class="am-notes">
+                        <span class="am-note-chip">projection_embed_extra_call — a térkép-elhelyezéshez egy extra beágyazás készült</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <aside class="am-inspector">
+                  <div class="hd"><b>Jelölt részletei</b><button data-collapse title="Összecsukás">‹</button></div>
+                  <div class="row"><span class="k">candidateKind</span><span class="v">memory_item</span></div>
+                  <div class="row"><span class="k">memoryItemId</span><span class="v ad-fk">a91f…c02e</span></div>
+                  <div class="row"><span class="k">sourceKind</span><span class="v">sleep_log</span></div>
+                  <div class="row"><span class="k">occurredOn</span><span class="v">2026-09-06</span></div>
+                  <div class="row"><span class="k">salience</span><span class="v">0.81</span></div>
+                  <div class="row"><span class="k">state</span><span class="v">active</span></div>
+                  <div class="row"><span class="k">selected</span><span class="v">igen</span></div>
+                  <div class="sec">Tartalom</div>
+                  <div class="txt">„Alvásidő-cél: 7,5 óra — az elmúlt 14 napból 9-en teljesült, a hétvégék rendre alulteljesítenek.”</div>
+                  <div class="sec">Forrás</div>
+                  <div class="txt"><a class="ad-fk">Megnyitás az adatböngészőben →</a> <span class="ad-mut">memory_item · a91f…c02e</span></div>
+                </aside>
+              </div>
+            </div>
+          </main>
+        </div></div></div>
+      </div>
+
+      <!-- ═══════════ 2 · GRÁF ═══════════ -->
+      <div class="deskblock" id="d-graf">
+        <div class="shotlbl"><b>2 · Gráf</b><code>?view=graf</code><span>force-layout, kind-színezett clay-pöttyök · csomópont- és él-inspector</span></div>
+        <div class="desk"><div class="deskscreen"><div class="ad-shell">
+          <nav class="ad-rail">
+            <div class="brand"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-mezo"/></svg><div>Mezo<small>admin</small></div></div>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span>Áttekintés</span></a>
+            <a class="on" data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><span>Userek</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-minta"/></svg><span>Feature-használat</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-erme"/></svg><span>LLM költség</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-tudas"/></svg><span>Adatböngésző</span></a>
+            <a class="soon"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-beallitas"/></svg><span>Meghívók</span><span class="v11">v1.1</span></a>
+            <div class="railfoot"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><div><div class="nm">Kertész Dániel</div><div class="rl">owner</div></div></div>
+          </nav>
+          <main class="ad-main">
+            <div class="ad-page">
+              <div class="pgtop"><button class="ad-back">‹ Userek</button><span class="ad-tag mut">/admin/users/8f21-a0c3/memory</span></div>
+              <div class="ad-hero">
+                <span class="ad-avatar lg" style="background:#6C5FA3">NP</span>
+                <div><div class="nm">Nagy Petra</div><div class="em">petra.nagy@example.com · user · regisztrált 2026-02-02 · utolsó aktivitás 6 perce</div></div>
+                <div class="stats">
+                  <div><span class="v">1 842</span><span class="ad-eyebrow">memória-elem</span></div>
+                  <div><span class="v">3 106</span><span class="ad-eyebrow">él</span></div>
+                  <div><span class="v">92</span><span class="ad-eyebrow">futás · 30n</span></div>
+                </div>
+              </div>
+              <div class="ad-tabs">
+                <button class="ad-tab">Aktivitás</button><button class="ad-tab">Adatok</button>
+                <button class="ad-tab">Feature-ök</button><button class="ad-tab">Költség</button>
+                <button class="ad-tab on">Memória</button>
+              </div>
+              <div class="am-segbar">
+                <button class="am-seg" data-go="d-futasok">Futások</button>
+                <button class="am-seg on" data-go="d-graf">Gráf</button>
+                <button class="am-seg" data-go="d-terkep">Térkép</button>
+                <button class="am-seg" data-go="d-retegek">Rétegek</button>
+              </div>
+
+              <div class="am-layout">
+                <div class="am-content">
+                  <div class="am-graphctl">
+                    <span class="lbl">Fajta</span>
+                    <button class="ad-chip on">mind</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#4E8FB8"></i>PATTERN</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#C9962E"></i>PREFERENCE</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#D8481F"></i>GOAL</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#5D4FA0"></i>LIFE_EVENT</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#6E8B5E"></i>SEASON</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#C46FA0"></i>INSIGHT</button>
+                    <button class="ad-chip am-kindchip"><i style="background:#3F8A7A"></i>PERSON</button>
+                  </div>
+                  <div class="am-graphctl">
+                    <span class="lbl">Súly-küszöb</span><input class="am-slider" type="range" min="0" max="1" step="0.05" value="0.15">
+                    <span class="ad-mut" style="font-size:10.5px;">≥ 0.15</span>
+                    <input class="am-search" placeholder="cím keresése…">
+                    <button class="ad-chip">Archiváltak</button>
+                    <button class="ad-chip">Töröltek</button>
+                  </div>
+
+                  <div class="am-graphwrap">
+                    <svg viewBox="0 0 760 380" width="100%" style="display:block;">
+                      <line x1="120" y1="80" x2="260" y2="60" stroke="#4E8FB8" stroke-width="3.5"/>
+                      <line x1="260" y1="60" x2="340" y2="240" stroke="#4E8FB8" stroke-width="2.2"/>
+                      <line x1="120" y1="80" x2="180" y2="220" stroke="#4E8FB8" stroke-width="2.8"/>
+                      <line x1="260" y1="60" x2="480" y2="230" stroke="#4E8FB8" stroke-width="1.8"/>
+                      <line x1="420" y1="70" x2="420" y2="330" stroke="#4E8FB8" stroke-width="2.6"/>
+                      <line x1="420" y1="70" x2="340" y2="240" stroke="#A8452A" stroke-width="1.6" stroke-dasharray="6 5"/>
+                      <line x1="480" y1="230" x2="560" y2="320" stroke="#4E8FB8" stroke-width="2.0"/>
+                      <line x1="560" y1="100" x2="640" y2="200" stroke="#4E8FB8" stroke-width="1.4"/>
+                      <line x1="680" y1="120" x2="120" y2="80" stroke="#4E8FB8" stroke-width="2.5"/>
+                      <line x1="100" y1="300" x2="260" y2="330" stroke="#4E8FB8" stroke-width="1.2" opacity="0.4"/>
+                      <line x1="340" y1="240" x2="420" y2="330" stroke="#4E8FB8" stroke-width="1.8"/>
+                      <line x1="700" y1="280" x2="640" y2="200" stroke="#4E8FB8" stroke-width="1.2"/>
+
+                      <circle cx="120" cy="80" r="18" fill="#4E8FB8"/>
+                      <circle cx="260" cy="60" r="22" fill="#D8481F" stroke="#A84A26" stroke-width="2.5"/>
+                      <circle cx="420" cy="70" r="16" fill="#5D4FA0"/>
+                      <circle cx="560" cy="100" r="14" fill="#C9962E"/>
+                      <circle cx="640" cy="200" r="15" fill="#6E8B5E"/>
+                      <circle cx="480" cy="230" r="17" fill="#C46FA0"/>
+                      <circle cx="340" cy="240" r="19" fill="#3F8A7A"/>
+                      <circle cx="180" cy="220" r="13" fill="#4E8FB8"/>
+                      <circle cx="100" cy="300" r="12" fill="#D8481F" stroke="#A2958A" stroke-width="2" stroke-dasharray="3 3"/>
+                      <circle cx="260" cy="330" r="11" fill="#C9962E" opacity="0.45"/>
+                      <circle cx="560" cy="320" r="13" fill="#5D4FA0"/>
+                      <circle cx="420" cy="330" r="14" fill="#C46FA0"/>
+                      <circle cx="680" cy="120" r="15" fill="#4E8FB8"/>
+                      <circle cx="700" cy="280" r="12" fill="#6E8B5E" stroke="#A2958A" stroke-width="2" stroke-dasharray="3 3"/>
+
+                      <text x="260" y="36" font-size="10" font-weight="700" text-anchor="middle" fill="#2B2118">Alvás-cél 7,5 óra</text>
+                      <text x="420" y="330" font-size="9.5" text-anchor="middle" fill="#6E6257">Munkahét vége kimerültebb</text>
+                    </svg>
+                  </div>
+                  <div class="am-legend2">
+                    <span><i style="background:#4E8FB8"></i>PATTERN</span>
+                    <span><i style="background:#C9962E"></i>PREFERENCE</span>
+                    <span><i style="background:#D8481F"></i>GOAL</span>
+                    <span><i style="background:#5D4FA0"></i>LIFE_EVENT</span>
+                    <span><i style="background:#6E8B5E"></i>SEASON</span>
+                    <span><i style="background:#C46FA0"></i>INSIGHT</span>
+                    <span><i style="background:#3F8A7A"></i>PERSON</span>
+                    <span style="opacity:.6"><i style="background:#4E8FB8;opacity:.45"></i>candidate (fakó)</span>
+                    <span><i style="background:transparent;border:2px dashed #A2958A;border-radius:50%;"></i>törölt (szaggatott perem)</span>
+                    <span>— él: <span style="border-bottom:2px solid #A8452A;padding-bottom:1px;">┅</span> CONFLICTS (szaggatott)</span>
+                  </div>
+                  <div class="ad-note9" style="font-size:9.5px;color:#A2958A;margin-top:8px;">A layout egyszer fut le és
+                  utána befagy — húzáskor csak a fogott csomópont mozdul, nincs újraszimuláció.</div>
+                </div>
+
+                <aside class="am-inspector">
+                  <div class="hd"><b>Inspector</b><button data-collapse title="Összecsukás">‹</button></div>
+
+                  <div class="sec">Csomópont — „Alvás-cél 7,5 óra”</div>
+                  <div class="row"><span class="k">kind</span><span class="v">GOAL</span></div>
+                  <div class="row"><span class="k">status</span><span class="v">active</span></div>
+                  <div class="row"><span class="k">occurredOn</span><span class="v">2026-06-11</span></div>
+                  <div class="row"><span class="k">fok (degree)</span><span class="v">4</span></div>
+                  <div class="txt" style="margin-top:6px;">„Napi 7,5 óra alvás elérése — a companion 2026 júniusa óta követi.”</div>
+                  <div class="row"><span class="k">forrás</span><span class="v"><a class="ad-fk">goal · 44a1…</a></span></div>
+                  <div class="row"><span class="k">be-élek</span><span class="v">2</span></div>
+                  <div class="row"><span class="k">ki-élek</span><span class="v">2</span></div>
+
+                  <div class="sec">Él — GOAL ↔ PERSON <span class="ad-tag warn" style="margin-left:4px;">CONFLICTS</span></div>
+                  <div class="row"><span class="k">weight</span><span class="v">0.62</span></div>
+                  <div class="row"><span class="k">lastReinforcedAt</span><span class="v">2 napja</span></div>
+                  <div class="am-validity">
+                    <div class="track"><div class="fill" style="width:64%;"></div></div>
+                    <div class="lbls"><span>létrehozva · 61 napja</span><span>~9 nap múlva kiesik <em>(becsült)</em></span></div>
+                  </div>
+                  <div class="sec">Evidencia</div>
+                  <div class="txt">• 2026-09-02 chat: „Anna most sokat dolgozik, nehéz beszorítani a közös vacsorát.” <a class="ad-fk">forrás →</a></div>
+                  <div class="txt" style="margin-top:4px;">• 2026-08-21 napló: „Munkahely-váltás óta kevesebb a közös időnk.” <a class="ad-fk">forrás →</a></div>
+                  <div class="ad-note9" style="font-size:9.5px;color:#A2958A;margin-top:8px;">A mezo-élekben nincs
+                  érvényességi intervallum — ez egy bomlási sáv: az éjszakai job súlya <code style="font-family:ui-monospace,monospace;">×0.99</code>,
+                  0.05 alatt törlődik.</div>
+                </aside>
+              </div>
+            </div>
+          </main>
+        </div></div></div>
+      </div>
+
+      <!-- ═══════════ 3 · TÉRKÉP ═══════════ -->
+      <div class="deskblock" id="d-terkep">
+        <div class="shotlbl"><b>3 · Térkép</b><code>?view=map</code><span>UMAP-vetület · replayed lekérdezés csillagként · 10 valódi pgvector-szomszéd</span></div>
+        <div class="desk"><div class="deskscreen"><div class="ad-shell">
+          <nav class="ad-rail">
+            <div class="brand"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-mezo"/></svg><div>Mezo<small>admin</small></div></div>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span>Áttekintés</span></a>
+            <a class="on" data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><span>Userek</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-minta"/></svg><span>Feature-használat</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-erme"/></svg><span>LLM költség</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-tudas"/></svg><span>Adatböngésző</span></a>
+            <a class="soon"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-beallitas"/></svg><span>Meghívók</span><span class="v11">v1.1</span></a>
+            <div class="railfoot"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><div><div class="nm">Kertész Dániel</div><div class="rl">owner</div></div></div>
+          </nav>
+          <main class="ad-main">
+            <div class="ad-page">
+              <div class="pgtop"><button class="ad-back">‹ Userek</button><span class="ad-tag mut">/admin/users/8f21-a0c3/memory</span></div>
+              <div class="ad-hero">
+                <span class="ad-avatar lg" style="background:#6C5FA3">NP</span>
+                <div><div class="nm">Nagy Petra</div><div class="em">petra.nagy@example.com · user · regisztrált 2026-02-02 · utolsó aktivitás 6 perce</div></div>
+                <div class="stats">
+                  <div><span class="v">1 842</span><span class="ad-eyebrow">memória-elem</span></div>
+                  <div><span class="v">3 106</span><span class="ad-eyebrow">él</span></div>
+                  <div><span class="v">92</span><span class="ad-eyebrow">futás · 30n</span></div>
+                </div>
+              </div>
+              <div class="ad-tabs">
+                <button class="ad-tab">Aktivitás</button><button class="ad-tab">Adatok</button>
+                <button class="ad-tab">Feature-ök</button><button class="ad-tab">Költség</button>
+                <button class="ad-tab on">Memória</button>
+              </div>
+              <div class="am-segbar">
+                <button class="am-seg" data-go="d-futasok">Futások</button>
+                <button class="am-seg" data-go="d-graf">Gráf</button>
+                <button class="am-seg on" data-go="d-terkep">Térkép</button>
+                <button class="am-seg" data-go="d-retegek">Rétegek</button>
+              </div>
+
+              <div class="am-layout">
+                <div class="am-content">
+                  <div class="am-samplebanner">482 elem látszik az 1 842-ból — a legfrissebb és legfontosabb mintája.</div>
+                  <div class="am-mapwrap">
+                    <svg viewBox="0 0 760 340" width="100%" style="display:block;">
+                      <!-- sleep cluster -->
+                      <circle cx="120" cy="70" r="5" fill="#6C5FA3"/><circle cx="140" cy="95" r="7" fill="#6C5FA3"/>
+                      <circle cx="105" cy="110" r="4" fill="#6C5FA3"/><circle cx="160" cy="60" r="6" fill="#6C5FA3"/>
+                      <circle cx="90" cy="80" r="3" fill="none" stroke="#6C5FA3" stroke-width="2"/>
+                      <circle cx="175" cy="120" r="5" fill="#6C5FA3"/><circle cx="130" cy="50" r="4" fill="#6C5FA3"/>
+                      <!-- food cluster -->
+                      <circle cx="580" cy="60" r="6" fill="#7FA06C"/><circle cx="610" cy="90" r="4" fill="#7FA06C"/>
+                      <circle cx="560" cy="95" r="5" fill="#7FA06C"/><circle cx="630" cy="55" r="7" fill="#7FA06C"/>
+                      <circle cx="600" cy="120" r="4" fill="none" stroke="#7FA06C" stroke-width="2"/>
+                      <circle cx="650" cy="100" r="5" fill="#7FA06C"/>
+                      <!-- train cluster -->
+                      <circle cx="120" cy="260" r="6" fill="#E1663F"/><circle cx="95" cy="290" r="5" fill="#E1663F"/>
+                      <circle cx="150" cy="300" r="4" fill="#E1663F"/><circle cx="80" cy="250" r="7" fill="#E1663F"/>
+                      <circle cx="160" cy="270" r="5" fill="#E1663F"/>
+                      <!-- journal cluster (center) -->
+                      <circle cx="380" cy="170" r="6" fill="#4E8FB8"/><circle cx="400" cy="195" r="5" fill="#4E8FB8"/>
+                      <circle cx="360" cy="150" r="4" fill="#4E8FB8"/><circle cx="410" cy="150" r="7" fill="#4E8FB8"/>
+                      <circle cx="350" cy="200" r="5" fill="none" stroke="#4E8FB8" stroke-width="2"/>
+                      <circle cx="420" cy="180" r="4" fill="#4E8FB8"/><circle cx="390" cy="140" r="5" fill="#4E8FB8"/>
+                      <!-- habits cluster -->
+                      <circle cx="560" cy="270" r="6" fill="#C9962E"/><circle cx="590" cy="290" r="5" fill="#C9962E"/>
+                      <circle cx="540" cy="300" r="4" fill="#C9962E"/><circle cx="610" cy="260" r="7" fill="#C9962E"/>
+                      <!-- chat scattered -->
+                      <circle cx="260" cy="90" r="4" fill="#C46FA0"/><circle cx="300" cy="250" r="5" fill="#C46FA0"/>
+                      <circle cx="480" cy="80" r="4" fill="#C46FA0"/><circle cx="470" cy="260" r="5" fill="#C46FA0"/>
+                      <circle cx="250" cy="230" r="4" fill="none" stroke="#C46FA0" stroke-width="2"/>
+
+                      <!-- replayed query star + highlighted candidates -->
+                      <line x1="330" y1="180" x2="380" y2="170" stroke="#A84A26" stroke-width="1.4" stroke-dasharray="3 3"/>
+                      <line x1="330" y1="180" x2="360" y2="150" stroke="#A84A26" stroke-width="1.4" stroke-dasharray="3 3"/>
+                      <line x1="330" y1="180" x2="140" y2="95" stroke="#A84A26" stroke-width="1.4" stroke-dasharray="3 3"/>
+                      <circle cx="380" cy="170" r="8" fill="none" stroke="#A84A26" stroke-width="2.4"/>
+                      <circle cx="360" cy="150" r="7" fill="none" stroke="#A84A26" stroke-width="2.4"/>
+                      <circle cx="140" cy="95" r="8" fill="none" stroke="#A84A26" stroke-width="2.4"/>
+                      <path d="M330 170 l3 8 8 1-6 6 1 8-7-4-7 4 1-8-6-6 8-1z" fill="#A84A26"/>
+                    </svg>
+                  </div>
+                  <div class="am-srckey">
+                    <span><i style="background:#6C5FA3"></i>sleep_log</span>
+                    <span><i style="background:#7FA06C"></i>food_log</span>
+                    <span><i style="background:#E1663F"></i>workout</span>
+                    <span><i style="background:#4E8FB8"></i>journal_entry</span>
+                    <span><i style="background:#C9962E"></i>habit_day</span>
+                    <span><i style="background:#C46FA0"></i>chat_message</span>
+                    <span style="opacity:.7"><i style="background:transparent;border:2px solid #6E6257;border-radius:50%;"></i>suppressed / superseded (üres)</span>
+                    <span><i style="background:transparent;border:2px solid #A84A26;border-radius:50%;"></i>★ replayed lekérdezés + jelöltjei</span>
+                  </div>
+                </div>
+
+                <aside class="am-inspector">
+                  <div class="hd"><b>Pont részletei</b><button data-collapse title="Összecsukás">‹</button></div>
+                  <div class="row"><span class="k">sourceKind</span><span class="v">journal_entry</span></div>
+                  <div class="row"><span class="k">occurredOn</span><span class="v">2026-09-05</span></div>
+                  <div class="row"><span class="k">salience</span><span class="v">0.74</span></div>
+                  <div class="row"><span class="k">state</span><span class="v">active</span></div>
+                  <div class="sec">Tartalom</div>
+                  <div class="txt">„Ma korán keltem, jól aludtam — az edzés utáni napokon mindig jobb az alvásminőségem.”</div>
+                  <div class="sec">Forrás</div>
+                  <div class="txt"><a class="ad-fk">Megnyitás az adatböngészőben →</a> <span class="ad-mut">journal_entry · c012…9f</span></div>
+                  <div class="sec">10 valódi szomszéd <span class="ad-mut" style="font-weight:600;">(pgvector, valódi vektor-közelség)</span></div>
+                  <div class="row"><span class="k">Alvás-cél 7,5 óra…</span><span class="v">0.912</span></div>
+                  <div class="row"><span class="k">Hétvégi alvás-behozás</span><span class="v">0.887</span></div>
+                  <div class="row"><span class="k">Edzés utáni fáradtság</span><span class="v">0.851</span></div>
+                  <div class="row"><span class="k">Késői vacsora → rossz alvás</span><span class="v">0.823</span></div>
+                  <div class="row"><span class="k">Reggeli energiaszint napló</span><span class="v">0.795</span></div>
+                  <div class="row" style="border-bottom:none;"><span class="ad-mut">+ 5 további…</span></div>
+                  <div class="ad-note9" style="font-size:9.5px;color:#A2958A;margin-top:6px;">A térképen látott
+                  távolság a 2D-re hajtogatott vetület; ezek a szomszédok a teljes 768 dimenzióban a legközelebbiek —
+                  a kettő szándékosan nem feltétlenül ugyanaz.</div>
+                </aside>
+              </div>
+            </div>
+          </main>
+        </div></div></div>
+      </div>
+
+      <!-- ═══════════ 4 · RÉTEGEK ═══════════ -->
+      <div class="deskblock" id="d-retegek">
+        <div class="shotlbl"><b>4 · Rétegek</b><code>?view=layers</code><span>vektor- és gráf-egészség · minden hibás/elavult szám az adatböngészőre mutat</span></div>
+        <div class="desk"><div class="deskscreen"><div class="ad-shell">
+          <nav class="ad-rail">
+            <div class="brand"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-mezo"/></svg><div>Mezo<small>admin</small></div></div>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span>Áttekintés</span></a>
+            <a class="on" data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><span>Userek</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-minta"/></svg><span>Feature-használat</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-erme"/></svg><span>LLM költség</span></a>
+            <a data-go="d-futasok"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-tudas"/></svg><span>Adatböngésző</span></a>
+            <a class="soon"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-beallitas"/></svg><span>Meghívók</span><span class="v11">v1.1</span></a>
+            <div class="railfoot"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><div><div class="nm">Kertész Dániel</div><div class="rl">owner</div></div></div>
+          </nav>
+          <main class="ad-main">
+            <div class="ad-page">
+              <div class="pgtop"><button class="ad-back">‹ Userek</button><span class="ad-tag mut">/admin/users/8f21-a0c3/memory</span></div>
+              <div class="ad-hero">
+                <span class="ad-avatar lg" style="background:#6C5FA3">NP</span>
+                <div><div class="nm">Nagy Petra</div><div class="em">petra.nagy@example.com · user · regisztrált 2026-02-02 · utolsó aktivitás 6 perce</div></div>
+                <div class="stats">
+                  <div><span class="v">1 842</span><span class="ad-eyebrow">memória-elem</span></div>
+                  <div><span class="v">3 106</span><span class="ad-eyebrow">él</span></div>
+                  <div><span class="v">92</span><span class="ad-eyebrow">futás · 30n</span></div>
+                </div>
+              </div>
+              <div class="ad-tabs">
+                <button class="ad-tab">Aktivitás</button><button class="ad-tab">Adatok</button>
+                <button class="ad-tab">Feature-ök</button><button class="ad-tab">Költség</button>
+                <button class="ad-tab on">Memória</button>
+              </div>
+              <div class="am-segbar">
+                <button class="am-seg" data-go="d-futasok">Futások</button>
+                <button class="am-seg" data-go="d-graf">Gráf</button>
+                <button class="am-seg" data-go="d-terkep">Térkép</button>
+                <button class="am-seg on" data-go="d-retegek">Rétegek</button>
+              </div>
+
+              <div class="am-layout">
+                <div class="am-content">
+                  <div class="ad-mosaic">
+                    <div class="ad-tile sp8 w-sky">
+                      <div class="ad-eyebrow">memory_vector · státusz szerint</div>
+                      <div class="am-statgrid" style="margin-top:8px;">
+                        <div class="am-stat"><b>1 796</b><div class="lbl">ok</div></div>
+                        <div class="am-stat linkable"><b>31</b><div class="lbl">elavult (stale)</div></div>
+                        <div class="am-stat linkable"><b>15</b><div class="lbl">sikertelen</div></div>
+                        <div class="am-stat"><b>1 842</b><div class="lbl">összesen</div></div>
+                      </div>
+                      <div class="ad-eyebrow" style="margin-top:12px;">embedding-verzió eloszlás</div>
+                      <div class="ad-bar" style="width:100%;margin-top:6px;">
+                        <i style="background:#4E8FB8;width:82%;"></i><i style="background:#C9962E;width:16%;"></i><i style="background:#A2958A;width:2%;"></i>
+                      </div>
+                      <div class="am-legend2" style="margin-top:6px;">
+                        <span><i style="background:#4E8FB8"></i>text-embedding-3-large · 1 511</span>
+                        <span><i style="background:#C9962E"></i>text-embedding-3-large-v2 · 296</span>
+                        <span><i style="background:#A2958A"></i>ismeretlen · 35</span>
+                      </div>
+                    </div>
+                    <div class="ad-tile sp4 w-coral">
+                      <div class="ad-eyebrow">memory_item · állapot szerint</div>
+                      <div class="am-joblist" style="margin-top:8px;">
+                        <div class="row"><span>active</span><b>1 590</b></div>
+                        <div class="row"><span class="am-stat linkable" style="all:unset;cursor:pointer;color:#A84A26;text-decoration:underline dotted;">candidate</span><b>184</b></div>
+                        <div class="row"><span>archived</span><b>52</b></div>
+                        <div class="row"><span class="am-stat linkable" style="all:unset;cursor:pointer;color:#A84A26;text-decoration:underline dotted;">deleted</span><b>16</b></div>
+                      </div>
+                    </div>
+                    <div class="ad-tile sp6 w-lav">
+                      <div class="ad-eyebrow">knowledge_node · státusz szerint</div>
+                      <div class="am-joblist" style="margin-top:8px;">
+                        <div class="row"><span>active</span><b>241</b></div>
+                        <div class="row"><span class="am-stat linkable" style="all:unset;cursor:pointer;color:#A84A26;text-decoration:underline dotted;">candidate</span><b>19</b></div>
+                        <div class="row"><span>archived</span><b>7</b></div>
+                        <div class="row"><span class="am-stat linkable" style="all:unset;cursor:pointer;color:#A84A26;text-decoration:underline dotted;">deleted</span><b>3</b></div>
+                      </div>
+                    </div>
+                    <div class="ad-tile sp6 w-sage">
+                      <div class="ad-eyebrow">él-súly hisztogram · 10 sáv</div>
+                      <div class="am-histobar" style="margin-top:10px;">
+                        <i style="height:8%;"></i><i style="height:14%;"></i><i style="height:22%;"></i><i style="height:38%;"></i>
+                        <i style="height:64%;"></i><i style="height:100%;"></i><i style="height:71%;"></i><i style="height:40%;"></i>
+                        <i style="height:19%;"></i><i style="height:9%;"></i>
+                      </div>
+                      <div class="ad-axis" style="margin-top:6px;"><span>0.0</span><span>0.5</span><span>1.0</span></div>
+                    </div>
+                    <div class="ad-tile sp12">
+                      <div class="ad-eyebrow">Éjszakai jobok <span class="ad-mut" style="font-weight:600;">(időpontok becsültek)</span></div>
+                      <div class="am-joblist" style="margin-top:8px;grid-template-columns:1fr 1fr;display:grid;">
+                        <div class="row"><span>graph decay + prune</span><b>ma 03:12 · becsült</b></div>
+                        <div class="row"><span>vektor-egészség rollup</span><b>ma 03:04 · becsült</b></div>
+                        <div class="row"><span>elavult beágyazás jelölés</span><b>ma 02:58 · becsült</b></div>
+                        <div class="row"><span>PCA-cache invalidálás</span><b>ma 03:20 · becsült</b></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ad-note9" style="font-size:9.5px;color:#A2958A;margin-top:10px;">Minden hibás/elavult
+                  szám (31 elavult, 15 sikertelen, 184 + 19 candidate, 16 + 3 deleted) az adatböngészőbe mutat, a
+                  megfelelő táblára és userre előszűrve — a szám csak a nyom, nem szűrő.</div>
+                </div>
+
+                <aside class="am-inspector collapsed">
+                  <div class="hd"><b></b><button data-collapse title="Kinyitás">›</button></div>
+                  <div class="empty">A Rétegek nézetben nincs kijelölhető sor — az inspector itt
+                  csak összecsukható helykitöltő. Kattints egy StatCellre az adatböngészőbe ugráshoz.</div>
+                </aside>
+              </div>
+            </div>
+          </main>
+        </div></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) {
+      var t = document.getElementById(go.getAttribute('data-go'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    var collapse = e.target.closest('[data-collapse]');
+    if (collapse) {
+      var ins = collapse.closest('.am-inspector');
+      if (ins) ins.classList.toggle('collapsed');
+    }
+  });
+})();
+</script>
