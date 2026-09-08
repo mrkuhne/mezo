@@ -48,6 +48,16 @@ describe('AdminLayout (mock mode)', () => {
     expect(container.querySelector('.tab-bar')).not.toBeInTheDocument()
   })
 
+  it('renders the reworked rail: renames + Nyers adatok in the Eszközök group', async () => {
+    renderLayout()
+    expect(await screen.findByRole('link', { name: /Emberek/ })).toHaveAttribute('href', '/admin/users')
+    expect(screen.getByRole('link', { name: /Költés/ })).toHaveAttribute('href', '/admin/cost')
+    expect(screen.getByRole('link', { name: /Nyers adatok/ })).toHaveAttribute('href', '/admin/data')
+    expect(screen.getByText('Eszközök')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Adatböngésző/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^Userek$/ })).not.toBeInTheDocument()
+  })
+
   // Task 20 (mezo-d5iy.20): AdminLayout used to mount no ArrivalProvider at all, so every
   // `useArrival()`/`useSettledArrival()` consumer under it (every admin page's `EntranceGroup`)
   // fell back to arrival.tsx's context default of 'push' — ALWAYS, regardless of navigation —
