@@ -7,7 +7,7 @@ import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 // desktop-only surface, one clay icon per section, active state via NavLink's isActive.
 interface RailItem { to: string; label: string; icon: ClayIconName; end?: boolean }
 const RAIL: RailItem[] = [
-  { to: '/admin', label: 'Áttekintés', icon: 'i-nap', end: true },
+  { to: '/admin', label: 'Pulzus', icon: 'i-nap', end: true },
   { to: '/admin/users', label: 'Emberek', icon: 'i-emberek' },
   { to: '/admin/usage', label: 'Feature-használat', icon: 'i-minta' },
   { to: '/admin/cost', label: 'Költés', icon: 'i-erme' },

@@ -39,7 +39,7 @@ describe('AdminLayout (mock mode)', () => {
     renderLayout()
     expect(await screen.findByText('admin content')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: /admin navigáció/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Áttekintés/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Pulzus/ })).toBeInTheDocument()
   })
 
   it('never renders the app tab bar', async () => {

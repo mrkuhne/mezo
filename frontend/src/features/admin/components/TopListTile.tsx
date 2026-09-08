@@ -20,6 +20,7 @@ export function TopListTile({
   moreLabel,
   moreTo,
   unit,
+  emptyLabel = 'Nincs adat.',
 }: {
   title: string
   eyebrow: string
@@ -27,13 +28,16 @@ export function TopListTile({
   moreLabel: string
   moreTo: string
   unit?: string
+  /** Override the generic "Nincs adat." empty copy — a list whose emptiness is itself good
+   *  news (mezo-m079 Task 3's "Csendes tesztelők": nobody quiet) needs its own honest phrasing. */
+  emptyLabel?: string
 }) {
   return (
     <div className="ad-top">
       <div className="ad-eyebrow">{eyebrow}</div>
       <h3>{title}</h3>
       {rows.length === 0 ? (
-        <div className="ad-top-empty">Nincs adat.</div>
+        <div className="ad-top-empty">{emptyLabel}</div>
       ) : (
         rows.map((row, i) => {
           const body = (

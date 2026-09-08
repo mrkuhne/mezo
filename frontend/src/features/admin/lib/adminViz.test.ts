@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import type { AdminCostMatrixResponse } from '@/data/admin/adminInsightsApi'
-import { costMatrixTotals, topNFromEntries, deltaVsTrailingAvg } from '@/features/admin/lib/adminViz'
+import type { AdminCostMatrixResponse, AdminUserInsightResponse } from '@/data/admin/adminInsightsApi'
+import {
+  costMatrixTotals,
+  domainTotals,
+  featureLegend,
+  quietTesters,
+  topNFromEntries,
+  deltaVsTrailingAvg,
+} from '@/features/admin/lib/adminViz'
 
 // mezo-m079 Task 2 — cost-matrix aggregation + top-N shaping + the trailing-average delta,
 // all pure functions, tested against hand-computed fixtures.
@@ -102,5 +109,94 @@ describe('deltaVsTrailingAvg', () => {
     expect(r.pct).toBeCloseTo(expectedPct)
     expect(r.direction).toBe('up')
     expect(r.fromZero).toBe(false)
+  })
+})
+
+describe('domainTotals', () => {
+  it('sums each domain series own days, labelled through the dictionary', () => {
+    const totals = domainTotals([
+      { key: 'train', days: [{ count: 2 }, { count: 3 }] },
+      { key: 'food', days: [{ count: 1 }, { count: 1 }] },
+    ])
+    expect(totals).toEqual([
+      { key: 'train', label: 'Edzés', missing: undefined, value: 5 },
+      { key: 'food', label: 'Étkezés', missing: undefined, value: 2 },
+    ])
+  })
+
+  it('flags an unrecognized domain key as missing while still returning the raw key as the label', () => {
+    const totals = domainTotals([{ key: 'nonexistent_domain', days: [{ count: 4 }] }])
+    expect(totals).toEqual([{ key: 'nonexistent_domain', label: 'nonexistent_domain', missing: true, value: 4 }])
+  })
+})
+
+describe('featureLegend', () => {
+  it('keeps the top n features and folds the remainder into an Egyéb bucket off matrix.totalUsd', () => {
+    const matrix: AdminCostMatrixResponse = {
+      period: '30d',
+      users: [],
+      features: ['companion_chat', 'meal_coach', 'meal_draft', 'train_meso_plan'],
+      cells: [
+        { userId: 'u1', feature: 'companion_chat', calls: 1, costUsd: 10, unknownCalls: 0 },
+        { userId: 'u1', feature: 'meal_coach', calls: 1, costUsd: 5, unknownCalls: 0 },
+        { userId: 'u1', feature: 'meal_draft', calls: 1, costUsd: 2, unknownCalls: 0 },
+        { userId: 'u1', feature: 'train_meso_plan', calls: 1, costUsd: 1, unknownCalls: 0 },
+      ],
+      totalUsd: 20, // deliberately > the cells' own sum (18) — Egyéb must read off this field
+    }
+    const legend = featureLegend(matrix, 2)
+    expect(legend).toEqual([
+      { key: 'companion_chat', label: 'Beszélgetés a társsal', missing: undefined, value: 10 },
+      { key: 'meal_coach', label: 'Étkezési tanácsadó', missing: undefined, value: 5 },
+      { key: '__other__', label: 'Egyéb', value: 5 },
+    ])
+  })
+
+  it('omits the Egyéb bucket when nothing is left over', () => {
+    const matrix: AdminCostMatrixResponse = {
+      period: '30d',
+      users: [],
+      features: ['companion_chat'],
+      cells: [{ userId: 'u1', feature: 'companion_chat', calls: 1, costUsd: 3, unknownCalls: 0 }],
+      totalUsd: 3,
+    }
+    expect(featureLegend(matrix, 3)).toEqual([
+      { key: 'companion_chat', label: 'Beszélgetés a társsal', missing: undefined, value: 3 },
+    ])
+  })
+})
+
+describe('quietTesters', () => {
+  const NOW = new Date('2026-09-08T12:00:00Z')
+  const users: Pick<AdminUserInsightResponse, 'id' | 'name' | 'role' | 'lastActivityAt'>[] = [
+    { id: 'owner', name: 'Owner', role: 'OWNER', lastActivityAt: null },
+    { id: 'fresh', name: 'Fresh', role: 'USER', lastActivityAt: '2026-09-08T10:00:00Z' }, // today, <3 days
+    { id: 'quiet4', name: 'Quiet4', role: 'USER', lastActivityAt: '2026-09-04T12:00:00Z' }, // 4 days
+    { id: 'quiet10', name: 'Quiet10', role: 'USER', lastActivityAt: '2026-08-29T12:00:00Z' }, // 10 days
+    { id: 'never', name: 'Never', role: 'USER', lastActivityAt: null },
+  ]
+
+  it('excludes the owner and anyone quiet less than the threshold, sorts quietest first', () => {
+    const rows = quietTesters(users, NOW)
+    expect(rows.map((r) => r.key)).toEqual(['never', 'quiet10', 'quiet4'])
+  })
+
+  it('renders an honest "még nem aktív" row instead of inventing a day count for a never-active user', () => {
+    const rows = quietTesters(users, NOW)
+    const never = rows.find((r) => r.key === 'never')
+    expect(never?.value).toBe('még nem aktív')
+    expect(never?.share).toBe(1)
+  })
+
+  it('formats a quiet day count as "X napja" and links to the user detail page', () => {
+    const rows = quietTesters(users, NOW)
+    const quiet4 = rows.find((r) => r.key === 'quiet4')
+    expect(quiet4?.value).toBe('4 napja')
+    expect(quiet4?.to).toBe('/admin/users/quiet4')
+  })
+
+  it('returns an empty list when nobody has been quiet long enough', () => {
+    const rows = quietTesters([{ id: 'a', name: 'A', role: 'USER', lastActivityAt: NOW.toISOString() }], NOW)
+    expect(rows).toEqual([])
   })
 })

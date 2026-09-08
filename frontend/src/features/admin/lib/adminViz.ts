@@ -1,4 +1,4 @@
-import type { AdminCostMatrixResponse } from '@/data/admin/adminInsightsApi'
+import type { AdminCostMatrixResponse, AdminUserInsightResponse } from '@/data/admin/adminInsightsApi'
 import { featureLabel } from '@/features/admin/lib/labels'
 import type { TopRow } from '@/features/admin/components/TopListTile'
 
@@ -137,4 +137,72 @@ export function deltaVsTrailingAvg(
   const pct = ((yesterday - avg) / avg) * 100
   const direction = pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat'
   return { pct, direction, fromZero: false }
+}
+
+/** A legend slice — like `AdminVizEntry` but carrying the label dictionary's own `missing` flag
+ *  through instead of discarding it (mezo-m079 Task 3), so a legend can render the honest
+ *  "nincs címke" marker next to a raw key the label dictionary doesn't recognize. */
+export interface AdminLegendEntry {
+  key: string
+  label: string
+  missing?: boolean
+  value: number
+}
+
+/** Per-domain 30-day totals for the Pulzus "Aktivitás 30 nap" tile's legend (mezo-m079 Task 3):
+ *  every domain's own total (NOT summed across domains like `sumSeriesByDay` — this is one row
+ *  per domain, that function's one row per DAY), labelled through `featureLabel` (the activity
+ *  domains share the same dictionary as the LLM feature slugs — see labels.ts's own comment). */
+export function domainTotals(series: { key: string; days: { count: number }[] }[]): AdminLegendEntry[] {
+  return series.map((s) => {
+    const lbl = featureLabel(s.key)
+    return { key: s.key, label: lbl.label, missing: lbl.missing, value: s.days.reduce((sum, d) => sum + d.count, 0) }
+  })
+}
+
+/** Top-`n` feature costs + one "Egyéb" remainder bucket, for the Pulzus "Költés 30 nap" tile's
+ *  legend (mezo-m079 Task 3). Deliberately does its own per-feature summing rather than calling
+ *  `costMatrixTotals` + re-deriving `missing` from the label a second time — that would either
+ *  duplicate the label lookup or need `costMatrixTotals`'s shared, already-tested return shape
+ *  widened for this one caller. `matrix.totalUsd` (not a re-sum of `cells`) is the remainder's
+ *  base, per the page's own "the cost matrix is the SOLE source of the 30-day total" rule. */
+export function featureLegend(matrix: AdminCostMatrixResponse, n: number): AdminLegendEntry[] {
+  const totals: AdminLegendEntry[] = matrix.features.map((f) => {
+    const lbl = featureLabel(f)
+    const value = matrix.cells.filter((c) => c.feature === f).reduce((sum, c) => sum + c.costUsd, 0)
+    return { key: f, label: lbl.label, missing: lbl.missing, value }
+  })
+  const top = [...totals].sort((a, b) => b.value - a.value).slice(0, n)
+  const rest = Math.max(0, matrix.totalUsd - top.reduce((sum, e) => sum + e.value, 0))
+  const result = [...top]
+  if (rest > 0.004) result.push({ key: '__other__', label: 'Egyéb', value: rest })
+  return result
+}
+
+/** Non-owner users quiet for at least `minDays`, quietest first — the Pulzus "Csendes
+ *  tesztelők" tile (mezo-m079 Task 3). A user who has NEVER been active (`lastActivityAt: null`)
+ *  is the quietest of all, sorted first, but gets an honest "még nem aktív" row instead of an
+ *  invented day count. `now` is injectable so a test never depends on the real clock. */
+export function quietTesters(
+  users: Pick<AdminUserInsightResponse, 'id' | 'name' | 'role' | 'lastActivityAt'>[],
+  now: Date = new Date(),
+  minDays = 3,
+): TopRow[] {
+  const withDays = users
+    .filter((u) => u.role !== 'OWNER')
+    .map((u) => ({
+      u,
+      days: u.lastActivityAt == null ? null : Math.floor((now.getTime() - new Date(u.lastActivityAt).getTime()) / 86_400_000),
+    }))
+    .filter((x) => x.days === null || x.days >= minDays)
+    .sort((a, b) => (b.days ?? Number.POSITIVE_INFINITY) - (a.days ?? Number.POSITIVE_INFINITY))
+
+  const maxDays = Math.max(1, ...withDays.map((x) => x.days ?? 0))
+  return withDays.map(({ u, days }) => ({
+    key: u.id,
+    label: u.name,
+    value: days === null ? 'még nem aktív' : `${days} napja`,
+    share: days === null ? 1 : days / maxDays,
+    to: `/admin/users/${u.id}`,
+  }))
 }
