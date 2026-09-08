@@ -25,10 +25,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * Reflexió S4 (mezo-eq85.4), the SILENT LAUNCH — the shipped default. {@code notice.push-enabled=false}
- * holds back the {@code OBSERVATION_NEW} push only: the observation event is still appended and,
- * crucially, still carries {@code surfaced=true}, so the Észrevételek feed has real content the day
- * the tab ships (mezo-eq85.5) and the switch flips.
+ * The push switched OFF. This was S4's SILENT LAUNCH and the shipped default (mezo-eq85.4); since
+ * mezo-eq85.5 the shipped default is {@code true} and this class pins the property explicitly, so
+ * it keeps proving the OFF half of the switch. {@code notice.push-enabled=false} holds back the
+ * {@code OBSERVATION_NEW} push only: the observation event is still appended and, crucially, still
+ * carries {@code surfaced=true}, so the Észrevételek feed has real content either way.
  *
  * <p>This is the distinction {@link QuickNoticeBudgetOffIT} does NOT cover — there the budget
  * vetoes and the event is {@code surfaced=false}. Both halves have to be asserted here or the test
