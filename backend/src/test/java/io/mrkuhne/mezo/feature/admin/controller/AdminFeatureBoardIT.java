@@ -1,0 +1,161 @@
+package io.mrkuhne.mezo.feature.admin.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.api.dto.AdminFeatureBoardResponse;
+import io.mrkuhne.mezo.api.dto.AdminFeatureRow;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
+import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+
+/** GET /api/admin/features — the Funkciók scorecard (mezo-l096.3). */
+class AdminFeatureBoardIT extends ApiIntegrationTest {
+
+    private static final String URI = "/api/admin/features";
+    private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
+
+    @Autowired private LlmLogRepository llmLogRepository;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private FeedbackPopulator feedbackPopulator;
+
+    @Test
+    void testBoard_shouldReturn403_whenCallerIsUser() {
+        RegisteredUser anna = registerUser("Anna");
+        assertHasRequestError(getForBody(URI, anna.headers(), HttpStatus.FORBIDDEN, String.class), "AUTH_FORBIDDEN");
+    }
+
+    @Test
+    void testBoard_shouldUnionDomainAndLlmRowsWithCorrectKinds_whenBothSourcesHaveData() {
+        RegisteredUser anna = registerUser("Anna");
+        llmLogRepository.save(logRow(anna.id(), "meal_draft", CallStatus.SUCCESS, new BigDecimal("0.01")));
+        mealPopulator.createBareMealAt(anna.id(), LocalDate.now(ZONE), "lunch", LocalTime.NOON);
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "meal_draft".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getKind()).isEqualTo(AdminFeatureRow.KindEnum.AI));
+        assertThat(body.getRows()).filteredOn(r -> "food".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getKind()).isEqualTo(AdminFeatureRow.KindEnum.DOMAIN));
+        // Every mezo.admin.feature-map domain key is always present, even with zero usage.
+        assertThat(body.getRows()).extracting("key").contains("train", "sleep", "journal", "habits", "water", "weight");
+    }
+
+    @Test
+    void testBoard_shouldFlagUnknownSlugAsSystemKind_whenFeatureIsUnknown() {
+        llmLogRepository.save(logRow(null, "unknown", CallStatus.SUCCESS, null));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "unknown".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getKind()).isEqualTo(AdminFeatureRow.KindEnum.SYSTEM));
+    }
+
+    @Test
+    void testBoard_shouldExcludeErrorCallsFromCostAndUses_whenAFeatureHasBothStatuses() {
+        RegisteredUser anna = registerUser("Anna");
+        llmLogRepository.save(logRow(anna.id(), "meal_coach", CallStatus.SUCCESS, new BigDecimal("0.05")));
+        llmLogRepository.save(logRow(anna.id(), "meal_coach", CallStatus.ERROR, new BigDecimal("9.00")));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "meal_coach".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getCostUsd()).isEqualTo(0.05);
+                    assertThat(r.getCostPerUse()).isEqualTo(0.05); // 1 non-ERROR call
+                });
+    }
+
+    @Test
+    void testBoard_shouldExcludeNullCreatedByFromUniqueUsers_whenRowIsBackgroundTraffic() {
+        llmLogRepository.save(logRow(null, "nightly_recall", CallStatus.SUCCESS, new BigDecimal("0.02")));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "nightly_recall".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getUniqueUsers()).isZero();
+                    assertThat(r.getCostUsd()).isEqualTo(0.02); // background cost is still real cost
+                });
+    }
+
+    @Test
+    void testBoard_shouldMapLiveFeedbackThroughArtifactFeatureMap_whenChatMessageVerdictsExist() {
+        RegisteredUser anna = registerUser("Anna");
+        feedbackPopulator.createVerdict(anna.id(), MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "up", null);
+        feedbackPopulator.createVerdict(anna.id(), MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "up", null);
+        feedbackPopulator.createVerdict(anna.id(), MessageFeedbackEntity.KIND_CHAT_MESSAGE, UUID.randomUUID(), "down",
+                MessageFeedbackEntity.REASON_INACCURATE);
+        // companion_chat must exist as a row even with zero LLM usage, so the mapped feedback lands.
+        llmLogRepository.save(logRow(anna.id(), "companion_chat", CallStatus.SUCCESS, new BigDecimal("0.01")));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "companion_chat".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getHelped()).isNotNull();
+                    assertThat(r.getHelped().getUp()).isEqualTo(2);
+                    assertThat(r.getHelped().getDown()).isEqualTo(1);
+                });
+    }
+
+    @Test
+    void testBoard_shouldComputeHabitShareFromThreeOfFourActiveIsoWeeks_whenAUserIsHabitual() {
+        RegisteredUser anna = registerUser("Anna"); // habitual: active 3 of the last 4 ISO weeks
+        RegisteredUser bela = registerUser("Bela"); // tried once, in the current week only
+
+        LocalDate currentWeekMonday = LocalDate.now(ZONE).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate week0 = currentWeekMonday.minusWeeks(3).plusDays(1); // Tuesday, oldest of the 4
+        LocalDate week1 = currentWeekMonday.minusWeeks(2).plusDays(1);
+        LocalDate week2 = currentWeekMonday.minusWeeks(1).plusDays(1);
+        LocalDate week3 = currentWeekMonday.plusDays(1); // Tuesday of the current week
+
+        mealPopulator.createBareMealAt(anna.id(), week0, "lunch", LocalTime.NOON);
+        mealPopulator.createBareMealAt(anna.id(), week1, "lunch", LocalTime.NOON);
+        mealPopulator.createBareMealAt(anna.id(), week2, "lunch", LocalTime.NOON);
+        mealPopulator.createBareMealAt(bela.id(), week3, "lunch", LocalTime.NOON);
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "food".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getUniqueUsers()).isEqualTo(2L);
+                    assertThat(r.getHabitUserShare()).isEqualTo(0.5); // 1 habitual / 2 tried
+                });
+    }
+
+    /** Minimal valid audit row — same shape as {@code AdminUsageIT#logRow}. */
+    private static LlmLogEntity logRow(UUID owner, String feature, CallStatus status, BigDecimal cost) {
+        LlmLogEntity e = new LlmLogEntity();
+        e.setCreatedBy(owner);
+        e.setCallKind(CallKind.CHAT);
+        e.setFeature(feature);
+        e.setRequestedModel("gemini-2.5-flash");
+        e.setServedModel(status == CallStatus.ERROR ? null : "gemini-2.5-flash");
+        e.setStatus(status);
+        e.setLatencyMs(100);
+        e.setCostUsd(cost);
+        return e;
+    }
+}
