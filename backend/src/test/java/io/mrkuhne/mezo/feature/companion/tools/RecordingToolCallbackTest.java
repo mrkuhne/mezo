@@ -70,4 +70,30 @@ class RecordingToolCallbackTest {
         assertThat(RecordingToolCallback.compactArgs(null)).isEmpty();
         assertThat(RecordingToolCallback.compactArgs("{}")).isEmpty();
     }
+
+    @Test
+    void testCall_shouldCaptureTheDelegateResult_whenWithinBudget() {
+        // mezo-indo: the decorator is the ONLY place that sees a tool's output, so it is the only
+        // place that can hand it to the audit for the verdict judge.
+        ToolCallAudit audit = new ToolCallAudit(2, 10);
+        RecordingToolCallback cb = new RecordingToolCallback(stub("get_sleep", "Alvás: 7,1 óra", false), audit);
+
+        cb.call("{\"days\":7}", new ToolContext(Map.of()));
+
+        assertThat(audit.toolOutcomes()).singleElement()
+                .extracting(ToolCallAudit.ToolOutcome::result).isEqualTo("Alvás: 7,1 óra");
+    }
+
+    @Test
+    void testCall_shouldCaptureTheHonestErrorText_whenDelegateThrows() {
+        // A failed read must reach the judge as a FAILED read — otherwise a number the answer
+        // could not possibly have got from this tool would look supported by it.
+        ToolCallAudit audit = new ToolCallAudit(6, 10);
+        RecordingToolCallback cb = new RecordingToolCallback(stub("get_sleep", null, true), audit);
+
+        cb.call("{}", new ToolContext(Map.of()));
+
+        assertThat(audit.toolOutcomes()).singleElement()
+                .extracting(ToolCallAudit.ToolOutcome::result).isEqualTo(RecordingToolCallback.TOOL_FAILED);
+    }
 }

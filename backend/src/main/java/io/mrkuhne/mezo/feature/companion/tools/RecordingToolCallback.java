@@ -45,13 +45,19 @@ public class RecordingToolCallback implements ToolCallback {
         if (audit.budgetExhausted()) {
             return BUDGET_EXHAUSTED;
         }
-        audit.recordCall(getToolDefinition().name(), compactArgs(toolInput));
+        // mezo-indo: the decorator is the only place that sees a tool's OUTPUT, so it is the only
+        // place that can hand it to the audit for the verdict judge. The honest error text is
+        // recorded too — a failed read must not read as a read that supports a number.
+        int callIndex = audit.recordCall(getToolDefinition().name(), compactArgs(toolInput));
+        String result;
         try {
-            return delegate.call(toolInput, toolContext);
+            result = delegate.call(toolInput, toolContext);
         } catch (Exception e) {
             log.warn("Companion tool {} failed", getToolDefinition().name(), e);
-            return TOOL_FAILED;
+            result = TOOL_FAILED;
         }
+        audit.recordResult(callIndex, result);
+        return result;
     }
 
     /**
