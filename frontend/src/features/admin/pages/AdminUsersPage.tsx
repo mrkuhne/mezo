@@ -4,7 +4,7 @@ import { useMe } from '@/data/hooks'
 import { useAdminUserInsights } from '@/data/admin/adminInsightsHooks'
 import type { AdminSortDir, AdminUserInsightResponse, AdminUserInsightSort } from '@/data/admin/adminInsightsApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
-import { STATUS_LABEL, STATUS_TONE, TesterCard } from '@/features/admin/components/TesterCard'
+import { STATUS_LABEL, STATUS_TONE, STATUS_WASH, TesterCard } from '@/features/admin/components/TesterCard'
 import { testerStatus, type TesterStatus } from '@/features/admin/lib/adminViz'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
@@ -97,8 +97,10 @@ export function AdminUsersPage() {
   // Summary counts (Rulings): the owner is deliberately excluded from the two CHURN buckets
   // (csendesedik/lemorzsolódott) — an owner going quiet is a fact about the founder's own usage,
   // not a churn signal about the tester base this strip exists to watch — but IS counted
-  // normally in aktív/még nem aktív, and the owner's card always renders regardless of the
-  // active filter (see `visibleRows` below).
+  // normally in aktív/még nem aktív. The owner's card is always visible in the UNFILTERED grid
+  // (trivially true — every row shows) but is NOT force-shown under an active status filter
+  // (final review F2): clicking "Lemorzsolódott · 1" must show exactly 1 card, not 2 — an owner
+  // who doesn't match the clicked bucket is exactly as filtered-out as anyone else.
   const counts: Record<TesterStatus, number> = {
     aktiv: 0, csendesedik: 0, lemorzsolodott: 0, meg_nem_aktiv: 0,
   }
@@ -109,7 +111,7 @@ export function AdminUsersPage() {
 
   const visibleRows = statusFilter === null
     ? withStatusFiltered
-    : withStatusFiltered.filter(({ u, status }) => u.role === 'OWNER' || status === statusFilter)
+    : withStatusFiltered.filter(({ status }) => status === statusFilter)
 
   const sortedRows = [...visibleRows].sort((a, b) => (
     cardSort === 'koltseg' ? b.u.cost30dUsd - a.u.cost30dUsd : byRiskAsc(a.u, b.u)
@@ -123,7 +125,7 @@ export function AdminUsersPage() {
           {view === 'cards' && (
             <MosaicDesktop>
               {STATUS_ORDER.map((s) => (
-                <AdminTile key={s} query={users} wash="coral" eyebrow={STATUS_LABEL[s]} span={3}>
+                <AdminTile key={s} query={users} wash={STATUS_WASH[s]} eyebrow={STATUS_LABEL[s]} span={3}>
                   <button
                     type="button"
                     className={`ad-poster-btn${statusFilter === s ? ' on' : ''}`}

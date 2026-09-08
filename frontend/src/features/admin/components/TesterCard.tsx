@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { AdminUserInsightResponse } from '@/data/admin/adminInsightsApi'
 import { heatColor, testerStatus, type TesterStatus } from '@/features/admin/lib/adminViz'
 import { huInt, usd } from '@/shared/lib/huNum'
+import type { MozaikWash } from '@/shared/ui/mozaik'
 
 // TesterCard (mezo-zde2 Task 2) — the Emberek list's default view, one card per tester. Ported
 // idiom, not new invention: the 90-day heat strip reuses `.ad-heat`/`heatColor` from the User
@@ -24,6 +25,17 @@ export const STATUS_TONE: Record<TesterStatus, string> = {
   csendesedik: 'warn',
   lemorzsolodott: 'bad',
   meg_nem_aktiv: 'mut',
+}
+
+// Final review (WASH) — the same tone vocabulary as `STATUS_TONE`, but as a `MozaikWash` for the
+// Emberek summary-strip cells (AdminUsersPage): each status cell now carries its own tinted
+// tile instead of all four sharing a flat coral wash. `MozaikWash` has no plain "muted" — `white`
+// is its neutral wash, used for "még nem aktív" (no signal, not a warning color).
+export const STATUS_WASH: Record<TesterStatus, MozaikWash> = {
+  aktiv: 'sage',
+  csendesedik: 'gold',
+  lemorzsolodott: 'coral',
+  meg_nem_aktiv: 'white',
 }
 
 export function TesterCard({

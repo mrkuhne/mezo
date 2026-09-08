@@ -41,9 +41,12 @@ export function AdminUserDetailPage() {
   const isOwner = me.data?.role === 'OWNER'
   const navigate = useNavigate()
   const detail = useAdminUserDetail(userId, isOwner)
-  const board = useAdminFeatureBoard('30d', isOwner)
-  const feedback = useAdminUserFeedback(userId, isOwner)
   const [tab, setTab] = useState<Tab>('Aktivitás')
+  // Final review F3 — gated on the active tab too, not just `isOwner`: every OTHER tab used to
+  // fire this fetch on mount even though its result (the "never discovered" section) only ever
+  // renders under Funkciók.
+  const board = useAdminFeatureBoard('30d', isOwner && tab === 'Funkciók')
+  const feedback = useAdminUserFeedback(userId, isOwner)
 
   // Embedded per-table row browser (Adatok tab). Local component state, not URL search params —
   // this is a sub-panel of a user's detail page, not its own navigable surface (that's
@@ -224,6 +227,11 @@ export function AdminUserDetailPage() {
                     <div className="ad-big">{huInt(Object.values(detail.data.featureUsage30d).reduce((a, b) => a + b, 0))}<u>hívás</u></div>
                     <div style={{ marginTop: 6 }}>
                       {Object.entries(detail.data.featureUsage30d)
+                        // Final review F1 — `featureUsage30d` is 0-merged across every domain by
+                        // the backend; a 0-call row is noise in an adoption list, not an
+                        // "adopted" feature, so it's filtered here (and out of the "used" set
+                        // below) rather than only sorted last.
+                        .filter(([, count]) => count > 0)
                         .sort(([, a], [, b]) => b - a)
                         .map(([feature, count]) => {
                           const lbl = featureLabel(feature)
@@ -246,7 +254,13 @@ export function AdminUserDetailPage() {
                       are deliberately deferred (plan Rulings, bd note) — no fake data here. */}
                   <AdminTile query={board} wash="sage" eyebrow="Ezeket még nem találta meg" span={12}>
                     {(() => {
-                      const used = new Set(Object.keys(detail.data.featureUsage30d))
+                      // Final review F1 — `featureUsage30d` comes 0-merged across every domain
+                      // key from the backend, so a raw `Object.keys()` used-set marked every
+                      // domain feature "used" and this section could never list one. Only n > 0
+                      // counts as actually used.
+                      const used = new Set(
+                        Object.entries(detail.data.featureUsage30d).filter(([, n]) => n > 0).map(([k]) => k),
+                      )
                       const undiscovered = board.data.rows.filter((r) => r.kind !== 'system' && !used.has(r.key))
                       if (undiscovered.length === 0) {
                         return <p className="ad-mut">Minden elérhető funkciót kipróbált.</p>

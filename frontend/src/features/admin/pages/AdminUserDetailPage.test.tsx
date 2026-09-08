@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -94,22 +94,36 @@ describe('AdminUserDetailPage (mock mode)', () => {
     expect(screen.getByText(/1 napja/)).toBeInTheDocument()
   })
 
-  // mezo-zde2 Task 3 — adoption list (HU labels, count desc) + the "never discovered" section
-  // sourced from `useAdminFeatureBoard('30d', ...)`'s non-system row keys minus the ones the
-  // user's own featureUsage30d already covers. None of ADMIN_FEATURE_BOARD_MOCK's non-system
-  // keys (companion_chat/meal_draft/meal_coach/train_meso_plan/proactive_feed/food) overlap
-  // ADMIN_USER_DETAIL_MOCK.featureUsage30d's keys (chat/coach/vision), so every board key shows
-  // up there — a deterministic fixture, not a coincidence to preserve.
-  it('Funkciók tab lists the user\'s feature adoption plus a never-discovered section from the board', async () => {
+  // Final review F1 — `featureUsage30d` is 0-merged across every domain by the backend, so a
+  // raw `Object.keys()` used-set would mark every domain feature "used" and the never-discovered
+  // section could never list one. `ADMIN_USER_DETAIL_MOCK.featureUsage30d` now carries a GENUINE
+  // zero (`train_meso_plan: 0`) precisely to pin this: it must be excluded from the adoption
+  // list (0-call rows are noise) AND must still show up in "Ezeket még nem találta meg" even
+  // though its key is present in the map — only `companion_chat`(34)/`meal_draft`(12)/`food`(9)
+  // count as "used". Board non-system keys: companion_chat/meal_draft/meal_coach/
+  // train_meso_plan/proactive_feed/food — meal_coach and proactive_feed were never in
+  // featureUsage30d at all, the classic "never tried" case.
+  it('Funkciók tab lists only n>0 adoption rows and never-discovered honestly includes a genuine-zero key (F1)', async () => {
     renderPage()
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
     fireEvent.click(screen.getByRole('tab', { name: 'Funkciók' }))
     expect(await screen.findByText('Ezeket még nem találta meg')).toBeInTheDocument()
-    // adoption list still shows the user's own usage counts
-    expect(screen.getByText('18')).toBeInTheDocument()
-    // never-discovered: a non-system board key HU-labelled, none of which the user has used
-    expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument() // companion_chat
-    expect(screen.getByText('Étel-felismerés')).toBeInTheDocument() // meal_draft
+
+    // adoption list: real, used (n>0) rows only
+    expect(screen.getByText('Beszélgetés a társsal')).toBeInTheDocument() // companion_chat, 34
+    expect(screen.getByText('34')).toBeInTheDocument()
+    expect(screen.getByText('Étel-felismerés')).toBeInTheDocument() // meal_draft, 12
+
+    // never-discovered: meal_coach/proactive_feed (never tried) AND train_meso_plan (genuine 0
+    // in featureUsage30d — F1's core assertion), but NOT companion_chat/meal_draft/food (used).
+    const neverDiscoveredTile = screen.getByText('Ezeket még nem találta meg').closest<HTMLElement>('.mz-tile')!
+    expect(within(neverDiscoveredTile).getByText('Edzésterv-készítés')).toBeInTheDocument() // train_meso_plan
+    expect(within(neverDiscoveredTile).getByText('Étkezési tanácsadó')).toBeInTheDocument() // meal_coach
+    expect(within(neverDiscoveredTile).getByText('Üzenőfal-üzenetek')).toBeInTheDocument() // proactive_feed
+    expect(within(neverDiscoveredTile).queryByText('Beszélgetés a társsal')).toBeNull() // companion_chat used
+    expect(within(neverDiscoveredTile).queryByText('Étel-felismerés')).toBeNull() // meal_draft used
+    expect(within(neverDiscoveredTile).queryByText('Étkezés')).toBeNull() // food used
+
     // the system row never appears in either section
     expect(screen.queryByText('Ismeretlen hívás')).toBeNull()
   })

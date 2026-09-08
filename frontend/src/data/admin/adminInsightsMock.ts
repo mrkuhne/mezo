@@ -148,11 +148,16 @@ export const ADMIN_USER_DETAIL_MOCK: AdminUserDetailResponse = {
     { table: 'food_log', rowCount: 210, deletedCount: 0, lastCreatedAt: '2026-08-14T06:40:00Z' },
     { table: 'journal_note', rowCount: 22, deletedCount: 1, lastCreatedAt: '2026-08-10T21:00:00Z' },
   ],
-  featureUsage30d: { chat: 18, coach: 6, vision: 2 },
+  // Final review — real feature slugs (were fake `chat`/`coach`/`vision`, which have no
+  // FEATURE_LABELS entry and rendered "(nincs címke)" in mock mode). `train_meso_plan: 0` is a
+  // GENUINE zero — a feature the user has never actually called — so the Funkciók tab's
+  // "Ezeket még nem találta meg" section (which must only count n > 0 as "used", F1) has a real
+  // fixture to prove it: this key still shows up there even though it's a key in this map.
+  featureUsage30d: { companion_chat: 34, meal_draft: 12, train_meso_plan: 0, food: 9 },
   costByFeature30d: [
-    { feature: 'chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
-    { feature: 'coach', calls: 6, costUsd: 0.81, unknownCalls: 0 },
-    { feature: 'vision', calls: 2, costUsd: 0, unknownCalls: 2 },
+    { feature: 'companion_chat', calls: 34, costUsd: 2.4, unknownCalls: 0 },
+    { feature: 'meal_draft', calls: 12, costUsd: 0.81, unknownCalls: 0 },
+    { feature: 'food', calls: 9, costUsd: 0, unknownCalls: 2 },
   ],
 }
 

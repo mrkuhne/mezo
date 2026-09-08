@@ -82,7 +82,11 @@ describe('AdminUsersPage (mock mode, card grid — default view)', () => {
     expect(screen.getByRole('button', { name: /Még nem aktív/ })).toHaveTextContent('1')
   })
 
-  it('filters the card grid when a summary cell is clicked, but always keeps the owner card visible', async () => {
+  // Final review F2 ruling: under an ACTIVE status filter, only matching cards show — the owner
+  // is included only if the owner itself matches. Daniel/OWNER is `aktiv` (active today) per the
+  // fixture recap above, so he does NOT match "Lemorzsolódott" and must NOT force-show there;
+  // the cell's own count (1) must equal the actual card count (exactly Anna).
+  it('filters the card grid to exactly the matching status when a summary cell is clicked', async () => {
     const { container } = renderPage()
     await screen.findByText('Daniel')
     const owner = ADMIN_USER_INSIGHTS_MOCK[0]
@@ -90,14 +94,27 @@ describe('AdminUsersPage (mock mode, card grid — default view)', () => {
     const bela = ADMIN_USER_INSIGHTS_MOCK[2]
 
     fireEvent.click(screen.getByRole('button', { name: /Lemorzsolódott/ }))
-    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(2))
-    expect(screen.getByText(owner.name)).toBeInTheDocument()
+    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(1))
+    expect(screen.queryByText(owner.name)).not.toBeInTheDocument()
     expect(screen.getByText(anna.name)).toBeInTheDocument()
     expect(screen.queryByText(bela.name)).not.toBeInTheDocument()
 
-    // Clicking the same cell again toggles the filter back off.
+    // Clicking the same cell again toggles the filter back off — the unfiltered view shows
+    // every row again, owner included (trivially — no filter is applied at all).
     fireEvent.click(screen.getByRole('button', { name: /Lemorzsolódott/ }))
     await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(ADMIN_USER_INSIGHTS_MOCK.length))
+    expect(screen.getByText(owner.name)).toBeInTheDocument()
+  })
+
+  // The "aktiv" bucket DOES include the owner (Daniel is aktiv), so filtering it must show
+  // exactly the owner — proving the owner isn't specially force-included OR force-excluded,
+  // just filtered like anyone else.
+  it('filtering to the owner\'s own matching status shows exactly the owner', async () => {
+    const { container } = renderPage()
+    await screen.findByText('Daniel')
+    fireEvent.click(screen.getByRole('button', { name: /^Aktív/ }))
+    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(1))
+    expect(screen.getByText(ADMIN_USER_INSIGHTS_MOCK[0].name)).toBeInTheDocument()
   })
 
   it('navigates to the user detail route on card click', async () => {
