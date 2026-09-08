@@ -1,7 +1,7 @@
 ---
 title: Mezo UX — vezetett élmény és saját vizuális karakter
 type: query
-updated: 2026-09-08
+updated: 2026-09-09
 tags: [design, frontend, technique]
 related: [../../features/_platform-design-system.md, ../../features/today.md, ../../features/insights.md, ../index.md]
 sources:
@@ -130,3 +130,32 @@ Akkor jó az irány, ha első pillantásra érthető, mi fontos, az elsődleges 
 elérhető, és részletezés után az ember ugyanott tudja folytatni. Új/bizonytalan adatú felhasználóval
 is meg kell nézni; nem építhetjük a kompozíciót kizárólag szép, teljes demóadatokra.
 Az art direction kiválasztása és a konkrét swipe-hiba reprodukciója a következő beszélgetés része.
+
+## Boop: signature elemek az avataron túl
+
+2026-09-09 · mezo-88jw.7 · tervezői javaslat, még nem elfogadott UI-változás.
+A felhasználó megtartaná az editorial irányt és az eredeti kétszemű karaktert, de a jelenlegi
+képernyők túl szövegesek. A fenti források újraolvasásából: Tide Guide esetén az Apple leírása
+összeköti a vízi témát az egyedi animációkkal, diagramokkal és napszakos palettával; Huawei
+felismerhető összegző ábrákat, Bevel több terület értelmezését kínálja. Ezekből saját motívumok
+következhetnek, nem a referenciák megjelenésének másolása. Hivatalos weboldalak áttekintése,
+nem új telepítettapp-vizsgálat. Az aktuális Apple-oldalon Tide Guide Visuals and Graphics nyertes.
+
+Javasolt közös formai nyelv: nyitott körívek, kerek végű vonalak és kis pontok. Négy rokon elem:
+
+- **Ritmusív:** időbeli előrehaladás. Nap: négy check-in; edzés: mezociklushetek vagy sorozatok;
+  alvás: időablak. Valós sorrend és feliratok, nem egységesített egészségpontszám.
+- **Kapcsolati szál:** étkezés, sport és megfigyelések közötti kapcsolat, forráspontokkal.
+  Feltételezés szaggatva, rögzített adat folytonosan; a vonal önmagában nem állít okságot.
+- **Öblös felület:** saját, finoman bemetszett kontúr két egymás melletti információs résszel;
+  például étkezési alapkeret és sportkiegészítés. Kevés kiemelt helyen, nem minden sor körül.
+- **Lenyomat:** naphoz vagy héthez tartozó kis kompozíció a rögzített eseményekből. Napló,
+  heti összegzés, chatben megnyitható emlék. Nem hangulatdiagnózis, nem generikus dísz.
+
+Mozgás: mentéskor pont érkezik a ritmusívre; sport átvezetésekor összekötő szál mutat a változó
+étkezési keretre; területváltáskor ugyanaz a kontúr alakul át. Egyszeri, rövid, csökkentett mozgást
+tiszteletben tartó átmenetek. Aktív sorozat vagy szövegírás alatt a háttér nyugodt.
+
+Következő összehasonlítás: egy nap/check-in, egy edzés és egy étkezési képernyő ugyanazzal a
+motívumcsaláddal. Az AI mintanézet negyedik próba a kapcsolati szálhoz. Sikerfeltétel: kevesebb
+magyarázó szöveg, felismerhető azonosság eltérő kompozícióval, érthető adatok dísz nélkül is.
