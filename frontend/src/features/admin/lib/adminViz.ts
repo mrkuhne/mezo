@@ -182,7 +182,12 @@ export function featureLegend(matrix: AdminCostMatrixResponse, n: number): Admin
 /** Non-owner users quiet for at least `minDays`, quietest first — the Pulzus "Csendes
  *  tesztelők" tile (mezo-m079 Task 3). A user who has NEVER been active (`lastActivityAt: null`)
  *  is the quietest of all, sorted first, but gets an honest "még nem aktív" row instead of an
- *  invented day count. `now` is injectable so a test never depends on the real clock. */
+ *  invented day count. `now` is injectable so a test never depends on the real clock.
+ *
+ *  Fix round 1: these rows carry NO `share` — a day count is not a share of anything, and the
+ *  mockup's quiet-testers tile has no bars at all (name left, day count right, in warning
+ *  color). `tone: 'warn'` marks a real quiet-day count; `tone: 'mut'` keeps the honest
+ *  "még nem aktív" row visually muted rather than alarming. */
 export function quietTesters(
   users: Pick<AdminUserInsightResponse, 'id' | 'name' | 'role' | 'lastActivityAt'>[],
   now: Date = new Date(),
@@ -197,12 +202,23 @@ export function quietTesters(
     .filter((x) => x.days === null || x.days >= minDays)
     .sort((a, b) => (b.days ?? Number.POSITIVE_INFINITY) - (a.days ?? Number.POSITIVE_INFINITY))
 
-  const maxDays = Math.max(1, ...withDays.map((x) => x.days ?? 0))
   return withDays.map(({ u, days }) => ({
     key: u.id,
     label: u.name,
     value: days === null ? 'még nem aktív' : `${days} napja`,
-    share: days === null ? 1 : days / maxDays,
+    tone: days === null ? 'mut' as const : 'warn' as const,
     to: `/admin/users/${u.id}`,
   }))
+}
+
+/** Hungarian copy for the "Költés ma" Δ chip (mezo-m079 Task 3 fix round 1) — a bare "-46%" chip
+ *  read as meaningless in the browser check; the mockup's chip carries the comparison in words.
+ *  `fromZero` (no trailing history to compare against) reads as "új költés", never a fake 0%. */
+export function costDeltaCopy(delta: { pct: number; direction: 'up' | 'down' | 'flat'; fromZero: boolean }): string {
+  if (delta.fromZero) return 'új költés'
+  const pct = Math.abs(Math.round(delta.pct))
+  if (delta.direction === 'flat') return '– megegyezik a heti átlaggal'
+  const glyph = delta.direction === 'up' ? '▲' : '▼'
+  const word = delta.direction === 'up' ? 'több' : 'kevesebb'
+  return `${glyph} ${pct}%-kal ${word} a heti átlagnál`
 }

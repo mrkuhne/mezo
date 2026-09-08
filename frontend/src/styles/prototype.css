@@ -11618,6 +11618,10 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-toprow .sharebar i { display: block; height: 100%; border-radius: 4px; background: #A84A26; transform-origin: left; transform: scaleX(1); }
 .mz-play .ad-toprow .sharebar i { animation: adGrow .6s cubic-bezier(.25,.8,.35,1) both; animation-delay: var(--d, .3s); }
 .ad-toprow .val { flex: none; min-width: 48px; text-align: right; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* mezo-m079 Task 3 fix round 1 — a bar-less row's value carries its own tone instead of a
+   share bar (e.g. "Csendes tesztelők": a day count is not a share of anything). */
+.ad-toprow .val.warn { color: #8A6612; }
+.ad-toprow .val.mut { color: #A2958A; font-weight: 600; }
 .ad-more {
   display: inline-flex; align-items: center; gap: 4px; margin-top: 10px;
   font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: #A84A26; text-decoration: none;

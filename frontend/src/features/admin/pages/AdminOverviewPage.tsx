@@ -10,6 +10,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
 import { huInt, usd } from '@/shared/lib/huNum'
 import {
+  costDeltaCopy,
   costMatrixTotals,
   deltaVsTrailingAvg,
   domainTotals,
@@ -101,9 +102,7 @@ export function AdminOverviewPage() {
 
             <AdminTile query={ov} wash="gold" eyebrow="Költés ma" span={3}>
               <Poster spot="s-medal" big={usd(ov.data.costTodayUsd)} unit=""
-                foot={<span className={`ad-delta ${costDelta.direction}`}>
-                  {costDelta.fromZero ? 'új költés' : `${costDelta.pct > 0 ? '+' : ''}${Math.round(costDelta.pct)}%`}
-                </span>} />
+                foot={<span className={`ad-delta ${costDelta.direction}`}>{costDeltaCopy(costDelta)}</span>} />
             </AdminTile>
 
             <AdminTile query={ov} wash="coral" eyebrow="Aktív ma" span={3}>
@@ -151,20 +150,18 @@ export function AdminOverviewPage() {
               </div>
             </AdminTile>
 
-            <AdminTile query={costTopQuery} wash="coral" eyebrow="Kik viszik" span={4}>
+            <AdminTile query={costTopQuery} wash="coral" eyebrow="Kik viszik a költést · 7 nap" span={4}>
               <TopListTile
                 title="Kik viszik a költést · 7 nap"
-                eyebrow="Kik viszik"
                 rows={kikViszikRows}
                 moreLabel="Minden fiók megnézése →"
                 moreTo="/admin/users"
               />
             </AdminTile>
 
-            <AdminTile query={costTopQuery} wash="gold" eyebrow="Mire megy a pénz" span={4}>
+            <AdminTile query={costTopQuery} wash="gold" eyebrow="Mire megy a pénz · 7 nap" span={4}>
               <TopListTile
                 title="Mire megy a pénz · 7 nap"
-                eyebrow="Mire megy a pénz"
                 rows={mireMegyRows}
                 moreLabel="Teljes költség-bontás →"
                 moreTo="/admin/cost"
@@ -174,7 +171,6 @@ export function AdminOverviewPage() {
             <AdminTile query={testers} wash="sky" eyebrow="Csendes tesztelők" span={4}>
               <TopListTile
                 title="Csendes tesztelők"
-                eyebrow="Csendes tesztelők"
                 rows={quietRows}
                 emptyLabel="Mindenki járt itt mostanában."
                 moreLabel="Minden tesztelő aktivitása →"

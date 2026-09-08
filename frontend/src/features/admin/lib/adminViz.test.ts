@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { AdminCostMatrixResponse, AdminUserInsightResponse } from '@/data/admin/adminInsightsApi'
 import {
+  costDeltaCopy,
   costMatrixTotals,
   domainTotals,
   featureLegend,
@@ -181,22 +182,44 @@ describe('quietTesters', () => {
     expect(rows.map((r) => r.key)).toEqual(['never', 'quiet10', 'quiet4'])
   })
 
-  it('renders an honest "még nem aktív" row instead of inventing a day count for a never-active user', () => {
+  it('renders an honest "még nem aktív" row instead of inventing a day count for a never-active user, no share bar', () => {
     const rows = quietTesters(users, NOW)
     const never = rows.find((r) => r.key === 'never')
     expect(never?.value).toBe('még nem aktív')
-    expect(never?.share).toBe(1)
+    expect(never?.tone).toBe('mut')
+    expect(never?.share).toBeUndefined()
   })
 
-  it('formats a quiet day count as "X napja" and links to the user detail page', () => {
+  it('formats a quiet day count as "X napja", warn-toned with no share bar, links to the user detail page', () => {
     const rows = quietTesters(users, NOW)
     const quiet4 = rows.find((r) => r.key === 'quiet4')
     expect(quiet4?.value).toBe('4 napja')
+    expect(quiet4?.tone).toBe('warn')
+    expect(quiet4?.share).toBeUndefined()
     expect(quiet4?.to).toBe('/admin/users/quiet4')
   })
 
   it('returns an empty list when nobody has been quiet long enough', () => {
     const rows = quietTesters([{ id: 'a', name: 'A', role: 'USER', lastActivityAt: NOW.toISOString() }], NOW)
     expect(rows).toEqual([])
+  })
+})
+
+describe('costDeltaCopy', () => {
+  it('reads "új költés" when there is no trailing average to compare against', () => {
+    expect(costDeltaCopy({ pct: 0, direction: 'up', fromZero: true })).toBe('új költés')
+    expect(costDeltaCopy({ pct: 0, direction: 'flat', fromZero: true })).toBe('új költés')
+  })
+
+  it('spells out an "up" delta with the ▲ glyph and "több" wording', () => {
+    expect(costDeltaCopy({ pct: 86.4, direction: 'up', fromZero: false })).toBe('▲ 86%-kal több a heti átlagnál')
+  })
+
+  it('spells out a "down" delta with the ▼ glyph and "kevesebb" wording, using the absolute value', () => {
+    expect(costDeltaCopy({ pct: -46.2, direction: 'down', fromZero: false })).toBe('▼ 46%-kal kevesebb a heti átlagnál')
+  })
+
+  it('reads a neutral copy for a flat (non-zero-base) delta', () => {
+    expect(costDeltaCopy({ pct: 0.1, direction: 'flat', fromZero: false })).toBe('– megegyezik a heti átlaggal')
   })
 })
