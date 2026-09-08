@@ -1390,8 +1390,11 @@ window).
   own free-text note when present; window = the latest daily-summary narrative's first 300 chars.
   (Fix round, task-7 review: the sleep/weight note suffix — `CompanionMessageGenerator#freeTextSuffix`
   — was added because their query is otherwise built entirely from numeric fields, which made
-  `CompanionMessageGeneratorMemoryIT`'s own FAIL_EMBED case impossible to exercise honestly; "" when
-  the note is null/blank, so no caller's behaviour changes.)
+  `CompanionMessageGeneratorMemoryIT`'s own FAIL_EMBED case impossible to exercise honestly. Users
+  already set this note today through the weight/sleep log sheets, so when one is present the
+  memory query, the retrieved memories and the audited `raw_query` for that message now change too
+  — that's the point, a numeric-only query retrieves nothing useful; "" only when the note is
+  null/blank. Truncated to 200 chars like the other query-builder truncations in this class.)
 - **A failed embed degrades, it does not empty the block.** `MemoryContextService`'s retrievers run
   independently — a `FakeEmbeddingAdapter.FAIL_EMBED` query only kills the DENSE retriever; lexical/
   facts/graph still run, so a query that shares a keyword with a seeded item can still surface it.

@@ -768,11 +768,15 @@ public class CompanionMessageGenerator {
      *  or weight log, appended to that surface's memory-retrieval query when present — the ONLY
      *  free-text signal {@link #generateSleepReaction}/{@link #generateWeightReaction} carry (the
      *  rest of {@code sleepLine}/{@code trendLine} is purely numeric), so without this a genuinely
-     *  matching memory could never be found by anything but coincidence. "" (no-op) when the note
-     *  is null or blank, which is the normal case today (no caller sets it), so no existing
-     *  behaviour changes. */
+     *  matching memory could never be found by anything but coincidence. Users already set this
+     *  note today, through the weight and sleep log sheets ({@code WeightLogService#setNote},
+     *  {@code SleepLogService#setNotes}), so this is a real, live behaviour change: whenever a note
+     *  is present, the memory query, the retrieved memories and the audited {@code raw_query} for
+     *  that message now change too — the whole point, since a numeric-only query retrieves nothing
+     *  useful. "" (no-op) only when the note is null or blank. Truncated to 200 chars, independent
+     *  of the entity column length, like every other query-builder truncation in this class. */
     private static String freeTextSuffix(String note) {
-        return note == null || note.isBlank() ? "" : " " + note;
+        return note == null || note.isBlank() ? "" : " " + firstChars(note, 200);
     }
 
     /** The "Ma (terv): …" line out of a rendered {@link ContextSnapshotAssembler} snapshot, or ""
