@@ -79,7 +79,17 @@ export function AdminUsersPage() {
   // One shared `testerStatus` bucketing (adminViz.ts) — status is derived once here per row and
   // reused by both the summary-strip counts and the filter, so a count can never drift from
   // what clicking that cell actually shows.
-  const withStatus = useMemo(
+  //
+  // Fix round 1 (product ruling): the summary-strip COUNTS are computed off the FULL roster
+  // (`users.data`), never the search-filtered set — a KPI strip that shrinks while someone types
+  // in the search box would misread as the true churn count changing. The card GRID (and its
+  // status-filter clicks) still applies the search filter — `withStatusFiltered` below, used only
+  // for `visibleRows`/`sortedRows`, never for `counts`.
+  const withStatusFull = useMemo(
+    () => users.data.map((u) => ({ u, status: testerStatus(u.lastActivityAt ?? null) })),
+    [users.data],
+  )
+  const withStatusFiltered = useMemo(
     () => filteredUsers.map((u) => ({ u, status: testerStatus(u.lastActivityAt ?? null) })),
     [filteredUsers],
   )
@@ -92,14 +102,14 @@ export function AdminUsersPage() {
   const counts: Record<TesterStatus, number> = {
     aktiv: 0, csendesedik: 0, lemorzsolodott: 0, meg_nem_aktiv: 0,
   }
-  withStatus.forEach(({ u, status }) => {
+  withStatusFull.forEach(({ u, status }) => {
     if (u.role === 'OWNER' && (status === 'csendesedik' || status === 'lemorzsolodott')) return
     counts[status] += 1
   })
 
   const visibleRows = statusFilter === null
-    ? withStatus
-    : withStatus.filter(({ u, status }) => u.role === 'OWNER' || status === statusFilter)
+    ? withStatusFiltered
+    : withStatusFiltered.filter(({ u, status }) => u.role === 'OWNER' || status === statusFilter)
 
   const sortedRows = [...visibleRows].sort((a, b) => (
     cardSort === 'koltseg' ? b.u.cost30dUsd - a.u.cost30dUsd : byRiskAsc(a.u, b.u)
@@ -118,9 +128,12 @@ export function AdminUsersPage() {
                     type="button"
                     className={`ad-poster-btn${statusFilter === s ? ' on' : ''}`}
                     aria-pressed={statusFilter === s}
-                    aria-label={STATUS_LABEL[s]}
                     onClick={() => setStatusFilter((f) => (f === s ? null : s))}
                   >
+                    {/* Fix round 1 (a11y polish): the accessible name lives IN the button itself
+                        now (a visually-hidden label, not only `aria-label`) — the eyebrow text
+                        showing the same label sits in the enclosing Tile, outside this button. */}
+                    <span className="sr-only">{STATUS_LABEL[s]}</span>
                     <div className="ad-poster">
                       <div className={`ad-big ad-count-${STATUS_TONE[s]}`}>{huInt(counts[s])}</div>
                     </div>

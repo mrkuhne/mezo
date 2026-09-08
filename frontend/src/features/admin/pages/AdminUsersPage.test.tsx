@@ -66,6 +66,22 @@ describe('AdminUsersPage (mock mode, card grid — default view)', () => {
     expect(screen.getByRole('button', { name: /Még nem aktív/ })).toHaveTextContent('1')
   })
 
+  // Fix round 1 (product ruling): a KPI strip that shrinks while typing would misread as the
+  // true churn count changing — the summary counts must stay pinned to the full roster even
+  // though the search box narrows the visible card grid down to a single match.
+  it('keeps the summary-strip counts unchanged while a search query narrows the card grid', async () => {
+    const { container } = renderPage()
+    await screen.findByText(ADMIN_USER_INSIGHTS_MOCK[0].name)
+
+    fireEvent.change(screen.getByLabelText('Keresés'), { target: { value: 'Anna' } })
+    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(1))
+
+    expect(screen.getByRole('button', { name: /Aktív/ })).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Csendesedik/ })).toHaveTextContent('0')
+    expect(screen.getByRole('button', { name: /Lemorzsolódott/ })).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Még nem aktív/ })).toHaveTextContent('1')
+  })
+
   it('filters the card grid when a summary cell is clicked, but always keeps the owner card visible', async () => {
     const { container } = renderPage()
     await screen.findByText('Daniel')
