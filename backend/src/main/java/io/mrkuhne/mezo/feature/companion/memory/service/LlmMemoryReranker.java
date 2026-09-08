@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.companion.memory.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
-import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
@@ -66,11 +65,10 @@ public class LlmMemoryReranker implements MemoryReranker {
         if (!properties.reranker().enabled() || selected.isEmpty()) {
             return false;
         }
-        if (request.deep()
-                || request.consumerPolicy() == ConsumerPolicy.WEEKLY_MEMOIR
-                // mezo-eq85.3: the offline reflection consumer reranks by policy, not by uncertainty
-                || (request.consumerPolicy() == ConsumerPolicy.REFLECTION
-                        && properties.policies().reflection().rerank())) {
+        // mezo-eq85.7: every policy's rerank ALLOWANCE now comes from its own limitsFor(...) —
+        // WEEKLY_MEMOIR and REFLECTION keep exactly today's behaviour (WEEKLY_MEMOIR's policy is
+        // configured rerank=true; REFLECTION is adapted from policies().reflection().rerank()).
+        if (request.deep() || properties.limitsFor(request.consumerPolicy()).rerank()) {
             return true;
         }
         if (selected.stream().anyMatch(item -> item.candidate().conflicting())) {

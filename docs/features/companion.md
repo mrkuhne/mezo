@@ -1118,14 +1118,20 @@ chat on the other.
   for a 03:40 answer — so it must not inherit chat's latency gate. `ConsumerPolicy.REFLECTION` gets
   its own candidate pool, token budget and reranker allowance under
   `mezo.companion.memory-platform.policies.reflection` (30 / 800 / `rerank: true`), read by
-  `MemoryContextService.retrieveCandidates` + `boundedTokenBudget` and by
-  `LlmMemoryReranker.shouldRerank` next to the existing `deep || WEEKLY_MEMOIR` condition. The value
-  lands in `memory_retrieval_run.consumer_policy`, so **every reflection retrieval is separable from
-  a chat turn's in the audit** — which is the whole reason it is a policy and not a flag.
-- **`ReflectionMemoryGateway` is the single door, and it FAILS OPEN.** One audited request per call
-  (`LlmCallContext("companion_reflection", "memory", …)`), and any runtime blow-up below it becomes
-  `""` plus a warning. A memory platform that cannot answer must not cost the user tonight's
-  reflection — the whole nightly pass is best-effort by design.
+  `MemoryContextService.retrieveCandidates` + `boundedTokenBudget` and, as of S7's `limitsFor`
+  refactor below, by `LlmMemoryReranker.shouldRerank` via `properties.limitsFor(request.consumerPolicy()).rerank()`
+  (the S3-era hard-coded `deep || WEEKLY_MEMOIR` condition is gone — see the S7 section for the
+  full switch). The value lands in `memory_retrieval_run.consumer_policy`, so **every reflection
+  retrieval is separable from a chat turn's in the audit** — which is the whole reason it is a
+  policy and not a flag.
+- **`ReflectionMemoryGateway` is the single door, and it FAILS OPEN.** One audited request per call,
+  and any runtime blow-up below it becomes `""` plus a warning. A memory platform that cannot
+  answer must not cost the user tonight's reflection — the whole nightly pass is best-effort by
+  design. S7 refactors this gateway into a thin caller of the shared `MemoryContextBlock` seam (see
+  below); the persisted `llm_call.operation` label changes as part of that from the S3-era literal
+  `"memory"` to `"reflection_memory"` (`MemoryContextBlock.render` always appends `"_memory"` to its
+  `operation` argument) — **a cost report grouped by that label shows a split series across the
+  cutover**, not a real change in call volume.
 - **`TestPlanValidator` is where "Gemini phrases, code decides" bites hardest.** The model may name
   two series, a lag and a direction (`RawTestPlan`); **everything that decides whether the resulting
   hypothesis can ever be confirmed** — `minN`, `minGroupN`, `windowDays` — comes from
@@ -1339,6 +1345,63 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   `mezo.companion.reflection.enabled=false` for that reason; `ReflectionDigestMorningIT` (not
   class-`@Transactional`) is what actually covers the digest path. Production is unaffected: under
   MVCC a plain `SELECT` never waits on row locks, only on DDL/`VACUUM FULL`.
+
+**Memória mindenhol S7 (`mezo-eq85.7`) — the shared seam every non-chat surface reuses.** S3 gave
+reflection its own door into the memory platform; Part B of the epic (tasks 7-12) rolls that same
+capability out to every AI surface that should sound like it remembers the user, starting with the
+four proactive companion messages (morning briefing, sleep reaction, weight reaction, midday/evening
+window).
+
+- **`MemoryContextBlock` generalises `ReflectionMemoryGateway`'s one-door, fail-open contract.**
+  `companion/memory/service/MemoryContextBlock.render(userId, policy, query, asOf, deep, feature,
+  operation, entityId)` wraps `MemoryContextService.retrieve` inside an
+  `LlmCallContext(feature, operation + "_memory", "policy", entityId)` so the embedding/rewrite/
+  rerank calls a retrieval triggers are billed to the CALLING surface, never to a generic "memory"
+  bucket, and returns `Rendered(block, refs, retrievalRunId)` — `Rendered.EMPTY` on a blank query, a
+  disabled policy, or ANY `RuntimeException` below it. `ReflectionMemoryGateway` (S3) is now a thin
+  delegate onto this same seam — same public `contextFor` signature, same fail-open contract; its
+  persisted LLM-call operation label moved from the literal `"memory"` to `"reflection_memory"`
+  (nothing pins the old literal).
+- **`MemoryPlatformProperties.limitsFor(ConsumerPolicy)` is the ONE place every consumer's numbers
+  come from.** `PolicyLimits(enabled, candidateLimit, maxTokens, rerank, deep)` — one record per
+  configured policy under `policies:`, individually switchable so a surface can be rolled back to
+  "no memory context" purely by config. `REFLECTION` and `CHAT_AMBIENT` are ADAPTED from their
+  pre-existing shapes (`policies.reflection` / `serving`) rather than moved into new records —
+  `ReflectionPolicy` has no `enabled` switch and must never gain a silent way to be turned off, so
+  `limitsFor(REFLECTION)` always reports `enabled=true`; the caller's own `deep` ARGUMENT, not the
+  record, is what actually decides retrieval depth. `MemoryContextService.retrieveCandidates` /
+  `boundedTokenBudget` and `LlmMemoryReranker.shouldRerank` all read through `limitsFor` now, so
+  REFLECTION/CHAT_AMBIENT keep byte-identical numbers and every other policy is bounded the same
+  way. Seven consumer policies are configured (morning-briefing 20/600/no-rerank, weekly-memoir
+  30/1200/rerank/deep, prediction-evidence 30/800/rerank, similar-days 30/600, character-evidence
+  30/1200/rerank/deep, extraction 10/300, personal-context 15/400) — only `morning-briefing` has a
+  caller today; the rest are Part-B's runway for tasks 8-12.
+- **The four proactive companion messages share ONE policy.** `ConsumerPolicy.MORNING_BRIEFING`
+  (already declared, previously unused) is what morning/sleep/weight/window all retrieve under —
+  none of the other six configured policies is specific to a single proactive-feed kind, only the
+  LLM billing `operation` label differs per kind (`morning`/`sleep`/`weight`/the window's own
+  `kind`). `CompanionMessageGenerator` reaches the bean through an `ObjectProvider<MemoryContextBlock>`
+  (same idiom as `ObjectProvider<ReflectionDigestService>`), appends `mem.block()` right after the
+  existing knowledge-facts block, and maps `mem.refs()` (`RefsEnvelope.Ref`, three components) onto
+  its own two-component `CompanionMessageEnvelope.Ref` — the numbered candidate list is label-only,
+  so the memory ref's id is dropped. Per-kind query: morning = the biometrics-free snapshot's first
+  400 chars + the "Ma (terv):" plan line; sleep = "alvás " + the freshly logged sleep line + the
+  sleep log's own free-text note when present; weight = "súly " + the trend line + the weigh-in's
+  own free-text note when present; window = the latest daily-summary narrative's first 300 chars.
+  (Fix round, task-7 review: the sleep/weight note suffix — `CompanionMessageGenerator#freeTextSuffix`
+  — was added because their query is otherwise built entirely from numeric fields, which made
+  `CompanionMessageGeneratorMemoryIT`'s own FAIL_EMBED case impossible to exercise honestly. Users
+  already set this note today through the weight/sleep log sheets, so when one is present the
+  memory query, the retrieved memories and the audited `raw_query` for that message now change too
+  — that's the point, a numeric-only query retrieves nothing useful; "" only when the note is
+  null/blank. Truncated to 200 chars like the other query-builder truncations in this class.)
+- **A failed embed degrades, it does not empty the block.** `MemoryContextService`'s retrievers run
+  independently — a `FakeEmbeddingAdapter.FAIL_EMBED` query only kills the DENSE retriever; lexical/
+  facts/graph still run, so a query that shares a keyword with a seeded item can still surface it.
+  `MemoryContextBlockIT` asserts the run row and the dense retriever's recorded error for this case;
+  `CompanionMessageGeneratorMemoryIT` does the same per proactive-feed kind, with the marker planted
+  where each surface's own query actually reads it (morning: the `[Cél]` goal title; sleep/weight:
+  the log's free-text note above; window: the daily-summary narrative).
 
 ## 2. User-facing behavior
 
@@ -2794,6 +2857,12 @@ Reflexió S3 (`mezo-eq85.3`) adds `policies.reflection` (`candidate-limit: 30`, 
 `rerank: true`, bound to `MemoryPlatformProperties.Policies`/`ReflectionPolicy`): the per-consumer
 override the OFFLINE nightly pass retrieves under, deliberately deeper than chat's serving limits
 because no user is waiting on it.
+Memória mindenhol S7 (`mezo-eq85.7`) adds seven more `PolicyLimits(enabled, candidateLimit,
+maxTokens, rerank, deep)` records under `policies:` (`morning-briefing`, `weekly-memoir`,
+`prediction-evidence`, `similar-days`, `character-evidence`, `extraction`, `personal-context`) plus
+`MemoryPlatformProperties.limitsFor(ConsumerPolicy)`, the one switch statement every consumer
+(`MemoryContextService`, `LlmMemoryReranker`, `MemoryContextBlock`) now reads its numbers through;
+`reflection` keeps its S3 shape (adapted, not moved) so it can never be silently disabled.
 Audit runs are retained for 30 days by default; `MemoryRetrievalRetentionJob` fans out over active
 users at 03:50 and physically deletes expired runs so database cascades remove their result and
 feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
@@ -6854,6 +6923,27 @@ generated AND saved. Revert the `REQUIRES_NEW` and that last case fails with exa
 (the five event-writing sites migrated to `PatternEventAppender`), and
 `CompanionMessageGeneratorIT`/`CompanionMessageMissedWorkoutsIT` for the morning generator.
 
+**Memória mindenhol S7 (`mezo-eq85.7`).** `MemoryContextBlockIT` runs **without a test
+transaction** (the `MemoryContextServiceIT`/`ReflectionMemoryGatewayIT` rule) and proves the seam
+directly: a seeded `memory_item` + `memory_vector` produces a non-blank block and a
+`memory_retrieval_run` row carrying `consumer_policy = MORNING_BRIEFING`; a
+`FakeEmbeddingAdapter.FAIL_EMBED` query still produces a run (the dense retriever's own trace entry
+records the error, lexical/facts/graph still ran); and a hand-built `MemoryPlatformProperties` copy
+with `morning-briefing.enabled=false` returns `Rendered.EMPTY` and writes NO run row — the
+surface-level kill switch, proven once at the seam so it does not need repeating per proactive-feed
+kind. `CompanionMessageGeneratorMemoryIT` (same no-test-transaction rule) proves each of the four
+proactive-feed kinds actually WIRES the seam: morning/sleep/weight/window each append the rendered
+`[Hosszú távú memória]` block to the payload the fake LLM records
+(`FakeCompanionLlm.lastUserMessage()`) when a seeded item matches, and each audited run carries
+`MORNING_BRIEFING`. `MemoryPlatformPropertiesIT` gained a binding case per new `PolicyLimits` plus a
+`limitsFor` mapping test; `LlmMemoryRerankerTest`/`MemoryCandidateFusionTest` were updated for the
+`Policies` record's seven new components — no behavioural assertion in either changed.
+**Regression coverage:** `ReflectionMemoryGatewayIT` (the gateway's constructor now takes a
+`MemoryContextBlock`, not the raw `MemoryContextService`/`MemoryPlatformProperties`/
+`LlmCallContextHolder` triple — its fail-open case rebuilds that triple ONE layer down, inside a
+hand-built `MemoryContextBlock`), `CompanionMessageGeneratorIT`, `CompanionMessageJobIT`,
+`LlmCallContextTaggingIT`, `ProactiveApiFeedIT` and `ArchitectureTest`.
+
 ## 9. Decisions, gotchas & deferred
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
@@ -7512,6 +7602,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryRetrievalAuditWriter,MemoryRetrievalRetentionJob}.java` — independent run/result persistence and active-user 30-day physical audit purge.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{MemoryContext,MemoryContextItem,ScoreBreakdown,RetrievalServingMode}.java` — structured context/provenance/score and staged rollout contracts.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryCandidateFusionTest,MemoryContextSelectorTest,LlmMemoryRerankerTest,MemoryContextServiceIT,MemoryPlatformPropertiesIT,MemoryRetrievalRetentionIT}.java` — pure ranking/rendering and PostgreSQL orchestration/config/retention gates.
+
+**Backend — Memória mindenhol S7, shared Part-B seam (`mezo-eq85.7` — §1/§3/§4/§8)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryContextBlock.java` — the one door EVERY non-chat companion surface uses to reach the memory platform; fail-open, billed to the calling feature/operation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/config/MemoryPlatformProperties.java` — `PolicyLimits` + `limitsFor(ConsumerPolicy)`, the one place every consumer's candidate/token/rerank numbers now come from.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ReflectionMemoryGateway.java` — refactored (S3 → S7) into a thin `MemoryContextBlock` delegate, same public signature.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — morning/sleep/weight/window each append a `[Hosszú távú memória]` block and contribute ref candidates via `ObjectProvider<MemoryContextBlock>`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryContextBlockIT.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/CompanionMessageGeneratorMemoryIT.java` — the seam proven once, then proven wired into all four proactive-feed kinds.
 
 **Backend + contract — chat rollout (`mezo-6dii.6` — §2–§5/§8–§9)**
 
