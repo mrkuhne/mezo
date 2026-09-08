@@ -107,6 +107,10 @@ export function Launcher() {
           <span>Menthető mintanap, előre megírt AI-válaszok.</span>
         </p>
       </div>
+      <a className="presence-study-entry" href="?v=presence">
+        Új tanulmány · Egy Mezo, több tér{" "}
+        <span>Dinamikus navigáció és folytonos beszélgetés →</span>
+      </a>
       <div className="comparison-controls">
         <span>UGORJ EGY TERÜLETRE</span>
         {[

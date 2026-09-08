@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import "./shell.css";
+import PresenceStudy from "./PresenceStudy.jsx";
 import { Explorer, Launcher } from "./lab-app.jsx";
 class ErrorBoundary extends React.Component {
   state = { error: false };
@@ -22,7 +23,9 @@ class ErrorBoundary extends React.Component {
 const variant = new URLSearchParams(location.search).get("v");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {["measure", "companion"].includes(variant) ? (
+    {variant === "presence" ? (
+      <PresenceStudy />
+    ) : ["measure", "companion"].includes(variant) ? (
       <Explorer variant={variant} />
     ) : (
       <Launcher />
