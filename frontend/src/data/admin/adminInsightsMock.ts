@@ -234,7 +234,7 @@ export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
       key: 'cost_spike',
       severity: 'warn',
       title: 'Tegnapi AI-költés kiugróan magas',
-      detail: 'Tegnap $1,84 ment el — a korábbi 7 nap átlaga $0,33 volt.',
+      detail: 'Tegnap $1.84 ment el — a korábbi 7 nap átlaga $0.33 volt.',
       link: '/admin/cost?day=2026-09-07',
     },
     {

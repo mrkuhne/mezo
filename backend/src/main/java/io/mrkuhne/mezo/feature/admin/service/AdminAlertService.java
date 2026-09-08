@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminAlertService {
 
-    private static final String STATEMENT_TIMEOUT = "5s";
     private static final DateTimeFormatter JOB_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int COST_SPIKE_LOOKBACK_DAYS = 8;
     private static final int LLM_ERROR_WINDOW_HOURS = 24;
@@ -64,7 +64,7 @@ public class AdminAlertService {
 
     @Transactional(readOnly = true)
     public AdminAlertsResponse alerts() {
-        alertQuery.applyStatementTimeout(STATEMENT_TIMEOUT);
+        alertQuery.applyStatementTimeout(properties.statementTimeoutSql());
         ZoneId zone = properties.reportZone();
         AdminProperties.Alerts thresholds = properties.alerts();
 
@@ -112,7 +112,8 @@ public class AdminAlertService {
                 .key("cost_spike")
                 .severity(SeverityEnum.WARN)
                 .title("Tegnapi AI-költés kiugróan magas")
-                .detail("Tegnap $%.2f ment el — a korábbi 7 nap átlaga $%.2f volt.".formatted(yesterdayUsd, priorAvg))
+                .detail(String.format(Locale.ROOT, "Tegnap $%.2f ment el — a korábbi 7 nap átlaga $%.2f volt.",
+                        yesterdayUsd, priorAvg))
                 .link("/admin/cost?day=" + yesterday));
     }
 
@@ -186,6 +187,9 @@ public class AdminAlertService {
         Instant cutoff = LocalDate.now(zone).minusDays(thresholds.testerQuietDays()).atStartOfDay(zone).toInstant();
         List<String> quiet = appUserRepository.findAll().stream()
                 .filter(user -> !user.isOwner())
+                .filter(user -> user.getStatus() == AppUserEntity.UserStatus.ACTIVE)
+                // lastSeenAt == null (never logged in) is deliberately excluded — that account
+                // never had a "was here" moment to go quiet FROM, so it is not a quiet tester.
                 .filter(user -> user.getLastSeenAt() != null && user.getLastSeenAt().isBefore(cutoff))
                 .map(AppUserEntity::getName)
                 .sorted()

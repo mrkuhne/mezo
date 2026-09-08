@@ -88,6 +88,9 @@ mezo:
     # non-LLM feature, which owned table proves the feature was used and which column
     # carries the moment of use.
     report-zone: Europe/Budapest
+    # SET LOCAL statement_timeout for every native/dynamic query the admin hub itself runs
+    # (AdminRowQuery / AdminAlertQuery) — the RAG explorer keeps its own separate knob below.
+    statement-timeout: 5s
     browser:
       max-page-size: 200
     feature-map:

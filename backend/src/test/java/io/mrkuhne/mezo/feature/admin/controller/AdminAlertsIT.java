@@ -237,6 +237,19 @@ class AdminAlertsIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testAlerts_shouldNotFireTesterQuiet_whenTheQuietAccountIsDisabled() {
+        RegisteredUser anna = registerUser("Anna");
+        getForBody("/api/auth/me", anna.headers(), HttpStatus.OK, String.class);
+        Instant eightDaysAgo = ZonedDateTime.now(ZONE).minusDays(8).toInstant();
+        jdbcTemplate.update("update app_user set last_seen_at = ?, status = 'DISABLED' where id = ?",
+                java.sql.Timestamp.from(eightDaysAgo), anna.id());
+
+        AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
+
+        assertThat(body.getAlerts()).noneMatch(a -> "tester_quiet".equals(a.getKey()));
+    }
+
+    @Test
     void testAlerts_shouldStaySilentOnJobMissed_whenNoDailySummaryRowsExistYet() {
         AdminAlertsResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminAlertsResponse.class);
 
