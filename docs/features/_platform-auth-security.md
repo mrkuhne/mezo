@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: done
-updated: 2026-09-06
+updated: 2026-09-08
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -190,6 +190,21 @@ Two small services in `feature/auth/service` close out the multi-user epic on th
 
 - **`PromptPersona`** (`@Service`) is the one place a prompt template gets the user's name. `PromptPersona.NAME_TOKEN = "{{NÉV}}"` is the literal every `static final String` prompt template carries; a call site invokes `promptPersona.render(userId, template)` once, right before the LLM call — `render` loads the account via `PromptPersona.forUser(userId)` → `PersonaContext` and does one `String.replace`. `PromptPersona.USER_TURN_LABEL = "Felhasználó: "` is the neutral transcript role label (chat history, embeddings, fact extraction) — the same precedent as `KonziliumProposalRound.USER_FEEDBACK_PREFIX = "FELHASZNÁLÓ VÁLASZA — "`, the konzílium wire marker. No case inflection: a name-bearing suffix (`Danielnek`, `Danielről`) is rewritten onto a following noun/pronoun (`{{NÉV}} számára`, `{{NÉV}} személyéről`) instead, because Hungarian and Western name order cannot be told apart from a plain display string.
 - **The 26 prompt-site files rewritten to carry `{{NÉV}}` (S6, full inventory in the S6 plan's Table A, `grep -rn "Daniel" backend/src/main/java` at plan time):** `companion/service/{ChatService,FactExtractionService,KnowledgeFactService,DailySummaryService,HypothesisPipelineService,PeriodSummaryService,MesoReviewGenerator,PersonExtractionService}.java`, `companion/quarterly/service/QuarterlyReviewService.java`, `companion/profile/service/ProfileAssembler.java`, `companion/graph/service/LifeEventExtractionService.java`, `companion/llm/HabitSuggestLlmAdapter.java`, `companion/ChatHistory.java`, `companion/embedding/MemoryEmbeddingWriter.java`, `character/service/{CharacterPromptAssembler,PortraitWriter,KonziliumVerdictRound,KonziliumProposalRound,CharacterObservationService,CharacterExpertCatalog}.java`, `proactive/service/{CompanionMessageGenerator,WeeklyReviewGenerator,MemoirGenerator,PredictionGenerator,ExperimentProposalGenerator,ChallengeGenerator,WeeklySuggestionGenerator,DiagnosisRecipe}.java`, `recipe/service/RecipeWorkshopService.java`. Two sites were **not** in that inventory and needed the same treatment once found during implementation: `companion/llm/LifeGoalProposeLlmAdapter.java` (the lifegoal slice landed on `main` after the plan was written) and `CharacterExpertCatalog.SKEPTIC`/`KonziliumVerdictRound.skepticPersona()` (rewritten further than the plan's enumerated row, since round-4's self-audit dimension changed what the Szkeptikus persona says beyond a name substitution — see [`character.md`](character.md) §9/§10). `TurnVerdictCheck`/`AdvisorRetry`/`CompanionHelloRunner` keep a plain `"a felhasználó"` label with no `render` call — no `userId` reaches those call sites.
+- **`PromptPersona.VOICE_HU` (bd `mezo-m4m0`, 2026-09-08) is the companion's Hungarian REGISTER,
+  and it is deliberately NOT injected by `render`.** The rule ("always address the user informally;
+  formal address is forbidden") is appended by the PROSE prompt templates that want it — a prose
+  template opts IN. `render` has ~36 call sites, many of them JSON-EXTRACTION prompts (fact, person
+  and life-event extraction, profile assembly) where a tone rule is noise at best and a formatting
+  risk at worst, so injecting it there would push a register instruction into prompts that produce
+  no prose at all. The constant exists because five non-feed prose prompts
+  (`RecipeBreakdownProseService`, `QuestFlavor`, `MealCoachService`, `DayReviewService`,
+  `QuickNoticeService`) had already pinned the same rule INLINE — which is exactly what made the
+  companion feed's silence invisible: the feed was the only prose family with no register rule at
+  all, so its register was model chance, and one advice card shipped in formal address between two
+  informal ones. All six companion prose prompts (five in `CompanionMessageGenerator`, one in
+  `AdviceProseGenerator`) now reference it. **Where a template puts it matters** — see
+  [`proactive.md` §5.2](proactive.md): inside the instruction body, never before the marker prefix
+  the fake LLM dispatches on, never after the strict-JSON contract.
 - **`PersonaContext`** (`record PersonaContext(String userName)`) is who a prompt speaks about — the account's `app_user.name` as typed at registration, or `PersonaContext.FALLBACK = "a felhasználó"` when the row cannot be loaded (`userId == null`, or deleted between token issuance and the call).
 - **`UserFanOut`** (`@Service`) replaces `appUserRepository.findAll()` in every cron: `activeUsers()` returns `AppUserRepository.findByStatusAndOnboardedAtIsNotNull(ACTIVE)`, and `forEachActiveUser(jobName, body)` runs each user's `body` inside `LlmActorContext.runAs(user.getId(), …)` (so `llm_log_history.created_by` names the user the job ran for, not the `Háttér` bucket — see [`admin-hub.md`](admin-hub.md) §5) and catches **`Throwable`**, not `Exception` — a `Consumer<T>.accept()` cannot declare a checked exception, but a sneaky-throw can still make one escape the body, and it must not abort the fan-out either. It logs a warning naming the job and the user id and moves to the next user; jobs keep their own finer-grained try/catch inside the body on top of this outer one.
 - **`LlmActorContext`** (`techcore/security`, added S3 `mezo-qw37.3`) is a plain `ThreadLocal<UUID>` for the acting account on a thread with no request principal (a cron's scheduler thread has an empty `SecurityContextHolder`). `runAs` sets it, runs the body, and restores the previous value in a `finally` — even when the body throws — so nesting is safe and nothing leaks across threads. The LLM-call audit recorder reads `LlmActorContext.current()` when the JWT principal is absent.
@@ -417,7 +432,7 @@ The full multi-user epic (`mezo-qw37`, S1–S6) is now complete; see [ADR 0035](
 - `service/CurrentUser.java` — per-request account load, DISABLED→403, `last_seen_at` stamp, `requireOwner()`.
 - `service/AdminService.java` (S3) — invite CRUD + user list/reset-password/status for the OWNER surface.
 - `controller/AdminController.java` (S3) — `/api/admin/*`, every method opens with `requireOwner()`.
-- `service/PromptPersona.java` (S6) — `{{NÉV}}` template substitution, `USER_TURN_LABEL`.
+- `service/PromptPersona.java` (S6) — `{{NÉV}}` template substitution, `USER_TURN_LABEL`, and `VOICE_HU` (the shared informal-register rule the six companion prose prompts append; `mezo-m4m0`, §4 above).
 - `service/PersonaContext.java` (S6) — `record PersonaContext(String userName)` + `FALLBACK`.
 - `service/UserFanOut.java` (S6) — `forEachActiveUser`, the cron replacement for `appUserRepository.findAll()`.
 

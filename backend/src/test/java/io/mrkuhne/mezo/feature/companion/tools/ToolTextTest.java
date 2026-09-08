@@ -61,12 +61,20 @@ class ToolTextTest {
         assertThat(ToolText.num(new BigDecimal("83.694"))).isEqualTo("83.694");
     }
 
-    /** The ceiling every 1..10 self-rating shares — sleep quality, check-in energy/stress/body/
-     *  mental, sport intensity. Each of those was ALSO rendered against a literal "/5" in at least
-     *  one renderer; the worst shape was the day narrative saying "energia 8/5" while the context
-     *  snapshot said "energia 8/10", so two prompts feeding one model contradicted each other. */
+    /**
+     * The ceiling every 1..10 self-rating shares — sleep quality, check-in energy/stress/body/
+     * mental, sport intensity. Each was ALSO rendered against a literal "/5" in at least one
+     * renderer; the worst shape was the day narrative saying "energia 8/5" while the context
+     * snapshot said "energia 8/10", so two prompts feeding one model contradicted each other.
+     *
+     * <p>NOTE what this does NOT do, so nobody reads more into it: it pins the literal 10, not the
+     * contracts. Widening {@code sleep.yml}'s bound or {@code ck_sport_session_intensity} would
+     * leave it green. Verifying against the sources of truth would mean parsing YAML and SQL from
+     * a unit test; the guard that actually catches drift is that ONE constant now feeds every
+     * renderer, so a mismatch cannot be local any more.
+     */
     @Test
-    void testRatingMax_shouldMatchEveryContractBoundItStandsFor() {
+    void testRatingMax_shouldStayTenUntilEveryContractBoundMovesTogether() {
         assertThat(ToolText.RATING_MAX).isEqualTo(10);
     }
 
@@ -87,6 +95,39 @@ class ToolTextTest {
     void testSleepQuality_shouldBeTheSameSeamAsRating() {
         assertThat(ToolText.sleepQuality(7)).isEqualTo(ToolText.rating(7));
         assertThat(ToolText.sleepQuality(null)).isEqualTo(ToolText.rating(null));
+    }
+
+    /*
+     * The three named helpers are the ONLY place a quantity's precision is decided (mezo-a64t).
+     * Pinning them here matters more than it looks: the renderer ITs assert whole sentences, so a
+     * changed precision would fail them with a diff about Hungarian prose rather than about the
+     * number — and the refactor that introduced these helpers claimed byte-identical output
+     * "by construction", which is exactly the kind of claim that needs a test under it.
+     */
+    @Test
+    void testHuWeight_shouldRenderABodyWeightToOneDecimal() {
+        assertThat(ToolText.huWeight(new BigDecimal("83.694"))).isEqualTo("83,7");
+        assertThat(ToolText.huWeight(new BigDecimal("83"))).isEqualTo("83,0");
+    }
+
+    /** A weekly rate is finer than a weight on purpose: at one decimal, -0,244 kg/week would
+     *  render as "-0,2" and a slow drift would read as a rounder number than it is. */
+    @Test
+    void testHuRate_shouldRenderAWeeklyRateToTwoDecimals() {
+        assertThat(ToolText.huRate(new BigDecimal("-0.244"))).isEqualTo("-0,24");
+    }
+
+    @Test
+    void testHuHours_shouldRenderADurationToOneDecimal() {
+        assertThat(ToolText.huHours(new BigDecimal("6.62"))).isEqualTo("6,6");
+    }
+
+    /** Every helper inherits huNum's absent-value rendering — none may emit "null" or "0,0". */
+    @Test
+    void testNamedHelpers_shouldRenderAQuestionMarkWhenAbsent() {
+        assertThat(ToolText.huWeight(null)).isEqualTo("?");
+        assertThat(ToolText.huRate(null)).isEqualTo("?");
+        assertThat(ToolText.huHours(null)).isEqualTo("?");
     }
 
     @Test

@@ -147,7 +147,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### auth
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-07, done) ·
-  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-06, done)
+  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-08, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -1052,7 +1052,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-07, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-08, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1263,7 +1263,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/intention.md](features/intention.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-06, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-07, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-08, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-06, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
 

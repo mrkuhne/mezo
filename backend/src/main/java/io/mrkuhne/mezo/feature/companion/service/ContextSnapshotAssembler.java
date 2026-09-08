@@ -85,7 +85,11 @@ import org.springframework.stereotype.Service;
 public class ContextSnapshotAssembler {
 
     static final String HEADER = "\n\nAKTUÁLIS ÁLLAPOT (pillanatkép — ";
-    static final String NO_DATA = "nincs adat";
+    /** Delegated, not re-spelled (bd mezo-qp1x): the feed generators' fail-closed provenance
+     *  filter decides whether to offer the model a source by looking for THIS literal in the
+     *  rendered snapshot. Two copies of it means a silent total loss of provenance chips the day
+     *  they diverge — and the filter drops candidates on no-match, so nothing would fail. */
+    static final String NO_DATA = ToolText.NO_DATA;
     /** dayOfWeek 0=Hétfő..6=Vasárnap (GymScheduleSlotEntity convention). */
     private static final List<String> HU_DAYS = List.of("H", "K", "Sze", "Cs", "P", "Szo", "V");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
