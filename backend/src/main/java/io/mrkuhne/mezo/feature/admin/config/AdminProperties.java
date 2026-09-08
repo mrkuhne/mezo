@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -23,11 +24,21 @@ import org.springframework.validation.annotation.Validated;
 public record AdminProperties(
         @NotNull @Valid Browser browser,
         @NotEmpty Map<String, @Valid FeatureSource> featureMap,
-        @NotNull ZoneId reportZone) {
+        @NotNull ZoneId reportZone,
+        @NotNull @Valid Alerts alerts) {
 
     /** Data-browser limits. */
     public record Browser(@Positive int maxPageSize) {}
 
     /** Where a feature's usage is recorded. */
     public record FeatureSource(@NotBlank String table, @NotBlank String timestampColumn) {}
+
+    /** Owner status-band alert rule thresholds (mezo-kjwa). */
+    public record Alerts(
+            @Positive double costSpikeFactor,
+            @Positive BigDecimal costSpikeMinUsd,
+            @Positive int llmErrorRatePct,
+            @Positive int llmErrorMinCalls,
+            @Positive int jobMissedAfterHours,
+            @Positive int testerQuietDays) {}
 }

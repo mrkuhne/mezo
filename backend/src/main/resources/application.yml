@@ -132,6 +132,15 @@ mezo:
       # llm_log_history.feature the dry-run replay bills under; must equal
       # LlmCallContext.FEATURE_ADMIN_REPLAY (AdminMemoryPropertiesTest pins them together).
       replay-feature-label: admin_replay
+    # Owner status-band alert rule thresholds (mezo-kjwa). Rule evaluation itself is a later
+    # slice; these are just the tunable knobs it will read.
+    alerts:
+      cost-spike-factor: 2.0
+      cost-spike-min-usd: 0.50
+      llm-error-rate-pct: 20
+      llm-error-min-calls: 5
+      job-missed-after-hours: 26
+      tester-quiet-days: 7
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
