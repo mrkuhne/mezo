@@ -43,7 +43,7 @@ export function AdminAccountsPage() {
   }
 
   return (
-    <MozaikPage tone="lav" className="ad-page-narrow">
+    <MozaikPage tone="lav">
       <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
       <PageHero icon="i-emberek" name="Beta admin" sub="meghívók · felhasználók" />
       <PageBody>

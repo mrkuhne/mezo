@@ -18,7 +18,7 @@ import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,26 @@ import org.springframework.test.context.ActiveProfiles;
 class CompanionObservationApiIT extends ApiIntegrationTest {
 
     private static final LocalDate TODAY = LocalDate.now();
+
+    /**
+     * A fixture instant inside the day these tests ASK for (mezo-z3ka).
+     *
+     * <p>{@code ObservationFeedService.forDay} serves a {@code [day 00:00, next day 00:00)} window
+     * over {@code occurred_at}, so a fixture stamped {@code Instant.now().minus(N, HOURS)} silently
+     * lands on YESTERDAY whenever the suite runs within N hours of local midnight — the card then
+     * falls outside the queried window and the assertion sees an empty feed. That is exactly how
+     * this class turned {@code main} red: CI reached it at 00:22 local time, and the 1 h, 2 h and
+     * 5 h offsets all crossed back over midnight together.
+     *
+     * <p>Anchoring to the day's own start instead makes the fixtures clock-independent. Seconds,
+     * not hours, keep the whole timeline inside the window even in the first minute of the day, and
+     * the window's lower bound is INCLUSIVE, so {@code dayAt(0)} is a valid stamp. A stamp slightly
+     * in the future is harmless here: the feed has no upper bound at wall-clock now, only the day's
+     * end.
+     */
+    private static Instant dayAt(int secondsIntoTheDay) {
+        return TODAY.atStartOfDay(ZoneId.systemDefault()).plusSeconds(secondsIntoTheDay).toInstant();
+    }
 
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
@@ -55,13 +75,12 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Test
     void testListObservations_shouldReturnFreshWatchingConfirmedInThatOrder_whenAllThreeExist() {
         UUID owner = ownerId();
-        Instant now = Instant.now();
 
         PatternEntity fresh = patternPopulator.reflection(owner, plan("people:anna"),
                 PatternEntity.STATUS_PROPOSED);
         PatternEventEntity freshEvent = patternEventPopulator.observation(owner, fresh.getId(),
                 "Feltűnt, hogy Anna után többet alszol.\nFigyeljem tovább?",
-                List.of("journal_entry:" + UUID.randomUUID()), true, now.minus(2, ChronoUnit.HOURS));
+                List.of("journal_entry:" + UUID.randomUUID()), true, dayAt(0));
 
         PatternEntity watching = patternPopulator.reflection(owner, plan("sleep-duration-h"),
                 PatternEntity.STATUS_MONITORING);
@@ -69,7 +88,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEntity confirmed = patternPopulator.reflection(owner, plan("late-meal-hour"),
                 PatternEntity.STATUS_CONFIRMED);
         patternEventPopulator.decision(owner, confirmed.getId(),
-                PatternEventEntity.KIND_CONFIRMED, now.minus(1, ChronoUnit.HOURS));
+                PatternEventEntity.KIND_CONFIRMED, dayAt(60));
 
         List<ObservationResponse> cards = getForList(
                 "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
@@ -99,14 +118,13 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Test
     void testListObservations_shouldMarkTheCardAsReturn_whenTheRowWasRepliedToBeforeTheObservation() {
         UUID owner = ownerId();
-        Instant now = Instant.now();
         PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"),
                 PatternEntity.STATUS_MONITORING);
-        patternEventPopulator.userReply(owner, row.getId(), "chip", "watch", null,
-                now.minus(5, ChronoUnit.HOURS));
+        // the answer came FIRST — that is what makes the later observation a `return` card
+        patternEventPopulator.userReply(owner, row.getId(), "chip", "watch", null, dayAt(0));
         patternEventPopulator.observation(owner, row.getId(),
                 "Ahogy kérted, figyeltem — és tényleg.\nMaradjunk rajta?",
-                List.of(), true, now.minus(1, ChronoUnit.HOURS));
+                List.of(), true, dayAt(60));
 
         List<ObservationResponse> cards = getForList(
                 "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
@@ -124,7 +142,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEntity row = patternPopulator.reflection(owner, plan("people:anna"),
                 PatternEntity.STATUS_PROPOSED);
         patternEventPopulator.observation(owner, row.getId(), "Ezt sosem láttad.\nUgye?",
-                List.of(), false, Instant.now().minus(1, ChronoUnit.HOURS));
+                List.of(), false, dayAt(0));
 
         assertThat(getForList("/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).isEmpty();
@@ -135,8 +153,10 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         PatternEntity row = patternPopulator.reflection(owner, plan("people:anna"),
                 PatternEntity.STATUS_PROPOSED);
+        // dayAt(0), not now-1h: the reply below is POSTed at real wall-clock now, and it must land
+        // AFTER this observation or the card turns into a `return` one.
         patternEventPopulator.observation(owner, row.getId(), "Feltűnt valami.\nFigyeljem?",
-                List.of(), true, Instant.now().minus(1, ChronoUnit.HOURS));
+                List.of(), true, dayAt(0));
 
         PatternReplyResponse reply = postForBody(
                 "/api/companion/pattern/" + row.getId() + "/reply",
@@ -193,7 +213,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEntity foreign = patternPopulator.reflection(stranger, plan("people:anna"),
                 PatternEntity.STATUS_MONITORING);
         patternEventPopulator.observation(stranger, foreign.getId(), "Idegen észrevétel.\nNa?",
-                List.of(), true, Instant.now().minus(1, ChronoUnit.HOURS));
+                List.of(), true, dayAt(0));
 
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).isEmpty();
@@ -224,7 +244,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEntity statConfirmed = patternPopulator.statistical(owner, "pair-confirmed",
                 PatternEntity.STATUS_CONFIRMED);
         patternEventPopulator.decision(owner, statConfirmed.getId(),
-                PatternEventEntity.KIND_CONFIRMED, Instant.now().minus(1, ChronoUnit.HOURS));
+                PatternEventEntity.KIND_CONFIRMED, dayAt(0));
 
         assertThat(getForList("/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).isEmpty();
@@ -244,13 +264,11 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Test
     void testListObservations_shouldKeepTheChipAnswer_whenTheNightlyPassBumpedLastDetectedAt() {
         UUID owner = ownerId();
-        Instant now = Instant.now();
         PatternEntity row = patternPopulator.reflection(owner, plan("sleep-duration-h"),
                 PatternEntity.STATUS_MONITORING);
-        patternEventPopulator.userReply(owner, row.getId(), "chip", "watch", null,
-                now.minus(6, ChronoUnit.HOURS));
+        patternEventPopulator.userReply(owner, row.getId(), "chip", "watch", null, dayAt(0));
         // the nightly pass ran AFTER the answer and moved the row's own timestamp forward
-        row.setLastDetectedAt(now.minus(1, ChronoUnit.HOURS));
+        row.setLastDetectedAt(dayAt(60));
         patternPopulator.save(row);
 
         List<ObservationResponse> cards = getForList(
