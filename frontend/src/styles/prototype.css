@@ -11550,6 +11550,45 @@ button.mz-wtile:active { transform: scale(0.96); }
    app-wide `.sk` shimmer idiom) ---- */
 .ad-tile-pending { display: flex; flex-direction: column; gap: 8px; min-height: 80px; justify-content: center; }
 
+/* ---- Funkciók scorecard (mezo-kxnn Task 1) ---- */
+.ad-period-row { margin: 2px 0 4px; }
+.ad-scorecard { display: flex; flex-direction: column; }
+.ad-scorerow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.6fr) 46px 110px 76px 100px 90px 14px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+}
+.ad-scorerow + .ad-scorerow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+.ad-scorerow:hover { background: rgba(93, 79, 160, 0.06); }
+.ad-scorerow:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-scorerow .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ad-scorerow .name .lb { font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ad-scorerow .num { text-align: right; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.ad-scorerow .spark { display: block; width: 100%; height: 24px; overflow: hidden; }
+.ad-scorerow .spark svg { height: 24px; }
+.ad-scorerow .habit { display: flex; align-items: center; gap: 6px; }
+.ad-scorerow .habit .pct { font-size: 10.5px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; width: 30px; text-align: right; }
+.ad-scorerow .helped { display: flex; gap: 8px; font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad-scorerow .helped .up { color: #4E6B42; }
+.ad-scorerow .helped .down { color: #A8452A; }
+.ad-scorerow .cost { display: flex; flex-direction: column; align-items: flex-end; }
+.ad-scorerow .cost .v { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ad-scorerow .cost .per { font-size: 9px; }
+.ad-reliability-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; justify-self: center; }
+.ad-reliability-dot.sage { background: #4E6B42; box-shadow: 0 0 0 3px rgba(78, 107, 66, .16); }
+.ad-reliability-dot.gold { background: #C9962E; box-shadow: 0 0 0 3px rgba(201, 150, 46, .18); }
+.ad-reliability-dot.coral { background: #C4694F; box-shadow: 0 0 0 3px rgba(196, 105, 79, .2); }
+.ad-reliability-dot.grey { background: #C9C1B8; }
+.ad-score-divider {
+  margin-top: 10px; padding: 6px 4px 4px; font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #A2958A; border-top: 0.5px solid rgba(43, 33, 24, 0.1);
+}
+
 /* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
    van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster
    Tile — no eyebrow, its own washes per state). `.off` (grey, unavailable) MUST look

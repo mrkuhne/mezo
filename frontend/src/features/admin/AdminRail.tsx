@@ -9,7 +9,7 @@ interface RailItem { to: string; label: string; icon: ClayIconName; end?: boolea
 const RAIL: RailItem[] = [
   { to: '/admin', label: 'Pulzus', icon: 'i-nap', end: true },
   { to: '/admin/users', label: 'Emberek', icon: 'i-emberek' },
-  { to: '/admin/usage', label: 'Feature-használat', icon: 'i-minta' },
+  { to: '/admin/features', label: 'Funkciók', icon: 'i-minta' },
   { to: '/admin/cost', label: 'Költés', icon: 'i-erme' },
   { to: '/admin/accounts', label: 'Meghívók és fiókok', icon: 'i-beallitas' },
 ]
