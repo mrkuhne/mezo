@@ -14,6 +14,15 @@ import {
   ADMIN_USER_INSIGHTS_MOCK,
 } from '@/data/admin/adminInsightsMock'
 import { ADMIN_TABLES_MOCK, ADMIN_VIEWS_MOCK, adminRowsMockFor } from '@/data/admin/adminDataMock'
+import {
+  ADMIN_MEMORY_GRAPH_MOCK,
+  ADMIN_MEMORY_HEALTH_MOCK,
+  ADMIN_MEMORY_NEIGHBORS_MOCK,
+  ADMIN_MEMORY_RUNS_MOCK,
+  ADMIN_MEMORY_VECTORS_MOCK,
+  adminMemoryReplayMockFor,
+  adminMemoryRunDetailFor,
+} from '@/data/admin/adminMemoryMock'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
@@ -227,6 +236,29 @@ function lifeGoalEcho(g: Record<string, unknown>) {
   }
 }
 
+/** Minimális, de a szerződés szerint ÉRVÉNYES `PatternResponse` a chip-válasz feleletéhez
+ *  (Reflexió S5, mezo-eq85.5). A `PatternReplyResponse.pattern` kötelező és nem null a dróton,
+ *  ezért a `null` alapérték hazug szerződést örökített volna minden jövőbeli suite-ra. */
+export function replyPatternStub(patternId: string) {
+  return {
+    id: patternId,
+    kind: 'reflection',
+    pairKey: `ref-${patternId}`,
+    category: 'physiology',
+    categoryLabel: 'Alvás',
+    title: 'Teszt-minta',
+    mechanism: null,
+    evidence: [],
+    confidence: null,
+    status: 'monitoring',
+    lastDetectedAt: '2026-09-06T02:40:00Z',
+    hypothesisKey: `ref-${patternId}`,
+    belief: 0.5,
+    evidenceHits: 1,
+    evidenceMisses: 0,
+  }
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
   http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
@@ -316,6 +348,26 @@ export const handlers = [
     const page = Number(url.searchParams.get('page') ?? base.page)
     return HttpResponse.json({ ...base, table, page })
   }),
+  // RAG memory explorer (mezo-4qyt) — populated defaults mirroring the mock seed. The
+  // "switched off" (404 with no ADMIN_MEMORY_* code) path is exercised via server.use() in the
+  // degraded-state tests, never as a default here.
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/runs`, ({ request }) => {
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? ADMIN_MEMORY_RUNS_MOCK.page)
+    const size = Number(url.searchParams.get('size') ?? ADMIN_MEMORY_RUNS_MOCK.size)
+    return HttpResponse.json({ ...ADMIN_MEMORY_RUNS_MOCK, page, size })
+  }),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/runs/:runId`, ({ params }) =>
+    HttpResponse.json(adminMemoryRunDetailFor(String(params.runId)))),
+  http.post(`${API_BASE}/api/admin/users/:userId/memory/replay`, async ({ request }) => {
+    const body = (await request.json()) as { query: string; reranker: boolean; rewrite: boolean }
+    return HttpResponse.json(adminMemoryReplayMockFor(body.query, body.reranker, body.rewrite))
+  }),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/graph`, () => HttpResponse.json(ADMIN_MEMORY_GRAPH_MOCK)),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/vectors`, () => HttpResponse.json(ADMIN_MEMORY_VECTORS_MOCK)),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/vectors/:itemId/neighbors`, () =>
+    HttpResponse.json(ADMIN_MEMORY_NEIGHBORS_MOCK)),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/health`, () => HttpResponse.json(ADMIN_MEMORY_HEALTH_MOCK)),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.
@@ -1388,6 +1440,14 @@ export const handlers = [
       lastDetectedAt: '2026-07-03T02:40:00Z',
     })
   }),
+  // Reflexió S5 (mezo-eq85.5) — az észrevétel-feed alapból ŐSZINTÉN ÜRES; a kártyákat
+  // a saját teszt írja felül `server.use(...)`-szal.
+  http.get(`${API_BASE}/api/companion/observation`, () => HttpResponse.json([])),
+  // A `PatternReplyResponse.pattern` a dróton KÖTELEZŐ és nem null — ez a közös alapérték,
+  // amit minden jövőbeli suite örököl, ezért egy minimális, de ÉRVÉNYES `PatternResponse`.
+  http.post(`${API_BASE}/api/companion/pattern/:id/reply`, ({ params }) =>
+    HttpResponse.json({ pattern: replyPatternStub(String(params.id)), conversationId: null }),
+  ),
   http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
     HttpResponse.json({
       windowFrom: '2026-06-13',

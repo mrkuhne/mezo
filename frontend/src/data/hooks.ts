@@ -23,6 +23,7 @@ export { useDiagnoses, useDiagnosis, useDiagnosisActions } from '@/data/insights
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
 export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions, useGraphEdgeCount } from '@/data/insights/graphHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
+export { useObservations, useObservationReply } from '@/data/insights/observationsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
 export { useCoachingTrace } from '@/data/insights/coachingTraceHooks'
@@ -74,6 +75,10 @@ export {
   useAdminScreenUsage,
 } from '@/data/admin/adminInsightsHooks'
 export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
+export {
+  useAdminMemoryRuns, useAdminMemoryRun, useAdminMemoryReplay, useAdminMemoryGraph,
+  useAdminMemoryVectors, useAdminMemoryNeighbors, useAdminMemoryHealth,
+} from '@/data/admin/adminMemoryHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation, useHabitFormations } from '@/data/habit/habitHooks'

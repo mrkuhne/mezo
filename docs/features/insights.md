@@ -383,17 +383,17 @@ The companion's own memory pipeline made legible: not another results tab, but a
 onto the **L0→L3 memory stack itself** (raw daily metrics → the L1 episodic journal + vectors → the
 L2 judgement inbox → L3 durable knowledge) — the spine [`companion.md`](companion.md) documents by
 version slice, rendered live. Four **local segments** behind `useStickyTab('insights.memoria.view')`
-(`Áttekintés` / `Napló` / `Kereső` / `Audit`, a segmented-control bar identical to the
-Growth/FuelSlots idiom, `MemoryPage.tsx:37-45`) — this is a **page-local** sub-nav, not a router
+(`Rétegek` / `Napló` / `Kereső` / `Audit`, a segmented-control bar identical to the
+Growth/FuelSlots idiom, `MemoryPage.tsx:77-82`) — this is a **page-local** sub-nav, not a router
 route; all four read off two page-level hooks (`useMemoryOverview()`, `useMemorySummaries()`, both
 `@/data/hooks`), so switching segments never refetches. A single **degraded card** (companion off →
-404 on the overview call) replaces the whole page with a link to `/mezo/motor` (which redirects to
-`/mezo/patterns`, §2.8 — the link survives the Motor retirement as an extra hop, repointed onto
-`/mezo` by `mezo-d20.5.1` but still not shortened past the redirect); the
+404 on the overview call) replaces the whole page with a link **directly to** `/mezo/patterns`
+(§2.1) — the doc's earlier claim of an extra `/mezo/motor` redirect hop no longer holds; that hop
+was removed and the link now points straight at the Patterns dashboard; the
 loading window renders `GhostState` — the same loading/degraded/error three-state discipline the
 retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
 
-- **Áttekintés (`components/MemoryLayersPanel.tsx` + `MemoryLayerCard.tsx`):** four wash-tinted
+- **Rétegek (`components/MemoryLayersPanel.tsx` + `MemoryLayerCard.tsx`):** four wash-tinted
   layer cards top to bottom — **L0** (neutral `text-tertiary` wash: `daysWithAnyData/windowDays` —
   how many days in the pattern-detection lookback window carry data on ANY `MetricKey`; **the
   synthetic `MetricKey.WEEKEND` series is deliberately excluded from this union** — it is a
@@ -444,12 +444,12 @@ retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
   `source=pattern` facts) the existing V3.3 `minta: {title}` evidence chip. This panel is the FIRST
   consumer of `KnowledgeFact.source`/`lastReinforcedAt` (below) beyond the wire itself.
 - **Degraded ties:** the page-level degraded card (companion 404 on `useMemoryOverview`) covers
-  Áttekintés/Napló; Kereső and Audit carry their OWN inline degraded lines because their two queries
+  Rétegek/Napló; Kereső and Audit carry their OWN inline degraded lines because their two queries
   (`useSimilarDays`, `useLlmUsage`) are independently lazy/dual-mode — a mid-session companion outage
   can surface per-panel rather than page-wide.
 
 **Known asymmetry since the Motor retirement (`mezo-tk88.4`):** the retired `MotorPage` used to
-carry the reverse of the Áttekintés footer link — a "Memória-obszervatórium →" line under its
+carry the reverse of the Rétegek footer link — a "Memória-obszervatórium →" line under its
 coverage table, making the two read-only diagnostics surfaces mutually reachable. The Motor-retire
 task ported only the metric-coverage-ring wiring into the new Patterns dashboard (§2.1), not this
 cross-link, so today the link is **one-way** (Memória → `/mezo/motor`, redirecting to
@@ -724,6 +724,15 @@ shapes, unchanged by this frontend (the server owns ranking, labelling and domai
 on, `AdviceRankPort`/`DailyCardPort`). The hub tile on `MezoHubPage.tsx:146-151,240-252` reads the
 SAME `useCoachingTrace()` the hub page itself reads — no separate teaser/copy.
 
+### 5.9 Észrevételek — the observation feed Today mounts (✅ Reflexió S5, `mezo-eq85.5`)
+**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, and the only consumer is Today's `NapMezoPage` third tab ([today.md](today.md) §2) via `features/today/components/ObservationCard.tsx` — the same "an Insights-owned hook that Today mounts" shape as `FeedbackChips` (§5.7).
+
+- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. The server already orders the feed, so nothing sorts here.
+- **`useObservationReply()`** → `{ reply(patternId, choice, text?), pendingPatternId }`. Real mode POSTs `POST /api/companion/pattern/{patternId}/reply` and invalidates the `['observations']` prefix; mock mode writes `repliedChoice` straight into the cached cards and answers the `talk` branch with `{ conversationId: 'mock-conv' }`. `pendingPatternId` names the row whose reply is in flight — the card uses it to disable its chip group, because **the backend reply is not idempotent** and a double tap posts twice.
+- **`sourceIcon` mapping.** The wire sends bare surface names (`naplo`/`alvas`/`edzes`/`vacsora`/`hold`/`mezo`); the clay set is `i-` prefixed. `observationsApi.ts` holds the explicit `Record` — there is no shared domain→icon map to reuse — and falls back to `i-mezo` for anything it does not know, so a newer backend value can never blank a card's disc.
+
+Wire schemas, card semantics, the budget and the `OBSERVATION_NEW` push live in [`companion.md`](companion.md) §1.
+
 ---
 
 ## 6. How to use it (consume)
@@ -920,7 +929,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`pages/MotorPage.tsx` is DELETED (`mezo-tk88.4`)** — the 8th sub-tab (`mezo-viqs`, redesigned `mezo-18bx`) is retired; its diagnostics folded into `PatternsPage.tsx` above (§2.8 carries the full retirement note + what did/didn't carry over)
 - **`pages/WeeklyPage.tsx` is DELETED (`mezo-p2tr`)** — the 2nd sub-tab (D′ `mezo-t16y.1`) is retired; its content (score hero, growth card, tervjavaslat) moved verbatim to `/me/week` (§2.2), later split by `mezo-d20.6.10` into the `Heti` hub + view-pages ([`me.md`](me.md))
 - `pages/MemoryPage.tsx` — **`mezo-al1i`**, the 9th sub-tab (now the 8th): read-only memory-pipeline observatory (§2.9), 4 page-local segments (`useStickyTab('insights.memoria.view')`) over `useMemoryOverview`/`useMemorySummaries`, one page-level degraded card (companion 404) + per-panel `GhostState`/degraded lines in Kereső/Audit, shown in both modes
-- `components/Memory{LayerCard,LayersPanel,JournalPanel,SearchPanel,AuditPanel}.tsx` — **`mezo-al1i`**: the L0→L3 wash-tinted layer cards + cron-labelled pulsing `FlowConnector`s (Áttekintés), the memoir-styled journal cards with month separators + embed dot + `focusDate` scroll (Napló), the lazy-submit search form (Kereső), and the two-block cost-hero/provenance panel (Audit) — §2.9 has the full per-panel breakdown
+- `components/Memory{LayerCard,LayersPanel,JournalPanel,SearchPanel,AuditPanel}.tsx` — **`mezo-al1i`**: the L0→L3 wash-tinted layer cards + cron-labelled pulsing `FlowConnector`s (Rétegek), the memoir-styled journal cards with month separators + embed dot + `focusDate` scroll (Napló), the lazy-submit search form (Kereső), and the two-block cost-hero/provenance panel (Audit) — §2.9 has the full per-panel breakdown
 - `components/SimilarDayCard.tsx` — **`mezo-al1i`** the Kereső result card: similarity ring + bar + the `egyezés × frissesség = végső` three-chip score row (freshness recovered client-side as `finalScore/similarity`); `onPick(date)` jumps the page to Napló focused on that day
 - `components/TokenColumns.tsx` — **`mezo-al1i`** the Audit panel's small stacked SVG bar chart (`--dv-lav` input / `--dv-sage` output tokens per day)
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)

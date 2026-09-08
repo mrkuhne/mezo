@@ -20,7 +20,7 @@ import { huInt } from '@/shared/lib/huNum'
 // Adatok tab: the inventory list stays here; clicking a row selects that table and mounts a
 // `DataTable` below it, bound to `useAdminRows({ table, userId: id, ... })` (mezo-d5iy.12).
 const usd = (v: number) => `$${v.toFixed(2)}`
-const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség'] as const
+const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória'] as const
 type Tab = (typeof TABS)[number]
 
 export function AdminUserDetailPage() {
@@ -105,7 +105,7 @@ export function AdminUserDetailPage() {
                   role="tab"
                   aria-selected={tab === t}
                   className={`ad-tab${tab === t ? ' on' : ''}`}
-                  onClick={() => setTab(t)}
+                  onClick={() => (t === 'Memória' ? navigate(`/admin/users/${userId}/memory`) : setTab(t))}
                 >
                   {t}
                 </button>

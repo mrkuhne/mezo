@@ -25,9 +25,11 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.101.0",
+    "d3-force": "^3.0.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.16.0"
+    "react-router-dom": "^7.16.0",
+    "umap-js": "^1.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -35,6 +37,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/d3-force": "^3.0.10",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
