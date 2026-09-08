@@ -176,3 +176,36 @@ Flake bug filed: mezo-x2ew (midnight-window test family 00:00–02:00 local, roo
 - **O3 — Worktrees per branch** under `../mezo-wt-*`; merges to main from worktree via
   `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`
   (handoff lesson). Full backend suite only ever run by the orchestrator, one Maven at a time.
+
+## Post-delivery defects reported live by the owner (2026-09-08)
+
+Three reports came in after the owner opened the live console for the first time. All three are
+recorded here because each one is a lesson about what this run's verification did *not* cover.
+
+- **L1 — /admin rendered blank (not our bug).** Chrome with AdBlock Plus blocked the bare-IP
+  `sslip.io` host; incognito (extensions off) loaded fine. My first hypothesis — a stale service
+  worker — was wrong, and clearing site data did not help. Backlog-worthy: the bare-IP domain
+  trips adblockers, which will hit every beta invitee, not just the owner.
+- **L2 — nothing scrolled on any /admin page (mezo-n87u, shipped).** `.ad-shell` used
+  `height: 100%; min-height: 100vh` under the global `html, body { overflow: hidden }`, so the
+  shell grew past the viewport with no scroller anywhere. Fix: definite `100dvh` shell +
+  `min-height: 0` on the flex children + a visible thin scrollbar on `.ad-main`/`.ad-rail`
+  (the global `*::-webkit-scrollbar { display: none }` had hidden every affordance).
+  **Why my own verification missed it:** I asserted structure from the a11y tree, which lists
+  offscreen content, so a page truncated at the fold looked complete; the visual goldens do not
+  cover `/admin`. mezo-klsl files a Playwright scroll guard.
+- **L3 — "no padding anywhere" (mezo-4qyt.14, two attempts).** I first dismissed this as
+  unreproducible; the owner pushed back with a screenshot and was right. Three owner pages
+  (`AdminCostPage`, its call detail, `AdminAccountsPage`) moved into `/admin` verbatim from the
+  phone shell and still use `MozaikPage`/`PageBody` rather than `MosaicDesktop`.
+  - **Attempt 1 (PR #588, wrong):** read as a line-length problem → constrained the pages to an
+    880px column. The owner rejected it: full desktop width is what he wants.
+  - **Attempt 2 (PR #589, correct):** the real defect was missing **vertical** rhythm —
+    `PageBody` sets no gap and neither `.card` nor `.aiu-fcard` carries a margin, so the period
+    tabs, the rollup hero and the "Feature szerint" breakdown butted together with only the
+    segtabs' own 4px. Fix: drop `.ad-page-narrow`, give `AdminCostPage`'s `PageBody` the
+    surface's own `col gap-md`.
+  - **Lesson:** "nincsen rendes padding" from a non-engineer names the *symptom*, not the axis.
+    Ask which axis (or show both) before changing layout — a wrong axis costs a full CI round.
+  - mezo-4qyt.14 **stays open** for the real fix: these three pages need the `MosaicDesktop`
+    treatment the other five admin pages already have. That is a redesign, not spacing.
