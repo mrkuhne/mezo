@@ -605,6 +605,44 @@ mezo:
     retention:
       payload-days: 90
       cron: "0 40 3 * * *"
+    # mezo-ozri.6 per-user rolling USD cap (spec §C1/§C2). REVERSES ADR 0035 §L1, which shipped cost
+    # visibility only: at the migration spec's §4 numbers a heavy account costs ~$51/month against
+    # $10.46 of net revenue, so the ceiling is not optional. Enforced PRE-FLIGHT in
+    # LlmCallContextHolder.runWith — the one point where the feature slug is known and the provider
+    # has not been called yet. NOTE (spec §L1): with mezo.feature.llm-log.enabled=false nothing is
+    # recorded, so the cap has nothing to read and is INERT — turning the audit log off turns the cap
+    # off too, and the service says so once at WARN.
+    budget:
+      enabled: true
+      # The ceiling for one account per cycle. $5, not the research's $4: the standard COGS is
+      # $2.13-3.11, so $4 is scarcity rather than headroom; $5 leaves ~1.6-2.3x until the beta
+      # produces a real p95.
+      hard-cap-usd: 5.00
+      # ROLLING window ending now, in days — deliberately not a calendar month.
+      cycle-days: 30
+      # The three graded steps as a percentage of hard-cap-usd. Must ascend (validated at boot).
+      degrade-at-percent: 70          # every call routes onto the provider's cheap tier
+      throttle-cron-at-percent: 90    # the expensive background generators below are suspended too
+      stop-at-percent: 100            # every capped call is refused until the window rolls
+      # Suspended from the throttle step up: the expensive generators nobody is sitting and waiting
+      # for. Each is an idempotent catch-up inside UserFanOut's per-user try/catch, so a refusal just
+      # skips one run. Slugs must match the first argument of a real `new LlmCallContext(...)` — a
+      # slug that matches nothing is a silent no-op, the worst failure mode this list has.
+      throttled-features:
+        - proactive_memoir
+        - proactive_diagnosis
+        - proactive_prediction
+        - proactive_experiment
+        - proactive_challenge
+        - proactive_weekly_review
+        - companion_quarterly
+        - companion_hypothesis
+      # Never capped: the owner's admin dry-run replay bills the INSPECTED user but has to stay
+      # usable on exactly the accounts that hit their ceiling (LlmCallContext.FEATURE_ADMIN_REPLAY),
+      # and the boot smoke call is how we find out the provider works at all.
+      exempt-features:
+        - admin_replay
+        - companion_smoke
     # Unit prices keyed by SERVED model id: USD per 1M tokens (generation) / per 1M chars (embedding).
     # Rates drift — verify the current Gemini rates when touching this block. Changing them does NOT
     # rewrite history: every logged call freezes its own pricing snapshot at write time.
