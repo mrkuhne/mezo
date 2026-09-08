@@ -798,23 +798,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
   - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmGroupRow`, `LlmLogRepository`,
     `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
-  - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmCallRecord`,
-    `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
+  - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmBudgetService`,
+    `LlmCallRecord`, `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
   - **controllers→contract:** `LlmUsageController`→`LlmUsageApi`
   - **mappers:** `LlmLogMapper`
   - **config:** `LlmLogAsyncConfig`, `LlmLogProperties`, `LlmPricingProperties`, `ModelPrice`
   - **events/listeners:** `LlmCallEvent`
-  - **other:** `CallKind`, `CallStatus`, `LlmCallContext`, `LlmCallContextHolder`, `PricingSnapshot`,
-    `ReasoningBilling`
+  - **other:** `CallKind`, `CallStatus`, `LlmBudgetGate`, `LlmBudgetLevel`, `LlmCallContext`, `LlmCallContextHolder`,
+    `PricingSnapshot`, `ReasoningBilling`
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 16 IT + 5 unit
-  - **ITs:** `LlmActorPropagationIT`, `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`,
-    `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`,
-    `LlmLogRetentionJobSwitchOffIT`, `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`,
-    `LlmUsageBreakdownIT`, `LlmUsageBreakdownMidnightIT`, `LlmUsageControllerIT`, `LlmUsageIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 18 IT + 7 unit
+  - **ITs:** `LlmActorPropagationIT`, `LlmBudgetCapIT`, `LlmBudgetLogDisabledIT`, `LlmCallContextTaggingIT`,
+    `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`,
+    `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`, `LlmLogRetentionJobWriteSwitchOffIT`,
+    `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`, `LlmUsageBreakdownMidnightIT`,
+    `LlmUsageControllerIT`, `LlmUsageIT`
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
