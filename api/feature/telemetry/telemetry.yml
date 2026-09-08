@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info: { title: mezo telemetry fragment, version: 1.0.0 }
+tags:
+  - name: Telemetry
+    description: >
+      Lean screen-event telemetry (part 4, spec 2026-09-07). WRITE side only: any authenticated
+      client posts its OWN screen views; `created_by` always comes from the JWT, never from the
+      payload. Default OFF (`mezo.feature.screen-telemetry.enabled`) — every operation 404s when
+      the switch is off, and the frontend must fail silent on any error. The OWNER-only READ side
+      lives on the AdminInsights tag (`GET /api/admin/usage/screens`).
+paths:
+  /api/telemetry/screen-events:
+    post:
+      tags: [Telemetry]
+      operationId: ingestScreenEvents
+      summary: Batch-ingest the caller's own screen views, fire-and-forget (Telemetry)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScreenEventBatchRequest' }
+      responses:
+        '202':
+          description: Accepted (no body — loss is acceptable, the client never reads a result)
+        '400':
+          description: >
+            Validation failure; TELEMETRY_BATCH_TOO_LARGE when the batch exceeds
+            `mezo.telemetry.batch-max`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '429':
+          description: Per-user rate limit exceeded (TELEMETRY_RATE_LIMITED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    ScreenEventInput:
+      type: object
+      required: [screen, occurredAt]
+      properties:
+        screen:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: >
+            The MATCHED ROUTE PATTERN, never a concrete URL (`/admin/users/:id`, not
+            `/admin/users/42`) — no PII-bearing path param ever leaves the client (spec T3).
+        occurredAt:
+          type: string
+          format: date-time
+          description: >
+            Client clock. Trusted but CLAMPED server-side to `now ± mezo.telemetry.occurred-at-clamp-hours`.
+        meta:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Free-form rider for a future event kind; v1 emits nothing here.
+    ScreenEventBatchRequest:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/ScreenEventInput' }
+          description: At most `mezo.telemetry.batch-max` items; more is a 400.

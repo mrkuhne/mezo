@@ -106,8 +106,10 @@ export function AdminMemoryPage() {
             {view === 'graph' && (
               <GraphView userId={userId} isOwner={isOwner} sel={sel} onSelect={select} onInspect={setInspector} />
             )}
-            {view === 'map' && <MapView />}
-            {view === 'layers' && <LayersView />}
+            {view === 'map' && (
+              <MapView userId={userId} isOwner={isOwner} sel={sel} onSelect={select} onInspect={setInspector} />
+            )}
+            {view === 'layers' && <LayersView userId={userId} isOwner={isOwner} />}
           </div>
 
           <MemoryInspector

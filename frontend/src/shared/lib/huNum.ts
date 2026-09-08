@@ -9,3 +9,9 @@ export const huInt = (v: number): string => {
   const grouped = Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   return neg ? `−${grouped}` : grouped
 }
+
+/** USD literal, 2 decimals — the admin hub's own LLM-cost figures (mezo-d5iy.11/.19). Was
+ *  triplicated verbatim across AdminOverviewPage/AdminUserDetailPage/AdminUsersPage; consolidated
+ *  here next to `huInt` per the same precedent. Deliberately not localized — the admin hub shows
+ *  the raw USD the LLM providers bill in, never converted/formatted for a Hungarian reader. */
+export const usd = (v: number): string => `$${v.toFixed(2)}`

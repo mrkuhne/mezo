@@ -11,3 +11,9 @@ export const UMAP_PARAMS = {
   minDist: 0.1,
   seed: 20260907,
 } as const
+
+/** Always 2 — the map is an SVG scatter, never a 3D view. */
+export const UMAP_N_COMPONENTS = 2
+/** Epochs between `progress` messages from the worker — the map "unfolds" instead of appearing
+ *  all at once (Slice 5, Step 5.3). */
+export const UMAP_PROGRESS_EVERY = 25

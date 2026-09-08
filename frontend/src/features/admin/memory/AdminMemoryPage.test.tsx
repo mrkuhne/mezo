@@ -64,6 +64,6 @@ describe('AdminMemoryPage (real mode)', () => {
     expect(await screen.findByText(/ki van kapcsolva/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Rétegek' }))
-    expect(screen.getByText('Készül')).toBeInTheDocument()
+    expect(await screen.findByText(/memory_vector · státusz szerint/)).toBeInTheDocument()
   })
 })

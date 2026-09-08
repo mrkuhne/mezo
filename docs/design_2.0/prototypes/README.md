@@ -43,6 +43,7 @@ they inline come from `../assets/`.
 | `eszrevetelek.html` | https://claude.ai/code/artifact/2f5e64be-de78-481a-9320-35e84706bf52 (Észrevételek — a Nap→Mezo oldal harmadik füle (feltűnt / visszatérés / figyelem / beépült kártyák, chipek) + a Minták laborfüzet egy reflexió-hipotézisre (teszt-terv, bizonyíték-napló, bizonyosság) — patterns-rag-intelligence) |
 | `ertesites-dropdown.html` | — (not yet published; a fejléc csengőjének görgethető, teljes szélességű értesítés-panelje: kitapadó fejrész + kategória-szűrő chipek + kitapadó napcímkék, típusonkénti clay-ikon — mezo-g9fz) |
 | `admin-hub.html` | — (not yet published; /admin desktop hub — 12 oszlopos mozaik, user-lista + becsúszó részlet, feature × nap mátrix, LLM költség-mátrix Háttér-oszloppal, adatböngésző — mezo-d5iy) |
+| `admin-memory.html` | — (not yet published; a user Memória tabja alatt — Futások/Gráf/Térkép/Rétegek négyutas szegmens-sáv + közös inspector, dry-run replay, RAG memória-felfedező part 2 — mezo-4qyt) |
 
 ## Workflow
 

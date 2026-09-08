@@ -6,6 +6,7 @@ import type {
   AdminDaySeries,
   AdminFeatureUsageResponse,
   AdminOverviewResponse,
+  AdminScreenUsageResponse,
   AdminUserDetailResponse,
   AdminUserInsightResponse,
 } from '@/data/admin/adminInsightsApi'
@@ -184,4 +185,40 @@ export const ADMIN_COST_MATRIX_EMPTY: AdminCostMatrixResponse = {
   features: [],
   cells: [],
   totalUsd: 0,
+}
+
+// Screen usage (mezo-o5cz) — the "Képernyők" panel's seed. Route PATTERNS, never concrete URLs,
+// exactly like what the real telemetry client reports; deterministic (index-driven, no random)
+// so the fixture cannot flake. Ordered views-desc to match the backend's own sort, so the mock
+// and real surfaces render the same shape.
+const SCREEN_USAGE_SEED: { screen: string; base: number; users: number }[] = [
+  { screen: '/nap', base: 9, users: 3 },
+  { screen: '/fuel', base: 6, users: 3 },
+  { screen: '/edzes', base: 4, users: 2 },
+  { screen: '/mezo/chat', base: 3, users: 2 },
+  { screen: '/admin/users/:id', base: 1, users: 1 },
+]
+
+export const ADMIN_SCREEN_USAGE_MOCK: AdminScreenUsageResponse = {
+  period: '30d',
+  days: FEATURE_USAGE_DAYS,
+  screens: SCREEN_USAGE_SEED.map(({ screen, base, users }, s) => {
+    const days = FEATURE_USAGE_DAYS.map((day, i) => ({ day, count: Math.max(0, base + ((i + s) % 3) - 1) }))
+    return {
+      screen,
+      views: days.reduce((sum, d) => sum + d.count, 0),
+      uniqueUsers: users,
+      lastSeenAt: `${FEATURE_USAGE_DAYS[FEATURE_USAGE_DAYS.length - 1]}T18:${String(10 + s).padStart(2, '0')}:00Z`,
+      days,
+    }
+  }),
+}
+
+// Same caveat as ADMIN_FEATURE_USAGE_EMPTY — AdminUsagePage renders its own `period` state, so
+// this hardcoded value never reaches the screen; it exists to satisfy the response shape while
+// real-mode data is unresolved.
+export const ADMIN_SCREEN_USAGE_EMPTY: AdminScreenUsageResponse = {
+  period: '30d',
+  days: [],
+  screens: [],
 }

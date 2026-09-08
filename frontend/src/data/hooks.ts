@@ -72,6 +72,7 @@ export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } fro
 export { useAdminInvites, useAdminUsers, useAdminActions } from '@/data/admin/adminHooks'
 export {
   useAdminOverview, useAdminUserInsights, useAdminUserDetail, useAdminFeatureUsage, useAdminCostMatrix,
+  useAdminScreenUsage,
 } from '@/data/admin/adminInsightsHooks'
 export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
 export {
