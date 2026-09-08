@@ -1,6 +1,12 @@
-# Mezo veled — egy társ, több tér
+# Boop — egy társ, több tér
 
 2026-09-08 · `mezo-88jw.4` · navigációs és kommunikációs prototípus. [Megnyitás](http://127.0.0.1:5193/?v=presence).
+
+## Boop vizuális irány
+
+Daniel az alkalmazást és a karaktert Boopnak nevezte el. A jelenlegi tanulmány meleg, modern AI-társ: Manrope címsorok, törtfehér felületek, puha lebegő menü, megmaradó területszínek. A navigációs ikonok az eredeti `design_2.0/assets/clay-icons.svg` sprite-ból érkeznek; a kis segédikonok vonalasak. Az Avatar Lab szemmozgását szemöldök, pír és mosoly egészíti ki külön SVG-rétegen. A kezdőoldali karakter kattintásra, Enterre vagy Space-re röviden örül, majd visszatér az előző állapotához. A csökkentett mozgás beállítása kikapcsolja az új rugózást. A kiegészítő arc részletei nem a runtime 3D modelljéhez kötöttek; erős fejfordulathoz később riggelni kell őket.
+
+Belépés: [Boop](http://127.0.0.1:5193/?v=boop). A korábbi `?v=presence` cím továbbra is működik, a mentett mintanap megmarad. A két régebbi összehasonlító irány változatlan. [Vizuális specifikáció](../superpowers/specs/2026-09-08-boop-visual-design.md).
 
 ## Termékértelmezés
 
@@ -10,9 +16,9 @@ Ez a tanulmány ennek az elképzelésnek csak a navigációját és kommunikáci
 
 ## Kipróbálható interakciók
 
-A kezdőképernyőn Clay és négy napi bejelentkezési pont vár. Két korábbi példa már szerepel, a délutáni közérzet és opcionális mondat rögzíthető. A negyedik után további bejelentkezést is lehet hozzáadni. A chat a legutóbbi közérzetből indul ki.
+A kezdőképernyőn Boop és négy napi bejelentkezési pont vár. Két korábbi példa már szerepel, a délutáni közérzet és opcionális mondat rögzíthető. A negyedik után további bejelentkezést is lehet hozzáadni. A chat a legutóbbi közérzetből indul ki.
 
-Az alsó Mezo-buborék kinyitja a területválasztót. Ugyanaz a karakter öt szerepben jelenik meg: Otthon, Mozgás, Táplálás, Életem, A közös kép. A helyi menü váltáskor átmenettel cserélődik; a szerepek és fülek nem rendeződnek át AI-javaslatok hatására. A kiválasztott fül és görgetési hely területenként megmarad.
+Az alsó Boop-buborék kinyitja a területválasztót. Ugyanaz a karakter öt szerepben jelenik meg: Otthon, Mozgás, Táplálás, Életem, A közös kép. A helyi menü váltáskor átmenettel cserélődik; a szerepek és fülek nem rendeződnek át AI-javaslatok hatására. A kiválasztott fül és görgetési hely területenként megmarad.
 
 | Tér | Helyi fülek |
 | --- | --- |
@@ -44,3 +50,7 @@ A területválasztó, a gyors rögzítő és a chat natív `dialog`. Escape bez�
 A teljes laborban **53/53 node-teszt sikeres**, a Vite build sikeres (a meglévő nagy-chunk figyelmeztetéssel). Hét új node-teszt: fül- és beszélgetésmegőrzés, check-in ritmus/kontextus, feltételes kérdés és explicit módosítás különbsége, idempotencia, változatlan mezociklus, napló/hála felhasználása és a már elmaradt sport helyes kezelése. Böngészőben 17 tartalmi nézet 360 px külső kereten, vízszintes túlcsordulás nélkül; további ellenőrzések: területválasztó, fülmegőrzés, chatvázlat, check-in → chat → mezociklus, tool → keret, Escape és fókuszvisszaadás. A keskeny asztali keret nem natív iOS készülékteszt.
 
 A prototípus nem kapcsolódik valódi AI-hoz vagy személyes adatokhoz. Nem fut tényleges folyamatos háttértanulás, diagnosztika vagy új edzésprogram-generálás. A helyi állapot újraindítható az asztali tanulmány melletti Mintanap újraindítása gombbal.
+
+## Boop ellenőrzés
+
+A prototípus 53 meglévő viselkedési tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.

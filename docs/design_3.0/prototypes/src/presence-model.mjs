@@ -1,13 +1,13 @@
 export const ROLES = {
   home: {
-    name: "Mezo veled",
+    name: "Boop veled",
     short: "Otthon",
     eyebrow: "EGY TÁRS. A TELJES TÖRTÉNETED.",
     description: "A napod, a beszélgetésünk és ami most fontos.",
     icon: "sun",
-    color: "#b16a50",
-    light: "#f4d1b8",
-    shadow: "#955039",
+    color: "#c38370",
+    light: "#f6cdb8",
+    shadow: "#a66050",
     tabs: [
       ["today", "Ma", "sun"],
       ["talk", "Beszélgetés", "message"],
