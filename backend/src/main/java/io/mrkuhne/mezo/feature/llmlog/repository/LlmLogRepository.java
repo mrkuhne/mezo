@@ -176,6 +176,23 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """, nativeQuery = true)
     List<LlmFeatureErrorRow> aggregateErrorRateByFeatureSince(@Param("since") Instant since);
 
+    /**
+     * Per (feature, user) usage rollup (Funkciók scorecard/detail, mezo-l096.3/.4) — the "who
+     * tried this feature, and when" primitive. ERROR-status calls are excluded (uses = non-ERROR
+     * calls); a null {@code createdBy} groups background/cron traffic into its own row, which the
+     * calling service must exclude from adoption/user counts (it is kept elsewhere for cost, but
+     * that is not this query's concern).
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureUserRow(
+            l.feature, l.createdBy, count(l), min(l.createdAt), max(l.createdAt))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.status <> :errorStatus
+        group by l.feature, l.createdBy
+        """)
+    List<LlmFeatureUserRow> aggregateByFeatureAndUserSince(@Param("since") Instant since,
+            @Param("errorStatus") CallStatus errorStatus);
+
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow(
