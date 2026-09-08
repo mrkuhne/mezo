@@ -357,3 +357,6 @@ components:
         title: { type: string, description: 'Hungarian, owner-facing' }
         detail: { type: string, description: 'Hungarian, one sentence' }
         link: { type: string, description: 'in-admin deep link with query params' }
+        subject:
+          type: string
+          description: 'raw technical key the alert is about, e.g. a feature slug — the client renders its label'

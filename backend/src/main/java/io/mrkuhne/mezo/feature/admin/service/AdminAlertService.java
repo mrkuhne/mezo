@@ -130,8 +130,9 @@ public class AdminAlertService {
                             .key("llm_errors")
                             .severity(SeverityEnum.BAD)
                             .title("Magas hibaarány egy AI funkciónál")
-                            .detail("A(z) %s funkció hívásainak %d%%-a hibázott az elmúlt 24 órában (%d/%d)."
-                                    .formatted(row.getFeature(), pct, row.getErrors(), row.getTotal()))
+                            .subject(row.getFeature())
+                            .detail("A funkció hívásainak %d%%-a hibázott az elmúlt 24 órában (%d/%d)."
+                                    .formatted(pct, row.getErrors(), row.getTotal()))
                             .link("/admin/cost?feature=" + row.getFeature());
                 })
                 .toList();

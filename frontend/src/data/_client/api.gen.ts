@@ -10018,6 +10018,8 @@ export interface components {
             detail: string;
             /** @description in-admin deep link with query params */
             link: string;
+            /** @description raw technical key the alert is about, e.g. a feature slug — the client renders its label */
+            subject?: string;
         };
         AdminColumnDescriptor: {
             name: string;

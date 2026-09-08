@@ -146,7 +146,8 @@ class AdminAlertsIT extends ApiIntegrationTest {
                 .singleElement()
                 .satisfies(a -> {
                     assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.BAD);
-                    assertThat(a.getDetail()).contains("companion_chat");
+                    assertThat(a.getSubject()).isEqualTo("companion_chat");
+                    assertThat(a.getDetail()).doesNotContain("companion_chat");
                 });
     }
 

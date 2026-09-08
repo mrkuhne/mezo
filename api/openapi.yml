@@ -24859,6 +24859,11 @@ components:
         link:
           type: string
           description: in-admin deep link with query params
+        subject:
+          type: string
+          description: >-
+            raw technical key the alert is about, e.g. a feature slug — the
+            client renders its label
     AdminColumnDescriptor:
       type: object
       required:
