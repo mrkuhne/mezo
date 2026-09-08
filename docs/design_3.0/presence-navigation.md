@@ -4,7 +4,9 @@
 
 ## Boop vizuális irány
 
-Daniel az alkalmazást és a karaktert Boopnak nevezte el. A jelenlegi tanulmány meleg, modern AI-társ: Manrope címsorok, törtfehér felületek, puha lebegő menü, megmaradó területszínek. A navigációs ikonok az eredeti `design_2.0/assets/clay-icons.svg` sprite-ból érkeznek; a kis segédikonok vonalasak. Az Avatar Lab szemmozgását szemöldök, pír és mosoly egészíti ki külön SVG-rétegen. A kezdőoldali karakter kattintásra, Enterre vagy Space-re röviden örül, majd visszatér az előző állapotához. A csökkentett mozgás beállítása kikapcsolja az új rugózást. A kiegészítő arc részletei nem a runtime 3D modelljéhez kötöttek; erős fejfordulathoz később riggelni kell őket.
+Daniel az alkalmazást és a karaktert Boopnak nevezte el. A jelenlegi irány visszatér az editorial címsorokhoz: Newsreader, dőlt kiemelések, meleg papírháttér, puha navigáció. A feliratok továbbra is sans betűsek.
+
+Boop az eredeti Avatar Lab definíciót használja, változatlan szemmérettel: nincs szemöldök, pír, száj vagy extra arcréteg. A pislogás és a rövid simogatási reakció megmaradt, a dekoratív szív eltűnt. A Clay sprite helyett 32 saját, vékony vonalas SVG ikon szolgálja a területi és segédnavigációt. Forrásuk `prototypes/src/boop-icon-paths.mjs`: 24-es koordinátarács, 1,5-ös vonalvastagság, kerek végek, közös `currentColor`. [A korrekció specifikációja](../superpowers/specs/2026-09-09-boop-editorial-design.md).
 
 Belépés: [Boop](http://127.0.0.1:5193/?v=boop). A korábbi `?v=presence` cím továbbra is működik, a mentett mintanap megmarad. A két régebbi összehasonlító irány változatlan. [Vizuális specifikáció](../superpowers/specs/2026-09-08-boop-visual-design.md).
 
@@ -53,4 +55,4 @@ A prototípus nem kapcsolódik valódi AI-hoz vagy személyes adatokhoz. Nem fut
 
 ## Boop ellenőrzés
 
-A prototípus 53 meglévő viselkedési tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.
+Az editorial körben a kezdőoldalt és a Kamrát böngészőben ellenőriztük; a karakter ismét csak két szemből áll, a területi menü saját vonalas ikonokat használ. A prototípus 53 meglévő viselkedési tesztje és Vite buildje sikeres. Böngészőben ellenőrizve: simogatás kattintással és Enterrel, visszaállás nyugalmi állapotba, területválasztás, Táplálás összegző és kontextust megőrző chat, Escape bezárás. A 360 px-es próbakeretben nincs vízszintes kilógás, a közérzetgombok az alsó menü fölött elférnek (asztali viewportban vizsgálva). A build nagy chunkra figyelmeztet; a teljes dokumentációlint korábban is jelzett 14 elavult dokumentumot, az errors-only ellenőrzés 0 hibával átmegy.

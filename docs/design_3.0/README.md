@@ -1,6 +1,6 @@
 # Boop vizuális iteráció
 
-A kiválasztott jelenlét-központú tanulmány új neve **Boop**. Modernebb, meleg UI, a saját Clay ikonok és érintésre reagáló karakter: [prototípus](http://127.0.0.1:5193/?v=boop), [működés és határok](presence-navigation.md).
+A kiválasztott jelenlét-központú tanulmány új neve **Boop**. Meleg editorial UI, saját vonalas SVG ikonok és az eredeti kétszemű, érintésre reagáló karakter: [prototípus](http://127.0.0.1:5193/?v=boop), [működés és határok](presence-navigation.md).
 
 # Mezo — Mérték és Mezo veled
 
