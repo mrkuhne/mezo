@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.llmlog.context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
+import io.mrkuhne.mezo.api.dto.CreateConversationRequestContext;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
@@ -9,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.memory.dto.ScoreBreakdown;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryRewriter;
+import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
@@ -132,6 +136,7 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private MemoryQueryRewriter memoryQueryRewriter;
     @Autowired private LlmMemoryReranker llmMemoryReranker;
+    @Autowired private ConversationService conversationService;
 
     @BeforeEach
     void resetCapture() {
@@ -206,6 +211,31 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
         assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
         assertThat(captured.feature()).isEqualTo("companion_recall");
         assertThat(captured.operation()).isEqualTo("rerank");
+    }
+
+    /**
+     * mezo-ozri.8: the server-generated opening turn is the third untagged call site the S1 sweep
+     * found. It matters twice over — the row lands under {@code unknown} in every cost report, AND,
+     * since mezo-ozri.6, it is the one chat call that never passes the per-user budget gate (the
+     * gate lives inside {@code runWith}).
+     */
+    @Test
+    void testOpeningTurn_shouldTagTheCallWithTheChatContext_whenTheServerSpeaksFirst() {
+        UUID user = userPopulator.createUser("llm-tagging-opening@test.local").getId();
+        capturingCompanionLlm.answerWith("Szia! Nézzük meg a tegnapi napodat.");
+
+        ConversationResponse conversation = conversationService.create(user,
+            CreateConversationRequest.builder()
+                .context(CreateConversationRequestContext.builder()
+                    .kind("day").date(LocalDate.now().minusDays(1)).build())
+                .build());
+
+        LlmCallContext captured = capturingCompanionLlm.captured();
+        assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
+        assertThat(captured.feature()).isEqualTo("companion_chat");
+        assertThat(captured.operation()).isEqualTo("opening_turn");
+        assertThat(captured.entityKind()).isEqualTo("conversation");
+        assertThat(captured.entityId()).isEqualTo(conversation.getId());
     }
 
     private static FusedCandidate fusedCandidate(UUID stableId) {

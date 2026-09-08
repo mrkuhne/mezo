@@ -2868,7 +2868,12 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   transcript reads as Mezo genuinely speaking first, not answering a hidden scripted question.
   **Swallow-and-log on any failure** (bad LLM call, blank answer): the conversation simply stays
   empty, exactly as a plain `createConversation()` call would leave it — a broken opening turn never
-  fails the create request. The `/me/week` "Beszélgess a napról/hétről" chips
+  fails the create request. **`mezo-ozri.8`:** the call is wrapped in
+  `LlmCallContextHolder.runWith(companion_chat / opening_turn / conversation:<id>)` like every other
+  LLM entry point — it shipped untagged, so it booked as `feature='unknown'` in the cost reports AND
+  bypassed the per-user USD cap (`mezo-ozri.6`), whose gate lives inside `runWith`. An over-budget
+  account now gets the gate's throw, which the same swallow-and-log catches: a silent empty
+  conversation rather than a 429 on a turn the user never asked for. The `/me/week` "Beszélgess a napról/hétről" chips
   (`useChatHandoff`, [me.md §2](me.md)) are the sole trigger.
 
 ## 4. Data model & API
