@@ -57,7 +57,7 @@ export function AdminCostPage() {
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? ''
 
   return (
-    <MozaikPage tone="gold" className="ad-page-narrow">
+    <MozaikPage tone="gold">
       <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
       <EntranceGroup>
         {/* Minimal hero — just the icon + title. Count, cost and the status split live
@@ -65,7 +65,7 @@ export function AdminCostPage() {
             screen); the prototype's page-hero bignum would otherwise repeat it. */}
         <PageHero icon="i-erme" name="AI-napló" />
 
-        <PageBody>
+        <PageBody className="col gap-md">
           <div className="aiu-segtabs rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             {PERIODS.map((p) => (
               <button
