@@ -7,10 +7,10 @@ import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
 import io.mrkuhne.mezo.feature.admin.repository.AdminAlertQuery;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.config.CompanionFeatureFlag;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureErrorRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
-import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,16 +53,14 @@ public class AdminAlertService {
 
     /**
      * The two companion-dependent rules (memory_stuck, job_missed) need to know whether the
-     * companion feature is on. Every other feature switch in this codebase is read through a
-     * {@code @ConditionalOnProperty}-gated bean + {@code ObjectProvider} (see {@code
-     * PlacementEngine}, {@code AdminMemoryService}) rather than a direct property read — but
-     * {@link AdminAlertQuery} is admin-owned and unconditionally present (install-wide, no
-     * per-user gate), so there is no bean whose absence could stand in for the switch here. This
-     * direct read is a deliberate, narrow exception for exactly this rule pair (task-3 brief,
-     * mezo-kjwa).
+     * companion feature is on, without either rule's evaluation disappearing along with a
+     * conditional bean — the other three rules in the same {@code alerts()} call must keep
+     * running regardless of the switch. {@link CompanionFeatureFlag} is the typed binding of
+     * {@code mezo.feature.companion.enabled} for exactly this "branch inside a method" case
+     * (configuration_conventions.md's documented exception to the usual
+     * {@code @ConditionalOnProperty}-at-the-bean-boundary rule); see its javadoc (mezo-kjwa).
      */
-    @Value("${" + FeaturesConfiguration.COMPANION_SWITCH + ":false}")
-    private boolean companionEnabled;
+    private final CompanionFeatureFlag companionFeatureFlag;
 
     @Transactional(readOnly = true)
     public AdminAlertsResponse alerts() {
@@ -74,7 +71,7 @@ public class AdminAlertService {
         List<AdminAlert> alerts = new ArrayList<>();
         costSpike(zone, thresholds).ifPresent(alerts::add);
         alerts.addAll(llmErrors(thresholds));
-        if (companionEnabled) {
+        if (companionFeatureFlag.enabled()) {
             memoryStuck().ifPresent(alerts::add);
             jobMissed(thresholds, zone).ifPresent(alerts::add);
         }
