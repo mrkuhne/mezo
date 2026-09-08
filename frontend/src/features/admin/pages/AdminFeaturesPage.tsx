@@ -6,7 +6,9 @@ import { AdminTile } from '@/features/admin/components/AdminTile'
 import { FeatureScoreRow } from '@/features/admin/components/FeatureScoreRow'
 import { ScreenUsageTable } from '@/features/admin/components/ScreenUsageTable'
 import { TopListTile, type TopRow } from '@/features/admin/components/TopListTile'
+import { ValueCostQuadrant } from '@/features/admin/components/ValueCostQuadrant'
 import { screenLabel } from '@/features/admin/lib/labels'
+import { valueScore } from '@/features/admin/lib/adminViz'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { CollapsibleStrip, MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
 import { huInt, usd } from '@/shared/lib/huNum'
@@ -18,8 +20,8 @@ import { huInt, usd } from '@/shared/lib/huNum'
 // divider) → screen-usage supporting tile (top-8, "teljes lista" behind a lenyitó — the cheaper
 // option the Rulings explicitly allow over inventing a full-list ROUTE that doesn't exist yet).
 //
-// Task 2 will insert the value/cost quadrant tile between the period toggle and the scorecard
-// (self-review notes: "order: summary → quadrant → scorecard → screen tile").
+// Task 2 (mezo-kxnn) inserted the value/cost quadrant tile between the period toggle and the
+// scorecard (self-review notes: "order: summary → quadrant → scorecard → screen tile").
 
 const PERIODS: { key: AdminFeaturePeriod; label: string }[] = [
   { key: '30d', label: '30 nap' },
@@ -33,15 +35,8 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'hasznalat', label: 'használat' },
 ]
 
-/** Placeholder for Task 2's `valueScore` (adminViz.ts): `uniqueUsers × (1 + habitUserShare)`,
- *  per the plan's ruling — swapped for the real formula (which also folds in `helped`) once the
- *  quadrant task lands its pure fn. Kept local to this page; nothing else depends on it yet. */
-function valueScorePlaceholder(row: AdminFeatureRow): number {
-  return row.uniqueUsers * (1 + row.habitUserShare)
-}
-
 const SORT_COMPARATORS: Record<SortKey, (a: AdminFeatureRow, b: AdminFeatureRow) => number> = {
-  ertek: (a, b) => valueScorePlaceholder(b) - valueScorePlaceholder(a),
+  ertek: (a, b) => valueScore(b) - valueScore(a),
   koltseg: (a, b) => b.costUsd - a.costUsd,
   hasznalat: (a, b) => b.uniqueUsers - a.uniqueUsers,
 }
@@ -113,6 +108,12 @@ export function AdminFeaturesPage() {
               </button>
             ))}
           </div>
+
+          <MosaicDesktop>
+            <AdminTile query={board} wash="lav" eyebrow="Érték / költség négyesmátrix" span={12}>
+              <ValueCostQuadrant rows={rows} />
+            </AdminTile>
+          </MosaicDesktop>
 
           <MosaicDesktop>
             <AdminTile query={board} wash="lav" eyebrow="Funkciók listája" span={12}>

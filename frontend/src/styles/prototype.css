@@ -11589,6 +11589,18 @@ button.mz-wtile:active { transform: scale(0.96); }
   text-transform: uppercase; color: #A2958A; border-top: 0.5px solid rgba(43, 33, 24, 0.1);
 }
 
+/* ---- value/cost quadrant (mezo-kxnn Task 2) — hand-rolled SVG scatter, no charting lib. ---- */
+.ad-quadrant { display: flex; flex-direction: column; gap: 4px; }
+.ad-quad-svg { width: 100%; height: auto; display: block; }
+.ad-quad-svg .split { stroke: rgba(43, 33, 24, .16); stroke-width: 1; stroke-dasharray: 4 4; }
+.ad-quad-svg .cap {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
+  fill: #A2958A;
+}
+.ad-quad-svg .pt { stroke: #fff; stroke-width: 1.5; opacity: 0.9; cursor: pointer; }
+.ad-quad-svg .pt:hover { opacity: 1; }
+.ad-quad-note { font-size: 10.5px; margin: 2px 0 0; }
+
 /* ---- status band (mezo-l096 §1, mezo-m079 Task 1) — the ONE place the admin says "baj
    van" / "minden rendben"; spans the full 12-column mosaic row on its own (not a poster
    Tile — no eyebrow, its own washes per state). `.off` (grey, unavailable) MUST look

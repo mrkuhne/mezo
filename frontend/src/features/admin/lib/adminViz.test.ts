@@ -8,10 +8,42 @@ import {
   quietTesters,
   topNFromEntries,
   deltaVsTrailingAvg,
+  valueScore,
 } from '@/features/admin/lib/adminViz'
 
 // mezo-m079 Task 2 — cost-matrix aggregation + top-N shaping + the trailing-average delta,
 // all pure functions, tested against hand-computed fixtures.
+
+describe('valueScore', () => {
+  it('is neutral (×1) when there is no feedback source at all', () => {
+    // 10 × (1 + 0.4) × 1 = 14
+    expect(valueScore({ uniqueUsers: 10, habitUserShare: 0.4, helped: null })).toBeCloseTo(14)
+  })
+
+  it('scales up by the helped ratio — up=14,down=3 → ×(0.5 + 14/17)', () => {
+    const factor = 0.5 + 14 / 17
+    // 8 × (1 + 0.5) × factor
+    expect(valueScore({ uniqueUsers: 8, habitUserShare: 0.5, helped: { up: 14, down: 3 } }))
+      .toBeCloseTo(8 * 1.5 * factor)
+  })
+
+  it('scales down toward ×0.5 when feedback is all-negative', () => {
+    // 6 × (1 + 0.2) × 0.5 = 3.6
+    expect(valueScore({ uniqueUsers: 6, habitUserShare: 0.2, helped: { up: 0, down: 5 } })).toBeCloseTo(3.6)
+  })
+
+  it('folds the habit-user-share factor in — a higher habit share raises the score at equal reach', () => {
+    const low = valueScore({ uniqueUsers: 10, habitUserShare: 0.1, helped: null })
+    const high = valueScore({ uniqueUsers: 10, habitUserShare: 0.8, helped: null })
+    expect(high).toBeGreaterThan(low)
+    expect(low).toBeCloseTo(11)
+    expect(high).toBeCloseTo(18)
+  })
+
+  it('treats an empty-but-present helped object (0 up, 0 down) as neutral, not NaN', () => {
+    expect(valueScore({ uniqueUsers: 4, habitUserShare: 0, helped: { up: 0, down: 0 } })).toBeCloseTo(4)
+  })
+})
 
 const MATRIX: AdminCostMatrixResponse = {
   period: '7d',
