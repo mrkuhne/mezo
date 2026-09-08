@@ -11429,6 +11429,7 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-tag { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 7px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .ad-tag.bg { background: rgba(93,79,160,.14); color: #5D4FA0; }
 .ad-tag.warn { background: rgba(201,150,46,.2); color: #8A6612; }
+.ad-tag.bad { background: rgba(196,105,79,.18); color: #A8452A; }
 .ad-tag.ok { background: rgba(110,139,94,.18); color: #4E6B42; }
 .ad-tag.mut { background: rgba(43,33,24,.07); color: #6E6257; }
 .ad-mut { color: #A2958A; }
@@ -11597,6 +11598,9 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-alert > i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .ad-alert.warn > i { background: #C9962E; box-shadow: 0 0 0 3px rgba(201, 150, 46, .18); }
 .ad-alert.bad > i { background: #C4694F; box-shadow: 0 0 0 3px rgba(196, 105, 79, .2); }
+/* mezo-m079 Task 3 fix round: 'info'-severity alerts (AdminAlert.severity) had no dot color —
+   the sky/muted tone the rest of the admin hub uses for neutral/informational tags. */
+.ad-alert.info > i { background: #4E8FB8; box-shadow: 0 0 0 3px rgba(78, 143, 184, .2); }
 .ad-alert > span:first-of-type { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 600; }
 .ad-alert .go { flex: none; font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: #A84A26; white-space: nowrap; }
 

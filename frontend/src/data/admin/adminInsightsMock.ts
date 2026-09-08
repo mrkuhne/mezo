@@ -157,7 +157,9 @@ export const ADMIN_FEATURE_USAGE_EMPTY: AdminFeatureUsageResponse = {
 
 // Cost matrix: one "Háttér" (background/cron) bucket with a null user id, and one cell that is
 // unpriced (costUsd: 0, unknownCalls > 0) so "unknown ≠ zero cost" has a fixture Task 11's
-// rendering can exercise.
+// rendering can exercise. Feature slugs are REAL `LlmCallContext` slugs (see labels.ts's
+// FEATURE_LABELS) — mezo-m079 Task 3 fix round: the fake 'chat'/'coach'/'vision' placeholders
+// had no dictionary entry, so mock mode silently rendered raw slugs instead of Hungarian labels.
 export const ADMIN_COST_MATRIX_MOCK: AdminCostMatrixResponse = {
   period: '30d',
   users: [
@@ -166,16 +168,18 @@ export const ADMIN_COST_MATRIX_MOCK: AdminCostMatrixResponse = {
     { id: MOCK_BELA_ID, label: 'Béla' },
     { id: null, label: 'Háttér' },
   ],
-  features: ['chat', 'coach', 'vision'],
+  features: ['companion_chat', 'meal_coach', 'meal_draft', 'train_meso_plan', 'proactive_feed'],
   cells: [
-    { userId: MOCK_OWNER_ID, feature: 'chat', calls: 40, costUsd: 5.6, unknownCalls: 0 },
-    { userId: MOCK_OWNER_ID, feature: 'coach', calls: 12, costUsd: 1.9, unknownCalls: 0 },
-    { userId: MOCK_ANNA_ID, feature: 'chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
-    { userId: MOCK_ANNA_ID, feature: 'vision', calls: 2, costUsd: 0, unknownCalls: 2 },
-    { userId: MOCK_BELA_ID, feature: 'chat', calls: 1, costUsd: 0.1, unknownCalls: 0 },
-    { userId: null, feature: 'chat', calls: 6, costUsd: 0, unknownCalls: 6 },
+    { userId: MOCK_OWNER_ID, feature: 'companion_chat', calls: 40, costUsd: 5.6, unknownCalls: 0 },
+    { userId: MOCK_OWNER_ID, feature: 'meal_coach', calls: 12, costUsd: 1.9, unknownCalls: 0 },
+    { userId: MOCK_OWNER_ID, feature: 'train_meso_plan', calls: 4, costUsd: 0.6, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'companion_chat', calls: 18, costUsd: 2.4, unknownCalls: 0 },
+    { userId: MOCK_ANNA_ID, feature: 'meal_draft', calls: 2, costUsd: 0, unknownCalls: 2 },
+    { userId: MOCK_ANNA_ID, feature: 'proactive_feed', calls: 5, costUsd: 0.4, unknownCalls: 0 },
+    { userId: MOCK_BELA_ID, feature: 'companion_chat', calls: 1, costUsd: 0.1, unknownCalls: 0 },
+    { userId: null, feature: 'companion_chat', calls: 6, costUsd: 0, unknownCalls: 6 },
   ],
-  totalUsd: 10.0,
+  totalUsd: 11.0,
 }
 
 // Same caveat as ADMIN_FEATURE_USAGE_EMPTY above — no consumer currently renders this field
