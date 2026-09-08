@@ -328,8 +328,15 @@ public class ChatService {
             String turnCtx = turnContext(userId, LocalDate.now(),
                     knowledgeFactService.renderPromptBlock(userId), "", "",
                     conversation.getContextKind(), conversation.getContextDate());
-            String answer = companionLlm.complete(
-                    systemPrompt, turnCtx, List.of(), KICKOFF_PROMPT, List.of(), Map.of());
+            // mezo-ozri.8: tagged like every other LLM entry point. Without this the turn books as
+            // feature='unknown' in the cost reports AND — since mezo-ozri.6 — it is the one chat
+            // call that never passes the per-user budget gate, which lives inside runWith. A
+            // refusal there throws, and the catch below swallows it: an out-of-budget account
+            // simply gets a silent, empty conversation instead of a 429 on a turn it never asked for.
+            String answer = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_chat", "opening_turn", "conversation", conversationId),
+                    () -> companionLlm.complete(
+                            systemPrompt, turnCtx, List.of(), KICKOFF_PROMPT, List.of(), Map.of()));
             if (answer == null || answer.isBlank()) {
                 log.warn("Opening turn for conversation {} produced no text — conversation stays empty",
                         conversationId);
