@@ -861,6 +861,61 @@ mezo:
           candidate-limit: 30
           max-tokens: 800
           rerank: true
+        # mezo-eq85.7 "Memória mindenhol S7": one PolicyLimits per Part-B consumer, each
+        # individually switchable so a surface can be rolled back to "no memory context" purely
+        # by config. morning-briefing is shared by ALL FOUR proactive companion messages
+        # (morning/sleep/weight/window) — none of the other six is specific to one of those kinds.
+        morning-briefing:
+          enabled: true
+          candidate-limit: 20
+          max-tokens: 600
+          rerank: false
+          deep: false
+        # Weekly memoir consolidation (a later Part-B task): deep, reranked, generous budget —
+        # nobody waits for a weekly write-up either.
+        weekly-memoir:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 1200
+          rerank: true
+          deep: true
+        # Prediction-evidence retrieval backing a forecast (a later Part-B task).
+        prediction-evidence:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 800
+          rerank: true
+          deep: false
+        # "Find similar past days" episodic-recall retrieval (a later Part-B task).
+        similar-days:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 600
+          rerank: false
+          deep: false
+        # Character-evidence retrieval backing a proposal/observation (a later Part-B task): deep
+        # and reranked, same reasoning as weekly-memoir.
+        character-evidence:
+          enabled: true
+          candidate-limit: 30
+          max-tokens: 1200
+          rerank: true
+          deep: true
+        # Post-turn fact-extraction's own retrieval (a later Part-B task) — deliberately lean and
+        # cheap, extraction runs on every turn.
+        extraction:
+          enabled: true
+          candidate-limit: 10
+          max-tokens: 300
+          rerank: false
+          deep: false
+        # Personal-context retrieval for a non-chat, non-reflection surface (a later Part-B task).
+        personal-context:
+          enabled: true
+          candidate-limit: 15
+          max-tokens: 400
+          rerank: false
+          deep: false
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)

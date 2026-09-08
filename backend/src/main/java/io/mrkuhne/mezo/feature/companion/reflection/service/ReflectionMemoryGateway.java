@@ -1,18 +1,11 @@
 package io.mrkuhne.mezo.feature.companion.reflection.service;
 
-import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
-import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
-import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
-import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +14,18 @@ import org.springframework.stereotype.Service;
  * unified memory platform. It exists so the reflection pass never talks to retrievers directly:
  * one {@link ConsumerPolicy#REFLECTION} request, one audited run, one prompt block.
  *
- * <p>FAIL-OPEN by contract: a reflection that cannot reach the memory platform must still reflect
- * on what it does have. Every failure below this method is logged and turns into {@code ""} —
- * never an exception, never a half-built block. The nightly pass has no user waiting on it, so the
- * policy is deliberately deeper than chat's (its own candidate pool, token budget and reranker
- * allowance live under {@code mezo.companion.memory-platform.policies.reflection}).
+ * <p>Memória mindenhol S7 (mezo-eq85.7): this class is now a THIN delegate to {@link
+ * MemoryContextBlock}, the seam every other Part-B surface shares — same public {@link
+ * #contextFor} signature and the same fail-open contract, so callers see no behaviour change.
+ * The nightly pass has no user waiting on it, so its policy is deliberately deeper than chat's
+ * (its own candidate pool, token budget and reranker allowance live under {@code
+ * mezo.companion.memory-platform.policies.reflection}).
+ *
+ * <p>The persisted LLM-call operation label moves from the pre-S7 literal {@code "memory"} to
+ * {@code "reflection_memory"} ({@link MemoryContextBlock#render} always appends {@code "_memory"}
+ * to its {@code operation} argument) — {@code ReflectionMemoryGatewayIT} does not pin this label,
+ * only the block content and the audited {@code consumerPolicy}, so the rename is safe.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -35,27 +33,11 @@ import org.springframework.stereotype.Service;
         havingValue = "true")
 public class ReflectionMemoryGateway {
 
-    private final MemoryContextService memoryContextService;
-    private final MemoryPlatformProperties properties;
-    private final LlmCallContextHolder llmCallContextHolder;
+    private final MemoryContextBlock memoryContextBlock;
 
     /** The rendered {@code [Hosszú távú memória]} block for one reflection query, or {@code ""}. */
     public String contextFor(UUID userId, String query, boolean deep) {
-        if (query == null || query.isBlank()) {
-            return "";
-        }
-        try {
-            MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.REFLECTION, query,
-                    List.of(), LocalDate.now(), properties.policies().reflection().maxTokens(),
-                    null, deep);
-            MemoryContext context = llmCallContextHolder.runWith(
-                    new LlmCallContext("companion_reflection", "memory", null, null),
-                    () -> memoryContextService.retrieve(request));
-            return context.promptBlock() == null ? "" : context.promptBlock();
-        } catch (RuntimeException e) {
-            log.warn("Reflection memory retrieval failed for user {} — continuing without memories",
-                    userId, e);
-            return "";
-        }
+        return memoryContextBlock.render(userId, ConsumerPolicy.REFLECTION, query, LocalDate.now(),
+                deep, "companion_reflection", "reflection", null).block();
     }
 }

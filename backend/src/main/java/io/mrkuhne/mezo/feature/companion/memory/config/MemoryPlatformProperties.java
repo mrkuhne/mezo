@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.memory.config;
 
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -44,6 +45,37 @@ public record MemoryPlatformProperties(
         @NotNull @Valid Indicators indicators,
         /** Per-consumer overrides of the online serving limits. */
         @NotNull @Valid Policies policies) {
+
+    /**
+     * The retrieval limits for one {@link ConsumerPolicy} (mezo-eq85.7 shared seam) — the ONE
+     * place {@link io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService},
+     * {@link io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker} and every
+     * {@link io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock} caller read the
+     * numbers from — no consumer branches its own copy.
+     *
+     * <p>{@code REFLECTION} and {@code CHAT_AMBIENT} are adapted from their PRE-EXISTING config
+     * shapes rather than moved into new {@link PolicyLimits} records: Task 3's
+     * {@link ReflectionPolicy} has no {@code enabled} switch and must never gain a silent way to
+     * be turned off, so it is always reported {@code enabled=true} here — the caller's own
+     * {@code deep} argument, not this record, is what actually decides retrieval depth. Lives on
+     * the top-level record (not on {@link Policies}) because {@code CHAT_AMBIENT} needs
+     * {@link #serving()}, which {@link Policies} cannot see.
+     */
+    public PolicyLimits limitsFor(ConsumerPolicy policy) {
+        return switch (policy) {
+            case REFLECTION -> new PolicyLimits(true, policies.reflection().candidateLimit(),
+                    policies.reflection().maxTokens(), policies.reflection().rerank(), false);
+            case CHAT_AMBIENT -> new PolicyLimits(
+                    true, serving.candidateLimit(), serving.chatMaxTokens(), false, false);
+            case MORNING_BRIEFING -> policies.morningBriefing();
+            case WEEKLY_MEMOIR -> policies.weeklyMemoir();
+            case PREDICTION_EVIDENCE -> policies.predictionEvidence();
+            case SIMILAR_DAYS -> policies.similarDays();
+            case CHARACTER_EVIDENCE -> policies.characterEvidence();
+            case EXTRACTION -> policies.extraction();
+            case PERSONAL_CONTEXT -> policies.personalContext();
+        };
+    }
 
     public record Retrieval(
             /** Candidates requested from each retriever before fusion. */
@@ -109,7 +141,23 @@ public record MemoryPlatformProperties(
 
     public record Policies(
             /** Reflexió S3 (mezo-eq85.3): the offline nightly-reflection consumer. */
-            @NotNull @Valid ReflectionPolicy reflection) {
+            @NotNull @Valid ReflectionPolicy reflection,
+            /** Memória mindenhol S7 (mezo-eq85.7): the four proactive companion messages
+             *  (morning/sleep/weight/window) share this ONE policy — none of the seven configured
+             *  consumers below is specific to a single proactive-feed kind. */
+            @NotNull @Valid PolicyLimits morningBriefing,
+            /** Reflexió/Memoir weekly-consolidation retrieval (a later Part-B task's consumer). */
+            @NotNull @Valid PolicyLimits weeklyMemoir,
+            /** Prediction-evidence retrieval backing a forecast (a later Part-B task's consumer). */
+            @NotNull @Valid PolicyLimits predictionEvidence,
+            /** "Find similar past days" episodic-recall retrieval. */
+            @NotNull @Valid PolicyLimits similarDays,
+            /** Character-evidence retrieval backing a proposal/observation. */
+            @NotNull @Valid PolicyLimits characterEvidence,
+            /** Post-turn fact-extraction's own retrieval — deliberately lean and cheap. */
+            @NotNull @Valid PolicyLimits extraction,
+            /** Personal-context retrieval for a non-chat, non-reflection surface. */
+            @NotNull @Valid PolicyLimits personalContext) {
     }
 
     public record ReflectionPolicy(
@@ -119,6 +167,26 @@ public record MemoryPlatformProperties(
             @Min(60) @Max(6000) int maxTokens,
             /** Allows the LLM reranker on every reflection retrieval (no latency gate offline). */
             boolean rerank) {
+    }
+
+    /**
+     * A per-consumer override of the online serving limits (mezo-eq85.7). {@code enabled} lets a
+     * surface be rolled back to "no memory context" purely by config; {@code deep} documents
+     * whether the consumer TYPICALLY wants the deep-query variant — the actual retrieval call
+     * still decides depth via its own explicit argument, this is metadata for that call site.
+     */
+    public record PolicyLimits(
+            /** Off ⇒ the consumer's {@code [Emlékek]}-equivalent block is always {@code ""} and no
+             *  {@code memory_retrieval_run} row is written — a surface-level kill switch. */
+            boolean enabled,
+            /** Candidates requested from each retriever before fusion. */
+            @Min(1) @Max(100) int candidateLimit,
+            /** Maximum memory-context budget for this consumer, in estimated tokens. */
+            @Min(60) @Max(6000) int maxTokens,
+            /** Allows the LLM reranker for this consumer (still gated by the global switch). */
+            boolean rerank,
+            /** Whether this consumer typically requests the deep-query variant. */
+            boolean deep) {
     }
 
     public record Indicators(
