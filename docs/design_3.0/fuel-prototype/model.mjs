@@ -22,14 +22,22 @@ export function createState() {
   {id:'snack',name:'Banán és mandula',category:'Kisétkezés',icon:'snack',minutes:2,servings:1,favorite:false,description:'Egy kis szünet két nagyobb étkezés között.',lines:[{id:'banana',g:120},{id:'almond',g:20}],steps:['Mérd ki a mandulát, és készíts mellé egy banánt.']},
  ];
  const meal = (id,recipe,time,date=TODAY) => ({id,name:recipe.name,time,date,slot:recipe.category,icon:recipe.icon,lines:recipe.lines.map(l=>({...l,g:l.g/recipe.servings})),score: id==='m1'?88:id==='m2'?92:81,source:'Recept'});
- return {version:1,pantry,recipes,meals:[meal('m1',recipes[1],'08:10'),meal('m2',recipes[0],'12:35'),meal('m3',recipes[3],'15:00'),meal('h1',recipes[1],'08:00','2026-09-08'),meal('h2',recipes[2],'19:00','2026-09-08')],water:{[TODAY]:1250,'2026-09-08':2250},settings:{base:2100,movement:350,balance:-200,p:160,c:245,f:70,fiber:30,water:2500,meals:4,cutoff:'14:00',profile:'Kiegyensúlyozott'},slots:[{name:'Reggeli',time:'08:00',share:25},{name:'Ebéd',time:'12:30',share:35},{name:'Kisétkezés',time:'15:00',share:15},{name:'Vacsora',time:'19:00',share:25}],stack:[{id:'s1',name:'D-vitamin',dose:'1 kapszula',time:'08:00',zone:'Reggelihez',taken:[TODAY],reason:'A mintaprotokollban a reggelihez kötött tétel.'},{id:'s2',name:'Kreatin',dose:'1 adag',time:'15:30',zone:'Délután',taken:[],reason:'A mentett mintaprotokoll délutáni eleme.'},{id:'s3',name:'Magnézium',dose:'1 kapszula',time:'21:00',zone:'Este',taken:[],reason:'A mintaprotokollban esti emlékeztetővel szerepel.'}],medications:[],shopping:[],plan:{},chat:[]};
+ return {version:2,pantry,recipes,meals:[meal('m1',recipes[1],'08:10'),meal('m2',recipes[0],'12:35'),meal('m3',recipes[3],'15:00'),meal('h1',recipes[1],'08:00','2026-09-08'),meal('h2',recipes[2],'19:00','2026-09-08')],water:{[TODAY]:1250,'2026-09-08':2250},goal:{title:'Erősebb, könnyebb forma',currentWeight:82,targetWeight:78,targetDate:'2026-12-15',maintenanceKcal:2300,dailyEnergyBalanceKcal:-200},workouts:[{id:'w1',date:TODAY,label:'Teljes test A',time:'17:30',kcal:350,loggedDates:[]}],settings:{fiber:30,water:2500,meals:4,cutoff:'14:00',profile:'Kiegyensúlyozott'},slots:[{name:'Reggeli',time:'08:00',share:25},{name:'Ebéd',time:'12:30',share:35},{name:'Kisétkezés',time:'15:00',share:15},{name:'Vacsora',time:'19:00',share:25}],stack:[{id:'s1',name:'D-vitamin',dose:'1 kapszula',time:'08:00',zone:'Reggelihez',taken:[TODAY],reason:'A mintaprotokollban a reggelihez kötött tétel.'},{id:'s2',name:'Kreatin',dose:'1 adag',time:'15:30',zone:'Délután',taken:[],reason:'A mentett mintaprotokoll délutáni eleme.'},{id:'s3',name:'Magnézium',dose:'1 kapszula',time:'21:00',zone:'Este',taken:[],reason:'A mintaprotokollban esti emlékeztetővel szerepel.'}],medications:[],shopping:[],plan:{},chat:[]};
 }
 export function nutrition(lines, pantry) {
  const result={kcal:0,p:0,c:0,f:0,fiber:0};
  for(const l of lines){const item=pantry.find(i=>i.id===l.id);if(!item)continue;for(const k of Object.keys(result))result[k]+=(Number(item[k])||0)*Number(l.g)/100;}
  return result;
 }
-export const target = s => Number(s.settings.base)+Number(s.settings.movement)+Number(s.settings.balance);
+export const plannedWorkout = (s,date=TODAY) => s.workouts.find(w=>w.date===date);
+export const activityKcal = (s,date=TODAY) => s.workouts.filter(w=>w.loggedDates.includes(date)).reduce((sum,w)=>sum+Number(w.kcal),0);
+export const baselineTarget = s => Number(s.goal.maintenanceKcal)+Number(s.goal.dailyEnergyBalanceKcal);
+export const target = (s,date=TODAY) => baselineTarget(s)+activityKcal(s,date);
+export function macroTargets(s,date=TODAY){
+ const kcal=target(s,date),weight=Number(s.goal.currentWeight),proteinPerKg=s.settings.profile==='Fehérjehangsúlyos'?2.2:s.settings.profile==='Szénhidrát-hangsúlyos'?1.6:1.95;
+ const p=Math.round(weight*proteinPerKg),f=Math.round(weight*.85),c=Math.max(0,Math.round((kcal-p*4-f*9)/4));
+ return {kcal,p,c,f,fiber:Number(s.settings.fiber),water:Number(s.settings.water)};
+}
 export const mealsOn = (s,date) => s.meals.filter(m=>m.date===date).sort((a,b)=>a.time.localeCompare(b.time));
 export const dayTotals = (s,date) => nutrition(mealsOn(s,date).flatMap(m=>m.lines),s.pantry);
 export const portionLines = (recipe,servings=1) => recipe.lines.map(l=>({...l,g:l.g*servings/recipe.servings}));
@@ -44,4 +52,4 @@ export function addShortages(s, recipe,servings=1){
 }
 export function toggleIntake(s,id,date=TODAY){const item=s.stack.find(i=>i.id===id);if(!item)return;item.taken=item.taken.includes(date)?item.taken.filter(d=>d!==date):[...item.taken,date];}
 export function shiftDate(date,delta){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);}
-export function load(storage){try{const s=JSON.parse(storage.getItem(STORAGE));if(s?.version===1&&Array.isArray(s.meals)&&Array.isArray(s.pantry))return s;}catch{}return createState();}
+export function load(storage){try{const saved=JSON.parse(storage.getItem(STORAGE));if((saved?.version===1||saved?.version===2)&&Array.isArray(saved.meals)&&Array.isArray(saved.pantry)){const fresh=createState();return {...fresh,...saved,version:2,goal:{...fresh.goal,...saved.goal},workouts:Array.isArray(saved.workouts)?saved.workouts:fresh.workouts,settings:{...fresh.settings,...saved.settings}};}}catch{}return createState();}

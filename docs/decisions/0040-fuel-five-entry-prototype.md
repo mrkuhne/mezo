@@ -19,6 +19,10 @@ amely a napi áttekintésből a korábbi napok és a heti grafikon felé is nyí
 A heti tervezés és étkezési ablakok a Beállításokból érhetők el; a Naplónak is van
 közvetlen tervbejárata. A gyógyszernapló a Stackből és a Beállításokból is elérhető.
 
+A Beállításokban a keret és a makrók nem kézzel megadott számok: az aktív súlycél,
+a céldátum és a napi fenntartó alap számítja őket. A tervezett edzés látható, de
+csak a rögzítés után kerül hozzá a napi kerethez.
+
 A látványt és a mélyebb aloldalakat közvetlenül a prototípusban iteráljuk.
 A production oldalak, API-k és számítási szabályok változatlanok. A prototípus
 explicit demonstrációként kezeli a score-t és az AI-válaszokat.

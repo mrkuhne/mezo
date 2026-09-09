@@ -33,13 +33,13 @@ A `file://` megnyitás a modulok miatt nem támogatott.
 | Család | Nézetek | Mit lehet kipróbálni? |
 | --- | --- | --- |
 | Napló | `diary`, `week` | Kcal/makró/rost/víz, napi étkezések, dátumválasztó, heti grafikon és visszanyitható napok. |
-| Keret | `energy`, `movement` | Alap + mozgás + cél bontás; a mintamozgás átállítása a napi keretet frissíti. |
+| Keret | `energy`, `movement` | Fenntartó keret + súlycél hatása + rögzített mozgás bontás. A tervezett edzés csak rögzítés után emeli a napi keretet. |
 | Étkezés | `log`, `meal`, `score` | Kamra + recept + szöveg/fotópélda egy vázlatban; név, időpont, nap, gramm; mentés, javítás, törlés/undo; 8 lenyitható score-nézőpont. |
 | Receptek | `recipes`, `recipe`, `recipe-edit`, `workshop`, `cook` | Keresés, kategória/kedvenc, adagváltás, hozzávaló-adatlapok, szerkesztő, Műhely-vázlat és vezetett főzésből étkezésrögzítés. |
 | Kamra | `pantry`, `item`, `item-edit`, `catalog`, `import`, `shopping` | Keresés, saját tápérték/készlet módosítása, katalógusminták, jelölt importelőnézet; receptből hiánylista, pipálás és eltávolítás. |
 | Stack | `stack`, `stack-today`, `protocol`, `timing`, `matches`, `stack-item` | Következő bevétel, pipa/undo, napi idővonal, tartós protokoll és indoklás, időzítési/étkezési nézet, tétel hozzáadása és szerkesztése. |
 | Gyógyszernapló | `medications` | Saját tétel, szerkesztés, napi bevétel, szüneteltetés/újraaktiválás. A Stackből és a Beállításokból is elérhető. |
-| Beállítások | `settings`, `settings-goals`, `settings-rhythm`, `slots`, `plan` | Keret és makrók; étkezésszám/koffeinhatár; ablakidő és 100%-os elosztás; napokra mentett receptötletek a mintahét végéig. |
+| Beállítások | `settings`, `settings-goals`, `settings-rhythm`, `slots`, `plan` | Súlycélból számolt keret és makrók, makróprofil, étkezésszám/koffeinhatár, ablakidő és 100%-os elosztás, napokra mentett receptötletek a mintahét végéig. |
 | Közös panelek | területválasztó, beszélgetés, víz, hozzávaló/receptválasztó | A színes kétszemű karakter megmarad; a chat vázlata és beszélgetése megmarad a panelek között. |
 
 A listából nyisd meg az azonosítóhoz kötött részletet: például `#recipe?id=bowl`
@@ -81,8 +81,11 @@ csak a kamrában szereplő neveket és az előttük álló grammot ismeri fel.
 A készlet, bevásárlólista és főzés kézi próba; a bevásárlópipa és étkezésmentés
 nem von le vagy tölt fel készletet. A terv mentése nem naplóz elfogyasztott ételt.
 A tervező napi receptválasztó, nem a production heti energia-/protokollmotor.
-A makróprofil itt elnevezés; a grammokat kézzel szerkeszted. A Stackben explicit
-mentés szemlélteti a szerkesztést; a production occurrence-autosave nem fut.
+A napi energia- és makrógrammok a helyi mintasúlycélból számolódnak: fenntartó
+keret + célhatás + csak a ténylegesen rögzített edzés. A tervezett edzés előnézet,
+nem növeli meg előre a keretet. A céladatok ebben a Fuel-tanulmányban olvasható
+mintaadatok; a súlycél szerkesztése az Én / Célok tér felelőssége lenne. A Stackben
+explicit mentés szemlélteti a szerkesztést; a production occurrence-autosave nem fut.
 A nem Fuel terek a szerepváltóból a régi Boop prototípushoz vezető átjárást adnak.
 
 ## Ellenőrzés és források
@@ -93,7 +96,7 @@ node --check docs/design_3.0/fuel-prototype/app.mjs
 ```
 
 8 állapotteszt: étkezés javítása, adagszorzó, invalid mennyiség, napelhatárolás,
-mozgás–keret kapcsolat, bevétel visszavonása, hiánylista duplikációvédelme,
+csak rögzített mozgás–keret kapcsolat, bevétel visszavonása, hiánylista duplikációvédelme,
 sérült mentés kezelése. Böngészőben 28 olvasási útvonal bejárva 390 és 360 px-en
 vízszintes túlcsordulás nélkül; az alsó hat vezérlő legalább 44 px széles.
 Receptből étkezés, 150 → 200 g lazac, mentés/részlet/score és napi összegzés,
