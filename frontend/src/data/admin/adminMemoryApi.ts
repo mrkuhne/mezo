@@ -12,6 +12,7 @@ export type AdminMemoryGraphResponse = components['schemas']['AdminMemoryGraphRe
 export type AdminMemoryVectorsResponse = components['schemas']['AdminMemoryVectorsResponse']
 export type AdminMemoryNeighborsResponse = components['schemas']['AdminMemoryNeighborsResponse']
 export type AdminMemoryHealthResponse = components['schemas']['AdminMemoryHealthResponse']
+export type AdminMemoryGlobalHealthResponse = components['schemas']['AdminMemoryGlobalHealthResponse']
 export type AdminMemoryReplayRequest = components['schemas']['AdminMemoryReplayRequest']
 export type AdminMemoryCandidate = components['schemas']['AdminMemoryCandidate']
 export type AdminMemoryScoreBreakdown = components['schemas']['AdminMemoryScoreBreakdown']
@@ -69,4 +70,6 @@ export const adminMemoryApi = {
   neighbors: (userId: string, itemId: string, k: number): Promise<AdminMemoryNeighborsResponse> =>
     apiFetch(`${base(userId)}/vectors/${encodeURIComponent(itemId)}/neighbors?k=${k}`),
   health: (userId: string): Promise<AdminMemoryHealthResponse> => apiFetch(`${base(userId)}/health`),
+  // Installation-wide, NOT scoped to one inspected user (mezo-k5zy) — the entry page's KPI tiles.
+  globalHealth: (): Promise<AdminMemoryGlobalHealthResponse> => apiFetch('/api/admin/memory/health'),
 }

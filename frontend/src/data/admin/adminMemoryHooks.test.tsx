@@ -6,6 +6,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import {
+  useAdminMemoryGlobalHealth,
   useAdminMemoryGraph,
   useAdminMemoryHealth,
   useAdminMemoryNeighbors,
@@ -13,7 +14,12 @@ import {
   useAdminMemoryRuns,
   useAdminMemoryVectors,
 } from '@/data/admin/adminMemoryHooks'
-import { ADMIN_MEMORY_RUNS_EMPTY, ADMIN_MEMORY_RUNS_MOCK } from '@/data/admin/adminMemoryMock'
+import {
+  ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY,
+  ADMIN_MEMORY_GLOBAL_HEALTH_MOCK,
+  ADMIN_MEMORY_RUNS_EMPTY,
+  ADMIN_MEMORY_RUNS_MOCK,
+} from '@/data/admin/adminMemoryMock'
 
 const USER_ID = 'u-1'
 
@@ -25,6 +31,11 @@ describe('adminMemory hooks (mock mode)', () => {
   it('serves the runs seed synchronously', () => {
     const { result } = renderHook(() => useAdminMemoryRuns(USER_ID, 0, 25, true), { wrapper: QueryWrapper })
     expect(result.current.data).toEqual(ADMIN_MEMORY_RUNS_MOCK)
+  })
+
+  it('serves the installation-wide health seed synchronously', () => {
+    const { result } = renderHook(() => useAdminMemoryGlobalHealth(true), { wrapper: QueryWrapper })
+    expect(result.current.data).toEqual(ADMIN_MEMORY_GLOBAL_HEALTH_MOCK)
   })
 })
 
@@ -46,6 +57,12 @@ describe('adminMemory hooks (real mode) — enabled gating', () => {
     const { result } = renderHook(() => useAdminMemoryNeighbors(USER_ID, null, 10, true), { wrapper: QueryWrapper })
     expect(result.current.isPending).toBe(false)
   })
+
+  it('does not fetch installation-wide health for a non-owner', () => {
+    const { result } = renderHook(() => useAdminMemoryGlobalHealth(false), { wrapper: QueryWrapper })
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.data).toEqual(ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY)
+  })
 })
 
 describe('adminMemory hooks (real mode) — fetch + degraded discrimination', () => {
@@ -65,6 +82,18 @@ describe('adminMemory hooks (real mode) — fetch + degraded discrimination', ()
 
     const health = renderHook(() => useAdminMemoryHealth(USER_ID, true), { wrapper: QueryWrapper })
     await waitFor(() => expect(health.result.current.data.jobs.lastRetrievalRun).not.toBeNull())
+  })
+
+  it('fetches the installation-wide health rollup', async () => {
+    const { result } = renderHook(() => useAdminMemoryGlobalHealth(true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.itemsTotal).toBeGreaterThan(0))
+  })
+
+  it('a bodyless 404 (feature switched off) resolves the global health read as degraded', async () => {
+    server.use(http.get(`${API_BASE}/api/admin/memory/health`, () => new HttpResponse(null, { status: 404 })))
+    const { result } = renderHook(() => useAdminMemoryGlobalHealth(true), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.data.degraded).toBe(true))
+    expect(result.current.isError).toBe(false)
   })
 
   // Resolved ambiguity 6: a BODYLESS 404 (missing controller bean — the feature switch is off)

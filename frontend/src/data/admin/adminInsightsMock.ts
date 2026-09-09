@@ -304,7 +304,7 @@ export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
       severity: 'bad',
       title: 'Elakadt emlék-feldolgozás',
       detail: '3 emlék beágyazása hibára futott.',
-      link: '/admin/users',
+      link: '/admin/memory',
     },
   ],
 }

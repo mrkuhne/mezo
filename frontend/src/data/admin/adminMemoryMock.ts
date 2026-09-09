@@ -1,5 +1,6 @@
 import { MOCK_ANNA_ID } from '@/data/admin/adminMock'
 import type {
+  AdminMemoryGlobalHealthResponse,
   AdminMemoryGraphResponse,
   AdminMemoryHealthResponse,
   AdminMemoryNeighborsResponse,
@@ -392,4 +393,22 @@ export const ADMIN_MEMORY_HEALTH_EMPTY: AdminMemoryHealthResponse = {
   servingEmbeddingVersion: '',
   vectorsByStatus: [], vectorFailures: [], vectorsByVersion: [], staleVectorCount: 0,
   itemsByState: [], nodesByStatus: [], nodesByKind: [], edgeWeightHistogram: [], jobs: {},
+}
+
+// Installation-wide health (mezo-k5zy) — the Memória entry page's KPI tiles. A realistic
+// install with a nonzero stale count (the quiet failure mode the entry page must surface).
+export const ADMIN_MEMORY_GLOBAL_HEALTH_MOCK: AdminMemoryGlobalHealthResponse = {
+  vectorsReady: 1780,
+  vectorsFailed: 6,
+  vectorsStale: 9,
+  itemsTotal: 1842,
+  newestDailySummaryAt: '2026-09-07T04:00:00Z',
+}
+
+export const ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY: AdminMemoryGlobalHealthResponse = {
+  vectorsReady: 0,
+  vectorsFailed: 0,
+  vectorsStale: 0,
+  itemsTotal: 0,
+  newestDailySummaryAt: null,
 }
