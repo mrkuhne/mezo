@@ -1,3 +1,4 @@
+import { openWorkout, workoutContent, initWorkout } from './workout.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
 const $=s=>document.querySelector(s);
@@ -20,6 +21,7 @@ const bars=items=>`<div class="load-bars">${items.map(([a,b,n])=>`<div><span>${a
 const detail=(name,copy,art='gem')=>`data-detail="${safe(name)}" data-copy="${safe(copy)}" data-art="${art}"`;
 const jump=(d,p)=>`data-route="${d}/${p}"`;
 function content(d,p){
+ const detailed=workoutContent(d,p);if(detailed!==null)return detailed;
  if(d==='nap')return [ '',
  `<div class="chat-bubble"><span class="chat-time">MEZO · MA</span>Ma 17:00-kor Felsőtest A vár. A napod első fele mögötted — az edzésről beszéljünk, vagy arról, hogy vagy?</div><details class="context"><summary>Miből indulok ki?</summary><p>7 óra 42 perc alvás · mai felsőtest · 1 180 kcal eddig · fokozatos erőépítés.</p><p>Karakter · szereted előre látni a napod menetét. Ez egy javítható mintaértelmezés.</p><small>Bemutatókontextus, nem személyes adatlekérés.</small></details><button class="sheet-action" data-voice>Elmondom, mi jár a fejemben</button>${row('book','Inkább leírom','Új naplóbejegyzés','data-open="journal"')}`,
  card('A RUTINOD','2 / 4 lépés','A rendszeresség megtart.','ring','data-open="routine"')+row('sun','Reggeli fény','Egy kis idő a szabadban','data-open="routine"')+row('moon','Esti lecsendesedés','Lassan helyére kerül a nap','data-open="routine"'),
@@ -59,16 +61,13 @@ function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading
 function voice(){react('connect');dialog('MEZO · MŰVELETPRÓBA',`${mini}<h2 class="sheet-title">Mondd, és indulunk.</h2><p class="sheet-sub">Válassz egy mintamondatot, vagy írd át. Ez a demó nem rögzít hangot és nem hív valódi AI-t.</p><div class="voice-examples">${[['food','Logolj AI-értékeléssel egy joghurtot és egy banánt.'],['workout','Indítsuk az edzést.'],['journal','Szeretnék naplóbejegyzést írni.']].map(([id,t])=>`<button data-example="${id}">${mic}<span>${t}</span></button>`).join('')}</div><form id="voice-form"><label class="form-field">A mondatod<textarea name="command" required>Logolj AI-értékeléssel egy joghurtot és egy banánt.</textarea></label><button class="sheet-action">Mutasd, hova viszel ↗</button></form>`);}
 function food(text=''){dialog('FUEL · AI-LOGOLÁS DEMÓ',`<h2 class="sheet-title">Nézzük, mi került a tányérra.</h2><form id="food-form"><label class="form-field">Étkezés<textarea name="meal" required>${safe(text)}</textarea></label><button class="sheet-action">${text?'Mintaelemzés megtekintése':'Mintaelemzés indítása'}</button></form><div id="food-result"></div>`);if(text)foodResult();}
 function foodResult(){const input=$('#food-form [name=meal]').value.trim();if(!input)return;$('#food-result').innerHTML=`<div class="note-card"><span class="overline">SZIMULÁLT ELEMZÉS · DEMÓ</span><p>${safe(input)}</p>${/joghurt/i.test(input)&&/banán/i.test(input)?`<p><strong>Joghurt · 150 g<br>Banán · 1 közepes darab</strong></p><p>Egy gyors uzsonna. A joghurt típusát és a pontos adagokat még érdemes ellenőrizni.</p><small>Előre megírt mintaértékelés. A fenti szövegben pontosíthatod az adagokat; valódi AI-elemzés itt nem fut.</small>`:`A valódi elemző itt bontaná tételekre az étkezést és becsülné meg az adagokat. Ebben a demóban nincs tápértékszámítás.`}</div><button class="sheet-action" data-demo-save>Elteszem a demóba</button>`;}
-function workout(){dialog('EDZÉS · INDÍTÁS',`<h2 class="sheet-title">Felsőtest A</h2><p class="sheet-sub">3. hét / 6 · a mai edzésed</p>${row('dumbbell','Fekvenyomás','3 × 10 · 60 kg',detail('Fekvenyomás','Két ismétlés tartalék. Mintaelőírás.'))}<button class="sheet-action" data-start-workout>Kezdjük az első szettet</button>`);}
-let sets=0;
 document.addEventListener('click',e=>{
  const el=e.target.closest('button');if(!el)return;
  if(el.hasAttribute('data-route')){closeSheet();const [d,p]=el.dataset.route.split('/');go(d,Number(p));}
  if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${c.tabs.join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
- if(el.hasAttribute('data-food'))food();if(el.hasAttribute('data-workout'))workout();
- if(el.hasAttribute('data-start-workout')){sets=0;dialog('AKTÍV EDZÉS · DEMÓ',`<h2 class="sheet-title">Fekvenyomás</h2><p class="sheet-sub">60 kg · cél 10 ismétlés · 2 RIR</p><form id="set-form"><label class="form-field">Súly (kg)<input name="kg" type="number" min="0" step=".5" value="60" required></label><label class="form-field">Ismétlés<input name="reps" type="number" min="1" max="100" value="10" required></label><button class="sheet-action">Szett rögzítése</button></form><div id="set-list"></div>`);}
+ if(el.hasAttribute('data-food'))food();if(el.hasAttribute('data-workout'))openWorkout();
  if(el.hasAttribute('data-sport'))dialog('RÖPLABDA · DEMÓ',`<h2 class="sheet-title">A pályán töltött idő.</h2><form id="sport-form"><label class="form-field">Időtartam (perc)<input type="number" name="minutes" min="1" value="90" required></label><label class="form-field">Terhelés (1–10)<input type="number" name="rpe" min="1" max="10" value="7" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
  if(el.dataset.detail)dialog('MEZO · RÉSZLET DEMÓ',`${icon(el.dataset.art||'gem')}<h2 class="sheet-title">${safe(el.dataset.detail)}</h2><p class="sheet-sub">${safe(el.dataset.copy)}</p>`);
@@ -79,11 +78,11 @@ document.addEventListener('submit',e=>{
  if(form.id==='food-form'){e.preventDefault();foodResult();}
  if(form.id==='voice-form'){e.preventDefault();const command=String(data.get('command')).trim();const s=command.toLocaleLowerCase('hu');
  if(/joghurt|banán|étkez|kaj|ebéd/.test(s)){closeSheet();go('fuel',0);food(command);toast('Átvittelek az étkezési AI-logolás demójába.');}
- else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);workout();toast('Itt a mai edzésed.');}
+ else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openWorkout();toast('Itt a mai edzésed.');}
  else if(/napló/.test(s)){closeSheet();go('me',3);openSheet('journal');const note=command.split(':').slice(1).join(':').trim();if(note)$('#journal-form textarea').value=note;toast('Megnyitottam a naplódat.');}
  else {let hint=$('#voice-hint');if(!hint){hint=document.createElement('p');hint.id='voice-hint';hint.className='quiet';form.append(hint);}hint.textContent='Ez a demó az étkezés, edzésindítás és napló három példáját ismeri. Válassz egy mintamondatot.';}}
- if(form.id==='set-form'){e.preventDefault();sets++;$('#set-list').insertAdjacentHTML('beforeend',`<div class="note-card">✓ ${sets}. szett · ${safe(data.get('kg'))} kg × ${safe(data.get('reps'))}</div>`);react('connect');}
  if(form.id==='sport-form'||form.id==='weight-form'){e.preventDefault();const message=form.id==='sport-form'?`Röplabda · ${data.get('minutes')} perc · RPE ${data.get('rpe')}`:`Súly · ${data.get('weight')} kg`;closeSheet();toast(message+' · demóbejegyzés');react('connect');}
 });
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
+initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 window.addEventListener('hashchange',draw);draw();
