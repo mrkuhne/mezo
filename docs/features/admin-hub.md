@@ -86,9 +86,10 @@ list in the `mezo-l096` redesign).
   chips that filter the grid; sortable by kockázat (quiet-first, a never-active user sorts
   first) or by 30-day cost; searchable (debounced ~300ms, `q`). The owner's own card is excluded
   from the two churn buckets' counts (their own activity isn't a churn signal about the tester
-  base) but is not force-shown once a status filter is active. A "Táblázat nézet" chip toggles to
-  the original dense sortable table (server-side `sort`/`dir` via `listAdminUserInsights`) for
-  the same rows.
+  base) but is not force-shown once a status filter is active. The status filter (and its
+  `?filter=` URL reflection, see §9) only affects the card grid — a "Táblázat nézet" chip toggles
+  to the original dense sortable table (server-side `sort`/`dir` via `listAdminUserInsights`),
+  which shows every search-matched row regardless of any active status filter.
 - **`/admin/users/:id` — Tesztelő részlet.** A ring gauge for the 30-day active-day share, then
   six tabs: **Aktivitás** (90-day per-domain heat strip), **Adatok** (data inventory + an
   embedded per-table row browser, same `DataTable` component as Nyers adatok, scoped to this
@@ -269,9 +270,14 @@ predates this epic — see `beta-admin.md`'s history) but is now consumed exclus
 |---|---|---|
 | `recordAiDraftOutcome` | `POST /api/ai-drafts/{draftId}/outcome` | 204, upserts `(user, draftId) → outcome` (`accepted\|edited\|discarded`) — last signal wins; `feature` is a free slug, not checked against a fixed list; the admin scorecard is the only reader |
 
-Every operation on all four new/updated tags is 401/403 (`AUTH_FORBIDDEN`) like the rest of the
-platform; `getAdminTableRows` additionally 400s (`ADMIN_TABLE_UNKNOWN` / `ADMIN_COLUMN_UNKNOWN`)
-on an unrecognized name and 504s (`ADMIN_QUERY_TIMEOUT`) on a statement-timeout cancellation.
+Every operation on the three OWNER-only tags above (`AdminInsights`, `AdminData`, and part 1's
+pre-existing `Admin`/`LlmUsage`) is 401/403 (`AUTH_FORBIDDEN`) like the rest of the platform;
+`getAdminTableRows` additionally 400s (`ADMIN_TABLE_UNKNOWN` / `ADMIN_COLUMN_UNKNOWN`) on an
+unrecognized name and 504s (`ADMIN_QUERY_TIMEOUT`) on a statement-timeout cancellation.
+`AiDrafts` is different in kind, not just in response codes — it is the ordinary user-facing write
+side of `acceptedShare` (any signed-in user records their OWN draft outcomes), so it carries no
+owner gate and no 403 at all: 204 on success, 400 on validation (unknown outcome, blank/oversized
+`feature`), 401 on a missing/invalid token.
 
 **`acceptedShare`'s upsert semantics (load-bearing).** `(accepted+edited)/total` over
 `ai_draft_outcome` rows for a feature in the selected period; a row counts in the period its
@@ -463,8 +469,9 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
   `lemorzsolodott` status bucket — the SAME 7+-day boundary `mezo.admin.alerts.tester-quiet-days`
   fires on (`statusFromFilterParam`, `AdminUsersPage.tsx`). Clicking any summary-strip chip also
   writes the real status key back into `?filter=` (never the `quiet` alias) and clears it on
-  toggle-off, so a reload or a shared link reproduces exactly what's on screen (mezo-wg4x fix
-  round).
+  toggle-off, so a reload or a shared link reproduces exactly what's on screen **in the card
+  view** (mezo-wg4x fix round) — the "Táblázat nézet" table ignores the status filter (and thus
+  `?filter=`) entirely, per §2.
 - **Deferred (own specs/issues):** a free-form SQL box (SELECT-only Postgres role, second
   read-only datasource); infra observability — done separately, see
   [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md); byte-level per-user

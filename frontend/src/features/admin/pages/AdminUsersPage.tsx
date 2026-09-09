@@ -100,19 +100,25 @@ export function AdminUsersPage() {
     () => statusFromFilterParam(searchParams.get('filter')),
   )
   // Writes the actual status key back (never the `quiet` alias) — `?filter=` is URL-as-state for
-  // whichever bucket is active, so a reload or a shared link reproduces exactly what's on screen;
-  // clearing the filter clears the param entirely rather than leaving a stale `filter=`.
+  // whichever bucket is active, so a reload or a shared link reproduces exactly what's on screen
+  // (card view only, see the callers above); clearing the filter clears the param entirely rather
+  // than leaving a stale `filter=`.
+  //
+  // Fix round (StrictMode safety): `next` is resolved against the CURRENT `statusFilter` closure
+  // value here, then `setStatusFilterState`/`setSearchParams` are called sequentially as plain
+  // event-handler statements — never `setSearchParams` from INSIDE a `setState` updater callback.
+  // React 18 StrictMode double-invokes updater functions to surface side effects; a `setSearchParams`
+  // call nested inside one would double-navigate under that double-invoke, and `setSearchParams`
+  // itself already accepts (and safely re-invokes) a functional updater for the params object.
   const setStatusFilter = (next: TesterStatus | null | ((prev: TesterStatus | null) => TesterStatus | null)) => {
-    setStatusFilterState((prev) => {
-      const resolved = typeof next === 'function' ? next(prev) : next
-      setSearchParams((params) => {
-        const p = new URLSearchParams(params)
-        if (resolved === null) p.delete('filter')
-        else p.set('filter', resolved)
-        return p
-      }, { replace: true })
-      return resolved
-    })
+    const resolved = typeof next === 'function' ? next(statusFilter) : next
+    setStatusFilterState(resolved)
+    setSearchParams((params) => {
+      const p = new URLSearchParams(params)
+      if (resolved === null) p.delete('filter')
+      else p.set('filter', resolved)
+      return p
+    }, { replace: true })
   }
   const [cardSort, setCardSort] = useState<CardSortKey>('kockazat')
 

@@ -68,9 +68,12 @@ label is now "Felidézések" — every pre-existing `?view=runs` deep link keeps
 An unset or unknown `view` now defaults to `overview` (it defaulted to `runs` before `mezo-k5zy`).
 A five-way segment bar (`MemorySegmentBar`, Áttekintés · Felidézések · Gráf · Térkép · Rétegek)
 sits under the existing 6-tab bar (Aktivitás · Adatok · Funkciók · Költség · Visszajelzések ·
-**Memória**); every view renders into `.am-content` beside a collapsible `MemoryInspector` that
-shows the currently selected row's detail (or an empty placeholder when nothing is selected —
-Áttekintés and Rétegek never populate it, neither has a selectable row).
+**Memória**); the four selectable views (Felidézések · Gráf · Térkép · Rétegek) render into
+`.am-content` beside a collapsible `MemoryInspector` that shows the currently selected row's
+detail (or an empty placeholder when nothing is selected — Rétegek never populates it, it has no
+selectable row). **Áttekintés is the one exception: it drops the inspector column entirely**
+(`AdminMemoryPage.tsx` only mounts it for `view !== 'overview'`), so its tiles use the full
+content width rather than sharing it with an always-empty pane.
 
 **Áttekintés** (`OverviewView`, the default landing view): reads the SAME per-user `/health` op
 Rétegek uses (no new endpoint) plus the SAME per-user feedback op the user-detail
