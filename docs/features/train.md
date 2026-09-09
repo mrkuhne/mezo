@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-09
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -46,6 +46,16 @@ Train is the largest mezo domain: the area for planning and executing strength w
 ---
 
 ## 2. User-facing behavior
+
+### Separate Boop / Clay prototype (design study only)
+
+The standalone [Edzés prototype](../design_3.0/train-prototype/README.md) studies a
+Boop shell with Edzés / Heti / Tervek / Napló / Tár, local workout logging and
+editable sample plans. It runs on port 5197 alongside the Fuel study, with a
+separate phone-frame preview. [ADR 0041](../decisions/0041-train-clay-prototype.md)
+records the decision and simplified model boundaries. This is **not** a production
+route, hook, contract, progression-engine or navigation change; the behavior below
+continues to describe the shipped app.
 
 ### The Edzés hub (`pages/EdzesHubPage.tsx`, `/train`, `mezo-d20.3.1`)
 
