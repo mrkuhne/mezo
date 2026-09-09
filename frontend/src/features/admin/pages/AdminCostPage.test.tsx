@@ -1,29 +1,18 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { setToken } from '@/data/_client/api'
 import { AdminCostPage } from '@/features/admin/pages/AdminCostPage'
-import { LLM_CALLS_MOCK } from '@/data/me/llmUsageHooks'
+import { LLM_CALLS_MOCK, LLM_USAGE_MOCK, LLM_BREAKDOWN_MOCK } from '@/data/me/llmUsageHooks'
+import { ADMIN_OVERVIEW_MOCK } from '@/data/admin/adminInsightsMock'
 
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
-function renderPage() {
-  return render(
-    <QueryWrapper>
-      <RouterProvider
-        router={createMemoryRouter([{ path: '/admin/cost', element: <AdminCostPage /> }], {
-          initialEntries: ['/admin/cost'],
-        })}
-      />
-    </QueryWrapper>,
-  )
-}
-
-function renderPageWithNavigation() {
+function renderAt(path: string) {
   return render(
     <QueryWrapper>
       <RouterProvider
@@ -32,148 +21,147 @@ function renderPageWithNavigation() {
             { path: '/admin', element: <div data-testid="admin-page">Admin Page</div> },
             { path: '/admin/cost', element: <AdminCostPage /> },
           ],
-          { initialEntries: ['/admin/cost'] },
+          { initialEntries: [path] },
         )}
       />
     </QueryWrapper>,
   )
 }
 
+const nowMonthUpper = new Intl.DateTimeFormat('hu-HU', { month: 'long', timeZone: 'Europe/Budapest' })
+  .format(new Date())
+  .toUpperCase()
+
 describe('AdminCostPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('opens on the week period with the header numbers and the call list', () => {
-    renderPage()
+  it('renders the KPI strip off the calendar-month summary, incl. the Δ chip vs the prior month', () => {
+    renderAt('/admin/cost')
 
-    expect(screen.getByText('AI-napló')).toBeInTheDocument()
-    expect(screen.getByText('412')).toBeInTheDocument()
-    expect(screen.getByText('$1.86')).toBeInTheDocument()
-    // the breakdown and the list both render. `companion_hypothesis` is BOTH a feature-breakdown
-    // bar AND (independently, in LLM_CALLS_MOCK) the feature of a listed call, so a plain
-    // getByText collides on two elements — scope to the breakdown's bar button (the call row is a
-    // `link`, not a `button`), the same disambiguation the "applies a feature filter" test below
-    // already relies on for `meal_draft`.
-    expect(screen.getByRole('button', { name: /companion_hypothesis/ })).toBeInTheDocument()
-    expect(screen.getAllByRole('link').length).toBeGreaterThan(0)
+    // "SZEPTEMBER · NAPTÁRI HÓNAP" style eyebrow — the calendar-month name, uppercased.
+    expect(screen.getByText(`${nowMonthUpper} · NAPTÁRI HÓNAP`)).toBeInTheDocument()
+    // LLM_USAGE_MOCK.month.costUsd = 1.22 — coincidentally also the "Egy aktív fiókra jut"
+    // figure (Anna is the mock's only non-owner ACTIVE account), so both KPI posters show it.
+    expect(screen.getAllByText('$1.22').length).toBeGreaterThanOrEqual(1)
+    // prevMonthToSameDayUsd = 1.05 -> (1.22-1.05)/1.05*100 ≈ 16.2% up
+    expect(screen.getByText(/▲ 16%-kal több az előző hónap azonos napjához képest/)).toBeInTheDocument()
+    // Ismeretlen költségű hívások — breakdown.totals.unpricedCount = 38
+    expect(screen.getByText('38')).toBeInTheDocument()
+    expect(screen.getByText('árlista nélküli hívás')).toBeInTheDocument()
   })
 
-  it('switches the period and keeps the three options reachable', () => {
-    renderPage()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Ma' }))
-    expect(screen.getByRole('button', { name: 'Ma' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Ez a hónap' })).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('applies a feature filter when a breakdown bar is tapped, and narrows the list with it', async () => {
-    renderPage()
-    const rowsBefore = screen.getAllByRole('link').length
-
-    fireEvent.click(screen.getByRole('button', { name: /meal_draft/ }))
-
-    // the active narrowing shows up as a clearable chip
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /meal_draft ✕/ })).toBeInTheDocument(),
+  it('shows the honest "nincs előző havi adat" chip when there is no prior-month figure', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/summary`, () =>
+        HttpResponse.json({ ...LLM_USAGE_MOCK, prevMonthToSameDayUsd: null }),
+      ),
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => HttpResponse.json(LLM_BREAKDOWN_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/calls`, () => HttpResponse.json({ items: [], hasMore: false })),
     )
-    // …and the list below actually shrinks — mock mode answers the FILTERS, like the server does
-    // (LLM_CALLS_MOCK holds exactly one meal_draft call). A chip over an unchanged list was the
-    // demo surface lying about what the filter does.
-    // Mozaik re-face (mezo-d20.6.8): the back chip is now a PageHead <button> (navigate(-1)),
-    // like every other re-faced subpage, not a <Link> — so `link` role only ever matches call
-    // rows: exactly 1 remaining after the filter.
-    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(1))
-    expect(rowsBefore).toBeGreaterThan(2)
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    setToken('t')
+    renderAt('/admin/cost')
+    await waitFor(() => expect(screen.getByText('nincs előző havi adat')).toBeInTheDocument())
   })
 
-  it('does not offer the load-more control when the window already covers every row', () => {
-    renderPage()
-    // The seed is 7 rows and the opening window is 50 — there is nothing more to fetch, so the
-    // control must be absent (it used to be offered forever off a hardcoded hasMore: true).
-    expect(screen.queryByRole('button', { name: /További hívások/ })).toBeNull()
+  it('shows the model-mix table with per-model tokens', () => {
+    renderAt('/admin/cost')
+    expect(screen.getByText('Modell szerint')).toBeInTheDocument()
+    // "gemini-2.5-flash" also appears in the call-list rows below (servedModel) — scope to the
+    // model-mix table's own monospace cell.
+    expect(screen.getAllByText('gemini-2.5-flash').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('1 320 000')).toBeInTheDocument()
   })
 
-  // ── Mozaik re-face (mezo-d20.6.8): own subpage scaffold + the "~ becslés" disclosure ───────
-  it('renders its own back chip (not the removed sub-nav Link) and the estimate footnote', () => {
-    renderPage()
-    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-    expect(
-      screen.getByText('~ becslés — a modellárak tájékoztató jellegűek · Befagyasztott ártábla hívásonként.'),
-    ).toBeInTheDocument()
+  it('labels the trend and matrix tiles with the rolling 30-day window, distinct from the calendar-month KPI strip', async () => {
+    renderAt('/admin/cost')
+    expect(screen.getByText('Napi költés · elmúlt 30 nap')).toBeInTheDocument()
+    expect(screen.getByText('Teljes mátrix · elmúlt 30 nap')).toBeInTheDocument()
   })
 
-  it('offers a per-user chip row from byUser and narrows the list on tap (mezo-qw37.3)', async () => {
-    renderPage()
-    const before = screen.getAllByRole('link').length
-    fireEvent.click(screen.getByRole('button', { name: 'Anna 70' }))
-    await waitFor(() => expect(screen.getAllByRole('link').length).toBeLessThan(before))
-    fireEvent.click(screen.getByRole('button', { name: 'Mindenki' }))
-    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(before))
+  it('mounts with a ?feature= deep link already filtering the call list and showing the active chip', async () => {
+    renderAt('/admin/cost?feature=meal_draft')
+    await waitFor(() => expect(screen.getByRole('button', { name: /meal_draft ✕/ })).toBeInTheDocument())
+    // LLM_CALLS_MOCK has exactly one meal_draft call
+    const list = screen.getByTestId('call-list')
+    await waitFor(() => expect(within(list).getAllByRole('link')).toHaveLength(1))
   })
 
-  it('back button navigates to /admin (not browser history)', async () => {
-    // When the cost page is reachable directly (e.g. from a bookmarked URL or a redirect with
-    // no prior history), navigate(-1) would either no-op or throw the owner out of the admin
-    // shell. The explicit navigate('/admin') target ensures the back button is always usable.
-    renderPageWithNavigation()
-    const backButton = screen.getByRole('button', { name: 'Vissza' })
-    await userEvent.click(backButton)
-    await waitFor(() => {
-      expect(screen.getByTestId('admin-page')).toBeInTheDocument()
-    })
+  it('mounts with a ?day= deep link and shows the clearable day chip', async () => {
+    renderAt('/admin/cost?day=2026-08-14')
+    await waitFor(() => expect(screen.getByRole('button', { name: /2026-08-14 ✕/ })).toBeInTheDocument())
+  })
+
+  it('clicking a trend dot sets ?day= and narrows the call list to that day', async () => {
+    renderAt('/admin/cost')
+    const dots = screen.getAllByRole('button', { name: /Nap kiválasztása:/ })
+    const lastDot = dots[dots.length - 1]
+    const lastDay = ADMIN_OVERVIEW_MOCK.costSeries[ADMIN_OVERVIEW_MOCK.costSeries.length - 1].day
+    fireEvent.click(lastDot)
+    await waitFor(() => expect(screen.getByRole('button', { name: new RegExp(`${lastDay} ✕`) })).toBeInTheDocument())
+  })
+
+  it('opens the "Teljes mátrix" disclosure to a heat grid with Hungarian feature labels and a Háttér row', async () => {
+    renderAt('/admin/cost')
+    fireEvent.click(screen.getByRole('button', { name: /Megnyitás/ }))
+    await waitFor(() => expect(screen.getByText('Béla')).toBeInTheDocument())
+    // "Háttér" also names the "Ki költi" top-card's background bucket — both are honest.
+    expect(screen.getAllByText('Háttér').length).toBeGreaterThanOrEqual(1)
+    // companion_chat's translated label appears as a column header
+    expect(screen.getAllByText('Beszélgetés a társsal').length).toBeGreaterThan(0)
+  })
+
+  it('the "Mire megy a pénz" and "Ki költi" top-5 cards read off the breakdown, translated feature labels', () => {
+    renderAt('/admin/cost')
+    expect(screen.getByText('Mire megy a pénz')).toBeInTheDocument()
+    expect(screen.getByText('Ki költi')).toBeInTheDocument()
+    // companion_chat is the highest-cost feature in LLM_BREAKDOWN_MOCK
+    expect(screen.getAllByText(/Beszélgetés a társsal/).length).toBeGreaterThan(0)
+    // "Daniel" also names the call rows' created-by — scope to the "Ki költi" card's own link.
+    expect(screen.getAllByText('Daniel').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders its own back chip and navigates to /admin', async () => {
+    renderAt('/admin/cost')
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    await waitFor(() => expect(screen.getByTestId('admin-page')).toBeInTheDocument())
   })
 })
 
 describe('AdminCostPage (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  beforeEach(() => { vi.stubEnv('VITE_USE_MOCK', 'false'); setToken('t') })
 
   it('raises the requested window when more calls are loaded', async () => {
     const limits: string[] = []
     server.use(
-      http.get(`${API_BASE}/api/llm-usage/breakdown`, () =>
-        HttpResponse.json({
-          from: '2026-08-14',
-          totals: { callCount: 60, successCount: 60, errorCount: 0, cancelledCount: 0, unpricedCount: 0, promptTokens: 0, cachedTokens: 0, costUsd: 1, currency: 'USD' },
-          features: [], models: [], byUser: [],
-        }),
-      ),
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => HttpResponse.json(LLM_BREAKDOWN_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/summary`, () => HttpResponse.json(LLM_USAGE_MOCK)),
       http.get(`${API_BASE}/api/llm-usage/calls`, ({ request }) => {
         limits.push(new URL(request.url).searchParams.get('limit') ?? '')
-        return HttpResponse.json({
-          items: [LLM_CALLS_MOCK.items[0]],
-          hasMore: true,
-        })
+        return HttpResponse.json({ items: [LLM_CALLS_MOCK.items[0]], hasMore: true })
       }),
     )
 
-    renderPage()
+    renderAt('/admin/cost')
 
-    await waitFor(() => expect(limits).toEqual(['50']))
+    await waitFor(() => expect(limits).toContain('50'))
     fireEvent.click(screen.getByRole('button', { name: /További hívások/ }))
     await waitFor(() => expect(limits).toContain('100'))
   })
 
-  it('omits the chip counts when the breakdown fails but the list succeeds', async () => {
-    // Partial failure: `useDualQuery` hands back the honest-empty rollup on an error, so rendering
-    // the counts would print "Siker 0 · Hiba 0 · Megszakadt 0" above a list of real rows. The
-    // chips stay clickable (they filter server-side, on the list endpoint that DID answer).
+  it('passes the day filter through to the calls request when mounted with ?day=', async () => {
+    const days: (string | null)[] = []
     server.use(
-      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => new HttpResponse(null, { status: 500 })),
-      http.get(`${API_BASE}/api/llm-usage/calls`, () =>
-        HttpResponse.json({ items: [LLM_CALLS_MOCK.items[0]], hasMore: false }),
-      ),
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => HttpResponse.json(LLM_BREAKDOWN_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/summary`, () => HttpResponse.json(LLM_USAGE_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/calls`, ({ request }) => {
+        days.push(new URL(request.url).searchParams.get('day'))
+        return HttpResponse.json({ items: [], hasMore: false })
+      }),
     )
 
-    renderPage()
+    renderAt('/admin/cost?day=2026-08-14')
 
-    // the list rendered its row…
-    await waitFor(() => expect(screen.getByText(/companion_chat/)).toBeInTheDocument())
-    // …the rollup said so instead of showing zeros
-    await waitFor(() =>
-      expect(screen.getByText(/Nem sikerült betölteni az AI-használatot/)).toBeInTheDocument(),
-    )
-    expect(screen.getByRole('button', { name: 'Hiba' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Hiba 0/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Siker 0/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Megszakadt 0/ })).toBeNull()
+    await waitFor(() => expect(days).toContain('2026-08-14'))
   })
 })

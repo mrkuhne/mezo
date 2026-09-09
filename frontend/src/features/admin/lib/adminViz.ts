@@ -247,6 +247,45 @@ export function testerStatus(lastActivityAt: string | null, now: Date = new Date
   return 'lemorzsolodott'
 }
 
+/** Client-side mirror of `AdminAlertService.costSpike`'s per-day rule (mezo-pfdv Task 2) — the
+ *  Költés trend tile's coral anomaly dots. `series` is a plain chronological `{day, usd}[]`
+ *  (the same order as `overview.costSeries`); each entry is evaluated as if it were "yesterday":
+ *  it fires when its own `usd` clears the absolute `minUsd` floor AND either the prior-7-day
+ *  average is exactly zero (first real spend after a quiet stretch) or the entry's `usd` is
+ *  STRICTLY greater than `factor` times that average — matching the backend's `>` (not `>=`),
+ *  so a day at EXACTLY 2x the average does not fire. A day with fewer than 7 prior entries in
+ *  the series (near its start) is NOT given a shorter window — the missing days count as 0,
+ *  exactly like the backend's `costByDay.getOrDefault(day, ZERO)` over the fixed 8-day lookback. */
+export function spikeDays(
+  series: { day: string; usd: number }[],
+  factor = 2,
+  minUsd = 0.5,
+): string[] {
+  const fired: string[] = []
+  for (let i = 0; i < series.length; i++) {
+    const usd = series[i].usd
+    let priorSum = 0
+    for (let back = 1; back <= 7; back++) {
+      const j = i - back
+      if (j >= 0) priorSum += series[j].usd
+    }
+    const priorAvg = priorSum / 7
+    if (usd >= minUsd && (priorAvg === 0 || usd > factor * priorAvg)) {
+      fired.push(series[i].day)
+    }
+  }
+  return fired
+}
+
+/** Month-end run-rate (mezo-pfdv Task 2 Rulings) — "Várható hó végén, a mostani tempóval":
+ *  the calendar-month cost so far, projected linearly across the full month by its elapsed
+ *  days. Guards `dayOfMonth <= 0` to 0 rather than dividing by zero (an impossible calendar
+ *  day, but a defensive guard costs nothing here). */
+export function monthRunRate(monthUsd: number, dayOfMonth: number, daysInMonth: number): number {
+  if (dayOfMonth <= 0) return 0
+  return (monthUsd / dayOfMonth) * daysInMonth
+}
+
 /** Value-score heuristic v1 (mezo-kxnn Task 2, plan Rulings) — the Funkciók scorecard's default
  *  sort AND the value/cost quadrant's x-axis. `uniqueUsers × (1 + habitUserShare)` is the reach ×
  *  stickiness base; `helped` then nudges it by feedback sentiment: `null` (no feedback source —
