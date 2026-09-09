@@ -54,7 +54,7 @@ A listakeresés és a görgetési hely az oldalak közötti visszalépésnél me
 - Az eredeti [Clay ikoncsalád](../../design_2.0/assets/README.md) helyi másolata; azonos szimbólumazonosítók.
 - Finom oldalsó bemetszések és körívek a kiemelt kereten; részletekhez sorok,
   szerkesztőkhöz célzott űrlap, receptekhez saját illusztrált gyűjtemény.
-- A bal alsó szerepváltó és a jobb felső beszélgetés ugyanazt a zöld, kétszemű CSS avatart használja. Pislogás mellett 13 másodpercenként röviden körbefordítja a szemét; csökkentett mozgásnál mindkettő leáll.
+- A bal alsó szerepváltó és a jobb felső, felirat nélküli beszélgetés ugyanazt a zöld, kétszemű CSS avatart használja. Pislogás mellett röviden fel-balra, fel-jobbra, balra vagy lefelé pillant; csökkentett mozgásnál mindkettő leáll.
 - A mezo szerepváltó kör alakú, kétszemű, tónust váltó CSS karaktertanulmány.
   Nem az Avatar Lab motorjának másolata vagy integrációja.
 - A dock külön elrendezési sor, nem takarja a görgethető munkafelületet.

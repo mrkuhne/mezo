@@ -23,7 +23,7 @@ dialog{position:fixed;inset:auto auto 24px 50%;transform:translateX(-50%);margin
 .dock-item>span{font-size:9px}.dimension summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;min-height:62px}.dimension summary>span{overflow-wrap:anywhere}.dimension summary>b{white-space:nowrap}.dimension .track{grid-column:1/-1}.modal-feedback{padding:12px;background:#eee5d4;border-radius:12px;font-size:12px;color:#805e3f;line-height:1.7;margin:6px 0 14px}
 @media(max-width:375px){.dock-item>span{font-size:8.5px}#dock{grid-template-columns:44px repeat(5,minmax(0,1fr))}}
 
-/* A short upward eye roll between long, calm rests; blink remains independent. */
-@keyframes eye-roll{0%,62%,80%,100%{translate:0 0}65%{translate:-3px -1px}68%{translate:-2px -4px}71%{translate:0 -5px}74%{translate:3px -3px}77%{translate:3px 0}}
-.header-chat{gap:8px}.header-chat .orb{width:39px;height:39px}
-@media(max-width:375px){.header-chat .orb{width:33px;height:33px}}
+/* Calm idle expression: a blink plus brief, separate glances rather than a circular roll. */
+@keyframes eye-roll{0%,16%,100%{translate:0 0}18%{translate:-2px -3px}21%{translate:0 0}42%{translate:3px -2px}45%{translate:0 0}64%{translate:-3px 0}67%{translate:0 0}82%{translate:2px 2px}85%{translate:0 0}}
+.header-avatar{display:grid;place-items:center;min-width:44px;min-height:44px;margin-right:-4px}.header-avatar .orb{width:39px;height:39px}
+@media(max-width:375px){.header-avatar .orb{width:33px;height:33px}}
