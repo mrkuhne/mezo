@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-09
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -46,6 +46,15 @@ Train is the largest mezo domain: the area for planning and executing strength w
 ---
 
 ## 2. User-facing behavior
+
+**Neon Forge visual prototype (mezo-i18d):** an isolated mock exploration at
+`prototypes/train-neon-forge/` covers the daily overview, nine-set workout logging,
+rest timer, XP/coins, skill details, cosmetic shop and one-time completion rewards.
+It has no backend connection and does not replace the production Train pages.
+Run it with the command in [the prototype README](../../prototypes/train-neon-forge/README.md).
+The approved [design](../superpowers/specs/2026-09-09-train-neon-forge-design.md)
+records its visual direction and demo-only reward rules. Refresh/reset clears mock progress.
+
 
 ### The Edzés hub (`pages/EdzesHubPage.tsx`, `/train`, `mezo-d20.3.1`)
 
