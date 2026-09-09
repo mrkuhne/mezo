@@ -96,15 +96,24 @@ spec:
                   key: GEMINI_API_KEY
             # mezo-ozri.2: the OpenAI chat provider. Rides the SAME mezo-app secret, and the
             # Gemini key above STAYS — embedding, audio-transcribe and the chat fallback are
-            # all still Gemini. optional: true so the pod keeps booting on the dummy
-            # application.yml default until the key is actually sealed in; until then
-            # mezo.companion.llm.provider must stay `gemini`.
+            # all still Gemini. mezo-kdhn: the key IS sealed in now, so `optional` is gone —
+            # with the provider below set to openai, a missing key must stop the pod loudly
+            # rather than let it boot on application.yml's dummy default and then fail every
+            # single chat turn at request time.
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: mezo-app
                   key: OPENAI_API_KEY
-                  optional: true
+            # mezo-kdhn: PRODUCTION answers chat turns on OpenAI (gpt-5.6-luna). Set HERE, on the
+            # Deployment, and deliberately NOT by changing application.yml's `gemini` default —
+            # the explicit-env precedent of MEZO_FEATURE_COMPANION_ENABLED below. That keeps local
+            # dev, CI and every test on Gemini (no OpenAI key needed to run them) and makes the
+            # rollback one deleted env entry. Chosen on the eval's evidence: gpt-5.6-luna beat the
+            # incumbent on exact match (90.5% vs 88.1%) at 7.2x lower cost per successful action —
+            # docs/research/comparisons/companion-chat-model-rebaseline-2026-09.md.
+            - name: MEZO_COMPANION_LLM_PROVIDER
+              value: "openai"
             - name: MEZO_FEATURE_COMPANION_ENABLED
               value: "true"
             # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning
