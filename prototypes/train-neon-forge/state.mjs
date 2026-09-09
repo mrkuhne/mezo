@@ -4,12 +4,13 @@ export const exercises = [
   { name: 'Vállból nyomás', muscle: 'Váll · tricepsz', kg: 20, reps: 10, skill: 'Stabilitás', previous: '17,5 kg × 10', color: 'purple' },
 ];
 export const initialState = () => ({ xp: 860, coins: 1240, logs: [], finished: false, claimed: false, aura: false });
-export function logSet(state, kg, reps) {
+export function logSet(state, kg, reps, rir = 2) {
   if (state.finished || state.logs.length >= 9) throw new Error('Ez az edzés már teljesült.');
   if (!Number.isFinite(kg) || kg < 0 || kg > 500 || !Number.isInteger(reps) || reps < 1 || reps > 100)
     throw new Error('Súly: 0–500 kg. Ismétlés: 1–100 egész szám.');
+  if (!Number.isInteger(rir) || rir < 0 || rir > 10) throw new Error('RIR: 0–10 közötti egész szám.');
   return { ...state, xp: state.xp + 35, coins: state.coins + 5,
-    logs: [...state.logs, { exercise: Math.floor(state.logs.length / 3), kg, reps }] };
+    logs: [...state.logs, { exercise: Math.floor(state.logs.length / 3), kg, reps, rir }] };
 }
 export function finishWorkout(state) {
   if (!state.logs.length) throw new Error('Előbb logolj legalább egy sorozatot.');

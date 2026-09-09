@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialState, logSet, finishWorkout, claimReward, buyAura, totals } from './state.mjs';
 
+test('workout log retains repetitions in reserve', () => {
+  assert.equal(logSet(initialState(), 60, 10, 3).logs[0].rir, 3);
+  assert.throws(() => logSet(initialState(), 60, 10, 11));
+});
+
 test('a full workout records exact volume and grants one reward only', () => {
   let state = initialState();
   for (let i = 0; i < 9; i++) state = logSet(state, 60, 10);

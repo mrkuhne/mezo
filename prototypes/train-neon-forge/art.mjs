@@ -1,6 +1,13 @@
 let serial = 0;
 export function icon(name, size = 22) {
   const paths = {
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
+    leaf: '<path d="M20 3C5 1 0 10 6 17S22 19 20 3ZM4 21 16 8"/>',
+    chat: '<path d="M21 11a9 9 0 0 1-9 9H4l-2 2V11a9 9 0 0 1 19 0Z"/><path d="M7 10h10M7 14h6"/>',
+    user: '<circle cx="12" cy="7" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 4h1m6 0h1m-7 3h1"/>',
+    run: '<circle cx="16" cy="4" r="2"/><path d="m8 8 5-2 3 5 5 1M13 6l-3 8 5 3-1 5m-4-8-4 5H2M3 8h3M1 12h4"/>',
+    ball: '<circle cx="12" cy="12" r="9"/><path d="M4 6c8-2 11 4 9 15M9 3c-4 7-1 12 10 14M21 9c-8-4-14-2-16 9"/>',
     bolt: '<path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
     back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
@@ -75,5 +82,7 @@ export function art(kind = 'bell', cls = '') {
     <path d="m190 126 63 36v74l-63 37-63-37v-74Z" fill="#986328" stroke="#f7c462" stroke-width="2"/>
     <path d="m191 146-32 52h29l-8 43 43-61h-30l8-34Z" fill="${paint('gold')}"/>
     </g>`;
-  return `<svg class="art ${cls}" viewBox="0 0 380 350" fill="none" aria-hidden="true">${defs}<ellipse cx="190" cy="175" rx="180" ry="165" fill="${paint('halo')}"/>${{ bell, gem, chest, medal }[kind] || bell}</svg>`;
+  const ball = `<g class="floating-object" filter="${paint('shadow')}"><circle cx="190" cy="174" r="104" fill="${paint('gold')}"/><path d="M115 103q142-24 113 170M173 71q-62 111 104 162M290 137q-143-70-181 94" stroke="#815329" stroke-width="5"/><path d="M124 106q61-44 113 8" stroke="#fff4d0" stroke-width="9" stroke-linecap="round" opacity=".7"/><path d="M154 78q-17 71 50 112l71 44q-46 69-110 35-32-84-11-191Z" fill="#f1ede8" opacity=".32"/></g>`;
+  const shoe = `<g class="floating-object" filter="${paint('shadow')}" transform="rotate(-18 190 175)"><path d="m66 172 26-72 45 22 49-5 35 56 77 34q25 14 13 42H64q-21-37 2-77Z" fill="${paint('purple')}" stroke="#d1bdff" stroke-width="2"/><path d="m64 225 243-4q18 30-2 43H65q-19-10-1-39Z" fill="${paint('metal')}"/><path d="m63 238 246-2" stroke="#cdff65" stroke-width="8"/><path d="m90 106 15 70q21 25 62-9l-27-42" fill="#332c4d"/><path d="m166 141 34-10m-25 26 34-10m-24 27 34-10" stroke="#f0e9ff" stroke-width="7" stroke-linecap="round"/><path d="m144 196 48 3 28-13-27 31-49-21Z" fill="#ceff65"/></g>`;
+  return `<svg class="art ${cls}" viewBox="0 0 380 350" fill="none" aria-hidden="true">${defs}<ellipse cx="190" cy="175" rx="180" ry="165" fill="${paint('halo')}"/>${{ bell, gem, chest, medal, ball, shoe }[kind] || bell}</svg>`;
 }
