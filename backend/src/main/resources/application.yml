@@ -126,6 +126,8 @@ mezo:
       memoir: proactive_memoir
       prediction: proactive_prediction
       day_review: day_review
+      meal_coach: meal_coach
+      recipe_breakdown: recipe_breakdown
     # RAG memory explorer tunables (mezo-4qyt). NOTE the deliberate omissions: the RRF
     # constant, the per-retriever fusion weights and the graph decay factor are the
     # companion's (mezo.companion.memory-platform.fusion / mezo.companion.graph) and are

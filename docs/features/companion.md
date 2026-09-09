@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-08
+updated: 2026-09-09
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -3246,21 +3246,26 @@ instead of months of unrecorded signal. Driving spec:
   wire's `updatedAt`), `artifact_kind varchar(20)`, `artifact_id uuid`, `verdict varchar(4)`,
   `reason varchar(16)` (nullable). Constraints: `pk_message_feedback_id`,
   `fk_message_feedback_created_by_app_user_id`, **`uq_message_feedback_artifact (created_by,
-  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the seven
-  kinds `chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review`,
-  widened from five in two CK-swap-only migrations —
+  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the nine
+  kinds
+  `chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown`,
+  widened from five in three CK-swap-only migrations —
   `202608271500_mezo-p2tr_feedback_weekly_review_kind.sql` added `weekly_review`,
-  `202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` added `day_review`; neither touches
-  existing rows, only the CHECK's own claim of what a future insert may write),
-  `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
+  `202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` added `day_review`,
+  `202609091500_mezo-76f6_feedback_meal_coach_recipe_breakdown_kind.sql` (Slice 8 Task 2) added
+  `meal_coach`/`recipe_breakdown`; none touches existing rows, only the CHECK's own claim of what a
+  future insert may write), `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
   (`inaccurate|too_much|bad_timing|not_about_me`) and the cross-field
   **`ck_message_feedback_reason`** (`reason is null or verdict = 'down'`). Index
   `idx_message_feedback_created_by_kind (created_by, artifact_kind)` — the batch-read's key.
-- **The seven kinds span SEVEN different tables** — `ai_message` (chat answers), `companion_message`
+- **The nine kinds span NINE different tables** — `ai_message` (chat answers), `companion_message`
   (the Today feed), `weekly_suggestion`, `weekly_review`, `memoir`, `prediction` (proactive-owned,
-  [`proactive.md` §4/§10](proactive.md)) and `day_review` (companion-owned, §3/§4 above,
-  `mezo-jcpt.4`/`mezo-jcpt.9`). **`artifact_id` therefore carries NO foreign key**: existence
-  is deliberately not validated cross-table (spec §8.1) — seven conditional FKs cannot be expressed,
+  [`proactive.md` §4/§10](proactive.md)), `day_review` (companion-owned, §3/§4 above,
+  `mezo-jcpt.4`/`mezo-jcpt.9`), and — meal/fuel-owned, CHECK widened by Slice 8 Task 2 (`mezo-76f6`)
+  ahead of the FE chip mounts landing in Task 3 — `meal_coach` (artifact id = meal id; prose
+  regenerations share the id, version-conflation accepted) and `recipe_breakdown` (artifact id =
+  recipe id). **`artifact_id` therefore carries NO foreign key**: existence
+  is deliberately not validated cross-table (spec §8.1) — nine conditional FKs cannot be expressed,
   and a dangling id is harmless in a single-user app. A vote on a since-deleted artifact simply
   never gets read back.
 - **`uq_message_feedback_artifact` spans soft-deleted rows too** (it is a plain unique constraint,

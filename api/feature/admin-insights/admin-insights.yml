@@ -499,7 +499,7 @@ components:
           type: number
           format: double
           nullable: true
-          description: 'Always null until ai_draft_outcome ships (slice 8) — the contract carries the field now.'
+          description: '(accepted+edited)/total ai_draft_outcome rows for this feature in the selected period; null when the feature has zero recorded outcomes.'
         costUsd: { type: number, format: double }
         costPerUse: { type: number, format: double, nullable: true, description: 'null when there were zero non-ERROR calls' }
         unknownCalls: { type: integer, format: int64 }

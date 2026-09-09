@@ -8756,7 +8756,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
         - name: ids
           in: query
           required: true
@@ -8841,7 +8841,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
         - name: artifactId
           in: path
           required: true
@@ -22997,7 +22997,7 @@ components:
         artifactKind:
           type: string
           pattern: >-
-            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
+            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
         artifactId:
           type: string
           format: uuid
@@ -23023,7 +23023,8 @@ components:
           type: string
           description: >-
             'chat_message' | 'feed_message' | 'weekly_suggestion' |
-            'weekly_review' | 'memoir' | 'prediction' | 'day_review'
+            'weekly_review' | 'memoir' | 'prediction' | 'day_review' |
+            'meal_coach' | 'recipe_breakdown'
         artifactId:
           type: string
           format: uuid
@@ -25256,8 +25257,9 @@ components:
           format: double
           nullable: true
           description: >-
-            Always null until ai_draft_outcome ships (slice 8) — the contract
-            carries the field now.
+            (accepted+edited)/total ai_draft_outcome rows for this feature in
+            the selected period; null when the feature has zero recorded
+            outcomes.
         costUsd:
           type: number
           format: double

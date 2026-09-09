@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.llmlog.repository;
 
 import io.mrkuhne.mezo.feature.llmlog.entity.AiDraftOutcomeEntity;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,20 @@ import org.springframework.data.repository.query.Param;
 public interface AiDraftOutcomeRepository extends JpaRepository<AiDraftOutcomeEntity, UUID> {
 
     Optional<AiDraftOutcomeEntity> findByCreatedByAndDraftIdAndDeletedFalse(UUID createdBy, UUID draftId);
+
+    /** Per-feature outcome-count buckets since {@code since} (Funkciók scorecard
+     *  {@code acceptedShare}, mezo-76f6 Task 2) — the primitive {@link
+     *  io.mrkuhne.mezo.feature.admin.service.AdminFeatureService#board} folds into
+     *  {@code (accepted+edited)/total}, null when a feature has zero outcomes in the period.
+     *  Same grouped-aggregate shape as {@code LlmLogRepository#aggregateByUserAndFeatureSince}. */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeFeatureRow(
+            o.feature, o.outcome, count(o))
+        from AiDraftOutcomeEntity o
+        where o.createdAt >= :since
+        group by o.feature, o.outcome
+        """)
+    List<AiDraftOutcomeFeatureRow> aggregateByFeatureSince(@Param("since") Instant since);
 
     /** The single write path (plan Rulings: "last signal wins per (owner, draft_id)").
      *

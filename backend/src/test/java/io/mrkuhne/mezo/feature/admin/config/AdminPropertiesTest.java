@@ -47,6 +47,8 @@ class AdminPropertiesTest extends AbstractIntegrationTest {
                 .containsEntry("weekly_review", "proactive_weekly_review")
                 .containsEntry("memoir", "proactive_memoir")
                 .containsEntry("prediction", "proactive_prediction")
-                .containsEntry("day_review", "day_review");
+                .containsEntry("day_review", "day_review")
+                .containsEntry("meal_coach", "meal_coach")
+                .containsEntry("recipe_breakdown", "recipe_breakdown");
     }
 }

@@ -9309,7 +9309,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' | 'meal_coach' | 'recipe_breakdown' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;
@@ -10198,7 +10198,7 @@ export interface components {
             helped: components["schemas"]["AdminFeatureHelped"] | null;
             /**
              * Format: double
-             * @description Always null until ai_draft_outcome ships (slice 8) — the contract carries the field now.
+             * @description (accepted+edited)/total ai_draft_outcome rows for this feature in the selected period; null when the feature has zero recorded outcomes.
              */
             acceptedShare: number | null;
             /** Format: double */

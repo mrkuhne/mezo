@@ -30,7 +30,10 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionFeatureFlag;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.entity.AiDraftOutcomeEntity;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeFeatureRow;
+import io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureDayRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureErrorRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureUserRow;
@@ -83,6 +86,7 @@ public class AdminFeatureService {
     private final LlmLogRepository llmLogRepository;
     private final CompanionFeatureFlag companionFeatureFlag;
     private final AppUserRepository appUserRepository;
+    private final AiDraftOutcomeRepository aiDraftOutcomeRepository;
 
     /** Funnel/unknown-key window (mezo-l096.4 ruling: fixed 90d, independent of the endpoint's
      *  {@code period} selector). */
@@ -217,6 +221,16 @@ public class AdminFeatureService {
             }
         }
 
+        // ── draft outcomes (period-scoped; acceptedShare = (accepted+edited)/total) ────────────
+        Map<String, long[]> outcomeCountsByFeature = new HashMap<>();
+        for (AiDraftOutcomeFeatureRow row : aiDraftOutcomeRepository.aggregateByFeatureSince(since)) {
+            long[] counts = outcomeCountsByFeature.computeIfAbsent(row.feature(), k -> new long[2]);
+            counts[1] += row.count();
+            if (!AiDraftOutcomeEntity.OUTCOME_DISCARDED.equals(row.outcome())) {
+                counts[0] += row.count();
+            }
+        }
+
         List<AdminFeatureRow> rows = new ArrayList<>();
         acc.forEach((key, a) -> {
             var row = new AdminFeatureRow();
@@ -227,7 +241,9 @@ public class AdminFeatureService {
             row.setHabitUserShare(a.triedUsers.isEmpty() ? 0.0 : (double) a.habitUsers.size() / a.triedUsers.size());
             boolean mapped = companionFeatureFlag.enabled() && mappedSlugs.contains(key);
             row.setHelped(mapped ? helped(helpedBySlug.getOrDefault(key, new int[2])) : null);
-            row.setAcceptedShare(null);
+            long[] outcomeCounts = outcomeCountsByFeature.get(key);
+            row.setAcceptedShare(outcomeCounts == null || outcomeCounts[1] == 0
+                    ? null : (double) outcomeCounts[0] / outcomeCounts[1]);
             row.setCostUsd(a.costUsd);
             row.setCostPerUse(a.calls == 0 ? null : a.costUsd / a.calls);
             row.setUnknownCalls(a.unknownCalls);
