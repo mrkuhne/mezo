@@ -62,3 +62,16 @@ habit and check-in interactions retain their in-memory state. Reload resets the 
   personal pages and all three command transitions; recorded a workout set.
 - CODEMAP check and documentation error-only lint pass (12 existing stale advisories, 3 warnings).
 - The inherited in-app iframe MutationObserver diagnostic is documented in the Nap prototype note.
+
+## Atomic orbit refinement (mezo-mv0p)
+
+User requested two additional planet-bearing rings and subtle neuron-like local firing.
+Four rings now live in an independent scene group: they follow the body's center and manual
+view rotation, but do not inherit its autonomous yaw. Each plane tips at its own rate;
+beads orbit in alternating directions with periods approximately 19–29 seconds. The orbit
+lines have slightly higher opacity so their independent movement is easier to read.
+Six short seam fragments provide local light events, one at a time, with a smooth 1.1-second
+fade every 5.4 seconds. No whole-body brightness modulation or extra point light is added.
+Pause/reduced motion stops orbit time and hides the transient light fragments.
+Validation: four existing prototype tests pass, both Vite entries build, diff whitespace
+check passes, and the four-ring scene was visually checked on the Nap landing page.
