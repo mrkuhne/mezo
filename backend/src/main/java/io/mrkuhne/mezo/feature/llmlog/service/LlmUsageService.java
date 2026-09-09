@@ -130,12 +130,18 @@ public class LlmUsageService {
     public LlmCallListResponse listCalls(String rawPeriod, LocalDate day, String feature, String rawStatus,
                                          String rawCallKind, UUID userId, Integer rawLimit) {
         ZoneId zone = llmLogProperties.reportZone();
-        Instant since = UsagePeriod.parse(rawPeriod).startDate(zone).atStartOfDay(zone).toInstant();
+        Instant periodSince = UsagePeriod.parse(rawPeriod).startDate(zone).atStartOfDay(zone).toInstant();
         int limit = Math.clamp(rawLimit == null ? DEFAULT_LIMIT : rawLimit, 1, MAX_LIMIT);
 
         boolean hasDay = day != null;
-        Instant dayStart = hasDay ? day.atStartOfDay(zone).toInstant() : since;
-        Instant dayEnd = hasDay ? day.plusDays(1).atStartOfDay(zone).toInstant() : since;
+        Instant dayStart = hasDay ? day.atStartOfDay(zone).toInstant() : periodSince;
+        Instant dayEnd = hasDay ? day.plusDays(1).atStartOfDay(zone).toInstant() : periodSince;
+        // mezo-pfdv fix round 3 (H1): `day` REPLACES the period window, it does not intersect with
+        // it — a dot/alert-link for a day before the period's own start (e.g. any day before the
+        // 1st under period=MONTH) must not land on an empty list. Passing `dayStart` as the query's
+        // `since` when `hasDay` makes the `l.createdAt >= :since` clause a no-op (subsumed by the
+        // day-bounds AND below), so the day bounds alone decide the window.
+        Instant since = hasDay ? dayStart : periodSince;
 
         List<LlmCallRow> rows = llmLogRepository.findCalls(
             since,

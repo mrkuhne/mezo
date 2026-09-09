@@ -271,14 +271,20 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
      * {@code (:param is null or …)} idiom. No owner filter — same reason as the aggregates.
      *
      * <p>{@code hasDay}/{@code dayStart}/{@code dayEnd} (mezo-pfdv) are the optional {@code day}
-     * query param's report-zone calendar-day bounds — a bounded window ANDed onto the period's
-     * {@code since}, not a replacement for it, so a caller narrowing to one day still respects the
-     * period filter. Gated on a boolean flag rather than {@code dayStart is null}: binding a null
-     * {@code Instant} into a bare {@code ? is null} check (with no other typed usage to pin it)
-     * makes Postgres fail with "could not determine data type of parameter" — the other filters
-     * avoid this because their null branch always also compares the SAME parameter against a typed
-     * column, but {@code dayStart}/{@code dayEnd} are combined with AND, not reused solo. When
-     * {@code hasDay} is false, {@code dayStart}/{@code dayEnd} are unused dummies (never null).
+     * query param's report-zone calendar-day bounds. {@code since} here is ALREADY the effective
+     * window's start — {@link io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService#listCalls}
+     * passes {@code dayStart} as {@code since} when {@code hasDay} (fix round 3, mezo-pfdv H1),
+     * so the {@code l.createdAt >= :since} clause below is a deliberate no-op in that case (fully
+     * subsumed by the day-bounds AND) — the day REPLACES the period window rather than
+     * intersecting with it, so a day before the period's own start (e.g. before the 1st under
+     * period=MONTH) still returns its calls, matching the cost_spike alert link and the trend's
+     * anomaly dots, both of which can point at a day the current period doesn't cover. Gated on a
+     * boolean flag rather than {@code dayStart is null}: binding a null {@code Instant} into a
+     * bare {@code ? is null} check (with no other typed usage to pin it) makes Postgres fail with
+     * "could not determine data type of parameter" — the other filters avoid this because their
+     * null branch always also compares the SAME parameter against a typed column, but
+     * {@code dayStart}/{@code dayEnd} are combined with AND, not reused solo. When {@code hasDay}
+     * is false, {@code dayStart}/{@code dayEnd} are unused dummies (never null).
      *
      * <p>The caller asks for {@code limit + 1} rows: getting that many is how the service knows
      * more exist, without paying for a second {@code count(*)} on every load-more.

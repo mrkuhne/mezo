@@ -88,12 +88,22 @@ class LlmUsageControllerIT extends ApiIntegrationTest {
      * mezo-pfdv: {@code day} narrows the list to one report-zone calendar day. A row seeded at
      * 23:45 LOCAL on the boundary day is still within it (the edge the report zone matters for);
      * the same wall-clock time one day later must be excluded.
+     *
+     * <p>Fix round 3 (L1): {@code boundaryDay} is a FIXED 40 days back, not {@code minusDays(5)}
+     * — 5 days back can land in the current calendar month or the previous one depending on
+     * which day of the month the suite happens to run on, which used to make this test's
+     * {@code period=MONTH} query only ACCIDENTALLY exercise the H1 fix (day-before-period-start)
+     * on some days and not others. 40 days is always outside a ≤31-day calendar month, so this
+     * test deterministically exercises the same "day replaces the period window" behavior every
+     * run, regardless of today's date — see also the dedicated
+     * {@link #testListCalls_shouldReturnCalls_whenDayIsInThePreviousCalendarMonth} below for that
+     * behavior asserted directly and by name.
      */
     @Test
     void testListCalls_shouldNarrowToOneReportZoneDay_whenDayGiven() {
         RegisteredUser anna = registerUser("Anna");
         ZoneId zone = llmLogProperties.reportZone();
-        LocalDate boundaryDay = LocalDate.now(zone).minusDays(5);
+        LocalDate boundaryDay = LocalDate.now(zone).minusDays(40);
         Instant lateOnBoundaryDay = boundaryDay.atTime(23, 45).atZone(zone).toInstant();
         Instant sameWallClockNextDay = boundaryDay.plusDays(1).atTime(23, 45).atZone(zone).toInstant();
 
@@ -108,6 +118,31 @@ class LlmUsageControllerIT extends ApiIntegrationTest {
 
         assertThat(body.getItems()).singleElement()
             .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.01, within(1e-9)));
+    }
+
+    /**
+     * mezo-pfdv fix round 3 (H1): {@code day} REPLACES the period's own window rather than
+     * intersecting with it — the cost_spike alert link and the trend's anomaly dots can both
+     * point at a day the current period doesn't cover (e.g. any day before the 1st, under
+     * {@code period=MONTH}). Named/asserted directly against "the previous calendar month",
+     * rather than relying on an arbitrary day-offset, so the intent reads unambiguously.
+     */
+    @Test
+    void testListCalls_shouldReturnCalls_whenDayIsInThePreviousCalendarMonth() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate firstOfPriorMonth = java.time.YearMonth.from(LocalDate.now(zone)).minusMonths(1).atDay(1);
+        Instant midDayPriorMonth = firstOfPriorMonth.atTime(12, 0).atZone(zone).toInstant();
+
+        llmLogPopulator.logCall(midDayPriorMonth, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.030000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=MONTH&day=" + firstOfPriorMonth, ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.03, within(1e-9)));
     }
 
     /** day composes with the other filters: it narrows further, it does not replace them. */
