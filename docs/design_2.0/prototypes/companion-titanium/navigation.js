@@ -1,3 +1,4 @@
+import { personalContent, personalDetail, initPersonal, openPersonalJournal, personalArrival, personalInitial } from './personal.js';
 import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, foodContent, initFood } from './food.js';
 import { openWorkout, workoutContent, initWorkout } from './workout.js';
@@ -23,6 +24,7 @@ const bars=items=>`<div class="load-bars">${items.map(([a,b,n])=>`<div><span>${a
 const detail=(name,copy,art='gem')=>`data-detail="${safe(name)}" data-copy="${safe(copy)}" data-art="${art}"`;
 const jump=(d,p)=>`data-route="${d}/${p}"`;
 function content(d,p){
+ const personal=personalContent(d,p);if(personal!==null)return personal;
  const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
  const foodPage=foodContent(d,p);if(foodPage!==null)return foodPage;
  const detailed=workoutContent(d,p);if(detailed!==null)return detailed;
@@ -54,11 +56,11 @@ function content(d,p){
 function go(d,p){const h=`#${d}/${p}`;if(location.hash===h)draw();else location.hash=h;}
 function draw(){
  route=resolveRoute(location.hash);rememberRoute(memory,route.domain,route.page);const {domain:d,page:p}=route,cfg=domains[d];
- $('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
- $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=!(d==='nap'&&p===0);panel.hidden=!original.hidden;panel.innerHTML=content(d,p);
- $('.arrival').hidden=p!==0||mezoDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');
- if(p===0){$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}
- if(d!=='mezo')panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
+ $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;panel.innerHTML=content(d,p);
+ $('.arrival').hidden=p!==0||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');
+ if(p===0){const arrival=personalArrival(d)||cfg;$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
+ if(!['mezo','me','nap'].includes(d))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
 function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading;$('#sheet-body').innerHTML=html;$('#sheet').showModal();}
@@ -79,7 +81,7 @@ document.addEventListener('submit',e=>{
  if(form.id==='voice-form'){e.preventDefault();const command=String(data.get('command')).trim();const s=command.toLocaleLowerCase('hu');
  if(/joghurt|banán|étkez|kaj|ebéd/.test(s)){closeSheet();go('fuel',0);openFood(command);toast('Átvittelek az étkezési AI-logolás demójába.');}
  else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openWorkout();toast('Itt a mai edzésed.');}
- else if(/napló/.test(s)){closeSheet();go('me',3);openSheet('journal');const note=command.split(':').slice(1).join(':').trim();if(note)$('#journal-form textarea').value=note;toast('Megnyitottam a naplódat.');}
+ else if(/napló/.test(s)){closeSheet();const note=command.split(':').slice(1).join(':').trim();openPersonalJournal(note);toast('Megnyitottam a naplódat.');}
  else {let hint=$('#voice-hint');if(!hint){hint=document.createElement('p');hint.id='voice-hint';hint.className='quiet';form.append(hint);}hint.textContent='Ez a demó az étkezés, edzésindítás és napló három példáját ismeri. Válassz egy mintamondatot.';}}
  if(form.id==='sport-form'||form.id==='weight-form'){e.preventDefault();const message=form.id==='sport-form'?`Röplabda · ${data.get('minutes')} perc · RPE ${data.get('rpe')}`:`Súly · ${data.get('weight')} kg`;closeSheet();toast(message+' · demóbejegyzés');react('connect');}
 });
@@ -87,4 +89,5 @@ document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const 
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initMezo({refresh:draw});
+initPersonal({refresh:draw});
 window.addEventListener('hashchange',draw);draw();

@@ -101,3 +101,5 @@ $('#companion').addEventListener('load',()=>{motionPaused=matchMedia('(prefers-r
 render(true);
 
 export { openSheet, closeSheet, react, toast, safe, icon };
+
+export const currentDaypart=()=>part;

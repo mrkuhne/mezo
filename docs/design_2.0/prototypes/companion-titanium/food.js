@@ -32,3 +32,5 @@ export function initFood(options){callbacks=options;document.addEventListener('m
  document.addEventListener('submit',e=>{if(e.target.id==='food-input-form'){e.preventDefault();source=new FormData(e.target).get('meal').trim();if(!/joghurt/i.test(source)||!/banán/i.test(source)){$('#food-input-error').textContent='Ebben a demóban a joghurt és banán példát tudjuk elemezni. A mintamondattal végigpróbálhatod.';return;}const originalId=draft?.id;draft=sampleDraft();if(originalId)draft.id=originalId;stage='review';render();react('connect',2000);}if(e.target.id==='food-review-form'){e.preventDefault();readDraft();if(!saveMeal(day,draft)){$('#food-review-error').textContent='Ellenőrizd az adagokat és az időpontot.';return;}stage='saved';render();react('connect',2500);callbacks.refresh();syncOverview();}});
  $('#restart').addEventListener('click',()=>{day=createFoodDay();draft=null;leave();});
 }
+
+export const foodSnapshot=()=>({...totals(day)});
