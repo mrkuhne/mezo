@@ -15,7 +15,8 @@ import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { ScoreBreakdownBody, ScoreLedgerSection } from '@/features/fuel/components/ScoreBreakdownBody'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
-import { useMealCoachFor } from '@/data/hooks'
+import { useMealCoachFor, useFeedback } from '@/data/hooks'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 
 /** "+4 pont" → the number and its unit split, so the chip can size them apart. */
 const PONT_RE = /^([+−]\d+) pont$/
@@ -25,9 +26,12 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
   // immediately from the already-loaded envelope, this only fills the prose card.
   const { verdict, isPending: coachPending } = useMealCoachFor(meal.id)
   const b = meal.breakdown
-  if (!b) return null
   const scorePct = (meal.score ?? 0) * 100
-  const summary = verdict?.summary ?? b.summary
+  const summary = verdict?.summary ?? b?.summary ?? null
+  // One useFeedback per sheet (mezo-76f6) — mounted unconditionally so hook order never depends
+  // on `b`/`summary`; the chips themselves render only once there is prose to vote on.
+  const feedback = useFeedback('meal_coach', summary ? [meal.id] : [])
+  if (!b) return null
   // The role the meal was SCORED under (Standard / Pre / Post) — the same chip the block wears.
   const ctx = mealContextOf(meal)
   // mezo-jcpt.1: the improve list rides the Mezo card as action chips (prototype `.impch`),
@@ -112,6 +116,16 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                       })}
                     </div>
                   )}
+                  {/* Silent 👍/👎 on the coach's own prose (mezo-76f6) — a new dialog would violate
+                      Global Constraints, so this rides the existing verdict card as one more row. */}
+                  <div className="mt-sm">
+                    <FeedbackChips
+                      key={meal.id}
+                      value={feedback.get(meal.id)}
+                      onVote={(v, reason) => feedback.vote(meal.id, v, reason)}
+                      label="a Mezo olvasatáról"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

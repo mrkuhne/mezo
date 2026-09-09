@@ -24,6 +24,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
+import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
 import { pct } from '@/shared/lib/pct'
 import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
@@ -184,6 +185,42 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   /** Which recipe lines have their ingredient fine-tuning block expanded. */
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
+  // --- draft outcome signals (mezo-76f6): accepted/edited/discarded for the meal_draft feature.
+  // `aiDraftId` is the backend-minted id from the most recent successful AI draft; a save with
+  // no AI provenance (aiContribution null) never reports anything — there is no draft to react to.
+  const [aiDraftId, setAiDraftId] = useState<string | null>(null)
+  // Flips true the moment the user touches an AI-landed line (amount/removal/override) — the
+  // "edited vs accepted-as-is" signal. Reset whenever a fresh AI draft lands.
+  const aiLinesEditedRef = useRef(false)
+  // Guards "exactly once per draft": holds the draftId an outcome has already been sent for, so
+  // a save (accepted/edited) followed by unmount never ALSO fires a discard for the same draft,
+  // and a repeated unmount effect never double-fires either.
+  const outcomeReportedForRef = useRef<string | null>(null)
+  const aiDraftIdRef = useRef<string | null>(null)
+  useEffect(() => { aiDraftIdRef.current = aiDraftId }, [aiDraftId])
+
+  const reportOutcomeOnce = (draftId: string, outcome: 'accepted' | 'edited' | 'discarded') => {
+    if (outcomeReportedForRef.current === draftId) return
+    outcomeReportedForRef.current = draftId
+    reportDraftOutcome(draftId, 'meal_draft', outcome)
+  }
+  // Escape/back share the close path (LogFlowPage → onCancel → onClose, which unmounts this
+  // component) — that IS the discard signal (mezo-76f6 ruling). Mount-once effect so the
+  // cleanup fires exactly on unmount, not on every aiDraftId change (a mid-session AI re-run
+  // just overwrites `aiDraftId` — only the CURRENT draft gets a discard, on eventual unmount).
+  useEffect(() => {
+    return () => {
+      const id = aiDraftIdRef.current
+      if (id) reportOutcomeOnce(id, 'discarded')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once: the cleanup must fire exactly on unmount
+  }, [])
+
+  /** Marks the AI-lines-were-edited signal when the touched line actually came from the AI panel. */
+  const markAiTouched = (key: string) => {
+    if (lines.find(l => l.key === key)?.fromAi) aiLinesEditedRef.current = true
+  }
+
   const [lines, setLines] = useState<DraftLine[]>(() => {
     if (!prefill) return []
     if (prefill.source === 'recipe') {
@@ -233,11 +270,12 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
     setLines(prev => [...prev, { key: crypto.randomUUID(), source: 'recipe', refId: r.id, name: r.name, amount: 1, unit: 'adag' }])
     setReceptOpen(false)
   }
-  const removeLine = (key: string) => setLines(prev => prev.filter(l => l.key !== key))
+  const removeLine = (key: string) => { markAiTouched(key); setLines(prev => prev.filter(l => l.key !== key)) }
   // --- recipe ingredient overrides (mezo-ormb) --------
   // Record only a GENUINE delta: stepping back to the recipe's own amount removes the key, so the
   // "N MODOSITVA" count and Alaphelyzet don't linger on an untouched line.
-  const setOverride = (key: string, index: number, amount: number) =>
+  const setOverride = (key: string, index: number, amount: number) => {
+    markAiTouched(key)
     setLines(prev => prev.map(p => {
       if (p.key !== key) return p
       const original = recipes.find(r => r.id === p.refId)?.ingredients[index]?.amount
@@ -246,19 +284,28 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       else next[index] = amount
       return { ...p, overrides: next }
     }))
-  const clearOverride = (key: string, index: number) =>
+  }
+  const clearOverride = (key: string, index: number) => {
+    markAiTouched(key)
     setLines(prev => prev.map(p => {
       if (p.key !== key) return p
       const next = { ...p.overrides }
       delete next[index]
       return { ...p, overrides: next }
     }))
-  const resetOverrides = (key: string) =>
+  }
+  const resetOverrides = (key: string) => {
+    markAiTouched(key)
     setLines(prev => prev.map(p => p.key === key ? { ...p, overrides: undefined } : p))
-  const bump = (key: string, delta: number, step: number, min: number) =>
+  }
+  const bump = (key: string, delta: number, step: number, min: number) => {
+    markAiTouched(key)
     setLines(prev => prev.map(l => l.key === key ? { ...l, amount: stepAmount(l.amount, delta * step, min) } : l))
-  const setAmount = (key: string, raw: string) =>
+  }
+  const setAmount = (key: string, raw: string) => {
+    markAiTouched(key)
     setLines(prev => prev.map(l => l.key === key ? { ...l, amount: parseAmountInput(raw, l.amount) } : l))
+  }
 
   const canRunAi = aiText.trim().length > 0 || aiPhoto != null
   const runAi = async () => {
@@ -289,6 +336,10 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       setLines(prev => [...prev, ...newLines])
       if (!slotLocked.current) setSlot(draft.slot)
       setAiContribution({ photo: !!aiPhoto, rawText: aiText.trim() || null })
+      // A fresh backend-minted draft (mezo-76f6) — reset the "edited" flag so a PRIOR run's
+      // manual tweaks (if any) don't leak an "edited" onto a since-regenerated draft.
+      setAiDraftId(draft.draftId)
+      aiLinesEditedRef.current = false
       setAiText('')
       setAiPhoto(null)
       setAiOpen(false)
@@ -338,7 +389,19 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
         : {}),
     }
-    logMeal(input)
+    // AI-provenance moment (mezo-76f6): accepted when the AI-landed lines were saved as-is,
+    // edited when the user touched any of them first. A save with no AI provenance at all has
+    // no draft to react to. Guarding the discard effect BEFORE the mutation settles matters: this
+    // composer often unmounts (onSaved → onClose) well before a real-mode POST resolves, and that
+    // unmount must not ALSO fire a discard for the very draft this save is reporting.
+    if (aiContribution && aiDraftId) {
+      const draftId = aiDraftId
+      const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
+      outcomeReportedForRef.current = draftId
+      logMeal(input, { onSuccess: () => reportDraftOutcome(draftId, 'meal_draft', outcome) })
+    } else {
+      logMeal(input)
+    }
     onSaved()
   }
 

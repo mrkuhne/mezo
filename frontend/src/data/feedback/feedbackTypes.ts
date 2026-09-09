@@ -3,7 +3,10 @@
  * The seven kinds span seven different backend tables — one verdict per
  * (user, artifactKind, artifactId), overwritten by a new verdict and removed by a retraction.
  * `day_review` (mezo-jcpt.9) is the day page's analogue of `weekly_review`: it targets the
- * evaluation's own `reviewId`, present only when the scored day actually has LLM prose. */
+ * evaluation's own `reviewId`, present only when the scored day actually has LLM prose.
+ * `meal_coach` and `recipe_breakdown` (mezo-76f6) target the meal/recipe id itself — chips mount
+ * ONLY when that artifact's coach prose is actually present (a purely deterministic breakdown has
+ * nothing to vote on); prose regenerations share the same id (version-conflation accepted). */
 export type FeedbackArtifactKind =
   | 'chat_message'
   | 'feed_message'
@@ -12,6 +15,8 @@ export type FeedbackArtifactKind =
   | 'prediction'
   | 'weekly_review'
   | 'day_review'
+  | 'meal_coach'
+  | 'recipe_breakdown'
 
 export type FeedbackVerdict = 'up' | 'down'
 

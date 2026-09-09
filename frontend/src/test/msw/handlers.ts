@@ -993,6 +993,9 @@ export const handlers = [
           { name: i % 2 === 0 ? 'Row' : 'Squat', muscle: i % 2 === 0 ? 'back-mid' : 'quad', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', catalogId: 'c1f3a0e2-0000-4000-8000-000000000002' } ] }
       : { day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] })
     return HttpResponse.json({
+      // Fresh per call (mezo-76f6) — mirrors the backend's "a fresh id per generate/regenerate
+      // call, never a content hash" ruling, so real-mode regenerate tests see a NEW id too.
+      draftId: crypto.randomUUID(),
       template: { title: 'Hypertrophy · Ősz', shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
         musclePriorities: body.priorities ?? null, weeks: body.weeks, split: `Upper / Lower · ${body.daysOfWeek.length}×/hét`, style: `RP · ${body.weeks} hét`,
         phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], notes: body.goalText ?? null, volumePerMuscle: null, days },

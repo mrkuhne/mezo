@@ -18,9 +18,10 @@
 // A varázsló az állandó edzőtermi időpontokhoz NEM nyúl: a szlot ideje kötelező
 // HH:mm, a varázsló pedig nem kérdez időpontot — kitalálni nem fog.
 // ============================================================
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMesoPlanGenerate, useMesoTemplates, useTimingProfile } from '@/data/hooks'
+import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
 import type { ExerciseLibraryItem, GymExercise, MesoDay } from '@/data/types'
 import { MesoWeekEditor } from '@/features/train/components/MesoWeekEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
@@ -50,11 +51,36 @@ export function MesocyclePlannerPage() {
   // pages/ own data fetching; the editor stays presentational (frontend_conventions).
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
+  // --- draft outcome signals (mezo-76f6), feature slug 'train_meso_plan' ---
+  // Holds the CURRENT generated proposal's draftId while it is still unresolved (neither saved
+  // nor already reported as discarded); null once resolved or before the first generation.
+  // `state.dirty` (wizardState.ts) IS the "edited" signal for free — it already tracks "a manual
+  // edit landed since the last generation", reset on every fresh 'generated'.
+  const pendingDraftIdRef = useRef<string | null>(null)
+  const resolvePending = (outcome: 'accepted' | 'edited' | 'discarded') => {
+    const id = pendingDraftIdRef.current
+    if (!id) return
+    pendingDraftIdRef.current = null
+    reportDraftOutcome(id, 'train_meso_plan', outcome)
+  }
+  // Leaving the planner (back-nav or any other unmount) with an unresolved proposal still
+  // sitting in state is a discard. Mount-once so the cleanup fires exactly on unmount.
+  useEffect(() => {
+    return () => resolvePending('discarded')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once: the cleanup must fire exactly on unmount
+  }, [])
+
   const runGenerate = async (from: WizardState) => {
     setFailed(false)
     setConfirming(false)
     try {
-      dispatch({ type: 'generated', proposal: await generate(generateInput(from)) })
+      const proposal = await generate(generateInput(from))
+      // Regenerating (or the rare case of a second first-run) abandons whatever proposal was
+      // still unresolved — its own discard fires HERE, because by unmount time `state.proposal`
+      // will already be the NEW one and the old draftId would be lost.
+      resolvePending('discarded')
+      pendingDraftIdRef.current = proposal.draftId
+      dispatch({ type: 'generated', proposal })
       dispatch({ type: 'step', step: 'editor' })
     } catch {
       // A failed FIRST generation leaves `step` on the interview (there is nothing else to
@@ -81,6 +107,9 @@ export function MesocyclePlannerPage() {
     setSaving(true)
     try {
       const tpl = await createTemplate(toUpsert(state))
+      // Accepted moment (mezo-76f6 ruling): a successful createTemplate FROM a generated
+      // proposal — start (below) is irrelevant to this signal, so it fires unconditionally here.
+      resolvePending(state.dirty ? 'edited' : 'accepted')
       if (!alsoStart) {
         navigate('/train/mesocycles')
         return

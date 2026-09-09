@@ -215,6 +215,7 @@ function fromDayResponse(d: FuelDayResponse): FuelDayData {
  *  normalizes the optional/nullable contract fields to explicit nulls the FE draft type expects. */
 export function fromAiDraftResponse(r: MealAiDraftResponse): MealAiDraft {
   return {
+    draftId: r.draftId,
     slot: r.slot as MealSlot,
     title: r.title ?? null,
     note: r.note ?? null,

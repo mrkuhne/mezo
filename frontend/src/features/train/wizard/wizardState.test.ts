@@ -26,7 +26,7 @@ function makeProposal(over: Partial<MesoTemplateUpsertRequest> = {}, days: MesoD
     days: [],
     ...over,
   }
-  return { template, days, rationale: 'r', llmUsed: false }
+  return { draftId: 'draft-1', template, days, rationale: 'r', llmUsed: false }
 }
 
 const generate = (s: WizardState, proposal = makeProposal()) =>
