@@ -8,8 +8,17 @@ import io.mrkuhne.mezo.api.dto.AdminViewDescriptor;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -189,5 +198,81 @@ class AdminDataBrowserIT extends ApiIntegrationTest {
         // over 90 tables, so hasSizeGreaterThan(50) has real margin against a silent regression
         // that drops a whole swath of tables from the catalog, without hard-coding the count.
         assertThat(body.getTables()).hasSizeGreaterThan(50);
+    }
+
+    /**
+     * mezo-76f6 fix-up: the test above only guards the ADMIN CATALOG (which describes tables it
+     * knows about) against shrinking — it never once looked at ResetDatabase's actual TRUNCATE
+     * list, so a brand-new owned table (like {@code ai_draft_outcome}) that is admin-browsable
+     * but missing from ResetDatabase sailed through it silently, and cross-test-class row leakage
+     * (mezo-76f6 CI failure: AdminFeatureBoardIT's acceptedShare tests) went undetected.
+     *
+     * <p>This one derives BOTH sides independently — the live {@code information_schema} table
+     * inventory (ground truth for what exists in the schema) vs. a source-level parse of
+     * {@code ResetDatabase.java}'s TRUNCATE list — and fails loudly on any live table that isn't
+     * accounted for by name, so the next missing table trips a compile-time-cheap, run-fast test
+     * instead of a flaky full-suite CI leak.
+     */
+    @Test
+    void testResetDatabase_shouldTruncateEveryOwnedTable_soANewTableCannotLeakBetweenTestClasses() throws IOException {
+        Set<String> liveTables = jdbcTemplate.queryForList(
+                "select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'",
+                String.class)
+            .stream().collect(Collectors.toSet());
+
+        // Liquibase's own bookkeeping — never application data, never touched by ResetDatabase.
+        Set<String> frameworkTables = Set.of("databasechangelog", "databasechangeloglock");
+        // app_user: NOT in the TRUNCATE list (it is DELETEd with an exception for the seeded
+        // owner, see ResetDatabase javadoc) but still handled — it is reset, just not truncated.
+        Set<String> handledOutsideTruncate = Set.of("app_user");
+        // Hybrid catalogs (mezo-qw37.4): loader master rows (created_by null) must survive, so
+        // ResetDatabase DELETEs only the user-authored rows rather than truncating — also handled,
+        // just not via the TRUNCATE list.
+        Set<String> hybridCatalogTables = Set.of("pantry_catalog", "exercise_catalog");
+        // One-off migration artifact (mezo-qw37.4 pantry_catalog split): a frozen `create table ...
+        // as select` snapshot, never written to after creation, never owned/user-authored data —
+        // genuinely exempt from reset, unlike every other table here.
+        Set<String> historicalArtifactTables = Set.of("pantry_item_definition_archive");
+
+        Set<String> tablesRequiringReset = liveTables.stream()
+            .filter(t -> !frameworkTables.contains(t))
+            .filter(t -> !handledOutsideTruncate.contains(t))
+            .filter(t -> !hybridCatalogTables.contains(t))
+            .filter(t -> !historicalArtifactTables.contains(t))
+            .collect(Collectors.toSet());
+
+        Set<String> truncatedTables = parseResetDatabaseTruncateList();
+
+        assertThat(truncatedTables)
+            .as("every live table not in the documented exception sets above must be in "
+                + "ResetDatabase's TRUNCATE list, or a new owned table silently leaks rows "
+                + "between test classes (mezo-76f6) — add it to ResetDatabase's TRUNCATE list, "
+                + "or to one of this test's exception sets if it is genuinely never reset")
+            .containsExactlyInAnyOrderElementsOf(tablesRequiringReset);
+    }
+
+    /** Parses the single TRUNCATE TABLE statement string out of ResetDatabase.java's source —
+     *  there is no public List to import (task-7 judgement call 3), so this reads the ground
+     *  truth straight from the file the growth rule lives on. */
+    private static Set<String> parseResetDatabaseTruncateList() throws IOException {
+        Path path = Path.of("src", "test", "java", "io", "mrkuhne", "mezo", "support", "ResetDatabase.java");
+        String source;
+        try {
+            source = Files.readString(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException("ResetDatabase.java not found at " + path.toAbsolutePath(), e);
+        }
+        Matcher matcher = Pattern.compile("TRUNCATE TABLE (.+?) CASCADE", Pattern.DOTALL).matcher(source);
+        if (!matcher.find()) {
+            throw new IllegalStateException("Could not find a 'TRUNCATE TABLE ... CASCADE' statement in " + path);
+        }
+        // The statement is one Java string literal split across several concatenated ("+")
+        // fragments for readability — strip the quote/plus/newline seams the concatenation
+        // leaves behind before splitting on the real, SQL-level commas.
+        String tableCsv = matcher.group(1).replaceAll("[\"+]", " ");
+        return Arrays.stream(tableCsv.split(","))
+            .map(String::strip)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toSet());
     }
 }
