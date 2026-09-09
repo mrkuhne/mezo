@@ -43,8 +43,8 @@ public class AdminAlertService {
     private static final int COST_SPIKE_LOOKBACK_DAYS = 8;
     private static final int LLM_ERROR_WINDOW_HOURS = 24;
 
-    /** {@code /admin/memory} ships in slice 7 (mezo-l096.7); until then memory_stuck points here. */
-    private static final String MEMORY_STUCK_LINK = "/admin/users";
+    /** {@code /admin/memory} shipped in slice 7 (mezo-l096.7, mezo-k5zy). */
+    private static final String MEMORY_STUCK_LINK = "/admin/memory";
 
     private final AdminAlertQuery alertQuery;
     private final AdminProperties properties;

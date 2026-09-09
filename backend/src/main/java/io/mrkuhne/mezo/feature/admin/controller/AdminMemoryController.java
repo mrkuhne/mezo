@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.admin.controller;
 
 import io.mrkuhne.mezo.api.controller.AdminMemoryApi;
+import io.mrkuhne.mezo.api.dto.AdminMemoryGlobalHealthResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryGraphResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryHealthResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryNeighborsResponse;
@@ -74,5 +75,11 @@ public class AdminMemoryController implements AdminMemoryApi {
     public AdminMemoryHealthResponse getAdminMemoryHealth(UUID userId) {
         currentUser.requireOwner();
         return service.health(userId);
+    }
+
+    @Override
+    public AdminMemoryGlobalHealthResponse getAdminMemoryGlobalHealth() {
+        currentUser.requireOwner();
+        return service.globalHealth();
     }
 }

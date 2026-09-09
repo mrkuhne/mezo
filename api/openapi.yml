@@ -11166,6 +11166,35 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '504':
           $ref: '#/components/responses/AdminMemoryQueryTimeout'
+  /api/admin/memory/health:
+    get:
+      tags:
+        - AdminMemory
+      operationId: getAdminMemoryGlobalHealth
+      summary: >-
+        Installation-wide memory health rollup, independent of any one inspected
+        user (AdminMemory)
+      description: >
+        Ready/failed/stale vector counts, total memory items, and the newest
+        daily-summary timestamp across the WHOLE installation — sourced from
+        AdminAlertQuery, the same counts the memory_stuck/job_missed owner
+        alerts already use. Companion off → 404 ADMIN_MEMORY_DISABLED, matching
+        the per-user memory ops' idiom.
+      responses:
+        '200':
+          description: The install-wide health rollup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMemoryGlobalHealthResponse'
+        '401':
+          $ref: '#/components/responses/AdminMemoryUnauthorized'
+        '403':
+          $ref: '#/components/responses/AdminMemoryForbidden'
+        '404':
+          $ref: '#/components/responses/AdminMemoryDisabled'
+        '504':
+          $ref: '#/components/responses/AdminMemoryQueryTimeout'
   '/api/admin/users/{userId}/memory/health':
     get:
       tags:
@@ -26228,6 +26257,36 @@ components:
         count:
           type: integer
           format: int64
+    AdminMemoryGlobalHealthResponse:
+      type: object
+      required:
+        - vectorsReady
+        - vectorsFailed
+        - vectorsStale
+        - itemsTotal
+      properties:
+        vectorsReady:
+          type: integer
+          format: int64
+        vectorsFailed:
+          type: integer
+          format: int64
+        vectorsStale:
+          type: integer
+          format: int64
+          description: >-
+            present but ANN-ineligible, the quiet failure mode (same predicate
+            as AdminMemoryHealthResponse.staleVectorCount, install-wide)
+        itemsTotal:
+          type: integer
+          format: int64
+        newestDailySummaryAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            inferred from the newest daily_summary row install-wide; null on a
+            fresh install with no summary ever written
     AdminMemoryHealthResponse:
       type: object
       required:

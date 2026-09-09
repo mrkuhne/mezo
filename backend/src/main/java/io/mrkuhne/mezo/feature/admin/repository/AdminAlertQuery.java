@@ -22,6 +22,10 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AdminAlertQuery {
 
+    private static final String READY_MEMORY_VECTORS = """
+        select count(*) from memory_vector where is_deleted = false and status = 'ready'
+        """;
+
     private static final String FAILED_MEMORY_VECTORS = """
         select count(*) from memory_vector where is_deleted = false and status = 'failed'
         """;
@@ -41,12 +45,23 @@ public class AdminAlertQuery {
         select max(created_at) from daily_summary where is_deleted = false
         """;
 
+    /** Install-wide memory item count, for the {@code getAdminMemoryGlobalHealth} op's
+     *  {@code itemsTotal} (mezo-k5zy). */
+    private static final String TOTAL_MEMORY_ITEMS = """
+        select count(*) from memory_item where is_deleted = false
+        """;
+
     private final NamedParameterJdbcTemplate jdbc;
 
     /** Same idiom as {@code AdminRowQuery#applyStatementTimeout} / {@code
      *  AdminDataBrowserService}: applied first, inside the caller's read-only transaction. */
     public void applyStatementTimeout(String timeout) {
         jdbc.getJdbcTemplate().execute("SET LOCAL statement_timeout = '" + timeout + "'");
+    }
+
+    public long readyMemoryVectors() {
+        Long count = jdbc.getJdbcTemplate().queryForObject(READY_MEMORY_VECTORS, Long.class);
+        return count == null ? 0L : count;
     }
 
     public long failedMemoryVectors() {
@@ -62,5 +77,10 @@ public class AdminAlertQuery {
     public Optional<Instant> newestDailySummaryAt() {
         OffsetDateTime at = jdbc.getJdbcTemplate().queryForObject(NEWEST_DAILY_SUMMARY, OffsetDateTime.class);
         return Optional.ofNullable(at).map(OffsetDateTime::toInstant);
+    }
+
+    public long totalMemoryItems() {
+        Long count = jdbc.getJdbcTemplate().queryForObject(TOTAL_MEMORY_ITEMS, Long.class);
+        return count == null ? 0L : count;
     }
 }
