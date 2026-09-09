@@ -458,15 +458,17 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
   for the whole selected period but used at some point in the trailing 12-ISO-week trend window
   still gets a row (all period-scoped numbers zero, `usesPerWeek` non-zero) — deliberate, so a
   feature's usage tails off toward zero on the sparkline instead of vanishing abruptly.
-- **`/admin/users?filter=quiet`** (the `tester_quiet` alert's link target) is a plain navigation
-  today — `AdminUsersPage` does not read a `filter` query param; the owner lands on the Emberek
-  page and applies the "csendesedik"/"lemorzsolódott" chip filters manually. Wiring the query
-  param through is a small, non-blocking follow-up, not a slice-9 fix (doc-only sweep; no
-  production code changes in this task per its ruling).
+- **`/admin/users?filter=quiet`** (the `tester_quiet` alert's link target) lands pre-filtered:
+  `AdminUsersPage` reads `?filter=` on mount and maps the alert's `quiet` alias to the
+  `lemorzsolodott` status bucket — the SAME 7+-day boundary `mezo.admin.alerts.tester-quiet-days`
+  fires on (`statusFromFilterParam`, `AdminUsersPage.tsx`). Clicking any summary-strip chip also
+  writes the real status key back into `?filter=` (never the `quiet` alias) and clears it on
+  toggle-off, so a reload or a shared link reproduces exactly what's on screen (mezo-wg4x fix
+  round).
 - **Deferred (own specs/issues):** a free-form SQL box (SELECT-only Postgres role, second
   read-only datasource); infra observability — done separately, see
   [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md); byte-level per-user
-  footprint if row counts stop being enough signal; wiring `/admin/users?filter=quiet`.
+  footprint if row counts stop being enough signal.
 
 ## 10. Key files
 
