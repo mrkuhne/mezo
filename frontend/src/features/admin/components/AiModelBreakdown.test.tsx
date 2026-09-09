@@ -7,7 +7,9 @@ describe('AiModelBreakdown', () => {
   it('renders one row per served model with its call count, tokens and rollup cost', () => {
     render(<AiModelBreakdown groups={LLM_BREAKDOWN_MOCK.models} />)
 
-    expect(screen.getByText('Modell szerint')).toBeInTheDocument()
+    // fix round 3 (L3): the eyebrow now names its window ("calendar month" — this table reads
+    // breakdown.models, never the trend/matrix's rolling 30 days).
+    expect(screen.getByText('Modell szerint · naptári hónap')).toBeInTheDocument()
     expect(screen.getByText('gemini-2.5-flash')).toBeInTheDocument()
     expect(screen.getByText('217')).toBeInTheDocument()
     expect(screen.getByText('$1.12')).toBeInTheDocument()

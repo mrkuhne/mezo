@@ -264,7 +264,14 @@ export function testerStatus(lastActivityAt: string | null, now: Date = new Date
  *  STRICTLY greater than `factor` times that average — matching the backend's `>` (not `>=`),
  *  so a day at EXACTLY 2x the average does not fire. A day with fewer than 7 prior entries in
  *  the series (near its start) is NOT given a shorter window — the missing days count as 0,
- *  exactly like the backend's `costByDay.getOrDefault(day, ZERO)` over the fixed 8-day lookback. */
+ *  exactly like the backend's `costByDay.getOrDefault(day, ZERO)` over the fixed 8-day lookback.
+ *
+ *  <p>L2 (fix round 3): the `factor`/`minUsd` DEFAULTS here (2 / 0.5) are a client-side COPY of
+ *  the backend's tunable `mezo.admin.alerts.cost-spike-factor` / `cost-spike-min-usd`
+ *  (`AdminProperties.Alerts`, application.yml) — there is no shared source of truth between the
+ *  two. If an operator retunes those knobs without also updating the default arguments below (or
+ *  the call site passing an explicit override), the trend's coral dots silently drift out of
+ *  sync with the Pulzus `cost_spike` alert they are meant to visually match. */
 export function spikeDays(
   series: { day: string; usd: number }[],
   factor = 2,

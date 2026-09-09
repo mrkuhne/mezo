@@ -20493,7 +20493,7 @@ export interface operations {
         parameters: {
             query: {
                 period: string;
-                /** @description ISO date (yyyy-MM-dd); narrows to just that report-zone calendar day, composed (AND'd) with period and every other filter — the anomaly-dot deep link from the 30d trend (mezo-pfdv) */
+                /** @description ISO date (yyyy-MM-dd); when given, that report-zone calendar day IS the filtering window — it REPLACES the period's own window rather than intersecting with it (a day before the period's start, e.g. before the 1st for period=MONTH, still returns its calls). period still supplies the OTHER filters' context; every non-window filter (feature/status/callKind/userId) still composes normally. The anomaly-dot deep link from the 30d trend, and the cost_spike alert link, both rely on this (mezo-pfdv) */
                 day?: string;
                 /** @description exact feature slug, e.g. companion_chat */
                 feature?: string;

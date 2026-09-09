@@ -14,6 +14,7 @@ import {
   useLlmCalls,
   LLM_CALLS_MOCK,
   LLM_CALLS_EMPTY,
+  MOCK_CALLS_DAY,
   useLlmCall,
   LLM_CALL_DETAIL_MOCK,
   LLM_CALL_DETAIL_EMPTY,
@@ -192,17 +193,19 @@ describe('useLlmCalls (mock mode)', () => {
   })
 
   it('narrows to one report-zone calendar day, like the server does (mezo-pfdv)', () => {
-    // the whole seed is 2026-08-14; a filter on that day is a no-op, a different day is empty.
-    const sameDay = renderHook(() => useLlmCalls('DAY', { day: '2026-08-14' }, 50), { wrapper: makeHookWrapper() })
+    // the whole seed sits on MOCK_CALLS_DAY (mezo-pfdv fix round 3: derived relative to now, so
+    // it stays aligned with ADMIN_ALERTS_MOCK's cost_spike link — see llmUsageHooks.ts's own
+    // comment); a filter on that day is a no-op, a different day is empty.
+    const sameDay = renderHook(() => useLlmCalls('DAY', { day: MOCK_CALLS_DAY }, 50), { wrapper: makeHookWrapper() })
     expect(sameDay.result.current.data.items).toHaveLength(7)
 
-    const otherDay = renderHook(() => useLlmCalls('DAY', { day: '2026-08-13' }, 50), { wrapper: makeHookWrapper() })
+    const otherDay = renderHook(() => useLlmCalls('DAY', { day: '2026-01-01' }, 50), { wrapper: makeHookWrapper() })
     expect(otherDay.result.current.data.items).toEqual([])
   })
 
   it('composes day with the other filters, narrowing further rather than replacing them', () => {
     const combined = renderHook(
-      () => useLlmCalls('DAY', { day: '2026-08-14', feature: 'meal_draft' }, 50),
+      () => useLlmCalls('DAY', { day: MOCK_CALLS_DAY, feature: 'meal_draft' }, 50),
       { wrapper: makeHookWrapper() },
     )
     expect(combined.result.current.data.items.map((i) => i.feature)).toEqual(['meal_draft'])

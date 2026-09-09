@@ -185,6 +185,9 @@ export function AdminCostPage() {
   }))
 
   const costSeries = ov.data.costSeries.map((d) => ({ day: d.day, usd: d.amountUsd }))
+  // L2 (fix round 3): default factor/minUsd here silently couple to the backend's
+  // `mezo.admin.alerts.cost-spike-factor`/`cost-spike-min-usd` (AdminAlertService.costSpike) —
+  // retuning one without the other desyncs these dots from the Pulzus cost_spike alert.
   const spikes = new Set(spikeDays(costSeries))
   const latestSpike = costSeries.filter((d) => spikes.has(d.day)).at(-1)
 
@@ -198,14 +201,22 @@ export function AdminCostPage() {
 
         <PageBody className="col gap-md">
           <MosaicDesktop>
+            {/* fix round 3 (M2): `usd(monthCost ?? 0)` used to print "$0.00" for a null cost — a
+                genuinely unknown/unpriced month reading as "free", the exact ADR 0014 honesty
+                violation the rest of the app avoids. `null` here means "no priced call this
+                calendar month" (never a confident zero), so it renders "—" with its own honest
+                sub-copy instead of running the Δ comparison against a number that doesn't exist. */}
             <AdminTile query={summaryQuery} wash="gold" eyebrow={`${monthName} · NAPTÁRI HÓNAP`} span={3}>
-              <Poster spot="s-medal" big={usd(monthCost ?? 0)}
-                foot={<span className={`ad-delta ${delta.tone === 'mut' ? 'flat' : delta.tone}`}>{delta.text}</span>} />
+              <Poster spot="s-medal" big={monthCost != null ? usd(monthCost) : '—'}
+                foot={monthCost == null
+                  ? <span className="ad-mut">nincs árazott hívás</span>
+                  : <span className={`ad-delta ${delta.tone === 'mut' ? 'flat' : delta.tone}`}>{delta.text}</span>} />
               <div className="ad-mut" style={{ fontSize: 9.5, marginTop: 2 }}>~ becslés — árazott hívások összege</div>
             </AdminTile>
 
             <AdminTile query={summaryQuery} wash="sky" eyebrow="Várható hó végén" span={3}>
-              <Poster spot="s-hegycel" big={usd(runRate ?? 0)} foot={<span className="ad-mut">a mostani tempóval</span>} />
+              <Poster spot="s-hegycel" big={runRate != null ? usd(runRate) : '—'}
+                foot={<span className="ad-mut">{runRate != null ? 'a mostani tempóval' : 'nincs árazott hívás'}</span>} />
             </AdminTile>
 
             <AdminTile query={perAccountQuery} wash="sage" eyebrow="Egy aktív fiókra jut" span={3}>
@@ -343,7 +354,14 @@ function Poster({ spot, big, foot }: { spot: Parameters<typeof ClaySpot>[0]['nam
  *  line regardless of the tile's actual rendered width (both SVGs share one `viewBox` in
  *  normalised coordinates, `preserveAspectRatio="none"`). Every day is clickable (sets `?day=`);
  *  only spike days get the visible coral marker — a day with no anomaly is still pickable, just
- *  invisible, so a tester can always drill into a specific date from the chart. */
+ *  invisible, so a tester can always drill into a specific date from the chart.
+ *
+ *  Fix round 3 (L3): each dot is now keyboard-reachable — `tabIndex={0}` plus an Enter/Space
+ *  handler alongside the click one, the same activation contract a real `<button>` gives for
+ *  free that a bare SVG `<circle>` does not. The outer `<svg>` no longer carries
+ *  `role="presentation"` (which would have told assistive tech to ignore this whole layer,
+ *  circles included) — each circle already names itself via its own `role="button"` +
+ *  `aria-label`, so the wrapper needs no role of its own. */
 function CostTrendDots({ days, spikes, onPick }: {
   days: { day: string; usd: number }[]
   spikes: Set<string>
@@ -361,7 +379,6 @@ function CostTrendDots({ days, spikes, onPick }: {
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      role="presentation"
     >
       {days.map((d, i) => {
         const x = n === 1 ? 0 : (i / (n - 1)) * W
@@ -378,8 +395,15 @@ function CostTrendDots({ days, spikes, onPick }: {
             strokeWidth={isSpike ? 1.5 : 0}
             style={{ cursor: 'pointer' }}
             role="button"
+            tabIndex={0}
             aria-label={`Nap kiválasztása: ${d.day} · ${usd(d.usd)}`}
             onClick={() => onPick(d.day)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onPick(d.day)
+              }
+            }}
           />
         )
       })}

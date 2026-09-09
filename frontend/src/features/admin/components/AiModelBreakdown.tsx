@@ -10,12 +10,19 @@ import type { LlmUsageModelGroup } from '@/data/me/llmUsageApi'
 // grand total) — same "leader's bar is full, everyone else reads as a share of the leader"
 // convention as `topNFromEntries` (adminViz.ts), so a page with one dominant model doesn't leave
 // every other bar looking like a rounding error against a total none of them individually earned.
+// Fix round 3 (M1): the bar used to render invisible — its `.gbar` class had no bare CSS rule of
+// its own (only `.aiu-bar .gbar`, a selector this table cell never matches), so every row showed
+// an empty cell. Renamed to `.ad-modelbar` with its own track/fill rule (prototype.css), the
+// `.ad-toprow .sharebar` naming precedent this file's own AiModelBreakdown neighbor uses.
 export function AiModelBreakdown({ groups }: { groups: LlmUsageModelGroup[] }) {
   if (groups.length === 0) return null
   const maxCost = Math.max(...groups.map((g) => g.costUsd ?? 0), 0)
   return (
     <div className="aiu-fcard rise" style={{ paddingBottom: 8 }}>
-      <div className="eyebrow" style={{ padding: '0 15px 9px' }}>Modell szerint</div>
+      {/* fix round 3 (L3): this table reads breakdown.models for the CALENDAR month
+          (`useLlmUsageBreakdown('MONTH')`), never the trend/matrix's rolling 30 days — say so,
+          per the plan Rulings' "calendar vs rolling, never mixed in one tile" guardrail. */}
+      <div className="eyebrow" style={{ padding: '0 15px 9px' }}>Modell szerint · naptári hónap</div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr className="text-tertiary" style={{ fontSize: 10, textAlign: 'left' }}>
@@ -50,7 +57,7 @@ export function AiModelBreakdown({ groups }: { groups: LlmUsageModelGroup[] }) {
                   {formatRollupCost(g.costUsd)}
                 </td>
                 <td style={{ padding: '5px 15px', width: 80 }}>
-                  <div className="gbar"><div style={{ width: `${share * 100}%` }} /></div>
+                  <div className="ad-modelbar"><div style={{ width: `${share * 100}%` }} /></div>
                 </td>
               </tr>
             )

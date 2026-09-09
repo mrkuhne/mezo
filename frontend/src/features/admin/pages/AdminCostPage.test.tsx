@@ -66,7 +66,7 @@ describe('AdminCostPage (mock mode)', () => {
 
   it('shows the model-mix table with per-model tokens', () => {
     renderAt('/admin/cost')
-    expect(screen.getByText('Modell szerint')).toBeInTheDocument()
+    expect(screen.getByText('Modell szerint · naptári hónap')).toBeInTheDocument()
     // "gemini-2.5-flash" also appears in the call-list rows below (servedModel) — scope to the
     // model-mix table's own monospace cell.
     expect(screen.getAllByText('gemini-2.5-flash').length).toBeGreaterThanOrEqual(1)
@@ -101,6 +101,16 @@ describe('AdminCostPage (mock mode)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: new RegExp(`${lastDay} ✕`) })).toBeInTheDocument())
   })
 
+  it('picks a trend dot with the keyboard (Enter), not just a click (mezo-pfdv L3)', async () => {
+    renderAt('/admin/cost')
+    const dots = screen.getAllByRole('button', { name: /Nap kiválasztása:/ })
+    const firstDot = dots[0]
+    const firstDay = ADMIN_OVERVIEW_MOCK.costSeries[0].day
+    expect(firstDot).toHaveAttribute('tabindex', '0')
+    fireEvent.keyDown(firstDot, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByRole('button', { name: new RegExp(`${firstDay} ✕`) })).toBeInTheDocument())
+  })
+
   it('opens the "Teljes mátrix" disclosure to a heat grid with Hungarian feature labels and a Háttér row', async () => {
     renderAt('/admin/cost')
     fireEvent.click(screen.getByRole('button', { name: /Megnyitás/ }))
@@ -130,6 +140,31 @@ describe('AdminCostPage (mock mode)', () => {
 
 describe('AdminCostPage (real mode)', () => {
   beforeEach(() => { vi.stubEnv('VITE_USE_MOCK', 'false'); setToken('t') })
+
+  it('renders honest "—" (never "$0.00") for the month cost and run-rate when nothing is priced yet (mezo-pfdv M2)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/summary`, () =>
+        HttpResponse.json({ ...LLM_USAGE_MOCK, month: { ...LLM_USAGE_MOCK.month, costUsd: null } }),
+      ),
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () => HttpResponse.json(LLM_BREAKDOWN_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/calls`, () => HttpResponse.json({ items: [], hasMore: false })),
+    )
+
+    renderAt('/admin/cost')
+
+    // scoped to the two KPI tiles this fix touches — the (pre-existing, unrelated) cost-matrix
+    // heat grid legitimately has its own zero-cost/all-unpriced cells elsewhere on the page, so a
+    // page-wide "no $0.00 anywhere" assertion would collide with that unrelated surface.
+    await waitFor(() => {
+      const monthTile = screen.getByText(/NAPTÁRI HÓNAP/).closest('.mz-tile') as HTMLElement
+      expect(monthTile.querySelector('.ad-big')?.textContent).toBe('—')
+    })
+    const monthTile = screen.getByText(/NAPTÁRI HÓNAP/).closest('.mz-tile') as HTMLElement
+    const runRateTile = screen.getByText('Várható hó végén').closest('.mz-tile') as HTMLElement
+    expect(runRateTile.querySelector('.ad-big')?.textContent).toBe('—')
+    expect(within(monthTile).getByText('nincs árazott hívás')).toBeInTheDocument()
+    expect(within(runRateTile).getByText('nincs árazott hívás')).toBeInTheDocument()
+  })
 
   it('raises the requested window when more calls are loaded', async () => {
     const limits: string[] = []

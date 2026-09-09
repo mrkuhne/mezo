@@ -281,6 +281,14 @@ export const ADMIN_SCREEN_USAGE_EMPTY: AdminScreenUsageResponse = {
 // Alerts (mezo-kjwa) — rule-based owner-facing warnings on the admin hub. One `warn` (cost
 // spike) and one `bad` (stuck memory processing), so slice 2's UI has both severities to render
 // against. `generatedAt` is computed at module load — no test asserts its exact value.
+//
+// Fix round 3 (H1 mock-side follow-up, mezo-pfdv): `cost_spike`'s link used to point at a
+// HARDCODED `2026-09-07` while `LLM_CALLS_MOCK` (llmUsageHooks.ts) sat on a separately-hardcoded
+// `2026-08-14` — the two never agreed, so clicking through from this alert in mock mode always
+// landed on an empty call list. Both now derive "yesterday" from the real clock independently
+// (same `daysAgoIso` recipe, sliced to the date part) — matching the alert's own "Tegnapi"
+// (yesterday) wording, and landing on the same calendar day as the calls seed without either
+// file importing the other.
 export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
   generatedAt: new Date().toISOString(),
   alerts: [
@@ -289,7 +297,7 @@ export const ADMIN_ALERTS_MOCK: AdminAlertsResponse = {
       severity: 'warn',
       title: 'Tegnapi AI-költés kiugróan magas',
       detail: 'Tegnap $1.84 ment el — a korábbi 7 nap átlaga $0.33 volt.',
-      link: '/admin/cost?day=2026-09-07',
+      link: `/admin/cost?day=${daysAgoIso(1).slice(0, 10)}`,
     },
     {
       key: 'memory_stuck',

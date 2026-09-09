@@ -7168,29 +7168,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); font-variant-numeric: tabular-nums; }
 .ntf-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; }
 
-.aiu-segtabs { display: flex; gap: 4px; background: var(--surface-recess); border-radius: 999px; padding: 4px; margin-bottom: 4px; }
-.aiu-segtabs button { flex: 1; min-height: 44px; border: none; background: none; border-radius: 999px;
-  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
-.aiu-segtabs button.on { background: var(--gradient-cta); color: #fff; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
 .aiu-fcard { border-radius: 21px; padding: 13px 0 5px; background: var(--mz-wash-white);
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
-.aiu-bar { display: flex; align-items: center; gap: 9px; padding: 7px 15px; }
-.aiu-bar .nm { font-size: 11px; font-weight: 600; flex: 1; }
-.aiu-bar .gbar { flex: 1.4; height: 6px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
-.aiu-bar .gbar div { height: 100%; border-radius: 3px; background: var(--coral);
-  transform: scaleX(0); transform-origin: left; }
-.mz-play .aiu-bar .gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
-.aiu-bar .vl { font-size: 9px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; flex: none; }
 .aiu-callt { border-radius: 18px; padding: 11px 13px 11px 15px; margin-bottom: 9px; position: relative;
   background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
   box-shadow: 0 12px 24px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
 .aiu-callt::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px;
   border-radius: 2px; background: var(--rc); }
 .aiu-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; text-align: center; margin-top: 10px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
-}
 
 /* ── Edzés hub (mezo-d20.3.1) — prototype edzes-body.html hub section ×1.18:
       one long hero (clay spot + eyebrow + session title + the companion coach
@@ -11742,6 +11727,14 @@ button.mz-wtile:active { transform: scale(0.96); }
 }
 .ad-more:hover { text-decoration: underline; }
 .ad-top-empty { font-size: 11px; color: #A2958A; padding: 10px 0; }
+
+/* mezo-pfdv fix round 3 (M1) — Költés's model-mix table share bar (AiModelBreakdown.tsx). Was
+   `.gbar`, which had NO bare rule (only `.aiu-bar .gbar`, a selector this table cell never
+   matches) — every row's bar rendered invisible. Same track/fill recipe as `.ad-toprow
+   .sharebar` above, sized for the table cell's narrower column. */
+.ad-modelbar { height: 5px; border-radius: 4px; background: rgba(43, 33, 24, .07); overflow: hidden; }
+.ad-modelbar div { display: block; height: 100%; border-radius: 4px; background: #A84A26; transform-origin: left; transform: scaleX(1); }
+.mz-play .ad-modelbar div { animation: adGrow .6s cubic-bezier(.25,.8,.35,1) both; animation-delay: var(--d, .3s); }
 
 /* ---- User részlet: a saját sor-elrendezésű hero (NEM a mobil .mz-page-hero középre
    igazított verziója) + fülek ---- */
