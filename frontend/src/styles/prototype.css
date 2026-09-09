@@ -11561,6 +11561,19 @@ button.mz-wtile:active { transform: scale(0.96); }
 /* card-scale heat strip: same `.ad-heat` idiom, shorter bars */
 .ad-heat.sm i { height: 16px; }
 
+/* Memória entry page's tester picker (mezo-k5zy) — a plain row list, not the Emberek card grid:
+   the entry page's job is "pick a user, jump straight into their memory explorer", not the
+   Emberek risk/heat overview, so it deliberately carries less per-row weight than `.ad-testercard`. */
+.ad-memtesterlist { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.ad-memtesterrow { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px;
+  text-decoration: none; color: inherit; }
+.ad-memtesterrow:hover { background: rgba(255,255,255,.65); }
+.ad-memtesterrow:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-memtesterrow .nm { flex: 1; min-width: 0; }
+.ad-memtesterrow .nm .t { font-size: 12px; font-weight: 700; }
+.ad-memtesterrow .nm .em { font-size: 10.5px; color: #6E6257; }
+.ad-memtesterrow .chev { color: #A2958A; }
+
 /* ---- Funkciók scorecard (mezo-kxnn Task 1) ---- */
 .ad-period-row { margin: 2px 0 4px; }
 .ad-scorecard { display: flex; flex-direction: column; }

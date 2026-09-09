@@ -5,6 +5,7 @@ import { useAdminUserDetail } from '@/data/admin/adminInsightsHooks'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { MemorySegmentBar, VIEWS, type ViewKey } from '@/features/admin/memory/MemorySegmentBar'
 import { InspectorEmpty, MemoryInspector } from '@/features/admin/memory/MemoryInspector'
+import { OverviewView } from '@/features/admin/memory/views/OverviewView'
 import { RunsView } from '@/features/admin/memory/views/RunsView'
 import { GraphView } from '@/features/admin/memory/views/GraphView'
 import { MapView } from '@/features/admin/memory/views/MapView'
@@ -30,7 +31,10 @@ export function AdminMemoryPage() {
   const detail = useAdminUserDetail(userId, isOwner)
   const [params, setParams] = useSearchParams()
   const rawView = params.get('view')
-  const view = (rawView != null && rawView in VIEWS ? rawView : 'runs') as ViewKey
+  // mezo-k5zy: default view is now `overview` when none is given — every EXPLICIT `?view=`
+  // value (including the old default `runs`) still resolves exactly as before, so no earlier
+  // deep link breaks.
+  const view = (rawView != null && rawView in VIEWS ? rawView : 'overview') as ViewKey
   const sel = params.get('sel')
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
   const [inspector, setInspector] = useState<InspectorBody | null>(null)
@@ -93,6 +97,7 @@ export function AdminMemoryPage() {
 
         <div className="am-layout">
           <div className="am-content">
+            {view === 'overview' && <OverviewView userId={userId} isOwner={isOwner} onGo={go} />}
             {view === 'runs' && (
               <RunsView
                 userId={userId}

@@ -26,10 +26,17 @@ function renderPage(search = '') {
 describe('AdminMemoryPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('the default view is Futások', async () => {
+  it('the default view is Áttekintés', async () => {
     renderPage()
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
-    expect(screen.getByRole('tab', { name: 'Futások' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Áttekintés' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Emlék-egészség')).toBeInTheDocument()
+  })
+
+  it('?view=runs selects Felidézések (the old "Futások" URL value keeps working)', async () => {
+    renderPage('?view=runs')
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    expect(screen.getByRole('tab', { name: 'Felidézések' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText(/Futáslista/)).toBeInTheDocument()
   })
 
@@ -40,10 +47,10 @@ describe('AdminMemoryPage (mock mode)', () => {
     expect(screen.getByText('Tudásgráf')).toBeInTheDocument()
   })
 
-  it('an unknown view falls back to Futások', async () => {
+  it('an unknown view falls back to Áttekintés', async () => {
     renderPage('?view=nonsense')
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
-    expect(screen.getByRole('tab', { name: 'Futások' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Áttekintés' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('clicking the segment bar navigates between views', async () => {
@@ -59,7 +66,7 @@ describe('AdminMemoryPage (real mode)', () => {
 
   it('a 404-with-no-code renders the "ki van kapcsolva" tile while a sibling view stays untouched', async () => {
     server.use(http.get(`${API_BASE}/api/admin/users/:userId/memory/runs`, () => new HttpResponse(null, { status: 404 })))
-    renderPage()
+    renderPage('?view=runs')
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
     expect(await screen.findByText(/ki van kapcsolva/)).toBeInTheDocument()
 

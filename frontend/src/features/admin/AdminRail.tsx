@@ -11,6 +11,7 @@ const RAIL: RailItem[] = [
   { to: '/admin/users', label: 'Emberek', icon: 'i-emberek' },
   { to: '/admin/features', label: 'Funkciók', icon: 'i-minta' },
   { to: '/admin/cost', label: 'Költés', icon: 'i-erme' },
+  { to: '/admin/memory', label: 'Memória', icon: 'i-kristaly' },
   { to: '/admin/accounts', label: 'Meghívók és fiókok', icon: 'i-beallitas' },
 ]
 // The data browser is a drill-through TOOL, not a destination (mezo-l096): it moves out
