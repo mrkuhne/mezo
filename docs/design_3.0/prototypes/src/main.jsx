@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "./shell.css";
 import PresenceStudy from "./PresenceStudy.jsx";
+import GuidedStudy from "./GuidedStudy.jsx";
 import { Explorer, Launcher } from "./lab-app.jsx";
 class ErrorBoundary extends React.Component {
   state = { error: false };
@@ -23,7 +24,9 @@ class ErrorBoundary extends React.Component {
 const variant = new URLSearchParams(location.search).get("v");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {["presence", "boop"].includes(variant) ? (
+    {variant === "guided" ? (
+      <GuidedStudy />
+    ) : ["presence", "boop"].includes(variant) ? (
       <PresenceStudy />
     ) : ["measure", "companion"].includes(variant) ? (
       <Explorer variant={variant} />

@@ -1,3 +1,12 @@
+# Vezetett nap — 1. kör (mezo-tiy8)
+
+Daniel döntése a PR #595 kutatás és a #610 Boop-bejárás után: teljes UX-csere, de a design 2.0
+színvilág és a clay ikonok maradnak; a Boopból csak a dinamikus dokk és az animált társ jön át.
+Új változat: [Vezetett nap](http://127.0.0.1:5193/?v=guided) — 4 kulcsjelenet (reggeli Nap,
+edzés indítás→lezárás ünnepléssel és aktív-edzés sávval, étkezésnaplózás, heti visszatekintés),
+a szervezőelv: *hol tartok → mi fontos most → mit tehetek → mi változott*. Terv:
+[spec](../superpowers/specs/2026-09-09-guided-day-prototype-design.md).
+
 A Boopban a kért alapfunkciók részletes, állapotot megőrző mockjai is elérhetők: [funkciótérkép és kipróbálás](boop-core-coverage.md).
 
 A saját kontúrcsalád és a napi lenyomat is kipróbálható: [Életem · a napjaid lenyomata](http://127.0.0.1:5193/?v=boop#presence/life/today). Válassz napot, majd bontsd ki az eseményeit.
