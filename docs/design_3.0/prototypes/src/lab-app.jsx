@@ -107,8 +107,12 @@ export function Launcher() {
           <span>Menthető mintanap, előre megírt AI-válaszok.</span>
         </p>
       </div>
+      <a className="presence-study-entry" href="?v=guided">
+        Legújabb · Vezetett nap{" "}
+        <span>Design 2.0 színek, clay ikonok, dinamikus dokk →</span>
+      </a>
       <a className="presence-study-entry" href="?v=boop">
-        Új tanulmány · Boop, a társad{" "}
+        Boop, a társad{" "}
         <span>Dinamikus navigáció és folytonos beszélgetés →</span>
       </a>
       <div className="comparison-controls">
