@@ -26,6 +26,13 @@ import { Link } from 'react-router-dom'
 // Fix round 1 (mezo-kxnn): `moreTo`/`moreLabel` are optional — a caller whose "teljes lista"
 // affordance is a `CollapsibleStrip` (not a drill-through route) renders no footer link at all,
 // rather than being forced to invent a fake `moreTo` target or hand-roll its own `.ad-top` markup.
+//
+// Fix round 1 (mezo-3u4r): `missing` marks a row whose `label` came from an undictionaried key
+// (`featureLabel(key).missing`) — a raw slug rendering bare (no visible signal that it isn't a
+// real Hungarian label) is exactly the completeness gate `labels.completeness.test.ts` exists to
+// prevent everywhere ELSE on the admin surface; this closes the one gap the top-list pipeline
+// left (`costMatrixTotals`/`AdminCostPage`'s `featureEntries` both propagate it into `AdminVizEntry`,
+// `topNFromEntries` carries it through unchanged). Omitted/false ⇒ no visible change.
 export interface TopRow {
   key: string
   label: string
@@ -34,6 +41,7 @@ export interface TopRow {
   share?: number
   tone?: 'warn' | 'mut'
   to?: string
+  missing?: boolean
 }
 
 export function TopListTile({
@@ -66,7 +74,10 @@ export function TopListTile({
             <>
               <span className="rank">{i + 1}.</span>
               <div className="info">
-                <div className="lb">{row.label}</div>
+                <div className="lb">
+                  {row.label}
+                  {row.missing && <span className="ad-mut"> (nincs címke)</span>}
+                </div>
                 {row.sub && <div className="sub">{row.sub}</div>}
                 {row.share !== undefined && (
                   <div className="sharebar"><i style={{ width: `${row.share * 100}%` }} /></div>

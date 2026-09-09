@@ -4,13 +4,17 @@ import { AiModelBreakdown } from '@/features/admin/components/AiModelBreakdown'
 import { LLM_BREAKDOWN_MOCK } from '@/data/me/llmUsageHooks'
 
 describe('AiModelBreakdown', () => {
-  it('renders one tile per served model with its call count and rollup cost', () => {
+  it('renders one row per served model with its call count, tokens and rollup cost', () => {
     render(<AiModelBreakdown groups={LLM_BREAKDOWN_MOCK.models} />)
 
-    expect(screen.getByText('Modell szerint')).toBeInTheDocument()
+    // fix round 3 (L3): the eyebrow now names its window ("calendar month" — this table reads
+    // breakdown.models, never the trend/matrix's rolling 30 days).
+    expect(screen.getByText('Modell szerint · naptári hónap')).toBeInTheDocument()
     expect(screen.getByText('gemini-2.5-flash')).toBeInTheDocument()
     expect(screen.getByText('217')).toBeInTheDocument()
     expect(screen.getByText('$1.12')).toBeInTheDocument()
+    // 1 320 000 total tokens, Hungarian thousands grouping
+    expect(screen.getByText('1 320 000')).toBeInTheDocument()
     expect(screen.getByText('gemini-embedding-001')).toBeInTheDocument()
     expect(screen.getByText('$0.09')).toBeInTheDocument()
   })
@@ -18,7 +22,8 @@ describe('AiModelBreakdown', () => {
   it('keeps the null-keyed bucket as "ismeretlen" with a dashed cost, not a dropped row', () => {
     // An ERROR call never reached a model, so the backend returns a null-keyed group. Those calls
     // happened — hiding them would hide exactly the traffic the AI-napló exists to surface — and
-    // their cost is UNKNOWN, never $0.00 (ADR 0014).
+    // their cost is UNKNOWN, never $0.00 (ADR 0014). Its token sums are honestly 0 (no model ever
+    // saw the request), not "—".
     render(<AiModelBreakdown groups={LLM_BREAKDOWN_MOCK.models} />)
 
     expect(screen.getByText('ismeretlen')).toBeInTheDocument()

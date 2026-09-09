@@ -6,7 +6,9 @@ import {
   domainTotals,
   featureLegend,
   firstLastActivity,
+  monthRunRate,
   quietTesters,
+  spikeDays,
   testerStatus,
   topNFromEntries,
   deltaVsTrailingAvg,
@@ -81,6 +83,20 @@ describe('costMatrixTotals', () => {
       { key: 'meal_coach', label: 'Étkezési tanácsadó', value: 1 },
     ])
   })
+
+  // mezo-3u4r fix round 1 — an undictionaried feature slug must carry `missing: true` through,
+  // not just print the raw slug as if it were a real label.
+  it('flags an undictionaried feature slug with missing:true', () => {
+    const matrixWithUnknown: AdminCostMatrixResponse = {
+      period: '30d',
+      users: [{ id: 'u1', label: 'Anna' }],
+      features: ['some_new_slug'],
+      cells: [{ userId: 'u1', feature: 'some_new_slug', calls: 3, costUsd: 2, unknownCalls: 0 }],
+      totalUsd: 2,
+    }
+    const totals = costMatrixTotals(matrixWithUnknown, 'feature')
+    expect(totals).toEqual([{ key: 'some_new_slug', label: 'some_new_slug', value: 2, missing: true }])
+  })
 })
 
 describe('topNFromEntries', () => {
@@ -106,6 +122,13 @@ describe('topNFromEntries', () => {
   it('never divides by zero when every entry is 0', () => {
     const rows = topNFromEntries([{ key: 'z', label: 'Z', value: 0 }], 1, String)
     expect(rows[0].share).toBe(0)
+  })
+
+  // mezo-3u4r fix round 1 — `missing` rides through from the entry to the row unchanged, so a
+  // caller (TopListTile) can render the honesty marker without re-deriving it.
+  it('carries an entry missing flag through to the row', () => {
+    const rows = topNFromEntries([{ key: 'x', label: 'x', value: 5, missing: true }], 1, String)
+    expect(rows[0].missing).toBe(true)
   })
 })
 
@@ -330,5 +353,94 @@ describe('firstLastActivity', () => {
   it('collapses to a single day when the only active day is the last one (today)', () => {
     const series = [{ days: [{ count: 0 }, { count: 0 }, { count: 5 }] }]
     expect(firstLastActivity(series)).toEqual({ firstDaysAgo: 0, lastDaysAgo: 0 })
+  })
+})
+
+// mezo-pfdv Task 2 — the Költés trend tile's anomaly dots + month-end run-rate, both pure
+// functions mirroring backend rules the client cannot re-fetch per-day (spikeDays mirrors
+// AdminAlertService.costSpike's exact semantics, hand-computed here against the same formula).
+describe('spikeDays', () => {
+  it('fires on a day that clears the floor and beats 2x the prior-7 average (missing days = 0)', () => {
+    // day 8 (index 7): usd=2, prior 7 days (idx 0..6) are all 0 -> priorAvg=0 -> fires (avg-zero branch)
+    const series = [
+      { day: '2026-09-01', usd: 0 },
+      { day: '2026-09-02', usd: 0 },
+      { day: '2026-09-03', usd: 0 },
+      { day: '2026-09-04', usd: 0 },
+      { day: '2026-09-05', usd: 0 },
+      { day: '2026-09-06', usd: 0 },
+      { day: '2026-09-07', usd: 0 },
+      { day: '2026-09-08', usd: 2 },
+    ]
+    expect(spikeDays(series)).toEqual(['2026-09-08'])
+  })
+
+  it('does not fire below the absolute usd floor even with a zero prior average', () => {
+    const series = [
+      { day: '2026-09-01', usd: 0 },
+      { day: '2026-09-02', usd: 0.1 }, // below the default minUsd=0.5
+    ]
+    expect(spikeDays(series)).toEqual([])
+  })
+
+  it('fires only when strictly greater than factor x prior avg, not merely equal', () => {
+    // Prior 7 days average to 0.49 each — below the 0.5 floor, so none of them fire on their
+    // own. Target exactly 2x that avg (0.98) does NOT fire (needs to be strictly greater); a
+    // hair over (0.99) fires.
+    const priorSeven = Array.from({ length: 7 }, (_, i) => ({ day: `p${i}`, usd: 0.49 }))
+    const exact = [...priorSeven, { day: 'target', usd: 0.98 }]
+    const over = [...priorSeven, { day: 'target', usd: 0.99 }]
+    expect(spikeDays(exact)).toEqual([])
+    expect(spikeDays(over)).toEqual(['target'])
+  })
+
+  it('treats missing history (fewer than 7 prior entries) as zeros in the average, not a shorter window', () => {
+    // Only 2 prior days seeded (both 0.6). d1/d2 themselves fire too — each has NO prior history
+    // of its own (the zero-prior-avg branch), same as the very first test above; that is not
+    // what this test is about. What distinguishes "missing = 0" from "average over the entries
+    // that exist" is d3: priorSum=1.2 over the FIXED 7-slot window -> avg ≈ 0.171, so
+    // 1.0 > 2×0.171 fires — whereas a shrunk 2-day window would average 0.6, and 1.0 would NOT
+    // exceed 2×0.6=1.2.
+    const series = [
+      { day: 'd1', usd: 0.6 },
+      { day: 'd2', usd: 0.6 },
+      { day: 'd3', usd: 1.0 },
+    ]
+    expect(spikeDays(series)).toEqual(['d1', 'd2', 'd3'])
+  })
+
+  it('respects custom factor/minUsd overrides', () => {
+    // Seven real prior days at 0.49 (below the 0.5 floor, so none of them fire on their own) ->
+    // priorAvg=0.49 for the target. factor=2 threshold is 0.98 (2.5... wait, target below);
+    // factor=3 threshold is 1.47 — target 1.2 clears the first, not the second.
+    const priorSeven = Array.from({ length: 7 }, (_, i) => ({ day: `p${i}`, usd: 0.49 }))
+    const series = [...priorSeven, { day: 'target', usd: 1.2 }]
+    expect(spikeDays(series, 2, 0.5)).toEqual(['target'])
+    expect(spikeDays(series, 3, 0.5)).toEqual([])
+  })
+
+  it('can flag more than one day in a series', () => {
+    const zeros = Array.from({ length: 7 }, (_, i) => ({ day: `z${i}`, usd: 0 }))
+    const series = [...zeros, { day: 'spike1', usd: 3 }, ...Array.from({ length: 6 }, (_, i) => ({ day: `q${i}`, usd: 0 })), { day: 'spike2', usd: 4 }]
+    expect(spikeDays(series)).toEqual(['spike1', 'spike2'])
+  })
+
+  it('returns an empty list for an empty series', () => {
+    expect(spikeDays([])).toEqual([])
+  })
+})
+
+describe('monthRunRate', () => {
+  it('projects the month-end total from the running cost and elapsed days', () => {
+    // $18 spent through day 12 of a 30-day month -> $18/12*30 = $45
+    expect(monthRunRate(18, 12, 30)).toBeCloseTo(45)
+  })
+
+  it('returns the month-so-far figure unchanged on the very last day', () => {
+    expect(monthRunRate(45, 30, 30)).toBeCloseTo(45)
+  })
+
+  it('does not divide by zero on an invalid dayOfMonth (guards to 0)', () => {
+    expect(monthRunRate(10, 0, 30)).toBe(0)
   })
 })

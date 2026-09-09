@@ -10,12 +10,16 @@ import type { TopRow } from '@/features/admin/components/TopListTile'
 
 /** A single aggregated total, pre-`topNFromEntries` — the shape `costMatrixTotals` returns and
  *  `topNFromEntries` consumes (mezo-m079 Task 2). `sub` is optional: only the cost-matrix's
- *  Háttér (background/cron) bucket carries one today. */
+ *  Háttér (background/cron) bucket carries one today. `missing` (mezo-3u4r fix round 1) carries
+ *  `featureLabel(key).missing` through — an undictionaried feature slug must not go on to render
+ *  bare in a top list, the same honesty rule `domainTotals`/`featureLegend` already keep via
+ *  `AdminLegendEntry`; this is the sibling field for the `topNFromEntries` pipeline. */
 export interface AdminVizEntry {
   key: string
   label: string
   value: number
   sub?: string
+  missing?: boolean
 }
 
 /** Sum a set of per-domain day-series into one totals-per-day array (AdminOverviewPage's
@@ -59,13 +63,17 @@ export function costMatrixTotals(
   axis: 'user' | 'feature',
 ): AdminVizEntry[] {
   if (axis === 'feature') {
-    return matrix.features.map((feature) => ({
-      key: feature,
-      label: featureLabel(feature).label,
-      value: matrix.cells
-        .filter((c) => c.feature === feature)
-        .reduce((sum, c) => sum + c.costUsd, 0),
-    }))
+    return matrix.features.map((feature) => {
+      const lbl = featureLabel(feature)
+      return {
+        key: feature,
+        label: lbl.label,
+        missing: lbl.missing,
+        value: matrix.cells
+          .filter((c) => c.feature === feature)
+          .reduce((sum, c) => sum + c.costUsd, 0),
+      }
+    })
   }
   return matrix.users.map((u) => ({
     key: u.id ?? '__background__',
@@ -93,6 +101,7 @@ export function topNFromEntries(
     key: e.key,
     label: e.label,
     sub: e.sub,
+    missing: e.missing,
     value: fmt(e.value),
     share: e.value / max,
   }))
@@ -245,6 +254,52 @@ export function testerStatus(lastActivityAt: string | null, now: Date = new Date
   if (days <= 2) return 'aktiv'
   if (days < 7) return 'csendesedik'
   return 'lemorzsolodott'
+}
+
+/** Client-side mirror of `AdminAlertService.costSpike`'s per-day rule (mezo-pfdv Task 2) — the
+ *  Költés trend tile's coral anomaly dots. `series` is a plain chronological `{day, usd}[]`
+ *  (the same order as `overview.costSeries`); each entry is evaluated as if it were "yesterday":
+ *  it fires when its own `usd` clears the absolute `minUsd` floor AND either the prior-7-day
+ *  average is exactly zero (first real spend after a quiet stretch) or the entry's `usd` is
+ *  STRICTLY greater than `factor` times that average — matching the backend's `>` (not `>=`),
+ *  so a day at EXACTLY 2x the average does not fire. A day with fewer than 7 prior entries in
+ *  the series (near its start) is NOT given a shorter window — the missing days count as 0,
+ *  exactly like the backend's `costByDay.getOrDefault(day, ZERO)` over the fixed 8-day lookback.
+ *
+ *  <p>L2 (fix round 3): the `factor`/`minUsd` DEFAULTS here (2 / 0.5) are a client-side COPY of
+ *  the backend's tunable `mezo.admin.alerts.cost-spike-factor` / `cost-spike-min-usd`
+ *  (`AdminProperties.Alerts`, application.yml) — there is no shared source of truth between the
+ *  two. If an operator retunes those knobs without also updating the default arguments below (or
+ *  the call site passing an explicit override), the trend's coral dots silently drift out of
+ *  sync with the Pulzus `cost_spike` alert they are meant to visually match. */
+export function spikeDays(
+  series: { day: string; usd: number }[],
+  factor = 2,
+  minUsd = 0.5,
+): string[] {
+  const fired: string[] = []
+  for (let i = 0; i < series.length; i++) {
+    const usd = series[i].usd
+    let priorSum = 0
+    for (let back = 1; back <= 7; back++) {
+      const j = i - back
+      if (j >= 0) priorSum += series[j].usd
+    }
+    const priorAvg = priorSum / 7
+    if (usd >= minUsd && (priorAvg === 0 || usd > factor * priorAvg)) {
+      fired.push(series[i].day)
+    }
+  }
+  return fired
+}
+
+/** Month-end run-rate (mezo-pfdv Task 2 Rulings) — "Várható hó végén, a mostani tempóval":
+ *  the calendar-month cost so far, projected linearly across the full month by its elapsed
+ *  days. Guards `dayOfMonth <= 0` to 0 rather than dividing by zero (an impossible calendar
+ *  day, but a defensive guard costs nothing here). */
+export function monthRunRate(monthUsd: number, dayOfMonth: number, daysInMonth: number): number {
+  if (dayOfMonth <= 0) return 0
+  return (monthUsd / dayOfMonth) * daysInMonth
 }
 
 /** Value-score heuristic v1 (mezo-kxnn Task 2, plan Rulings) — the Funkciók scorecard's default

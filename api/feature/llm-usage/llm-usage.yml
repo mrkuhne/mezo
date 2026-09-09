@@ -67,6 +67,11 @@ paths:
           in: query
           required: true
           schema: { type: string, pattern: '^(DAY|WEEK|MONTH)$' }
+        - name: day
+          in: query
+          required: false
+          description: ISO date (yyyy-MM-dd); when given, that report-zone calendar day IS the filtering window — it REPLACES the period's own window rather than intersecting with it (a day before the period's start, e.g. before the 1st for period=MONTH, still returns its calls). period still supplies the OTHER filters' context; every non-window filter (feature/status/callKind/userId) still composes normally. The anomaly-dot deep link from the 30d trend, and the cost_spike alert link, both rely on this (mezo-pfdv)
+          schema: { type: string, format: date }
         - name: feature
           in: query
           required: false
@@ -97,7 +102,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LlmCallListResponse' }
         '400':
-          description: Unknown period, status or call kind
+          description: Unknown period, day, status or call kind
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -151,6 +156,18 @@ components:
         day: { $ref: '#/components/schemas/LlmUsagePeriod' }
         week: { $ref: '#/components/schemas/LlmUsagePeriod' }
         month: { $ref: '#/components/schemas/LlmUsagePeriod' }
+        prevMonthToSameDayUsd:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Previous calendar month's PRICED cost from its 1st through the same day-of-month
+            boundary as today (report zone) — the "vs last month" comparator for the current
+            month-to-date figure. Clamped: if today is later in its month than the prior month is
+            long (e.g. today is the 31st and the prior month only had 30 days), the boundary is the
+            prior month's last day. Null when the prior month's window holds no priced row at all
+            (never coalesced to 0 — same ADR 0014 rule as every other cost sum here).
+
     LlmUsagePeriod:
       type: object
       required: [callCount, currency]
@@ -171,7 +188,7 @@ components:
         models:
           type: array
           description: "one entry per SERVED model; key is null for calls that never reached one"
-          items: { $ref: '#/components/schemas/LlmUsageGroup' }
+          items: { $ref: '#/components/schemas/LlmUsageModelGroup' }
         byUser:
           type: array
           description: "one entry per calling account, cost-descending (unpriced last); the null-user entry is the background (cron/stream) traffic"
@@ -196,6 +213,15 @@ components:
         key: { type: string, nullable: true, description: "feature slug or served model id; null = unknown" }
         callCount: { type: integer, format: int64 }
         costUsd: { type: number, format: double, nullable: true }
+    LlmUsageModelGroup:
+      type: object
+      required: [callCount, promptTokens, totalTokens]
+      properties:
+        key: { type: string, nullable: true, description: "served model id; null = calls that never reached one (ERROR rows)" }
+        callCount: { type: integer, format: int64 }
+        costUsd: { type: number, format: double, nullable: true }
+        promptTokens: { type: integer, format: int64, description: "summed raw prompt tokens over the group's rows; a row with no reported tokens counts as 0" }
+        totalTokens: { type: integer, format: int64, description: "summed total tokens over the group's rows; a row with no reported tokens counts as 0" }
     LlmUsageUserGroup:
       type: object
       required: [callCount, totalTokens]

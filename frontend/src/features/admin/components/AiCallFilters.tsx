@@ -62,6 +62,14 @@ export function AiCallFilters({ totals, filters, onChange }: {
   return (
     <div className="col" style={{ gap: 6, padding: '12px 0 2px' }}>
       <div className="row" style={{ gap: 6, overflowX: 'auto' }}>
+        {filters.day && (
+          <button type="button" style={chipStyle(true)} onClick={() => {
+            const { day, ...rest } = filters
+            onChange(rest)
+          }}>
+            {filters.day} ✕
+          </button>
+        )}
         {filters.feature && (
           <button type="button" style={chipStyle(true)} onClick={() => {
             const { feature, ...rest } = filters

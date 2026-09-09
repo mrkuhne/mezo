@@ -14,6 +14,7 @@ import {
   useLlmCalls,
   LLM_CALLS_MOCK,
   LLM_CALLS_EMPTY,
+  MOCK_CALLS_DAY,
   useLlmCall,
   LLM_CALL_DETAIL_MOCK,
   LLM_CALL_DETAIL_EMPTY,
@@ -29,6 +30,11 @@ describe('useLlmUsageSummary (mock mode)', () => {
     expect(result.current.data).toEqual(LLM_USAGE_MOCK)
     expect(result.current.data.day.callCount).toBe(12)
     expect(result.current.data.month.costUsd).toBe(1.22)
+  })
+
+  it('carries the prev-month comparator (mezo-pfdv)', () => {
+    const { result } = renderHook(() => useLlmUsageSummary(), { wrapper: makeHookWrapper() })
+    expect(result.current.data.prevMonthToSameDayUsd).toBe(1.05)
   })
 })
 
@@ -50,10 +56,27 @@ describe('useLlmUsageSummary (real mode)', () => {
     const { result } = renderHook(() => useLlmUsageSummary(), { wrapper: makeHookWrapper() })
     // Never the mock seed while unresolved (the dual-mode invariant).
     expect(result.current.data).toEqual(LLM_USAGE_EMPTY)
+    expect(result.current.data.prevMonthToSameDayUsd).toBeNull()
     await waitFor(() => expect(result.current.data.day.callCount).toBe(3))
     expect(hit).toBe(1) // the hook hit the contract URL, not some other path
     expect(result.current.data.week.costUsd).toBe(0.09)
     expect(result.current.data.month.costUsd).toBeNull()
+  })
+
+  it('reports a null prev-month comparator honestly when the backend has no prior-month data', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/summary`, () =>
+        HttpResponse.json({
+          day: { callCount: 0, costUsd: null, currency: 'USD' },
+          week: { callCount: 0, costUsd: null, currency: 'USD' },
+          month: { callCount: 0, costUsd: null, currency: 'USD' },
+          prevMonthToSameDayUsd: null,
+        }),
+      ),
+    )
+    const { result } = renderHook(() => useLlmUsageSummary(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.data.prevMonthToSameDayUsd).toBeNull()
   })
 })
 
@@ -72,15 +95,23 @@ describe('useLlmUsageBreakdown (mock mode)', () => {
     // model, so those rows MUST show up as the null-keyed group — the one the UI renders as
     // "ismeretlen" with a dashed cost.
     const { totals, features, models } = LLM_BREAKDOWN_MOCK
-    const calls = (groups: typeof models) => groups.reduce((n, g) => n + g.callCount, 0)
-    const cost = (groups: typeof models) => groups.reduce((n, g) => n + (g.costUsd ?? 0), 0)
+    const calls = (groups: { callCount: number }[]) => groups.reduce((n, g) => n + g.callCount, 0)
+    const cost = (groups: { costUsd?: number | null }[]) => groups.reduce((n, g) => n + (g.costUsd ?? 0), 0)
 
     expect(calls(features)).toBe(totals.callCount)
     expect(calls(models)).toBe(totals.callCount)
     expect(cost(features)).toBeCloseTo(totals.costUsd ?? 0, 6)
     expect(cost(models)).toBeCloseTo(totals.costUsd ?? 0, 6)
     expect(models.find((m) => m.key == null))
-      .toEqual({ key: null, callCount: totals.errorCount, costUsd: null })
+      .toEqual({ key: null, callCount: totals.errorCount, costUsd: null, promptTokens: 0, totalTokens: 0 })
+  })
+
+  it('keeps the model token sums reconcilable too (mezo-pfdv): promptTokens sums to totals.promptTokens, totalTokens per row is never less than promptTokens', () => {
+    const { totals, models } = LLM_BREAKDOWN_MOCK
+    expect(models.reduce((n, m) => n + m.promptTokens, 0)).toBe(totals.promptTokens)
+    models.forEach((m) => expect(m.totalTokens).toBeGreaterThanOrEqual(m.promptTokens))
+    // the ERROR bucket (null key) never reached a model — no usage at all, not merely no cost.
+    expect(models.find((m) => m.key == null)).toMatchObject({ promptTokens: 0, totalTokens: 0 })
   })
 
   it('keeps byUser reconcilable too: the per-account groups sum to the totals, background is the null group', () => {
@@ -101,7 +132,7 @@ describe('useLlmUsageBreakdown (real mode)', () => {
           from: '2026-08-14',
           totals: { callCount: 3, successCount: 3, errorCount: 0, cancelledCount: 0, unpricedCount: 1, promptTokens: 0, cachedTokens: 0, costUsd: 0.5, currency: 'USD' },
           features: [{ key: 'companion_chat', callCount: 3, costUsd: 0.5 }],
-          models: [{ key: 'gemini-2.5-flash', callCount: 3, costUsd: 0.5 }],
+          models: [{ key: 'gemini-2.5-flash', callCount: 3, costUsd: 0.5, promptTokens: 900, totalTokens: 1_200 }],
           byUser: [],
         }),
       ),
@@ -113,6 +144,8 @@ describe('useLlmUsageBreakdown (real mode)', () => {
     expect(result.current.data).toEqual(LLM_BREAKDOWN_EMPTY)
     await waitFor(() => expect(result.current.data.totals.callCount).toBe(3))
     expect(result.current.data.features[0].key).toBe('companion_chat')
+    expect(result.current.data.models[0].promptTokens).toBe(900)
+    expect(result.current.data.models[0].totalTokens).toBe(1_200)
   })
 })
 
@@ -159,6 +192,25 @@ describe('useLlmCalls (mock mode)', () => {
     expect(exact.result.current.data.hasMore).toBe(false)
   })
 
+  it('narrows to one report-zone calendar day, like the server does (mezo-pfdv)', () => {
+    // the whole seed sits on MOCK_CALLS_DAY (mezo-pfdv fix round 3: derived relative to now, so
+    // it stays aligned with ADMIN_ALERTS_MOCK's cost_spike link — see llmUsageHooks.ts's own
+    // comment); a filter on that day is a no-op, a different day is empty.
+    const sameDay = renderHook(() => useLlmCalls('DAY', { day: MOCK_CALLS_DAY }, 50), { wrapper: makeHookWrapper() })
+    expect(sameDay.result.current.data.items).toHaveLength(7)
+
+    const otherDay = renderHook(() => useLlmCalls('DAY', { day: '2026-01-01' }, 50), { wrapper: makeHookWrapper() })
+    expect(otherDay.result.current.data.items).toEqual([])
+  })
+
+  it('composes day with the other filters, narrowing further rather than replacing them', () => {
+    const combined = renderHook(
+      () => useLlmCalls('DAY', { day: MOCK_CALLS_DAY, feature: 'meal_draft' }, 50),
+      { wrapper: makeHookWrapper() },
+    )
+    expect(combined.result.current.data.items.map((i) => i.feature)).toEqual(['meal_draft'])
+  })
+
   it('narrows to one account on userId, like the server does', () => {
     const anna = renderHook(() => useLlmCalls('DAY', { userId: '00000000-0000-4000-8000-000000000002' }, 50), { wrapper: makeHookWrapper() })
     expect(anna.result.current.data.items.length).toBeGreaterThan(0)
@@ -185,12 +237,13 @@ describe('useLlmCalls (real mode)', () => {
     )
 
     const { result } = renderHook(
-      () => useLlmCalls('WEEK', { feature: 'meal_coach', status: 'ERROR', userId: 'u-1' }, 100),
+      () => useLlmCalls('WEEK', { day: '2026-08-14', feature: 'meal_coach', status: 'ERROR', userId: 'u-1' }, 100),
       { wrapper: makeHookWrapper() },
     )
 
     await waitFor(() => expect(result.current.isPending).toBe(false))
     expect(seen).toContain('period=WEEK')
+    expect(seen).toContain('day=2026-08-14')
     expect(seen).toContain('feature=meal_coach')
     expect(seen).toContain('status=ERROR')
     expect(seen).toContain('limit=100')

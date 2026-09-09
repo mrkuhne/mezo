@@ -6,7 +6,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
-import { ADMIN_ALERTS_EMPTY } from '@/data/admin/adminInsightsMock'
+import { ADMIN_ALERTS_EMPTY, ADMIN_ALERTS_MOCK } from '@/data/admin/adminInsightsMock'
 
 // mezo-m079 (Task 1): AdminStatusBand is self-contained (calls useAdminAlerts itself), so
 // the only outside seam a test needs to control is navigation — mocked exactly like
@@ -36,9 +36,12 @@ describe('AdminStatusBand (mock mode)', () => {
   })
 
   it('navigates to the alert link on chip click', async () => {
+    // mezo-pfdv fix round 3: the mock's cost_spike link is derived relative to "now" (so it
+    // stays aligned with the LLM_CALLS_MOCK seed's own day — see adminInsightsMock.ts's comment),
+    // not a hardcoded date — read it back off the fixture instead of hardcoding it here too.
     renderBand()
     fireEvent.click(await screen.findByText('Tegnapi AI-költés kiugróan magas'))
-    expect(mocks.navigate).toHaveBeenCalledWith('/admin/cost?day=2026-09-07')
+    expect(mocks.navigate).toHaveBeenCalledWith(ADMIN_ALERTS_MOCK.alerts[0].link)
   })
 })
 

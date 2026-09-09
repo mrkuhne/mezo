@@ -6,12 +6,17 @@ import static org.assertj.core.api.Assertions.within;
 import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageUserGroup;
+import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +28,7 @@ import org.springframework.http.HttpStatus;
 class LlmUsageControllerIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;
+    @Autowired private LlmLogProperties llmLogProperties;
 
     @Test
     void testEveryRead_shouldReturn403_whenCallerIsUser() {
@@ -76,6 +82,87 @@ class LlmUsageControllerIT extends ApiIntegrationTest {
         LlmCallListResponse onlyAnna = getForBody("/api/llm-usage/calls?period=DAY&userId=" + anna.id(), ownerAuthHeaders(),
             HttpStatus.OK, LlmCallListResponse.class);
         assertThat(onlyAnna.getItems()).singleElement().satisfies(i -> assertThat(i.getCreatedBy()).isEqualTo(anna.id()));
+    }
+
+    /**
+     * mezo-pfdv: {@code day} narrows the list to one report-zone calendar day. A row seeded at
+     * 23:45 LOCAL on the boundary day is still within it (the edge the report zone matters for);
+     * the same wall-clock time one day later must be excluded.
+     *
+     * <p>Fix round 3 (L1): {@code boundaryDay} is a FIXED 40 days back, not {@code minusDays(5)}
+     * — 5 days back can land in the current calendar month or the previous one depending on
+     * which day of the month the suite happens to run on, which used to make this test's
+     * {@code period=MONTH} query only ACCIDENTALLY exercise the H1 fix (day-before-period-start)
+     * on some days and not others. 40 days is always outside a ≤31-day calendar month, so this
+     * test deterministically exercises the same "day replaces the period window" behavior every
+     * run, regardless of today's date — see also the dedicated
+     * {@link #testListCalls_shouldReturnCalls_whenDayIsInThePreviousCalendarMonth} below for that
+     * behavior asserted directly and by name.
+     */
+    @Test
+    void testListCalls_shouldNarrowToOneReportZoneDay_whenDayGiven() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate boundaryDay = LocalDate.now(zone).minusDays(40);
+        Instant lateOnBoundaryDay = boundaryDay.atTime(23, 45).atZone(zone).toInstant();
+        Instant sameWallClockNextDay = boundaryDay.plusDays(1).atTime(23, 45).atZone(zone).toInstant();
+
+        llmLogPopulator.logCall(lateOnBoundaryDay, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.010000"));
+        llmLogPopulator.logCall(sameWallClockNextDay, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.020000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=MONTH&day=" + boundaryDay, ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.01, within(1e-9)));
+    }
+
+    /**
+     * mezo-pfdv fix round 3 (H1): {@code day} REPLACES the period's own window rather than
+     * intersecting with it — the cost_spike alert link and the trend's anomaly dots can both
+     * point at a day the current period doesn't cover (e.g. any day before the 1st, under
+     * {@code period=MONTH}). Named/asserted directly against "the previous calendar month",
+     * rather than relying on an arbitrary day-offset, so the intent reads unambiguously.
+     */
+    @Test
+    void testListCalls_shouldReturnCalls_whenDayIsInThePreviousCalendarMonth() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate firstOfPriorMonth = java.time.YearMonth.from(LocalDate.now(zone)).minusMonths(1).atDay(1);
+        Instant midDayPriorMonth = firstOfPriorMonth.atTime(12, 0).atZone(zone).toInstant();
+
+        llmLogPopulator.logCall(midDayPriorMonth, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.030000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=MONTH&day=" + firstOfPriorMonth, ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getCostUsd()).isEqualTo(0.03, within(1e-9)));
+    }
+
+    /** day composes with the other filters: it narrows further, it does not replace them. */
+    @Test
+    void testListCalls_shouldComposeDayWithFeatureFilter_whenBothGiven() {
+        RegisteredUser anna = registerUser("Anna");
+        ZoneId zone = llmLogProperties.reportZone();
+        LocalDate today = LocalDate.now(zone);
+
+        llmLogPopulator.logCall(null, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.010000"));
+        llmLogPopulator.logCall(null, anna.id(), CallKind.CHAT, CallStatus.SUCCESS,
+            "meal_coach", "send", "gemini-2.5-flash", new BigDecimal("0.020000"));
+
+        LlmCallListResponse body = getForBody(
+            "/api/llm-usage/calls?period=DAY&day=" + today + "&feature=meal_coach", ownerAuthHeaders(),
+            HttpStatus.OK, LlmCallListResponse.class);
+
+        assertThat(body.getItems()).singleElement()
+            .satisfies(i -> assertThat(i.getFeature()).isEqualTo("meal_coach"));
     }
 
     private static PricingSnapshot snapshot() {

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,10 +41,10 @@ public class LlmUsageController implements LlmUsageApi {
     }
 
     @Override
-    public LlmCallListResponse listLlmCalls(String period, String feature, String status,
+    public LlmCallListResponse listLlmCalls(String period, LocalDate day, String feature, String status,
                                             String callKind, UUID userId, Integer limit) {
         currentUser.requireOwner();
-        return service.listCalls(period, feature, status, callKind, userId, limit);
+        return service.listCalls(period, day, feature, status, callKind, userId, limit);
     }
 
     @Override

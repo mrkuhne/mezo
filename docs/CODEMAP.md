@@ -114,10 +114,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
     AdminFeatureDetailPage.tsx, AdminFeaturesPage.tsx, AdminOverviewPage.tsx, AdminUserDetailPage.tsx,
     AdminUsersPage.tsx
-  - **components:** AdminStatusBand.tsx, AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx,
-    AiModelBreakdown.tsx, AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, FeatureScoreRow.tsx, JsonCell.tsx,
-    ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx, TesterCard.tsx, TopListTile.tsx, UserPicker.tsx,
-    ValueCostQuadrant.tsx
+  - **components:** AdminStatusBand.tsx, AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiModelBreakdown.tsx,
+    DataTable.tsx, FeatureScoreRow.tsx, JsonCell.tsx, ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx,
+    TesterCard.tsx, TopListTile.tsx, UserPicker.tsx, ValueCostQuadrant.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
     MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
     RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts, projection.ts,
@@ -806,7 +805,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sub-features:** `context`
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
   - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmFeatureErrorRow`, `LlmFeatureUserRow`,
-    `LlmGroupRow`, `LlmLogRepository`, `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
+    `LlmGroupRow`, `LlmLogRepository`, `LlmModelGroupRow`, `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`,
+    `LlmUserRow`
   - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmBudgetService`,
     `LlmCallRecord`, `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
