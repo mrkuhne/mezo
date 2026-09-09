@@ -27,11 +27,15 @@ Controls:
 - **Figyel:** close, slow breathing form with lavender/cyan reflections.
 - **Kapcsolódik:** slightly opens the form and shifts the interface accent to cyan.
 - **Ünnepel:** opens wider, warms the core, adds a transient particle/ring pulse.
-- **Energy:** controls motion speed; zero stops time progression.
+- **Energy:** controls motion speed; zero stops time progression. Autonomous speed and
+  oscillation amplitudes use a 0.4 multiplier (60% reduction from the initial study);
+  manual rotation and the distinct state poses retain their original range.
 - **Pause:** freezes autonomous motion. Reduced-motion preference starts paused; explicit
   play can opt back into motion. State selection still displays a static version of its pose.
 - **Drag / reset:** inspect the object and restore its orientation.
-- **Journal reaction:** demonstrates a quiet acknowledgment. No text is submitted, no data
+- **Journal reaction:** demonstrates a quiet acknowledgment through the connection pose,
+  core light and message-card sheen. No outward ring or particle burst; those are reserved
+  for celebration. No text is submitted, no data
   is saved and no real AI is connected; every sentence is illustrative mock copy.
 
 The desktop study places the object beside its controls; mobile stacks them. It has no
