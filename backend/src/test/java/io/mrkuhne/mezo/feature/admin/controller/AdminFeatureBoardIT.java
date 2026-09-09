@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.AdminFeatureBoardResponse;
 import io.mrkuhne.mezo.api.dto.AdminFeatureRow;
+import io.mrkuhne.mezo.api.dto.AiDraftOutcomeRequest;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
@@ -122,6 +123,27 @@ class AdminFeatureBoardIT extends ApiIntegrationTest {
                 });
     }
 
+    /** {@code artifactFeatureMap} gains {@code meal_coach: meal_coach} (Slice 8 Task 2, mezo-76f6) —
+     *  a meal_coach vote must surface under the meal_coach feature's helped counts, same mapped
+     *  live-feedback path {@code testBoard_shouldMapLiveFeedbackThroughArtifactFeatureMap_...}
+     *  exercises for chat_message/companion_chat. */
+    @Test
+    void testBoard_shouldMapMealCoachFeedbackThroughArtifactFeatureMap_whenMealCoachVerdictsExist() {
+        RegisteredUser anna = registerUser("Anna");
+        feedbackPopulator.createVerdict(anna.id(), MessageFeedbackEntity.KIND_MEAL_COACH, UUID.randomUUID(), "up", null);
+        // meal_coach must exist as a row even with zero LLM usage, so the mapped feedback lands.
+        llmLogRepository.save(logRow(anna.id(), "meal_coach", CallStatus.SUCCESS, new BigDecimal("0.01")));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "meal_coach".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getHelped()).isNotNull();
+                    assertThat(r.getHelped().getUp()).isEqualTo(1);
+                });
+    }
+
     @Test
     void testBoard_shouldComputeHabitShareFromThreeOfFourActiveIsoWeeks_whenAUserIsHabitual() {
         RegisteredUser anna = registerUser("Anna"); // habitual: active 3 of the last 4 ISO weeks
@@ -188,6 +210,68 @@ class AdminFeatureBoardIT extends ApiIntegrationTest {
                     assertThat(r.getUsesPerWeek()).hasSize(12);
                     assertThat(r.getUsesPerWeek().get(domainIndex)).isGreaterThan(0);
                 });
+    }
+
+    /**
+     * {@code acceptedShare} = (accepted+edited)/total ai_draft_outcome rows for the feature in the
+     * period (Slice 8 Task 2, mezo-76f6 plan Rulings) — 2 accepted + 1 edited + 1 discarded -> 0.75.
+     * Outcomes are recorded through the real {@code POST /api/ai-drafts/{draftId}/outcome}
+     * endpoint (Task 1), same as {@code AiDraftsApiIT}, rather than a direct repository save.
+     */
+    @Test
+    void testBoard_shouldComputeAcceptedShare_whenOutcomesExistForAFeature() {
+        RegisteredUser anna = registerUser("Anna");
+        llmLogRepository.save(logRow(anna.id(), "meal_draft", CallStatus.SUCCESS, new BigDecimal("0.01")));
+        recordOutcome(anna, "meal_draft", "accepted");
+        recordOutcome(anna, "meal_draft", "accepted");
+        recordOutcome(anna, "meal_draft", "edited");
+        recordOutcome(anna, "meal_draft", "discarded");
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "meal_draft".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getAcceptedShare()).isEqualTo(0.75));
+    }
+
+    @Test
+    void testBoard_shouldLeaveAcceptedShareNull_whenFeatureHasZeroOutcomes() {
+        RegisteredUser anna = registerUser("Anna");
+        llmLogRepository.save(logRow(anna.id(), "meso_plan", CallStatus.SUCCESS, new BigDecimal("0.01")));
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "meso_plan".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getAcceptedShare()).isNull());
+    }
+
+    /**
+     * mezo-76f6 review finding L1: a feature that only ever generates deterministically (no
+     * {@code llm_log_history} row) and is not a {@code mezo.admin.feature-map} domain key either
+     * must still surface as a row once it has recorded outcomes — the row-set union extends to
+     * {@code ai_draft_outcome}'s own distinct feature slugs, not just the llm/domain sources.
+     */
+    @Test
+    void testBoard_shouldSurfaceOutcomesOnlyFeatureAsAiKind_whenFeatureHasNoLlmRowsAndIsNotADomainKey() {
+        RegisteredUser anna = registerUser("Anna");
+        recordOutcome(anna, "train_meso_plan", "accepted");
+        recordOutcome(anna, "train_meso_plan", "discarded");
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "train_meso_plan".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getAcceptedShare()).isEqualTo(0.5);
+                    assertThat(r.getKind()).isEqualTo(AdminFeatureRow.KindEnum.AI);
+                });
+    }
+
+    private void recordOutcome(RegisteredUser user, String feature, String outcome) {
+        postForBody("/api/ai-drafts/" + UUID.randomUUID() + "/outcome",
+            AiDraftOutcomeRequest.builder().feature(feature).outcome(outcome).build(),
+            user.headers(), HttpStatus.NO_CONTENT, Void.class);
     }
 
     /** Minimal valid audit row — same shape as {@code AdminUsageIT#logRow}. */

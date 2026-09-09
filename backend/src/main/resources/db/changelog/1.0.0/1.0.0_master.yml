@@ -1253,3 +1253,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609081100_mezo-ozri.6_llm_log_created_by_index.sql
+  - changeSet:
+      id: "1.0.0:202609091100_mezo-76f6_create_ai_draft_outcome"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609091100_mezo-76f6_create_ai_draft_outcome.sql
+  - changeSet:
+      id: "1.0.0:202609091500_mezo-76f6_feedback_meal_coach_recipe_breakdown_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609091500_mezo-76f6_feedback_meal_coach_recipe_breakdown_kind.sql

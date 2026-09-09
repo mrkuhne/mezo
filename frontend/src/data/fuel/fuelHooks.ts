@@ -103,7 +103,13 @@ export function useMealActions(date: string = localDateString()) {
     [mock],
   )
 
-  const logMeal = useCallback((input: MealInput) => logM.mutate(input), [logM])
+  // The optional `onSuccess` is a PER-CALL callback (TanStack merges it with the hook-level one
+  // above) — MealComposer uses it to fire the meal_draft outcome signal (mezo-76f6) only once the
+  // save has genuinely succeeded, never optimistically.
+  const logMeal = useCallback(
+    (input: MealInput, options?: { onSuccess?: () => void }) => logM.mutate(input, options),
+    [logM],
+  )
   const updateMeal = useCallback((id: string, input: MealInput) => updateM.mutate({ id, input }), [updateM])
   const deleteMeal = useCallback((id: string) => deleteM.mutate(id), [deleteM])
   return { logMeal, updateMeal, deleteMeal, draftMealFromAi }

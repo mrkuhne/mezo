@@ -376,6 +376,7 @@ export const MOCK_PHOTO_DRAFT: PantryScrapeDraft = {
 // low-confidence estimate line (needsReview → the review-chip path). `_aiSeed` is the first food seed.
 const _aiSeed = ingredients[0]
 export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
+  draftId: 'mock-ai-draft', // outcome reporting is a no-op in mock mode — a static id is fine
   slot: 'lunch',
   title: 'Csirkés wrap + latte',
   note: null,

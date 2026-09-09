@@ -243,6 +243,8 @@ export interface MealAiDraftLine {
 /** AI-parsed meal draft — a proposed slot + lines the user confirms before logging. Nothing is
  *  persisted until confirmed. Mirrors the MealAiDraftResponse contract. */
 export interface MealAiDraft {
+  /** Backend-minted (mezo-76f6) — echoed back to POST /api/ai-drafts/{draftId}/outcome. */
+  draftId: string
   slot: MealSlot
   title: string | null
   note: string | null

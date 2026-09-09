@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info: { title: mezo ai-drafts fragment, version: 1.0.0 }
+paths:
+  /api/ai-drafts/{draftId}/outcome:
+    post:
+      tags: [AiDrafts]
+      operationId: recordAiDraftOutcome
+      summary: Upsert this user's outcome signal for one backend-minted AI draft (AiDrafts, mezo-76f6)
+      description: >-
+        Last signal wins per (user, draftId) — a later accepted/edited REPLACES an earlier
+        discarded and vice versa, since the composer/wizard that produced the draft can be
+        reopened after a discard. `feature` is a free slug (not checked against a fixed list
+        here); the admin scorecard joins by slug. No GET on this resource — admin reads the
+        aggregate via the repository.
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AiDraftOutcomeRequest' }
+      responses:
+        '204':
+          description: Outcome stored (upserted)
+        '400':
+          description: Validation error (unknown outcome, blank/oversized feature)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    AiDraftOutcomeRequest:
+      type: object
+      required: [feature, outcome]
+      properties:
+        feature:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Free slug identifying the AI generator (e.g. 'meal_draft', 'meso_plan') — not validated against a fixed list.
+        outcome:
+          type: string
+          pattern: '^(accepted|edited|discarded)$'

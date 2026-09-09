@@ -346,7 +346,9 @@ export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
     {
       key: 'meal_draft', kind: 'ai', uniqueUsers: 5,
       usesPerWeek: FEATURE_WEEKS_12(2, 2),
-      habitUserShare: 0.2, helped: null, acceptedShare: null,
+      // acceptedShare 0.72 (mezo-76f6) — real mock parity: most AI meal drafts get logged
+      // as-is or with a tweak, the rest discarded.
+      habitUserShare: 0.2, helped: null, acceptedShare: 0.72,
       // errorPct ~20 — meal_draft (photo/text -> draft) is the flakiest of the bunch.
       costUsd: 6.75, costPerUse: 0.34, unknownCalls: 0, errorPct: 19.8, p90LatencyMs: 2200, screenViews: null,
     },
@@ -360,7 +362,9 @@ export const ADMIN_FEATURE_BOARD_MOCK: AdminFeatureBoardResponse = {
     {
       key: 'train_meso_plan', kind: 'ai', uniqueUsers: 4,
       usesPerWeek: FEATURE_WEEKS_12(1, 1),
-      habitUserShare: 0.25, helped: { up: 5, down: 0 }, acceptedShare: null,
+      // acceptedShare 0.68 (mezo-76f6) — a mesocycle proposal gets edited more often than a
+      // meal draft (a whole training block invites more tweaking before save).
+      habitUserShare: 0.25, helped: { up: 5, down: 0 }, acceptedShare: 0.68,
       costUsd: 3.2, costPerUse: 0.53, unknownCalls: 0, errorPct: 0, p90LatencyMs: 1600, screenViews: null,
     },
     {

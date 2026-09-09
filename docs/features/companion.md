@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-08
+updated: 2026-09-09
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -3167,6 +3167,32 @@ but it is documented here because both recording adapters live in `feature/compa
   NOT apply the usual `created_by = currentUser` ownership filter (it would hide exactly the
   invisible cron and streaming volume).
 
+### AI draft outcomes (✅ `mezo-76f6`, admin value dashboard Slice 8)
+
+Another **`feature/llmlog`**-owned table, for the same reason as the audit log above: it measures
+value across every big AI generator (meal draft, meso plan), not just companion's own surfaces.
+Migration `202609091100_mezo-76f6_create_ai_draft_outcome.sql` creates **`ai_draft_outcome`**
+(`id`, `created_by`, `is_deleted`, `created_at`, `feature varchar(40)` — a free slug, not checked
+against a fixed list, `draft_id uuid`, `outcome varchar(10)` — `ck_ai_draft_outcome_outcome IN
+('accepted','edited','discarded')`), unique on `(created_by, draft_id)`. **`POST
+/api/ai-drafts/{draftId}/outcome`** (`AiDraftOutcomeRequest {feature, outcome}` → 204,
+`AiDraftOutcomeService.recordOutcome` → `AiDraftOutcomeRepository.upsertOutcome`, a native
+`ON CONFLICT` upsert) is the ONE write path — there is no GET, admin reads the aggregate directly.
+**Last signal wins, but the row's `created_at` never moves on a later upsert** — a draft
+discarded and then re-opened and accepted still keeps the FIRST attempt's timestamp, which is
+what anchors it to a reporting period (see below). `MealAiDraftResponse.draftId` and
+`MesoPlanGenerateResponse.draftId` are backend-minted uuids (one fresh id per call, no content
+hash) that the FE echoes back here; see [`fuel.md`](fuel.md) §"AI meal-draft contract" and
+[`train.md`](train.md) §"Plan generator" for the two generators' own accepted/edited/discarded
+semantics. `AdminFeatureService.board`'s **`acceptedShare`** = `(accepted+edited)/total` outcome
+rows per feature in the selected period, `null` on zero outcomes — **a row counts in the period
+its FIRST signal landed in**, per the created_at-never-moves rule above, so a cross-period flip
+is attributed to the original period, not the one the flip happened in. Because a generator can
+run purely deterministically for a stretch (no LLM call at all — e.g. the meso-plan generator
+with its LLM pick step off or contributing zero picks) and therefore write no
+`llm_log_history` row, `board`'s feature row-set additionally unions in every distinct `feature`
+slug seen in `ai_draft_outcome` — otherwise such a feature's outcomes would never surface as a row.
+
 ### Per-user rolling USD cap (✅ `mezo-ozri.6`, spec §C1/§C2)
 
 The audit table above is not only a report any more — it is what a **ceiling** reads. Every account
@@ -3246,21 +3272,26 @@ instead of months of unrecorded signal. Driving spec:
   wire's `updatedAt`), `artifact_kind varchar(20)`, `artifact_id uuid`, `verdict varchar(4)`,
   `reason varchar(16)` (nullable). Constraints: `pk_message_feedback_id`,
   `fk_message_feedback_created_by_app_user_id`, **`uq_message_feedback_artifact (created_by,
-  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the seven
-  kinds `chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review`,
-  widened from five in two CK-swap-only migrations —
+  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the nine
+  kinds
+  `chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown`,
+  widened from five in three CK-swap-only migrations —
   `202608271500_mezo-p2tr_feedback_weekly_review_kind.sql` added `weekly_review`,
-  `202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` added `day_review`; neither touches
-  existing rows, only the CHECK's own claim of what a future insert may write),
-  `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
+  `202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` added `day_review`,
+  `202609091500_mezo-76f6_feedback_meal_coach_recipe_breakdown_kind.sql` (Slice 8 Task 2) added
+  `meal_coach`/`recipe_breakdown`; none touches existing rows, only the CHECK's own claim of what a
+  future insert may write), `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
   (`inaccurate|too_much|bad_timing|not_about_me`) and the cross-field
   **`ck_message_feedback_reason`** (`reason is null or verdict = 'down'`). Index
   `idx_message_feedback_created_by_kind (created_by, artifact_kind)` — the batch-read's key.
-- **The seven kinds span SEVEN different tables** — `ai_message` (chat answers), `companion_message`
+- **The nine kinds span NINE different tables** — `ai_message` (chat answers), `companion_message`
   (the Today feed), `weekly_suggestion`, `weekly_review`, `memoir`, `prediction` (proactive-owned,
-  [`proactive.md` §4/§10](proactive.md)) and `day_review` (companion-owned, §3/§4 above,
-  `mezo-jcpt.4`/`mezo-jcpt.9`). **`artifact_id` therefore carries NO foreign key**: existence
-  is deliberately not validated cross-table (spec §8.1) — seven conditional FKs cannot be expressed,
+  [`proactive.md` §4/§10](proactive.md)), `day_review` (companion-owned, §3/§4 above,
+  `mezo-jcpt.4`/`mezo-jcpt.9`), and — meal/fuel-owned, CHECK widened by Slice 8 Task 2 (`mezo-76f6`)
+  ahead of the FE chip mounts landing in Task 3 — `meal_coach` (artifact id = meal id; prose
+  regenerations share the id, version-conflation accepted) and `recipe_breakdown` (artifact id =
+  recipe id). **`artifact_id` therefore carries NO foreign key**: existence
+  is deliberately not validated cross-table (spec §8.1) — nine conditional FKs cannot be expressed,
   and a dangling id is harmless in a single-user app. A vote on a since-deleted artifact simply
   never gets read back.
 - **`uq_message_feedback_artifact` spans soft-deleted rows too** (it is a plain unique constraint,

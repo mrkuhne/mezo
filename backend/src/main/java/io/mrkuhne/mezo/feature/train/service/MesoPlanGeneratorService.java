@@ -70,6 +70,10 @@ public class MesoPlanGeneratorService {
             }
         }
         return MesoPlanGenerateResponse.builder()
+            // Stateless mint (mezo-76f6): no content hash, no persistence — a fresh id per
+            // generate/regenerate call; the FE echoes it back to
+            // POST /api/ai-drafts/{draftId}/outcome once the wizard resolves it.
+            .draftId(UUID.randomUUID())
             .template(toTemplate(skeleton, days, priorities, req))
             .rationale(rationale)
             .llmUsed(llmUsed)

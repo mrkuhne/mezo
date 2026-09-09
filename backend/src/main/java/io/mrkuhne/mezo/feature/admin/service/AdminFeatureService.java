@@ -30,7 +30,10 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionFeatureFlag;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.entity.AiDraftOutcomeEntity;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
+import io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeFeatureRow;
+import io.mrkuhne.mezo.feature.llmlog.repository.AiDraftOutcomeRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureDayRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureErrorRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureUserRow;
@@ -83,6 +86,7 @@ public class AdminFeatureService {
     private final LlmLogRepository llmLogRepository;
     private final CompanionFeatureFlag companionFeatureFlag;
     private final AppUserRepository appUserRepository;
+    private final AiDraftOutcomeRepository aiDraftOutcomeRepository;
 
     /** Funnel/unknown-key window (mezo-l096.4 ruling: fixed 90d, independent of the endpoint's
      *  {@code period} selector). */
@@ -90,8 +94,15 @@ public class AdminFeatureService {
 
     /** {@code GET /api/admin/features} — feature scorecard (mezo-l096.3).
      *
-     * <p>Row set = union of every {@code mezo.admin.feature-map} domain key and every distinct
-     * {@code feature} slug seen in {@code llm_log_history} in the period (plan ruling). {@code
+     * <p>Row set = union of every {@code mezo.admin.feature-map} domain key, every distinct
+     * {@code feature} slug seen in {@code llm_log_history} in the period (plan ruling), AND every
+     * distinct {@code feature} slug seen in {@code ai_draft_outcome} in the period (mezo-76f6
+     * review finding L1) — a generator that runs PURELY deterministically for a stretch (e.g.
+     * {@code train_meso_plan} with the meso-plan-ai switch off, or an LLM answer with zero
+     * accepted picks) writes no {@code llm_log_history} row at all, so without this extension its
+     * outcome signals would never surface as a row. {@code acceptedShare} itself anchors to the
+     * FIRST signal's {@code created_at} (upsert semantics, Task 1) — a cross-period flip (e.g.
+     * discarded then re-opened and accepted) counts entirely in the ORIGINAL period. {@code
      * kind} is {@code system} for {@link LlmCallContext#UNKNOWN}'s slug and {@link
      * LlmCallContext#FEATURE_ADMIN_REPLAY} regardless of which sources saw them, {@code both} when
      * a slug is both a domain key AND an LLM feature, {@code domain}/{@code ai} otherwise.
@@ -217,6 +228,28 @@ public class AdminFeatureService {
             }
         }
 
+        // ── draft outcomes (period-scoped; acceptedShare = (accepted+edited)/total) ────────────
+        // Outcome counts anchor to the row's OWN created_at, i.e. the FIRST signal recorded for a
+        // (owner, draftId) — a later signal UPSERTs the same row in place (upsert semantics, Task
+        // 1), so a cross-period flip (drafted+discarded in one period, re-opened and accepted in
+        // the next) is counted entirely in the ORIGINAL period, not the one the flip happened in.
+        Map<String, long[]> outcomeCountsByFeature = new HashMap<>();
+        for (AiDraftOutcomeFeatureRow row : aiDraftOutcomeRepository.aggregateByFeatureSince(since)) {
+            long[] counts = outcomeCountsByFeature.computeIfAbsent(row.feature(), k -> new long[2]);
+            counts[1] += row.count();
+            if (!AiDraftOutcomeEntity.OUTCOME_DISCARDED.equals(row.outcome())) {
+                counts[0] += row.count();
+            }
+        }
+        // Row-set union extension (mezo-76f6 review finding L1): a feature can generate PURELY
+        // deterministically (e.g. `train_meso_plan` with the meso-plan-ai switch off, or an
+        // answer with zero accepted picks) — it then writes no `llm_log_history` row at all and
+        // may not be a `mezo.admin.feature-map` domain key either, so without this its outcome
+        // signals would never surface as a row. `computeIfAbsent` is a no-op for a feature already
+        // seen above; a genuinely outcomes-only feature gets a fresh all-zero `FeatureAcc`
+        // (isDomain=isLlm=false ⇒ kind AI, per {@link #kindName}).
+        outcomeCountsByFeature.keySet().forEach(feature -> acc.computeIfAbsent(feature, k -> new FeatureAcc()));
+
         List<AdminFeatureRow> rows = new ArrayList<>();
         acc.forEach((key, a) -> {
             var row = new AdminFeatureRow();
@@ -227,7 +260,9 @@ public class AdminFeatureService {
             row.setHabitUserShare(a.triedUsers.isEmpty() ? 0.0 : (double) a.habitUsers.size() / a.triedUsers.size());
             boolean mapped = companionFeatureFlag.enabled() && mappedSlugs.contains(key);
             row.setHelped(mapped ? helped(helpedBySlug.getOrDefault(key, new int[2])) : null);
-            row.setAcceptedShare(null);
+            long[] outcomeCounts = outcomeCountsByFeature.get(key);
+            row.setAcceptedShare(outcomeCounts == null || outcomeCounts[1] == 0
+                    ? null : (double) outcomeCounts[0] / outcomeCounts[1]);
             row.setCostUsd(a.costUsd);
             row.setCostPerUse(a.calls == 0 ? null : a.costUsd / a.calls);
             row.setUnknownCalls(a.unknownCalls);

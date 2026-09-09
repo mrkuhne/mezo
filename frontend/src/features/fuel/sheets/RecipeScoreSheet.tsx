@@ -12,12 +12,19 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { roleRubricLabel } from '@/features/fuel/logic/recipeRole'
+import { useFeedback } from '@/data/hooks'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 
 export function RecipeScoreSheet({ recipe, breakdown, onClose }: {
   recipe: Recipe
   breakdown: MealBreakdown
   onClose: () => void
 }) {
+  // Chips mount ONLY when the breakdown actually carries coach prose (mezo-76f6 ruling) — a
+  // purely deterministic breakdown has nothing to vote on. One useFeedback per sheet, called
+  // unconditionally so hook order never depends on `breakdown.summary`.
+  const hasProse = !!breakdown.summary
+  const feedback = useFeedback('recipe_breakdown', hasProse ? [recipe.id] : [])
   return (
     <Sheet onClose={onClose} labelledBy="recipe-score-title">
       {(close) => (
@@ -39,6 +46,19 @@ export function RecipeScoreSheet({ recipe, breakdown, onClose }: {
           </div>
 
           <ScoreBreakdownBody breakdown={breakdown} />
+
+          {/* Silent 👍/👎 on the coach's prose (mezo-76f6) — only when this breakdown actually
+              carries any (the deterministic-only case has nothing to vote on). */}
+          {hasProse && (
+            <div className="mt-md">
+              <FeedbackChips
+                key={recipe.id}
+                value={feedback.get(recipe.id)}
+                onVote={(v, reason) => feedback.vote(recipe.id, v, reason)}
+                label="a recept értékeléséről"
+              />
+            </div>
+          )}
 
           <div style={{ height: 24 }} />
         </>

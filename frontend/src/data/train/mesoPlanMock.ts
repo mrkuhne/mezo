@@ -45,6 +45,9 @@ export function mockMesoPlan(input: MesoPlanGenerateRequest, library: ExerciseLi
   })
   const n = Math.min(6, Math.max(2, input.daysOfWeek.length))
   return {
+    // Outcome reporting is a no-op in mock mode, but a FRESH id per call still matters — the
+    // planner's own regenerate-mints-a-new-draftId logic (mezo-76f6) is exercised in mock mode too.
+    draftId: crypto.randomUUID(),
     template: {
       title: `Hypertrophy · ${getSeason(huMonthDay(localDateString()))}`,
       shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',

@@ -7,6 +7,9 @@ import { seedDays } from '@/features/train/logic/mesoDays'
 import { mockMesoPlan } from '@/data/train/mesoPlanMock'
 
 export interface MesoPlanProposal {
+  /** Backend-minted (mezo-76f6) — echoed back to POST /api/ai-drafts/{draftId}/outcome. A fresh
+   *  id per generate/regenerate call, never reused. */
+  draftId: string
   template: MesoTemplateUpsertRequest
   /** The template's days with client ids (seedDays) — what the editor mutates. */
   days: MesoDay[]
@@ -42,7 +45,7 @@ function toProposal(r: MesoPlanGenerateResponse): MesoPlanProposal {
       countsTowardVolume: e.countsTowardVolume,
     })),
   }))
-  return { template: r.template, days: seedDays(seeded), rationale: r.rationale, llmUsed: r.llmUsed }
+  return { draftId: r.draftId, template: r.template, days: seedDays(seeded), rationale: r.rationale, llmUsed: r.llmUsed }
 }
 
 /** Generate a hypertrophy plan proposal (nothing persisted). Mock = FE skeleton + mock library. */

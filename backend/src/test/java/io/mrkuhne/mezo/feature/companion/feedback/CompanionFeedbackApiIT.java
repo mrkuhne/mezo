@@ -205,6 +205,91 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.NO_CONTENT);
     }
 
+    /**
+     * The eighth and ninth kinds (Slice 8 Task 2, mezo-76f6): meal-coach prose and the
+     * recipe-breakdown result gain chips exactly like the other seven artifact kinds. Exercised on
+     * PUT + GET + DELETE per kind — same coverage the day_review CHECK-swap added above.
+     */
+    @Test
+    void testPutFeedback_shouldAccept_whenArtifactKindIsMealCoach() {
+        MessageFeedbackResponse response = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind(MessageFeedbackEntity.KIND_MEAL_COACH)
+                .artifactId(UUID.randomUUID())
+                .verdict(MessageFeedbackEntity.VERDICT_UP)
+                .build(),
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(response.getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_MEAL_COACH);
+        assertThat(response.getVerdict()).isEqualTo(MessageFeedbackEntity.VERDICT_UP);
+    }
+
+    @Test
+    void testListFeedback_shouldAccept_whenKindIsMealCoach() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_MEAL_COACH, artifactId,
+            MessageFeedbackEntity.VERDICT_DOWN, MessageFeedbackEntity.REASON_TOO_MUCH);
+
+        List<MessageFeedbackResponse> found = getForList(
+            "/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_MEAL_COACH + "&ids=" + artifactId,
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_MEAL_COACH);
+    }
+
+    @Test
+    void testDeleteFeedback_shouldReturn204_whenArtifactKindIsMealCoach() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_MEAL_COACH, artifactId,
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        deleteAndExpect("/api/companion/feedback/" + MessageFeedbackEntity.KIND_MEAL_COACH + "/" + artifactId,
+            ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void testPutFeedback_shouldAccept_whenArtifactKindIsRecipeBreakdown() {
+        MessageFeedbackResponse response = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind(MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN)
+                .artifactId(UUID.randomUUID())
+                .verdict(MessageFeedbackEntity.VERDICT_UP)
+                .build(),
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(response.getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN);
+        assertThat(response.getVerdict()).isEqualTo(MessageFeedbackEntity.VERDICT_UP);
+    }
+
+    @Test
+    void testListFeedback_shouldAccept_whenKindIsRecipeBreakdown() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN, artifactId,
+            MessageFeedbackEntity.VERDICT_DOWN, MessageFeedbackEntity.REASON_INACCURATE);
+
+        List<MessageFeedbackResponse> found = getForList(
+            "/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN + "&ids=" + artifactId,
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN);
+    }
+
+    @Test
+    void testDeleteFeedback_shouldReturn204_whenArtifactKindIsRecipeBreakdown() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN, artifactId,
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        deleteAndExpect("/api/companion/feedback/" + MessageFeedbackEntity.KIND_RECIPE_BREAKDOWN + "/" + artifactId,
+            ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+    }
+
     /** The CHECK was WIDENED, not loosened — a genuinely invented kind still fails everywhere. */
     @Test
     void testPutFeedback_shouldReturn400_whenArtifactKindIsNotARealKind() {

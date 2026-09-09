@@ -391,6 +391,9 @@ export const handlers = [
   // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not
   // surface as an unhandled request, and answers 202 with no body like the backend does.
   http.post(`${API_BASE}/api/telemetry/screen-events`, () => new HttpResponse(null, { status: 202 })),
+  // Draft outcome signals (mezo-76f6) — same "answer it so real-mode tests never leak to the
+  // network" reasoning as telemetry above; 204 no body, matching the backend contract.
+  http.post(`${API_BASE}/api/ai-drafts/:draftId/outcome`, () => new HttpResponse(null, { status: 204 })),
   // Admin data browser (mezo-d5iy.12) — populated defaults from the same mock seed, never a
   // 404 for an unknown table: an unrecognised `:table` falls back to the food_log fixture
   // rather than answering empty/error, matching "MSW handlers answer populated defaults".
@@ -993,6 +996,9 @@ export const handlers = [
           { name: i % 2 === 0 ? 'Row' : 'Squat', muscle: i % 2 === 0 ? 'back-mid' : 'quad', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', catalogId: 'c1f3a0e2-0000-4000-8000-000000000002' } ] }
       : { day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] })
     return HttpResponse.json({
+      // Fresh per call (mezo-76f6) — mirrors the backend's "a fresh id per generate/regenerate
+      // call, never a content hash" ruling, so real-mode regenerate tests see a NEW id too.
+      draftId: crypto.randomUUID(),
       template: { title: 'Hypertrophy · Ősz', shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
         musclePriorities: body.priorities ?? null, weeks: body.weeks, split: `Upper / Lower · ${body.daysOfWeek.length}×/hét`, style: `RP · ${body.weeks} hét`,
         phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], notes: body.goalText ?? null, volumePerMuscle: null, days },

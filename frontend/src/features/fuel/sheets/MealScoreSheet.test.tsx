@@ -1,9 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { HttpResponse, http } from 'msw'
+import { afterEach, beforeEach, describe, vi } from 'vitest'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { useFuelDay } from '@/data/hooks'
+import { API_BASE } from '@/data/_client/api'
+import { server } from '@/test/msw/server'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // useFuelDay is now composed dual-mode (mezo-arb); pin mock mode so the seed (with its
@@ -93,4 +96,58 @@ test('close button dismisses', async () => {
   renderSheet(onClose)
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(onClose).toHaveBeenCalled())
+})
+
+// 👍/👎 on the coach's prose (mezo-76f6) — mounted inside the "Mezo · olvasat" card, only
+// when there IS one (a coach-less meal has nothing to vote on).
+describe('meal_coach feedback chips', () => {
+  test('mock mode: chips render alongside the summary and a vote round-trips', async () => {
+    const meal = renderSheet()
+    const card = screen.getByText('Mezo · olvasat').closest<HTMLElement>('.card')!
+    const up = within(card).getByRole('button', { name: /Segített/ })
+    expect(up).toBeInTheDocument()
+    await userEvent.click(up)
+    await waitFor(() => expect(up).toHaveAttribute('aria-pressed', 'true'))
+    // vote survives — this IS the artifact-id-keyed round-trip (mock cache write)
+    void meal
+  })
+
+  test('a coach-less meal (no summary) renders no feedback chips', () => {
+    const seed = seedScoredMeal()
+    const coachless = { ...seed, breakdown: { ...seed.breakdown!, summary: null } }
+    render(<MealScoreSheet meal={coachless} onClose={() => {}} />, { wrapper: QueryWrapper })
+    expect(screen.queryByRole('button', { name: /Segített/ })).not.toBeInTheDocument()
+  })
+
+  test('real mode: a stored verdict hydrates the chip, and a vote PUTs meal_coach/{meal.id}', async () => {
+    // Grab a scored meal from the mock seed FIRST (still mock env from the outer beforeEach),
+    // then flip to real mode for the render — MealScoreSheet itself is env-agnostic, only the
+    // hooks it calls read the env at render time.
+    const meal = seedScoredMeal()
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const puts: unknown[] = []
+    server.use(
+      // useMealCoachFor's real-mode fetch — answered empty so the sheet keeps the seed's own
+      // `breakdown.summary` as the prose (this test is about the feedback chips, not the coach).
+      http.get(`${API_BASE}/api/meal/:id/coach`, () => HttpResponse.json({ verdicts: [] })),
+      http.get(`${API_BASE}/api/companion/feedback`, ({ request }) => {
+        const url = new URL(request.url)
+        expect(url.searchParams.get('kind')).toBe('meal_coach')
+        return HttpResponse.json([
+          { artifactKind: 'meal_coach', artifactId: meal.id, verdict: 'up', reason: null, updatedAt: '2026-09-08T10:00:00Z' },
+        ])
+      }),
+      http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+        const body = await request.json()
+        puts.push(body)
+        return HttpResponse.json({ ...(body as Record<string, unknown>), updatedAt: '2026-09-08T10:01:00Z' })
+      }),
+    )
+    render(<MealScoreSheet meal={meal} onClose={() => {}} />, { wrapper: QueryWrapper })
+    const card = await screen.findByText('Mezo · olvasat').then((el) => el.closest<HTMLElement>('.card')!)
+    await waitFor(() => expect(within(card).getByRole('button', { name: /Segített/ })).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(within(card).getByRole('button', { name: /Nem talált/ }))
+    await userEvent.click(within(card).getByRole('button', { name: 'pontatlan' }))
+    await waitFor(() => expect(puts).toEqual([{ artifactKind: 'meal_coach', artifactId: meal.id, verdict: 'down', reason: 'inaccurate' }]))
+  })
 })
