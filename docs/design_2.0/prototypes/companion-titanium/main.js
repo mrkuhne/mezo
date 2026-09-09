@@ -182,6 +182,7 @@ function init() {
   host.addEventListener('pointercancel', () => { drag = null; });
   renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); paused = true; syncPause(); document.querySelector('#scene-status').textContent = 'A 3D NÉZET MEGSZAKADT · TÖLTSD ÚJRA'; });
 
+  let orbitTime = 0;
   function animate(now) {
     requestAnimationFrame(animate);
     const dt = Math.min((now - last) / 1000, .05); last = now;
@@ -189,6 +190,7 @@ function init() {
     const moving = !paused && energy > 0;
     const target = modes[mode], lerp = 1 - Math.exp(-dt * 3);
     if (moving) {
+      orbitTime += dt;
       time += dt * (.2 + energy * 1.45) * motionScale;
       smooth.spread += (target.spread - smooth.spread) * lerp;
       smooth.speed += (target.speed - smooth.speed) * lerp;
@@ -197,7 +199,7 @@ function init() {
     } else Object.assign(smooth, { spread: target.spread, speed: target.speed, glow: target.glow });
     viewX += (pitch - viewX) * lerp; viewY += (yaw - viewY) * lerp;
     group.rotation.x = viewX + .1 + Math.sin(time * .3) * .07 * motionScale;
-    group.rotation.y = viewY + Math.sin(time * .24) * .2 * motionScale;
+    group.rotation.y = viewY - orbitTime * Math.PI / 36;
     group.rotation.z = Math.sin(time * .17) * .12 * motionScale;
     group.position.y = -.2 + Math.sin(time * .75) * .055 * motionScale;
     for (let i = 0; i < petals.length; i++) {
@@ -211,7 +213,10 @@ function init() {
     core.scale.setScalar(1 + Math.sin(time * 1.2) * .035 * motionScale + smooth.spread * .12);
     coreLight.intensity = 8 * smooth.glow;
     bloom.strength = .32 + smooth.glow * .11;
-    for (let i = 0; i < orbits.length; i++) orbits[i].rotation.z = .3 - i * .8 + time * .025 * (i ? -1 : 1);
+    for (let i = 0; i < orbits.length; i++) {
+      orbits[i].rotation.x = .9 + i * .65 + orbitTime * Math.PI / (46 + i * 12);
+      orbits[i].rotation.z = .3 - i * .8 + time * .025 * (i ? -1 : 1);
+    }
     dots.forEach(dot => { const a = dot.phase + time * (.14 + smooth.speed * .2), r = 1.65 + dot.orbit * .14; dot.mesh.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); });
     for (let i = 0; i < particleCount; i++) {
       const p = seeds[i], a = p.angle + time * .025 * p.speed, r = p.radius + (1 - burst) * burst * 3;

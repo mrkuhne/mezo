@@ -37,11 +37,12 @@ function render(replay=false) {
     checkin:{label:'Check-in',value:`${Object.keys(day.checkins).length} / 4`,hint:day.checkins[part]?'Visszanézhetsz magadra':'Hogy vagy most?',art:'heart',color:'#d0a5c4',open:'checkin'},
     journal:{label:'Napló',value:day.journal.length?'Megérkezett':'Egy gondolat',hint:day.journal.length?`${day.journal.length} bejegyzés ma`:'Ami most benned van',art:'book',color:'#c1a7e3',open:'journal'},
   };
-  const list=part==='reggel'?['sleep','routine','quests','checkin']:part==='este'?['routine','journal','quests','checkin']:['water','train','fuel','quests','routine','stack'];
+  const list=part==='reggel'?['sleep','routine','journal','checkin']:part==='este'?['routine','journal','sleep','checkin']:['water','train','fuel','journal','routine','stack'];
   $('#tiles').innerHTML=list.map(key=>tile(items[key])).join('');
   if(!replay) $('#tiles').querySelectorAll('.tile-enter').forEach(el=>el.classList.remove('tile-enter'));
   $('#need-bars').innerHTML=needs().map(([name,n,color])=>`<span class="need" style="--need-color:${color};--fill:${n}%"><span class="need-track"><i></i></span><small>${name}</small></span>`).join('');
   $('#intention-text').textContent=day.intention;$('#xp-label').textContent=day.xp;$('#xp-bar').style.width=`${day.xp/1200*100}%`;
+  document.dispatchEvent(new Event('mezo:day-render'));
 }
 function setPart(next) { part=next;render(true);react('listen');$('#app-scroll').scrollTo({top:0,behavior:'smooth'}); }
 function logWater() { const earned=addWater(day);render();const water=$('[data-water]');if(water){water.classList.remove('ripple');void water.offsetWidth;water.classList.add('ripple');}toast(earned?'+250 ml · Víz-küldetés teljesítve · +25 XP':`+250 ml · ${(day.water/1000).toLocaleString('hu-HU')} liter ma`); if(earned)react('celebrate',4500);else react('connect',2200); }
@@ -98,3 +99,5 @@ $('#restart').addEventListener('click',()=>{day=createDay();setPart('nap');toast
 $('#motion-toggle').addEventListener('click',()=>{motionPaused=!motionPaused;$('#motion-toggle').setAttribute('aria-pressed',String(motionPaused));$('#motion-toggle').setAttribute('aria-label',motionPaused?'Társ mozgásának folytatása':'Társ mozgásának szüneteltetése');$('#motion-toggle').textContent=motionPaused?'▷':'Ⅱ';$('#companion').contentWindow?.postMessage({type:'mezo:pause',paused:motionPaused},location.origin);});
 $('#companion').addEventListener('load',()=>{motionPaused=matchMedia('(prefers-reduced-motion: reduce)').matches;$('#motion-toggle').setAttribute('aria-pressed',String(motionPaused));$('#motion-toggle').textContent=motionPaused?'▷':'Ⅱ';$('#motion-toggle').setAttribute('aria-label',motionPaused?'Társ mozgásának folytatása':'Társ mozgásának szüneteltetése');});
 render(true);
+
+export { openSheet, closeSheet, react, toast, safe, icon };
