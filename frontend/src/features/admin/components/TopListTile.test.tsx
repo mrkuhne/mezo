@@ -111,6 +111,26 @@ describe('TopListTile', () => {
     expect(screen.getByText('Ma fül (kezdőlap)')).toBeInTheDocument()
   })
 
+  it('renders a muted "(nincs címke)" marker after the label when the row is missing (mezo-3u4r)', () => {
+    // An undictionaried feature slug reaching a top list must not render bare — same honesty
+    // rule the completeness gate enforces everywhere else on the admin surface.
+    render(
+      <MemoryRouter>
+        <TopListTile
+          title="Mire megy a pénz"
+          rows={[
+            { key: 'some_new_slug', label: 'some_new_slug', value: '$3.00', share: 1, missing: true },
+            { key: 'companion_chat', label: 'Beszélgetés a társsal', value: '$1.00', share: 0.3 },
+          ]}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('(nincs címke)')).toBeInTheDocument()
+    // the labelled row stays clean — no marker leaks onto a row that doesn't need one
+    const cleanRow = screen.getByText('Beszélgetés a társsal').closest('.info')
+    expect(cleanRow?.textContent).not.toContain('nincs címke')
+  })
+
   it('appends the unit to the value when given', () => {
     render(
       <MemoryRouter>

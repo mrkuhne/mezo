@@ -85,7 +85,7 @@ export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
   features: [
     { key: 'companion_chat', callCount: 96, costUsd: 0.74 },
     { key: 'companion_hypothesis', callCount: 21, costUsd: 0.39 },
-    { key: 'proactive_briefing', callCount: 7, costUsd: 0.21 },
+    { key: 'proactive_feed', callCount: 7, costUsd: 0.21 },
     { key: 'meal_draft', callCount: 34, costUsd: 0.18 },
     { key: 'meal_coach', callCount: 29, costUsd: 0.12 },
     { key: 'embed_memory', callCount: 148, costUsd: 0.09 },
@@ -123,7 +123,7 @@ export const LLM_CALLS_MOCK: LlmCallListResponse = {
     { id: '44444444-4444-4444-8444-444444444444', createdAt: '2026-08-14T12:19:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'CANCELLED', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 1400, streamed: true, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: null, errorCode: null },
     { id: '55555555-5555-4555-8555-555555555555', createdAt: '2026-08-14T12:02:00Z', createdBy: '00000000-0000-4000-8000-000000000002', feature: 'embed_memory', operation: 'document', callKind: 'EMBED_DOC', status: 'SUCCESS', requestedModel: 'gemini-embedding-001', servedModel: 'gemini-embedding-001', latencyMs: 400, streamed: false, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: 12, embedDimensions: 768, costUsd: 0.0004, errorClass: null, errorCode: null },
     { id: '66666666-6666-4666-8666-666666666666', createdAt: '2026-08-14T11:47:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_hypothesis', operation: 'critique', callKind: 'SMART', status: 'SUCCESS', requestedModel: 'gemini-2.5-pro', servedModel: 'gemini-2.5-pro', latencyMs: 22600, streamed: false, toolRounds: null, totalTokens: 18902, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.184, errorClass: null, errorCode: null },
-    { id: '77777777-7777-4777-8777-777777777777', createdAt: '2026-08-14T03:45:00Z', createdBy: null, feature: 'proactive_briefing', operation: 'generate', callKind: 'CHAT', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 5200, streamed: false, toolRounds: null, totalTokens: 9341, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.031, errorClass: null, errorCode: null },
+    { id: '77777777-7777-4777-8777-777777777777', createdAt: '2026-08-14T03:45:00Z', createdBy: null, feature: 'proactive_feed', operation: 'generate', callKind: 'CHAT', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 5200, streamed: false, toolRounds: null, totalTokens: 9341, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.031, errorClass: null, errorCode: null },
   ],
   // The seed IS everything the mock log holds — `mockCalls` recomputes `hasMore` per window, so
   // this flag only describes the unfiltered, unbounded read.

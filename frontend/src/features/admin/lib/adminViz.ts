@@ -10,12 +10,16 @@ import type { TopRow } from '@/features/admin/components/TopListTile'
 
 /** A single aggregated total, pre-`topNFromEntries` — the shape `costMatrixTotals` returns and
  *  `topNFromEntries` consumes (mezo-m079 Task 2). `sub` is optional: only the cost-matrix's
- *  Háttér (background/cron) bucket carries one today. */
+ *  Háttér (background/cron) bucket carries one today. `missing` (mezo-3u4r fix round 1) carries
+ *  `featureLabel(key).missing` through — an undictionaried feature slug must not go on to render
+ *  bare in a top list, the same honesty rule `domainTotals`/`featureLegend` already keep via
+ *  `AdminLegendEntry`; this is the sibling field for the `topNFromEntries` pipeline. */
 export interface AdminVizEntry {
   key: string
   label: string
   value: number
   sub?: string
+  missing?: boolean
 }
 
 /** Sum a set of per-domain day-series into one totals-per-day array (AdminOverviewPage's
@@ -59,13 +63,17 @@ export function costMatrixTotals(
   axis: 'user' | 'feature',
 ): AdminVizEntry[] {
   if (axis === 'feature') {
-    return matrix.features.map((feature) => ({
-      key: feature,
-      label: featureLabel(feature).label,
-      value: matrix.cells
-        .filter((c) => c.feature === feature)
-        .reduce((sum, c) => sum + c.costUsd, 0),
-    }))
+    return matrix.features.map((feature) => {
+      const lbl = featureLabel(feature)
+      return {
+        key: feature,
+        label: lbl.label,
+        missing: lbl.missing,
+        value: matrix.cells
+          .filter((c) => c.feature === feature)
+          .reduce((sum, c) => sum + c.costUsd, 0),
+      }
+    })
   }
   return matrix.users.map((u) => ({
     key: u.id ?? '__background__',
@@ -93,6 +101,7 @@ export function topNFromEntries(
     key: e.key,
     label: e.label,
     sub: e.sub,
+    missing: e.missing,
     value: fmt(e.value),
     share: e.value / max,
   }))

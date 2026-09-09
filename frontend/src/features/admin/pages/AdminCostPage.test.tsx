@@ -149,6 +149,24 @@ describe('AdminCostPage (real mode)', () => {
     await waitFor(() => expect(limits).toContain('100'))
   })
 
+  it('renders the missing-label marker in "Mire megy a pénz" for an undictionaried feature slug (mezo-3u4r)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/llm-usage/breakdown`, () =>
+        HttpResponse.json({
+          ...LLM_BREAKDOWN_MOCK,
+          features: [{ key: 'some_new_slug', callCount: 5, costUsd: 9.99 }],
+        }),
+      ),
+      http.get(`${API_BASE}/api/llm-usage/summary`, () => HttpResponse.json(LLM_USAGE_MOCK)),
+      http.get(`${API_BASE}/api/llm-usage/calls`, () => HttpResponse.json({ items: [], hasMore: false })),
+    )
+
+    renderAt('/admin/cost')
+
+    await waitFor(() => expect(screen.getByText('some_new_slug')).toBeInTheDocument())
+    expect(screen.getByText('(nincs címke)')).toBeInTheDocument()
+  })
+
   it('passes the day filter through to the calls request when mounted with ?day=', async () => {
     const days: (string | null)[] = []
     server.use(

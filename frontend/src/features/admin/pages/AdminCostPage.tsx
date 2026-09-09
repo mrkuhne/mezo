@@ -88,8 +88,11 @@ function monthDeltaCopy(monthUsd: number | null | undefined, prevUsd: number | n
 function featureEntries(groups: { key?: string | null; costUsd?: number | null }[]): AdminVizEntry[] {
   return groups.map((g) => {
     const key = g.key ?? '__unknown__'
-    const lbl = g.key ? featureLabel(g.key) : { label: 'ismeretlen' }
-    return { key, label: lbl.label, value: g.costUsd ?? 0 }
+    // mezo-3u4r fix round 1: a real-but-undictionaried slug (`missing: true`) is a DIFFERENT
+    // honesty case than a genuinely absent key (`ismeretlen`, no feature at all) — only the
+    // former propagates the "(nincs címke)" marker; a `null` key never carries `missing`.
+    const lbl = g.key ? featureLabel(g.key) : { label: 'ismeretlen', missing: false }
+    return { key, label: lbl.label, missing: lbl.missing, value: g.costUsd ?? 0 }
   })
 }
 

@@ -83,6 +83,20 @@ describe('costMatrixTotals', () => {
       { key: 'meal_coach', label: 'Étkezési tanácsadó', value: 1 },
     ])
   })
+
+  // mezo-3u4r fix round 1 — an undictionaried feature slug must carry `missing: true` through,
+  // not just print the raw slug as if it were a real label.
+  it('flags an undictionaried feature slug with missing:true', () => {
+    const matrixWithUnknown: AdminCostMatrixResponse = {
+      period: '30d',
+      users: [{ id: 'u1', label: 'Anna' }],
+      features: ['some_new_slug'],
+      cells: [{ userId: 'u1', feature: 'some_new_slug', calls: 3, costUsd: 2, unknownCalls: 0 }],
+      totalUsd: 2,
+    }
+    const totals = costMatrixTotals(matrixWithUnknown, 'feature')
+    expect(totals).toEqual([{ key: 'some_new_slug', label: 'some_new_slug', value: 2, missing: true }])
+  })
 })
 
 describe('topNFromEntries', () => {
@@ -108,6 +122,13 @@ describe('topNFromEntries', () => {
   it('never divides by zero when every entry is 0', () => {
     const rows = topNFromEntries([{ key: 'z', label: 'Z', value: 0 }], 1, String)
     expect(rows[0].share).toBe(0)
+  })
+
+  // mezo-3u4r fix round 1 — `missing` rides through from the entry to the row unchanged, so a
+  // caller (TopListTile) can render the honesty marker without re-deriving it.
+  it('carries an entry missing flag through to the row', () => {
+    const rows = topNFromEntries([{ key: 'x', label: 'x', value: 5, missing: true }], 1, String)
+    expect(rows[0].missing).toBe(true)
   })
 })
 
