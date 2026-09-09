@@ -51,4 +51,24 @@ describe('RunDetail', () => {
     renderDetail({ ...ADMIN_MEMORY_RUN_DETAIL_EMPTY, replayNotes: ['pca_unavailable'] })
     expect(screen.getByText(/a térkép-elhelyezés nem sikerült/)).toBeInTheDocument()
   })
+
+  // mezo-k5zy Task 3 — the run's own lead line + each candidate row's own verdict.
+  it('renders a run-level verdict lead line for the top selected candidate', () => {
+    renderDetail()
+    expect(screen.getByText(/^A legjobb találatot .+ találta meg a rendszer\.$/)).toBeInTheDocument()
+  })
+
+  it('renders no verdict lead line when there are no candidates at all', () => {
+    renderDetail({ ...ADMIN_MEMORY_RUN_DETAIL_EMPTY, candidates: [] })
+    expect(screen.queryByText(/találta meg a rendszer/)).not.toBeInTheDocument()
+  })
+
+  it('every candidate row carries its own verdict sentence next to its title', () => {
+    renderDetail()
+    const verdicts = document.querySelectorAll('.am-candhead .verdict')
+    expect(verdicts.length).toBe(ADMIN_MEMORY_RUN_SHADOW_DETAIL.candidates.length)
+    for (const v of verdicts) {
+      expect(v.textContent?.trim().length ?? 0).toBeGreaterThan(0)
+    }
+  })
 })

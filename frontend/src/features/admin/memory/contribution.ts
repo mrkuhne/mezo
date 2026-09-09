@@ -1,4 +1,4 @@
-import type { AdminMemoryCandidate, AdminMemoryFusionConfig } from '@/data/admin/adminMemoryApi'
+import type { AdminMemoryCandidate, AdminMemoryFusionConfig, AdminMemoryScoreBreakdown } from '@/data/admin/adminMemoryApi'
 
 export interface Contribution {
   /** retriever name, or a boost key like 'recencyBoost' */
@@ -74,4 +74,99 @@ export function decompose(
   const drift = rrfSum - storedRrf
 
   return { segments, rrfSum, storedRrf, drift }
+}
+
+// runVerdictSentence (mezo-k5zy Task 3) — a plain-Hungarian, one-line "why did this win" verdict
+// over a candidate's scoreBreakdown, for readers who will never open the stacked contribution bar.
+//
+// Deliberately independent of `decompose`/an `AdminMemoryCandidate`: it only needs the breakdown
+// itself (+ the live fusion weights, optional) — no `contentSnapshot`/`candidateRefId` etc. — so
+// callers that already have a bare breakdown (or a candidate predating today's live config) never
+// have to fabricate a whole candidate/fusion object just to get a sentence.
+//
+// The production RRF constant (`mezo.companion.memory-platform.fusion.rrf-k`) is 60 — the same
+// value `contribution.test.ts`'s own `FUSION_UNIT` fixture uses — and is the only thing this
+// function needs beyond the live weights to rank retrievers against each other; a caller with no
+// live fusion config at all (weights omitted) still gets a sensible answer (every retriever
+// weighted 1, i.e. "which retriever ranked this candidate highest").
+const DEFAULT_RRF_K = 60
+
+const RETRIEVER_ORDER = ['dense', 'lexical', 'graph', 'facts'] as const
+
+// Product wording per source (Rulings: mezo-k5zy Task 3) — the ONLY four retrievers the pipeline
+// has today (RunDetail.tsx's own `RETRIEVER_COLORS` covers exactly this set).
+const RETRIEVER_VERDICT: Record<string, string> = {
+  dense: 'főleg tartalmi hasonlóság miatt',
+  lexical: 'főleg szó szerinti egyezés miatt',
+  graph: 'a tudásgráf kapcsolatai miatt',
+  facts: 'egy rögzített tény miatt',
+}
+
+// Boost-led wording per key (Rulings: "mert kiemelt/friss/fontos emlék" for pinned/recency/
+// salience). `sourceReliabilityBoost`/`temporalBoost` are real boost keys too (contribution.ts's
+// own `BOOST_KEYS`) but outside the ruling's three named ones — given a sensible sentence anyway
+// so a run whose winning signal was one of THESE never silently falls through to the generic
+// no-signal sentence below.
+const BOOST_VERDICT: Record<string, string> = {
+  pinnedBoost: 'mert kiemelt emlék',
+  recencyBoost: 'mert friss emlék',
+  salienceBoost: 'mert fontos emlék',
+  sourceReliabilityBoost: 'mert megbízható forrásból származik',
+  temporalBoost: 'mert most van itt az ideje',
+}
+
+const NO_SIGNAL_VERDICT = 'nem állapítható meg egyértelmű ok — egyik retriever sem talált rá, kiemelés sem érvényesült'
+
+/**
+ * One-line verdict over a candidate's `scoreBreakdown`: names the dominant contribution source in
+ * product words, or leads with a boost when it out-weighs every retriever.
+ *
+ * Tie behaviour (documented, not incidental): among retrievers, ties are broken by
+ * `RETRIEVER_ORDER` (dense > lexical > graph > facts — the loop only replaces the champion on a
+ * STRICT `>`, so the first-scanned retriever at the max value wins); between a boost and a
+ * retriever, the retriever wins a tie (the boost must strictly EXCEED the best retriever
+ * contribution, per the ruling's own "exceeds" wording — a boost that only MATCHES a retriever's
+ * contribution is not "the" reason).
+ */
+export function runVerdictSentence(
+  breakdown: AdminMemoryScoreBreakdown,
+  fusionWeights?: AdminMemoryFusionConfig['retrieverWeights'],
+): string {
+  const ranks = breakdown.retrieverRanks ?? {}
+
+  let bestRetriever: { key: string; value: number } | null = null
+  const scoreOf = (rank: number, key: string) => (fusionWeights?.[key] ?? 1) / (DEFAULT_RRF_K + rank)
+  // RETRIEVER_ORDER first, so a tie among the four known retrievers resolves to the documented
+  // priority order; any OTHER retriever key (a future addition, or a stored run predating this
+  // dictionary) still counts toward the comparison, just with no product-worded sentence of its
+  // own if it happens to win.
+  for (const key of RETRIEVER_ORDER) {
+    const rank = ranks[key]
+    if (rank == null) continue
+    const value = scoreOf(rank, key)
+    if (!bestRetriever || value > bestRetriever.value) bestRetriever = { key, value }
+  }
+  for (const [key, rank] of Object.entries(ranks)) {
+    if (rank == null || (RETRIEVER_ORDER as readonly string[]).includes(key)) continue
+    const value = scoreOf(rank, key)
+    if (!bestRetriever || value > bestRetriever.value) bestRetriever = { key, value }
+  }
+
+  let bestBoost: { key: string; value: number } | null = null
+  for (const key of BOOST_KEYS) {
+    const value = breakdown[key]
+    if (value == null) continue
+    if (!bestBoost || value > bestBoost.value) bestBoost = { key, value }
+  }
+
+  if (bestBoost && (!bestRetriever || bestBoost.value > bestRetriever.value)) {
+    return BOOST_VERDICT[bestBoost.key] ?? 'mert egy kiemelő szabály érvényesült'
+  }
+  if (bestRetriever) {
+    return RETRIEVER_VERDICT[bestRetriever.key] ?? `a(z) ${bestRetriever.key} retriever miatt`
+  }
+  if (bestBoost) {
+    return BOOST_VERDICT[bestBoost.key] ?? 'mert egy kiemelő szabály érvényesült'
+  }
+  return NO_SIGNAL_VERDICT
 }

@@ -128,4 +128,11 @@ describe('MapView (mock mode)', () => {
     fireEvent.click(point)
     expect(onSelect).toHaveBeenCalledWith(ITEM_ACTIVE.itemId)
   })
+
+  // mezo-k5zy Task 3 — the visual-encoding legend note (color = source, size = salience).
+  it('renders the color/size encoding note next to the source legend', async () => {
+    renderMapView()
+    await screen.findByTestId(`am-point-${ITEM_ACTIVE.itemId}`)
+    expect(screen.getByText('szín = forrás · méret = fontosság (salience)')).toBeInTheDocument()
+  })
 })

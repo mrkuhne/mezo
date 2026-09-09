@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { decompose } from '@/features/admin/memory/contribution'
-import type { AdminMemoryCandidate, AdminMemoryFusionConfig } from '@/data/admin/adminMemoryApi'
+import { decompose, runVerdictSentence } from '@/features/admin/memory/contribution'
+import type { AdminMemoryCandidate, AdminMemoryFusionConfig, AdminMemoryScoreBreakdown } from '@/data/admin/adminMemoryApi'
 
 const FUSION_UNIT: AdminMemoryFusionConfig = { rrfK: 60, retrieverWeights: { dense: 1, lexical: 1 } }
 
@@ -77,5 +77,73 @@ describe('decompose — boosts', () => {
     const c = candidate({ retrieverRanks: { dense: 1 }, rrf: 1 / 61, recencyBoost: null, finalScore: 1 / 61 })
     const { segments } = decompose(c, FUSION_UNIT)
     expect(segments.find((s) => s.key === 'recencyBoost')).toBeUndefined()
+  })
+})
+
+function breakdown(overrides: Partial<AdminMemoryScoreBreakdown>): AdminMemoryScoreBreakdown {
+  return { retrieverRanks: {}, rrf: 0, finalScore: 0, ...overrides }
+}
+
+describe('runVerdictSentence — dominant retriever', () => {
+  it('names dense when it out-scores every other retriever', () => {
+    const b = breakdown({ retrieverRanks: { dense: 1, lexical: 5 } })
+    expect(runVerdictSentence(b)).toBe('főleg tartalmi hasonlóság miatt')
+  })
+
+  it('names lexical when IT out-scores dense', () => {
+    const b = breakdown({ retrieverRanks: { dense: 5, lexical: 1 } })
+    expect(runVerdictSentence(b)).toBe('főleg szó szerinti egyezés miatt')
+  })
+
+  it('names graph and facts too (the pipeline\'s other two retriever sources)', () => {
+    expect(runVerdictSentence(breakdown({ retrieverRanks: { graph: 1, dense: 5 } }))).toBe('a tudásgráf kapcsolatai miatt')
+    expect(runVerdictSentence(breakdown({ retrieverRanks: { facts: 1, dense: 5 } }))).toBe('egy rögzített tény miatt')
+  })
+
+  it('live fusion weights can flip the dominant retriever despite equal ranks', () => {
+    const b = breakdown({ retrieverRanks: { dense: 1, lexical: 1 } })
+    // Unweighted, this is the dense/lexical TIE case (see below) — dense wins by priority order.
+    // A live lexical weight of 3 vs dense's default 1 must flip the verdict to lexical.
+    expect(runVerdictSentence(b, { dense: 1, lexical: 3 })).toBe('főleg szó szerinti egyezés miatt')
+  })
+})
+
+describe('runVerdictSentence — boost-led', () => {
+  it('leads with the boost when it strictly exceeds the best retriever contribution', () => {
+    // dense rank 1, rrfK 60 default => 1/61 ≈ 0.0164 — a realistic recencyBoost (0.05) exceeds it.
+    const b = breakdown({ retrieverRanks: { dense: 1 }, recencyBoost: 0.05 })
+    expect(runVerdictSentence(b)).toBe('mert friss emlék')
+  })
+
+  it('maps pinned/recency/salience to the ruling\'s three product sentences', () => {
+    expect(runVerdictSentence(breakdown({ pinnedBoost: 1 }))).toBe('mert kiemelt emlék')
+    expect(runVerdictSentence(breakdown({ recencyBoost: 1 }))).toBe('mert friss emlék')
+    expect(runVerdictSentence(breakdown({ salienceBoost: 1 }))).toBe('mert fontos emlék')
+  })
+
+  it('a boost that only MATCHES (never exceeds) the best retriever does NOT win the lead', () => {
+    // dense rank 1 => 1/61; an EXACT-equal boost must not out-verdict the retriever ("exceeds").
+    const b = breakdown({ retrieverRanks: { dense: 1 }, pinnedBoost: 1 / 61 })
+    expect(runVerdictSentence(b)).toBe('főleg tartalmi hasonlóság miatt')
+  })
+})
+
+describe('runVerdictSentence — sensible tie behaviour', () => {
+  it('dense wins a same-value tie against lexical (documented priority order)', () => {
+    const b = breakdown({ retrieverRanks: { dense: 1, lexical: 1 } })
+    expect(runVerdictSentence(b)).toBe('főleg tartalmi hasonlóság miatt')
+  })
+
+  it('lexical wins a same-value tie against graph/facts (priority order continues)', () => {
+    const b = breakdown({ retrieverRanks: { lexical: 1, graph: 1, facts: 1 } })
+    expect(runVerdictSentence(b)).toBe('főleg szó szerinti egyezés miatt')
+  })
+})
+
+describe('runVerdictSentence — no signal', () => {
+  it('is honest when neither a retriever nor a boost contributed anything', () => {
+    expect(runVerdictSentence(breakdown({}))).toBe(
+      'nem állapítható meg egyértelmű ok — egyik retriever sem talált rá, kiemelés sem érvényesült',
+    )
   })
 })

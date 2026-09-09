@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FEATURE_LABELS, featureLabel, feedbackReasonLabel, screenLabel, surfaceLabel, tableLabel } from './labels'
+import { FEATURE_LABELS, featureLabel, feedbackReasonLabel, memoryTermLabel, screenLabel, surfaceLabel, tableLabel } from './labels'
 
 describe('admin label dictionary', () => {
   it('maps LLM feature slugs to Hungarian labels', () => {
@@ -65,6 +65,40 @@ describe('admin label dictionary', () => {
   it('falls back honestly on an unknown surface kind', () => {
     const l = surfaceLabel('brand_new_kind')
     expect(l.label).toBe('brand_new_kind')
+    expect(l.missing).toBe(true)
+  })
+
+  // mezo-k5zy Task 3 — the memory explorer's Gráf/Térkép/Felidézések terms.
+  it('maps the 4 retriever sources to Hungarian labels', () => {
+    expect(memoryTermLabel('dense').label).toBe('Tartalmi hasonlóság')
+    expect(memoryTermLabel('lexical').label).toBe('Szó szerinti egyezés')
+    expect(memoryTermLabel('graph').label).toBe('Tudásgráf')
+    expect(memoryTermLabel('facts').label).toBe('Rögzített tény')
+  })
+
+  it('maps all 7 knowledge_node kinds to Hungarian labels', () => {
+    for (const kind of ['PATTERN', 'PREFERENCE', 'GOAL', 'LIFE_EVENT', 'SEASON', 'INSIGHT', 'PERSON']) {
+      expect(memoryTermLabel(kind).missing, kind).toBeUndefined()
+    }
+  })
+
+  it('maps all 5 knowledge_edge kinds to a Hungarian label AND a meaning one-liner', () => {
+    for (const kind of ['TRIGGERS', 'PRECEDED_BY', 'SUPPORTS', 'CONFLICTS', 'RELATES_TO']) {
+      const l = memoryTermLabel(kind)
+      expect(l.missing, kind).toBeUndefined()
+      expect(l.hint?.trim().length, kind).toBeGreaterThan(0)
+    }
+  })
+
+  it('maps the 3 memory_vector statuses to Hungarian labels', () => {
+    expect(memoryTermLabel('ready').label).toBe('Kész')
+    expect(memoryTermLabel('pending').label).toBe('Folyamatban')
+    expect(memoryTermLabel('failed').label).toBe('Elakadt')
+  })
+
+  it('falls back honestly on an unknown memory term', () => {
+    const l = memoryTermLabel('brand_new_term')
+    expect(l.label).toBe('brand_new_term')
     expect(l.missing).toBe(true)
   })
 })

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { AdminMemoryCandidate, AdminMemoryFusionConfig, AdminMemoryRunDetailResponse } from '@/data/admin/adminMemoryApi'
-import { decompose } from '@/features/admin/memory/contribution'
+import { decompose, runVerdictSentence } from '@/features/admin/memory/contribution'
 import { InspectorRow, InspectorSection, sourceLink } from '@/features/admin/memory/MemoryInspector'
 import type { ViewKey } from '@/features/admin/memory/MemorySegmentBar'
 
@@ -52,6 +52,13 @@ export function RunDetail({
   const { run, candidates, fusion, promptTrace, promptTraceReason, dryRun, replayNotes } = detail
   const [openId, setOpenId] = useState<string | null>(candidates[0]?.candidateRefId ?? null)
 
+  // The run's own lead line (mezo-k5zy Task 3, Rulings) — the plain-Hungarian verdict for the
+  // TOP result the run actually surfaced (selected, lowest rank), so a reader gets "why this run
+  // worked" without opening a single candidate. Falls back to the first candidate when the run
+  // selected none (every candidate got dropped downstream).
+  const topCandidate = [...candidates].filter((c) => c.selected).sort((a, b) => a.rank - b.rank)[0] ?? candidates[0]
+  const topVerdict = topCandidate ? runVerdictSentence(topCandidate.scoreBreakdown, fusion.retrieverWeights) : null
+
   useEffect(() => {
     const c = candidates.find((x) => x.candidateRefId === openId)
     if (!c) { onInspect(null); return }
@@ -81,6 +88,10 @@ export function RunDetail({
             <span key={n} className="am-note-chip">{NOTE_LABEL[n] ?? n}</span>
           ))}
         </div>
+      )}
+
+      {topVerdict && (
+        <p className="am-verdict-lead">A legjobb találatot {topVerdict} találta meg a rendszer.</p>
       )}
 
       {run.retrieverTrace.length > 0 && (
@@ -148,6 +159,7 @@ function CandidateRow({
   const { segments } = decompose(candidate, fusion)
   const activeTotal = segments.reduce((sum, s) => sum + (s.rank != null || s.kind === 'boost' ? s.value : 0), 0)
   const allAbsent = segments.filter((s) => s.kind === 'retriever').every((s) => s.rank == null)
+  const verdict = runVerdictSentence(candidate.scoreBreakdown, fusion.retrieverWeights)
 
   return (
     <details
@@ -157,7 +169,10 @@ function CandidateRow({
     >
       <summary>
         <span className="rk">{index}.</span>
-        <span className="tt">{candidate.contentSnapshot}</span>
+        <span className="am-candhead">
+          <span className="tt">{candidate.contentSnapshot}</span>
+          <span className="verdict">{verdict}</span>
+        </span>
         <span className="fs">{candidate.scoreBreakdown.finalScore.toFixed(3)}</span>
       </summary>
       <div className="inner">

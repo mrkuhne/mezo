@@ -12,7 +12,7 @@ import { MapView } from '@/features/admin/memory/views/MapView'
 import { LayersView } from '@/features/admin/memory/views/LayersView'
 import type { InspectorBody } from '@/features/admin/memory/views/RunDetail'
 
-// /admin/users/:id/memory?view=runs|graph|map|layers&sel=<id>
+// /admin/users/:id/memory?view=overview|runs|graph|map|layers&sel=<id>
 // The view and the selection live in the URL, not in component state (mezo-4qyt.3): a deep
 // link from a run candidate to "this edge on Gráf" or "this point on Térkép" is the whole point
 // of the four views sharing one inspector, and that only works if both are addressable.
@@ -21,7 +21,10 @@ import type { InspectorBody } from '@/features/admin/memory/views/RunDetail'
 // selected — the other four navigate back to the user detail page, same idiom that page already
 // uses for ITS "Memória" tab), the segment bar, and the shared inspector; every view supplies
 // its own inspector body via `onInspect`.
-const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória'] as const
+//
+// TABS reads "Funkciók", not "Feature-ök" (mezo-k5zy Task 3 fix) — this page keeps its OWN copy
+// of the tab row, so AdminUserDetailPage.tsx's earlier rename (mezo-zde2 Task 3) never reached it.
+const TABS = ['Aktivitás', 'Adatok', 'Funkciók', 'Költség', 'Memória'] as const
 
 export function AdminMemoryPage() {
   const { id = '' } = useParams()

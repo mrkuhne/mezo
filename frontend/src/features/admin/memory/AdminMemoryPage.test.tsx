@@ -53,6 +53,15 @@ describe('AdminMemoryPage (mock mode)', () => {
     expect(screen.getByRole('tab', { name: 'Áttekintés' })).toHaveAttribute('aria-selected', 'true')
   })
 
+  // mezo-k5zy Task 3 — the stray "Feature-ök" tab label, fixed to match AdminUserDetailPage's own
+  // rename (mezo-zde2 Task 3).
+  it('the top tab bar reads "Funkciók", not the stray "Feature-ök"', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    expect(screen.getByRole('tab', { name: 'Funkciók' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Feature-ök' })).not.toBeInTheDocument()
+  })
+
   it('clicking the segment bar navigates between views', async () => {
     renderPage()
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)

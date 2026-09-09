@@ -44,6 +44,15 @@ describe('RunsView (mock mode)', () => {
     expect(screen.getByText(new RegExp(`a futások ${ADMIN_MEMORY_RUNS_MOCK.retentionDays} nap után törlődnek`))).toBeInTheDocument()
   })
 
+  // mezo-k5zy Task 3 — plain-Hungarian column headers, no raw technical words.
+  it('humanizes the table headers (Policy → Felhasználás, Lekérdezés mód → Keresés módja)', () => {
+    renderRunsView()
+    expect(screen.getByRole('columnheader', { name: 'Felhasználás' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Keresés módja' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Policy' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Lekérdezés mód' })).not.toBeInTheDocument()
+  })
+
   it('clicking a row selects that run', () => {
     const { onSelectRun } = renderRunsView()
     const run = ADMIN_MEMORY_RUNS_MOCK.items[0]

@@ -11821,6 +11821,13 @@ button.mz-wtile:active { transform: scale(0.96); }
 .am-mode.new { background: rgba(110,139,94,.18); color: #4E6B42; }
 .am-mode.old { background: rgba(43,33,24,.08); color: #6E6257; }
 
+/* verdict sentences (mezo-k5zy Task 3) — the run's own lead line, and the per-candidate one
+   riding alongside its title in the (closed-or-open) expand summary. */
+.am-verdict-lead { font-size: 11.5px; color: #2B2118; margin: 2px 0 12px; }
+.am-candhead { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.am-candhead .tt { display: block; }
+.am-candhead .verdict { font-size: 9.5px; color: #6E6257; font-weight: 600; white-space: normal; }
+
 /* retriever-trace strip */
 .am-trace { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
 .am-trace .chip { display: flex; align-items: center; gap: 6px; background: rgba(43,33,24,.045); border-radius: 10px; padding: 6px 10px; font-size: 10px; }
@@ -11889,6 +11896,14 @@ button.mz-wtile:active { transform: scale(0.96); }
 .am-legend2 { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 9.5px; }
 .am-legend2 span { display: inline-flex; align-items: center; gap: 5px; color: #6E6257; font-weight: 600; }
 .am-legend2 i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* Gráf's él-fajta legend (mezo-k5zy Task 3) — the meaning one-liner MEMORY_TERM_LABELS carries
+   per edge kind, not just a translated name (the color dot alone never said what TRIGGERS vs
+   RELATES_TO actually means). */
+.am-edgelegend { margin-top: 10px; display: grid; gap: 4px; font-size: 10px; }
+.am-edgelegend .row { display: flex; gap: 8px; align-items: baseline; }
+.am-edgelegend .row b { flex: none; width: 92px; color: #2B2118; }
+.am-edgelegend .row span { color: #6E6257; }
 .am-validity { margin-top: 4px; }
 .am-validity .track { height: 8px; border-radius: 5px; background: rgba(43,33,24,.08); position: relative; overflow: hidden; }
 .am-validity .fill { position: absolute; inset: 0; border-radius: 5px; background: linear-gradient(90deg, #6E8B5E, #C9962E); }
@@ -11900,7 +11915,10 @@ button.mz-wtile:active { transform: scale(0.96); }
 /* Térkép — SVG scatter (slice 5) */
 .am-mapwrap { background: #FFFFFF; border-radius: 14px; position: relative; }
 .am-samplebanner { font-size: 10.5px; background: rgba(78,143,184,.12); color: #345E78; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; }
-.am-srckey { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 9.5px; }
+/* Térkép's "what the visual encoding means" note (mezo-k5zy Task 3) — a point's COLOR is its
+   source table, its SIZE is salience; this used to only be implicit in the src-key colors below. */
+.am-mapkeynote { font-size: 9.5px; font-weight: 700; color: #6E6257; margin-top: 10px; }
+.am-srckey { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 9.5px; }
 .am-srckey span { display: inline-flex; align-items: center; gap: 5px; color: #6E6257; font-weight: 600; }
 .am-srckey i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 
