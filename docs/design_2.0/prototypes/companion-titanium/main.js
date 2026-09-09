@@ -6,6 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const host = document.querySelector('#scene');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const motionScale = .4; // User preference: 60% calmer than the initial study.
 let paused = reduced.matches, energy = .55, mode = 'listen', time = 0, burst = 0;
 let last = performance.now(), drag = null, yaw = 0, pitch = 0, viewX = 0, viewY = 0;
 const modes = {
@@ -159,7 +160,7 @@ function init() {
     document.querySelector('#scene-status').textContent = state.label;
     document.querySelector('#message-label').textContent = state.title;
     document.querySelector('#message-text').innerHTML = state.text;
-    burst = mode === 'celebrate' ? 1 : .28;
+    burst = mode === 'celebrate' ? 1 : 0;
     if (paused) Object.assign(smooth, { spread: state.spread, speed: state.speed, glow: state.glow });
   }
   document.querySelectorAll('.mode').forEach(el => el.addEventListener('click', () => selectMode(el.dataset.mode)));
@@ -168,7 +169,7 @@ function init() {
     document.querySelector('#message-label').textContent = 'A GONDOLATOD MEGÉRKEZETT';
     document.querySelector('#message-text').innerHTML = 'Itt most helye van annak,<br>amit magaddal hoztál.';
     const message = document.querySelector('.message'); message.classList.remove('arrived'); void message.offsetWidth; message.classList.add('arrived');
-    burst = .65;
+    burst = 0;
   });
   host.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw, pitch }; host.setPointerCapture(e.pointerId); });
   host.addEventListener('pointermove', e => { if (drag) { yaw = drag.yaw + (e.clientX - drag.x) * .008; pitch = THREE.MathUtils.clamp(drag.pitch + (e.clientY - drag.y) * .006, -.8, .8); } });
@@ -183,26 +184,26 @@ function init() {
     const moving = !paused && energy > 0;
     const target = modes[mode], lerp = 1 - Math.exp(-dt * 3);
     if (moving) {
-      time += dt * (.2 + energy * 1.45);
+      time += dt * (.2 + energy * 1.45) * motionScale;
       smooth.spread += (target.spread - smooth.spread) * lerp;
       smooth.speed += (target.speed - smooth.speed) * lerp;
       smooth.glow += (target.glow - smooth.glow) * lerp;
       burst = Math.max(0, burst - dt * .4);
     } else Object.assign(smooth, { spread: target.spread, speed: target.speed, glow: target.glow });
     viewX += (pitch - viewX) * lerp; viewY += (yaw - viewY) * lerp;
-    group.rotation.x = viewX + .1 + Math.sin(time * .3) * .07;
-    group.rotation.y = viewY + Math.sin(time * .24) * .2;
-    group.rotation.z = Math.sin(time * .17) * .12;
-    group.position.y = -.2 + Math.sin(time * .75) * .055;
+    group.rotation.x = viewX + .1 + Math.sin(time * .3) * .07 * motionScale;
+    group.rotation.y = viewY + Math.sin(time * .24) * .2 * motionScale;
+    group.rotation.z = Math.sin(time * .17) * .12 * motionScale;
+    group.position.y = -.2 + Math.sin(time * .75) * .055 * motionScale;
     for (let i = 0; i < petals.length; i++) {
       const a = i * Math.PI * 2 / 3 + .18;
-      petals[i].rotation.z = a + Math.sin(time * smooth.speed + i * .2) * .14 + smooth.spread * .35;
-      petals[i].position.set(Math.cos(a + .2) * smooth.spread * .6, Math.sin(a + .2) * smooth.spread * .6, Math.sin(time * .55 + i * 2.09) * .065);
-      petals[i].rotation.x = Math.sin(time * .4 + i * 2.09) * .09;
+      petals[i].rotation.z = a + Math.sin(time * smooth.speed + i * .2) * .14 * motionScale + smooth.spread * .35;
+      petals[i].position.set(Math.cos(a + .2) * smooth.spread * .6, Math.sin(a + .2) * smooth.spread * .6, Math.sin(time * .55 + i * 2.09) * .065 * motionScale);
+      petals[i].rotation.x = Math.sin(time * .4 + i * 2.09) * .09 * motionScale;
     }
     coreMat.uniforms.uTime.value = time * .65;
-    coreMat.uniforms.uGlow.value = smooth.glow * (.94 + Math.sin(time * 1.2) * .06);
-    core.scale.setScalar(1 + Math.sin(time * 1.2) * .035 + smooth.spread * .12);
+    coreMat.uniforms.uGlow.value = smooth.glow * (.94 + Math.sin(time * 1.2) * .06 * motionScale);
+    core.scale.setScalar(1 + Math.sin(time * 1.2) * .035 * motionScale + smooth.spread * .12);
     coreLight.intensity = 8 * smooth.glow;
     bloom.strength = .32 + smooth.glow * .11;
     for (let i = 0; i < orbits.length; i++) orbits[i].rotation.z = .3 - i * .8 + time * .025 * (i ? -1 : 1);
@@ -211,13 +212,13 @@ function init() {
       const p = seeds[i], a = p.angle + time * .025 * p.speed, r = p.radius + (1 - burst) * burst * 3;
       particlePositions[i*3] = Math.cos(a) * r;
       particlePositions[i*3+1] = Math.sin(a) * r * .8;
-      particlePositions[i*3+2] = p.z + Math.sin(time * .2 + i) * .08;
+      particlePositions[i*3+2] = p.z + Math.sin(time * .2 + i) * .08 * motionScale;
     }
     particles.attributes.position.needsUpdate = true;
     pointsMat.opacity = .2 + smooth.spread * .4 + (moving ? burst * .5 : 0);
     pointsMat.color.set(target.color);
     pulse.scale.setScalar(1 + (1 - burst) * 2.2);
-    pulse.material.opacity = moving ? Math.sin(burst * Math.PI) * .32 : 0;
+    pulse.material.opacity = moving && mode === 'celebrate' ? Math.sin(burst * Math.PI) * .32 : 0;
     composer.render();
   }
   requestAnimationFrame(animate);
