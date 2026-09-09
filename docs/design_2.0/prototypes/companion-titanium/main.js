@@ -82,7 +82,7 @@ function init() {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(indices); g.computeVertexNormals(); return g;
   }
   const metal = new THREE.MeshPhysicalMaterial({ color: '#8a8d9c', metalness: 1, roughness: .19, clearcoat: 1, clearcoatRoughness: .13, envMapIntensity: 1.4, iridescence: .3, iridescenceIOR: 1.3, iridescenceThicknessRange: [160, 390] });
-  const petalGeo = petalGeometry(), petals = [], seams = [];
+  const petalGeo = petalGeometry(), petals = [], seams = [], sparks = [];
   for (let i = 0; i < 3; i++) {
     const pivot = new THREE.Group(); pivot.rotation.z = i * Math.PI * 2 / 3 + .18;
     const petal = new THREE.Mesh(petalGeo, metal); pivot.add(petal); group.add(pivot); petals.push(pivot);
@@ -94,6 +94,15 @@ function init() {
     }
     const seam = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 80, .009, 6, false), new THREE.MeshBasicMaterial({ color: ['#c49aff', '#91e5ef', '#ffd191'][i] }));
     pivot.add(seam); seams.push(seam);
+    // Short luminous seam fragments: occasional local activity, never a full-body flash.
+    for (let j = 0; j < 2; j++) {
+      const start = 15 + j * 38;
+      const spark = new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.slice(start, start + 9)), 16, .015, 6, false),
+        new THREE.MeshBasicMaterial({ color: new THREE.Color(['#dcc5ff', '#b6f2f7', '#ffe4b8'][i]).multiplyScalar(1.7), transparent: true, opacity: 0, depthWrite: false })
+      );
+      pivot.add(spark); sparks.push(spark);
+    }
   }
 
   const coreMat = new THREE.ShaderMaterial({
@@ -106,12 +115,15 @@ function init() {
   coreRing.rotation.set(.2, .35, .2); group.add(coreRing);
 
   const orbits = [], dots = [];
-  for (let i = 0; i < 2; i++) {
+  // Orbit planes move independently from the rotating titanium body.
+  const orbitSystem = new THREE.Group(); scene.add(orbitSystem);
+  const orbitColors = ['#c8a571', '#b6a0e4', '#91cbd8', '#c4b4cd'];
+  for (let i = 0; i < 4; i++) {
     const orbit = new THREE.Group(); orbit.rotation.set(.9 + i * .65, .3 + i * .7, .3 - i * .8);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.65 + i * .14, .003, 5, 160), new THREE.MeshBasicMaterial({ color: i ? '#b6a0e4' : '#c8a571', transparent: true, opacity: .28 }));
-    orbit.add(ring); group.add(orbit); orbits.push(orbit);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.65 + i * .14, .003, 5, 160), new THREE.MeshBasicMaterial({ color: orbitColors[i], transparent: true, opacity: .42 }));
+    orbit.add(ring); orbitSystem.add(orbit); orbits.push(orbit);
     for (let j = 0; j < 3; j++) {
-      const bead = new THREE.Mesh(new THREE.SphereGeometry(j ? .027 : .06, 20, 16), new THREE.MeshPhysicalMaterial({ color: i ? '#aa99e0' : '#d7b582', emissive: i ? '#7e52c4' : '#a66930', emissiveIntensity: .3, metalness: .7, roughness: .15 }));
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(j ? .027 : .06, 20, 16), new THREE.MeshPhysicalMaterial({ color: orbitColors[i], emissive: orbitColors[i], emissiveIntensity: .3, metalness: .7, roughness: .15 }));
       orbit.add(bead); dots.push({ mesh: bead, orbit: i, phase: j * 2.094 + i });
     }
   }
@@ -213,11 +225,20 @@ function init() {
     core.scale.setScalar(1 + Math.sin(time * 1.2) * .035 * motionScale + smooth.spread * .12);
     coreLight.intensity = 8 * smooth.glow;
     bloom.strength = .32 + smooth.glow * .11;
+    orbitSystem.position.copy(group.position);
+    orbitSystem.rotation.set(viewX, viewY, 0);
+    const firingCycle = orbitTime / 5.4;
+    const firingAge = (firingCycle % 1) * 5.4;
+    const firingIndex = (Math.floor(firingCycle) * 5 + 2) % sparks.length;
+    sparks.forEach((spark, i) => {
+      spark.material.opacity = moving && i === firingIndex && firingAge < 1.1
+        ? Math.pow(Math.sin(firingAge / 1.1 * Math.PI), 2) * .85 : 0;
+    });
     for (let i = 0; i < orbits.length; i++) {
-      orbits[i].rotation.x = .9 + i * .65 + orbitTime * Math.PI / (46 + i * 12);
+      orbits[i].rotation.x = .9 + i * .65 + orbitTime * Math.PI / (26 + i * 8);
       orbits[i].rotation.z = .3 - i * .8 + time * .025 * (i ? -1 : 1);
     }
-    dots.forEach(dot => { const a = dot.phase + time * (.14 + smooth.speed * .2), r = 1.65 + dot.orbit * .14; dot.mesh.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); });
+    dots.forEach(dot => { const a = dot.phase + orbitTime * (.22 + dot.orbit * .035) * (dot.orbit % 2 ? -1 : 1), r = 1.65 + dot.orbit * .14; dot.mesh.position.set(Math.cos(a) * r, Math.sin(a) * r, 0); });
     for (let i = 0; i < particleCount; i++) {
       const p = seeds[i], a = p.angle + time * .025 * p.speed, r = p.radius + (1 - burst) * burst * 3;
       particlePositions[i*3] = Math.cos(a) * r;
