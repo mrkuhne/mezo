@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-09
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -46,6 +46,20 @@ Train is the largest mezo domain: the area for planning and executing strength w
 ---
 
 ## 2. User-facing behavior
+
+**Neon Forge visual prototype (mezo-i18d):** an isolated mock exploration at
+`prototypes/train-neon-forge/` now presents the Train hub in a mobile device frame,
+with the six existing destinations (weekly agenda, mesocycles, sport, running,
+exercise catalog, medals), the daily view and nine-set workout logging with RIR.
+Sport/run forms, weekly sport slots and sample meso activation mutate mock state;
+XP/coins, skill details, cosmetic shop and completion rewards remain explorable.
+It has no backend connection and does not replace the production Train pages.
+Run it with the command in [the prototype README](../../prototypes/train-neon-forge/README.md).
+The approved [design](../superpowers/specs/2026-09-09-train-neon-forge-design.md)
+records its visual direction and demo-only reward rules. Refresh/reset clears mock progress.
+The [app-alignment correction](../superpowers/specs/2026-09-09-train-neon-forge-app-alignment.md)
+records the Mezo navigation mapping and representative-functionality boundaries.
+
 
 ### The Edzés hub (`pages/EdzesHubPage.tsx`, `/train`, `mezo-d20.3.1`)
 
@@ -772,4 +786,3 @@ Both modes and both layers must stay green.
 - BE: `*IT.java` (service + contract) incl. `WorkoutTodayProgressionIT` + the pure `ProgressionDeciderTest` (`mezo-5pfe`) + `support/populator/{TrainPopulator,RunningPopulator}.java`; Progressive Overload Plan 2 (`mezo-hi9m`): the pure `VolumeDeciderTest`, `VolumeProgressionServiceIT`, `VolumePropertiesIT`, `VolumeEffectiveSetsIT` + `VolumeEffectiveSetsSwitchOffIT` (the effective-set distribution, on/off), `VolumeArcContractIT`; **`MesoTemplateIT`** (`mezo-meyc.1`) — template CRUD/ownership, stamp correctness (days/exercises/volume rows copied), single-active invariant, planned start, legacy rerun materialization, the jsonb round-trip of `meso_template`'s `Map<String, record>` `volumePerMuscle` column — + `support/populator/MesoTemplatePopulator.java`; **`MesocycleCloseReportIT`** (`mezo-meyc.2`, 9 tests, mutation-checked) — report math (adherence/strength/records) on populated data, idempotent close, self-eval capture + fill-on-reclose, legacy backfill via regenerate, the `TRAIN_MESO_REPORT_NOT_FOUND`/`TRAIN_MESO_NOT_CLOSED` error paths — over the extended `TrainPopulator`; **`MesocycleCloseReportIT` grew the `MesocycleClosed` publish/no-publish matrix** (`mezo-meyc.3`, `@RecordApplicationEvents`: real close publishes, an idempotent re-close and the fill-if-null self-eval branch do NOT, every accepted regenerate does) and runs with **`mezo.feature.companion.enabled=false`** so the companion's async review listener cannot race its `context`-null / status-`pending` assertions; **`MesoReviewSwitchOffIT`** (`mezo-meyc.3`, own `@TestPropertySource` context) covers `aiEvalEnabled: false` + "context written, AI half left pending". The generator itself is tested from the companion side — `feature/companion/MesoReviewGeneratorIT` ([`companion.md`](companion.md) §10). **Plan generator (mesocycle wizard redesign):** pure `MesoPlanSkeletonTest`/`MesoPlanFillerTest`/`MesoPlanMergerTest` (`service/`), `MesoPlanPropertiesBindingIT` (`config/`), `MesoStartTierSeedIT`, `MesoPlanGenerateContractIT`, `MesoPlanGenerateAiIT` (`companion-fake` profile — exercises the `MesoPlanLlmAdapter` end-to-end through the port, there is no adapter-only unit test) — see §4 `#### Plan generator` and §8 above for detail
 
 **Related docs** — specs/plans in `docs/superpowers/specs|plans/` (dated `2026-06-10`…`2026-06-14`, plus the `2026-07-25` Progressive Overload design spec + the Plan 1 (`2026-07-25-progressive-overload-p1-intensity-signal.md`, `mezo-5pfe`) and Plan 2 (`2026-07-25-progressive-overload-p2-volume-overview.md`, `mezo-hi9m`) implementation plans, and the `2026-08-01-set-budget-unified-editor-design.md` set-budget + unified-editor design (`mezo-7rdg`, §2/§4 above)); house standards in `docs/references/*.md`. **Mesocycle history — epic COMPLETE** (template/run split S1 + deterministic close report S2 + cross-domain context/AI evaluation S3 + two-run compare view S4, `mezo-meyc`, all four slices shipped): design spec [`2026-08-16-mesocycle-history-design.md`](../superpowers/specs/2026-08-16-mesocycle-history-design.md), ADR [0027](../decisions/0027-mesocycle-template-run-history.md).
-
