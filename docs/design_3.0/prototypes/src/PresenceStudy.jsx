@@ -1,3 +1,4 @@
+import { RpgIcon } from "./RpgIcon.jsx";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Sparkline, FoodArt, WorkoutArt } from "./shared.jsx";
 import {
@@ -10,17 +11,35 @@ import {
   presenceReply,
   applyPresenceTool,
 } from "./presence-model.mjs";
-import { BoopAvatar as Avatar, BoopIcon as Icon, BoopPet } from "./BoopIdentity.jsx";
+import {
+  BoopAvatar as Avatar,
+  BoopIcon as BaseIcon,
+  BoopPet,
+} from "./BoopIdentity.jsx";
 import "./presence.css";
 import "./boop.css";
 import { DailyImprint } from "./DailyImprint.jsx";
-import { RhythmArc, CycleSignature, FuelSignature, DayConnection } from "./SignatureVisuals.jsx";
-import CompleteFlow, { COMPLETE_ROUTES, COMPLETE_TABS, featureLocation, makeCompleteApi } from "./CompleteFlow.jsx";
+import {
+  RhythmArc,
+  CycleSignature,
+  FuelSignature,
+  DayConnection,
+} from "./SignatureVisuals.jsx";
+import CompleteFlow, {
+  COMPLETE_ROUTES,
+  COMPLETE_TABS,
+  featureLocation,
+  makeCompleteApi,
+} from "./CompleteFlow.jsx";
 import { hydrateComplete } from "./complete-model.mjs";
+import RpgScreen, { RpgSidebar, RpgRight } from "./RpgStudy.jsx";
+import { ModuleBadge } from "./RpgVisuals.jsx";
+import { RPG_ROLES, storageFor } from "./rpg-model.mjs";
+const Icon = BaseIcon;
 const STORAGE = "mezo-presence-v1";
-function readState() {
+function readState(storage = STORAGE) {
   try {
-    const v = JSON.parse(localStorage.getItem(STORAGE));
+    const v = JSON.parse(localStorage.getItem(storage));
     return v?.checkins && v?.tabs && v?.messages
       ? { ...createPresence(), ...v }
       : createPresence();
@@ -32,11 +51,13 @@ function readLocation() {
   const parts = location.hash.slice(1).split("?"),
     [, role = "home", tab] = parts[0].split("/");
   const r = ROLES[role] ? role : "home";
-  const query=new URLSearchParams(parts[1] || "");
-  const page=query.get("page");
-  const params=Object.fromEntries([...query].filter(([k])=>k!=="page"&&k!=="panel"));
+  const query = new URLSearchParams(parts[1] || "");
+  const page = query.get("page");
+  const params = Object.fromEntries(
+    [...query].filter(([k]) => k !== "page" && k !== "panel"),
+  );
   return {
-    feature: COMPLETE_ROUTES[page] ? {page,params} : null,
+    feature: COMPLETE_ROUTES[page] ? { page, params } : null,
     role: r,
     tab: ROLES[r].tabs.some(([id]) => id === tab) ? tab : ROLES[r].tabs[0][0],
     panel: ["talk", "roles", "capture"].includes(
@@ -46,10 +67,12 @@ function readLocation() {
       : null,
   };
 }
-function urlFor(role, tab, panel, feature=null) {
- const query=new URLSearchParams(feature ? {...feature.params,page:feature.page}:{});
- if(panel)query.set('panel',panel);
- return `#presence/${role}/${tab}${query.size?'?'+query:''}`;
+function urlFor(role, tab, panel, feature = null) {
+  const query = new URLSearchParams(
+    feature ? { ...feature.params, page: feature.page } : {},
+  );
+  if (panel) query.set("panel", panel);
+  return `#presence/${role}/${tab}${query.size ? "?" + query : ""}`;
 }
 function Orb({ role, size = 70, state = "idle" }) {
   const r = ROLES[role];
@@ -67,9 +90,13 @@ function Orb({ role, size = 70, state = "idle" }) {
     </span>
   );
 }
-export default function PresenceStudy() {
+export default function PresenceStudy({ variant = "boop" }) {
+  const rpg = variant === "rpg",
+    storage = storageFor(variant),
+    roles = rpg ? RPG_ROLES : ROLES;
+  const Icon = rpg ? RpgIcon : BaseIcon;
   const [s, setS] = useState(() => {
-      let v = readState();
+      let v = readState(storage);
       if (location.hash.startsWith("#presence/")) {
         const r = readLocation();
         v = selectTab(selectRole(v, r.role), r.tab);
@@ -94,13 +121,13 @@ export default function PresenceStudy() {
     sendLock = useRef(false);
   latest.current = s;
   const viewKey = useRef("");
-  const role = ROLES[s.role],
+  const role = roles[s.role],
     tab = s.tabs[s.role],
     key = s.role + "/" + tab + (feature ? "/" + JSON.stringify(feature) : ""),
     budget = foodBudget(s);
   viewKey.current = key;
   useEffect(() => {
-    localStorage.setItem(STORAGE, JSON.stringify(s));
+    localStorage.setItem(storage, JSON.stringify(s));
   }, [s]);
   useEffect(() => {
     history.replaceState(
@@ -110,10 +137,7 @@ export default function PresenceStudy() {
     );
     const pop = () => {
       const current = latest.current;
-      positions.current.set(
-        viewKey.current,
-        area.current?.scrollTop || 0,
-      );
+      positions.current.set(viewKey.current, area.current?.scrollTop || 0);
       const r = readLocation();
       historyDepth.current = history.state?.depth || 0;
       setS((v) => selectTab(selectRole(v, r.role), r.tab));
@@ -171,7 +195,11 @@ export default function PresenceStudy() {
     if (historyDepth.current > 0) history.back();
     else {
       setPanel(null);
-      history.replaceState({presence:true,depth:0},"",location.search+urlFor(s.role,tab,null,feature));
+      history.replaceState(
+        { presence: true, depth: 0 },
+        "",
+        location.search + urlFor(s.role, tab, null, feature),
+      );
     }
   }
   function back() {
@@ -214,11 +242,19 @@ export default function PresenceStudy() {
     }, 800);
   }
   function ask(text) {
-    open("talk");
+    if (rpg && s.role !== "life") {
+      navigate("life", "today", "talk");
+      setFeature(null);
+      history.replaceState(
+        history.state,
+        "",
+        location.search + urlFor("life", "today", "talk"),
+      );
+    } else open("talk");
     if (text) send(text);
   }
   function pickTab(id) {
-    if (s.role === "home" && id === "talk") return open("talk");
+    if (s.role === "home" && id === "talk") return ask();
     if (s.role === "home" && id === "capture") return open("capture");
     navigate(s.role, id);
   }
@@ -231,22 +267,41 @@ export default function PresenceStudy() {
     navigate("home", "today", null, true);
     toast("A mintanap újraindult");
   }
-  function goFeature(page,params={}) {
-    if(!COMPLETE_ROUTES[page])return toast("Ez a nézet nem található");
-    const place=featureLocation(page), next={page,params};
-    positions.current.set(key,area.current?.scrollTop||0);
-    setS(v=>selectTab(selectRole(v,place.role),place.tab));setFeature(next);setPanel(null);
-    const replace=!!panel;if(!replace)historyDepth.current++;
-    history[replace?'replaceState':'pushState']({presence:true,depth:historyDepth.current},"",location.search+urlFor(place.role,place.tab,null,next));
+  function goFeature(page, params = {}) {
+    if (!COMPLETE_ROUTES[page]) return toast("Ez a nézet nem található");
+    const place = featureLocation(page),
+      next = { page, params };
+    positions.current.set(key, area.current?.scrollTop || 0);
+    setS((v) => selectTab(selectRole(v, place.role), place.tab));
+    setFeature(next);
+    setPanel(null);
+    const replace = !!panel;
+    if (!replace) historyDepth.current++;
+    history[replace ? "replaceState" : "pushState"](
+      { presence: true, depth: historyDepth.current },
+      "",
+      location.search + urlFor(place.role, place.tab, null, next),
+    );
   }
-  const api = { s, setS, budget, navigate, ask, toast, celebrate, open, back, goFeature };
-  const coreApi=makeCompleteApi(api,feature?.params||{},goFeature);
-  api.core=coreApi;
-  const activeFeature=feature?.page || COMPLETE_TABS[s.role]?.[tab];
+  const api = {
+    s,
+    setS,
+    budget,
+    navigate,
+    ask,
+    toast,
+    celebrate,
+    open,
+    back,
+    goFeature,
+  };
+  const coreApi = makeCompleteApi(api, feature?.params || {}, goFeature);
+  api.core = coreApi;
+  const activeFeature = feature?.page || COMPLETE_TABS[s.role]?.[tab];
 
   return (
     <div
-      className="presence-study"
+      className={`presence-study ${rpg ? "rpg-study" : ""}`}
       style={{
         "--pr-width":
           new URLSearchParams(location.search).get("width") === "360"
@@ -255,36 +310,44 @@ export default function PresenceStudy() {
       }}
     >
       <aside className="pr-study-note">
-        <a href="/" className="pr-lab-link">
-          ← Korábbi irányok
-        </a>
-        <span className="pr-eyebrow">BOOP / RITMUS ÉS KAPCSOLÓDÁS</span>
-        <h1>
-          Egy társ.
-          <br />
-          <em>Többféle tér.</em>
-        </h1>
-        <p>
-          A beszélgetés folytonos.
-          <br />A munkafelület ahhoz igazodik,
-          <br />
-          amivel éppen foglalkozol.
-        </p>
-        <div className="pr-note-rule" />
-        <p className="pr-note-small">
-          Kezdd egy check-innel. A lenti Boop-buborékkal válts területet, majd
-          térj vissza a beszélgetéshez.
-        </p>
-        <button onClick={reset}>
-          <Icon name="rotate" size={15} />
-          Mintanap újraindítása
-        </button>
-        <button onClick={()=>goFeature("core-index")}>Minden funkció · oldaltérkép</button>
-        <span className="pr-demo-label">
-          Navigáció és kommunikáció.
-          <br />
-          Szemléltető adatok, előre írt AI-válaszok.
-        </span>
+        {rpg ? (
+          <RpgSidebar api={{ ...api, reset }} />
+        ) : (
+          <>
+            <a href="/" className="pr-lab-link">
+              ← Korábbi irányok
+            </a>
+            <span className="pr-eyebrow">BOOP / RITMUS ÉS KAPCSOLÓDÁS</span>
+            <h1>
+              Egy társ.
+              <br />
+              <em>Többféle tér.</em>
+            </h1>
+            <p>
+              A beszélgetés folytonos.
+              <br />A munkafelület ahhoz igazodik,
+              <br />
+              amivel éppen foglalkozol.
+            </p>
+            <div className="pr-note-rule" />
+            <p className="pr-note-small">
+              Kezdd egy check-innel. A lenti Boop-buborékkal válts területet,
+              majd térj vissza a beszélgetéshez.
+            </p>
+            <button onClick={reset}>
+              <Icon name="rotate" size={15} />
+              Mintanap újraindítása
+            </button>
+            <button onClick={() => goFeature("core-index")}>
+              Minden funkció · oldaltérkép
+            </button>
+            <span className="pr-demo-label">
+              Navigáció és kommunikáció.
+              <br />
+              Szemléltető adatok, előre írt AI-válaszok.
+            </span>
+          </>
+        )}
       </aside>
       <div
         className="pr-device"
@@ -301,7 +364,7 @@ export default function PresenceStudy() {
           <div>
             {s.role === "home" ? (
               <span className="pr-wordmark">
-                boop<span>veled.</span>
+                boop<span>{rpg ? "PLAY" : "veled."}</span>
               </span>
             ) : (
               <>
@@ -321,17 +384,37 @@ export default function PresenceStudy() {
           </div>
           <button
             className="pr-chat-open"
-            onClick={() => open("talk")}
-            aria-label="Folytatom a beszélgetést"
+            onClick={() =>
+              rpg && s.role !== "life"
+                ? goFeature("notifications")
+                : open("talk")
+            }
+            aria-label={
+              rpg && s.role !== "life"
+                ? "Értesítések"
+                : "Folytatom a beszélgetést"
+            }
           >
-            <Icon name="message" size={20} />
-            <span>Beszélgessünk</span>
+            <Icon
+              name={rpg && s.role !== "life" ? "bell" : "message"}
+              size={20}
+            />
+            <span>
+              {rpg && s.role !== "life" ? "Értesítések" : "Beszélgessünk"}
+            </span>
           </button>
         </header>
         <main className="pr-main" ref={area}>
           <div key={key} className="pr-surface">
-            {activeFeature ? (
-              <CompleteFlow page={activeFeature} api={coreApi}/>
+            {rpg ? (
+              <RpgScreen
+                api={api}
+                feature={activeFeature}
+                coreApi={coreApi}
+                fallback={<Workspace api={api} />}
+              />
+            ) : activeFeature ? (
+              <CompleteFlow page={activeFeature} api={coreApi} />
             ) : s.role === "home" ? (
               <Home api={api} mood={mood} />
             ) : (
@@ -346,7 +429,11 @@ export default function PresenceStudy() {
             aria-label={`Területváltás, most ${role.name}`}
             aria-haspopup="dialog"
           >
-            <Orb role={s.role} size={49} state={mood} />
+            {rpg ? (
+              <ModuleBadge role={s.role} size={42} />
+            ) : (
+              <Orb role={s.role} size={49} state={mood} />
+            )}
             <span>
               {s.role === "home" ? "Tereim" : role.short}
               <Icon name="chevron-down" size={10} />
@@ -374,43 +461,49 @@ export default function PresenceStudy() {
         )}
       </div>
       <aside className="pr-study-right">
-        <span className="pr-eyebrow">UGYANAZ A BOOP</span>
-        <div className="pr-role-line">
-          {Object.entries(ROLES)
-            .filter(([id]) => id !== "home")
-            .map(([id, r]) => (
-              <button
-                key={id}
-                onClick={() => navigate(id)}
-                aria-label={`${r.name} terület`}
-                className={id === s.role ? "selected" : ""}
-              >
-                <Orb role={id} size={42} />
-                <span>{r.name}</span>
-              </button>
-            ))}
-        </div>
-        <p>
-          Helyet váltasz.
-          <br />A történeted veled marad.
-        </p>
-        <div className="pr-note-rule" />
-        <span className="pr-eyebrow">PRÓBÁLD KI A KAPCSOLATOT</span>
-        <button
-          className="pr-demo-prompt"
-          onClick={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
-        >
-          „Mi lenne, ha elmaradna ma a röplabda?”
-          <Icon name="arrow-up-right" size={17} />
-        </button>
-        <p className="pr-note-small">
-          Előbb átbeszélitek. Átvezetés után az étkezési keret is követi a
-          változást.
-        </p>
+        {rpg ? (
+          <RpgRight api={api} />
+        ) : (
+          <>
+            <span className="pr-eyebrow">UGYANAZ A BOOP</span>
+            <div className="pr-role-line">
+              {Object.entries(ROLES)
+                .filter(([id]) => id !== "home")
+                .map(([id, r]) => (
+                  <button
+                    key={id}
+                    onClick={() => navigate(id)}
+                    aria-label={`${r.name} terület`}
+                    className={id === s.role ? "selected" : ""}
+                  >
+                    <Orb role={id} size={42} />
+                    <span>{r.name}</span>
+                  </button>
+                ))}
+            </div>
+            <p>
+              Helyet váltasz.
+              <br />A történeted veled marad.
+            </p>
+            <div className="pr-note-rule" />
+            <span className="pr-eyebrow">PRÓBÁLD KI A KAPCSOLATOT</span>
+            <button
+              className="pr-demo-prompt"
+              onClick={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
+            >
+              „Mi lenne, ha elmaradna ma a röplabda?”
+              <Icon name="arrow-up-right" size={17} />
+            </button>
+            <p className="pr-note-small">
+              Előbb átbeszélitek. Átvezetés után az étkezési keret is követi a
+              változást.
+            </p>
+          </>
+        )}
       </aside>
       <dialog
         ref={dialog}
-        className={`pr-dialog pr-dialog-${panel || "closed"}`}
+        className={`pr-dialog pr-dialog-${panel || "closed"} ${rpg ? "rpg-dialog" : ""}`}
         onCancel={(e) => {
           e.preventDefault();
           close();
@@ -433,8 +526,10 @@ export default function PresenceStudy() {
               <div className="pr-sheet-handle" />
               <div className="pr-sheet-heading">
                 <div>
-                  <span className="pr-eyebrow">UGYANAZ A TÁRS</span>
-                  <h2>Merre menjünk?</h2>
+                  <span className="pr-eyebrow">
+                    {rpg ? "MODULVÁLASZTÓ" : "UGYANAZ A TÁRS"}
+                  </span>
+                  <h2>{rpg ? "Válts területet." : "Merre menjünk?"}</h2>
                 </div>
                 <button
                   autoFocus
@@ -449,17 +544,21 @@ export default function PresenceStudy() {
                 Válassz teret annak, amivel most foglalkozol.
               </p>
               <div className="pr-worlds">
-                {Object.entries(ROLES).map(([id, r]) => (
+                {Object.entries(roles).map(([id, r]) => (
                   <button
                     key={id}
                     className={id === s.role ? "selected" : ""}
                     onClick={() => navigate(id, undefined, null, true)}
                   >
-                    <Orb
-                      role={id}
-                      size={id === "home" ? 58 : 68}
-                      state={id === s.role ? "listening" : "idle"}
-                    />
+                    {rpg ? (
+                      <ModuleBadge role={id} size={52} />
+                    ) : (
+                      <Orb
+                        role={id}
+                        size={id === "home" ? 58 : 68}
+                        state={id === s.role ? "listening" : "idle"}
+                      />
+                    )}
                     <span>
                       <strong>{r.name}</strong>
                       <small>{r.description}</small>
@@ -498,7 +597,11 @@ export default function PresenceStudy() {
                 ].map(([r, t, label, icon]) => (
                   <button
                     key={label}
-                    onClick={() => label === "Étel" ? goFeature("fuel-log") : navigate(r, t, null, true)}
+                    onClick={() =>
+                      label === "Étel"
+                        ? goFeature("fuel-log")
+                        : navigate(r, t, null, true)
+                    }
                   >
                     <Icon name={icon} size={25} />
                     <span>{label}</span>
@@ -715,7 +818,11 @@ function Home({ api, mood }) {
           ? "Ez is része a mai történetednek."
           : "A napod számai mellett te is itt vagy."}
       </p>
-      <RhythmArc labels={["Reggel", "Délben", "Délután", "Este"]} completed={s.checkins.length} title={`${s.checkins.length} napi bejelentkezés`} />
+      <RhythmArc
+        labels={["Reggel", "Délben", "Délután", "Este"]}
+        completed={s.checkins.length}
+        title={`${s.checkins.length} napi bejelentkezés`}
+      />
       {!saved ? (
         <div className="pr-checkin">
           <span className="pr-eyebrow">{next} · EGY PILLANAT MAGADRA</span>
@@ -791,7 +898,12 @@ function Home({ api, mood }) {
           <br />
           <em>összeérnek.</em>
         </h2>
-        <DayConnection cycle={s.training.cycle} budget={api.budget} onMovement={() => navigate("movement", "gym")} onFuel={() => navigate("fuel", "today")} />
+        <DayConnection
+          cycle={s.training.cycle}
+          budget={api.budget}
+          onMovement={() => navigate("movement", "gym")}
+          onFuel={() => navigate("fuel", "today")}
+        />
         <Row
           icon="sparkles"
           title="Egy alakuló összefüggés"
@@ -799,8 +911,14 @@ function Home({ api, mood }) {
           onClick={() => navigate("understanding", "patterns")}
         />
       </section>
-      <button className="pr-primary" onClick={()=>api.open("capture")}>Hozzáadok a napomhoz <Icon name="plus"/></button>
-      <DailyImprint state={s} compact onOpen={() => navigate("life", "today")} />
+      <button className="pr-primary" onClick={() => api.open("capture")}>
+        Hozzáadok a napomhoz <Icon name="plus" />
+      </button>
+      <DailyImprint
+        state={s}
+        compact
+        onOpen={() => navigate("life", "today")}
+      />
       <p className="pr-quiet-foot">
         Nem mindenből lesz teendő.
         <br />
@@ -816,7 +934,14 @@ function Workspace({ api }) {
   return (
     <div className="pr-workspace">
       <div className="pr-workspace-intro">
-        <SectionTitle kicker={role.eyebrow} title={s.role === "life" && tab === "today" ? "A napjaid lenyomata." : role.name} />
+        <SectionTitle
+          kicker={role.eyebrow}
+          title={
+            s.role === "life" && tab === "today"
+              ? "A napjaid lenyomata."
+              : role.name
+          }
+        />
         <Orb role={s.role} size={74} />
       </div>
       {s.role === "movement" ? (
@@ -824,12 +949,31 @@ function Workspace({ api }) {
           {tab === "today" ? (
             <>
               <p className="pr-lead">A sportjaid egy közös nap részei.</p>
-              <button className="pr-primary" onClick={()=>api.core.go("workout")}>{s.full.session?.status === "active" ? "Edzés folytatása" : "Edzés indítása"}</button>
-              <button className="pr-secondary" onClick={()=>api.goFeature("train")}>Mai és heti edzésnapló</button>
-              <CycleSignature cycle={s.training.cycle} onOpen={() => navigate("movement", "gym")} />
+              <button
+                className="pr-primary"
+                onClick={() => api.core.go("workout")}
+              >
+                {s.full.session?.status === "active"
+                  ? "Edzés folytatása"
+                  : "Edzés indítása"}
+              </button>
+              <button
+                className="pr-secondary"
+                onClick={() => api.goFeature("train")}
+              >
+                Mai és heti edzésnapló
+              </button>
+              <CycleSignature
+                cycle={s.training.cycle}
+                onOpen={() => navigate("movement", "gym")}
+              />
               <Row
                 icon="dumbbell"
-                title={s.full.session?.status==="active"?s.full.session.title:s.training.cycle.session}
+                title={
+                  s.full.session?.status === "active"
+                    ? s.full.session.title
+                    : s.training.cycle.session
+                }
                 sub="A mezociklus edzésnapja"
                 value="17:30"
               />
@@ -961,8 +1105,18 @@ function Workspace({ api }) {
           {tab === "today" ? (
             <>
               <p className="pr-lead">A célod együtt mozog a napoddal.</p>
-              <button className="pr-primary" onClick={()=>api.goFeature("fuel-log")}>Étkezés hozzáadása <Icon name="plus"/></button>
-              <FuelSignature budget={budget} sportActive={s.training.sportActive} onSport={() => navigate("movement", "sport")} onExplain={() => ask("Mi lenne, ha elmaradna ma a röplabda?")} />
+              <button
+                className="pr-primary"
+                onClick={() => api.goFeature("fuel-log")}
+              >
+                Étkezés hozzáadása <Icon name="plus" />
+              </button>
+              <FuelSignature
+                budget={budget}
+                sportActive={s.training.sportActive}
+                onSport={() => navigate("movement", "sport")}
+                onExplain={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
+              />
               <p className="pr-small-note">
                 Szemléltető összefüggés, nem személyre számított táplálkozási
                 előírás.
@@ -1087,7 +1241,18 @@ function Life({ api }) {
     tab = s.tabs.life;
   return tab === "today" ? (
     <>
-      <div className="core-hub-links"><button onClick={()=>api.goFeature("me-people")}>Emberek és kapcsolatok →</button><button onClick={()=>api.goFeature("goals")}>Életcélok és pillérek →</button><button onClick={()=>api.goFeature("me-routines")}>Rutinok →</button><button onClick={()=>api.goFeature("notifications")}>Értesítések →</button></div>
+      <div className="core-hub-links">
+        <button onClick={() => api.goFeature("me-people")}>
+          Emberek és kapcsolatok →
+        </button>
+        <button onClick={() => api.goFeature("goals")}>
+          Életcélok és pillérek →
+        </button>
+        <button onClick={() => api.goFeature("me-routines")}>Rutinok →</button>
+        <button onClick={() => api.goFeature("notifications")}>
+          Értesítések →
+        </button>
+      </div>
       <DailyImprint state={s} onJournal={() => navigate("life", "journal")} />
       <Row
         icon="sun"
@@ -1135,7 +1300,11 @@ function Life({ api }) {
           maxLength={2000}
         />
       </label>
-      <DailyImprint state={s} compact onOpen={() => navigate("life", "today")} />
+      <DailyImprint
+        state={s}
+        compact
+        onOpen={() => navigate("life", "today")}
+      />
       <span className="pr-saved-note">
         <Icon name="check" size={13} />
         Helyben, írás közben megőrizve
@@ -1151,12 +1320,27 @@ function Life({ api }) {
   ) : tab === "body" ? (
     <>
       <p className="pr-lead">A tested jelzései is hozzád tartoznak.</p>
-      <div className="core-hub-links"><button onClick={()=>api.goFeature("me-weight-log")}>Súly rögzítése →</button><button onClick={()=>api.goFeature("me-weight")}>Súlynapló és trend →</button><button onClick={()=>api.goFeature("me-sleep-log")}>Alvás rögzítése →</button><button onClick={()=>api.goFeature("me-sleep")}>Alvásnapló és cél →</button></div>
+      <div className="core-hub-links">
+        <button onClick={() => api.goFeature("me-weight-log")}>
+          Súly rögzítése →
+        </button>
+        <button onClick={() => api.goFeature("me-weight")}>
+          Súlynapló és trend →
+        </button>
+        <button onClick={() => api.goFeature("me-sleep-log")}>
+          Alvás rögzítése →
+        </button>
+        <button onClick={() => api.goFeature("me-sleep")}>
+          Alvásnapló és cél →
+        </button>
+      </div>
       <div className="pr-body-pair">
         <div>
           <Icon name="moon" />
           <strong>
-            {Math.floor((s.full.personal.sleep.latest?.minutes||0)/60)} <small>ó</small> {(s.full.personal.sleep.latest?.minutes||0)%60} <small>p</small>
+            {Math.floor((s.full.personal.sleep.latest?.minutes || 0) / 60)}{" "}
+            <small>ó</small> {(s.full.personal.sleep.latest?.minutes || 0) % 60}{" "}
+            <small>p</small>
           </strong>
           <span>Legutóbbi alvás</span>
         </div>
@@ -1169,7 +1353,11 @@ function Life({ api }) {
         </div>
       </div>
       <Sparkline
-        values={s.full.personal.weight.logs.length ? [...s.full.personal.weight.logs].reverse().map(l=>l.value) : [0]}
+        values={
+          s.full.personal.weight.logs.length
+            ? [...s.full.personal.weight.logs].reverse().map((l) => l.value)
+            : [0]
+        }
         width={320}
         height={95}
       />

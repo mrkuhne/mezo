@@ -25,3 +25,5 @@ bottom. Rotate (archive the head) when this passes ~500 lines. Format: `YYYY-MM-
 - 2026-09-07 · MEASURE · a re-baseline lezárva: gpt-5.6-luna (90,5% exact / 0 hiba / p95 5591 ms / $0,00047 per sikeres akció) és gpt-5.6-terra (95,2% / 0 kritikus / p95 8092 ms / $0,0047) raw captures + vak hangnem A/B (2 bíró x 2 jelölt, 42 pár). Döntés: luna a default chat, terra a smart tier. Közben kiderült egy éles hiba: a GPT-5.6 a /v1/chat/completions-ön elutasítja a function toolt reasoning_efforttal együtt — mind a 42 eset elbukott rajta, javítva (reasoning_effort=none csak a tool-úton). Ez kiüti a spec Q1 minőség-karját a chat-úton; S4 (mezo-ozri.4) dolga.
 
 - 2026-09-08 · INGEST / QUERY · Nine short primary-source excerpts captured; queries/mezo-ux-direction.md records reference transfer, local mock UI observations, navigation audit limits and three proposed directions. mezo-88jw.1; no design selected, no product code changed.
+
+- 2026-09-09 · INGEST / QUERY · BitePal App Store, Duolingo milestone animation and Strava Best Efforts short excerpts; boop-data-rpg.md maps primary-source principles into an independent colorful data-first prototype. mezo-88jw.11.

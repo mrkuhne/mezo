@@ -13,7 +13,8 @@ try {
     "/src/presence-model.mjs",
   );
   const { nutrition } = await server.ssrLoadModule("/src/model.mjs");
-  const state = hydrateComplete(createPresence()).full;
+  const rootState = hydrateComplete(createPresence());
+  const state = rootState.full;
   const noop = () => {};
   const api = {
     state,
@@ -50,7 +51,13 @@ try {
       };
       checked++;
       try {
-        const html = renderToString(React.createElement(Flow, { page, api }));
+        const html = renderToString(
+          React.createElement(Flow, {
+            page,
+            api,
+            visual: process.env.BOOP_VISUAL,
+          }),
+        );
         if (html.length < 20) throw Error("Empty");
       } catch (e) {
         fail++;
@@ -60,6 +67,37 @@ try {
   console.log(
     `${Object.keys(COMPLETE_ROUTES).length} routes, ${checked} seeded/missing-ID renders, ${fail} failures`,
   );
+  if (process.env.BOOP_VISUAL === "rpg") {
+    const { default: RpgScreen } =
+      await server.ssrLoadModule("/src/RpgStudy.jsx");
+    const { foodBudget } = await server.ssrLoadModule(
+      "/src/presence-model.mjs",
+    );
+    for (const role of ["home", "movement", "fuel", "life"]) {
+      const s = { ...rootState, role };
+      const shellApi = {
+        ...api,
+        s,
+        budget: foodBudget(s),
+        core: api,
+        setS: noop,
+        navigate: noop,
+        goFeature: noop,
+        celebrate: noop,
+      };
+      const html = renderToString(
+        React.createElement(RpgScreen, {
+          api: shellApi,
+          feature: null,
+          coreApi: api,
+          fallback: null,
+        }),
+      );
+      if (!html.includes("rpg-content"))
+        throw Error(`Missing RPG dashboard: ${role}`);
+    }
+    console.log("4 RPG dashboards render successfully");
+  }
   process.exitCode = fail ? 1 : 0;
 } finally {
   await server.close();

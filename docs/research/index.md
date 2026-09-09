@@ -51,3 +51,5 @@ ingest.
 - [Free exercise image/video APIs](queries/2026-08-05-exercise-media-apis.md) — free-exercise-db (public domain stills) vs wger (CC-BY-SA) vs ExerciseDB (AGPL/paid GIFs) vs YouTube embeds; why motion stays on YouTube and what an image layer would cost. `confidence: high`.
 
 - [Mezo UX direction research](queries/mezo-ux-direction.md) — Hevy, Strava, Yazio, Huawei Health, Nike, Bevel, Apple Design Awards and Avatar Lab; current UI observations and three unapproved directions. `confidence: medium`.
+
+- [Boop — játékos adatközpontú UX](queries/boop-data-rpg.md)
