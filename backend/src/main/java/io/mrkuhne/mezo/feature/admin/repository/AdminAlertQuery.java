@@ -8,15 +8,19 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * Install-wide freshness/health counts for the owner alert rules (mezo-kjwa). Fixed table names
- * only — this class never interpolates request input, so no {@link
- * io.mrkuhne.mezo.feature.admin.service.AdminSqlDialect} quoting is needed.
+ * Install-wide freshness/health counts, shared by two callers: the owner alert rules
+ * ({@link io.mrkuhne.mezo.feature.admin.service.AdminAlertService}, mezo-kjwa) and the RAG memory
+ * explorer's installation-wide health op ({@code AdminMemoryService#getAdminMemoryGlobalHealth},
+ * mezo-k5zy) — both need the SAME install-wide vector/item counts, so this class is the one
+ * place they are computed. Fixed table names only — this class never interpolates request input,
+ * so no {@link io.mrkuhne.mezo.feature.admin.service.AdminSqlDialect} quoting is needed.
  *
  * <p>Unlike {@link io.mrkuhne.mezo.feature.companion.memory.repository.MemoryHealthQuery}, these
  * reads are NOT gated on the companion feature switch
- * and carry NO {@code userId} filter: the alert rules look at the whole installation, not one
- * inspected user, and the calling service ({@code AdminAlertService}) decides whether the
- * companion-dependent rules run at all.
+ * and carry NO {@code userId} filter: both callers look at the whole installation, not one
+ * inspected user, and each calling service decides for itself whether/how a companion-off state
+ * changes its own response (the alert rules skip the companion-dependent rules entirely; the
+ * memory explorer answers with a degraded 404, same idiom as its other endpoints).
  */
 @Repository
 @RequiredArgsConstructor
