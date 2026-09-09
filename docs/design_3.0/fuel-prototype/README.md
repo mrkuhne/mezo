@@ -32,7 +32,7 @@ A `file://` megnyitás a modulok miatt nem támogatott.
 
 | Család | Nézetek | Mit lehet kipróbálni? |
 | --- | --- | --- |
-| Napló | `diary`, `week` | Kcal/makró/rost/víz, napi étkezések, dátumválasztó, heti grafikon és visszanyitható napok. |
+| Napló | `diary`, `week` | Kcal, makrók, kiemelt napi AI score, étkezések, dátumválasztó, heti grafikon és visszanyitható napok. A vízlog nem itt történik. |
 | Keret | `energy`, `movement` | Fenntartó keret + súlycél hatása + rögzített mozgás bontás. A tervezett edzés csak rögzítés után emeli a napi keretet. |
 | Étkezés | `log`, `meal`, `score` | Kamra + recept + szöveg/fotópélda egy vázlatban; név, időpont, nap, gramm; mentés, javítás, törlés/undo; 8 lenyitható score-nézőpont. |
 | Receptek | `recipes`, `recipe`, `recipe-edit`, `workshop`, `cook` | Keresés, kategória/kedvenc, adagváltás, hozzávaló-adatlapok, szerkesztő, Műhely-vázlat és vezetett főzésből étkezésrögzítés. |
@@ -52,7 +52,8 @@ A listakeresés és a görgetési hely az oldalak közötti visszalépésnél me
 - Meleg papír, zsálya napi keret, korall fehérje, arany szénhidrát, levendula zsír/score, kék víz.
 - Geist a számokhoz és kezelőelemekhez; Fraunces és dőlt hangsúly a címsorokhoz.
 - Az eredeti [Clay ikoncsalád](../../design_2.0/assets/README.md) helyi másolata; azonos szimbólumazonosítók.
-- Finom oldalsó bemetszések és körívek a kiemelt kereten; részletekhez sorok,
+- Finom oldalsó bemetszések és körívek a kiemelt kereten; a napi AI score a makrók alatt áll,
+  az étkezési score nyolc, egyszerre csak egyként lenyitható sorból áll; részletekhez sorok,
   szerkesztőkhöz célzott űrlap, receptekhez saját illusztrált gyűjtemény.
 - A bal alsó szerepváltó és a jobb felső, felirat nélküli beszélgetés ugyanazt a zöld, kétszemű CSS avatart használja. Pislogás mellett röviden fel-balra, fel-jobbra, balra vagy lefelé pillant; csökkentett mozgásnál mindkettő leáll.
 - A mezo szerepváltó kör alakú, kétszemű, tónust váltó CSS karaktertanulmány.

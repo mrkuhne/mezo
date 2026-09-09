@@ -27,3 +27,6 @@ dialog{position:fixed;inset:auto auto 24px 50%;transform:translateX(-50%);margin
 @keyframes eye-roll{0%,16%,100%{translate:0 0}18%{translate:-2px -3px}21%{translate:0 0}42%{translate:3px -2px}45%{translate:0 0}64%{translate:-3px 0}67%{translate:0 0}82%{translate:2px 2px}85%{translate:0 0}}
 .header-avatar{display:grid;place-items:center;min-width:44px;min-height:44px;margin-right:-4px}.header-avatar .orb{width:39px;height:39px}
 @media(max-width:375px){.header-avatar .orb{width:33px;height:33px}}
+
+/* The score is read as one focused thread, never as competing two-column cards. */
+.dimensions{grid-template-columns:1fr}.dimension{padding:15px 16px}.day-score-priority{margin:14px 0 20px}
