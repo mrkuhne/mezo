@@ -84,11 +84,17 @@ export function decompose(
 // callers that already have a bare breakdown (or a candidate predating today's live config) never
 // have to fabricate a whole candidate/fusion object just to get a sentence.
 //
-// The production RRF constant (`mezo.companion.memory-platform.fusion.rrf-k`) is 60 — the same
-// value `contribution.test.ts`'s own `FUSION_UNIT` fixture uses — and is the only thing this
-// function needs beyond the live weights to rank retrievers against each other; a caller with no
-// live fusion config at all (weights omitted) still gets a sensible answer (every retriever
-// weighted 1, i.e. "which retriever ranked this candidate highest").
+// The production RRF constant (`mezo.companion.memory-platform.fusion.rrf-k`) DEFAULTS to 60 —
+// the same value `contribution.test.ts`'s own `FUSION_UNIT` fixture uses — for a caller with no
+// live fusion config at all (weights/rrfK omitted), so it still gets a sensible answer (every
+// retriever weighted 1, i.e. "which retriever ranked this candidate highest").
+//
+// Fix round (F1): a caller that DOES have the live `AdminMemoryFusionConfig` (every real one
+// does — `RunDetail.tsx` holds it right next to the stacked contribution bar this sentence is a
+// gloss on) MUST pass its actual `rrfK`. Hardcoding 60 here made the verdict silently drift from
+// the bar at any other k: a boost that only wins the verdict's comparison at k=60 can lose it (or
+// vice versa) at the server's REAL k, so the sentence and the bar below it could contradict each
+// other on an install that ever tunes this constant.
 const DEFAULT_RRF_K = 60
 
 const RETRIEVER_ORDER = ['dense', 'lexical', 'graph', 'facts'] as const
@@ -131,11 +137,12 @@ const NO_SIGNAL_VERDICT = 'nem állapítható meg egyértelmű ok — egyik retr
 export function runVerdictSentence(
   breakdown: AdminMemoryScoreBreakdown,
   fusionWeights?: AdminMemoryFusionConfig['retrieverWeights'],
+  rrfK: number = DEFAULT_RRF_K,
 ): string {
   const ranks = breakdown.retrieverRanks ?? {}
 
   let bestRetriever: { key: string; value: number } | null = null
-  const scoreOf = (rank: number, key: string) => (fusionWeights?.[key] ?? 1) / (DEFAULT_RRF_K + rank)
+  const scoreOf = (rank: number, key: string) => (fusionWeights?.[key] ?? 1) / (rrfK + rank)
   // RETRIEVER_ORDER first, so a tie among the four known retrievers resolves to the documented
   // priority order; any OTHER retriever key (a future addition, or a stored run predating this
   // dictionary) still counts toward the comparison, just with no product-worded sentence of its

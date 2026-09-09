@@ -61,14 +61,12 @@ export function OverviewView({
       <AdminTile query={health} wash="sky" eyebrow="Emlék-egészség" span={6}>
         <div className="am-statgrid" style={{ marginTop: 8 }}>
           <div className="am-stat"><b>{huInt(readyCount)}</b><div className="lbl">kész vektor</div></div>
-          <div className="am-stat linkable" role="button" tabIndex={0}
-            onClick={() => onGo('layers', null)} onKeyDown={(e) => { if (e.key === 'Enter') onGo('layers', null) }}>
+          <button type="button" className="am-stat linkable" onClick={() => onGo('layers', null)}>
             <b>{huInt(failedCount)}</b><div className="lbl">elakadt vektor</div>
-          </div>
-          <div className="am-stat linkable" role="button" tabIndex={0}
-            onClick={() => onGo('layers', null)} onKeyDown={(e) => { if (e.key === 'Enter') onGo('layers', null) }}>
+          </button>
+          <button type="button" className="am-stat linkable" onClick={() => onGo('layers', null)}>
             <b>{huInt(staleCount)}</b><div className="lbl">elavult vektor</div>
-          </div>
+          </button>
           <div className="am-stat"><b>{huInt(itemsTotal)}</b><div className="lbl">emlék összesen</div></div>
         </div>
       </AdminTile>

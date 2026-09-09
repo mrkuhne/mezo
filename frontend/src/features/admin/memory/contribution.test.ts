@@ -126,6 +126,17 @@ describe('runVerdictSentence — boost-led', () => {
     const b = breakdown({ retrieverRanks: { dense: 1 }, pinnedBoost: 1 / 61 })
     expect(runVerdictSentence(b)).toBe('főleg tartalmi hasonlóság miatt')
   })
+
+  // Fix round (F1) — a hardcoded rrfK made the verdict able to contradict the SAME run's stacked
+  // contribution bar at any k other than 60 (RunDetail.tsx passes the server-authoritative
+  // `fusion.rrfK` at both call sites now). Same breakdown, only rrfK changes: at the production
+  // default (60) the retriever's share is small enough that the boost wins; at a much smaller,
+  // still-plausible k the SAME retriever's share grows past the SAME boost, flipping the verdict.
+  it('a live (non-default) rrfK can flip the boost-vs-retriever verdict', () => {
+    const b = breakdown({ retrieverRanks: { dense: 1 }, pinnedBoost: 0.1 })
+    expect(runVerdictSentence(b)).toBe('mert kiemelt emlék') // default rrfK=60: dense 1/61 ≈ 0.016 < 0.1
+    expect(runVerdictSentence(b, undefined, 2)).toBe('főleg tartalmi hasonlóság miatt') // rrfK=2: dense 1/3 ≈ 0.33 > 0.1
+  })
 })
 
 describe('runVerdictSentence — sensible tie behaviour', () => {

@@ -22,6 +22,17 @@ import type {
 
 export const ADMIN_MEMORY_INSPECTED_USER_ID = MOCK_ANNA_ID
 
+/** An ISO timestamp `hoursAgo` hours before "now" (mezo-k5zy fix round — F3) — same relative-date
+ *  idiom as `adminInsightsMock.ts`'s `daysAgoIso`, so `newestDailySummaryAt` stays "X órája" no
+ *  matter which day the suite runs on, instead of a hardcoded date drifting further into the past
+ *  (and eventually past the entry page's own >26h warn threshold) every day the fixture goes
+ *  unedited. */
+function hoursAgoIso(hoursAgo: number): string {
+  const d = new Date()
+  d.setHours(d.getHours() - hoursAgo)
+  return d.toISOString()
+}
+
 const RUN_SHADOW: AdminMemoryRunSummary = {
   id: 'a1000000-0000-4000-8000-000000000001',
   createdAt: '2026-09-07T09:41:12Z',
@@ -476,12 +487,25 @@ export function adminMemoryHealthMockFor(userId: string): AdminMemoryHealthRespo
 
 // Installation-wide health (mezo-k5zy) — the Memória entry page's KPI tiles. A realistic
 // install with a nonzero stale count (the quiet failure mode the entry page must surface).
+//
+// Fix round (F2): these numbers must be the SUM of the three per-user seeds above, not an
+// independent fiction — otherwise the entry page's install-wide KPIs contradict what a click into
+// any one user's own Áttekintés/Rétegek shows immediately after. Recomputed from
+// ADMIN_MEMORY_HEALTH_{ANNA,OWNER,BELA}_MOCK:
+//   vectors  Anna 132+6+2=140  Owner 780+20+12=812  Béla 0        => total 952
+//   ready    Anna 132          Owner 780            Béla 0        => 912
+//   failed   Anna 2            Owner 12             Béla 0        => 14
+//   stale    Anna 6            Owner 5              Béla 0        => 11
+//   items    Anna 356          Owner 2140           Béla 0        => 2496
+// (Pulzus's own overview seed, `ADMIN_OVERVIEW_MOCK`'s 512/488 memoryItemCount/vectorCount, is a
+// SEPARATE endpoint's independent fiction — deliberately left untouched; only this memory-global
+// seed needs to agree with the per-user memory seeds.)
 export const ADMIN_MEMORY_GLOBAL_HEALTH_MOCK: AdminMemoryGlobalHealthResponse = {
-  vectorsReady: 1780,
-  vectorsFailed: 6,
-  vectorsStale: 9,
-  itemsTotal: 1842,
-  newestDailySummaryAt: '2026-09-07T04:00:00Z',
+  vectorsReady: 912,
+  vectorsFailed: 14,
+  vectorsStale: 11,
+  itemsTotal: 2496,
+  newestDailySummaryAt: hoursAgoIso(5),
 }
 
 export const ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY: AdminMemoryGlobalHealthResponse = {

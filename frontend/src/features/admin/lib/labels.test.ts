@@ -28,6 +28,12 @@ describe('admin label dictionary', () => {
     expect(tableLabel('mystery_table').missing).toBe(true)
   })
 
+  // mezo-k5zy fix round — F5: the Memória entry page's own route.
+  it('maps the Memória entry route', () => {
+    expect(screenLabel('/admin/memory').label).toBe('Admin · memória')
+    expect(screenLabel('/admin/memory').missing).toBeUndefined()
+  })
+
   it('every entry has a non-empty Hungarian label', () => {
     for (const [key, v] of Object.entries(FEATURE_LABELS)) {
       expect(v.label.trim().length, key).toBeGreaterThan(0)

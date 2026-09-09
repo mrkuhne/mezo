@@ -7,7 +7,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { OverviewView } from '@/features/admin/memory/views/OverviewView'
-import { ADMIN_MEMORY_HEALTH_ANNA_MOCK, ADMIN_MEMORY_HEALTH_MOCK } from '@/data/admin/adminMemoryMock'
+import { ADMIN_MEMORY_GLOBAL_HEALTH_MOCK, ADMIN_MEMORY_HEALTH_ANNA_MOCK, ADMIN_MEMORY_HEALTH_MOCK } from '@/data/admin/adminMemoryMock'
 import { userFeedbackMockFor } from '@/data/admin/adminInsightsMock'
 import { MOCK_ANNA_ID } from '@/data/admin/adminMock'
 import { huInt } from '@/shared/lib/huNum'
@@ -47,14 +47,14 @@ describe('OverviewView (mock mode)', () => {
   })
 
   // Fix round 1 — Anna's own explorer must show HER numbers (132/2/6/356), not the
-  // install-wide seed's 1780/6/9/1842.
+  // install-wide seed (now 912/14/11/2496, the sum of every per-user seed — F2).
   it("renders Anna's own scaled health numbers, not the install-wide seed", async () => {
     renderOverview(MOCK_ANNA_ID)
     await screen.findByText('Emlék-egészség')
     const readyCount = ADMIN_MEMORY_HEALTH_ANNA_MOCK.vectorsByStatus.find((b) => b.key === 'ready')!.count
     expect(screen.getByText(huInt(readyCount))).toBeInTheDocument()
     expect(screen.getByText(huInt(ADMIN_MEMORY_HEALTH_ANNA_MOCK.staleVectorCount))).toBeInTheDocument()
-    expect(screen.queryByText(huInt(1780))).not.toBeInTheDocument()
+    expect(screen.queryByText(huInt(ADMIN_MEMORY_GLOBAL_HEALTH_MOCK.vectorsReady))).not.toBeInTheDocument()
   })
 
   it('clicking a failed/stale problem link calls onGo("layers", null)', async () => {
@@ -62,6 +62,24 @@ describe('OverviewView (mock mode)', () => {
     await screen.findByText('Emlék-egészség')
     const btn = await screen.findByText(/sikertelen vektor a Rétegeken/)
     fireEvent.click(btn)
+    expect(onGo).toHaveBeenCalledWith('layers', null)
+  })
+
+  // Fix round 1 (F4) — the health-summary's failed/stale cells are real <button>s now (a11y:
+  // Space activates them, not just Enter/click), matching the file's own `ad-fk` button precedent.
+  it('the elakadt/elavult health cells are real buttons and call onGo("layers", null)', async () => {
+    const onGo = renderOverview()
+    await screen.findByText('Emlék-egészség')
+    // Two DIFFERENT elements' text both contain "elakadt/elavult vektor" (this health-summary
+    // cell AND the "Legutóbbi problémák" link below it) — `.closest('button')` on the LABEL text
+    // disambiguates, same idiom LayersView's own tests already use (`stale.closest('a')`).
+    const failedBtn = screen.getByText('elakadt vektor').closest('button')
+    const staleBtn = screen.getByText('elavult vektor').closest('button')
+    expect(failedBtn).not.toBeNull()
+    expect(staleBtn).not.toBeNull()
+    fireEvent.click(failedBtn!)
+    fireEvent.click(staleBtn!)
+    expect(onGo).toHaveBeenCalledTimes(2)
     expect(onGo).toHaveBeenCalledWith('layers', null)
   })
 })

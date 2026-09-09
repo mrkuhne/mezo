@@ -11927,6 +11927,10 @@ button.mz-wtile:active { transform: scale(0.96); }
 .am-stat { background: rgba(43,33,24,.035); border-radius: 12px; padding: 11px 12px; }
 .am-stat b { display: block; font-weight: 200; font-size: 26px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .am-stat.linkable { cursor: pointer; }
+/* Fix round (F4) — OverviewView's linkable stats are real <button>s (a11y: Space now works, not
+   just Enter/click), so the browser's default button chrome needs resetting the same way
+   `.ad-poster-btn` already does for its own button-ized tile. */
+button.am-stat { display: block; width: 100%; border: none; font: inherit; text-align: left; }
 .am-stat.linkable:hover { background: rgba(168,74,38,.07); }
 .am-stat.linkable b { color: #A84A26; text-decoration: underline dotted; }
 .am-stat .lbl { font-size: 9.5px; color: #6E6257; font-weight: 600; margin-top: 2px; }

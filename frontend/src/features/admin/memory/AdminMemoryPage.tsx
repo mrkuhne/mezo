@@ -17,14 +17,17 @@ import type { InspectorBody } from '@/features/admin/memory/views/RunDetail'
 // link from a run candidate to "this edge on Gráf" or "this point on Térkép" is the whole point
 // of the four views sharing one inspector, and that only works if both are addressable.
 //
-// This page owns URL state, the 5-tab bar (mirroring AdminUserDetailPage's TABS with "Memória"
-// selected — the other four navigate back to the user detail page, same idiom that page already
+// This page owns URL state, the 6-tab bar (mirroring AdminUserDetailPage's own TABS with "Memória"
+// selected — the other five navigate back to the user detail page, same idiom that page already
 // uses for ITS "Memória" tab), the segment bar, and the shared inspector; every view supplies
 // its own inspector body via `onInspect`.
 //
 // TABS reads "Funkciók", not "Feature-ök" (mezo-k5zy Task 3 fix) — this page keeps its OWN copy
 // of the tab row, so AdminUserDetailPage.tsx's earlier rename (mezo-zde2 Task 3) never reached it.
-const TABS = ['Aktivitás', 'Adatok', 'Funkciók', 'Költség', 'Memória'] as const
+// It also now carries "Visszajelzések" (fix round — TABS), matching AdminUserDetailPage's 6 tabs
+// exactly; this row was missing it entirely (a pre-existing staleness noted, not fixed, in the
+// slice's Task 2/3 reports) — the entry just navigates back like every other non-Memória tab.
+const TABS = ['Aktivitás', 'Adatok', 'Funkciók', 'Költség', 'Visszajelzések', 'Memória'] as const
 
 export function AdminMemoryPage() {
   const { id = '' } = useParams()

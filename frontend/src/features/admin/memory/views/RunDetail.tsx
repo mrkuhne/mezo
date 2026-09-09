@@ -57,7 +57,7 @@ export function RunDetail({
   // worked" without opening a single candidate. Falls back to the first candidate when the run
   // selected none (every candidate got dropped downstream).
   const topCandidate = [...candidates].filter((c) => c.selected).sort((a, b) => a.rank - b.rank)[0] ?? candidates[0]
-  const topVerdict = topCandidate ? runVerdictSentence(topCandidate.scoreBreakdown, fusion.retrieverWeights) : null
+  const topVerdict = topCandidate ? runVerdictSentence(topCandidate.scoreBreakdown, fusion.retrieverWeights, fusion.rrfK) : null
 
   useEffect(() => {
     const c = candidates.find((x) => x.candidateRefId === openId)
@@ -159,7 +159,7 @@ function CandidateRow({
   const { segments } = decompose(candidate, fusion)
   const activeTotal = segments.reduce((sum, s) => sum + (s.rank != null || s.kind === 'boost' ? s.value : 0), 0)
   const allAbsent = segments.filter((s) => s.kind === 'retriever').every((s) => s.rank == null)
-  const verdict = runVerdictSentence(candidate.scoreBreakdown, fusion.retrieverWeights)
+  const verdict = runVerdictSentence(candidate.scoreBreakdown, fusion.retrieverWeights, fusion.rrfK)
 
   return (
     <details

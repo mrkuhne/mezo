@@ -78,6 +78,21 @@ describe('AdminMemoryPage (mock mode)', () => {
     expect(screen.getByText('Válassz egy elemet a listából.')).toBeInTheDocument()
   })
 
+  // Fix round (TABS) — this page's own tab row was missing "Visszajelzések" entirely, so it had
+  // 5 tabs instead of AdminUserDetailPage's 6. Added; clicking it (a non-Memória tab) navigates
+  // back to the user detail page, same idiom every other non-Memória tab already uses.
+  it('the tab bar matches AdminUserDetailPage\'s 6 tabs, including Visszajelzések', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    // The page has TWO role="tab" rows — the top `.ad-tabs` (Aktivitás…Memória) AND the memory
+    // segment bar (Áttekintés…Rétegek) — scope to the top row specifically.
+    const topTabs = document.querySelectorAll('.ad-tabs [role="tab"]')
+    expect(topTabs).toHaveLength(6)
+    expect(Array.from(topTabs).map((t) => t.textContent)).toContain('Visszajelzések')
+    fireEvent.click(screen.getByRole('tab', { name: 'Visszajelzések' }))
+    expect(await screen.findByText('USER DETAIL PAGE')).toBeInTheDocument()
+  })
+
   it('clicking the segment bar navigates between views', async () => {
     renderPage()
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
