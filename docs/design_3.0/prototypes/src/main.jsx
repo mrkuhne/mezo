@@ -23,8 +23,8 @@ class ErrorBoundary extends React.Component {
 const variant = new URLSearchParams(location.search).get("v");
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
-    {["presence", "boop"].includes(variant) ? (
-      <PresenceStudy />
+    {["presence", "boop", "rpg"].includes(variant) ? (
+      <PresenceStudy variant={variant}/>
     ) : ["measure", "companion"].includes(variant) ? (
       <Explorer variant={variant} />
     ) : (

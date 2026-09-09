@@ -1,3 +1,5 @@
+**Új irány: [Boop Play](http://127.0.0.1:5193/?v=rpg#presence/home/today)** — színes, adatközpontú RPG felületek. [Működés és összehasonlítás](boop-rpg.md). A korábbi editorial változat külön megmarad.
+
 A Boopban a kért alapfunkciók részletes, állapotot megőrző mockjai is elérhetők: [funkciótérkép és kipróbálás](boop-core-coverage.md).
 
 A saját kontúrcsalád és a napi lenyomat is kipróbálható: [Életem · a napjaid lenyomata](http://127.0.0.1:5193/?v=boop#presence/life/today). Válassz napot, majd bontsd ki az eseményeit.

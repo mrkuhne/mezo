@@ -2,6 +2,11 @@ import React, { useContext } from "react";
 import { Avatar, Icon, IdentityContext } from "../shared.jsx";
 import "./flow-ui.css";
 export function FlowHead({ eyebrow, title, description, children }) {
+  const identity = useContext(IdentityContext);
+  if (identity?.pageTitle) {
+    title = identity.pageTitle;
+    eyebrow = null;
+  }
   return (
     <div className="flow-head">
       {eyebrow && <span className="flow-kicker">{eyebrow}</span>}
@@ -61,12 +66,22 @@ export function FlowRow({ icon, title, subtitle, value, onClick, children }) {
   );
 }
 export function CompanionNote({ children, action, onClick, state = "idle" }) {
-  const identity=useContext(IdentityContext);
+  const identity = useContext(IdentityContext);
   return (
     <div className="flow-companion">
-      <Avatar size={48} state={state} />
+      {identity?.visual === "rpg" ? (
+        <span className="rpg-note-icon">
+          <Icon name="info" />
+        </span>
+      ) : (
+        <Avatar size={48} state={state} />
+      )}
       <div>
-        <span className="flow-kicker">{identity?.name || "MEZO"}</span>
+        <span className="flow-kicker">
+          {identity?.visual === "rpg"
+            ? "ADAT ÉS KONTEXTUS"
+            : identity?.name || "MEZO"}
+        </span>
         <div className="flow-companion-copy">{children}</div>
         {action && (
           <button type="button" className="text-button" onClick={onClick}>

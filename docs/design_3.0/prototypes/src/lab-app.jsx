@@ -107,6 +107,7 @@ export function Launcher() {
           <span>Menthető mintanap, előre megírt AI-válaszok.</span>
         </p>
       </div>
+      <a className="presence-study-entry" href="?v=rpg"><strong>Boop Play · új RPG irány</strong><span>Színes, adatközpontú felületek · edzés, táplálás, fejlődés →</span></a>
       <a className="presence-study-entry" href="?v=boop">
         Új tanulmány · Boop, a társad{" "}
         <span>Dinamikus navigáció és folytonos beszélgetés →</span>

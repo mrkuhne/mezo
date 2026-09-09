@@ -1,3 +1,5 @@
+import { RpgIcon } from "./RpgIcon.jsx";
+import { RPG_TITLES } from "./rpg-model.mjs";
 import React, { useState } from "react";
 import FuelFlow, { FUEL_ROUTES } from "./flows/FuelFlow.jsx";
 import TrainFlow, { TRAIN_ROUTES } from "./flows/TrainFlow.jsx";
@@ -318,7 +320,7 @@ function Shortcuts({ page, api }) {
     </div>
   );
 }
-export default function CompleteFlow({ page, api }) {
+export default function CompleteFlow({ page, api, visual }) {
   let content;
   if (page === "core-index")
     content = (
@@ -353,7 +355,14 @@ export default function CompleteFlow({ page, api }) {
     content = <InsightFlow page={page} api={api} />;
   else content = <p>Ez a nézet nem található.</p>;
   return (
-    <IdentityContext.Provider value={{ Icon: BoopIcon, name: "Boop" }}>
+    <IdentityContext.Provider
+      value={{
+        Icon: visual === "rpg" ? RpgIcon : BoopIcon,
+        name: "Boop",
+        visual,
+        pageTitle: visual === "rpg" ? RPG_TITLES[page] : null,
+      }}
+    >
       <div className="boop-complete" key={page + JSON.stringify(api.params)}>
         {content}
         <Shortcuts page={page} api={api} />
