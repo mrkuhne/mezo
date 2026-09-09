@@ -137,7 +137,7 @@ function init() {
   function resize() {
     const { width, height } = host.getBoundingClientRect();
     renderer.setSize(width, height); composer.setSize(width, height); camera.aspect = width / height;
-    camera.position.z = width < 500 ? 10.7 : 8.7; camera.updateProjectionMatrix();
+    camera.position.z = document.documentElement.dataset.embed ? 7.8 : width < 500 ? 10.7 : 8.7; camera.updateProjectionMatrix();
   }
   const observer = new ResizeObserver(resize); observer.observe(host); resize();
   document.querySelector('#loading').remove();
@@ -163,6 +163,11 @@ function init() {
     burst = mode === 'celebrate' ? 1 : 0;
     if (paused) Object.assign(smooth, { spread: state.spread, speed: state.speed, glow: state.glow });
   }
+  window.addEventListener('message', event => {
+    if (event.origin !== location.origin || event.source !== parent) return;
+    if (event.data?.type === 'mezo:mode' && Object.hasOwn(modes, event.data.mode)) selectMode(event.data.mode);
+    if (event.data?.type === 'mezo:pause' && typeof event.data.paused === 'boolean') { paused = event.data.paused; syncPause(); }
+  });
   document.querySelectorAll('.mode').forEach(el => el.addEventListener('click', () => selectMode(el.dataset.mode)));
   document.querySelector('#journal').addEventListener('click', () => {
     selectMode('connect');
