@@ -1,3 +1,4 @@
+import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, foodContent, initFood } from './food.js';
 import { openWorkout, workoutContent, initWorkout } from './workout.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
@@ -22,6 +23,7 @@ const bars=items=>`<div class="load-bars">${items.map(([a,b,n])=>`<div><span>${a
 const detail=(name,copy,art='gem')=>`data-detail="${safe(name)}" data-copy="${safe(copy)}" data-art="${art}"`;
 const jump=(d,p)=>`data-route="${d}/${p}"`;
 function content(d,p){
+ const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
  const foodPage=foodContent(d,p);if(foodPage!==null)return foodPage;
  const detailed=workoutContent(d,p);if(detailed!==null)return detailed;
  if(d==='nap')return [ '',
@@ -54,9 +56,9 @@ function draw(){
  route=resolveRoute(location.hash);rememberRoute(memory,route.domain,route.page);const {domain:d,page:p}=route,cfg=domains[d];
  $('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
  $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=!(d==='nap'&&p===0);panel.hidden=!original.hidden;panel.innerHTML=content(d,p);
- $('.arrival').hidden=p!==0;$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');
+ $('.arrival').hidden=p!==0||mezoDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');
  if(p===0){$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}
- panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ if(d!=='mezo')panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
 function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading;$('#sheet-body').innerHTML=html;$('#sheet').showModal();}
@@ -84,4 +86,5 @@ document.addEventListener('submit',e=>{
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
+initMezo({refresh:draw});
 window.addEventListener('hashchange',draw);draw();
