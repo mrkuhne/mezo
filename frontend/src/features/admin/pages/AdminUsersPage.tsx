@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
 import { useAdminUserInsights } from '@/data/admin/adminInsightsHooks'
 import type { AdminSortDir, AdminUserInsightResponse, AdminUserInsightSort } from '@/data/admin/adminInsightsApi'
@@ -15,6 +15,25 @@ import { huInt, usd } from '@/shared/lib/huNum'
 // file's own git history for the pre-rebuild version). Cards are the default view per the plan
 // Rulings; the old table survives unchanged behind the toggle chip.
 const STATUS_ORDER: TesterStatus[] = ['aktiv', 'csendesedik', 'lemorzsolodott', 'meg_nem_aktiv']
+
+// tester_quiet alert deep link (mezo-wg4x fix round — the Pulzus alert linked
+// `/admin/users?filter=quiet` since mezo-kjwa, but this page never read it). `?filter=` is
+// URL-as-state, same idiom as AdminCostPage's `?day=`/`?feature=`: read on mount, written back
+// whenever the summary-chip filter changes, cleared when it is turned off.
+//
+// Interpretation ruling: `mezo.admin.alerts.tester-quiet-days` defaults to 7, and
+// `testerStatus()`'s own boundary is "lemorzsolodott = 7+ days quiet" (adminViz.ts) — the SAME
+// number, not a coincidence (both read the "gone dark for a week" signal). `csendesedik` (3-6
+// days) is a softer, earlier warning the alert does not fire for, so `filter=quiet` maps to
+// 'lemorzsolodott' alone, not "csendesedik + lemorzsolodott" — a broader match would show rows
+// the alert never actually flagged. The reverse direction (an explicit status key already in the
+// URL, e.g. from this page's own back button) is honoured as-is; `quiet` is only a read-side
+// alias, never written back — clicking the lemorzsolodott chip after landing here rewrites the
+// param to `filter=lemorzsolodott`.
+function statusFromFilterParam(raw: string | null): TesterStatus | null {
+  if (raw === 'quiet') return 'lemorzsolodott'
+  return raw !== null && (STATUS_ORDER as string[]).includes(raw) ? (raw as TesterStatus) : null
+}
 
 type CardSortKey = 'kockazat' | 'koltseg'
 const CARD_SORTS: { key: CardSortKey; label: string }[] = [
@@ -40,6 +59,7 @@ export function AdminUsersPage() {
   const me = useMe()
   const isOwner = me.data?.role === 'OWNER'
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<AdminUserInsightSort>('lastActivityAt')
   const [dir, setDir] = useState<AdminSortDir>('desc')
@@ -73,7 +93,33 @@ export function AdminUsersPage() {
   }
 
   const [view, setView] = useState<'cards' | 'table'>('cards')
-  const [statusFilter, setStatusFilter] = useState<TesterStatus | null>(null)
+  // Lazy initializer, not a mount-time useEffect — the tester_quiet alert's link
+  // (`/admin/users?filter=quiet`) must land already filtered on the FIRST render, same
+  // deep-link-lands-filtered contract as AdminCostPage's `?day=`/`?feature=`.
+  const [statusFilter, setStatusFilterState] = useState<TesterStatus | null>(
+    () => statusFromFilterParam(searchParams.get('filter')),
+  )
+  // Writes the actual status key back (never the `quiet` alias) — `?filter=` is URL-as-state for
+  // whichever bucket is active, so a reload or a shared link reproduces exactly what's on screen
+  // (card view only, see the callers above); clearing the filter clears the param entirely rather
+  // than leaving a stale `filter=`.
+  //
+  // Fix round (StrictMode safety): `next` is resolved against the CURRENT `statusFilter` closure
+  // value here, then `setStatusFilterState`/`setSearchParams` are called sequentially as plain
+  // event-handler statements — never `setSearchParams` from INSIDE a `setState` updater callback.
+  // React 18 StrictMode double-invokes updater functions to surface side effects; a `setSearchParams`
+  // call nested inside one would double-navigate under that double-invoke, and `setSearchParams`
+  // itself already accepts (and safely re-invokes) a functional updater for the params object.
+  const setStatusFilter = (next: TesterStatus | null | ((prev: TesterStatus | null) => TesterStatus | null)) => {
+    const resolved = typeof next === 'function' ? next(statusFilter) : next
+    setStatusFilterState(resolved)
+    setSearchParams((params) => {
+      const p = new URLSearchParams(params)
+      if (resolved === null) p.delete('filter')
+      else p.set('filter', resolved)
+      return p
+    }, { replace: true })
+  }
   const [cardSort, setCardSort] = useState<CardSortKey>('kockazat')
 
   // One shared `testerStatus` bucketing (adminViz.ts) — status is derived once here per row and

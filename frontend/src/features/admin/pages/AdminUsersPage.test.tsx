@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -16,6 +16,26 @@ function renderPage() {
     <MemoryRouter initialEntries={['/admin/users']}>
       <Routes>
         <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/users/:id" element={<div>USER DETAIL PAGE</div>} />
+      </Routes>
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+}
+
+// Exposes the router's current search string so a test can assert `?filter=` was written or
+// cleared, same LocationProbe idiom as MesoReportPage.test.tsx (pathname-only there; this page's
+// deep link is carried entirely in the search string).
+function LocationProbe() {
+  const { search } = useLocation()
+  return <div data-testid="location-search">{search}</div>
+}
+
+function renderAt(initialEntry: string) {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route path="/admin/users" element={<><AdminUsersPage /><LocationProbe /></>} />
         <Route path="/admin/users/:id" element={<div>USER DETAIL PAGE</div>} />
       </Routes>
     </MemoryRouter>,
@@ -104,6 +124,43 @@ describe('AdminUsersPage (mock mode, card grid — default view)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Lemorzsolódott/ }))
     await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(ADMIN_USER_INSIGHTS_MOCK.length))
     expect(screen.getByText(owner.name)).toBeInTheDocument()
+  })
+
+  // The tester_quiet alert on Pulzus links `/admin/users?filter=quiet` (AdminAlertService,
+  // mezo-kjwa) — this page must land already filtered on the FIRST render (mezo-wg4x fix round),
+  // not just support clicking the chip after the fact. `quiet` maps to `lemorzsolodott`
+  // (statusFromFilterParam's ruling: same 7+-day boundary the alert itself fires on).
+  it('lands pre-filtered to lemorzsolódott when opened via the tester_quiet alert link (?filter=quiet)', async () => {
+    const { container } = renderAt('/admin/users?filter=quiet')
+    const owner = ADMIN_USER_INSIGHTS_MOCK[0]
+    const anna = ADMIN_USER_INSIGHTS_MOCK[1]
+    const bela = ADMIN_USER_INSIGHTS_MOCK[2]
+
+    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(1))
+    expect(screen.queryByText(owner.name)).not.toBeInTheDocument()
+    expect(screen.getByText(anna.name)).toBeInTheDocument()
+    expect(screen.queryByText(bela.name)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lemorzsolódott/ })).toHaveAttribute('aria-pressed', 'true')
+
+    // Toggling the (now-active) chip off clears the grid AND rewrites the param away from the
+    // `quiet` alias entirely — it never gets echoed back into the URL, only real status keys do.
+    fireEvent.click(screen.getByRole('button', { name: /Lemorzsolódott/ }))
+    await waitFor(() => expect(container.querySelectorAll('.ad-testercard')).toHaveLength(ADMIN_USER_INSIGHTS_MOCK.length))
+    expect(screen.getByRole('button', { name: /Lemorzsolódott/ })).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent(''))
+  })
+
+  // Clicking a status chip (no deep link involved) also writes `?filter=<status>` — the round
+  // trip works in both directions, not just on the read side the alert link exercises above.
+  it('writes the clicked status key into ?filter= and clears it again on toggle-off', async () => {
+    renderAt('/admin/users')
+    await screen.findByText('Daniel')
+
+    fireEvent.click(screen.getByRole('button', { name: /^Aktív/ }))
+    await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent('filter=aktiv'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^Aktív/ }))
+    await waitFor(() => expect(screen.getByTestId('location-search')).toHaveTextContent(''))
   })
 
   // The "aktiv" bucket DOES include the owner (Daniel is aktiv), so filtering it must show
