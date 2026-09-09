@@ -20,11 +20,12 @@ import {
 } from '@/data/admin/adminInsightsMock'
 import { ADMIN_TABLES_MOCK, ADMIN_VIEWS_MOCK, adminRowsMockFor } from '@/data/admin/adminDataMock'
 import {
+  ADMIN_MEMORY_GLOBAL_HEALTH_MOCK,
   ADMIN_MEMORY_GRAPH_MOCK,
-  ADMIN_MEMORY_HEALTH_MOCK,
   ADMIN_MEMORY_NEIGHBORS_MOCK,
   ADMIN_MEMORY_RUNS_MOCK,
   ADMIN_MEMORY_VECTORS_MOCK,
+  adminMemoryHealthMockFor,
   adminMemoryReplayMockFor,
   adminMemoryRunDetailFor,
 } from '@/data/admin/adminMemoryMock'
@@ -430,7 +431,10 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/users/:userId/memory/vectors`, () => HttpResponse.json(ADMIN_MEMORY_VECTORS_MOCK)),
   http.get(`${API_BASE}/api/admin/users/:userId/memory/vectors/:itemId/neighbors`, () =>
     HttpResponse.json(ADMIN_MEMORY_NEIGHBORS_MOCK)),
-  http.get(`${API_BASE}/api/admin/users/:userId/memory/health`, () => HttpResponse.json(ADMIN_MEMORY_HEALTH_MOCK)),
+  http.get(`${API_BASE}/api/admin/users/:userId/memory/health`, ({ params }) =>
+    HttpResponse.json(adminMemoryHealthMockFor(String(params.userId)))),
+  // Installation-wide health (mezo-k5zy) — NOT scoped to one inspected user.
+  http.get(`${API_BASE}/api/admin/memory/health`, () => HttpResponse.json(ADMIN_MEMORY_GLOBAL_HEALTH_MOCK)),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.

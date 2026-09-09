@@ -4621,6 +4621,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/memory/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Installation-wide memory health rollup, independent of any one inspected user (AdminMemory)
+         * @description Ready/failed/stale vector counts, total memory items, and the newest daily-summary timestamp across the WHOLE installation — sourced from AdminAlertQuery, the same counts the memory_stuck/job_missed owner alerts already use. Companion off → 404 ADMIN_MEMORY_DISABLED, matching the per-user memory ops' idiom.
+         */
+        get: operations["getAdminMemoryGlobalHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users/{userId}/memory/health": {
         parameters: {
             query?: never;
@@ -10663,6 +10683,24 @@ export interface components {
             key: string;
             /** Format: int64 */
             count: number;
+        };
+        AdminMemoryGlobalHealthResponse: {
+            /** Format: int64 */
+            vectorsReady: number;
+            /** Format: int64 */
+            vectorsFailed: number;
+            /**
+             * Format: int64
+             * @description present but ANN-ineligible, the quiet failure mode (same predicate as AdminMemoryHealthResponse.staleVectorCount, install-wide)
+             */
+            vectorsStale: number;
+            /** Format: int64 */
+            itemsTotal: number;
+            /**
+             * Format: date-time
+             * @description inferred from the newest daily_summary row install-wide; null on a fresh install with no summary ever written
+             */
+            newestDailySummaryAt?: string | null;
         };
         AdminMemoryHealthResponse: {
             servingEmbeddingVersion: string;
@@ -23802,6 +23840,30 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            504: components["responses"]["AdminMemoryQueryTimeout"];
+        };
+    };
+    getAdminMemoryGlobalHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The install-wide health rollup */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryGlobalHealthResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
             504: components["responses"]["AdminMemoryQueryTimeout"];
         };
     };

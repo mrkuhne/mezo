@@ -3,6 +3,7 @@ import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import {
   adminMemoryApi,
   degradable,
+  type AdminMemoryGlobalHealthResponse,
   type AdminMemoryGraphResponse,
   type AdminMemoryHealthResponse,
   type AdminMemoryNeighborsResponse,
@@ -13,10 +14,11 @@ import {
   type Degradable,
 } from '@/data/admin/adminMemoryApi'
 import {
+  ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY,
+  ADMIN_MEMORY_GLOBAL_HEALTH_MOCK,
   ADMIN_MEMORY_GRAPH_EMPTY,
   ADMIN_MEMORY_GRAPH_MOCK,
   ADMIN_MEMORY_HEALTH_EMPTY,
-  ADMIN_MEMORY_HEALTH_MOCK,
   ADMIN_MEMORY_NEIGHBORS_EMPTY,
   ADMIN_MEMORY_NEIGHBORS_MOCK,
   ADMIN_MEMORY_RUNS_EMPTY,
@@ -25,6 +27,7 @@ import {
   ADMIN_MEMORY_RUN_DETAIL_MOCK,
   ADMIN_MEMORY_VECTORS_EMPTY,
   ADMIN_MEMORY_VECTORS_MOCK,
+  adminMemoryHealthMockFor,
   adminMemoryRunDetailFor,
 } from '@/data/admin/adminMemoryMock'
 
@@ -115,13 +118,27 @@ export function useAdminMemoryHealth(userId: string, isOwner: boolean) {
   const enabled = isOwner && userId !== ''
   const q = useDualQuery<Degradable<AdminMemoryHealthResponse>>({
     queryKey: [...ADMIN_MEMORY_KEY, 'health', userId],
-    mockData: ADMIN_MEMORY_HEALTH_MOCK,
+    mockData: adminMemoryHealthMockFor(userId),
     realFetch: degradable(() => adminMemoryApi.health(userId), ADMIN_MEMORY_HEALTH_EMPTY),
     realEmpty: ADMIN_MEMORY_HEALTH_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     enabled,
   })
   return { ...q, isPending: enabled && q.isPending }
+}
+
+/** Installation-wide health (mezo-k5zy) — the Memória entry page's KPI tiles, NOT scoped to one
+ *  inspected user and NOT a client-side aggregation over every user's per-user `useAdminMemoryHealth`. */
+export function useAdminMemoryGlobalHealth(isOwner: boolean) {
+  const q = useDualQuery<Degradable<AdminMemoryGlobalHealthResponse>>({
+    queryKey: [...ADMIN_MEMORY_KEY, 'global-health'],
+    mockData: ADMIN_MEMORY_GLOBAL_HEALTH_MOCK,
+    realFetch: degradable(() => adminMemoryApi.globalHealth(), ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY),
+    realEmpty: ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    enabled: isOwner,
+  })
+  return { ...q, isPending: isOwner && q.isPending }
 }
 
 /** The replay is the only mutation on this surface — and it is side-effect-free server-side

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.admin.service;
 
 import io.mrkuhne.mezo.api.dto.AdminMemoryCandidate;
+import io.mrkuhne.mezo.api.dto.AdminMemoryGlobalHealthResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryGraphResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryHealthResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryNeighbor;
@@ -13,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.AdminMemoryRunSummary;
 import io.mrkuhne.mezo.api.dto.AdminMemoryVectorItem;
 import io.mrkuhne.mezo.api.dto.AdminMemoryVectorsResponse;
 import io.mrkuhne.mezo.feature.admin.config.AdminMemoryProperties;
+import io.mrkuhne.mezo.feature.admin.repository.AdminAlertQuery;
 import io.mrkuhne.mezo.feature.admin.repository.AdminRowQuery;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
@@ -35,6 +37,8 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -104,6 +108,7 @@ public class AdminMemoryService {
     private final AdminMemoryGraphMapper graphMapper;
     private final AdminMemoryProperties properties;
     private final AdminRowQuery rowQuery;
+    private final AdminAlertQuery alertQuery;
     private final ObjectMapper objectMapper;
 
     /** One page of the inspected user's audited runs, newest first. */
@@ -344,6 +349,28 @@ public class AdminMemoryService {
                     .jobs(graphMapper.jobs(query.jobs(userId)))
                     .build();
         });
+    }
+
+    /**
+     * Installation-wide health rollup (mezo-k5zy): the same ready/failed/stale vector counts and
+     * item total the memory_stuck/job_missed owner alerts already read from {@link AdminAlertQuery},
+     * NOT a client-side aggregation over every user's per-user {@code /health}. Gated on the
+     * companion switch via {@code require(healthQuery)} exactly like the per-user ops, even though
+     * the counts themselves come from fixed-table SQL that needs no companion bean.
+     */
+    @Transactional(readOnly = true)
+    public AdminMemoryGlobalHealthResponse globalHealth() {
+        require(healthQuery);
+        alertQuery.applyStatementTimeout(properties.statementTimeoutSql());
+        return translateTimeout(() -> AdminMemoryGlobalHealthResponse.builder()
+                .vectorsReady(alertQuery.readyMemoryVectors())
+                .vectorsFailed(alertQuery.failedMemoryVectors())
+                .vectorsStale(alertQuery.staleMemoryVectors())
+                .itemsTotal(alertQuery.totalMemoryItems())
+                .newestDailySummaryAt(alertQuery.newestDailySummaryAt()
+                        .map(instant -> OffsetDateTime.ofInstant(instant, ZoneOffset.UTC))
+                        .orElse(null))
+                .build());
     }
 
     /** The map's projection request — the admin knobs the companion service is handed. */

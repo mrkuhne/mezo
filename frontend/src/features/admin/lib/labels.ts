@@ -110,6 +110,9 @@ export const SCREEN_LABELS: Record<string, Entry> = {
   '/admin/users': { label: 'Admin · emberek' },
   '/admin/users/:id': { label: 'Admin · tesztelő-részlet' },
   '/admin/users/:id/memory': { label: 'Admin · emlék-böngésző' },
+  // Memória entry page (mezo-k5zy fix round — F5): the rail's `/admin/memory` landing, one hop
+  // above the per-user emlék-böngésző above.
+  '/admin/memory': { label: 'Admin · memória' },
   // '/admin/usage' is a redirect-only route (mezo-kxnn) — `/admin/features` is the live screen
   // now; the old entry is gone rather than kept as a second label for a route nothing renders.
   '/admin/features': { label: 'Admin · funkciók' },
@@ -170,6 +173,44 @@ export const SURFACE_LABELS: Record<string, Entry> = {
   day_review: { label: 'Napi értékelés' },
 }
 
+// Memory-explorer terms (mezo-k5zy Task 3) — closes the slice-0 deferred "every memory term"
+// promise: every raw backend key the Gráf/Térkép/Felidézések views render gets a Hungarian name
+// here, same honest-fallback contract as every other dictionary in this file. Four families,
+// one flat record (no collisions — a retriever key, a node kind, an edge kind and a vector
+// status never share a spelling):
+//   - retriever sources (`AdminMemoryScoreBreakdown.retrieverRanks` keys / RunDetail's own
+//     `RETRIEVER_COLORS` universe)
+//   - node kinds (`AdminMemoryGraphNode.kind`, GraphView's `KIND_COLOR` universe)
+//   - edge kinds (`AdminMemoryGraphEdge.kind`) — the hint carries the one-liner the Gráf legend
+//     needs ("what does this edge MEAN"), not just a translated key
+//   - vector states (`AdminMemoryHealthResponse.vectorsByStatus`/`AdminMemoryGlobalHealthResponse`
+//     keys)
+export const MEMORY_TERM_LABELS: Record<string, Entry> = {
+  // ── retriever sources ──
+  dense: { label: 'Tartalmi hasonlóság', hint: 'beágyazás (embedding) alapú keresés' },
+  lexical: { label: 'Szó szerinti egyezés', hint: 'kulcsszó/szöveg alapú keresés' },
+  graph: { label: 'Tudásgráf', hint: 'a tudásgráf kapcsolatain át talált emlék' },
+  facts: { label: 'Rögzített tény', hint: 'egy korábban tanult, rögzített tény' },
+  // ── node kinds (knowledge_node.kind) ──
+  PATTERN: { label: 'Minta', hint: 'ismétlődő viselkedési/érzés-mintázat' },
+  PREFERENCE: { label: 'Preferencia', hint: 'amit a felhasználó kedvel vagy kerül' },
+  GOAL: { label: 'Cél', hint: 'kimondott vagy levezetett cél' },
+  LIFE_EVENT: { label: 'Élet-esemény', hint: 'egyszeri, jelentős esemény' },
+  SEASON: { label: 'Időszak', hint: 'egy életszakasz vagy időszak jellemzője' },
+  INSIGHT: { label: 'Felismerés', hint: 'a társ által levont következtetés' },
+  PERSON: { label: 'Személy', hint: 'a naplóban említett ember' },
+  // ── edge kinds (knowledge_edge.kind) — hint = the legend's "what this arrow means" one-liner ──
+  TRIGGERS: { label: 'Kiváltja', hint: 'az egyik csomópont kiváltja a másikat' },
+  PRECEDED_BY: { label: 'Megelőzi', hint: 'az egyik csomópont időben megelőzi a másikat' },
+  SUPPORTS: { label: 'Alátámasztja', hint: 'az egyik csomópont megerősíti a másikat' },
+  CONFLICTS: { label: 'Ellentmond', hint: 'a két csomópont ellentmond egymásnak' },
+  RELATES_TO: { label: 'Kapcsolódik', hint: 'általános, kevésbé pontosan jellemzett kapcsolat' },
+  // ── vector states (memory_vector status) ──
+  ready: { label: 'Kész', hint: 'kereshető, beágyazott vektor' },
+  pending: { label: 'Folyamatban', hint: 'beágyazásra vár' },
+  failed: { label: 'Elakadt', hint: 'a beágyazás sikertelen volt' },
+}
+
 function resolve(record: Record<string, Entry>, key: string): AdminLabel {
   const hit = record[key]
   return hit ? { ...hit } : { label: key, missing: true }
@@ -193,4 +234,8 @@ export function feedbackReasonLabel(reason: string): AdminLabel {
 
 export function surfaceLabel(kind: string): AdminLabel {
   return resolve(SURFACE_LABELS, kind)
+}
+
+export function memoryTermLabel(key: string): AdminLabel {
+  return resolve(MEMORY_TERM_LABELS, key)
 }

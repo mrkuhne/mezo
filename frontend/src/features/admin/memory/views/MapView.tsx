@@ -399,6 +399,7 @@ export function MapView({
           </div>
         )}
 
+        <div className="am-mapkeynote">szín = forrás · méret = fontosság (salience)</div>
         <div className="am-srckey">
           <span><i style={{ background: '#6C5FA3' }} />sleep_log</span>
           <span><i style={{ background: '#7FA06C' }} />food_log / fuel_log</span>

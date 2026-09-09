@@ -1,5 +1,6 @@
-import { MOCK_ANNA_ID } from '@/data/admin/adminMock'
+import { MOCK_ANNA_ID, MOCK_BELA_ID, MOCK_OWNER_ID } from '@/data/admin/adminMock'
 import type {
+  AdminMemoryGlobalHealthResponse,
   AdminMemoryGraphResponse,
   AdminMemoryHealthResponse,
   AdminMemoryNeighborsResponse,
@@ -20,6 +21,17 @@ import type {
 // Float32 projection block.
 
 export const ADMIN_MEMORY_INSPECTED_USER_ID = MOCK_ANNA_ID
+
+/** An ISO timestamp `hoursAgo` hours before "now" (mezo-k5zy fix round — F3) — same relative-date
+ *  idiom as `adminInsightsMock.ts`'s `daysAgoIso`, so `newestDailySummaryAt` stays "X órája" no
+ *  matter which day the suite runs on, instead of a hardcoded date drifting further into the past
+ *  (and eventually past the entry page's own >26h warn threshold) every day the fixture goes
+ *  unedited. */
+function hoursAgoIso(hoursAgo: number): string {
+  const d = new Date()
+  d.setHours(d.getHours() - hoursAgo)
+  return d.toISOString()
+}
 
 const RUN_SHADOW: AdminMemoryRunSummary = {
   id: 'a1000000-0000-4000-8000-000000000001',
@@ -392,4 +404,114 @@ export const ADMIN_MEMORY_HEALTH_EMPTY: AdminMemoryHealthResponse = {
   servingEmbeddingVersion: '',
   vectorsByStatus: [], vectorFailures: [], vectorsByVersion: [], staleVectorCount: 0,
   itemsByState: [], nodesByStatus: [], nodesByKind: [], edgeWeightHistogram: [], jobs: {},
+}
+
+// Per-user health mocks (mezo-k5zy fix round 1) — `ADMIN_MEMORY_HEALTH_MOCK` above used to be
+// served for EVERY userId, with numbers copy-shaped from the INSTALL-WIDE seed
+// (`ADMIN_MEMORY_GLOBAL_HEALTH_MOCK`'s 1780/6/9/1842). That made a real browsable user's own
+// explorer (e.g. Anna, `vectorCount: 140` on her `ADMIN_USER_INSIGHTS_MOCK` row) show
+// installation-scale numbers next to her own much smaller hero stats — internally inconsistent
+// within the SAME mock seed. `adminMemoryHealthMockFor(userId)` below keys off the three known
+// mock users (owner/Anna/Béla) so a real click-through (entry page's tester picker ->
+// `/admin/users/:id/memory`) always lands on numbers proportribed to THAT user; any other/
+// synthetic id (arbitrary test ids like `'u-1'`) keeps falling back to `ADMIN_MEMORY_HEALTH_MOCK`
+// unchanged — the existing fixture, not a stand-in for any specific mock user, so tests written
+// against it are untouched.
+
+// Anna — `vectorCount: 140`, `rowCount: 356` on her insight row. Every count here is scaled DOWN
+// from the (now install-wide-only) original fixture, staying internally consistent: vectorsByStatus
+// sums to her vectorCount (132+6+2=140), itemsByState sums to her rowCount (320+24+12=356).
+export const ADMIN_MEMORY_HEALTH_ANNA_MOCK: AdminMemoryHealthResponse = {
+  servingEmbeddingVersion: 'text-embedding-3-small@v1',
+  vectorsByStatus: [{ key: 'ready', count: 132 }, { key: 'pending', count: 6 }, { key: 'failed', count: 2 }],
+  vectorFailures: [{ key: 'RATE_LIMITED', count: 1 }, { key: 'CONTENT_FILTERED', count: 1 }],
+  vectorsByVersion: [{ key: 'text-embedding-3-small@v1', count: 132 }, { key: 'text-embedding-3-small@v0', count: 8 }],
+  staleVectorCount: 6,
+  itemsByState: [{ key: 'active', count: 320 }, { key: 'suppressed', count: 24 }, { key: 'superseded', count: 12 }],
+  nodesByStatus: [{ key: 'active', count: 18 }, { key: 'archived', count: 3 }, { key: 'candidate', count: 1 }],
+  nodesByKind: [{ key: 'PATTERN', count: 9 }, { key: 'PREFERENCE', count: 5 }, { key: 'GOAL', count: 3 }, { key: 'LIFE_EVENT', count: 2 }, { key: 'SEASON', count: 1 }, { key: 'INSIGHT', count: 1 }, { key: 'PERSON', count: 1 }],
+  edgeWeightHistogram: Array.from({ length: 10 }, (_, i) => ({ key: `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}`, count: [3, 4, 5, 9, 16, 30, 40, 48, 37, 17][i] })),
+  jobs: {
+    lastDailySummary: '2026-09-07T04:00:00Z',
+    lastPatternDetection: '2026-09-07T04:12:00Z',
+    lastEdgeReinforcement: '2026-09-07T04:20:00Z',
+    lastRetrievalRun: '2026-09-07T09:41:12Z',
+    lastVectorWrite: '2026-09-07T09:30:00Z',
+  },
+}
+
+// Daniel (owner) — `vectorCount: 812`, `rowCount: 2140`. Same internal-consistency contract as
+// Anna's mock above.
+export const ADMIN_MEMORY_HEALTH_OWNER_MOCK: AdminMemoryHealthResponse = {
+  servingEmbeddingVersion: 'text-embedding-3-small@v1',
+  vectorsByStatus: [{ key: 'ready', count: 780 }, { key: 'pending', count: 20 }, { key: 'failed', count: 12 }],
+  vectorFailures: [{ key: 'RATE_LIMITED', count: 8 }, { key: 'CONTENT_FILTERED', count: 4 }],
+  vectorsByVersion: [{ key: 'text-embedding-3-small@v1', count: 780 }, { key: 'text-embedding-3-small@v0', count: 32 }],
+  staleVectorCount: 5,
+  itemsByState: [{ key: 'active', count: 1980 }, { key: 'suppressed', count: 110 }, { key: 'superseded', count: 50 }],
+  nodesByStatus: [{ key: 'active', count: 100 }, { key: 'archived', count: 20 }, { key: 'candidate', count: 8 }],
+  nodesByKind: [{ key: 'PATTERN', count: 54 }, { key: 'PREFERENCE', count: 27 }, { key: 'GOAL', count: 18 }, { key: 'LIFE_EVENT', count: 14 }, { key: 'SEASON', count: 7 }, { key: 'INSIGHT', count: 5 }, { key: 'PERSON', count: 3 }],
+  edgeWeightHistogram: Array.from({ length: 10 }, (_, i) => ({ key: `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}`, count: [18, 25, 32, 54, 95, 172, 235, 276, 217, 99][i] })),
+  jobs: {
+    lastDailySummary: '2026-09-07T04:00:00Z',
+    lastPatternDetection: '2026-09-07T04:12:00Z',
+    lastEdgeReinforcement: '2026-09-07T04:20:00Z',
+    lastRetrievalRun: '2026-09-07T09:41:12Z',
+    lastVectorWrite: '2026-09-07T09:30:00Z',
+  },
+}
+
+// Béla — `vectorCount: 0`, `status: 'DISABLED'`, never active. Honest all-zero shape, NOT the
+// same identity as `ADMIN_MEMORY_HEALTH_EMPTY` (that one is the companion-off/degraded-fallback
+// shape with an empty `servingEmbeddingVersion` too) — the system IS configured, Béla simply has
+// nothing in it yet.
+export const ADMIN_MEMORY_HEALTH_BELA_MOCK: AdminMemoryHealthResponse = {
+  servingEmbeddingVersion: 'text-embedding-3-small@v1',
+  vectorsByStatus: [], vectorFailures: [], vectorsByVersion: [], staleVectorCount: 0,
+  itemsByState: [], nodesByStatus: [], nodesByKind: [], edgeWeightHistogram: [],
+  jobs: {
+    lastDailySummary: null,
+    lastPatternDetection: null,
+    lastEdgeReinforcement: null,
+    lastRetrievalRun: null,
+    lastVectorWrite: null,
+  },
+}
+
+export function adminMemoryHealthMockFor(userId: string): AdminMemoryHealthResponse {
+  if (userId === MOCK_ANNA_ID) return ADMIN_MEMORY_HEALTH_ANNA_MOCK
+  if (userId === MOCK_OWNER_ID) return ADMIN_MEMORY_HEALTH_OWNER_MOCK
+  if (userId === MOCK_BELA_ID) return ADMIN_MEMORY_HEALTH_BELA_MOCK
+  return ADMIN_MEMORY_HEALTH_MOCK
+}
+
+// Installation-wide health (mezo-k5zy) — the Memória entry page's KPI tiles. A realistic
+// install with a nonzero stale count (the quiet failure mode the entry page must surface).
+//
+// Fix round (F2): these numbers must be the SUM of the three per-user seeds above, not an
+// independent fiction — otherwise the entry page's install-wide KPIs contradict what a click into
+// any one user's own Áttekintés/Rétegek shows immediately after. Recomputed from
+// ADMIN_MEMORY_HEALTH_{ANNA,OWNER,BELA}_MOCK:
+//   vectors  Anna 132+6+2=140  Owner 780+20+12=812  Béla 0        => total 952
+//   ready    Anna 132          Owner 780            Béla 0        => 912
+//   failed   Anna 2            Owner 12             Béla 0        => 14
+//   stale    Anna 6            Owner 5              Béla 0        => 11
+//   items    Anna 356          Owner 2140           Béla 0        => 2496
+// (Pulzus's own overview seed, `ADMIN_OVERVIEW_MOCK`'s 512/488 memoryItemCount/vectorCount, is a
+// SEPARATE endpoint's independent fiction — deliberately left untouched; only this memory-global
+// seed needs to agree with the per-user memory seeds.)
+export const ADMIN_MEMORY_GLOBAL_HEALTH_MOCK: AdminMemoryGlobalHealthResponse = {
+  vectorsReady: 912,
+  vectorsFailed: 14,
+  vectorsStale: 11,
+  itemsTotal: 2496,
+  newestDailySummaryAt: hoursAgoIso(5),
+}
+
+export const ADMIN_MEMORY_GLOBAL_HEALTH_EMPTY: AdminMemoryGlobalHealthResponse = {
+  vectorsReady: 0,
+  vectorsFailed: 0,
+  vectorsStale: 0,
+  itemsTotal: 0,
+  newestDailySummaryAt: null,
 }

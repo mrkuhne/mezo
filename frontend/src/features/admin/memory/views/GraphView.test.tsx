@@ -69,9 +69,22 @@ describe('GraphView (mock mode)', () => {
   it('a kind filter chip hides nodes of other kinds', async () => {
     renderGraphView()
     await screen.findByTestId(`am-node-${NODE_ACTIVE.id}`)
-    fireEvent.click(screen.getByRole('button', { name: /GOAL/ }))
+    // The chip label is now the Hungarian term (mezo-k5zy Task 3, memoryTermLabel('GOAL')), not
+    // the raw backend kind — NODE_CANDIDATE's kind is GOAL, whose chip now reads "Cél".
+    fireEvent.click(screen.getByRole('button', { name: /Cél/ }))
     expect(screen.queryByTestId(`am-node-${NODE_ACTIVE.id}`)).not.toBeInTheDocument()
     expect(screen.getByTestId(`am-node-${NODE_CANDIDATE.id}`)).toBeInTheDocument()
+  })
+
+  // mezo-k5zy Task 3 — node-kind + edge-kind legends use Hungarian terms, not raw backend kinds.
+  it('the node-kind legend shows Hungarian labels, and the edge-kind legend explains what each edge means', async () => {
+    renderGraphView()
+    await screen.findByTestId(`am-node-${NODE_ACTIVE.id}`)
+    expect(document.querySelector('.am-legend2')?.textContent).toContain('Cél')
+    expect(document.querySelector('.am-legend2')?.textContent).not.toMatch(/\bGOAL\b/)
+    const edgeLegend = document.querySelector('.am-edgelegend')
+    expect(edgeLegend?.textContent).toContain('Kiváltja')
+    expect(edgeLegend?.textContent).toContain('kiváltja a másikat')
   })
 
   it('the title search filters nodes by title', async () => {

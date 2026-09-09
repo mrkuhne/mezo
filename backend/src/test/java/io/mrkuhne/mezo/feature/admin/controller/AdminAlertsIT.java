@@ -177,7 +177,7 @@ class AdminAlertsIT extends ApiIntegrationTest {
                 .singleElement()
                 .satisfies(a -> {
                     assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.BAD);
-                    assertThat(a.getLink()).contains("/admin/users");
+                    assertThat(a.getLink()).contains("/admin/memory");
                 });
     }
 
@@ -197,7 +197,7 @@ class AdminAlertsIT extends ApiIntegrationTest {
                 .singleElement()
                 .satisfies(a -> {
                     assertThat(a.getSeverity()).isEqualTo(AdminAlert.SeverityEnum.WARN);
-                    assertThat(a.getLink()).contains("/admin/users");
+                    assertThat(a.getLink()).contains("/admin/memory");
                 });
     }
 

@@ -71,8 +71,8 @@ export function RunsView({
           <table className="ad-table" style={{ minWidth: 820 }}>
             <thead>
               <tr>
-                <th>Idő</th><th>Policy</th><th>Mód</th><th>Lekérdezés mód</th><th>Nyers → átfogalmazott</th>
-                <th className="num">Jelöltek</th><th className="num">Ideje</th><th>Hiba</th>
+                <th>Idő</th><th>Felhasználás</th><th>Kiszolgálás</th><th>Keresés módja</th><th>Lekérdezés</th>
+                <th className="num">Jelöltek</th><th className="num">Időtartam</th><th>Hiba</th>
               </tr>
             </thead>
             <tbody>

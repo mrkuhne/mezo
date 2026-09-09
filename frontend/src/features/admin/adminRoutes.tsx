@@ -21,6 +21,8 @@ const AdminUserDetailPage = lazy(() =>
   import('@/features/admin/pages/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })))
 const AdminMemoryPage = lazy(() =>
   import('@/features/admin/memory/AdminMemoryPage').then((m) => ({ default: m.AdminMemoryPage })))
+const AdminMemoryEntryPage = lazy(() =>
+  import('@/features/admin/pages/AdminMemoryEntryPage').then((m) => ({ default: m.AdminMemoryEntryPage })))
 const AdminFeaturesPage = lazy(() =>
   import('@/features/admin/pages/AdminFeaturesPage').then((m) => ({ default: m.AdminFeaturesPage })))
 const AdminFeatureDetailPage = lazy(() =>
@@ -43,6 +45,9 @@ export const adminRoutes: RouteObject[] = [
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
       { path: 'users/:id/memory', element: <AdminMemoryPage /> },
+      // Memória entry (mezo-k5zy) — installation-wide health + tester picker, one hop above
+      // the per-user memory explorer above.
+      { path: 'memory', element: <AdminMemoryEntryPage /> },
       // Funkciók (mezo-kxnn) replaces the Feature-használat matrix page; /admin/usage is a
       // bookmark-preserving redirect, not a live route.
       { path: 'features', element: <AdminFeaturesPage /> },

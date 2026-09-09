@@ -99,11 +99,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/admin/users/{id}/feedback · GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix ·
     GET /api/admin/usage/screens · GET /api/admin/alerts · GET /api/admin/features · GET /api/admin/features/{key} ·
     GET /api/admin/feedback/summary
-- **Contract** `api/feature/admin-memory/admin-memory.yml` — 7 operations
+- **Contract** `api/feature/admin-memory/admin-memory.yml` — 8 operations
   - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
     POST /api/admin/users/{userId}/memory/replay · GET /api/admin/users/{userId}/memory/graph ·
     GET /api/admin/users/{userId}/memory/vectors · GET /api/admin/users/{userId}/memory/vectors/{itemId}/neighbors ·
-    GET /api/admin/users/{userId}/memory/health
+    GET /api/admin/memory/health · GET /api/admin/users/{userId}/memory/health
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminRows`, `useAdminTables`,
     `useAdminUsers`, `useAdminViews`
@@ -112,18 +112,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     adminMock.ts
 - **FE ui** `frontend/src/features/admin`
   - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
-    AdminFeatureDetailPage.tsx, AdminFeaturesPage.tsx, AdminOverviewPage.tsx, AdminUserDetailPage.tsx,
-    AdminUsersPage.tsx
+    AdminFeatureDetailPage.tsx, AdminFeaturesPage.tsx, AdminMemoryEntryPage.tsx, AdminOverviewPage.tsx,
+    AdminUserDetailPage.tsx, AdminUsersPage.tsx
   - **components:** AdminStatusBand.tsx, AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiModelBreakdown.tsx,
     DataTable.tsx, FeatureScoreRow.tsx, JsonCell.tsx, ScreenUsageTable.tsx, Sparkline.tsx, TablePicker.tsx,
     TesterCard.tsx, TopListTile.tsx, UserPicker.tsx, ValueCostQuadrant.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
-    MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
-    RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts, projection.ts,
-    umap.worker.ts, umapConstants.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 22 IT + 3 unit
+    MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, OverviewView.tsx, ReplayBox.tsx,
+    RunDetail.tsx, RunsView.tsx, adminRoutes.tsx, adminViz.ts, contribution.ts, graphLayout.ts, labels.ts,
+    projection.ts, umap.worker.ts, umapConstants.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 24 IT + 3 unit
   - **ITs:** `AdminAlertsCompanionOffIT`, `AdminAlertsIT`, `AdminDataBrowserIT`, `AdminFeatureBoardIT`,
-    `AdminFeatureDetailIT`, `AdminFeatureQueryIT`, `AdminFeaturesCompanionOffIT`, `AdminMemoryGraphIT`,
+    `AdminFeatureDetailIT`, `AdminFeatureQueryIT`, `AdminFeaturesCompanionOffIT`,
+    `AdminMemoryGlobalHealthCompanionOffIT`, `AdminMemoryGlobalHealthIT`, `AdminMemoryGraphIT`,
     `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`, `AdminMemoryReplayIT`, `AdminMemoryRunsIT`,
     `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`, `AdminOverviewIT`, `AdminScreenUsageIT`,
     `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserFeedbackCompanionOffIT`,

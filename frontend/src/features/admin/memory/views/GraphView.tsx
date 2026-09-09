@@ -6,6 +6,7 @@ import { layout, type LaidOutNode } from '@/features/admin/memory/graphLayout'
 import { GraphEdgeInspectorBody, GraphNodeInspectorBody } from '@/features/admin/memory/views/GraphInspector'
 import type { InspectorBody } from '@/features/admin/memory/views/RunDetail'
 import type { AdminMemoryGraphResponse } from '@/data/admin/adminMemoryApi'
+import { memoryTermLabel } from '@/features/admin/lib/labels'
 
 // Gráf (mezo-4qyt.4, Step 4.2) — d3-force layout, hand-written SVG. A node kind's colour is
 // fixed (`KIND_COLOR`), covering all SEVEN kinds including PERSON (`GraphNodeEntity.KIND_PERSON`
@@ -25,6 +26,7 @@ const CONFLICTS_STROKE = '#A8452A'
 const EDGE_STROKE = '#4E8FB8'
 
 const KIND_ORDER = ['PATTERN', 'PREFERENCE', 'GOAL', 'LIFE_EVENT', 'SEASON', 'INSIGHT', 'PERSON']
+const EDGE_KIND_ORDER = ['TRIGGERS', 'PRECEDED_BY', 'SUPPORTS', 'CONFLICTS', 'RELATES_TO']
 const VIEWBOX = { width: 760, height: 380 }
 
 export function GraphView({
@@ -131,7 +133,7 @@ export function GraphView({
               className={`ad-chip am-kindchip${activeKinds != null && activeKinds.has(k) ? ' on' : ''}`}
               onClick={() => toggleKind(k)}
             >
-              <i style={{ background: KIND_COLOR[k] }} />{k}
+              <i style={{ background: KIND_COLOR[k] }} />{memoryTermLabel(k).label}
             </button>
           ))}
         </div>
@@ -239,12 +241,26 @@ export function GraphView({
 
         <div className="am-legend2">
           {KIND_ORDER.map((k) => (
-            <span key={k}><i style={{ background: KIND_COLOR[k] }} />{k}</span>
+            <span key={k} title={memoryTermLabel(k).hint}><i style={{ background: KIND_COLOR[k] }} />{memoryTermLabel(k).label}</span>
           ))}
           <span style={{ opacity: 0.6 }}><i style={{ background: EDGE_STROKE, opacity: 0.45 }} />candidate (fakó)</span>
           <span><i style={{ background: 'transparent', border: '2px dashed #A2958A', borderRadius: '50%' }} />törölt (szaggatott perem)</span>
-          <span>— él: <span style={{ borderBottom: `2px solid ${CONFLICTS_STROKE}`, paddingBottom: 1 }}>┅</span> CONFLICTS (szaggatott)</span>
+          <span>— él: <span style={{ borderBottom: `2px solid ${CONFLICTS_STROKE}`, paddingBottom: 1 }}>┅</span> {memoryTermLabel('CONFLICTS').label} (szaggatott)</span>
         </div>
+
+        <div className="am-edgelegend">
+          <div className="ad-eyebrow" style={{ marginBottom: 4 }}>Él-fajták</div>
+          {EDGE_KIND_ORDER.map((k) => {
+            const l = memoryTermLabel(k)
+            return (
+              <div key={k} className="row">
+                <b>{l.label}</b>
+                <span>{l.hint}</span>
+              </div>
+            )
+          })}
+        </div>
+
         <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 8 }}>
           A layout egyszer fut le és utána befagy — húzáskor csak a fogott csomópont mozdul, nincs újraszimuláció.
         </div>
