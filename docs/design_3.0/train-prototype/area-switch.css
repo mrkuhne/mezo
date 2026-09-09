@@ -1,0 +1,19 @@
+/* Boop területszínek: az Edzés mindig kék, a térváltó pedig az öt főteret mutatja. */
+.orb.coral{--light:#f5dbca;--mid:#d59e83;--dark:#a37565}
+.orb.blue{--light:#d9e6ef;--mid:#adc4d4;--dark:#6c859b}
+.orb.sage{--light:#e0e9c7;--mid:#b0c497;--dark:#799060}
+.orb.lavender{--light:#eee2f3;--mid:#c4b1d6;--dark:#907d9f}
+.orb.rose{--light:#f2dce4;--mid:#cda6b8;--dark:#9e7889}
+.area-switch .orb{animation:blink 7s infinite,glance 19s ease-in-out infinite}
+.nav-item.active{background:var(--blue)}
+.nav-item.active span{color:#567d8a}
+.role-options{display:grid;gap:8px;margin:20px 0}
+.role-options>a,.role-options>button{display:flex;align-items:center;gap:16px;width:100%;padding:13px 14px;border-radius:22px;text-align:left;color:var(--ink);min-height:104px}
+.role-options span{flex:1}
+.role-options strong{display:block;font-size:18px}
+.role-options small{display:block;font-size:12px;margin-top:5px}
+.role-options b{font-size:26px;color:#81936c;font-weight:400}
+.role-options .selected{background:var(--blue)}
+.role-options .orb{width:64px;height:64px}
+.role-options .orb i{width:5px;height:13px}
+.role-options .selected b{font-size:31px}

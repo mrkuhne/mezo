@@ -107,7 +107,7 @@ számlálók csak szeptember 7–13. adatait veszik figyelembe, régebbi sportlo
 Meleg papír, zsálya összegzések, korall erősítés, arany eredmények, levendula sport,
 kék futás. Geist a számokhoz és kezelőelemekhez, Fraunces a rövid címsorokhoz.
 A telefonháztól külön app, valódi mobilviewport, a dock önálló elrendezési sor.
-Legalább 44 px-es alsó érintési célok. A kis zöld avatar pislog és röviden
+Legalább 44 px-es alsó érintési célok. Az Edzés kis kék avatárja pislog és röviden
 fel-balra, fel-jobbra, oldalra vagy lefelé pillant; nincs köröző szemmozgás.
 `prefers-reduced-motion` esetén az animáció leáll.
 
