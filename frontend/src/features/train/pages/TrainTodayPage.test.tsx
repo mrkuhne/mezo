@@ -98,14 +98,30 @@ test('day strip: selecting another day swaps the rendered sessions, no refetch',
   expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
 })
 
+// Mock mode's gymDoneDates (trainHooks.ts) always marks the WALL-CLOCK "today" ISO
+// date done whenever the fixture's flagged gym day (Csü) is active — a fixed rule,
+// independent of which real weekday the suite happens to run on. buildWeekAgenda
+// assigns Sze's row the real calendar date of "this week's Wednesday", so on any
+// run that lands on an actual Wednesday, Sze's row date COINCIDES with that
+// always-done wall-clock date and the day reads as already logged — losing the
+// not-yet-done, direct-start CTA this test exists to assert (day-of-week flake).
+// Pin the clock to a fixed Thursday (matching the fixture's own Csü="today" flag)
+// so Sze and the wall-clock day can never collide, regardless of the real date
+// (mezo-pfdv).
 test('a non-today gym day renders a read-only-capable card with a direct-start CTA', async () => {
-  renderView()
-  // Sze (Wed) carries a not-yet-done gym slot in the mock week.
-  fireEvent.click(screen.getByRole('tab', { name: /Szerda|Sze/ }))
-  expect(await screen.findByText('Pull Day', { selector: '.todaycard-title' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /Kezdjük el/ }))
-  // Mock MesoDay fixtures carry no `id`, so gymDayTarget resolves the plain route.
-  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
+  try {
+    renderView()
+    // Sze (Wed) carries a not-yet-done gym slot in the mock week.
+    fireEvent.click(screen.getByRole('tab', { name: /Szerda|Sze/ }))
+    expect(await screen.findByText('Pull Day', { selector: '.todaycard-title' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Kezdjük el/ }))
+    // Mock MesoDay fixtures carry no `id`, so gymDayTarget resolves the plain route.
+    expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('the weekly list and load tiles moved to Heti — Mai renders neither', () => {
