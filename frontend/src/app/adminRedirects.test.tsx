@@ -42,8 +42,12 @@ describe('legacy owner routes (mock mode)', () => {
 
   it('redirects me/ai-usage to /admin/cost (AdminCostPage)', async () => {
     const { router } = renderAt('/me/ai-usage')
-    expect(await screen.findByText('AI-napló')).toBeInTheDocument()
-    expect(screen.getByText('Költés')).toBeInTheDocument() // AdminRail, confirms /admin/cost is active
+    // mezo-pfdv Task 2 rebuilt AdminCostPage: the old "AI-napló" header is gone, replaced by
+    // the section template — its PageHero is now named "Költés" too (same as the AdminRail
+    // link), so the rail confirmation below is scoped to the `link` role to stay unambiguous.
+    // The KPI strip's "<HÓNAP> · NAPTÁRI HÓNAP" eyebrow is a stable marker unique to the new page.
+    expect(await screen.findByText(/NAPTÁRI HÓNAP/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Költés' })).toBeInTheDocument() // AdminRail, confirms /admin/cost is active
     expect(router.state.location.pathname).toBe('/admin/cost')
   })
 
