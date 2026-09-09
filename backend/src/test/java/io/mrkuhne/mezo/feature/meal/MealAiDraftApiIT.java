@@ -47,6 +47,7 @@ class MealAiDraftApiIT extends ApiIntegrationTest {
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(res.getBody()).isNotNull();
+        assertThat(res.getBody().getDraftId()).isNotNull(); // backend-minted (mezo-76f6) — stateless, no content hash
         assertThat(res.getBody().getSlot()).isEqualTo("snack");
         assertThat(res.getBody().getItems()).hasSize(1);
         assertThat(res.getBody().getItems().getFirst().getSource()).isEqualTo("estimate");

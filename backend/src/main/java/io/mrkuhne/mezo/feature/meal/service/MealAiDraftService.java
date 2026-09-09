@@ -212,6 +212,9 @@ public class MealAiDraftService {
         PantryNameIndex nameIndex = PantryNameIndex.of(
             pantryCatalogRepository.findByDeletedFalseAndStatusOrderByNameAsc(PantryCatalogEntity.STATUS_VERIFIED));
         MealAiDraftResponse res = new MealAiDraftResponse();
+        // Stateless mint (mezo-76f6): no content hash, no persistence — the FE echoes this back
+        // to POST /api/ai-drafts/{draftId}/outcome once the draft is accepted/edited/discarded.
+        res.setDraftId(UUID.randomUUID());
         res.setSlot(extracted.slot() != null && SLOTS.contains(extracted.slot()) ? extracted.slot() : "snack");
         res.setTitle(extracted.title());
         res.setNote(extracted.note());

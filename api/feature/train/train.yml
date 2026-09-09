@@ -2193,8 +2193,12 @@ components:
           description: Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve")
     MesoPlanGenerateResponse:
       type: object
-      required: [template, rationale, llmUsed]
+      required: [template, rationale, llmUsed, draftId]
       properties:
+        draftId:
+          type: string
+          format: uuid
+          description: Backend-minted id (mezo-76f6) — stateless, no content hash; a fresh id per generate/regenerate call. The FE echoes it back to POST /api/ai-drafts/{draftId}/outcome.
         template:
           $ref: '#/components/schemas/MesoTemplateUpsertRequest'
         rationale:

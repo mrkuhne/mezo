@@ -422,8 +422,12 @@ components:
         items: { type: array, items: { $ref: '#/components/schemas/MealItemResponse' } }
     MealAiDraftResponse:
       type: object
-      required: [slot, items]
+      required: [slot, items, draftId]
       properties:
+        draftId:
+          type: string
+          format: uuid
+          description: Backend-minted id (mezo-76f6) — stateless, no content hash; the FE echoes it back to POST /api/ai-drafts/{draftId}/outcome.
         slot:
           type: string
           pattern: '^(breakfast|lunch|dinner|snack)$'

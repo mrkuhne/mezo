@@ -4678,6 +4678,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-drafts/{draftId}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upsert this user's outcome signal for one backend-minted AI draft (AiDrafts, mezo-76f6)
+         * @description Last signal wins per (user, draftId) — a later accepted/edited REPLACES an earlier discarded and vice versa, since the composer/wizard that produced the draft can be reopened after a discard. `feature` is a free slug (not checked against a fixed list here); the admin scorecard joins by slug. No GET on this resource — admin reads the aggregate via the repository.
+         */
+        post: operations["recordAiDraftOutcome"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5081,6 +5101,11 @@ export interface components {
             goalText?: string | null;
         };
         MesoPlanGenerateResponse: {
+            /**
+             * Format: uuid
+             * @description Backend-minted id (mezo-76f6) — stateless, no content hash; a fresh id per generate/regenerate call. The FE echoes it back to POST /api/ai-drafts/{draftId}/outcome.
+             */
+            draftId: string;
             template: components["schemas"]["MesoTemplateUpsertRequest"];
             /** @description One Hungarian sentence on what was chosen and why (LLM or deterministic) */
             rationale: string;
@@ -6852,6 +6877,11 @@ export interface components {
             items: components["schemas"]["MealItemResponse"][];
         };
         MealAiDraftResponse: {
+            /**
+             * Format: uuid
+             * @description Backend-minted id (mezo-76f6) — stateless, no content hash; the FE echoes it back to POST /api/ai-drafts/{draftId}/outcome.
+             */
+            draftId: string;
             slot: string;
             title?: string | null;
             note?: string | null;
@@ -10739,6 +10769,11 @@ export interface components {
         ScreenEventBatchRequest: {
             /** @description At most `mezo.telemetry.batch-max` items; more is a 400. */
             events: components["schemas"]["ScreenEventInput"][];
+        };
+        AiDraftOutcomeRequest: {
+            /** @description Free slug identifying the AI generator (e.g. 'meal_draft', 'meso_plan') — not validated against a fixed list. */
+            feature: string;
+            outcome: string;
         };
     };
     responses: {
@@ -23933,6 +23968,48 @@ export interface operations {
             };
             /** @description Per-user rate limit exceeded (TELEMETRY_RATE_LIMITED) */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recordAiDraftOutcome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draftId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiDraftOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Outcome stored (upserted) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (unknown outcome, blank/oversized feature) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

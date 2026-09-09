@@ -33,6 +33,7 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
 
         assertThat(res.getLlmUsed()).isFalse();
         assertThat(res.getRationale()).isNotBlank();
+        assertThat(res.getDraftId()).isNotNull(); // backend-minted (mezo-76f6) — stateless, no content hash
         MesoTemplateUpsertRequest t = res.getTemplate();
         assertThat(t.getGoalPreset()).isEqualTo("hypertrophy");
         assertThat(t.getWeeks()).isEqualTo(6);
@@ -67,6 +68,20 @@ class MesoPlanGenerateContractIT extends ApiIntegrationTest {
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getDays()).hasSize(7);
+    }
+
+    @Test
+    void testGenerateMesoPlan_shouldMintAFreshDraftId_whenRegenerated() {
+        HttpHeaders auth = ownerAuthHeaders();
+        MesoPlanGenerateRequest request = MesoPlanGenerateRequest.builder()
+            .daysOfWeek(Set.of("Hét", "Csü")).weeks(4).build();
+
+        MesoPlanGenerateResponse first = postForBody(GENERATE, request, auth, HttpStatus.OK, MesoPlanGenerateResponse.class);
+        MesoPlanGenerateResponse second = postForBody(GENERATE, request, auth, HttpStatus.OK, MesoPlanGenerateResponse.class);
+
+        assertThat(first.getDraftId()).isNotNull();
+        assertThat(second.getDraftId()).isNotNull();
+        assertThat(second.getDraftId()).isNotEqualTo(first.getDraftId());
     }
 
     @Test
