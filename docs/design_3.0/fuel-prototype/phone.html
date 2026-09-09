@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mezo Fuel · Mobil előnézet</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;height:100dvh;overflow:hidden;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#f1ede5,#d6d2c8);font-family:Arial,sans-serif}
+    .stage{position:relative;width:422px;height:916px;flex:none}
+    .device{position:absolute;inset:0;width:422px;height:916px;padding:12px;background:#080808;border:7px solid #242424;border-radius:61px;box-shadow:0 35px 65px -14px #0007,inset 0 0 0 2px #000;transform-origin:top left}
+    .screen{width:384px;height:878px;background:#faf7f0;border-radius:43px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+    .status{height:51px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 27px 0;color:#30291f;font-size:15px;font-weight:700;position:relative;user-select:none}
+    .island{position:absolute;width:114px;height:33px;border-radius:22px;background:#000;top:10px;left:50%;transform:translateX(-50%)}
+    .indicators{display:flex;gap:6px;align-items:center}.indicators svg{width:16px;height:13px}.indicators .battery{width:19px}
+    iframe{display:block;flex:1;width:100%;min-height:0;border:0;background:#faf7f0}
+    .home{height:22px;flex:none;display:grid;place-items:center;background:#faf7f0}.home:after{content:"";height:5px;width:122px;border-radius:5px;background:#28251f}
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage"><div class="device" id="device"><div class="screen">
+    <div class="status" aria-hidden="true"><span>9:41</span><i class="island"></i><span class="indicators">
+      <svg viewBox="0 0 18 14" fill="currentColor"><path d="M0 10h3v4H0zm5-3h3v7H5zm5-3h3v10h-3zm5-4h3v14h-3z"/></svg>
+      <svg viewBox="0 0 20 15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4q9-7 18 0M4 8q6-5 12 0M8 12q2-2 4 0"/></svg>
+      <svg class="battery" viewBox="0 0 24 13" fill="currentColor"><rect x=".5" y=".5" width="20" height="12" rx="2" fill="none" stroke="currentColor"/><rect x="2.5" y="2.5" width="16" height="8" rx="1"/><path d="M22 4h2v5h-2z"/></svg>
+    </span></div>
+    <iframe id="app" title="Mezo Fuel kattintható mobil prototípus" src="./index.html#diary"></iframe>
+    <div class="home" aria-hidden="true"></div>
+  </div></div></div>
+  <script>
+    const stage=document.getElementById('stage'),device=document.getElementById('device');
+    function fit(){const scale=Math.min(1,(innerWidth-40)/422,(innerHeight-40)/916);stage.style.width=`${422*scale}px`;stage.style.height=`${916*scale}px`;device.style.transform=`scale(${scale})`;}
+    addEventListener('resize',fit);fit();
+  </script>
+</body>
+</html>

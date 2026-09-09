@@ -4,6 +4,11 @@
 
 **[Megnyitás](http://127.0.0.1:5196/#diary)**
 
+**[Mobilkeretes előnézet](http://127.0.0.1:5196/phone.html)** — a kért telefonház,
+kamerasziget, státuszsáv és gesztuscsík külön keretezi a működő prototípust.
+A belső mobilnézet 384 px széles; a teljes készülék arányosan illeszkedik az ablakba.
+Az alkalmazás és a panelek a telefon kijelzőjén belül maradnak, ugyanazzal a helyi mentéssel.
+
 Daniel iránya: az új Boop navigáció és nyugodtabb hierarchia a Design 2.0 színeivel,
 Clay ikonjaival és a jelenlegi Fuel részletes számaival, makróival, AI score-jával.
 A külön **Ma megszűnik**: a napi áttekintés és az előzmények a Naplóba kerülnek.
