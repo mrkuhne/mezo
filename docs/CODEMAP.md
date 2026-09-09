@@ -1503,25 +1503,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`,
   `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
-- **`ResetDatabase` TRUNCATE list** — 109 tables; a new owned domain table MUST be added here in the same change:
-  - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
-    `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
-    `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
-    `companion_flag_trace`, `companion_message`, `daily_intention`, `daily_quest`, `daily_summary`, `day_review`,
-    `decision_entry`, `diagnosis`, `diet_settings`, `exercise`, `exercise_feedback`, `exercise_set`, `experiment`,
-    `feedback_rollup`, `fuel_settings`, `gamification_profile`, `goal`, `goal_plan_link`, `goal_suggestion`,
-    `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`, `intention_creed`,
-    `intention_focus`, `invite`, `journal_entry`, `knowledge_edge`, `knowledge_fact`, `knowledge_node`, `learned_fact`,
-    `level_up_event`, `life_goal`, `life_goal_pillar`, `life_goal_pillar_day`, `llm_log_history`, `meal`, `meal_item`,
-    `meal_slot_template`, `medication`, `medication_dose`, `memoir`, `memory_embedding`, `memory_item`,
-    `memory_retrieval_feedback`, `memory_retrieval_result`, `memory_retrieval_run`, `memory_vector`, `mention`,
-    `meso_template`, `mesocycle`, `mesocycle_report`, `message_feedback`, `muscle_group_volume_log`, `needs_day`,
-    `notification_pref`, `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`, `pattern`,
-    `pattern_event`, `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
-    `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
-    `screen_event`, `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
-    `sport_slot_skip`, `supplement_intake`, `text_signal`, `tutorial_progress`, `water_log`, `weekly_review`,
-    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`
+- **`ResetDatabase` TRUNCATE list** — 111 tables; a new owned domain table MUST be added here in the same change:
+  - **tables:** `activity_log`, `ai_conversation`, `ai_draft_outcome`, `ai_message`, `app_notification`,
+    `biometric_profile`, `challenge`, `character_claim`, `character_conference`, `character_dimension`,
+    `character_observation`, `character_portrait_revision`, `character_run`, `check_in`, `coin_event`,
+    `companion_flag_log`, `companion_flag_trace`, `companion_message`, `daily_intention`, `daily_quest`,
+    `daily_summary`, `day_review`, `decision_entry`, `diagnosis`, `diet_settings`, `exercise`, `exercise_feedback`,
+    `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`, `goal`, `goal_plan_link`,
+    `goal_suggestion`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`,
+    `intention_creed`, `intention_focus`, `invite`, `journal_entry`, `knowledge_edge`, `knowledge_fact`,
+    `knowledge_node`, `learned_fact`, `level_up_event`, `life_goal`, `life_goal_pillar`, `life_goal_pillar_day`,
+    `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`, `medication_dose`, `memoir`,
+    `memory_embedding`, `memory_item`, `memory_retrieval_feedback`, `memory_retrieval_result`, `memory_retrieval_run`,
+    `memory_vector`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`, `message_feedback`,
+    `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`, `owned_title`,
+    `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`, `person`,
+    `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`, `recipe_ingredient`,
+    `ritual_day`, `run_session_log`, `running_block`, `screen_event`, `skill_progress`, `sleep_goal`, `sleep_log`,
+    `sport_event`, `sport_schedule_slot`, `sport_session`, `sport_slot_skip`, `supplement_intake`, `text_signal`,
+    `tutorial_progress`, `water_log`, `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`,
+    `workout_day_adjustment`, `workout_session`, `workout_timing_profile`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
