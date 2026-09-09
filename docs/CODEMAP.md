@@ -18,6 +18,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [admin](#admin) | ✓ | 3 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [admin-memory-explorer](features/admin-memory-explorer.md) |
+| [aidraft](#aidraft) | · | · | ✓ | · | · |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
@@ -32,7 +33,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [intention](#intention) | ✓ | 1 | ✓ | · | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | ✓ | · | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
-| [llmlog](#llmlog) | ✓ | 1 | · | · | [companion](features/companion.md) |
+| [llmlog](#llmlog) | ✓ | 2 | · | · | [companion](features/companion.md) |
 | [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
@@ -132,6 +133,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `DailySummaryPopulator`, `FeedbackPopulator`,
     `GraphPopulator`, `LlmLogPopulator`, `MealPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`,
     `UserPopulator`
+
+### aidraft
+
+*FE-data* · read next: **none — no HOW doc exists for this feature yet**
+
+- **FE data** `frontend/src/data/aidraft`
+  - **modules:** outcomeClient.ts
 
 ### appnotification
 
@@ -297,7 +305,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-07, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-09-07, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-08, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-06, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
@@ -669,7 +677,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-08, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-08, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -800,32 +808,34 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-08, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
-  - **entities→tables:** `LlmLogEntity`→`llm_log_history`
-  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmFeatureErrorRow`, `LlmFeatureUserRow`,
-    `LlmGroupRow`, `LlmLogRepository`, `LlmModelGroupRow`, `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`,
-    `LlmUserRow`
-  - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmBudgetService`,
-    `LlmCallRecord`, `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
-    `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
-  - **controllers→contract:** `LlmUsageController`→`LlmUsageApi`
+  - **entities→tables:** `AiDraftOutcomeEntity`→`ai_draft_outcome`, `LlmLogEntity`→`llm_log_history`
+  - **repositories:** `AiDraftOutcomeFeatureRow`, `AiDraftOutcomeRepository`, `LlmCallRow`, `LlmDailyAggregate`,
+    `LlmFeatureDayRow`, `LlmFeatureErrorRow`, `LlmFeatureUserRow`, `LlmGroupRow`, `LlmLogRepository`,
+    `LlmModelGroupRow`, `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
+  - **services:** `AiDraftOutcomeService`, `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`,
+    `LlmBudgetService`, `LlmCallRecord`, `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`,
+    `LlmUsageService`, `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
+  - **controllers→contract:** `AiDraftsController`→`AiDraftsApi`, `LlmUsageController`→`LlmUsageApi`
   - **mappers:** `LlmLogMapper`
   - **config:** `LlmLogAsyncConfig`, `LlmLogProperties`, `LlmPricingProperties`, `ModelPrice`
   - **events/listeners:** `LlmCallEvent`
   - **other:** `CallKind`, `CallStatus`, `LlmBudgetGate`, `LlmBudgetLevel`, `LlmCallContext`, `LlmCallContextHolder`,
     `PricingSnapshot`, `ReasoningBilling`
+- **Contract** `api/feature/ai-drafts/ai-drafts.yml` — 1 operation
+  - **endpoints:** POST /api/ai-drafts/{draftId}/outcome
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 18 IT + 7 unit
-  - **ITs:** `LlmActorPropagationIT`, `LlmBudgetCapIT`, `LlmBudgetLogDisabledIT`, `LlmCallContextTaggingIT`,
-    `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`,
-    `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`, `LlmLogRetentionJobWriteSwitchOffIT`,
-    `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`, `LlmUsageBreakdownMidnightIT`,
-    `LlmUsageControllerIT`, `LlmUsageIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 19 IT + 7 unit
+  - **ITs:** `AiDraftsApiIT`, `LlmActorPropagationIT`, `LlmBudgetCapIT`, `LlmBudgetLogDisabledIT`,
+    `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`, `LlmLogRecorderWiringIT`,
+    `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
+    `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`,
+    `LlmUsageBreakdownMidnightIT`, `LlmUsageControllerIT`, `LlmUsageIT`
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
@@ -1525,5 +1535,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`, `quickinput`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `quickinput`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
