@@ -43,7 +43,8 @@ public final class DeliberationAssembler {
         Map<Integer, ConferenceDeliberationEnvelope.SkepticVerdict> verdictByIndex = new LinkedHashMap<>();
         for (KonziliumVerdictRound.SkepticVerdict verdict : verdicts) {
             verdictByIndex.put(verdict.index(),
-                    new ConferenceDeliberationEnvelope.SkepticVerdict(verdict.verdict(), verdict.argument()));
+                    new ConferenceDeliberationEnvelope.SkepticVerdict(
+                            verdict.verdict(), verdict.argument(), verdict.suggestedConfidence()));
         }
 
         Map<String, List<ConferenceDeliberationEnvelope.Item>> itemsByChapter = new LinkedHashMap<>();
@@ -53,7 +54,9 @@ public final class DeliberationAssembler {
             String chapterKey = resolved == null ? FALLBACK_CHAPTER_KEY : resolved;
             ConferenceDeliberationEnvelope.ChairRuling chair = i < rulings.size()
                     ? new ConferenceDeliberationEnvelope.ChairRuling(
-                            rulings.get(i).accepted(), rulings.get(i).ruledConfidence(), rulings.get(i).reason())
+                            rulings.get(i).accepted(), rulings.get(i).ruledConfidence(),
+                            rulings.get(i).reason(), rulings.get(i).dissent(),
+                            rulings.get(i).note(), rulings.get(i).suggestedDimensionKey())
                     : null;
             itemsByChapter
                     .computeIfAbsent(chapterKey, key -> new ArrayList<>())

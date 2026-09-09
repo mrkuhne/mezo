@@ -16,6 +16,8 @@ import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
 import {
   ACCEPTED_LABEL,
+  NOTE_LABEL,
+  SKEPTIC_LABEL,
   STANCE_LABEL,
   STANCE_TONE as SHARED_STANCE_TONE,
   displayName,
@@ -23,6 +25,46 @@ import {
 } from '@/features/character/deliberationLabels'
 
 const NO_ANSWER = 'Ez a kör nem adott választ erre az állításra.'
+
+const NOTHING_TO_ADD = 'A Szkeptikus érvét elfogadom, nem teszek hozzá.'
+
+/** What the chair CONTRIBUTED, or the honest short form when it only ratified. Mirrors the
+ *  backend's `addsSomething` (KonziliumVerdictRound.java) — the two run on different surfaces
+ *  with no shared runtime, so this copy is deliberate, not accidental duplication (mezo-lghn).
+ *  A rejection that ratifies a KILL, and an acceptance at the strength the Szkeptikus suggested,
+ *  both add nothing — paraphrasing the Szkeptikus there is the theater this card exists to avoid.
+ *  `dissent` is read with `=== true` (never as a truthy check) because it arrives as a nullable
+ *  boolean and the model's self-report cannot be trusted either way. An accept that overrules an
+ *  explicit KILL gets the SAME hardening as the rejection arm above (mezo-lghn fix round 4, item
+ *  1): it is always shown, and — same spirit — this does NOT consult `dissent` either. Overruling
+ *  a kill is the single strongest thing the chair can do, and it can never be mistaken for a
+ *  ratification just because a stray `suggestedConfidence` on that KILL happens to land in the
+ *  same confidence-word tier as the chair's own number. */
+function chairAddedSomething(item: ConferenceItem): boolean {
+  const chair = item.chair
+  if (chair == null) return false
+  if (chair.dissent === true || chair.note != null) return true
+  if (!chair.accepted) return item.skeptic == null || item.skeptic.verdict !== 'KILL'
+  if (item.skeptic?.verdict === 'KILL') return true
+  if (chair.confidence == null) return true
+  const suggested = item.skeptic?.suggestedConfidence
+  if (suggested == null) return true
+  return confidenceWord(chair.confidence) !== confidenceWord(suggested)
+}
+
+/** The dissent/note grounds that belong ahead of the chair's own reason, or '' when there are
+ *  none — kept separate from `chairAddedSomething` so a ruling that DID add something (a dissent,
+ *  a note, an overruled KILL, a differing confidence word) can still show plain `reason` alone
+ *  when neither `dissent` nor `note` fired (mezo-lghn). */
+function chairDetail(chair: NonNullable<ConferenceItem['chair']>): string {
+  const parts: string[] = []
+  if (chair.dissent === true) parts.push('a Szkeptikus döntése ellenében')
+  if (chair.note != null && NOTE_LABEL[chair.note] != null) {
+    const dimension = chair.suggestedDimensionKey != null ? `: ${chair.suggestedDimensionKey}` : ''
+    parts.push(`${NOTE_LABEL[chair.note]}${dimension}`)
+  }
+  return parts.length > 0 ? `${parts.join(' · ')} — ` : ''
+}
 
 const ACCEPTED_FALLBACK = 'Elfogadva'
 const REJECTED_LABEL = 'Elvetve'
@@ -68,6 +110,15 @@ function reactionCount(thread: ConferenceThread): number {
 
 type ChipTone = StanceTone | 'acc' | 'rej' | 'non'
 
+/** The Szkeptikus's chip tone by verdict grade: a KILL reads like a challenge, a WEAKEN like a
+ *  nuance, an unreserved KEEP like support — the same three-way vocabulary STANCE_TONE already
+ *  uses for peer reactions (mezo-lghn). */
+function skepticTone(verdict: string): ChipTone {
+  if (verdict === 'KILL') return 'cha'
+  if (verdict === 'WEAKEN') return 'nua'
+  return 'sup'
+}
+
 function ChainStep({ expertKey, who, chip, chipTone, children }: {
   expertKey: string
   who: string
@@ -94,6 +145,13 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
   const confidence = item.chair?.accepted === true && item.chair.confidence != null
     ? ` · ${confidenceWord(item.chair.confidence)}`
     : ''
+  // A KILL carries no strength to suggest — a stray `suggestedConfidence` on one must never render
+  // as a confidence word (mirrors the backend's `skepticLine`, mezo-lghn fix round 4, item 2).
+  const skepticConfidence = item.skeptic != null
+    && item.skeptic.suggestedConfidence != null
+    && item.skeptic.verdict !== 'KILL'
+    ? ` · ${confidenceWord(item.skeptic.suggestedConfidence)}`
+    : ''
   return (
     <div className="kr-thitem">
       <ChainStep expertKey={item.expertKey} who={displayName(experts, item.expertKey)} chip="felvetette">
@@ -113,8 +171,8 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
       <ChainStep
         expertKey="szkeptikus"
         who="Szkeptikus"
-        chip={item.skeptic == null ? undefined : item.skeptic.verdict === 'KILL' ? 'kukázta' : 'meghagyta'}
-        chipTone={item.skeptic?.verdict === 'KILL' ? 'cha' : 'sup'}
+        chip={item.skeptic == null ? undefined : `${SKEPTIC_LABEL[item.skeptic.verdict] ?? 'Válaszolt'}${skepticConfidence}`}
+        chipTone={item.skeptic == null ? undefined : skepticTone(item.skeptic.verdict)}
       >
         {item.skeptic == null ? NO_ANSWER : item.skeptic.argument}
       </ChainStep>
@@ -124,7 +182,11 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
         chip={item.chair == null ? undefined : `${badge.label}${confidence}`}
         chipTone={badge.tone}
       >
-        {item.chair == null ? NO_ANSWER : item.chair.reason}
+        {item.chair == null
+          ? NO_ANSWER
+          : !chairAddedSomething(item)
+            ? NOTHING_TO_ADD
+            : `${chairDetail(item.chair)}${item.chair.reason}`}
       </ChainStep>
     </div>
   )

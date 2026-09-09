@@ -209,7 +209,7 @@ class DetectorTest {
     void registry_skipsDisabledDetectors() {
         CharacterProperties props = new CharacterProperties(
                 new CharacterProperties.Observation("0 40 2 * * *", 3),
-                new CharacterProperties.Conference("0 30 19 * * SUN", 2),
+                new CharacterProperties.Conference("0 30 19 * * SUN", 2, 80),
                 new CharacterProperties.Monthly("0 0 20 * * SUN", 90),
                 new CharacterProperties.Prompt(new BigDecimal("0.30"), 5, 2000, 30),
                 Map.of("journal-silence", new CharacterProperties.Detector(false)));

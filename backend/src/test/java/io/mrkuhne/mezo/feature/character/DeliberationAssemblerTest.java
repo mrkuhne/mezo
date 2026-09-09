@@ -31,9 +31,9 @@ class DeliberationAssemblerTest {
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(sleep, mind, log),
                 List.of(new KonziliumCrossTalkRound.Reaction(0, "pszichologus", "CHALLENGE", "Lehet stressz is.")),
-                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "KILL", "Kevés adat."),
-                        new KonziliumVerdictRound.SkepticVerdict(1, "KEEP", "Elfogadható."),
-                        new KonziliumVerdictRound.SkepticVerdict(2, "KEEP", "Elfogadható.")),
+                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "KILL", "Kevés adat.", null),
+                        new KonziliumVerdictRound.SkepticVerdict(1, "KEEP", "Elfogadható.", null),
+                        new KonziliumVerdictRound.SkepticVerdict(2, "KEEP", "Elfogadható.", null)),
                 List.of(new ClaimRuling(sleep, false, new BigDecimal("0.40"), "Nem engedem be."),
                         new ClaimRuling(mind, true, new BigDecimal("0.60"), "Rendben."),
                         new ClaimRuling(log, true, new BigDecimal("0.70"), "Rendben.")),
@@ -76,7 +76,7 @@ class DeliberationAssemblerTest {
 
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(sleep, mind), List.of(),
-                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "KILL", "Kevés adat.")),
+                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "KILL", "Kevés adat.", null)),
                 List.of(),
                 new KonziliumChapters(Map.of("recovery", "Regeneráció"), Map.of()));
 
@@ -116,6 +116,27 @@ class DeliberationAssemblerTest {
 
         assertThat(envelope.threads()).singleElement()
                 .satisfies(thread -> assertThat(thread.title()).isEqualTo("discipline"));
+    }
+
+    @Test
+    void theChairsDissentAndNoteReachTheEnvelope() {
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", "physical", null,
+                "Rekompozíció zajlik.", new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
+                List.of(proposal),
+                List.of(),
+                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "WEAKEN", "Kevés adat.",
+                        new BigDecimal("0.55"))),
+                List.of(new ClaimRuling(proposal, true, new BigDecimal("0.60"), "A dosszié ezt erősíti.",
+                        true, "CONTRADICTS", null)),
+                KonziliumChapters.empty());
+
+        ConferenceDeliberationEnvelope.Item item = envelope.threads().get(0).items().get(0);
+        assertThat(item.skeptic().verdict()).isEqualTo("WEAKEN");
+        assertThat(item.skeptic().suggestedConfidence()).isEqualByComparingTo("0.55");
+        assertThat(item.chair().dissent()).isTrue();
+        assertThat(item.chair().note()).isEqualTo("CONTRADICTS");
     }
 
     @Test

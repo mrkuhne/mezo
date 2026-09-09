@@ -1,7 +1,12 @@
 package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
+import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
+import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
+import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
+import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -9,10 +14,14 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -46,21 +55,64 @@ public class KonziliumVerdictRound {
     private static final BigDecimal MAX_RULED_CONFIDENCE = new BigDecimal("0.90");
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
     private static final String NEW_KIND = "NEW";
+    private static final String DOWN_KIND = "DOWN";
+    private static final String RETIRE_KIND = "RETIRE";
     private static final String KEEP = "KEEP";
+    private static final String WEAKEN = "WEAKEN";
     private static final String KILL = "KILL";
     private static final String DEFAULT_ARGUMENT = "nincs ellenérv";
     private static final String DEFAULT_REASON = "nem került döntésre";
+    /** No verdict the chair's prompt/transcript can honestly render for this index — the
+     *  Szkeptikus either never answered it or answered with something {@link #isShownVerdict}
+     *  does not recognize. Carries NO grade token, unlike the old fabricated {@code KEEP} default
+     *  (mezo-lghn fix round 1): silence is not approval. */
+    private static final String SKEPTIC_NO_ANSWER = "nem adott választ erre a javaslatra";
+    /** System-authored — replaces the chair's own {@code reason} when an accept is dropped by
+     *  {@link #lacksSensitiveClearance}, so the rejection never reads as the chair contradicting
+     *  itself with its own acceptance text (mezo-lghn fix round 1). */
+    private static final String SENSITIVE_BLOCKED_REASON =
+            "Érzékeny állítás, amit a Szkeptikus nem hagyott jóvá — a rendszer nem írja a dossziéba.";
+    private static final String ACTIVE = "ACTIVE";
+    private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
+    /** Promoted to a constant (mezo-lghn fix round 2, item 4): this literal is also passed
+     *  directly to the blocked-accept {@link ClaimRuling}, so keeping it only inside
+     *  {@code VALID_NOTES} would let the two drift apart. */
+    private static final String NOTE_NOT_FOR_DOSSIER = "NOT_FOR_DOSSIER";
+    /** Promoted alongside {@link #NOTE_NOT_FOR_DOSSIER} — also compared directly against in the
+     *  REHOME gate below. */
+    private static final String NOTE_REHOME = "REHOME";
+    private static final Set<String> VALID_NOTES =
+            Set.of("DUPLICATE", "CONTRADICTS", NOTE_NOT_FOR_DOSSIER, NOTE_REHOME);
+    /** The chair's turn, for a ruling that merely ratified the Szkeptikus with nothing added
+     *  (mezo-lghn): every such proposal collapses into one aggregate line carrying this text,
+     *  instead of a per-proposal paraphrase of what the Szkeptikus already said. */
+    private static final String NOTHING_TO_ADD = "a Szkeptikus érvét elfogadom, nem teszek hozzá.";
+    /** Human labels for {@link #VALID_NOTES}, for the chair's transcript line (mezo-lghn). Keyed by
+     *  the note constants where one exists, so the label can never drift from the value actually
+     *  compared against. */
+    private static final Map<String, String> NOTE_LABELS = Map.of(
+            "DUPLICATE", "már tartunk ilyet",
+            "CONTRADICTS", "ellentmond a dossziénak",
+            NOTE_NOT_FOR_DOSSIER, "nem dossziéba való",
+            NOTE_REHOME, "máshová tartozik");
 
+    private final CharacterDimensionRepository dimensionRepository;
+    private final CharacterClaimRepository claimRepository;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
+    private final CharacterProperties characterProperties;
 
-    /** One Szkeptikus verdict, before defaulting. */
-    record SkepticVerdictDraft(Integer index, String verdict, String argument) {}
+    /** One Szkeptikus verdict, before defaulting. {@code suggestedConfidence} is the strength the
+     *  Szkeptikus thinks the evidence carries — meaningful for KEEP and WEAKEN, ignored for KILL,
+     *  and null whenever the model omitted it (mezo-lghn). */
+    record SkepticVerdictDraft(Integer index, String verdict, String argument,
+                               BigDecimal suggestedConfidence) {}
 
     /** One Integrátor ruling, before defaulting/clamping. */
-    record IntegratorRulingDraft(Integer index, Boolean accept, BigDecimal confidence, String reason) {}
+    record IntegratorRulingDraft(Integer index, Boolean accept, BigDecimal confidence, String reason,
+                                 Boolean dissent, String note, String suggestedDimensionKey) {}
 
     /** One Integrátor chapter proposal, before the blank-title/cap filter. */
     record IntegratorChapterDraft(String title, String rationale) {}
@@ -83,7 +135,41 @@ public class KonziliumVerdictRound {
     /** One Szkeptikus verdict as it will be SHOWN — carrying the proposal index it answers.
      *  Produced only when the Szkeptikus round parsed AND only for the indexes it actually
      *  answered; an unanswered index simply has no entry here (mezo-xlvr). */
-    public record SkepticVerdict(int index, String verdict, String argument) {}
+    public record SkepticVerdict(int index, String verdict, String argument,
+                                 BigDecimal suggestedConfidence) {}
+
+    /** The dossier as the round reads it once per run: every ACTIVE claim by id (so a proposal's
+     *  target resolves without a query per proposal), the owner's dimensions by id, the claims the
+     *  chair's dossier block may show, and whether that list was capped (mezo-lghn). */
+    private record DossierContext(Map<UUID, CharacterClaimEntity> claimsById,
+                                  Map<UUID, CharacterDimensionEntity> dimensionsById,
+                                  List<CharacterClaimEntity> shownClaims,
+                                  boolean truncated) {}
+
+    private DossierContext loadDossier(UUID owner) {
+        List<CharacterClaimEntity> active =
+                claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, ACTIVE);
+        Map<UUID, CharacterClaimEntity> claimsById = active.stream()
+                .collect(Collectors.toMap(CharacterClaimEntity::getId, Function.identity(),
+                        (first, second) -> first, LinkedHashMap::new));
+        Map<UUID, CharacterDimensionEntity> dimensionsById = dimensionRepository.findByCreatedBy(owner).stream()
+                .collect(Collectors.toMap(CharacterDimensionEntity::getId, Function.identity(),
+                        (first, second) -> first, LinkedHashMap::new));
+
+        int cap = characterProperties.conference().maxDossierClaims();
+        boolean truncated = active.size() > cap;
+        // Freshest first when capping: a claim nobody has touched in a year is the least useful
+        // context for this week's decision. The kept slice is re-sorted by confidence so the block
+        // reads the way every other claim surface does.
+        List<CharacterClaimEntity> shown = truncated
+                ? active.stream()
+                        .sorted(Comparator.comparing(CharacterClaimEntity::getUpdatedAt).reversed())
+                        .limit(cap)
+                        .sorted(Comparator.comparing(CharacterClaimEntity::getConfidence).reversed())
+                        .toList()
+                : active;
+        return new DossierContext(claimsById, dimensionsById, shown, truncated);
+    }
 
     /**
      * The round's output: every proposal's final ruling, at most one chapter proposal, one
@@ -115,14 +201,15 @@ public class KonziliumVerdictRound {
             return new Result(List.of(), List.of(), List.of(), List.of(), false);
         }
 
-        SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals);
+        DossierContext dossier = loadDossier(owner);
+        SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals, dossier);
         List<ConferenceTranscriptEnvelope.Turn> turns = new ArrayList<>();
         if (skepticResult.parsed()) {
             turns.add(skepticTurn(proposals, skepticResult.verdicts()));
         }
 
         IntegratorResult integratorResult = runIntegrator(owner, weekStart, proposals,
-                skepticResult.verdicts(), reactions);
+                skepticResult.verdicts(), reactions, dossier);
         IntegratorAnswer answer = integratorResult.answer();
         Map<Integer, IntegratorRulingDraft> rulingsByIndex = new LinkedHashMap<>();
         for (IntegratorRulingDraft draft : answer.rulings()) {
@@ -135,7 +222,7 @@ public class KonziliumVerdictRound {
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal proposal = proposals.get(i);
             IntegratorRulingDraft draft = rulingsByIndex.get(i);
-            rulings.add(toRuling(proposal, draft));
+            rulings.add(toRuling(proposal, draft, skepticResult.verdicts().get(i)));
         }
 
         List<ChapterProposal> chapters = new ArrayList<>();
@@ -150,34 +237,68 @@ public class KonziliumVerdictRound {
         }
 
         if (integratorResult.parsed()) {
-            turns.add(integratorTurn(rulings, chapters));
+            turns.add(integratorTurn(rulings, chapters, skepticResult.verdicts()));
         }
 
         // Only the indexes the Szkeptikus ACTUALLY answered get a shown verdict (mezo-xlvr final
         // review, I2): an index it skipped had no verdict, and emitting a defaulted KEEP here
         // would put words in its mouth — the item's `skeptic` stays null and the UI says that
-        // round gave no answer for it. (The prompt-side skepticVerdictsBlock keeps its default:
-        // that is about what the chair is TOLD, not about what the user is shown.)
+        // round gave no answer for it. (The prompt-side skepticVerdictsBlock renders through the
+        // SAME skepticLine helper as the transcript, so it is equally honest — neither surface
+        // fabricates a grade for an index the Szkeptikus never answered; mezo-lghn fix round 1.)
         List<SkepticVerdict> verdicts = new ArrayList<>();
         if (skepticResult.parsed()) {
             for (int i = 0; i < proposals.size(); i++) {
                 SkepticVerdictDraft draft = skepticResult.verdicts().get(i);
-                if (draft == null || (!KEEP.equals(draft.verdict()) && !KILL.equals(draft.verdict()))) {
+                if (draft == null || !isShownVerdict(draft.verdict())) {
                     continue;
                 }
                 String argument = draft.argument() != null && !draft.argument().isBlank()
                         ? draft.argument() : DEFAULT_ARGUMENT;
-                verdicts.add(new SkepticVerdict(i, draft.verdict(), argument));
+                verdicts.add(new SkepticVerdict(i, draft.verdict(), argument, draft.suggestedConfidence()));
             }
         }
         return new Result(rulings, chapters, turns, List.copyOf(verdicts), integratorResult.parsed());
     }
 
-    private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft) {
+    /** A verdict the Szkeptikus genuinely gave. Anything else (null, a typo, an unknown grade)
+     *  is NOT shown — emitting a defaulted verdict would put words in its mouth (mezo-xlvr I2). */
+    private static boolean isShownVerdict(String verdict) {
+        return KEEP.equals(verdict) || WEAKEN.equals(verdict) || KILL.equals(verdict);
+    }
+
+    /**
+     * One proposal's ruling, with the chair's asymmetric right to overrule the Szkeptikus enforced
+     * HERE rather than in the prompt (mezo-lghn): tightening is always allowed, but an accept that
+     * ADDS or STRENGTHENS a sensitive claim requires the Szkeptikus's affirmative clearance. A
+     * prompt sentence alone would leave the guardrail to the model's goodwill.
+     */
+    private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft,
+                                         SkepticVerdictDraft verdict) {
         if (draft == null) {
             return new ClaimRuling(proposal, false, null, DEFAULT_REASON);
         }
         boolean accepted = draft.accept() != null && draft.accept();
+        String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
+
+        // Fail CLOSED on the kind axis too (mezo-lghn fix round 2, item 4): the guardrail engages
+        // unless the change demonstrably WEAKENS the dossier. DOWN lowers a claim's confidence and
+        // RETIRE removes it, so both tighten and are always safe to accept even when sensitive and
+        // even over a KILL; anything else — including NEW, UP, and a null or unrecognised kind —
+        // is treated as strengthening and needs the Szkeptikus's clearance. Asking "is this kind
+        // NEW or UP?" (the round-1 shape) fails OPEN on anything unexpected; asking "does this kind
+        // demonstrably weaken?" fails CLOSED instead, so this safety boundary does not depend on
+        // KonziliumProposalRound's kind validation or ClaimLifecycle's default-switch staying
+        // correct forever.
+        boolean weakensDossier = DOWN_KIND.equals(proposal.kind()) || RETIRE_KIND.equals(proposal.kind());
+        boolean sensitiveWriteBlocked = accepted && !weakensDossier && lacksSensitiveClearance(proposal, verdict);
+        if (sensitiveWriteBlocked) {
+            log.warn("Chair accepted a sensitive proposal without Szkeptikus clearance — dropping the accept "
+                    + "(kind {}, dimension {}, claim {})", proposal.kind(), proposal.dimensionKey(),
+                    proposal.claimId());
+            return new ClaimRuling(proposal, false, null, SENSITIVE_BLOCKED_REASON, false, NOTE_NOT_FOR_DOSSIER, null);
+        }
+
         BigDecimal confidence = draft.confidence();
         // The proposal-confidence fallback is a NEW-only concern (there is no "current value" to
         // move for a brand-new claim). For UP/DOWN an omitted confidence must stay null so
@@ -186,11 +307,53 @@ public class KonziliumVerdictRound {
         if (confidence == null && NEW_KIND.equals(proposal.kind())) {
             confidence = proposal.confidence();
         }
+        // The DOWN/RETIRE exemption above is justified by the premise that the change WEAKENS the
+        // dossier — but for DOWN that is only an assumption, not a guarantee: ClaimLifecycle.applyMove
+        // writes the chair's own confidence AS-IS whenever it is non-null, and steps -0.10 off the
+        // claim's CURRENT value only when it is null. So a sensitive DOWN accepted WITHOUT the
+        // Szkeptikus's clearance — it only reached here because of the weakensDossier exemption, not
+        // because the Szkeptikus actually cleared it — must never carry the chair's own number
+        // through: an inflated confidence there would STRENGTHEN the claim, exactly what the
+        // guardrail exists to stop, reached through the exemption meant to be safe by construction.
+        // Forcing it to null hands the move to the lifecycle's own deterministic, guaranteed-
+        // weakening step. If the Szkeptikus DID clear it (KEEP/WEAKEN), that clearance is what earns
+        // the chair the right to set its own number, so the chair's value survives untouched. RETIRE
+        // needs no such treatment: it removes the claim outright, so there is no confidence number to
+        // abuse (mezo-lghn fix round 3, item 1).
+        if (accepted && DOWN_KIND.equals(proposal.kind()) && lacksSensitiveClearance(proposal, verdict)) {
+            confidence = null;
+        }
         if (accepted && confidence != null) {
             confidence = clamp(confidence);
         }
-        String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
-        return new ClaimRuling(proposal, accepted, confidence, reason);
+        boolean dissent = draft.dissent() != null && draft.dissent()
+                && verdict != null && contradicts(accepted, verdict.verdict());
+        String note = draft.note() != null && VALID_NOTES.contains(draft.note()) ? draft.note() : null;
+        String rehome = NOTE_REHOME.equals(note) ? draft.suggestedDimensionKey() : null;
+        return new ClaimRuling(proposal, accepted, confidence, reason, dissent, note, rehome);
+    }
+
+    /** Whether the chair's decision actually goes against the Szkeptikus — a self-declared
+     *  {@code dissent} on a ruling that agrees with the verdict is dropped, so the flag can be
+     *  trusted by every surface that renders it. */
+    private static boolean contradicts(boolean accepted, String verdict) {
+        return accepted ? KILL.equals(verdict) : KEEP.equals(verdict) || WEAKEN.equals(verdict);
+    }
+
+    /** A sensitive proposal may be accepted only with an AFFIRMATIVE non-KILL verdict from the
+     *  Szkeptikus. A KILL blocks it — and so does the ABSENCE of a verdict: when that round failed
+     *  to parse, the adversary check did not happen, and this pipeline's failure rule is "an
+     *  unusable LLM answer ⇒ no change" (Karakter spec §6). Treating silence as clearance would
+     *  make a BROKEN Szkeptikus round the easiest path to writing exactly the claims this
+     *  guardrail exists to stop. This is NOT the same as pretending the Szkeptikus said KILL: the
+     *  SHOWN verdict stays honestly absent (Result.verdicts omits unanswered indexes) — only the
+     *  WRITE is declined (mezo-lghn). */
+    private static boolean lacksSensitiveClearance(ClaimProposal proposal, SkepticVerdictDraft verdict) {
+        if (!proposal.sensitive()) {
+            return false;
+        }
+        return verdict == null
+                || !(KEEP.equals(verdict.verdict()) || WEAKEN.equals(verdict.verdict()));
     }
 
     private static BigDecimal clamp(BigDecimal value) {
@@ -205,9 +368,10 @@ public class KonziliumVerdictRound {
 
     // ── Szkeptikus ────────────────────────────────────────────────────────────
 
-    private SkepticResult runSkeptic(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals) {
+    private SkepticResult runSkeptic(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
+                                      DossierContext dossier) {
         String systemPrompt = SKEPTIC_MARKER + "\n" + skepticPersona() + "\n" + skepticContract();
-        String userMessage = numberedProposals(weekStart, proposals);
+        String userMessage = numberedProposals(weekStart, proposals, dossier);
         String raw = callSmart(owner, "skeptic", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Szkeptikus answer was blank for owner {} week {}", owner, weekStart);
@@ -233,13 +397,36 @@ public class KonziliumVerdictRound {
                                                                   Map<Integer, SkepticVerdictDraft> verdicts) {
         StringBuilder sb = new StringBuilder("Szkeptikus: ").append(proposals.size()).append(" javaslat véleményezve.");
         for (int i = 0; i < proposals.size(); i++) {
-            SkepticVerdictDraft draft = verdicts.get(i);
-            String verdict = draft != null && KILL.equals(draft.verdict()) ? KILL : KEEP;
-            String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
-                    ? draft.argument() : DEFAULT_ARGUMENT;
-            sb.append("\nP").append(i).append(": ").append(verdict).append(" — ").append(argument);
+            sb.append("\nP").append(i).append(": ").append(skepticLine(verdicts.get(i)));
         }
         return new ConferenceTranscriptEnvelope.Turn("szkeptikus", sb.toString(), List.of());
+    }
+
+    private static String skepticVerdictsBlock(List<ClaimProposal> proposals,
+                                                Map<Integer, SkepticVerdictDraft> verdicts) {
+        StringBuilder sb = new StringBuilder("Szkeptikus döntések:");
+        for (int i = 0; i < proposals.size(); i++) {
+            sb.append("\nP").append(i).append(": ").append(skepticLine(verdicts.get(i)));
+        }
+        return sb.toString();
+    }
+
+    /** One verdict as text, for the transcript AND the chair's prompt block — the SAME rendering
+     *  for both, so they can never disagree about what the Szkeptikus actually said. An unanswered
+     *  index (draft null) or one with a grade {@link #isShownVerdict} does not recognize renders an
+     *  honest "no answer" line with NO grade token (mezo-lghn fix round 1): the old KEEP default
+     *  put words in the Szkeptikus's mouth and, worse, told the chair a broken/blank Szkeptikus
+     *  round had approved — silence is not approval. The suggested strength is rendered as a WORD,
+     *  never a decimal. */
+    private static String skepticLine(SkepticVerdictDraft draft) {
+        if (draft == null || !isShownVerdict(draft.verdict())) {
+            return SKEPTIC_NO_ANSWER;
+        }
+        String argument = draft.argument() != null && !draft.argument().isBlank()
+                ? draft.argument() : DEFAULT_ARGUMENT;
+        String suggested = draft.suggestedConfidence() == null || KILL.equals(draft.verdict())
+                ? "" : " → " + CharacterConfidenceWords.word(draft.suggestedConfidence());
+        return draft.verdict() + suggested + " — " + argument;
     }
 
     private static String skepticPersona() {
@@ -247,7 +434,9 @@ public class KonziliumVerdictRound {
                 Te vagy a Szkeptikus, {{NÉV}} profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
                 hangon írsz. A feladatod, hogy minden javaslatot megtámadj: kérdőjelezd meg a \
                 bizonyíték elégségességét, keress alternatív magyarázatot, és figyelj a \
-                túlinterpretálásra. Az érzékeny (sensitive=true) javaslatokat fokozott szigorral vizsgáld. \
+                túlinterpretálásra. Egyetlen kérdésre válaszolsz: alátámasztja-e a bizonyíték az \
+                állítást, és milyen erősségen? Hogy egy állítás bekerüljön-e a dossziéba, nem a te \
+                dolgod — azt az Integrátor dönti el. \
                 A "self-audit" dimenzió javaslatai a saját megfigyelő-szerepedből \
                 jöttek — ezeket ugyanezzel a szigorral bíráld, és külön ellenőrizd, hogy az alanyuk \
                 valóban a rendszer (Mezo teljesítménye), nem a felhasználó ({{NÉV}}) tulajdonsága.""";
@@ -255,20 +444,28 @@ public class KonziliumVerdictRound {
 
     private static String skepticContract() {
         return """
+                Minden javaslathoz pontosan egy fokozatot adj:
+                - KILL: a bizonyíték egyáltalán nem támasztja alá az állítást, vagy túlinterpretálás.
+                - WEAKEN: van benne valami, de nem ezen az erősségen.
+                - KEEP: a bizonyíték elbírja a javasolt erősséget.
+                A "suggestedConfidence" az az erősség, amit a bizonyíték szerinted elbír (0.0-1.0) — \
+                KEEP és WEAKEN esetén add meg, KILL esetén hagyd el.
                 Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat és formázás nélkül, pontosan ebben \
-                a formában: [{"index":0,"verdict":"KEEP|KILL","argument":"..."}]. A felsorolt \
-                javaslatok mindegyikéhez (P0, P1, …) pontosan egy bejegyzést adj, a sorszáma szerinti \
-                "index" mezővel.""";
+                a formában: [{"index":0,"verdict":"KEEP|WEAKEN|KILL","argument":"...",\
+                "suggestedConfidence":0.55}]. A felsorolt javaslatok mindegyikéhez (P0, P1, …) \
+                pontosan egy bejegyzést adj, a sorszáma szerinti "index" mezővel.""";
     }
 
     // ── Integrátor ────────────────────────────────────────────────────────────
 
     private IntegratorResult runIntegrator(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
                                             Map<Integer, SkepticVerdictDraft> verdicts,
-                                            List<KonziliumCrossTalkRound.Reaction> reactions) {
+                                            List<KonziliumCrossTalkRound.Reaction> reactions,
+                                            DossierContext dossier) {
         String systemPrompt = INTEGRATOR_MARKER + "\n" + integratorPersona() + "\n" + integratorContract();
-        String userMessage = numberedProposals(weekStart, proposals) + "\n"
-                + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions);
+        String userMessage = numberedProposals(weekStart, proposals, dossier) + "\n"
+                + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions)
+                + dossierBlock(proposals, dossier);
         String raw = callSmart(owner, "integrate", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Integrátor answer was blank for owner {} week {}", owner, weekStart);
@@ -283,15 +480,45 @@ public class KonziliumVerdictRound {
         }
     }
 
+    /**
+     * The chair's turn, carrying a per-proposal line ONLY where the ruling added something to what
+     * the Szkeptikus already said (mezo-lghn). Everything the chair merely ratified collapses into
+     * one honest aggregate line instead of a paraphrase, and confidence is rendered as a WORD —
+     * this turn used to print a raw decimal into a user-facing surface, against the invariant
+     * {@link CharacterConfidenceWords} states.
+     */
     private static ConferenceTranscriptEnvelope.Turn integratorTurn(List<ClaimRuling> rulings,
-                                                                     List<ChapterProposal> chapters) {
+                                                                     List<ChapterProposal> chapters,
+                                                                     Map<Integer, SkepticVerdictDraft> verdicts) {
         long accepted = rulings.stream().filter(ClaimRuling::accepted).count();
         StringBuilder sb = new StringBuilder("Mezo: ").append(accepted).append('/').append(rulings.size())
                 .append(" javaslat elfogadva.");
+        List<String> ratified = new ArrayList<>();
         for (int i = 0; i < rulings.size(); i++) {
             ClaimRuling ruling = rulings.get(i);
-            sb.append("\nP").append(i).append(": ").append(ruling.accepted() ? "ELFOGADVA" : "ELUTASÍTVA")
-                    .append(" (").append(ruling.ruledConfidence()).append(") — ").append(ruling.reason());
+            if (!addsSomething(ruling, verdicts.get(i))) {
+                ratified.add("P" + i);
+                continue;
+            }
+            sb.append("\nP").append(i).append(": ").append(ruling.accepted() ? "ELFOGADVA" : "ELUTASÍTVA");
+            if (ruling.accepted() && ruling.ruledConfidence() != null) {
+                sb.append(" (").append(CharacterConfidenceWords.word(ruling.ruledConfidence())).append(')');
+            }
+            if (ruling.dissent()) {
+                sb.append(" [a Szkeptikus döntése ellenében]");
+            }
+            String label = ruling.note() == null ? null : NOTE_LABELS.get(ruling.note());
+            if (label != null) {
+                sb.append(" [").append(label);
+                if (ruling.suggestedDimensionKey() != null) {
+                    sb.append(": ").append(ruling.suggestedDimensionKey());
+                }
+                sb.append(']');
+            }
+            sb.append(" — ").append(ruling.reason());
+        }
+        if (!ratified.isEmpty()) {
+            sb.append('\n').append(String.join(", ", ratified)).append(": ").append(NOTHING_TO_ADD);
         }
         for (ChapterProposal chapter : chapters) {
             sb.append("\nÚj fejezet: ").append(chapter.title()).append(" — ").append(chapter.rationale());
@@ -299,23 +526,75 @@ public class KonziliumVerdictRound {
         return new ConferenceTranscriptEnvelope.Turn("mezo", sb.toString(), List.of());
     }
 
+    /**
+     * Whether this ruling contributed anything the Szkeptikus had not already said. A rejection
+     * that ratifies a KILL adds nothing; a rejection over KEEP/WEAKEN or over no answer at all is
+     * always shown, so a real disagreement can never hide behind a model that forgot to set
+     * {@code dissent}. The ACCEPT side gets the same hardening (mezo-lghn fix round 4, item 1):
+     * an accept that overrules an explicit KILL is always shown too, and — same spirit as the
+     * rejection arm — this does NOT consult {@code dissent} either. Overruling a kill is the
+     * single strongest thing the chair can do; it can never be mistaken for a ratification just
+     * because a stray {@code suggestedConfidence} on that KILL happens to land in the same
+     * confidence-word tier as the chair's own number.
+     */
+    private static boolean addsSomething(ClaimRuling ruling, SkepticVerdictDraft verdict) {
+        if (ruling.dissent() || ruling.note() != null) {
+            return true;
+        }
+        if (!ruling.accepted()) {
+            return verdict == null || !KILL.equals(verdict.verdict());
+        }
+        if (verdict != null && KILL.equals(verdict.verdict())) {
+            return true;
+        }
+        if (ruling.ruledConfidence() == null) {
+            return true;
+        }
+        BigDecimal suggested = verdict == null ? null : verdict.suggestedConfidence();
+        if (suggested == null) {
+            return true;
+        }
+        return !CharacterConfidenceWords.word(ruling.ruledConfidence())
+                .equals(CharacterConfidenceWords.word(suggested));
+    }
+
     private static String integratorPersona() {
         return """
                 Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
-                szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. Minden javaslatot \
-                a Szkeptikus ellenérveivel együtt mérlegelsz — és ahol a szakértők egymás \
-                javaslatára is állást foglaltak, azt is figyelembe veszed —, és csak azt fogadod \
-                el, amit a bizonyíték tényleg alátámaszt. Új fejezetet (chapter) csak akkor \
-                javasolsz, ha valóban önálló, tartós témáról van szó — ritkán.""";
+                szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. \
+                A bizonyíték elégségességét a Szkeptikus már megítélte — ne bíráld felül újra. \
+                Csak ott térj el tőle, ahol olyat látsz, amit ő nem láthatott: a dossziét. \
+                A te öt kérdésed: tartunk-e már ilyen állítást (duplikáció) · ellentmond-e \
+                valamelyik meglévő állításnak, és akkor melyik mozduljon · a bizalom eddigi útja \
+                alapján mennyit mozdulhat most a szint · beírjuk-e ezt egy emberről szóló állandó \
+                dossziéba, még ha igaz is (az érzékeny állításokat itt mérlegeld) · önálló, \
+                tartós téma-e, ami külön fejezetet érdemel — ez ritka. \
+                Ahol a szakértők egymás javaslatára is állást foglaltak, azt is figyelembe veszed. \
+                A Szkeptikus KEEP vagy WEAKEN döntése ellenére elvethetsz. KILL ellenére csak \
+                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges, kivéve \
+                ha a javaslat DOWN vagy RETIRE, mert az gyengíti vagy törli az állítást, azt \
+                mindig elfogadhatod. Új vagy erősödő érzékeny állítást (NEW, UP) csak akkor \
+                fogadhatsz el, ha a Szkeptikus kifejezetten KEEP-et vagy WEAKEN-t adott rá — ha \
+                egyáltalán nem válaszolt erre a \
+                javaslatra, az ugyanúgy nem elég az elfogadáshoz, mintha KILL-t mondott volna.""";
     }
 
     private static String integratorContract() {
         return """
                 Válaszolj KIZÁRÓLAG egy JSON objektummal, magyarázat és formázás nélkül, pontosan \
                 ebben a formában: {"rulings":[{"index":0,"accept":true|false,"confidence":0.0-1.0,\
-                "reason":"..."}],"chapters":[{"title":"...","rationale":"..."}]}. A felsorolt \
-                javaslatok mindegyikéhez (P0, P1, …) adj egy rulings-bejegyzést. Legfeljebb 1 \
-                chapters-bejegyzést adj, és csak akkor, ha tényleg indokolt.""";
+                "reason":"...","dissent":true|false,"note":"DUPLICATE|CONTRADICTS|NOT_FOR_DOSSIER|\
+                REHOME","suggestedDimensionKey":"..."}],"chapters":[{"title":"...",\
+                "rationale":"..."}]}.
+                A "reason" CSAK azt tartalmazza, amit te teszel hozzá — a Szkeptikus érvét ne \
+                mondd el újra. Ha egyetértesz vele és nincs mit hozzátenned, a "reason" legyen \
+                rövid és mondja ezt ki.
+                A "dissent" akkor true, ha a döntésed szembemegy a Szkeptikus döntésével; ilyenkor \
+                a "reason" nevezze meg, mit nem láthatott a Szkeptikus.
+                A "note" csak akkor szerepeljen, ha tényleg találtál ilyet; a \
+                "suggestedDimensionKey" csak REHOME mellé.
+                A felsorolt javaslatok mindegyikéhez (P0, P1, …) adj egy rulings-bejegyzést. \
+                Legfeljebb 1 chapters-bejegyzést adj, és csak akkor, ha tényleg indokolt.""";
     }
 
     // ── shared rendering/parsing ──────────────────────────────────────────────
@@ -333,7 +612,8 @@ public class KonziliumVerdictRound {
         }
     }
 
-    private static String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals) {
+    private String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals,
+                                      DossierContext dossier) {
         // The monthly bootstrap konzílium (Karakter S4, mezo-1gim.6) has no week — CharacterBootstrapService
         // passes weekStart=null here. weekStart.plusDays(6) would NPE, so render a null-safe label instead
         // of a week range for that path.
@@ -344,24 +624,27 @@ public class KonziliumVerdictRound {
                 .append(" (a javaslatok korábbi, még fel nem dolgozott megfigyelésekből is származhatnak)");
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal p = proposals.get(i);
-            String target = NEW_KIND.equals(p.kind()) ? p.dimensionKey() : String.valueOf(p.claimId());
-            sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target)
+            sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target(p, dossier))
                     .append(" — ").append(p.text()).append(" (biztonság ").append(p.confidence())
                     .append(p.sensitive() ? ", ÉRZÉKENY" : "").append(") indoklás: ").append(p.rationale());
         }
         return sb.toString();
     }
 
-    private static String skepticVerdictsBlock(List<ClaimProposal> proposals, Map<Integer, SkepticVerdictDraft> verdicts) {
-        StringBuilder sb = new StringBuilder("Szkeptikus döntések:");
-        for (int i = 0; i < proposals.size(); i++) {
-            SkepticVerdictDraft draft = verdicts.get(i);
-            String verdict = draft != null && KILL.equals(draft.verdict()) ? KILL : KEEP;
-            String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
-                    ? draft.argument() : DEFAULT_ARGUMENT;
-            sb.append("\nP").append(i).append(": ").append(verdict).append(" — ").append(argument);
+    /** What the proposal is ABOUT, in words a judge can rule on. A NEW proposal names its
+     *  dimension; anything else names the claim it moves — its current text and confidence WORD,
+     *  never its UUID, which told neither judge anything (mezo-lghn). */
+    private static String target(ClaimProposal proposal, DossierContext dossier) {
+        if (NEW_KIND.equals(proposal.kind())) {
+            return proposal.dimensionKey();
         }
-        return sb.toString();
+        CharacterClaimEntity claim = proposal.claimId() == null
+                ? null : dossier.claimsById().get(proposal.claimId());
+        if (claim == null) {
+            return CLAIM_NOT_FOUND;
+        }
+        return "a jelenlegi állítás (" + CharacterConfidenceWords.word(claim.getConfidence()) + "): "
+                + claim.getText();
     }
 
     /** The peers' stances, grouped by the proposal they are about (mezo-xlvr). Empty input yields
@@ -376,6 +659,74 @@ public class KonziliumVerdictRound {
             sb.append("\nP").append(reaction.index()).append(": ")
                     .append(CharacterExpertCatalog.byKey(reaction.expertKey()).displayName())
                     .append(" ").append(reaction.stance()).append(" — ").append(reaction.argument());
+        }
+        return sb.toString();
+    }
+
+    /** The dossier as the CHAIR sees it (never the Szkeptikus — spec §10): every ACTIVE claim
+     *  grouped by dimension, with the targeted claims' confidence history and user feedback so the
+     *  chair can judge how far a number may move and what {{NÉV}} has already said about it. */
+    private static String dossierBlock(List<ClaimProposal> proposals, DossierContext dossier) {
+        StringBuilder sb = new StringBuilder("\nDosszié:");
+        if (dossier.shownClaims().isEmpty()) {
+            sb.append("\n(még egyetlen aktív állítás sincs)");
+            return sb.toString();
+        }
+        Map<UUID, List<CharacterClaimEntity>> byDimension = new LinkedHashMap<>();
+        for (CharacterClaimEntity claim : dossier.shownClaims()) {
+            byDimension.computeIfAbsent(claim.getDimensionId(), key -> new ArrayList<>()).add(claim);
+        }
+        for (Map.Entry<UUID, List<CharacterClaimEntity>> entry : byDimension.entrySet()) {
+            CharacterDimensionEntity dimension = dossier.dimensionsById().get(entry.getKey());
+            sb.append("\n").append(dimension == null ? "(ismeretlen dimenzió)" : dimension.getTitle()).append(':');
+            for (CharacterClaimEntity claim : entry.getValue()) {
+                sb.append("\n- (").append(CharacterConfidenceWords.word(claim.getConfidence())).append(") ")
+                        .append(claim.getText());
+            }
+        }
+        if (dossier.truncated()) {
+            sb.append("\n(A lista a legfrissebb ").append(dossier.shownClaims().size())
+                    .append(" állításra van szűkítve — nem a teljes dosszié.)");
+        }
+        String targeted = targetedClaimDetails(proposals, dossier);
+        return sb.append(targeted).toString();
+    }
+
+    /** Confidence history and user feedback for the claims a proposal actually targets — the two
+     *  things that tell the chair how far the number may move and whether {{NÉV}} has already
+     *  pushed back on this exact claim. */
+    private static String targetedClaimDetails(List<ClaimProposal> proposals, DossierContext dossier) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < proposals.size(); i++) {
+            ClaimProposal proposal = proposals.get(i);
+            if (proposal.claimId() == null) {
+                continue;
+            }
+            CharacterClaimEntity claim = dossier.claimsById().get(proposal.claimId());
+            if (claim == null) {
+                continue;
+            }
+            List<String> history = claim.getConfidenceHistory() == null
+                    ? List.of()
+                    : claim.getConfidenceHistory().points().stream()
+                            .map(point -> CharacterConfidenceWords.word(point.value()) + " (" + point.cause() + ")")
+                            .toList();
+            List<String> feedback = claim.getUserFeedback() == null
+                    ? List.of()
+                    : claim.getUserFeedback().events().stream()
+                            .map(event -> event.kind()
+                                    + (event.text() == null || event.text().isBlank() ? "" : ": " + event.text()))
+                            .toList();
+            if (history.isEmpty() && feedback.isEmpty()) {
+                continue;
+            }
+            sb.append("\nP").append(i).append(" célzott állításának előzményei:");
+            if (!history.isEmpty()) {
+                sb.append("\n  bizalom útja: ").append(String.join(" → ", history));
+            }
+            if (!feedback.isEmpty()) {
+                sb.append("\n  felhasználói visszajelzés: ").append(String.join(" | ", feedback));
+            }
         }
         return sb.toString();
     }
