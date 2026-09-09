@@ -37,10 +37,11 @@ export function AdminFeatureDetailPage() {
   const [period, setPeriod] = useState<AdminFeaturePeriod>('30d')
   const detail = useAdminFeatureDetail(key, period, isOwner)
   // `acceptedShare` (mezo-kxnn final review Finding 3) lives on the BOARD row, not the detail
-  // response's own contract — `AdminFeatureDetailResponse` carries no such field. Always null
-  // until `ai_draft_outcome` ships (slice 8; see the schema's own doc comment on
-  // `AdminFeatureRow.acceptedShare`), so this degrades to the honest "még nem mérjük" line even
-  // while the board query is loading/empty — never a fabricated 0%.
+  // response's own contract — `AdminFeatureDetailResponse` carries no such field. Real since
+  // `ai_draft_outcome` shipped (slice 8, mezo-76f6 — see `AdminFeatureRow.acceptedShare`'s own
+  // doc comment for the period-anchoring rule); still degrades to the honest "még nem mérjük"
+  // line for a feature with zero recorded outcomes, or while the board query is loading/empty —
+  // never a fabricated 0%.
   const board = useAdminFeatureBoard(period, isOwner)
   const acceptedShare = board.data.rows.find((r) => r.key === key)?.acceptedShare ?? null
 

@@ -391,6 +391,9 @@ export const handlers = [
   // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not
   // surface as an unhandled request, and answers 202 with no body like the backend does.
   http.post(`${API_BASE}/api/telemetry/screen-events`, () => new HttpResponse(null, { status: 202 })),
+  // Draft outcome signals (mezo-76f6) — same "answer it so real-mode tests never leak to the
+  // network" reasoning as telemetry above; 204 no body, matching the backend contract.
+  http.post(`${API_BASE}/api/ai-drafts/:draftId/outcome`, () => new HttpResponse(null, { status: 204 })),
   // Admin data browser (mezo-d5iy.12) — populated defaults from the same mock seed, never a
   // 404 for an unknown table: an unrecognised `:table` falls back to the food_log fixture
   // rather than answering empty/error, matching "MSW handlers answer populated defaults".

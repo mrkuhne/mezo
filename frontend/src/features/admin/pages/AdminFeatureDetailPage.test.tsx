@@ -82,6 +82,18 @@ describe('AdminFeatureDetailPage (mock mode)', () => {
     expect(screen.getByText('TIMEOUT')).toBeInTheDocument()
     expect(screen.getByText('RATE_LIMIT')).toBeInTheDocument()
   })
+
+  // acceptedShare (mezo-76f6 review finding L2) — both branches of the board row lookup.
+  it('renders "még nem mérjük" for a feature with zero recorded outcomes (acceptedShare null)', async () => {
+    renderPage('companion_chat') // board mock row: acceptedShare null
+    await screen.findByText('Beszélgetés a társsal')
+    expect(screen.getByText('Elfogadási arány: még nem mérjük')).toBeInTheDocument()
+  })
+
+  it('renders the real percentage for a feature with a non-null acceptedShare', async () => {
+    renderPage('meal_draft') // board mock row: acceptedShare 0.72
+    await screen.findByText('Elfogadási arány: 72%')
+  })
 })
 
 describe('AdminFeatureDetailPage — companion-off / unmapped feedback (real mode via MSW override)', () => {

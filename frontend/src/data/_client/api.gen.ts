@@ -10198,7 +10198,7 @@ export interface components {
             helped: components["schemas"]["AdminFeatureHelped"] | null;
             /**
              * Format: double
-             * @description (accepted+edited)/total ai_draft_outcome rows for this feature in the selected period; null when the feature has zero recorded outcomes.
+             * @description (accepted+edited)/total ai_draft_outcome rows for this feature in the selected period; null when the feature has zero recorded outcomes. A row counts in the period its FIRST signal was recorded in (upsert semantics) — a later cross-period flip (e.g. discarded then re-opened and accepted) still counts in the original period, not the one the flip happened in.
              */
             acceptedShare: number | null;
             /** Format: double */

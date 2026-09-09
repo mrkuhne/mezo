@@ -246,6 +246,28 @@ class AdminFeatureBoardIT extends ApiIntegrationTest {
                 .satisfies(r -> assertThat(r.getAcceptedShare()).isNull());
     }
 
+    /**
+     * mezo-76f6 review finding L1: a feature that only ever generates deterministically (no
+     * {@code llm_log_history} row) and is not a {@code mezo.admin.feature-map} domain key either
+     * must still surface as a row once it has recorded outcomes — the row-set union extends to
+     * {@code ai_draft_outcome}'s own distinct feature slugs, not just the llm/domain sources.
+     */
+    @Test
+    void testBoard_shouldSurfaceOutcomesOnlyFeatureAsAiKind_whenFeatureHasNoLlmRowsAndIsNotADomainKey() {
+        RegisteredUser anna = registerUser("Anna");
+        recordOutcome(anna, "train_meso_plan", "accepted");
+        recordOutcome(anna, "train_meso_plan", "discarded");
+
+        AdminFeatureBoardResponse body = getForBody(URI, ownerAuthHeaders(), HttpStatus.OK, AdminFeatureBoardResponse.class);
+
+        assertThat(body.getRows()).filteredOn(r -> "train_meso_plan".equals(r.getKey()))
+                .singleElement()
+                .satisfies(r -> {
+                    assertThat(r.getAcceptedShare()).isEqualTo(0.5);
+                    assertThat(r.getKind()).isEqualTo(AdminFeatureRow.KindEnum.AI);
+                });
+    }
+
     private void recordOutcome(RegisteredUser user, String feature, String outcome) {
         postForBody("/api/ai-drafts/" + UUID.randomUUID() + "/outcome",
             AiDraftOutcomeRequest.builder().feature(feature).outcome(outcome).build(),
