@@ -19,7 +19,6 @@ import {
   ADMIN_MEMORY_GRAPH_EMPTY,
   ADMIN_MEMORY_GRAPH_MOCK,
   ADMIN_MEMORY_HEALTH_EMPTY,
-  ADMIN_MEMORY_HEALTH_MOCK,
   ADMIN_MEMORY_NEIGHBORS_EMPTY,
   ADMIN_MEMORY_NEIGHBORS_MOCK,
   ADMIN_MEMORY_RUNS_EMPTY,
@@ -28,6 +27,7 @@ import {
   ADMIN_MEMORY_RUN_DETAIL_MOCK,
   ADMIN_MEMORY_VECTORS_EMPTY,
   ADMIN_MEMORY_VECTORS_MOCK,
+  adminMemoryHealthMockFor,
   adminMemoryRunDetailFor,
 } from '@/data/admin/adminMemoryMock'
 
@@ -118,7 +118,7 @@ export function useAdminMemoryHealth(userId: string, isOwner: boolean) {
   const enabled = isOwner && userId !== ''
   const q = useDualQuery<Degradable<AdminMemoryHealthResponse>>({
     queryKey: [...ADMIN_MEMORY_KEY, 'health', userId],
-    mockData: ADMIN_MEMORY_HEALTH_MOCK,
+    mockData: adminMemoryHealthMockFor(userId),
     realFetch: degradable(() => adminMemoryApi.health(userId), ADMIN_MEMORY_HEALTH_EMPTY),
     realEmpty: ADMIN_MEMORY_HEALTH_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,

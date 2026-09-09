@@ -7,9 +7,10 @@ import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { OverviewView } from '@/features/admin/memory/views/OverviewView'
-import { ADMIN_MEMORY_HEALTH_MOCK } from '@/data/admin/adminMemoryMock'
+import { ADMIN_MEMORY_HEALTH_ANNA_MOCK, ADMIN_MEMORY_HEALTH_MOCK } from '@/data/admin/adminMemoryMock'
 import { userFeedbackMockFor } from '@/data/admin/adminInsightsMock'
 import { MOCK_ANNA_ID } from '@/data/admin/adminMock'
+import { huInt } from '@/shared/lib/huNum'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -43,6 +44,17 @@ describe('OverviewView (mock mode)', () => {
     expect(await screen.findByText(new RegExp(`${pct}%-a volt hasznos`))).toBeInTheDocument()
     expect(screen.getByText(`elnémítva: ${mock.recall!.suppress}`)).toBeInTheDocument()
     expect(onGo).not.toHaveBeenCalled()
+  })
+
+  // Fix round 1 — Anna's own explorer must show HER numbers (132/2/6/356), not the
+  // install-wide seed's 1780/6/9/1842.
+  it("renders Anna's own scaled health numbers, not the install-wide seed", async () => {
+    renderOverview(MOCK_ANNA_ID)
+    await screen.findByText('Emlék-egészség')
+    const readyCount = ADMIN_MEMORY_HEALTH_ANNA_MOCK.vectorsByStatus.find((b) => b.key === 'ready')!.count
+    expect(screen.getByText(huInt(readyCount))).toBeInTheDocument()
+    expect(screen.getByText(huInt(ADMIN_MEMORY_HEALTH_ANNA_MOCK.staleVectorCount))).toBeInTheDocument()
+    expect(screen.queryByText(huInt(1780))).not.toBeInTheDocument()
   })
 
   it('clicking a failed/stale problem link calls onGo("layers", null)', async () => {

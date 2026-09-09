@@ -62,6 +62,22 @@ describe('AdminMemoryPage (mock mode)', () => {
     expect(screen.queryByRole('tab', { name: 'Feature-ök' })).not.toBeInTheDocument()
   })
 
+  // Fix round 1 (controller browser check) — the inspector column has nothing to inspect on
+  // Áttekintés (no selectable row there at all), so it must not render, freeing the width for
+  // the overview tiles; every SELECTABLE view (runs/graph/map/layers) still gets it.
+  it('the inspector column is absent on Áttekintés (nothing selectable there)', async () => {
+    renderPage()
+    await screen.findByText('Emlék-egészség')
+    expect(screen.queryByText('Válassz egy elemet a listából.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Részletek')).not.toBeInTheDocument()
+  })
+
+  it('the inspector column still renders on Felidézések (runs)', async () => {
+    renderPage('?view=runs')
+    await screen.findByText(/Futáslista/)
+    expect(screen.getByText('Válassz egy elemet a listából.')).toBeInTheDocument()
+  })
+
   it('clicking the segment bar navigates between views', async () => {
     renderPage()
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)

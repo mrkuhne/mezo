@@ -120,13 +120,19 @@ export function AdminMemoryPage() {
             {view === 'layers' && <LayersView userId={userId} isOwner={isOwner} />}
           </div>
 
-          <MemoryInspector
-            title={inspector?.title ?? 'Részletek'}
-            collapsed={inspectorCollapsed}
-            onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
-          >
-            {inspector ? inspector.content : <InspectorEmpty />}
-          </MemoryInspector>
+          {/* Fix round 1 (controller browser check): Áttekintés has no selectable row at all — an
+              inspector column reading "Válassz egy elemet a listából" next to it is pure noise,
+              not an honest empty state. The inspector belongs to the four SELECTABLE views
+              (runs/graph/map/layers); overview's tiles get the freed width instead. */}
+          {view !== 'overview' && (
+            <MemoryInspector
+              title={inspector?.title ?? 'Részletek'}
+              collapsed={inspectorCollapsed}
+              onToggleCollapse={() => setInspectorCollapsed((c) => !c)}
+            >
+              {inspector ? inspector.content : <InspectorEmpty />}
+            </MemoryInspector>
+          )}
         </div>
       </PageBody>
     </MozaikPage>
