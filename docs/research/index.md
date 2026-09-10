@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Catalog
 type: summary
-updated: 2026-09-06
+updated: 2026-09-10
 tags: [tooling]
 related: [SCHEMA.md, log.md, README.md]
 ---
@@ -20,6 +20,7 @@ ingest.
 - [LM Studio](entities/lm-studio.md) — local model host/server; MLX KV-checkpointing engine, agent-relevant settings + CLI limits. `confidence: high`.
 - [Qwen 3.x model line](entities/qwen3-model-line.md) — 3.6/3.8/Coder-Next; hybrid-attention cheap KV, benchmark standing, mezo roles. `confidence: high`.
 - [Exist.io](entities/exist-io.md) — personal-analytics aggregator with no goal object, only a rolling median baseline; the source behind mezo's life-goal `baseline` pillar kind, and the one entry with a debunked citation. `confidence: medium`.
+- [YAZIO daily diary](entities/yazio.md) — one dominant calorie gauge, compact macro meters and meal diary; a low-confidence screenshot reference for the Titanium Fuel hierarchy. `confidence: low`.
 
 ## Concepts
 

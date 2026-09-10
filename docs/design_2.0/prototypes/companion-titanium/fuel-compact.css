@@ -1,0 +1,65 @@
+/* YAZIO-inspired hierarchy translated into Mezo's dimensional visual language. */
+.arrival.fuel-compact{height:170px}
+.arrival.fuel-compact .arrival-title{top:5px}
+.arrival.fuel-compact .arrival-title .date{font-size:6px}
+.arrival.fuel-compact .arrival-title h2{font-size:19px;margin-top:5px}
+.arrival.fuel-compact iframe{top:25px;height:125px}
+.arrival.fuel-compact .presence{top:134px;font-size:6px}
+.arrival.fuel-compact .companion-copy{top:92px;left:auto;right:17px;width:40px}
+.arrival.fuel-compact .companion-copy p{display:none}
+.arrival.fuel-compact .companion-copy .voice-open{display:flex;width:40px;height:40px;margin:0;padding:0;justify-content:center;border-radius:50%}
+.arrival.fuel-compact .voice-open svg{width:17px;height:17px}
+.arrival.fuel-compact .voice-open span,.arrival.fuel-compact .voice-open small{display:none}
+.arrival.fuel-compact .motion-toggle{top:92px;right:auto;left:18px;width:23px;height:23px}
+.arrival.fuel-compact~.demo-pages .day-navigator{grid-template-columns:38px 32px minmax(0,1fr) 38px;gap:2px;margin:0 0 9px;padding:3px 0 8px;border:0;border-bottom:1px solid #ffffff0d;border-radius:0;background:#0d0f14e8;box-shadow:none}
+.arrival.fuel-compact~.demo-pages .day-navigator>button{width:38px;height:42px;border-radius:50%;background:transparent}
+.arrival.fuel-compact~.demo-pages .day-calendar{width:32px;height:32px;border:0;border-radius:50%;background:#ffffff05}
+.arrival.fuel-compact~.demo-pages .day-date small{font-size:7px}
+.arrival.fuel-compact~.demo-pages .day-date strong{margin-top:3px;font-size:11px}
+.arrival.fuel-compact~.demo-pages .day-swipe-hint{display:none}
+.fuel-focus{position:relative;padding:3px 0 20px;border-bottom:1px solid #ffffff0d}
+.fuel-visual{display:flex;align-items:center;justify-content:center;gap:2px;min-height:170px}
+.fuel-gauge{position:relative;width:150px;height:150px;flex:0 0 150px;display:grid;place-items:center}
+.fuel-gauge-rings{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);filter:drop-shadow(0 0 11px #86d7e735)}
+.fuel-gauge-rings circle{fill:none;stroke-width:10}
+.fuel-gauge-base{stroke:#ffffff0b}
+.fuel-gauge-progress{stroke:#86d7e7;stroke-linecap:round;stroke-dasharray:var(--fuel-progress) 100}
+.fuel-gauge-art{position:relative;z-index:1;width:106px;height:106px;display:grid;place-items:center;transform:rotate(-7deg)}
+.fuel-gauge-art .icon{width:106px;height:106px;filter:drop-shadow(0 14px 14px #0008) drop-shadow(0 0 12px #b8eaa52b)}
+.fuel-primary-number{min-width:0;margin-left:-5px}
+.fuel-primary-number small{display:block;font-size:7px;letter-spacing:1.4px;color:#8bbbc5}
+.fuel-primary-number strong{display:block;margin:4px 0 -1px;font-size:58px;line-height:1;font-weight:500;letter-spacing:-3px;color:#ecf6f6;text-shadow:0 0 24px #83d7e729}
+.fuel-primary-number span{font-size:9px;color:#78919a}
+.fuel-equation{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:-5px}
+.fuel-equation span{text-align:center;min-width:54px}
+.fuel-equation strong{display:block;font-size:15px;font-weight:500;color:#d5e4e6}
+.fuel-equation small{display:block;margin-top:4px;font-size:6px;letter-spacing:1px;color:#6f8790}
+.fuel-equation>b{font-size:15px;font-weight:300;color:#51656e}
+.fuel-rings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:18px 0 17px;border-bottom:1px solid #ffffff0d}
+.fuel-ring{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1}
+.fuel-ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--macro-color) 28%,transparent))}
+.fuel-ring circle{fill:none;stroke-width:5}
+.fuel-ring-track{stroke:#ffffff0b}
+.fuel-ring-progress{stroke:var(--macro-color);stroke-linecap:round;stroke-dasharray:var(--ring-progress) 100}
+.fuel-ring>span{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;line-height:1}
+.fuel-ring small{font-size:7px;color:#8fa4ac}
+.fuel-ring strong{margin-top:5px;font-size:17px;font-weight:500;color:var(--macro-color)}
+.fuel-ring b{margin-top:4px;font-size:6px;font-weight:400;color:#687e87}
+.fuel-log-action{display:flex;align-items:center;gap:13px;width:100%;padding:16px 2px;border:0;border-bottom:1px solid #ffffff0d;background:transparent;text-align:left;color:#e5edf0}
+.fuel-log-icon{width:55px;height:55px;flex:0 0 auto;display:grid;place-items:center}
+.fuel-log-icon .icon{width:55px;height:55px;filter:drop-shadow(0 8px 10px #0007) drop-shadow(0 0 9px #bca6f12c)}
+.fuel-log-action strong{display:block;font-size:16px;font-weight:500}
+.fuel-log-action small{display:block;margin-top:4px;font-size:8px;color:#887c99}
+.fuel-log-action>b{margin-left:auto;font-size:30px;font-weight:300;color:#cab7ef}
+.food-list-heading{margin:23px 0 4px}
+.food-timeline.flat .meal-entry{margin:0;padding:22px 2px 13px;border:0;border-bottom:1px solid #ffffff0d;border-radius:0;background:transparent}
+.food-timeline.flat .meal-entry>.icon{width:45px;height:45px;filter:drop-shadow(0 7px 8px #0006)}
+.food-timeline.flat .meal-entry>b{font-size:21px;color:#d7e7ea}
+.food-timeline.flat .meal-time{left:2px;top:8px}
+.food-day-empty.flat{display:flex;align-items:center;gap:12px;padding:22px 0;border-bottom:1px solid #ffffff0d}
+.food-day-empty.flat .icon{width:55px;height:55px}
+.food-day-empty.flat strong{font-size:13px;font-weight:500}
+.fuel-more.flat{margin:11px 0 4px;border:0;border-bottom:1px solid #ffffff0d;border-radius:0;background:transparent}
+.fuel-more.flat>summary{padding:14px 1px}
+.fuel-more.flat .fuel-secondary{padding-left:1px;padding-right:1px}
+@media(prefers-reduced-motion:no-preference){.fuel-gauge-progress,.fuel-ring-progress{animation:fuel-ring-rise 1.05s cubic-bezier(.2,.78,.24,1) both}.fuel-ring:nth-child(2) .fuel-ring-progress{animation-delay:.08s}.fuel-ring:nth-child(3) .fuel-ring-progress{animation-delay:.16s}.fuel-ring:nth-child(4) .fuel-ring-progress{animation-delay:.24s}.fuel-gauge-art{animation:fuel-float 4.8s ease-in-out 1.05s infinite}.fuel-primary-number strong{animation:fuel-glow 5.5s ease-in-out 1.05s infinite}@keyframes fuel-ring-rise{from{stroke-dasharray:0 100}}@keyframes fuel-float{0%,100%{transform:rotate(-7deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(-4px)}}@keyframes fuel-glow{0%,100%{text-shadow:0 0 20px #83d7e71d}50%{text-shadow:0 0 31px #83d7e73d}}}
