@@ -1,6 +1,6 @@
 # Nap → Mai — Titanium production rebuild (slice 1: landing page)
 
-Date: 2026-09-10. Status: concept approved by owner; coverage audit pending.
+Date: 2026-09-10. Status: **prototype explicitly approved by owner 2026-09-10** ("mehet", prototype commit 2e4cebf20); coverage manifest frozen. Driving issue: mezo-mhum.
 Workflow: [Titanium production rebuild handoff](../../design_2.0/2026-09-10-titanium-production-rebuild-handoff.md),
 [ADR 0041](../../decisions/0041-feature-coverage-before-titanium-production-rebuild.md).
 Prototype reference: [Én/Nap deep](../../design_2.0/2026-09-10-titanium-me-nap-deep.md),

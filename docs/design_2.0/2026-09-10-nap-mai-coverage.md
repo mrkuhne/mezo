@@ -6,7 +6,7 @@ Design spec: [2026-09-10-nap-mai-titanium-design.md](../superpowers/specs/2026-0
 Evidence base: `frontend/src/features/today/pages/NapHubPage.tsx` (read in full 2026-09-10),
 `frontend/src/app/router.tsx:198-209`, investigator terrain report 2026-09-10.
 
-**All rows decided by the owner on 2026-09-10** (brainstorm Q&A, one row at a time; the
+**FROZEN — prototype approved by the owner 2026-09-10 (prototype commit 2e4cebf20; driving issue mezo-mhum). All rows decided by the owner on 2026-09-10** (brainstorm Q&A, one row at a time; the
 "KEEP bundle" rows were confirmed as one explicitly enumerated batch). No `UNKNOWN` remains.
 
 ## A. Hero layer (daypart-adaptive top of page)
