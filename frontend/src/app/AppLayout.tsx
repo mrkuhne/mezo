@@ -42,7 +42,10 @@ export function AppLayout() {
   // mezo-bq2t: /fuel/log/uj is the same situation — its sticky save bar owns the thumb zone
   // (measured: the FAB sat right on top of it), and a "quick log" FAB on the logging page
   // itself is redundant anyway. Same deal: header and tab bar stay.
-  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj'].includes(location.pathname)
+  // mezo-mhum: /nap/gyors IS the picker page (QuickLogSurface variant="page") — the coral
+  // FAB would float over its own destination and open the modal sheet duplicate on top of
+  // the full-page picker. Same call as /fuel/log/uj above.
+  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.

@@ -206,7 +206,14 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
     </div>
   )
 
-  if (variant === 'page') return grid(onDone)
+  // A page variánsban a `close` a rács navigáló csempéinek szól (Étkezés/Stack/Edzés/
+  // Check-in-kész), NEM az oldal bezárásának — maga a navigate() hagyja el az oldalt.
+  // `onDone` itt a `navigate(-1)` (NapGyorsPage.tsx), és a böngésző `history.go(-1)`-je
+  // ASZINKRON: ha a csempe `close()`-ként hívná, a sorban álló vissza-lépés a push UTÁN
+  // sül el és visszavonja azt (futásidőben reprodukálva: a csempe felvillan, majd
+  // visszaugrik /nap-ra). A no-op close ezt zárja ki; az al-sheetek onClose-a marad a
+  // valódi `onDone` (egyetlen navigate(-1) egy befejezett logolás UTÁN helyes).
+  if (variant === 'page') return grid(() => {})
 
   return (
     <Sheet onClose={onDone} labelledBy="quicklog-title">

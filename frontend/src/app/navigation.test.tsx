@@ -316,3 +316,12 @@ test('hides the quick-log FAB on the logging page but keeps the tab bar (mezo-bq
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
 })
+
+test('hides the quick-log FAB on the quick-log picker page itself (mezo-mhum)', async () => {
+  // /nap/gyors IS the QuickLogSurface picker (page variant) — the FAB would float over its
+  // own destination and open the modal sheet duplicate on top of the full-page picker.
+  const { container } = renderApp('/nap/gyors')
+  await screen.findByText('Mi érkezett?')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
