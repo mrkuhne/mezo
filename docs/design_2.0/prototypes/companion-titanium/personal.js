@@ -6,7 +6,7 @@ import {closeSheet,toast,react,currentDaypart} from './nap.js';
 import {foodSnapshot} from './food.js';
 import {workoutSnapshot} from './workout.js';
 let state=createPersonal(),callbacks;
-const makeUI=()=>({weightPeriod:'14',journalFilter:'all',journalQuery:'',journalHistoryOpen:false,entryKind:'note',journalDraft:'',chatDraft:'',part:currentDaypart()});
+const makeUI=()=>({weightPeriod:'14',journalFilter:'all',journalQuery:'',journalHistoryOpen:false,entryKind:'note',journalDraft:'',chatDraft:'',part:currentDaypart(),anchors:new Set()});
 let ui=makeUI();
 const labels={me:['Áttekintés','Súly','Alvás','Napló'],nap:['Mai','Beszélgetés','Rutin','Napzárás']};
 const external=()=>({food:foodSnapshot(),workout:workoutSnapshot()});
@@ -22,11 +22,15 @@ export function initPersonal(options){callbacks=options;
   const legacy={profile:'me/0/profile',sleep:'me/2',journal:'me/3/entry-new',intention:'nap/0/intention',routine:'nap/2',checkin:'nap/0/checkin',ritual:'nap/3',needs:'nap/0/signals',messages:'nap/1',train:'train/0',fuel:'fuel/0',quick:'nap/0/quick'};
   if(el.id==='quick-add'||legacy[el.dataset.open]||el.hasAttribute('data-weight')){event.preventDefault();event.stopImmediatePropagation();go(el.id==='quick-add'?'nap/0/quick':el.hasAttribute('data-weight')?'me/1/weight-log':legacy[el.dataset.open]);return;}
  },true);
+ // A vízcsempe konténere role="button" (a belső ＋ miatt nem lehet <button> a <button>-ban) —
+ // ugyanaz a minta, mint a production rutin-csempéé.
+ document.addEventListener('keydown',event=>{const el=event.target.closest('[role="button"][data-life]');if(el&&(event.key==='Enter'||event.key===' ')){event.preventDefault();go(el.dataset.life);}});
  document.addEventListener('click',event=>{
-  const el=event.target.closest('button');if(!el)return;const d=el.dataset;
+  const el=event.target.closest('button,[role="button"][data-life]');if(!el)return;const d=el.dataset;
   if(d.life){if(d.life==='me/3/entry-edit/day-close'){go('nap/3/close-edit');return;}go(d.life);}
   if(d.lifeFilter){ui[d.lifeFilter]=d.value;if(d.lifeFilter==='journalFilter')ui.journalHistoryOpen=true;callbacks.refresh();}
   if(d.lifeWater){saveWater(state,Number(d.lifeWater));refresh('Egy pohárral több figyelem magadra.');}
+  if(d.lifeAnchor){ui.anchors.has(d.lifeAnchor)?ui.anchors.delete(d.lifeAnchor):ui.anchors.add(d.lifeAnchor);callbacks.refresh();}
   if(el.hasAttribute('data-life-water-undo')){undoWater(state);refresh('Az utolsó saját poharat visszavontam.');}
   if(d.lifeHabit){if(toggleRoutine(state,d.lifeHabit))refresh('A rutinod frissült.');}
   if(d.lifePause){const r=state.routines.find(x=>x.id===d.lifePause);if(r){r.paused=!r.paused;refresh(r.paused?'Most pihen ez a lépés.':'Újra helye van a rutinodban.');}}
@@ -62,6 +66,17 @@ export function initPersonal(options){callbacks=options;
  document.querySelector('#restart').addEventListener('click',()=>{state=createPersonal();ui=makeUI();callbacks.refresh();});
 }
 
-export function personalArrival(domain){const name=state.profile.name;const part=currentDaypart();if(domain==='me')return {greeting:'A te ritmusod, '+name+'.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'};if(domain!=='nap')return null;return part==='reggel'?{greeting:'Jó reggelt, '+name+'.',copy:'Adjunk irányt a napnak. A többi jön lépésenként.'}:part==='este'?{greeting:'Megérkeztél, '+name+'.',copy:state.closing?'A mai nap a helyén. Most már jöhet a pihenés.':'Ami ma belefért, az már a tiéd. A többit letehetjük holnapig.'}:{greeting:'Jó itt folytatni, '+name+'.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'};}
+export function personalArrival(domain){const name=state.profile.name;const part=currentDaypart();if(domain==='me')return {greeting:'A te ritmusod, '+name+'.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'};if(domain!=='nap')return null;return part==='reggel'?{greeting:'Jó reggelt, '+name+'.',copy:state.intention?'A mai irányod: „'+state.intention+'” Lépésenként haladunk.':'Adjunk irányt a napnak. A többi jön lépésenként.'}:part==='este'?{greeting:'Megérkeztél, '+name+'.',copy:state.closing?'A mai nap a helyén. Most már jöhet a pihenés.':'Ami ma belefért, az már a tiéd. A többit letehetjük holnapig.'}:{greeting:'Jó itt folytatni, '+name+'.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'};}
 
 export const personalInitial=()=>state.profile.name.trim().slice(0,1).toLocaleUpperCase('hu');
+
+/** Életjel-aura: a társ fényét a saját jelzéseid színezik (víz · pihenés · energia).
+ *  Hiányzó jelzés = halvány szín, nem kitalált érték. */
+export function needsAura(){
+ const water=Math.min(1,state.water.reduce((a,b)=>a+b.ml,0)/2000);
+ const sleep=state.sleeps.length?(state.sleeps.at(-1).quality||0)/10:0;
+ const m=state.moments.este||state.moments.delutan||state.moments.nap||state.moments.reggel;
+ const energy=m?m.energy/10:0;
+ const a=(c,level)=>c+Math.round(24+level*72).toString(16).padStart(2,'0');
+ return {water:a('#8ed2e8',water),sleep:a('#bca6f1',sleep),energy:a('#d9c395',energy)};
+}

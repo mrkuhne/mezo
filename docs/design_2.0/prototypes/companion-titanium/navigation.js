@@ -1,4 +1,4 @@
-import { personalContent, personalDetail, initPersonal, openPersonalJournal, personalArrival, personalInitial } from './personal.js';
+import { personalContent, personalDetail, initPersonal, openPersonalJournal, personalArrival, personalInitial, needsAura } from './personal.js';
 import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, initFood } from './food.js';
 import { animateFuelDashboard, fuelDashboardContent } from './fuel-dashboard.js';
@@ -66,6 +66,10 @@ function draw(){
  if(d==='fuel'&&p===0)animateFuelDashboard(panel);
  $('.arrival').hidden=p!==0||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
  if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
+ // Életjel-aura: Nap/Mai-on a társ fényét a saját jelzéseid színezik; koppintva nyílnak az életjelek.
+ const auraOn=d==='nap'&&p===0&&!personalDetail();$('.arrival').classList.toggle('has-aura',auraOn);
+ if(auraOn){const aura=needsAura();$('.arrival').style.setProperty('--aura-water',aura.water);$('.arrival').style.setProperty('--aura-sleep',aura.sleep);$('.arrival').style.setProperty('--aura-energy',aura.energy);$('.presence').innerHTML=`<span class="presence-dot"></span> VELED VAGYOK · <button class="presence-signals" data-life="nap/0/signals">ÉLETJELEK ↗</button>`;}
+ else $('.presence').innerHTML='<span class="presence-dot"></span> VELED VAGYOK';
  if(!['mezo','me','nap'].includes(d))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }

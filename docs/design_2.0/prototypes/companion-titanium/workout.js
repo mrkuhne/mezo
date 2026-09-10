@@ -82,4 +82,4 @@ export function initWorkout(options){callbacks=options;
  $('#restart').addEventListener('click',()=>{workout=createWorkout();selected=0;editing=null;restUntil=0;leave();});
 }
 
-export const workoutSnapshot=()=>({complete:workout.status==='complete'});
+export const workoutSnapshot=()=>({complete:workout.status==='complete',xp:metrics(workout).xp});

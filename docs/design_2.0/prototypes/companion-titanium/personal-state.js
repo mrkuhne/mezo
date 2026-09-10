@@ -17,3 +17,23 @@ export function toggleRoutine(s,id){const r=s.routines.find(x=>x.id===id);if(!r|
 export function closeDay(s,value){s.closing={...value};const text=[value.keep&&'Magammal viszem: '+value.keep,value.release&&'Leteszem: '+value.release,value.tomorrow&&'Holnap: '+value.tomorrow].filter(Boolean).join('\n');const old=s.entries.find(e=>e.id==='day-close');if(text){if(old){old.text=text;old.archived=false;}else s.entries.push({id:'day-close',kind:'note',date:s.date,text,archived:false});}else if(old)s.entries=s.entries.filter(e=>e!==old);}
 export function saveWater(s,ml){need(Number.isFinite(ml)&&ml>=50&&ml<=1500,'50–1500 ml közötti adagot adj meg.');s.water.push({ml,time:'Most',seed:false});}
 export function undoWater(s){if(s.water.at(-1)&&!s.water.at(-1).seed)s.water.pop();}
+/** Az „egy kiemelt lépés" választó: napszakonként egyetlen javaslat, prioritási létrán.
+ *  Este mindig a napzárás; reggel a szándék, majd a reggeli rutin; napközben
+ *  pillanatkép → víz → edzés → cél → napló. Nem nyaggat hattal egyszerre. */
+export function nextStep(s,part,external){
+ if(part==='este')return s.closing
+  ?{title:'A mai nap a helyén.',sub:'Ha szeretnéd, vissza is nézheted.',path:'nap/3/close-summary',icon:'moon'}
+  :{title:'Tegyük le a napot.',sub:'Amit megőriznél, és amit elengednél.',path:'nap/3',icon:'moon'};
+ if(part==='reggel'){
+  if(!s.intention)return {title:'Adjunk irányt a napnak.',sub:'Egy mondat elég.',path:'nap/0/intention',icon:'sun'};
+  const pending=s.routines.find(r=>r.part==='reggel'&&!r.paused&&!r.derived&&!routineDone(s,r));
+  if(pending)return {title:'A reggeli ritmusod vár.',sub:pending.name+' · '+pending.anchor,path:'nap/2/chain/reggel',icon:'ring'};
+ }
+ if(!s.moments.nap&&!s.moments.delutan)return {title:'Hogy vagy most?',sub:'Egy rövid pillanatkép, magadért.',path:'nap/0/checkin',icon:'heart'};
+ const water=s.water.reduce((a,b)=>a+b.ml,0);
+ if(water<1500)return {title:'Egy pohár víz jólesne.',sub:(water/1000).toLocaleString('hu-HU',{maximumFractionDigits:2})+' liter ma eddig.',path:'nap/0/water',icon:'water'};
+ if(!external.workout.complete)return {title:'A mai mozgásod még előtted áll.',sub:'Együtt bele tudunk kezdeni.',path:'train/0',icon:'dumbbell'};
+ const goal=s.goals.find(g=>g.status==='active');
+ if(goal)return {title:'Egy lépés a célod felé.',sub:goal.step,path:'me/0/goal/'+goal.id,icon:'gem'};
+ return {title:'Egy gondolatnyi hely.',sub:'A napló mindig nyitva áll.',path:'me/3/entry-new',icon:'book'};
+}
