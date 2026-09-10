@@ -251,9 +251,14 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 
 **The visual goldens do NOT cover the tone axis, and never will.** `mezo-x5va` rewrote how the orb's colour is derived and moved **zero pixels** on any baseline: the pale↔full shift stays under `pixelmatch`'s 0.2 per-pixel threshold. The hex assertions above are the strictly sharper instrument; do not reach for a screenshot to protect a colour here. The one gap the four layers left was the **composition** — an `AppHeader` that passed a constant instead of `dayOrb.intensity` would keep all four green — and `frontend/src/app/AppHeader.dayOrbTone.test.tsx` closes it by reading the rendered header's `.dayorb stop` colours for a strong, a weak and an absent evaluation. What a golden would still add, and only a golden, is CSS flattening the fill (a future `filter`/`opacity` on `.dayorb-fill`); that is deferred in `mezo-7vdm`, since it costs a test-only surface in the prod bundle.
 
-**Two test gotchas worth inheriting:**
+**Three test gotchas worth inheriting:**
 1. **The wall clock is pinned.** `useMinuteTick` is mocked to a fixed `13:42`, because `setFace` *deletes* `?dp` when the clicked face is already the now-face — on a CI runner whose clock lands in the este band, a `dp=este` assertion would pass vacuously. This exact flake failed a real CI run.
 2. **Shared external stores for in-place writes.** Several hooks read `useFuelDay` (the page *and* the needs sim), so a per-instance `useState` stub lets `logWater` update the wrong instance; the water test uses one hoisted store with `useSyncExternalStore`.
+3. **Sport-slot isolation includes the active mesocycle.** `useDayOrbFill.test.tsx` pins one clock
+   for the tested weekday/date and overrides both the sport schedule and active mesocycle. Clearing
+   only `/gym-schedule` is insufficient: `useTrain` derives a planned gym day from the active
+   mesocycle even when that day has no standalone time slot, so a Thursday runner can add an
+   unrelated sixth denominator signal to a sport-only assertion.
 
 ### Feature-root structural guards
 - **`todayScope.test.ts`** — repurposed by the cleanup. Its original job (no `features/today/components/*.tsx` may import `shared/ui/ItemRow`) was **removed on purpose**: the exempted positive control (`AnchorIsland.tsx`) went out of the tree with everything else, so the rule would have run blind — *a vacuously green guard is worse than none*. What remains is the retirement list: the file now asserts that all 16 Design 2.0-deleted view components (`AnchorIsland`, `ChainCelebrations`, `DailyQuestsChip`, `DayGroups`, `Daypart{Day,Evening,Morning,Panel,Tabs}`, `IntentionBanner`, `MezoChip`, `NeedsRow`, `TodayList`, `TodayRow`, `TodayStats`, `VulnerabilityCard`) plus the three earlier ones (`MezoMessage`, `IslandFactsStrip`, `CompanionNoteCard`) stay gone — a resurrection has to be a deliberate edit to this list, not an accident.
