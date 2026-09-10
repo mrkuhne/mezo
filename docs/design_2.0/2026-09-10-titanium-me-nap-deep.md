@@ -23,14 +23,14 @@ Base URL: `nap.html#me/`.
 | `0/profile` | Editable name, height and bio. Name updates the companion greeting and avatar initial. |
 | `0/people`, `person/{id}` | Two explicitly fictional sample relationships, individual detail, own mention capture and journal handoff. |
 | `0/settings`, `data` | Quiet decorative cards, demo-only reminder preference, communication preference link to Mezo, explanation of data boundaries. |
-| `1` Súly | Last measurement, measured seven-day average and comparison, editable target, 7/14/30-day selection, chart/text alternative and all measurement rows. Fourteen sample dates exist; longer windows are not padded. |
+| `1` Súly | Selected-day measurement or honest empty state, measured seven-day average and comparison up to that day, editable target, 7/14/30-day chart/text alternative and collapsed measurement history. Fourteen sample dates exist; longer windows are not padded. |
 | `1/weight-log/{optional date}`, `weight-day/{date}` | Date, kg and note, validation, existing-date replacement and linked day detail. |
 | `1/weight-context`, `weight-goal` | Weight/sleep/food/training context and own target editor; the target does not automatically change food budgets or workouts. |
-| `2` Alvás | Latest night, own quality, recorded-night average, own target, duration chart/text equivalent and individual-night history. |
+| `2` Alvás | The night ending on the selected day or an honest empty state, own quality, recorded-night average up to that day, own target, duration chart/text equivalent and collapsed individual-night history. |
 | `2/sleep-log/{optional date}`, `sleep-night/{date}` | Separate bed/wake datetime fields, awake-minute subtraction, quality, optional circumstances and note. Date identifies the wake day. Saving the same day replaces its night. |
 | `2/sleep-rhythm`, `sleep-context` | Own bedtime/duration targets, evening routine, cross-domain context and evidence links. |
 | `2/night` | Quiet dark view with own bedtime and explicit return; shared header, bottom menu and quick button hidden while active, restored on exit. No sleep measurement/alarm starts. |
-| `3` Napló | Note/gratitude/decision/archive filters, Hungarian accent-tolerant search, entry cards and explicit create. |
+| `3` Napló | Entries for the selected day and explicit date-bound creation first; note/gratitude/decision/archive filters and Hungarian accent-tolerant global search remain in a collapsed secondary control. |
 | `3/entry-new`, `entry-edit/{id}`, `entry/{id}` | Type-specific copy, dated writing, explicit save, stable-ID edit, reversible archive. Decision review is separate from the original words. Evening-reflection editing leads to the shared closing editor. |
 
 ## Nap: the shared day
@@ -56,7 +56,23 @@ Base URL: `nap.html#nap/`.
 
 ## Shared implementation
 
-- `personal-state.js`: one memory model and validated state transitions.
+### Shared date navigation
+
+Súly, Alvás, Napló, Fuel Mai and Edzés Mai share the same selected date. A horizontal swipe across
+the daily canvas advances exactly one day (left for next, right for previous), with matching arrow
+buttons for discoverability and keyboard access. The persistent header shows today/yesterday/age,
+the full date and a native calendar picker; historical pages expose `Vissza mára`, and the next-day
+control is disabled at the anchored demo date. Switching domains preserves the date.
+
+Daily content follows the selection rather than changing only its label. Weight and sleep use the
+actual dated sample rows; journal filters its own entries; Fuel and Train contain explicit sample
+histories for September 7–8 plus honest empty states for earlier days. Logging remains attached to
+today except for the personal forms that already accept a past date. Long histories remain
+available as collapsed secondary controls, while weekly load and trend views keep their existing
+routes.
+
+- `day-navigation-state.js`: shared ISO-date selection, route eligibility and deliberate horizontal-swipe threshold.
+- `personal-state.js`: one memory model and validated state transitions, including selected-day weight summaries.
 - `personal-state.test.js`: date-based corrections, sleep duration, journal identity/archive,
   separate decision review, check-in replacement, derived routine rules, closing upsert and water undo.
 - `me-pages.js` / `day-pages.js`: all full-page renderers and local page composition.
@@ -75,8 +91,15 @@ source of truth. No new persisted user data or production frontend/backend files
 
 ## Validation
 
-Seven new state tests initially failed on the missing module, then passed. All 20 prototype tests
-pass. Vite builds both lab and Nap entries; existing Three.js >500kB warning remains.
+The date-navigation tests initially failed on the missing module, and the selected-day weight test
+failed before the date-bounded summary existed. All 24 prototype tests pass. Vite builds both lab
+and Nap entries; existing Three.js >500kB warning remains.
+
+At 390px the selected date was moved from September 9 to September 8 on Alvás, then preserved while
+switching to Súly, Napló, Fuel and Edzés. Each domain rendered its own September 8 content; the
+historical Fuel page showed four meals and 2,260 kcal, while Edzés showed the logged 90-minute
+röplabda session. Arrow movement, disabled future navigation, native calendar control, return to
+today and the mobile layout were inspected in the browser.
 
 At 390px: weight 81.4→81.2 correction retained 14 measurements; overnight sleep 23:15→07:15 minus
 15 awake minutes produced 7h45, including a saved circumstance; decision capture/review preserved

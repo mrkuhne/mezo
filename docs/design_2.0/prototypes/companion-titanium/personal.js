@@ -11,7 +11,7 @@ let ui=makeUI();
 const labels={me:['Áttekintés','Súly','Alvás','Napló'],nap:['Mai','Beszélgetés','Rutin','Napzárás']};
 const external=()=>({food:foodSnapshot(),workout:workoutSnapshot()});
 export function personalDetail(){const [d,,v]=location.hash.slice(1).split('/');return (d==='me'||d==='nap')&&!!v;}
-export function personalContent(domain,page){if(!labels[domain])return null;const [,,view='',id='']=location.hash.slice(1).split('/');ui.part=currentDaypart();return `<div class="mezo-world life-world ${domain==='nap'?'life-day':'life-me'} ${state.settings.quiet?'life-quiet':''}">${view?`<button class="lf-back" data-life="${domain}/${page}">‹ ${labels[domain][page]}</button>`:''}${(domain==='me'?mePage:dayPage)(state,page,view,id,ui,external())}${footer}</div>`;}
+export function personalContent(domain,page,selectedDate=state.date){if(!labels[domain])return null;const [,,view='',id='']=location.hash.slice(1).split('/');ui.part=currentDaypart();return `<div class="mezo-world life-world ${domain==='nap'?'life-day':'life-me'} ${state.settings.quiet?'life-quiet':''}">${view?`<button class="lf-back" data-life="${domain}/${page}">‹ ${labels[domain][page]}</button>`:''}${(domain==='me'?mePage:dayPage)(state,page,view,id,ui,external(),selectedDate)}${footer}</div>`;}
 export function openPersonalJournal(text=''){ui.journalDraft=text;ui.entryKind='note';go('me/3/entry-new');}
 function go(path){closeSheet();if(location.hash==='#'+path)callbacks.refresh();else location.hash='#'+path;}
 function refresh(message='Megőriztem a demóban.'){callbacks.refresh();toast(message);react('connect',1800);}

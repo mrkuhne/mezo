@@ -4,6 +4,8 @@ import { openFood, foodContent, initFood } from './food.js';
 import { openWorkout, workoutContent, initWorkout } from './workout.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
+import { createDayNavigation, dayDescriptor, dayRoute, swipeDayDelta } from './day-navigation-state.js';
+import { dayFrame } from './life-ui.js';
 const $=s=>document.querySelector(s);
 const domains={
  nap:{name:'Nap',color:'#d9c395',art:'sun',tabs:['Mai','Beszélgetés','Rutin','Napzárás'],icons:['sun','chat','ring','moon'],greeting:'Jó itt folytatni, Dani.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'},
@@ -12,7 +14,7 @@ const domains={
  mezo:{name:'Mezo',color:'#bca6f1',art:'gem',tabs:['Felfedezések','Előrejelzések','Karakter','Tudástár'],icons:['gem','sun','person','stack'],greeting:'Összeérnek a dolgok.',copy:'Van egy új észrevételem az estéidről. Megnézzük együtt?'},
  me:{name:'Én',color:'#d7a7bc',art:'person',tabs:['Áttekintés','Súly','Alvás','Napló'],icons:['person','ring','moon','book'],greeting:'A te ritmusod.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'},
 };
-let route=resolveRoute(location.hash),memory=initialNavigation();
+let route=resolveRoute(location.hash),memory=initialNavigation(),dayNav=createDayNavigation('2026-09-09'),dayMotion='';
 const original=$('.day-content');const panel=document.createElement('section');panel.className='demo-pages';original.after(panel);
 const mini=`<svg class="mini-titan" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="32" rx="27" ry="13" transform="rotate(-30 32 32)" fill="none" stroke="#9c8cbb"/><circle cx="32" cy="32" r="9" fill="url(#gold)"/><g fill="url(#titanium)" stroke="#b6b1c8" stroke-width=".6"><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z"/><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z" transform="rotate(120 32 32)"/><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z" transform="rotate(240 32 32)"/></g><circle cx="54" cy="21" r="3" fill="url(#purple)"/></svg>`;
 const mic=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v3M9 21h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
@@ -23,11 +25,11 @@ const stats=items=>`<div class="demo-stats">${items.map(([a,b])=>`<div><strong>$
 const bars=items=>`<div class="load-bars">${items.map(([a,b,n])=>`<div><span>${a}<b>${b}</b></span><i style="--amount:${n}%"></i></div>`).join('')}</div>`;
 const detail=(name,copy,art='gem')=>`data-detail="${safe(name)}" data-copy="${safe(copy)}" data-art="${art}"`;
 const jump=(d,p)=>`data-route="${d}/${p}"`;
-function content(d,p){
- const personal=personalContent(d,p);if(personal!==null)return personal;
+function content(d,p,date){
+ const personal=personalContent(d,p,date);if(personal!==null)return personal;
  const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
- const foodPage=foodContent(d,p);if(foodPage!==null)return foodPage;
- const detailed=workoutContent(d,p);if(detailed!==null)return detailed;
+ const foodPage=foodContent(d,p,date);if(foodPage!==null)return foodPage;
+ const detailed=workoutContent(d,p,date);if(detailed!==null)return detailed;
  if(d==='nap')return [ '',
  `<div class="chat-bubble"><span class="chat-time">MEZO · MA</span>Ma 17:00-kor Felsőtest A vár. A napod első fele mögötted — az edzésről beszéljünk, vagy arról, hogy vagy?</div><details class="context"><summary>Miből indulok ki?</summary><p>7 óra 42 perc alvás · mai felsőtest · 1 180 kcal eddig · fokozatos erőépítés.</p><p>Karakter · szereted előre látni a napod menetét. Ez egy javítható mintaértelmezés.</p><small>Bemutatókontextus, nem személyes adatlekérés.</small></details><button class="sheet-action" data-voice>Elmondom, mi jár a fejemben</button>${row('book','Inkább leírom','Új naplóbejegyzés','data-open="journal"')}`,
  card('A RUTINOD','2 / 4 lépés','A rendszeresség megtart.','ring','data-open="routine"')+row('sun','Reggeli fény','Egy kis idő a szabadban','data-open="routine"')+row('moon','Esti lecsendesedés','Lassan helyére kerül a nap','data-open="routine"'),
@@ -54,19 +56,23 @@ function content(d,p){
  card('A SAJÁT SZAVAIDDAL','Van helye annak, ami benned van.','Egy gondolat is elég.','book','data-open="journal"')+row('book','Új bejegyzés','Írd le vagy diktáld Mezonak','data-open="journal"')+row('chat','Inkább elmondom','Előkészített naplóbejegyzés','data-voice')][p];
 }
 function go(d,p){const h=`#${d}/${p}`;if(location.hash===h)draw();else location.hash=h;}
+function arrivalFor(domain,cfg,date){if(date===dayNav.max)return personalArrival(domain)||cfg;const label=dayDescriptor(date,dayNav.max).label;if(domain==='train')return {greeting:'Itt volt a mozgásod.',copy:date==='2026-09-08'?'Ezen a napon röplabdáztál. A terhelés és a regeneráció együtt marad előtted.':date==='2026-09-07'?'Ezen a napon egy teljes testes edzést zártál le.':'Ezen a napon nincs naplózott edzésed.'};if(domain==='fuel')return {greeting:'Ilyen volt a tányérod.',copy:`${label} étkezései, makrói és mozgása egy napi történetben.`};return personalArrival(domain)||cfg;}
 function draw(){
  route=resolveRoute(location.hash);rememberRoute(memory,route.domain,route.page);const {domain:d,page:p}=route,cfg=domains[d];
  $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
- $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;panel.innerHTML=content(d,p);
+ $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;const view=location.hash.slice(1).split('/')[2]||'',raw=content(d,p,dayNav.date);panel.innerHTML=dayRoute(d,p,view)?dayFrame(raw,dayNav.date,dayNav.max,dayMotion):raw;dayMotion='';
  $('.arrival').hidden=p!==0||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');
- if(p===0){const arrival=personalArrival(d)||cfg;$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
+ if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
  if(!['mezo','me','nap'].includes(d))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
+function moveDay(amount){if(!dayNav.shift(amount))return;dayMotion=amount>0?'left':'right';draw();}
 function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading;$('#sheet-body').innerHTML=html;$('#sheet').showModal();}
 function voice(){react('connect');dialog('MEZO · MŰVELETPRÓBA',`${mini}<h2 class="sheet-title">Mondd, és indulunk.</h2><p class="sheet-sub">Válassz egy mintamondatot, vagy írd át. Ez a demó nem rögzít hangot és nem hív valódi AI-t.</p><div class="voice-examples">${[['food','Logolj AI-értékeléssel egy joghurtot és egy banánt.'],['workout','Indítsuk az edzést.'],['journal','Szeretnék naplóbejegyzést írni.']].map(([id,t])=>`<button data-example="${id}">${mic}<span>${t}</span></button>`).join('')}</div><form id="voice-form"><label class="form-field">A mondatod<textarea name="command" required>Logolj AI-értékeléssel egy joghurtot és egy banánt.</textarea></label><button class="sheet-action">Mutasd, hova viszel ↗</button></form>`);}
 document.addEventListener('click',e=>{
  const el=e.target.closest('button');if(!el)return;
+ if(el.dataset.dayShift){moveDay(Number(el.dataset.dayShift));return;}
+ if(el.hasAttribute('data-day-today')){if(dayNav.today()){dayMotion='right';draw();}return;}
  if(el.hasAttribute('data-route')){closeSheet();const [d,p]=el.dataset.route.split('/');go(d,Number(p));}
  if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${c.tabs.join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
@@ -76,6 +82,16 @@ document.addEventListener('click',e=>{
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
  if(el.dataset.detail)dialog('MEZO · RÉSZLET DEMÓ',`${icon(el.dataset.art||'gem')}<h2 class="sheet-title">${safe(el.dataset.detail)}</h2><p class="sheet-sub">${safe(el.dataset.copy)}</p>`);
 });
+document.addEventListener('change',e=>{if(!e.target.matches('[data-day-picker]'))return;const previous=dayNav.date;if(dayNav.select(e.target.value)){dayMotion=e.target.value>previous?'left':'right';draw();}});
+let swipe=null;
+panel.addEventListener('touchstart',e=>{if(!e.target.closest('[data-day-swipe]')||e.target.closest('input,textarea,select'))return;const t=e.changedTouches[0];swipe={startX:t.clientX,startY:t.clientY,endX:t.clientX,endY:t.clientY};},{passive:true});
+panel.addEventListener('touchmove',e=>{if(!swipe)return;const t=e.changedTouches[0];swipe.endX=t.clientX;swipe.endY=t.clientY;if(Math.abs(swipe.endX-swipe.startX)>12&&Math.abs(swipe.endX-swipe.startX)>Math.abs(swipe.endY-swipe.startY)*1.2)e.preventDefault();},{passive:false});
+panel.addEventListener('touchend',e=>{if(!swipe)return;const t=e.changedTouches[0];swipe.endX=t.clientX;swipe.endY=t.clientY;const delta=swipeDayDelta(swipe);swipe=null;if(delta)moveDay(delta);},{passive:true});
+let drag=null;
+panel.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0||!e.target.closest('[data-day-swipe]')||e.target.closest('button,a,input,textarea,select,summary'))return;drag={startX:e.clientX,startY:e.clientY,endX:e.clientX,endY:e.clientY};});
+panel.addEventListener('pointermove',e=>{if(!drag)return;drag.endX=e.clientX;drag.endY=e.clientY;});
+panel.addEventListener('pointerup',e=>{if(!drag)return;drag.endX=e.clientX;drag.endY=e.clientY;const delta=swipeDayDelta(drag);drag=null;if(delta)moveDay(delta);});
+panel.addEventListener('pointercancel',()=>{drag=null;});
 document.addEventListener('submit',e=>{
  const form=e.target,data=new FormData(form);
  if(form.id==='voice-form'){e.preventDefault();const command=String(data.get('command')).trim();const s=command.toLocaleLowerCase('hu');
@@ -90,4 +106,5 @@ initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK'
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initMezo({refresh:draw});
 initPersonal({refresh:draw});
+$('#restart').addEventListener('click',()=>{dayNav=createDayNavigation('2026-09-09');dayMotion='';draw();});
 window.addEventListener('hashchange',draw);draw();
