@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AppHeader } from '@/app/AppHeader'
 import { CircadianTheme } from '@/app/CircadianTheme'
@@ -7,7 +6,7 @@ import { PhoneFrame } from '@/app/PhoneFrame'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
-import { useTheme } from '@/app/ThemeProvider'
+import { useForceTheme } from '@/app/ThemeProvider'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
@@ -53,15 +52,14 @@ export function AppLayout() {
   // nem az oldalra. Pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI (Életjelek,
   // Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
   const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
-  // A sötét ALAP a ház meglévő dark témája — ugyanaz a `setForceTheme` fogás, amivel a
-  // Napzárás rituálé is sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és
-  // a shell összes portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark`
-  // scope ERRE ÜL RÁ a prototípus grafit/titán bőrével — nem helyette.
-  const { setForceTheme } = useTheme()
-  useEffect(() => {
-    setForceTheme(titanDark ? 'dark' : null)
-    return () => setForceTheme(null)
-  }, [titanDark, setForceTheme])
+  // A sötét ALAP a ház meglévő dark témája — ugyanaz a fogás, amivel a Napzárás rituálé is
+  // sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és a shell összes
+  // portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark` scope ERRE ÜL RÁ
+  // a prototípus grafit/titán bőrével — nem helyette.
+  // A `useForceTheme` SAJÁT igényt tart fenn (mezo-mhum javítóhullám): a /nap → /ritual úton a
+  // rituálé is sötétet kér, és a régi egyszemélyes kapcsolóval ez a réteg törölte az övét is —
+  // világos beállítású felhasználónál a rituálé világos tokenekkel rajzolódott.
+  useForceTheme(titanDark ? 'dark' : null)
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
   const screen = (
     <ScreenContent>

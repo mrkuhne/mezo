@@ -12,7 +12,7 @@ import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { ringsOf } from '@/features/today/logic/needsInputs'
 import { localDateString } from '@/shared/lib/dates'
-import { useTheme } from '@/app/ThemeProvider'
+import { useForceTheme } from '@/app/ThemeProvider'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
 const ACT_COUNT = 6
@@ -85,12 +85,10 @@ export function RitualPage() {
   // theme), but the sheets it portals (CheckInSheet, ActivityLogSheet) and any XP-award overlay
   // (LevelUpScreen) are theme-aware and would render light for a light-mode user — clashing.
   // Force data-theme=dark for the whole flow so everything is consistent, then revert to the
-  // user's real theme on exit. This does NOT touch the persisted preference (setForceTheme).
-  const { setForceTheme } = useTheme()
-  useEffect(() => {
-    setForceTheme('dark')
-    return () => setForceTheme(null)
-  }, [setForceTheme])
+  // user's real theme on exit. This does NOT touch the persisted preference.
+  // The claim is this component's OWN (mezo-mhum fix-wave): arriving from the Titán Nap, that
+  // shell holds a claim too, and the old single-slot API let its cleanup clear ours.
+  useForceTheme('dark')
 
   const [act, setAct] = useState(1)
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)

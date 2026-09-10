@@ -52,7 +52,17 @@ test.each(['/train', '/fuel', '/me', '/nap/eletjel'])('a %s NEM kap titan-dark h
   expect(container.querySelector('.titan-dark')).toBeNull()
 })
 
-test('a Titán Nap a ház dark témáját kényszeríti; más útvonal nem', () => {
+// FIGYELEM (mezo-mhum javítóhullám): a tárolt beállítást KI KELL PECKELNI `light`-ra. Üres
+// localStorage-dzsal a mód `auto`, és a cirkadián feloldó este magától sötétet ad — a teszt
+// akkor is zöld lenne, ha ezt a mechanizmust teljesen kitörölnénk.
+test('a Titán Nap a ház dark témáját kényszeríti a világos beállítás fölött is', () => {
+  localStorage.setItem('mezo-theme', 'light')
   renderAt('/nap')
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+})
+
+test('világos beállítású felhasználónál más útvonal NEM lesz sötét', () => {
+  localStorage.setItem('mezo-theme', 'light')
+  renderAt('/train')
+  expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 })

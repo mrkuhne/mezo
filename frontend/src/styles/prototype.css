@@ -12079,7 +12079,8 @@ button.nap-titan-chip { cursor: pointer; }
 
    Két réteg, szándékosan:
    1. ALAP — az AppLayout a ház MEGLÉVŐ dark témáját kényszeríti ezen a két útvonalon
-      (`setForceTheme('dark')`, ugyanaz a fogás, mint a Napzárás rituáléé). Így minden
+      (`useForceTheme('dark')`, ugyanaz a fogás, mint a Napzárás rituáléé — a két igény
+      egymásra ÜL, nem törli egymást, lásd ThemeProvider.tsx). Így minden
       dark-token (a portálozott sheetek, az XP-overlay, a chartok) magától a helyére kerül,
       és ennek a blokknak nem kell a teljes témát újraírnia.
    2. BŐR — ez a blokk. A ház dark témája MELEG grafit (#191614); a Titán prototípusé
@@ -12128,32 +12129,32 @@ button.nap-titan-chip { cursor: pointer; }
 
   /* Mozaik mosások/tónusok/cellák a hideg grafit felületekre keverve (lásd a fenti
      „MIÉRT" bekezdést — ezek nem öröklődnek helyesen, ki kell mondani őket). */
-  --mz-wash-white: #1A1C24;
-  --mz-wash-coral: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 18%, #1A1C24), color-mix(in srgb, var(--dv-coral) 6%, #0B0D12));
-  --mz-wash-sage:  linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 18%, #1A1C24), color-mix(in srgb, var(--dv-sage) 6%, #0B0D12));
-  --mz-wash-sky:   linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 18%, #1A1C24), color-mix(in srgb, var(--dv-sky) 6%, #0B0D12));
-  --mz-wash-gold:  linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, #1A1C24), color-mix(in srgb, var(--dv-amber) 5%, #0B0D12));
-  --mz-wash-lav:   linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 20%, #1A1C24), color-mix(in srgb, var(--dv-lav) 6%, #0B0D12));
-  --mz-wash-rose:  linear-gradient(150deg, color-mix(in srgb, var(--dv-rose) 16%, #1A1C24), color-mix(in srgb, var(--dv-rose) 5%, #0B0D12));
-  --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 9%, #1A1C24), #1A1C24 75%);
-  --mz-tone-coral: color-mix(in srgb, var(--dv-coral) 22%, #0B0D12);
-  --mz-tone-gold:  color-mix(in srgb, var(--dv-amber) 20%, #0B0D12);
-  --mz-tone-lav:   color-mix(in srgb, var(--dv-lav) 24%, #0B0D12);
-  --mz-tone-rose:  color-mix(in srgb, var(--dv-rose) 20%, #0B0D12);
-  --mz-tone-sage:  color-mix(in srgb, var(--dv-sage) 20%, #0B0D12);
-  --mz-tone-sky:   color-mix(in srgb, var(--dv-sky) 20%, #0B0D12);
-  --mz-cell-sage-bg:  color-mix(in srgb, var(--dv-sage) 20%, #1A1C24);
-  --mz-cell-coral-bg: color-mix(in srgb, var(--dv-coral) 20%, #1A1C24);
-  --mz-cell-amber-bg: color-mix(in srgb, var(--dv-amber) 18%, #1A1C24);
-  --mz-cell-lav-bg:   color-mix(in srgb, var(--dv-lav) 20%, #1A1C24);
-  --mz-cell-sky-bg:   color-mix(in srgb, var(--dv-sky) 20%, #1A1C24);
-  --mz-cell-rose-bg:  color-mix(in srgb, var(--dv-rose) 18%, #1A1C24);
-  --mz-cell-gold-bg:  color-mix(in srgb, var(--dv-amber) 22%, #1A1C24);
-  --mz-cellbg:  color-mix(in srgb, #1A1C24 78%, transparent);
-  --mz-chipbg:  color-mix(in srgb, #22242E 82%, transparent);
-  --mz-stripbg: #1A1C24;
-  --mz-ink-soft: #A69EB4;
-  --mz-ink-mut:  #8D849B;
+  --mz-wash-white: var(--surface-card);
+  --mz-wash-coral: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 6%, var(--surface-page)));
+  --mz-wash-sage:  linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sage) 6%, var(--surface-page)));
+  --mz-wash-sky:   linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sky) 6%, var(--surface-page)));
+  --mz-wash-gold:  linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-amber) 5%, var(--surface-page)));
+  --mz-wash-lav:   linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 20%, var(--surface-card)), color-mix(in srgb, var(--dv-lav) 6%, var(--surface-page)));
+  --mz-wash-rose:  linear-gradient(150deg, color-mix(in srgb, var(--dv-rose) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-rose) 5%, var(--surface-page)));
+  --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 9%, var(--surface-card)), var(--surface-card) 75%);
+  --mz-tone-coral: color-mix(in srgb, var(--dv-coral) 22%, var(--surface-page));
+  --mz-tone-gold:  color-mix(in srgb, var(--dv-amber) 20%, var(--surface-page));
+  --mz-tone-lav:   color-mix(in srgb, var(--dv-lav) 24%, var(--surface-page));
+  --mz-tone-rose:  color-mix(in srgb, var(--dv-rose) 20%, var(--surface-page));
+  --mz-tone-sage:  color-mix(in srgb, var(--dv-sage) 20%, var(--surface-page));
+  --mz-tone-sky:   color-mix(in srgb, var(--dv-sky) 20%, var(--surface-page));
+  --mz-cell-sage-bg:  color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));
+  --mz-cell-coral-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card));
+  --mz-cell-amber-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card));
+  --mz-cell-lav-bg:   color-mix(in srgb, var(--dv-lav) 20%, var(--surface-card));
+  --mz-cell-sky-bg:   color-mix(in srgb, var(--dv-sky) 20%, var(--surface-card));
+  --mz-cell-rose-bg:  color-mix(in srgb, var(--dv-rose) 18%, var(--surface-card));
+  --mz-cell-gold-bg:  color-mix(in srgb, var(--dv-amber) 22%, var(--surface-card));
+  --mz-cellbg:  color-mix(in srgb, var(--surface-card) 78%, transparent);
+  --mz-chipbg:  color-mix(in srgb, var(--surface-elevated) 82%, transparent);
+  --mz-stripbg: var(--surface-card);
+  --mz-ink-soft: var(--text-secondary);
+  --mz-ink-mut:  var(--text-muted);
 
   /* A fejléc aurorája a prototípus hideg éjszakája — nem a meleg dark-téma mosása. */
   --mzh-wash-reggel: linear-gradient(155deg, #2B2434 0%, #1D1A26 55%, #12141B 100%);
@@ -12165,12 +12166,18 @@ button.nap-titan-chip { cursor: pointer; }
   --mzh-deco-fill:   rgba(234, 232, 238, 0.28);
 }
 /* A napszak-tinta a világos téma eszköze; a Titán vászon MINDIG grafit marad — csak a
-   halvány égsáv izzik napszakonként (ugyanaz a döntés, mint a ház dark témájában). */
+   halvány égsáv izzik napszakonként (ugyanaz a döntés, mint a ház dark témájában).
+
+   FAJSÚLY (mezo-mhum javítóhullám): a ház éjszakai égsávjai fentebb (:2277-2280) a
+   `:root[data-theme="dark"] .phone-screen[data-day=…] .sky` alakot viselik — ez (0,5,0), a
+   korábbi `.titan-dark[data-day=…] .sky` (0,3,0) pedig ALULMARADT vele szemben, így a Titán
+   Nap ege a ház MELEG borostyánját kapta a szánt hideg éjszaka helyett. Ezért visel minden
+   itteni égsáv-szabály teljes, `:root[data-theme="dark"] .phone-screen.titan-dark…` láncot. */
 .phone-screen.titan-dark[data-day] { background: var(--canvas); }
-.titan-dark .sky { opacity: 0.45; }
-.titan-dark[data-day="reggel"] .sky { background: radial-gradient(60% 40% at 18% 0%, rgba(228, 204, 150, 0.12), transparent 70%); }
-.titan-dark[data-day="delutan"] .sky { background: radial-gradient(60% 40% at 50% 0%, rgba(142, 210, 232, 0.09), transparent 70%); }
-.titan-dark[data-day="este"] .sky { background: radial-gradient(60% 40% at 82% 0%, rgba(188, 166, 241, 0.14), transparent 70%); }
+:root[data-theme="dark"] .phone-screen.titan-dark .sky { opacity: 0.45; }
+:root[data-theme="dark"] .phone-screen.titan-dark[data-day="reggel"] .sky { background: radial-gradient(60% 40% at 18% 0%, rgba(228, 204, 150, 0.12), transparent 70%); }
+:root[data-theme="dark"] .phone-screen.titan-dark[data-day="delutan"] .sky { background: radial-gradient(60% 40% at 50% 0%, rgba(142, 210, 232, 0.09), transparent 70%); }
+:root[data-theme="dark"] .phone-screen.titan-dark[data-day="este"] .sky { background: radial-gradient(60% 40% at 82% 0%, rgba(188, 166, 241, 0.14), transparent 70%); }
 
 /* A fejléc napszak-buborékai a világos témára hangolt élénk pasztellek; grafiton
    fényforrásként robbannak. A prototípus fejléce halk — itt csak sejtelmes izzás marad. */

@@ -43,10 +43,14 @@ function stubReducedMotion(reduce: boolean) {
   }))
 }
 
+// FIGYELEM (mezo-mhum javítóhullám): itt NINCS `sceneImported.mockClear()`. A számláló
+// KUMULATÍV, a fájl egész futására: a modult a vitest egyszer, az ELSŐ importkor tölti be, így
+// egy lenullázott számláló mellett a „soha nem importáltuk" állítások némán vakká válnának
+// (egy modul-szintű import után is zöldek maradnának). Így viszont bármelyik korábbi import
+// hangosan megbuktatja a két negatív esetet.
 afterEach(() => {
   vi.unstubAllGlobals()
   HTMLCanvasElement.prototype.getContext = realGetContext
-  sceneImported.mockClear()
 })
 
 describe('TitanCompanion', () => {
@@ -65,7 +69,8 @@ describe('TitanCompanion', () => {
 
   // FONTOS: ez a két eset SORRENDBEN fut. A `React.lazy` a modult egyszer tölti be és a
   // betöltött állapotot a komponens-azonosítón tartja, tehát a „nem importáltuk" állítást
-  // csak az élő ág futtatása ELŐTT lehet őszintén kimondani.
+  // csak az élő ág futtatása ELŐTT lehet őszintén kimondani. A számláló kumulatív (lásd az
+  // afterEach-et), tehát a fájl BÁRMELY korábbi importja is megbuktatja ezt a két esetet.
   test('csökkentett mozgás mellett NINCS canvas, és a three.js chunk el sem indul', async () => {
     stubReducedMotion(true)
     stubWebGL(true)   // van WebGL — tehát tényleg CSAK a mozgás-preferencia tartja vissza

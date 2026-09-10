@@ -105,7 +105,10 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     const pmrem = new THREE.PMREMGenerator(renderer)
     const env = pmrem.fromScene(studio, 0.07)
     scene.environment = env.texture
-    track(env.texture)
+    // A `fromScene()` egy TELJES WebGLRenderTarget-et ad vissza, nem csak textúrát: a
+    // rendercél `dispose()`-a szabadítja fel a GPU-oldali puffert IS (a textúráé csak a
+    // textúrát). Ezért a célt követjük, ne a textúrát (mezo-mhum javítóhullám).
+    track(env)
     pmrem.dispose()
 
     scene.add(new THREE.AmbientLight('#b6c3ff', 0.35))
@@ -273,11 +276,15 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     ground.position.set(0, -2.06, -0.4)
     scene.add(ground)
 
+    // FIGYELEM (mezo-mhum javítóhullám): az `EffectComposer.dispose()` a three 0.180-ban CSAK a
+    // saját két írás/olvasás pufferét szabadítja fel — a hozzáadott passzokhoz HOZZÁ SEM NYÚL.
+    // Az UnrealBloomPass önmagában 11 rendercélt és több anyagot tart, ezért minden passzt
+    // kézzel követünk a közös eldobó listán.
     const composer = new EffectComposer(renderer)
-    composer.addPass(new RenderPass(scene, camera))
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.5, 0.82)
+    composer.addPass(track(new RenderPass(scene, camera)))
+    const bloom = track(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.5, 0.82))
     composer.addPass(bloom)
-    composer.addPass(new OutputPass())
+    composer.addPass(track(new OutputPass()))
 
     const resize = () => {
       const { width, height } = host.getBoundingClientRect()
@@ -388,6 +395,8 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       reduced?.removeEventListener('change', onReduced)
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()
+      // A composer csak a SAJÁT pufferpárját dobja el; a passzok (bloom 11 rendercélja is)
+      // a `disposables` listán jönnek utána (mezo-mhum javítóhullám).
       composer.dispose()
       disposables.forEach((d) => d.dispose())
       renderer.domElement.remove()
