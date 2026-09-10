@@ -6,7 +6,7 @@ import {closeSheet,toast,react,currentDaypart} from './nap.js';
 import {foodSnapshot} from './food.js';
 import {workoutSnapshot} from './workout.js';
 let state=createPersonal(),callbacks;
-const makeUI=()=>({weightPeriod:'14',journalFilter:'all',journalQuery:'',entryKind:'note',journalDraft:'',chatDraft:'',part:currentDaypart()});
+const makeUI=()=>({weightPeriod:'14',journalFilter:'all',journalQuery:'',journalHistoryOpen:false,entryKind:'note',journalDraft:'',chatDraft:'',part:currentDaypart()});
 let ui=makeUI();
 const labels={me:['Áttekintés','Súly','Alvás','Napló'],nap:['Mai','Beszélgetés','Rutin','Napzárás']};
 const external=()=>({food:foodSnapshot(),workout:workoutSnapshot()});
@@ -25,7 +25,7 @@ export function initPersonal(options){callbacks=options;
  document.addEventListener('click',event=>{
   const el=event.target.closest('button');if(!el)return;const d=el.dataset;
   if(d.life){if(d.life==='me/3/entry-edit/day-close'){go('nap/3/close-edit');return;}go(d.life);}
-  if(d.lifeFilter){ui[d.lifeFilter]=d.value;callbacks.refresh();}
+  if(d.lifeFilter){ui[d.lifeFilter]=d.value;if(d.lifeFilter==='journalFilter')ui.journalHistoryOpen=true;callbacks.refresh();}
   if(d.lifeWater){saveWater(state,Number(d.lifeWater));refresh('Egy pohárral több figyelem magadra.');}
   if(el.hasAttribute('data-life-water-undo')){undoWater(state);refresh('Az utolsó saját poharat visszavontam.');}
   if(d.lifeHabit){if(toggleRoutine(state,d.lifeHabit))refresh('A rutinod frissült.');}
