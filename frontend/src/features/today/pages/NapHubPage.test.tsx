@@ -126,6 +126,24 @@ const journalStore = vi.hoisted(() => ({
   },
 }))
 
+/** Mutable so A7 can assert the honest `—` while the gamification read is still open: the
+ *  day read's `realEmpty` is `xpTotal: 0`, so a rendered `+0` would be indistinguishable from
+ *  a real zero-XP day. */
+const gamStore = vi.hoisted(() => ({
+  xpTotal: 210,
+  pending: false,
+  reset() { this.xpTotal = 210; this.pending = false },
+}))
+
+/** Mutable so C6 can drive the page's goal rung: the default is the empty list (no goal), the
+ *  goal case seeds one so the ladder's 7th rung can be reached from the page itself. */
+const lifeGoalStore = vi.hoisted(() => ({
+  goals: [] as { id: string; title: string }[],
+  pending: false,
+  isError: false,
+  reset() { this.goals = []; this.pending = false; this.isError = false },
+}))
+
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   const { useSyncExternalStore } = await import('react')
@@ -170,14 +188,18 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       logWeight: vi.fn(),
     }),
     useJournalNotes: () => ({ data: journalStore.notes, isPending: journalStore.pending, isError: false, refetch: vi.fn() }),
-    useLifeGoalToday: () => ({ today: { goals: [] }, isPending: false, isError: false }),
+    useLifeGoalToday: () => ({
+      today: { goals: lifeGoalStore.goals },
+      isPending: lifeGoalStore.pending,
+      isError: lifeGoalStore.isError,
+    }),
     useRitualDay: () => ({
       data: { date: '2026-05-22', closed: false, closedAt: null, reflectionText: null, window: 'open' },
       isPending: false,
     }),
     useGamificationDay: () => ({
-      data: { date: '2026-05-22', xpTotal: 210, events: [] },
-      isPending: false,
+      data: { date: '2026-05-22', xpTotal: gamStore.xpTotal, events: [] },
+      isPending: gamStore.pending,
     }),
   }
 })
@@ -208,6 +230,8 @@ beforeEach(() => {
   workoutStore.reset()
   fuelPlanStore.reset()
   journalStore.reset()
+  gamStore.reset()
+  lifeGoalStore.reset()
   emitSpy.mockClear()
   clock.now = new Date('2026-05-22T13:42:00')
 })
@@ -282,6 +306,23 @@ test('A3: reggel a súly-chip a trend-nyíllal jön — EGYETLEN mérésnél ny�
   expect(single.textContent).not.toMatch(/[↘↗]/)
 })
 
+test('A3: két AZONOS mérés között sincs nyíl — a trend csak akkor hír, ha tényleg változott', async () => {
+  weightStore.log = [{ date: '2026-05-21', value: 84.2 }, { date: '2026-05-22', value: 84.2 }]
+  renderHub('/nap?dp=reggel')
+  const chip = await screen.findByRole('button', { name: 'Súly · részletek' })
+  expect(chip).toHaveTextContent('84,2 kg')
+  expect(chip.textContent).not.toMatch(/[↘↗]/)
+})
+
+test('A4: reggel az első fókusz ott áll a társ blokkjában', async () => {
+  renderHub('/nap?dp=reggel')
+  await screen.findByText('Jó reggelt.')
+  const chips = [...document.querySelectorAll('.nap-titan-ctx .nap-titan-chip')]
+  const focus = chips.find((c) => c.textContent?.startsWith('Fókusz'))
+  expect(focus).toBeDefined()
+  expect(focus).toHaveTextContent('evezés-tempó')
+})
+
 test('A5/B4: az étkezés-csempe a keret maradékát és a fehérjét viszi', async () => {
   renderHub()
   const tile = await screen.findByRole('button', { name: 'Étkezés' })
@@ -322,6 +363,27 @@ test('A7: edzésterv nélkül a strip cellája őszinte „—", nem kitalált n
   await screen.findByText('Megérkeztél.')
   const cells = [...document.querySelectorAll('.mz-statcell')]
   expect(cells.some((c) => c.querySelector('b')?.textContent === '—')).toBe(true)
+})
+
+test('A7: futó gamifikációs lekérés alatt az XP cella „—", nem egy kitalált +0', async () => {
+  gamStore.pending = true
+  gamStore.xpTotal = 0 // a lekérés `realEmpty`-je pontosan ez — ebből nem jöhet ki „+0"
+  renderHub('/nap?dp=este')
+  await screen.findByText('Megérkeztél.')
+  const xpCell = [...document.querySelectorAll('.mz-statcell')]
+    .find((c) => c.textContent?.includes('a mai termés'))
+  expect(xpCell).toBeDefined()
+  expect(xpCell!.querySelector('b')?.textContent).toBe('—')
+  expect(xpCell!.textContent).not.toContain('+0')
+})
+
+test('A7: feloldott lekérésnél az XP cella a nap tényleges termését mondja', async () => {
+  renderHub('/nap?dp=este')
+  await screen.findByText('Megérkeztél.')
+  const xpCell = [...document.querySelectorAll('.mz-statcell')]
+    .find((c) => c.textContent?.includes('a mai termés'))!
+  // a count-up rámpája miatt a végérték a ~600 ms-os ramp végén áll be
+  await waitFor(() => expect(xpCell.querySelector('b')?.textContent).toBe('+210'))
 })
 
 // ── B. the six tiles ────────────────────────────────────────────────────────
@@ -444,6 +506,32 @@ test('C5/C6: a stack- és a cél-csempe sincs többé a mozaikban', async () => 
   await screen.findByText('Jó itt folytatni.')
   expect(screen.queryByRole('button', { name: 'Stack' })).toBeNull()
   expect(screen.queryByRole('button', { name: /Célok · ma/ })).toBeNull()
+})
+
+/** A cél NEM tűnt el a nyitóoldalról, csak a csempéjét váltotta a létra egy foka. Ez a fok a
+ *  létra 7. rungja: minden korábbi feltétel (check-in, víz, edzés) kielégítve. */
+function seedGoalRung() {
+  waterStore.water = 3000 // a 4 literes cél 60%-a fölött → a víz-fok nem üt be
+  workoutStore.type = null // nincs terv → az edzés-fok sem
+}
+
+test('C6: cél esetén a következő lépés a cél foka lesz, a cél címével', async () => {
+  seedGoalRung()
+  lifeGoalStore.goals = [{ id: 'g1', title: '10 km futás év végéig' }]
+  renderHub('/nap?dp=nap', <Route path="/me/goals" element={<div>goals-page</div>} />)
+  expect(await screen.findByText('Egy lépés a célod felé.')).toBeInTheDocument()
+  expect(screen.getByText('10 km futás év végéig')).toBeInTheDocument()
+  await userEvent.click(screen.getByText('Egy lépés a célod felé.'))
+  expect(await screen.findByText('goals-page')).toBeInTheDocument()
+})
+
+test('C6: még fel nem oldott cél-lekérésből nem találunk ki lépést — marad a napló-fok', async () => {
+  seedGoalRung()
+  lifeGoalStore.pending = true
+  lifeGoalStore.goals = [] // a futó lekérés üres listája megkülönböztethetetlen a „nincs célod"-tól
+  renderHub()
+  expect(await screen.findByText('Egy gondolatnyi hely.')).toBeInTheDocument()
+  expect(screen.queryByText('Egy lépés a célod felé.')).toBeNull()
 })
 
 test('C7: az Éjszakai mód csempe csak a levezető ablakban jelenik meg', async () => {

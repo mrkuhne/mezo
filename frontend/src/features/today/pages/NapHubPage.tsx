@@ -106,7 +106,7 @@ export function NapHubPage() {
   const { data: intentionData } = useIntentionDay(date)
   const { addFocus } = useIntentionActions(date)
   const needs = useNeeds(tick)
-  const { data: gamDay } = useGamificationDay(date)
+  const { data: gamDay, isPending: gamPending } = useGamificationDay(date)
   const { data: journalNotes, isPending: journalPending } = useJournalNotes(date, date)
   const { today: lifeGoalToday, isPending: lifeGoalPending, isError: lifeGoalError } = useLifeGoalToday()
   const { data: ritualDay } = useRitualDay(date)
@@ -154,9 +154,10 @@ export function NapHubPage() {
     : 0
 
   // ── the ladder's inputs (mezo-mhum, `logic/nextStep`) ────────────────
-  // checkinStale: a NAPPALI sávok (10:00 és 14:00 — az ébredési és az esti sáv közötti ablak)
-  // közül egyik sincs kitöltve. Az ébredési sáv magától kész szokott lenni, az esti pedig a
-  // napzárás dolga, így egyik sem mondana igazat arról, hogy „rég néztél magadra".
+  // checkinStale: a NAPPALI sávok közül egyik sincs kitöltve. „Nappali" = 10:00 ≤ idő < 20:00,
+  // vagyis az ébredési sáv (06:30) és az esti sáv (20:00) közötti minden sáv. Az ébredési sáv
+  // magától kész szokott lenni, az esti pedig a napzárás dolga, így egyik sem mondana igazat
+  // arról, hogy „rég néztél magadra".
   const daySlots = checkins.filter((c) => c.time >= '10:00' && c.time < '20:00')
   const checkinStale = !daySlots.some((c) => c.state === 'done')
   // C6: a cél napi lépése a létrába költözött. A `today` üres listája a lekérés alatt UGYANÚGY
@@ -491,7 +492,9 @@ export function NapHubPage() {
                   label={kcalEaten <= Math.round(fuel.targets.kcal) ? 'kcal · kereten belül ✓' : 'kcal · kereten túl'} />
                 <StatCell value={today.workoutType ? `${today.workoutType}${workoutDone ? ' ✓' : ''}` : '—'}
                   label={workoutDoneSets != null ? `${workoutDoneSets} szett` : 'a mai edzés'} />
-                <StatCell value={`+${xpCount}`} label="a mai termés" />
+                {/* A gamifikációs nap `realEmpty`-je xpTotal:0 — futó lekérés alatt a `+0`
+                    kitalált nulla lenne, ezért ott „—" áll (ugyanaz az idióma, mint a naplónál). */}
+                <StatCell value={gamPending ? '—' : `+${xpCount}`} label="a mai termés" />
               </StatStrip>
             </div>
           </>
