@@ -195,7 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-10, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -1288,7 +1288,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-08, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-06, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-10, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,

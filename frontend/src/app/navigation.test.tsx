@@ -233,6 +233,16 @@ test('/nap renders the day spine (Today content) and /today redirects to it', as
   expect(legacy.state.location.pathname).toBe('/nap')
 })
 
+// Titanium rebuild (mezo-mhum): /nap/gyors is the FAB's full-page picker destination
+// (TabBar.test.tsx proves the FAB navigates here from /nap exactly) — this is the
+// router-config-level half, proving `routes` itself resolves the path to NapGyorsPage.
+test('/nap/gyors resolves from the router config to the full-page quick-log picker', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/nap/gyors'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  expect(await screen.findByText('Mi érkezett?')).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/nap/gyors')
+})
+
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/insights/chat'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)

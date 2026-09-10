@@ -12,7 +12,7 @@ key_files:
   - frontend/src/data/lifegoal
   - frontend/src/features/me/pages/CelokPage.tsx
   - frontend/src/features/me/pages/CelPage.tsx
-  - frontend/src/features/today/components/LifeGoalTodayTile.tsx
+  - frontend/src/features/today/logic/nextStep.ts
 related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
 
