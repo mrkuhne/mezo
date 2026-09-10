@@ -71,6 +71,20 @@ today except for the personal forms that already accept a past date. Long histor
 available as collapsed secondary controls, while weekly load and trend views keep their existing
 routes.
 
+### Fuel density calibration
+
+Fuel Mai is the first calibration page for a lower-friction mobile hierarchy. Its first layer has
+four jobs only: preserve a compact Mezo presence, identify the selected day, show intake against
+the calorie and macro frame in one dense glance, and offer one unmistakable meal-log action. The
+day's meals follow directly. Frame explanation, movement context and recipe discovery remain
+available together in one collapsed `Több erről a napról` disclosure.
+
+This establishes the pattern for evaluating the other daily roots: one dominant answer, one
+primary action and the records needed right now; interpretation and longer-term analysis move one
+level deeper. The companion remains full-size on Nap Mai, where arrival and conversation are the
+page's purpose. On task-focused pages it may use the compact landing demonstrated by Fuel, so the
+presence stays recognisable without consuming the working area.
+
 - `day-navigation-state.js`: shared ISO-date selection, route eligibility and deliberate horizontal-swipe threshold.
 - `personal-state.js`: one memory model and validated state transitions, including selected-day weight summaries.
 - `personal-state.test.js`: date-based corrections, sleep duration, journal identity/archive,
@@ -78,6 +92,8 @@ routes.
 - `me-pages.js` / `day-pages.js`: all full-page renderers and local page composition.
 - `life-ui.js` / `personal.css`: reusable dimensional-icon cards, readable charts, forms,
   quiet surfaces, mobile styling and reduced-motion handling.
+- `food.js` / `food.css` / `fuel-compact.css`: compact Fuel glance, primary meal logging, daily
+  meal list and collapsed contextual layer.
 - `personal.js`: route delegation, form handlers, bounded conversation demo, local state,
   shared legacy entry points and current-data snapshots.
 - `navigation.js`: delegates both areas, contextual navigation, companion visibility/daypart greeting,
@@ -100,6 +116,11 @@ switching to Súly, Napló, Fuel and Edzés. Each domain rendered its own Septem
 historical Fuel page showed four meals and 2,260 kcal, while Edzés showed the logged 90-minute
 röplabda session. Arrow movement, disabled future navigation, native calendar control, return to
 today and the mobile layout were inspected in the browser.
+
+Fuel Mai was then inspected in its compact and expanded states and on September 8. The first view
+contains the companion, day navigator, calorie/macro glance and meal-log action before the meal
+history; the collapsed context remains reachable, and the historical day retains its own totals,
+four recorded meals and direct return to today.
 
 At 390px: weight 81.4→81.2 correction retained 14 measurements; overnight sleep 23:15→07:15 minus
 15 awake minutes produced 7h45, including a saved circumstance; decision capture/review preserved

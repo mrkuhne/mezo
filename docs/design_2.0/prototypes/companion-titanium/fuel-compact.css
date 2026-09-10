@@ -1,0 +1,11 @@
+/* Fuel keeps Mezo present without letting the companion consume the task area. */
+.arrival.fuel-compact{height:230px}
+.arrival.fuel-compact .arrival-title{top:7px}
+.arrival.fuel-compact .arrival-title h2{font-size:21px}
+.arrival.fuel-compact iframe{top:28px;height:124px}
+.arrival.fuel-compact .presence{top:139px}
+.arrival.fuel-compact .companion-copy{top:153px;left:20px;right:20px}
+.arrival.fuel-compact .companion-copy p{max-width:300px;font-size:10px;line-height:1.42}
+.arrival.fuel-compact .companion-copy .voice-open{margin-top:7px;padding:7px 12px;font-size:9px}
+.arrival.fuel-compact .voice-open svg{width:15px;height:15px}
+.arrival.fuel-compact .motion-toggle{top:127px;right:18px;width:23px;height:23px}

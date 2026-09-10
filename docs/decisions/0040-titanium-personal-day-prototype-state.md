@@ -34,6 +34,12 @@ jumps, and a historical day always offers a direct return to today. The state ne
 the anchored demo day. Long histories and trend tools remain available behind secondary,
 collapsed analysis controls instead of acting as the primary day picker.
 
+Use Fuel Today as the density calibration for task-focused daily pages. Its visible hierarchy is
+a compact companion, the shared day control, one calorie/macro summary, one primary log action and
+the day's meals. Budget explanation, movement context and recipe discovery share a collapsed
+secondary layer. Nap Today keeps the larger companion because meeting and directing the companion
+is its primary purpose; task pages can retain the same identity in less vertical space.
+
 ## Consequences
 
 The user can assess cross-area continuity: sleep → daily context, food → daily intake,
@@ -42,6 +48,8 @@ State rules have focused tests; visual and route integration is checked in the b
 The prototype needs a later deliberate mapping to production contracts if adopted.
 Cross-domain navigation now preserves the selected day, so a user can compare the same date in
 sleep, weight, food, training and journal without finding it again.
+The calibration gives later pages a concrete density target without committing the whole
+prototype to identical card sizes or an identical companion footprint.
 
 ## Alternatives considered
 
@@ -53,5 +61,7 @@ sleep, weight, food, training and journal without finding it again.
   to every domain and continue to make date selection feel like browsing a list.
 - Swipe only on the date header: reduces accidental gestures, but leaves too small and hidden a
   target for the primary day-to-day action.
+- Equal-size cards for every summary and explanation: visually consistent, but makes every item
+  compete for attention and pushes the frequent logging action below ornamental overview content.
 
 Implementation map and validation: [Én and Nap prototype](../design_2.0/2026-09-10-titanium-me-nap-deep.md).
