@@ -107,7 +107,7 @@ export function NapHubPage() {
   const { addFocus } = useIntentionActions(date)
   const needs = useNeeds(tick)
   const { data: gamDay } = useGamificationDay(date)
-  const { data: journalNotes } = useJournalNotes(date, date)
+  const { data: journalNotes, isPending: journalPending } = useJournalNotes(date, date)
   const { today: lifeGoalToday, isPending: lifeGoalPending, isError: lifeGoalError } = useLifeGoalToday()
   const { data: ritualDay } = useRitualDay(date)
 
@@ -375,7 +375,10 @@ export function NapHubPage() {
           </span>
         </button>
 
-        {/* ── 3. the six stable tiles — this ORDER never varies ──────── */}
+        {/* ── 3. the six stable tiles — this ORDER never varies ────────
+            Mindegyik visel egy `nap-t-<kulcs>` osztályt: ez a csempe IDENTITÁSA (nem stílus),
+            amivel a sorrend-őr teszt napszaktól függetlenül tud rá hivatkozni — az
+            aria-label napszakonként változhat („Reggeli rutin" / „Esti rutin"), a hely nem. */}
         <Mosaic>
           {/* B1 · Víz — a csempe egésze a részletekbe visz, a benne ülő `+` logol egy pohárral,
               a visszavonás pedig CSAK akkor jelenik meg, ha van mit visszavonni. Ezért nem
@@ -461,10 +464,12 @@ export function NapHubPage() {
           {/* B2 · Rutin */}
           {habitTile(habitFace, 230)}
 
-          {/* B5 · Napló — egy adat: hány bejegyzés született ma. A nulla itt őszinte szám. */}
+          {/* B5 · Napló — egy adat: hány bejegyzés született ma. A nulla itt őszinte szám —
+              DE csak feloldott lekérés után: futó lekérés üres listája ugyanúgy néz ki, mint a
+              „ma még semmi", ezért addig `—` áll ott, nem egy kitalált 0. */}
           <Tile key="journal" wash="white" icon="i-naplo" eyebrow="Napló" delayMs={270}
             className="nap-t-naplo"
-            line={<span className="nap-tileline"><span className="nap-big">{journalNotes.length}</span><span className="nap-mut">bejegyzés ma</span></span>}
+            line={<span className="nap-tileline"><span className="nap-big">{journalPending ? '—' : journalNotes.length}</span><span className="nap-mut">bejegyzés ma</span></span>}
             onClick={() => navigate('/me/naplo')} aria-label="Napló" />
         </Mosaic>
 

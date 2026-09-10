@@ -112,10 +112,19 @@ const CHECKINS = [
   { time: '20:00', state: 'pending', values: null, note: null },
 ]
 
-const JOURNAL_TODAY = [
-  { id: 'jn1', occurredOn: '2026-05-22', text: 'Első bejegyzés', source: 'quickinput', createdAt: '2026-05-22T09:00:00Z' },
-  { id: 'jn2', occurredOn: '2026-05-22', text: 'Második bejegyzés', source: 'quickinput', createdAt: '2026-05-22T12:00:00Z' },
-]
+/** Mutable so the "still loading" branch can be asserted: a pending read's empty list looks
+ *  exactly like an honest "semmi ma", and a fabricated 0 would be a lie. */
+const journalStore = vi.hoisted(() => ({
+  notes: [] as { id: string; occurredOn: string; text: string; source: string; createdAt: string }[],
+  pending: false,
+  reset() {
+    this.pending = false
+    this.notes = [
+      { id: 'jn1', occurredOn: '2026-05-22', text: 'Első bejegyzés', source: 'quickinput', createdAt: '2026-05-22T09:00:00Z' },
+      { id: 'jn2', occurredOn: '2026-05-22', text: 'Második bejegyzés', source: 'quickinput', createdAt: '2026-05-22T12:00:00Z' },
+    ]
+  },
+}))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -160,7 +169,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       weightTrends: { last7d: { avg: 84.4, weeklyRate: -0.3 }, last4w: { weeklyRate: -0.25 } },
       logWeight: vi.fn(),
     }),
-    useJournalNotes: () => ({ data: JOURNAL_TODAY, isPending: false, isError: false, refetch: vi.fn() }),
+    useJournalNotes: () => ({ data: journalStore.notes, isPending: journalStore.pending, isError: false, refetch: vi.fn() }),
     useLifeGoalToday: () => ({ today: { goals: [] }, isPending: false, isError: false }),
     useRitualDay: () => ({
       data: { date: '2026-05-22', closed: false, closedAt: null, reflectionText: null, window: 'open' },
@@ -198,6 +207,7 @@ beforeEach(() => {
   weightStore.reset()
   workoutStore.reset()
   fuelPlanStore.reset()
+  journalStore.reset()
   emitSpy.mockClear()
   clock.now = new Date('2026-05-22T13:42:00')
 })
@@ -388,6 +398,15 @@ test('B5: a napló-csempe a mai bejegyzések számát mutatja', async () => {
   expect(tile).toHaveTextContent('bejegyzés ma')
   await userEvent.click(tile)
   expect(await screen.findByText('naplo-page')).toBeInTheDocument()
+})
+
+test('B5: futó lekérés alatt „—" áll a napló-csempén, nem egy kitalált nulla', async () => {
+  journalStore.pending = true
+  journalStore.notes = []
+  renderHub()
+  const tile = await screen.findByRole('button', { name: 'Napló' })
+  expect(tile).toHaveTextContent('—')
+  expect(tile).not.toHaveTextContent('0')
 })
 
 // ── C. what left the landing ────────────────────────────────────────────────
