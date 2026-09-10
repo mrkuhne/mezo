@@ -8,6 +8,7 @@ import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
+import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { EdzesHubPage } from '@/features/train/pages/EdzesHubPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
@@ -204,6 +205,9 @@ export const routes: RouteObject[] = [
       { path: 'nap/kuldetesek', element: <NapKuldetesekPage /> },
       // Nap tile → own full page (Huawei pattern, mezo-d20.2.5)
       { path: 'nap/checkin', element: <NapCheckinPage /> },
+      // FAB Titanium destination FROM /nap exactly (mezo-mhum): full-page quick-log picker,
+      // sharing `QuickLogSurface` with the `QuickInputSheet` modal used everywhere else.
+      { path: 'nap/gyors', element: <NapGyorsPage /> },
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },

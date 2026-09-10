@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { TabBar } from '@/app/TabBar'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -11,6 +11,23 @@ function renderAt(path: string, ui: React.ReactNode) {
     <QueryWrapper>
       <LevelUpProvider>
         <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+      </LevelUpProvider>
+    </QueryWrapper>,
+  )
+}
+
+function LocationProbe() {
+  const loc = useLocation()
+  return <div data-testid="loc">{loc.pathname}</div>
+}
+
+function renderFabAt(path: string) {
+  return render(
+    <QueryWrapper>
+      <LevelUpProvider>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes><Route path="*" element={<><QuickLogFab /><LocationProbe /></>} /></Routes>
+        </MemoryRouter>
       </LevelUpProvider>
     </QueryWrapper>,
   )
@@ -41,9 +58,19 @@ test('marks the current route tab active — /nap and /mezo included', () => {
   expect(screen.getByText('Nap').closest('a')!.className).not.toContain('active')
 })
 
-test('the floating FAB opens the quick-log sheet', async () => {
-  renderAt('/nap', <QuickLogFab />)
+test('the floating FAB opens the quick-log sheet away from /nap', async () => {
+  renderFabAt('/train')
   await userEvent.click(screen.getByRole('button', { name: 'Gyors logolás' }))
   expect(screen.getByText('Gyors logolás', { selector: 'h2' })).toBeInTheDocument()
   expect(screen.getByText('Étkezés')).toBeInTheDocument()
+})
+
+// Titanium rebuild (mezo-mhum): from /nap EXACTLY the FAB is the tile→page portal to the
+// full-page quick-log picker instead of the modal sheet — every other route (including /nap's
+// own subpages, e.g. /nap/checkin) keeps opening the sheet, covered by the test above.
+test('the floating FAB navigates to the full-page picker from /nap exactly', async () => {
+  renderFabAt('/nap')
+  await userEvent.click(screen.getByRole('button', { name: 'Gyors logolás' }))
+  expect(screen.queryByText('Gyors logolás', { selector: 'h2' })).not.toBeInTheDocument()
+  expect(screen.getByTestId('loc')).toHaveTextContent('/nap/gyors')
 })

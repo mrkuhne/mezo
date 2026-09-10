@@ -6,6 +6,7 @@ import { PhoneFrame } from '@/app/PhoneFrame'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
+import { useForceTheme } from '@/app/ThemeProvider'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
@@ -41,11 +42,27 @@ export function AppLayout() {
   // mezo-bq2t: /fuel/log/uj is the same situation — its sticky save bar owns the thumb zone
   // (measured: the FAB sat right on top of it), and a "quick log" FAB on the logging page
   // itself is redundant anyway. Same deal: header and tab bar stay.
-  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj'].includes(location.pathname)
+  // mezo-mhum: /nap/gyors IS the picker page (QuickLogSurface variant="page") — the coral
+  // FAB would float over its own destination and open the modal sheet duplicate on top of
+  // the full-page picker. Same call as /fuel/log/uj above.
+  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.
   const hideHeader = hideChrome || location.pathname === '/mezo/chat'
+  // Titán Nap (mezo-mhum, Task 7): az újraépített Nap-képernyők a prototípus SÖTÉT grafit
+  // bőrét viselik — és mivel a fejléc meg a TabBar a shellé, a scope-osztály is ide való,
+  // nem az oldalra. Pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI (Életjelek,
+  // Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
+  const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
+  // A sötét ALAP a ház meglévő dark témája — ugyanaz a fogás, amivel a Napzárás rituálé is
+  // sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és a shell összes
+  // portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark` scope ERRE ÜL RÁ
+  // a prototípus grafit/titán bőrével — nem helyette.
+  // A `useForceTheme` SAJÁT igényt tart fenn (mezo-mhum javítóhullám): a /nap → /ritual úton a
+  // rituálé is sötétet kér, és a régi egyszemélyes kapcsolóval ez a réteg törölte az övét is —
+  // világos beállítású felhasználónál a rituálé világos tokenekkel rajzolódott.
+  useForceTheme(titanDark ? 'dark' : null)
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
   const screen = (
     <ScreenContent>
@@ -65,7 +82,7 @@ export function AppLayout() {
       <CircadianTheme />
       {/* Clay sprite defs — mounted once so every ClayIcon/ClaySpot <use> resolves. */}
       <ClaySprites />
-      <PhoneFrame anchor={anchor}>
+      <PhoneFrame anchor={anchor} scope={titanDark ? 'titan-dark' : undefined}>
         <ToastProvider>
           <LevelUpProvider>
             {/* Mezo-kalauz motor (mezo-gb1s.1): egy példány, route-váltásra dönt, a sheetet ide

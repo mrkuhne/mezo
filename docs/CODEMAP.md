@@ -195,7 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-10, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -1215,6 +1215,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
+  - **root:** QuickLogSurface.tsx
 
 ### recipe
 
@@ -1287,7 +1288,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-08, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-06, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-10, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1295,15 +1296,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** adviceApi.ts, adviceHooks.ts, checkinHooks.ts, checkins.ts, feedApi.ts, feedHooks.ts, today.ts,
     todayHooks.ts
 - **FE ui** `frontend/src/features/today`
-  - **pages:** EletjelPage.tsx, NapCheckinPage.tsx, NapHubPage.tsx, NapKuldetesekPage.tsx, NapMezoPage.tsx,
-    NapRutinPage.tsx
+  - **pages:** EletjelPage.tsx, NapCheckinPage.tsx, NapGyorsPage.tsx, NapHubPage.tsx, NapKuldetesekPage.tsx,
+    NapMezoPage.tsx, NapRutinPage.tsx
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
-    EletjelStrip.tsx, LifeGoalTodayTile.tsx, MezoMessagesSheet.tsx, ObservationCard.tsx
+    EletjelStrip.tsx, MezoMessagesSheet.tsx, ObservationCard.tsx, TitanCompanion.tsx, TitanScene.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
     habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts,
-    nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts,
-    windDown.ts
+    nextStep.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts,
+    useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train

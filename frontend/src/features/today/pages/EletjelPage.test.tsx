@@ -158,7 +158,10 @@ test('the quiet principle line closes the page', async () => {
   expect(await screen.findByText(/A gyűrűk nem büntetnek — csak jelzik, mi kér figyelmet\./)).toBeInTheDocument()
 })
 
-test('the hub Életjel tile navigates to /nap/eletjel', async () => {
+// Titánium Nap/Mai (mezo-mhum, manifest C4): az Életjel-CSEMPE beolvadt a társba — a
+// szükségletek színe a társ auráját festi, és MAGA a társ az ajtó ide. A hub-oldali belépő
+// tehát nem tűnt el, csak gazdát cserélt; a teszt ugyanazt az utat járja a mai gombbal.
+test('the hub companion navigates to /nap/eletjel', async () => {
   render(
     <QueryWrapper>
       <ToastProvider>
@@ -173,6 +176,6 @@ test('the hub Életjel tile navigates to /nap/eletjel', async () => {
       </ToastProvider>
     </QueryWrapper>,
   )
-  await userEvent.click(await screen.findByRole('button', { name: 'Életjel' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Életjelek' }))
   expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
 })

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mealApi, type FuelDayData } from '@/data/fuel/mealApi'
 import { apiFetch } from '@/data/_client/api'
@@ -116,32 +116,71 @@ export function useMealActions(date: string = localDateString()) {
 }
 
 /** Water intake write on the ['fuelDay', date] cache. Mock increments consumed.water in place;
- *  real POSTs /api/water-log and invalidates fuelDay so the rollup re-reads server-side. */
+ *  real POSTs /api/water-log and invalidates fuelDay so the rollup re-reads server-side.
+ *
+ *  Undo (mezo-mhum): covers ONLY amounts logged in this mount session — never guesses server
+ *  history. Mock keeps a stack of logged amounts (undo pops + subtracts, floor 0); real keeps a
+ *  stack of the ids the POST responses returned (undo DELETEs the last one via
+ *  mealApi.deleteWaterLog, then invalidates exactly like log does). Empty stack → no-op. */
 export function useWaterActions(date: string = localDateString()) {
   const qc = useQueryClient()
   const mock = isMockMode()
+  const amountStack = useRef<number[]>([])
+  const idStack = useRef<string[]>([])
+  const [canUndo, setCanUndo] = useState(false)
 
-  const waterM = useMutation({
+  const invalidateWater = () => {
+    qc.invalidateQueries({ queryKey: [FUELDAY_KEY] })
+    // Quest evaluation is read-triggered: nudge the day's quest read so a met
+    // water_target flips to completed without leaving the current screen.
+    qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+  }
+
+  const waterM = useMutation<void, unknown, number>({
     mutationFn: mock
       ? async (amountMl: number) => {
           qc.setQueryData<FuelDayData>(fuelDayKey(date), d => {
             const base = d ?? { ...seedDayData, date }
             return { ...base, consumed: { ...base.consumed, water: base.consumed.water + amountMl } }
           })
+          amountStack.current.push(amountMl)
         }
-      : (amountMl: number) => mealApi.logWater(date, amountMl),
-    onSuccess: mock
-      ? undefined
-      : () => {
-          qc.invalidateQueries({ queryKey: [FUELDAY_KEY] })
-          // Quest evaluation is read-triggered: nudge the day's quest read so a met
-          // water_target flips to completed without leaving the current screen.
-          qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+      : async (amountMl: number) => {
+          const res = await mealApi.logWater(date, amountMl)
+          idStack.current.push(res.id)
         },
+    onSuccess: () => {
+      setCanUndo(true)
+      if (!mock) invalidateWater()
+    },
+  })
+
+  const undoM = useMutation<boolean, unknown, void>({
+    mutationFn: mock
+      ? async () => {
+          const amountMl = amountStack.current.pop()
+          if (amountMl === undefined) return false
+          qc.setQueryData<FuelDayData>(fuelDayKey(date), d => {
+            const base = d ?? { ...seedDayData, date }
+            return { ...base, consumed: { ...base.consumed, water: Math.max(0, base.consumed.water - amountMl) } }
+          })
+          return true
+        }
+      : async () => {
+          const id = idStack.current.pop()
+          if (id === undefined) return false
+          await mealApi.deleteWaterLog(id)
+          return true
+        },
+    onSuccess: undone => {
+      setCanUndo(mock ? amountStack.current.length > 0 : idStack.current.length > 0)
+      if (!mock && undone) invalidateWater()
+    },
   })
 
   const logWater = useCallback((amountMl: number) => waterM.mutate(amountMl), [waterM])
-  return { logWater }
+  const undoLastWater = useCallback(() => undoM.mutate(), [undoM])
+  return { logWater, undoLastWater, canUndo }
 }
 
 const RECIPE_LOGS_KEY = (id: string) => ['recipeLogs', id] as const

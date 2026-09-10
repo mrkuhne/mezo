@@ -116,9 +116,12 @@ test('the back chip navigates back', async () => {
   expect(await screen.findByText('elsewhere-page')).toBeInTheDocument()
 })
 
-test('the hub Check-in tile navigates to /nap/checkin instead of opening the sheet', async () => {
-  renderPage(['/nap?dp=nap'])
-  await userEvent.click(await screen.findByRole('button', { name: 'Check-in' }))
+// Titánium Nap/Mai (mezo-mhum, manifest C2): a check-in CSEMPE lekerült a nyitóoldalról — a
+// belépő a gyors-felvevő és a társ létrája („Hogy vagy most?"), a felület maga változatlan.
+// Ami ebből ide tartozik és tovább él: az útvonal FELOLDÓDIK és a saját oldalt adja, nem a
+// régi sheetet — pontosan az, amit ez a teszt eredetileg őrzött.
+test('/nap/checkin resolves to the full page, never the old sheet (manifest C2)', async () => {
+  renderPage(['/nap/checkin'])
   expect(await screen.findByText('négy pillanatkép a napodról')).toBeInTheDocument()
   expect(screen.queryByText(/Hogy vagyunk/)).not.toBeInTheDocument()
 })
