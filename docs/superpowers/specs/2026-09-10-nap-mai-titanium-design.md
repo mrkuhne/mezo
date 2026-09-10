@@ -48,10 +48,12 @@ in one tap with undo.
 - Honest states doctrine: nothing numeric renders while pending; empty is honestly empty.
 - `prefers-reduced-motion`: companion renders as a calm static/low-motion variant; entrance
   choreography and ring animations degrade gracefully.
-- Companion presence: production has no Titanium companion renderer yet (prototype uses
-  Three.js, >500 kB warning). Production approach: lazy-loaded renderer with a static fallback
-  for reduced-motion/low-end; exact engineering decided in the implementation plan. The visual
-  outcome must match the approved prototype either way.
+- Companion presence (owner reopen 2026-09-11): the first production cut used a static SVG badge
+  and the light shell — the owner rejected this as diverging from the approved prototype. Final
+  decision: the REAL Three.js liquid-titanium scene is ported (lazy chunk, static SVG fallback for
+  reduced-motion/loading), and the rebuilt Nap screens (`/nap`, `/nap/gyors`) get the full dark
+  graphite Titanium shell including a dark header/tabbar variant; other routes stay light until
+  their own slices (owner decision A).
 
 ## Prior art
 

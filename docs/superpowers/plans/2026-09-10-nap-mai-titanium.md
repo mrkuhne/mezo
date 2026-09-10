@@ -305,3 +305,40 @@ describe('TitanCompanion', () => {
 - Spec coverage: every frozen-manifest row maps to a task (A1-A7, B1-B6 → T5; C1-C7 → T5/T6; D1 → T5; D2 shell untouched — no task needed, assert nothing forked; D3 → T4; D4/D5 → T5; D6 → T5 companion CTA; D7 → T6; D8 → T5 A7/B2).
 - Route strings marked VERIFY must be read from `router.tsx` by the implementer, never guessed.
 - No backend task exists by design; any backend diff is a stop-the-line error.
+
+---
+
+### Task 7: Prototype fidelity — living Three.js companion + dark Titanium shell on Nap (owner reopen 2026-09-11)
+
+Owner evidence: the shipped page diverges from the approved prototype (SVG badge instead of the
+living liquid-titanium form; light shell instead of dark graphite). Owner decisions 2026-09-11:
+(1) port the real companion; (2) full dark Titanium look on the rebuilt Nap screens (`/nap` and
+`/nap/gyors`), including a dark header/tabbar variant there; other routes stay unchanged until
+their own slices.
+
+**Files:**
+- Modify: `frontend/package.json` (+ `three@0.180.0` dep, `@types/three` dev dep; pnpm 9, lockfile committed)
+- Create: `frontend/src/features/today/components/TitanScene.tsx` — React wrapper adapting the
+  prototype scene `docs/design_2.0/prototypes/companion-titanium/main.js` (verbatim port of the
+  scene graph, materials, bloom composer and idle animation; embed-mode camera z=7.8; proper
+  dispose on unmount; devicePixelRatio clamp). Loaded ONLY via `React.lazy` + dynamic import so
+  three lands in its own lazy chunk (the >500 kB chunk warning for that chunk is accepted — note
+  it in the report).
+- Modify: `frontend/src/features/today/components/TitanCompanion.tsx` — keep interface
+  `{ states, onOpenSignals }`; reduced-motion OR scene-not-yet-loaded → the existing static SVG
+  (Suspense fallback); otherwise the lazy TitanScene canvas. Aura + Életjelek button unchanged.
+- Modify: `frontend/src/app/AppLayout.tsx` (or the shell owner it uses) — add a `titan-dark`
+  scope class on the shell wrapper when `pathname === '/nap' || pathname === '/nap/gyors'`.
+- Modify: `frontend/src/styles/prototype.css` — append ONE `/* ── titan-dark scope (mezo-mhum) ── */`
+  block redefining the shell/header/tabbar/page background tokens under `.titan-dark`, matching
+  the prototype's graphite palette (`docs/design_2.0/prototypes/companion-titanium/nap.css` and
+  `navigation.css` are the color source); the Nap Mai cards must sit on dark like `nap.html#nap/0`.
+- Test: `TitanCompanion.test.tsx` (fallback + reduced-motion → no canvas), a shell test asserting
+  `titan-dark` present on `/nap` and `/nap/gyors` and absent on `/train`, existing NapHubPage
+  suite stays green.
+
+- [ ] Step 1: failing tests (reduced-motion no-canvas; titan-dark scoping)
+- [ ] Step 2: port TitanScene + rewire TitanCompanion
+- [ ] Step 3: titan-dark CSS scope + shell class
+- [ ] Step 4: `pnpm vitest run src/features/today src/app`, both-mode full `pnpm test`, `pnpm build`
+- [ ] Step 5: commit `feat(today): living Titan companion + dark Nap shell (mezo-mhum)`
