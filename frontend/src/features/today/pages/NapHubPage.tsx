@@ -1,55 +1,73 @@
 // ============================================================
-// Mezo · NapHubPage — the Nap spine's Mozaik face (mezo-d20.2.1)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html. The header
-// (section spot + name · [tutorial "?"] · daypart switch · Mezo messages ·
-// notifications · profile orb) now lives in the shell
-// (`app/AppHeader.tsx`, mezo-atry) — this page only picks the panel from
-// `?dp=`, then renders ONE hero per daypart panel + the 2-column tile mosaic;
-// every tile navigates to its own page (Huawei pattern).
+// Mezo · NapHubPage — a Nap gerinc TITÁN arca (mezo-mhum)
+// Source of truth: the frozen coverage manifest
+// `docs/design_2.0/2026-09-10-nap-mai-coverage.md` (owner-approved 2026-09-10) +
+// `.superpowers/sdd/2026-09-10-nap-mai-titanium/task-5-brief.md` §Page composition.
 //
-// 1:1 fidelity audit (mezo-d20.11) — what this page owes the prototype and now
-// pays: the Rutin tile carries the NEXT habit's own clay icon + its name +
-// `n/m` + an in-place tick,
-// the Küldetés tile shows one big dot per quest (not a text count), the Kreed
-// tile has NO icon and carries the `n fókusz ›` more-line, the reggel hero keeps
-// `Súly … ↘` and `Fókusz …` on ONE row, the day-bar segments and the water bar
-// FILL on entrance, the este panel closes with the day's stat strip, and
-// `?day=rough` renders the horgony melt again (provisional, F7).
+// The page is ONE composition on every daypart — no more three separate hero/mosaic
+// panels (the pre-Titanium shape, mezo-d20.2.1). Top to bottom:
+//   1. companion block — TitanCompanion (its aura IS the Életjel gauge, C4) + greeting
+//      + creed line (C3) + the morning context chips (A3/A4) + the Mezo CTA (D6);
+//   2. ONE computed next step (`nextStep`, the ladder) — the only "what now?" the page
+//      ever states, so the tiles never compete for that job (A6 = its evening rung);
+//   3. the SIX stable tiles, in a FIXED order that never varies by daypart
+//      (víz · alvás · étkezés · edzés · rutin · napló) — a mosaic whose shape changes
+//      by the hour is a mosaic the thumb cannot learn;
+//   4. evening-only extras: the timed night door (C7) and the day's stat strip (A7).
+// The daypart changes the greeting and the next step. Nothing else moves.
+//
+// What LEFT the page (manifest C): the quest tile (C1 DEFER — `/nap/kuldetesek` still
+// resolves), the check-in tile (C2 → quick picker + the ladder's own "Hogy vagy most?"
+// rung; the day's check-in slots are still READ here, they feed `checkinStale`), the
+// Kreed tile (C3 → companion), the Életjel tile (C4 → the companion's aura), the Stack
+// tile (C5 → quick picker), `LifeGoalTodayTile` (C6 → the ladder's goal rung) and the
+// separate meal-window tile (B4 → merged into the étkezés tile). The quick-log button
+// is the shell's FAB (D3) — on `/nap` it opens the full-page `/nap/gyors` picker, so
+// this page renders no quick button of its own.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { ClayIcon } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import {
-  useToday, useTodayScenario, useCheckins, useSleepGoal, useDailyQuests,
+  useToday, useTodayScenario, useCheckins, useSleepGoal,
   useHabitDay, useHabitCatalog, useHabitActions, useFuelPreview, useFuelDay,
   useWaterActions, useSleep, useWeight, useIntentionDay, useIntentionActions,
-  useStackDay, useGamificationDay,
+  useGamificationDay, useJournalNotes, useLifeGoalToday, useRitualDay,
 } from '@/data/hooks'
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
-import { needRingGradient } from '@/features/today/logic/needs'
 import { minsToBed } from '@/features/today/logic/windDown'
+import { nextStep } from '@/features/today/logic/nextStep'
 import { habitAction } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { daypartMilestone } from '@/features/today/logic/chainMilestone'
 import { nextInChain } from '@/features/today/logic/chainPrompt'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
-import { LifeGoalTodayTile } from '@/features/today/components/LifeGoalTodayTile'
+import { TitanCompanion } from '@/features/today/components/TitanCompanion'
 import type { HabitItem } from '@/data/types'
 
 function fmtHm(mins: number): string {
   const h = Math.floor(mins / 60)
   const m = Math.round(mins % 60)
   return `${h}:${String(m).padStart(2, '0')}`
+}
+
+/** The companion's opening line per daypart — the ONE thing besides the next step that
+ *  the hour is allowed to change (manifest A1). */
+const GREETING: Record<DayFace, string> = {
+  reggel: 'Jó reggelt.',
+  nap: 'Jó itt folytatni.',
+  este: 'Megérkeztél.',
 }
 
 /** The prototype's three horgony rows (`?day=rough`), verbatim copy. */
@@ -71,36 +89,38 @@ export function NapHubPage() {
   // két másolat egy napszak-határon két különböző napszakot vezetett volna le.
   const { face } = useDayFace()
 
-  // ── data for heroes + tiles ─────────────────────────────────────────
+  // ── data for the companion + the six tiles ──────────────────────────
   const { fuel } = useFuelDay(date)
   const { plan } = useFuelPreview()
-  const { logWater } = useWaterActions(date)
+  const { logWater, undoLastWater, canUndo } = useWaterActions(date)
   const { lastNight } = useSleep()
   const { weightLog } = useWeight()
   const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1] : null
   const previousWeight = weightLog.length > 1 ? weightLog[weightLog.length - 2] : null
+  // C2: the check-in TILE is gone, the check-in DATA is not — it is what tells the ladder
+  // whether the day's "Hogy vagy most?" rung is due.
   const { checkins } = useCheckins()
-  const { quests } = useDailyQuests(date)
   const { habits } = useHabitDay(date)
   const { catalog: habitCatalog } = useHabitCatalog()
   const { check, pending: habitPending } = useHabitActions(date)
   const { data: intentionData } = useIntentionDay(date)
   const { addFocus } = useIntentionActions(date)
   const needs = useNeeds(tick)
-  const { slots: stackSlots } = useStackDay(date)
   const { data: gamDay } = useGamificationDay(date)
+  const { data: journalNotes } = useJournalNotes(date, date)
+  const { today: lifeGoalToday, isPending: lifeGoalPending, isError: lifeGoalError } = useLifeGoalToday()
+  const { data: ritualDay } = useRitualDay(date)
 
   const intention = intentionData ?? { date, creed: null, foci: [], reflection: null }
 
-  // ── the one sheet the hub still owns (Kreed) ─────────────────────────
+  // ── the one sheet the hub still owns (Kreed / fókusz) ────────────────
   const [focusOpen, setFocusOpen] = useState(false)
   const [anchorsDone, setAnchorsDone] = useState<Set<number>>(() => new Set())
   // mezo-3zue.6: a hubon nincs lista, amit ki lehetne emelni — a csempe „következő" választása
   // lesz lánc-tudatos. Ugyanaz a pipa-következmény, mint a rutin-oldalon, oldal-lokálisan.
   const [promptKey, setPromptKey] = useState<string | null>(null)
 
-  // ── derived tile facts ──────────────────────────────────────────────
-  const questXp = quests.reduce((s, q) => s + q.xp, 0)
+  // ── derived facts ───────────────────────────────────────────────────
   const habitsFor = (f: DayFace) => {
     const keys = new Set(
       habitCatalog.chains
@@ -109,54 +129,56 @@ export function NapHubPage() {
     )
     return habits.filter((h) => keys.has(h.chain))
   }
+  const morningHabits = habitsFor('reggel')
+  const eveningHabits = habitsFor('este')
+  const morningHabitPending = morningHabits.some((h) => h.status === 'pending')
+  // A rutin-csempe LÁNCA: reggel a reggeli, este az esti. Napközben az, amelyikben van még
+  // nyitott szem (a reggeli előbb) — a csempe így napközben sem üresen áll, hanem azt mutatja,
+  // ami tényleg vár. Minden szem kész → a reggeli lánc kerete viszi a „Tökéletes nap" állapotot.
+  const habitFace: DayFace = face === 'reggel' || face === 'este'
+    ? face
+    : morningHabitPending ? 'reggel' : eveningHabits.some((h) => h.status === 'pending') ? 'este' : 'reggel'
+
   const kcalLeft = Math.round(fuel.targets.kcal - fuel.consumed.kcal)
   const kcalCount = useCountUp(kcalLeft)
-  // The prototype count-ups both time heroes (`data-kind="time"`): count the MINUTES,
-  // format after — a formatted string cannot be interpolated.
-  const sleptMin = lastNight ? Math.round(lastNight.duration * 60) : 0
-  const sleptCount = useCountUp(sleptMin)
-  const bedIn = minsToBed(tick, sleepGoal.bedTime)
-  const bedInCount = useCountUp(bedIn)
   const kcalEaten = Math.round(fuel.consumed.kcal)
   const kcalEatenCount = useCountUp(kcalEaten)
   const xpCount = useCountUp(gamDay.xpTotal)
+  const bedIn = minsToBed(tick, sleepGoal.bedTime)
 
-  const mealSlots = plan.slots.filter((s) => s.slotKey !== undefined)
-  const nowWindow = mealSlots.find((s) => s.state === 'now')
-  const stackTaken = stackSlots.filter((sl) => sl.entries.filter((e) => !e.skippedToday).every((e) => e.taken)).length
+  // Ugyanaz az ablak-szabály, mint a gyors-naplózó felületén (QuickLogSurface): a
+  // FELHASZNÁLÓ étkezési ablaka (`slotKey` van), aminek az állapota épp `now`.
+  const nowWindow = plan.slots.find((s) => s.slotKey !== undefined && s.state === 'now')
   const waterPct = fuel.targets.water > 0
     ? Math.min(1, fuel.consumed.water / fuel.targets.water)
     : 0
 
-  // ── shared tiles (Küldetések / Check-in appear on every panel) ──
-  // These carry prototype-specific internals (a count badge, quest dots), so they are
-  // composed from the Mozaik `mz-*` classes rather than the generic `Tile` recipe.
-  const questTile = (delay: number) => (
-    <button key="quest" type="button" className="mz-tile mz-w-gold rise"
-      style={{ '--d': `${delay}ms` } as React.CSSProperties}
-      onClick={() => navigate('/nap/kuldetesek')} aria-label="Napi küldetések">
-      <span className="mz-eyebrow nap-gold">Küldetések</span>
-      <div className="mz-spotwrap"><ClaySpot name="s-hajtas" size={47} /></div>
-      {/* prototype: ONE big dot per quest (filled = done) + the day's XP pot — the
-          count is shown visually, so it is NOT repeated as text. */}
-      <div className="nap-bigdots">
-        {quests.map((q) => (
-          <span key={q.id} className={cn('hd', q.status === 'completed' && 'f')} aria-hidden="true" />
-        ))}
-        {questXp > 0 && <span className="nap-qxp">+{questXp} XP</span>}
-      </div>
-    </button>
-  )
-
-  const checkTile = (delay: number) => (
-    <Tile key="check" wash="rose" icon="i-checkin" eyebrow="Check-in" delayMs={delay}
-      line={
-        <span className="nap-ckdots" aria-hidden="true">
-          {checkins.map((c, i) => <span key={i} className={cn('hd', c.state === 'done' && 'f')} />)}
-        </span>
-      }
-      onClick={() => navigate('/nap/checkin')} aria-label="Check-in" />
-  )
+  // ── the ladder's inputs (mezo-mhum, `logic/nextStep`) ────────────────
+  // checkinStale: a NAPPALI sávok (10:00 és 14:00 — az ébredési és az esti sáv közötti ablak)
+  // közül egyik sincs kitöltve. Az ébredési sáv magától kész szokott lenni, az esti pedig a
+  // napzárás dolga, így egyik sem mondana igazat arról, hogy „rég néztél magadra".
+  const daySlots = checkins.filter((c) => c.time >= '10:00' && c.time < '20:00')
+  const checkinStale = !daySlots.some((c) => c.state === 'done')
+  // C6: a cél napi lépése a létrába költözött. A `today` üres listája a lekérés alatt UGYANÚGY
+  // néz ki, mint a „nincs célod" (a `realEmpty` idiómája), ezért a pending/error kör kimarad —
+  // egy még fel nem oldott ablakból nem találunk ki lépést.
+  const goalStep = !lifeGoalPending && !lifeGoalError && lifeGoalToday.goals.length > 0
+    ? lifeGoalToday.goals[0].title
+    : null
+  const step = nextStep({
+    face,
+    ritualClosed: ritualDay.closed,
+    // A szándék akkor „megvan", ha van kreed VAGY legalább egy fókusz — a létra reggeli
+    // első foka pontosan ezt a hiányt tölti be (a sheet fókuszt ír).
+    intentionSet: intention.creed !== null || intention.foci.length > 0,
+    morningHabitPending,
+    checkinStale,
+    waterMl: fuel.consumed.water,
+    waterTargetMl: fuel.targets.water,
+    workoutPlanned: Boolean(today.workoutType),
+    workoutDone,
+    goalStep,
+  })
 
   /** The prototype's in-place tick: only a habit whose own action IS a check can honestly
    *  complete from here (ADR 0010 — a DERIVED row never self-completes). Anything else has
@@ -188,9 +210,12 @@ export function NapHubPage() {
     }
   }
 
+  /** B2 — the routine tile, moved over from the pre-Titanium mosaic with its chain-aware pick,
+   *  its in-place tick and its reward toast unchanged. The ONE change: it renders on every
+   *  daypart (an empty chain shows the sage all-done face) instead of disappearing, because
+   *  the six tiles are now a fixed, learnable set. */
   const habitTile = (f: DayFace, delay: number) => {
-    const items = habitsFor(f)
-    if (items.length === 0) return null
+    const items = f === 'reggel' ? morningHabits : eveningHabits
     const done = items.filter((h) => h.status === 'done').length
     // A lánc előzi a sorrendet: ha az imént pipált horgonyra kötött sor itt van és még
     // nyitott, a csempe AZT mutatja — így a stacking a hubról pipálva is kifizetődik.
@@ -201,7 +226,7 @@ export function NapHubPage() {
     const icon = next
       ? (chain ? habitClayIcon(next.key, chain) : DAYPART_CLAY[f === 'este' ? 'EVENING' : 'MORNING'])
       : 'i-lang'
-    const name = next ? next.title : (f === 'este' ? 'Tökéletes este' : 'Tökéletes reggel')
+    const name = next ? next.title : 'Tökéletes nap'
     const tick = next ? tileTick(next) : null
     const label = f === 'este' ? 'Esti rutin' : 'Reggeli rutin'
     // A tile that contains its own tick button cannot itself be a <button> (nested
@@ -209,7 +234,7 @@ export function NapHubPage() {
     const open = () => navigate(`/nap/rutin?dp=${f}`)
     return (
       <div key="habit" role="button" tabIndex={0} aria-label={label}
-        className={cn('mz-tile rise', next ? (f === 'este' ? 'mz-w-lav' : 'mz-w-gold') : 'mz-w-sage')}
+        className={cn('mz-tile nap-t-rutin rise', next ? (f === 'este' ? 'mz-w-lav' : 'mz-w-gold') : 'mz-w-sage')}
         style={{ '--d': `${delay}ms` } as React.CSSProperties}
         onClick={open}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}>
@@ -236,25 +261,19 @@ export function NapHubPage() {
     )
   }
 
-  // ── „nehéz nap" horgony-olvadás (`?day=rough`) ──────────────────────
-  // PROVIZÓRIKUS (mezo-d20.11): a törölt AnchorIsland tartalma a Mozaik nyelvén, hogy a
-  // mód ne rendereljen semmit. Végleges formája az F7 design-körre tartozik.
+  // ── „nehéz nap" horgony-olvadás (`?day=rough`, D1) ───────────────────
+  // Titánra öltöztetve (mezo-mhum): a társ ITT IS ott van, csak csendben — halványabb aura,
+  // NINCS következő lépés, nincs mozaik. A három horgony és a kilépés tartalma változatlan.
   if (scenario.anchorMode) {
     return (
-      <div className="nap-hub">
+      <div className="nap-hub nap-titan">
         <EntranceGroup className="mz-panel-stack">
-          <div className="mz-tile nap-hero nap-anch-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
-            <div className="nap-hero-row">
-              <ClaySpot name="s-piheno" size={52} />
-              <div>
-                <span className="mz-eyebrow nap-coral">Horgony mód · csendben</span>
-                <div className="nap-hero-line">
-                  <span className="nap-big">{ANCHORS.length}</span>
-                  <span className="nap-mut">apró horgony</span>
-                </div>
-              </div>
-            </div>
-            <p className="nap-anch-say">Nehéz nap — ma elég a minimum. Itt vagyok.</p>
+          <div className="nap-titan-hero nap-titan-quiet rise" data-kalauz-anchor="nap-hero"
+            style={{ '--d': '0ms' } as React.CSSProperties}>
+            <TitanCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} />
+            <span className="mz-eyebrow nap-coral">Horgony mód · csendben</span>
+            <h2 className="nap-titan-greet">Nehéz nap — ma elég a minimum.</h2>
+            <p className="nap-titan-say">Itt vagyok. {ANCHORS.length} apró horgony, semmi más.</p>
           </div>
           <Mosaic>
             {ANCHORS.map((a, i) => {
@@ -290,158 +309,178 @@ export function NapHubPage() {
     )
   }
 
+  const openWater = () => navigate('/fuel')
+
   return (
-    <div className="nap-hub">
+    <div className="nap-hub nap-titan">
       <EntranceGroup replayKey={face} className="mz-panel-stack">
-        {face === 'reggel' && (
-          <>
-            <div className="mz-tile mz-w-lav nap-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <div className="nap-hero-row">
-                <ClaySpot name="s-este" size={52} />
-                <div>
-                  <span className="mz-eyebrow nap-lav">Éjszakád</span>
-                  <div className="nap-hero-line">
-                    <span className="nap-big">{lastNight ? fmtHm(sleptCount) : '—'}</span>
-                    {lastNight && <span className="nap-mut">minőség {lastNight.quality}/10</span>}
-                  </div>
-                </div>
-              </div>
-              {/* prototype: `Súly 84,2 kg ↘` and `Fókusz …` on ONE row (the CSS keeps it
-                  unwrapped; the focus text ellipsises). The trend arrow needs a previous
-                  weigh-in — with a single entry it renders nothing rather than a fake ↘. */}
-              <div className="nap-hero-sub">
-                {latestWeight && (
-                  <span className="nap-mut">
-                    Súly <b>
-                      {latestWeight.value.toLocaleString('hu-HU')} kg
-                      {previousWeight && previousWeight.value !== latestWeight.value
-                        ? (latestWeight.value < previousWeight.value ? ' ↘' : ' ↗')
-                        : ''}
-                    </b>
-                  </span>
-                )}
-                {intention.foci.length > 0 && <span className="nap-mut">Fókusz <b className="nap-coral">{intention.foci[0].text}</b></span>}
-              </div>
+        {/* ── 1. companion block ─────────────────────────────────────── */}
+        <div className="nap-titan-hero rise" data-kalauz-anchor="nap-hero"
+          style={{ '--d': '0ms' } as React.CSSProperties}>
+          {/* C4: az Életjel-csempe helyett MAGA a társ a mérőóra — az aurát az első három
+              szükséglet színe/sávja festi, a koppintás pedig a részletes felületet nyitja. */}
+          <TitanCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} />
+          <h2 className="nap-titan-greet">{GREETING[face]}</h2>
+          {/* C3: a kreed a társ mondata lett, nem külön csempe. Egy koppintás a fókusz-sheetet
+              nyitja (ugyanaz a sheet, amit a Kreed-csempe vitt). */}
+          {intention.creed && (
+            <button type="button" className="nap-titan-creed" aria-label="Kreed és fókuszok"
+              onClick={() => setFocusOpen(true)}>
+              <span className="nap-titan-creedtext">{intention.creed}</span>
+              {intention.foci.length > 0 && (
+                <span className="nap-titan-focibadge">{intention.foci.length} fókusz</span>
+              )}
+            </button>
+          )}
+          {/* A3/A4: a reggeli hero két adata — súly (őszinte nyíllal) és az első fókusz. Csak
+              reggel: délután a súly már nem hír, és a helyet a következő lépés kapja meg. */}
+          {face === 'reggel' && (latestWeight || intention.foci.length > 0) && (
+            <div className="nap-titan-ctx">
+              {latestWeight && (
+                <button type="button" className="nap-titan-chip" aria-label="Súly · részletek"
+                  onClick={() => navigate('/me/weight')}>
+                  Súly <b>
+                    {latestWeight.value.toLocaleString('hu-HU')} kg
+                    {/* A trend-nyílhoz KELL egy korábbi mérés — egyetlen bejegyzésnél inkább
+                        semmi, mint egy kitalált ↘. */}
+                    {previousWeight && previousWeight.value !== latestWeight.value
+                      ? (latestWeight.value < previousWeight.value ? ' ↘' : ' ↗')
+                      : ''}
+                  </b>
+                </button>
+              )}
+              {intention.foci.length > 0 && (
+                <span className="nap-titan-chip">Fókusz <b className="nap-coral">{intention.foci[0].text}</b></span>
+              )}
             </div>
-            <Mosaic>
-              {habitTile('reggel', 70)}
-              {questTile(110)}
-              {checkTile(150)}
-              {/* prototype .t-kreed: NO icon — the creed with a 3-line clamp, then the more-line */}
-              <button type="button" className="mz-tile mz-w-white rise"
-                style={{ '--d': '190ms' } as React.CSSProperties}
-                onClick={() => setFocusOpen(true)} aria-label="Kreed">
-                <span className="mz-eyebrow nap-coral">Kreed</span>
-                <div className="nap-kreedq">{intention.creed ?? 'Mi a mai szándék?'}</div>
-                <div className="nap-tilegap" />
-                {intention.foci.length > 0 && (
-                  <div className="nap-tilemore nap-coral">{intention.foci.length} fókusz ›</div>
-                )}
-              </button>
-            </Mosaic>
-          </>
-        )}
+          )}
+          {/* D6: a társ beszélgetés-ajtaja. A feed maga a szálon él (`/nap/uzenetek`). */}
+          <button type="button" className="nap-titan-talk" onClick={() => navigate('/nap/uzenetek')}>
+            Beszéljük át a napod <span aria-hidden="true">↗</span>
+          </button>
+        </div>
 
-        {face === 'nap' && (
-          <>
-            <div className="mz-tile mz-w-sage nap-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <span className="mz-eyebrow nap-sage">Keret · ma</span>
-              <div className="nap-hero-line">
+        {/* ── 2. the ONE next step (the ladder) ──────────────────────── */}
+        <button type="button" className="nap-nextstep rise"
+          style={{ '--d': '40ms' } as React.CSSProperties}
+          onClick={() => { if (step.kind === 'intention') setFocusOpen(true); else navigate(step.to) }}>
+          <span className="mz-eyebrow nap-coral">Most egy kis lépés</span>
+          <span className="nap-nextstep-row">
+            <span className="nap-nextstep-art"><ClayIcon name={step.icon} size={44} /></span>
+            <span className="nap-nextstep-copy">
+              <strong className="nap-nextstep-title">{step.title}</strong>
+              <small className="nap-nextstep-sub">{step.sub}</small>
+            </span>
+            <span className="nap-nextstep-go" aria-hidden="true">↗</span>
+          </span>
+        </button>
+
+        {/* ── 3. the six stable tiles — this ORDER never varies ──────── */}
+        <Mosaic>
+          {/* B1 · Víz — a csempe egésze a részletekbe visz, a benne ülő `+` logol egy pohárral,
+              a visszavonás pedig CSAK akkor jelenik meg, ha van mit visszavonni. Ezért nem
+              lehet maga a csempe egy <button> (egymásba ágyazott interaktív tartalom). */}
+          <div key="water" role="button" tabIndex={0} aria-label="Hidratáció · részletek"
+            className="mz-tile mz-w-sky nap-t-viz rise" style={{ '--d': '70ms' } as React.CSSProperties}
+            onClick={openWater}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openWater() } }}>
+            <span className="mz-eyebrow nap-sky">Víz</span>
+            <div className="nap-watertop">
+              <ClayIcon name="i-viz" size={26} />
+              <span className="nap-waterval">
+                <span className="nap-waterbig">
+                  {(fuel.consumed.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 2 })}
+                </span>
+                <span className="nap-watermut">
+                  / {(fuel.targets.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 1 })} L
+                </span>
+              </span>
+            </div>
+            <div className="nap-waterfill">
+              <div style={{ '--w': waterPct } as React.CSSProperties} />
+            </div>
+            <div className="nap-waterbtns">
+              <button type="button" className="nap-water-quick" aria-label="Víz +2,5 dl"
+                onClick={(e) => { e.stopPropagation(); logWater(250) }}>+</button>
+              {canUndo && (
+                <button type="button" className="nap-water-undo" aria-label="Utolsó pohár visszavonása"
+                  onClick={(e) => { e.stopPropagation(); undoLastWater() }}>↺</button>
+              )}
+            </div>
+          </div>
+
+          {/* A2/B6 · Alvás — `duration` a dróton ÓRA, ezért percre váltjuk, mielőtt formázzuk
+              (percekkel etetett formázó 0:07-et írna). Adat nélkül nagy „—", sosem 0:00. */}
+          <Tile key="sleep" wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={110}
+            className="nap-t-alvas"
+            line={lastNight ? (
+              <span className="nap-tileline">
+                <span className="nap-big">{fmtHm(Math.round(lastNight.duration * 60))}</span>
+                <span className="nap-mut">minőség {lastNight.quality}/10</span>
+              </span>
+            ) : (
+              <span className="nap-tileline">
+                <span className="nap-big">—</span>
+                <span className="nap-mut">Még nincs naplózva</span>
+              </span>
+            )}
+            onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
+
+          {/* A5/B4 · Étkezés — a keret NAGY száma + a fehérje. Nyitott étkezési ablakban a
+              csempe „most"-ot jelez és EGYENESEN a logolóba visz (a külön ablak-csempe B4
+              szerint ide olvadt); ablakon kívül a Fuel hubja a cél. */}
+          <Tile key="meal" wash={nowWindow ? 'most' : 'sage'} icon="i-fuel" delayMs={150}
+            className="nap-t-etkezes"
+            eyebrow={nowWindow ? `${nowWindow.label} · most` : 'Keret · ma'}
+            line={
+              <span className="nap-tileline">
                 <span className="nap-big">{kcalCount}</span>
-                <span className="nap-mut">kcal maradt · fehérje {Math.round(fuel.consumed.p)}/{Math.round(fuel.targets.p)} g</span>
-              </div>
-              <div className="daybar">
-                {mealSlots.map((s, i) => (
-                  <i key={i} className={cn(s.state === 'done' && 'f', s.state === 'now' && 'now')}
-                    style={{ '--d': `${250 + i * 80}ms` } as React.CSSProperties} />
-                ))}
-              </div>
-            </div>
-            <Mosaic>
-              {nowWindow && (
-                <Tile wash="most" icon="i-fuel" eyebrow={`${nowWindow.label} · most`} delayMs={70}
-                  line={<span className="nap-tilemore nap-coral">Logold ›</span>}
-                  onClick={() => navigate('/fuel')} aria-label={`Logold — ${nowWindow.label}`} />
-              )}
-              <LifeGoalTodayTile delayMs={90} />
-              {today.workoutType && (
-                <Tile wash="coral" icon="i-edzes" eyebrow="Edzés" delayMs={110}
-                  line={today.workoutType} onClick={() => navigate('/train')} aria-label="Edzés" />
-              )}
-              <button type="button" className="mz-tile mz-w-white rise" style={{ '--d': '150ms' } as React.CSSProperties}
-                onClick={() => navigate('/nap/eletjel')} aria-label="Életjel">
-                <span className="mz-eyebrow">Életjel</span>
-                <div className="mz-spotwrap">
-                  <div className="nap-bigring" style={{ background: needRingGradient(needs.states) }}>
-                    <span className="nap-ringhole"><ClayIcon name="i-eletjel" size={18} /></span>
-                  </div>
-                </div>
-              </button>
-              {/* prototype .t-water: icon + value / goal on top, the FILLING bar at the
-                  bottom, and the „koppints: +2,5 dl" hint under it. */}
-              <button type="button" className="mz-tile mz-w-sky rise" style={{ '--d': '190ms' } as React.CSSProperties}
-                onClick={() => logWater(250)} aria-label="Víz +2,5 dl">
-                <div className="nap-watertop">
-                  <ClayIcon name="i-viz" size={26} />
-                  <span className="nap-waterval">
-                    <span className="nap-waterbig">
-                      {(fuel.consumed.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 2 })}
-                    </span>
-                    <span className="nap-watermut">
-                      / {(fuel.targets.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 1 })} L
-                    </span>
-                  </span>
-                </div>
-                <div className="nap-tilegap" />
-                <div className="nap-waterfill">
-                  <div style={{ '--w': waterPct } as React.CSSProperties} />
-                </div>
-                <div className="nap-waterhint">koppints: +2,5 dl</div>
-              </button>
-              <Tile wash="sage" icon="i-stack" eyebrow="Stack" delayMs={230}
-                line={<span className="nap-stackbig">{stackTaken}/{stackSlots.length}</span>}
-                onClick={() => navigate('/fuel/stack')} aria-label="Stack" />
-              {questTile(270)}
-              {checkTile(310)}
-            </Mosaic>
-          </>
-        )}
+                <span className="nap-mut">kcal · fehérje {Math.round(fuel.consumed.p)}/{Math.round(fuel.targets.p)} g</span>
+              </span>
+            }
+            onClick={() => navigate(nowWindow ? `/fuel/log/uj?w=${encodeURIComponent(tileKey(nowWindow))}` : '/fuel')}
+            aria-label="Étkezés" />
 
+          {/* B3 · Edzés — terv nélkül is ott marad (hat stabil csempe), csak őszintén üresen. */}
+          <Tile key="workout" wash="coral" icon="i-edzes" eyebrow="Edzés" delayMs={190}
+            className="nap-t-edzes"
+            line={
+              <span className="nap-tileline">
+                <span className="nap-habname">
+                  {today.workoutType ? `${today.workoutType}${workoutDone ? ' ✓' : ''}` : 'Pihenő'}
+                </span>
+                <span className="nap-mut">
+                  {today.workoutType
+                    ? (workoutDoneSets != null ? `${workoutDoneSets} szett` : 'a mai edzés')
+                    : 'Ma nincs betervezve'}
+                </span>
+              </span>
+            }
+            onClick={() => navigate('/train')} aria-label="Edzés" />
+
+          {/* B2 · Rutin */}
+          {habitTile(habitFace, 230)}
+
+          {/* B5 · Napló — egy adat: hány bejegyzés született ma. A nulla itt őszinte szám. */}
+          <Tile key="journal" wash="white" icon="i-naplo" eyebrow="Napló" delayMs={270}
+            className="nap-t-naplo"
+            line={<span className="nap-tileline"><span className="nap-big">{journalNotes.length}</span><span className="nap-mut">bejegyzés ma</span></span>}
+            onClick={() => navigate('/me/naplo')} aria-label="Napló" />
+        </Mosaic>
+
+        {/* ── 4. evening extras ──────────────────────────────────────── */}
         {face === 'este' && (
           <>
-            <div className="mz-tile nap-hero nap-dusk rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <div className="nap-hero-row">
-                <ClaySpot name="s-napzaras" size={58} />
-                <div>
-                  <span className="mz-eyebrow nap-lav">Villanyoltásig</span>
-                  <div className="nap-hero-line">
-                    <span className="nap-big">{fmtHm(bedInCount)}</span>
-                    <span className="nap-mut">{sleepGoal.bedTime} lefekvés</span>
-                  </div>
-                </div>
-              </div>
-              <button type="button" className="cta nap-cta-lav" onClick={() => navigate('/ritual')}>
-                Zárjuk le a napot
-              </button>
-            </div>
-            <Mosaic>
-              {habitTile('este', 70)}
-              {questTile(110)}
-              {checkTile(150)}
-              {/* Éjszakai mód's Nap-side door. It died with `IslandEvening` when the Today view
-                  layer went (mezo-d20.11): the Alvás page's row survived, but that row was
-                  designed as the TWIN of a timed evening entry, not its replacement. Timed, as
-                  it always was — inside the wind-down window (lights-out − 90 min), so it does
-                  not sit on the mosaic all evening. */}
-              {bedIn <= 90 && bedIn > 0 && (
-                <Tile key="night" wash="lav" icon="i-alvas" eyebrow="Éjszakai mód" delayMs={190}
-                  line={`indul ${sleepGoal.bedTime} előtt`}
-                  onClick={() => navigate('/me/sleep/night')} aria-label="Éjszakai mód" />
-              )}
-            </Mosaic>
-            {/* prototype: the este panel closes on the day's stat strip (kcal · edzés · XP).
-                A statistic with no source renders `—`, never a fabricated zero. */}
-            <div className="rise" style={{ '--d': '200ms' } as React.CSSProperties}>
+            {/* C7: az Éjszakai mód Nap-oldali ajtaja — IDŐZÍTVE, ahogy mindig is volt
+                (villanyoltás − 90 perc), hogy ne üljön egész este a felületen. */}
+            {bedIn <= 90 && bedIn > 0 && (
+              <Tile key="night" wash="lav" icon="i-alvas" eyebrow="Éjszakai mód" delayMs={310}
+                line={`indul ${sleepGoal.bedTime} előtt`}
+                onClick={() => navigate('/me/sleep/night')} aria-label="Éjszakai mód" />
+            )}
+            {/* A7: az este a nap statisztika-sorával zár (kcal · edzés · XP). Forrás nélküli
+                statisztika `—`, sosem kitalált nulla. */}
+            <div className="rise" style={{ '--d': '350ms' } as React.CSSProperties}>
               <StatStrip>
                 <StatCell value={kcalEatenCount}
                   label={kcalEaten <= Math.round(fuel.targets.kcal) ? 'kcal · kereten belül ✓' : 'kcal · kereten túl'} />

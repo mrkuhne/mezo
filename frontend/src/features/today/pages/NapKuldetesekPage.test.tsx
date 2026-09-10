@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom'
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
@@ -140,10 +140,17 @@ test('honest empty state: no quests drawn → the empty line, no fabricated 0/0 
   expect(container.querySelector('.mz-bignum')).toBeNull()
 })
 
-test('the hub quest tile navigates to /nap/kuldetesek and the route renders the page (router registration)', async () => {
+// Titánium Nap/Mai (mezo-mhum, manifest C1 — DEFER): a küldetés-csempe lekerült a
+// nyitóoldalról (a végleges otthona egy későbbi szeleté), de a FELÜLET és minden mély
+// hivatkozása (értesítés, kalauz) él tovább. Épp ezt a felezővonalat őrzi a teszt:
+// a `/nap/kuldetesek` útvonal feloldódik és az oldalt adja — ÉS a hubon nincs küldetés-belépő.
+test('/nap/kuldetesek still resolves and renders the page, while the hub carries no quest entry (manifest C1)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap?dp=nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await userEvent.click(await screen.findByRole('button', { name: 'Napi küldetések' }))
+  await screen.findByText('Jó itt folytatni.')
+  expect(screen.queryByRole('button', { name: 'Napi küldetések' })).toBeNull()
+
+  await act(() => router.navigate('/nap/kuldetesek'))
   expect(router.state.location.pathname).toBe('/nap/kuldetesek')
   expect(await screen.findByText('ajánlatok a mai napra')).toBeInTheDocument()
 })

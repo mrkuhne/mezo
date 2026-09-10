@@ -12014,3 +12014,61 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   50% { filter: brightness(1.18); }
 }
 /* ── /titanium companion ─────────────────────────────────────────────── */
+
+/* ── nap-mai titanium (mezo-mhum) ─────────────────────────────────────────
+   A `/nap` nyitóoldal TITÁN kompozíciója: társ-blokk (TitanCompanion + köszönés
+   + kreed + reggeli chipek + Mezo-ajtó), EGY következő lépés, majd a hat stabil
+   csempe. A csempe-belsők (`.nap-watertop`, `.nap-habname`, `.nap-htick*`) a
+   korábbi Nap-blokkból élnek tovább — itt csak az ÚJ rétegek állnak.
+   Minden mozgás a `.mz-play` egyszeri koreográfiáján és a meglévő
+   prefers-reduced-motion blokkokon keresztül fut; ez a blokk nem indít saját
+   animációt, tehát nincs mit kivezetni csökkentett mozgás mellett. */
+.nap-titan-hero { display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 14px 16px 16px; border-radius: 20px; text-align: center;
+  background: linear-gradient(160deg, var(--mz-tone-lav), var(--mz-wash-white) 72%); }
+/* Horgony mód: ugyanaz a blokk, csendesebbre véve — a társ aurája visszafogott. */
+.nap-titan-quiet { background: var(--mz-wash-anchor); }
+.nap-titan-quiet .titan-aura { opacity: 0.45; }
+.nap-titan-greet { font-family: var(--ff-display); font-size: 22px; font-weight: 300;
+  letter-spacing: -0.02em; margin: 0; }
+.nap-titan-say { font-size: 13px; font-weight: 300; margin: 0; color: var(--mz-ink-soft); }
+.nap-titan-creed { min-height: 44px; max-width: 100%; border: none; background: none; padding: 4px 6px;
+  font-family: inherit; color: inherit; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nap-titan-creedtext { font-size: 12.5px; font-weight: 300; font-style: italic;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.nap-titan-focibadge { font-size: 11px; font-weight: 700; color: var(--primary-deep); }
+.nap-titan-ctx { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.nap-titan-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 0 12px; border: none; border-radius: 999px; background: var(--mz-chipbg);
+  font-family: inherit; font-size: 12px; color: var(--mz-ink-soft); }
+button.nap-titan-chip { cursor: pointer; }
+.nap-titan-chip b { color: var(--text-primary); font-weight: 700; }
+.nap-titan-talk { min-height: 44px; padding: 0 18px; border: none; border-radius: 999px;
+  font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+  background: var(--gradient-cta); box-shadow: 0 10px 22px -8px rgba(255, 91, 54, 0.5); }
+
+/* A NAGY, egyetlen „most ez jön" kártya — a lépcső egyetlen foka, sosem lista. */
+.nap-nextstep { width: 100%; min-height: 44px; display: flex; flex-direction: column; gap: 7px;
+  padding: 13px 15px; border: none; border-radius: 20px; text-align: left;
+  font-family: inherit; color: inherit; cursor: pointer;
+  background: linear-gradient(135deg, var(--mz-tone-coral), var(--mz-wash-white) 78%);
+  box-shadow: 0 12px 26px -14px rgba(43, 33, 24, 0.45); }
+.nap-nextstep-row { display: flex; align-items: center; gap: 12px; }
+.nap-nextstep-art { flex: none; display: grid; place-items: center; }
+.nap-nextstep-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.nap-nextstep-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.nap-nextstep-sub { font-size: 12px; color: var(--mz-ink-soft); }
+.nap-nextstep-go { flex: none; font-size: 15px; color: var(--primary-deep); }
+
+/* A víz-csempe két saját gombja: 30px látvány 44px-es célban (a `.nap-htickbtn` precedens). */
+.nap-waterbtns { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin: -7px -7px -7px 0; }
+.nap-water-quick, .nap-water-undo { width: 44px; height: 44px; flex: none; border: none;
+  background: none; padding: 0; font-family: inherit; font-size: 17px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; display: grid; place-items: center; }
+.nap-water-quick { color: var(--primary-deep); }
+
+/* A csempe-sor: nagy szám + halk alsó sor, középre zárva (a mozaik `.mz-tile-line` belseje). */
+.nap-tileline { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.nap-tileline .nap-mut { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* ── /nap-mai titanium ───────────────────────────────────────────────────── */
