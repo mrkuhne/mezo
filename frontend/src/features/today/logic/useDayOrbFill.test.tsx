@@ -145,6 +145,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
 
   test('a skip matching today\'s weekday + time + date drops the sport slot from the denominator', async () => {
     server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
@@ -161,6 +162,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
 
   test('a skip for a different date leaves the sport slot in the denominator', async () => {
     server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
