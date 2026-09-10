@@ -81,10 +81,12 @@ materials and iconography.
 
 One open, borderless energy instrument now dominates: a large dimensional bowl sits in a progress
 arc beside the remaining calorie number. The short `keret − étel + mozgás` equation explains it.
-The three macros use flat meters, logging is one icon-led row, and meals are separated list rows
-with large icons and numbers instead of cards. Frame explanation, movement context and recipes
-remain in one collapsed disclosure. The task-focused companion header keeps the animated presence
-and two icon controls, but removes its explanatory paragraph.
+Protein, carbohydrate, fat and fibre each use a small circular meter; their arcs and displayed
+values rise from zero on entry and on a selected-day change, with staggered timing. Logging is one
+icon-led row, and meals are separated list rows with large icons and numbers instead of cards.
+Frame explanation, movement context and recipes remain in one collapsed disclosure. The
+task-focused companion header keeps the animated presence and two icon controls, but removes its
+explanatory paragraph.
 
 This establishes the pattern for evaluating the other daily roots: one visually interesting
 answer, one primary action and the records needed right now. Interpretation and longer-term
@@ -125,9 +127,11 @@ today and the mobile layout were inspected in the browser.
 
 Fuel Mai was then inspected in its borderless visual-dashboard state and on September 8. The first
 view contains the compact companion, flat day navigator, animated bowl/gauge, dominant remaining
-number, macro meters and meal-log action before the meal history. The log action opens the existing
-three-stage food flow; the collapsed context remains reachable, and the historical day retains its
-own 2,260 kcal total, four recorded meals and direct return to today.
+number, four animated macro/fibre rings and meal-log action before the meal history. An early-frame
+capture showed the arcs and values partway through their rise; the settled capture reached 86 g
+protein, 128 g carbohydrate, 36 g fat and 18 g fibre. The log action opens the existing three-stage
+food flow; the collapsed context remains reachable, and the historical day retains its own 2,260
+kcal total, four recorded meals and direct return to today.
 
 At 390px: weight 81.4→81.2 correction retained 14 measurements; overnight sleep 23:15→07:15 minus
 15 awake minutes produced 7h45, including a saved circumstance; decision capture/review preserved

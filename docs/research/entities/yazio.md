@@ -21,7 +21,8 @@ progress appears as three compact horizontal meters; meal records follow below.
 For the [Titanium Fuel prototype](../../design_2.0/2026-09-10-titanium-me-nap-deep.md), this is a
 layout reference rather than a style source. Mezo keeps its own dark titanium materials, dimensional
 SVG food object, animated companion and color system. It adopts the hierarchy by replacing a stack
-of bordered summary cards with one large energy instrument, flat meters and separated list rows.
+of bordered summary cards with one large energy instrument, four circular nutrient meters and
+separated list rows.
 
 Confidence is low because this capture comes from one editorial screenshot and versions of the app
 may differ. It supports the visible arrangement only; it does not support claims about YAZIO's

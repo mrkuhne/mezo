@@ -20,8 +20,10 @@
 .fuel-focus{position:relative;padding:3px 0 20px;border-bottom:1px solid #ffffff0d}
 .fuel-visual{display:flex;align-items:center;justify-content:center;gap:2px;min-height:170px}
 .fuel-gauge{position:relative;width:150px;height:150px;flex:0 0 150px;display:grid;place-items:center}
-.fuel-gauge-track{position:absolute;inset:5px;border-radius:50%;background:conic-gradient(from 212deg,#86d7e7 0 var(--fuel-progress),#ffffff0b var(--fuel-progress) 78%,transparent 78% 100%);filter:drop-shadow(0 0 11px #86d7e735)}
-.fuel-gauge-track:after{content:'';position:absolute;inset:9px;border-radius:50%;background:#0d1117}
+.fuel-gauge-rings{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);filter:drop-shadow(0 0 11px #86d7e735)}
+.fuel-gauge-rings circle{fill:none;stroke-width:10}
+.fuel-gauge-base{stroke:#ffffff0b}
+.fuel-gauge-progress{stroke:#86d7e7;stroke-linecap:round;stroke-dasharray:var(--fuel-progress) 100}
 .fuel-gauge-art{position:relative;z-index:1;width:106px;height:106px;display:grid;place-items:center;transform:rotate(-7deg)}
 .fuel-gauge-art .icon{width:106px;height:106px;filter:drop-shadow(0 14px 14px #0008) drop-shadow(0 0 12px #b8eaa52b)}
 .fuel-primary-number{min-width:0;margin-left:-5px}
@@ -33,13 +35,16 @@
 .fuel-equation strong{display:block;font-size:15px;font-weight:500;color:#d5e4e6}
 .fuel-equation small{display:block;margin-top:4px;font-size:6px;letter-spacing:1px;color:#6f8790}
 .fuel-equation>b{font-size:15px;font-weight:300;color:#51656e}
-.fuel-meters{display:grid;gap:13px;padding:20px 0 17px;border-bottom:1px solid #ffffff0d}
-.fuel-meter>span{display:flex;align-items:baseline;justify-content:space-between}
-.fuel-meter small{font-size:8px;color:#8fa4ac}
-.fuel-meter strong{font-size:13px;font-weight:500;color:var(--macro-color)}
-.fuel-meter strong>b{font-size:7px;font-weight:400;color:#687e87}
-.fuel-meter>i{display:block;height:4px;margin-top:7px;border-radius:4px;background:#ffffff09;overflow:hidden}
-.fuel-meter>i>b{display:block;width:var(--macro-progress);height:100%;border-radius:4px;background:var(--macro-color);box-shadow:0 0 10px var(--macro-color)}
+.fuel-rings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:18px 0 17px;border-bottom:1px solid #ffffff0d}
+.fuel-ring{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1}
+.fuel-ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transform:rotate(-90deg);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--macro-color) 28%,transparent))}
+.fuel-ring circle{fill:none;stroke-width:5}
+.fuel-ring-track{stroke:#ffffff0b}
+.fuel-ring-progress{stroke:var(--macro-color);stroke-linecap:round;stroke-dasharray:var(--ring-progress) 100}
+.fuel-ring>span{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;line-height:1}
+.fuel-ring small{font-size:7px;color:#8fa4ac}
+.fuel-ring strong{margin-top:5px;font-size:17px;font-weight:500;color:var(--macro-color)}
+.fuel-ring b{margin-top:4px;font-size:6px;font-weight:400;color:#687e87}
 .fuel-log-action{display:flex;align-items:center;gap:13px;width:100%;padding:16px 2px;border:0;border-bottom:1px solid #ffffff0d;background:transparent;text-align:left;color:#e5edf0}
 .fuel-log-icon{width:55px;height:55px;flex:0 0 auto;display:grid;place-items:center}
 .fuel-log-icon .icon{width:55px;height:55px;filter:drop-shadow(0 8px 10px #0007) drop-shadow(0 0 9px #bca6f12c)}
@@ -57,4 +62,4 @@
 .fuel-more.flat{margin:11px 0 4px;border:0;border-bottom:1px solid #ffffff0d;border-radius:0;background:transparent}
 .fuel-more.flat>summary{padding:14px 1px}
 .fuel-more.flat .fuel-secondary{padding-left:1px;padding-right:1px}
-@media(prefers-reduced-motion:no-preference){.fuel-gauge-art{animation:fuel-float 4.8s ease-in-out infinite}.fuel-primary-number strong{animation:fuel-glow 5.5s ease-in-out infinite}@keyframes fuel-float{0%,100%{transform:rotate(-7deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(-4px)}}@keyframes fuel-glow{0%,100%{text-shadow:0 0 20px #83d7e71d}50%{text-shadow:0 0 31px #83d7e73d}}}
+@media(prefers-reduced-motion:no-preference){.fuel-gauge-progress,.fuel-ring-progress{animation:fuel-ring-rise 1.05s cubic-bezier(.2,.78,.24,1) both}.fuel-ring:nth-child(2) .fuel-ring-progress{animation-delay:.08s}.fuel-ring:nth-child(3) .fuel-ring-progress{animation-delay:.16s}.fuel-ring:nth-child(4) .fuel-ring-progress{animation-delay:.24s}.fuel-gauge-art{animation:fuel-float 4.8s ease-in-out 1.05s infinite}.fuel-primary-number strong{animation:fuel-glow 5.5s ease-in-out 1.05s infinite}@keyframes fuel-ring-rise{from{stroke-dasharray:0 100}}@keyframes fuel-float{0%,100%{transform:rotate(-7deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(-4px)}}@keyframes fuel-glow{0%,100%{text-shadow:0 0 20px #83d7e71d}50%{text-shadow:0 0 31px #83d7e73d}}}

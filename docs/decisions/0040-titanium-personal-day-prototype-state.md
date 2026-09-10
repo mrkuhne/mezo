@@ -36,12 +36,14 @@ collapsed analysis controls instead of acting as the primary day picker.
 
 Use Fuel Today as the visual-density calibration for task-focused daily pages. Its visible
 hierarchy follows the [YAZIO diary reference](../research/entities/yazio.md): one dominant energy
-instrument and number, a compact `goal − food + movement` explanation, flat macro meters, one
-icon-led log action and a separator-based meal list. Mezo's dimensional bowl and titanium palette
-replace the source's styling. Budget explanation, movement context and recipe discovery share a
-collapsed secondary layer. The task header keeps a small animated companion and icon controls but
-no explanatory paragraph. Nap Today keeps the larger companion because meeting and directing Mezo
-is its primary purpose.
+instrument and number, a compact `goal − food + movement` explanation, one icon-led log action and
+a separator-based meal list. Mezo's dimensional bowl and titanium palette replace the source's
+styling, and protein, carbohydrate, fat and fibre use four circular meters. Gauge arcs and their
+numbers rise from zero with staggered timing on page entry and selected-day changes; reduced-motion
+preference shows the final state without the transition. Budget explanation, movement context and
+recipe discovery share a collapsed secondary layer. The task header keeps a small animated
+companion and icon controls but no explanatory paragraph. Nap Today keeps the larger companion
+because meeting and directing Mezo is its primary purpose.
 
 ## Consequences
 
