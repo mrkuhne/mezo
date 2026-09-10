@@ -1,6 +1,7 @@
 import { personalContent, personalDetail, initPersonal, openPersonalJournal, personalArrival, personalInitial } from './personal.js';
 import { mezoContent, mezoDetail, initMezo } from './mezo.js';
-import { openFood, foodContent, initFood } from './food.js';
+import { openFood, initFood } from './food.js';
+import { fuelDashboardContent } from './fuel-dashboard.js';
 import { openWorkout, workoutContent, initWorkout } from './workout.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
@@ -19,6 +20,7 @@ const original=$('.day-content');const panel=document.createElement('section');p
 const mini=`<svg class="mini-titan" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="32" rx="27" ry="13" transform="rotate(-30 32 32)" fill="none" stroke="#9c8cbb"/><circle cx="32" cy="32" r="9" fill="url(#gold)"/><g fill="url(#titanium)" stroke="#b6b1c8" stroke-width=".6"><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z"/><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z" transform="rotate(120 32 32)"/><path d="M30 7C8 11 9 38 22 44L26 32C17 25 22 17 30 7Z" transform="rotate(240 32 32)"/></g><circle cx="54" cy="21" r="3" fill="url(#purple)"/></svg>`;
 const mic=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v3M9 21h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 $('.companion-copy button').removeAttribute('data-open');$('.companion-copy button').dataset.voice='';$('.companion-copy button').className='voice-open';$('.companion-copy button').innerHTML=mic+'<span>Mondd Mezonak</span><small>DEMÓ</small>';
+$('.companion-copy button').setAttribute('aria-label','Mondd Mezonak');
 const row=(art,name,sub,action='')=>`<button class="sheet-row" ${action}><span>${icon(art)}</span><span><strong>${name}</strong><small>${sub}</small></span><span class="row-end">↗</span></button>`;
 const card=(eyebrow,value,sub,art='gem',action='')=>`<button class="feature-card" ${action}><span class="overline">${eyebrow}</span>${icon(art)}<strong>${value}</strong><p>${sub}</p><span class="card-arrow">↗</span></button>`;
 const stats=items=>`<div class="demo-stats">${items.map(([a,b])=>`<div><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`;
@@ -28,7 +30,7 @@ const jump=(d,p)=>`data-route="${d}/${p}"`;
 function content(d,p,date){
  const personal=personalContent(d,p,date);if(personal!==null)return personal;
  const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
- const foodPage=foodContent(d,p,date);if(foodPage!==null)return foodPage;
+ const fuelDashboard=fuelDashboardContent(d,p,date);if(fuelDashboard!==null)return fuelDashboard;
  const detailed=workoutContent(d,p,date);if(detailed!==null)return detailed;
  if(d==='nap')return [ '',
  `<div class="chat-bubble"><span class="chat-time">MEZO · MA</span>Ma 17:00-kor Felsőtest A vár. A napod első fele mögötted — az edzésről beszéljünk, vagy arról, hogy vagy?</div><details class="context"><summary>Miből indulok ki?</summary><p>7 óra 42 perc alvás · mai felsőtest · 1 180 kcal eddig · fokozatos erőépítés.</p><p>Karakter · szereted előre látni a napod menetét. Ez egy javítható mintaértelmezés.</p><small>Bemutatókontextus, nem személyes adatlekérés.</small></details><button class="sheet-action" data-voice>Elmondom, mi jár a fejemben</button>${row('book','Inkább leírom','Új naplóbejegyzés','data-open="journal"')}`,

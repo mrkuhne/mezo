@@ -34,11 +34,14 @@ jumps, and a historical day always offers a direct return to today. The state ne
 the anchored demo day. Long histories and trend tools remain available behind secondary,
 collapsed analysis controls instead of acting as the primary day picker.
 
-Use Fuel Today as the density calibration for task-focused daily pages. Its visible hierarchy is
-a compact companion, the shared day control, one calorie/macro summary, one primary log action and
-the day's meals. Budget explanation, movement context and recipe discovery share a collapsed
-secondary layer. Nap Today keeps the larger companion because meeting and directing the companion
-is its primary purpose; task pages can retain the same identity in less vertical space.
+Use Fuel Today as the visual-density calibration for task-focused daily pages. Its visible
+hierarchy follows the [YAZIO diary reference](../research/entities/yazio.md): one dominant energy
+instrument and number, a compact `goal − food + movement` explanation, flat macro meters, one
+icon-led log action and a separator-based meal list. Mezo's dimensional bowl and titanium palette
+replace the source's styling. Budget explanation, movement context and recipe discovery share a
+collapsed secondary layer. The task header keeps a small animated companion and icon controls but
+no explanatory paragraph. Nap Today keeps the larger companion because meeting and directing Mezo
+is its primary purpose.
 
 ## Consequences
 
@@ -63,5 +66,7 @@ prototype to identical card sizes or an identical companion footprint.
   target for the primary day-to-day action.
 - Equal-size cards for every summary and explanation: visually consistent, but makes every item
   compete for attention and pushes the frequent logging action below ornamental overview content.
+- Smaller versions of the same cards: improves fit but retains the box stack and leaves no strong
+  visual object. The revised page removes those containers instead of miniaturising them.
 
 Implementation map and validation: [Én and Nap prototype](../design_2.0/2026-09-10-titanium-me-nap-deep.md).
