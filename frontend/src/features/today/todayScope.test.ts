@@ -51,8 +51,9 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
       'DailyQuestsSheet.tsx', 'EletjelStrip.tsx',
       // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája.
       'MezoMessagesSheet.tsx', 'ObservationCard.tsx',
-      // Titánium Nap/Mai (mezo-mhum) — a nyitóoldal társ-jelenléte.
-      'TitanCompanion.tsx',
+      // Titánium Nap/Mai (mezo-mhum) — a nyitóoldal társ-jelenléte és (Task 7) az élő,
+      // lusta chunkban érkező Three.js jelenete.
+      'TitanCompanion.tsx', 'TitanScene.tsx',
     ])
   })
 })

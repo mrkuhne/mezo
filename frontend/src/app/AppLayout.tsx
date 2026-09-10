@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { AppHeader } from '@/app/AppHeader'
 import { CircadianTheme } from '@/app/CircadianTheme'
@@ -6,6 +7,7 @@ import { PhoneFrame } from '@/app/PhoneFrame'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
+import { useTheme } from '@/app/ThemeProvider'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
@@ -46,6 +48,20 @@ export function AppLayout() {
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.
   const hideHeader = hideChrome || location.pathname === '/mezo/chat'
+  // Titán Nap (mezo-mhum, Task 7): az újraépített Nap-képernyők a prototípus SÖTÉT grafit
+  // bőrét viselik — és mivel a fejléc meg a TabBar a shellé, a scope-osztály is ide való,
+  // nem az oldalra. Pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI (Életjelek,
+  // Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
+  const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
+  // A sötét ALAP a ház meglévő dark témája — ugyanaz a `setForceTheme` fogás, amivel a
+  // Napzárás rituálé is sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és
+  // a shell összes portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark`
+  // scope ERRE ÜL RÁ a prototípus grafit/titán bőrével — nem helyette.
+  const { setForceTheme } = useTheme()
+  useEffect(() => {
+    setForceTheme(titanDark ? 'dark' : null)
+    return () => setForceTheme(null)
+  }, [titanDark, setForceTheme])
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
   const screen = (
     <ScreenContent>
@@ -65,7 +81,7 @@ export function AppLayout() {
       <CircadianTheme />
       {/* Clay sprite defs — mounted once so every ClayIcon/ClaySpot <use> resolves. */}
       <ClaySprites />
-      <PhoneFrame anchor={anchor}>
+      <PhoneFrame anchor={anchor} scope={titanDark ? 'titan-dark' : undefined}>
         <ToastProvider>
           <LevelUpProvider>
             {/* Mezo-kalauz motor (mezo-gb1s.1): egy példány, route-váltásra dönt, a sheetet ide
