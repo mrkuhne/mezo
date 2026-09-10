@@ -197,6 +197,28 @@ describe('useWaterActions (mock mode)', () => {
     act(() => result.current.meals.logMeal({ slot: 'snack', items: [] }))
     await waitFor(() => expect(result.current.day.fuel.consumed.water).toBe(before + 250))
   })
+
+  it('canUndo is false until a logWater happens in this mount; undoLastWater subtracts the last logged amount (floor 0)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ day: useFuelDay(), water: useWaterActions() }), { wrapper: Wrapper })
+    expect(result.current.water.canUndo).toBe(false)
+    const before = result.current.day.fuel.consumed.water
+    act(() => result.current.water.logWater(250))
+    await waitFor(() => expect(result.current.day.fuel.consumed.water).toBe(before + 250))
+    await waitFor(() => expect(result.current.water.canUndo).toBe(true))
+    act(() => result.current.water.undoLastWater())
+    await waitFor(() => expect(result.current.day.fuel.consumed.water).toBe(before))
+    expect(result.current.water.canUndo).toBe(false)
+  })
+
+  it('undoLastWater with an empty stack is a no-op', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ day: useFuelDay(), water: useWaterActions() }), { wrapper: Wrapper })
+    const before = result.current.day.fuel.consumed.water
+    act(() => result.current.water.undoLastWater())
+    expect(result.current.day.fuel.consumed.water).toBe(before)
+    expect(result.current.water.canUndo).toBe(false)
+  })
 })
 
 describe('useWaterActions (real mode)', () => {
@@ -220,5 +242,44 @@ describe('useWaterActions (real mode)', () => {
       // quest evaluation is read-triggered — the water write must nudge the quest day read
       expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-07-02']))
     })
+  })
+
+  it('undoLastWater DELETEs /api/water-log/{id} using the id from the log response, and invalidates fuelDay + the day quest read', async () => {
+    let deletedId: string | null = null
+    server.use(
+      http.post(`${API_BASE}/api/water-log`, async () => HttpResponse.json({ id: 'w-123', date: '2026-07-02', amountMl: 250 }, { status: 201 })),
+      http.delete(`${API_BASE}/api/water-log/:id`, ({ params }) => {
+        deletedId = params.id as string
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useWaterActions('2026-07-02'), { wrapper: Wrapper })
+    expect(result.current.canUndo).toBe(false)
+    act(() => result.current.logWater(250))
+    await waitFor(() => expect(result.current.canUndo).toBe(true))
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    act(() => result.current.undoLastWater())
+    await waitFor(() => expect(deletedId).toBe('w-123'))
+    await waitFor(() => {
+      const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
+      expect(keys.some(k => k.includes('fuelDay'))).toBe(true)
+      expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-07-02']))
+    })
+    expect(result.current.canUndo).toBe(false)
+  })
+
+  it('undoLastWater with an empty id stack is a no-op (no DELETE issued)', async () => {
+    let deleteCalled = false
+    server.use(http.delete(`${API_BASE}/api/water-log/:id`, () => {
+      deleteCalled = true
+      return new HttpResponse(null, { status: 204 })
+    }))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useWaterActions('2026-07-02'), { wrapper: Wrapper })
+    act(() => result.current.undoLastWater())
+    await new Promise(r => setTimeout(r, 0))
+    expect(deleteCalled).toBe(false)
+    expect(result.current.canUndo).toBe(false)
   })
 })

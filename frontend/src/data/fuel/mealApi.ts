@@ -16,6 +16,7 @@ type MealItemResponse = components['schemas']['MealItemResponse']
 type FuelDayResponse = components['schemas']['FuelDayResponse']
 type FuelWeekResponse = components['schemas']['FuelWeekResponse']
 type WaterLogRequest = components['schemas']['WaterLogRequest']
+type WaterLogResponse = components['schemas']['WaterLogResponse']
 type MealBreakdownResponse = components['schemas']['MealBreakdown']
 type MealScoreDimensionResponse = components['schemas']['MealScoreDimension']
 
@@ -266,6 +267,9 @@ export const mealApi = {
     if (req.photo) form.append('photo', req.photo, 'photo.jpg')
     return apiFetch<MealAiDraftResponse>('/api/meal/ai-draft', { method: 'POST', body: form }).then(fromAiDraftResponse)
   },
-  logWater: (date: string, amountMl: number): Promise<void> =>
-    apiFetch('/api/water-log', { method: 'POST', body: JSON.stringify({ date, amountMl } satisfies WaterLogRequest) }).then(() => undefined),
+  logWater: (date: string, amountMl: number): Promise<WaterLogResponse> =>
+    apiFetch<WaterLogResponse>('/api/water-log', { method: 'POST', body: JSON.stringify({ date, amountMl } satisfies WaterLogRequest) }),
+  // Undo (mezo-mhum): soft-delete the just-logged entry by id (never guesses server history).
+  deleteWaterLog: (id: string): Promise<void> =>
+    apiFetch(`/api/water-log/${id}`, { method: 'DELETE' }).then(() => undefined),
 }
