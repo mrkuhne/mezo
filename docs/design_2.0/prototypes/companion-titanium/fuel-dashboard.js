@@ -53,7 +53,7 @@ function heroSection(values,remaining,current,record,variant='h2'){
  if(variant==='h3')return `<button ${attrs}><div class="hero-pair top"><div class="hero-side"><strong data-fuel-count="${values.kcal}">0</strong><small>KCAL·T ETTÉL</small></div><div class="hero-side lead"><strong data-fuel-count="${Math.abs(remaining)}">0</strong><small>${remaining>=0?'MÉG BELEFÉR':'A KERET FELETT'}</small></div></div><div class="hero-track"><i style="--w:${progress}%"></i><b></b></div><p class="fuel-tapline">Koppints: miből jön össze?</p></button>`;
  return `<button ${attrs}><div class="fuel-visual">${gauge(progress)}<div class="fuel-primary-number"><small>${remaining>=0?'MÉG BELEFÉR':'A KERET FELETT'}</small><strong data-fuel-count="${Math.abs(remaining)}">0</strong><span>kcal</span></div></div><p class="fuel-eaten"><b data-fuel-count="${values.kcal}">0</b> kcal·t ettél ma<span class="fuel-tapline"> · koppints a részletekért</span></p></button>`;
 }
-let heroVariant='h2';
+let heroVariant='h1';
 export function setHeroVariant(v){heroVariant=v;}
 // Glass-box content: the math behind the number, only on tap.
 export function energyDetailHtml(){
