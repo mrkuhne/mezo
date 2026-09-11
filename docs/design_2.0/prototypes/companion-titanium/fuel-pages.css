@@ -290,8 +290,8 @@ button.fuel-focus{display:block;width:100%;border:0;background:transparent;text-
 .macro-cell{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0}
 .macro-cell .fuel-ring{width:100%;aspect-ratio:1}
 .macro-cell .fuel-ring circle{stroke-width:5.5}
-.fuel-ring strong{margin-top:0;font-size:20px;font-weight:600}
-.fuel-ring b{margin-top:4px;font-size:10px;font-weight:500;color:#9fb0b8}
+.fuel-ring strong{margin-top:0;font-size:19px;font-weight:600}
+.fuel-ring b{margin-top:4px;font-size:9px;font-weight:500;color:#9fb0b8}
 .fuel-ring b i{font-style:normal;font-size:8px;margin-left:1px}
 .macro-ico{width:29px;height:29px}
 .macro-ico .icon{width:29px;height:29px;filter:drop-shadow(0 5px 6px #0007)}
