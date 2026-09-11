@@ -2,7 +2,6 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
-import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -234,25 +233,9 @@ test('the back chip navigates back', async () => {
   expect(screen.getByTestId('hub-stub')).toBeInTheDocument()
 })
 
-test("the hub's Rutin tile navigates to /nap/rutin?dp=<face> instead of quick-ticking", async () => {
-  render(
-    <QueryWrapper>
-      <ToastProvider>
-        <LevelUpProvider>
-          <MemoryRouter initialEntries={['/nap?dp=reggel']}>
-            <Routes>
-              <Route path="/nap" element={<NapHubPage />} />
-              <Route path="/nap/rutin" element={<LocationProbe />} />
-            </Routes>
-          </MemoryRouter>
-        </LevelUpProvider>
-      </ToastProvider>
-    </QueryWrapper>,
-  )
-  await userEvent.click(await screen.findByRole('button', { name: 'Reggeli rutin' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/nap/rutin?dp=reggel')
-  expect(habitStore.checked).toEqual([])
-})
+// (mezo-7flr) The hub's Rutin TILE is gone — `/nap` is now a pure companion entry and the Rutin
+// page is reached via the navigation, not a hub tile. The former "hub Rutin tile navigates to
+// /nap/rutin?dp=<face>" test was deleted with the tile it exercised.
 
 // ── 1:1 fidelity audit (mezo-d20.11) ────────────────────────────────────────────
 
