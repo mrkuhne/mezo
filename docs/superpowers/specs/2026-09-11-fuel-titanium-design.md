@@ -33,6 +33,11 @@ domain destinations, while the weekly/long-term picture has no home at all.
 6. **Bevásárlás (shopping) is DEFERRED** from this slice — owner decision; gets a formal
    `DEFER` row + bd follow-up in the coverage record. Not a DROP.
 7. **Settings** (daily budget, diet principles) live behind a quiet corner entry on Fuel Mai.
+8. **Micronutrients become a real capability** (prototype iteration, same day): production stores
+   only fiber/sugar/salt/saturated fat. The owner wants vitamins and minerals stored for pantry
+   items, recipe lines and meal snapshots, extracted by every AI flow (meal draft, pantry
+   photo/URL import, recipe workshop). Tracked as its own bd feature (coverage row F1); until it
+   ships, the meal detail's Mikrotápanyagok section shows the four stored facts honestly.
 
 ## Page roles
 

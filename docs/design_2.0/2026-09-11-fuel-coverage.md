@@ -99,6 +99,12 @@ rows are only valid with an explicit owner decision recorded in the Owner note c
 | E11 | Kalauz/tutorial route-felfedezés | `tutorial/registry/fuel.ts` | KEEP (átkötve) | Registry updated to new routes |
 | E12 | Feature-kapcsolók és degradációk (meal-ai, coach, slot-ai, fuel/diet-settings) | backend audit §4 | KEEP | Coach off ⇒ 200+empty; LLM off ⇒ 503 handled |
 
+## F. Új képesség a prototípus-iterációból
+
+| # | Capability | Evidence | Current behavior | Freq/value | New destination | Decision | Preservation test | Owner note |
+|---|---|---|---|---|---|---|---|---|
+| F1 | Mikrotápanyagok (vitaminok, ásványi anyagok) tárolása és megjelenítése | Ma csak `fiberG/sugarG/saltG/saturatedFatG` létezik: `Nutrients` (`meal.yml`, `pantry.yml`, `openapi.yml`), `pantry_item`/`pantry_catalog`, `recipe_ingredient` és `meal_item` snapshot (mezo-m6uv), `OffClient` nutriments, `pantry-catalog.json`; kapcsolódó: mezo-kz8s | Nincs vitamin/ásványi anyag adat sehol | Owner-érték: magas | Étel-részletlap Mikrotápanyagok rész, kamraelem-részlet, recept-részlet; AI-kinyerés az étkezés-, kamra- (fotó/link) és recept-folyamatban | KEEP (új képesség, owner 2026-09-11: „vegyük fel tervbe… kamra elemekhez is, receptekhez is meg az AI-nak is kiszednie") — külön bd feature, sorrendezés owner-döntésre vár | Mentett étel/kamraelem/recept mikrotápanyag-értékei visszaolvashatók; ismeretlen = null, soha nem 0 | Addig a Mikrotápanyagok rész a rost/cukor/só/telített zsír sorokat mutatja |
+
 ## Route/felület-leltár lezáráshoz
 
 22 mai route + 15 sheet + 4 LogFlow overlay belépő lefedve a fenti sorokban; új szerkezet:
