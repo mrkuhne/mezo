@@ -948,3 +948,33 @@ dialog.glass .sheet-handle{display:none}
 .sx-callout p{margin:0;font-size:12px;line-height:1.55;color:#ded6f3}
 .sx-callout small{display:block;margin-bottom:4px;font-size:8px;letter-spacing:1px;color:#a99fc2}
 .sx-advice{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 14px 16px;margin-bottom:12px;border:1px solid #bca6f14a;border-radius:20px;background:radial-gradient(120% 120% at 50% 0%,#bca6f12a,#ffffff03 70%);box-shadow:0 12px 26px #0006}
+/* Glass boxes get real breathing room, and the supplement detail gets colour-coded blocks */
+dialog.glass{padding:18px 20px 26px}
+.glass-chips span.on{border-color:#8fd97a4d;background:#8fd97a1c;color:#d6f0c6}
+.sx-item .glass-hero{padding-bottom:12px}
+.sx-item-tick{display:flex;align-items:center;gap:10px;width:100%;margin:14px 0 0;padding:13px 15px;border:1px solid #b8d77755;border-radius:16px;background:linear-gradient(140deg,#b8d7772e,#b8d77708);box-shadow:0 10px 20px #0005,inset 0 1px 0 #ffffff1a;font-size:14px;font-weight:600;color:#effbe8}
+.sx-item-tick .icon{width:26px;height:26px}
+.sx-item-tick span{flex:1;text-align:left}
+.sx-item-tick b{font-size:17px;font-weight:400;color:#b5e6a2}
+.sx-item-tick.done{border-color:#ffffff1c;background:#ffffff06;color:#c3d0d5}
+.sx-item-tick.done b{color:#9aa9b0}
+.sx-item-block{margin:12px 0 0;padding:13px 14px;border:1px solid color-mix(in srgb,var(--dim-color) 26%,transparent);border-radius:16px;background:linear-gradient(155deg,color-mix(in srgb,var(--dim-color) 13%,transparent),#ffffff02 68%)}
+.sx-item-block.why{--dim-color:#d9c395}
+.sx-item-block.quiet{border-style:dashed;border-color:#ffffff1c;background:#ffffff05}
+.sx-item-block-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.sx-item-block-head .icon{width:26px;height:26px}
+.sx-item-block-head strong{font-size:12px;font-weight:600;letter-spacing:.3px;color:#e2ecef}
+.sx-item-block p{margin:0;font-size:12px;line-height:1.6;color:#b9c8ce}
+.sx-item-sub{margin-top:7px;color:#93a3ab}
+.sx-item-dose{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.sx-item-dose strong{font-size:34px;font-weight:500;letter-spacing:-1.2px;color:color-mix(in srgb,var(--dim-color) 62%,#fff)}
+.sx-item-dose em{font-style:normal;font-size:12px;color:#9fb0b8}
+.sx-item-block .tx-rows{margin-top:4px}
+.sx-item-link{display:flex;align-items:center;gap:11px;width:100%;margin:12px 0 0;padding:12px 13px;border:1px solid #ffffff1c;border-radius:16px;background:linear-gradient(150deg,#ffffff0e,#ffffff03);text-align:left;color:#e6eef1}
+.sx-item-link.shelf{border-color:#bca6f133;background:linear-gradient(150deg,#bca6f116,#ffffff03)}
+.sx-item-link .icon{width:30px;height:30px;flex:0 0 auto}
+.sx-item-link strong{display:block;font-size:13px;font-weight:500}
+.sx-item-link small{display:block;margin-top:2px;font-size:10px;color:#93a3ab}
+.sx-item-link span{flex:1;min-width:0;font-size:13px}
+.sx-item-link b{font-size:17px;font-weight:300;color:#9fb0b8}
+.sx-item .food-note{margin-top:14px}
