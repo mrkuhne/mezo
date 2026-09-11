@@ -1,5 +1,5 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
-import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, longHorizon, patterns } from './fuel-state.js';
+import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, weekCompare, weekDeltas, longHorizon, patterns } from './fuel-state.js';
 import { mealBlocks } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
@@ -181,11 +181,84 @@ function saveWorkshop(){
 const workshopSheet=()=>`<h2 class="sheet-title">Recept mentése</h2><button class="kx-link-card" data-workshop-new>${icon('score')}<span><strong>Inkább a Műhelyben rakjuk össze</strong><small>Te mondod a célt, én a hozzávalót</small></span><b>›</b></button><form id="recipe-manual-form"><label class="lf-field">Név<input name="name" required placeholder="Pl. Lencsés curry"></label><label class="lf-field">Kalória / adag<input name="kcal" type="number" min="1" max="3000" required value="610"></label><label class="lf-field">Fehérje (g)<input name="p" type="number" min="0" max="300" required value="31"></label><button class="sheet-action">Mentem a receptet ✓</button></form>`;
 const pantrySheet=()=>`<h2 class="sheet-title">Új elem a kamrába</h2><div class="lf-chips" data-pantry-tabs>${[['foto','📷 Fotó'],['link','Link'],['kezi','Kézzel'],['katalogus','Katalógus']].map(([v,l],i)=>`<button data-pantry-tab="${v}" aria-pressed="${i===0}">${l}</button>`).join('')}</div><div data-pantry-pane="foto"><div class="food-finder small"><span></span><span></span><span></span><span></span><p>CÍMKE A KERESŐBEN · DEMÓ</p></div><button class="sheet-action" data-pantry-shot>Exponálás — minta: túró 250 g</button><div id="pantry-photo-result"></div></div><div data-pantry-pane="link" hidden><form id="pantry-link-form"><label class="lf-field">Termék linkje<input name="url" type="url" placeholder="https://…" required></label><button class="sheet-action">Kinyerem az adatokat ✦</button></form><div id="pantry-link-result"></div></div><div data-pantry-pane="kezi" hidden><form id="pantry-manual-form"><label class="lf-field">Név<input name="name" required placeholder="Pl. Mandula"></label><label class="lf-field">Mennyiség<input name="amount" placeholder="Pl. 200 g"></label><label class="lf-field">Típus<select name="kind"><option value="food">Étel</option><option value="supp">Kiegészítő</option></select></label><button class="sheet-action">Felveszem ✓</button></form></div><div data-pantry-pane="katalogus" hidden><div class="konyha-list">${[['Zabpehely','372 kcal / 100 g'],['Mandula','579 kcal / 100 g'],['Skyr','63 kcal / 100 g']].map(([n,s])=>`<button class="konyha-row" data-catalog-add="${safe(n)}">${icon('stack')}<span><strong>${n}</strong><small>${s} · közös katalógus</small></span><b>＋</b></button>`).join('')}</div></div><p class="food-note">Demó: a fotó- és link-kinyerés mintaeredményt ad. Kétszeri hozzáadás nem duplikál.</p>`;
 
-// --- Trendek --------------------------------------------------------------
-function weekBars(w){const max=2900;return `<div class="week-bars" role="img" aria-label="A hét napjai a kerethez képest">${w.days.map(d=>{const logged=Number.isFinite(d.kcal);const h=logged?Math.max(8,Math.round(d.kcal/max*100)):0;const t=Math.round(d.target/max*100);return `<div class="week-day ${d.weekend?'weekend':''} ${d.today?'today':''}"><i class="target" style="--h:${t}%"></i>${logged?`<i class="bar ${d.kcal<=d.target+60?'within':'over'}" style="--h:${h}%"></i>`:'<i class="gap"></i>'}<b>${logged?String(Math.round(d.kcal)):'·'}</b><span>${d.day}</span>${d.training?'<u title="Edzésnap"></u>':''}</div>`;}).join('')}</div>`;}
-function trendek(){const w=weekData[week],s=weekSummary(w);return `<div class="trend-hero"><span class="overline">JÓL MENT A HETEM?</span><div class="trend-week-nav"><button data-week="previous" aria-pressed="${week==='previous'}">‹ Múlt hét</button><strong>${w.label}</strong><button data-week="current" aria-pressed="${week==='current'}" ${week==='current'?'disabled':''}>Ez a hét ›</button></div><div class="trend-big">${s.logged?`<strong>${s.within}<small> / ${s.logged}</small></strong><span>NAP A KERETEDEN BELÜL</span>`:'<strong>—</strong><span>MÉG NINCS NAPLÓZOTT NAP</span>'}</div>${weekBars(w)}<p class="trend-read">${week==='current'?'Három naplózott nap, mindhárom kereten belül. A hét többi része még előtted áll — üresen hagyjuk, nem találgatjuk.':s.weekendDelta>0?`Hétvégén átlagosan ${fmt(s.weekendDelta)} kcal-lal többet ettél, mint hétköznap. Nem hiba — így alakult, és most már látod.`:'Kiegyensúlyozott hét volt.'}</p></div><div class="lf-stats trend-stats"><div><strong>${s.avg?fmt(s.avg):'—'}</strong><small>napi átlag kcal</small></div><div><strong>${w.scoreAvg?`✨ ${w.scoreAvg.toLocaleString('hu-HU')}`:'—'}</strong><small>étkezés-minőség</small></div><div><strong>${w.weightAvg?`${w.weightAvg.toLocaleString('hu-HU')} kg`:'—'}</strong><small>heti súlyátlag</small></div></div><div class="lf-section"><h2>Hosszabb táv</h2><small>7 HÉT</small></div>${horizonChart()}<div class="lf-section"><h2>Mintázatok</h2><small>A MEZO FIGYELI</small></div>${patterns.map(p=>`<button class="konyha-row pattern" data-route="${p.route}">${icon('gem')}<span><strong>${safe(p.title)}</strong><small>${safe(p.state)} · a részletek a Mezo oldalon</small></span><b>↗</b></button>`).join('')}<p class="food-note">A mintázatok kanonikus otthona a Mezo — innen csak odalépsz, nem másolat.</p>`;}
-function horizonChart(){const ks=longHorizon.map(r=>r.kcal),ws=longHorizon.map(r=>r.weight);const kmin=Math.min(...ks)-40,kmax=Math.max(...ks)+40,wmin=Math.min(...ws)-.15,wmax=Math.max(...ws)+.15;const x=i=>26+i*286/(longHorizon.length-1);const ky=v=>108-(v-kmin)/(kmax-kmin)*76,wy=v=>108-(v-wmin)/(wmax-wmin)*76;
- return `<figure class="lf-chart horizon"><svg viewBox="0 0 340 150" role="img" aria-label="Heti átlag kalória és súly együtt, hét héten át"><path d="M26 32H312M26 70H312M26 108H312" stroke="#ffffff0d"/><polyline points="${longHorizon.map((r,i)=>`${x(i)},${ky(r.kcal)}`).join(' ')}" fill="none" stroke="#8ed2e8" stroke-width="2.5" stroke-linejoin="round"/><polyline points="${longHorizon.map((r,i)=>`${x(i)},${wy(r.weight)}`).join(' ')}" fill="none" stroke="#d7a7bc" stroke-width="2.5" stroke-dasharray="1 6" stroke-linecap="round"/>${longHorizon.map((r,i)=>`<circle cx="${x(i)}" cy="${wy(r.weight)}" r="2.6" fill="#d7a7bc"/>`).join('')}<text x="26" y="146">${longHorizon[0].week}</text><text x="270" y="146">${longHorizon.at(-1).week}</text></svg><figcaption><span class="dot kcal"></span> heti átlag kcal · <span class="dot weight"></span> heti súlyátlag</figcaption><details><summary>Adatok szövegesen</summary>${longHorizon.map(r=>`<p>${r.week} · ${fmt(r.kcal)} kcal · ${r.weight.toLocaleString('hu-HU')} kg</p>`).join('')}</details></figure>`;}
+// --- Trendek ----------------------------------------------------------------
+const TX_STAT={
+ avg:['Napi átlag','bowl','#8ed2e8','kcal','A naplózott napok átlaga. A nem naplózott nap nem nullaként számít, hanem sehogy — ezért marad őszinte a szám.'],
+ score:['Étkezés-minőség','score','#bca6f1','','A héten pontozott étkezéseid átlaga. A pontszám mentéskor, determinisztikusan születik, és később sem írja át semmi.'],
+ weight:['Heti súlyátlag','person','#d7a7bc','kg','A napi mérések heti átlaga, így egyetlen reggel ingadozása nem visz félre.'],
+};
+const dayLabel=date=>new Intl.DateTimeFormat('hu-HU',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
+const thousand=v=>(v/1000).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
+const overBudget=d=>d.kcal>d.target+60;
+function weekBars(w){
+ const max=Math.max(2900,...w.days.map(d=>d.kcal||0));
+ return `<div class="tx-bars">${w.days.map(d=>{
+  const logged=Number.isFinite(d.kcal),height=logged?Math.max(12,Math.round(d.kcal/max*100)):0;
+  return `<button class="tx-day ${d.weekend?'weekend':''} ${d.today?'today':''}" data-tx-day="${d.date}" aria-label="${dayLabel(d.date)}: ${logged?`${fmt(d.kcal)} kcal a ${fmt(d.target)} kcal-os keretből`:'nincs naplózva'}"><span class="tx-col"><i class="tx-target" style="--h:${Math.round(d.target/max*100)}%"></i>${logged?`<i class="tx-fill ${overBudget(d)?'over':'within'}" style="--h:${height}%"></i>`:'<i class="tx-gap"></i>'}</span><b>${logged?thousand(d.kcal):'·'}</b><span class="tx-name">${d.day}</span>${d.training?`<u title="Edzésnap"></u>`:''}</button>`;
+ }).join('')}</div>`;
+}
+function trendek(){
+ const w=weekData[week],s=weekSummary(w),cmp=weekCompare(w),deltas=weekDeltas(w,weekData.previous),isCurrent=week==='current';
+ const values={avg:s.avg,score:w.scoreAvg,weight:w.weightAvg};
+ const read=isCurrent
+  ?`${s.logged} naplózott nap, mind a ${s.within} a kereteden belül. A hét többi része még előtted áll — üresen hagyjuk, nem találgatjuk.`
+  :cmp.delta>0?`Hétvégén átlagosan ${fmt(cmp.delta)} kcal-lal többet ettél, mint hétköznap. Nem hiba — így alakult, és most már látod.`:'Kiegyensúlyozott hét volt.';
+ return `<div class="tx-hero"><span class="tx-glow"></span>
+  <div class="tx-weeknav"><button data-week="previous" aria-pressed="${!isCurrent}" ${isCurrent?'':'disabled'}>‹ Múlt hét</button><strong>${w.label}</strong><button data-week="current" aria-pressed="${isCurrent}" ${isCurrent?'disabled':''}>Ez a hét ›</button></div>
+  <div class="tx-big"><strong>${s.logged?s.within:'—'}</strong><span><b>/ ${s.logged} naplózott nap</b><small>A KERETEDEN BELÜL</small></span></div>
+  ${weekBars(w)}
+  <p class="tx-read">${read}</p>
+  <p class="tx-hint">Koppints egy napra a részletekért</p></div>
+ <div class="tx-tiles">${Object.entries(TX_STAT).map(([kind,[label,art,color,unit]])=>{const v=values[kind],delta=isCurrent?deltas[kind]:null;
+  return `<button class="tx-tile" style="--kx:${color}" data-tx-stat="${kind}"><span class="tx-tile-art">${icon(art)}</span><strong>${v==null?'—':fmt1(v)}${unit?`<small>${unit}</small>`:''}</strong><span class="tx-tile-label">${label}</span>${delta?`<em>${delta>0?'▲':'▼'} ${fmt1(Math.abs(delta))}${unit?` ${unit}`:''}</em>`:''}</button>`;}).join('')}</div>
+ <div class="lf-section"><h2>Hétköznap és hétvége</h2></div>
+ <div class="tx-split">${cmp.weekday!=null?`<div class="tx-splitrow" style="--kx:#8ed2e8"><span class="tx-split-art">${icon('sun')}</span><span class="tx-split-copy"><strong>Hétköznap</strong><i><b style="--w:${Math.min(100,cmp.weekday/30)}%"></b></i></span><b>${fmt(cmp.weekday)}<small>kcal</small></b></div>`:''}
+  ${cmp.weekend!=null?`<div class="tx-splitrow" style="--kx:#d9c395"><span class="tx-split-art">${icon('moon')}</span><span class="tx-split-copy"><strong>Hétvége</strong><i><b style="--w:${Math.min(100,cmp.weekend/30)}%"></b></i></span><b>${fmt(cmp.weekend)}<small>kcal</small></b></div>`:`<p class="tx-empty">${icon('moon')}<span>Ezen a héten még nincs naplózott hétvégi nap — üresen hagyjuk.</span></p>`}
+  ${cmp.delta!=null?`<p class="tx-split-note">A különbség <b>${fmt(Math.abs(cmp.delta))} kcal</b> ${cmp.delta>0?'a hétvége javára':'a hétköznapok javára'}.</p>`:''}</div>
+ <div class="lf-section"><h2>Hosszabb táv</h2></div>
+ <button class="tx-card" data-tx-horizon><span class="tx-card-head"><span class="tx-card-title">${icon('ring')}<strong>Evés és súly együtt</strong></span><b>↗</b></span>${horizonChart()}<span class="tx-legend"><em class="kcal">heti átlag kcal</em><em class="weight">heti súlyátlag</em></span></button>
+ <div class="lf-section"><h2>Mintázatok</h2></div>
+ ${patterns.map((p,i)=>`<button class="tx-pattern" data-tx-pattern="${i}"><span class="tx-pattern-art">${icon('gem')}</span><span><strong>${safe(p.title)}</strong><small>${safe(p.state)}</small></span><b>↗</b></button>`).join('')}
+ <p class="food-note">A mintázatok otthona a Mezo — innen odalépsz, nem másolatot látsz.</p>`;
+}
+function horizonChart(){
+ const ks=longHorizon.map(r=>r.kcal),ws=longHorizon.map(r=>r.weight);
+ const kmin=Math.min(...ks)-60,kmax=Math.max(...ks)+60,wmin=Math.min(...ws)-.2,wmax=Math.max(...ws)+.2;
+ const x=i=>18+i*300/(longHorizon.length-1),ky=v=>110-(v-kmin)/(kmax-kmin)*80,wy=v=>110-(v-wmin)/(wmax-wmin)*80;
+ const kcalPoints=longHorizon.map((r,i)=>`${x(i)},${ky(r.kcal)}`).join(' ');
+ return `<svg class="tx-chart" viewBox="0 0 336 150" role="img" aria-label="Heti átlag kalória és heti súlyátlag hét héten át"><defs><linearGradient id="tx-area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8ed2e855"/><stop offset="1" stop-color="#8ed2e800"/></linearGradient></defs><path d="M18 34H318M18 72H318M18 110H318" stroke="#ffffff0d"/><polygon points="${kcalPoints} 318,118 18,118" fill="url(#tx-area)"/><polyline points="${kcalPoints}" fill="none" stroke="#8ed2e8" stroke-width="2.6" stroke-linejoin="round"/><polyline points="${longHorizon.map((r,i)=>`${x(i)},${wy(r.weight)}`).join(' ')}" fill="none" stroke="#d7a7bc" stroke-width="2.4" stroke-dasharray="1 6" stroke-linecap="round"/>${longHorizon.map((r,i)=>`<circle cx="${x(i)}" cy="${wy(r.weight)}" r="3" fill="#d7a7bc"/>`).join('')}<text x="18" y="140">${longHorizon[0].week}</text><text x="264" y="140">${longHorizon.at(-1).week}</text></svg>`;
+}
+function trendDayGlass(date){
+ const d=weekData[week].days.find(x=>x.date===date);
+ if(!d)return '<p class="sheet-sub">Nincs ilyen nap.</p>';
+ const logged=Number.isFinite(d.kcal),color=logged?(overBudget(d)?'#d9c395':'#8ed2e8'):'#8ed2e8';
+ const rows=logged?[['Étkezés','bowl',`${d.meals} étkezés`],['Fehérje','meat',`${fmt(d.protein)} g`],['Étkezés-minőség','score',d.score?score1(d.score):'—'],['Víz','water',`${fmt1(d.water)} l`],['Mozgás','dumbbell',d.training?'edzésnap':'pihenőnap']]:[];
+ return `<div class="glass-dim" style="--dim-color:${color}"><div class="glass-hero dim"><span class="glass-hero-art">${icon('bowl')}</span><div><strong>${logged?fmt(d.kcal):'—'}</strong><small>${dayLabel(d.date)}</small></div></div>
+ ${logged?`<div class="glass-bar dimbar"><i style="--w:${Math.min(100,Math.round(d.kcal/d.target*100))}%"></i></div>
+ <p class="glass-fact">A kereted ezen a napon <b>${fmt(d.target)} kcal</b> volt${d.training?' — edzésnapra igazítva':''}. ${overBudget(d)?`${fmt(d.kcal-d.target)} kcal-lal fölé ment; így alakult.`:'Belefértél.'}</p>
+ <div class="glass-list">${rows.map(([label,art,value])=>`<div class="glass-stat plain" style="--stat-color:${color}"><span class="gs-art">${icon(art)}</span><span class="gs-copy"><strong>${label}</strong></span><b>${value}</b></div>`).join('')}</div>`
+ :`<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.</p></div>`}</div>`;
+}
+function trendStatGlass(kind){
+ const [label,art,color,unit,copy]=TX_STAT[kind],w=weekData[week],previous=weekData.previous;
+ const pick=source=>({avg:weekSummary(source).avg,score:source.scoreAvg,weight:source.weightAvg}[kind]);
+ const now=pick(w),before=pick(previous),delta=now!=null&&before!=null&&week==='current'?Math.round((now-before)*10)/10:null;
+ return `<div class="glass-dim" style="--dim-color:${color}"><div class="glass-hero dim"><span class="glass-hero-art">${icon(art)}</span><div><strong>${now==null?'—':fmt1(now)}</strong><small>${label}${unit?` · ${unit}`:''}</small></div></div>
+ <p class="glass-lead">${copy}</p>
+ <div class="glass-list"><div class="glass-kv"><span>${w.label}</span><b>${now==null?'—':`${fmt1(now)}${unit?` ${unit}`:''}`}</b></div><div class="glass-kv"><span>${previous.label}</span><b>${before==null?'—':`${fmt1(before)}${unit?` ${unit}`:''}`}</b></div>${delta!=null?`<div class="glass-kv"><span>Változás</span><b>${delta>0?'+':''}${fmt1(delta)}${unit?` ${unit}`:''}</b></div>`:''}</div>
+ <p class="glass-fact">${kind==='avg'?`Ezen a héten <b>${weekSummary(w).logged} nap</b> van naplózva a hétből.${w.days.some(d=>d.today&&Number.isFinite(d.kcal))?' A mai nap még nyitva van — félkész napként is beleszámít az átlagba.':''}`:kind==='score'?'Az egyes étkezések bontása a Mai oldalon, az AI-értékelésnél nyílik.':'A súly részletes görbéje az Én oldalon él — ott szerkeszthető is.'}</p></div>`;
+}
+function trendPatternGlass(index){
+ const p=patterns[Number(index)];if(!p)return '<p class="sheet-sub">Nincs ilyen mintázat.</p>';
+ return `<div class="glass-dim" style="--dim-color:#bca6f1"><div class="glass-hero dim"><span class="glass-hero-art">${icon('gem')}</span><div><strong>${safe(p.state)}</strong><small>${safe(p.title)}</small></div></div>
+ <p class="glass-lead">${safe(p.detail)}</p>
+ <button class="kx-link-card" data-route="${p.route}">${icon('gem')}<span><strong>Megnézem a Mezo oldalán</strong><small>Ott a teljes bizonyíték és a visszajelzés</small></span><b>›</b></button></div>`;
+}
+function trendHorizonGlass(){
+ return `<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('ring')}</span><div><strong>7 hét</strong><small>Evés és súly együtt</small></div></div>
+ <p class="glass-lead">A heti átlagok egymás mellett: a kalória és a súly ugyanazon a héten. Egyik sem ok, csak együttjárás.</p>
+ <div class="glass-list">${longHorizon.map(r=>`<div class="glass-kv"><span>${r.week}</span><b>${fmt(r.kcal)} kcal · ${fmt1(r.weight)} kg</b></div>`).join('')}</div></div>`;
+}
 
 // --- Kiegészítők ----------------------------------------------------------
 function stackPage(){const prog=stackProgress(stack),pct=Math.round(prog.taken/prog.total*100);return `<div class="stack-hero"><div class="stack-ring" style="--stack-progress:${pct}"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="stack-ring-track" cx="60" cy="60" r="52" pathLength="100"/><circle class="stack-ring-progress" cx="60" cy="60" r="52" pathLength="100"/></svg><span><strong>${prog.taken}<small> / ${prog.total}</small></strong><b>BEVÉVE MA</b></span></div><div class="stack-hero-copy"><span class="overline">MIT VESZEK BE MA?</span><p>${prog.taken===prog.total?'Minden a helyén. Mára ennyi volt.':'Egy érintés, és pipálva. Ha félrement, még egy érintés visszavonja.'}</p></div></div>${stackZones.map(([zone,label])=>{const rows=stack.items.filter(i=>i.zone===zone);if(!rows.length)return '';return `<div class="lf-section"><h2>${label}</h2><small>${rows.filter(r=>stack.taken.has(r.id)).length} / ${rows.length}</small></div>${rows.map(r=>{const done=stack.taken.has(r.id);return `<button class="stack-row ${done?'done':''}" data-stack-tick="${r.id}" aria-pressed="${done}"><span class="stack-check">${done?'✓':''}</span><span><strong>${safe(r.name)}</strong><small>${safe(r.dose)} · ${safe(r.zoneLabel)}</small></span><b>${done?'VISSZAVONOM':'BEVETTEM'}</b></button>`;}).join('')}`;}).join('')}<div class="lf-section"><h2>Mélyebben</h2></div><button class="konyha-row" data-stack-protocol>${icon('stack')}<span><strong>Protokoll</strong><small>Mit miért szedsz — és ki tette a helyére</small></span><b>↗</b></button><button class="konyha-row" data-stack-manage>${icon('gem')}<span><strong>Kezelés</strong><small>Új elem, adag, időzítés</small></span><b>↗</b></button><button class="konyha-row quiet" data-stack-medication>${icon('moon')}<span><strong>Gyógyszer</strong><small>Most nincs követett gyógyszered</small></span><b>↗</b></button><p class="food-note">Mintaprotokoll. A pipák a demóban élnek, újratöltéskor törlődnek.</p>`;}
@@ -237,6 +310,10 @@ export function initFuelPages(options){callbacks=options;
   if(el.dataset.recipeLog){const r=recipes.find(x=>x.id===el.dataset.recipeLog);if(r){callbacks.closeSheet();openFoodFixed(r.name,{kcal:r.kcal*servings,p:r.p*servings,c:r.c*servings,f:r.f*servings,fiber:(r.fiber??5)*servings},slotBlock(r.slot).time);}}
   if(el.dataset.pantryLog){const k=pantry.find(x=>x.id===el.dataset.pantryLog);if(k){callbacks.closeSheet();openFoodFixed(k.name,{kcal:Math.round(k.kcal100*1.5),p:Math.round((k.p100||0)*1.5),c:Math.round((k.c100||0)*1.5),f:Math.round((k.f100||0)*1.5),fiber:1},'16:00');}}
   if(el.dataset.week){week=el.dataset.week;callbacks.refresh();}
+  if(el.dataset.txDay){callbacks.dialog('TRENDEK · NAP',trendDayGlass(el.dataset.txDay));document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.txStat){callbacks.dialog('TRENDEK · MUTATÓ',trendStatGlass(el.dataset.txStat));document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.txPattern){callbacks.dialog('TRENDEK · MINTÁZAT',trendPatternGlass(el.dataset.txPattern));document.querySelector('#sheet').classList.add('glass');}
+  if(el.hasAttribute('data-tx-horizon')){callbacks.dialog('TRENDEK · HOSSZABB TÁV',trendHorizonGlass());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick);if(taken!==null){toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);callbacks.refresh();}}
   if(el.hasAttribute('data-stack-protocol'))callbacks.dialog('KIEGÉSZÍTŐK',protocolSheet());
   if(el.hasAttribute('data-stack-manage'))callbacks.dialog('KIEGÉSZÍTŐK',manageSheet());

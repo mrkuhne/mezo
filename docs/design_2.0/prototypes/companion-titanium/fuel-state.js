@@ -53,22 +53,22 @@ export const stackZones=[['reggel','Reggel'],['delben','Délben'],['este','Este'
 // Adherence-neutral: within/over are states, never shame. kcal null = unlogged day (honest gap).
 export const weekData={
  current:{label:'Ez a hét',days:[
-  {day:'H',date:'2026-09-07',kcal:2115,target:2400,training:true},
-  {day:'K',date:'2026-09-08',kcal:2260,target:2400,training:true},
-  {day:'Sze',date:'2026-09-09',kcal:1180,target:2400,training:true,today:true},
+  {day:'H',date:'2026-09-07',kcal:2115,target:2400,training:true,meals:4,score:8.2,protein:148,water:2.6},
+  {day:'K',date:'2026-09-08',kcal:2260,target:2400,training:true,meals:4,score:7.4,protein:154,water:2.1},
+  {day:'Sze',date:'2026-09-09',kcal:1180,target:2400,training:true,today:true,meals:2,score:8.3,protein:86,water:1.25},
   {day:'Cs',date:'2026-09-10',kcal:null,target:2400},
   {day:'P',date:'2026-09-11',kcal:null,target:2200},
   {day:'Szo',date:'2026-09-12',kcal:null,target:2200,weekend:true},
   {day:'V',date:'2026-09-13',kcal:null,target:2200,weekend:true},
  ],scoreAvg:7.8,weightAvg:81.3},
  previous:{label:'Múlt hét',days:[
-  {day:'H',date:'2026-08-31',kcal:2350,target:2400,training:true},
-  {day:'K',date:'2026-09-01',kcal:2180,target:2400,training:true},
-  {day:'Sze',date:'2026-09-02',kcal:2490,target:2400},
-  {day:'Cs',date:'2026-09-03',kcal:2210,target:2400,training:true},
-  {day:'P',date:'2026-09-04',kcal:2050,target:2200},
-  {day:'Szo',date:'2026-09-05',kcal:2740,target:2200,weekend:true},
-  {day:'V',date:'2026-09-06',kcal:2520,target:2200,weekend:true},
+  {day:'H',date:'2026-08-31',kcal:2350,target:2400,training:true,meals:4,score:7.6,protein:141,water:2.4},
+  {day:'K',date:'2026-09-01',kcal:2180,target:2400,training:true,meals:4,score:7.9,protein:150,water:2.7},
+  {day:'Sze',date:'2026-09-02',kcal:2490,target:2400,meals:5,score:6.8,protein:120,water:1.8},
+  {day:'Cs',date:'2026-09-03',kcal:2210,target:2400,training:true,meals:4,score:7.5,protein:139,water:2.2},
+  {day:'P',date:'2026-09-04',kcal:2050,target:2200,meals:3,score:7.1,protein:112,water:1.6},
+  {day:'Szo',date:'2026-09-05',kcal:2740,target:2200,weekend:true,meals:5,score:6.4,protein:104,water:1.4},
+  {day:'V',date:'2026-09-06',kcal:2520,target:2200,weekend:true,meals:4,score:7.2,protein:118,water:1.9},
  ],scoreAvg:7.2,weightAvg:81.6},
 };
 export function weekSummary(week){const logged=week.days.filter(d=>Number.isFinite(d.kcal));if(!logged.length)return {logged:0,within:0,avg:null,weekendDelta:null};
@@ -77,12 +77,24 @@ export function weekSummary(week){const logged=week.days.filter(d=>Number.isFini
  const mean=rows=>rows.length?rows.reduce((s,d)=>s+d.kcal,0)/rows.length:null;
  const weekendDelta=mean(weekend)!=null&&mean(weekday)!=null?Math.round(mean(weekend)-mean(weekday)):null;
  return {logged:logged.length,within,avg,weekendDelta};}
+// Weekday vs weekend split and week-over-week deltas — both honest about unlogged days.
+export function weekCompare(week){
+ const logged=week.days.filter(d=>Number.isFinite(d.kcal));
+ const mean=rows=>rows.length?Math.round(rows.reduce((sum,d)=>sum+d.kcal,0)/rows.length):null;
+ const weekday=mean(logged.filter(d=>!d.weekend)),weekend=mean(logged.filter(d=>d.weekend));
+ return {weekday,weekend,delta:weekday!=null&&weekend!=null?weekend-weekday:null,coverage:logged.length};
+}
+export function weekDeltas(week,previous){
+ const now=weekSummary(week),before=weekSummary(previous);
+ const diff=(a,b)=>a==null||b==null?null:Math.round((a-b)*10)/10;
+ return {avg:diff(now.avg,before.avg),score:diff(week.scoreAvg,previous.scoreAvg),weight:diff(week.weightAvg,previous.weightAvg)};
+}
 export const longHorizon=[
  {week:'júl 27.',kcal:2380,weight:82.4},{week:'aug 3.',kcal:2310,weight:82.1},{week:'aug 10.',kcal:2405,weight:82.2},
  {week:'aug 17.',kcal:2290,weight:81.9},{week:'aug 24.',kcal:2240,weight:81.7},{week:'aug 31.',kcal:2360,weight:81.6},
  {week:'szept 7.',kcal:2185,weight:81.3},
 ];
 export const patterns=[
- {title:'Edzésnapokon kevesebb fehérje jut estére',state:'megfigyelés alatt',route:'mezo/0'},
- {title:'A hétvégi vacsorák viszik el a keret nagyját',state:'megerősítetted',route:'mezo/0'},
+ {title:'Edzésnapokon kevesebb fehérje jut estére',state:'megfigyelés alatt',route:'mezo/0',detail:'Három edzésnapon a vacsora fehérjéje 20–25 g-mal alacsonyabb volt, mint pihenőnapokon. Ez megfigyelés, nem bizonyított ok — a Mezo tovább gyűjti hozzá az adatot.'},
+ {title:'A hétvégi vacsorák viszik el a keret nagyját',state:'megerősítetted',route:'mezo/0',detail:'Szombaton és vasárnap a napi kalória fele a vacsorára esett. Te magad erősítetted meg, hogy ez így van — a Mezo ezt már tényként kezeli.'},
 ];
