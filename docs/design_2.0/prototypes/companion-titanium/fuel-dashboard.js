@@ -134,26 +134,40 @@ function buildEnvelope(m){
  return {value:base,confidence,tagline,summary:verdict,dims,wsum,improve};
 }
 const STATUS_LABEL={good:'rendben',ok:'oké',low:'figyeld'};
-function dimPayload(d){
- if(d.macro){const p=d.macro;return `<div class="dim-payload"><div class="macro-ratio">${[['Fehérje',p.ratioP,p.targetP,'#bca6f1'],['Szénhidrát',p.ratioC,p.targetC,'#d9c395'],['Zsír',p.ratioF,p.targetF,'#8ed2e8']].map(([l,v,t,c])=>`<div style="--macro-color:${c}"><i style="--w:${v}%"></i><span><strong>${l} ${v}%</strong><small>cél: ${t}</small></span></div>`).join('')}</div><p class="dim-fact">A nap energiájának ${p.kcalShareOfDay}%-a · a cél ${p.targetOrigin}.</p></div>`;}
- if(d.micros?.length)return `<div class="dim-payload">${d.micros.map(r=>`<div class="micro-row ${r.status}"><span>${r.name}</span><i><b style="--w:${Math.min(100,r.pct)}%"></b></i><strong>${r.value}</strong><small>${STATUS_LABEL[r.status]}</small></div>`).join('')}</div>`;
- if(d.nova){const nv=d.nova;return `<div class="dim-payload"><div class="nova-stack">${nv.stack.filter(s=>s.pct>0).map(s=>`<i class="n${s.nova}" style="--w:${s.pct}%" title="NOVA ${s.nova}"></i>`).join('')}</div>${nv.stack.filter(s=>s.pct>0).map(s=>`<p class="dim-fact"><b class="nova-dot n${s.nova}"></b>NOVA ${s.nova} · ${s.pct}% — ${safe(s.label)}</p>`).join('')}${nv.items.some(i=>i.warning)?`<p class="dim-fact warn">⚠ Ultra-feldolgozott sor: ${safe(nv.items.filter(i=>i.warning).map(i=>i.name).join(', '))}</p>`:''}</div>`;}
- let out='';
- if(d.timing){const t=d.timing;out+=`<div class="timing-bar"><span>${t.windowFrom??''}</span><i><b style="--at:${t.windowFrom?Math.min(96,Math.max(4,(parseInt(t.eatenAt)-parseInt(t.windowFrom))/2*100)):50}%"></b></i><span>${t.windowTo??''}</span></div><p class="dim-fact">${t.eatenAt}-kor etted · ${safe(t.slotLabel)}-ablak${t.windowFrom?` (${t.windowFrom}–${t.windowTo})`:''}.</p>`;}
- if(d.context)out+=d.context.map(([l,v])=>`<p class="dim-fact"><span>${safe(l)}:</span> ${safe(v)}</p>`).join('');
- if(d.note)out+=`<p class="dim-note">${icon('score')} ${safe(d.note)}</p>`;
- return out?`<div class="dim-payload">${out}</div>`:'';
+const STATUS_COLOR={good:'#8fd97a',ok:'#8ed2e8',low:'#e0b56e'};
+const NOVA_SHORT={1:'Alapanyag',2:'Konyhai összetevő',3:'Feldolgozott',4:'Ultra-feldolgozott'};
+// Each scoring dimension gets its own hue + clay icon so the breakdown reads as a colorful mosaic.
+const DIM_STYLE={macro:['#e08a7c','meat'],micro:['#bca6f1','gem'],who:['#8ed2e8','heart'],fat_quality:['#cdd170','avocado'],nova:['#d9c395','stack'],plant_diversity:['#8fd97a','fiber'],energy_density:['#f0b36e','bolt'],context:['#8fa8f0','sun']};
+const weightPct=(d,wsum)=>Math.round(d.weight/(wsum||1)*100);
+function dimTile(mealId,d,wsum){
+ const [color,art]=DIM_STYLE[d.id],degraded=d.weight===0;
+ return `<button class="dim-tile ${degraded?'degraded':''}" style="--dim-color:${color}" data-dim="${mealId}|${d.id}" aria-label="${d.label}: ${degraded?'kimaradt':score1(d.score)} — részletek"><span class="dim-tile-top"><span class="dim-tile-art">${icon(art)}</span><strong>${degraded?'—':score1(d.score)}</strong></span><span class="dim-tile-label">${d.label}</span><i class="dim-tile-bar"><b style="--v:${degraded?0:d.score*10}%"></b></i><small>${degraded?'kimaradt · kevés adat':`súly ${weightPct(d,wsum)}%`}</small></button>`;
+}
+// Glass-box body for one dimension: same material and rhythm as the energy breakdown.
+export function dimGlassHtml(mealId,dimId){
+ const m=mealInfo(mealId);if(!m)return '<p class="sheet-sub">Nincs meg ez az étkezés.</p>';
+ const env=buildEnvelope(m),d=env.dims.find(x=>x.id===dimId);if(!d)return '<p class="sheet-sub">Nincs ilyen szempont.</p>';
+ const [color,art]=DIM_STYLE[d.id],degraded=d.weight===0;
+ let body='';
+ if(degraded)body+=`<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ehhez az étkezéshez nem volt elég adat, ezért ez a szempont kimaradt, és a többi súlya vette át a helyét. Nem találgatunk.</p></div>`;
+ if(d.macro){const p=d.macro;body+=`<div class="glass-list">${[['Fehérje',p.ratioP,p.targetP,'#e08a7c','meat'],['Szénhidrát',p.ratioC,p.targetC,'#d9c395','carb'],['Zsír',p.ratioF,p.targetF,'#cdd170','avocado']].map(([l,v,t,c,a])=>`<div class="glass-stat" style="--stat-color:${c}"><span class="gs-art">${icon(a)}</span><span class="gs-copy"><strong>${l}</strong><i><b style="--w:${v}%"></b></i><small>cél: ${t}</small></span><b>${v}%</b></div>`).join('')}</div><p class="glass-fact">A nap energiájának <b>${p.kcalShareOfDay}%</b>-a · a cél ${safe(p.targetOrigin)}.</p>`;}
+ if(d.micros?.length)body+=`<div class="glass-list">${d.micros.map(r=>`<div class="glass-stat" style="--stat-color:${STATUS_COLOR[r.status]}"><span class="gs-dot"></span><span class="gs-copy"><strong>${r.name}</strong><i><b style="--w:${Math.min(100,r.pct)}%"></b></i><small>az étkezés-keret ${r.pct}%-a</small></span><b>${r.value}<em>${STATUS_LABEL[r.status]}</em></b></div>`).join('')}</div>`;
+ if(d.nova){const nv=d.nova,groups=nv.stack.filter(s=>s.pct>0);body+=`<div class="glass-nova">${groups.map(s=>`<i class="n${s.nova}" style="--w:${s.pct}%"></i>`).join('')}</div><div class="glass-list">${groups.map(s=>`<div class="glass-stat plain"><span class="gs-dot nova n${s.nova}"></span><span class="gs-copy"><strong>${NOVA_SHORT[s.nova]}</strong><small>${safe(s.label)}</small></span><b>${s.pct}%</b></div>`).join('')}</div>${nv.items.some(i=>i.warning)?`<p class="glass-fact warn">Ultra-feldolgozott sor: ${safe(nv.items.filter(i=>i.warning).map(i=>i.name).join(', '))}</p>`:''}`;}
+ if(d.timing){const t=d.timing;const pos=t.windowFrom&&t.windowTo?Math.min(96,Math.max(4,(minutesOf(t.eatenAt)-minutesOf(t.windowFrom))/(minutesOf(t.windowTo)-minutesOf(t.windowFrom))*100)):50;body+=`<div class="glass-timing"><span>${t.windowFrom??''}</span><i><b style="--at:${pos}%"></b></i><span>${t.windowTo??''}</span></div><p class="glass-fact"><b>${t.eatenAt}</b>-kor etted · ${safe(t.slotLabel)}-ablak.</p>`;}
+ if(d.context)body+=`<div class="glass-list">${d.context.map(([l,v])=>`<div class="glass-kv"><span>${safe(l)}</span><b>${safe(v)}</b></div>`).join('')}</div>`;
+ if(d.note)body+=`<div class="glass-callout"><span>${icon('score')}</span><p><small>MEZO JEGYZETE</small>${safe(d.note)}</p></div>`;
+ return `<div class="glass-dim" style="--dim-color:${color}"><div class="glass-hero dim"><span class="glass-hero-art">${icon(art)}</span><div><strong>${degraded?'—':score1(d.score)}</strong><small>${d.label}</small></div></div><div class="glass-chips"><span>súly ${weightPct(d,env.wsum)}%</span>${d.coverage!=null?`<span>lefedettség ${Math.round(d.coverage*100)}%</span>`:''}</div><div class="glass-bar dimbar"><i style="--w:${degraded?0:d.score*10}%"></i></div><p class="glass-lead">${safe(d.detail)}</p>${body}</div>`;
 }
 function scorePage(id){
  const m=mealInfo(id);
  if(!m)return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><strong>Nincs meg ez az étkezés</strong></span></div>`;
  const env=buildEnvelope(m);
  return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>AI-ÉRTÉKELÉS${m.history?' · KORÁBBI NAP':''}</small><strong>${safe(m.name)}</strong></span><b>${m.time} · ${fmt(m.kcal)} kcal</b></div>
- <div class="score-hero"><span class="score-hero-art">${icon('score')}</span><div><strong>${score1(env.value)}</strong><small>/ 10</small></div><div class="score-hero-copy"><em>${safe(env.tagline)}</em><p>${safe(env.summary)}</p><small>Bizonyosság: ${env.confidence}% — ennyi adatot láttam az étkezésből.</small></div></div>
- <div class="lf-section"><h2>Miből áll össze?</h2><small>8 SÚLYOZOTT SZEMPONT</small></div>
- <div class="score-dims">${env.dims.map(d=>`<details class="score-dim ${d.weight===0?'degraded':''}"><summary><span class="dim-title"><strong>${d.label}</strong><small>súly ${Math.round(d.weight/(env.wsum||1)*100)}%${d.coverage!=null&&d.coverage<1?` · lefedettség ${Math.round(d.coverage*100)}%`:''}</small></span><i style="--v:${d.score*10}%"><b>${d.weight===0?'—':score1(d.score)}</b></i></summary><p class="dim-detail">${safe(d.detail)}</p>${dimPayload(d)}</details>`).join('')}</div>
+ <div class="ai-hero"><span class="ai-hero-glow"></span><span class="ai-hero-art">${icon('score')}</span><strong class="ai-hero-score">${score1(env.value)}</strong><em>${safe(env.tagline)}</em><p>${safe(env.summary)}</p><span class="ai-conf"><i style="--w:${env.confidence}%"></i>Bizonyosság ${env.confidence}%</span></div>
+ <div class="lf-section"><h2>Miből áll össze?</h2><small>KOPPINTS A RÉSZLETEKÉRT</small></div>
+ <div class="dim-grid">${env.dims.map(d=>dimTile(m.id,d,env.wsum)).join('')}</div>
  <div class="lf-section"><h2>Ha feljebb vinnéd</h2></div>
- ${env.improve.map(row=>`<p class="improve-row">${icon('bolt')} ${safe(row)}</p>`).join('')}
+ ${env.improve.map(row=>`<div class="ai-improve"><span>${icon('bolt')}</span><p>${safe(row)}</p></div>`).join('')}
  <div class="score-feedback"><span class="overline">TALÁLT AZ ÉRTÉKELÉS?</span><button data-score-feedback="up">Talál ✓</button><button data-score-feedback="down">Nem talál</button></div>
  <p class="food-note">A pontszám mentéskor, determinisztikusan születik; a szöveges részt a coach írja hozzá, és sosem írja át a számokat. Mintaadatok.</p>`;
 }
