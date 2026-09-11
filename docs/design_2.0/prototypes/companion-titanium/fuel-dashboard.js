@@ -29,27 +29,30 @@ function windowBar(block,rows){
  return `<div class="block-window" role="img" aria-label="${block.label}-ablak ${block.box[0]}–${block.box[1]}, optimális ${optFrom}–${optTo}"><span>${block.box[0]}</span><i><em style="--from:${pct(optFrom)}%;--to:${pct(optTo)}%"></em>${rows.map(m=>`<b style="--at:${pct(m.time)}%" title="${m.time}"></b>`).join('')}</i><span>${block.box[1]}</span></div>`;
 }
 
-function blockCard(block,rows,current,variant){
+const budgetRing=(logged,budget)=>{const pct=Math.min(100,Math.round(logged/budget*100));return `<span class="budget-ring ${logged?'':'empty'}"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="br-track" cx="22" cy="22" r="18" pathLength="100"/><circle class="br-fill" cx="22" cy="22" r="18" pathLength="100" style="--p:${pct}"/></svg><b>${logged?fmt(logged):fmt(budget)}</b></span>`;};
+function blockCard(block,rows,current,budgetMode='head'){
  const logged=rows.reduce((s,m)=>s+m.kcal,0);
- const rowFor=variant==='b'?(m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="row-art">${icon('bowl')}</span><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`):mealRow;
- const headArt=variant==='a'?`<span class="block-art">${icon(block.art)}</span>`:'';
- return `<section class="meal-block v-${variant}" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head">${headArt}<strong>${block.label}</strong>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${windowBar(block,rows)}${rows.map(rowFor).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
+ let headRight='',afterWindow='';
+ if(budgetMode==='head')headRight=rows.length?`<span class="block-sum">${fmt(logged)} <small>/ ${fmt(block.budget)} kcal</small></span>`:`<span class="block-sum quiet">kb. ${fmt(block.budget)} kcal</span>`;
+ else if(budgetMode==='bar'){headRight=rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:'';afterWindow=`<div class="budget-bar ${rows.length?'':'empty'}"><i><b style="--w:${Math.min(100,logged/block.budget*100)}%"></b></i><span>${rows.length?`${fmt(logged)} / ${fmt(block.budget)}`:`kb. ${fmt(block.budget)} kcal keret`}</span></div>`;}
+ else if(budgetMode==='ring')headRight=budgetRing(logged,block.budget);
+ return `<section class="meal-block v-a" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head"><span class="block-art">${icon(block.art)}</span><strong>${block.label}</strong>${headRight}</div>${windowBar(block,rows)}${afterWindow}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
 }
-let blockVariant='a';
+let budgetMode='head';
 function blocksSection({current,meals}){
- return mealBlocks.map(block=>blockCard(block,meals.filter(m=>blockFor(m.time)===block.key),current,blockVariant)).join('');
+ return mealBlocks.map(block=>blockCard(block,meals.filter(m=>blockFor(m.time)===block.key),current,budgetMode)).join('');
 }
-// Temporary comparison view for the owner: the same blocks in both card styles.
+// Temporary comparison view for the owner: the A card with three budget treatments.
 function variantsPage(overview){
- const sample=blocks=>blocks.map(key=>{const block=mealBlocks.find(b=>b.key===key);return [block,overview.meals.filter(m=>blockFor(m.time)===block.key)];});
- const pair=sample(['reggeli','uzsonna']);
- const render=v=>pair.map(([block,rows])=>blockCard(block,rows,true,v)).join('');
- return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>KÁRTYA-VARIÁCIÓK</small><strong>Melyik érzés jobb?</strong></span></div>
- <div class="lf-section"><h2>A · Színfolt</h2><small>BLOKK-IKON A FEJLÉCBEN, SAJÁT SZÍNMOSÁS</small></div>${render('a')}
- <div class="lf-section"><h2>B · Ikonos sorok</h2><small>MINDEN ÉTELNÉL KIS TÁL, FINOMABB SZÍN</small></div>${render('b')}
- <p class="food-note">Mondd meg, melyik (vagy milyen keverék) — és az lesz a Mai oldal alapja.</p>`;
+ const pair=['reggeli','uzsonna'].map(key=>{const block=mealBlocks.find(b=>b.key===key);return [block,overview.meals.filter(m=>blockFor(m.time)===block.key)];});
+ const render=mode=>pair.map(([block,rows])=>blockCard(block,rows,true,mode)).join('');
+ return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>A KERET JELZÉSE · 3 OPCIÓ</small><strong>Melyik érzés jobb?</strong></span></div>
+ <div class="lf-section"><h2>1 · Fejlécben</h2><small>„420 / 520 kcal" A CÍM MELLETT, ÜRESNÉL HALVÁNYAN</small></div>${render('head')}
+ <div class="lf-section"><h2>2 · Keret-sáv</h2><small>TÖLTŐDŐ SÁV AZ IDŐSÁV ALATT</small></div>${render('bar')}
+ <div class="lf-section"><h2>3 · Mini gyűrű</h2><small>KIS TÖLTŐDŐ GYŰRŰ A FEJLÉC JOBBJÁN</small></div>${render('ring')}
+ <p class="food-note">Mondd a számát — és az lesz a Mai oldal alapja.</p>`;
 }
-export function setBlockVariant(v){blockVariant=v;}
+export function setBudgetMode(mode){budgetMode=mode;}
 
 // --- Meal detail ------------------------------------------------------------
 const NOVA_LABEL={1:'NOVA 1 · alapanyag',2:'NOVA 2 · konyhai összetevő',3:'NOVA 3 · feldolgozott',4:'NOVA 4 · ultra-feldolgozott'};
