@@ -21,10 +21,10 @@ export const createFoodDay=()=>({meals:[
 ]});
 // Planned meal windows: the Mai page lists these blocks and logging targets one of them.
 export const mealBlocks=[
- {key:'reggeli',label:'Reggeli',time:'08:00',budget:520,box:['06:00','11:00'],optimal:['07:30','09:30']},
- {key:'ebed',label:'Ebéd',time:'12:30',budget:760,box:['10:30','15:30'],optimal:['12:00','14:00']},
- {key:'uzsonna',label:'Uzsonna',time:'16:00',budget:320,box:['14:00','19:00'],optimal:['15:30','17:00']},
- {key:'vacsora',label:'Vacsora',time:'19:30',budget:800,box:['17:00','22:00'],optimal:['18:30','20:30']},
+ {key:'reggeli',label:'Reggeli',time:'08:00',budget:520,box:['06:00','11:00'],optimal:['07:30','09:30'],color:'#d9c395',art:'sun'},
+ {key:'ebed',label:'Ebéd',time:'12:30',budget:760,box:['10:30','15:30'],optimal:['12:00','14:00'],color:'#c8e895',art:'bowl'},
+ {key:'uzsonna',label:'Uzsonna',time:'16:00',budget:320,box:['14:00','19:00'],optimal:['15:30','17:00'],color:'#8ed2e8',art:'bolt'},
+ {key:'vacsora',label:'Vacsora',time:'19:30',budget:800,box:['17:00','22:00'],optimal:['18:30','20:30'],color:'#bca6f1',art:'moon'},
 ];
 export const minutesOf=t=>Number(t.slice(0,2))*60+Number(t.slice(3));
 export function blockFor(time){if(time<'10:30')return 'reggeli';if(time<'14:30')return 'ebed';if(time<'18:00')return 'uzsonna';return 'vacsora';}

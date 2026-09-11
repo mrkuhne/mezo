@@ -29,13 +29,27 @@ function windowBar(block,rows){
  return `<div class="block-window" role="img" aria-label="${block.label}-ablak ${block.box[0]}–${block.box[1]}, optimális ${optFrom}–${optTo}"><span>${block.box[0]}</span><i><em style="--from:${pct(optFrom)}%;--to:${pct(optTo)}%"></em>${rows.map(m=>`<b style="--at:${pct(m.time)}%" title="${m.time}"></b>`).join('')}</i><span>${block.box[1]}</span></div>`;
 }
 
-function blocksSection({current,meals}){
- return mealBlocks.map(block=>{
-  const rows=meals.filter(m=>blockFor(m.time)===block.key);
-  const logged=rows.reduce((s,m)=>s+m.kcal,0);
-  return `<section class="meal-block" aria-label="${block.label}"><div class="block-head"><strong>${block.label}</strong>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${windowBar(block,rows)}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
- }).join('');
+function blockCard(block,rows,current,variant){
+ const logged=rows.reduce((s,m)=>s+m.kcal,0);
+ const rowFor=variant==='b'?(m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="row-art">${icon('bowl')}</span><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`):mealRow;
+ const headArt=variant==='a'?`<span class="block-art">${icon(block.art)}</span>`:'';
+ return `<section class="meal-block v-${variant}" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head">${headArt}<strong>${block.label}</strong>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${windowBar(block,rows)}${rows.map(rowFor).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
 }
+let blockVariant='a';
+function blocksSection({current,meals}){
+ return mealBlocks.map(block=>blockCard(block,meals.filter(m=>blockFor(m.time)===block.key),current,blockVariant)).join('');
+}
+// Temporary comparison view for the owner: the same blocks in both card styles.
+function variantsPage(overview){
+ const sample=blocks=>blocks.map(key=>{const block=mealBlocks.find(b=>b.key===key);return [block,overview.meals.filter(m=>blockFor(m.time)===block.key)];});
+ const pair=sample(['reggeli','uzsonna']);
+ const render=v=>pair.map(([block,rows])=>blockCard(block,rows,true,v)).join('');
+ return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>KÁRTYA-VARIÁCIÓK</small><strong>Melyik érzés jobb?</strong></span></div>
+ <div class="lf-section"><h2>A · Színfolt</h2><small>BLOKK-IKON A FEJLÉCBEN, SAJÁT SZÍNMOSÁS</small></div>${render('a')}
+ <div class="lf-section"><h2>B · Ikonos sorok</h2><small>MINDEN ÉTELNÉL KIS TÁL, FINOMABB SZÍN</small></div>${render('b')}
+ <p class="food-note">Mondd meg, melyik (vagy milyen keverék) — és az lesz a Mai oldal alapja.</p>`;
+}
+export function setBlockVariant(v){blockVariant=v;}
 
 // --- Meal detail ------------------------------------------------------------
 const NOVA_LABEL={1:'NOVA 1 · alapanyag',2:'NOVA 2 · konyhai összetevő',3:'NOVA 3 · feldolgozott',4:'NOVA 4 · ultra-feldolgozott'};
@@ -118,6 +132,7 @@ export function fuelDashboardContent(domain,page,date){
  const segments=location.hash.slice(1).split('/');
  if(segments[2]==='score')return scorePage(segments[3]||'');
  if(segments[2]==='meal')return mealDetailPage(segments[3]||'');
+ if(segments[2]==='variants')return variantsPage(fuelOverview(date));
  const overview=fuelOverview(date);
  const {current,record,values,remaining}=overview;
  const main=current?Math.abs(remaining):values.kcal;
