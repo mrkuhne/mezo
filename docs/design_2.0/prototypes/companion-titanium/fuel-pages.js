@@ -36,6 +36,7 @@ export function initFuelPages(options){callbacks=options;
  document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;
   if(el.dataset.subroute)location.hash=`#fuel/1/${el.dataset.subroute}`;
   if(el.dataset.score)location.hash=`#fuel/0/score/${el.dataset.score}`;
+  if(el.dataset.mealOpen)location.hash=`#fuel/0/meal/${el.dataset.mealOpen}`;
   if(el.dataset.scoreFeedback){toast(el.dataset.scoreFeedback==='up'?'Köszönöm — ez segít pontosítani.':'Értem. Ezt a visszajelzést is tanulom.');react('connect',1200);}
   if(el.hasAttribute('data-konyha-recipe'))callbacks.dialog('KONYHA · RECEPT',workshopSheet());
   if(el.hasAttribute('data-konyha-pantry'))callbacks.dialog('KONYHA · KAMRA',pantrySheet());

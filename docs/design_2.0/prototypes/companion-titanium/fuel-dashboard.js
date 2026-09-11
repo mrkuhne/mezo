@@ -1,8 +1,9 @@
-import { fuelOverview, mealInfo } from './food.js';
-import { mealBlocks, blockFor } from './food-state.js';
+import { fuelOverview, mealInfo, mealRecord } from './food.js';
+import { mealBlocks, blockFor, mealFacts } from './food-state.js';
 import { icon, safe } from './nap.js';
 
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
+const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
 const score1=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
 const ring=(name,value,target,color)=>`<div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span><small>${name}</small><strong data-fuel-count="${value}">0</strong><b>/ ${target} g</b></span></div>`;
 
@@ -18,42 +19,97 @@ export function animateFuelDashboard(root=document){
 }
 
 const scoreChip=m=>m.score==null?`<span class="score-chip pending">${icon('score')}<b>folyamatban</b></span>`:`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`;
-const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" ${m.editable?`data-food-edit="${m.id}"`:''}><span class="meal-time">${m.time}</span>${icon('bowl')}<span><strong>${safe(m.name)}</strong><small>${m.editable?`${safe(m.hint)} · ✎`:'mintaelőzmény'}</small></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`;
+const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span>${icon('bowl')}</span><span class="block-meal-copy"><strong>${safe(m.name)}</strong><small>${m.time}${m.editable?' · részletek és szerkesztés':' · mintaelőzmény'}</small></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`;
 
 function blocksSection({current,meals}){
  return mealBlocks.map(block=>{
   const rows=meals.filter(m=>blockFor(m.time)===block.key);
   const logged=rows.reduce((s,m)=>s+m.kcal,0);
-  return `<section class="meal-block" aria-label="${block.label}"><div class="block-head"><span><strong>${block.label}</strong><small>${block.time} · keret kb. ${fmt(block.budget)} kcal</small></span><b>${rows.length?`${fmt(logged)} kcal`:''}</b></div>${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}">＋ Logolás ide<small>kamera · hang · szokásosak</small></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
+  return `<section class="meal-block" aria-label="${block.label}"><div class="block-head"><strong>${block.label}</strong><span class="block-meta"><b>${block.time}</b><i></i><b>kb. ${fmt(block.budget)} kcal keret</b></span>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
  }).join('');
 }
 
+// --- Meal detail ------------------------------------------------------------
+const NOVA_LABEL={1:'NOVA 1 · alapanyag',2:'NOVA 2 · konyhai összetevő',3:'NOVA 3 · feldolgozott',4:'NOVA 4 · ultra-feldolgozott'};
+function mealDetailPage(id){
+ const m=mealRecord(id);
+ if(!m)return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza">‹</button><span><strong>Nincs meg ez az étkezés</strong></span></div>`;
+ const facts=m.raw&&!m.raw.fixed?{lines:m.raw.items.map(i=>[i.key==='banana'?'Banán':i.key==='greek'?'Görög joghurt':'Natúr joghurt',`${i.grams} g`,'kamra',null,1]),plants:mealFacts[m.name]?.plants??1}:mealFacts[m.name]??null;
+ const n=m.nutrients;
+ const nutrientRow=(label,value,unit='g')=>`<div class="nutri-row"><span>${label}</span><b>${value==null?'—':`${fmt1(value)} ${unit}`}</b></div>`;
+ return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>${safe(m.slot||'ÉTKEZÉS').toLocaleUpperCase('hu-HU')}${m.history?' · KORÁBBI NAP':''}</small><strong>${safe(m.name)}</strong></span><b>${m.time}</b></div>
+ <div class="meal-hero"><div class="meal-hero-kcal"><strong data-fuel-count="${m.macros.kcal}">0</strong><small>kcal</small></div>${m.score!=null?`<button class="score-chip big" data-score="${m.id}">${icon('score')}<span><b>${score1(m.score)}</b><small>AI-ÉRTÉKELÉS ↗</small></span></button>`:''}</div>
+ <div class="lf-section"><h2>Hozzávalók</h2><small>${facts?facts.lines.length:0} TÉTEL</small></div>
+ ${facts?facts.lines.map(([name,amount,source,kcal,nova])=>`<div class="line-row">${icon(source==='kamra'?'stack':source==='recept'?'book':'chat')}<span><strong>${safe(name)}</strong><small>${safe(amount)} · ${safe(source)}${nova?` · <u class="${nova===4?'warn':''}">${NOVA_LABEL[nova]}</u>`:''}</small></span><b>${kcal==null?'':`${fmt(kcal)} kcal`}</b></div>`).join(''):'<p class="block-empty">Ehhez a mintaelőzményhez nincsenek részletezett sorok.</p>'}
+ <div class="lf-section"><h2>Tápértékek</h2><small>MENTÉSKOR BEFAGYASZTVA</small></div>
+ <div class="nutri-grid">${nutrientRow('Fehérje',m.macros.p)}${nutrientRow('Szénhidrát',m.macros.c)}${nutrientRow('Zsír',m.macros.f)}${nutrientRow('Rost',m.macros.fiber)}${nutrientRow('Cukor',n?.sugar)}${nutrientRow('Só',n?.salt)}${nutrientRow('Telített zsír',n?.satfat)}<div class="nutri-row"><span>Növényféle</span><b>${facts?.plants??'—'}</b></div></div>
+ <p class="nutri-note">A „—" azt jelenti: a forrás nem adott értéket — nem nulla, és nem találgatjuk.</p>
+ <div class="lf-section"><h2>Eredet</h2></div><p class="meal-prov">${icon('chat')} ${safe(m.provenance)}</p>
+ ${m.history?'':`<button class="food-action" data-food-edit="${m.id}">Szerkesztem az étkezést ✎</button>`}
+ <p class="food-note">Minden érték a mentéskori pillanatkép — a katalógus későbbi módosítása nem írja át a múltat.</p>`;
+}
+
+// --- AI score breakdown (mirrors the production 8-dimension envelope) -------
+function buildEnvelope(m){
+ const base=m.score??7.4,facts=mealFacts[m.name],n=facts?.nutrients,plants=facts?.plants??1;
+ const novaLines=(facts?.lines??[]).map(([name,,,,nova])=>({name,nova:nova??1}));
+ const novaShare=g=>{const rows=(facts?.lines??[]).filter(l=>l[4]===g),total=(facts?.lines??[]).reduce((s,l)=>s+(l[3]||0),0)||1;return Math.round(rows.reduce((s,l)=>s+(l[3]||0),0)/total*100);};
+ const block=mealBlocks.find(b=>b.key===blockFor(m.time));
+ const clamp=v=>Math.min(10,Math.max(3,v));
+ const microRows=n?[
+  {name:'Rost',value:`${fmt1(facts.macros?.fiber)} g`,pct:Math.min(120,Math.round((facts.macros?.fiber??0)/7*100)),status:(facts.macros?.fiber??0)>=6?'good':'ok'},
+  n.sugar==null?null:{name:'Cukor',value:`${fmt1(n.sugar)} g`,pct:Math.round(n.sugar/25*100),status:n.sugar<=12?'good':n.sugar<=22?'ok':'low'},
+  n.salt==null?null:{name:'Só',value:`${fmt1(n.salt)} g`,pct:Math.round(n.salt/1.7*100),status:n.salt<=1?'good':'ok'},
+  n.satfat==null?null:{name:'Telített zsír',value:`${fmt1(n.satfat)} g`,pct:Math.round(n.satfat/7*100),status:n.satfat<=5?'good':n.satfat<=9?'ok':'low'},
+ ].filter(Boolean):[];
+ const microDegraded=microRows.length<3;
+ const dims=[
+  {id:'macro',label:'Makró-egyensúly',weight:.22,score:clamp(base+.4),coverage:1,detail:'A fehérje–szénhidrát–zsír arány a napi célodhoz képest.',macro:{ratioP:32,ratioC:44,ratioF:24,targetP:'25–35%',targetC:'40–50%',targetF:'20–30%',kcalShareOfDay:Math.round(m.kcal/2400*100),targetOrigin:'az aktív célod előírásából'}},
+  {id:'micro',label:'Mikrotápanyagok',weight:microDegraded?0:.10,score:microDegraded?0:clamp(base-.6),coverage:microDegraded?.4:.9,detail:microDegraded?'Nem volt elég adat — a szempont kimaradt, a többi súlya átveszi.':'Rost, cukor, só és telített zsír az étkezés-keretedhez mérve.',micros:microRows},
+  {id:'who',label:'WHO-irányelvek',weight:.14,score:clamp(base+.1),coverage:.9,detail:'Cukor-, só- és zsírbevitel a WHO ajánlásaihoz képest.',context:[['Hozzáadott cukor','ajánláson belül'],['Só','megfelelő'],['Zsírarány','rendben']]},
+  {id:'fat_quality',label:'Zsírminőség',weight:.10,score:clamp(base+(n?.satfat!=null&&n.satfat>9?-1.2:.2)),coverage:n?.satfat==null?.5:1,detail:n?.satfat==null?'A telített zsírról nem volt adat minden sorban.':'Telített és telítetlen zsírok aránya.',context:[['Telített zsír',n?.satfat==null?'—':`${fmt1(n.satfat)} g`],['Arány a zsírokon belül',n?.satfat==null?'nem látható':'kiegyensúlyozott']]},
+  {id:'nova',label:'Feldolgozottság',weight:.18,score:clamp(base+(novaLines.some(l=>l.nova===4)?-1.4:.9)),coverage:1,detail:'Minél közelebb az alapanyagokhoz, annál jobb.',nova:{dominant:novaLines.some(l=>l.nova===4)&&novaShare(4)>40?4:1,stack:[1,2,3,4].map(g=>({nova:g,pct:novaShare(g),label:novaLines.filter(l=>l.nova===g).map(l=>l.name).join(', ')||'—'})),items:novaLines.map(l=>({...l,warning:l.nova===4}))}},
+  {id:'plant_diversity',label:'Növényi változatosság',weight:.08,score:clamp(4+plants*1.4),coverage:1,detail:'Hányféle növény került a tányérra.',context:[['Növényfélék száma',String(plants)],['A heti 30-féle célhoz','minden féle számít']]},
+  {id:'energy_density',label:'Energiasűrűség',weight:.06,score:clamp(base+.5),coverage:1,detail:'Mennyire laktató a kalóriájához képest.',context:[['Energiasűrűség','mérsékelt'],['Teltségérzet','jó']]},
+  {id:'context',label:'Napi kontextus',weight:.12,score:clamp(base+.3),coverage:1,detail:'Hogyan illeszkedik az addigi napodhoz és az étkezés-ablakodhoz.',context:[['A nap addigi része','kereten belül'],['Fehérje eddig','jó ütemben']],timing:{eatenAt:m.time,windowFrom:block?.time??null,windowTo:block?block.time.replace(/^(\d\d)/,h=>String(Number(h)+2).padStart(2,'0')):null,slotLabel:block?.label?.toLocaleLowerCase('hu-HU')??'nasi'},note:'Jó ütemben jött — az ablakod közepén, és hagyott teret a vacsorának.'},
+ ];
+ const active=dims.filter(d=>d.weight>0),wsum=active.reduce((s,d)=>s+d.weight,0);
+ const confidence=Math.round(dims.reduce((s,d)=>s+(d.coverage??1),0)/dims.length*100);
+ const verdict=base>=8?'Erős választás volt. A fehérje és a feldolgozottság viszi a hátán — ezt nyugodtan ismételd.':base>=7?'Rendben lévő étkezés. Egy marék zöldség vagy gyümölcs mellé, és a mikrotápanyag-sor is felzárkózik.':'Belefér. A nap egészében nézzük — egyetlen étkezés sosem ítélet.';
+ const tagline=base>=8?'Fehérjében erős, tiszta tányér':base>=7?'Stabil választás, kis ráfejlesztéssel':'Belefér — a nap egésze számít';
+ const improve=[base>=8?'Ha még feljebb vinnéd: egy marék leveles zöld a rost-sorért.':'Tegyél mellé egy adag zöldséget — a mikró- és rost-sor egyszerre lép feljebb.','A telített zsírt sajt helyett olajos maggal cserélve a zsírminőség-sor javul.'];
+ return {value:base,confidence,tagline,summary:verdict,dims,wsum,improve};
+}
+const STATUS_LABEL={good:'rendben',ok:'oké',low:'figyeld'};
+function dimPayload(d){
+ if(d.macro){const p=d.macro;return `<div class="dim-payload"><div class="macro-ratio">${[['Fehérje',p.ratioP,p.targetP,'#bca6f1'],['Szénhidrát',p.ratioC,p.targetC,'#d9c395'],['Zsír',p.ratioF,p.targetF,'#8ed2e8']].map(([l,v,t,c])=>`<div style="--macro-color:${c}"><i style="--w:${v}%"></i><span><strong>${l} ${v}%</strong><small>cél: ${t}</small></span></div>`).join('')}</div><p class="dim-fact">A nap energiájának ${p.kcalShareOfDay}%-a · a cél ${p.targetOrigin}.</p></div>`;}
+ if(d.micros?.length)return `<div class="dim-payload">${d.micros.map(r=>`<div class="micro-row ${r.status}"><span>${r.name}</span><i><b style="--w:${Math.min(100,r.pct)}%"></b></i><strong>${r.value}</strong><small>${STATUS_LABEL[r.status]}</small></div>`).join('')}</div>`;
+ if(d.nova){const nv=d.nova;return `<div class="dim-payload"><div class="nova-stack">${nv.stack.filter(s=>s.pct>0).map(s=>`<i class="n${s.nova}" style="--w:${s.pct}%" title="NOVA ${s.nova}"></i>`).join('')}</div>${nv.stack.filter(s=>s.pct>0).map(s=>`<p class="dim-fact"><b class="nova-dot n${s.nova}"></b>NOVA ${s.nova} · ${s.pct}% — ${safe(s.label)}</p>`).join('')}${nv.items.some(i=>i.warning)?`<p class="dim-fact warn">⚠ Ultra-feldolgozott sor: ${safe(nv.items.filter(i=>i.warning).map(i=>i.name).join(', '))}</p>`:''}</div>`;}
+ let out='';
+ if(d.timing){const t=d.timing;out+=`<div class="timing-bar"><span>${t.windowFrom??''}</span><i><b style="--at:${t.windowFrom?Math.min(96,Math.max(4,(parseInt(t.eatenAt)-parseInt(t.windowFrom))/2*100)):50}%"></b></i><span>${t.windowTo??''}</span></div><p class="dim-fact">${t.eatenAt}-kor etted · ${safe(t.slotLabel)}-ablak${t.windowFrom?` (${t.windowFrom}–${t.windowTo})`:''}.</p>`;}
+ if(d.context)out+=d.context.map(([l,v])=>`<p class="dim-fact"><span>${safe(l)}:</span> ${safe(v)}</p>`).join('');
+ if(d.note)out+=`<p class="dim-note">${icon('score')} ${safe(d.note)}</p>`;
+ return out?`<div class="dim-payload">${out}</div>`:'';
+}
 function scorePage(id){
  const m=mealInfo(id);
- if(!m)return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>AI-ÉRTÉKELÉS</small><strong>Nincs meg ez az étkezés</strong></span></div>`;
- const base=m.score??7.4;
- const dims=[['Makró-egyensúly',.4,'A fehérje–szénhidrát–zsír arány a célodhoz képest.'],
-  ['Feldolgozottság',.9,'Minél közelebb az alapanyagokhoz, annál jobb.'],
-  ['Fehérje-időzítés',-.3,'Mennyi fehérje jutott erre a napszakra.'],
-  ['Zsírminőség',.1,'Telített és telítetlen zsírok aránya.'],
-  ['Mikrotápanyagok',-.6,'Vitamin- és ásványianyag-sűrűség.'],
-  ['Növényi változatosság',-.2,'Hányféle növény került a tányérra.'],
-  ['Energiasűrűség',.5,'Mennyire laktató a kalóriájához képest.'],
-  ['Napi kontextus',.3,'Hogyan illeszkedik az addigi napodhoz.']]
-  .map(([label,delta,copy])=>({label,copy,value:Math.min(10,Math.max(3,base+delta))}));
- const verdict=base>=8?'Erős választás volt. A fehérje és a feldolgozottság viszi a hátán — ezt nyugodtan ismételd.':base>=7?'Rendben lévő étkezés. Egy marék zöldség vagy gyümölcs mellé, és a mikrotápanyag-sor is felzárkózik.':'Belefér. A nap egészében nézzük — egyetlen étkezés sosem ítélet.';
+ if(!m)return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><strong>Nincs meg ez az étkezés</strong></span></div>`;
+ const env=buildEnvelope(m);
  return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>AI-ÉRTÉKELÉS${m.history?' · KORÁBBI NAP':''}</small><strong>${safe(m.name)}</strong></span><b>${m.time} · ${fmt(m.kcal)} kcal</b></div>
- <div class="score-hero"><span class="score-hero-art">${icon('score')}</span><div><strong>${score1(base)}</strong><small>/ 10</small></div><p>${verdict}</p></div>
- <div class="lf-section"><h2>Miből áll össze?</h2><small>8 SZEMPONT</small></div>
- <div class="score-dims">${dims.map(d=>`<div class="score-dim"><span><strong>${d.label}</strong><small>${d.copy}</small></span><i style="--v:${d.value*10}%"><b>${score1(d.value)}</b></i></div>`).join('')}</div>
+ <div class="score-hero"><span class="score-hero-art">${icon('score')}</span><div><strong>${score1(env.value)}</strong><small>/ 10</small></div><div class="score-hero-copy"><em>${safe(env.tagline)}</em><p>${safe(env.summary)}</p><small>Bizonyosság: ${env.confidence}% — ennyi adatot láttam az étkezésből.</small></div></div>
+ <div class="lf-section"><h2>Miből áll össze?</h2><small>8 SÚLYOZOTT SZEMPONT</small></div>
+ <div class="score-dims">${env.dims.map(d=>`<details class="score-dim ${d.weight===0?'degraded':''}"><summary><span class="dim-title"><strong>${d.label}</strong><small>súly ${Math.round(d.weight/(env.wsum||1)*100)}%${d.coverage!=null&&d.coverage<1?` · lefedettség ${Math.round(d.coverage*100)}%`:''}</small></span><i style="--v:${d.score*10}%"><b>${d.weight===0?'—':score1(d.score)}</b></i></summary><p class="dim-detail">${safe(d.detail)}</p>${dimPayload(d)}</details>`).join('')}</div>
+ <div class="lf-section"><h2>Ha feljebb vinnéd</h2></div>
+ ${env.improve.map(row=>`<p class="improve-row">${icon('bolt')} ${safe(row)}</p>`).join('')}
  <div class="score-feedback"><span class="overline">TALÁLT AZ ÉRTÉKELÉS?</span><button data-score-feedback="up">Talál ✓</button><button data-score-feedback="down">Nem talál</button></div>
- <p class="food-note">Mintaértékelés előre megírt szöveggel. A pontszámot mentéskor számoljuk, a magyarázat később sem írja át.</p>`;
+ <p class="food-note">A pontszám mentéskor, determinisztikusan születik; a szöveges részt a coach írja hozzá, és sosem írja át a számokat. Mintaadatok.</p>`;
 }
 
 export function fuelDashboardContent(domain,page,date){
  if(domain!=='fuel'||page!==0)return null;
  const segments=location.hash.slice(1).split('/');
  if(segments[2]==='score')return scorePage(segments[3]||'');
+ if(segments[2]==='meal')return mealDetailPage(segments[3]||'');
  const overview=fuelOverview(date);
  const {current,record,values,remaining}=overview;
  const main=current?Math.abs(remaining):values.kcal;

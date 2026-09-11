@@ -1,4 +1,4 @@
-import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, saveMeal, deleteMeal, totals, usualMeals } from './food-state.js';
+import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals } from './food-state.js';
 import { safe, icon, closeSheet, react } from './nap.js';
 const $=s=>document.querySelector(s),fmt=v=>Math.round(v).toLocaleString('hu-HU');
 let day=createFoodDay(),draft=null,stage='input',mode='photo',source='',blockTime='',deleteArmed=false,callbacks;
@@ -38,6 +38,8 @@ export function mealName(m){return m.fixed?m.name:'Joghurt és banán';}
 export function mealHint(m){return m.fixed?(m.slot||'Szokásos'):`${m.items[0].grams} g + ${m.items[1].grams} g · pontosítható`;}
 export const dayMeals=()=>[...day.meals].sort((a,b)=>a.time.localeCompare(b.time)).map(m=>({id:m.id,time:m.time,name:mealName(m),hint:mealHint(m),kcal:nutrition(m).kcal,score:m.score??null,editable:true}));
 export function mealInfo(id){const own=day.meals.find(m=>m.id===id);if(own)return {id,name:mealName(own),time:own.time,kcal:nutrition(own).kcal,score:own.score??null,history:false};for(const record of Object.values(foodHistory)){const h=record.meals.find(m=>m.id===id);if(h)return {...h,history:true};}return null;}
+// Full raw record for the meal-detail page: macros + the raw draft (for item-based lines).
+export function mealRecord(id){const own=day.meals.find(m=>m.id===id);if(own)return {id,name:mealName(own),slot:own.slot||'',time:own.time,score:own.score??null,macros:nutrition(own),nutrients:nutrientFor(own),raw:own,history:false,provenance:own.fixed?'kézi / szokásos':'AI-felismerés, jóváhagyva'};for(const record of Object.values(foodHistory)){const h=record.meals.find(m=>m.id===id);if(h){const facts=mealFacts[h.name];return {id,name:h.name,slot:h.slot,time:h.time,score:h.score,macros:{kcal:h.kcal,...(facts?.macros||{p:null,c:null,f:null,fiber:null})},nutrients:facts?.nutrients??{sugar:null,salt:null,satfat:null},raw:null,history:true,provenance:'mintaelőzmény'};}}return null;}
 export function fuelOverview(date=FOOD_TODAY){const current=date===FOOD_TODAY,record=foodHistory[date],values=current?totals(day):record||{kcal:0,p:0,c:0,f:0,fiber:0};const meals=current?dayMeals():(record?.meals||[]).map(m=>({...m,editable:false}));return{current,record,values,remaining:2400-values.kcal,mealCount:meals.length,meals};}
 export function initFood(options){callbacks=options;document.addEventListener('mezo:day-render',syncOverview);document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;
  if(el.hasAttribute('data-food-leave'))leave();
