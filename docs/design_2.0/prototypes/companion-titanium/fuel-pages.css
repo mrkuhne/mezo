@@ -314,3 +314,11 @@ dialog.glass .sheet-handle{display:none}
 .glass-row.total{border-bottom:0}
 .glass-row.total span{font-size:13px;color:#d5e4e6}
 .glass-row.total b{font-size:19px;color:#9fdcec}
+/* Tap chip: glassy invitation to the breakdown */
+.fuel-tapchip{position:relative;display:flex;align-items:center;gap:8px;width:fit-content;margin:10px auto 0;padding:9px 15px 9px 12px;border:1px solid #ffffff24;border-radius:22px;background:linear-gradient(150deg,#ffffff14,#ffffff05);backdrop-filter:blur(8px);box-shadow:0 8px 18px #0006,inset 0 1px 0 #ffffff2b;color:#c6d8de;font-size:11px;letter-spacing:.3px;overflow:hidden}
+.fuel-tapchip i{display:grid;place-items:center;width:18px;height:18px;color:#9fdcec}
+.fuel-tapchip i svg{width:18px;height:18px}
+.fuel-tapchip b{font-weight:400;color:#8fb3bd;font-size:14px;line-height:1}
+.chip-sheen{position:absolute;top:0;bottom:0;width:34px;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,#ffffff20,transparent)}
+@media(prefers-reduced-motion:no-preference){.chip-sheen{animation:chip-sheen 3.6s ease-in-out infinite}@keyframes chip-sheen{0%,55%{left:-40px}85%,100%{left:calc(100% + 10px)}}}
+@media(prefers-reduced-motion:reduce){.chip-sheen{display:none}}
