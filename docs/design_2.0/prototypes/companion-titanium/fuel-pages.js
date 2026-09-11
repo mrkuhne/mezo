@@ -237,7 +237,7 @@ function trendDayGlass(date){
  const rows=[['Étkezés','bowl',`${d.meals?.length??0} étkezés`],['Fehérje','meat',`${fmt(d.protein)} g`],['Víz','water',`${fmt1(d.water)} l`],['Mozgás','dumbbell',d.training?'edzésnap':'pihenőnap']];
  return `<div class="glass-dim" style="--dim-color:${color}">
  <div class="glass-hero dim"><span class="glass-hero-art">${icon('score')}</span><div><strong>${d.score!=null?score1(d.score):'—'}</strong><small>${dayLabel(d.date)} · étkezés-pont</small></div></div>
- <div class="glass-chips"><span>${fmt(d.kcal)} / ${fmt(d.target)} kcal</span><span>${d.meals?.length??0} étkezés</span>${fuelScore!=null?`<span>napi fuel-érték ${fuelScore}/100</span>`:''}</div>
+ <div class="glass-chips"><span>${fmt(d.kcal)} / ${fmt(d.target)} kcal</span><span>${d.meals?.length??0} étkezés</span>${fuelScore!=null?`<span>napi fuel-érték ${fuelScore}/100${d.dims?.nutrition?.score==null||d.dims?.quality?.score==null?' · részleges':''}</span>`:''}</div>
  <div class="glass-bar dimbar"><i style="--w:${Math.min(100,Math.round(d.kcal/d.target*100))}%"></i></div>
  <p class="glass-fact">A kereted ezen a napon <b>${fmt(d.target)} kcal</b> volt${d.training?' — edzésnapra igazítva':''}. ${overBudget(d)?`${fmt(d.kcal-d.target)} kcal-lal fölé ment; így alakult.`:'Belefértél.'}</p>
  <div class="tx-dims">${dims.map(([id,label,art,dimColor,weight])=>{const dim=d.dims?.[id];const score=dim?.score??null;
