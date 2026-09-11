@@ -1,5 +1,5 @@
 import { fuelOverview, mealInfo, mealRecord } from './food.js';
-import { mealBlocks, blockFor, mealFacts } from './food-state.js';
+import { mealBlocks, blockFor, minutesOf, mealFacts } from './food-state.js';
 import { icon, safe } from './nap.js';
 
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
@@ -19,13 +19,21 @@ export function animateFuelDashboard(root=document){
 }
 
 const scoreChip=m=>m.score==null?`<span class="score-chip pending">${icon('score')}<b>folyamatban</b></span>`:`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`;
-const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span>${icon('bowl')}</span><span class="block-meal-copy"><strong>${safe(m.name)}</strong><small>${m.time}${m.editable?' · részletek és szerkesztés':' · mintaelőzmény'}</small></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`;
+const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`;
+
+// 5-hour window bar: the optimal range highlighted inside the box, one marker per logged meal.
+function windowBar(block,rows){
+ const [boxFrom,boxTo]=block.box.map(minutesOf),span=boxTo-boxFrom;
+ const pct=t=>Math.min(98,Math.max(2,(minutesOf(t)-boxFrom)/span*100));
+ const [optFrom,optTo]=block.optimal;
+ return `<div class="block-window" role="img" aria-label="${block.label}-ablak ${block.box[0]}–${block.box[1]}, optimális ${optFrom}–${optTo}"><span>${block.box[0]}</span><i><em style="--from:${pct(optFrom)}%;--to:${pct(optTo)}%"></em>${rows.map(m=>`<b style="--at:${pct(m.time)}%" title="${m.time}"></b>`).join('')}</i><span>${block.box[1]}</span></div>`;
+}
 
 function blocksSection({current,meals}){
  return mealBlocks.map(block=>{
   const rows=meals.filter(m=>blockFor(m.time)===block.key);
   const logged=rows.reduce((s,m)=>s+m.kcal,0);
-  return `<section class="meal-block" aria-label="${block.label}"><div class="block-head"><strong>${block.label}</strong><span class="block-meta"><b>${block.time}</b><i></i><b>kb. ${fmt(block.budget)} kcal keret</b></span>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
+  return `<section class="meal-block" aria-label="${block.label}"><div class="block-head"><strong>${block.label}</strong>${rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:''}</div>${windowBar(block,rows)}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong><small>kamera · hang · szokásosak</small></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
  }).join('');
 }
 
