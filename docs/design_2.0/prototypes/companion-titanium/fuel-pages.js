@@ -1,6 +1,7 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
 import { createRecipes, addRecipe, createPantry, addPantryItem, removePantryItem, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, longHorizon, patterns } from './fuel-state.js';
 import { openFoodFixed } from './food.js';
+import { energyDetailHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
 const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 let recipes=createRecipes(),pantry=createPantry(),stack=createStack(),week='current',callbacks;
@@ -33,10 +34,12 @@ const medicationSheet=()=>`${icon('moon')}<h2 class="sheet-title">Gyógyszer</h2
 
 export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const view=location.hash.slice(1).split('/')[2]||'';if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():konyha();if(page===2)return trendek();if(page===3)return stackPage();return null;}
 export function initFuelPages(options){callbacks=options;
+ document.querySelector('#sheet')?.addEventListener('close',e=>e.target.classList.remove('glass'));
  document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;
   if(el.dataset.subroute)location.hash=`#fuel/1/${el.dataset.subroute}`;
   if(el.dataset.score)location.hash=`#fuel/0/score/${el.dataset.score}`;
   if(el.dataset.mealOpen)location.hash=`#fuel/0/meal/${el.dataset.mealOpen}`;
+  if(el.hasAttribute('data-energy-detail')){callbacks.dialog('A NAPI KERETED',energyDetailHtml());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.scoreFeedback){toast(el.dataset.scoreFeedback==='up'?'Köszönöm — ez segít pontosítani.':'Értem. Ezt a visszajelzést is tanulom.');react('connect',1200);}
   if(el.hasAttribute('data-konyha-recipe'))callbacks.dialog('KONYHA · RECEPT',workshopSheet());
   if(el.hasAttribute('data-konyha-pantry'))callbacks.dialog('KONYHA · KAMRA',pantrySheet());

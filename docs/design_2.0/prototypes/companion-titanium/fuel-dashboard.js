@@ -5,7 +5,7 @@ import { icon, safe } from './nap.js';
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
 const score1=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
-const ring=(name,value,target,color)=>`<div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span><small>${name}</small><strong data-fuel-count="${value}">0</strong><b>/ ${target} g</b></span></div>`;
+const ring=(name,art,value,target,color)=>`<div class="macro-cell"><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${fmt(value)} a ${target} grammból"><strong data-fuel-count="${value}">0</strong><b>/ ${target} g</b></span></div><span class="macro-ico">${icon(art)}</span></div>`;
 
 export function animateFuelDashboard(root=document){
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,15 +43,37 @@ let budgetMode='ring';
 function blocksSection({current,meals}){
  return mealBlocks.map(block=>blockCard(block,meals.filter(m=>blockFor(m.time)===block.key),current,budgetMode)).join('');
 }
-// Temporary comparison view for the owner: the A card with three budget treatments.
+// The energy hero: at first glance only "ettél / még belefér"; the math opens in the glass box.
+const gauge=(progress,size='')=>`<div class="fuel-gauge ${size}" style="--fuel-progress:${progress}"><svg class="fuel-gauge-rings" viewBox="0 0 160 160" aria-hidden="true"><circle class="fuel-gauge-base" cx="80" cy="80" r="69" pathLength="100"/><circle class="fuel-gauge-progress" cx="80" cy="80" r="69" pathLength="100"/></svg><span class="fuel-gauge-art">${icon('bowl')}</span></div>`;
+function heroSection(values,remaining,current,record,variant='h2'){
+ const progress=Math.min(100,values.kcal/2400*100);
+ const attrs=`class="fuel-focus v-${variant}" data-energy-detail aria-label="Energia-részletek megnyitása"`;
+ if(!current){const label=record?'KCAL BEVITT':'NINCS ADAT';return `<button ${attrs}><div class="fuel-visual">${gauge(progress)}<div class="fuel-primary-number"><small>${label}</small><strong data-fuel-count="${values.kcal}">0</strong><span>/ 2 400 kcal</span></div></div><p class="fuel-tapline">Koppints a részletekért</p></button>`;}
+ if(variant==='h1')return `<button ${attrs}><div class="hero-pair"><div class="hero-side"><strong data-fuel-count="${values.kcal}">0</strong><small>KCAL·T ETTÉL</small></div>${gauge(progress,'small')}<div class="hero-side lead"><strong data-fuel-count="${Math.abs(remaining)}">0</strong><small>${remaining>=0?'MÉG BELEFÉR':'A KERET FELETT'}</small></div></div><p class="fuel-tapline">Koppints: miből jön össze?</p></button>`;
+ if(variant==='h3')return `<button ${attrs}><div class="hero-pair top"><div class="hero-side"><strong data-fuel-count="${values.kcal}">0</strong><small>KCAL·T ETTÉL</small></div><div class="hero-side lead"><strong data-fuel-count="${Math.abs(remaining)}">0</strong><small>${remaining>=0?'MÉG BELEFÉR':'A KERET FELETT'}</small></div></div><div class="hero-track"><i style="--w:${progress}%"></i><b></b></div><p class="fuel-tapline">Koppints: miből jön össze?</p></button>`;
+ return `<button ${attrs}><div class="fuel-visual">${gauge(progress)}<div class="fuel-primary-number"><small>${remaining>=0?'MÉG BELEFÉR':'A KERET FELETT'}</small><strong data-fuel-count="${Math.abs(remaining)}">0</strong><span>kcal</span></div></div><p class="fuel-eaten"><b data-fuel-count="${values.kcal}">0</b> kcal·t ettél ma<span class="fuel-tapline"> · koppints a részletekért</span></p></button>`;
+}
+let heroVariant='h2';
+export function setHeroVariant(v){heroVariant=v;}
+// Glass-box content: the math behind the number, only on tap.
+export function energyDetailHtml(){
+ const {values,remaining}=fuelOverview();
+ return `<div class="glass-hero">${icon('bowl')}<div><strong>${fmt(Math.abs(remaining))}</strong><small>kcal ${remaining>=0?'fér még bele ma':'a keret felett'}</small></div></div>
+ <div class="glass-rows">
+ <div class="glass-row"><span>Napi kereted</span><b>2 400 kcal</b><small>edzésnapra igazítva, az aktív célod előírásából</small></div>
+ <div class="glass-row minus"><span>Ma megetted</span><b>− ${fmt(values.kcal)} kcal</b><small>${fmt(values.p)} g fehérje · ${fmt(values.c)} g szénhidrát · ${fmt(values.f)} g zsír</small></div>
+ <div class="glass-row plus"><span>Mozgásból vissza</span><b>+ 0 kcal</b><small>ma még nincs logolt edzés</small></div>
+ <div class="glass-row total"><span>${remaining>=0?'Még belefér':'A keret felett'}</span><b>${fmt(Math.abs(remaining))} kcal</b></div>
+ </div><p class="food-note">A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap újraszületik.</p>`;
+}
+// Temporary comparison view for the owner: three hero options.
 function variantsPage(overview){
- const pair=['reggeli','uzsonna'].map(key=>{const block=mealBlocks.find(b=>b.key===key);return [block,overview.meals.filter(m=>blockFor(m.time)===block.key)];});
- const render=mode=>pair.map(([block,rows])=>blockCard(block,rows,true,mode)).join('');
- return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>A KERET JELZÉSE · 3 OPCIÓ</small><strong>Melyik érzés jobb?</strong></span></div>
- <div class="lf-section"><h2>1 · Fejlécben</h2><small>„420 / 520 kcal" A CÍM MELLETT, ÜRESNÉL HALVÁNYAN</small></div>${render('head')}
- <div class="lf-section"><h2>2 · Keret-sáv</h2><small>TÖLTŐDŐ SÁV AZ IDŐSÁV ALATT</small></div>${render('bar')}
- <div class="lf-section"><h2>3 · Mini gyűrű</h2><small>KIS TÖLTŐDŐ GYŰRŰ A FEJLÉC JOBBJÁN</small></div>${render('ring')}
- <p class="food-note">Mondd a számát — és az lesz a Mai oldal alapja.</p>`;
+ const {values,remaining}=overview;
+ return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>FEJLÉC · 3 OPCIÓ</small><strong>Mit láss elsőre?</strong></span></div>
+ <div class="lf-section"><h2>1 · Két szám a tál körül</h2><small>BALRA AMIT ETTÉL, JOBBRA AMI BELEFÉR</small></div>${heroSection(values,remaining,true,null,'h1')}
+ <div class="lf-section"><h2>2 · Egy uralkodó szám</h2><small>A „MÉG BELEFÉR" A FŐSZEREPLŐ, ALATTA EGY CSENDES SOR</small></div>${heroSection(values,remaining,true,null,'h2')}
+ <div class="lf-section"><h2>3 · Számpár + sáv</h2><small>KÉT SZÁM FELÜL, ALATTA TÖLTŐDŐ NAPI SÁV</small></div>${heroSection(values,remaining,true,null,'h3')}
+ <p class="food-note">Mindegyik koppintásra a részletes bontást nyitja az üvegdobozban. Mondd a számát.</p>`;
 }
 export function setBudgetMode(mode){budgetMode=mode;}
 
@@ -139,8 +161,5 @@ export function fuelDashboardContent(domain,page,date){
  if(segments[2]==='variants')return variantsPage(fuelOverview(date));
  const overview=fuelOverview(date);
  const {current,record,values,remaining}=overview;
- const main=current?Math.abs(remaining):values.kcal;
- const mainLabel=current?(remaining>=0?'KCAL MARADT':'KCAL TÖBBLET'):(record?'KCAL BEVITT':'NINCS ADAT');
- const progress=Math.min(100,values.kcal/2400*100);
- return `<section class="fuel-focus" aria-label="Napi energiakeret"><div class="fuel-visual"><div class="fuel-gauge" style="--fuel-progress:${progress}"><svg class="fuel-gauge-rings" viewBox="0 0 160 160" aria-hidden="true"><circle class="fuel-gauge-base" cx="80" cy="80" r="69" pathLength="100"/><circle class="fuel-gauge-progress" cx="80" cy="80" r="69" pathLength="100"/></svg><span class="fuel-gauge-art">${icon('bowl')}</span></div><div class="fuel-primary-number"><small>${mainLabel}</small><strong data-fuel-count="${main}">0</strong><span>${current?'kcal':'/ 2 400 kcal'}</span></div></div><div class="fuel-equation" aria-label="Keretszámítás"><span><strong>2 400</strong><small>KERET</small></span><b>−</b><span><strong>${fmt(values.kcal)}</strong><small>ÉTEL</small></span><b>+</b><span><strong>0</strong><small>MOZGÁS</small></span></div></section><section class="fuel-rings" aria-label="Makrók és rost">${ring('Fehérje',values.p,160,'#bca6f1')}${ring('Szénhidrát',values.c,270,'#d9c395')}${ring('Zsír',values.f,76,'#8ed2e8')}${ring('Rost',values.fiber,30,'#c8e895')}</section><div class="food-list-heading"><h2>${current?'A mai blokkjaid':'Ezen a napon'}</h2><span>${overview.mealCount} ÉTKEZÉS</span></div>${current||record?blocksSection(overview):`<div class="food-day-empty flat">${icon('bowl')}<strong>Nincs étkezés.</strong></div>`}<button class="fuel-log-action" ${current?'data-food':'data-day-today'}><span class="fuel-log-icon">${icon('chat')}</span><span><strong>${current?'Étkezés logolása':'Vissza a mai naphoz'}</strong><small>${current?'Kamera · hang · gépelés · szokásosak':'Logolni mindig a mai naphoz tudsz'}</small></span><b>${current?'＋':'→'}</b></button><details class="fuel-more flat"><summary>További részletek <span>KERET · MOZGÁS · RECEPTEK</span></summary><button class="fuel-secondary" data-food-budget>${icon('ring')}<span><strong>Keretszámítás</strong></span><b>↗</b></button>${record||current?`<button class="fuel-secondary" data-route="train/0">${icon('dumbbell')}<span><strong>${current?'Felsőtest A':record.training}</strong></span><b>↗</b></button>`:''}<button class="fuel-secondary" data-route="fuel/1">${icon('bowl')}<span><strong>Konyha</strong></span><b>↗</b></button></details>`;
+ return `${heroSection(values,remaining,current,record,heroVariant)}<section class="fuel-rings" aria-label="Makrók és rost">${ring('Fehérje','protein',values.p,160,'#bca6f1')}${ring('Szénhidrát','carb',values.c,270,'#d9c395')}${ring('Zsír','fat',values.f,76,'#8ed2e8')}${ring('Rost','fiber',values.fiber,30,'#c8e895')}</section><div class="food-list-heading"><h2>${current?'A mai blokkjaid':'Ezen a napon'}</h2><span>${overview.mealCount} ÉTKEZÉS</span></div>${current||record?blocksSection(overview):`<div class="food-day-empty flat">${icon('bowl')}<strong>Nincs étkezés.</strong></div>`}<button class="fuel-log-action" ${current?'data-food':'data-day-today'}><span class="fuel-log-icon">${icon('chat')}</span><span><strong>${current?'Étkezés logolása':'Vissza a mai naphoz'}</strong><small>${current?'Kamera · hang · gépelés · szokásosak':'Logolni mindig a mai naphoz tudsz'}</small></span><b>${current?'＋':'→'}</b></button><details class="fuel-more flat"><summary>További részletek <span>KERET · MOZGÁS · RECEPTEK</span></summary><button class="fuel-secondary" data-food-budget>${icon('ring')}<span><strong>Keretszámítás</strong></span><b>↗</b></button>${record||current?`<button class="fuel-secondary" data-route="train/0">${icon('dumbbell')}<span><strong>${current?'Felsőtest A':record.training}</strong></span><b>↗</b></button>`:''}<button class="fuel-secondary" data-route="fuel/1">${icon('bowl')}<span><strong>Konyha</strong></span><b>↗</b></button></details>`;
 }

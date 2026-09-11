@@ -268,3 +268,46 @@
 .proto-row strong{display:block;font-size:12px;font-weight:500}
 .proto-row small{display:block;margin:3px 0 4px;font-size:8px;color:#84979f}
 .proto-row p{margin:0;font-size:10px;line-height:1.55;color:#aebfc7}
+/* Hero: tappable, one clear message; the math lives in the glass box */
+button.fuel-focus{display:block;width:100%;border:0;background:transparent;text-align:inherit;color:inherit;padding:3px 0 16px}
+.fuel-tapline{display:block;margin:2px 0 0;font-size:9px;letter-spacing:.8px;color:#5f7681;text-align:center}
+.fuel-eaten{margin:0;text-align:center;font-size:12px;color:#9db3bc}
+.fuel-eaten b{font-size:14px;font-weight:600;color:#cfe2e7}
+.hero-pair{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 2px 8px}
+.hero-pair.top{padding-bottom:2px}
+.hero-side{text-align:center;min-width:96px}
+.hero-side strong{display:block;font-size:30px;font-weight:500;letter-spacing:-1px;color:#b9cdd4}
+.hero-side small{display:block;margin-top:4px;font-size:7px;letter-spacing:1.2px;color:#748a93}
+.hero-side.lead strong{font-size:46px;letter-spacing:-2px;color:#ecf6f6;text-shadow:0 0 22px #83d7e729}
+.hero-side.lead small{color:#8bbbc5}
+.fuel-gauge.small{width:96px;height:96px;flex:0 0 96px}
+.fuel-gauge.small .fuel-gauge-art,.fuel-gauge.small .fuel-gauge-art .icon{width:64px;height:64px}
+.hero-track{position:relative;height:14px;margin:10px 2px 8px;border-radius:8px;background:#ffffff08}
+.hero-track i{position:absolute;inset:0;width:var(--w);border-radius:8px;background:linear-gradient(90deg,#569eb4,#9fdcec);box-shadow:0 0 12px #8ed2e833}
+.hero-track b{position:absolute;right:0;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#ffffff2e}
+/* Macro cells: number-only rings, custom icon below */
+.macro-cell{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0}
+.macro-cell .fuel-ring{width:100%;aspect-ratio:1}
+.fuel-ring strong{margin-top:0;font-size:18px}
+.fuel-ring b{margin-top:4px;font-size:8px}
+.macro-ico{width:30px;height:30px}
+.macro-ico .icon{width:30px;height:30px;filter:drop-shadow(0 5px 6px #0007)}
+/* Glass box dialog */
+dialog.glass{top:0;bottom:0;margin:auto;width:min(86%,338px);max-height:74dvh;border-radius:24px;border:1px solid #ffffff30;background:linear-gradient(155deg,#ffffff17,#ffffff06 45%,#ffffff0d),#12141bcc;backdrop-filter:blur(22px) saturate(1.25);box-shadow:0 34px 70px #000b,0 0 34px #8ed2e814,inset 0 1px 0 #ffffff3d,inset 0 -1px 0 #ffffff10;padding:14px 21px 24px}
+dialog.glass::backdrop{background:#05070cb8;backdrop-filter:blur(15px)}
+dialog.glass .sheet-handle{display:none}
+@media(prefers-reduced-motion:no-preference){dialog.glass[open]{animation:glass-in .32s cubic-bezier(.2,.85,.3,1.15) both}@keyframes glass-in{from{opacity:0;transform:scale(.92) translateY(8px)}}}
+.glass-hero{display:flex;align-items:center;gap:14px;padding:8px 0 14px;border-bottom:1px solid #ffffff1a}
+.glass-hero .icon{width:56px;height:56px;filter:drop-shadow(0 8px 10px #0008)}
+.glass-hero strong{font-size:38px;font-weight:500;letter-spacing:-1.5px;color:#f0f8f8;text-shadow:0 0 18px #83d7e733}
+.glass-hero small{display:block;margin-top:2px;font-size:11px;color:#9db3bc}
+.glass-rows{padding:6px 0 2px}
+.glass-row{padding:11px 0;border-bottom:1px solid #ffffff12;display:grid;grid-template-columns:1fr auto;gap:3px 10px}
+.glass-row span{font-size:12px;color:#aebfc7}
+.glass-row b{font-size:15px;font-weight:600;color:#e6eff1;text-align:right}
+.glass-row small{grid-column:1/-1;font-size:10px;color:#7e929b}
+.glass-row.minus b{color:#d9c395}
+.glass-row.plus b{color:#c8e895}
+.glass-row.total{border-bottom:0}
+.glass-row.total span{font-size:13px;color:#d5e4e6}
+.glass-row.total b{font-size:19px;color:#9fdcec}
