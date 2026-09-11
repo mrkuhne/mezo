@@ -492,3 +492,5 @@ dialog.glass .sheet-handle{display:none}
 .score-head>.score-chip{flex:0 0 auto}
 .meal-hero3{overflow:visible}
 .meal-hero3 .mh-glow{top:-46px;left:23%;width:270px;height:270px;background:radial-gradient(circle,color-mix(in srgb,var(--block-color) 22%,transparent) 0,transparent 62%)}
+/* The generic round back-button rule also matched the AI chip; restore the pill. */
+.score-head>button.score-chip{width:auto;height:auto;padding:7px 11px 7px 7px;border:1px solid #bca6f142;border-radius:22px;background:#bca6f114;color:#ddd0fb;font-size:inherit}
