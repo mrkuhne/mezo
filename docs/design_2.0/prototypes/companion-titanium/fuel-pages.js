@@ -227,6 +227,20 @@ function horizonChart(){
  const kcalPoints=longHorizon.map((r,i)=>`${x(i)},${ky(r.kcal)}`).join(' ');
  return `<svg class="tx-chart" viewBox="0 0 336 150" role="img" aria-label="Heti átlag kalória és heti súlyátlag hét héten át"><defs><linearGradient id="tx-area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8ed2e855"/><stop offset="1" stop-color="#8ed2e800"/></linearGradient></defs><path d="M18 34H318M18 72H318M18 110H318" stroke="#ffffff0d"/><polygon points="${kcalPoints} 318,118 18,118" fill="url(#tx-area)"/><polyline points="${kcalPoints}" fill="none" stroke="#8ed2e8" stroke-width="2.6" stroke-linejoin="round"/><polyline points="${longHorizon.map((r,i)=>`${x(i)},${wy(r.weight)}`).join(' ')}" fill="none" stroke="#d7a7bc" stroke-width="2.4" stroke-dasharray="1 6" stroke-linecap="round"/>${longHorizon.map((r,i)=>`<circle cx="${x(i)}" cy="${wy(r.weight)}" r="3" fill="#d7a7bc"/>`).join('')}<text x="18" y="140">${longHorizon[0].week}</text><text x="264" y="140">${longHorizon.at(-1).week}</text></svg>`;
 }
+// The engine emits compact fact pairs ("c · f" → "245 g · 74 g"); split them into readable rows,
+// lift the training band into a footnote and draw percentage facts as meters.
+const DIM_FACT_LABEL={kcal:'Kalória','fehérje':'Fehérje',nova:'Feldolgozottság (NOVA)',mikro:'Mikrotápanyag-lefedettség'};
+function dimFactView(facts=[]){
+ const rows=[],meters=[];let note=null;
+ for(const [label,value] of facts){
+  if(label==='sáv'){note=value;continue;}
+  if(label==='c · f'){const [carb,fat]=String(value).split('·').map(v=>v.trim());rows.push(['Szénhidrát',carb],['Zsír',fat]);continue;}
+  const percent=/^(\d+(?:[.,]\d+)?)%$/.exec(String(value));
+  if(percent){meters.push([DIM_FACT_LABEL[label]??label,Number(percent[1].replace(',','.'))]);continue;}
+  rows.push([DIM_FACT_LABEL[label]??label,value]);
+ }
+ return {rows,meters,note};
+}
 function trendDayGlass(date){
  const d=weekData[week].days.find(x=>x.date===date);
  if(!d)return '<p class="sheet-sub">Nincs ilyen nap.</p>';
@@ -240,8 +254,12 @@ function trendDayGlass(date){
  <div class="glass-chips"><span>${fmt(d.kcal)} / ${fmt(d.target)} kcal</span><span>${d.meals?.length??0} étkezés</span>${fuelScore!=null?`<span>napi fuel-érték ${fuelScore}/100${d.dims?.nutrition?.score==null||d.dims?.quality?.score==null?' · részleges':''}</span>`:''}</div>
  <div class="glass-bar dimbar"><i style="--w:${Math.min(100,Math.round(d.kcal/d.target*100))}%"></i></div>
  <p class="glass-fact">A kereted ezen a napon <b>${fmt(d.target)} kcal</b> volt${d.training?' — edzésnapra igazítva':''}. ${overBudget(d)?`${fmt(d.kcal-d.target)} kcal-lal fölé ment; így alakult.`:'Belefértél.'}</p>
- <div class="tx-dims">${dims.map(([id,label,art,dimColor,weight])=>{const dim=d.dims?.[id];const score=dim?.score??null;
-  return `<div class="tx-dim ${score==null?'degraded':''}" style="--kx:${dimColor}"><div class="tx-dim-head"><span class="tx-dim-art">${icon(art)}</span><span><strong>${label}</strong><small>a napi értékelés ${weight}%-a</small></span><b>${score==null?'—':score}</b></div>${score!=null?`<i class="tx-dim-bar"><b style="--w:${score}%"></b></i>`:''}<div class="tx-facts">${(dim?.facts??[]).map(([factLabel,value])=>`<span><em>${safe(factLabel)}</em>${safe(value)}</span>`).join('')||'<span class="quiet">nincs elég adat ehhez a szemponthoz</span>'}</div></div>`;}).join('')}</div>
+ <div class="tx-dims">${dims.map(([id,label,art,dimColor,weight])=>{const dim=d.dims?.[id],score=dim?.score??null,view=dimFactView(dim?.facts);
+  return `<div class="tx-dim ${score==null?'degraded':''}" style="--kx:${dimColor}"><div class="tx-dim-head"><span class="tx-dim-art">${icon(art)}</span><span><strong>${label}</strong><small>a napi értékelés ${weight}%-a</small></span><b>${score==null?'—':score}</b></div>${score!=null?`<i class="tx-dim-bar"><b style="--w:${score}%"></b></i>`:''}
+  ${view.rows.length?`<dl class="tx-rows">${view.rows.map(([factLabel,value])=>`<div><dt>${safe(factLabel)}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl>`:''}
+  ${view.meters.length?`<div class="tx-meters">${view.meters.map(([meterLabel,pct])=>`<div class="tx-meter"><span><em>${safe(meterLabel)}</em><b>${pct}%</b></span><i><u style="--w:${Math.min(100,pct)}%"></u></i></div>`).join('')}</div>`:''}
+  ${view.note?`<p class="tx-dim-note">${icon('bolt')}${safe(view.note)}</p>`:''}
+  ${!view.rows.length&&!view.meters.length?'<p class="tx-dim-note quiet">Ehhez a szemponthoz még nincs elég adat ezen a napon.</p>':''}</div>`;}).join('')}</div>
  <div class="lf-section glass-section"><h2>A nap étkezései</h2></div>
  <div class="glass-list">${(d.meals??[]).map(([name,kcal,score])=>`<div class="glass-stat plain" style="--stat-color:${color}"><span class="gs-art">${icon('bowl')}</span><span class="gs-copy"><strong>${safe(name)}</strong><small>${fmt(kcal)} kcal</small></span><b>${icon('score')} ${score1(score)}</b></div>`).join('')}</div>
  <div class="glass-list">${rows.map(([label,art,value])=>`<div class="glass-kv"><span>${label}</span><b>${value}</b></div>`).join('')}</div>
