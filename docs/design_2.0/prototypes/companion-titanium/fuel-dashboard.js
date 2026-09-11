@@ -19,7 +19,8 @@ export function animateFuelDashboard(root=document){
 }
 
 const scoreChip=m=>m.score==null?`<span class="score-chip pending">${icon('score')}<b>folyamatban</b></span>`:`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`;
-const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span><b>${fmt(m.kcal)}<small>kcal</small></b></button>${scoreChip(m)}</div>`;
+// Row kcal intentionally omitted: the block ring already carries the number (owner 2026-09-11).
+const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span></button>${scoreChip(m)}</div>`;
 
 // 5-hour window bar: the optimal range highlighted inside the box, one marker per logged meal.
 function windowBar(block,rows){
@@ -38,7 +39,7 @@ function blockCard(block,rows,current,budgetMode='head'){
  else if(budgetMode==='ring')headRight=budgetRing(logged,block.budget);
  return `<section class="meal-block v-a" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head"><span class="block-art">${icon(block.art)}</span><strong>${block.label}</strong>${headRight}</div>${windowBar(block,rows)}${afterWindow}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
 }
-let budgetMode='head';
+let budgetMode='ring';
 function blocksSection({current,meals}){
  return mealBlocks.map(block=>blockCard(block,meals.filter(m=>blockFor(m.time)===block.key),current,budgetMode)).join('');
 }

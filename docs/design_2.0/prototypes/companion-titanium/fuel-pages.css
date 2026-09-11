@@ -81,7 +81,7 @@
 .br-track{stroke:#ffffff0e}
 .br-fill{stroke:var(--block-color);stroke-linecap:round;stroke-dasharray:var(--p) 100;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--block-color) 40%,transparent))}
 .budget-ring b{position:relative;font-size:10px;font-weight:600;color:#dbe9ec}
-.budget-ring.empty .br-fill{stroke-dasharray:0 100}
+.budget-ring.empty .br-fill{display:none}
 .budget-ring.empty b{color:#7e939c;font-weight:400}
 .block-meal{display:flex;align-items:center;gap:12px;padding:12px 0 13px;border-top:1px solid #ffffff0a}
 .block-meal-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:0;border:0;background:transparent;text-align:left;color:#e2ecef}
