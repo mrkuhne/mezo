@@ -8,7 +8,7 @@ const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
 const score1=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
 let recipes=createRecipes(),pantry=createPantry(),stack=createStack(),week='current',callbacks;
-let recipeFilter='Mind',pantryFilter='Mind',servings=1,armedDelete=null;
+let recipeFilter='Mind',pantryFilter='Mind',servings=1,servingsFor=null,armedDelete=null;
 
 // --- Konyha ---------------------------------------------------------------
 // Recipes wear the hue of the meal block they belong to — the same language as Fuel Mai.
@@ -46,6 +46,7 @@ function receptekPage(){
  ${list.length?`<div class="kx-recipe-grid">${list.map(recipeTile).join('')}</div>`:`<div class="kx-empty">${icon('bowl')}<strong>Ebben a blokkban még nincs recepted.</strong><button data-konyha-recipe>Mentsünk egyet ＋</button></div>`}`;
 }
 function recipeDetailPage(id){
+ if(servingsFor!==id){servings=1;servingsFor=id;}
  const r=recipes.find(x=>x.id===id);
  if(!r)return `<div class="kx-subhead">${back('Receptek','data-subroute="receptek"')}<span><strong>Nincs meg ez a recept</strong></span></div>`;
  const block=slotBlock(r.slot),lineKcal=r.lines.reduce((s,l)=>s+(l[2]||0),0)||1;
