@@ -101,26 +101,19 @@ function renderHub(path = '/nap?dp=nap', extraRoutes?: ReactNode) {
   )
 }
 
-// ── the companion + greeting ─────────────────────────────────────────────────
+// ── the companion (no greeting) ──────────────────────────────────────────────
 
-test('a társ a nyitóoldal középpontja, a napszak csak a köszönést váltja', async () => {
-  const nap = renderHub('/nap?dp=nap')
-  expect(await screen.findByText('Jó itt folytatni.')).toBeInTheDocument()
+test('a társ a nyitóoldal egyetlen középpontja, köszöntő szöveg nélkül (owner 2026-09-11)', async () => {
+  renderHub('/nap?dp=nap')
   // The companion IS the Életjelek door (a tap opens the detail surface).
-  expect(screen.getByRole('button', { name: 'Életjelek' })).toBeInTheDocument()
-  nap.unmount()
-
-  const reggel = renderHub('/nap?dp=reggel')
-  expect(await screen.findByText('Jó reggelt.')).toBeInTheDocument()
-  reggel.unmount()
-
-  renderHub('/nap?dp=este')
-  expect(await screen.findByText('Megérkeztél.')).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Életjelek' })).toBeInTheDocument()
+  // A köszöntő eltűnt — csak a 3D forma áll a közepén.
+  expect(document.querySelector('.nap-titan-greet')).toBeNull()
 })
 
 test('a kalauz horgonya a társ blokkján marad', async () => {
   renderHub()
-  await screen.findByText('Jó itt folytatni.')
+  await screen.findByRole('button', { name: 'Életjelek' })
   expect(document.querySelector('[data-kalauz-anchor="nap-hero"]')).not.toBeNull()
 })
 
@@ -129,7 +122,7 @@ test('reduced-motion mellett a statikus társ (SVG) jelenik meg, nem az élő je
     matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
   }))
   renderHub()
-  await screen.findByText('Jó itt folytatni.')
+  await screen.findByRole('button', { name: 'Életjelek' })
   expect(document.querySelector('.titan-svg')).not.toBeNull()
   expect(document.querySelector('.titan-scene')).toBeNull()
 })
@@ -166,7 +159,8 @@ test('üres mezővel a küldés nem navigál', async () => {
   await screen.findByPlaceholderText('Írj vagy mondj valamit Mezónak…')
   await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
   expect(screen.queryByText(/chat-surface:/)).toBeNull()
-  expect(screen.getByText('Jó itt folytatni.')).toBeInTheDocument()
+  // A társ és a mező a helyén marad — üres küldés nem navigál.
+  expect(screen.getByRole('button', { name: 'Életjelek' })).toBeInTheDocument()
 })
 
 test('a mikrofon a hang-hookot indítja', async () => {
@@ -188,7 +182,7 @@ test('a leiratozott szöveg a mezőbe kerül ellenőrzésre — nem megy el azon
 
 test('nincs többé csempe / mozaik / következő lépés / statisztika-sor a nyitóoldalon', async () => {
   renderHub('/nap?dp=este') // este volt az egyetlen napszak, ami extra csempéket/stripet hozott
-  await screen.findByText('Megérkeztél.')
+  await screen.findByRole('button', { name: 'Életjelek' })
   expect(document.querySelector('.mz-mosaic')).toBeNull()
   expect(document.querySelector('.nap-nextstep')).toBeNull()
   expect(document.querySelector('.mz-statcell')).toBeNull()
@@ -201,12 +195,11 @@ test('nincs többé csempe / mozaik / következő lépés / statisztika-sor a ny
 
 // ── the rough / anchor day ───────────────────────────────────────────────────
 
-test('horgony mód: ugyanaz a társ + composer, csendesebb köszönéssel, csempék nélkül', async () => {
+test('horgony mód: ugyanaz a társ + composer, csendesebb aurával, csempék nélkül', async () => {
   scenarioStore.anchorMode = true
   renderHub('/nap?day=rough')
-  expect(await screen.findByText('Nehéz nap — ma elég a minimum.')).toBeInTheDocument()
   // The companion and the composer are still here — the entry is the same, only calmer.
-  expect(screen.getByRole('button', { name: 'Életjelek' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Életjelek' })).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Írj vagy mondj valamit Mezónak…')).toBeInTheDocument()
   expect(document.querySelector('[data-kalauz-anchor="nap-hero"]')).not.toBeNull()
   // A quiet aura, and NO anchor tiles / exit (those tiles are gone with the rest).

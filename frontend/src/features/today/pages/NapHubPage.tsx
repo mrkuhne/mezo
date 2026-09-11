@@ -27,7 +27,6 @@ import { Icon } from '@/shared/ui/Icon'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { cn } from '@/shared/lib/cn'
 import { useTodayScenario } from '@/data/hooks'
-import { type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
@@ -37,17 +36,6 @@ import { TitanCompanion } from '@/features/today/components/TitanCompanion'
 // A composer legfeljebb ennyire nő meg (~5 sor 13px/1.45-nél), utána befelé görget —
 // ugyanaz a korlát, mint a beszélgetés-felület mezőjén (ChatPage, mezo-a837).
 const COMPOSER_MAX_HEIGHT = 104
-
-/** The companion's opening line per daypart — the ONE thing the hour is allowed to
- *  change on this page. Reused verbatim from the pre-companion-first Nap Mai. */
-const GREETING: Record<DayFace, string> = {
-  reggel: 'Jó reggelt.',
-  nap: 'Jó itt folytatni.',
-  este: 'Megérkeztél.',
-}
-
-/** A nehéz nap („horgony mód") csendesebb köszönése — a társ ITT IS ott van, csak halkabban. */
-const ANCHOR_GREETING = 'Nehéz nap — ma elég a minimum.'
 
 export function NapHubPage() {
   const navigate = useNavigate()
@@ -84,19 +72,17 @@ export function NapHubPage() {
     setDraft('')
   }
 
-  const greeting = scenario.anchorMode ? ANCHOR_GREETING : GREETING[face]
-
   return (
     <div className="nap-hub nap-titan nap-companion-page">
       <EntranceGroup replayKey={face} className="mz-panel-stack nap-companion-stack">
-        {/* ── a társ — a teljes képernyő közepén, doboz nélkül ───────────── */}
+        {/* ── a társ — a teljes képernyő közepén, csak a 3D elem (doboz, aura és
+            köszöntő nélkül, owner 2026-09-11) ────────────────────────────── */}
         <div
           className={cn('nap-companion-hero rise', scenario.anchorMode && 'nap-titan-quiet')}
           data-kalauz-anchor="nap-hero"
           style={{ '--d': '0ms' } as React.CSSProperties}
         >
           <TitanCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} />
-          <h2 className="nap-titan-greet">{greeting}</h2>
         </div>
 
         {/* ── a társhoz írni: mező + mikrofon, alul a menü fölött ─────────── */}

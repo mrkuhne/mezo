@@ -11924,8 +11924,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .titan-core { transform-origin: 90px 90px; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .titan-form { animation: titan-spin 60s linear infinite; }
-  .titan-rings { animation: titan-spin-back 84s linear infinite; }
+  .titan-form { animation: titan-spin 30s linear infinite; }
+  .titan-rings { animation: titan-spin-back 42s linear infinite; }
   .titan-planet { animation: titan-orbit 22s linear infinite; transform-origin: 90px 90px; }
   .titan-core { animation: titan-glow 7s ease-in-out infinite; }
 }
@@ -11982,11 +11982,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .nap-companion-hero .titan-companion.is-live { height: min(46vh, 340px); }
 .nap-companion-hero .titan-companion:not(.is-live) { width: 240px; height: 240px; }
-/* DOBOZ NÉLKÜL: a jelenet renderelője már átlátszó (alpha), így a keret pusztán CSS —
-   itt levesszük a belső keret-árnyékot és a panel-lekerekítést, hogy a társ közvetlenül a
-   sötét háttéren lebegjen (a fentről/lentről elhalványító maszk marad, hogy beleolvadjon). */
+/* CSAK a 3D elem (owner 2026-09-11): se doboz, se homályos kör. A jelenet renderelője már
+   átlátszó (alpha), így a „doboz" pusztán CSS — levesszük a belső keret-árnyékot, a panel-
+   lekerekítést ÉS a maszkot; az aurát (a homályos színes kör) pedig elrejtjük. Marad a puszta
+   forgó 3D forma a sötét háttéren. */
 .nap-companion-hero .titan-companion { box-shadow: none; }
-.nap-companion-hero .titan-scene { border-radius: 0; }
+.nap-companion-hero .titan-scene { border-radius: 0; -webkit-mask-image: none; mask-image: none; }
+.nap-companion-hero .titan-aura { display: none; }
+/* A bloom-composer ÁTLÁTSZATLAN #000 hátteret ad — ez volt a „fekete doboz". Ahelyett, hogy a
+   canvas keverésével bajlódnánk (a belépő-animáció stacking-contextje elszigetelné), a `/nap`
+   tartalmi hátterét TISZTA FEKETÉRE vesszük: a jelenet #000-ja így nyom nélkül beleolvad, csak a
+   világító 3D forma marad — keret nélkül. A fejléc/menü a saját (közel fekete) felületén marad. */
+.nap-companion-page { background: #000; }
+/* Lélegzetnyi tér a mező és az alsó menü között. */
+.nap-companion-page .nap-composer-wrap { padding-bottom: 18px; }
 .nap-composer-wrap { margin-top: auto; display: flex; flex-direction: column; gap: 7px; padding: 0 4px 4px; }
 .nap-composer-err { font-size: 11px; text-align: center; color: var(--coral-deep); margin: 0; }
 .nap-composer { width: 100%; }
