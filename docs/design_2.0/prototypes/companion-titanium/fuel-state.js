@@ -25,6 +25,8 @@ export function createPantry(){return [
  {id:'k-zab',name:'Zabpehely',kind:'food',category:'Gabona',amount:'500 g',source:'katalógus',addedDays:9,kcal100:372,p100:13.5,c100:58.7,f100:7,fiber100:10.6,sugar100:1,salt100:.01,satfat100:1.3,nova:1},
  {id:'k-tojas',name:'Tojás',kind:'food',category:'Tojás',amount:'10 db',source:'kézi',addedDays:6,kcal100:143,p100:12.6,c100:.7,f100:9.5,fiber100:0,sugar100:.4,salt100:.36,satfat100:3.1,nova:1},
  {id:'k-tortilla',name:'Tortilla lap',kind:'food',category:'Pékáru',amount:'6 db',source:'fotó',addedDays:3,kcal100:310,p100:8.5,c100:50,f100:7.5,fiber100:null,sugar100:null,salt100:null,satfat100:3,nova:4},
+ {id:'k-cink',name:'Cink-glükonát',kind:'supp',category:'Ásványi anyag',amount:'100 tabletta',source:'fotó',addedDays:2,dose:'15 mg / tabletta',timing:null},
+ {id:'k-k2',name:'K2-vitamin (MK-7)',kind:'supp',category:'Vitamin',amount:'60 kapszula',source:'katalógus',addedDays:7,dose:'100 µg / kapszula',timing:null},
  {id:'k-d3',name:'D3-vitamin',kind:'supp',category:'Vitamin',amount:'90 kapszula',source:'katalógus',addedDays:20,dose:'4000 NE',timing:'Reggelivel'},
  {id:'k-kreatin',name:'Kreatin-monohidrát',kind:'supp',category:'Teljesítmény',amount:'300 g',source:'link',addedDays:12,dose:'5 g',timing:'Ebéd után'},
  {id:'k-magnezium',name:'Magnézium-biszglicinát',kind:'supp',category:'Ásványi anyag',amount:'120 kapszula',source:'katalógus',addedDays:15,dose:'200 mg',timing:'Vacsorával'},
@@ -37,10 +39,10 @@ export const pantrySwaps=[{from:'Tortilla lap',to:'Teljes kiőrlésű tortilla',
 // --- Kiegészítők: protocol + intakes --------------------------------------
 export function createStack(){return {
  items:[
-  {id:'s-d3',name:'D3-vitamin',dose:'4000 NE',zone:'reggel',zoneLabel:'Reggelivel',pantryId:'k-d3',why:'A téli félévben mért alacsony szint miatt.',source:'saját döntés'},
-  {id:'s-omega',name:'Omega-3',dose:'1000 mg',zone:'reggel',zoneLabel:'Reggelivel',pantryId:null,why:'Zsírsav-egyensúly; étkezéssel szívódik jól.',source:'okos elhelyezés'},
-  {id:'s-kreatin',name:'Kreatin',dose:'5 g',zone:'delben',zoneLabel:'Ebéd után',pantryId:'k-kreatin',why:'Erőépítés; a napszak mindegy, a rendszeresség számít.',source:'okos elhelyezés'},
-  {id:'s-magnezium',name:'Magnézium',dose:'200 mg',zone:'este',zoneLabel:'Vacsorával',pantryId:'k-magnezium',why:'Esti lecsendesedés és alvásminőség.',source:'saját döntés'},
+  {id:'s-d3',name:'D3-vitamin',dose:'4000 NE',zone:'reggel',zoneLabel:'Reggelivel',pantryId:'k-d3',dailyTarget:4000,unit:'NE',product:{perUnit:2000,unitForm:'kapszula',container:90},reason:'Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.',why:'A téli félévben mért alacsony szint miatt.',source:'saját döntés'},
+  {id:'s-omega',name:'Omega-3',dose:'1000 mg',zone:'reggel',zoneLabel:'Reggelivel',pantryId:null,dailyTarget:1000,unit:'mg',product:{perUnit:500,unitForm:'kapszula',container:60},reason:'Zsírban oldódó — zsíros étkezéssel szívódik fel jól.',why:'Zsírsav-egyensúly; étkezéssel szívódik jól.',source:'okos elhelyezés'},
+  {id:'s-kreatin',name:'Kreatin',dose:'5 g',zone:'delben',zoneLabel:'Ebéd után',pantryId:'k-kreatin',dailyTarget:5,unit:'g',product:{perUnit:5,unitForm:'adagolókanál',container:60},reason:'Étkezéstől független — a napi konzisztencia számít, nem az időpont.',why:'Erőépítés; a napszak mindegy, a rendszeresség számít.',source:'okos elhelyezés'},
+  {id:'s-magnezium',name:'Magnézium',dose:'200 mg',zone:'este',zoneLabel:'Vacsorával',pantryId:'k-magnezium',dailyTarget:400,unit:'mg',product:{perUnit:200,unitForm:'kapszula',container:120},reason:'Este — GABA-moduláció és mélyalvás-támogatás, lefekvés előtt ~2 órával.',why:'Esti lecsendesedés és alvásminőség.',source:'saját döntés'},
  ],
  taken:new Set(['s-d3','s-omega']),
  times:{'s-d3':'07:42','s-omega':'07:42'},
@@ -58,6 +60,31 @@ export function nextDue(stack){
  return [...stack.items].sort((a,b)=>order.indexOf(a.zone)-order.indexOf(b.zone)).find(i=>!stack.taken.has(i.id))??null;
 }
 export function addStackItem(stack,{name,dose='',zone='reggel',zoneLabel='Reggelivel'}){if(!name)return null;const item={id:id('s'),name,dose,zone,zoneLabel,pantryId:null,why:'Új elem · az okos elhelyezés tette a helyére.',source:'okos elhelyezés'};stack.items.push(item);return item;}
+// Demo reference for the dose advisor. Mirrors what production knows today (the placement rule
+// table's zone + Hungarian reason) PLUS the piece that does not exist yet: a recommended daily
+// range per substance. Sample data, never medical advice.
+export const SUPPLEMENT_REFERENCE=[
+ {match:/d3|d-vitamin/,name:'D3-vitamin',unit:'NE',daily:[2000,4000],zone:'delben',zoneLabel:'Ebéddel',reason:'Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.',caution:'Tartósan magas adag előtt érdemes vérszintet méretni; K2-vel együtt szokás szedni.'},
+ {match:/k2|mk-7/,name:'K2-vitamin',unit:'µg',daily:[100,200],zone:'delben',zoneLabel:'Ebéddel',reason:'Zsírban oldódó — a D3-mal együtt, zsíros étkezéshez.',caution:'Véralvadásgátló mellett csak orvosi egyeztetéssel.'},
+ {match:/magn/,name:'Magnézium',unit:'mg',daily:[200,400],zone:'este',zoneLabel:'Vacsorával',reason:'Este — GABA-moduláció és mélyalvás-támogatás, lefekvés előtt ~2 órával.',caution:'Egyszerre sok magnézium emésztést zavarhat; ilyenkor oszd két részre.'},
+ {match:/kreatin|creatine/,name:'Kreatin',unit:'g',daily:[3,5],zone:'reggel',zoneLabel:'Ébredés után',reason:'Étkezéstől független — a napi konzisztencia számít, nem az időpont.',caution:null},
+ {match:/cink|zinc/,name:'Cink',unit:'mg',daily:[10,15],zone:'este',zoneLabel:'Vacsorával',reason:'Vacsorához — távol a reggeli koffeintől és a többi ásványi anyagtól.',caution:'Éhgyomorra gyakran émelygést okoz; hosszú távon nagy adag rézhiányt okozhat.'},
+ {match:/omega|halolaj|krill/,name:'Omega-3',unit:'mg',daily:[1000,2000],zone:'delben',zoneLabel:'Ebéddel',reason:'Zsírban oldódó — zsíros étkezéssel szívódik fel jól.',caution:null},
+];
+// Turns a product label into a plan: how much a day, how many units of THIS product, when, and how
+// long the package lasts. Returns null when the substance is unknown — we never guess a dose.
+export function doseAdvice({name='',perUnit,unitForm='kapszula',container=null,dailyOverride=null}){
+ const reference=SUPPLEMENT_REFERENCE.find(r=>r.match.test(String(name).toLocaleLowerCase('hu-HU')));
+ if(!reference)return null;
+ if(!Number.isFinite(perUnit)||perUnit<=0)return {...reference,unknownProduct:true};
+ const target=Number.isFinite(dailyOverride)&&dailyOverride>0?dailyOverride:reference.daily[1];
+ const units=Math.max(1,Math.round(target/perUnit));
+ const daily=Math.round(units*perUnit*100)/100;
+ return {substance:reference.name,unit:reference.unit,range:reference.daily,target,units,unitForm,daily,
+  days:Number.isFinite(container)&&container>0?Math.floor(container/units):null,
+  zone:reference.zone,zoneLabel:reference.zoneLabel,reason:reference.reason,caution:reference.caution,
+  matchesTarget:Math.abs(daily-target)<=perUnit*0.01,unknownProduct:false};
+}
 export const stackZones=[['reggel','Reggel'],['delben','Délben'],['este','Este']];
 
 // --- Trendek: weekly picture + long horizon --------------------------------

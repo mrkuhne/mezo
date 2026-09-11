@@ -864,3 +864,39 @@ dialog.glass .sheet-handle{display:none}
 .sx-proto-row strong{display:block;font-size:12px;font-weight:500}
 .sx-proto-row small{display:block;margin:3px 0 4px;font-size:9px;color:#8a9ba3}
 .sx-proto-row p{margin:0;font-size:11px;line-height:1.5;color:#aebdc4}
+/* Protokoll: dose + timing per item; the AI-supported setup wizard */
+.sx-dose-card{margin:12px 0 0;padding:12px;border:1px solid color-mix(in srgb,var(--kx) 26%,transparent);border-radius:16px;background:linear-gradient(155deg,color-mix(in srgb,var(--kx) 12%,transparent),#ffffff02 66%)}
+.sx-dose-head{display:flex;align-items:center;gap:10px}
+.sx-dose-art .icon{width:32px;height:32px;filter:drop-shadow(0 5px 6px #0007)}
+.sx-dose-head strong{display:block;font-size:14px;font-weight:600;color:#e6eef1}
+.sx-dose-head small{display:block;margin-top:2px;font-size:10px;color:#93a3ab}
+.sx-dose-main{display:flex;align-items:baseline;gap:8px;margin:10px 0 8px}
+.sx-dose-main strong{font-size:30px;font-weight:500;letter-spacing:-1px;color:color-mix(in srgb,var(--kx) 62%,#fff)}
+.sx-dose-main strong small{font-size:12px;letter-spacing:0;color:#8a9ba3}
+.sx-dose-main em{font-style:normal;font-size:11px;color:#93a3ab}
+.sx-dose-main b{margin-left:auto;font-size:13px;font-weight:600;color:#e2ecef}
+.sx-dose-facts{display:flex;flex-wrap:wrap;gap:6px}
+.sx-dose-facts span{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:11px;background:#ffffff0a;font-size:10px;color:#d3dee2}
+.sx-dose-facts em{font-style:normal;font-size:9px;color:#8fa0a8}
+.sx-dose-why{display:flex;align-items:flex-start;gap:8px;margin:10px 0 0;padding-top:9px;border-top:1px solid #ffffff0d;font-size:11px;line-height:1.5;color:#b6c3c9}
+.sx-dose-why .icon{width:20px;height:20px;flex:0 0 auto}
+.sx-dose-why.big{margin:12px 0;padding:12px;border:1px solid #d9c39530;border-radius:14px;background:#d9c3950f;font-size:12px;color:#e7dcc2}
+.sx-dose-why.big .icon{width:24px;height:24px}
+.sx-dose-note{margin:9px 0 0;font-size:11px;line-height:1.5;color:#93a3ab}
+.sx-steps{display:flex;gap:6px;margin:12px 0 14px}
+.sx-steps span{flex:1;padding:6px 4px;border-radius:11px;background:#ffffff08;text-align:center;font-size:9px;letter-spacing:.6px;color:#8a9ba3}
+.sx-steps span.on{background:#bca6f124;color:#e6dcfb}
+.sx-form{display:grid;gap:2px}
+.sx-form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sx-advice{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px 12px 14px;border:1px solid color-mix(in srgb,var(--kx) 35%,transparent);border-radius:18px;background:radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--kx) 22%,transparent),#ffffff03 70%)}
+.sx-advice-art .icon{width:56px;height:56px;filter:drop-shadow(0 8px 10px #0008) drop-shadow(0 0 12px color-mix(in srgb,var(--kx) 40%,transparent))}
+.sx-advice>strong{margin-top:6px;font-size:34px;font-weight:500;letter-spacing:-1.2px;color:#f2eefd}
+.sx-advice>em{font-style:normal;font-size:11px;letter-spacing:1px;color:#a99fc2}
+.sx-advice p{margin:9px 0 0;font-size:12px;line-height:1.55;color:#c3cfd5}
+.sx-advice p b{color:#e6eef1}
+.sx-advice-days{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 11px;border-radius:14px;background:#ffffff0b;font-size:10px;color:#b6c3c9}
+.sx-advice-days .icon{width:18px;height:18px}
+.sx-tune{margin:12px 0}
+.sx-tune .overline{display:block;margin-bottom:7px}
+.sx-tune .wsx-stepper{--block-color:#bca6f1}
+.sx-tune .lf-chips{gap:6px}
