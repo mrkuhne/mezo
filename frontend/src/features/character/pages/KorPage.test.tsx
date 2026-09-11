@@ -70,6 +70,6 @@ describe('KorPage', () => {
   test('back arrow returns to Adatforrások', async () => {
     render(<KorPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/adatforrasok')
   })
 })

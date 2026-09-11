@@ -85,7 +85,7 @@ export function RunPage() {
 
   if (isLoading || expertsLoading) return null
 
-  const goFutasok = () => navigate('/me/karakter/gepterem/futasok')
+  const goFutasok = () => navigate('/mezo/karakter/gepterem/futasok')
 
   if (run == null) {
     return (
@@ -172,7 +172,7 @@ export function RunPage() {
               <button
                 type="button"
                 className="cta kr-runlink"
-                onClick={() => navigate(`/me/karakter/konzilium?id=${summary.conferenceId}`)}
+                onClick={() => navigate(`/mezo/karakter/konzilium?id=${summary.conferenceId}`)}
               >
                 Teljes transzkript megnyitása ›
               </button>

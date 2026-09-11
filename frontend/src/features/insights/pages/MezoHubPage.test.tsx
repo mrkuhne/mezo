@@ -140,7 +140,7 @@ describe('MezoHubPage (mock mode)', () => {
     // tile-header-layout: normál, 2-per-sor cella — nincs többé teljes soros csempe
     expect(karakter.classList.contains('mz-tile-wide')).toBe(false)
     await userEvent.click(karakter)
-    expect(screen.getByTestId('location')).toHaveTextContent('/me/karakter')
+    expect(screen.getByTestId('location')).toHaveTextContent('/mezo/karakter')
   })
 
   test('a Karakter csempe az élő átlag CORE érettséget mutatja (post-bootstrap)', () => {

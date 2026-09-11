@@ -30,6 +30,6 @@ describe('AdatforrasokPage — with a planned round', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Tervezett' }))
     expect(screen.queryByText('Mind a négy kör bekötve.')).not.toBeInTheDocument()
     await userEvent.click(screen.getByText('Teszt kör'))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok/kor/7')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/adatforrasok/kor/7')
   })
 })

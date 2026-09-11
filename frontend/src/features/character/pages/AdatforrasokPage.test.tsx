@@ -40,6 +40,6 @@ describe('AdatforrasokPage', () => {
   test('back arrow returns to Gépterem', async () => {
     render(<AdatforrasokPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem')
   })
 })
