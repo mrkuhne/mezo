@@ -280,8 +280,8 @@ button.fuel-focus{display:block;width:100%;border:0;background:transparent;text-
 .hero-side small{display:block;margin-top:6px;font-size:7px;letter-spacing:1.2px;color:#748a93}
 .hero-side.lead strong{color:#ecf6f6;text-shadow:0 0 22px #83d7e729}
 .hero-side.lead small{color:#8bbbc5}
-.fuel-gauge.small{width:96px;height:96px;flex:0 0 96px}
-.fuel-gauge.small .fuel-gauge-art,.fuel-gauge.small .fuel-gauge-art .icon{width:64px;height:64px}
+.fuel-gauge.small{width:106px;height:106px;flex:0 0 106px}
+.fuel-gauge.small .fuel-gauge-art,.fuel-gauge.small .fuel-gauge-art .icon{width:71px;height:71px}
 .hero-track{position:relative;height:14px;margin:10px 2px 8px;border-radius:8px;background:#ffffff08}
 .hero-track i{position:absolute;inset:0;width:var(--w);border-radius:8px;background:linear-gradient(90deg,#569eb4,#9fdcec);box-shadow:0 0 12px #8ed2e833}
 .hero-track b{position:absolute;right:0;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#ffffff2e}
