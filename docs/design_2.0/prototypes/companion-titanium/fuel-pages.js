@@ -24,14 +24,13 @@ const deleteControl=(kind,id,label)=>armedDelete===`${kind}:${id}`?`<div class="
 function konyha(){
  const food=pantry.filter(k=>k.kind==='food').length,supp=pantry.length-food;
  const favourite=[...recipes].sort((a,b)=>(b.eaten||0)-(a.eaten||0))[0];
- const fresh=[...pantry].filter(k=>k.addedDays!=null).sort((a,b)=>a.addedDays-b.addedDays).slice(0,3);
  return `<div class="kx-captures">
   <button class="kx-capture" style="--kx:#bca6f1" data-konyha-recipe><span class="kx-capture-art">${icon('book')}</span><b class="kx-plus">＋</b><strong>Recept mentése</strong><small>Műhely · link · kézzel</small></button>
   <button class="kx-capture" style="--kx:#d9c395" data-konyha-pantry><span class="kx-capture-art">${icon('camera')}</span><b class="kx-plus">＋</b><strong>Új elem a kamrába</strong><small>Fotó · link · katalógus</small></button>
  </div>
  <button class="kx-poster" style="--kx:#bca6f1" data-subroute="receptek"><span class="kx-poster-head"><span class="kx-poster-title">${icon('book')}<strong>Receptek</strong></span><b>↗</b></span><span class="kx-poster-main"><strong>${recipes.length}</strong><span class="kx-bowls">${recipes.slice(0,5).map(r=>`<i style="--slot:${slotBlock(r.slot).color}">${icon('bowl')}</i>`).join('')}</span></span>${favourite?.eaten?`<span class="kx-poster-foot">${icon('score')}<span>Kedvenced most: <b>${safe(favourite.name)}</b> · ${favourite.eaten}× etted</span></span>`:''}</button>
  <button class="kx-poster" style="--kx:#d9c395" data-subroute="kamra"><span class="kx-poster-head"><span class="kx-poster-title">${icon('stack')}<strong>Kamra</strong></span><b>↗</b></span><span class="kx-poster-main"><strong>${pantry.length}</strong><span class="kx-split" role="img" aria-label="${food} étel, ${supp} kiegészítő"><i style="--w:${pantry.length?food/pantry.length*100:0}%"></i><u></u></span></span><span class="kx-legend"><em>${icon('carb')}${food} étel</em><em>${icon('micro')}${supp} kiegészítő</em></span></button>
- ${fresh.length?`<div class="lf-section"><h2>Legutóbb érkezett</h2></div><div class="kx-fresh">${fresh.map(k=>{const [color,art]=pantryStyle(k);return `<button class="kx-fresh-tile" style="--kx:${color}" data-pantry-open="${k.id}"><span class="kx-fresh-art">${icon(art)}</span><strong>${safe(k.name)}</strong><em>${icon(SOURCE_ICON[k.source]||'chat')}${added(k.addedDays)}</em></button>`;}).join('')}</div>`:''}`;
+`;
 }
 
 function recipeTile(r){
