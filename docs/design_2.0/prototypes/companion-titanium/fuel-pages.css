@@ -486,3 +486,9 @@ dialog.glass .sheet-handle{display:none}
 .micro-card.low .mc-end em{background:#e0b56e26;color:#ecd09e}
 .micro-card.unknown{border-style:dashed;opacity:.72}
 @media(max-width:360px){.meal-hero3{grid-template-columns:1fr}.mh-left{min-width:0}}
+/* Header chip must never push off-screen; hero glow without hard edges */
+.score-head>span{flex:1;min-width:0}
+.score-head>span strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score-head>.score-chip{flex:0 0 auto}
+.meal-hero3{overflow:visible}
+.meal-hero3 .mh-glow{top:-46px;left:23%;width:270px;height:270px;background:radial-gradient(circle,color-mix(in srgb,var(--block-color) 22%,transparent) 0,transparent 62%)}
