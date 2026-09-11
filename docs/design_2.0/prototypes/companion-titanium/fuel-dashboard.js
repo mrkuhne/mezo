@@ -95,6 +95,21 @@ export function ingredientStyle(name){
  if(/zöldség|gyümölcs|brokkoli|paprika|banán|erdei|saláta/.test(n))return ['#8fd97a','fiber'];
  return ['#8ed2e8','bowl'];
 }
+// Shared by the meal and recipe detail pages. lines: [{amount,kcal,nova}].
+export function qualityTilesHtml(lines,plants){
+ const lineKcal=lines.reduce((sum,l)=>sum+(l.kcal||0),0);
+ const baseShare=lines.length&&lineKcal?Math.round(lines.filter(l=>l.nova===1).reduce((sum,l)=>sum+(l.kcal||0),0)/lineKcal*100):null;
+ const grams=lines.map(l=>{const g=/^(\d+(?:[.,]\d+)?)\s*g\b/.exec(l.amount||'');return g?Number(g[1].replace(',','.')):null;});
+ const density=lines.length&&lineKcal&&grams.every(g=>g!=null)?Math.round(lineKcal/grams.reduce((sum,g)=>sum+g,0)*100):null;
+ const ultra=lines.filter(l=>l.nova===4).length;
+ const tiles=[['Alapanyag-arány',baseShare,'%','processing','#d9c395'],['Növényféle',plants??null,'féle','sprout','#7fd6b0'],['Energiasűrűség',density,'kcal/100 g','bolt','#f0b36e'],['Ultra-feldolgozott',lines.length?ultra:null,'tétel','stack',ultra?'#e08a7c':'#8ed2e8']];
+ return `<div class="nutri-tiles">${tiles.map(([label,v,unit,art,color])=>`<div class="nutri-tile ${v==null?'unknown':''}" style="--nt-color:${color}"><span class="nt-top"><span class="nt-art">${icon(art)}</span><strong>${v==null?'—':fmt1(v)}<small>${v==null?'':unit}</small></strong></span><span class="nt-label">${label}</span></div>`).join('')}</div>`;
+}
+// Stored nutrition-quality facts against the per-meal allotment; scale multiplies servings.
+export function microCardsHtml({fiber,sugar,salt,satfat},scale=1){
+ const rows=[['Rost',fiber,7,'fiber','#8fd97a',v=>v>=6?'good':'ok','cél'],['Cukor',sugar,25,'sugar','#f0a8c8',v=>v<=12?'good':v<=22?'ok':'low','keret'],['Só',salt,1.7,'salt','#b9c7d6',v=>v<=1?'good':'ok','keret'],['Telített zsír',satfat,7,'fat','#f0b36e',v=>v<=5?'good':v<=9?'ok':'low','keret']];
+ return `<div class="micro-list">${rows.map(([label,raw,allot,art,color,status,kind])=>{if(raw==null)return `<div class="micro-card unknown" style="--mc-color:${color}"><span class="mc-art">${icon(art)}</span><span class="mc-copy"><strong>${label}</strong><small>a forrás nem adott értéket</small></span><span class="mc-end"><b>—</b><em>nincs adat</em></span></div>`;const v=raw*scale,s=status(raw),pct=Math.round(raw/allot*100);return `<div class="micro-card ${s}" style="--mc-color:${color}"><span class="mc-art">${icon(art)}</span><span class="mc-copy"><strong>${label}</strong><i><b style="--w:${Math.min(100,pct)}%"></b></i><small>adagonként az étkezés-${kind} ${pct}%-a</small></span><span class="mc-end"><b>${fmt1(v)} g</b><em>${STATUS_LABEL[s]}</em></span></div>`;}).join('')}</div><p class="nutri-note">A „—" azt jelenti: a forrás nem adott értéket — nem nulla, és nem találgatjuk.</p>`;
+}
 function mealDetailPage(id){
  const m=mealRecord(id);
  if(!m)return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza">‹</button><span><strong>Nincs meg ez az étkezés</strong></span></div>`;
@@ -106,14 +121,6 @@ function mealDetailPage(id){
  // Macro rings: each macro's share of THIS meal's energy (4/4/9 kcal per gram).
  const pK=(mk.p??0)*4,cK=(mk.c??0)*4,fK=(mk.f??0)*9,macroK=pK+cK+fK||1;
  const shareRing=(name,art,kcal,grams,color)=>{const pct=Math.round(kcal/macroK*100);return `<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring share" style="--macro-color:${color};--ring-progress:${pct}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: az étel energiájának ${pct}%-a, ${fmt(grams??0)} g"><strong><span data-fuel-count="${pct}">0</span><i>%</i></strong><b>${fmt(grams??0)} g</b></span></div><span class="macro-name">${name}</span></div>`;};
- // Quality: derived facts only (NOVA mix, plant count, energy density, ultra-processed lines).
- const baseShare=lines.length?Math.round(lines.filter(l=>l[4]===1).reduce((s,l)=>s+(l[3]||0),0)/lineKcal*100):null;
- const ultra=lines.filter(l=>l[4]===4).length;
- const grams=lines.map(l=>{const g=/^(\d+(?:[.,]\d+)?)\s*g\b/.exec(l[1]);return g?Number(g[1].replace(',','.')):null;});
- const density=lines.length&&grams.every(g=>g!=null)?Math.round(mk.kcal/grams.reduce((s,g)=>s+g,0)*100):null;
- const quality=[['Alapanyag-arány',baseShare,'%','processing','#d9c395'],['Növényféle',facts?.plants??null,'féle','sprout','#7fd6b0'],['Energiasűrűség',density,'kcal/100 g','bolt','#f0b36e'],['Ultra-feldolgozott',lines.length?ultra:null,'tétel','stack',ultra?'#e08a7c':'#8ed2e8']];
- // Micronutrients: the stored nutrition-quality facts against a per-meal allotment (same rows the score uses).
- const micro=[['Rost',mk.fiber,7,'fiber','#8fd97a',v=>v>=6?'good':'ok','cél'],['Cukor',n.sugar,25,'sugar','#f0a8c8',v=>v<=12?'good':v<=22?'ok':'low','keret'],['Só',n.salt,1.7,'salt','#b9c7d6',v=>v<=1?'good':'ok','keret'],['Telített zsír',n.satfat,7,'fat','#f0b36e',v=>v<=5?'good':v<=9?'ok':'low','keret']];
  const aiOrigin=/AI/.test(m.provenance);
  return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>${safe(m.slot||block.label).toLocaleUpperCase('hu-HU')}${m.history?' · KORÁBBI NAP':''}</small><strong>${safe(m.name)}</strong></span>${m.score!=null?`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`:''}</div>
  <div class="meal-hero3" style="--block-color:${block.color}"><span class="mh-glow"></span>
@@ -124,11 +131,8 @@ function mealDetailPage(id){
  <section class="fuel-rings three" aria-label="Az étel energiájának megoszlása">${shareRing('Fehérje','meat',pK,mk.p,'#e08a7c')}${shareRing('Szénhidrát','carb',cK,mk.c,'#d9c395')}${shareRing('Zsír','avocado',fK,mk.f,'#cdd170')}</section>
  <div class="lf-section"><h2>Hozzávalók</h2></div>
  <div class="ing-list">${lines.length?lines.map(([name,amount,source,kcal,nova])=>{const [color,art]=ingredientStyle(name),share=kcal?Math.round(kcal/lineKcal*100):null;return `<div class="ing-row" style="--ing-color:${color}"><span class="ing-art">${icon(art)}</span><span class="ing-copy"><strong>${safe(name)}</strong><span class="ing-meta"><em>${icon(source==='kamra'?'stack':'chat')}${safe(source)}</em>${nova?`<em class="nova" style="--nova:${NOVA_COLOR[nova]}"><i></i>${NOVA_SHORT[nova]}</em>`:''}</span>${share!=null?`<i class="ing-bar"><b style="--w:${share}%"></b></i>`:''}</span><span class="ing-end"><b>${kcal==null?'—':fmt(kcal)}<small>kcal</small></b><small>${safe(amount)}</small></span></div>`;}).join(''):`<p class="block-empty">Ehhez az étkezéshez nincsenek részletezett sorok.</p>`}</div>
- <div class="lf-section"><h2>Minőség</h2></div>
- <div class="nutri-tiles">${quality.map(([label,v,unit,art,color])=>`<div class="nutri-tile ${v==null?'unknown':''}" style="--nt-color:${color}"><span class="nt-top"><span class="nt-art">${icon(art)}</span><strong>${v==null?'—':fmt1(v)}<small>${v==null?'':unit}</small></strong></span><span class="nt-label">${label}</span></div>`).join('')}</div>
- <div class="lf-section"><h2>Mikrotápanyagok</h2></div>
- <div class="micro-list">${micro.map(([label,v,allot,art,color,status,kind])=>{if(v==null)return `<div class="micro-card unknown" style="--mc-color:${color}"><span class="mc-art">${icon(art)}</span><span class="mc-copy"><strong>${label}</strong><small>a forrás nem adott értéket</small></span><span class="mc-end"><b>—</b><em>nincs adat</em></span></div>`;const s=status(v),pct=Math.round(v/allot*100);return `<div class="micro-card ${s}" style="--mc-color:${color}"><span class="mc-art">${icon(art)}</span><span class="mc-copy"><strong>${label}</strong><i><b style="--w:${Math.min(100,pct)}%"></b></i><small>az étkezésre jutó ${kind} ${pct}%-a</small></span><span class="mc-end"><b>${fmt1(v)} g</b><em>${STATUS_LABEL[s]}</em></span></div>`;}).join('')}</div>
- <p class="nutri-note">A „—" azt jelenti: a forrás nem adott értéket — nem nulla, és nem találgatjuk.</p>
+ <div class="lf-section"><h2>Minőség</h2></div>${qualityTilesHtml(lines.map(([,amount,,kcal,nova])=>({amount,kcal,nova})),facts?.plants)}
+ <div class="lf-section"><h2>Mikrotápanyagok</h2></div>${microCardsHtml({fiber:mk.fiber,sugar:n.sugar,salt:n.salt,satfat:n.satfat})}
  <div class="lf-section"><h2>Eredet</h2></div>
  <div class="prov-card"><span class="prov-art">${icon(aiOrigin?'score':'book')}</span><span><strong>${safe(m.provenance)}</strong><small>Minden érték a mentéskori pillanatkép — a katalógus későbbi módosítása nem írja át a múltat.</small></span></div>
  ${m.history?'':`<button class="meal-edit" data-food-edit="${m.id}">${icon('book')}<span>Szerkesztem az étkezést</span><b>›</b></button>`}`;

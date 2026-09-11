@@ -2,7 +2,7 @@
 import { createRecipes, addRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, longHorizon, patterns } from './fuel-state.js';
 import { mealBlocks } from './food-state.js';
 import { openFoodFixed } from './food.js';
-import { energyDetailHtml, dimGlassHtml, ingredientStyle, NOVA_COLOR, NOVA_SHORT } from './fuel-dashboard.js';
+import { energyDetailHtml, dimGlassHtml, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
 const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
@@ -58,6 +58,8 @@ function recipeDetailPage(id){
  <div class="lf-section"><h2>Makrók</h2></div>${shareRings(r.p,r.c,r.f,servings)}
  <div class="lf-section"><h2>Hozzávalók</h2></div>
  <div class="ing-list">${r.lines.length?r.lines.map(([name,amount,kcal,nova])=>{const [color,art]=ingredientStyle(name),share=kcal?Math.round(kcal/lineKcal*100):null;return `<div class="ing-row" style="--ing-color:${color}"><span class="ing-art">${icon(art)}</span><span class="ing-copy"><strong>${safe(name)}</strong><span class="ing-meta">${nova?`<em class="nova" style="--nova:${NOVA_COLOR[nova]}"><i></i>${NOVA_SHORT[nova]}</em>`:''}${servings>1?`<em>${icon('ring')}× ${servings}</em>`:''}</span>${share!=null?`<i class="ing-bar"><b style="--w:${share}%"></b></i>`:''}</span><span class="ing-end"><b>${kcal==null?'—':fmt(kcal*servings)}<small>kcal</small></b><small>${safe(amount)}</small></span></div>`;}).join(''):`<p class="block-empty">A hozzávalók még nincsenek részletezve.</p>`}</div>
+ <div class="lf-section"><h2>Minőség</h2></div>${qualityTilesHtml(r.lines.map(([,amount,kcal,nova])=>({amount,kcal,nova})),r.plants)}
+ <div class="lf-section"><h2>Mikrotápanyagok</h2></div>${microCardsHtml({fiber:r.fiber,sugar:r.sugar,salt:r.salt,satfat:r.satfat},servings)}
  <div class="prov-card"><span class="prov-art">${icon('score')}</span><span><strong>Mezo jegyzete</strong><small>${safe(r.note)}</small></span></div>
  <button class="meal-edit kx-primary" data-recipe-log="${r.id}">${icon('bowl')}<span>Ma ettem ilyet — naplózom</span><b>›</b></button>
  <button class="meal-edit kx-secondary" data-workshop-iterate="${r.id}">${icon('score')}<span>Iterálás a Műhelyben</span><b>›</b></button>
