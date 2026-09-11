@@ -83,9 +83,9 @@ function variantsPage(overview){
 export function setBudgetMode(mode){budgetMode=mode;}
 
 // --- Meal detail ------------------------------------------------------------
-const NOVA_COLOR={1:'#8fd97a',2:'#8ed2e8',3:'#d9c395',4:'#e08a7c'};
+export const NOVA_COLOR={1:'#8fd97a',2:'#8ed2e8',3:'#d9c395',4:'#e08a7c'};
 // Ingredient hue + clay icon by food family, so every line reads at a glance.
-function ingredientStyle(name){
+export function ingredientStyle(name){
  const n=name.toLocaleLowerCase('hu-HU');
  if(/csirke|lazac|tojás|hús|pulyka|tonhal/.test(n))return ['#e08a7c','meat'];
  if(/joghurt|skyr|túró|tej/.test(n))return ['#bca6f1','protein'];
@@ -167,7 +167,7 @@ function buildEnvelope(m){
 }
 const STATUS_LABEL={good:'rendben',ok:'oké',low:'figyeld'};
 const STATUS_COLOR={good:'#8fd97a',ok:'#8ed2e8',low:'#e0b56e'};
-const NOVA_SHORT={1:'Alapanyag',2:'Konyhai összetevő',3:'Feldolgozott',4:'Ultra-feldolgozott'};
+export const NOVA_SHORT={1:'Alapanyag',2:'Konyhai összetevő',3:'Feldolgozott',4:'Ultra-feldolgozott'};
 // Each scoring dimension gets its own hue + clay icon so the breakdown reads as a colorful mosaic.
 const DIM_STYLE={macro:['#e08a7c','macro'],micro:['#bca6f1','micro'],who:['#8ed2e8','shield'],fat_quality:['#cdd170','avocado'],nova:['#d9c395','processing'],plant_diversity:['#8fd97a','fiber'],energy_density:['#f0b36e','bolt'],context:['#8fa8f0','clock']};
 const weightPct=(d,wsum)=>Math.round(d.weight/(wsum||1)*100);

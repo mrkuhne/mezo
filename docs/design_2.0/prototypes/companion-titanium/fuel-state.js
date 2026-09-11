@@ -3,28 +3,35 @@ let serial=0;
 const id=prefix=>`${prefix}-${++serial}`;
 
 // --- Konyha: recipes -------------------------------------------------------
+// Lines: [name, amount, kcal, NOVA group]. eaten/lastEaten mirror the recipe-logs read.
 export function createRecipes(){return [
- {id:'r-rizstal',name:'Csirkés rizstál',slot:'Ebéd',kcal:760,p:52,fit:8.4,servings:1,mins:25,lines:['Csirkemell 180 g','Rizs 90 g','Zöldségek 150 g'],note:'A heted leggyakoribb ebédje.'},
- {id:'r-zabkasa',name:'Joghurtos zabkása',slot:'Reggeli',kcal:420,p:28,fit:8.9,servings:1,mins:10,lines:['Zabpehely 60 g','Görög joghurt 150 g','Gyümölcs 80 g'],note:'Gyors, fehérjében erős reggeli.'},
- {id:'r-tortilla',name:'Tojásos tortilla',slot:'Vacsora',kcal:750,p:38,fit:7.6,servings:2,mins:20,lines:['Tojás 3 db','Tortilla 2 db','Sajt 40 g'],note:'Két adag: marad holnapra is.'},
+ {id:'r-rizstal',name:'Csirkés rizstál',slot:'Ebéd',kcal:760,p:52,c:78,f:24,fiber:9,fit:8.4,servings:1,mins:25,eaten:4,lastEaten:'tegnap',lines:[['Csirkemell','180 g',216,1],['Jázmin rizs','90 g (száraz)',320,1],['Zöldségkeverék','150 g',66,1],['Olívaolaj','10 g',88,2]],note:'A heted leggyakoribb ebédje — fehérjében erős, tiszta alapanyagokból.'},
+ {id:'r-zabkasa',name:'Joghurtos zabkása',slot:'Reggeli',kcal:420,p:28,c:56,f:10,fiber:7,fit:8.9,servings:1,mins:10,eaten:5,lastEaten:'ma',lines:[['Zabpehely','60 g',223,1],['Görög joghurt','150 g',146,1],['Erdei gyümölcs','80 g',51,1]],note:'Gyors, fehérjében erős reggeli, sok rosttal.'},
+ {id:'r-tortilla',name:'Tojásos tortilla',slot:'Vacsora',kcal:750,p:38,c:52,f:34,fiber:6,fit:7.1,servings:2,mins:20,eaten:2,lastEaten:'3 napja',lines:[['Tojás','3 db',215,1],['Tortilla lap','2 db',290,4],['Sajt','40 g',161,3],['Paprika','80 g',26,1]],note:'Két adag: marad holnapra is. A tortillalap ultra-feldolgozott — teljes kiőrlésűvel feljebb menne.'},
+ {id:'r-lazac',name:'Lazacos rizstál',slot:'Ebéd',kcal:735,p:48,c:68,f:22,fiber:5,fit:8.7,servings:1,mins:30,eaten:1,lastEaten:'4 napja',lines:[['Lazacfilé','160 g',330,1],['Jázmin rizs','80 g (száraz)',285,1],['Brokkoli','120 g',41,1]],note:'Omega-3-ban gazdag ebéd, kevés feldolgozott összetevővel.'},
+ {id:'r-skyr',name:'Banán és skyr',slot:'Uzsonna',kcal:310,p:24,c:44,f:3,fiber:4,fit:8.0,servings:1,mins:3,eaten:3,lastEaten:'2 napja',lines:[['Skyr','150 g',95,1],['Banán','120 g',107,1],['Méz','10 g',30,2]],note:'Edzés előtti gyors energia, könnyű fehérjével.'},
 ]}
-export function addRecipe(recipes,{name,slot='Ebéd',kcal,p,lines=[]}){if(!name||!Number.isFinite(kcal)||kcal<=0||!Number.isFinite(p)||p<0)return null;const recipe={id:id('r'),name,slot,kcal,p,fit:null,servings:1,mins:null,lines,note:'Új recept · a pontszáma még számolódik.'};recipes.unshift(recipe);return recipe;}
+export function addRecipe(recipes,{name,slot='Ebéd',kcal,p,c,f,lines=[]}){if(!name||!Number.isFinite(kcal)||kcal<=0||!Number.isFinite(p)||p<0)return null;const recipe={id:id('r'),name,slot,kcal,p,c:Number.isFinite(c)?c:Math.round(kcal*.45/4),f:Number.isFinite(f)?f:Math.round(kcal*.3/9),fiber:null,fit:null,servings:1,mins:null,eaten:0,lastEaten:null,lines:lines.map(l=>typeof l==='string'?[l,'',null,1]:l),note:'Új recept · a pontszáma még számolódik.'};recipes.unshift(recipe);return recipe;}
+export function removeRecipe(recipes,recipeId){const index=recipes.findIndex(r=>r.id===recipeId);if(index<0)return false;recipes.splice(index,1);return true;}
 
 // --- Konyha: pantry --------------------------------------------------------
+// Per-100 g facts are the stored definition; null = the source had no value. addedDays feeds the imports feed.
 export function createPantry(){return [
- {id:'k-joghurt',name:'Görög joghurt',kind:'food',amount:'2 pohár',kcal100:97,p100:9,source:'katalógus'},
- {id:'k-banan',name:'Banán',kind:'food',amount:'3 darab',kcal100:89,p100:1.1,source:'kézi'},
- {id:'k-zab',name:'Zabpehely',kind:'food',amount:'500 g',kcal100:372,p100:13.5,source:'katalógus'},
- {id:'k-csirke',name:'Csirkemell',kind:'food',amount:'600 g',kcal100:120,p100:22.5,source:'fotó'},
- {id:'k-rizs',name:'Jázmin rizs',kind:'food',amount:'1 kg',kcal100:356,p100:7,source:'link'},
- {id:'k-tojas',name:'Tojás',kind:'food',amount:'10 db',kcal100:143,p100:12.6,source:'kézi'},
- {id:'k-d3',name:'D3-vitamin',kind:'supp',amount:'90 kapszula',dose:'4000 NE',source:'katalógus'},
- {id:'k-kreatin',name:'Kreatin-monohidrát',kind:'supp',amount:'300 g',dose:'5 g',source:'link'},
- {id:'k-magnezium',name:'Magnézium-biszglicinát',kind:'supp',amount:'120 kapszula',dose:'200 mg',source:'katalógus'},
- {id:'k-omega',name:'Omega-3',kind:'supp',amount:'60 kapszula',dose:'1000 mg',source:'kézi'},
+ {id:'k-csirke',name:'Csirkemell',kind:'food',category:'Hús',amount:'600 g',source:'fotó',addedDays:1,kcal100:120,p100:22.5,c100:0,f100:2.6,sugar100:0,salt100:.2,satfat100:.7,nova:1},
+ {id:'k-rizs',name:'Jázmin rizs',kind:'food',category:'Gabona',amount:'1 kg',source:'link',addedDays:2,kcal100:356,p100:7,c100:79,f100:.6,sugar100:.1,salt100:0,satfat100:.2,nova:1},
+ {id:'k-joghurt',name:'Görög joghurt',kind:'food',category:'Tejtermék',amount:'2 pohár',source:'katalógus',addedDays:4,kcal100:97,p100:9,c100:4,f100:5,sugar100:3.8,salt100:.11,satfat100:3.2,nova:1},
+ {id:'k-banan',name:'Banán',kind:'food',category:'Gyümölcs',amount:'3 darab',source:'kézi',addedDays:5,kcal100:89,p100:1.1,c100:22.8,f100:.3,sugar100:12.2,salt100:0,satfat100:.1,nova:1},
+ {id:'k-zab',name:'Zabpehely',kind:'food',category:'Gabona',amount:'500 g',source:'katalógus',addedDays:9,kcal100:372,p100:13.5,c100:58.7,f100:7,sugar100:1,salt100:.01,satfat100:1.3,nova:1},
+ {id:'k-tojas',name:'Tojás',kind:'food',category:'Tojás',amount:'10 db',source:'kézi',addedDays:6,kcal100:143,p100:12.6,c100:.7,f100:9.5,sugar100:.4,salt100:.36,satfat100:3.1,nova:1},
+ {id:'k-tortilla',name:'Tortilla lap',kind:'food',category:'Pékáru',amount:'6 db',source:'fotó',addedDays:3,kcal100:310,p100:8.5,c100:50,f100:7.5,sugar100:null,salt100:null,satfat100:3,nova:4},
+ {id:'k-d3',name:'D3-vitamin',kind:'supp',category:'Vitamin',amount:'90 kapszula',source:'katalógus',addedDays:20,dose:'4000 NE',timing:'Reggelivel'},
+ {id:'k-kreatin',name:'Kreatin-monohidrát',kind:'supp',category:'Teljesítmény',amount:'300 g',source:'link',addedDays:12,dose:'5 g',timing:'Ebéd után'},
+ {id:'k-magnezium',name:'Magnézium-biszglicinát',kind:'supp',category:'Ásványi anyag',amount:'120 kapszula',source:'katalógus',addedDays:15,dose:'200 mg',timing:'Vacsorával'},
 ]}
-export function addPantryItem(pantry,{name,kind='food',amount='',source='kézi'}){if(!name)return null;const item={id:id('k'),name,kind,amount,source};pantry.unshift(item);return item;}
+export function addPantryItem(pantry,{name,kind='food',amount='',source='kézi'}){if(!name)return null;const item={id:id('k'),name,kind,category:kind==='supp'?'Kiegészítő':'Új elem',amount,source,addedDays:0,kcal100:null,p100:null,c100:null,f100:null,sugar100:null,salt100:null,satfat100:null,nova:null};pantry.unshift(item);return item;}
 export function removePantryItem(pantry,itemId){const index=pantry.findIndex(i=>i.id===itemId);if(index<0)return false;pantry.splice(index,1);return true;}
+// Read-only swap heuristics (pantry suggestions): cheaper or cleaner alternatives, never a shopping list.
+export const pantrySwaps=[{from:'Tortilla lap',to:'Teljes kiőrlésű tortilla',reason:'Kevésbé feldolgozott, kétszer annyi rost.',price:'+90 Ft / csomag'}];
 
 // --- Kiegészítők: protocol + intakes --------------------------------------
 export function createStack(){return {
