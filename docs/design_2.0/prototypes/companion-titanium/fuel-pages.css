@@ -784,3 +784,23 @@ dialog.glass .sheet-handle{display:none}
 .tx-pattern strong{display:block;font-size:13px;font-weight:500;line-height:1.35}
 .tx-pattern small{display:block;margin-top:3px;font-size:10px;color:#a99fc2}
 .tx-pattern>b{margin-left:auto;font-size:13px;color:#cdbdf3}
+/* Trendek — day score on the bars, fuel dimensions in the day glass */
+.tx-day b.tx-score{font-size:11px;font-weight:600;color:#cdbdf3}
+.tx-day.gapless b.tx-score{color:#6f8088}
+.tx-dims{display:grid;gap:9px;margin:12px 0 4px}
+.tx-dim{padding:11px 12px;border:1px solid color-mix(in srgb,var(--kx) 26%,transparent);border-radius:15px;background:linear-gradient(155deg,color-mix(in srgb,var(--kx) 13%,transparent),#ffffff02 66%)}
+.tx-dim.degraded{border-style:dashed;opacity:.74}
+.tx-dim-head{display:flex;align-items:center;gap:10px}
+.tx-dim-art .icon{width:30px;height:30px;filter:drop-shadow(0 4px 5px #0007)}
+.tx-dim-head strong{display:block;font-size:13px;font-weight:500;color:#e6eef1}
+.tx-dim-head small{display:block;margin-top:2px;font-size:9px;color:#93a3ab}
+.tx-dim-head>b{margin-left:auto;font-size:20px;font-weight:600;color:color-mix(in srgb,var(--kx) 62%,#fff)}
+.tx-dim-bar{position:relative;display:block;height:6px;margin:9px 0 8px;border-radius:4px;background:#ffffff0c}
+.tx-dim-bar b{position:absolute;inset:0;width:var(--w);border-radius:4px;background:var(--kx);box-shadow:0 0 8px color-mix(in srgb,var(--kx) 45%,transparent)}
+.tx-facts{display:flex;flex-wrap:wrap;gap:6px}
+.tx-facts span{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;background:#ffffff0a;font-size:10px;color:#d3dee2}
+.tx-facts em{font-style:normal;font-size:9px;color:#8fa0a8}
+.tx-facts .quiet{background:transparent;color:#8a9ba3}
+.glass-section{margin:14px 0 2px}
+.glass-section h2{font-size:13px}
+.glass-stat>b .icon{width:18px;height:18px;vertical-align:-4px;margin-right:2px}

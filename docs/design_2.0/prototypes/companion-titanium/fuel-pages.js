@@ -1,5 +1,5 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
-import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, weekCompare, weekDeltas, longHorizon, patterns } from './fuel-state.js';
+import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, weekCompare, weekDeltas, fuelDayScore, longHorizon, patterns } from './fuel-state.js';
 import { mealBlocks } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
@@ -188,13 +188,12 @@ const TX_STAT={
  weight:['Heti súlyátlag','person','#d7a7bc','kg','A napi mérések heti átlaga, így egyetlen reggel ingadozása nem visz félre.'],
 };
 const dayLabel=date=>new Intl.DateTimeFormat('hu-HU',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`));
-const thousand=v=>(v/1000).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
 const overBudget=d=>d.kcal>d.target+60;
 function weekBars(w){
  const max=Math.max(2900,...w.days.map(d=>d.kcal||0));
  return `<div class="tx-bars">${w.days.map(d=>{
   const logged=Number.isFinite(d.kcal),height=logged?Math.max(12,Math.round(d.kcal/max*100)):0;
-  return `<button class="tx-day ${d.weekend?'weekend':''} ${d.today?'today':''}" data-tx-day="${d.date}" aria-label="${dayLabel(d.date)}: ${logged?`${fmt(d.kcal)} kcal a ${fmt(d.target)} kcal-os keretből`:'nincs naplózva'}"><span class="tx-col"><i class="tx-target" style="--h:${Math.round(d.target/max*100)}%"></i>${logged?`<i class="tx-fill ${overBudget(d)?'over':'within'}" style="--h:${height}%"></i>`:'<i class="tx-gap"></i>'}</span><b>${logged?thousand(d.kcal):'·'}</b><span class="tx-name">${d.day}</span>${d.training?`<u title="Edzésnap"></u>`:''}</button>`;
+  return `<button class="tx-day ${d.weekend?'weekend':''} ${d.today?'today':''}" data-tx-day="${d.date}" aria-label="${dayLabel(d.date)}: ${logged?`${fmt(d.kcal)} kcal a ${fmt(d.target)} kcal-os keretből, étkezés-pont ${d.score!=null?score1(d.score):'nincs'}`:'nincs naplózva'}"><span class="tx-col"><i class="tx-target" style="--h:${Math.round(d.target/max*100)}%"></i>${logged?`<i class="tx-fill ${overBudget(d)?'over':'within'}" style="--h:${height}%"></i>`:'<i class="tx-gap"></i>'}</span><b class="tx-score">${d.score!=null?score1(d.score):'·'}</b><span class="tx-name">${d.day}</span>${d.training?`<u title="Edzésnap"></u>`:''}</button>`;
  }).join('')}</div>`;
 }
 function trendek(){
@@ -208,7 +207,7 @@ function trendek(){
   <div class="tx-big"><strong>${s.logged?s.within:'—'}</strong><span><b>/ ${s.logged} naplózott nap</b><small>A KERETEDEN BELÜL</small></span></div>
   ${weekBars(w)}
   <p class="tx-read">${read}</p>
-  <p class="tx-hint">Koppints egy napra a részletekért</p></div>
+  <p class="tx-hint">A szám a nap étkezés-pontja · koppints a részletekért</p></div>
  <div class="tx-tiles">${Object.entries(TX_STAT).map(([kind,[label,art,color,unit]])=>{const v=values[kind],delta=isCurrent?deltas[kind]:null;
   return `<button class="tx-tile" style="--kx:${color}" data-tx-stat="${kind}"><span class="tx-tile-art">${icon(art)}</span><strong>${v==null?'—':fmt1(v)}${unit?`<small>${unit}</small>`:''}</strong><span class="tx-tile-label">${label}</span>${delta?`<em>${delta>0?'▲':'▼'} ${fmt1(Math.abs(delta))}${unit?` ${unit}`:''}</em>`:''}</button>`;}).join('')}</div>
  <div class="lf-section"><h2>Hétköznap és hétvége</h2></div>
@@ -231,13 +230,22 @@ function horizonChart(){
 function trendDayGlass(date){
  const d=weekData[week].days.find(x=>x.date===date);
  if(!d)return '<p class="sheet-sub">Nincs ilyen nap.</p>';
- const logged=Number.isFinite(d.kcal),color=logged?(overBudget(d)?'#d9c395':'#8ed2e8'):'#8ed2e8';
- const rows=logged?[['Étkezés','bowl',`${d.meals} étkezés`],['Fehérje','meat',`${fmt(d.protein)} g`],['Étkezés-minőség','score',d.score?score1(d.score):'—'],['Víz','water',`${fmt1(d.water)} l`],['Mozgás','dumbbell',d.training?'edzésnap':'pihenőnap']]:[];
- return `<div class="glass-dim" style="--dim-color:${color}"><div class="glass-hero dim"><span class="glass-hero-art">${icon('bowl')}</span><div><strong>${logged?fmt(d.kcal):'—'}</strong><small>${dayLabel(d.date)}</small></div></div>
- ${logged?`<div class="glass-bar dimbar"><i style="--w:${Math.min(100,Math.round(d.kcal/d.target*100))}%"></i></div>
+ const logged=Number.isFinite(d.kcal);
+ if(!logged)return `<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('bowl')}</span><div><strong>—</strong><small>${dayLabel(d.date)}</small></div></div><div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.</p></div></div>`;
+ const fuelScore=fuelDayScore(d),color=overBudget(d)?'#d9c395':'#8ed2e8';
+ const dims=[['nutrition','Táplálkozás','macro','#e08a7c',30],['quality','Minőség','processing','#d9c395',15]];
+ const rows=[['Étkezés','bowl',`${d.meals?.length??0} étkezés`],['Fehérje','meat',`${fmt(d.protein)} g`],['Víz','water',`${fmt1(d.water)} l`],['Mozgás','dumbbell',d.training?'edzésnap':'pihenőnap']];
+ return `<div class="glass-dim" style="--dim-color:${color}">
+ <div class="glass-hero dim"><span class="glass-hero-art">${icon('score')}</span><div><strong>${d.score!=null?score1(d.score):'—'}</strong><small>${dayLabel(d.date)} · étkezés-pont</small></div></div>
+ <div class="glass-chips"><span>${fmt(d.kcal)} / ${fmt(d.target)} kcal</span><span>${d.meals?.length??0} étkezés</span>${fuelScore!=null?`<span>napi fuel-érték ${fuelScore}/100</span>`:''}</div>
+ <div class="glass-bar dimbar"><i style="--w:${Math.min(100,Math.round(d.kcal/d.target*100))}%"></i></div>
  <p class="glass-fact">A kereted ezen a napon <b>${fmt(d.target)} kcal</b> volt${d.training?' — edzésnapra igazítva':''}. ${overBudget(d)?`${fmt(d.kcal-d.target)} kcal-lal fölé ment; így alakult.`:'Belefértél.'}</p>
- <div class="glass-list">${rows.map(([label,art,value])=>`<div class="glass-stat plain" style="--stat-color:${color}"><span class="gs-art">${icon(art)}</span><span class="gs-copy"><strong>${label}</strong></span><b>${value}</b></div>`).join('')}</div>`
- :`<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.</p></div>`}</div>`;
+ <div class="tx-dims">${dims.map(([id,label,art,dimColor,weight])=>{const dim=d.dims?.[id];const score=dim?.score??null;
+  return `<div class="tx-dim ${score==null?'degraded':''}" style="--kx:${dimColor}"><div class="tx-dim-head"><span class="tx-dim-art">${icon(art)}</span><span><strong>${label}</strong><small>a napi értékelés ${weight}%-a</small></span><b>${score==null?'—':score}</b></div>${score!=null?`<i class="tx-dim-bar"><b style="--w:${score}%"></b></i>`:''}<div class="tx-facts">${(dim?.facts??[]).map(([factLabel,value])=>`<span><em>${safe(factLabel)}</em>${safe(value)}</span>`).join('')||'<span class="quiet">nincs elég adat ehhez a szemponthoz</span>'}</div></div>`;}).join('')}</div>
+ <div class="lf-section glass-section"><h2>A nap étkezései</h2></div>
+ <div class="glass-list">${(d.meals??[]).map(([name,kcal,score])=>`<div class="glass-stat plain" style="--stat-color:${color}"><span class="gs-art">${icon('bowl')}</span><span class="gs-copy"><strong>${safe(name)}</strong><small>${fmt(kcal)} kcal</small></span><b>${icon('score')} ${score1(score)}</b></div>`).join('')}</div>
+ <div class="glass-list">${rows.map(([label,art,value])=>`<div class="glass-kv"><span>${label}</span><b>${value}</b></div>`).join('')}</div>
+ <p class="food-note">A napi értékelés hat szempontból áll — itt a két étkezéshez tartozó látszik. A többi (edzés, alvás, naplózás, ritmus) az Én oldal napi nézetén él.</p></div>`;
 }
 function trendStatGlass(kind){
  const [label,art,color,unit,copy]=TX_STAT[kind],w=weekData[week],previous=weekData.previous;

@@ -53,30 +53,59 @@ export const stackZones=[['reggel','Reggel'],['delben','Délben'],['este','Este'
 // Adherence-neutral: within/over are states, never shame. kcal null = unlogged day (honest gap).
 export const weekData={
  current:{label:'Ez a hét',days:[
-  {day:'H',date:'2026-09-07',kcal:2115,target:2400,training:true,meals:4,score:8.2,protein:148,water:2.6},
-  {day:'K',date:'2026-09-08',kcal:2260,target:2400,training:true,meals:4,score:7.4,protein:154,water:2.1},
-  {day:'Sze',date:'2026-09-09',kcal:1180,target:2400,training:true,today:true,meals:2,score:8.3,protein:86,water:1.25},
+  {day:'H',date:'2026-09-07',kcal:2115,target:2400,training:true,score:8.2,protein:148,water:2.6,
+   dims:{nutrition:{score:84,facts:[['kcal','2115 / 2400'],['fehérje','148 / 160 g'],['c · f','220 g · 69 g'],['sáv','edzésnapi +150 kcal']]},quality:{score:79,facts:[['nova','86%'],['mikro','74%']]}},
+   meals:[['Zabkása gyümölccsel',420,8.2],['Lazacos rizstál',735,8.7],['Görög joghurt',240,7.8],['Csirkés tortilla',720,7.5]]},
+  {day:'K',date:'2026-09-08',kcal:2260,target:2400,training:true,score:7.4,protein:154,water:2.1,
+   dims:{nutrition:{score:88,facts:[['kcal','2260 / 2400'],['fehérje','154 / 160 g'],['c · f','245 g · 74 g'],['sáv','edzésnapi +150 kcal']]},quality:{score:62,facts:[['nova','54%'],['mikro','70%']]}},
+   meals:[['Joghurtos zabkása',440,8.1],['Csirkés rizstál',760,8.4],['Banán és skyr',310,8.0],['Tojásos tortilla',750,7.1]]},
+  {day:'Sze',date:'2026-09-09',kcal:1180,target:2400,training:true,today:true,score:8.3,protein:86,water:1.25,
+   dims:{nutrition:{score:null,facts:[['kcal','1180 / 2400'],['fehérje','86 / 160 g']]},quality:{score:81,facts:[['nova','92%'],['mikro','76%']]}},
+   meals:[['Zabkása gyümölccsel',420,8.2],['Csirkés rizstál',760,8.4]]},
   {day:'Cs',date:'2026-09-10',kcal:null,target:2400},
   {day:'P',date:'2026-09-11',kcal:null,target:2200},
   {day:'Szo',date:'2026-09-12',kcal:null,target:2200,weekend:true},
   {day:'V',date:'2026-09-13',kcal:null,target:2200,weekend:true},
  ],scoreAvg:7.8,weightAvg:81.3},
  previous:{label:'Múlt hét',days:[
-  {day:'H',date:'2026-08-31',kcal:2350,target:2400,training:true,meals:4,score:7.6,protein:141,water:2.4},
-  {day:'K',date:'2026-09-01',kcal:2180,target:2400,training:true,meals:4,score:7.9,protein:150,water:2.7},
-  {day:'Sze',date:'2026-09-02',kcal:2490,target:2400,meals:5,score:6.8,protein:120,water:1.8},
-  {day:'Cs',date:'2026-09-03',kcal:2210,target:2400,training:true,meals:4,score:7.5,protein:139,water:2.2},
-  {day:'P',date:'2026-09-04',kcal:2050,target:2200,meals:3,score:7.1,protein:112,water:1.6},
-  {day:'Szo',date:'2026-09-05',kcal:2740,target:2200,weekend:true,meals:5,score:6.4,protein:104,water:1.4},
-  {day:'V',date:'2026-09-06',kcal:2520,target:2200,weekend:true,meals:4,score:7.2,protein:118,water:1.9},
+  {day:'H',date:'2026-08-31',kcal:2350,target:2400,training:true,score:7.6,protein:141,water:2.4,
+   dims:{nutrition:{score:90,facts:[['kcal','2350 / 2400'],['fehérje','141 / 160 g'],['c · f','258 g · 76 g']]},quality:{score:68,facts:[['nova','64%'],['mikro','72%']]}},
+   meals:[['Zabkása gyümölccsel',430,8.0],['Csirkés rizstál',770,8.3],['Skyr gyümölccsel',300,7.6],['Tojásos tortilla',850,6.6]]},
+  {day:'K',date:'2026-09-01',kcal:2180,target:2400,training:true,score:7.9,protein:150,water:2.7,
+   dims:{nutrition:{score:86,facts:[['kcal','2180 / 2400'],['fehérje','150 / 160 g'],['c · f','232 g · 71 g']]},quality:{score:76,facts:[['nova','80%'],['mikro','73%']]}},
+   meals:[['Joghurtos zabkása',420,8.2],['Lazacos rizstál',735,8.7],['Banán és skyr',305,8.0],['Csirkés tortilla',720,7.4]]},
+  {day:'Sze',date:'2026-09-02',kcal:2490,target:2400,score:6.8,protein:120,water:1.8,
+   dims:{nutrition:{score:74,facts:[['kcal','2490 / 2400'],['fehérje','120 / 160 g'],['c · f','286 g · 92 g']]},quality:{score:58,facts:[['nova','48%'],['mikro','66%']]}},
+   meals:[['Croissant',340,5.4],['Csirkés rizstál',760,8.4],['Csoki és kávé',290,5.2],['Pizza',1100,6.1]]},
+  {day:'Cs',date:'2026-09-03',kcal:2210,target:2400,training:true,score:7.5,protein:139,water:2.2,
+   dims:{nutrition:{score:85,facts:[['kcal','2210 / 2400'],['fehérje','139 / 160 g'],['c · f','236 g · 73 g']]},quality:{score:70,facts:[['nova','70%'],['mikro','71%']]}},
+   meals:[['Zabkása gyümölccsel',420,8.2],['Csirkés rizstál',760,8.4],['Görög joghurt',240,7.8],['Tojásos tortilla',790,6.9]]},
+  {day:'P',date:'2026-09-04',kcal:2050,target:2200,score:7.1,protein:112,water:1.6,
+   dims:{nutrition:{score:80,facts:[['kcal','2050 / 2200'],['fehérje','112 / 150 g'],['c · f','228 g · 68 g']]},quality:{score:64,facts:[['nova','60%'],['mikro','68%']]}},
+   meals:[['Zabkása gyümölccsel',420,8.2],['Szendvics',560,6.4],['Tojásos tortilla',750,7.1],['Csoki',320,5.4]]},
+  {day:'Szo',date:'2026-09-05',kcal:2740,target:2200,weekend:true,score:6.4,protein:104,water:1.4,
+   dims:{nutrition:{score:52,facts:[['kcal','2740 / 2200'],['fehérje','104 / 150 g'],['c · f','318 g · 104 g']]},quality:{score:56,facts:[['nova','46%'],['mikro','62%']]}},
+   meals:[['Croissant',380,5.2],['Hamburger menü',1180,5.6],['Sütemény',420,5.0],['Tésztás vacsora',760,7.2]]},
+  {day:'V',date:'2026-09-06',kcal:2520,target:2200,weekend:true,score:7.2,protein:118,water:1.9,
+   dims:{nutrition:{score:66,facts:[['kcal','2520 / 2200'],['fehérje','118 / 150 g'],['c · f','276 g · 88 g']]},quality:{score:72,facts:[['nova','74%'],['mikro','69%']]}},
+   meals:[['Rántotta',390,7.8],['Vasárnapi ebéd',980,7.0],['Sütemény',330,5.6],['Saláta',420,8.2]]},
  ],scoreAvg:7.2,weightAvg:81.6},
 };
 export function weekSummary(week){const logged=week.days.filter(d=>Number.isFinite(d.kcal));if(!logged.length)return {logged:0,within:0,avg:null,weekendDelta:null};
  const within=logged.filter(d=>d.kcal<=d.target+60).length,avg=Math.round(logged.reduce((s,d)=>s+d.kcal,0)/logged.length);
- const weekend=logged.filter(d=>d.weekend),weekday=logged.filter(d=>!d.weekend);
  const mean=rows=>rows.length?rows.reduce((s,d)=>s+d.kcal,0)/rows.length:null;
- const weekendDelta=mean(weekend)!=null&&mean(weekday)!=null?Math.round(mean(weekend)-mean(weekday)):null;
+ const weekend=mean(logged.filter(d=>d.weekend)),weekday=mean(logged.filter(d=>!d.weekend));
+ const weekendDelta=weekend!=null&&weekday!=null?Math.round(weekend-weekday):null;
  return {logged:logged.length,within,avg,weekendDelta};}
+// The two fuel dimensions of the day engine (nutrition .30, quality .15), renormalised the way the
+// engine renormalises DONE dimensions — so a day with only one measurable dimension stays honest.
+export function fuelDayScore(day){
+ const n=day?.dims?.nutrition?.score??null,q=day?.dims?.quality?.score??null;
+ if(n==null&&q==null)return null;
+ if(n==null)return q;
+ if(q==null)return n;
+ return Math.round((n*.30+q*.15)/.45);
+}
 // Weekday vs weekend split and week-over-week deltas — both honest about unlogged days.
 export function weekCompare(week){
  const logged=week.days.filter(d=>Number.isFinite(d.kcal));
