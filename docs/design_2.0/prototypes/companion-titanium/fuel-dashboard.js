@@ -47,7 +47,7 @@ function blocksSection({current,meals}){
 // The energy hero: at first glance only "ettél / még belefér"; the math opens in the glass box.
 const gauge=(progress,size='')=>`<div class="fuel-gauge ${size}" style="--fuel-progress:${progress}"><svg class="fuel-gauge-rings" viewBox="0 0 160 160" aria-hidden="true"><circle class="fuel-gauge-base" cx="80" cy="80" r="69" pathLength="100"/><circle class="fuel-gauge-progress" cx="80" cy="80" r="69" pathLength="100"/></svg><span class="fuel-gauge-art">${icon('bowl')}</span></div>`;
 const eqGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4.9 7H9.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="17" cy="17" r="4.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14.9 17H19.1M17 14.9V19.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 6L18.5 6M13.8 9.5L17.2 9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".55"/></svg>`;
-const tapChip=(label='Miből jön össze?')=>`<span class="fuel-tapchip"><i>${eqGlyph}</i><span>${label}</span><b>›</b><u class="chip-sheen"></u></span>`;
+const tapChip=(label='Miből jön össze?')=>`<span class="fuel-tapchip"><span>${label}</span><b>›</b><u class="chip-sheen"></u></span>`;
 function heroSection(values,remaining,current,record,variant='h2'){
  const progress=Math.min(100,values.kcal/2400*100);
  const attrs=`class="fuel-focus v-${variant}" data-energy-detail aria-label="Energia-részletek megnyitása"`;
@@ -61,12 +61,14 @@ export function setHeroVariant(v){heroVariant=v;}
 // Glass-box content: the math behind the number, only on tap.
 export function energyDetailHtml(){
  const {values,remaining}=fuelOverview();
+ const eatenPct=Math.min(100,values.kcal/2400*100);
  return `<div class="glass-hero">${icon('bowl')}<div><strong>${fmt(Math.abs(remaining))}</strong><small>kcal ${remaining>=0?'fér még bele ma':'a keret felett'}</small></div></div>
- <div class="glass-rows">
- <div class="glass-row"><span>Napi kereted</span><b>2 400 kcal</b><small>edzésnapra igazítva, az aktív célod előírásából</small></div>
- <div class="glass-row minus"><span>Ma megetted</span><b>− ${fmt(values.kcal)} kcal</b><small>${fmt(values.p)} g fehérje · ${fmt(values.c)} g szénhidrát · ${fmt(values.f)} g zsír</small></div>
- <div class="glass-row plus"><span>Mozgásból vissza</span><b>+ 0 kcal</b><small>ma még nincs logolt edzés</small></div>
- <div class="glass-row total"><span>${remaining>=0?'Még belefér':'A keret felett'}</span><b>${fmt(Math.abs(remaining))} kcal</b></div>
+ <div class="glass-bar" role="img" aria-label="A napi keretedből ${fmt(values.kcal)} kcal fogyott el"><i style="--w:${eatenPct}%"></i><span class="gb-left">ettél</span><span class="gb-right">még szabad</span></div>
+ <div class="glass-flow">
+ <div class="glass-node" style="--node-color:#d9c395"><span class="gn-art">${icon('ring')}</span><span class="gn-copy"><strong>Napi keret</strong><small>edzésnapra igazítva, az aktív célod előírásából</small></span><b>2 400</b></div>
+ <div class="glass-node" style="--node-color:#e08a7c"><span class="gn-art">${icon('bowl')}</span><span class="gn-copy"><strong>Megetted</strong><small>${fmt(values.p)} g fehérje · ${fmt(values.c)} g szénhidrát · ${fmt(values.f)} g zsír</small></span><b>− ${fmt(values.kcal)}</b></div>
+ <div class="glass-node" style="--node-color:#c8e895"><span class="gn-art">${icon('dumbbell')}</span><span class="gn-copy"><strong>Mozgásból vissza</strong><small>ma még nincs logolt edzés</small></span><b>+ 0</b></div>
+ <div class="glass-node total" style="--node-color:#8ed2e8"><span class="gn-art">${icon('bolt')}</span><span class="gn-copy"><strong>${remaining>=0?'Még belefér':'A keret felett'}</strong></span><b>${fmt(Math.abs(remaining))}<i>kcal</i></b></div>
  </div><p class="food-note">A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap újraszületik.</p>`;
 }
 // Temporary comparison view for the owner: three hero options.

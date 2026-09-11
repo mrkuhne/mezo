@@ -322,3 +322,22 @@ dialog.glass .sheet-handle{display:none}
 .chip-sheen{position:absolute;top:0;bottom:0;width:34px;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,#ffffff20,transparent)}
 @media(prefers-reduced-motion:no-preference){.chip-sheen{animation:chip-sheen 3.6s ease-in-out infinite}@keyframes chip-sheen{0%,55%{left:-40px}85%,100%{left:calc(100% + 10px)}}}
 @media(prefers-reduced-motion:reduce){.chip-sheen{display:none}}
+/* Glass modal: visual equation flow */
+.glass-bar{position:relative;height:16px;margin:13px 0 24px;border-radius:9px;background:#ffffff0c;border:1px solid #ffffff14}
+.glass-bar i{position:absolute;inset:0;width:var(--w);border-radius:9px;background:linear-gradient(90deg,#569eb4,#9fdcec);box-shadow:0 0 14px #8ed2e83a}
+.glass-bar span{position:absolute;top:20px;font-size:9px;letter-spacing:.8px;color:#7e929b}
+.glass-bar .gb-left{left:2px;color:#9fd4e4}
+.glass-bar .gb-right{right:2px}
+.glass-flow{position:relative;padding:2px 0 4px}
+.glass-flow::before{content:'';position:absolute;left:19px;top:14px;bottom:26px;width:2px;background:linear-gradient(180deg,#d9c39544,#e08a7c44,#c8e89544,#8ed2e866)}
+.glass-node{position:relative;display:flex;align-items:center;gap:12px;padding:9px 0}
+.gn-art{position:relative;z-index:1;width:40px;height:40px;flex:0 0 auto;display:grid;place-items:center;border-radius:50%;background:#101319;border:1px solid color-mix(in srgb,var(--node-color) 40%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--node-color) 20%,transparent)}
+.gn-art .icon{width:24px;height:24px}
+.gn-copy{min-width:0;flex:1}
+.gn-copy strong{display:block;font-size:13px;font-weight:500;color:#dfe9ec}
+.gn-copy small{display:block;margin-top:3px;font-size:10px;line-height:1.45;color:#8595a0}
+.glass-node>b{font-size:17px;font-weight:600;color:color-mix(in srgb,var(--node-color) 78%,#fff);white-space:nowrap}
+.glass-node.total{margin-top:6px;padding-top:14px;border-top:1px solid #ffffff1a}
+.glass-node.total>b{font-size:24px}
+.glass-node.total>b i{font-style:normal;font-size:11px;margin-left:4px;color:#8bbbc5}
+@media(prefers-reduced-motion:no-preference){.glass-node{animation:node-in .4s cubic-bezier(.2,.8,.3,1.1) both}.glass-node:nth-child(2){animation-delay:.07s}.glass-node:nth-child(3){animation-delay:.14s}.glass-node:nth-child(4){animation-delay:.21s}@keyframes node-in{from{opacity:0;transform:translateX(-8px)}}}
