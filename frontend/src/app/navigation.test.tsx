@@ -11,6 +11,14 @@ import rawCss from '@/styles/prototype.css?raw'
 // mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
 beforeEach(() => seedAllKalauzSeen())
 
+// mezo-jkh4: the last-tab memory is a module-level, in-session store — it leaks across
+// tests. Every test here renders the nav (TabBar's effect records the visited tab), so
+// without a per-test reset the test order decides what a domain's "first visit" resolves
+// to. Under CI's order a prior test left it dirty and the switcher jumped to a remembered
+// tab instead of tab 1 (the '/nap' vs '/fuel/recipes' flake). Reset before EVERY test so
+// each one starts from clean memory and is order-independent.
+beforeEach(() => resetNavMemory())
+
 function renderApp(path = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
@@ -109,7 +117,7 @@ test('/me/karakter/konzilium redirects to /mezo/karakter/konzilium preserving th
 
 // Last-tab memory (mezo-jkh4): the switcher returns each domain to its last-visited tab.
 test('the domain switcher returns to the last-visited tab (memory)', async () => {
-  resetNavMemory()
+  // navMemory is cleared in beforeEach, so this starts from a clean, order-independent store.
   const router = createMemoryRouter(routes, { initialEntries: ['/fuel/recipes'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   // Visit a Fuel tab (Receptek) so it is remembered, then leave for another domain.
