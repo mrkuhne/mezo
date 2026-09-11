@@ -5,7 +5,7 @@ import { icon, safe } from './nap.js';
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
 const score1=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
-const ring=(name,art,value,target,color,unit='g')=>`<div class="macro-cell"><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${fmt1(value)} / ${fmt1(target)} ${unit}"><strong data-fuel-count="${value}" data-fuel-dec="${unit==='l'?1:0}">0</strong><b>/ ${fmt1(target)}<i>${unit}</i></b></span></div><span class="macro-ico">${icon(art)}</span></div>`;
+const ring=(name,art,value,target,color,unit='g')=>`<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${fmt1(value)} / ${fmt1(target)} ${unit}"><strong data-fuel-count="${value}" data-fuel-dec="${unit==='l'?1:0}">0</strong><b>/ ${fmt1(target)}<i>${unit}</i></b></span></div></div>`;
 
 export function animateFuelDashboard(root=document){
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
