@@ -5269,114 +5269,6 @@ button.mz-tile:active { transform: scale(0.96); }
   .kalauz-sheet.is-peek, .kalauz-dot::after { transition: none; }
 }
 
-.nap-hero { min-height: 0; cursor: default; }
-.nap-hero-row { display: flex; align-items: center; gap: 12px; }
-.nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
-.nap-big { font-weight: 200; font-size: 42px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.nap-mut { font-size: 12px; color: var(--mz-ink-soft); }
-.nap-mut b { color: var(--text-primary); }
-/* Prototype keeps `Súly … ↘` and `Fókusz …` on ONE row (nap-body reggel hero): the
-   focus text is the only elastic half, so it ellipsises instead of wrapping the row. */
-.nap-hero-sub { display: flex; flex-wrap: nowrap; gap: 17px; margin-top: 7px; }
-.nap-hero-sub > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nap-hero-sub > span:first-child { flex: none; }
-.nap-lav { color: #6C5FA3; }
-.nap-sage { color: #5F7A52; }
-.nap-coral { color: var(--primary-deep); }
-.nap-gold { color: var(--mz-qxp-ink); }
-.nap-dusk { background: linear-gradient(140deg, var(--mz-tone-lav), var(--mz-wash-white) 75%); }
-.nap-cta-lav { width: 100%; margin-top: 11px; padding: 10px 0; border-radius: 999px; border: none;
-  font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
-  background: linear-gradient(135deg, #8A6BC9, #5D4FA0);
-  box-shadow: 0 10px 22px -8px rgba(93, 79, 160, 0.55); }
-.daybar { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
-.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1);
-  transform: scaleX(1); transform-origin: left; }
-.daybar i.f { background: var(--dv-sage); }
-.daybar i.now { background: var(--dv-amber); }
-/* prototype `.play .daybar i { animation: segf … }` — the segments SWEEP in on the
-   panel's entrance, and the current window keeps a slow amber halo (mezo-d20.11). */
-.mz-play .daybar i { transform: scaleX(0);
-  animation: nap-segfill 0.4s ease-out forwards; animation-delay: var(--d, 0ms); }
-@keyframes nap-segfill { to { transform: scaleX(1); } }
-.mz-play .daybar i.now {
-  animation: nap-segfill 0.4s ease-out forwards, nap-nowpulse 2.6s ease-in-out 1.4s infinite; }
-@keyframes nap-nowpulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
-  50% { box-shadow: 0 0 0 4px rgba(201, 150, 46, 0.3); }
-}
-.nap-ckdots { display: flex; justify-content: center; gap: 7px; }
-.nap-ckdots .hd, .hprog .hd { width: 9px; height: 9px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); display: inline-block; }
-.nap-ckdots .hd.f { background: var(--dv-rose); }
-.nap-bigring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
-.nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
-  display: grid; place-items: center; }
-
-/* ── Nap hub · a prototípus csempe-belsői (mezo-d20.11, 1:1 hűség-audit) ──
-   nap-body.html reggel/nap/este panel: a Mezo-spot olvasatlan-SZÁMLÁLÓJA, a Rutin
-   per-szokás ikon + név + helyben pipálás, a küldetés-pöttyök, a víz-sáv és a
-   Kreed idézet. Értékek nap-head.html ×1.18; minden szín token. */
-.nap-anchorwrap { position: relative; display: grid; place-items: center; }
-.nap-unread { position: absolute; top: -6px; right: -11px; min-width: 20px; height: 20px;
-  border-radius: 999px; background: var(--gradient-cta); color: #fff;
-  font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 5px;
-  font-variant-numeric: tabular-nums; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.6); }
-.nap-tilemore { font-size: 11px; font-weight: 600; text-align: center; }
-
-.nap-habname { font-size: 13.5px; font-weight: 700; text-align: center;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.nap-habfoot { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
-.nap-habcount { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600;
-  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
-/* 30px artwork inside a 44pt hit box (the .nr-tickbtn precedent) — the negative
-   margin keeps the prototype's row height while the target clears the floor. */
-.nap-htickbtn { width: 44px; height: 44px; flex: none; margin: -7px -7px -7px 0;
-  display: grid; place-items: center; border: none; background: none; padding: 0;
-  font-family: inherit; cursor: pointer; }
-.nap-htickbtn:disabled { cursor: default; opacity: 0.6; }
-span.nap-htickbtn { cursor: default; }
-.nap-htick { width: 30px; height: 30px; border-radius: 50%;
-  border: 2px solid rgba(43, 33, 24, 0.18); background: var(--mz-chipbg);
-  display: grid; place-items: center; color: #fff; font-size: 15px;
-  transition: transform 0.12s ease; }
-button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
-.nap-htick.f { border-color: transparent; background: var(--mz-tickfill);
-  box-shadow: 0 7px 14px -5px rgba(110, 139, 94, 0.6); }
-.mz-play .nap-htick.f { animation: nap-tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
-@keyframes nap-tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
-
-.nap-bigdots { display: flex; justify-content: center; align-items: center; gap: 7px; }
-.nap-bigdots .hd { width: 13px; height: 13px; border-radius: 50%; display: inline-block;
-  background: rgba(43, 33, 24, 0.12); }
-.nap-bigdots .hd.f { background: var(--mz-daydot-f); }
-.nap-qxp { font-size: 12px; font-weight: 700; color: var(--mz-qxp-ink); margin-left: 5px;
-  font-variant-numeric: tabular-nums; }
-
-.nap-kreedq { font-size: 12px; font-weight: 300;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.nap-tilegap { flex: 1; }
-
-.nap-watertop { display: flex; align-items: center; gap: 8px; }
-.nap-waterval { display: flex; align-items: baseline; gap: 4px; }
-.nap-waterbig { font-weight: 200; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.nap-watermut { font-size: 10px; color: var(--mz-ink-soft); }
-.nap-waterfill { height: 8px; border-radius: 5px; background: var(--mz-water-track); overflow: hidden; }
-.nap-waterfill div { height: 100%; border-radius: 5px; background: var(--mz-water-fill);
-  transform: scaleX(var(--w, 0)); transform-origin: left; }
-.mz-play .nap-waterfill div { transform: scaleX(0);
-  animation: nap-waterfill 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s forwards; }
-@keyframes nap-waterfill { to { transform: scaleX(var(--w, 0)); } }
-.nap-waterhint { font-size: 10px; color: var(--mz-ink-mut); margin-top: 5px; }
-.nap-stackbig { font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
-
-/* ── „Nehéz nap" horgony-olvadás (`?day=rough`, mezo-d20.11 — PROVIZÓRIKUS) ──
-   A törölt AnchorIsland utódja a Mozaik nyelvén: egy meleg hero + három horgony-
-   csempe + a kilépés. F7-ig ez tartja életben a módot, nem új képernyő. */
-.nap-anch-hero { background: var(--mz-wash-anchor); }
-.nap-anch-say { font-size: 13px; font-weight: 300; margin: 7px 0 0; }
-.nap-anch-exit { width: 100%; min-height: 44px; border-radius: 999px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--mz-ink-soft);
-  background: rgba(43, 33, 24, 0.06); }
 
 /* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
    hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
@@ -5648,11 +5540,6 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
   .mz-page-hero.orb svg { animation: none; }
-  /* Nap hub entrance choreography (mezo-d20.11) — end states kept, motion dropped. */
-  .daybar i, .mz-play .daybar i, .mz-play .daybar i.now { animation: none; transform: scaleX(1); }
-  .nap-htick { transition: none; }
-  .mz-play .nap-htick.f { animation: none; }
-  .nap-waterfill div, .mz-play .nap-waterfill div { animation: none; transform: scaleX(var(--w, 0)); }
 }
 
 /* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
@@ -12037,8 +11924,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .titan-core { transform-origin: 90px 90px; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .titan-form { animation: titan-spin 60s linear infinite; }
-  .titan-rings { animation: titan-spin-back 84s linear infinite; }
+  .titan-form { animation: titan-spin 30s linear infinite; }
+  .titan-rings { animation: titan-spin-back 42s linear infinite; }
   .titan-planet { animation: titan-orbit 22s linear infinite; transform-origin: 90px 90px; }
   .titan-core { animation: titan-glow 7s ease-in-out infinite; }
 }
@@ -12060,14 +11947,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /titanium companion ─────────────────────────────────────────────── */
 
-/* ── nap-mai titanium (mezo-mhum) ─────────────────────────────────────────
-   A `/nap` nyitóoldal TITÁN kompozíciója: társ-blokk (TitanCompanion + köszönés
-   + kreed + reggeli chipek + Mezo-ajtó), EGY következő lépés, majd a hat stabil
-   csempe. A csempe-belsők (`.nap-watertop`, `.nap-habname`, `.nap-htick*`) a
-   korábbi Nap-blokkból élnek tovább — itt csak az ÚJ rétegek állnak.
-   Minden mozgás a `.mz-play` egyszeri koreográfiáján és a meglévő
-   prefers-reduced-motion blokkokon keresztül fut; ez a blokk nem indít saját
-   animációt, tehát nincs mit kivezetni csökkentett mozgás mellett. */
+/* ── nap-mai titanium · companion-first (mezo-mhum → mezo-7flr) ─────────────
+   A `/nap` nyitóoldal ma PUSZTA társ-belépő: a TitanCompanion (középpont) + a
+   napszak-köszönés + alatta a beszélgetés-composer (mező + mikrofon). A régi
+   csempe-réteg (következő lépés, hat csempe, statisztika-sor, horgony-csempék)
+   a navigációba költözött (mezo-jkh4), a CSS-ük innen kivezetve. A composer a
+   beszélgetés-felület saját `.mzc-composer` pirulája, itt a társ alatt, normál
+   folyásban (nincs sticky `.chat-composer` plumbing).
+   Ez a blokk nem indít saját animációt, tehát nincs mit kivezetni csökkentett
+   mozgás mellett. */
 .nap-titan-hero { display: flex; flex-direction: column; align-items: center; gap: 7px;
   padding: 14px 16px 16px; border-radius: 20px; text-align: center;
   background: linear-gradient(160deg, var(--mz-tone-lav), var(--mz-wash-white) 72%); }
@@ -12076,46 +11964,41 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-titan-quiet .titan-aura { opacity: 0.45; }
 .nap-titan-greet { font-family: var(--ff-display); font-size: 22px; font-weight: 300;
   letter-spacing: -0.02em; margin: 0; }
-.nap-titan-say { font-size: 13px; font-weight: 300; margin: 0; color: var(--mz-ink-soft); }
-.nap-titan-creed { min-height: 44px; max-width: 100%; border: none; background: none; padding: 4px 6px;
-  font-family: inherit; color: inherit; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.nap-titan-creedtext { font-size: 12.5px; font-weight: 300; font-style: italic;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.nap-titan-focibadge { font-size: 11px; font-weight: 700; color: var(--primary-deep); }
-.nap-titan-ctx { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.nap-titan-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 4px;
-  padding: 0 12px; border: none; border-radius: 999px; background: var(--mz-chipbg);
-  font-family: inherit; font-size: 12px; color: var(--mz-ink-soft); }
-button.nap-titan-chip { cursor: pointer; }
-.nap-titan-chip b { color: var(--text-primary); font-weight: 700; }
-.nap-titan-talk { min-height: 44px; padding: 0 18px; border: none; border-radius: 999px;
-  font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
-  background: var(--gradient-cta); box-shadow: 0 10px 22px -8px rgba(255, 91, 54, 0.5); }
 
-/* A NAGY, egyetlen „most ez jön" kártya — a lépcső egyetlen foka, sosem lista. */
-.nap-nextstep { width: 100%; min-height: 44px; display: flex; flex-direction: column; gap: 7px;
-  padding: 13px 15px; border: none; border-radius: 20px; text-align: left;
-  font-family: inherit; color: inherit; cursor: pointer;
-  background: linear-gradient(135deg, var(--mz-tone-coral), var(--mz-wash-white) 78%);
-  box-shadow: 0 12px 26px -14px rgba(43, 33, 24, 0.45); }
-.nap-nextstep-row { display: flex; align-items: center; gap: 12px; }
-.nap-nextstep-art { flex: none; display: grid; place-items: center; }
-.nap-nextstep-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.nap-nextstep-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-.nap-nextstep-sub { font-size: 12px; color: var(--mz-ink-soft); }
-.nap-nextstep-go { flex: none; font-size: 15px; color: var(--primary-deep); }
-
-/* A víz-csempe két saját gombja: 30px látvány 44px-es célban (a `.nap-htickbtn` precedens). */
-.nap-waterbtns { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin: -7px -7px -7px 0; }
-.nap-water-quick, .nap-water-undo { width: 44px; height: 44px; flex: none; border: none;
-  background: none; padding: 0; font-family: inherit; font-size: 17px; font-weight: 700;
-  color: var(--mz-ink-soft); cursor: pointer; display: grid; place-items: center; }
-.nap-water-quick { color: var(--primary-deep); }
-
-/* A csempe-sor: nagy szám + halk alsó sor, középre zárva (a mozaik `.mz-tile-line` belseje). */
-.nap-tileline { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
-.nap-tileline .nap-mut { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* Companion-first rétegek (mezo-7flr): a társ NAGYOBB középpont, alatta a composer.
+   Az élő jelenet (`.titan-companion.is-live`) már teljes szélességű, 232px magas sáv;
+   itt csak a statikus SVG-változatot nagyítjuk, hogy reduced-motion / WebGL nélkül is
+   a lap uralkodó eleme legyen. */
+/* Companion-first, TELJES KÉPERNYŐS elrendezés (mezo-7flr): a társ a képernyő közepén,
+   doboz nélkül, a mező pedig alul, közvetlenül a menü fölött. A lap kitölti a görgetőport
+   látható magasságát; rövid tartalomnál a `margin-top:auto` nyomja a mezőt a menü fölé. */
+.nap-companion-page { min-height: 100%; padding: 0; gap: 0; }
+.nap-companion-stack { flex: 1 1 auto; min-height: 100%; display: flex; flex-direction: column; }
+.nap-companion-hero {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 12px 16px; text-align: center;
+  /* NINCS doboz — a társ közvetlenül a sötét háttéren ül. */
+  background: none; border: none; box-shadow: none; border-radius: 0;
+}
+.nap-companion-hero .titan-companion.is-live { height: min(46vh, 340px); }
+.nap-companion-hero .titan-companion:not(.is-live) { width: 240px; height: 240px; }
+/* CSAK a 3D elem (owner 2026-09-11): se doboz, se homályos kör. A jelenet renderelője már
+   átlátszó (alpha), így a „doboz" pusztán CSS — levesszük a belső keret-árnyékot, a panel-
+   lekerekítést ÉS a maszkot; az aurát (a homályos színes kör) pedig elrejtjük. Marad a puszta
+   forgó 3D forma a sötét háttéren. */
+.nap-companion-hero .titan-companion { box-shadow: none; }
+.nap-companion-hero .titan-scene { border-radius: 0; -webkit-mask-image: none; mask-image: none; }
+.nap-companion-hero .titan-aura { display: none; }
+/* A bloom-composer ÁTLÁTSZATLAN #000 hátteret ad — ez volt a „fekete doboz". Ahelyett, hogy a
+   canvas keverésével bajlódnánk (a belépő-animáció stacking-contextje elszigetelné), a `/nap`
+   tartalmi hátterét TISZTA FEKETÉRE vesszük: a jelenet #000-ja így nyom nélkül beleolvad, csak a
+   világító 3D forma marad — keret nélkül. A fejléc/menü a saját (közel fekete) felületén marad. */
+.nap-companion-page { background: #000; }
+/* Lélegzetnyi tér a mező és az alsó menü között. */
+.nap-companion-page .nap-composer-wrap { padding-bottom: 18px; }
+.nap-composer-wrap { margin-top: auto; display: flex; flex-direction: column; gap: 7px; padding: 0 4px 4px; }
+.nap-composer-err { font-size: 11px; text-align: center; color: var(--coral-deep); margin: 0; }
+.nap-composer { width: 100%; }
 /* ── /nap-mai titanium ───────────────────────────────────────────────────── */
 
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────

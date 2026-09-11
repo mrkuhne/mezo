@@ -79,6 +79,27 @@ describe('ChatPage (mock mode)', () => {
     vi.useRealTimers()
   })
 
+  test('auto-sends the message handed off from the /nap composer (mezo-7flr)', async () => {
+    // The companion-first landing navigates here with the text in router state; ChatPage sends
+    // it through its OWN engine (one thread, the reply streams here) exactly once. Fake timers
+    // + getByText (not findByText, which deadlocks under fake timers) mirror the send test above.
+    vi.useFakeTimers()
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={[{ pathname: '/mezo/chat', state: { compose: 'Segíts a napommal' } }]}>
+          <ChatPage />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    // The handoff text appears as the user's turn without anyone typing into the composer —
+    // the mount effect fired `send` synchronously.
+    expect(screen.getByText('Segíts a napommal')).toBeInTheDocument()
+    await act(async () => { vi.advanceTimersByTime(1300) })
+    // ...and Mezo answers it — the reply flow ran on this page, not on /nap.
+    expect(screen.getByText(/Nézzük meg az adatokat/)).toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   test('renders feedback chips on the assistant answers only (mezo-b3pp.15)', async () => {
     renderPage()
     // The demo thread is assistant / user / assistant — two votable answers, one user bubble.

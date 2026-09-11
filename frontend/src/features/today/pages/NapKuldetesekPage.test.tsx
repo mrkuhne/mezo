@@ -147,7 +147,8 @@ test('honest empty state: no quests drawn → the empty line, no fabricated 0/0 
 test('/nap/kuldetesek still resolves and renders the page, while the hub carries no quest entry (manifest C1)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap?dp=nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await screen.findByText('Jó itt folytatni.')
+  // A companion-first hub loaded marker (a köszöntő szöveg eltűnt, mezo-7flr).
+  await screen.findByRole('button', { name: 'Életjelek' })
   expect(screen.queryByRole('button', { name: 'Napi küldetések' })).toBeNull()
 
   await act(() => router.navigate('/nap/kuldetesek'))

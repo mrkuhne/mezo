@@ -327,7 +327,8 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
         smooth.spread = target.spread; smooth.speed = target.speed; smooth.glow = target.glow
       }
       group.rotation.x = 0.1 + Math.sin(time * 0.3) * 0.07 * MOTION_SCALE
-      group.rotation.y = -orbitTime * Math.PI / 36
+      // Kétszeres forgási sebesség (owner 2026-09-11): π/18 a korábbi π/36 helyett.
+      group.rotation.y = -orbitTime * Math.PI / 18
       group.rotation.z = Math.sin(time * 0.17) * 0.12 * MOTION_SCALE
       group.position.y = -0.2 + Math.sin(time * 0.75) * 0.055 * MOTION_SCALE
       for (let i = 0; i < petals.length; i++) {

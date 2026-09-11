@@ -319,6 +319,14 @@ test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   expect(container.querySelector('.tab-bar')).not.toBeNull()
 })
 
+// mezo-7flr: the companion-first /nap has a bottom composer that owns the thumb zone, so the
+// coral FAB (which would overlap the send button) is hidden there — same call as the chat page.
+test('hides the quick-log FAB on the companion-first /nap but keeps the tab bar', () => {
+  const { container } = renderApp('/nap')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
+
 test('the sticky header keeps its compact aurora without covering content or doubling the chat header', async () => {
   const auroraRule = rawCss.match(/\.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
   const condensedAuroraRule = rawCss.match(/\.app-head\.is-cond \.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
