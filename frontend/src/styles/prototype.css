@@ -11969,11 +11969,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Az élő jelenet (`.titan-companion.is-live`) már teljes szélességű, 232px magas sáv;
    itt csak a statikus SVG-változatot nagyítjuk, hogy reduced-motion / WebGL nélkül is
    a lap uralkodó eleme legyen. */
-.nap-companion-hero { padding: 22px 16px 20px; gap: 12px; }
-.nap-companion-hero .titan-companion:not(.is-live) { width: 220px; height: 220px; }
-.nap-composer-wrap { display: flex; flex-direction: column; gap: 7px; }
+/* Companion-first, TELJES KÉPERNYŐS elrendezés (mezo-7flr): a társ a képernyő közepén,
+   doboz nélkül, a mező pedig alul, közvetlenül a menü fölött. A lap kitölti a görgetőport
+   látható magasságát; rövid tartalomnál a `margin-top:auto` nyomja a mezőt a menü fölé. */
+.nap-companion-page { min-height: 100%; padding: 0; gap: 0; }
+.nap-companion-stack { flex: 1 1 auto; min-height: 100%; display: flex; flex-direction: column; }
+.nap-companion-hero {
+  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 12px 16px; text-align: center;
+  /* NINCS doboz — a társ közvetlenül a sötét háttéren ül. */
+  background: none; border: none; box-shadow: none; border-radius: 0;
+}
+.nap-companion-hero .titan-companion.is-live { height: min(46vh, 340px); }
+.nap-companion-hero .titan-companion:not(.is-live) { width: 240px; height: 240px; }
+/* DOBOZ NÉLKÜL: a jelenet renderelője már átlátszó (alpha), így a keret pusztán CSS —
+   itt levesszük a belső keret-árnyékot és a panel-lekerekítést, hogy a társ közvetlenül a
+   sötét háttéren lebegjen (a fentről/lentről elhalványító maszk marad, hogy beleolvadjon). */
+.nap-companion-hero .titan-companion { box-shadow: none; }
+.nap-companion-hero .titan-scene { border-radius: 0; }
+.nap-composer-wrap { margin-top: auto; display: flex; flex-direction: column; gap: 7px; padding: 0 4px 4px; }
 .nap-composer-err { font-size: 11px; text-align: center; color: var(--coral-deep); margin: 0; }
-/* A composer a társ alatt, normál folyásban — NEM a chat sticky-plumbingjával. */
 .nap-composer { width: 100%; }
 /* ── /nap-mai titanium ───────────────────────────────────────────────────── */
 

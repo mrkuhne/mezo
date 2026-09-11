@@ -87,11 +87,11 @@ export function NapHubPage() {
   const greeting = scenario.anchorMode ? ANCHOR_GREETING : GREETING[face]
 
   return (
-    <div className="nap-hub nap-titan">
-      <EntranceGroup replayKey={face} className="mz-panel-stack">
-        {/* ── a társ — a nyitóoldal egyetlen középpontja ─────────────────── */}
+    <div className="nap-hub nap-titan nap-companion-page">
+      <EntranceGroup replayKey={face} className="mz-panel-stack nap-companion-stack">
+        {/* ── a társ — a teljes képernyő közepén, doboz nélkül ───────────── */}
         <div
-          className={cn('nap-titan-hero nap-companion-hero rise', scenario.anchorMode && 'nap-titan-quiet')}
+          className={cn('nap-companion-hero rise', scenario.anchorMode && 'nap-titan-quiet')}
           data-kalauz-anchor="nap-hero"
           style={{ '--d': '0ms' } as React.CSSProperties}
         >
@@ -99,7 +99,7 @@ export function NapHubPage() {
           <h2 className="nap-titan-greet">{greeting}</h2>
         </div>
 
-        {/* ── a társhoz írni: mező + mikrofon ────────────────────────────── */}
+        {/* ── a társhoz írni: mező + mikrofon, alul a menü fölött ─────────── */}
         <div className="nap-composer-wrap rise" style={{ '--d': '60ms' } as React.CSSProperties}>
           {voice.error && (
             <p className="nap-composer-err" role="alert">{voice.error}</p>
