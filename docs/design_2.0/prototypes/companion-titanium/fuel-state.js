@@ -18,18 +18,18 @@ export function removeRecipe(recipes,recipeId){const index=recipes.findIndex(r=>
 // --- Konyha: pantry --------------------------------------------------------
 // Per-100 g facts are the stored definition; null = the source had no value. addedDays feeds the imports feed.
 export function createPantry(){return [
- {id:'k-csirke',name:'Csirkemell',kind:'food',category:'Hús',amount:'600 g',source:'fotó',addedDays:1,kcal100:120,p100:22.5,c100:0,f100:2.6,sugar100:0,salt100:.2,satfat100:.7,nova:1},
- {id:'k-rizs',name:'Jázmin rizs',kind:'food',category:'Gabona',amount:'1 kg',source:'link',addedDays:2,kcal100:356,p100:7,c100:79,f100:.6,sugar100:.1,salt100:0,satfat100:.2,nova:1},
- {id:'k-joghurt',name:'Görög joghurt',kind:'food',category:'Tejtermék',amount:'2 pohár',source:'katalógus',addedDays:4,kcal100:97,p100:9,c100:4,f100:5,sugar100:3.8,salt100:.11,satfat100:3.2,nova:1},
- {id:'k-banan',name:'Banán',kind:'food',category:'Gyümölcs',amount:'3 darab',source:'kézi',addedDays:5,kcal100:89,p100:1.1,c100:22.8,f100:.3,sugar100:12.2,salt100:0,satfat100:.1,nova:1},
- {id:'k-zab',name:'Zabpehely',kind:'food',category:'Gabona',amount:'500 g',source:'katalógus',addedDays:9,kcal100:372,p100:13.5,c100:58.7,f100:7,sugar100:1,salt100:.01,satfat100:1.3,nova:1},
- {id:'k-tojas',name:'Tojás',kind:'food',category:'Tojás',amount:'10 db',source:'kézi',addedDays:6,kcal100:143,p100:12.6,c100:.7,f100:9.5,sugar100:.4,salt100:.36,satfat100:3.1,nova:1},
- {id:'k-tortilla',name:'Tortilla lap',kind:'food',category:'Pékáru',amount:'6 db',source:'fotó',addedDays:3,kcal100:310,p100:8.5,c100:50,f100:7.5,sugar100:null,salt100:null,satfat100:3,nova:4},
+ {id:'k-csirke',name:'Csirkemell',kind:'food',category:'Hús',amount:'600 g',source:'fotó',addedDays:1,kcal100:120,p100:22.5,c100:0,f100:2.6,fiber100:0,sugar100:0,salt100:.2,satfat100:.7,nova:1},
+ {id:'k-rizs',name:'Jázmin rizs',kind:'food',category:'Gabona',amount:'1 kg',source:'link',addedDays:2,kcal100:356,p100:7,c100:79,f100:.6,fiber100:1.3,sugar100:.1,salt100:0,satfat100:.2,nova:1},
+ {id:'k-joghurt',name:'Görög joghurt',kind:'food',category:'Tejtermék',amount:'2 pohár',source:'katalógus',addedDays:4,kcal100:97,p100:9,c100:4,f100:5,fiber100:0,sugar100:3.8,salt100:.11,satfat100:3.2,nova:1},
+ {id:'k-banan',name:'Banán',kind:'food',category:'Gyümölcs',amount:'3 darab',source:'kézi',addedDays:5,kcal100:89,p100:1.1,c100:22.8,f100:.3,fiber100:2.6,sugar100:12.2,salt100:0,satfat100:.1,nova:1},
+ {id:'k-zab',name:'Zabpehely',kind:'food',category:'Gabona',amount:'500 g',source:'katalógus',addedDays:9,kcal100:372,p100:13.5,c100:58.7,f100:7,fiber100:10.6,sugar100:1,salt100:.01,satfat100:1.3,nova:1},
+ {id:'k-tojas',name:'Tojás',kind:'food',category:'Tojás',amount:'10 db',source:'kézi',addedDays:6,kcal100:143,p100:12.6,c100:.7,f100:9.5,fiber100:0,sugar100:.4,salt100:.36,satfat100:3.1,nova:1},
+ {id:'k-tortilla',name:'Tortilla lap',kind:'food',category:'Pékáru',amount:'6 db',source:'fotó',addedDays:3,kcal100:310,p100:8.5,c100:50,f100:7.5,fiber100:null,sugar100:null,salt100:null,satfat100:3,nova:4},
  {id:'k-d3',name:'D3-vitamin',kind:'supp',category:'Vitamin',amount:'90 kapszula',source:'katalógus',addedDays:20,dose:'4000 NE',timing:'Reggelivel'},
  {id:'k-kreatin',name:'Kreatin-monohidrát',kind:'supp',category:'Teljesítmény',amount:'300 g',source:'link',addedDays:12,dose:'5 g',timing:'Ebéd után'},
  {id:'k-magnezium',name:'Magnézium-biszglicinát',kind:'supp',category:'Ásványi anyag',amount:'120 kapszula',source:'katalógus',addedDays:15,dose:'200 mg',timing:'Vacsorával'},
 ]}
-export function addPantryItem(pantry,{name,kind='food',amount='',source='kézi'}){if(!name)return null;const item={id:id('k'),name,kind,category:kind==='supp'?'Kiegészítő':'Új elem',amount,source,addedDays:0,kcal100:null,p100:null,c100:null,f100:null,sugar100:null,salt100:null,satfat100:null,nova:null};pantry.unshift(item);return item;}
+export function addPantryItem(pantry,{name,kind='food',amount='',source='kézi'}){if(!name)return null;const item={id:id('k'),name,kind,category:kind==='supp'?'Kiegészítő':'Új elem',amount,source,addedDays:0,kcal100:null,p100:null,c100:null,f100:null,fiber100:null,sugar100:null,salt100:null,satfat100:null,nova:null};pantry.unshift(item);return item;}
 export function removePantryItem(pantry,itemId){const index=pantry.findIndex(i=>i.id===itemId);if(index<0)return false;pantry.splice(index,1);return true;}
 // Read-only swap heuristics (pantry suggestions): cheaper or cleaner alternatives, never a shopping list.
 export const pantrySwaps=[{from:'Tortilla lap',to:'Teljes kiőrlésű tortilla',reason:'Kevésbé feldolgozott, kétszer annyi rost.',price:'+90 Ft / csomag'}];

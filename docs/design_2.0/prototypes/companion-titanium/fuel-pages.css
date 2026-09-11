@@ -707,3 +707,14 @@ dialog.glass .sheet-handle{display:none}
 .wsx-dock{bottom:-6px}
 .wsx-save{margin:16px 0 2px}
 .wsx-demo{margin:8px 0 0}
+/* Receptműhely poster on the Konyha root */
+.kx-ws-poster{position:relative;overflow:hidden;border-color:#bca6f155;background:radial-gradient(120% 140% at 100% 0%,#8ed2e81f,transparent 55%),linear-gradient(160deg,#bca6f12a,#bca6f108 60%,#ffffff03);box-shadow:0 14px 28px #0006,0 0 30px #bca6f11c,inset 0 1px 0 #ffffff1f}
+.kx-ws-poster .kx-poster-title .icon{width:34px;height:34px;filter:drop-shadow(0 5px 6px #0007) drop-shadow(0 0 10px #bca6f150)}
+@media(prefers-reduced-motion:no-preference){.kx-ws-poster .kx-poster-title .icon{animation:score-tilt 5.2s ease-in-out infinite}}
+.kx-ws-copy{display:grid;gap:3px}
+.kx-ws-copy strong{font-size:20px;font-weight:600;line-height:1.2;color:#f3eefd}
+.kx-ws-copy small{font-size:11px;line-height:1.45;color:#b3a9cc}
+.kx-ws-goals{display:flex;gap:7px}
+.kx-ws-goals i{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#10131a;border:1px solid color-mix(in srgb,var(--kx) 45%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--kx) 22%,transparent)}
+.kx-ws-goals i .icon{width:24px;height:24px}
+.sheet-title+.kx-link-card{margin:4px 0 6px}

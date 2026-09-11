@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { draftFromGoal, draftFromRecipe, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
+import { draftFromGoal, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { createPantry, createRecipes } from './fuel-state.js';
 
 const pantry=createPantry();
@@ -14,3 +14,4 @@ test('a protein request bumps a protein line and reports only what changed',()=>
 test('a turn that changes nothing answers with the honest fallback',()=>{const d=draftFromGoal('breakfast');const res=workshopTurn({draft:d,message:'Szerinted jó így?'});assert.equal(res.reply,'Frissítettem a vázlatot.');assert.deepEqual(res.changed,[]);});
 test('a failed turn returns no draft so the user message can be retried',()=>{assert.deepEqual(workshopTurn({draft:null,message:'hiba'}),{ok:false});});
 test('seeding from a recipe keeps shelf matches as pantry lines and the rest as estimates',()=>{const r=createRecipes().find(x=>x.id==='r-rizstal');const d=draftFromRecipe(r,pantry);assert.equal(d.lines.find(l=>l.key==='csirkemell').source,'pantry');assert.equal(d.lines.find(l=>l.key==='zöldségkeverék').source,'estimate');assert.equal(d.servings,1);});
+test('the workshop preview sums known micronutrients per serving and keeps all-unknown values null',()=>{const d=draftFromGoal('high_protein');const n=draftNutrition(d,pantry);assert.ok(n.perServing.sugar>0);assert.equal(n.qualityLines.length,d.lines.length);assert.equal(n.qualityLines.at(-1).nova,1);assert.equal(n.plants,2);const blind=draftNutrition({servings:1,lines:[{key:'x',source:'estimate',name:'X',amount:10,unit:'g',est:{kcal:10,p:0,c:0,f:0},estAmount:10}]},pantry);assert.equal(blind.perServing.fiber,null);});
