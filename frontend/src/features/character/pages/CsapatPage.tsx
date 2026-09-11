@@ -41,7 +41,7 @@ export function CsapatPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Csapat</div>
         <div className="mz-hero-sb">Mezo belső tanácsa — ők dolgoznak a karakteren</div>

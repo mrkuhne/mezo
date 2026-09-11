@@ -60,7 +60,7 @@ describe('GeptermPage', () => {
   test('Futások tile navigates to the Futások list', async () => {
     renderHub()
     await userEvent.click(screen.getByRole('button', { name: /Futások/ }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futasok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futasok')
   })
 
   test('AI-napló tile navigates to /admin/cost unfiltered (AiCallFilters is not URL-driven)', async () => {
@@ -72,13 +72,13 @@ describe('GeptermPage', () => {
   test('Adatforrások tile navigates to the Adatforrások page (Task 5)', async () => {
     renderHub()
     await userEvent.click(screen.getByRole('button', { name: /Adatforrások/ }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/adatforrasok')
   })
 
   test('Detektorok tile navigates to the Detektorok page (Task 5)', async () => {
     renderHub()
     await userEvent.click(screen.getByRole('button', { name: /Detektorok/ }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/detektorok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/detektorok')
   })
 
   test('an empty week (no runs) renders the tiles with no hero line — no fabricated line', () => {

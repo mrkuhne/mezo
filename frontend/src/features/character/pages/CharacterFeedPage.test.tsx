@@ -71,7 +71,7 @@ describe('CharacterFeedPage', () => {
     const diffRow = screen.getByText(/Vasárnapi konzílium/).closest('button.kr-feeddiff')
     expect(diffRow).toHaveClass('kr-feeddiff')
     fireEvent.click(diffRow!)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/konzilium')
   })
 
   test('an honestly empty feed renders no fabricated rows', () => {
@@ -90,7 +90,7 @@ describe('CharacterFeedPage', () => {
     const gear = row!.querySelector('.kr-gepq') as HTMLButtonElement
     expect(gear).not.toBeNull()
     fireEvent.click(gear)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futas/ejsz-30')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futas/ejsz-30')
   })
 
   test('I1: a run more than 1 day stale is an honest gap, never silently matched', () => {
@@ -119,7 +119,7 @@ describe('CharacterFeedPage', () => {
     const gear = row!.querySelector('.kr-gepq') as HTMLButtonElement
     expect(gear).not.toBeNull()
     fireEvent.click(gear)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futas/ejsz-20')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futas/ejsz-20')
   })
 
   test('no ⚙ when no run row exists for the observation\'s date — honest absence, not a dead button', () => {

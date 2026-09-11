@@ -42,7 +42,7 @@ export function GeptermPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
       <PageHero icon="i-retegek" iconSize={34} name="Gépterem" sub="mi táplálja a dossziét — nyíltan">
         {lastRun != null && <p className="kr-runlede">{lastRunLine(lastRun)}</p>}
       </PageHero>
@@ -53,14 +53,14 @@ export function GeptermPage() {
             eyebrow="Futások"
             delayMs={60}
             line={`e héten ${runs.length} futás · ${weekObsCount} megfigyelés`}
-            onClick={() => navigate('/me/karakter/gepterem/futasok')}
+            onClick={() => navigate('/mezo/karakter/gepterem/futasok')}
           />
           <Tile
             icon="i-retegek"
             eyebrow="Adatforrások"
             delayMs={100}
             line="a teljes tervezett korpusz"
-            onClick={() => navigate('/me/karakter/gepterem/adatforrasok')}
+            onClick={() => navigate('/mezo/karakter/gepterem/adatforrasok')}
           />
           <Tile
             icon="i-tudas"
@@ -74,7 +74,7 @@ export function GeptermPage() {
             eyebrow="Detektorok"
             delayMs={180}
             line="az aktív katalógus"
-            onClick={() => navigate('/me/karakter/gepterem/detektorok')}
+            onClick={() => navigate('/mezo/karakter/gepterem/detektorok')}
           />
         </Mosaic>
       </PageBody>

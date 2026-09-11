@@ -5,7 +5,7 @@
 // `leltarcard` of rows (each row's meta: a single ghost detector chip when it names exactly
 // one detector key, a "{n} detektor" count when it names several, and/or an ÉRZÉKENY dot).
 //
-// Route: `/me/karakter/gepterem/adatforrasok/kor/:n` (path param — see AdatforrasokPage's
+// Route: `/mezo/karakter/gepterem/adatforrasok/kor/:n` (path param — see AdatforrasokPage's
 // header comment for the sibling-idiom reasoning). An unknown/out-of-range `:n` renders the
 // same `.kr-degraded` 404 face RunPage/DimensionPage use — never a crash on a stray URL.
 // ============================================================
@@ -35,7 +35,7 @@ export function KorPage() {
   const navigate = useNavigate()
   const round = INVENTORY_ROUNDS.find((r) => r.n === Number(n))
 
-  const goBack = () => navigate('/me/karakter/gepterem/adatforrasok')
+  const goBack = () => navigate('/mezo/karakter/gepterem/adatforrasok')
 
   if (round == null) {
     return (

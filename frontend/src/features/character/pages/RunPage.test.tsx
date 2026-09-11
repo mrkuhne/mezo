@@ -91,7 +91,7 @@ describe('RunPage', () => {
     hoisted.run = MOCK_RUN_DETAIL['run-w2']
     renderRun()
     await userEvent.click(screen.getByRole('button', { name: 'Teljes transzkript megnyitása ›' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium?id=w2')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/konzilium?id=w2')
   })
 
   test('an unknown/foreign run id (404 -> null) renders the honest not-found face, not a crash', () => {
@@ -130,6 +130,6 @@ describe('RunPage', () => {
   test('‹ Futások back button navigates to the Futások list', async () => {
     renderRun()
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futasok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futasok')
   })
 })

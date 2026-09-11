@@ -333,33 +333,43 @@ export const routes: RouteObject[] = [
       // somewhere sensible.
       { path: 'mezo/motor', element: <Navigate to="/mezo/patterns" replace /> },
       { path: 'mezo/memoria', element: <MemoryPage /> },
+      // Karakter dossier — moved from `/me/karakter/*` into the Mezo domain (mezo-jkh4) so
+      // the Mezo bar stays active on the Karakter surface (active domain = first segment).
+      // The component files are unchanged; only the route PATHS moved (legacy `/me/karakter/*`
+      // redirects live in the Én section below).
+      // Karakter dossier hub (mezo-1gim.13) — the Mezo hub's Karakter tile.
+      { path: 'mezo/karakter', element: <KarakterHubPage /> },
+      // Dimenziók/dimenzió/feed full-page siblings (Task 4); Csapat/Konzílium (Task 5) —
+      // Konzílium's transcript view rides `?id=` on the SAME route (the WeekHub sibling
+      // idiom, e.g. WeekLessonsPage's `?start=`), not a child route.
+      { path: 'mezo/karakter/dimenziok', element: <DimensionsPage /> },
+      { path: 'mezo/karakter/dimenzio/:key', element: <DimensionPage /> },
+      { path: 'mezo/karakter/feed', element: <CharacterFeedPage /> },
+      { path: 'mezo/karakter/csapat', element: <CsapatPage /> },
+      { path: 'mezo/karakter/konzilium', element: <KonziliumPage /> },
+      // Gépterem (mezo-1gim.14, Task 4) — the geek-transparency hub + its Futások timeline +
+      // the generic run-detail page every row (and, from Task 5, every Feed ⚙) opens into.
+      { path: 'mezo/karakter/gepterem', element: <GeptermPage /> },
+      { path: 'mezo/karakter/gepterem/futasok', element: <FutasokPage /> },
+      { path: 'mezo/karakter/gepterem/futas/:id', element: <RunPage /> },
+      // Adatforrások/kör/Detektorok (Task 5) — the kör mini-pages are discrete indexed items
+      // (DimensionsPage's `/dimenzio/:key` sibling idiom), not a continuous stepped range, so
+      // they get a path param (`/kor/:n`), not FutasokPage's `?start=` query-param idiom.
+      { path: 'mezo/karakter/gepterem/adatforrasok', element: <AdatforrasokPage /> },
+      { path: 'mezo/karakter/gepterem/adatforrasok/kor/:n', element: <KorPage /> },
+      { path: 'mezo/karakter/gepterem/detektorok', element: <DetektorokPage /> },
       // Én tab — Design 2.0 shell dissolution (mezo-d20.6.1): the Me shell
       // (AppHero + SubNavDropdown + its ⚙️ Beállítások action) is gone. /me is the hub
       // Mozaik face, which carries the settings band itself; the former sub-tabs are
       // full-page siblings on their stable routes (they keep their current faces until
       // their own F5 slices land) — the same idiom the Mezo tab took in mezo-d20.5.1.
       { path: 'me', element: <EnHubPage /> },
-      // Karakter dossier hub (mezo-1gim.13) — the Én hub's Karakter tile.
-      { path: 'me/karakter', element: <KarakterHubPage /> },
-      // Dimenziók/dimenzió/feed full-page siblings (Task 4); Csapat/Konzílium (Task 5) —
-      // Konzílium's transcript view rides `?id=` on the SAME route (the WeekHub sibling
-      // idiom, e.g. WeekLessonsPage's `?start=`), not a child route.
-      { path: 'me/karakter/dimenziok', element: <DimensionsPage /> },
-      { path: 'me/karakter/dimenzio/:key', element: <DimensionPage /> },
-      { path: 'me/karakter/feed', element: <CharacterFeedPage /> },
-      { path: 'me/karakter/csapat', element: <CsapatPage /> },
-      { path: 'me/karakter/konzilium', element: <KonziliumPage /> },
-      // Gépterem (mezo-1gim.14, Task 4) — the geek-transparency hub + its Futások timeline +
-      // the generic run-detail page every row (and, from Task 5, every Feed ⚙) opens into.
-      { path: 'me/karakter/gepterem', element: <GeptermPage /> },
-      { path: 'me/karakter/gepterem/futasok', element: <FutasokPage /> },
-      { path: 'me/karakter/gepterem/futas/:id', element: <RunPage /> },
-      // Adatforrások/kör/Detektorok (Task 5) — the kör mini-pages are discrete indexed items
-      // (DimensionsPage's `/dimenzio/:key` sibling idiom), not a continuous stepped range, so
-      // they get a path param (`/kor/:n`), not FutasokPage's `?start=` query-param idiom.
-      { path: 'me/karakter/gepterem/adatforrasok', element: <AdatforrasokPage /> },
-      { path: 'me/karakter/gepterem/adatforrasok/kor/:n', element: <KorPage /> },
-      { path: 'me/karakter/gepterem/detektorok', element: <DetektorokPage /> },
+      // Karakter moved to the Mezo domain (mezo-jkh4): the dossier now lives under
+      // `/mezo/karakter/*` (registered in the Mezo section above) so the Mezo bar stays
+      // active on the Karakter surface. Every legacy `/me/karakter/*` link — old bookmarks,
+      // notification deep-links (character_portrait, konzilium_verdict) — redirects there,
+      // preserving the subpath and query (the /today, /insights redirect idiom).
+      { path: 'me/karakter/*', element: <LegacyPathRedirect prefix="/me/karakter" to="/mezo/karakter" /> },
       // Growth hub (mezo-rmi0.1) — hero + Ma strip + 2×2 mosaic; the four sub-pages are flat siblings below (added per task).
       { path: 'me/growth', element: <GrowthHubPage /> },
       { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },

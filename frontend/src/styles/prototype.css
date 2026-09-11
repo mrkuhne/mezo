@@ -1067,6 +1067,51 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .tab-item:not(.active) .tab-ico svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
 .tab-item svg { transition: filter var(--duration-normal) var(--ease-out); }
 
+/* Titanium nav (mezo-jkh4): the domain-switch mark leads the bar — the Mezo companion
+   mark + the current domain's name + a ⌃ caret. Styled as a tab-item column, but the
+   Mezo mark stays full-colour (it is the identity, not a muted tab). */
+.tab-item.domain-switch {
+  border: none; background: none; cursor: pointer; padding: 0;
+  font: inherit;
+}
+.tab-item.domain-switch .tab-ico svg { filter: none; }
+.domain-switch-name {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--ff-body); font-size: 11px; font-weight: 700;
+  color: var(--text-primary);
+}
+.domain-switch-name b { font-size: 9px; opacity: 0.6; line-height: 1; }
+
+/* Domain-switcher dialog (mezo-jkh4) — "Egy társ. Öt világ." over the Sheet primitive. */
+.domain-switcher-body { padding: 4px 20px 28px; }
+.domain-switcher-eyebrow {
+  margin: 0 0 4px; font-family: var(--ff-body);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--text-secondary); text-transform: uppercase;
+}
+.domain-switcher .sheet-title {
+  margin: 0 0 18px; font-family: var(--ff-display, var(--ff-body));
+  font-size: 24px; font-weight: 700; color: var(--text-primary);
+}
+.domain-list { display: flex; flex-direction: column; gap: 10px; }
+.domain-row {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid var(--border-subtle); border-radius: 18px;
+  background: var(--surface, var(--canvas)); cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+}
+.domain-row.current { border-color: var(--primary-deep); }
+.domain-row-mark { display: grid; place-items: center; flex: none; }
+.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.domain-row-text strong {
+  font-family: var(--ff-body); font-size: 15px; font-weight: 700; color: var(--text-primary);
+}
+.domain-row-text small { font-size: 12px; color: var(--text-secondary); }
+.domain-row-end { flex: none; font-size: 15px; color: var(--text-secondary); }
+.domain-row.current .domain-row-end { color: var(--primary-deep); }
+
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
    NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas):

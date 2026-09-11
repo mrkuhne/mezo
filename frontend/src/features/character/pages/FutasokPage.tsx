@@ -101,7 +101,7 @@ export function FutasokPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter/gepterem')} label="‹ Gépterem" />
+      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
       <PageHero name="Futások" sub="a pipeline futásai, hetekre bontva" />
       <PageBody>
         <div className="kr-weeknav">
@@ -177,7 +177,7 @@ export function FutasokPage() {
                     key={run.id}
                     type="button"
                     className={isQuietNightly(run) ? 'kr-runrow quiet' : 'kr-runrow'}
-                    onClick={() => navigate(`/me/karakter/gepterem/futas/${run.id}`)}
+                    onClick={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)}
                   >
                     <div className="kr-runrow-tx">
                       <div className="kr-runrow-title">
@@ -203,7 +203,7 @@ export function FutasokPage() {
               key={run.id}
               type="button"
               className="kr-raretile"
-              onClick={() => navigate(`/me/karakter/gepterem/futas/${run.id}`)}
+              onClick={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)}
             >
               <div className="kr-runrow-tx">
                 <div className="kr-runrow-title">{KIND_LABEL[run.kind]}</div>

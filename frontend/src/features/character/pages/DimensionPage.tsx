@@ -58,7 +58,7 @@ export function DimensionPage() {
   if (dimension == null) {
     return (
       <div className="kr-hub">
-        <PageHead onBack={() => navigate('/me/karakter/dimenziok')} label="‹ Karakter" />
+        <PageHead onBack={() => navigate('/mezo/karakter/dimenziok')} label="‹ Karakter" />
         <div className="kr-degraded">Ez a dimenzió jelenleg nem elérhető.</div>
       </div>
     )
@@ -77,7 +77,7 @@ export function DimensionPage() {
 
   return (
     <div className="kr-hub" style={{ '--pwash': `${color}2e` } as CSSProperties}>
-      <PageHead onBack={() => navigate('/me/karakter/dimenziok')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter/dimenziok')} label="‹ Karakter" />
       <div className="kr-dim-hero" style={{ '--pc': color } as CSSProperties}>
         {dimension.expertKey != null
           ? <div className="kr-dim-avatar" style={{ '--pc': color } as CSSProperties}><PersonaOrb expertKey={dimension.expertKey} size={58} /></div>

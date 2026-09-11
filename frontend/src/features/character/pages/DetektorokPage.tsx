@@ -121,7 +121,7 @@ export function DetektorokPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter/gepterem')} label="‹ Gépterem" />
+      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
       <PageHero name="Detektorok" sub="a ma aktív katalógus, egy mondatban" />
       <PageBody principle={PRINCIPLE}>
         <div className="kr-leltarcard sage">

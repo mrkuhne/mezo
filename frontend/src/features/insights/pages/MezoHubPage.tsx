@@ -210,7 +210,7 @@ export function MezoHubPage() {
           </Tile>
           {/* Karakter (hub-tile-reorg): AI-domain dossier. */}
           <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={440} aria-label="Karakter"
-            className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/me/karakter')} />
+            className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/mezo/karakter')} />
           {/* Proaktív coaching (mezo-6269.3) — a split arc + the winner's name, sized for the cell. */}
           <Tile wash="sky" icon="i-eletjel" eyebrow="Proaktív coaching" delayMs={480}
             aria-label="Proaktív coaching" className="mzh-eb-sky mzh-t-coaching"

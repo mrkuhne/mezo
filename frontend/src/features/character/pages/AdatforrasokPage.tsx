@@ -7,9 +7,9 @@
 // "+ még N terület később" tail line off `INVENTORY.later`.
 //
 // Route idiom (brief's explicit call): the four kör mini-pages are DISCRETE, indexed items —
-// same shape as DimensionsPage's tiles into `/me/karakter/dimenzio/:key` — not a continuous,
+// same shape as DimensionsPage's tiles into `/mezo/karakter/dimenzio/:key` — not a continuous,
 // steppable range like FutasokPage's `?start=` week window. A path param sibling therefore
-// matches the app's own idiom better than a query param: `/me/karakter/gepterem/adatforrasok/
+// matches the app's own idiom better than a query param: `/mezo/karakter/gepterem/adatforrasok/
 // kor/:n`, not `?kor=`.
 //
 // Content is entirely static (`@/features/character/inventory.ts`) — see that file's header
@@ -38,7 +38,7 @@ export function AdatforrasokPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter/gepterem')} label="‹ Gépterem" />
+      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
       <PageHero name="Adatforrások" sub="mit olvas a rendszer ma, és mit tervez" />
       <PageBody>
         <div className="kr-leltarsegs" role="tablist" aria-label="Adatforrások nézet">
@@ -92,7 +92,7 @@ export function AdatforrasokPage() {
                 type="button"
                 key={rnd.n}
                 className="kr-korindex"
-                onClick={() => navigate(`/me/karakter/gepterem/adatforrasok/kor/${rnd.n}`)}
+                onClick={() => navigate(`/mezo/karakter/gepterem/adatforrasok/kor/${rnd.n}`)}
               >
                 <span className="kr-rnum">{rnd.n}. KÖR</span>
                 <div className="kr-lrow-grow">

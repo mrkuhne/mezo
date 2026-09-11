@@ -80,13 +80,13 @@ describe('KarakterHubPage', () => {
   test('tiles navigate to their own full-page siblings', async () => {
     renderHub()
     await userEvent.click(screen.getByRole('button', { name: 'Dimenziók' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/dimenziok')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/dimenziok')
     await userEvent.click(screen.getByRole('button', { name: 'Feed' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/feed')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/feed')
     await userEvent.click(screen.getByRole('button', { name: 'Csapat' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/csapat')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/csapat')
     await userEvent.click(screen.getByRole('button', { name: 'Konzílium' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/konzilium')
   })
 
   test('a pre-bootstrap empty dossier shows the intro ceremony face, not the mosaic', () => {
@@ -119,7 +119,7 @@ describe('KarakterHubPage', () => {
     renderHub()
     expect(screen.getByText('A dossziéd elkészült')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Nézd meg az első konzíliumot' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/konzilium')
   })
 
   test("result 'empty' (204) shows the honest no-history face", () => {
@@ -164,7 +164,7 @@ describe('KarakterHubPage', () => {
     expect(row).toBeInTheDocument()
     expect(screen.getByText(/3 megfigyelés · 2 szakértő hívva/)).toBeInTheDocument()
     await userEvent.click(row)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem')
   })
 
   test('an empty week (no runs yet) renders the Gépterem row with its static tagline, never a fabricated line', () => {

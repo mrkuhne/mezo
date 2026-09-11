@@ -69,6 +69,6 @@ describe('CsapatPage', () => {
   test('a back chip returns to the Karakter hub', async () => {
     render(<CsapatPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter')
   })
 })
