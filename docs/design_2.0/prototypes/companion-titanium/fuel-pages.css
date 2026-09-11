@@ -819,3 +819,5 @@ dialog.glass .sheet-handle{display:none}
 .tx-dim-note{display:flex;align-items:center;gap:7px;margin:11px 0 0;padding-top:9px;border-top:1px solid #ffffff0d;font-size:11px;line-height:1.45;color:#b6c3c9}
 .tx-dim-note .icon{width:20px;height:20px;flex:0 0 auto}
 .tx-dim-note.quiet{border-top:0;padding-top:0;color:#8a9ba3}
+/* Entrance: the weekday/weekend bars fill like every other Fuel meter */
+@media(prefers-reduced-motion:no-preference){.tx-split-copy i b{animation:tx-bar-fill .85s cubic-bezier(.2,.78,.24,1) both}.tx-splitrow:nth-child(2) .tx-split-copy i b{animation-delay:.09s}@keyframes tx-bar-fill{from{width:0}}}

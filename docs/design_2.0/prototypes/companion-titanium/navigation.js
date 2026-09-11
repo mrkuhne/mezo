@@ -60,7 +60,7 @@ function draw(){
  route=resolveRoute(location.hash);rememberRoute(memory,route.domain,route.page);const {domain:d,page:p}=route,cfg=domains[d];
  $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
  $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;const view=location.hash.slice(1).split('/')[2]||'',raw=content(d,p,dayNav.date);panel.innerHTML=dayRoute(d,p,view)?dayFrame(raw,dayNav.date,dayNav.max,dayMotion):raw;dayMotion='';
- if(d==='fuel'&&p===0)animateFuelDashboard(panel);
+ if(d==='fuel')animateFuelDashboard(panel);
  // Owner decision 2026-09-11: no 3D companion on any Fuel page — the arrival stays hidden there.
  $('.arrival').hidden=p!==0||d==='fuel'||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
  if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
