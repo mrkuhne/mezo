@@ -43,7 +43,7 @@ rows are only valid with an explicit owner decision recorded in the Owner note c
 | B2 | Kamraelem felvétele kézzel/katalógusból | `createPantryItem`, `searchPantryCatalog`, `addPantryItemFromCatalog`; `AddPantryItemSheet`, `CatalogSearchSheet` | Sheet + idempotent catalog add | Top Konyha action | Konyha gyors-művelet #2: „Új elem a kamrába" | KEEP (emelt) | Manual add + catalog one-tap add work | — |
 | B3 | Kamraelem betöltés fotóból (címke) | `photoExtractPantryItem` `pantry.yml:122`; `ImportItemSheet` Fotó mode | AI reads label photo → draft → confirm import | Frequent capture | Konyha „Új elem" folyamat fotó-első | KEEP | Label photo → draft → confirmed item + imports feed row | — |
 | B4 | Kamraelem betöltés linkből (webshop) | `scrapePantryItem`; `ImportItemSheet` Link mode | URL → AI extract with provenance/confidence | Occasional | Ugyanott, link fül | KEEP | URL scrape → draft → import | — |
-| B5 | Vonalkód / OpenFoodFacts keresés | `lookupPantryItem` `pantry.yml:84` — **backend kész, UI nincs** | Contracted+implemented, never wired | Potential quick capture | Konyha „Új elem" folyamat: vonalkód mód | DÖNTÉSRE VÁR (J: KEEP — bekötjük) | Barcode/text lookup returns candidates → import | Owner decides |
+| B5 | Vonalkód / OpenFoodFacts keresés | `lookupPantryItem` `pantry.yml:84` — **backend kész, UI nincs** | Contracted+implemented, never wired | None (owner) | — | DROP a UI-scope-ból (owner 2026-09-11: „nem kell vonalkód beolvasás"); endpoint érintetlen marad | Endpoint stays contracted and untouched; still no UI caller | Explicit owner decision |
 | B6 | Kamra böngészés/keresés/szűrés + elem-részletek | `getPantry`; `FuelKamraPage` (segbar, search, filters, skeleton), `KamraItemDetailPage` | Cards, filters, detail w/ macros/NOVA/source | Occasional | Konyha alsó rész: Kamra lista + részletlap | KEEP | Search/filter/detail/edit/two-step delete work | Browsing secondary |
 | B7 | Kamraelem szerkesztés/törlés | `updatePantryItem/deletePantryItem`; sheets | Author-locked definition fields; two-step delete | Occasional | Részletlapon (változatlan) | KEEP | Edit + delete flows | — |
 | B8 | Recept-könyvtár böngészés + részletlap | `listRecipes`; `FuelRecipesPage` (skeleton), `RecipeDetailPage` (score, serving toggle, logs) | Library + detail mosaic | Occasional | Konyha alsó rész: Receptek lista + részletlap | KEEP | Type counts, detail, score sheet, logs sheet | — |
@@ -53,9 +53,9 @@ rows are only valid with an explicit owner decision recorded in the Owner note c
 | B12 | Recept naplózása étkezésként / kamraelem naplózása | `RecipeDetailPage` Logolás → LogFlow; `KamraItemDetailPage:110` | Prefilled meal composer overlay | Frequent bridge | Részletlap → naplózó (kamera-felület kihagyva, előtöltve) | KEEP | Recipe/pantry prefill logs a meal | — |
 | B13 | Csere-javaslatok (olcsóbb/jobb elem) | `PantrySuggestionResponse`; `FuelKamraPage:268` | Read-only heuristic card | Low | Konyha Kamra-rész alja (változatlan) | KEEP | Suggestions render when present | — |
 | B14 | Import-előzmények (honnan jött) | `PantryImport` feed; `FuelKamraPage:281` | Provenance log | Low | Konyha Kamra-rész alja | KEEP | Feed renders after import | — |
-| B15 | Bevásárlólista | **Nem létezik** (grep: 0 feature hit); szomszédos: stock/expiry mezők `SHOW_PANTRY_STOCK=false` mögött (mezo-6nu), ár-mező él, retailer enum integráció nélkül | No feature anywhere | — | — | DEFER (owner 2026-09-11: „most nem kell") | n/a — bd follow-up filed | Owner said skip now |
-| B16 | Készlet/lejárat UI (flag mögött) | `SHOW_PANTRY_STOCK=false` `flags.ts:13`; mezo-6nu | 5 dormant UI surfaces; backend columns live | Deferred earlier | Marad flag mögött, Konyha nem éleszti fel | KEEP (rejtve, változatlan) | Flag still false; flipping restores surfaces | Existing owner deferral |
-| B17 | „Mit főzzünk itthon lévőből" | derived (recipes × pantry); no dedicated backend | Implicit via recipe usedIn | Low (owner) | Konyha, egy szinttel lejjebb | KEEP (mélyebben) | Reachable from Konyha | Owner: rarely used |
+| B15 | Bevásárlólista | **Nem létezik** (grep: 0 feature hit); szomszédos: stock/expiry mezők `SHOW_PANTRY_STOCK=false` mögött (mezo-6nu), ár-mező él, retailer enum integráció nélkül | No feature anywhere | — | — | DROP (owner 2026-09-11: „bevásárlólista sem kell") | n/a — nothing exists to remove; no follow-up | Explicit owner decision |
+| B16 | Készlet/lejárat UI (flag mögött) | `SHOW_PANTRY_STOCK=false` `flags.ts:13`; mezo-6nu | 5 dormant UI surfaces; backend columns live | None (owner) | Marad flag mögött, sosem éled fel a Konyhában | DROP a redesign-scope-ból (owner 2026-09-11: „készlet sem [kell]"); backend oszlopok érintetlenek | Flag stays false; no new UI references stock | Explicit owner decision; dormant code untouched |
+| B17 | „Mit főzzünk itthon lévőből" | derived (recipes × pantry); no dedicated backend | Implicit via recipe usedIn | None (owner) | — | DROP (owner 2026-09-11: „Mit főzzünk nem kell") | No such surface in Konyha; recipe detail's ingredient list unaffected | Explicit owner decision |
 
 ## C. Trendek — heti kép és hosszabb táv
 
@@ -78,8 +78,8 @@ rows are only valid with an explicit owner decision recorded in the Owner note c
 | D4 | Étkezés-kötések és vélemények (stack×meals) | `FuelStackMealsPage`, `FuelStackManageMealsPage` | Read-only bindings/verdicts | Low | Kiegészítők 2. szint alrésze | MERGE | Bindings visible | — |
 | D5 | Gyógyszer-követés (üres állapot + teljes életciklus) | medication API; `FuelMedicationPage` (live=empty branch, mezo-lwmq); notification anchor `/fuel/gyogyszer` | Production-empty by owner decision; populated branch fixture-only | Rare/owner | Kiegészítők alól érhető el (változatlan viselkedés, üres állapot él) | KEEP (változatlan) | Empty state renders; deep link target survives (redirect if route moves); Europe/Budapest cycle zone untouched | Do NOT revive or drop |
 | D6 | Beadás-visszavonás (dose undo) | `deleteDose` `MedicationService.deleteDose:101` — **NO UI** | Backend only | Correction | — (marad UI nélkül, amíg a gyógyszer-oldal üres) | KEEP (backend, UI nélkül) | Endpoint untouched | Consistent with D5 |
-| D7 | Protokoll-verziótörténet | `ProtocolViewResponse.history[]` mapped, never rendered | Data in state, invisible | None | — | DÖNTÉSRE VÁR (J: marad adat-szinten, UI nélkül) | Mapping preserved | — |
-| D8 | Replan-forgatókönyvek (halott felület) | `ReplanSheet.tsx` 244 sor, 0 consumer; `useReplanScenarios` mock-only `fuelReadHooks.ts:12` | Dead code, mock-only data | None | — | DÖNTÉSRE VÁR (J: DROP — töröljük a halott kódot) | n/a; removal noted in docs | Needs owner DROP |
+| D7 | Protokoll-verziótörténet | `ProtocolViewResponse.history[]` mapped, never rendered | Data in state, invisible | None | — (adat-szinten marad, UI nélkül) | KEEP (owner 2026-09-11) | `history[]` mapping preserved in state | Owner approved: stored, no UI |
+| D8 | Replan-forgatókönyvek (halott felület) | `ReplanSheet.tsx` 244 sor, 0 consumer; `useReplanScenarios` mock-only `fuelReadHooks.ts:12` | Dead code, mock-only data | None | — | DROP (owner 2026-09-11: kódtisztítás jóváhagyva) | `ReplanSheet.tsx` + test + `useReplanScenarios` removed; no route/consumer breaks | Explicit owner decision |
 | D9 | Stack push-értesítések és mélylinkek | `notificationScheduleWriter.ts:21` FUEL_SLOT→`/fuel/stack`; habit `morning_coffee`→`/fuel/stack` | FE-written schedule rows; category key contract | Automatic | Deep link retarget to new Kiegészítők route (redirect old) | KEEP (átkötve) | Push entries resolve to the new route; category key unchanged | Trap §6.2 |
 
 ## E. Háttér- és keresztirányú képességek (láthatatlan, de kötelező sor)
@@ -95,7 +95,7 @@ rows are only valid with an explicit owner decision recorded in the Owner note c
 | E7 | Query-invalidációs háló (meal→habitDay/dailyQuests; diet→goals; medication→today) | `fuelHooks.ts:64-71` etc. | KEEP | Cross-domain invalidations preserved in new hooks usage |
 | E8 | Dual-mode adathorgok azonos publikus viselkedéssel | `data/fuel/*` (audit §3) | KEEP | Both modes tested per gate |
 | E9 | AI-draft eredményjelzés (draftId → outcome) | `MealAiDraftService` draftId; aidraft block | KEEP | Outcome signal still sent on save/discard |
-| E10 | Étkezés-provenance (manual/ai-text/ai-photo) tárolása | `MealService:88`; never surfaced | DÖNTÉSRE VÁR (J: KEEP tárolva; kis jelölés a sorokon opcionális) | Provenance still written |
+| E10 | Étkezés-provenance (manual/ai-text/ai-photo) tárolása | `MealService:88`; never surfaced | KEEP (owner 2026-09-11: tárolva marad, UI-jelölés nem kötelező) | Provenance still written |
 | E11 | Kalauz/tutorial route-felfedezés | `tutorial/registry/fuel.ts` | KEEP (átkötve) | Registry updated to new routes |
 | E12 | Feature-kapcsolók és degradációk (meal-ai, coach, slot-ai, fuel/diet-settings) | backend audit §4 | KEEP | Coach off ⇒ 200+empty; LLM off ⇒ 503 handled |
 
@@ -107,14 +107,16 @@ al-route-ok) · Trendek (`/fuel/trendek`) · Kiegészítők (`/fuel/stack` konsz
 Beállítások + Ablakok a Mai sarkából. Megszűnő route-ok (`/fuel/log`, `/fuel/plan`,
 `/fuel/naplo`, 4 manage-oldal) MERGE-sorai fent; régi mélylinkek redirectet kapnak.
 
-## Coverage closure record — TÖLTENDŐ a beszélgetés után
+## Coverage closure record — CLOSED 2026-09-11
 
 | Check | Evidence |
 | --- | --- |
-| CODEMAP freshness | `node scripts/gen-codemap.mjs --check` — pending |
-| Domain closure | pending owner conversation |
-| Backend closure | 2026-09-11 backend audit (32 ops mapped) |
-| Frontend closure | 2026-09-11 frontend audit (22 routes, 15 sheets, hooks, deep links) |
-| Owner closure | pending: B5, B15(recorded), D7, D8, E10 + confirmations per batch |
-| Prototype scope | pending |
-| Preservation scope | pending |
+| CODEMAP freshness | `node scripts/gen-codemap.mjs --check` ✅ up to date at commit 4f656db9f |
+| Domain closure | All 6 primary blocks + related checks classified; no `UNKNOWN` remains in this record |
+| Backend closure | 2026-09-11 backend audit (32 ops mapped through services/entities/jobs/security; §6 break-risks listed) |
+| Frontend closure | 2026-09-11 frontend audit (22 routes, 15 sheets, all hooks, quick actions, deep links, cross-domain readers) |
+| Owner closure | 4 Hungarian batches approved 2026-09-11 (Mai, Konyha, Trendek, Kiegészítők+background). Explicit owner DROPs: B5 (barcode UI), B15 (shopping), B16 (stock UI revival), B17 (mit főzzünk), D8 (ReplanSheet dead code). Explicit KEEPs incl. new UI: A6 (voice wiring), A7 (szokásosak), A8/A9 (meal edit/delete UI), C2 (week-avg wiring), D7/E10 (stored, no UI) |
+| Prototype scope | All four pages: Mai hero+rings+flat rows+camera-first logger (photo/voice/text/szokásosak tabs, edit/delete, past-day), Konyha two quick-captures + libraries, Trendek weekly hero + long horizon + pattern links, Kiegészítők time-band checklist + protocol/manage; states: empty/historical/AI-failure/loading/reduced-motion |
+| Preservation scope | Every KEEP/MERGE row's Preservation test column; E1–E12 background tests mandatory |
+
+Prototype approval will freeze these decisions for implementation (handoff §4).
