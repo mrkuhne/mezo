@@ -68,7 +68,7 @@ function draw(){
  const auraOn=d==='nap'&&p===0&&!personalDetail();$('.arrival').classList.toggle('has-aura',auraOn);
  if(auraOn){const aura=needsAura();$('.arrival').style.setProperty('--aura-water',aura.water);$('.arrival').style.setProperty('--aura-sleep',aura.sleep);$('.arrival').style.setProperty('--aura-energy',aura.energy);$('.presence').innerHTML=`<span class="presence-dot"></span> VELED VAGYOK · <button class="presence-signals" data-life="nap/0/signals">ÉLETJELEK ↗</button>`;}
  else $('.presence').innerHTML='<span class="presence-dot"></span> VELED VAGYOK';
- if(!['mezo','me','nap'].includes(d))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ if(!['mezo','me','nap'].includes(d)&&!(d==='fuel'&&view))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
 function moveDay(amount){if(!dayNav.shift(amount))return;dayMotion=amount>0?'left':'right';draw();}

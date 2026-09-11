@@ -56,6 +56,16 @@
 .konyha-capture strong{display:block;font-size:15px;font-weight:500}
 .konyha-capture small{display:block;margin-top:3px;font-size:8px;letter-spacing:.4px;color:#84aab4}
 .konyha-capture>b{margin-left:auto;font-size:26px;font-weight:300;color:#9fdcec}
+.konyha-door{display:flex;align-items:center;gap:13px;width:100%;padding:15px 13px;margin:0 0 9px;border:1px solid #ffffff10;border-radius:17px;background:#ffffff05;text-align:left;color:#dde8ec;box-shadow:0 10px 20px #0005}
+.konyha-door strong{display:block;font-size:15px;font-weight:500}
+.konyha-door small{display:block;margin-top:3px;font-size:8px;letter-spacing:.4px;color:#84979f}
+.konyha-door>b{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:#9fc4ce}
+.konyha-door>b strong{font-size:21px;font-weight:500;color:#d7e7ea}
+.konyha-subhead{display:flex;align-items:center;gap:11px;margin:2px 0 12px}
+.konyha-subhead>button{width:38px;height:38px;flex:0 0 auto;border:1px solid #ffffff14;border-radius:50%;background:#ffffff06;color:#c4d2d8;font-size:19px}
+.konyha-subhead small{display:block;font-size:7px;letter-spacing:1.4px;color:#84979f}
+.konyha-subhead strong{display:block;margin-top:2px;font-size:22px;font-weight:500}
+.konyha-subhead>b{margin-left:auto;font-size:8px;letter-spacing:.8px;color:#84979f}
 .konyha-list{display:grid}
 .konyha-row{display:flex;align-items:center;gap:11px;width:100%;padding:13px 2px;border:0;border-bottom:1px solid #ffffff0d;background:transparent;text-align:left;color:#dde8ec}
 .konyha-row .icon{width:38px;height:38px;flex:0 0 auto;filter:drop-shadow(0 6px 7px #0006)}
