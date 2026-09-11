@@ -2,6 +2,7 @@ import { personalContent, personalDetail, initPersonal, openPersonalJournal, per
 import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, initFood } from './food.js';
 import { animateFuelDashboard, fuelDashboardContent } from './fuel-dashboard.js';
+import { fuelPagesContent, initFuelPages } from './fuel-pages.js';
 import { openWorkout, workoutContent, initWorkout } from './workout.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
@@ -11,7 +12,7 @@ const $=s=>document.querySelector(s);
 const domains={
  nap:{name:'Nap',color:'#d9c395',art:'sun',tabs:['Mai','Beszélgetés','Rutin','Napzárás'],icons:['sun','chat','ring','moon'],greeting:'Jó itt folytatni, Dani.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'},
  train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terhelés','Napló','Tervek'],icons:['dumbbell','bolt','book','stack'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
- fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Receptek','Kamra','Kiegészítők'],icons:['bowl','book','stack','gem'],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
+ fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Konyha','Trendek','Kiegészítők'],icons:['bowl','book','ring','stack'],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
  mezo:{name:'Mezo',color:'#bca6f1',art:'gem',tabs:['Felfedezések','Előrejelzések','Karakter','Tudástár'],icons:['gem','sun','person','stack'],greeting:'Összeérnek a dolgok.',copy:'Van egy új észrevételem az estéidről. Megnézzük együtt?'},
  me:{name:'Én',color:'#d7a7bc',art:'person',tabs:['Áttekintés','Súly','Alvás','Napló'],icons:['person','ring','moon','book'],greeting:'A te ritmusod.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'},
 };
@@ -31,6 +32,7 @@ function content(d,p,date){
  const personal=personalContent(d,p,date);if(personal!==null)return personal;
  const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
  const fuelDashboard=fuelDashboardContent(d,p,date);if(fuelDashboard!==null)return fuelDashboard;
+ const fuelPage=fuelPagesContent(d,p);if(fuelPage!==null)return fuelPage;
  const detailed=workoutContent(d,p,date);if(detailed!==null)return detailed;
  if(d==='nap')return [ '',
  `<div class="chat-bubble"><span class="chat-time">MEZO · MA</span>Ma 17:00-kor Felsőtest A vár. A napod első fele mögötted — az edzésről beszéljünk, vagy arról, hogy vagy?</div><details class="context"><summary>Miből indulok ki?</summary><p>7 óra 42 perc alvás · mai felsőtest · 1 180 kcal eddig · fokozatos erőépítés.</p><p>Karakter · szereted előre látni a napod menetét. Ez egy javítható mintaértelmezés.</p><small>Bemutatókontextus, nem személyes adatlekérés.</small></details><button class="sheet-action" data-voice>Elmondom, mi jár a fejemben</button>${row('book','Inkább leírom','Új naplóbejegyzés','data-open="journal"')}`,
@@ -41,11 +43,6 @@ function content(d,p,date){
  card('EZ A HETED','Építkezésben','A kész volumen és a hátralévő terv együtt.','bolt',detail('A terhelés forrásai','A gym szettek logolt adatok. A sport izomterhelése becslés. Az AI-mondat ebben a prototípusban mintaszöveg.'))+bars([['Mell','6 / 12 szett',50],['Hát','9 / 14 szett',64],['Váll','4 / 8 szett',50],['Láb','8 / 12 szett',67]])+`<div class="chat-bubble">A röplabda is terheli a vállad. A gym volumenét a sporttal és a regenerációval együtt érdemes néznünk.<span class="chat-time">DEMO · SPORTTERHELÉS: BECSLÉS</span></div>`+row('moon','Regeneráció','7 óra 42 perc alvás',jump('me',2)),
  row('dumbbell','Hétfő · Felsőtest B','12 szett · 48 perc',detail('Felsőtest B','Fekvenyomás 3 × 10 · 60 kg. Evezés 3 × 12 · 45 kg. Mintaedzés.','dumbbell'))+row('bolt','Kedd · Röplabda','90 perc · RPE 7',detail('Röplabda','90 perc edzés · terhelés 7 / 10. Mintaadat.','bolt'))+row('dumbbell','Ma · Felsőtest A','Még előtted áll','data-workout'),
  card('AKTÍV MEZOCIKLUS','Alapból erő','3. hét / 6 · hypertrophy','stack',detail('Alapból erő','Hat hét, heti három gym nap. Aktív mezociklus és heti volumenív bemutató.','stack'))+row('stack','Mezociklusok és sablonok','Aktív, tervezett és lezárt ciklusok',detail('Mezociklusok','Alapból erő · aktív. Felső / alsó · sablon. Új ciklus építése itt kap helyet.'))+row('bolt','Sporttervek','Röplabda · futóblokkok',detail('Sporttervek','Kedd és csütörtök 18:00 · Röplabda. Futóblokkok és sportbeosztások egy helyen.'))+row('dumbbell','Gyakorlatkatalógus','Böngészés és saját gyakorlatok',detail('Gyakorlatok','Fekvenyomás · Evezés · Vállból nyomás. A választó az edzésszerkesztőből is elérhető.'))][p];
- if(d==='fuel')return [
- card('NAPI KERET','1 180 / 2 400','Az edzésnapodhoz igazított kcal-keret.','bowl','data-food')+stats([['86 / 160 g','fehérje'],['128 / 270 g','szénhidrát'],['36 / 76 g','zsír']])+row('bowl','Étkezés logolása','AI-elemzéssel is','data-food')+row('bolt','Mi alakítja a keretem?','Alapigény + mozgás + cél',detail('A mai kereted','A demó 2 400 kcal keretet mutat. Az éles számítást az alapigény, a mozgás és a súlycél alakítja.'))+row('bowl','Reggeli és ebéd','Zabkása · csirkés rizstál','data-open="fuel"'),
- card('RECEPTMŰHELY','Főzzünk ki valamit.','A hozzávalóidtól egy saját receptig.','bowl',detail('Receptműhely','Itt indul majd a receptalkotó beszélgetés: hozzávalók, adagok és iterálás.'))+row('bowl','Csirkés rizstál','760 kcal · 52 g fehérje',detail('Csirkés rizstál','Csirkemell, rizs, zöldségek. 1 adag · 760 kcal. Mintarecept.','bowl'))+row('bowl','Joghurtos zabkása','420 kcal · 28 g fehérje',detail('Joghurtos zabkása','Joghurt, zabpehely és gyümölcs. 1 adag · 420 kcal. Mintarecept.','bowl')),
- card('A POLCODON','12 hozzávaló','Ami otthon van, abból indulunk.','stack',detail('Kamra','A demóban szereplő készlet mintaadat.'))+row('bowl','Görög joghurt','2 pohár',detail('Görög joghurt','2 × 150 g · hűtőben. Mintaadat.'))+row('sun','Banán','3 darab',detail('Banán','3 darab · gyümölcsök. Mintaadat.'))+row('stack','Zabpehely','500 g',detail('Zabpehely','500 g · szárazáru. Mintaadat.')),
- card('KÖVETKEZŐ','Vacsorával','Magnézium · a saját protokollod szerint.','stack','data-open="stack"')+row('ring','Mai bevételek','A napi ritmusodban','data-open="stack"')+row('stack','Protokoll kezelése','Elemek, időzítés, étkezési kapcsolatok',detail('Protokoll','A saját beállításaid szerkesztője itt nyílik majd.'))][p];
  if(d==='mezo')return [
  card('EGY ÚJ ÉSZREVÉTEL','Az estéd számít.','A késői étkezés és az alvás együtt változhat.','gem',detail('Az estéd számít','Minta: együttjárás, nem bizonyított ok. Innen nyílna a bizonyíték, a visszajelzés és a kapcsolódó kísérlet.'))+row('ring','Minták','Amit figyelünk és amit megerősítettél',detail('Minták','Késői étkezés × alvásminőség · megfigyelés alatt. Sport × alvás · még gyűlik az adat.'))+row('chat','Járjunk utána','Miért vagyok fáradt?',detail('Járjunk utána','Alvás, terhelés és étkezés: lehetséges magyarázatok és kipróbálható változtatások.'))+row('bolt','Kísérletek','Egy változtatás, követhető eredmény',detail('Korábbi vacsora','7 napos mintakísérlet · 3. nap. Itt látnád az eredményt és a kapcsolódó mintát.')),
  card('A KÖVETKEZŐ NAPOK','Több tér a pihenésnek','Egy előrejelzés, amit később visszanézünk.','sun',detail('Előrejelzés','Demófeltevés: a korábbi vacsorákkal az alvásminőség javulhat. Még nem értékelt.'))+row('ring','Korábbi előrejelzések','Mi vált be, és mi nem?',detail('Visszamérés','Az előrejelzés mellett a tényleges eredményt is megmutatjuk.')),
@@ -64,7 +61,8 @@ function draw(){
  $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
  $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;const view=location.hash.slice(1).split('/')[2]||'',raw=content(d,p,dayNav.date);panel.innerHTML=dayRoute(d,p,view)?dayFrame(raw,dayNav.date,dayNav.max,dayMotion):raw;dayMotion='';
  if(d==='fuel'&&p===0)animateFuelDashboard(panel);
- $('.arrival').hidden=p!==0||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train'||d==='fuel');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
+ // Owner decision 2026-09-11: no 3D companion on any Fuel page — the arrival stays hidden there.
+ $('.arrival').hidden=p!==0||d==='fuel'||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
  if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
  // Életjel-aura: Nap/Mai-on a társ fényét a saját jelzéseid színezik; koppintva nyílnak az életjelek.
  const auraOn=d==='nap'&&p===0&&!personalDetail();$('.arrival').classList.toggle('has-aura',auraOn);
@@ -111,6 +109,7 @@ document.addEventListener('submit',e=>{
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
+initFuelPages({refresh:draw,go,dialog,closeSheet});
 initMezo({refresh:draw});
 initPersonal({refresh:draw});
 $('#restart').addEventListener('click',()=>{dayNav=createDayNavigation('2026-09-09');dayMotion='';draw();});
