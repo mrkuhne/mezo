@@ -137,7 +137,7 @@ const STATUS_LABEL={good:'rendben',ok:'oké',low:'figyeld'};
 const STATUS_COLOR={good:'#8fd97a',ok:'#8ed2e8',low:'#e0b56e'};
 const NOVA_SHORT={1:'Alapanyag',2:'Konyhai összetevő',3:'Feldolgozott',4:'Ultra-feldolgozott'};
 // Each scoring dimension gets its own hue + clay icon so the breakdown reads as a colorful mosaic.
-const DIM_STYLE={macro:['#e08a7c','meat'],micro:['#bca6f1','gem'],who:['#8ed2e8','heart'],fat_quality:['#cdd170','avocado'],nova:['#d9c395','stack'],plant_diversity:['#8fd97a','fiber'],energy_density:['#f0b36e','bolt'],context:['#8fa8f0','sun']};
+const DIM_STYLE={macro:['#e08a7c','macro'],micro:['#bca6f1','micro'],who:['#8ed2e8','heart'],fat_quality:['#cdd170','avocado'],nova:['#d9c395','processing'],plant_diversity:['#8fd97a','fiber'],energy_density:['#f0b36e','bolt'],context:['#8fa8f0','sun']};
 const weightPct=(d,wsum)=>Math.round(d.weight/(wsum||1)*100);
 function dimTile(mealId,d,wsum){
  const [color,art]=DIM_STYLE[d.id],degraded=d.weight===0;
