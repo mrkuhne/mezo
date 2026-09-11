@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { draftFromGoal, draftFromRecipe, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
+import { createPantry, createRecipes } from './fuel-state.js';
+
+const pantry=createPantry();
+
+test('first turn builds a draft from the goal and flashes every line',()=>{const res=workshopTurn({draft:null,message:'Rakjunk össze valamit',goal:'high_protein'});assert.equal(res.ok,true);assert.equal(res.draft.goal,'high_protein');assert.deepEqual(res.changed,res.draft.lines.map(l=>l.key));});
+test('macros come from pantry facts; unknown shelf facts stay unknown, never zero',()=>{const m=lineMacros({source:'pantry',refId:'k-csirke',amount:200,unit:'g'},pantry);assert.equal(Math.round(m.kcal),240);const fresh=[{id:'x',kind:'food',name:'Új',kcal100:null}];assert.equal(lineMacros({source:'pantry',refId:'x',amount:100,unit:'g'},fresh).known,false);assert.equal(draftTotals({lines:[{source:'pantry',refId:'x',amount:100,unit:'g'}]},fresh).unknown,1);});
+test('estimate lines block save until replaced with a shelf item or dropped',()=>{const d=draftFromGoal('high_protein');assert.equal(canSave(d),false);const i=d.lines.findIndex(l=>l.source==='estimate');assert.equal(canSave(replaceWithPantry(d,i,pantry[0])),true);assert.equal(canSave(dropLine(d,i)),true);assert.equal(canSave({...dropLine(d,i),name:'  '}),false);});
+test('an estimate survives an empty amount and rescales when a value returns',()=>{const d=draftFromGoal('high_protein'),i=d.lines.findIndex(l=>l.source==='estimate');const zero=setLineAmount(d,i,0);assert.equal(lineMacros(zero.lines[i],pantry).kcal,0);const back=setLineAmount(zero,i,30);assert.equal(Math.round(lineMacros(back.lines[i],pantry).kcal),172);});
+test('servings scale every amount and clamp to 1..12',()=>{const d=draftFromGoal('high_protein');const four=scaleServings(d,4);assert.equal(four.lines[0].amount,d.lines[0].amount*2);assert.equal(scaleServings(d,40).servings,12);assert.equal(scaleServings(d,0).servings,1);});
+test('a protein request bumps a protein line and reports only what changed',()=>{const d=draftFromGoal('before_bed');const res=workshopTurn({draft:d,message:'Legyen benne több fehérje'});assert.equal(res.ok,true);assert.deepEqual(res.changed,['görög joghurt']);});
+test('a turn that changes nothing answers with the honest fallback',()=>{const d=draftFromGoal('breakfast');const res=workshopTurn({draft:d,message:'Szerinted jó így?'});assert.equal(res.reply,'Frissítettem a vázlatot.');assert.deepEqual(res.changed,[]);});
+test('a failed turn returns no draft so the user message can be retried',()=>{assert.deepEqual(workshopTurn({draft:null,message:'hiba'}),{ok:false});});
+test('seeding from a recipe keeps shelf matches as pantry lines and the rest as estimates',()=>{const r=createRecipes().find(x=>x.id==='r-rizstal');const d=draftFromRecipe(r,pantry);assert.equal(d.lines.find(l=>l.key==='csirkemell').source,'pantry');assert.equal(d.lines.find(l=>l.key==='zöldségkeverék').source,'estimate');assert.equal(d.servings,1);});

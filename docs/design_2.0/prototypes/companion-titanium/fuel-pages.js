@@ -1,6 +1,7 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
-import { createRecipes, addRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, longHorizon, patterns } from './fuel-state.js';
+import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, longHorizon, patterns } from './fuel-state.js';
 import { mealBlocks } from './food-state.js';
+import { GOALS, draftFromRecipe, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
 import { energyDetailHtml, dimGlassHtml, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
@@ -41,7 +42,7 @@ function receptekPage(){
  const slots=['Mind',...mealBlocks.map(b=>b.label)];
  const list=recipeFilter==='Mind'?recipes:recipes.filter(r=>r.slot===recipeFilter);
  return `<div class="kx-subhead">${back('Konyha','data-route="fuel/1"')}<span><small>KONYHA</small><strong>Receptek</strong></span></div>
- <button class="kx-workshop" data-konyha-recipe><span class="kx-workshop-art">${icon('score')}</span><span><strong>Főzzünk ki valamit</strong><small>A Műhelyben együtt alakítjuk a receptet</small></span><b>›</b><u class="chip-sheen"></u></button>
+ <button class="kx-workshop" data-workshop-new><span class="kx-workshop-art">${icon('score')}</span><span><strong>Főzzünk ki valamit</strong><small>A Műhelyben együtt alakítjuk a receptet</small></span><b>›</b><u class="chip-sheen"></u></button>
  <div class="kx-filters">${slots.map(s=>{const n=s==='Mind'?recipes.length:recipes.filter(r=>r.slot===s).length;return `<button data-recipe-filter="${s}" aria-pressed="${recipeFilter===s}" style="--kx:${s==='Mind'?'#bca6f1':slotBlock(s).color}">${s==='Mind'?'':icon(slotBlock(s).art)}${s}<b>${n}</b></button>`;}).join('')}</div>
  ${list.length?`<div class="kx-recipe-grid">${list.map(recipeTile).join('')}</div>`:`<div class="kx-empty">${icon('bowl')}<strong>Ebben a blokkban még nincs recepted.</strong><button data-konyha-recipe>Mentsünk egyet ＋</button></div>`}`;
 }
@@ -105,7 +106,74 @@ function pantryDetailPage(id){
  ${supp||k.kcal100==null?'':`<button class="meal-edit kx-primary" data-pantry-log="${k.id}">${icon('bowl')}<span>Ettem belőle — naplózom</span><b>›</b></button>`}
  <div class="kx-actions"><button data-demo-edit="kamraelem">${icon('book')}Szerkesztés</button>${deleteControl('pantry',k.id,'leveszem a polcról')}</div>`;
 }
-const workshopSheet=()=>`<h2 class="sheet-title">Recept mentése</h2><div class="lf-chips" data-recipe-tabs>${[['muhely','✨ Műhely'],['link','Link'],['kezi','Kézzel']].map(([v,l],i)=>`<button data-recipe-tab="${v}" aria-pressed="${i===0}">${l}</button>`).join('')}</div><div data-recipe-pane="muhely"><div class="chat-bubble">Mit főzzünk ki? Mondd a célt, és összerakok egy első változatot.<span class="chat-time">MŰHELY · DEMÓ</span></div><div class="lf-chips">${['Fehérjében erős','Edzés utáni','Esti, könnyű'].map(g=>`<button data-workshop-goal="${safe(g)}">${g}</button>`).join('')}</div><div id="workshop-result"></div></div><div data-recipe-pane="link" hidden><form id="recipe-link-form"><label class="lf-field">Recept linkje<input name="url" type="url" placeholder="https://…" required></label><button class="sheet-action">Kinyerem a receptet ✦</button></form><div id="recipe-link-result"></div></div><div data-recipe-pane="kezi" hidden><form id="recipe-manual-form"><label class="lf-field">Név<input name="name" required placeholder="Pl. Lencsés curry"></label><label class="lf-field">Kalória / adag<input name="kcal" type="number" min="1" max="3000" required value="610"></label><label class="lf-field">Fehérje (g)<input name="p" type="number" min="0" max="300" required value="31"></label><button class="sheet-action">Mentem a receptet ✓</button></form></div><p class="food-note">Demó: a Műhely és a link-kinyerés előre megírt mintát ad, valódi AI-hívás nélkül.</p>`;
+// --- Receptműhely ------------------------------------------------------------
+const freshWorkshop=()=>({draft:null,history:[],busy:false,error:null,context:[],flash:[],sourceId:null,seededFrom:null,text:'',picker:null,basis:'serving'});
+let wsx=freshWorkshop();
+const withContext=message=>wsx.context.length?`${message}\n(Kamrából: ${wsx.context.join(', ')})`:message;
+const bubble=m=>m.role==='user'?`<div class="wsx-bubble me"><p>${safe(m.text).replace(/\n/g,'<br>')}</p></div>`:`<div class="wsx-bubble mezo"><span>${icon('score')}</span><p>${safe(m.text)}</p></div>`;
+function muhelyPage(id){
+ if(id&&wsx.seededFrom!==id){const r=recipes.find(x=>x.id===id);if(r){wsx=freshWorkshop();wsx.draft=draftFromRecipe(r,pantry);wsx.sourceId=id;wsx.seededFrom=id;wsx.history=[{role:'assistant',text:`Betöltöttem: ${r.name}. Mit alakítsunk rajta?`}];}}
+ const d=wsx.draft,goal=GOALS.find(g=>g.id===d?.goal);
+ const head=`<div class="kx-subhead">${wsx.sourceId?back('Recept',`data-recipe-open="${wsx.sourceId}"`):back('Receptek','data-subroute="receptek"')}<span><small>KONYHA${wsx.sourceId?' · ITERÁLÁS':''}</small><strong>Receptműhely</strong></span></div>`;
+ let canvas='';
+ if(!d){
+  canvas=`<div class="wsx-empty"><span class="wsx-empty-glow"></span><span class="wsx-empty-art">${icon('score')}</span><strong>Mit főzzünk ki?</strong><p>Válassz egy célt, vagy írd le alul a saját szavaiddal. Én hozzávalót és mennyiséget javaslok — a számokat mindig a kamrád adja.</p></div>
+  <div class="wsx-goals">${GOALS.map(g=>`<button class="wsx-goal" style="--kx:${g.color}" data-wsx-goal="${g.id}" ${wsx.busy?'disabled':''}><span>${icon(g.art)}</span><strong>${g.label}</strong></button>`).join('')}<button class="wsx-goal" style="--kx:#d9c395" data-wsx-pick-open="context"><span>${icon('stack')}</span><strong>Kamrából indulok</strong></button></div>`;
+ }else{
+  const totals=draftTotals(d,pantry),per=wsx.basis==='serving'?d.servings:1;
+  canvas=`<div class="wsx-name"><input value="${safe(d.name)}" data-wsx-name aria-label="Recept neve" placeholder="Recept neve">${goal?`<span class="wsx-goal-chip" style="--kx:${goal.color}">${icon(goal.art)}${goal.label}</span>`:''}</div>
+  <div class="meal-hero3 wsx-hero" style="--block-color:${goal?.color??'#bca6f1'}"><span class="mh-glow"></span>
+   <div class="mh-left"><span class="mh-art">${icon('bowl')}</span><div class="mh-kcal"><strong>${fmt(totals.kcal/per)}</strong><small>kcal ${wsx.basis==='serving'?'/ adag':'· egész'}</small></div></div>
+   <div class="mh-right"><div class="wsx-stepper"><button data-wsx-servings="-1" aria-label="Kevesebb adag" ${d.servings<=1?'disabled':''}>−</button><span><strong>${d.servings}</strong><small>adag</small></span><button data-wsx-servings="1" aria-label="Több adag" ${d.servings>=12?'disabled':''}>＋</button></div><div class="wsx-basis" role="group" aria-label="Nézet">${[['serving','1 adag'],['total','Egész recept']].map(([v,l])=>`<button data-wsx-basis="${v}" aria-pressed="${wsx.basis===v}">${l}</button>`).join('')}</div></div>
+  </div>
+  ${totals.unknown?`<p class="nutri-note">${totals.unknown} sorhoz nincs tápérték a kamrában — a számokból kimarad, nem találgatjuk.</p>`:''}
+  <div class="lf-section"><h2>Makrók</h2></div>${shareRings(totals.p/per,totals.c/per,totals.f/per)}
+  <div class="lf-section"><h2>Hozzávalók</h2></div>
+  <div class="ing-list">${d.lines.length?d.lines.map((l,i)=>{const m=lineMacros(l,pantry),[color,art]=ingredientStyle(l.name),est=l.source==='estimate';return `<div class="ing-row wsx-line ${est?'estimate':''} ${wsx.flash.includes(l.key)?'flash':''}" style="--ing-color:${color}"><span class="ing-art">${icon(art)}</span><span class="ing-copy"><strong>${safe(l.name)}</strong><span class="ing-meta">${est?`<em class="est">${icon('score')}becsült sor</em>`:`<em>${icon('stack')}kamra</em>`}</span><span class="wsx-amount"><button data-wsx-amount="${i}|-1" aria-label="${safe(l.name)}: kevesebb">−</button><input type="number" inputmode="decimal" min="0" step="${l.unit==='db'?1:10}" value="${l.amount}" data-wsx-amount-input="${i}" aria-label="${safe(l.name)} mennyisége"><em>${l.unit}</em><button data-wsx-amount="${i}|1" aria-label="${safe(l.name)}: több">＋</button></span>${est?`<span class="wsx-est-actions"><button data-wsx-pick-open="${i}">${icon('stack')}Csere kamraelemre</button><button data-wsx-drop="${i}">Törlés</button></span>`:''}</span><span class="ing-end"><b>${m.known?fmt(m.kcal):'—'}<small>kcal</small></b>${est?'':`<button class="wsx-remove" data-wsx-drop="${i}" aria-label="${safe(l.name)} törlése">×</button>`}</span></div>`;}).join(''):`<p class="block-empty">Nincs hozzávaló — kérj egyet alul, vagy válassz a kamrából.</p>`}</div>
+  ${d.steps.length?`<details class="wsx-steps"><summary>${icon('book')}<span><strong>Elkészítés</strong><small>${d.steps.length} lépés</small></span><b>⌄</b></summary><ol>${d.steps.map(s=>`<li>${safe(s)}</li>`).join('')}</ol></details>`:''}`;
+ }
+ const gate=d&&!canSave(d)?`<p class="wsx-gate">${d.lines.some(l=>l.source==='estimate')?'Becsült sor van a vázlatban — cseréld kamraelemre vagy töröld a mentéshez.':'Adj nevet és legalább egy hozzávalót a mentéshez.'}</p>`:'';
+ const recent=wsx.history.slice(-1),older=wsx.history.slice(0,-1);
+ const dock=`<div class="wsx-dock">
+  ${older.length?`<details class="wsx-history"><summary>Beszélgetés · még ${older.length} üzenet</summary>${older.map(bubble).join('')}</details>`:''}
+  ${recent.map(bubble).join('')}
+  ${wsx.busy?`<div class="wsx-bubble mezo busy" role="status" aria-label="A Műhely gondolkodik"><span>${icon('score')}</span><p><i></i><i></i><i></i></p></div>`:''}
+  ${wsx.error?`<div class="wsx-bubble error" role="alert"><span>${icon('chat')}</span><p>A Műhely most nem elérhető — az üzeneted megvan.</p><span class="wsx-error-actions"><button data-wsx-retry>Újra</button><button data-wsx-edit-failed>Átírom</button></span></div>`:''}
+  ${d?`<div class="wsx-goal-row">${GOALS.map(g=>`<button data-wsx-goal="${g.id}" style="--kx:${g.color}" aria-pressed="${d.goal===g.id}" ${wsx.busy?'disabled':''}>${icon(g.art)}${g.label}</button>`).join('')}</div>`:''}
+  ${wsx.context.length?`<div class="wsx-context">${wsx.context.map(n=>`<button data-wsx-context-drop="${safe(n)}" aria-label="${safe(n)} eltávolítása">${icon('stack')}${safe(n)}<b>×</b></button>`).join('')}</div>`:''}
+  <form class="wsx-composer" data-wsx-form><button type="button" data-wsx-pick-open="context" aria-label="Hozzávaló a kamrából">${icon('stack')}</button><input name="msg" data-wsx-text placeholder="${d?'Mit alakítsunk rajta?':'Írd le, mit főznél…'}" value="${safe(wsx.text)}" autocomplete="off" ${wsx.busy?'disabled':''}><button type="submit" aria-label="Küldés" ${wsx.busy?'disabled':''}>›</button></form>
+ </div>`;
+ const save=d?`<div class="wsx-save">${gate}<button data-wsx-save ${canSave(d)?'':'disabled'}>${icon('book')}<span>${wsx.sourceId?'Recept frissítése':'Mentés a Receptkönyvbe'}</span></button></div>`:'';
+ return `${head}${canvas}${save}<p class="wsx-demo">Demó-kulcsszavak: „fehérje”, „könnyebb”, „zöldség” — vagy „hiba” a hibaállapothoz.</p><div class="wsx-spacer" aria-hidden="true"></div>${dock}`;
+}
+function pickerHtml(){
+ const foods=pantry.filter(k=>k.kind==='food'),context=wsx.picker==='context';
+ return `<div class="glass-dim" style="--dim-color:#d9c395"><div class="glass-hero dim"><span class="glass-hero-art">${icon('stack')}</span><div><strong>Kamra</strong><small>${context?'Jelöld, mire építsünk — többet is választhatsz':'Válaszd ki, mire cseréljük a becsült sort'}</small></div></div><div class="glass-list">${foods.map(k=>{const [color,art]=ingredientStyle(k.name),picked=context&&wsx.context.includes(k.name);return `<button class="glass-pick ${picked?'picked':''}" data-wsx-pick="${k.id}" style="--stat-color:${color}"><span class="gs-art">${icon(art)}</span><span class="gs-copy"><strong>${safe(k.name)}</strong><small>${k.kcal100!=null?`${fmt(k.kcal100)} kcal · ${fmt1(k.p100)} g fehérje / 100 g`:'nincs tápérték'}</small></span><b>${picked?'✓':'＋'}</b></button>`;}).join('')}</div>${context?'<p class="glass-fact">A jelöltek a következő üzeneteddel mennek a Műhelynek.</p>':''}</div>`;
+}
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function runTurn(message,goal){
+ if(wsx.busy)return;
+ wsx.history.push({role:'user',text:message});wsx.busy=true;wsx.error=null;keepScroll();
+ const session=wsx;
+ setTimeout(()=>{
+  if(session!==wsx)return;
+  const res=workshopTurn({draft:wsx.draft,message,goal,context:wsx.context});
+  wsx.busy=false;
+  if(!res.ok)wsx.error={retryText:message};
+  else{wsx.draft=res.draft;wsx.history.push({role:'assistant',text:res.reply});wsx.flash=res.changed;wsx.context=[];react('connect',1500);setTimeout(()=>{if(session===wsx)wsx.flash=[];},2600);}
+  if(location.hash.startsWith('#fuel/1/muhely'))keepScroll();
+ },reduceMotion()?120:750);
+}
+function saveWorkshop(){
+ const d=wsx.draft;if(!canSave(d))return;
+ const totals=draftTotals(d,pantry),goal=GOALS.find(g=>g.id===d.goal);
+ const lines=d.lines.map(l=>{const m=lineMacros(l,pantry),item=pantry.find(k=>k.id===l.refId);return [l.name,`${fmt1(l.amount)} ${l.unit}`,m.known?Math.round(m.kcal):null,item?.nova??null];});
+ const perServing={kcal:Math.round(totals.kcal/d.servings),p:Math.round(totals.p/d.servings),c:Math.round(totals.c/d.servings),f:Math.round(totals.f/d.servings)};
+ if(wsx.sourceId){const id=wsx.sourceId;updateRecipe(recipes,id,{name:d.name.trim(),servings:d.servings,lines,...perServing,...(goal?{slot:goal.slot}:{})});wsx=freshWorkshop();toast('Recept frissítve.');location.hash=`#fuel/1/recept/${id}`;}
+ else{addRecipe(recipes,{name:d.name.trim(),slot:goal?.slot??'Ebéd',lines,...perServing});wsx=freshWorkshop();toast('Recept mentve a Receptkönyvbe.');location.hash='#fuel/1/receptek';}
+}
+
+const workshopSheet=()=>`<h2 class="sheet-title">Recept mentése</h2><div class="lf-chips" data-recipe-tabs>${[['muhely','✨ Műhely'],['link','Link'],['kezi','Kézzel']].map(([v,l],i)=>`<button data-recipe-tab="${v}" aria-pressed="${i===0}">${l}</button>`).join('')}</div><div data-recipe-pane="muhely"><div class="chat-bubble">A Műhelyben együtt rakjuk össze: te mondod a célt, én a hozzávalókat, a számokat a kamrád adja.<span class="chat-time">MŰHELY</span></div><button class="sheet-action" data-workshop-new>Megnyitom a Műhelyt ✦</button></div><div data-recipe-pane="link" hidden><form id="recipe-link-form"><label class="lf-field">Recept linkje<input name="url" type="url" placeholder="https://…" required></label><button class="sheet-action">Kinyerem a receptet ✦</button></form><div id="recipe-link-result"></div></div><div data-recipe-pane="kezi" hidden><form id="recipe-manual-form"><label class="lf-field">Név<input name="name" required placeholder="Pl. Lencsés curry"></label><label class="lf-field">Kalória / adag<input name="kcal" type="number" min="1" max="3000" required value="610"></label><label class="lf-field">Fehérje (g)<input name="p" type="number" min="0" max="300" required value="31"></label><button class="sheet-action">Mentem a receptet ✓</button></form></div><p class="food-note">Demó: a Műhely és a link-kinyerés előre megírt mintát ad, valódi AI-hívás nélkül.</p>`;
 const pantrySheet=()=>`<h2 class="sheet-title">Új elem a kamrába</h2><div class="lf-chips" data-pantry-tabs>${[['foto','📷 Fotó'],['link','Link'],['kezi','Kézzel'],['katalogus','Katalógus']].map(([v,l],i)=>`<button data-pantry-tab="${v}" aria-pressed="${i===0}">${l}</button>`).join('')}</div><div data-pantry-pane="foto"><div class="food-finder small"><span></span><span></span><span></span><span></span><p>CÍMKE A KERESŐBEN · DEMÓ</p></div><button class="sheet-action" data-pantry-shot>Exponálás — minta: túró 250 g</button><div id="pantry-photo-result"></div></div><div data-pantry-pane="link" hidden><form id="pantry-link-form"><label class="lf-field">Termék linkje<input name="url" type="url" placeholder="https://…" required></label><button class="sheet-action">Kinyerem az adatokat ✦</button></form><div id="pantry-link-result"></div></div><div data-pantry-pane="kezi" hidden><form id="pantry-manual-form"><label class="lf-field">Név<input name="name" required placeholder="Pl. Mandula"></label><label class="lf-field">Mennyiség<input name="amount" placeholder="Pl. 200 g"></label><label class="lf-field">Típus<select name="kind"><option value="food">Étel</option><option value="supp">Kiegészítő</option></select></label><button class="sheet-action">Felveszem ✓</button></form></div><div data-pantry-pane="katalogus" hidden><div class="konyha-list">${[['Zabpehely','372 kcal / 100 g'],['Mandula','579 kcal / 100 g'],['Skyr','63 kcal / 100 g']].map(([n,s])=>`<button class="konyha-row" data-catalog-add="${safe(n)}">${icon('stack')}<span><strong>${n}</strong><small>${s} · közös katalógus</small></span><b>＋</b></button>`).join('')}</div></div><p class="food-note">Demó: a fotó- és link-kinyerés mintaeredményt ad. Kétszeri hozzáadás nem duplikál.</p>`;
 
 // --- Trendek --------------------------------------------------------------
@@ -120,7 +188,7 @@ const protocolSheet=()=>`<h2 class="sheet-title">A protokollod</h2><p class="she
 const manageSheet=()=>`<h2 class="sheet-title">Kezelés</h2><p class="sheet-sub">Új elem felvételekor az okos elhelyezés javasol idősávot — te bármikor átteheted.</p><form id="stack-add-form"><label class="lf-field">Mit vennél fel?<input name="name" required placeholder="Pl. Cink"></label><label class="lf-field">Adag<input name="dose" placeholder="Pl. 15 mg"></label><label class="lf-field">Idősáv<select name="zone"><option value="auto" selected>✨ Okos elhelyezés dönti</option>${stackZones.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><button class="sheet-action">Felveszem a protokollba ✓</button></form>`;
 const medicationSheet=()=>`${icon('moon')}<h2 class="sheet-title">Gyógyszer</h2><p class="sheet-sub">Most nincs követett gyógyszered — és ezt nem is töltjük ki találgatással. Ha egyszer szükség lesz rá, itt indul: napi ciklus, beadások, emlékeztetők.</p>`;
 
-export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):konyha();if(page===2)return trendek();if(page===3)return stackPage();return null;}
+export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):view==='muhely'?muhelyPage(itemId):konyha();if(page===2)return trendek();if(page===3)return stackPage();return null;}
 function keepScroll(){const sc=document.querySelector('#app-scroll'),y=sc.scrollTop;callbacks.refresh();requestAnimationFrame(()=>sc.scrollTo({top:y,behavior:'instant'}));}
 export function initFuelPages(options){callbacks=options;
  document.querySelector('#sheet')?.addEventListener('close',e=>e.target.classList.remove('glass'));
@@ -134,9 +202,19 @@ export function initFuelPages(options){callbacks=options;
   if(el.hasAttribute('data-konyha-recipe'))callbacks.dialog('KONYHA · RECEPT',workshopSheet());
   if(el.hasAttribute('data-konyha-pantry'))callbacks.dialog('KONYHA · KAMRA',pantrySheet());
   if(el.dataset.recipeTab||el.dataset.pantryTab){const kind=el.dataset.recipeTab?'recipe':'pantry',value=el.dataset[kind==='recipe'?'recipeTab':'pantryTab'];document.querySelectorAll(`[data-${kind}-pane]`).forEach(p=>p.hidden=p.dataset[kind==='recipe'?'recipePane':'pantryPane']!==value);document.querySelectorAll(`[data-${kind}-tab]`).forEach(t=>t.setAttribute('aria-pressed',String(t===el)));}
-  if(el.dataset.workshopGoal){const target=document.querySelector('#workshop-result');if(target)target.innerHTML=`<div class="chat-bubble">Egy ${safe(el.dataset.workshopGoal.toLocaleLowerCase('hu'))} tál: lencsés curry rizzsel. 610 kcal, 31 g fehérje adagonként. Mentsem így, vagy alakítsunk rajta?<span class="chat-time">MŰHELY · MINTAVÁLASZ</span></div><button class="sheet-action" data-workshop-save>Mentem a receptet ✓</button>`;react('connect',2000);}
-  if(el.hasAttribute('data-workshop-save')){const saved=addRecipe(recipes,{name:'Lencsés curry',kcal:610,p:31,lines:['Vöröslencse 120 g','Rizs 80 g','Kókusztej 100 ml']});callbacks.closeSheet();toast(saved?'Recept mentve: Lencsés curry':'Ez a recept már megvan.');callbacks.refresh();}
-  if(el.dataset.workshopIterate){callbacks.dialog('MŰHELY · ITERÁLÁS',`<div class="chat-bubble">Mit alakítsunk a recepten? Több fehérje, kevesebb szénhidrát, más köret?<span class="chat-time">MŰHELY · DEMÓ</span></div><p class="sheet-sub">A demóban innen a mentés útja ugyanaz, mint az új receptnél.</p>`);}
+  if(el.hasAttribute('data-workshop-new')){callbacks.closeSheet();wsx=freshWorkshop();location.hash='#fuel/1/muhely';}
+  if(el.dataset.workshopIterate){wsx=freshWorkshop();location.hash=`#fuel/1/muhely/${el.dataset.workshopIterate}`;}
+  if(el.dataset.wsxGoal){const g=GOALS.find(x=>x.id===el.dataset.wsxGoal);runTurn(withContext(wsx.draft?g.message:`Rakjunk össze egy receptet: ${g.label.toLocaleLowerCase('hu-HU')}.`),g.id);}
+  if(el.dataset.wsxServings&&wsx.draft){wsx.draft=scaleServings(wsx.draft,wsx.draft.servings+Number(el.dataset.wsxServings));keepScroll();}
+  if(el.dataset.wsxBasis){wsx.basis=el.dataset.wsxBasis;keepScroll();}
+  if(el.dataset.wsxAmount&&wsx.draft){const [i,dir]=el.dataset.wsxAmount.split('|').map(Number),line=wsx.draft.lines[i];if(line){wsx.draft=setLineAmount(wsx.draft,i,line.amount+dir*(line.unit==='db'?1:10));keepScroll();}}
+  if(el.dataset.wsxDrop!==undefined&&wsx.draft){wsx.draft=dropLine(wsx.draft,Number(el.dataset.wsxDrop));keepScroll();}
+  if(el.dataset.wsxPickOpen!==undefined){wsx.picker=el.dataset.wsxPickOpen==='context'?'context':Number(el.dataset.wsxPickOpen);callbacks.dialog('RECEPTMŰHELY · KAMRA',pickerHtml());document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.wsxPick){const item=pantry.find(k=>k.id===el.dataset.wsxPick);if(item){if(wsx.picker==='context'){wsx.context=wsx.context.includes(item.name)?wsx.context.filter(n=>n!==item.name):[...wsx.context,item.name];el.classList.toggle('picked');el.querySelector('b').textContent=wsx.context.includes(item.name)?'✓':'＋';keepScroll();}else if(typeof wsx.picker==='number'&&wsx.draft){wsx.draft=replaceWithPantry(wsx.draft,wsx.picker,item);wsx.flash=[wsx.draft.lines[wsx.picker].key];wsx.picker=null;callbacks.closeSheet();keepScroll();}}}
+  if(el.dataset.wsxContextDrop){wsx.context=wsx.context.filter(n=>n!==el.dataset.wsxContextDrop);keepScroll();}
+  if(el.hasAttribute('data-wsx-retry')&&wsx.error){const failed=wsx.error.retryText;if(wsx.history.at(-1)?.role==='user')wsx.history.pop();wsx.error=null;runTurn(failed,wsx.draft?.goal??null);}
+  if(el.hasAttribute('data-wsx-edit-failed')&&wsx.error){wsx.text=wsx.error.retryText;if(wsx.history.at(-1)?.role==='user')wsx.history.pop();wsx.error=null;keepScroll();}
+  if(el.hasAttribute('data-wsx-save'))saveWorkshop();
   if(el.hasAttribute('data-pantry-shot')){const target=document.querySelector('#pantry-photo-result');if(target)target.innerHTML=`<div class="import-preview"><span class="overline">KIOLVASOTT ADATOK · BIZONYTALANSÁGGAL</span><strong>Félzsíros túró · 250 g</strong><small>121 kcal / 100 g · 12 g fehérje · forrás: címkefotó</small><button class="sheet-action" data-pantry-import="Félzsíros túró|250 g|fotó">Felveszem a kamrába ✓</button></div>`;react('connect',2000);}
   if(el.dataset.pantryImport!==undefined&&el.dataset.pantryImport){const [name,amount,src]=el.dataset.pantryImport.split('|');if(pantry.some(p=>p.name===name))toast('Már a polcodon van.');else addPantryItem(pantry,{name,amount,source:src});callbacks.closeSheet();toast(`${name} · a kamrádban`);callbacks.refresh();}
   if(el.dataset.catalogAdd){if(pantry.some(p=>p.name===el.dataset.catalogAdd))toast('Már a polcodon van.');else{addPantryItem(pantry,{name:el.dataset.catalogAdd,amount:'',source:'katalógus'});toast(`${el.dataset.catalogAdd} · a kamrádban`);}callbacks.closeSheet();callbacks.refresh();}
@@ -159,12 +237,15 @@ export function initFuelPages(options){callbacks=options;
   if(el.hasAttribute('data-stack-medication'))callbacks.dialog('KIEGÉSZÍTŐK',medicationSheet());
  });
  document.addEventListener('submit',e=>{const data=new FormData(e.target);
+  if(e.target.matches('[data-wsx-form]')){e.preventDefault();const msg=String(data.get('msg')||'').trim();if(!msg||wsx.busy)return;wsx.text='';runTurn(withContext(msg),wsx.draft?.goal??null);return;}
   if(e.target.id==='recipe-manual-form'){e.preventDefault();const saved=addRecipe(recipes,{name:String(data.get('name')).trim(),kcal:Number(data.get('kcal')),p:Number(data.get('p'))});callbacks.closeSheet();toast(saved?`Recept mentve: ${saved.name}`:'Nézd meg a név és a számok mezőit.');callbacks.refresh();}
   if(e.target.id==='recipe-link-form'){e.preventDefault();const target=document.querySelector('#recipe-link-result');if(target)target.innerHTML=`<div class="import-preview"><span class="overline">KINYERT RECEPT · ELŐNÉZET</span><strong>Sült zöldséges bulgur</strong><small>540 kcal / adag · 22 g fehérje · a link alapján, becsléssel</small><button class="sheet-action" data-link-recipe-save>Mentem a receptet ✓</button></div>`;react('connect',2000);}
   if(e.target.id==='pantry-link-form'){e.preventDefault();const target=document.querySelector('#pantry-link-result');if(target)target.innerHTML=`<div class="import-preview"><span class="overline">KINYERT ADATOK · ELŐNÉZET</span><strong>Földimogyoró-krém · 350 g</strong><small>588 kcal / 100 g · 25 g fehérje · forrás: link</small><button class="sheet-action" data-pantry-import="Földimogyoró-krém|350 g|link">Felveszem a kamrába ✓</button></div>`;react('connect',2000);}
   if(e.target.id==='stack-add-form'){e.preventDefault();const zoneChoice=String(data.get('zone')),auto=zoneChoice==='auto',zone=auto?'este':zoneChoice,zoneLabel=Object.fromEntries(stackZones)[zone];const item=addStackItem(stack,{name:String(data.get('name')).trim(),dose:String(data.get('dose')).trim(),zone,zoneLabel});callbacks.closeSheet();toast(item?`${item.name} · ${auto?'az okos elhelyezés estére tette':zoneLabel.toLocaleLowerCase('hu')}`:'Add meg a nevét.');callbacks.refresh();}
  });
  document.addEventListener('click',e=>{const el=e.target.closest('button');if(el?.hasAttribute('data-link-recipe-save')){const saved=addRecipe(recipes,{name:'Sült zöldséges bulgur',kcal:540,p:22,lines:['Bulgur 90 g','Sült zöldségek 200 g','Fetakocka 40 g']});callbacks.closeSheet();toast(saved?'Recept mentve: Sült zöldséges bulgur':'Ez a recept már megvan.');callbacks.refresh();}});
+ document.addEventListener('input',e=>{if(e.target.matches('[data-wsx-name]')&&wsx.draft){wsx.draft.name=e.target.value;const save=document.querySelector('[data-wsx-save]');if(save)save.disabled=!canSave(wsx.draft);return;}if(e.target.matches('[data-wsx-text]'))wsx.text=e.target.value;});
+ document.addEventListener('change',e=>{if(!e.target.matches('[data-wsx-amount-input]')||!wsx.draft)return;wsx.draft=setLineAmount(wsx.draft,Number(e.target.dataset.wsxAmountInput),e.target.value);keepScroll();});
  document.addEventListener('input',e=>{if(!e.target.matches('[data-pantry-search]'))return;const q=e.target.value.trim().toLocaleLowerCase('hu-HU');let shown=0;document.querySelectorAll('.kx-item').forEach(t=>{const hit=!q||t.dataset.name.includes(q);t.hidden=!hit;if(hit)shown++;});const empty=document.querySelector('.kx-search-empty');if(empty)empty.hidden=shown>0;});
- document.querySelector('#restart')?.addEventListener('click',()=>{recipes=createRecipes();pantry=createPantry();stack=createStack();week='current';recipeFilter='Mind';pantryFilter='Mind';servings=1;armedDelete=null;});
+ document.querySelector('#restart')?.addEventListener('click',()=>{recipes=createRecipes();pantry=createPantry();stack=createStack();week='current';recipeFilter='Mind';pantryFilter='Mind';servings=1;armedDelete=null;wsx=freshWorkshop();});
 }

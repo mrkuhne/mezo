@@ -12,6 +12,7 @@ export function createRecipes(){return [
  {id:'r-skyr',name:'Banán és skyr',slot:'Uzsonna',kcal:310,p:24,c:44,f:3,fiber:4,sugar:22.4,salt:.15,satfat:.3,plants:2,fit:8.0,servings:1,mins:3,eaten:3,lastEaten:'2 napja',lines:[['Skyr','150 g',95,1],['Banán','120 g',107,1],['Méz','10 g',30,2]],note:'Edzés előtti gyors energia, könnyű fehérjével.'},
 ]}
 export function addRecipe(recipes,{name,slot='Ebéd',kcal,p,c,f,lines=[]}){if(!name||!Number.isFinite(kcal)||kcal<=0||!Number.isFinite(p)||p<0)return null;const recipe={id:id('r'),name,slot,kcal,p,c:Number.isFinite(c)?c:Math.round(kcal*.45/4),f:Number.isFinite(f)?f:Math.round(kcal*.3/9),fiber:null,sugar:null,salt:null,satfat:null,plants:null,fit:null,servings:1,mins:null,eaten:0,lastEaten:null,lines:lines.map(l=>typeof l==='string'?[l,'',null,1]:l),note:'Új recept · a pontszáma még számolódik.'};recipes.unshift(recipe);return recipe;}
+export function updateRecipe(recipes,recipeId,patch){const recipe=recipes.find(r=>r.id===recipeId);if(!recipe)return null;Object.assign(recipe,patch);return recipe;}
 export function removeRecipe(recipes,recipeId){const index=recipes.findIndex(r=>r.id===recipeId);if(index<0)return false;recipes.splice(index,1);return true;}
 
 // --- Konyha: pantry --------------------------------------------------------
