@@ -306,8 +306,8 @@ function stackPage(){
   return `<section class="sx-band ${done===rows.length?'complete':''}" style="--kx:${color}" aria-label="${label}"><div class="sx-band-head"><span class="sx-band-art">${icon(art)}</span><strong>${label}</strong><span class="sx-band-count">${done} / ${rows.length}</span></div>${rows.map(stackRow).join('')}</section>`;
  }).join('')}
  <div class="lf-section"><h2>Mélyebben</h2></div>
- <button class="kx-poster sx-poster" style="--kx:#8ed2e8" data-stack-protocol><span class="kx-poster-head"><span class="kx-poster-title">${icon('stack')}<strong>Protokoll</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>${stack.items.length} elem</strong><small>Mit miért szedsz, és ki tette a helyére.</small></span></button>
- <button class="kx-poster sx-poster" style="--kx:#bca6f1" data-stack-manage><span class="kx-poster-head"><span class="kx-poster-title">${icon('gem')}<strong>Kezelés</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>Új elem beállítása</strong><small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small></span></button>
+ <button class="kx-poster sx-poster" style="--kx:#8ed2e8" data-goto="fuel/3/protokoll"><span class="kx-poster-head"><span class="kx-poster-title">${icon('stack')}<strong>Protokoll</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>${stack.items.length} elem</strong><small>Mit miért szedsz, és ki tette a helyére.</small></span></button>
+ <button class="kx-poster sx-poster" style="--kx:#bca6f1" data-goto="fuel/3/beallitas"><span class="kx-poster-head"><span class="kx-poster-title">${icon('gem')}<strong>Kezelés</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>Új elem beállítása</strong><small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small></span></button>
  <button class="konyha-row quiet" data-stack-medication>${icon('moon')}<span><strong>Gyógyszer</strong><small>Most nincs követett gyógyszered</small></span><b>↗</b></button>
  <p class="food-note">Mintaprotokoll. A pipák a demóban élnek, újratöltéskor törlődnek.</p>`;
 }
@@ -322,69 +322,73 @@ function stackItemGlass(itemId){
  <p class="glass-lead">${safe(item.why)}</p>
  <button class="wsx-save-like sx-glass-tick ${done?'done':''}" data-stack-tick="${item.id}">${icon(done?'moon':'score')}<span>${done?'Mégsem vettem be':'Bevettem'}</span></button>
  ${shelf?`<button class="kx-link-card" data-pantry-open="${shelf.id}">${icon('stack')}<span><strong>${safe(shelf.name)}</strong><small>${safe(shelf.amount)} a kamrádban · ${safe(shelf.source)}</small></span><b>›</b></button>`:`<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ez az elem nincs a kamrádban — a protokollban viszont ott van. Ha felveszed, innen is elérhető lesz.</p></div>`}
- <button class="kx-link-card" data-stack-manage>${icon('gem')}<span><strong>Áthelyezem vagy módosítom</strong><small>Idősáv és adag a Kezelésben</small></span><b>›</b></button></div>`;
+ <button class="kx-link-card" data-goto="fuel/3/beallitas">${icon('gem')}<span><strong>Áthelyezem vagy módosítom</strong><small>Idősáv és adag a Kezelésben</small></span><b>›</b></button></div>`;
 }
-// Protokoll = dose + timing per item (not a second tick list): how much a day, how many units of
-// YOUR product that is, when, and why — the rule table's reason verbatim.
-const protocolSheet=()=>`<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('stack')}</span><div><strong>${stack.items.length}</strong><small>elem · adagok és időzítés</small></div></div>
- <p class="glass-lead">Mennyit, miből mennyi az, mikor — és miért ott. Az időzítés indoklása a szabálytáblából jön, az adag a termék címkéjéből.</p>
- ${stack.items.map(item=>{
-  const [color,art,zoneName]=ZONE_STYLE[item.zone],product=item.product;
-  const units=product&&item.dailyTarget?Math.max(1,Math.round(item.dailyTarget/product.perUnit)):null;
-  const days=product&&units?Math.floor(product.container/units):null;
-  return `<div class="sx-dose-card" style="--kx:${color}"><div class="sx-dose-head"><span class="sx-dose-art">${icon('micro')}</span><span><strong>${safe(item.name)}</strong><small>${zoneName} · ${safe(item.zoneLabel)}</small></span></div>
-  ${item.dailyTarget?`<div class="sx-dose-main"><strong>${fmt1(item.dailyTarget)}<small> ${safe(item.unit)}</small></strong><em>naponta</em>${units?`<b>= ${units} ${safe(product.unitForm)}</b>`:''}</div>`:'<p class="sx-dose-note">A napi mennyiség nincs beállítva ehhez az elemhez.</p>'}
-  ${product?`<div class="sx-dose-facts"><span><em>1 ${safe(product.unitForm)}</em>${fmt1(product.perUnit)} ${safe(item.unit)}</span><span><em>dobozban</em>${product.container} ${safe(product.unitForm)}</span>${days?`<span><em>kitart</em>~${days} nap</span>`:''}</div>`:`<p class="sx-dose-note">A termék adatai nincsenek megadva — a Kezelésben beállíthatod, és megmondom, hány ${'kapszula'} ez.</p>`}
-  ${item.reason?`<p class="sx-dose-why">${icon('bolt')}${safe(item.reason)}</p>`:''}</div>`;}).join('')}
- <p class="food-note">Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.</p></div>`;
-
-// --- AI-supported dose setup -----------------------------------------------
-let setup={step:1,name:'',perUnit:null,unitForm:'kapszula',container:null,unit:'',source:null,dailyOverride:null,zone:null,manualDose:''};
-const resetSetup=()=>{setup={step:1,name:'',perUnit:null,unitForm:'kapszula',container:null,unit:'',source:null,dailyOverride:null,zone:null,manualDose:''};};
+// Protokoll is its own page: a 5–15 item stack has to stay scannable, so rows are compact and
+// grouped by time band; the detail lives one tap deeper in the item glass.
+function protokollPage(){
+ const withProduct=stack.items.filter(i=>i.product&&i.dailyTarget);
+ const soonest=withProduct.map(i=>{const units=Math.max(1,Math.round(i.dailyTarget/i.product.perUnit));return {name:i.name,days:Math.floor(i.product.container/units)};}).sort((a,b)=>a.days-b.days)[0];
+ const zonesUsed=stackZones.filter(([zone])=>stack.items.some(i=>i.zone===zone)).length;
+ return `<div class="kx-subhead">${back('Kiegészítők','data-goto="fuel/3"')}<span><small>KIEGÉSZÍTŐK</small><strong>Protokoll</strong></span></div>
+ <div class="sx-summary"><div><strong>${stack.items.length}</strong><small>elem</small></div><div><strong>${zonesUsed}</strong><small>idősáv</small></div><div><strong>${soonest?`~${soonest.days}`:'—'}</strong><small>${soonest?`nap múlva fogy ki ${/^[aáeéiíoóöőuúüű]/i.test(soonest.name)?'az':'a'} ${soonest.name}`:'nincs termékadat'}</small></div></div>
+ ${stackZones.map(([zone,label])=>{
+  const rows=stack.items.filter(i=>i.zone===zone);if(!rows.length)return '';
+  const [color,art]=ZONE_STYLE[zone];
+  return `<section class="sx-proto-group" style="--kx:${color}"><div class="sx-proto-title">${icon(art)}<strong>${label}</strong><b>${rows.length}</b></div>
+  ${rows.map(item=>{const product=item.product,units=product&&item.dailyTarget?Math.max(1,Math.round(item.dailyTarget/product.perUnit)):null;
+   return `<button class="sx-proto-line" data-stack-item="${item.id}"><span class="sx-proto-line-art">${icon('micro')}</span><span class="sx-proto-line-copy"><strong>${safe(item.name)}</strong><small>${safe(item.zoneLabel)}${units?` · ${units} ${safe(product.unitForm)}`:''}</small></span><span class="sx-proto-line-end"><b>${item.dailyTarget?`${fmt1(item.dailyTarget)} ${safe(item.unit)}`:safe(item.dose||'—')}</b>${product?`<small>${Math.floor(product.container/(units||1))} nap</small>`:'<small>nincs adat</small>'}</span></button>`;}).join('')}</section>`;
+ }).join('')}
+ <button class="kx-link-card" data-goto="fuel/3/beallitas">${icon('gem')}<span><strong>Új elem beállítása</strong><small>Megmondom, mennyit vegyél be belőle, mikor és miért</small></span><b>›</b></button>
+ <p class="food-note">Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.</p>`;
+}
+// The dose advisor is a page too: one flow, three steps, no popup→drawer jump halfway through.
+let setup={step:1,name:'',perUnit:null,unitForm:'kapszula',container:null,unit:'',source:null,dailyOverride:null,zone:null};
+const resetSetup=()=>{setup={step:1,name:'',perUnit:null,unitForm:'kapszula',container:null,unit:'',source:null,dailyOverride:null,zone:null};};
 const SETUP_STEPS=['Termék','Adatok','Javaslat'];
-const setupHeader=()=>`<div class="glass-hero dim"><span class="glass-hero-art">${icon('gem')}</span><div><strong>Új elem</strong><small>${SETUP_STEPS[setup.step-1]} · ${setup.step}/3</small></div></div><div class="sx-steps">${SETUP_STEPS.map((label,i)=>`<span class="${i+1<=setup.step?'on':''}">${label}</span>`).join('')}</div>`;
-function setupGlass(){
- const inner=setup.step===1?setupPick():setup.step===2?setupFacts():setupAdvice();
- return `<div class="glass-dim" style="--dim-color:#bca6f1">${setupHeader()}${inner}</div>`;
+function beallitasPage(){
+ const backTo=setup.step===1?'data-goto="fuel/3"':'data-sx-step="'+(setup.step-1)+'"';
+ return `<div class="kx-subhead">${back(setup.step===1?'Kiegészítők':'Vissza',backTo)}<span><small>KIEGÉSZÍTŐK · ${setup.step}/3</small><strong>Új elem beállítása</strong></span></div>
+ <div class="sx-steps">${SETUP_STEPS.map((label,i)=>`<span class="${i+1===setup.step?'on':''} ${i+1<setup.step?'done':''}">${label}</span>`).join('')}</div>
+ ${setup.step===1?setupPick():setup.step===2?setupFacts():setupAdvice()}`;
 }
 function setupPick(){
  const free=pantry.filter(k=>k.kind==='supp'&&!stack.items.some(i=>i.pantryId===k.id));
- return `<p class="glass-lead">Melyik terméket állítsuk be? A címkéjéből kiolvasom, mennyi van benne, és megmondom, ez mennyi az ajánlott napi mennyiségből.</p>
- ${free.length?`<div class="glass-list">${free.map(k=>`<button class="glass-pick" data-sx-pick="${k.id}" style="--stat-color:#bca6f1"><span class="gs-art">${icon('micro')}</span><span class="gs-copy"><strong>${safe(k.name)}</strong><small>${safe(k.amount)}${k.dose?` · ${safe(k.dose)}`:''}</small></span><b>›</b></button>`).join('')}</div>`:'<p class="sx-dose-note">A kamrád minden kiegészítője már a protokollodban van.</p>'}
- <button class="kx-link-card" data-sx-photo>${icon('camera')}<span><strong>Címkefotóról</strong><small>Lefotózod a hátoldalt, kiolvasom a hatóanyagot és az adagot</small></span><b>›</b></button>
- <button class="kx-link-card" data-sx-manual>${icon('book')}<span><strong>Beírom kézzel</strong><small>Ha nincs nálad a termék</small></span><b>›</b></button>`;
+ return `<p class="sx-lead">Melyik terméket állítsuk be? A címkéjéről kiolvasom, mennyi van benne, és megmondom, ez mennyi az ajánlott napi mennyiségből.</p>
+ ${free.length?`<div class="lf-section"><h2>A kamrádból</h2></div><div class="sx-picks">${free.map(k=>`<button class="sx-pick" data-sx-pick="${k.id}"><span class="sx-pick-art">${icon('micro')}</span><span><strong>${safe(k.name)}</strong><small>${safe(k.amount)}${k.dose?` · ${safe(k.dose)}`:''}</small></span><b>›</b></button>`).join('')}</div>`:'<p class="sx-lead quiet">A kamrád minden kiegészítője már a protokollodban van.</p>'}
+ <div class="lf-section"><h2>Vagy</h2></div>
+ <button class="sx-pick wide" data-sx-photo><span class="sx-pick-art">${icon('camera')}</span><span><strong>Címkefotóról</strong><small>Lefotózod a hátoldalt, kiolvasom a hatóanyagot és az adagot</small></span><b>›</b></button>
+ <button class="sx-pick wide" data-sx-manual><span class="sx-pick-art">${icon('book')}</span><span><strong>Beírom kézzel</strong><small>Ha nincs nálad a termék</small></span><b>›</b></button>`;
 }
 function setupFacts(){
- return `${setup.source==='photo'?`<div class="glass-callout"><span>${icon('camera')}</span><p><small>A CÍMKÉRŐL OLVASTAM KI</small>Ellenőrizd a számokat — ha a fotó félreolvasott valamit, itt javíthatod.</p></div>`:''}
+ return `${setup.source==='photo'?`<div class="sx-callout">${icon('camera')}<p><small>A CÍMKÉRŐL OLVASTAM KI</small>Ellenőrizd a számokat — ha a fotó félreolvasott valamit, itt javíthatod.</p></div>`:'<p class="sx-lead">Ezek a termék saját adatai. Ebből számolom ki, hány egység kell naponta.</p>'}
  <form id="sx-facts-form" class="sx-form">
-  <label class="lf-field">Termék vagy hatóanyag<input name="name" value="${safe(setup.name)}" placeholder="Pl. D3-vitamin" required></label>
-  <div class="sx-form-row"><label class="lf-field">Egy ${safe(setup.unitForm)}-ban<input name="perUnit" type="number" min="0" step="any" value="${setup.perUnit??''}" placeholder="2000"></label><label class="lf-field">Mértékegység<input name="unit" value="${safe(setup.unit)}" placeholder="NE"></label></div>
-  <div class="sx-form-row"><label class="lf-field">Kiszerelés<input name="form" value="${safe(setup.unitForm)}" placeholder="kapszula"></label><label class="lf-field">Dobozban<input name="container" type="number" min="0" step="1" value="${setup.container??''}" placeholder="90"></label></div>
-  <button class="sheet-action" type="submit">${icon('score')} Nézzük, mennyi kell belőle</button>
+  <label class="sx-field">Termék vagy hatóanyag<input name="name" value="${safe(setup.name)}" placeholder="Pl. D3-vitamin" required></label>
+  <div class="sx-form-row"><label class="sx-field">Egy egységben<input name="perUnit" type="number" min="0" step="any" value="${setup.perUnit??''}" placeholder="2000"></label><label class="sx-field">Mértékegység<input name="unit" value="${safe(setup.unit)}" placeholder="NE"></label></div>
+  <div class="sx-form-row"><label class="sx-field">Kiszerelés<input name="form" value="${safe(setup.unitForm)}" placeholder="kapszula"></label><label class="sx-field">Dobozban<input name="container" type="number" min="0" step="1" value="${setup.container??''}" placeholder="90"></label></div>
+  <button class="sx-primary" type="submit">${icon('score')}<span>Nézzük, mennyi kell belőle</span><b>›</b></button>
  </form>`;
 }
 function setupAdvice(){
  const advice=doseAdvice({name:setup.name,perUnit:setup.perUnit,unitForm:setup.unitForm,container:setup.container,dailyOverride:setup.dailyOverride});
- if(!advice)return `<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ezt a hatóanyagot még nem ismerem, ezért nem találok ki hozzá adagot. Vedd fel a protokollba, és írd be, amit a termék címkéje javasol.</p></div>
-  <form id="sx-manual-form" class="sx-form"><label class="lf-field">Adag (ahogy szeded)<input name="dose" value="${safe(setup.manualDose)}" placeholder="Pl. 1 kapszula"></label><label class="lf-field">Idősáv<select name="zone">${stackZones.map(([value,label])=>`<option value="${value}" ${setup.zone===value?'selected':''}>${label}</option>`).join('')}</select></label><button class="sheet-action" type="submit">${icon('stack')} Felveszem a protokollba</button></form>`;
- if(advice.unknownProduct)return `<div class="glass-callout"><span>${icon('chat')}</span><p><small>HIÁNYZIK EGY ADAT</small>${safe(advice.name)}-ra ismerem az ajánlott napi ${advice.daily[0]}–${advice.daily[1]} ${safe(advice.unit)} sávot, de a termék címkéjéről nem tudom, mennyi van egy ${safe(setup.unitForm)}-ban. Írd be, és megmondom, hány kell belőle.</p></div><button class="kx-link-card" data-sx-back>${icon('book')}<span><strong>Vissza az adatokhoz</strong></span><b>›</b></button>`;
+ if(!advice)return `<div class="sx-callout">${icon('chat')}<p><small>ŐSZINTÉN</small>Ezt a hatóanyagot még nem ismerem, ezért nem találok ki hozzá adagot. Vedd fel a protokollba, és írd be, amit a termék címkéje javasol.</p></div>
+  <form id="sx-manual-form" class="sx-form"><label class="sx-field">Adag (ahogy szeded)<input name="dose" placeholder="Pl. 1 kapszula"></label><label class="sx-field">Idősáv<select name="zone">${stackZones.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><button class="sx-primary" type="submit">${icon('stack')}<span>Felveszem a protokollba</span><b>›</b></button></form>`;
+ if(advice.unknownProduct)return `<div class="sx-callout">${icon('chat')}<p><small>HIÁNYZIK EGY ADAT</small>${safe(advice.name)}-ra ismerem az ajánlott napi ${advice.daily[0]}–${advice.daily[1]} ${safe(advice.unit)} sávot, de a címkéről nem tudom, mennyi van egy egységben. Írd be, és megmondom, hány kell belőle.</p></div><button class="sx-pick wide" data-sx-step="2"><span class="sx-pick-art">${icon('book')}</span><span><strong>Vissza az adatokhoz</strong></span><b>›</b></button>`;
  const zone=setup.zone??advice.zone,zoneLabel=stackZones.find(([value])=>value===zone)?.[1]??advice.zoneLabel;
- return `<div class="sx-advice" style="--kx:#bca6f1"><span class="sx-advice-art">${icon('micro')}</span><strong>${advice.units} ${safe(advice.unitForm)}</strong><em>naponta</em>
+ return `<div class="sx-advice"><span class="sx-advice-art">${icon('micro')}</span><strong>${advice.units} ${safe(advice.unitForm)}</strong><em>naponta</em>
   <p>${fmt1(advice.daily)} ${safe(advice.unit)} · az ajánlott <b>${advice.range[0]}–${advice.range[1]} ${safe(advice.unit)}</b> sávban${advice.matchesTarget?'':' (a termék adagja miatt kerekítve)'}</p>
   ${advice.days?`<span class="sx-advice-days">${icon('stack')}A doboz ~${advice.days} napra elég</span>`:''}</div>
  <div class="sx-dose-why big">${icon('bolt')}${safe(advice.reason)}</div>
  <div class="sx-tune"><span class="overline">NAPI MENNYISÉG</span><div class="wsx-stepper"><button data-sx-daily="-1" aria-label="Kevesebb">−</button><span><strong>${fmt1(advice.daily)}</strong><small>${safe(advice.unit)}</small></span><button data-sx-daily="1" aria-label="Több">＋</button></div></div>
  <div class="sx-tune"><span class="overline">MIKOR</span><div class="lf-chips">${stackZones.map(([value,label])=>`<button data-sx-zone="${value}" aria-pressed="${zone===value}">${label}</button>`).join('')}</div></div>
- ${advice.caution?`<div class="glass-callout"><span>${icon('chat')}</span><p><small>AMIRE FIGYELJ</small>${safe(advice.caution)}</p></div>`:''}
- <button class="sheet-action" data-sx-save>${icon('stack')} Felveszem a protokollba · ${zoneLabel}</button>
+ ${advice.caution?`<div class="sx-callout warn">${icon('chat')}<p><small>AMIRE FIGYELJ</small>${safe(advice.caution)}</p></div>`:''}
+ <button class="sx-primary save" data-sx-save>${icon('stack')}<span>Felveszem a protokollba · ${zoneLabel}</span><b>✓</b></button>
  <p class="food-note">Tájékoztatás, nem orvosi tanács. Gyógyszer vagy krónikus betegség mellett kérdezd meg a kezelőorvosod.</p>`;
 }
-const openSetup=()=>{callbacks.dialog('KIEGÉSZÍTŐK · BEÁLLÍTÁS',setupGlass());document.querySelector('#sheet').classList.add('glass');};
-const manageSheet=()=>{resetSetup();return setupGlass();};
 const medicationSheet=()=>`<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('moon')}</span><div><strong>—</strong><small>Gyógyszer</small></div></div>
  <div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Most nincs követett gyógyszered, és ezt nem töltjük ki találgatással. Ha egyszer szükség lesz rá, itt indul: napi ciklus, beadások és emlékeztetők.</p></div></div>`;
 
-export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):view==='muhely'?muhelyPage(itemId):konyha();if(page===2)return trendek();if(page===3)return stackPage();return null;}
+export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):view==='muhely'?muhelyPage(itemId):konyha();if(page===2)return trendek();if(page===3)return view==='protokoll'?protokollPage():view==='beallitas'?beallitasPage():stackPage();return null;}
 function keepScroll(){const sc=document.querySelector('#app-scroll'),y=sc.scrollTop;skipNextCountUp();callbacks.refresh();requestAnimationFrame(()=>sc.scrollTo({top:y,behavior:'instant'}));}
 export function initFuelPages(options){callbacks=options;
  document.querySelector('#sheet')?.addEventListener('close',e=>e.target.classList.remove('glass'));
@@ -434,24 +438,23 @@ export function initFuelPages(options){callbacks=options;
   if(el.hasAttribute('data-tx-horizon')){callbacks.dialog('TRENDEK · HOSSZABB TÁV',trendHorizonGlass());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick,'14:20');if(taken!==null){toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);if(document.querySelector('#sheet')?.open)callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackTick)),document.querySelector('#sheet').classList.add('glass');keepScroll();}}
   if(el.dataset.stackItem){callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackItem));document.querySelector('#sheet').classList.add('glass');}
-  if(el.hasAttribute('data-stack-protocol')){callbacks.dialog('KIEGÉSZÍTŐK',protocolSheet());document.querySelector('#sheet').classList.add('glass');}
-  if(el.hasAttribute('data-stack-manage')){resetSetup();openSetup();}
-  if(el.dataset.sxPick){const item=pantry.find(k=>k.id===el.dataset.sxPick);if(item){const perUnit=/([\d.,]+)\s*(NE|mg|µg|g)/i.exec(item.dose||'');setup={...setup,step:2,source:'pantry',name:item.name,perUnit:perUnit?Number(perUnit[1].replace(',','.')):null,unit:perUnit?perUnit[2]:'',unitForm:/tabletta/i.test(`${item.dose||''} ${item.amount||''}`)?'tabletta':'kapszula',container:Number((/(\d+)/.exec(item.amount||'')||[])[1])||null};openSetup();}}
-  if(el.hasAttribute('data-sx-photo')){setup={...setup,step:2,source:'photo',name:'D3+K2 2000 NE',perUnit:2000,unit:'NE',unitForm:'kapszula',container:90};openSetup();}
-  if(el.hasAttribute('data-sx-manual')){setup={...setup,step:2,source:'manual'};openSetup();}
-  if(el.hasAttribute('data-sx-back')){setup={...setup,step:2};openSetup();}
-  if(el.dataset.sxDaily&&setup.step===3){const advice=doseAdvice({name:setup.name,perUnit:setup.perUnit,unitForm:setup.unitForm,container:setup.container,dailyOverride:setup.dailyOverride});if(advice&&!advice.unknownProduct){setup.dailyOverride=Math.max(setup.perUnit,advice.daily+Number(el.dataset.sxDaily)*setup.perUnit);openSetup();}}
-  if(el.dataset.sxZone){setup.zone=el.dataset.sxZone;openSetup();}
-  if(el.hasAttribute('data-sx-save')){const advice=doseAdvice({name:setup.name,perUnit:setup.perUnit,unitForm:setup.unitForm,container:setup.container,dailyOverride:setup.dailyOverride});if(advice&&!advice.unknownProduct){const zone=setup.zone??advice.zone,zoneLabel=stackZones.find(([value])=>value===zone)?.[1]??advice.zoneLabel;const item=addStackItem(stack,{name:advice.substance,dose:`${advice.units} ${advice.unitForm} · ${fmt1(advice.daily)} ${advice.unit}`,zone,zoneLabel});if(item)Object.assign(item,{dailyTarget:advice.daily,unit:advice.unit,product:{perUnit:setup.perUnit,unitForm:advice.unitForm,container:setup.container??0},reason:advice.reason,why:advice.reason,source:setup.zone?'saját döntés':'okos elhelyezés'});callbacks.closeSheet();resetSetup();toast(`${advice.substance} · ${advice.units} ${advice.unitForm} ${zoneLabel.toLocaleLowerCase('hu')}`);keepScroll();}}
+  if(el.dataset.goto){if(el.dataset.goto==='fuel/3/beallitas')resetSetup();callbacks.closeSheet();location.hash=`#${el.dataset.goto}`;}
+  if(el.dataset.sxStep){setup.step=Number(el.dataset.sxStep);keepScroll();}
+  if(el.dataset.sxPick){const item=pantry.find(k=>k.id===el.dataset.sxPick);if(item){const perUnit=/([\d.,]+)\s*(NE|mg|µg|g)/i.exec(item.dose||'');setup={...setup,step:2,source:'pantry',name:item.name,perUnit:perUnit?Number(perUnit[1].replace(',','.')):null,unit:perUnit?perUnit[2]:'',unitForm:/tabletta/i.test(`${item.dose||''} ${item.amount||''}`)?'tabletta':'kapszula',container:Number((/(\d+)/.exec(item.amount||'')||[])[1])||null};keepScroll();}}
+  if(el.hasAttribute('data-sx-photo')){setup={...setup,step:2,source:'photo',name:'D3+K2 2000 NE',perUnit:2000,unit:'NE',unitForm:'kapszula',container:90};keepScroll();}
+  if(el.hasAttribute('data-sx-manual')){setup={...setup,step:2,source:'manual'};keepScroll();}
+  if(el.hasAttribute('data-sx-back')){setup={...setup,step:2};keepScroll();}
+  if(el.dataset.sxDaily&&setup.step===3){const advice=doseAdvice({name:setup.name,perUnit:setup.perUnit,unitForm:setup.unitForm,container:setup.container,dailyOverride:setup.dailyOverride});if(advice&&!advice.unknownProduct){setup.dailyOverride=Math.max(setup.perUnit,advice.daily+Number(el.dataset.sxDaily)*setup.perUnit);keepScroll();}}
+  if(el.dataset.sxZone){setup.zone=el.dataset.sxZone;keepScroll();}
+  if(el.hasAttribute('data-sx-save')){const advice=doseAdvice({name:setup.name,perUnit:setup.perUnit,unitForm:setup.unitForm,container:setup.container,dailyOverride:setup.dailyOverride});if(advice&&!advice.unknownProduct){const zone=setup.zone??advice.zone,zoneLabel=stackZones.find(([value])=>value===zone)?.[1]??advice.zoneLabel;const item=addStackItem(stack,{name:advice.substance,dose:`${advice.units} ${advice.unitForm} · ${fmt1(advice.daily)} ${advice.unit}`,zone,zoneLabel});if(item)Object.assign(item,{dailyTarget:advice.daily,unit:advice.unit,product:{perUnit:setup.perUnit,unitForm:advice.unitForm,container:setup.container??0},reason:advice.reason,why:advice.reason,source:setup.zone?'saját döntés':'okos elhelyezés'});resetSetup();location.hash='#fuel/3/protokoll';toast(`${advice.substance} · ${advice.units} ${advice.unitForm} ${zoneLabel.toLocaleLowerCase('hu')}`);keepScroll();}}
   if(el.hasAttribute('data-stack-medication')){callbacks.dialog('KIEGÉSZÍTŐK',medicationSheet());document.querySelector('#sheet').classList.add('glass');}
  });
  document.addEventListener('submit',e=>{const data=new FormData(e.target);
   if(e.target.matches('[data-wsx-form]')){e.preventDefault();const msg=String(data.get('msg')||'').trim();if(!msg||wsx.busy)return;wsx.text='';runTurn(withContext(msg),wsx.draft?.goal??null);return;}
   if(e.target.id==='recipe-manual-form'){e.preventDefault();const saved=addRecipe(recipes,{name:String(data.get('name')).trim(),kcal:Number(data.get('kcal')),p:Number(data.get('p'))});callbacks.closeSheet();toast(saved?`Recept mentve: ${saved.name}`:'Nézd meg a név és a számok mezőit.');callbacks.refresh();}
   if(e.target.id==='pantry-link-form'){e.preventDefault();const target=document.querySelector('#pantry-link-result');if(target)target.innerHTML=`<div class="import-preview"><span class="overline">KINYERT ADATOK · ELŐNÉZET</span><strong>Földimogyoró-krém · 350 g</strong><small>588 kcal / 100 g · 25 g fehérje · forrás: link</small><button class="sheet-action" data-pantry-import="Földimogyoró-krém|350 g|link">Felveszem a kamrába ✓</button></div>`;react('connect',2000);}
-  if(e.target.id==='sx-facts-form'){e.preventDefault();const perUnit=Number(String(data.get('perUnit')||'').replace(',','.'));setup={...setup,step:3,name:String(data.get('name')||'').trim(),perUnit:Number.isFinite(perUnit)&&perUnit>0?perUnit:null,unit:String(data.get('unit')||'').trim(),unitForm:String(data.get('form')||'kapszula').trim()||'kapszula',container:Number(data.get('container'))||null,dailyOverride:null};openSetup();return;}
-  if(e.target.id==='sx-manual-form'){e.preventDefault();const zone=String(data.get('zone')||'reggel'),zoneLabel=stackZones.find(([value])=>value===zone)?.[1]??'Reggel';const item=addStackItem(stack,{name:setup.name||'Új kiegészítő',dose:String(data.get('dose')||'').trim(),zone,zoneLabel});if(item)Object.assign(item,{why:'Te állítottad be — a címke javaslata alapján.',source:'saját döntés'});callbacks.closeSheet();resetSetup();toast(`${item?item.name:'Elem'} · felvéve a protokollba`);keepScroll();return;}
-  if(e.target.id==='stack-add-form'){e.preventDefault();const zoneChoice=String(data.get('zone')),auto=zoneChoice==='auto',zone=auto?'este':zoneChoice,zoneLabel=Object.fromEntries(stackZones)[zone];const item=addStackItem(stack,{name:String(data.get('name')).trim(),dose:String(data.get('dose')).trim(),zone,zoneLabel});callbacks.closeSheet();toast(item?`${item.name} · ${auto?'az okos elhelyezés estére tette':zoneLabel.toLocaleLowerCase('hu')}`:'Add meg a nevét.');callbacks.refresh();}
+  if(e.target.id==='sx-facts-form'){e.preventDefault();const perUnit=Number(String(data.get('perUnit')||'').replace(',','.'));setup={...setup,step:3,name:String(data.get('name')||'').trim(),perUnit:Number.isFinite(perUnit)&&perUnit>0?perUnit:null,unit:String(data.get('unit')||'').trim(),unitForm:String(data.get('form')||'kapszula').trim()||'kapszula',container:Number(data.get('container'))||null,dailyOverride:null};keepScroll();return;}
+  if(e.target.id==='sx-manual-form'){e.preventDefault();const zone=String(data.get('zone')||'reggel'),zoneLabel=stackZones.find(([value])=>value===zone)?.[1]??'Reggel';const item=addStackItem(stack,{name:setup.name||'Új kiegészítő',dose:String(data.get('dose')||'').trim(),zone,zoneLabel});if(item)Object.assign(item,{why:'Te állítottad be — a címke javaslata alapján.',source:'saját döntés'});resetSetup();location.hash='#fuel/3/protokoll';toast(`${item?item.name:'Elem'} · felvéve a protokollba`);keepScroll();return;}
  });
  document.addEventListener('input',e=>{if(e.target.matches('[data-wsx-name]')&&wsx.draft){wsx.draft.name=e.target.value;const save=document.querySelector('[data-wsx-save]');if(save)save.disabled=!canSave(wsx.draft);return;}if(e.target.matches('[data-wsx-text]'))wsx.text=e.target.value;});
  document.addEventListener('change',e=>{if(!e.target.matches('[data-wsx-amount-input]')||!wsx.draft)return;wsx.draft=setLineAmount(wsx.draft,Number(e.target.dataset.wsxAmountInput),e.target.value);keepScroll();});

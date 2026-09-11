@@ -900,3 +900,51 @@ dialog.glass .sheet-handle{display:none}
 .sx-tune .overline{display:block;margin-bottom:7px}
 .sx-tune .wsx-stepper{--block-color:#bca6f1}
 .sx-tune .lf-chips{gap:6px}
+/* Protokoll page: compact, scannable rows for a 5–15 item stack */
+.sx-summary{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:14px;align-items:end;margin:0 0 14px;padding:13px 14px;border:1px solid #8ed2e82e;border-radius:17px;background:linear-gradient(155deg,#8ed2e814,#ffffff02 66%)}
+.sx-summary strong{display:block;font-size:26px;font-weight:500;letter-spacing:-1px;color:#cfe8f0}
+.sx-summary small{display:block;margin-top:2px;font-size:10px;line-height:1.35;color:#93a3ab}
+.sx-proto-group{margin:0 0 12px;padding:2px 0 0}
+.sx-proto-title{display:flex;align-items:center;gap:9px;padding:0 2px 7px}
+.sx-proto-title .icon{width:26px;height:26px;filter:drop-shadow(0 4px 5px #0007)}
+.sx-proto-title strong{font-size:14px;font-weight:600;color:#e4eef1}
+.sx-proto-title b{margin-left:auto;font-size:11px;font-weight:600;color:color-mix(in srgb,var(--kx) 70%,#fff)}
+.sx-proto-line{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;margin-bottom:6px;border:1px solid color-mix(in srgb,var(--kx) 22%,transparent);border-radius:14px;background:linear-gradient(155deg,color-mix(in srgb,var(--kx) 11%,transparent),#ffffff02 70%);text-align:left;color:#e2ecef}
+.sx-proto-line-art .icon{width:30px;height:30px;flex:0 0 auto}
+.sx-proto-line-copy{flex:1;min-width:0}
+.sx-proto-line-copy strong{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sx-proto-line-copy small{display:block;margin-top:2px;font-size:10px;color:#8fa0a8}
+.sx-proto-line-end{text-align:right;flex:0 0 auto}
+.sx-proto-line-end b{display:block;font-size:14px;font-weight:600;color:color-mix(in srgb,var(--kx) 66%,#fff);white-space:nowrap}
+.sx-proto-line-end small{display:block;margin-top:2px;font-size:9px;color:#8a9ba3}
+/* Dose setup page: one flow, three steps, page padding — no popup→drawer jump */
+.sx-steps{display:flex;gap:6px;margin:0 0 14px}
+.sx-steps span{flex:1;padding:7px 4px;border-radius:12px;background:#ffffff07;text-align:center;font-size:10px;letter-spacing:.5px;color:#8a9ba3}
+.sx-steps span.done{background:#bca6f114;color:#b9aedb}
+.sx-steps span.on{background:#bca6f12a;color:#efe8ff;box-shadow:0 0 12px #bca6f11f}
+.sx-lead{margin:0 0 14px;font-size:12px;line-height:1.6;color:#aebfc7}
+.sx-lead.quiet{color:#8a9ba3}
+.sx-picks{display:grid;gap:8px}
+.sx-pick{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #bca6f130;border-radius:16px;background:linear-gradient(155deg,#bca6f114,#ffffff02 68%);text-align:left;color:#e6eef1}
+.sx-pick.wide{margin-bottom:8px;border-color:#ffffff18;background:linear-gradient(155deg,#ffffff0c,#ffffff02 68%)}
+.sx-pick-art .icon{width:34px;height:34px;filter:drop-shadow(0 5px 6px #0007)}
+.sx-pick strong{display:block;font-size:14px;font-weight:500}
+.sx-pick small{display:block;margin-top:3px;font-size:10px;line-height:1.4;color:#93a3ab}
+.sx-pick>b{margin-left:auto;font-size:17px;font-weight:300;color:#b9aedb}
+.sx-form{display:grid;gap:11px}
+.sx-form-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.sx-field{display:grid;gap:6px;font-size:11px;color:#93a3ab}
+.sx-field input,.sx-field select{width:100%;padding:12px 13px;border:1px solid #ffffff1a;border-radius:14px;background:#0c0e14;color:#eef3f5;font-size:14px;outline:none}
+.sx-field input:focus,.sx-field select:focus{border-color:#bca6f155}
+.sx-primary{display:flex;align-items:center;gap:10px;width:100%;margin-top:4px;padding:14px 15px;border:1px solid #bca6f14d;border-radius:16px;background:linear-gradient(140deg,#bca6f130,#bca6f10c);box-shadow:0 10px 20px #0005,inset 0 1px 0 #ffffff1f;font-size:14px;font-weight:600;color:#f0ebfd;text-align:left}
+.sx-primary .icon{width:26px;height:26px}
+.sx-primary span{flex:1}
+.sx-primary b{font-weight:300;font-size:18px;color:#cdbdf3}
+.sx-primary.save{border-color:#b8d77755;background:linear-gradient(140deg,#b8d7772e,#b8d77708);color:#effbe8}
+.sx-primary.save b{color:#b5e6a2}
+.sx-callout{display:flex;gap:11px;align-items:flex-start;margin:0 0 14px;padding:13px;border:1px solid #bca6f133;border-radius:16px;background:linear-gradient(150deg,#bca6f116,#ffffff03)}
+.sx-callout.warn{border-color:#e0b56e3d;background:linear-gradient(150deg,#e0b56e16,#ffffff03)}
+.sx-callout .icon{width:26px;height:26px;flex:0 0 auto}
+.sx-callout p{margin:0;font-size:12px;line-height:1.55;color:#ded6f3}
+.sx-callout small{display:block;margin-bottom:4px;font-size:8px;letter-spacing:1px;color:#a99fc2}
+.sx-advice{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 14px 16px;margin-bottom:12px;border:1px solid #bca6f14a;border-radius:20px;background:radial-gradient(120% 120% at 50% 0%,#bca6f12a,#ffffff03 70%);box-shadow:0 12px 26px #0006}
