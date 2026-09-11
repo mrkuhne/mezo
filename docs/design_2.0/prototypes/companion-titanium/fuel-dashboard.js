@@ -7,8 +7,13 @@ const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDig
 const score1=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:1,maximumFractionDigits:1});
 const ring=(name,art,value,target,color,unit='g')=>`<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100,value/target*100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${fmt1(value)} / ${fmt1(target)} ${unit}"><strong data-fuel-count="${value}" data-fuel-dec="${unit==='l'?1:0}">0</strong><b>/ ${fmt1(target)}<i>${unit}</i></b></span></div></div>`;
 
+// A state change inside a page (a tick, a stepper) re-renders it — replaying the count-up from zero
+// there reads as a glitch, so the next render after such an edit lands straight on the final value.
+let skipOnce=false;
+export function skipNextCountUp(){skipOnce=true;}
 export function animateFuelDashboard(root=document){
- const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches||skipOnce;
+ skipOnce=false;
  root.querySelectorAll('[data-fuel-count]').forEach(element=>{
   const target=Number(element.dataset.fuelCount),dec=Number(element.dataset.fuelDec||0);
   const show=v=>Number(v).toLocaleString('hu-HU',{minimumFractionDigits:dec,maximumFractionDigits:dec});

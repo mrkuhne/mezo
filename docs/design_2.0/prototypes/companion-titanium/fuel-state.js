@@ -37,16 +37,27 @@ export const pantrySwaps=[{from:'Tortilla lap',to:'Teljes kiőrlésű tortilla',
 // --- Kiegészítők: protocol + intakes --------------------------------------
 export function createStack(){return {
  items:[
-  {id:'s-d3',name:'D3-vitamin',dose:'4000 NE',zone:'reggel',zoneLabel:'Reggelivel',why:'A téli félévben mért alacsony szint miatt.',source:'saját döntés'},
-  {id:'s-omega',name:'Omega-3',dose:'1000 mg',zone:'reggel',zoneLabel:'Reggelivel',why:'Zsírsav-egyensúly; étkezéssel szívódik jól.',source:'okos elhelyezés'},
-  {id:'s-kreatin',name:'Kreatin',dose:'5 g',zone:'delben',zoneLabel:'Ebéd után',why:'Erőépítés; a napszak mindegy, a rendszeresség számít.',source:'okos elhelyezés'},
-  {id:'s-magnezium',name:'Magnézium',dose:'200 mg',zone:'este',zoneLabel:'Vacsorával',why:'Esti lecsendesedés és alvásminőség.',source:'saját döntés'},
+  {id:'s-d3',name:'D3-vitamin',dose:'4000 NE',zone:'reggel',zoneLabel:'Reggelivel',pantryId:'k-d3',why:'A téli félévben mért alacsony szint miatt.',source:'saját döntés'},
+  {id:'s-omega',name:'Omega-3',dose:'1000 mg',zone:'reggel',zoneLabel:'Reggelivel',pantryId:null,why:'Zsírsav-egyensúly; étkezéssel szívódik jól.',source:'okos elhelyezés'},
+  {id:'s-kreatin',name:'Kreatin',dose:'5 g',zone:'delben',zoneLabel:'Ebéd után',pantryId:'k-kreatin',why:'Erőépítés; a napszak mindegy, a rendszeresség számít.',source:'okos elhelyezés'},
+  {id:'s-magnezium',name:'Magnézium',dose:'200 mg',zone:'este',zoneLabel:'Vacsorával',pantryId:'k-magnezium',why:'Esti lecsendesedés és alvásminőség.',source:'saját döntés'},
  ],
  taken:new Set(['s-d3','s-omega']),
+ times:{'s-d3':'07:42','s-omega':'07:42'},
 }}
-export function toggleIntake(stack,itemId){if(!stack.items.some(i=>i.id===itemId))return null;if(stack.taken.has(itemId)){stack.taken.delete(itemId);return false;}stack.taken.add(itemId);return true;}
+// The tick records WHEN it happened, so an undo can remove it again — the same pair the intake log keeps.
+export function toggleIntake(stack,itemId,time='14:20'){
+ if(!stack.items.some(i=>i.id===itemId))return null;
+ if(stack.taken.has(itemId)){stack.taken.delete(itemId);delete stack.times[itemId];return false;}
+ stack.taken.add(itemId);stack.times[itemId]=time;return true;
+}
 export const stackProgress=stack=>({taken:stack.taken.size,total:stack.items.length});
-export function addStackItem(stack,{name,dose='',zone='reggel',zoneLabel='Reggelivel'}){if(!name)return null;const item={id:id('s'),name,dose,zone,zoneLabel,why:'Új elem · az okos elhelyezés tette a helyére.',source:'okos elhelyezés'};stack.items.push(item);return item;}
+// The next occurrence still waiting, in zone order — what the hero offers with one tap.
+export function nextDue(stack){
+ const order=stackZones.map(([zone])=>zone);
+ return [...stack.items].sort((a,b)=>order.indexOf(a.zone)-order.indexOf(b.zone)).find(i=>!stack.taken.has(i.id))??null;
+}
+export function addStackItem(stack,{name,dose='',zone='reggel',zoneLabel='Reggelivel'}){if(!name)return null;const item={id:id('s'),name,dose,zone,zoneLabel,pantryId:null,why:'Új elem · az okos elhelyezés tette a helyére.',source:'okos elhelyezés'};stack.items.push(item);return item;}
 export const stackZones=[['reggel','Reggel'],['delben','Délben'],['este','Este']];
 
 // --- Trendek: weekly picture + long horizon --------------------------------

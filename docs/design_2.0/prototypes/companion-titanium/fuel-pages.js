@@ -1,9 +1,9 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
-import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, stackZones, weekData, weekSummary, weekCompare, weekDeltas, fuelDayScore, longHorizon, patterns } from './fuel-state.js';
+import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, nextDue, stackZones, weekData, weekSummary, weekCompare, weekDeltas, fuelDayScore, longHorizon, patterns } from './fuel-state.js';
 import { mealBlocks } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
-import { energyDetailHtml, dimGlassHtml, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
+import { energyDetailHtml, dimGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
 const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
@@ -287,13 +287,55 @@ function trendHorizonGlass(){
 }
 
 // --- Kiegészítők ----------------------------------------------------------
-function stackPage(){const prog=stackProgress(stack),pct=Math.round(prog.taken/prog.total*100);return `<div class="stack-hero"><div class="stack-ring" style="--stack-progress:${pct}"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="stack-ring-track" cx="60" cy="60" r="52" pathLength="100"/><circle class="stack-ring-progress" cx="60" cy="60" r="52" pathLength="100"/></svg><span><strong>${prog.taken}<small> / ${prog.total}</small></strong><b>BEVÉVE MA</b></span></div><div class="stack-hero-copy"><span class="overline">MIT VESZEK BE MA?</span><p>${prog.taken===prog.total?'Minden a helyén. Mára ennyi volt.':'Egy érintés, és pipálva. Ha félrement, még egy érintés visszavonja.'}</p></div></div>${stackZones.map(([zone,label])=>{const rows=stack.items.filter(i=>i.zone===zone);if(!rows.length)return '';return `<div class="lf-section"><h2>${label}</h2><small>${rows.filter(r=>stack.taken.has(r.id)).length} / ${rows.length}</small></div>${rows.map(r=>{const done=stack.taken.has(r.id);return `<button class="stack-row ${done?'done':''}" data-stack-tick="${r.id}" aria-pressed="${done}"><span class="stack-check">${done?'✓':''}</span><span><strong>${safe(r.name)}</strong><small>${safe(r.dose)} · ${safe(r.zoneLabel)}</small></span><b>${done?'VISSZAVONOM':'BEVETTEM'}</b></button>`;}).join('')}`;}).join('')}<div class="lf-section"><h2>Mélyebben</h2></div><button class="konyha-row" data-stack-protocol>${icon('stack')}<span><strong>Protokoll</strong><small>Mit miért szedsz — és ki tette a helyére</small></span><b>↗</b></button><button class="konyha-row" data-stack-manage>${icon('gem')}<span><strong>Kezelés</strong><small>Új elem, adag, időzítés</small></span><b>↗</b></button><button class="konyha-row quiet" data-stack-medication>${icon('moon')}<span><strong>Gyógyszer</strong><small>Most nincs követett gyógyszered</small></span><b>↗</b></button><p class="food-note">Mintaprotokoll. A pipák a demóban élnek, újratöltéskor törlődnek.</p>`;}
-const protocolSheet=()=>`<h2 class="sheet-title">A protokollod</h2><p class="sheet-sub">Minden elemnél látod, miért szeded és ki döntött a helyéről.</p>${stack.items.map(r=>`<div class="proto-row">${icon('gem')}<span><strong>${safe(r.name)} · ${safe(r.dose)}</strong><small>${safe(r.zoneLabel)} · ${safe(r.source)}</small><p>${safe(r.why)}</p></span></div>`).join('')}`;
-const manageSheet=()=>`<h2 class="sheet-title">Kezelés</h2><p class="sheet-sub">Új elem felvételekor az okos elhelyezés javasol idősávot — te bármikor átteheted.</p><form id="stack-add-form"><label class="lf-field">Mit vennél fel?<input name="name" required placeholder="Pl. Cink"></label><label class="lf-field">Adag<input name="dose" placeholder="Pl. 15 mg"></label><label class="lf-field">Idősáv<select name="zone"><option value="auto" selected>✨ Okos elhelyezés dönti</option>${stackZones.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><button class="sheet-action">Felveszem a protokollba ✓</button></form>`;
-const medicationSheet=()=>`${icon('moon')}<h2 class="sheet-title">Gyógyszer</h2><p class="sheet-sub">Most nincs követett gyógyszered — és ezt nem is töltjük ki találgatással. Ha egyszer szükség lesz rá, itt indul: napi ciklus, beadások, emlékeztetők.</p>`;
+const ZONE_STYLE={reggel:['#d9c395','sun','Reggel'],delben:['#c8e895','bowl','Délben'],este:['#bca6f1','moon','Este']};
+const stackRow=item=>{
+ const done=stack.taken.has(item.id),time=stack.times?.[item.id];
+ return `<div class="sx-row ${done?'done':''}"><button class="sx-check" data-stack-tick="${item.id}" aria-pressed="${done}" aria-label="${safe(item.name)}: ${done?'visszavonom':'bevettem'}">${done?'✓':''}</button><button class="sx-row-main" data-stack-item="${item.id}"><span class="sx-row-art">${icon('micro')}</span><span class="sx-row-copy"><strong>${safe(item.name)}</strong><small>${safe(item.dose)} · ${safe(item.zoneLabel)}${done&&time?` · bevéve ${time}`:''}</small></span><b>›</b></button></div>`;
+};
+function stackPage(){
+ const progress=stackProgress(stack),pct=Math.round(progress.taken/progress.total*100),next=nextDue(stack);
+ const [nextColor]=next?ZONE_STYLE[next.zone]:['#8fd97a'];
+ return `<div class="sx-hero"><span class="sx-glow"></span>
+  <div class="stack-ring" style="--stack-progress:${pct}"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="stack-ring-track" cx="60" cy="60" r="52" pathLength="100"/><circle class="stack-ring-progress" cx="60" cy="60" r="52" pathLength="100"/></svg><span><strong><span data-fuel-count="${progress.taken}">0</span><small> / ${progress.total}</small></strong><b>BEVÉVE MA</b></span></div>
+  <div class="sx-hero-copy"><span class="overline">MIT VESZEK BE MA?</span>
+   ${next?`<button class="sx-next" style="--kx:${nextColor}" data-stack-tick="${next.id}"><span class="sx-next-art">${icon(ZONE_STYLE[next.zone][1])}</span><span><small>KÖVETKEZIK</small><strong>${safe(next.name)}</strong><em>${safe(next.dose)} · ${safe(next.zoneLabel)}</em></span><b>BEVETTEM</b></button>`
+    :`<p class="sx-done">${icon('score')}<span>Mára minden megvan. Ha félrement valami, a pipát bármikor visszavonhatod.</span></p>`}</div></div>
+ ${stackZones.map(([zone,label])=>{
+  const rows=stack.items.filter(i=>i.zone===zone);if(!rows.length)return '';
+  const [color,art]=ZONE_STYLE[zone],done=rows.filter(r=>stack.taken.has(r.id)).length;
+  return `<section class="sx-band ${done===rows.length?'complete':''}" style="--kx:${color}" aria-label="${label}"><div class="sx-band-head"><span class="sx-band-art">${icon(art)}</span><strong>${label}</strong><span class="sx-band-count">${done} / ${rows.length}</span></div>${rows.map(stackRow).join('')}</section>`;
+ }).join('')}
+ <div class="lf-section"><h2>Mélyebben</h2></div>
+ <button class="kx-poster sx-poster" style="--kx:#8ed2e8" data-stack-protocol><span class="kx-poster-head"><span class="kx-poster-title">${icon('stack')}<strong>Protokoll</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>${stack.items.length} elem</strong><small>Mit miért szedsz, és ki tette a helyére.</small></span></button>
+ <button class="kx-poster sx-poster" style="--kx:#bca6f1" data-stack-manage><span class="kx-poster-head"><span class="kx-poster-title">${icon('gem')}<strong>Kezelés</strong></span><b>↗</b></span><span class="kx-ws-copy"><strong>Új elem, adag, időzítés</strong><small>Az okos elhelyezés javasol idősávot — te bármikor átteheted.</small></span></button>
+ <button class="konyha-row quiet" data-stack-medication>${icon('moon')}<span><strong>Gyógyszer</strong><small>Most nincs követett gyógyszered</small></span><b>↗</b></button>
+ <p class="food-note">Mintaprotokoll. A pipák a demóban élnek, újratöltéskor törlődnek.</p>`;
+}
+function stackItemGlass(itemId){
+ const item=stack.items.find(i=>i.id===itemId);
+ if(!item)return '<p class="sheet-sub">Nincs ilyen elem.</p>';
+ const [color,art,zoneName]=ZONE_STYLE[item.zone],done=stack.taken.has(item.id),time=stack.times?.[item.id];
+ const shelf=item.pantryId?pantry.find(k=>k.id===item.pantryId):null;
+ return `<div class="glass-dim" style="--dim-color:${color}">
+ <div class="glass-hero dim"><span class="glass-hero-art">${icon('micro')}</span><div><strong>${safe(item.dose)}</strong><small>${safe(item.name)}</small></div></div>
+ <div class="glass-chips"><span>${zoneName} · ${safe(item.zoneLabel)}</span><span>${safe(item.source)}</span>${done?`<span>bevéve${time?` ${time}`:''}</span>`:'<span>ma még nincs bevéve</span>'}</div>
+ <p class="glass-lead">${safe(item.why)}</p>
+ <button class="wsx-save-like sx-glass-tick ${done?'done':''}" data-stack-tick="${item.id}">${icon(done?'moon':'score')}<span>${done?'Mégsem vettem be':'Bevettem'}</span></button>
+ ${shelf?`<button class="kx-link-card" data-pantry-open="${shelf.id}">${icon('stack')}<span><strong>${safe(shelf.name)}</strong><small>${safe(shelf.amount)} a kamrádban · ${safe(shelf.source)}</small></span><b>›</b></button>`:`<div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Ez az elem nincs a kamrádban — a protokollban viszont ott van. Ha felveszed, innen is elérhető lesz.</p></div>`}
+ <button class="kx-link-card" data-stack-manage>${icon('gem')}<span><strong>Áthelyezem vagy módosítom</strong><small>Idősáv és adag a Kezelésben</small></span><b>›</b></button></div>`;
+}
+const protocolSheet=()=>`<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('stack')}</span><div><strong>${stack.items.length}</strong><small>elem a protokollodban</small></div></div>
+ <p class="glass-lead">Minden elemnél látod, miért szeded és ki döntött az idősávjáról — te magad, vagy az okos elhelyezés.</p>
+ ${stackZones.map(([zone,label])=>{const rows=stack.items.filter(i=>i.zone===zone);if(!rows.length)return '';const [color,art]=ZONE_STYLE[zone];
+  return `<div class="sx-proto-zone" style="--kx:${color}"><div class="sx-proto-head">${icon(art)}<strong>${label}</strong></div>${rows.map(r=>`<div class="sx-proto-row"><span class="sx-proto-art">${icon('micro')}</span><span><strong>${safe(r.name)} · ${safe(r.dose)}</strong><small>${safe(r.zoneLabel)} · ${safe(r.source)}</small><p>${safe(r.why)}</p></span></div>`).join('')}</div>`;}).join('')}`;
+const manageSheet=()=>`<div class="glass-dim" style="--dim-color:#bca6f1"><div class="glass-hero dim"><span class="glass-hero-art">${icon('gem')}</span><div><strong>Kezelés</strong><small>Új elem a protokollba</small></div></div>
+ <p class="glass-lead">Ha nem választasz idősávot, az okos elhelyezés dönt helyetted — és utólag bármikor átteheted.</p>
+ <form id="stack-add-form"><label class="lf-field">Mit vennél fel?<input name="name" required placeholder="Pl. Cink"></label><label class="lf-field">Adag<input name="dose" placeholder="Pl. 15 mg"></label><label class="lf-field">Idősáv<select name="zone"><option value="auto" selected>✨ Okos elhelyezés dönti</option>${stackZones.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><button class="sheet-action">Felveszem a protokollba ✓</button></form></div>`;
+const medicationSheet=()=>`<div class="glass-dim" style="--dim-color:#8ed2e8"><div class="glass-hero dim"><span class="glass-hero-art">${icon('moon')}</span><div><strong>—</strong><small>Gyógyszer</small></div></div>
+ <div class="glass-callout"><span>${icon('chat')}</span><p><small>ŐSZINTÉN</small>Most nincs követett gyógyszered, és ezt nem töltjük ki találgatással. Ha egyszer szükség lesz rá, itt indul: napi ciklus, beadások és emlékeztetők.</p></div></div>`;
 
 export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):view==='muhely'?muhelyPage(itemId):konyha();if(page===2)return trendek();if(page===3)return stackPage();return null;}
-function keepScroll(){const sc=document.querySelector('#app-scroll'),y=sc.scrollTop;callbacks.refresh();requestAnimationFrame(()=>sc.scrollTo({top:y,behavior:'instant'}));}
+function keepScroll(){const sc=document.querySelector('#app-scroll'),y=sc.scrollTop;skipNextCountUp();callbacks.refresh();requestAnimationFrame(()=>sc.scrollTo({top:y,behavior:'instant'}));}
 export function initFuelPages(options){callbacks=options;
  document.querySelector('#sheet')?.addEventListener('close',e=>e.target.classList.remove('glass'));
  document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;
@@ -340,10 +382,11 @@ export function initFuelPages(options){callbacks=options;
   if(el.dataset.txStat){callbacks.dialog('TRENDEK · MUTATÓ',trendStatGlass(el.dataset.txStat));document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.txPattern){callbacks.dialog('TRENDEK · MINTÁZAT',trendPatternGlass(el.dataset.txPattern));document.querySelector('#sheet').classList.add('glass');}
   if(el.hasAttribute('data-tx-horizon')){callbacks.dialog('TRENDEK · HOSSZABB TÁV',trendHorizonGlass());document.querySelector('#sheet').classList.add('glass');}
-  if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick);if(taken!==null){toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);callbacks.refresh();}}
-  if(el.hasAttribute('data-stack-protocol'))callbacks.dialog('KIEGÉSZÍTŐK',protocolSheet());
-  if(el.hasAttribute('data-stack-manage'))callbacks.dialog('KIEGÉSZÍTŐK',manageSheet());
-  if(el.hasAttribute('data-stack-medication'))callbacks.dialog('KIEGÉSZÍTŐK',medicationSheet());
+  if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick,'14:20');if(taken!==null){toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);if(document.querySelector('#sheet')?.open)callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackTick)),document.querySelector('#sheet').classList.add('glass');keepScroll();}}
+  if(el.dataset.stackItem){callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackItem));document.querySelector('#sheet').classList.add('glass');}
+  if(el.hasAttribute('data-stack-protocol')){callbacks.dialog('KIEGÉSZÍTŐK',protocolSheet());document.querySelector('#sheet').classList.add('glass');}
+  if(el.hasAttribute('data-stack-manage')){callbacks.dialog('KIEGÉSZÍTŐK',manageSheet());document.querySelector('#sheet').classList.add('glass');}
+  if(el.hasAttribute('data-stack-medication')){callbacks.dialog('KIEGÉSZÍTŐK',medicationSheet());document.querySelector('#sheet').classList.add('glass');}
  });
  document.addEventListener('submit',e=>{const data=new FormData(e.target);
   if(e.target.matches('[data-wsx-form]')){e.preventDefault();const msg=String(data.get('msg')||'').trim();if(!msg||wsx.busy)return;wsx.text='';runTurn(withContext(msg),wsx.draft?.goal??null);return;}
