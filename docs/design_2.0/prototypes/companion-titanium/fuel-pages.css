@@ -286,12 +286,15 @@ button.fuel-focus{display:block;width:100%;border:0;background:transparent;text-
 .hero-track i{position:absolute;inset:0;width:var(--w);border-radius:8px;background:linear-gradient(90deg,#569eb4,#9fdcec);box-shadow:0 0 12px #8ed2e833}
 .hero-track b{position:absolute;right:0;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#ffffff2e}
 /* Macro cells: number-only rings, custom icon below */
+.fuel-rings{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .macro-cell{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0}
 .macro-cell .fuel-ring{width:100%;aspect-ratio:1}
-.fuel-ring strong{margin-top:0;font-size:18px}
-.fuel-ring b{margin-top:4px;font-size:8px}
-.macro-ico{width:30px;height:30px}
-.macro-ico .icon{width:30px;height:30px;filter:drop-shadow(0 5px 6px #0007)}
+.macro-cell .fuel-ring circle{stroke-width:5.5}
+.fuel-ring strong{margin-top:0;font-size:20px;font-weight:600}
+.fuel-ring b{margin-top:4px;font-size:10px;font-weight:500;color:#9fb0b8}
+.fuel-ring b i{font-style:normal;font-size:8px;margin-left:1px}
+.macro-ico{width:29px;height:29px}
+.macro-ico .icon{width:29px;height:29px;filter:drop-shadow(0 5px 6px #0007)}
 /* Glass box dialog */
 dialog.glass{top:0;bottom:0;margin:auto;width:min(86%,338px);max-height:74dvh;border-radius:24px;border:1px solid #ffffff30;background:linear-gradient(155deg,#ffffff17,#ffffff06 45%,#ffffff0d),#12141bcc;backdrop-filter:blur(22px) saturate(1.25);box-shadow:0 34px 70px #000b,0 0 34px #8ed2e814,inset 0 1px 0 #ffffff3d,inset 0 -1px 0 #ffffff10;padding:14px 21px 24px}
 dialog.glass::backdrop{background:#05070cb8;backdrop-filter:blur(15px)}
