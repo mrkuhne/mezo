@@ -10,6 +10,18 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#FBF6EF" />
+    <!-- Installed-PWA chrome (mezo-cp8w → status bar): on Android + Safari-browser the
+         dynamic `theme-color` meta (applyTheme in shared/lib/theme.ts) already tints the
+         system bar per theme. iOS home-screen PWAs ignore theme-color, so the OS status
+         bar stayed opaque white over the dark Nap shell. `black-translucent` lets the web
+         view bleed under the status bar (icons forced white) so the app's OWN background
+         paints it — dark on the dark pages. The standalone media query already pads
+         `.screen-content` by env(safe-area-inset-top), so nothing hides behind it.
+         NOTE: iOS caches these at install time — an already-installed app must be removed
+         and re-added to the home screen to pick up the change. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <!-- Design 2.0 brand: the clay orb is THE app icon (mezo-d20.1.2). The PNG set in
          public/ (pwa-*, maskable, apple-touch) is generated from logo-orb.svg. -->
     <link rel="icon" href="/logo-orb.svg" type="image/svg+xml" />
