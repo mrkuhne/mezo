@@ -249,7 +249,7 @@ export function MealComposer({
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay(logDate)
-  const { logMeal, updateMeal, deleteMeal, draftMealFromAi } = useMealActions(logDate)
+  const { logMeal, logMealAsync, updateMeal, deleteMeal, draftMealFromAi } = useMealActions(logDate)
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
@@ -552,7 +552,14 @@ export function MealComposer({
       const draftId = aiDraftId
       const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
       outcomeReportedForRef.current = draftId
-      logMeal(input, { onSuccess: () => reportDraftOutcome(draftId, 'meal_draft', outcome) })
+      // E9 (mezo-qt5q): `logMealAsync` — NOT the per-call onSuccess, which TanStack drops when
+      // this composer unmounts first. `onSaved()` below navigates away on the page route, so the
+      // callback form reported nothing there. A failed save reports nothing either: the draft was
+      // never accepted, and the discard guard above already claimed this id.
+      void logMealAsync(input).then(
+        () => reportDraftOutcome(draftId, 'meal_draft', outcome),
+        () => undefined,
+      )
     } else {
       logMeal(input)
     }
