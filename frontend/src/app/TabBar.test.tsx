@@ -77,7 +77,7 @@ test('a Fuel fülsor a jóváhagyott sorrendet és ikonokat viseli', () => {
 
 // A leghosszabb-prefix aktív-fül szabály (navModel.activeTabRoute) a mély Fuel-oldalakon is tart.
 test('a Kiegészítők fül aktív a stack mélyebb oldalain is', () => {
-  renderAt('/fuel/stack/manage', <TabBar />)
+  renderAt('/fuel/stack/protocol', <TabBar />)
   const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
   expect(within(bar).getByRole('link', { name: /Kiegészítők/ })).toHaveAttribute('aria-current', 'page')
 })

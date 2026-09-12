@@ -50,7 +50,7 @@ function renderAt(entry: string) {
   const router = createMemoryRouter(
     [
       { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
-      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+      { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
   )

@@ -33,22 +33,13 @@ import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEdito
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
-import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelMealDetailPage } from '@/features/fuel/pages/FuelMealDetailPage'
 import { FuelMealScorePage } from '@/features/fuel/pages/FuelMealScorePage'
-import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
-import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
 import { FuelKonyhaPage } from '@/features/fuel/pages/FuelKonyhaPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
 import { FuelStackProtocolPage } from '@/features/fuel/pages/FuelStackProtocolPage'
-import { FuelStackTodayPage } from '@/features/fuel/pages/FuelStackTodayPage'
-import { FuelStackMealsPage } from '@/features/fuel/pages/FuelStackMealsPage'
-import { FuelStackManagePage } from '@/features/fuel/pages/FuelStackManagePage'
-import { FuelStackManageProtocolPage } from '@/features/fuel/pages/FuelStackManageProtocolPage'
-import { FuelStackManageTimingPage } from '@/features/fuel/pages/FuelStackManageTimingPage'
-import { FuelStackManageMealsPage } from '@/features/fuel/pages/FuelStackManageMealsPage'
 import { FuelStackAddPage } from '@/features/fuel/pages/FuelStackAddPage'
 import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
 import { FuelKamraPage } from '@/features/fuel/pages/FuelKamraPage'
@@ -137,6 +128,51 @@ function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
 }
+
+/**
+ * Fuel Titanium S5 (mezo-qt5q): the retired Fuel routes and where they now land. A saved
+ * bookmark, a push notification (`notificationScheduleWriter.ts` FUEL_SLOT → /fuel/stack) or a
+ * Kalauz step pointing at any of these must NEVER 404 — the catch-all `*` would silently eject
+ * the user to /nap.
+ *
+ * The targets follow the DELIVERED surface, which corrects the plan's first draft in one place:
+ * `/fuel/stack/meals` (manifest D4, étkezési kötések) is retired too, because S2 folded the
+ * bindings into `FuelStackProtocolPage`'s own sub-section rather than leaving a second page.
+ *
+ *   /fuel/log                     → /fuel                  (A10: Mai is the canonical day list)
+ *   /fuel/plan                    → /fuel/trendek          (C1/C6: weekly picture merged)
+ *   /fuel/naplo                   → /fuel/trendek          (C5: day quality merged)
+ *   /fuel/stack/today             → /fuel/stack            (D1: hub + Today are one page)
+ *   /fuel/stack/meals             → /fuel/stack/protocol   (D4: bindings are a sub-section)
+ *   /fuel/stack/manage{,/*}       → /fuel/stack/protocol   (D3: 4 manage pages folded in)
+ *
+ * `/fuel/stack/manage/add` (Új elem) SURVIVES — which is why this is an exact-path table and not
+ * a `manage/*` prefix rule that would swallow it.
+ */
+export const FUEL_RETIRED_REDIRECTS: Record<string, string> = {
+  '/fuel/log': '/fuel',
+  '/fuel/plan': '/fuel/trendek',
+  '/fuel/naplo': '/fuel/trendek',
+  '/fuel/stack/today': '/fuel/stack',
+  '/fuel/stack/meals': '/fuel/stack/protocol',
+  '/fuel/stack/manage': '/fuel/stack/protocol',
+  '/fuel/stack/manage/protocol': '/fuel/stack/protocol',
+  '/fuel/stack/manage/timing': '/fuel/stack/protocol',
+  '/fuel/stack/manage/meals': '/fuel/stack/protocol',
+}
+
+/** Keeps the query string, so a `?d=2026-09-08` bookmark of a paged-back day lands on that SAME
+ *  day on the new page (Mai derives the viewed day from `?d=`), not on today. */
+function RetiredRouteRedirect({ to }: { to: string }) {
+  const location = useLocation()
+  return <Navigate to={to + location.search} replace />
+}
+
+/** Route objects for the table above — one source of truth, so a row can never be listed as
+ *  redirected while its path stays unmatched (the test asserts both directions). */
+const fuelRetiredRedirectRoutes: RouteObject[] = Object.entries(FUEL_RETIRED_REDIRECTS).map(
+  ([from, to]) => ({ path: from.slice(1), element: <RetiredRouteRedirect to={to} /> }),
+)
 
 /**
  * Owner-gates a legacy redirect that lands inside `/admin` (mezo-d5iy.17). The two entries
@@ -266,8 +302,6 @@ export const routes: RouteObject[] = [
       // current faces until their own F3 slices land) — the same idiom the Mezo
       // (mezo-d20.5.1) and Én (mezo-d20.6.1) tabs took.
       { path: 'fuel', element: <FuelMaiPage /> },
-      // The hub's Logolás hero tile → the stacked-window logging page (mezo-byo1).
-      { path: 'fuel/log', element: <FuelLogPage /> },
       // A blokk-CTA-k saját logoló oldala (mezo-bq2t) — a kontextus az URL-ben él (d/w/ai).
       { path: 'fuel/log/uj', element: <FuelLogNewPage /> },
       // Fuel Titanium S1b (mezo-33k6): az étkezés AI értékelése saját oldalon — A11.
@@ -275,26 +309,15 @@ export const routes: RouteObject[] = [
       { path: 'fuel/etkezes/:id/ertekeles', element: <FuelMealScorePage /> },
       // Fuel Titanium S1b (mezo-33k6): egy logolt étkezés részletei — A10/A14.
       { path: 'fuel/etkezes/:id', element: <FuelMealDetailPage /> },
-      // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
-      { path: 'fuel/plan', element: <FuelPlanPage /> },
       // Fuel Titanium S0 (mezo-o6uv): a két új cél route-ja — a tartalom S3/S4.
       { path: 'fuel/trendek', element: <FuelTrendekPage /> },
       { path: 'fuel/konyha', element: <FuelKonyhaPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
       { path: 'fuel/stack/protocol', element: <FuelStackProtocolPage /> },
-      { path: 'fuel/stack/today', element: <FuelStackTodayPage /> },
-      { path: 'fuel/stack/meals', element: <FuelStackMealsPage /> },
-      { path: 'fuel/stack/manage', element: <FuelStackManagePage /> },
-      { path: 'fuel/stack/manage/protocol', element: <FuelStackManageProtocolPage /> },
-      { path: 'fuel/stack/manage/timing', element: <FuelStackManageTimingPage /> },
-      { path: 'fuel/stack/manage/meals', element: <FuelStackManageMealsPage /> },
       { path: 'fuel/stack/manage/add', element: <FuelStackAddPage /> },
       { path: 'fuel/kamra', element: <FuelKamraPage /> },
       { path: 'fuel/kamra/:id', element: <KamraItemDetailPage /> },
       { path: 'fuel/gyogyszer', element: <FuelMedicationPage /> },
-      // Napló — the hub's 6th tile. Week-centric trend depth is F3.6 (+ the F6.2
-      // backend series); this route is its honest destination today.
-      { path: 'fuel/naplo', element: <FuelNaploPage /> },
       // `new` is listed before `:id` for clarity (React Router ranks static over dynamic).
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
       // Receptműhely (mezo-92pb) — static, so it must precede `:id`; `?recipeId=` seeds it.
@@ -306,6 +329,8 @@ export const routes: RouteObject[] = [
       // dedicated slot-template editor (mezo-7102).
       { path: 'fuel/settings', element: <FuelSettingsPage /> },
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
+      // Fuel Titanium S5 (mezo-qt5q): a leváltott Fuel-útvonalak redirectjei — `FUEL_RETIRED_REDIRECTS`.
+      ...fuelRetiredRedirectRoutes,
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
       // fuel/recipes/:id above (no Insights sub-nav chrome).
       { path: 'mezo/patterns/:pairKey', element: <PatternDetailPage /> },

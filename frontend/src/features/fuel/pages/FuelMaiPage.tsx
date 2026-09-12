@@ -173,10 +173,12 @@ export function FuelMaiPage() {
   const { cycle } = useMedication()
   const medLine = cycle.cycleDay > 0 ? `D${cycle.cycleDay} · ${cycle.phaseLabel}` : undefined
 
-  // Napló: today's own AI average off the logged meals — no fabricated 0 when nothing
-  // is scored yet (`aiAverage` returns null and the line vanishes).
+  // Trendek line: today's own AI average off the logged meals — no fabricated 0 when nothing
+  // is scored yet (`aiAverage` returns null, and the weekly protein line takes over).
+  // S5 (mezo-qt5q): ez a szám a visszavont Napló-csempe egyetlen saját jele volt; a lap a
+  // Trendekbe olvadt (C5), tehát a jel is a Trendek-csempére költözött — nem vész el.
   const todayAvg = aiAverage(fuel.meals.map(m => (m.score != null ? Math.round(m.score * 100) : null)))
-  const naploLine = todayAvg == null ? undefined : `AI-átlag ${todayAvg}`
+  const trendekLine = todayAvg == null ? tervLine : `AI-átlag ${todayAvg}`
 
   return (
     <div className="fh-hub">
@@ -237,12 +239,13 @@ export function FuelMaiPage() {
         </button>
 
         {/* A tegnapi pótolható ablakok csalija — a visszavont Logolás-csempe EGYETLEN saját
-            feladata, megtartva: a /fuel/log?d= ajtó nyitva marad (a lap kivezetése S5). */}
+            feladata, megtartva. S5 (mezo-qt5q): a `/fuel/log` lap kivezetve, a pótlás ajtaja
+            MAGA a Mai lapozója (`/fuel?d=`) — ugyanaz a nap, egy redirect nélkül. */}
         {/* Csak a mai nézetben csali: egy visszalapozott napon a lapozó MAGA a pótlás útja. */}
         {!past && !yPending && yMissed > 0 && (
           <button type="button" className="fmx-pastchip rise" style={{ '--d': '130ms' } as React.CSSProperties}
             aria-label={`Pótlás · ${huMonthDay(yesterday).toLowerCase()}. · ${yMissed} ablak pótolható`}
-            onClick={() => navigate(`/fuel/log?d=${yesterday}`)}>
+            onClick={() => navigate(`/fuel?d=${yesterday}`)}>
             ↺ {huMonthDay(yesterday).toLowerCase()}. · {yMissed} ablak pótolható
           </button>
         )}
@@ -253,9 +256,14 @@ export function FuelMaiPage() {
           <FuelWaterModule date={date} currentMl={fuel.consumed.water} targetMl={fuel.targets.water} />
         </div>
 
+        {/* S5 (mezo-qt5q): a csempe-sáv MINDEN ajtaja élő lapra nyílik. A `Terv` (`/fuel/plan`,
+            C1) és a `Napló` (`/fuel/naplo`, C5) csempe EGY Trendek-csempévé olvadt, mert mind a
+            két lap a Trendekbe költözött — két csempe ugyanarra a lapra félrevezető lenne. A
+            Trendek/Konyha/Kiegészítők hármas egyébként a fül-sávból (navModel) is elérhető; ezek
+            a csempék a lapon belüli rövidítések, a saját élő adat-soraikkal. */}
         <Mosaic>
-          <Tile wash="white" icon="i-rend" eyebrow="Terv" delayMs={160}
-            line={tervLine} onClick={() => navigate('/fuel/plan')} aria-label="Terv" />
+          <Tile wash="white" icon="i-trend" eyebrow="Trendek" delayMs={160}
+            line={trendekLine} onClick={() => navigate('/fuel/trendek')} aria-label="Trendek" />
           <Tile wash="sage" icon="i-stack" eyebrow="Stack" delayMs={200} className="fh-eb-sage"
             line={stackLine} onClick={() => navigate('/fuel/stack')} aria-label="Stack" />
           <Tile wash="coral" icon="i-recept" eyebrow="Receptek" delayMs={240} className="fh-eb-coral"
@@ -264,8 +272,6 @@ export function FuelMaiPage() {
             line={kamraLine} onClick={() => navigate('/fuel/kamra')} aria-label="Kamra" />
           <Tile wash="lav" icon="i-injekcio" eyebrow="Gyógyszer" delayMs={320} className="fh-eb-lav"
             line={medLine} onClick={() => navigate('/fuel/gyogyszer')} aria-label="Gyógyszer" />
-          <Tile wash="sky" icon="i-naplo" eyebrow="Napló" delayMs={360} className="fh-eb-sky"
-            line={naploLine} onClick={() => navigate('/fuel/naplo')} aria-label="Napló" />
         </Mosaic>
 
         {/* A16 (mezo-33k6): a beállítás CSENDES SAROK a lap alján (owner, spec 7) — nem csempe

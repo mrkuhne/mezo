@@ -136,8 +136,9 @@ test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → ban
 
 // ── the Titanium energy hero (Fuel Titanium S1a, mezo-33k6 — manifest A1/A2/A15) ──────
 // The pre-Titanium keret-hero (`.khero-*`: the consumed-kcal numeral, the segmented day-bar,
-// the three energy chips) is GONE from this page; its own contracts live on in
-// KeretHero.test.tsx + FuelLogPage.test.tsx, which still render it on /fuel/log.
+// the three energy chips) is GONE from this page. S5 (mezo-qt5q) retired its last host
+// (`/fuel/log`), so `KeretHero.tsx` went with the page — the day's energy contract now lives
+// ONLY here, on `FuelEnergyHero` (see the hero block below).
 
 // A1/A2/A15 (mezo-33k6): a Mai teteje a Titán energiaműszer. A régi KeretHero elment.
 test('a Mai a Titán energia-heroval nyit', () => {
@@ -200,8 +201,8 @@ test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet an
 
 // ── the Logolás hero tile (mezo-byo1 — the swimlane's successor) ─────────────
 // The per-window logging behaviors (slot seeding, Pótold, AI arm, out-of-window,
-// score chips) moved to /fuel/log and are covered by FuelLogPage.test.tsx; the hub
-// carries ONE live door whose face follows the same WindowLaneVM.
+// score chips) live on the `/fuel/log/uj` logger (FuelLogNewPage.test.tsx) since S1c; the hub
+// carries the blocks whose face follows the same WindowLaneVM.
 
 const DONE_REGGELI: FuelSlot = {
   time: '09:15', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
@@ -296,7 +297,8 @@ test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?
   // A chip a blokkok MELLETT áll, sosem beágyazva (nested button nincs).
   expect(container.querySelector('.fmx-blocks')!.contains(chip)).toBe(false)
   await userEvent.click(chip)
-  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log?d=${yesterday}`)
+  // S5 (mezo-qt5q): a pótlás ajtaja a Mai lapozója — a `/fuel/log` lap megszűnt.
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel?d=${yesterday}`)
 })
 
 test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
@@ -405,35 +407,56 @@ test('a víz-modul gyorsgombja a napot írja, és a hero gyűrűje követi', asy
 
 // ── the 6-tile mosaic ────────────────────────────────────────────────────────
 
-test('the mosaic carries exactly the six Fuel tiles, each navigating to its own page', async () => {
+// S5 (mezo-qt5q): MINDEN csempe ÉLŐ lapra nyílik — egyik sem fut bele egy redirectbe. A `Terv`
+// (`/fuel/plan`) és a `Napló` (`/fuel/naplo`) csempe egy Trendek-csempévé olvadt, mert mind a két
+// lap a Trendekbe költözött (C1/C5); két csempe ugyanarra a lapra félrevezető lenne.
+test('the mosaic carries exactly the five Fuel tiles, each navigating to its own LIVE page', async () => {
   renderView()
-  for (const [label, path] of [
-    ['Terv', '/fuel/plan'],
+  const expected = [
+    ['Trendek', '/fuel/trendek'],
     ['Stack', '/fuel/stack'],
     ['Receptek', '/fuel/recipes'],
     ['Kamra', '/fuel/kamra'],
     ['Gyógyszer', '/fuel/gyogyszer'],
-    ['Napló', '/fuel/naplo'],
-  ] as const) {
+  ] as const
+  for (const [label, path] of expected) {
     const tile = screen.getByRole('button', { name: label })
     fireEvent.click(tile)
     expect(screen.getByTestId('loc').textContent).toBe(path)
   }
+  // A retirált két ajtó NEM él tovább csempeként.
+  expect(screen.queryByRole('button', { name: 'Terv' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Napló' })).toBeNull()
 })
 
-test('tile lines come from the pages\' own data — a Terv line, a Kamra count, no fabricated numbers', () => {
+test('tile lines come from the pages\' own data — a Kamra count, no fabricated numbers', () => {
   renderView()
-  expect(screen.getByRole('button', { name: 'Terv' })).toHaveTextContent(/^Terv.*Protein \d\/7 nap$/)
   expect(screen.getByRole('button', { name: 'Kamra' })).toHaveTextContent(/\d+ tétel/)
 })
 
-test('a Napló line only appears once something is scored today — never a fake AI average', () => {
+// A napi AI-átlag a visszavont Napló-csempe EGYETLEN saját jele volt — S5 (mezo-qt5q) a
+// Trendek-csempére vitte át, és az őszinte-null szabály VÁLTOZATLAN: pontozatlan napon nem
+// kitalált nulla áll ott, hanem a heti protein-sor veszi át a helyét.
+test('a Trendek-csempe AI-átlagot ír, amint van pontozott étkezés — kitalált nulla sosem', () => {
   hoisted.overrideSlots = [
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'now', kcal: 600, p: 35, c: 60, f: 18 },
   ]
   renderView()
   // The mock day's own logged meals ARE scored, so the line is present and honest.
-  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(/AI-átlag \d+/)
+  const tile = screen.getByRole('button', { name: 'Trendek' })
+  expect(tile).toHaveTextContent(/AI-átlag \d+/)
+  expect(tile).not.toHaveTextContent(/AI-átlag 0\b/)
+})
+
+test('pontozatlan napon a Trendek-csempe a heti protein-sort írja, nem AI-átlag nullát', () => {
+  // Egy őszintén ÜRES nap (a mock minden napra ugyanazt a seedet adná) — nincs pontozott
+  // étkezés, tehát nincs AI-átlag sem.
+  const empty = addDays(localDateString(), -2)
+  hoisted.emptyDates = [empty]
+  renderView(`/fuel?d=${empty}`)
+  const tile = screen.getByRole('button', { name: 'Trendek' })
+  expect(tile).toHaveTextContent(/Protein \d\/7 nap/)
+  expect(tile).not.toHaveTextContent(/AI-átlag/)
 })
 
 // ── the quiet settings corner (Fuel Titanium S1d, mezo-33k6 — manifest A16) ───

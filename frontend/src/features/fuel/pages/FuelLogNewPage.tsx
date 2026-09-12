@@ -62,9 +62,11 @@ export function FuelLogNewPage() {
     ? { source: 'recipe' as const, recipeId: slot.suggestedRecipeId }
     : null
 
-  // Mentés és Mégse ugyanoda tér vissza: a lista, ugyanazon a napon. `replace`, hogy a
+  // Mentés és Mégse ugyanoda tér vissza: a napi lista, ugyanazon a napon. `replace`, hogy a
   // böngésző-vissza ne dobjon vissza a már lezárt composerbe.
-  const back = () => navigate(`/fuel/log${past ? `?d=${date}` : ''}`, { replace: true })
+  // S5 (mezo-qt5q): a napi lista a MAI lap (`/fuel`) — a `/fuel/log` oldal megszűnt, és egy
+  // belső navigáció nem futhat bele a redirectjébe.
+  const back = () => navigate(`/fuel${past ? `?d=${date}` : ''}`, { replace: true })
 
   const dayLabel = `${huMonthDay(date).toLowerCase()}.`
 

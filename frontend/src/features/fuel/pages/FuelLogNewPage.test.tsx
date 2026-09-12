@@ -77,7 +77,7 @@ function renderAt(entry: string) {
   router = createMemoryRouter(
     [
       { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
-      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+      { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
   )
@@ -92,7 +92,7 @@ function renderAtSharedClient(entry: string) {
   router = createMemoryRouter(
     [
       { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
-      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+      { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
   )
@@ -263,7 +263,7 @@ test('Mégse a listára visz vissza ugyanarra a napra', async () => {
   const y = addDays(localDateString(), -1)
   renderAt(`/fuel/log/uj?d=${y}`)
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
-  expect(currentPath()).toBe(`/fuel/log?d=${y}`)
+  expect(currentPath()).toBe(`/fuel?d=${y}`)
   expect(screen.getByText('LOG PAGE PROBE')).toBeInTheDocument()
 })
 
@@ -271,14 +271,14 @@ test('Mégse mai napon a lista alap-URL-jére visz', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
-  expect(currentPath()).toBe('/fuel/log')
+  expect(currentPath()).toBe('/fuel')
 })
 
 test('a ‹ Vissza fejléc-gomb is a listára visz', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
-  expect(currentPath()).toBe('/fuel/log')
+  expect(currentPath()).toBe('/fuel')
 })
 
 // ── A múltbeli könyvelés IGAZSÁGA (a FuelLogPage.test.tsx „múltbeli mentés a választott nap

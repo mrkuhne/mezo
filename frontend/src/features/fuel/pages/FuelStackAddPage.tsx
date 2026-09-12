@@ -179,12 +179,14 @@ export function FuelStackAddPage() {
     }
   }
 
-  const backLabel = step === 1 ? '‹ Stack' : '‹ Kezelés'
+  // S5 (mezo-qt5q): a 2–3. lépés visszaútja a Protokoll-lap (a Kezelés otthona), nem a
+  // leváltott `/fuel/stack/manage`.
+  const backLabel = step === 1 ? '‹ Stack' : '‹ Protokoll'
 
   return (
     <StackPageScaffold
       tone="lav"
-      backTo={step === 1 ? '/fuel/stack' : '/fuel/stack/manage'}
+      backTo={step === 1 ? '/fuel/stack' : '/fuel/stack/protocol'}
       backLabel={backLabel}
       icon="i-beallitas" name="Új elem beállítása"
       big={`${step}/3`} sub={STEPS[step - 1]}
