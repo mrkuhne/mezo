@@ -3343,56 +3343,9 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                        margin-top: 12px; padding: 11px; border: 1.5px dashed var(--line);
                        border-radius: var(--r-lg); color: var(--faint); font-size: 12px; font-weight: 600; }
 
-/* ═════════ Fuel Keret-hero — .khero family (mezo-c9t5, keret-hero Task 2) ═════════
-   Replaces the belt (below) atop FuelMaiPage, above the window-river sky: a halo-sage band
-   (no card frame) — a 2s ease-out count-up remaining-kcal number (KeretHero.tsx drives the
-   rAF; this CSS is static layout only), the "eddig X / Y · n/m ablak" of-line, a segmented
-   day-bar with a gold now-marker, the 3 energy chips, and the 5 macro/rost/víz progress
-   rings. Ring fill is a pure CSS `stroke-dashoffset` transition — KeretHero.tsx flips
-   `.khero-ring-fill`'s dashoffset from full-circumference (0%) to its target one frame after
-   mount, and the transition below carries the sweep; :where()-wrapped so the reduced-motion
-   override wins without !important (the `::where(.isl…)` precedent above). Design:
-   docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2, mockup asset
-   docs/superpowers/specs/assets/2026-08-09-fuel-keret-hero-mockup.html. */
-.khero { background: var(--halo-sage); padding: 16px 18px 12px; text-align: center; }
-.khero-n { font-family: var(--ff-display); font-size: 46px; font-weight: 200; letter-spacing: -0.04em;
-           line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
-.khero-u { font-size: 18px; font-weight: 300; color: var(--faint); margin-left: 5px; }
-.khero-of { font-size: 11.5px; color: var(--sub); font-weight: 500; margin-top: 5px; }
-.khero-of b { color: var(--sage-deep); font-weight: 700; }
-
-.khero-dayseg { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px auto 0;
-                position: relative; background: var(--surface-recess); max-width: 280px; }
-.khero-seg { display: block; height: 100%; background: var(--sage); }
-.khero-seg-alt { background: var(--sage-deep); }
-.khero-mark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--accent-base);
-              border-radius: 1px; box-shadow: 0 0 0 2px rgba(212, 168, 83, 0.25); }
-
-.khero-chips { display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
-.khero-chip { font-family: inherit; font-size: 10.5px; font-weight: 600; color: var(--sub);
-              background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-full);
-              padding: 4px 11px; cursor: pointer; }
-.khero-chip b { font-weight: 800; color: var(--ink); }
-.khero-chip-goal b { color: var(--sage-deep); }
-
-.khero-rings { display: flex; justify-content: center; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
-.khero-ring { text-align: center; border: none; background: none; padding: 0; font-family: inherit; }
-.khero-ring-water { cursor: pointer; }
-.khero-ring-water:active .khero-ringwrap { transform: scale(0.95); transition: transform 0.12s; }
-.khero-ring svg { transform: rotate(-90deg); }
-.khero-ring-track { stroke: var(--surface-recess); }
-:where(.khero-ring-fill) { transition: stroke-dashoffset 2s cubic-bezier(.2, .8, .2, 1); }
-.khero-ringwrap { position: relative; width: 58px; height: 58px; margin: 0 auto; }
-.khero-pctv { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-              font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
-.khero-pctv em { font-style: normal; font-size: 8px; font-weight: 600; color: var(--faint); margin-left: 1px; }
-.khero-lb { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
-.khero-gv { font-size: 10px; font-weight: 700; margin-top: 1px; color: var(--ink); }
-.khero-gv em { font-style: normal; font-weight: 500; color: var(--faint); }
-
-@media (prefers-reduced-motion: reduce) {
-  :where(.khero-ring-fill) { transition: none; }
-}
+/* A `.khero-*` család KIVEZETVE (Fuel Titanium S5, mezo-qt5q): a `KeretHero.tsx` utolsó
+   hordozója, a `/fuel/log` lap megszűnt — a Mai energia-műszere a `.fmx-hero`
+   (`FuelEnergyHero` + `FuelMacroRings`) saját családja. */
 
 /* ═════════ Fuel done-window capsule — .kdone family (mezo-c9t5, keret-hero Task 3) ═════════
    The day's done meal windows, merged into ONE expandable capsule sitting first in the sky
@@ -7374,119 +7327,17 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-hero { border-radius: 21px; overflow: hidden;
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
 
-/* ═══ Logolás hero tile (mezo-byo1 — the swimlane's successor; prototype
-   fuel-logolas.html .logtile ×1.18). The stamp/ring/score-chip classes below it
-   survive the lane: WindowBlock on /fuel/log wears them. ═══ */
-.fh-logtile { position: relative; display: block; width: 100%; text-align: left; cursor: pointer;
-  border-radius: 22px; padding: 14px 15px; font-family: inherit; color: var(--text-primary);
-  background: var(--mz-wash-band); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow-coral);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.fh-logtile:active { transform: scale(0.975); }
-.fh-logtile.is-alldone { background: var(--mz-qdone-bg); box-shadow: var(--mz-shadow-sage); }
-.fh-lt-eyebrow { display: flex; align-items: center; gap: 7px; font-size: 9.5px; font-weight: 800;
-  letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-cell-coral-ink); }
-.fh-logtile.is-alldone .fh-lt-eyebrow { color: var(--mz-cell-sage-ink); }
-.fh-lt-nowdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
-.fh-lt-main { display: flex; align-items: center; gap: 13px; margin-top: 8px; }
-.fh-lt-txt { flex: 1; min-width: 0; display: block; }
-.fh-lt-big { display: block; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
-.fh-lt-sub { display: block; font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); margin-top: 2px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fh-lt-chev { margin-left: auto; color: var(--mz-ink-mut); font-size: 17px; flex: none; }
-.fh-lt-dots { display: flex; gap: 5px; margin-top: 11px; }
-.fh-lt-dots i { flex: 1; height: 6px; border-radius: 3px; background: rgba(43, 33, 24, 0.09); }
-.fh-lt-dots i.is-f { background: var(--dv-sage, var(--sage)); }
-.fh-lt-dots i.is-nw { background: var(--mz-fh-now-ring); }
-.fh-lt-dots i.is-ms { background: color-mix(in srgb, var(--mz-cell-amber-ink) 55%, transparent); }
-.fh-lt-dline { display: block; font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft);
-  margin-top: 6px; font-variant-numeric: tabular-nums; }
-@keyframes fh-lt-nowpulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 74, 0); }
-  50% { box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.3); }
-}
-.fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: fh-lt-nowpulse 2.6s ease-in-out 1.2s infinite; }
+/* A `.fh-logtile` / `.fh-lt-*` család KIVEZETVE (Fuel Titanium S5, mezo-qt5q): a
+   `FuelLogHeroTile` helyét S1b-ben a nap étkezés-blokkjai vették át (`.fmx-blk`), a
+   „tegnap pótolható" csali pedig a saját `.fmx-pastchip` sorát viseli. */
 
-/* the tile's own wrapper (mezo-1j3z) — the button stays the sole `.fh-logtile` root;
-   the hub-csali past-day chip sits below it, a sibling, never a nested button. */
-.fh-logtile-wrap { display: block; }
-.fh-lt-pastwrap { display: block; margin-top: 9px; }
-.fh-lt-past { border: none; font-family: inherit; cursor: pointer; display: inline-flex; gap: 5px;
-  align-items: center; min-height: 44px; font-size: 9.5px; font-weight: 700; color: var(--mz-cell-amber-ink);
-  background: var(--mz-cell-amber-bg); border-radius: 999px; padding: 5px 12px; }
-
-.fh-wstamp { margin-left: auto; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
-  border-radius: 6px; padding: 2px 6px; flex: none; }
-.fh-st-now { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
-.fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
-.fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
-
-/* 44px SVG macro rings on the /fuel/log block (Logolás 2.1, mezo-zeeq; prototype
-   fuel-logolas-2.1.html `.m`) — stroke-dashoffset transition, the .khero-ring-fill recipe;
-   the letter sits in the hole, the grams under it, then the share of the DAILY target. */
-.fh-wring { display: grid; gap: 1px; justify-items: center; flex: 1; min-width: 0; }
-.fh-wring-w { position: relative; width: 44px; height: 44px; }
-.fh-wring-w svg { transform: rotate(-90deg); display: block; }
-.fh-wring-t { fill: none; stroke: var(--mz-gbar-bg); }
-:where(.fh-wring-f) { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.4s cubic-bezier(.2, .8, .2, 1); }
-.fh-wring-w i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal;
-  font-size: 11px; font-weight: 800; color: var(--mz-ink-soft); }
-.fh-wring b { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-top: 3px;
-  font-variant-numeric: tabular-nums; }
-.fh-wring b em { font-style: normal; font-size: 9px; font-weight: 600; color: var(--mz-ink-mut); }
-.fh-wring small { font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.flog-rings.is-done { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px;
-  padding-top: 10px; border-top: 1px solid var(--border-subtle); }
-/* a planned window's 3 rings stay compact beside the kcal cell */
-.flog-data .fh-wring { flex: none; }
-.flog-data .fh-wring-w { width: 34px; height: 34px; }
-.flog-data .fh-wring-w svg { width: 34px; height: 34px; }
-.flog-data .fh-wring b { font-size: 11px; }
-.flog-data .fh-wring small { display: none; }
-
-.fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
-  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
-.fh-scorech.is-mid { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
-.fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
-button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
-.flog-srow .fh-scorech.is-pend { min-height: 36px; display: inline-flex; align-items: center; padding: 3px 14px; font-size: 11px; }
-
-/* AI score pill (Logolás 2.1, mezo-zeeq): 30px ring + 19px number + tone word + chevron. It
-   nudges every 2.6s (the fh-lt-nowpulse cadence) with a tone-coloured halo so it reads as
-   tappable — the user's explicit ask; :active and reduced motion stop it (see the .fh-*
-   reduced-motion block below). */
-.fh-aisc { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px 4px 5px; border-radius: 999px;
-  background: var(--surface-card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle);
-  color: var(--text-primary); transform-origin: 40% 50%; border: none; font-family: inherit; text-align: left; }
-.fh-aisc.is-tap { cursor: pointer; min-height: 44px; }
-.fh-aisc-r { position: relative; width: 30px; height: 30px; flex: none; }
-.fh-aisc-r svg { transform: rotate(-90deg); display: block; }
-.fh-aisc-t { fill: none; stroke: var(--mz-gbar-bg); }
-:where(.fh-aisc-f) { fill: none; stroke-linecap: round; stroke: var(--sc); transition: stroke-dashoffset 1.2s cubic-bezier(.2, .8, .2, 1); }
-.fh-aisc-r i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 10px; }
-.fh-aisc-t2 { display: grid; line-height: 1.1; }
-.fh-aisc-t2 b { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.fh-aisc-t2 small { font-size: 8.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sc-ink); }
-.fh-aisc-chev { font-size: 16px; color: var(--mz-ink-mut); margin-left: -2px; }
-.fh-aisc.s-hi { --sc: var(--dv-sage); --sc-ink: var(--mz-cell-sage-ink); }
-.fh-aisc.s-md { --sc: var(--dv-amber); --sc-ink: var(--mz-cell-amber-ink); }
-.fh-aisc.s-lo { --sc: var(--dv-coral); --sc-ink: var(--mz-cell-coral-ink); }
-@keyframes fh-aisc-nudge {
-  0%, 14%, 100% { transform: rotate(0) scale(1); }
-  3% { transform: rotate(-5deg) scale(1.05); }
-  6% { transform: rotate(5deg) scale(1.06); }
-  9% { transform: rotate(-3deg) scale(1.04); }
-  12% { transform: rotate(2deg) scale(1.02); }
-}
-@keyframes fh-aisc-halo {
-  0%, 14%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle); }
-  6% { box-shadow: 0 4px 18px color-mix(in srgb, var(--sc) 45%, transparent), inset 0 0 0 1.5px var(--sc); }
-}
-.fh-aisc.is-tap { animation: fh-aisc-nudge 2.6s ease-in-out 0.3s infinite, fh-aisc-halo 2.6s ease-in-out 0.3s infinite; }
-.fh-aisc.is-tap:active { animation: none; transform: scale(0.96); }
+/* A `WindowBlock` családjai (`.fh-wstamp`, `.fh-st-*`, `.fh-wring*`, `.fh-aisc*`) KIVEZETVE
+   (Fuel Titanium S5, mezo-qt5q): a `WindowBlock.tsx` egyetlen hordozója, a `/fuel/log` lap
+   megszűnt — a Mai blokkjai (`FuelMealBlocks`) a saját `.fmx-*` családjukat viselik. */
 
 /* Context chip — the role the meal was SCORED under: Standard / Pre-workout / Post-workout
-   (mezo-zeeq; amber = pre, lavender = post, the Stack-zone cell tones). */
+   (mezo-zeeq; amber = pre, lavender = post, the Stack-zone cell tones). S5 (mezo-qt5q): ez az
+   EGYETLEN család, ami túlélte a WindowBlock kivezetését — a `MealScoreSheet` is ezt viseli. */
 .fh-ctx { display: inline-flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em;
   text-transform: uppercase; padding: 3px 8px; border-radius: 999px; flex: none; white-space: nowrap; }
 .fh-ctx i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
@@ -7513,20 +7364,10 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .fh-mzmsg-meta { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
 
-.fh-naplorow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 9px; border-radius: 18px;
-  padding: 11px 13px; margin-bottom: 9px; background: var(--mz-wash-white);
-  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
-.fh-naplorow-t { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; }
-.fh-naplorow-x { width: 100%; font-size: 10px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
-.fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
+/* A `.fh-naplorow*` / `.fh-naplo-empty` család KIVEZETVE (Fuel Titanium S5, mezo-qt5q): a
+   Napló lap a Trendekbe olvadt (C5), a napi minőség a `.ftx-*` családban él. */
 
-@media (prefers-reduced-motion: reduce) {
-  .fh-logtile { transition: none; }
-  .fh-logtile:active { transform: none; }
-  .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
-  .fh-aisc.is-tap { animation: none; }
-  :where(.fh-wring-f), :where(.fh-aisc-f) { transition: none; }
-}
+/* A fenti három család reduced-motion ága velük együtt ment (mezo-qt5q). */
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
    mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens
    above) rather than the prototype's own hand-rolled hexes — Stack has no head/body split in
@@ -7820,86 +7661,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .logflow-srct { transition: none; }
 }
 
-/* ── Fuel · /fuel/log stacked window blocks (mezo-byo1) — prototype
-   fuel-logolas.html `.logblk` ×1.18 (330→390px frame). One full-width block per
-   eating window; the Logold CTA expands the MealComposer IN PLACE via the
-   grid-rows 0fr→1fr well. State washes: done sage, now coral ring, missed
-   dashed amber (never punitive red), free/empty dashed neutral. ── */
-/* The hub's KeretHero as the page hero (Logolás 2.1, mezo-zeeq): the page's own coral/gold
-   tone already washes the top, so the hero's halo-sage band is dropped here. */
-.flog-khero .khero { background: none; padding-top: 0; }
-/* Day stepper + Pótlás mood + the past-day closed card (mezo-1j3z) — prototype
-   fuel-log-multinap.html `.daysw`/`.pastnote`/`.dayclosed`, tokens translated. */
-.flog-daysw { display: flex; align-items: center; gap: 7px; justify-content: center; margin: 2px 0 6px; }
-.flog-daysw button {
-  width: 28px; height: 28px; border-radius: 50%; border: 0.5px solid var(--border-subtle);
-  background: var(--surface-card); font-family: inherit; font-size: 14px; color: var(--text-secondary);
-  cursor: pointer; display: grid; place-items: center; padding: 0 0 1px; box-shadow: var(--shadow-xs);
-}
-.flog-daysw button:disabled { opacity: 0.3; box-shadow: none; cursor: default; }
-.flog-dlbl {
-  min-width: 128px; text-align: center; border-radius: 999px; padding: 4px 14px 5px;
-  background: var(--surface-card); border: 0.5px solid var(--border-subtle);
-}
-.flog-dlbl b { display: block; font-size: 12px; font-weight: 800; line-height: 1.25; }
-.flog-dlbl small {
-  display: block; font-size: 7.5px; font-weight: 700; color: var(--text-tertiary);
-  letter-spacing: 0.12em; text-transform: uppercase;
-}
-.flog-pastnote {
-  display: flex; gap: 6px; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 600; color: var(--mz-cell-amber-ink); margin-top: 5px;
-}
-.flog-pastnote i { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); flex: none; }
-.flog-dayclosed { text-align: center; padding: 4px 12px 10px; }
-.flog-dayclosed b { display: block; font-size: 13.5px; font-weight: 800; color: var(--mz-cell-sage-ink); }
-.flog-dayclosed span { font-size: 10px; color: var(--text-secondary); }
-.flog-blk {
-  border-radius: 22px; margin-bottom: 12px; overflow: hidden;
-  background: var(--surface-card); border: 0.5px solid var(--border-subtle);
-  box-shadow: var(--mz-shadow);
-}
-.flog-blk.is-done { background: var(--mz-wash-sage); }
-.flog-blk.is-now { border: 1px solid var(--coral); box-shadow: var(--mz-shadow-coral); }
-.flog-blk.is-missed {
-  border: 1.2px dashed color-mix(in srgb, var(--mz-cell-amber-ink, #A8801F) 55%, transparent);
-  box-shadow: none;
-}
-.flog-blk.is-free { border: 1.2px dashed var(--border-strong, rgba(43, 33, 24, 0.2)); box-shadow: none; }
-.flog-in { padding: 12px 14px 13px; }
-.flog-top { display: flex; align-items: center; gap: 7px; }
-.flog-top time { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-.flog-lbl { font-size: 8.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-tertiary); }
-.flog-top .fh-wstamp { margin-left: auto; }
-.flog-main { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-.flog-icon {
-  width: 50px; height: 50px; border-radius: 16px; flex: none; display: grid; place-items: center;
-  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
-.flog-txt { flex: 1; min-width: 0; }
-.flog-name {
-  font-size: 15px; font-weight: 700; line-height: 1.3;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.flog-name.is-ghost { color: var(--text-tertiary); font-weight: 600; }
-.flog-meta { font-size: 9.5px; color: var(--text-secondary); margin-top: 3px; font-variant-numeric: tabular-nums; }
-.flog-data { flex: none; display: grid; gap: 6px; justify-items: center; margin-left: auto; }
-.flog-kcal {
-  border-radius: 12px; padding: 4px 12px 3px; text-align: center;
-  background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
-.flog-kcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.flog-kcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 3px; }
-.flog-rings { display: flex; gap: 7px; }
-/* done card: score pill + kcal on ONE row under the name (mezo-zeeq) */
-.flog-srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
-.flog-srow .flog-kcal { background: none; box-shadow: none; padding: 0; text-align: right; line-height: 1; }
-.flog-srow .flog-kcal b { font-size: 24px; letter-spacing: -0.03em; }
-.flog-srow .flog-kcal small { font-size: 8px; margin-left: 4px; }
-.flog-blk.is-missed .flog-data { opacity: 0.7; }
-.flog-ctas { display: flex; gap: 8px; margin-top: 10px; }
-.flog-ctas .cta-primary { flex: 1; padding: 8px 0; justify-content: center; }
-.flog-ctas .cta-ghost { flex: 0.6; padding: 8px 0; justify-content: center; }
+/* A `.flog-*` család (a `/fuel/log` lap teljes stíluskészlete) KIVEZETVE (Fuel Titanium S5,
+   mezo-qt5q): a lapot a Mai váltotta (A10/A13) — a nap-léptető a `.fmx-daysw`, a blokkok a
+   `.fmx-blk`. */
 
 /* ═══ Score breakdown 2.1 (mezo-zeeq) — MealScoreSheet + RecipeScoreSheet body: tone hero,
    contribution ledger, collapsible dimension cards, gain cards. Prototype fuel-logolas-2.1.html
