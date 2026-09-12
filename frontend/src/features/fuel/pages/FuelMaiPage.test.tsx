@@ -381,6 +381,28 @@ test('a lapozás a ?d=-t írja, a mai nap pedig paraméter nélkül marad', asyn
   expect(screen.getByTestId('loc').textContent).toBe('/fuel')
 })
 
+// ── a víz-modul (Fuel Titanium S1d, mezo-33k6 — manifest A12) ────────────────
+// A víz a Mai-on MARAD (owner), első osztályú modulként a blokkok ALATT — a hero
+// víz-gyűrűje továbbra is a sheet ajtaja, a modul pedig a gyorsgombokat adja.
+
+test('a víz-modul a blokkok alatt, a mozaik előtt áll', () => {
+  const { container } = renderView()
+  const blocks = container.querySelector('.fmx-blocks')!
+  const water = container.querySelector('.fmx-water')!
+  const mosaic = container.querySelector('.mz-mosaic')!
+  expect(water).toBeInTheDocument()
+  expect(blocks.compareDocumentPosition(water) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(water.compareDocumentPosition(mosaic) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('a víz-modul gyorsgombja a napot írja, és a hero gyűrűje követi', async () => {
+  renderView()
+  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
+  await userEvent.click(screen.getByRole('button', { name: '+2,5 dl' }))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Víz logolása/ })
+    .getAttribute('aria-label')).not.toBe(before))
+})
+
 // ── the 6-tile mosaic ────────────────────────────────────────────────────────
 
 test('the mosaic carries exactly the six Fuel tiles, each navigating to its own page', async () => {

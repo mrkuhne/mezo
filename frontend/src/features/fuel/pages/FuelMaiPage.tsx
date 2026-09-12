@@ -80,6 +80,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
+import { FuelWaterModule } from '@/features/fuel/components/FuelWaterModule'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
@@ -243,6 +244,12 @@ export function FuelMaiPage() {
             ↺ {huMonthDay(yesterday).toLowerCase()}. · {yMissed} ablak pótolható
           </button>
         )}
+
+        {/* A12: a víz a Mai-on marad (owner) — a blokkok ALATT, gyorsgombokkal és a
+            session-alapú visszavonással. A hero víz-gyűrűje továbbra is a sheet ajtaja. */}
+        <div className="rise" style={{ '--d': '150ms' } as React.CSSProperties}>
+          <FuelWaterModule date={date} currentMl={fuel.consumed.water} targetMl={fuel.targets.water} />
+        </div>
 
         <Mosaic>
           <Tile wash="white" icon="i-rend" eyebrow="Terv" delayMs={160}

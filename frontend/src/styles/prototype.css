@@ -12039,6 +12039,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: var(--surface-recess); color: var(--sub);
   font-size: 12.5px; line-height: 1.6; text-align: center; }
 
+/* S1d (A12): a víz-modul. Ugyanaz a gyűrű-anatómia, mint a hero makró-gyűrűinél (a `.fmx-ring`
+   szabályok osztottak), mellette a pohár-léptékű gyorsgombok és a visszavonás. A cél alatti
+   érték SEMLEGES — sem szín, sem hang nem mond hibát. */
+.fmx-water { display: grid; gap: 11px; padding: 13px 14px; border-radius: 18px;
+  background: color-mix(in srgb, var(--sky) 9%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--sky) 22%, transparent); }
+.fmx-water-head { display: flex; align-items: center; gap: 11px; }
+.fmx-water-head .fmx-ico { width: 30px; height: 30px; flex: 0 0 auto; }
+.fmx-water-head .fmx-ico svg { width: 30px; height: 30px; }
+.fmx-water-head .fmx-ring { width: 58px; height: 58px; flex: 0 0 58px; margin-left: auto; }
+.fmx-water-head .fmx-ring strong { font-size: 15px; }
+.fmx-water-head .fmx-ring b { margin-top: 2px; font-size: 8px; }
+.fmx-water-copy { min-width: 0; flex: 1; }
+.fmx-water-copy strong { display: block; font-size: 15px; font-weight: 600; color: var(--ink); }
+.fmx-water-copy small { display: block; margin-top: 3px; font-size: 11px; color: var(--sub); }
+.fmx-water-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fmx-water-add { padding: 11px 0; border-radius: 13px; border: 1px solid var(--divider);
+  background: var(--surface-1); color: var(--sky); font-size: 13px; font-weight: 600;
+  transition: transform 0.12s; }
+.fmx-water-add:active { transform: scale(0.96); }
+.fmx-water-undo { justify-self: start; padding: 7px 12px; border-radius: 999px;
+  border: 1px dashed var(--divider); background: transparent; color: var(--sub); font-size: 11px; }
+
 /* Hero: koppintható, egyetlen tiszta üzenet — a matek az üvegdobozban lakik.
    (prototípus: fuel-pages.css `Hero: tappable…` + fuel-compact.css `.fuel-focus`/`.fuel-visual`) */
 .fmx-hero { padding: 3px 0 4px; text-align: center; }
@@ -12623,6 +12646,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-dim, .fmx-score-art, .fmx-score-glow { animation: none; }
   /* S1c (mezo-33k6): a logoló-héj mikrofon-lélegzése és a kereső lebegése kivezetve. */
   .fmx-mic, .fmx-mic:not(:disabled), .fmx-finder svg { animation: none; }
+  /* S1d (mezo-33k6): a víz-gyorsgomb nyomás-visszajelzése kivezetve. */
+  .fmx-water-add, .fmx-water-add:active { transform: none; transition: none; }
 }
 /* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
 
