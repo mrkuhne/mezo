@@ -33,22 +33,9 @@ afterEach(() => vi.unstubAllEnvs())
 describe('Stack read pages — mock', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  test('a teljes protokoll read-only sorrendet, eredetet és szerkesztési kijáratot mutat', async () => {
-    const { container } = renderPage('/fuel/stack/protocol')
-    expect(screen.getByText('Teljes protokoll')).toBeInTheDocument()
-    expect(screen.getByText('8 tétel')).toBeInTheDocument()
-    expect(screen.getByText('v3 · 86% bizalom')).toBeInTheDocument()
-    expect(screen.getByText('Kreatin monohidrát')).toBeInTheDocument()
-    expect(screen.getByText('5g')).toBeInTheDocument()
-    expect(screen.getByText(/Kreatin ébredés után/)).toBeInTheDocument()
-    expect(screen.getAllByText('auto').length).toBeGreaterThan(0)
-    expect(container.querySelector('use[href="#i-stack"]')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /bevétel jelölése/ })).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
-    expect(screen.getByTestId('location')).toHaveTextContent('/fuel/stack/manage/protocol')
-  })
-
-  test.each(['/fuel/stack/protocol', '/fuel/stack/today', '/fuel/stack/meals'])(
+  // S2 (mezo-g2vl): a Protokoll-oldal saját tesztfájlba került (FuelStackProtocolPage.test.tsx) —
+  // ott a D2/D3/D4/D7 szerződései élnek. Itt csak a Stack olvasó-oldalak maradtak.
+  test.each(['/fuel/stack/today', '/fuel/stack/meals'])(
     '%s visszalép a Stack hubra', async path => {
       renderPage(path)
       await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))

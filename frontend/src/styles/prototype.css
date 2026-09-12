@@ -12843,6 +12843,49 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-radius: 14px; border: 1px solid var(--divider); background: var(--surface-recess);
   font-size: 13px; font-weight: 600; color: var(--ink); }
 
+/* Protokoll-oldal (D2 · D3 · D4): kompakt, átfutható sorok egy 5–15 tételes stackhez — a
+   részlet és a SZERKESZTÉS egy koppintással mélyebben (StackItemSheet). */
+.fsx-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+  align-items: end; margin: 0 0 4px; padding: 13px 14px; border-radius: 17px;
+  border: 1px solid color-mix(in srgb, var(--sky) 26%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--sky) 12%, transparent),
+    var(--surface-1) 66%); }
+.fsx-summary strong { display: block; font-size: 26px; font-weight: 500; letter-spacing: -1px;
+  color: var(--ink); }
+.fsx-summary small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.35;
+  color: var(--sub); }
+
+.fsx-proto-group { margin: 0; padding: 2px 0 0; }
+.fsx-proto-title { display: flex; align-items: center; gap: 9px; padding: 0 2px 7px; }
+.fsx-proto-title strong { font-size: 14px; font-weight: 600; color: var(--ink); }
+.fsx-proto-title time { font-size: 11px; color: var(--sub); }
+.fsx-proto-title b { margin-left: auto; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--fsx-zone-color, var(--sage)) 72%, var(--ink)); }
+.fsx-proto-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.fsx-proto-line { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px;
+  padding: 10px 12px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--fsx-zone-color, var(--sage)) 22%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--fsx-zone-color, var(--sage)) 10%, transparent),
+    var(--surface-1) 70%);
+  text-align: left; color: var(--ink); }
+.fsx-proto-line-art { flex: 0 0 auto; }
+.fsx-proto-line-copy { flex: 1; min-width: 0; }
+.fsx-proto-line-copy strong { display: block; font-size: 13px; font-weight: 500; }
+.fsx-proto-line-copy small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
+.fsx-proto-line-copy em { display: block; margin-top: 4px; font-style: normal; font-size: 10.5px;
+  line-height: 1.5; color: var(--sub); }
+.fsx-proto-line-end { flex: 0 0 auto; text-align: right; }
+.fsx-proto-line-end b { display: block; font-size: 14px; font-weight: 600;
+  color: color-mix(in srgb, var(--fsx-zone-color, var(--sage)) 68%, var(--ink));
+  white-space: nowrap; }
+.fsx-proto-line-end small { display: block; margin-top: 2px; font-size: 9px; color: var(--sub); }
+
+.fsx-proto-meals { margin: 6px 0 0; padding: 12px 13px; border-radius: 17px;
+  border: 1px solid color-mix(in srgb, var(--coral) 24%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--coral) 11%, transparent),
+    var(--surface-1) 68%); --fsx-zone-color: var(--coral); }
+.fsx-proto-quiet { margin: 0; font-size: 12px; line-height: 1.6; color: var(--sub); }
+
 @media (prefers-reduced-motion: no-preference) {
   .fsx-glow { animation: fsx-glow 5s ease-in-out infinite; }
   @keyframes fsx-glow { 50% { opacity: 0.62; transform: scale(1.07); } }
