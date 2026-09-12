@@ -263,8 +263,10 @@ test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async 
   // pins the row height so it cannot regress silently.
   await page.setViewportSize({ width: 393, height: 852 })
   await page.goto('/fuel/log')
-  // The first openable window CTA → navigates to /fuel/log/uj → Kamra source tile → picker.
+  // The first openable window CTA → /fuel/log/uj (camera-first) → the Gépelés route owns the
+  // manual pickers (S1c.2, mezo-33k6) → Kamra source tile → picker.
   await page.getByRole('button', { name: /^(Logold|Pótold) · / }).first().click()
+  await page.getByRole('tab', { name: /Gépelés/ }).click()
   await page.getByRole('button', { name: 'Kamra · hozzáadás' }).click()
   const rows = page.locator('.fkp-item')
   await expect(rows.first()).toBeVisible()

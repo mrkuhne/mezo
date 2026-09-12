@@ -145,6 +145,11 @@ export function FuelLogNewPage() {
           incomingPhoto={photo}
           incomingAiText={aiTextIn}
           onAiFailed={() => setFailed(true)}
+          // S1c.2 (mezo-33k6): ahol a héj renderel, ott a héj a bejárat — a composer nem kínál
+          // második ✨ AI kártyát, és a megerősítő részt csak az első tétellel hozza. A kézi
+          // pickerek a GÉPELÉS úton élnek (A3): ott a kézi sor-felvétel az, amit a user akar.
+          shellOwnsEntry={!editing}
+          manualSources={mode === 'text'}
           editMealId={editMealId}
           logDate={past ? date : undefined}
           logTime={past ? tile?.time : undefined}

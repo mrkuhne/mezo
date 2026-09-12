@@ -174,7 +174,11 @@ export function FuelLogModes({ mode, onMode, onPhoto, onUsual, onTranscript, fai
   usuals: UsualMeal[]
 }) {
   return (
-    <div className="fmx-logmodes">
+    /* S1c.2 (mezo-33k6): a `log-forrasok` kalauz-horgony ITT ül, valahányszor a héj jelen van —
+       a teljes oldalon EZ a „honnan adod hozzá" felület (a composer ✨ kártyája eltűnt alóla).
+       A héj nélküli LogFlow-overlayben ugyanezt a nevet a composer forrás-sora viseli, tehát
+       mindkét felületen pontosan egy elem hordozza, és a „Mutasd meg" sosem mutat a semmibe. */
+    <div className="fmx-logmodes" data-kalauz-anchor="log-forrasok">
       <div className="fmx-modes" role="tablist" aria-label="Naplózási mód">
         {MODES.map(m => (
           <button key={m.id} type="button" role="tab" aria-selected={mode === m.id}

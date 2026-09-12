@@ -109,12 +109,19 @@ function renderAtSharedClient(entry: string) {
   }
 }
 
-/** Egy kamra-tétel felvétele a composerbe, majd mentés a (múltbeli) Pótlás-CTA-val. */
-async function addPantryLineAndSave(user: ReturnType<typeof userEvent.setup>) {
+/** Egy kamra-tétel felvétele a composerbe. S1c.2 (mezo-33k6): a kézi pickerek a GÉPELÉS úton
+ *  élnek — a lap a kamerán nyit, ezért a kézi út EGY koppintással kezdődik. */
+async function addPantryLine(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
   await user.click(await screen.findByRole('button', { name: 'Kamra · hozzáadás' }))
   const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
   await user.click(addBtn)
   await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+}
+
+/** Egy kamra-tétel felvétele a composerbe, majd mentés a (múltbeli) Pótlás-CTA-val. */
+async function addPantryLineAndSave(user: ReturnType<typeof userEvent.setup>) {
+  await addPantryLine(user)
   await user.click(screen.getByRole('button', { name: /pótlás/i }))
 }
 
@@ -155,18 +162,26 @@ test('ai=1 SZÁNDÉKOSAN kihagyja a terv-recept előtöltést', async () => {
   expect(screen.queryByText(recipe.name)).not.toBeInTheDocument()
 })
 
+// S1c.2 (mezo-33k6): a MIKOR szegmens a MEGERŐSÍTŐ részhez tartozik — az első tétellel jön.
+// Az „ablakon kívül" ígérete változatlan: ott a user maga választ ablakot, tehát a szegmensnek
+// ott KELL lennie, amint van mit könyvelni (rögzített ablaknál pedig sosem — azt a
+// MealComposer.shell.test.tsx őrzi).
 test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
   renderAt('/fuel/log/uj?w=99:99-Nincs')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   expect(screen.getByText('szabad tétel · te választod a mikort')).toBeInTheDocument()
+  await addPantryLine(user)
   expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
 })
 
 test('hiányzó w-nél is ablakon kívüli mód, sosem fabrikál ablakot', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
   renderAt('/fuel/log/uj')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
+  await addPantryLine(user)
   expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
 })
 

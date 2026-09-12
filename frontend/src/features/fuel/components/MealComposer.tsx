@@ -21,6 +21,14 @@
 // same AI text field, so a spoken meal reaches the draft endpoint as text and saves as
 // `ai-text`. No audio is ever sent to the draft endpoint, and nothing saves without confirmation.
 //
+// S1c.2 (mezo-33k6): EGY naplózó, nem kettő. Ahol mód-héj (`FuelLogModes`) ül fölötte, ott a
+// héj birtokolja a „hogyan kezdem" kérdést (`shellOwnsEntry`): a composer elhagyja a saját ✨ AI
+// forrás-kártyáját, a kézi Kamra/Recept pickereket pedig csak a GÉPELÉS úton kínálja
+// (`manualSources`) — nem tűnnek el, csak oda kerülnek, ahol a kézi sor-felvétel értelmes (A3).
+// A megerősítő rész (MIKOR · TÉTELEK · összegző kártya · mentés-CTA) ilyenkor csak az első sorral
+// jelenik meg. Héj NÉLKÜL (a LogFlowPage-overlay: recept, kamra, Életjel, Rutin) minden marad,
+// ahogy volt — a két prop alapértelmezése a mai viselkedés.
+//
 // provenance.origin: reflects whether AI genuinely contributed to THIS save
 // (ai-photo when a photo was analyzed this session, else ai-text), regardless of
 // how many manual lines ride alongside; a purely manual meal omits provenance —
@@ -213,6 +221,16 @@ export interface MealComposerProps {
   logTime?: string
   /** A mentés-CTA felirata (múltbeli nap). Absent = a meglévő felirat. */
   saveLabel?: string
+  /** S1c.2 (mezo-33k6): egy mód-héj (`FuelLogModes`) ül FÖLÖTTE, és az már birtokolja a „hogyan
+   *  kezdem" kérdést. Ilyenkor a composer elhagyja a SAJÁT ✨ AI forrás-kártyáját (az az egyetlen
+   *  valódi duplikáció), és a megerősítő részt csak akkor mutatja, ha van mit megerősíteni.
+   *  Alapértelmezése `false`: a héj NÉLKÜL futó hívók (a LogFlowPage-overlay — recept, kamra,
+   *  Életjel, Rutin) bájtazonosan úgy renderelnek, ahogy eddig. */
+  shellOwnsEntry?: boolean
+  /** S1c.2 (mezo-33k6): most relevánsak-e a KÉZI források (Kamra · Recept)? A héj alatt ez a
+   *  gépelés út szerződése (manifeszt A3: a kézi naplózás nem tűnik el, csak odakerül, ahol a
+   *  kézi sor-felvétel értelmes). Alapértelmezése `true` — a héj nélküli hívók változatlanok. */
+  manualSources?: boolean
   /** S1c (mezo-33k6, A8 · A9): egy MÁR LOGOLT étkezés szerkesztése. Jelen esetén a composer abból
    *  az étkezésből indul (sorok, cím, ablak, idő), a mentés `updateMeal`-t hív `logMeal` helyett,
    *  és megjelenik a két lépéses törlés. A javításról SOSEM megy AI-piszkozat-visszajelzés: az a
@@ -225,6 +243,7 @@ export interface MealComposerProps {
 export function MealComposer({
   fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, aiPanelOpen,
   incomingPhoto, incomingAiText, onAiFailed,
+  shellOwnsEntry = false, manualSources = true,
   logDate, logTime, saveLabel, editMealId, onSaved, onCancel,
 }: MealComposerProps) {
   const { recipes } = useRecipes()
@@ -542,9 +561,18 @@ export function MealComposer({
 
   const addedPantryIds = lines.filter(l => l.source === 'pantry' && l.refId).map(l => l.refId!)
 
+  // ── S1c.2 láthatósági szerződés (mezo-33k6) ─────────────────────────────────────────────────
+  // Héj NÉLKÜL mindhárom kapu nyitva van — a LogFlowPage-overlay (recept, kamra, Életjel, Rutin)
+  // pontosan úgy renderel, ahogy eddig. Héj alatt: a bejárat a héjé, a megerősítés a miénk.
+  const showAiSource = !shellOwnsEntry
+  const showManualSources = !shellOwnsEntry || manualSources
+  const showSourceRow = showAiSource || showManualSources
+  // „Van mit megerősíteni": legalább egy piszkozat-sor, vagy egy már logolt étkezés javítása.
+  const showConfirm = !shellOwnsEntry || lines.length > 0 || editMealId != null
+
   return (
     <div className="logflow-composer">
-      {fixedSlot == null && (
+      {fixedSlot == null && showConfirm && (
         <>
           <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>MIKOR</span>
           <div className="row gap-xs" style={{ margin: '7px 0 10px', padding: 5, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
@@ -559,21 +587,34 @@ export function MealComposer({
         </>
       )}
 
-      <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>HONNAN ADOD HOZZÁ?</span>
-      <div className="logflow-srctiles" data-kalauz-anchor="log-forrasok">
-        <button type="button" className="logflow-srct tone-gold" onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
-          <ClayIcon name="i-kamra" size={26} />
-          <b>Kamra</b><small>polcról, grammra</small>
-        </button>
-        <button type="button" className="logflow-srct tone-coral" onClick={() => setReceptOpen(true)} aria-label="Recept · hozzáadás">
-          <ClayIcon name="i-recept" size={26} />
-          <b>Recept</b><small>adagra</small>
-        </button>
-        <button type="button" className={'logflow-srct tone-lav' + (aiOpen ? ' on' : '')} onClick={() => setAiOpen(o => !o)} aria-label="✨ AI · fotó vagy szöveg" aria-pressed={aiOpen}>
-          <Icon name="sparkle" size={22} color="var(--lav-deep)" />
-          <b>✨ AI</b><small>fotó vagy szöveg</small>
-        </button>
-      </div>
+      {showSourceRow && (
+        <>
+          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>HONNAN ADOD HOZZÁ?</span>
+          {/* A kalauz-horgony CSAK a héj nélküli felületen ül itt (a teljes oldalon a héj
+              mód-sora viseli ugyanezt a nevet) — így pontosan egy elem hordozza, és a
+              „Mutasd meg" gomb mindig a valóban aktuális „hogyan adod hozzá" felületre mutat. */}
+          <div className="logflow-srctiles" {...(shellOwnsEntry ? {} : { 'data-kalauz-anchor': 'log-forrasok' })}>
+            {showManualSources && (
+              <>
+                <button type="button" className="logflow-srct tone-gold" onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
+                  <ClayIcon name="i-kamra" size={26} />
+                  <b>Kamra</b><small>polcról, grammra</small>
+                </button>
+                <button type="button" className="logflow-srct tone-coral" onClick={() => setReceptOpen(true)} aria-label="Recept · hozzáadás">
+                  <ClayIcon name="i-recept" size={26} />
+                  <b>Recept</b><small>adagra</small>
+                </button>
+              </>
+            )}
+            {showAiSource && (
+              <button type="button" className={'logflow-srct tone-lav' + (aiOpen ? ' on' : '')} onClick={() => setAiOpen(o => !o)} aria-label="✨ AI · fotó vagy szöveg" aria-pressed={aiOpen}>
+                <Icon name="sparkle" size={22} color="var(--lav-deep)" />
+                <b>✨ AI</b><small>fotó vagy szöveg</small>
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {aiBusy && (
         <div className="logflow-aipanel logflow-aibusy">
@@ -624,13 +665,15 @@ export function MealComposer({
         </div>
       )}
 
-      <div className="row" style={{ alignItems: 'center', gap: 9, margin: '14px 2px 9px' }}>
-        <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>TÉTELEK</span>
-        <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
-        <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-      </div>
+      {showConfirm && (
+        <div className="row" style={{ alignItems: 'center', gap: 9, margin: '14px 2px 9px' }}>
+          <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>TÉTELEK</span>
+          <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
+          <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+        </div>
+      )}
 
-      {lines.length === 0 && (
+      {showConfirm && lines.length === 0 && (
         <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
           <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs tétel — válassz forrást fent, vagy kombináld őket.</span>
         </div>
@@ -743,7 +786,7 @@ export function MealComposer({
         ))}
       </div>
 
-      <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
+      {showConfirm && <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
           <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>EZ AZ ÉTKEZÉS</span>
           <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
@@ -768,7 +811,7 @@ export function MealComposer({
             <div style={{ position: 'absolute', left: nowPct + '%', top: 0, bottom: 0, width: addPct + '%', background: 'var(--coral)' }} />
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
       {editMealId != null && (
@@ -779,13 +822,18 @@ export function MealComposer({
         </label>
       )}
 
+      {/* A „Mégse" MARAD akkor is, ha még nincs mit megerősíteni: az a kiszállás ajtaja, nem
+          mentés-művelet. A mentés-CTA viszont csak akkor jelenik meg, ha van mit menteni —
+          egy tiltott „Logolás" gomb egy üres piszkozat alatt csak zaj (S1c.2, mezo-33k6). */}
       <div className="row gap-sm logflow-actions" style={{ margin: '14px 0 12px' }}>
         <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
-        <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
-          {editMealId != null
-            ? <><Icon name="check" size={15} /> Mentem a javítást</>
-            : saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
-        </button>
+        {showConfirm && (
+          <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
+            {editMealId != null
+              ? <><Icon name="check" size={15} /> Mentem a javítást</>
+              : saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
+          </button>
+        )}
       </div>
 
       {/* A9: a törlés KÉT lépés (prototípus `deleteBlock`) — élesítés, majd megerősítés. Egy
