@@ -12207,8 +12207,137 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-block-log small { display: block; margin-top: 3px; font-size: 9px; color: var(--sub); }
 .fmx-block-empty { margin: 0; padding: 12px 2px; font-size: 11px; color: var(--sub); }
 
+/* ── Étkezés-részletező oldal (S1b, mezo-33k6 — A10/A11) ───────────────────
+   Prototípus: fuel-pages.css `Shared sub-page head` (:107), `Meal detail page` (:113),
+   `Meal detail — icon-rich, hue-coded` (:406) és a jóváhagyott v3 kalibráció,
+   `Meal detail v3 — split hero, share rings, micronutrient cards` (:453). */
+.fmx-page { padding: 2px 0 18px; }
+.fmx-subhead { display: flex; align-items: center; gap: 12px; margin: 2px 0 16px; }
+.fmx-subhead > button { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
+  border: 1px solid var(--border-subtle); background: var(--surface-recess); color: var(--ink);
+  font-family: inherit; font-size: 20px; line-height: 1; }
+.fmx-subhead > span { flex: 1; min-width: 0; }
+.fmx-subhead small { display: block; font-size: 8px; letter-spacing: 1.3px; color: var(--faint); }
+.fmx-subhead strong { display: block; margin-top: 3px; font-size: 21px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+
+/* Split hero: bal = ikon + kcal, jobb = két info-sor, az AI értékelés jobbra FENT. */
+.fmx-detail-hero { position: relative; display: grid;
+  grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px;
+  padding: 4px 2px 20px; border-bottom: 1px solid var(--divider); }
+.fmx-detail-glow { position: absolute; top: -46px; left: 23%; width: 270px; height: 270px;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--block-color) 22%, transparent) 0, transparent 62%); }
+.fmx-detail-left { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 128px; }
+.fmx-detail-art { width: 96px; height: 96px; display: grid; place-items: center; }
+.fmx-detail-art svg { width: 96px; height: 96px;
+  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.32)) drop-shadow(0 0 16px color-mix(in srgb, var(--block-color) 32%, transparent)); }
+.fmx-detail-kcal { position: relative; text-align: center; white-space: nowrap; }
+.fmx-detail-kcal strong { font-family: var(--ff-display); font-size: 44px; font-weight: 300;
+  letter-spacing: -0.04em; color: var(--ink); }
+.fmx-detail-kcal small { margin-left: 5px; font-size: 12px; color: var(--sub); }
+.fmx-detail-right { position: relative; display: grid; gap: 10px; }
+.fmx-detail-when, .fmx-detail-share { display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 15px;
+  border: 1px solid color-mix(in srgb, var(--block-color) 28%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--block-color) 15%, transparent), var(--surface-card)); }
+.fmx-detail-share { --block-color: var(--sky); }
+.fmx-di-art { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; }
+.fmx-di-art svg { width: 30px; height: 30px;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 7px color-mix(in srgb, var(--block-color) 30%, transparent)); }
+.fmx-detail-when strong, .fmx-detail-share strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+.fmx-detail-when small, .fmx-detail-share small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
+.fmx-detail-score { position: absolute; top: 0; right: 0; }
+@media (max-width: 360px) {
+  .fmx-detail-hero { grid-template-columns: 1fr; }
+  .fmx-detail-left { min-width: 0; }
+}
+
+/* Szakasz-fejléc: darabszám és felirat NÉLKÜL (owner). */
+.fmx-detail-sec { margin-top: 18px; }
+.fmx-section { padding: 0 2px 10px; }
+.fmx-section h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; color: var(--ink); }
+
+/* Megoszlás-gyűrűk: az S1a gyűrű-geometria, három hasábban, az étkezés SAJÁT arányaival. */
+.fmx-detail-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;
+  padding: 4px 16px 6px; }
+.fmx-ring.is-share strong { display: flex; align-items: baseline; font-size: 21px; }
+.fmx-ring.is-share b { font-size: 10px; }
+.fmx-share-name { font-size: 11px; color: var(--sub); }
+
+/* Hozzávaló-sorok: hue-kódolt, ikonos — egy pillantásra olvasható tányér-anatómia. */
+.fmx-ing-list { display: grid; gap: 8px; }
+.fmx-ing-row { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ing-color) 22%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--ing-color) 12%, transparent), var(--surface-card) 66%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
+.fmx-ing-art { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 50%; background: var(--surface-recess);
+  border: 1px solid color-mix(in srgb, var(--ing-color) 36%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ing-color) 20%, transparent); }
+.fmx-ing-copy { flex: 1; min-width: 0; }
+.fmx-ing-copy > strong { display: block; font-size: 14px; font-weight: 500; color: var(--ink); }
+.fmx-ing-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.fmx-ing-meta em { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px;
+  border-radius: 10px; background: var(--surface-recess); font-style: normal; font-size: 9px; color: var(--sub); }
+.fmx-ing-meta em svg { width: 13px; height: 13px; }
+.fmx-ing-meta em.is-nova { padding-left: 7px; }
+.fmx-ing-meta em.is-nova i { width: 7px; height: 7px; border-radius: 50%; background: var(--nova);
+  box-shadow: 0 0 6px var(--nova); }
+.fmx-ing-bar { position: relative; display: block; height: 4px; margin-top: 8px; border-radius: 3px;
+  background: var(--surface-recess); }
+.fmx-ing-bar b { position: absolute; inset: 0; width: var(--w); border-radius: 3px;
+  background: var(--ing-color); box-shadow: 0 0 6px color-mix(in srgb, var(--ing-color) 45%, transparent); }
+.fmx-ing-end { flex: 0 0 auto; text-align: right; }
+.fmx-ing-end b { display: block; font-size: 17px; font-weight: 600;
+  color: color-mix(in srgb, var(--ing-color) 58%, var(--ink)); }
+.fmx-ing-end b small { margin-left: 2px; font-size: 9px; font-weight: 400; color: var(--sub); }
+.fmx-ing-end > small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
+
+/* Minőség-lapkák. `is-unknown` = őszinte hiány: szaggatott, halkabb, „—". */
+.fmx-nutri-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fmx-nutri-tile { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--nt-color) 26%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--nt-color) 14%, transparent), var(--surface-card) 62%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1); }
+.fmx-nt-top { display: flex; align-items: center; justify-content: space-between; }
+.fmx-nt-art svg { width: 34px; height: 34px;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 8px color-mix(in srgb, var(--nt-color) 28%, transparent)); }
+.fmx-nutri-tile strong { font-size: 24px; font-weight: 500; letter-spacing: -0.03em;
+  color: color-mix(in srgb, var(--nt-color) 58%, var(--ink)); }
+.fmx-nutri-tile strong small { margin-left: 3px; font-size: 11px; letter-spacing: 0; color: var(--sub); }
+.fmx-nt-label { font-size: 12px; color: var(--sub); }
+.fmx-nutri-tile.is-unknown { border-style: dashed; opacity: 0.78; }
+
+/* Mikrotápanyag-kártyák: a NÉGY tárolt tény. `is-unknown` = a forrás nem adott értéket. */
+.fmx-micro-list { display: grid; gap: 8px; }
+.fmx-micro-card { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--mc-color) 24%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--mc-color) 12%, transparent), var(--surface-card) 66%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
+.fmx-mc-art { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 50%; background: var(--surface-recess);
+  border: 1px solid color-mix(in srgb, var(--mc-color) 36%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--mc-color) 20%, transparent); }
+.fmx-mc-copy { flex: 1; min-width: 0; }
+.fmx-mc-copy strong { display: block; font-size: 14px; font-weight: 500; color: var(--ink); }
+.fmx-mc-copy i { position: relative; display: block; height: 5px; margin: 7px 0 5px; border-radius: 3px;
+  background: var(--surface-recess); }
+.fmx-mc-copy i b { position: absolute; inset: 0; width: var(--w); border-radius: 3px;
+  background: var(--mc-color); box-shadow: 0 0 6px color-mix(in srgb, var(--mc-color) 45%, transparent); }
+.fmx-mc-copy small { display: block; font-size: 10px; color: var(--sub); }
+.fmx-mc-end { flex: 0 0 auto; text-align: right; }
+.fmx-mc-end b { display: block; font-size: 17px; font-weight: 600;
+  color: color-mix(in srgb, var(--mc-color) 58%, var(--ink)); }
+.fmx-mc-end em { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9px;
+  font-style: normal; font-size: 9px; background: var(--surface-recess); color: var(--sub); }
+.fmx-micro-card.is-unknown { border-style: dashed; opacity: 0.78; }
+.fmx-nutri-note { margin: 9px 2px 0; font-size: 10px; line-height: 1.5; color: var(--faint); }
+
 @media (prefers-reduced-motion: no-preference) {
   .fmx-ring-progress, .fmx-gauge-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+  /* A részletező hero tálja ugyanúgy lebeg, mint a Mai műszeré. */
+  .fmx-detail-art { animation: fmx-float 4.8s ease-in-out 0.4s infinite; }
   /* A chip figyelem-pulzusa: egy hajszálnyi emelkedés + halo, 2.8s-es ritmusban. */
   .fmx-score:not(.is-pending) { animation: fmx-score-glow 2.8s ease-in-out infinite; }
   .fmx-score:not(.is-pending) svg { animation: fmx-score-tilt 2.8s ease-in-out infinite;
@@ -12252,8 +12381,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-gauge-art { animation: none; }
   .fmx-chip-sheen { display: none; }
   .fmx-glass[open], .fmx-node { animation: none; }
-  /* A pont-chip figyelem-pulzusa is kivezetve (S1b, mezo-33k6). */
-  .fmx-score, .fmx-score svg { animation: none; }
+  /* A pont-chip figyelem-pulzusa és a részletező hero lebegése is kivezetve (S1b, mezo-33k6). */
+  .fmx-score, .fmx-score svg, .fmx-detail-art { animation: none; }
 }
 /* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
 
