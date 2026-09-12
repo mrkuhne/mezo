@@ -375,7 +375,11 @@ function render() {
     : view === 'summary'
     ? summary()
     : `<div class="wo-list">${session.order.map((id, i) => card(id, i, session.order.length)).join('')}
-       <button class="wo-finish-link" data-session-summary ${m.count ? '' : 'disabled'}>Mára ennyi · összegzés →</button></div>`;
+       <button class="wo-finish" data-session-summary ${m.count ? '' : 'disabled'}>
+        <span class="wo-finish-glow" aria-hidden="true"></span>
+        <span class="wo-finish-art">${icon('star')}</span>
+        <span class="wo-finish-copy"><strong>Edzés befejezése</strong><small>${m.count ? `${m.count} / ${m.planned} szett · jöhet az értékelés` : 'Legalább egy szettet rögzíts előbb'}</small></span>
+        <b>→</b><u class="chip-sheen"></u></button></div>`;
   overlay.innerHTML = `${head}<div class="wo-scroll ${view === 'list' ? '' : 'is-plain'}">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : glass.kind === 'menu' ? menuGlass(glass.id) : glass.kind === 'confirm' ? confirmGlass() : videoGlass(glass.id)) : ''}`;
   const scroller = overlay.querySelector('.wo-scroll');
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
