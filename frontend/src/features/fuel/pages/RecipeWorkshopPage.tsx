@@ -333,7 +333,10 @@ export function RecipeWorkshopPage() {
 
           {!draft && (
             /* A kiinduló vászon (prototípus `wsx-empty`): egy kérdés, és a cél-csempék a
-               dokkban várnak — nem üres képernyő. */
+               dokkban várnak — nem üres képernyő.
+               NB: a „Mit főzzünk ki?" a CHAT nyitó kérdése (prototípus-szöveg), NEM a B17
+               „mit főzzünk az itthon lévőből" felület — az owner azt kivette, és nem is épült
+               meg: itt te mondod meg a célt, nem a kamra-készlet generál listát. */
             <div className="fkx-ws-empty rise">
               <span className="fkx-ws-glow" aria-hidden="true" />
               <span className="fkx-ws-art" aria-hidden="true"><ClayIcon name="i-muhely" size={96} /></span>

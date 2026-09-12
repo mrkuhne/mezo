@@ -557,21 +557,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx,
-    FuelLogHeroTile.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelStackItemGlass.tsx,
-    FuelWaterModule.tsx, FuelWeekDayGlass.tsx, KamraCard.tsx, KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx,
-    MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx, MedicationWeekStrip.tsx,
-    MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx, RecipeCard.tsx, RecipeFitBadge.tsx,
-    RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx,
-    ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
-    StackManageCard.tsx, StackManageOccurrenceList.tsx, StackMealMatch.tsx, StackNextHero.tsx, StackPageScaffold.tsx,
-    StackRhythmPreview.tsx, StackTimeline.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx, WeeklySupplementGrid.tsx,
-    WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
+    FuelLogHeroTile.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelQualityBlocks.tsx,
+    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, KamraCard.tsx, KeretHero.tsx, MacroCells.tsx,
+    MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
+    MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
+    RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
+    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
+    StackDayArc.tsx, StackManageCard.tsx, StackManageOccurrenceList.tsx, StackMealMatch.tsx, StackNextHero.tsx,
+    StackPageScaffold.tsx, StackRhythmPreview.tsx, StackTimeline.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
+    WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
     formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, heroWindow.ts,
     kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, mealShare.ts,
-    projectStackDay.ts, recipeRole.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts,
-    stackPresentation.ts, useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
+    pantryProvenance.ts, projectStackDay.ts, recipeRole.ts, recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts,
+    scoreTone.ts, stackBands.ts, stackPresentation.ts, useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
