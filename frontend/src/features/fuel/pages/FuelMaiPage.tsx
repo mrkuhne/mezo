@@ -191,7 +191,7 @@ export function FuelMaiPage() {
             közös 7 napos alsó kapuval és jövő nélkül. */}
         <div className="fmx-daynav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <DayNavigator date={date} onChange={goDay} maxDate={today}
-            minDate={earliestBackfillDate(today)} />
+            minDate={earliestBackfillDate(today)} eyebrow />
         </div>
 
         {emptyPast ? (
@@ -213,6 +213,12 @@ export function FuelMaiPage() {
         {/* A10/A14: a nap blokkjai — ide logolsz, és innen nyílik egy logolt étkezés.
             `onLogInto` a MEGLÉVŐ logoló oldalra visz az ablak-kulccsal (`?w=`, mezo-bq2t):
             a kamera-első logoló S1c, tehát a lap minden commitnál végig működik. */}
+        {/* A prototípus `food-list-heading`-je: a blokkok fölött megmondjuk, MI következik,
+            és hogy hány étkezés van már a napban. */}
+        <div className="fmx-blocks-head rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+          <h2>{past ? 'Ezen a napon' : 'A mai blokkjaid'}</h2>
+          <span>{doneRows.length} ÉTKEZÉS</span>
+        </div>
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties} data-kalauz-anchor="fuel-log">
           <FuelMealBlocks
             lane={lane}

@@ -24,7 +24,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { addDays, localDateString, huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
+import { addDays, localDateString, huMonthDay, huFullDate } from '@/shared/lib/dates'
 // Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat
 // zölden hagyná a tesztet akkor is, ha a `?w=` szerződés elmozdul.
 import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
@@ -322,7 +322,8 @@ const D3 = addDays(TODAY, -3)
 
 test('a visszalapozott nap a saját adatával jelenik meg', async () => {
   renderView(`/fuel?d=${D3}`)
-  expect(await screen.findByText(huMonthDayDow(D3))).toBeInTheDocument()
+  // A Mai a kétsoros dátumsort viseli (jóváhagyott prototípus): a címke a TELJES dátum.
+  expect(await screen.findByText(huFullDate(D3))).toBeInTheDocument()
   expect(hoisted.dayCalls).toContain(D3)
   expect(hoisted.timelineCalls).toContain(D3)
 })
@@ -341,7 +342,9 @@ test('a jövőbe nem lehet lapozni', () => {
 // deep link MA-ra esik vissza, nem egy olyan napra, amit a naplózó visszautasítana.
 test('az ablakon kívüli ?d= MA-ra esik vissza', () => {
   renderView(`/fuel?d=${addDays(TODAY, -9)}`)
-  expect(screen.getByText('Ma')).toBeInTheDocument()
+  // A mai nap jelzése a címke FÖLÖTTI sorban áll, a címke a teljes dátum.
+  expect(screen.getByText('MA')).toBeInTheDocument()
+  expect(screen.getByText(huFullDate(TODAY))).toBeInTheDocument()
   expect(hoisted.dayCalls).toContain(TODAY)
   expect(hoisted.dayCalls).not.toContain(addDays(TODAY, -9))
 })

@@ -11831,25 +11831,38 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* Hero: koppintható, egyetlen tiszta üzenet — a matek az üvegdobozban lakik.
    (prototípus: fuel-pages.css `Hero: tappable…` + fuel-compact.css `.fuel-focus`/`.fuel-visual`) */
 .fmx-hero { padding: 3px 0 4px; text-align: center; }
-.fmx-visual { display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 170px; }
-/* A műszer 150px, benne a 106-os tál — EZ a jóváhagyott, 10%-kal nagyobb kalibráció. */
-.fmx-gauge { position: relative; width: 150px; height: 150px; flex: 0 0 150px; display: grid; place-items: center; }
+/* A jóváhagyott h1 hero (prototípus `hero-pair`): HÁROM egyenrangú rész egy sorban —
+   `1fr auto 1fr`, középen a műszer. A két szám AZONOS méretű; a vezető oldal csak
+   világosabb és glow-t kap. (A korábbi változat a bal oldali számot egy apró sorba
+   száműzte a tál alá — pont azt, amit az owner kifogásolt.) */
+.fmx-hero-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 10px; padding: 6px 2px 8px; min-height: 150px; }
+.fmx-hero-side { text-align: center; min-width: 0; }
+.fmx-hero-side > strong { display: block; font-family: var(--ff-display); font-size: 38px;
+  font-weight: 300; line-height: 1; letter-spacing: -0.04em; color: var(--sub); }
+.fmx-hero-side > small { display: block; margin-top: 6px; font-size: 7px; letter-spacing: 1.2px;
+  color: var(--faint); }
+.fmx-hero-side.is-lead > strong { color: var(--ink);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--sky) 20%, transparent); }
+.fmx-hero-side.is-lead > small { color: var(--sub); }
+/* A műszer a párban 106px, benne a 71-es tál — a prototípus `fuel-gauge.small` kalibrációja. */
+.fmx-gauge { position: relative; width: 106px; height: 106px; flex: 0 0 106px; display: grid; place-items: center; }
 .fmx-gauge-rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
   transform: rotate(-90deg); filter: drop-shadow(0 0 11px color-mix(in srgb, var(--sky) 26%, transparent)); }
 .fmx-gauge-rings circle { fill: none; stroke-width: 10; }
 .fmx-gauge-base { stroke: var(--surface-recess); }
 .fmx-gauge-progress { stroke: var(--sky); stroke-linecap: round; stroke-dasharray: var(--fuel-progress) 100; }
-.fmx-gauge-art { position: relative; z-index: 1; width: 106px; height: 106px; display: grid;
+.fmx-gauge-art { position: relative; z-index: 1; width: 71px; height: 71px; display: grid;
   place-items: center; transform: rotate(-7deg); }
-.fmx-gauge-art svg { width: 106px; height: 106px;
+.fmx-gauge-art svg { width: 71px; height: 71px;
   filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 12px color-mix(in srgb, var(--sage) 22%, transparent)); }
-.fmx-primary { min-width: 0; margin-left: -5px; text-align: left; }
-.fmx-primary small { display: block; font-size: 7px; letter-spacing: 1.4px; color: var(--sub); }
-.fmx-hero-remaining { display: block; margin: 4px 0 -1px; font-family: var(--ff-display);
-  font-size: 58px; line-height: 1; font-weight: 200; letter-spacing: -0.04em; color: var(--ink); }
-.fmx-primary > span { font-size: 9px; color: var(--faint); }
-.fmx-eaten { margin: 0; text-align: center; font-size: 12px; color: var(--sub); }
-.fmx-eaten b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.fmx-hero-remaining { margin: 0; }
+
+/* A blokkok fejléce (prototípus `food-list-heading`). */
+.fmx-blocks-head { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin: 18px 2px 10px; }
+.fmx-blocks-head h2 { margin: 0; font-size: 17px; font-weight: 500; color: var(--ink); }
+.fmx-blocks-head span { font-size: 8px; letter-spacing: 1.2px; color: var(--faint); }
 
 /* Koppintós chip: üveges meghívó a bontáshoz. */
 .fmx-tapchip { position: relative; display: flex; align-items: center; gap: 8px; width: fit-content;

@@ -66,11 +66,17 @@ test('statikus keretnél a mozgás sora gondolatjel', async () => {
   expect(within(screen.getByRole('dialog')).getByText('—')).toBeInTheDocument()
 })
 
-// A túlevett nap nem szégyenít: a szám előjelet vált, a keretezés semleges marad.
-test('túllépett keretnél a szám negatív, a szöveg nem minősít', () => {
+// A túlevett nap nem szégyenít. A jóváhagyott hero-ban az ELŐJEL a feliratban van
+// („A KERET FELETT"), a szám pedig az abszolút érték — egy „−300 kcal a keret felett" kettős
+// tagadás lenne, képernyőolvasón is. A semlegesség marad a lényeg.
+test('túllépett keretnél a felirat mondja meg az irányt, és nem minősít', () => {
   const over = vm({ consumed: { kcal: 3000, p: 0, c: 0, f: 0 } })
   const { container } = render(<FuelEnergyHero vm={over} />)
-  expect(container.querySelector('.fmx-hero-remaining')!.textContent).toMatch(/^−/)
+  const lead = container.querySelector('.fmx-hero-side.is-lead')!
+  expect(lead.querySelector('small')!.textContent).toBe('A KERET FELETT')
+  expect(lead.querySelector('.fmx-hero-remaining')!.textContent).not.toMatch(/−/)
+  expect(container.querySelector('.fmx-hero-remaining')!.getAttribute('aria-label'))
+    .toMatch(/kcal a keret felett$/)
   expect(container.textContent).not.toMatch(/elrontott|túlevés|hiba/i)
 })
 
@@ -89,12 +95,26 @@ test('onOpenEnergy-vel a chip a szülőt hívja, nem a helyi dobozt', async () =
 test('múltbeli napon a hero nem mondja azt, hogy „ma”', () => {
   const { container } = render(<FuelEnergyHero vm={vm()} past />)
   expect(container.textContent).not.toMatch(/\bma\b/)
-  expect(container.querySelector('.fmx-eaten')!.textContent).toMatch(/aznap/)
-  expect(container.querySelector('.fmx-hero-remaining')!.getAttribute('aria-label'))
-    .toMatch(/fért még bele/)
+  const labels = Array.from(container.querySelectorAll('.fmx-hero-side strong'))
+    .map(e => e.getAttribute('aria-label'))
+  expect(labels.some(l => /ettél aznap$/.test(l ?? ''))).toBe(true)
+  expect(labels.some(l => /fért még bele$/.test(l ?? ''))).toBe(true)
 })
 
 test('a mai napon marad a „ma” megfogalmazás', () => {
   const { container } = render(<FuelEnergyHero vm={vm()} />)
-  expect(container.querySelector('.fmx-eaten')!.textContent).toMatch(/ettél ma/)
+  const labels = Array.from(container.querySelectorAll('.fmx-hero-side strong'))
+    .map(e => e.getAttribute('aria-label'))
+  expect(labels.some(l => /ettél ma$/.test(l ?? ''))).toBe(true)
+  expect(labels.some(l => /fér még bele ma$/.test(l ?? ''))).toBe(true)
+})
+
+// A jóváhagyott h1 elrendezés: HÁROM rész egy sorban, a két szám AZONOS méretben.
+test('a hero három részes: ettél · műszer · még belefér', () => {
+  const { container } = render(<FuelEnergyHero vm={vm()} />)
+  const sides = container.querySelectorAll('.fmx-hero-side')
+  expect(sides).toHaveLength(2)
+  expect(sides[0].querySelector('small')!.textContent).toBe('KCAL·T ETTÉL')
+  expect(sides[1].querySelector('small')!.textContent).toBe('MÉG BELEFÉR')
+  expect(container.querySelector('.fmx-hero-pair .fmx-gauge')).not.toBeNull()
 })

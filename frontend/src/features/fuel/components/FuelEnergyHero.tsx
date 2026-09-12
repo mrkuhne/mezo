@@ -116,30 +116,40 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
 }) {
   const [boxOpen, setBoxOpen] = useState(false)
   const remaining = useFuelCountUp(vm.remainingKcal)
+  const eaten = useFuelCountUp(vm.consumedKcal)
   const over = vm.remainingKcal < 0
 
   return (
     <div className="fmx-hero">
-      <div className="fmx-visual">
+      {/* A jóváhagyott h1 elrendezés (fuel-dashboard.js `hero-pair`): HÁROM egyenrangú rész
+          EGY sorban — balra amit megettél, középen a tál az ívben, jobbra ami még belefér.
+          A két szám AZONOS méretű (38px); a jobb oldali csak világosabb és glow-t kap, mert
+          az a lap fő üzenete. Az owner kifejezetten ezt kérte: „egy sorban egymással, és ne
+          legyen az egyik kisebb, mint a másik". */}
+      <div className="fmx-hero-pair">
+        <div className="fmx-hero-side">
+          <strong aria-label={`${huInt(vm.consumedKcal)} kcal·t ettél ${past ? 'aznap' : 'ma'}`}>
+            <span aria-hidden="true">{huInt(eaten)}</span>
+          </strong>
+          <small aria-hidden="true">KCAL·T ETTÉL</small>
+        </div>
         <div className="fmx-gauge"
           style={{ '--fuel-progress': String(pct(vm.consumedKcal, vm.targetKcal)) } as React.CSSProperties}>
           <svg className="fmx-gauge-rings" viewBox="0 0 160 160" aria-hidden="true">
             <circle className="fmx-gauge-base" cx="80" cy="80" r="69" pathLength={100} />
             <circle className="fmx-gauge-progress" cx="80" cy="80" r="69" pathLength={100} />
           </svg>
-          <span className="fmx-gauge-art"><ClayIcon name="i-fuel" size={106} /></span>
+          <span className="fmx-gauge-art"><ClayIcon name="i-fuel" size={71} /></span>
         </div>
-        <div className="fmx-primary">
-          <small>{over ? 'A KERET FELETT' : 'MÉG BELEFÉR'}</small>
+        <div className="fmx-hero-side is-lead">
           {/* ONE sentence for the screen reader; the count-up digits are its decoration. */}
           <strong className="fmx-hero-remaining"
-            aria-label={`${huInt(vm.remainingKcal)} kcal ${over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}`}>
-            <span aria-hidden="true">{huInt(remaining)}</span>
+            aria-label={`${huInt(Math.abs(vm.remainingKcal))} kcal ${over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}`}>
+            <span aria-hidden="true">{huInt(Math.abs(remaining))}</span>
           </strong>
-          <span>{past ? 'kcal aznap' : 'kcal ma'}</span>
+          <small aria-hidden="true">{over ? 'A KERET FELETT' : 'MÉG BELEFÉR'}</small>
         </div>
       </div>
-      <p className="fmx-eaten"><b>{huInt(vm.consumedKcal)}</b> kcal·t ettél {past ? 'aznap' : 'ma'}</p>
       <button type="button" className="fmx-tapchip"
         onClick={() => (onOpenEnergy ? onOpenEnergy() : setBoxOpen(true))}>
         <span>Miből jön össze?</span>
