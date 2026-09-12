@@ -2,17 +2,38 @@
 //
 // A mock heti rollup a MAI hétre van dátumozva (`mockWeekRollup`), ezért egyetlen dátum sincs
 // beégetve: minden elvárás `mondayIso()`-ból származik. (Fix fixture itt éjfélkor elromlana.)
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { addDays, huMonthDay } from '@/shared/lib/dates'
+import { patterns as mockPatterns } from '@/data/insights/insights'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+
+function LocationProbe() {
+  return <div data-testid="location">{useLocation().pathname}</div>
+}
+
+function renderWithRoutes() {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/fuel/trendek']}>
+        <Routes>
+          <Route path="/fuel/trendek" element={<FuelTrendekPage />} />
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.unstubAllEnvs(); server.resetHandlers() })
 
 function renderView() {
   return render(
@@ -132,4 +153,58 @@ test('a hosszabb táv a heti kép alatt, egy időtengelyen rajzol', () => {
   const hero = container.querySelector('.ftx-hero')!
   const horizon = container.querySelector('.ftx-horizon')!
   expect(hero.compareDocumentPosition(horizon) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+// --- C4: a mintázatok kanonikus helye a Mezo — itt csak hivatkozunk rájuk. -------------------
+
+test('a mintázat sora a kanonikus Mezo-elemre visz', async () => {
+  renderWithRoutes()
+  // A mock mintázatai közül a táplálkozási vonatkozású jön be (a „Késő szénhidrát" sor).
+  await userEvent.click(screen.getByRole('button', { name: /Késő szénhidrát/ }))
+  expect(screen.getByTestId('location').textContent).toMatch(/^\/mezo\/patterns\//)
+})
+
+// Anti-duplikáció: a felismerés SZÖVEGÉT nem írjuk újra itt.
+test('a mintázat sora nem másolja le a felismerés szövegét', () => {
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.ftx-pattern')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) expect(row.textContent!.length).toBeLessThan(120)
+  // A mock minta mechanizmusa/bizonyítéka SEHOL nem szerepel a lapon.
+  for (const p of mockPatterns) {
+    expect(container.textContent).not.toContain(p.mechanism)
+    for (const e of p.evidence) expect(container.textContent).not.toContain(e)
+  }
+})
+
+test('a nem táplálkozási mintázat nem szivárog át a Fuel oldalra', () => {
+  const { container } = renderView()
+  expect(container.textContent).not.toMatch(/Magas sportterhelés/)
+  expect(container.textContent).not.toMatch(/Anna/)
+})
+
+// Valós mód, üres felismerés-lista: a réteg nem jelenik meg — és a teszt MEGVÁRJA, hogy a lap
+// tényleg feloldódjon, különben vákuum volna (a betöltési ablakban triviálisan nincs réteg).
+test('felismerés nélkül a réteg csendben elmarad, nem üres keret', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([])))
+  const { container } = renderView()
+  await waitFor(() => expect(container.querySelectorAll('.ftx-day')).toHaveLength(7))
+  expect(container.querySelector('.ftx-patterns')).toBeNull()
+  expect(container.textContent).not.toMatch(/Mintázatok/)
+})
+
+// Valós mód, táplálkozási felismeréssel: a réteg MEGJELENIK, tehát a fenti teszt nem vákuum.
+test('valós módban a táplálkozási felismerés sora megjelenik', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([{
+    id: 'p1', pairKey: 'daily-kcal~next-morning-weight-delta', category: 'response',
+    categoryLabel: 'Válasz', title: 'Napi kalória ↔ másnap reggeli súlyváltozás',
+    mechanism: 'SZIGORÚAN A MEZÓBAN', evidence: ['CSAK A MEZÓBAN'], status: 'monitoring',
+  }])))
+  const { container } = renderView()
+  await waitFor(() => expect(container.querySelectorAll('.ftx-pattern')).toHaveLength(1))
+  expect(screen.getByRole('button', { name: /Napi kalória/ })).toBeInTheDocument()
+  expect(container.textContent).not.toContain('SZIGORÚAN A MEZÓBAN')
+  expect(container.textContent).not.toContain('CSAK A MEZÓBAN')
 })

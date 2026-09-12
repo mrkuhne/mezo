@@ -35,9 +35,11 @@
 // C5: a coach-történet cache-only — ez a lap csak OLVAS, étkezés-coach generálást nem indít.
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useFuelWeek, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/me/meWeekHooks'
 import { useFuelHorizon } from '@/data/fuel/fuelHorizonHooks'
+import { usePatterns } from '@/data/insights/patternsHooks'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
@@ -46,6 +48,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { FuelHorizon } from '@/features/fuel/components/FuelHorizon'
 import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
+import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
 import { buildWeekView, loggedKcalAvg, type WeekDayVM } from '@/features/fuel/logic/fuelWeekView'
 
 /** A három mutató-csempe — a prototípus `TX_STAT`-ja ház-tokenekkel és clay-szimbólumokkal. */
@@ -140,9 +143,11 @@ function SplitRow({ label, icon, color, pct }: {
 }
 
 export function FuelTrendekPage() {
+  const navigate = useNavigate()
   const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek()
   const { week: meWeek } = useMeWeek(start)
   const { weeks: horizonWeeks } = useFuelHorizon(start)
+  const { patterns } = usePatterns()
   const [openDate, setOpenDate] = useState<string | null>(null)
 
   // A nap AI pontja és az edzésnap-jelölés a MEGLÉVŐ napi értékelésből (új formula nélkül).
@@ -177,6 +182,9 @@ export function FuelTrendekPage() {
         : delta > 0
           ? `Hétvégén átlagosan ${huInt(Math.round(delta))}%-kal többet ettél a keretedhez mérve, mint hétköznap. Így alakult, és most már látod.`
           : `Hétköznap átlagosan ${huInt(Math.round(Math.abs(delta)))}%-kal többet ettél a keretedhez mérve, mint hétvégén. Így alakult, és most már látod.`
+
+  // C4: HIVATKOZÁSOK, nem másolatok. Felismerés nélkül a réteg csendben elmarad.
+  const patternRefs = fuelPatternRefs(patterns)
 
   const openDay = openDate ? vm.days.find(d => d.date === openDate) ?? null : null
   const openRollup = openDate ? weekDays.find(d => d.date === openDate) ?? null : null
@@ -231,6 +239,34 @@ export function FuelTrendekPage() {
 
           <h2 className="ftx-section">Hosszabb táv</h2>
           <FuelHorizon weeks={horizonWeeks} />
+
+          {patternRefs.length > 0 && (
+            <>
+              <h2 className="ftx-section">Mintázatok</h2>
+              <div className="ftx-patterns">
+                {patternRefs.map(ref => (
+                  <button
+                    key={ref.pairKey}
+                    type="button"
+                    className="ftx-pattern"
+                    onClick={() => navigate(ref.route)}
+                  >
+                    <span className="ftx-pattern-art" aria-hidden="true">
+                      <ClayIcon name="i-minta" size={36} />
+                    </span>
+                    <span className="ftx-pattern-copy">
+                      <strong>{ref.title}</strong>
+                      <small>{ref.stateLabel}</small>
+                    </span>
+                    <b aria-hidden="true">↗</b>
+                  </button>
+                ))}
+              </div>
+              <p className="ftx-note">
+                A mintázatok otthona a Mezo — innen odalépsz, nem másolatot látsz.
+              </p>
+            </>
+          )}
         </PageBody>
       </EntranceGroup>
 

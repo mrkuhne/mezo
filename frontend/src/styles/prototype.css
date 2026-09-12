@@ -13219,6 +13219,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ftx-horizon-wait > span:first-child { line-height: 0; flex: 0 0 auto; }
 .ftx-horizon.is-waiting { border-style: dashed; background: var(--surface-recess); }
 
+/* A mintázat-réteg — HIVATKOZÁSOK a kanonikus Mezo-elemre (C4). Szándékosan rövid sorok: cím +
+   állapot-szó, a bizonyíték a Mezóban él. Felismerés nélkül a réteg meg sem jelenik. */
+.ftx-patterns { display: grid; gap: 8px; }
+.ftx-pattern { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
+  padding: 12px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--lav) 28%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--lav) 13%, var(--surface-1)),
+    var(--surface-1) 66%);
+  text-align: left; color: var(--ink); }
+.ftx-pattern-art { line-height: 0; flex: 0 0 auto; }
+.ftx-pattern-copy { flex: 1; min-width: 0; }
+.ftx-pattern-copy strong { display: block; font-size: 13px; font-weight: 500; line-height: 1.35; }
+.ftx-pattern-copy small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
+.ftx-pattern > b { margin-left: auto; font-size: 13px;
+  color: color-mix(in srgb, var(--lav) 60%, var(--ink)); }
+
 /* Belépő-koreográfia: a sávok felnőnek, a kontraszt-sávok kitöltődnek — egyszer, lépcsőzve. */
 @media (prefers-reduced-motion: no-preference) {
   .ftx-fill, .ftx-gap { animation: ftx-rise .75s cubic-bezier(.2, .78, .24, 1) both; }
