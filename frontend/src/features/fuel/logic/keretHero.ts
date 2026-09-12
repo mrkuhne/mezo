@@ -29,13 +29,20 @@ export interface KeretHeroVM {
   rings: RingVM[]
 }
 
+
+/** Magyar tizedesvessző, a gyűrűk számaihoz. */
+function huNum(n: number, decimals: number): string {
+  return n.toLocaleString('hu-HU', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+}
+
 function ring(key: RingVM['key'], label: string, value: number, target: number, color: string, unit: string): RingVM {
   return {
     key,
     label,
     pct: Math.round(pct(value, target)),
-    value: `${Math.round(value)}${unit}`,
-    target: `${Math.round(target)}${unit}`,
+    // A liter tizedessel olvasható (1,9 l), a gramm egészben (148 g).
+    value: `${huNum(value, unit === ' l' ? 1 : 0)}${unit}`,
+    target: `${huNum(target, unit === ' l' ? 1 : 0)}${unit}`,
     color,
   }
 }
@@ -90,8 +97,11 @@ export function buildKeretHero(input: {
     ring('p', 'Fehérje', consumed.p, budget.p, 'var(--macro-protein)', ' g'),
     ring('c', 'Szénhidrát', consumed.c, budget.c, 'var(--macro-carbs)', ' g'),
     ring('f', 'Zsír', consumed.f, budget.f, 'var(--macro-fat)', ' g'),
+    // A jóváhagyott prototípus sorrendje: a VÍZ a negyedik, a rost zárja a sort
+    // (fuel-dashboard.js `fuel-rings`). A víz literben áll — a `1,9 / 4 l` olvasható,
+    // az `1 850 / 4 000 ml` csak pontosabbnak látszik.
+    ring('water', 'Víz', water.currentMl / 1000, water.targetMl / 1000, 'var(--sky)', ' l'),
     ring('fiber', 'Rost', fiberG, fiberTargetG, 'var(--macro-fiber)', ' g'),
-    ring('water', 'Víz', water.currentMl, water.targetMl, 'var(--sky)', ' ml'),
   ]
 
   return {

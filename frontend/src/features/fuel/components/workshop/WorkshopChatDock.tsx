@@ -39,9 +39,9 @@ export interface WorkshopChatDockProps {
 }
 
 const PRESETS: { id: WorkshopGoal; label: string }[] = [
-  { id: 'high_protein', label: 'High protein' },
-  { id: 'pre_workout', label: 'Pre-workout' },
-  { id: 'post_workout', label: 'Post-workout' },
+  { id: 'high_protein', label: 'Magas fehérje' },
+  { id: 'pre_workout', label: 'Edzés előtt' },
+  { id: 'post_workout', label: 'Edzés után' },
   { id: 'before_bed', label: 'Lefekvés előtt' },
   { id: 'breakfast', label: 'Reggeli' },
 ]

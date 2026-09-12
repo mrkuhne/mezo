@@ -36,6 +36,8 @@ export function addDays(iso: string, n: number): string {
 // mock display strings. Used to format backend ISO dates (`2026-05-01`) into
 // the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
+const HU_MONTHS_FULL = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június',
+  'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December']
 const HU_DOW = ['Vas', 'Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo']
 const HU_DOW_FULL = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
 
@@ -65,6 +67,14 @@ export function huMonthDay(iso: string): string {
 export function huMonthDayDow(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${huMonthDay(iso)} · ${HU_DOW[new Date(y, m - 1, d).getDay()]}`
+}
+
+/** '2026-09-09' -> 'Szeptember 9., szerda' — a Fuel Mai kétsoros dátumsorának teljes
+ *  címkéje (a jóváhagyott prototípus `dayDescriptor`-ának megfelelője). */
+export function huFullDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const month = HU_MONTHS_FULL[m - 1]
+  return `${month} ${d}., ${HU_DOW_FULL[new Date(y, m - 1, d).getDay()].toLowerCase()}`
 }
 
 /** ISO Monday (YYYY-MM-DD) of the week containing `iso` — Sunday belongs to the PREVIOUS week. */

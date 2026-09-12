@@ -1,12 +1,26 @@
 import type { CSSProperties } from 'react'
 import { DatePicker } from '@/shared/ui/DatePicker'
-import { addDays, localDateString, huMonthDayDow } from '@/shared/lib/dates'
+import { addDays, localDateString, huMonthDayDow, huFullDate } from '@/shared/lib/dates'
 
 export interface DayNavigatorProps {
   date: string // YYYY-MM-DD (selected day)
   onChange: (date: string) => void // fires with the new ISO date (arrow step or calendar pick)
   maxDate?: string // default localDateString(); `next` disabled at maxDate — no future
   minDate?: string // optional floor; `prev` disabled at minDate
+  /** Fuel Titanium (mezo-jb84): a jóváhagyott prototípus kétsoros dátumsora — a naptár-címke
+   *  FÖLÖTT egy „MA / TEGNAP / N NAPPAL EZELŐTT" sor, a címke pedig a teljes magyar dátum.
+   *  Opcionális és alapból ki van kapcsolva: a Rutin két lapja változatlanul az egysoros
+   *  változatot kapja. */
+  eyebrow?: boolean
+}
+
+/** „MA" / „TEGNAP" / „3 NAPPAL EZELŐTT" — a prototípus `dayDescriptor`-ának megfelelője. */
+function eyebrowLabel(iso: string, maxDate: string): string {
+  const day = 86_400_000
+  const diff = Math.round((Date.parse(`${maxDate}T12:00:00Z`) - Date.parse(`${iso}T12:00:00Z`)) / day)
+  if (diff <= 0) return 'MA'
+  if (diff === 1) return 'TEGNAP'
+  return `${diff} NAPPAL EZELŐTT`
 }
 
 /**
@@ -19,10 +33,12 @@ export interface DayNavigatorProps {
  * `YYYY-MM-DD` strings compare lexicographically == chronologically, so bounds are string compares.
  * No `@/data/*` imports — this is a shared/ui primitive.
  */
-export function DayNavigator({ date, onChange, maxDate = localDateString(), minDate }: DayNavigatorProps) {
+export function DayNavigator({ date, onChange, maxDate = localDateString(), minDate, eyebrow = false }: DayNavigatorProps) {
   const canPrev = !minDate || date > minDate
   const canNext = date < maxDate
-  const label = (iso: string) => (iso === maxDate ? 'Ma' : huMonthDayDow(iso))
+  // Az eyebrow-s változatban a fenti sor mondja meg, MELYIK nap — a címke a teljes dátum.
+  const label = (iso: string) =>
+    eyebrow ? huFullDate(iso) : iso === maxDate ? 'Ma' : huMonthDayDow(iso)
   return (
     <div className="row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
       <button
@@ -34,7 +50,16 @@ export function DayNavigator({ date, onChange, maxDate = localDateString(), minD
       >
         ‹
       </button>
-      <DatePicker value={date} onChange={onChange} maxDate={maxDate} minDate={minDate} formatLabel={label} />
+      {eyebrow ? (
+        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 0 }}>
+          <small style={{ fontSize: 7, letterSpacing: '1.4px', color: 'var(--text-tertiary)' }}>
+            {eyebrowLabel(date, maxDate)}
+          </small>
+          <DatePicker value={date} onChange={onChange} maxDate={maxDate} minDate={minDate} formatLabel={label} />
+        </span>
+      ) : (
+        <DatePicker value={date} onChange={onChange} maxDate={maxDate} minDate={minDate} formatLabel={label} />
+      )}
       <button
         type="button"
         aria-label="Következő nap"

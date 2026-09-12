@@ -71,9 +71,9 @@ interface BaseMeta {
 const DEFAULT_META: BaseMeta = { slot: null, tags: [], starred: false, prepMins: 0, cookMins: 0, role: 'standard' }
 
 const GOAL_LABEL: Record<WorkshopGoal, string> = {
-  high_protein: 'High protein',
-  pre_workout: 'Pre-workout',
-  post_workout: 'Post-workout',
+  high_protein: 'Magas fehérje',
+  pre_workout: 'Edzés előtt',
+  post_workout: 'Edzés után',
   before_bed: 'Lefekvés előtt',
   breakfast: 'Reggeli',
 }

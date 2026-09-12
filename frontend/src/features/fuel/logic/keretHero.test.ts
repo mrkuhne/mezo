@@ -63,8 +63,9 @@ test('the water ring pct is currentMl over targetMl', () => {
   const vm = build({ water: { currentMl: 1800, targetMl: 2400 } })
   const water = vm.rings.find(r => r.key === 'water')!
   expect(water.pct).toBe(75)
-  expect(water.value).toBe('1800 ml')
-  expect(water.target).toBe('2400 ml')
+  // A jóváhagyott prototípus literben mutatja a vizet — olvashatóbb, mint a 4 jegyű ml.
+  expect(water.value).toBe('1,8 l')
+  expect(water.target).toBe('2,4 l')
 })
 
 test('an overshoot water log clamps the ring pct at 100, never over', () => {
@@ -73,9 +74,9 @@ test('an overshoot water log clamps the ring pct at 100, never over', () => {
   expect(water.pct).toBe(100)
 })
 
-test('the 5 rings always render in the fixed P/C/F/Rost/Víz order', () => {
+test('the 5 rings always render in the approved P/C/F/Víz/Rost order', () => {
   const vm = build()
-  expect(vm.rings.map(r => r.key)).toEqual(['p', 'c', 'f', 'fiber', 'water'])
+  expect(vm.rings.map(r => r.key)).toEqual(['p', 'c', 'f', 'water', 'fiber'])
 })
 
 // ── chips / static energy ─────────────────────────────────────────────────────

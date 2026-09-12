@@ -25,12 +25,22 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePantry, useRecipes } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { ImportItemSheet } from '@/features/fuel/sheets/ImportItemSheet'
 import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
+
+/** A Receptműhely öt preset-célja a Konyha poszterén — a prototípus `GOALS` sora.
+ *  Csak ARC (ikon + hue): a célok viselkedése a Műhely lapjáé, ez itt a meghívó. */
+const WORKSHOP_GOAL_FACES: { id: string; label: string; icon: ClayIconName; color: string }[] = [
+  { id: 'high_protein', label: 'Magas fehérje', icon: 'i-hus', color: 'var(--macro-protein)' },
+  { id: 'pre_workout', label: 'Edzés előtt', icon: 'i-lang', color: 'var(--amber)' },
+  { id: 'post_workout', label: 'Edzés után', icon: 'i-edzes', color: 'var(--sage)' },
+  { id: 'before_bed', label: 'Lefekvés előtt', icon: 'i-hold', color: 'var(--lav)' },
+  { id: 'breakfast', label: 'Reggeli', icon: 'i-nap', color: 'var(--macro-carbs)' },
+]
 
 export function FuelKonyhaPage() {
   const navigate = useNavigate()
@@ -87,6 +97,15 @@ export function FuelKonyhaPage() {
             <span className="fkx-ws-copy">
               <strong>Főzzünk ki valamit</strong>
               <small>Te mondod a célt, én a hozzávalót — a számokat a kamrád adja.</small>
+            </span>
+            {/* A jóváhagyott poszter cél-sora (`kx-ws-goals`): a Műhely öt preset-célja
+                egy pillantásra, a saját hue-jukkal — ígéret arról, mit lehet itt kérni. */}
+            <span className="fkx-ws-goals" aria-hidden="true">
+              {WORKSHOP_GOAL_FACES.map(g => (
+                <i key={g.id} style={{ '--fkx': g.color } as React.CSSProperties} title={g.label}>
+                  <ClayIcon name={g.icon} size={22} />
+                </i>
+              ))}
             </span>
           </button>
 
