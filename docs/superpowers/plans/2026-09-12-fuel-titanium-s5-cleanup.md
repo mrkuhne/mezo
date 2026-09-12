@@ -97,6 +97,8 @@ test('minden horgony megtalálható a saját oldalán', () => { ... })
 
 Read the registry and its existing test first: reuse whatever route-resolution helper they already have rather than inventing `routeExists` if an equivalent exists.
 
+**Known stale copy to fix in this task:** the `fuel-log-uj` kalauz card still describes the old three sources ("Kamra grammra, Recept adagra, ✨ AI"). The four ways in are now Fotó · Hang · Gépelés · Szokásosak. Rewrite that card's copy, and sweep the other Fuel cards for the same kind of drift — a step that points at a live route but describes a retired UI is just as broken as a dead route.
+
 - [ ] **Step 2: Run the tests to verify they fail, then implement**
 
 Run from `frontend/`: `CI=true VITE_USE_MOCK=true pnpm test` → FAIL for the steps that moved. Repoint them, and add the missing `data-kalauz-anchor` attributes to the new pages.
