@@ -7,6 +7,7 @@ import {
   skipExercise, isSkipped, pendingCount,
 } from './session-state.js';
 import { icon, safe, closeSheet, react, toast } from './nap.js';
+import { animateFuelDashboard } from './fuel-dashboard.js';
 
 const $ = s => document.querySelector(s);
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
@@ -229,31 +230,82 @@ function closeSession() {
 
 function summary() {
   const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
+  const minutes = Math.max(1, Math.round(((session.finishedAt || Date.now()) - (session.startedAt || Date.now())) / 60000));
+  const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
+
   // One record per exercise — the best of the day, not every set that cleared the old best.
   const records = session.order.flatMap(id => {
     const e = exerciseById(id);
     const beating = session.rows[id].filter((r, i) => r.done && setVerdict(e, i, r) === 'record');
     if (!beating.length) return [];
     const best = beating.reduce((a, b) => (e1rm(b) > e1rm(a) ? b : a));
-    return [`${e.name} · ${n(best.kg)} kg × ${best.reps}`];
+    return [{ name: e.name, art: e.art, color: e.color, value: `${n(best.kg)} kg × ${best.reps}`, e1rm: e1rm(best) }];
   });
-  return `<div class="wo-summary">
-   <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'NÉZZ VISSZA EGY PILLANATRA'}</span>
-   <h1 tabindex="-1">${done ? 'Beletetted. Megmarad.' : 'Ennyit tettél bele.'}</h1>
-   <div class="wo-summary-number">${m.count}<small>elvégzett munkasorozat</small></div>
-   <div class="wo-summary-stats"><span><b>${m.reps}</b>ismétlés</span><span><b>${n(m.volume)}</b>kg × rep</span><span><b>+${m.xp}</b>demó XP</span></div>
-   ${records.length ? `<div class="wo-summary-records">${icon('record')}<span><strong>${records.length} új rekord</strong><small>${records.join(' · ')}</small></span></div>` : ''}
-   <div class="wo-summary-list">${session.order.map(id => {
-    const e = exerciseById(id), logged = session.rows[id].filter(r => r.done);
-    const left = session.rows[id].length - logged.length;
-    const tail = isSkipped(session, id) ? 'kihagyott gyakorlat' : left && done ? `${left} szett kihagyva` : left ? `${left} szett még hátra` : '';
-    return `<div><strong>${e.name}</strong><small>${logged.length ? logged.map(r => `${n(r.kg)}×${r.reps}`).join(' · ') : 'nem logolt szett'}${tail ? ` · ${tail}` : ''}</small></div>`;
-  }).join('')}</div>
-   ${done
-    ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
-    : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-session-back>Még folytatom</button>`}
-   <p class="wo-glass-note">Mintaedzés · a demó újratöltése törli a szetteket.</p>
+
+  const ring = (name, art, value, target, color) =>
+    `<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100, target ? value / target * 100 : 0)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${value} / ${target} szett"><strong data-fuel-count="${value}">0</strong><b>/ ${target}<i>szett</i></b></span></div><span class="macro-name">${name}</span></div>`;
+
+  const hero = `<section class="wo-sum-hero ${done ? 'is-done' : ''}">
+   <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'MÁRA ENNYI'}</span>
+   <div class="wo-sum-art">${icon(records.length ? 'record' : 'gem')}<i></i><i></i><i></i></div>
+   <h1 tabindex="-1">${done ? 'Beletetted. Megmarad.' : records.length ? 'Ma megdöntöttél valamit.' : 'Ennyit tettél bele.'}</h1>
+   <div class="wo-sum-number"><strong data-fuel-count="${m.count}">0</strong><small>elvégzett munkasorozat${pending ? ` · ${pending} kihagyott` : ''}</small></div>
+  </section>`;
+
+  const rings = `<section class="fuel-rings three" aria-label="Izomcsoportonkénti munka">${session.order.map(id => {
+    const e = exerciseById(id);
+    return ring(e.muscle, e.art, doneCount(session, id), session.rows[id].length, e.color);
+  }).join('')}</section>`;
+
+  const tiles = `<div class="wo-sum-tiles">
+   <span><strong data-fuel-count="${m.reps}">0</strong><small>ismétlés</small></span>
+   <span><strong data-fuel-count="${m.volume}">0</strong><small>kg × ismétlés</small></span>
+   <span><strong>${minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
+   <span><strong>+${m.xp}</strong><small>demó XP</small></span>
   </div>`;
+
+  const recordCard = records.length ? `<section class="wo-sum-records">
+   <div class="wo-sum-records-head"><span class="wo-sum-records-art">${icon('record')}</span><span><span class="overline">ÚJ REKORD</span><strong>${records.length === 1 ? 'Egy gyakorlatban ma új csúcs.' : `${records.length} gyakorlatban ma új csúcs.`}</strong></span></div>
+   ${records.map(r => `<div class="wo-sum-record" style="--ex-color:${r.color}">${icon(r.art)}<span><strong>${r.name}</strong><small>${r.value} · becsült maximum ${n(r.e1rm)} kg</small></span><b>↑</b></div>`).join('')}
+  </section>` : '';
+
+  const energy = `<button class="wo-sum-energy" data-go-fuel>
+   <span class="wo-sum-energy-art">${icon('bowl')}</span>
+   <span class="wo-sum-energy-main"><b>+</b><strong data-fuel-count="${kcal}">0</strong><small>kcal a mai keretedhez</small></span>
+   <span class="fuel-tapchip"><span>Megnézem a keretem</span><b>›</b><u class="chip-sheen"></u></span></button>`;
+
+  const impact = `<div class="wo-sum-section"><span class="overline">AMIT MA MEGTERHELTÉL</span></div>
+   <div class="tr-mus">${session.order.map(id => {
+    const e = exerciseById(id), rows = session.rows[id], logged = doneCount(session, id);
+    const plan = 72, madeShare = rows.length ? logged / rows.length : 0;
+    const word = isSkipped(session, id) ? 'kihagyva' : !logged ? 'nem kapott' : madeShare === 1 ? 'teljes' : madeShare >= .5 ? 'nagyrészt' : 'részben';
+    return `<div class="tr-mus-row" style="--mus-color:${e.color}">
+     <span class="tr-mus-art">${icon(e.art)}</span>
+     <span class="tr-mus-name">${e.muscle}</span>
+     <span class="tr-mus-track"><i class="plan" style="--w:${plan}%"></i><i class="done" style="--w:${Math.round(plan * madeShare)}%"></i></span>
+     <span class="tr-mus-word">${word}</span></div>`;
+  }).join('')}</div>`;
+
+  const list = `<div class="wo-sum-section"><span class="overline">GYAKORLATONKÉNT</span></div>
+   <div class="wo-sum-list">${session.order.map(id => {
+    const e = exerciseById(id), rows = session.rows[id];
+    const logged = rows.filter(r => r.done), left = rows.length - logged.length;
+    const tail = isSkipped(session, id) ? 'kihagyott gyakorlat' : left && done ? `${left} szett kihagyva` : left ? `${left} szett még hátra` : 'minden szett megvan';
+    return `<div class="wo-sum-ex" style="--ex-color:${e.color}">
+     <span class="wo-sum-ex-head">${icon(e.art)}<strong>${e.name}</strong><small>${tail}</small></span>
+     <span class="wo-sum-chips">${rows.map((r, i) => r.done
+      ? `<b class="is-${VERDICT[setVerdict(e, i, r)][0]}">${n(r.kg)}×${r.reps}</b>`
+      : '<b class="is-empty">—</b>').join('')}</span></div>`;
+  }).join('')}</div>`;
+
+  const xp = `<div class="wo-sum-xp"><span class="wo-sum-xp-art">${icon('gem')}</span><span><strong>A haladásod megmarad.</strong><small>${760 + m.xp} / 1 200 XP · 12. szint</small></span><span class="wo-sum-xp-track"><i style="--w:${Math.min(100, (760 + m.xp) / 1200 * 100)}%"></i></span></div>`;
+
+  const cta = done
+    ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
+    : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-session-back>Még folytatom</button>`;
+
+  return `<div class="wo-summary">${hero}${rings}${tiles}${recordCard}${energy}${impact}${list}${xp}${cta}
+   <p class="wo-glass-note">Mintaedzés · a demó újratöltése törli a szetteket.</p></div>`;
 }
 
 let view = 'list';
@@ -273,7 +325,10 @@ function render() {
   const scroller = overlay.querySelector('.wo-scroll');
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
   updateTimers();
-  if (view === 'summary') requestAnimationFrame(() => overlay.querySelector('h1')?.focus());
+  if (view === 'summary') {
+    animateFuelDashboard(overlay);
+    requestAnimationFrame(() => overlay.querySelector('h1')?.focus());
+  }
 }
 
 function updateTimers() {
@@ -337,6 +392,7 @@ overlay.addEventListener('click', event => {
     return closeSession();
   }
   if (el.hasAttribute('data-finish-really')) { glass = null; return closeSession(); }
+  if (el.hasAttribute('data-go-fuel')) { leave(); return callbacks.go('fuel', 0); }
   if (el.hasAttribute('data-session-leave')) return leave();
 });
 
