@@ -160,15 +160,19 @@ function historyGlass(id) {
   const logged = rows.filter(r => r.done);
   const bestToday = logged.length ? logged.reduce((a, b) => (e1rm(b) > e1rm(a) ? b : a)) : null;
   const volumeToday = logged.reduce((total, r) => total + r.kg * r.reps, 0);
-  const beatsE1rm = bestToday && e1rm(bestToday) > h.e1rm;
-  const beatsSet = bestToday && (bestToday.kg > h.best.kg || (bestToday.kg === h.best.kg && bestToday.reps > h.best.reps));
-  const beatsVolume = volumeToday > h.maxVolume.value;
 
-  const record = (art, label, value, when, today, beaten) => `<div class="rec ${beaten ? 'is-beaten' : ''}">
-   <span class="rec-art">${icon(art)}</span>
-   <span class="rec-copy"><small>${label}</small><strong>${value}</strong><i>${when}</i></span>
-   <span class="rec-today">${beaten ? `${icon('record')}<b>MA MEGDÖNTVE</b>` : today}</span>
-  </div>`;
+  /** One record: where it stands, and how close today already is to it. */
+  const record = (art, label, value, since, now, target, nowLabel, gap) => {
+    const share = target ? Math.min(100, now / target * 100) : 0;
+    const beaten = now > target;
+    return `<div class="rec ${beaten ? 'is-beaten' : ''}">
+     <span class="rec-art">${icon(art)}</span>
+     <span class="rec-head"><small>${label}</small><strong>${value}</strong></span>
+     <span class="rec-since">${since}</span>
+     <span class="rec-track"><i style="--w:${share}%"></i></span>
+     <span class="rec-now">${beaten ? '<b>MA MEGDÖNTVE</b>' : now ? `ma ${nowLabel}${gap ? ` · ${gap}` : ''}` : ''}</span>
+    </div>`;
+  };
 
   const points = [...h.trajectory], all = [...points, ...h.projected];
   const min = Math.min(...all) - 2, max = Math.max(...all) + 2;
@@ -185,21 +189,23 @@ function historyGlass(id) {
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
 
-    <div class="wo-glass-section"><span class="overline">A MÚLTKORI ALKALOM</span></div>
+    <h3 class="wo-glass-title">A múltkori alkalom</h3>
     <div class="wo-glass-sets">${e.last.map((set, i) => `<span><i>${i + 1}. szett</i><strong>${n(set.kg)} × ${set.reps}</strong><small>${set.rir} RIR</small></span>`).join('')}</div>
 
-    <div class="wo-glass-section"><span class="overline">MEGDÖNTHETŐ REKORDOK</span></div>
+    <h3 class="wo-glass-title">Megdönthető rekordok</h3>
+    ${bestToday ? '' : '<p class="rec-empty">Ma még nem logoltál ehhez szettet — a sávok üresen állnak.</p>'}
     <div class="recs">
-     ${record('up', 'BECSÜLT EGYISMÉTLÉSES MAXIMUM', `${n(h.e1rm)} kg`, `${n(h.nextRecord.kg)} kg × ${h.nextRecord.reps} viszi feljebb`,
-       bestToday ? `ma ${n(e1rm(bestToday))} kg` : 'ma még nincs szett', beatsE1rm)}
+     ${record('peak', 'BECSÜLT 1RM', `${n(h.e1rm)} kg`, `${n(h.nextRecord.kg)} kg × ${h.nextRecord.reps} viszi feljebb`,
+       bestToday ? e1rm(bestToday) : 0, h.e1rm, bestToday ? `${n(e1rm(bestToday))} kg` : '',
+       bestToday ? `${n(Math.max(0, h.e1rm - e1rm(bestToday)))} kg kell` : '')}
      ${record('record', 'LEGJOBB SZETT', `${n(h.best.kg)} kg × ${h.best.reps}`, `${dateLabel(h.best.date)} óta áll`,
-       bestToday ? `ma ${n(bestToday.kg)} × ${bestToday.reps}` : 'ma még nincs szett', beatsSet)}
-     ${record('kettle', 'LEGTÖBB VOLUMEN EGY EDZÉSEN', `${n(h.maxVolume.value)} kg × rep`, `${dateLabel(h.maxVolume.date)} óta áll`,
-       volumeToday ? `ma ${n(volumeToday)}` : 'ma még nincs szett', beatsVolume)}
+       bestToday ? e1rm(bestToday) : 0, e1rm(h.best), bestToday ? `${n(bestToday.kg)} × ${bestToday.reps}` : '', '')}
+     ${record('kettle', 'LEGTÖBB VOLUMEN', `${n(h.maxVolume.value)} kg × rep`, `${dateLabel(h.maxVolume.date)} óta áll`,
+       volumeToday, h.maxVolume.value, `${n(volumeToday)} kg × rep`, `még ${n(Math.max(0, h.maxVolume.value - volumeToday))}`)}
     </div>
 
     <details class="wo-glass-more">
-     <summary>Hosszabb táv <span>ÍV · MEDÁLOK</span></summary>
+     <summary><span class="wo-glass-more-art">${icon('journal')}</span><span><strong>Hosszabb táv</strong><small>A becsült maximum íve és a medáljaid</small></span><b>⌄</b></summary>
      <figure class="wo-glass-chart">
       <figcaption><span>BECSÜLT 1RM ÍVE</span><small>folytonos: eddig · szaggatott: ha így haladsz</small></figcaption>
       <svg viewBox="0 0 328 132" role="img" aria-label="Becsült egyismétléses maximum eddigi és előrejelzett íve">

@@ -628,44 +628,50 @@
   .cer-details-screen.is-told .cer-cta { transition-delay: .9s; }
 }
 
-/* The beatable records, the point of the exercise log. */
-.recs { display: grid; gap: 9px; }
+/* The beatable records: tight rows, and a bar that says how close today already is. */
+.wo-glass-title { font-size: 17px; font-weight: 500; letter-spacing: -.01em; margin: 20px 0 10px; }
+.wo-glass-head + .wo-glass-title { margin-top: 4px; }
+.rec-empty { margin: -4px 0 10px; font-size: 11.5px; color: #ffffff6b; }
+
+.recs { display: grid; gap: 8px; }
 .rec {
-  display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px; padding: 13px 14px;
-  border: 1px solid #ffffff12; border-radius: 18px; background: linear-gradient(150deg, #ffffff08, #ffffff03);
+  display: grid; grid-template-columns: 34px 1fr auto; grid-template-rows: auto auto auto;
+  align-items: center; column-gap: 11px; row-gap: 5px; padding: 11px 13px;
+  border: 1px solid #ffffff12; border-radius: 16px; background: linear-gradient(150deg, #ffffff08, #ffffff03);
 }
 .rec.is-beaten {
   border-color: #d9c39566;
-  background: radial-gradient(110% 90% at 88% 0%, #d9c39528, transparent 64%), linear-gradient(150deg, #ffffff09, #ffffff03);
+  background: radial-gradient(110% 90% at 88% 0%, #d9c3952b, transparent 64%), linear-gradient(150deg, #ffffff09, #ffffff03);
 }
-.rec-art .icon { width: 36px; height: 36px; }
-.rec-copy small { display: block; font-size: 8px; letter-spacing: .14em; color: #ffffff5e; }
-.rec-copy strong { display: block; font-size: 19px; font-weight: 400; letter-spacing: -.02em; margin: 3px 0 2px; }
-.rec-copy i { font-style: normal; font-size: 10px; color: #ffffff52; }
-.rec-today { font-size: 10.5px; color: #ffffff70; text-align: right; max-width: 92px; }
-.rec.is-beaten .rec-today { display: grid; justify-items: end; gap: 3px; }
-.rec.is-beaten .rec-today .icon { width: 24px; height: 24px; }
-.rec.is-beaten .rec-today b { font-size: 8px; letter-spacing: .1em; color: #f0dcae; }
+.rec-art { grid-row: 1 / span 2; }
+.rec-art .icon { width: 34px; height: 34px; }
+.rec-head small { display: block; font-size: 8px; letter-spacing: .14em; color: #ffffff5e; }
+.rec-head strong { display: block; font-size: 18px; font-weight: 400; letter-spacing: -.02em; margin-top: 1px; }
+.rec-since { font-size: 9.5px; color: #ffffff4a; text-align: right; align-self: start; padding-top: 3px; }
+.rec-track {
+  grid-column: 2 / -1; position: relative; height: 5px; border-radius: 999px;
+  background: #ffffff12; overflow: hidden;
+}
+.rec-track i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, #b89757, #ffe9b5);
+}
+.rec.is-beaten .rec-track i { background: linear-gradient(90deg, #ffd98a, #fff6e0); box-shadow: 0 0 10px #ffd98a70; }
+.rec-now { grid-column: 2 / -1; font-size: 10px; color: #ffffff66; }
+.rec-now:empty { display: none; }
+.rec-now b { font-size: 9px; letter-spacing: .12em; color: #f0dcae; }
 
-.wo-glass-more { margin-top: 18px; border-top: 1px solid #ffffff12; padding-top: 12px; }
+.wo-glass-more { margin-top: 18px; }
 .wo-glass-more summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
-  font-size: 13px; color: #d3cfe0; list-style: none;
+  display: grid; grid-template-columns: 32px 1fr 14px; align-items: center; gap: 11px; cursor: pointer;
+  padding: 12px 13px; border: 1px solid #ffffff12; border-radius: 16px; background: #ffffff05;
+  list-style: none; color: #d3cfe0;
 }
 .wo-glass-more summary::-webkit-details-marker { display: none; }
-.wo-glass-more summary span { font-size: 8px; letter-spacing: .14em; color: #ffffff4a; }
+.wo-glass-more-art .icon { width: 30px; height: 30px; }
+.wo-glass-more summary strong { display: block; font-size: 13.5px; font-weight: 500; }
+.wo-glass-more summary small { display: block; font-size: 10px; color: #ffffff5e; margin-top: 2px; }
+.wo-glass-more summary b { color: #ffffff4a; text-align: right; transition: rotate .2s ease; }
+.wo-glass-more[open] summary b { rotate: 180deg; }
 .wo-glass-more[open] summary { margin-bottom: 12px; }
 .wo-glass-sets i { display: block; font-style: normal; font-size: 8.5px; letter-spacing: .1em; color: #ffffff4a; margin-bottom: 4px; }
-
-/* The read-back: everything already told, nothing waiting to play. */
-.wo-recap { padding: 10px 4px 8px; }
-.wo-recap .cer { margin: 0 0 4px; }
-.cer.is-settled .cer-comet { display: none; }
-.cer.is-settled .cer-stars i .icon { opacity: .12; filter: grayscale(1); }
-.cer.is-settled .cer-stars i.is-half .icon { opacity: .4; filter: grayscale(.4); }
-.cer.is-settled .cer-stars i.is-lit .icon { opacity: 1; filter: none; animation: none; }
-.cer.is-settled .cer-stars i.is-lit .cer-aura { animation: none; opacity: 0; }
-.wo-recap .cer-stats { margin-bottom: 12px; }
-.wo-recap .cer-record { margin: 0 0 12px; }
-.wo-recap-note { margin: 0 0 12px; font-size: 11.5px; color: #ffffff6b; text-align: center; }
-.wo-recap .cer-kcal, .wo-recap .cer-cta { opacity: 1; translate: none; }

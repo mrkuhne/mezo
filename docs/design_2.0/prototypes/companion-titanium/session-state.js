@@ -30,7 +30,7 @@ export const EXERCISES = [
     history: {
       sessions: 14, since: '2026-05-20',
       e1rm: 58, e1rmPrev: 57, best: { kg: 47.5, reps: 11, date: '2026-08-12' },
-      volume: 21160, lastVolume: 1502, maxVolume: { value: 1620, date: '2026-08-12' },
+      volume: 21160, lastVolume: 1502, maxVolume: { value: 1620, date: '2026-07-29' },
       nextRecord: { kg: 47.5, reps: 12, note: 'a legjobb szettednél egy ismétléssel több' },
       trajectory: [52, 53.5, 54, 55.5, 57, 58], projected: [59, 60, 61],
       medals: [
