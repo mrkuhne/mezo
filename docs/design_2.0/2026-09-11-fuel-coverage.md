@@ -126,4 +126,9 @@ Beállítások + Ablakok a Mai sarkából. Megszűnő route-ok (`/fuel/log`, `/f
 | Prototype scope | All four pages: Mai hero+rings+flat rows+camera-first logger (photo/voice/text/szokásosak tabs, edit/delete, past-day), Konyha two quick-captures + libraries, Trendek weekly hero + long horizon + pattern links, Kiegészítők time-band checklist + protocol/manage; states: empty/historical/AI-failure/loading/reduced-motion |
 | Preservation scope | Every KEEP/MERGE row's Preservation test column; E1–E12 background tests mandatory |
 
-Prototype approval will freeze these decisions for implementation (handoff §4).
+**Prototype approved by the owner on 2026-09-12 — this manifest is FROZEN for implementation**
+(handoff §4). New evidence can reopen a row, but Claude must surface the contradiction rather than
+silently changing scope. Implementation slices: `mezo-o6uv` (S0 shell) → `mezo-33k6` (S1 Mai),
+`mezo-g2vl` (S2 Kiegészítők), `mezo-83g0` (S3 Trendek), `mezo-hygp` (S4 Konyha) → `mezo-qt5q`
+(S5 cleanup). Follow-up capabilities outside this slice: `mezo-vj61` (micronutrient storage),
+`mezo-nmzh` (supplement dose advisor).

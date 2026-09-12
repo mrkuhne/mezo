@@ -39,6 +39,27 @@ domain destinations, while the weekly/long-term picture has no home at all.
    photo/URL import, recipe workshop). Tracked as its own bd feature (coverage row F1); until it
    ships, the meal detail's Mikrotápanyagok section shows the four stored facts honestly.
 
+## Prototype approval (delivery gate)
+
+**Approved by the owner on 2026-09-12** for all four pages of the interactive prototype in
+`docs/design_2.0/prototypes/companion-titanium/` (Fuel Mai, Kiegészítők, Trendek, Konyha, plus the
+meal-detail, AI-score, recipe-detail, pantry-detail, Receptműhely, Protokoll and dose-setup pages).
+Approval freezes the coverage manifest and opens the autonomous implementation phase
+(handoff §1 and §8). Final owner notes captured at approval:
+
+9. **Tab order is `Mai · Kiegészítők · Trendek · Konyha`** — display order only; route paths and
+   deep links keep their existing numbering/spelling.
+10. **Four new clay icons for the Fuel tab bar**: plate with cutlery (Mai), supplement jar with a
+    capsule (Kiegészítők), framed rising chart (Trendek), lidded pot with steam (Konyha).
+11. **Recipe URL import is dropped** (it never existed in production); pantry URL import stays, and
+    the same capability is extended to the supplement dose setup (product link → label facts).
+12. **Supplement dose advisor** (product label → daily amount, units of that product, timing with
+    the placement rule's reason) is a new capability tracked as `mezo-nmzh`, sequenced after this
+    slice; the prototype ships its approved UI and stays honest-null where the data is missing.
+
+Implementation slices (bd): `mezo-o6uv` S0 shell foundations → `mezo-33k6` S1 Mai,
+`mezo-g2vl` S2 Kiegészítők, `mezo-83g0` S3 Trendek, `mezo-hygp` S4 Konyha → `mezo-qt5q` S5 cleanup.
+
 ## Page roles
 
 ### Mai — "Hogy állok ma, és naplózzunk villámgyorsan"
