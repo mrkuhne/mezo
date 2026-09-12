@@ -24,6 +24,8 @@ export type ClayIconName =
   | 'i-life-produktivitas' | 'i-life-tanulas' | 'i-life-kapcsolatok' | 'i-life-regeneracio'
   // Receptműhely (mezo-92pb): the AI recipe workshop's own symbol — tányér + szikrák.
   | 'i-muhely'
+  // Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma.
+  | 'i-tanyer' | 'i-kiegeszito' | 'i-trend' | 'i-fazek'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'

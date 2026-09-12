@@ -2,16 +2,29 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (54 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (58 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 // Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
 // material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
 // accent — replacing the earlier warm-clay ramps. The NAMES (54 i-* + 24 s-*) are unchanged so
 // every call site and mapping table keeps compiling.
 
-test('ClaySprites mounts all 54 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 58 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(54)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(58)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
+})
+
+// Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma — tányér, kiegészítő-tégely,
+// trend-tábla, fazék. A készlet szabálya szerint titánium alap + domén-akcentus.
+test('a négy Fuel-fül ikon a sprite-ban van, a titánium recept szerint', () => {
+  render(<ClaySprites />)
+  for (const id of ['i-tanyer', 'i-kiegeszito', 'i-trend', 'i-fazek']) {
+    const sym = document.querySelector(`#${id}`)
+    expect(sym, `${id} hiányzik`).not.toBeNull()
+    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
+    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
+    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  }
 })
 
 // mezo-8az6: a fejléc szekció-spotjaihoz a Fuel és az Én darabja hiányzott a készletből.
