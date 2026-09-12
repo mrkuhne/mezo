@@ -13015,6 +13015,203 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /fuel-stack titanium ─────────────────────────────────────────────────── */
 
+/* ── fuel-trendek titanium (mezo-83g0) ────────────────────────────────────
+   A Trendek Titán felülete (fagyasztott manifeszt C1 · C2 · C3 · C4 · C5 · C6). A jóváhagyott
+   vizuális referencia a prototípus:
+   docs/design_2.0/prototypes/companion-titanium/fuel-pages.js (`trendek` :199, `weekBars` :192,
+   `horizonChart` :223, `dimFactView` :233, `trendDayGlass` :244, `trendPatternGlass` :277) +
+   a fuel-pages.css „Trendek" szekciója (:218) és `.tx-*` blokkjai (:722-821).
+
+   A `ftx-` prefix SZÁNDÉKOS: az S1 Mai blokkja `fmx-`-et, az S2 Kiegészítők blokkja `fsx-`-et
+   használ, és a három blokk független — így nem tudnak ütközni. EGY blokk, második
+   `fuel-trendek titanium` blokk nem nyílik.
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — a 7 oszlopos, 104px magas sávrács és a szaggatott
+   keretvonal, a csempe- és sor-ritmus, a dimenzió-blokkok SORONKÉNTI ténytálalása (ez az
+   owner kifejezett kérése: „nagyon össze van dobva és nehéz olvasni"), a belépő-koreográfia
+   időzítése és a lépcsőzött sáv-késleltetés.
+   AMIT NEM: a prototípus beégetett sötét hexeit. A Trendek a ház SAJÁT (világos/sötét)
+   témájában él, ezért minden szín ház-tokenen megy keresztül — új gradiens nem nyílik, a
+   paletta zárt.
+
+   SZÉGYENMENTESSÉG, CSS-szinten is: a keret FELETT járó nap (`.is-over`) borostyán kitöltést
+   kap, NEM hiba-vöröset, és nincs `.is-error` állapot, amit be lehetne kapcsolni. A nem
+   naplózott nap (`.is-empty`) egy semleges hézag-jelet kap, nem nulla magasságú oszlopot.
+
+   Csökkentett mozgás: minden animáció a `no-preference` ágban él, a `reduce` ág pedig explicit
+   kivezeti őket — ez a blokk csökkentett mozgás mellett teljesen statikus (a számok
+   felszámolása a `useFuelCountUp` hookon múlik, az maga is kivezet).
+   Ujjbarát: minden nap-oszlop és sor legalább 44px magas tap-területet kap. */
+
+.ftx-page .mz-page-body { padding-top: 4px; }
+.ftx-body { display: grid; gap: 13px; }
+
+/* A HETI KÉP — a lap protagonistája. */
+.ftx-hero { position: relative; padding: 6px 2px 16px; border-bottom: 1px solid var(--divider);
+  overflow: hidden; }
+.ftx-glow { position: absolute; top: -40px; left: 50%; width: 300px; height: 230px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sky) 20%, transparent) 0, transparent 66%); }
+.ftx-hero h1 { position: relative; margin: 0; font-size: 21px; font-weight: 600; color: var(--ink); }
+.ftx-week { position: relative; margin: 3px 0 0; font-size: 11px; letter-spacing: .4px;
+  color: var(--sub); }
+.ftx-big { position: relative; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; }
+.ftx-big strong { font-size: 62px; line-height: 1; font-weight: 500; letter-spacing: -3px;
+  color: var(--ink); }
+.ftx-big b { display: block; font-size: 13px; font-weight: 500; color: var(--sub); }
+.ftx-big small { display: block; margin-top: 3px; font-size: 8px; letter-spacing: 1.3px;
+  color: var(--faint); }
+
+/* A 7 oszlopos sávrács (prototípus `.tx-bars`/`.tx-day` geometriája). */
+.ftx-bars { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+  margin: 12px 0 2px; }
+.ftx-day { position: relative; display: grid; justify-items: center; gap: 4px; padding: 0 0 6px;
+  min-height: 44px; border: 0; background: transparent; color: inherit; }
+.ftx-col { position: relative; display: grid; align-items: end; width: 100%; height: 104px; }
+.ftx-target { grid-area: 1 / 1; align-self: end; width: 100%; height: var(--ftx-h);
+  border-top: 1px dashed var(--border-strong); }
+.ftx-fill { grid-area: 1 / 1; align-self: end; justify-self: center; width: 72%;
+  height: var(--ftx-h); border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, var(--sky), color-mix(in srgb, var(--sky) 55%, var(--surface-2))); }
+/* SEMLEGES, nem hiba: a keret felett járó nap MÁS SZÍNT kap, nem hibajelzést. */
+.ftx-day.is-over .ftx-fill {
+  background: linear-gradient(180deg, var(--amber), color-mix(in srgb, var(--amber) 55%, var(--surface-2))); }
+/* Őszinte hiány: hézag-jel, nem nulla magasságú oszlop. */
+.ftx-gap { grid-area: 1 / 1; align-self: end; justify-self: center; width: 72%; height: 8px;
+  border-radius: 5px; background: var(--surface-recess); }
+.ftx-day-score { font-size: 11px; font-weight: 600; color: var(--lav-deep, var(--ink)); }
+.ftx-day.is-empty .ftx-day-score { color: var(--faint); }
+.ftx-day-name { font-size: 9px; color: var(--faint); }
+.ftx-day.is-weekend .ftx-day-name { color: var(--amber-deep, var(--sub)); }
+.ftx-train { position: absolute; bottom: 0; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--sage); }
+
+.ftx-read { position: relative; margin: 14px 0 0; font-size: 12px; line-height: 1.6;
+  color: var(--sub); }
+.ftx-hint { position: relative; margin: 8px 0 0; font-size: 9px; letter-spacing: .8px;
+  text-align: center; color: var(--faint); }
+
+/* A három mutató-csempe. */
+.ftx-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px;
+  margin: 4px 0; }
+.ftx-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  min-width: 0; padding: 12px 11px; border-radius: 17px;
+  border: 1px solid color-mix(in srgb, var(--ftx-tile-color) 26%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--ftx-tile-color) 14%, var(--surface-1)),
+    var(--surface-1) 64%);
+  text-align: left; color: var(--ink); }
+.ftx-tile-art { line-height: 0; }
+.ftx-tile strong { font-size: 22px; font-weight: 500; letter-spacing: -.8px;
+  color: color-mix(in srgb, var(--ftx-tile-color) 55%, var(--ink)); }
+.ftx-tile strong small { margin-left: 3px; font-size: 10px; letter-spacing: 0; color: var(--sub); }
+.ftx-tile-label { font-size: 10px; line-height: 1.3; color: var(--sub); }
+
+.ftx-section { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+
+/* Hétköznap vs hétvége — a hét fő üzenete, kitöltődő sávval. */
+.ftx-split { display: grid; gap: 9px; }
+.ftx-splitrow { display: flex; align-items: center; gap: 11px; min-height: 44px;
+  padding: 11px 12px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ftx-split-color) 24%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--ftx-split-color) 12%, var(--surface-1)),
+    var(--surface-1) 66%); }
+.ftx-split-art { line-height: 0; flex: 0 0 auto; }
+.ftx-split-copy { flex: 1; min-width: 0; }
+.ftx-split-copy strong { display: block; font-size: 13px; font-weight: 500; color: var(--ink); }
+.ftx-split-copy i { position: relative; display: block; height: 6px; margin-top: 7px;
+  border-radius: 4px; background: var(--surface-recess); }
+.ftx-split-copy i b { position: absolute; inset: 0; width: var(--ftx-w); border-radius: 4px;
+  background: var(--ftx-split-color); }
+.ftx-splitrow > b { font-size: 19px; font-weight: 600; white-space: nowrap;
+  color: color-mix(in srgb, var(--ftx-split-color) 58%, var(--ink)); }
+.ftx-splitrow > b small { margin-left: 2px; font-size: 9px; font-weight: 400; color: var(--sub); }
+.ftx-split-note { margin: 2px 0 0; font-size: 11px; line-height: 1.5; color: var(--sub); }
+.ftx-split-note b { color: var(--ink); }
+
+/* A napi ÜVEGDOBOZ (`dialog.glass` ház-minta: FuelEnergyHero, FuelStackItemGlass). */
+.ftx-glass { display: grid; gap: 11px; }
+.ftx-glass-hero { display: flex; align-items: center; gap: 13px; }
+.ftx-glass-hero > span { line-height: 0; flex: 0 0 auto; }
+.ftx-glass-hero strong { display: block; font-size: 40px; font-weight: 500; letter-spacing: -1.6px;
+  line-height: 1; color: var(--ink); }
+.ftx-glass-hero small { display: block; margin-top: 5px; font-size: 10px; color: var(--sub); }
+.ftx-glass-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ftx-glass-chips span { display: inline-flex; align-items: center; padding: 3px 9px;
+  border-radius: 11px; background: var(--surface-recess); font-size: 10px; color: var(--sub); }
+.ftx-glass-bar { position: relative; height: 8px; border-radius: 5px;
+  background: var(--surface-recess); }
+.ftx-glass-bar i { position: absolute; inset: 0; width: var(--ftx-w); border-radius: 5px;
+  background: var(--sky); }
+.ftx-glass.is-over .ftx-glass-bar i { background: var(--amber); }
+.ftx-glass-fact { margin: 0; font-size: 11.5px; line-height: 1.6; color: var(--sub); }
+.ftx-glass-fact b { color: var(--ink); }
+/* Őszinte-null: a nem naplózott nap semleges, szaggatott keretű kimondása. */
+.ftx-glass-honest { display: flex; align-items: flex-start; gap: 10px; margin: 0;
+  padding: 12px 13px; border: 1px dashed var(--border-subtle); border-radius: 15px;
+  font-size: 11.5px; line-height: 1.6; color: var(--sub); }
+.ftx-glass-honest > span:first-child { line-height: 0; flex: 0 0 auto; }
+.ftx-glass-honest small { display: block; margin-bottom: 3px; font-size: 8px;
+  letter-spacing: 1.2px; color: var(--faint); }
+
+/* A dimenzió-blokkok — SORONKÉNT tálalt tények (owner: legyen olvasható). */
+.ftx-dims { display: grid; gap: 9px; }
+.ftx-dim { padding: 11px 12px; border-radius: 15px;
+  border: 1px solid color-mix(in srgb, var(--ftx-dim-color) 26%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--ftx-dim-color) 12%, var(--surface-1)),
+    var(--surface-1) 66%); }
+.ftx-dim.is-degraded { border-style: dashed; opacity: .78; }
+.ftx-dim-head { display: flex; align-items: center; gap: 10px; }
+.ftx-dim-head > span:first-child { line-height: 0; flex: 0 0 auto; }
+.ftx-dim-head strong { display: block; font-size: 13px; font-weight: 500; color: var(--ink); }
+.ftx-dim-head small { display: block; margin-top: 2px; font-size: 9px; color: var(--sub); }
+.ftx-dim-head > b { margin-left: auto; font-size: 20px; font-weight: 600;
+  color: color-mix(in srgb, var(--ftx-dim-color) 58%, var(--ink)); }
+.ftx-dim-bar { position: relative; display: block; height: 6px; margin: 9px 0 8px;
+  border-radius: 4px; background: var(--surface-recess); }
+.ftx-dim-bar b { position: absolute; inset: 0; width: var(--ftx-w); border-radius: 4px;
+  background: var(--ftx-dim-color); }
+.ftx-dim-note { margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: var(--sub); }
+/* Egy tény = egy sor: címke balra, érték jobbra. Ez a lap legkonkrétabb owner-kérése. */
+.ftx-rows { display: grid; margin: 10px 0 0; padding: 0; list-style: none; }
+.ftx-rows li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--divider); }
+.ftx-rows li:last-child { border-bottom: 0; }
+.ftx-rows span { font-size: 11px; color: var(--sub); }
+.ftx-rows b { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+.ftx-glass-link { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
+  padding: 11px 12px; border: 1px solid var(--border-subtle); border-radius: 15px;
+  background: var(--surface-recess); text-align: left; color: var(--ink); }
+.ftx-glass-link > span:first-child { line-height: 0; flex: 0 0 auto; }
+.ftx-glass-link strong { display: block; font-size: 12.5px; font-weight: 500; }
+.ftx-glass-link small { display: block; margin-top: 2px; font-size: 9.5px; color: var(--sub); }
+.ftx-glass-link > b { margin-left: auto; color: var(--sub); }
+.ftx-glass-close { min-height: 44px; padding: 11px; border: 0; border-radius: 14px;
+  background: var(--surface-recess); font-size: 12px; color: var(--sub); }
+.ftx-note { margin: 0; font-size: 10px; line-height: 1.55; color: var(--faint); }
+
+/* Belépő-koreográfia: a sávok felnőnek, a kontraszt-sávok kitöltődnek — egyszer, lépcsőzve. */
+@media (prefers-reduced-motion: no-preference) {
+  .ftx-fill, .ftx-gap { animation: ftx-rise .75s cubic-bezier(.2, .78, .24, 1) both; }
+  .ftx-day:nth-child(2) .ftx-fill, .ftx-day:nth-child(2) .ftx-gap { animation-delay: .05s; }
+  .ftx-day:nth-child(3) .ftx-fill, .ftx-day:nth-child(3) .ftx-gap { animation-delay: .1s; }
+  .ftx-day:nth-child(4) .ftx-fill, .ftx-day:nth-child(4) .ftx-gap { animation-delay: .15s; }
+  .ftx-day:nth-child(5) .ftx-fill, .ftx-day:nth-child(5) .ftx-gap { animation-delay: .2s; }
+  .ftx-day:nth-child(6) .ftx-fill, .ftx-day:nth-child(6) .ftx-gap { animation-delay: .25s; }
+  .ftx-day:nth-child(7) .ftx-fill, .ftx-day:nth-child(7) .ftx-gap { animation-delay: .3s; }
+  .ftx-split-copy i b, .ftx-dim-bar b, .ftx-glass-bar i {
+    animation: ftx-fill .85s cubic-bezier(.2, .78, .24, 1) both; }
+  .ftx-splitrow:nth-child(2) .ftx-split-copy i b { animation-delay: .09s; }
+  @keyframes ftx-rise { from { height: 0; } }
+  @keyframes ftx-fill { from { width: 0; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Csökkentett mozgás: MINDEN animáció kivezetve — a blokk statikus. */
+  .ftx-fill, .ftx-gap, .ftx-split-copy i b, .ftx-dim-bar b, .ftx-glass-bar i, .ftx-glow {
+    animation: none; }
+}
+/* ── /fuel-trendek titanium ───────────────────────────────────────────────── */
+
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────
    A Titán Nap (`/nap`, `/nap/gyors`) SÖTÉT GRAFIT bőre — a
    `docs/design_2.0/prototypes/companion-titanium/nap.css` + `navigation.css` palettája.
