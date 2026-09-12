@@ -436,11 +436,29 @@ test('a Napló line only appears once something is scored today — never a fake
   expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(/AI-átlag \d+/)
 })
 
-// ── the Fuel-beállítások band (the retired dropdown's extra action) ──────────
+// ── the quiet settings corner (Fuel Titanium S1d, mezo-33k6 — manifest A16) ───
+// Owner-döntés (spec 7): a beállítás CSENDES sarok — nem csempe, nem hangsúlyos, mosott
+// sáv. A korábbi `.fh-band` ezt a döntést sértette; a viselkedése (a saját oldalára visz)
+// változatlan, a HANGJA lett csendes.
 
-test('the Fuel-beállítások band navigates to its own page', async () => {
+test('the Fuel settings entry navigates to its own page', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Fuel-beállítások' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
+})
+
+test('a beállítások csendes sarokként, a lap alján érhetők el', async () => {
+  const { container } = renderView()
+  const corner = container.querySelector('.fmx-corner') as HTMLElement
+  expect(corner).toBeInTheDocument()
+  // Se csempe, se mosott sáv — a két hangsúlyos forma, amit az owner kizárt.
+  expect(corner.className).not.toContain('mz-tile')
+  expect(container.querySelector('.fh-band')).toBeNull()
+  // A lap ALJA: a mozaik után, és utána már nincs más modul.
+  const mosaic = container.querySelector('.mz-mosaic')!
+  expect(mosaic.compareDocumentPosition(corner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(corner.nextElementSibling).toBeNull()
+  await userEvent.click(within(corner).getByRole('button', { name: /beállítások/i }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
 })
 

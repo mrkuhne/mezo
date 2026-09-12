@@ -7494,16 +7494,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-ctx.is-pre { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 .fh-ctx.is-post { background: var(--mz-cell-lav-bg); color: var(--mz-cell-lav-ink); }
 
-/* ═══ Fuel-beállítások band (the .enh-band shape; a Mezo-sáv retired — mezo-04lo) ═══ */
-.fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
-  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
-  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.fh-band { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
-.fh-band:active { transform: scale(0.97); }
-.fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
-.fh-band .txt b { font-weight: 700; }
-.fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+/* The Fuel-beállítások band (`.fh-band`) is RETIRED with S1d (mezo-33k6, manifest A16): the
+   owner's decision put settings behind a QUIET corner, and a washed, shadowed, full-width band
+   is the opposite of quiet. Its successor is `.fmx-corner` in the fuel-mai titanium block. */
 
 /* mosaic eyebrow inks — one per hub tile (the .enh-eb- family precedent) */
 .fh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
@@ -7528,8 +7521,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fh-band, .fh-logtile { transition: none; }
-  .fh-band:active, .fh-logtile:active { transform: none; }
+  .fh-logtile { transition: none; }
+  .fh-logtile:active { transform: none; }
   .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
   .fh-aisc.is-tap { animation: none; }
   :where(.fh-wring-f), :where(.fh-aisc-f) { transition: none; }
@@ -12061,6 +12054,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-water-add:active { transform: scale(0.96); }
 .fmx-water-undo { justify-self: start; padding: 7px 12px; border-radius: 999px;
   border: 1px dashed var(--divider); background: transparent; color: var(--sub); font-size: 11px; }
+
+/* S1d (A16): a CSENDES sarok. Se mosás, se árnyék, se csempe-geometria — halk szöveg-link a
+   lap alján, mert a beállítás a legritkább út (owner, spec 7). A tap-terület ettől is
+   ujjbarát marad (44px magas sor). */
+.fmx-corner { display: flex; justify-content: center; padding: 6px 0 2px; }
+.fmx-corner-link { display: flex; align-items: center; gap: 7px; min-height: 44px;
+  padding: 0 12px; background: none; border: 0; color: var(--faint); font-size: 11.5px; }
+.fmx-corner-link svg { width: 18px; height: 18px; opacity: 0.75; }
+.fmx-corner-link:active { color: var(--sub); }
 
 /* Hero: koppintható, egyetlen tiszta üzenet — a matek az üvegdobozban lakik.
    (prototípus: fuel-pages.css `Hero: tappable…` + fuel-compact.css `.fuel-focus`/`.fuel-visual`) */

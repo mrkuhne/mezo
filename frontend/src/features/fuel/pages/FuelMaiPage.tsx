@@ -48,8 +48,9 @@
 //   Titán energia-hero — the remaining-kcal gauge, the tap chip, 5 macro rings (víz = a button)
 //   the day's meal BLOCKS — log into a block, open a logged meal (A10/A14)
 //   the generic log action (+ the „tegnap pótolható" chip), at the BOTTOM of the meal area
+//   the water module — quick-add + undo (A12)
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
-//   Fuel-beállítások band (→ /fuel/settings → /fuel/slots)
+//   the QUIET settings corner (A16 → /fuel/settings → /fuel/slots)
 //
 // The data layer is untouched: the same composed day (useFuelDay/useFuelTimeline),
 // the same mutations, the same sheets. Honest states are the contract — a tile line
@@ -266,14 +267,18 @@ export function FuelMaiPage() {
             line={naploLine} onClick={() => navigate('/fuel/naplo')} aria-label="Napló" />
         </Mosaic>
 
-        {/* The retired SubNavDropdown's ⚙️ action, re-homed as the entry to the standalone
-            settings page; its own row continues onward to the meal-window editor. */}
-        <button type="button" className="fh-band rise" style={{ '--d': '400ms' } as React.CSSProperties}
-          aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
-          <ClayIcon name="i-beallitas" size={26} />
-          <span className="txt"><b>Fuel-beállítások</b> · étkezési ablakok, koffein-stop</span>
-          <span className="chev" aria-hidden="true">›</span>
-        </button>
+        {/* A16 (mezo-33k6): a beállítás CSENDES SAROK a lap alján (owner, spec 7) — nem csempe
+            és nem mosott sáv (a korábbi `.fh-band`), mert a napi használatban a beállítás a
+            legritkább út. A viselkedés változatlan: a standalone beállítás-oldalra visz, és
+            onnan nyílik tovább az étkezési ablakok szerkesztője (A17). */}
+        <div className="fmx-corner rise" style={{ '--d': '400ms' } as React.CSSProperties}>
+          <button type="button" className="fmx-corner-link"
+            aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
+            <ClayIcon name="i-beallitas" size={18} />
+            <span>Beállítások</span>
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
       </EntranceGroup>
 
       {waterOpen && (
