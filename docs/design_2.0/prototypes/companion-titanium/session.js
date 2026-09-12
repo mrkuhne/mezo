@@ -74,12 +74,11 @@ function setRow(exercise, index, row) {
 
 function card(id, position, total) {
   const exercise = exerciseById(id), rows = session.rows[id], note = session.notes[id];
-  const done = doneCount(session, id), skipped = isSkipped(session, id), all = done === rows.length;
+  const skipped = isSkipped(session, id), all = doneCount(session, id) === rows.length;
   return `<section class="wo-card ${skipped ? 'is-skipped' : all ? 'is-complete' : ''}" style="--ex-color:${exercise.color}" aria-label="${exercise.name}">
    <header class="wo-card-head">
     <span class="wo-card-art">${icon(exercise.art)}</span>
-    <span class="wo-card-copy"><strong>${exercise.name}</strong><small>${skipped ? 'Kihagyva' : `${exercise.muscle} · ${rows.length} × ${exercise.target.reps} · ${exercise.target.rir} RIR`}</small></span>
-    <span class="wo-card-count">${done}<i>/${rows.length}</i></span>
+    <span class="wo-card-copy"><strong>${exercise.name}</strong>${skipped ? '<small>KIHAGYVA</small>' : ''}</span>
     <button class="wo-card-menu" data-menu="${id}" aria-haspopup="dialog" aria-label="${exercise.name} · további műveletek">⋮</button>
    </header>
    ${note ? `<button class="wo-note" data-note="${id}">${icon('tick')}<span>${safe(note)}</span></button>` : ''}
