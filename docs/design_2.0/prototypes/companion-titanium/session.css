@@ -551,26 +551,22 @@
 .cer-record strong { display: block; font-size: 13.5px; font-weight: 500; color: #f2e4c2; }
 .cer-record small { display: block; font-size: 10.5px; color: #ffffff70; margin-top: 2px; }
 
+/* The bowl and the number read as one line; one sentence carries the meaning. */
 .cer-kcal {
-  display: grid; grid-template-columns: 40px 1fr 14px; align-items: center; gap: 6px 12px; width: 100%;
-  margin-bottom: 14px; padding: 14px 16px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid #8ed2e838; border-radius: 22px;
-  background: radial-gradient(100% 80% at 90% 0%, #8ed2e81c, transparent 62%), linear-gradient(#ffffff09, #ffffff03);
+  position: relative; display: grid; justify-items: center; gap: 8px; width: 100%;
+  margin-bottom: 14px; padding: 20px 18px 18px; text-align: center; cursor: pointer; color: inherit;
+  border: 1px solid #8ed2e83d; border-radius: 24px;
+  background: radial-gradient(110% 90% at 50% 0%, #8ed2e81f, transparent 66%), linear-gradient(#ffffff0a, #ffffff03);
 }
-.cer-kcal-art .icon { width: 40px; height: 40px; }
-.cer-kcal-main { display: flex; align-items: baseline; gap: 2px; color: #a7dcec; }
-.cer-kcal-main b { font-size: 18px; font-weight: 300; }
-.cer-kcal-main strong { font-size: 34px; font-weight: 300; letter-spacing: -.03em; }
-.cer-kcal-main small { font-size: 11px; color: #ffffff7a; margin-left: 3px; }
-.cer-kcal-art { grid-area: 1 / 1 / 3 / 2; }
-.cer-kcal-main { grid-area: 1 / 2 / 2 / 3; }
-.cer-kcal-copy { grid-area: 2 / 2 / 3 / 3; }
-.cer-kcal > b { grid-area: 1 / 3 / 3 / 4; }
-.cer-kcal-copy strong { display: block; font-size: 13px; font-weight: 500; }
-.cer-kcal-copy small { display: block; font-size: 10px; color: #ffffff66; margin-top: 2px; line-height: 1.4; }
-.cer-kcal > b { color: #ffffff4a; font-size: 15px; text-align: right; }
+.cer-kcal-line { display: flex; align-items: center; justify-content: center; gap: 4px; color: #a7dcec; }
+.cer-kcal-line .icon { width: 62px; height: 62px; margin-right: 6px; filter: drop-shadow(0 6px 16px #8ed2e840); }
+.cer-kcal-line b { font-size: 30px; font-weight: 200; }
+.cer-kcal-line strong { font-size: 54px; font-weight: 200; letter-spacing: -.04em; line-height: 1; }
+.cer-kcal-line small { font-size: 15px; color: #ffffff8a; margin-left: 5px; align-self: flex-end; padding-bottom: 7px; }
+.cer-kcal-copy { font-size: 13.5px; color: #ffffffb0; }
+.cer-kcal-go { position: absolute; top: 16px; right: 18px; font-style: normal; font-size: 17px; color: #ffffff4a; }
 
-.wo-sum-section strong { display: block; font-size: 19px; font-weight: 400; margin-top: 4px; outline: none; }
+.wo-sum-section strong { display: block; font-size: 20px; font-weight: 400; letter-spacing: -.02em; outline: none; }
 
 .cer-muscles { padding-bottom: 4px; }
 .cer-cta { padding-top: 4px; }
@@ -604,4 +600,24 @@
   .wo-summary .cer-result, .wo-summary .cer-muscles, .wo-summary .cer-cta, .wo-summary > .wo-glass-note { opacity: 1; translate: none; pointer-events: auto; }
   .wo-mstar-track .fill { width: var(--w); }
   .cer { min-height: 0; }
+}
+
+/* Step two plays its own one-shot: bars grow, stars land, row after row. */
+@media (prefers-reduced-motion: no-preference) {
+  .cer-details-screen .wo-mstar-track .fill { width: 0; }
+  .cer-details-screen.is-told .wo-mstar-track .fill {
+    width: var(--w); transition: width 1s cubic-bezier(.22, .9, .25, 1); transition-delay: calc(.12s + var(--i) * .14s);
+  }
+  .cer-details-screen .stars i { opacity: 0; scale: .4; }
+  .cer-details-screen.is-told .stars i {
+    opacity: 1; scale: 1;
+    transition: opacity .26s ease, scale .4s cubic-bezier(.2, 1.6, .4, 1);
+    transition-delay: calc(.3s + var(--i) * .14s + var(--s) * .07s);
+  }
+  .cer-details-screen .cer-kcal, .cer-details-screen .cer-cta { opacity: 0; translate: 0 12px; }
+  .cer-details-screen.is-told .cer-kcal, .cer-details-screen.is-told .cer-cta {
+    opacity: 1; translate: 0 0; transition: opacity .45s ease, translate .45s cubic-bezier(.2, .8, .2, 1);
+  }
+  .cer-details-screen.is-told .cer-kcal { transition-delay: .78s; }
+  .cer-details-screen.is-told .cer-cta { transition-delay: .9s; }
 }

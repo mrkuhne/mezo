@@ -250,7 +250,7 @@ function closeSession() {
 const starRow = (value, size = '') => {
   const full = Math.floor(value), half = value - full >= .5;
   return `<span class="stars ${size}" aria-label="${String(value).replace('.', ',')} csillag az ötből">${[0, 1, 2, 3, 4].map(i =>
-    `<i style="--i:${i}">${icon(i < full ? 'star' : i === full && half ? 'star-half' : 'star-empty')}</i>`).join('')}</span>`;
+    `<i style="--s:${i}">${icon(i < full ? 'star' : i === full && half ? 'star-half' : 'star-empty')}</i>`).join('')}</span>`;
 };
 
 const VERDICTS = [
@@ -315,9 +315,9 @@ function summary() {
 function detailsStep() {
   const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
   const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
-  return `<div class="wo-summary is-told cer-details-screen">
+  return `<div class="wo-summary cer-details-screen">
    <section class="cer-muscles">
-    <div class="wo-sum-section"><span class="overline">IZOMCSOPORTOK · A HETI TERVHEZ KÉPEST</span><strong>Mit tett ez a hetedhez</strong></div>
+    <div class="wo-sum-section"><strong>Izomcsoportok fejlődése a mai edzésen</strong></div>
     <div class="wo-mstars">${muscleStarRows().map((row, i) => `<div class="wo-mstar" style="--ex-color:${muscleColor(row.muscleKey)};--i:${i}">
       <span class="wo-mstar-art">${muscleIcon(row.muscleKey)}</span>
       <span class="wo-mstar-copy"><strong>${row.name}</strong><small>${row.done} / ${row.plan} szett${row.added ? ` · ma +${row.added}` : ''}</small></span>
@@ -327,10 +327,9 @@ function detailsStep() {
    </section>
 
    <button class="cer-kcal" data-go-fuel>
-    <span class="cer-kcal-art">${icon('bowl')}</span>
-    <span class="cer-kcal-main"><b>+</b><strong>${kcal}</strong><small>kcal</small></span>
-    <span class="cer-kcal-copy"><strong>Ennyit nyertél a mai mozgással</strong><small>A mai keretedhez adódik</small></span>
-    <b>›</b></button>
+    <span class="cer-kcal-line">${icon('bowl')}<b>+</b><strong>${kcal}</strong><small>kcal</small></span>
+    <span class="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
+    <i class="cer-kcal-go">›</i></button>
 
    <div class="cer-cta">${done
     ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
@@ -394,7 +393,11 @@ function render() {
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
   updateTimers();
   if (view === 'summary') requestAnimationFrame(() => { runCeremony(); overlay.querySelector('h1')?.focus(); });
-  if (view === 'details') requestAnimationFrame(() => overlay.querySelector('.wo-sum-section strong')?.focus());
+  if (view === 'details') requestAnimationFrame(() => {
+    // Step two plays too: the bars grow and the stars land, row by row.
+    overlay.querySelector('.cer-details-screen')?.classList.add('is-told');
+    overlay.querySelector('.wo-sum-section strong')?.focus();
+  });
 }
 
 function updateTimers() {
