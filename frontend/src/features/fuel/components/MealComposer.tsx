@@ -16,6 +16,11 @@
 // lines carry the mezo-ormb ingredient fine-tuning block. CTA "✓ Logolás · +10 XP"
 // → useMealActions().logMeal, then `onSaved`.
 //
+// A6 (Fuel Titanium S1c, mezo-33k6): the ✨ AI panel also carries a microphone. It is WIRING
+// ONLY — `useVoiceInput` transcribes on the existing endpoint and appends the sentence to the
+// same AI text field, so a spoken meal reaches the draft endpoint as text and saves as
+// `ai-text`. No audio is ever sent to the draft endpoint, and nothing saves without confirmation.
+//
 // provenance.origin: reflects whether AI genuinely contributed to THIS save
 // (ai-photo when a photo was analyzed this session, else ai-text), regardless of
 // how many manual lines ride alongside; a purely manual meal omits provenance —
@@ -42,6 +47,16 @@ import {
   rescaleFrozen, lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS, factsOf,
 } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
+import { useVoiceInput, type VoiceState } from '@/features/insights/logic/useVoiceInput'
+
+/** A mikrofon állapot-feliratai (A6, mezo-33k6). A „nem támogatott" ág NEM hazudik működőt:
+ *  a gomb tiltott, és a felirata megmondja, miért. */
+const VOICE_LABEL: Record<VoiceState, string> = {
+  idle: 'Hang · mondd el, mit ettél',
+  recording: 'Hallgatlak — koppints a leállításhoz',
+  transcribing: 'Leiratozom a felvételt…',
+  unsupported: 'Hang · ez a böngésző nem tud hangot rögzíteni',
+}
 
 export type MealComposerPrefill =
   | { source: 'recipe'; recipeId: string }
@@ -179,6 +194,10 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   const [aiText, setAiText] = useState('')
   const [aiPhoto, setAiPhoto] = useState<File | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
+  // A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül — a
+  // leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan (`ai-text`).
+  const voice = useVoiceInput(text => setAiText(d => (d ? `${d} ${text}` : text)))
+  const voiceRecording = voice.state === 'recording'
   // What actually landed in the meal FROM the AI this session — the honest input to
   // provenance.origin (see the file-header note).
   const [aiContribution, setAiContribution] = useState<{ photo: boolean; rawText: string | null } | null>(null)
@@ -468,14 +487,23 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
                   onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
               </label>
             )}
+            <button type="button" className={'chip' + (voiceRecording ? ' brand' : '')}
+              style={{ fontSize: 11, padding: '6px 12px' }}
+              onClick={voice.toggle}
+              disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
+              aria-label={VOICE_LABEL[voice.state]} aria-pressed={voiceRecording}>
+              <Icon name={voiceRecording ? 'voice-wave' : 'mic'} size={12} />
+              {voiceRecording ? 'Hallgatlak…' : voice.state === 'transcribing' ? 'Leiratozom…' : 'Hang'}
+            </button>
             <button type="button" className="cta-primary" style={{ marginLeft: 'auto', padding: '6px 16px' }}
               disabled={!canRunAi} onClick={() => void runAi()}>
               ✨ Elemzés
             </button>
           </div>
           {aiError && <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{aiError}</p>}
+          {voice.error && <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{voice.error}</p>}
           <p className="text-secondary" style={{ fontSize: 9.5, lineHeight: 1.5, marginTop: 8 }}>
-            Szöveg vagy fotó — vagy mindkettő. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
+            Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
           </p>
         </div>
       )}
