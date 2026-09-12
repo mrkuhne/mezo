@@ -18,7 +18,6 @@
 // „error"/„hiba" jelző, mert a nézetnek nem szabad ilyet rajzolnia (a prototípus `overBudget`-je
 // is csak egy MÁS színt választ, nem hibát).
 // ============================================================
-import { huDow } from '@/shared/lib/dates'
 import type { FuelWeekData } from '@/data/fuel/mealApi'
 
 /** Mennyivel fölötte kell járni a keretnek, hogy „keret felett"-nek olvassuk — a prototípus
@@ -136,6 +135,30 @@ function isWeekend(iso: string): boolean {
  * skálafüggetlen: amit kap, azt adja tovább.
  * `trainingDays` az edzést hordozó napok ISO dátumai (C6).
  */
+/** A heti oszlopok napcímkéi a jóváhagyott prototípus szerint: H · K · Sze · Cs · P · Szo · V.
+ *  Hét oszlop fér ki egy telefonon, ezért rövid — a Sze/Szo párt a harmadik betű különíti el.
+ *  (A ház `huDow`-ja hosszabb — Hét/Kedd/Csü —, az a listáknak jó, a sávnak nem.) */
+const WEEK_BAR_DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'] as const
+
+/**
+ * A nap ÉTKEZÉS-PONTJA (0–10) — a jóváhagyott prototípus `fuelDayScore`-ja.
+ *
+ * A napi kiértékelés hat dimenziója közül csak a KETTŐ Fuel-vonatkozású számít: a táplálkozás
+ * (súly .30) és az étkezés-minőség (súly .15), a saját súlyaikra renormálva. A teljes napi
+ * pontszám ennél többet mond — alvást, edzést, naplózási fegyelmet is —, tehát egy Fuel-lapon
+ * félrevezető: a felirat is azt ígéri, hogy „a nap étkezés-pontja".
+ *
+ * Őszinte-null: ha egyik dimenzió sem ismert, nincs pont. Ha csak az egyik, az áll magában —
+ * a hiányzót NEM pótoljuk nullával, mert az lehúzná a napot egy nem tudott adat miatt.
+ */
+export function mealDayScore(nutrition: number | null, quality: number | null): number | null {
+  const toTen = (v: number) => Math.round(v) / 10
+  if (nutrition == null && quality == null) return null
+  if (nutrition == null) return toTen(quality!)
+  if (quality == null) return toTen(nutrition)
+  return toTen((nutrition * 0.3 + quality * 0.15) / 0.45)
+}
+
 export function buildWeekView(
   week: FuelWeekData,
   dayScores: Record<string, number | null>,
@@ -150,7 +173,7 @@ export function buildWeekView(
     const pct = logged && targetKcal != null ? (d.consumed.kcal / targetKcal) * 100 : null
     return {
       date: d.date,
-      label: huDow(d.date),
+      label: WEEK_BAR_DOW[new Date(`${d.date}T12:00:00`).getDay()],
       weekend: isWeekend(d.date),
       kcal: logged ? d.consumed.kcal : null,
       targetKcal,

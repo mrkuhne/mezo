@@ -102,11 +102,11 @@ test('a preset chip sets the goal and sends its own instruction turn', async () 
   renderPage()
   await sendFirstTurn()
 
-  await userEvent.click(screen.getByRole('button', { name: 'High protein' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Magas fehérje' }))
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(2))
   expect(turnImpl.mock.calls[1][0].goal).toBe('high_protein')
   // the goal rides on the canvas as the prototype's cél-chip
-  expect(await screen.findByText('High protein', { selector: '.logflow-lntag' })).toBeInTheDocument()
+  expect(await screen.findByText('Magas fehérje', { selector: '.logflow-lntag' })).toBeInTheDocument()
 })
 
 // M1 (mezo-uavr wipe class): a ?recipeId session that never touches a goal preset must save the
@@ -212,8 +212,8 @@ test('a Műhelyben nincs link-alapú recept-import', () => {
 // saját utasítás-körét küldi el.
 test('az üres vászon cél-csempéket ad, és egy csempe elindítja a saját körét', async () => {
   renderPage()
-  expect(screen.getAllByRole('button', { name: /High protein/ }).length).toBeGreaterThan(0)
-  await userEvent.click(screen.getAllByRole('button', { name: /High protein/ })[0])
+  expect(screen.getAllByRole('button', { name: /Magas fehérje/ }).length).toBeGreaterThan(0)
+  await userEvent.click(screen.getAllByRole('button', { name: /Magas fehérje/ })[0])
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(1))
   expect(turnImpl.mock.calls[0][0].goal).toBe('high_protein')
 })

@@ -52,7 +52,7 @@ import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
-import { buildWeekView, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
+import { buildWeekView, mealDayScore, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
 
 /** A három mutató-csempe — a prototípus `TX_STAT`-ja ház-tokenekkel és clay-szimbólumokkal. */
 const STAT_FACE: Record<'avg' | 'score' | 'weight', {
@@ -118,7 +118,7 @@ function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen:
   const h = (v: number) => `${Math.max(4, Math.round((v / max) * 100))}%`
   const aria = day.logged
     ? `${huMonthDayDow(day.date)}: ${huInt(day.kcal!)} kcal a ${day.targetKcal == null ? 'megadott' : `${huInt(day.targetKcal)} kcal-os`} keretből`
-      + `${day.dayScore == null ? ', napi pont még nincs' : `, napi pont ${huInt(day.dayScore)}`}`
+      + `${day.dayScore == null ? ', étkezés-pont még nincs' : `, étkezés-pont ${huScore(day.dayScore)}`}`
     : `${huMonthDayDow(day.date)}: nincs adat`
   return (
     <button
@@ -137,7 +137,7 @@ function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen:
           : <i className="ftx-gap" />}
       </span>
       <b className="ftx-day-score" aria-hidden="true">
-        {day.dayScore == null ? '·' : huInt(day.dayScore)}
+        {day.dayScore == null ? '·' : huScore(day.dayScore)}
       </b>
       <span className="ftx-day-name" aria-hidden="true">{day.label}</span>
       {/* Őszinte hiány: a „nincs adat" a képernyőolvasóé és a tesztnek is egy valódi szöveg —
@@ -230,6 +230,11 @@ function DayMealList({ date, onOpenMeal }: { date: string; onOpenMeal: (mealId: 
   )
 }
 
+/** Az étkezés-pont egy tizedessel, magyar vesszővel — 8,2 (prototípus `score1`). */
+function huScore(n: number): string {
+  return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
 export function FuelTrendekPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -254,7 +259,9 @@ export function FuelTrendekPage() {
   const trainingDays: string[] = []
   const subscoresByDate: Record<string, { nutrition: number | null; quality: number | null }> = {}
   for (const d of meWeek?.days ?? []) {
-    dayScores[d.date] = d.score ?? null
+    // A napok száma az ÉTKEZÉS-pont (0–10), nem a teljes napi értékelés (0–100): utóbbi az
+    // alvást és az edzést is beleszámolja, tehát nem arról szól, amit ez a lap kérdez.
+    dayScores[d.date] = mealDayScore(d.subscores.nutrition ?? null, d.subscores.quality ?? null)
     if (d.workoutCount > 0) trainingDays.push(d.date)
     subscoresByDate[d.date] = {
       nutrition: d.subscores.nutrition ?? null,

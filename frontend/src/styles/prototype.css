@@ -13323,6 +13323,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   /* Csökkentett mozgás: MINDEN animáció kivezetve — a blokk statikus. */
   .fkx-capture-art { animation: none; }
 }
+.fkx-ws-goals { display: flex; gap: 7px; margin-top: 2px; }
+.fkx-ws-goals i { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%;
+  background: color-mix(in srgb, var(--fkx) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fkx) 26%, transparent); }
+
 /* ── /fuel-konyha titanium ────────────────────────────────────────────────── */
 
 /* ── fuel overflow guard (mezo-jb84) ──────────────────────────────────────────────────────────

@@ -87,10 +87,11 @@ test('a hétvégét a valódi dátum mondja meg, nem a tömb pozíciója', () =>
   expect(vm.days.map(d => d.weekend)).toEqual([false, false, false, false, false, true, true])
 })
 
-// A ház `huDow`-ja a hitelforrás (Sze ≠ Szo — nem rövidítünk egy betűre, az ütközne).
-test('a nap felirata a ház rövid magyar napneve', () => {
+// A jóváhagyott prototípus sávcímkéi: hét oszlop fér ki egy telefonon, ezért rövidek.
+// A Sze/Szo pár a harmadik betűvel különül el — egy betűre tényleg nem lehet rövidíteni.
+test('a nap felirata a jóváhagyott rövid sávcímke', () => {
   expect(buildWeekView(WEEK, SCORES, []).days.map(d => d.label))
-    .toEqual(['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'])
+    .toEqual(['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'])
 })
 
 describe('szégyenmentesség', () => {
