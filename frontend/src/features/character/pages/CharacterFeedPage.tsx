@@ -132,7 +132,7 @@ export function CharacterFeedPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Amit mostanában megtudtam rólad</div>
         <div className="mz-hero-sb">a csapat friss megfigyelései, naponta</div>
@@ -185,7 +185,7 @@ export function CharacterFeedPage() {
                             className="kr-gepq"
                             aria-label="A futáshoz"
                             title="A futáshoz →"
-                            onClick={() => navigate(`/me/karakter/gepterem/futas/${runId}`)}
+                            onClick={() => navigate(`/mezo/karakter/gepterem/futas/${runId}`)}
                           >
                             ⚙
                           </button>
@@ -200,7 +200,7 @@ export function CharacterFeedPage() {
                   key={ii}
                   type="button"
                   className="kr-feeddiff"
-                  onClick={() => navigate('/me/karakter/konzilium')}
+                  onClick={() => navigate('/mezo/karakter/konzilium')}
                 >
                   <span className="kr-ic" aria-hidden="true" />
                   <span className="kr-tx">{it.text}</span>

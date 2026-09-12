@@ -42,7 +42,7 @@ function tree(path: string) {
   return (
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/me/karakter/konzilium" element={<KonziliumPage />} />
+        <Route path="/mezo/karakter/konzilium" element={<KonziliumPage />} />
       </Routes>
     </MemoryRouter>
   )
@@ -63,67 +63,67 @@ beforeEach(() => {
 describe('KonziliumPage — üres archívum', () => {
   test('an empty conference list renders the honest empty state, never a crash', () => {
     hoisted.conferences = []
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     expect(screen.getByText(/Egyelőre nincs konzílium/)).toBeInTheDocument()
   })
 
   test('a back chip returns to the Karakter hub', async () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter')
   })
 })
 
 describe('KonziliumPage — döntés-első nézet', () => {
   test('id nélkül a legutóbbi konzílium nyílik, nem lista', () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     expect(screen.getByText('Hogyan zajlott')).toBeInTheDocument()
     expect(screen.queryByText(/vissza a listához/)).not.toBeInTheDocument()
   })
 
   test('pontosan egy visszalépő vezérlő van a lapon', () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     expect(screen.getAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
   })
 
   test('a legutóbbi konzíliumon a későbbi-nyíl le van tiltva', () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     expect(screen.getByRole('button', { name: 'Későbbi tanácskozás' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Korábbi tanácskozás' })).toBeEnabled()
   })
 
   test('a legrégebbi konzíliumon a korábbi-nyíl le van tiltva', () => {
-    renderAt('/me/karakter/konzilium?id=b0')
+    renderAt('/mezo/karakter/konzilium?id=b0')
     expect(screen.getByRole('button', { name: 'Korábbi tanácskozás' })).toBeDisabled()
   })
 
   test('a dátum-gomb megnyitja az archívum lapot', async () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: /augusztus 30/ }))
     expect(await screen.findByText('Korábbi tanácskozások')).toBeInTheDocument()
   })
 
   test('a Beszélgetés váltó a kör-nézetre vált', async () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: 'Beszélgetés' }))
     expect(screen.getByText('Javaslatok')).toBeInTheDocument()
     expect(screen.queryByText('Hogyan zajlott')).not.toBeInTheDocument()
   })
 
   test('visszafejtett szálnál a kereszt-vita kör nem létezőként jelenik meg', () => {
-    renderAt('/me/karakter/konzilium?id=w1')
+    renderAt('/mezo/karakter/konzilium?id=w1')
     expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
   })
 
   test('an unknown id renders an honest not-found face, never a crash', () => {
-    renderAt('/me/karakter/konzilium?id=nope')
+    renderAt('/mezo/karakter/konzilium?id=nope')
     expect(screen.getByText(/nem található/)).toBeInTheDocument()
   })
 
   // Fix round 1 (mezo-sp9w, review finding 7): a bad deep link must not strand the reader — the
   // archive has to stay reachable, and there must still be exactly one back control.
   test('egy nem található konzíliumnál is elérhető marad az archívum, és marad pontosan egy vissza', async () => {
-    renderAt('/me/karakter/konzilium?id=nope')
+    renderAt('/mezo/karakter/konzilium?id=nope')
     expect(screen.getAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Korábbi tanácskozások' }))
     expect(await screen.findByText('6')).toBeInTheDocument() // kr-arccnt: all 6 mock conferences
@@ -132,7 +132,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
   // Fix round 1 (mezo-sp9w, review finding 6): the stepper's arrows were only ever tested for
   // their disabled state, never for actually switching the shown council.
   test('a korábbi nyílra kattintva az előző konzílium tartalma jelenik meg', async () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: 'Korábbi tanácskozás' }))
     expect(await screen.findByRole('button', { name: /augusztus 23/ })).toBeInTheDocument()
   })
@@ -141,7 +141,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
   // must both switch the shown council and reset a chronological view back to the overview —
   // exercising the actual navigation path, not just its affordances.
   test('az archívumban másik konzíliumot választva a nézet vált és visszaáll áttekintésre', async () => {
-    renderAt('/me/karakter/konzilium')
+    renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: 'Beszélgetés' }))
     expect(screen.getByText('Javaslatok')).toBeInTheDocument()
 
@@ -161,7 +161,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
       ...hoisted.detail,
       w1: { ...MOCK_CONFERENCE_DETAIL.w1, deliberation: [], deliberationSource: 'STORED' },
     }
-    renderAt('/me/karakter/konzilium?id=w1')
+    renderAt('/mezo/karakter/konzilium?id=w1')
 
     expect(screen.getByText(/hétvégi lépésszám tartósan alacsonyabb/)).toBeInTheDocument()
     expect(screen.queryByText('Hogyan zajlott')).not.toBeInTheDocument()
@@ -177,7 +177,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
       ...hoisted.detail,
       w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null, deliberationSource: null },
     }
-    renderAt('/me/karakter/konzilium?id=w2')
+    renderAt('/mezo/karakter/konzilium?id=w2')
 
     expect(screen.getByText('Mi változott a dossziédban')).toBeInTheDocument()
     expect(screen.getByText('bekerült')).toBeInTheDocument()
@@ -195,7 +195,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
 
   test('a conference with a deliberation renders threads, collapsed', async () => {
     hoisted.detail = { ...hoisted.detail, w2: MOCK_CONFERENCE_DETAIL.w2 }
-    renderAt('/me/karakter/konzilium?id=w2')
+    renderAt('/mezo/karakter/konzilium?id=w2')
 
     expect(screen.getByText('Fizikai')).toBeInTheDocument()
     expect(screen.queryByText(/Három adatpont kevés/)).not.toBeInTheDocument()
@@ -206,7 +206,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
 
   test('a conference without a deliberation still renders the prose transcript', () => {
     hoisted.detail = { ...hoisted.detail, b0: MOCK_BOOTSTRAP_CONFERENCE }
-    renderAt('/me/karakter/konzilium?id=b0')
+    renderAt('/mezo/karakter/konzilium?id=b0')
 
     expect(screen.getByText(/A teljes eddigi történet beolvasva/)).toBeInTheDocument()
   })
@@ -216,7 +216,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
   // === 'STORED'` alone would have told the reader the round ran and nobody spoke; the fix also
   // requires `kind === 'WEEKLY'`. `m1` (M1's new fixture) is exactly this shape.
   test('havi konzíliumnál a tárolt, reakció nélküli szál nem-létező körként jelenik meg, nem nullaként', () => {
-    renderAt('/me/karakter/konzilium?id=m1')
+    renderAt('/mezo/karakter/konzilium?id=m1')
     expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
     expect(screen.queryByText('0 hozzászólás')).not.toBeInTheDocument()
   })
@@ -246,7 +246,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
         ],
       },
     }
-    renderAt('/me/karakter/konzilium?id=b0')
+    renderAt('/mezo/karakter/konzilium?id=b0')
     expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
     expect(screen.queryByText('0 hozzászólás')).not.toBeInTheDocument()
   })
@@ -256,7 +256,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
   // this (it resolves synchronously) — `hoisted.loadingId` recreates the genuine loading frame
   // real mode has between the pick and the new detail landing.
   test('archívumból választva a lap nem nyílik vissza, ha közben betöltési kör történt', async () => {
-    const { rerender } = renderAt('/me/karakter/konzilium')
+    const { rerender } = renderAt('/mezo/karakter/konzilium')
     await userEvent.click(screen.getByRole('button', { name: /augusztus 30/ }))
     expect(await screen.findByText('Korábbi tanácskozások')).toBeInTheDocument()
 
@@ -272,7 +272,7 @@ describe('KonziliumPage — döntés-első nézet', () => {
     // mock, exactly like a real query settling would, without losing the navigation state a
     // brand new render would reset.
     hoisted.loadingId = null
-    rerender(tree('/me/karakter/konzilium'))
+    rerender(tree('/mezo/karakter/konzilium'))
     expect(await screen.findByRole('button', { name: /augusztus 23/ })).toBeInTheDocument()
     expect(screen.queryByText('Korábbi tanácskozások')).not.toBeInTheDocument()
   })

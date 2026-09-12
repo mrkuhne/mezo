@@ -130,7 +130,7 @@ export function KarakterHubPage() {
           <h3>A dossziéd elkészült</h3>
           <p>7 dimenzió, kezdő állításokkal — mindegyik forrással. Ez csak a kezdet: minden héten
             tovább finomodik.</p>
-          <button type="button" className="cta" onClick={() => navigate('/me/karakter/konzilium')}>
+          <button type="button" className="cta" onClick={() => navigate('/mezo/karakter/konzilium')}>
             Nézd meg az első konzíliumot
           </button>
         </div>
@@ -210,14 +210,14 @@ export function KarakterHubPage() {
         <Mosaic>
           <Tile wash="sky" icon="i-kristaly" eyebrow="Dimenziók" delayMs={80}
             line={`${avgMaturity}% átlag érettség · ${dimLine}`}
-            onClick={() => navigate('/me/karakter/dimenziok')} aria-label="Dimenziók" />
+            onClick={() => navigate('/mezo/karakter/dimenziok')} aria-label="Dimenziók" />
           <Tile wash="coral" eyebrow="Feed" delayMs={130}
             dot={feedRecent}
             line={latestFeedItem != null ? `„${latestFeedItem.text}”` : undefined}
-            onClick={() => navigate('/me/karakter/feed')} aria-label="Feed" />
+            onClick={() => navigate('/mezo/karakter/feed')} aria-label="Feed" />
           <Tile wash="lav" eyebrow="Csapat" delayMs={180}
             line={`${experts.length} profilozó — a csapat, ami épp most figyel rád`}
-            onClick={() => navigate('/me/karakter/csapat')} aria-label="Csapat">
+            onClick={() => navigate('/mezo/karakter/csapat')} aria-label="Csapat">
             <div className="kr-clustrow">
               {experts.map((e) => (
                 <div className="cd" key={e.key}><PersonaOrb expertKey={e.key} size={24} /></div>
@@ -234,7 +234,7 @@ export function KarakterHubPage() {
             line={latestConference != null
               ? `${new Date(latestConference.generatedAt).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })}.`
               : undefined}
-            onClick={() => navigate('/me/karakter/konzilium')} aria-label="Konzílium" />
+            onClick={() => navigate('/mezo/karakter/konzilium')} aria-label="Konzílium" />
         </Mosaic>
 
         {/* Gépterem row (v4.2, Task 4) — a thin, full-width row BELOW the 2×2 mosaic (not a
@@ -256,7 +256,7 @@ export function KarakterHubPage() {
           type="button"
           className="kr-geprow rise"
           style={{ '--d': '260ms' } as React.CSSProperties}
-          onClick={() => navigate('/me/karakter/gepterem')}
+          onClick={() => navigate('/mezo/karakter/gepterem')}
         >
           <span className="kr-geprow-eyebrow">Gépterem</span>
           <span className="kr-geprow-line">

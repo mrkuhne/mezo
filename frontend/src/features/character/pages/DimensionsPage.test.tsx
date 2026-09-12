@@ -51,7 +51,7 @@ describe('DimensionsPage', () => {
   test('clicking a tile navigates to its own dimension page', async () => {
     render(<DimensionsPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Fizikai' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/dimenzio/physical')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/dimenzio/physical')
   })
 
   test('overview null (character switch off) renders the degraded row, never a crash', () => {

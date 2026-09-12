@@ -91,7 +91,7 @@ describe('FutasokPage', () => {
   test('clicking a run row navigates to its detail page', async () => {
     renderPage()
     await userEvent.click(screen.getByText('2 megfigyelés · 2 szakértő hívva').closest('button')!)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futas/ejsz-27')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futas/ejsz-27')
   })
 
   test('the week stepper moves the ?start= param by ±7 days', async () => {

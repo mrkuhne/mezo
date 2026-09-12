@@ -45,7 +45,10 @@ export function AppLayout() {
   // mezo-mhum: /nap/gyors IS the picker page (QuickLogSurface variant="page") — the coral
   // FAB would float over its own destination and open the modal sheet duplicate on top of
   // the full-page picker. Same call as /fuel/log/uj above.
-  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors'].includes(location.pathname)
+  // mezo-7flr: a companion-first `/nap` alsó szövegmezője birtokolja a hüvelykujj-zónát (ugyanaz
+  // a helyzet, mint a chat/`/fuel/log/uj` composerénél, mezo-vdf4/bq2t) — a korall FAB rálógna a
+  // küldés gombra, ezért itt is elmarad; a gyors-naplózó a navigációból érhető el.
+  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.

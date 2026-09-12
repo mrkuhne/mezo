@@ -31,7 +31,7 @@ export function DimensionsPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Dimenziók</div>
         {/* I3 (final review): CHAPTER dimensions open/retire dynamically — "mind a nyolc" was a
@@ -51,7 +51,7 @@ export function DimensionsPage() {
               type="button"
               className={`kr-dimtile rise${isChapter ? ' chapter' : isMeta ? ' meta' : ''}`}
               style={{ '--d': `${40 + i * 45}ms`, '--wash': `${color}22`, '--dc': color, '--sh': `${color}4d`, '--mv': d.maturity } as React.CSSProperties}
-              onClick={() => navigate(`/me/karakter/dimenzio/${d.key}`)}
+              onClick={() => navigate(`/mezo/karakter/dimenzio/${d.key}`)}
               aria-label={d.title}
             >
               <div className="kr-dhd">

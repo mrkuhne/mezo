@@ -1,7 +1,8 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
+import { resetNavMemory } from '@/app/navModel'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
@@ -9,6 +10,14 @@ import rawCss from '@/styles/prototype.css?raw'
 
 // mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
 beforeEach(() => seedAllKalauzSeen())
+
+// mezo-jkh4: the last-tab memory is a module-level, in-session store — it leaks across
+// tests. Every test here renders the nav (TabBar's effect records the visited tab), so
+// without a per-test reset the test order decides what a domain's "first visit" resolves
+// to. Under CI's order a prior test left it dirty and the switcher jumped to a remembered
+// tab instead of tab 1 (the '/nap' vs '/fuel/recipes' flake). Reset before EVERY test so
+// each one starts from clean memory and is order-independent.
+beforeEach(() => resetNavMemory())
 
 function renderApp(path = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
@@ -20,15 +29,21 @@ test('redirects / to Today', async () => {
   // The Nap hub's daypart switch is the face-INDEPENDENT landmark (mezo-d20.2.1).
   expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
 })
-test('navigates between tabs by clicking the bottom nav', async () => {
+test('switches domains via the switcher, then between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
-  // Decision B (mezo-d20.1.1): the companion section is the first-class Mezo tab —
-  // the Nap hub carries no ✨ header link any more. The tab lands on the hub Mozaik
-  // face (mezo-d20.5.1): chat opener + tile mosaic, no subnav dropdown.
-  await userEvent.click((await screen.findAllByRole('link')).find(a => a.getAttribute('href') === '/mezo')!)
+  // Titanium nav (mezo-jkh4): the bar is contextual — Nap's tabs, no cross-domain links.
+  // Reaching another world goes through the domain switcher, which jumps to that domain's
+  // last-visited tab (here, first-visit → Mezo tab 1 = /mezo, the hub Mozaik face).
+  await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
+  const switcher = await screen.findByRole('dialog')
+  await userEvent.click(within(switcher).getByRole('button', { name: /^Mezo/ }))
   expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
   expect(screen.queryByLabelText('Insights alnavigáció')).not.toBeInTheDocument()
+  // Now on the Mezo domain, the bar carries Mezo's four contextual tabs — clicking one
+  // (Előrejelzések → /mezo/predictions) navigates within the domain.
+  await userEvent.click(screen.getByRole('link', { name: /Előrejelzések/ }))
+  expect(screen.getByRole('link', { name: /Előrejelzések/ }).className).toContain('active')
 })
 test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
@@ -71,8 +86,8 @@ test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () =>
   expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
 })
 
-test('/me/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
-  renderApp('/me/karakter')
+test('/mezo/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
+  renderApp('/mezo/karakter')
   // The ring's aria-label is the face-independent landmark: mock mode starts pre-bootstrap
   // (all CORE dims at maturity 0), so the intro ceremony's CTA is what actually renders.
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
@@ -84,75 +99,107 @@ test('the Mezo hub links to the Karakter dossier hub (hub-tile-reorg)', async ()
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
-test('/me/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
-  renderApp('/me/karakter/dimenziok')
+// Karakter moved to the Mezo domain (mezo-jkh4): legacy `/me/karakter/*` links (old
+// bookmarks, notification deep-links) redirect to `/mezo/karakter/*`, subpath preserved.
+test('/me/karakter redirects to /mezo/karakter (legacy link)', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/me/karakter'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await screen.findByRole('button', { name: 'Kezdjétek el' })
+  expect(router.state.location.pathname).toBe('/mezo/karakter')
+})
+
+test('/me/karakter/konzilium redirects to /mezo/karakter/konzilium preserving the subpath', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/me/karakter/konzilium'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await screen.findByText('Konzílium')
+  expect(router.state.location.pathname).toBe('/mezo/karakter/konzilium')
+})
+
+// Last-tab memory (mezo-jkh4): the switcher returns each domain to its last-visited tab.
+test('the domain switcher returns to the last-visited tab (memory)', async () => {
+  // navMemory is cleared in beforeEach, so this starts from a clean, order-independent store.
+  const router = createMemoryRouter(routes, { initialEntries: ['/fuel/recipes'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  // Visit a Fuel tab (Receptek) so it is remembered, then leave for another domain.
+  await screen.findByRole('button', { name: 'Területváltó: Fuel' })
+  await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
+  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Nap/ }))
+  expect(router.state.location.pathname).toBe('/nap')
+  // Re-open the switcher from Nap and pick Fuel — it lands back on Receptek, not Fuel tab 1.
+  await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
+  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Fuel/ }))
+  expect(router.state.location.pathname).toBe('/fuel/recipes')
+})
+
+test('/mezo/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/mezo/karakter/dimenziok')
   // Mock mode starts pre-bootstrap (MOCK_OVERVIEW_EMPTY — 7 CORE dims only, no CHAPTER yet),
   // so the derived count here is 7, not the fully-seeded dossier's 8.
   expect(await screen.findByText('7 dimenzió, egy helyen')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
 })
 
-test('/me/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, Task 4)', async () => {
-  renderApp('/me/karakter/dimenzio/physical')
+test('/mezo/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/mezo/karakter/dimenzio/physical')
   expect(await screen.findByText('Fizikai')).toBeInTheDocument()
   expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
 })
 
-test('/me/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
-  renderApp('/me/karakter/feed')
+test('/mezo/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/mezo/karakter/feed')
   expect(await screen.findByText('Amit mostanában megtudtam rólad')).toBeInTheDocument()
 })
 
-test('/me/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
-  renderApp('/me/karakter/csapat')
+test('/mezo/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
+  renderApp('/mezo/karakter/csapat')
   expect(await screen.findByText('Mezo belső tanácsa — ők dolgoznak a karakteren')).toBeInTheDocument()
   expect(screen.getByText('Doki')).toBeInTheDocument()
   expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
 })
 
-test('/me/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
+test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
   // Mode-agnostic: real mode's MSW handler seeds an empty conference list (GET
   // /api/character/conference -> []), so this only asserts the page itself renders as a
   // stable full-page sibling — not the decision-first content, which KonziliumPage.test.tsx
   // already covers against the mock fixtures.
-  renderApp('/me/karakter/konzilium')
+  renderApp('/mezo/karakter/konzilium')
   expect(await screen.findByText('Konzílium')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
-  renderApp('/me/karakter/gepterem')
+test('/mezo/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/mezo/karakter/gepterem')
   expect(await screen.findByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
   // Fix round 1 (a11y): the Futások tile carries no `aria-label` any more — its accessible
   // name is its own text content (eyebrow + the live line), so the query matches on that.
   expect(screen.getByRole('button', { name: /Futások/ })).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {
-  renderApp('/me/karakter/gepterem/futasok')
+test('/mezo/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/mezo/karakter/gepterem/futasok')
   expect(await screen.findByText('a pipeline futásai, hetekre bontva')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Task 4)', async () => {
-  renderApp('/me/karakter/gepterem/futas/ejsz-27')
+test('/mezo/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/mezo/karakter/gepterem/futas/ejsz-27')
   // ejsz-27 is a seeded signal night (2 fired chains) — the flow strip is the
   // face-independent landmark.
   expect(await screen.findByRole('group', { name: 'Futás-lánc' })).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source inventory (mezo-1gim.14, Task 5)', async () => {
-  renderApp('/me/karakter/gepterem/adatforrasok')
+test('/mezo/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source inventory (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/mezo/karakter/gepterem/adatforrasok')
   expect(await screen.findByText('mit olvas a rendszer ma, és mit tervez')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/adatforrasok/kor/:n renders the honest not-found face now that every round has landed (mezo-1gim.15, Task 8)', async () => {
+test('/mezo/karakter/gepterem/adatforrasok/kor/:n renders the honest not-found face now that every round has landed (mezo-1gim.15, Task 8)', async () => {
   // Rounds 1-4 have all landed for real via mezo-1gim.15 — INVENTORY_ROUNDS is empty in
   // production, so any :n now hits KorPage's honest not-found face instead of a real round.
-  renderApp('/me/karakter/gepterem/adatforrasok/kor/4')
+  renderApp('/mezo/karakter/gepterem/adatforrasok/kor/4')
   expect(await screen.findByText('Ez a kör nem található.')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/detektorok lists the 40 real detectors (mezo-1gim.14/.15, Tasks 5-8)', async () => {
-  renderApp('/me/karakter/gepterem/detektorok')
+test('/mezo/karakter/gepterem/detektorok lists the 40 real detectors (mezo-1gim.14/.15, Tasks 5-8)', async () => {
+  renderApp('/mezo/karakter/gepterem/detektorok')
   expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
 })
 
@@ -168,11 +215,11 @@ test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1,
   // renders KorPage's honest not-found face instead of a real round, but the remount + sticky-
   // segment coverage this test guards is unchanged, so the round-trip is driven via the router
   // directly instead of a click on a round tile that no longer exists.
-  const router = createMemoryRouter(routes, { initialEntries: ['/me/karakter/gepterem/adatforrasok'] })
+  const router = createMemoryRouter(routes, { initialEntries: ['/mezo/karakter/gepterem/adatforrasok'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
   expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
-  router.navigate('/me/karakter/gepterem/adatforrasok/kor/4')
+  router.navigate('/mezo/karakter/gepterem/adatforrasok/kor/4')
   expect(await screen.findByText('Ez a kör nem található.')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
@@ -216,7 +263,9 @@ test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {
   renderApp('/today')
   expect(document.querySelector('symbol#i-nap')).not.toBeNull()
   expect(document.querySelector('symbol#s-orb')).not.toBeNull()
-  expect(document.querySelectorAll('#ig-orb')).toHaveLength(1)
+  // Mounted exactly once — a shared gradient def from the icon sprite must not duplicate
+  // (Titanium redraw, mezo-ve03: the ramp is #ig-titanium now, not the old #ig-orb).
+  expect(document.querySelectorAll('#ig-titanium')).toHaveLength(1)
 })
 
 // --- Design 2.0 shell (mezo-d20.1.1): /nap + /mezo routes, legacy redirects, floating FAB ---
@@ -266,6 +315,14 @@ test('the floating chat bubble is retired — Mezo is a first-class tab now (dec
 
 test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   const { container } = renderApp('/mezo/chat')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
+
+// mezo-7flr: the companion-first /nap has a bottom composer that owns the thumb zone, so the
+// coral FAB (which would overlap the send button) is hidden there — same call as the chat page.
+test('hides the quick-log FAB on the companion-first /nap but keeps the tab bar', () => {
+  const { container } = renderApp('/nap')
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
 })

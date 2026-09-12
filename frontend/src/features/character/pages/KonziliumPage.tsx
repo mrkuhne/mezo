@@ -138,7 +138,7 @@ export function KonziliumPage() {
   if (conferences.length === 0) {
     return (
       <div className="kr-hub">
-        <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+        <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
         <div className="mz-page-hero"><div className="mz-hero-nm">Konzílium</div></div>
         <div className="mz-page-body">
           <div className="kr-konz-empty">Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</div>
@@ -170,7 +170,7 @@ export function KonziliumPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
+      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Konzílium</div>
         {summary != null && (

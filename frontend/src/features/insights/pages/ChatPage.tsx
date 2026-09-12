@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { ClaySpot } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
@@ -55,6 +55,7 @@ export function ChatPage() {
   // Which conversation is on screen lives in the URL (`?c=<id>` / `?c=new`) — a shared link,
   // a back navigation and a reload all land on the same thread (mezo-at8x.3).
   const navigate = useNavigate()
+  const location = useLocation()
   const [params, setParams] = useSearchParams()
   const selection = params.get('c')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -124,6 +125,21 @@ export function ChatPage() {
     send(draft)
     setDraft('')
   }
+
+  // Companion-first handoff (mezo-7flr): the `/nap` composer navigates here with the message in
+  // router state instead of running its own chat engine. We send it through THIS page's `send`
+  // (one engine, one thread — the stream lives here where the reply shows) exactly once, then
+  // strip the state so a reload or Back never re-sends. Skipped while degraded — the user then
+  // just sees the "társ nem elérhető" bubble, with their text still typed.
+  const handedOffRef = useRef(false)
+  useEffect(() => {
+    if (handedOffRef.current) return
+    const compose = (location.state as { compose?: string } | null)?.compose
+    if (!compose || degraded) return
+    handedOffRef.current = true
+    send(compose)
+    navigate(location.pathname + location.search, { replace: true, state: null })
+  }, [location, degraded, send, navigate])
 
   return (
     <div className="col gap-md chat-page mzc">

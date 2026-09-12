@@ -1,462 +1,82 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
-    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
-    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
-    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
-    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
-    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
-    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
-    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
-    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
-    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
-    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
-    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
-    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
-    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
-    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
-    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
-    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
-    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
-    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
-    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
-    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
-    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
-    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
-    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
-    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
-    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
-    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
-    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
-    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
-    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
-    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
-    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
-    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
-    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
-    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
-    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
-    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
-    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
-    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<!-- Titanium icon family (mezo-titanium-icons). Material = brushed-titanium base gradient
+     (ig-titanium) + ONE domain accent (ig-blue/gold/purple/lime/rose) + thin bright highlight
+     strokes + a soft drop shadow. viewBox 0 0 64 64. Gradient/filter ids are ig-* namespaced. -->
+<linearGradient id="ig-titanium" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#e9e4f6"/><stop offset=".18" stop-color="#8e8a9e"/><stop offset=".43" stop-color="#282b39"/><stop offset=".66" stop-color="#62697d"/><stop offset=".85" stop-color="#c9c7d8"/><stop offset="1" stop-color="#393647"/></linearGradient>
+<linearGradient id="ig-blue" x2=".5" y2="1"><stop stop-color="#d1faff"/><stop offset=".4" stop-color="#78cfe7"/><stop offset="1" stop-color="#38617a"/></linearGradient>
+<linearGradient id="ig-gold" x2=".8" y2="1"><stop stop-color="#ffebbe"/><stop offset=".45" stop-color="#b89757"/><stop offset="1" stop-color="#604831"/></linearGradient>
+<linearGradient id="ig-purple" x2=".7" y2="1"><stop stop-color="#eee0ff"/><stop offset=".4" stop-color="#b3a0ed"/><stop offset="1" stop-color="#504373"/></linearGradient>
+<linearGradient id="ig-lime" x2=".8" y2="1"><stop stop-color="#eeffb9"/><stop offset=".5" stop-color="#b8d777"/><stop offset="1" stop-color="#52663e"/></linearGradient>
+<linearGradient id="ig-rose" x2=".7" y2="1"><stop stop-color="#ffe0ec"/><stop offset=".45" stop-color="#e79db7"/><stop offset="1" stop-color="#6f4353"/></linearGradient>
+<filter id="ig-shadow" x="-60%" y="-60%" width="220%" height="240%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".5"/></filter>
 
-    <symbol id="i-nap" viewBox="0 0 100 100">
-      <g>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
-        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
-      </g>
-      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
-      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
-    </symbol>
+<!-- ============ NAV / CORE ============ -->
+<symbol id="i-nap" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 5V12M32 52V59M5 32H12M52 32H59M12 12L17 17M47 47L52 52M12 52L17 47M47 17L52 12" stroke="url(#ig-gold)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="15" fill="url(#ig-gold)"/><path d="M22 30A11 11 0 0 1 35 21" stroke="#fff4d2" stroke-width="2" fill="none" opacity=".8"/></g></symbol>
+<symbol id="i-edzes" viewBox="0 0 64 64"><g transform="rotate(-30 32 32)" filter="url(#ig-shadow)"><rect x="19" y="28" width="28" height="8" rx="3" fill="url(#ig-titanium)"/><rect x="10" y="15" width="12" height="34" rx="5" fill="url(#ig-titanium)"/><rect x="42" y="15" width="12" height="34" rx="5" fill="url(#ig-titanium)"/><rect x="6" y="22" width="7" height="20" rx="3" fill="url(#ig-lime)"/><rect x="51" y="22" width="7" height="20" rx="3" fill="url(#ig-lime)"/><path d="M16 19V44M48 19V44" stroke="#d0e8aa" stroke-width="1.5"/></g></symbol>
+<symbol id="i-fuel" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="28" rx="25" ry="10" fill="url(#ig-titanium)"/><path d="M8 29C9 49 18 53 32 53S56 46 57 29Z" fill="url(#ig-titanium)"/><ellipse cx="32" cy="28" rx="22" ry="7" fill="url(#ig-lime)"/><path d="M19 26C25 14 32 15 34 23C41 13 48 20 47 27" fill="#bfd79a" stroke="#eaf2bf" stroke-width="1.5"/><path d="M17 36C18 43 23 47 29 48" fill="none" stroke="#c4c7d6" stroke-width="2"/></g></symbol>
+<symbol id="i-mezo" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="32" rx="26" ry="12" transform="rotate(-28 32 32)" fill="none" stroke="url(#ig-purple)" stroke-width="3"/><ellipse cx="32" cy="32" rx="26" ry="11" transform="rotate(34 32 32)" fill="none" stroke="url(#ig-blue)" stroke-width="2" opacity=".65"/><circle cx="32" cy="32" r="13" fill="url(#ig-titanium)"/><circle cx="32" cy="32" r="6" fill="url(#ig-gold)"/><circle cx="54" cy="20" r="3" fill="url(#ig-purple)"/></g></symbol>
+<symbol id="i-emberek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="44" cy="22" r="8" fill="url(#ig-titanium)" opacity=".8"/><path d="M32 50C32 36 56 36 56 50Z" fill="url(#ig-titanium)" opacity=".8"/><circle cx="24" cy="20" r="10" fill="url(#ig-titanium)"/><path d="M8 52C8 33 40 33 40 52Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/></g></symbol>
 
-    <symbol id="i-edzes" viewBox="0 0 100 100">
-      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
-      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
-      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
-      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
-    </symbol>
+<!-- ============ DAY / TIME ============ -->
+<symbol id="i-viz" viewBox="0 0 64 64"><path d="M32 7C25 18 13 30 13 41A19 19 0 0 0 51 41C51 30 40 18 32 7Z" fill="url(#ig-blue)" stroke="#aeedff" stroke-width=".8" filter="url(#ig-shadow)"/><path d="M26 25C21 32 19 36 20 41" fill="none" stroke="#dcfaff" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M24 50C31 54 42 50 44 44" fill="none" stroke="#286887" stroke-width="2" opacity=".5"/></symbol>
+<symbol id="i-alvas" viewBox="0 0 64 64"><path d="M42 9C18 2 3 28 17 47C29 64 54 53 57 37C36 45 23 24 42 9Z" fill="url(#ig-purple)" stroke="#e7d7ff" stroke-width=".8" filter="url(#ig-shadow)"/><path d="M46 9L48 16 55 18 48 20 46 27 44 20 37 18 44 16Z" fill="url(#ig-gold)"/></symbol>
+<symbol id="i-hold" viewBox="0 0 64 64"><path d="M42 9C18 2 3 28 17 47C29 64 54 53 57 37C36 45 23 24 42 9Z" fill="url(#ig-purple)" stroke="#e7d7ff" stroke-width=".8" filter="url(#ig-shadow)"/></symbol>
+<symbol id="i-hajnal" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 18a15 15 0 0 1 15 15H17a15 15 0 0 1 15-15Z" fill="url(#ig-gold)"/><path d="M32 8V13M12 22L15 25M52 22L49 25M6 33H12M52 33H58" stroke="url(#ig-gold)" stroke-width="3.5" stroke-linecap="round"/><path d="M6 42H58M14 50H50" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-idozito" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M26 6h12M32 12V8" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="36" r="22" fill="url(#ig-titanium)"/><circle cx="32" cy="36" r="15" fill="#23212e"/><path d="M32 36V25" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="36" r="2.5" fill="#ffe6b0"/></g></symbol>
+<symbol id="i-heti" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="12" width="46" height="42" rx="7" fill="url(#ig-titanium)" stroke="#aca7c4"/><rect x="9" y="12" width="46" height="12" rx="7" fill="url(#ig-blue)"/><path d="M20 8V16M44 8V16" stroke="#d1faff" stroke-width="3" stroke-linecap="round"/><path d="M17 33h6M29 33h6M41 33h6M17 43h6M29 43h6" stroke="#c9c7d8" stroke-width="3" stroke-linecap="round"/></g></symbol>
 
-    <symbol id="i-fuel" viewBox="0 0 100 100">
-      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
-      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
-      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
-      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
-    </symbol>
+<!-- ============ HEALTH / BODY ============ -->
+<symbol id="i-eletjel" viewBox="0 0 64 64"><path d="M32 54C20 44 7 35 9 22C11 8 27 8 32 20C40 5 56 12 56 25C56 37 42 48 32 54Z" fill="url(#ig-rose)" stroke="#f0c9d9" filter="url(#ig-shadow)"/><path d="M13 32H23L28 24 35 41 40 31H53" fill="none" stroke="#fff0f6" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+<symbol id="i-checkin" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="23" fill="url(#ig-rose)"/><circle cx="32" cy="32" r="23" fill="none" stroke="#f6d3e1" stroke-width="1"/><path d="M21 33l7 8 15-18" fill="none" stroke="#fff2f7" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-suly" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="13" width="46" height="42" rx="11" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M18 34a14 14 0 0 1 28 0" fill="none" stroke="#2a2d3b" stroke-width="3.5"/><path d="M32 34 L40 25" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="34" r="3" fill="#e9e4f6"/></g></symbol>
+<symbol id="i-sport" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="24" fill="url(#ig-titanium)" stroke="#c9c7d8"/><path d="M32 8C24 20 24 44 32 56M32 8C40 20 40 44 32 56M9 26C22 34 42 34 55 26M9 40C22 32 42 32 55 40" fill="none" stroke="url(#ig-lime)" stroke-width="2.4" opacity=".9"/></g></symbol>
+<symbol id="i-futas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M8 44C14 40 20 42 26 38C31 35 33 28 40 30C46 32 47 40 55 41C58 41.5 58 48 54 48H12C8 48 6 45 8 44Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M40 30C42 26 46 25 50 27" fill="none" stroke="#c9c7d8" stroke-width="3" stroke-linecap="round"/><path d="M12 48H54" stroke="url(#ig-lime)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-injekcio" viewBox="0 0 64 64"><g transform="rotate(-45 32 32)" filter="url(#ig-shadow)"><rect x="18" y="26" width="26" height="12" rx="2" fill="url(#ig-titanium)"/><path d="M20 26v12M26 26v12M32 26v12" stroke="#c9c7d8" stroke-width="1.4"/><rect x="14" y="28" width="6" height="8" rx="2" fill="url(#ig-titanium)"/><rect x="44" y="30" width="7" height="4" fill="url(#ig-blue)"/><path d="M51 32H60" stroke="#8e8a9e" stroke-width="2" stroke-linecap="round"/><rect x="28" y="28" width="14" height="8" rx="1" fill="url(#ig-blue)" opacity=".8"/></g></symbol>
+<symbol id="i-lang" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 6C41 18 50 25 50 38A18 18 0 0 1 14 38C14 30 20 28 23 22C26 28 28 20 26 14C31 16 34 12 32 6Z" fill="url(#ig-gold)" stroke="#ffe6b0" stroke-width=".8"/><path d="M32 30c6 4 8 9 6 14a8 8 0 0 1-14-3c0-4 4-5 5-9 1 2 2 1 3-2Z" fill="url(#ig-lime)"/></g></symbol>
+<symbol id="i-growth" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 56V28" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M32 34C22 34 14 26 15 15C26 14 34 22 33 33Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/><path d="M32 42C40 42 49 36 49 26C40 25 32 31 32 41Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/></g></symbol>
 
-    <symbol id="i-mezo" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
-      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
-      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
-    </symbol>
+<!-- ============ MEZO / KNOWLEDGE ============ -->
+<symbol id="i-naplo" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M13 12L44 7 53 15 53 54 22 59 13 51Z" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M21 19L53 15 53 54 22 59Z" fill="url(#ig-purple)"/><path d="M13 12L21 19V59M29 29L45 27M29 36L42 34" fill="none" stroke="#e9dcff" stroke-width="1.5"/><path d="M43 42L45 47 50 49 45 50 43 55 42 50 37 49 42 47Z" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-memoar" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 15C25 9 13 9 8 12V53C13 50 25 50 32 55C39 50 51 50 56 53V12C51 9 39 9 32 15Z" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M32 15V55" stroke="#8e8a9e" stroke-width="2"/><path d="M14 22C19 20 26 20 29 23M35 23C38 20 45 20 50 22M14 31C19 29 26 29 29 32M35 32C38 29 45 29 50 31" fill="none" stroke="url(#ig-purple)" stroke-width="1.6" opacity=".85"/></g></symbol>
+<symbol id="i-tudas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="14" y="9" width="36" height="46" rx="7" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M32 18L45 26 41 41 23 41 19 26Z" fill="url(#ig-purple)" stroke="#ddd1ff" stroke-width=".8"/><path d="M32 18 L27 31 41 31Z" fill="#f0e7ff" opacity=".7"/><path d="M23 48h18" stroke="#d0cbe0" stroke-width="2.4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-kristaly" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 5L54 19 50 46 32 59 10 44 11 18Z" fill="url(#ig-purple)" stroke="#ddd1ff"/><path d="M32 5L26 27 11 18M26 27L10 44M26 27L32 59M26 27L54 19M26 27L50 46" fill="none" stroke="#f0e7ff" stroke-opacity=".55"/><path d="M37 22L32 32 39 32 29 44 31 35 25 35Z" fill="#f3e9ff"/></g></symbol>
+<symbol id="i-minta" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M14 16L44 26M14 16L26 48M44 26L26 48M44 26L52 46M26 48L52 46" stroke="url(#ig-blue)" stroke-width="2" opacity=".7"/><circle cx="14" cy="16" r="5" fill="url(#ig-blue)"/><circle cx="44" cy="26" r="6" fill="url(#ig-titanium)"/><circle cx="26" cy="48" r="5" fill="url(#ig-blue)"/><circle cx="52" cy="46" r="4" fill="url(#ig-purple)"/></g></symbol>
+<symbol id="i-retegek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M10 39L32 28 54 39 32 50Z" fill="url(#ig-titanium)"/><path d="M10 29L32 18 54 29 32 40Z" fill="url(#ig-blue)"/><path d="M10 19L32 8 54 19 32 30Z" fill="url(#ig-titanium)"/><path d="M32 8L54 19 32 30" fill="none" stroke="#c3e5f0" stroke-width="1.6"/></g></symbol>
+<symbol id="i-stack" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="17" y="8" width="30" height="48" rx="12" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M17 32h30" stroke="#8e8a9e" stroke-width="2"/><path d="M17 32a15 15 0 0 1 30 0V20a15 15 0 0 0-30 0Z" fill="url(#ig-blue)" opacity=".85"/></g></symbol>
+<symbol id="i-rend" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="21" fill="none" stroke="url(#ig-titanium)" stroke-width="11"/><path d="M32 11A21 21 0 1 1 12 38" fill="none" stroke="url(#ig-purple)" stroke-width="8" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-meso" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="36" width="8" height="16" rx="2" fill="url(#ig-titanium)"/><rect x="21" y="28" width="8" height="24" rx="2" fill="url(#ig-titanium)"/><rect x="33" y="20" width="8" height="32" rx="2" fill="url(#ig-gold)"/><rect x="45" y="34" width="8" height="18" rx="2" fill="url(#ig-titanium)"/><path d="M13 34C20 22 34 14 49 18" fill="none" stroke="url(#ig-lime)" stroke-width="2.4" stroke-linecap="round"/></g></symbol>
 
-    <symbol id="i-polc" viewBox="0 0 100 100">
-      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
-      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
-      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
-      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
-      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
-    </symbol>
+<!-- ============ GROWTH / GAME ============ -->
+<symbol id="i-cel" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="29" cy="35" r="22" fill="url(#ig-titanium)"/><circle cx="29" cy="35" r="15" fill="#23212e"/><circle cx="29" cy="35" r="8" fill="url(#ig-gold)"/><circle cx="29" cy="35" r="3" fill="#23212e"/><path d="M55 9 L33 31 M41 9 L55 9 L55 23" fill="none" stroke="url(#ig-lime)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-erme" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="32" rx="23" ry="23" fill="url(#ig-gold)"/><ellipse cx="32" cy="32" rx="23" ry="23" fill="none" stroke="#fff4d2" stroke-width="1.5" opacity=".6"/><ellipse cx="32" cy="32" rx="15" ry="15" fill="none" stroke="#7a5f34" stroke-width="2"/><path d="M32 24v16M27 28l5-4 5 4" fill="none" stroke="#5a4527" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-termes" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 10L38 24 53 25 42 35 45 50 32 42 19 50 22 35 11 25 26 24Z" fill="url(#ig-gold)" stroke="#fff4d2" stroke-width=".8"/><path d="M32 10L28 24 42 35" fill="none" stroke="#7a5f34" stroke-opacity=".5"/></g></symbol>
+<symbol id="i-kihivas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M14 8V58" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M16 10C26 4 34 16 46 10L50 27C38 33 30 21 18 27Z" fill="url(#ig-gold)" stroke="#ffe6b0" stroke-width=".8"/><path d="M16 10v17" stroke="#7a5f34" stroke-opacity=".4"/></g></symbol>
+<symbol id="i-muhely" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="38" rx="24" ry="10" fill="url(#ig-titanium)"/><ellipse cx="32" cy="35" rx="18" ry="6.5" fill="url(#ig-lime)" opacity=".7"/><path d="M20 15L22 21 28 23 22 25 20 31 18 25 12 23 18 21Z" fill="url(#ig-gold)"/><path d="M46 12L47 16 51 17 47 18 46 22 45 18 41 17 45 16Z" fill="url(#ig-gold)"/><circle cx="38" cy="16" r="2" fill="#ffe6b0"/></g></symbol>
 
-    <symbol id="i-viz" viewBox="0 0 100 100">
-      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
-      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
-    </symbol>
+<!-- ============ FOOD / KITCHEN ============ -->
+<symbol id="i-reggeli" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="41" rx="26" ry="9" fill="url(#ig-titanium)"/><ellipse cx="32" cy="38" rx="20" ry="6.4" fill="#c9c6d6"/><path d="M19 34c-3-8 6-13 11-8 5-5 13 0 11 7 4 3 1 9-5 8-3 4-12 4-14-1-5 1-7-4-3-6z" fill="#fdfaf0" stroke="#cfc9dc" stroke-width=".8"/><circle cx="30.5" cy="33" r="5.5" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-ebed" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="30" rx="24" ry="9" fill="url(#ig-titanium)"/><path d="M10 31C11 48 19 52 32 52S53 45 54 31Z" fill="url(#ig-titanium)"/><ellipse cx="32" cy="30" rx="20" ry="6.5" fill="url(#ig-lime)"/><circle cx="25" cy="29" r="4" fill="#c86b52"/><circle cx="36" cy="30" r="3.5" fill="#e6b45a"/><path d="M15 36C17 44 23 48 30 49" fill="none" stroke="#c4c7d6" stroke-width="2"/></g></symbol>
+<symbol id="i-snack" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 16C30 8 24 6 20 9C33 9 30 18 32 20C34 16 44 12 48 20C54 32 46 52 34 54C33 54 31 54 30 54C18 52 10 32 16 20C20 12 30 14 32 16Z" fill="url(#ig-rose)" stroke="#f6d3e1" stroke-width=".8"/><path d="M32 20C30 14 34 8 40 8" fill="none" stroke="#8f5a3a" stroke-width="2.4" stroke-linecap="round"/><path d="M22 26c1 8 4 14 9 17" fill="none" stroke="#fff2f7" stroke-width="2" opacity=".6"/></g></symbol>
+<symbol id="i-vacsora" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="34" cy="34" r="22" fill="url(#ig-titanium)"/><circle cx="34" cy="34" r="15" fill="url(#ig-purple)" opacity=".55"/><path d="M9 12V28C9 31 11 32 13 32V54M13 12V24M17 12V24M17 24C17 27 15 28 13 28" fill="none" stroke="url(#ig-titanium)" stroke-width="3" stroke-linecap="round"/></g></symbol>
+<symbol id="i-kamra" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="16" y="18" width="32" height="40" rx="8" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M22 12h20a4 4 0 0 1 4 4v4H18v-4a4 4 0 0 1 4-4Z" fill="url(#ig-titanium)"/><rect x="22" y="30" width="20" height="20" rx="4" fill="url(#ig-lime)" opacity=".8"/><path d="M22 40h20" stroke="#eaf2bf" stroke-width="1.6" opacity=".7"/></g></symbol>
+<symbol id="i-polc" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="14" width="48" height="6" rx="2" fill="url(#ig-titanium)"/><rect x="8" y="44" width="48" height="6" rx="2" fill="url(#ig-titanium)"/><rect x="15" y="22" width="8" height="20" rx="2" fill="url(#ig-lime)"/><rect x="27" y="26" width="8" height="16" rx="2" fill="url(#ig-blue)"/><rect x="39" y="22" width="9" height="20" rx="4" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-recept" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="12" y="10" width="40" height="46" rx="6" fill="url(#ig-titanium)" stroke="#aca7c4"/><rect x="12" y="10" width="8" height="46" fill="url(#ig-lime)" opacity=".6"/><path d="M27 22h18M27 30h18M27 38h12" stroke="#c9c7d8" stroke-width="2.6" stroke-linecap="round"/><circle cx="23" cy="22" r="1.6" fill="#b8d777"/><circle cx="23" cy="30" r="1.6" fill="#b8d777"/></g></symbol>
+<symbol id="i-lombik" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M26 8h12M28 10V26L15 48C13 52 16 56 20 56H44C48 56 51 52 49 48L36 26V10" fill="url(#ig-titanium)" stroke="#b6b0c5" stroke-width="1.2" stroke-linejoin="round"/><path d="M20 40C24 37 40 37 44 40L49 48C51 52 48 56 44 56H20C16 56 13 52 15 48Z" fill="url(#ig-blue)" opacity=".85"/><circle cx="27" cy="46" r="2" fill="#d1faff"/><circle cx="36" cy="50" r="1.6" fill="#d1faff"/></g></symbol>
 
-    <symbol id="i-alvas" viewBox="0 0 100 100">
-      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
-      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
-      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
-    </symbol>
+<!-- ============ SYSTEM / CHROME ============ -->
+<symbol id="i-ertesites" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 8C22 8 18 16 18 26C18 38 12 42 12 46H52C52 42 46 38 46 26C46 16 42 8 32 8Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M26 46a6 6 0 0 0 12 0Z" fill="url(#ig-titanium)"/><circle cx="46" cy="16" r="7" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-level" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="14" width="48" height="36" rx="6" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M10 17L32 35 54 17" fill="none" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-video" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="16" width="34" height="32" rx="7" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M44 28L56 20V44L44 36Z" fill="url(#ig-blue)"/><path d="M20 26l12 6-12 6Z" fill="#d1faff"/></g></symbol>
+<symbol id="i-mikrofon" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="24" y="8" width="16" height="30" rx="8" fill="url(#ig-purple)"/><path d="M16 30v3a16 16 0 0 0 32 0v-3" fill="none" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M32 49v7M24 56h16" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-beallitas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 6l5 6 8-2 1 8 7 4-4 7 4 7-7 4-1 8-8-2-5 6-5-6-8 2-1-8-7-4 4-7-4-7 7-4 1-8 8 2Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="10" fill="#23212e"/><circle cx="32" cy="32" r="4.5" fill="url(#ig-gold)"/></g></symbol>
 
-    <symbol id="i-eletjel" viewBox="0 0 100 100">
-      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
-      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
-    </symbol>
-
-    <symbol id="i-minta" viewBox="0 0 100 100">
-      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
-      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
-      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
-    </symbol>
-
-    <symbol id="i-naplo" viewBox="0 0 100 100">
-      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
-      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
-      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
-      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
-      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
-    </symbol>
-
-    <symbol id="i-cel" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
-      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
-      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
-      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
-      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
-    </symbol>
-
-    <symbol id="i-stack" viewBox="0 0 100 100">
-      <g transform="rotate(-32 50 50)">
-        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
-        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
-        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
-      </g>
-    </symbol>
-
-    <symbol id="i-suly" viewBox="0 0 100 100">
-      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
-      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
-      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
-      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
-    </symbol>
-
-    <symbol id="i-sport" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
-      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
-    </symbol>
-
-    <symbol id="i-futas" viewBox="0 0 100 100">
-      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
-      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
-      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
-    </symbol>
-
-    <symbol id="i-meso" viewBox="0 0 100 100">
-      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
-      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
-      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
-      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
-      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
-      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
-    </symbol>
-
-    <symbol id="i-emberek" viewBox="0 0 100 100">
-      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
-      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
-      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
-      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
-      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
-    </symbol>
-
-    <symbol id="i-tudas" viewBox="0 0 100 100">
-      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
-      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
-      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
-      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
-      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
-    </symbol>
-
-    <symbol id="i-ertesites" viewBox="0 0 100 100">
-      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
-      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
-      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
-      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
-    </symbol>
-
-    <symbol id="i-growth" viewBox="0 0 100 100">
-      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
-      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
-      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
-      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
-    </symbol>
-
-    <symbol id="i-erme" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
-      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
-      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
-    </symbol>
-
-    <symbol id="i-lang" viewBox="0 0 100 100">
-      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
-      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
-    </symbol>
-
-    <symbol id="i-beallitas" viewBox="0 0 100 100">
-      <g>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
-        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
-      </g>
-      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
-      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
-      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
-    </symbol>
-
-    <symbol id="i-mikrofon" viewBox="0 0 100 100">
-      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
-      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
-      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
-      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
-      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
-    </symbol>
-
-    <symbol id="i-kamra" viewBox="0 0 100 100">
-      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
-      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
-      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
-      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
-    </symbol>
-
-    <symbol id="i-recept" viewBox="0 0 100 100">
-      <g transform="rotate(-30 50 50)">
-        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
-        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
-        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
-        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
-      </g>
-    </symbol>
-
-    <symbol id="i-rend" viewBox="0 0 100 100">
-      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
-      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
-      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
-      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
-      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
-      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
-    </symbol>
-
-    <symbol id="i-level" viewBox="0 0 100 100">
-      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
-      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
-    </symbol>
-
-    <symbol id="i-hajnal" viewBox="0 0 100 100">
-      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
-      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
-      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
-      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
-      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
-      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
-    </symbol>
-
-    <symbol id="i-video" viewBox="0 0 100 100">
-      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
-      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
-      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
-    </symbol>
-
-    <symbol id="i-idozito" viewBox="0 0 100 100">
-      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
-      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
-      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
-      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
-      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
-      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
-      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
-      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
-    </symbol>
-
-    <symbol id="i-kihivas" viewBox="0 0 100 100">
-      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
-      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
-      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
-      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
-    </symbol>
-
-    <symbol id="i-checkin" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
-      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
-      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
-      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
-      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
-    </symbol>
-
-    <symbol id="i-injekcio" viewBox="0 0 100 100">
-      <g transform="rotate(-38 50 50)">
-        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
-        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
-        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
-        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
-        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
-        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
-        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
-      </g>
-    </symbol>
-
-    <symbol id="i-reggeli" viewBox="0 0 100 100">
-      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
-      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
-      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
-      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
-    </symbol>
-
-    <symbol id="i-ebed" viewBox="0 0 100 100">
-      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
-      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
-      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
-      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-    </symbol>
-
-    <symbol id="i-snack" viewBox="0 0 100 100">
-      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
-      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
-      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
-    </symbol>
-
-    <symbol id="i-vacsora" viewBox="0 0 100 100">
-      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
-      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
-      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
-    </symbol>
-    <symbol id="i-muhely" viewBox="0 0 100 100">
-      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
-      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
-      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
-      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
-      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
-    </symbol>
-    <symbol id="i-memoar" viewBox="0 0 100 100">
-      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
-      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
-      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
-      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
-      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
-    </symbol>
-    <symbol id="i-lombik" viewBox="0 0 100 100">
-      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
-      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
-      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
-      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
-      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
-      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
-      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
-    </symbol>
-    <symbol id="i-kristaly" viewBox="0 0 100 100">
-      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
-      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
-      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
-      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
-      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
-    </symbol>
-    <symbol id="i-retegek" viewBox="0 0 100 100">
-      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
-      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
-      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
-      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
-      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
-    </symbol>
-    <symbol id="i-heti" viewBox="0 0 100 100">
-      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
-      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
-      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
-      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
-      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
-      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
-      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
-    </symbol>
-    <symbol id="i-hold" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
-      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
-      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
-      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
-      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
-    </symbol>
-
-    <symbol id="i-termes" viewBox="0 0 100 100">
-      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
-      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
-      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
-      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
-    </symbol>
-
-    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
-         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
-         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
-         gradiensek, fehér spekuláris folt. -->
-    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
-    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
-    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
-
-    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
-      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
-      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
-      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
-      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
-    </symbol>
-    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
-      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
-      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
-      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
-      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
-    </symbol>
-    <symbol id="i-life-konyha" viewBox="0 0 100 100">
-      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
-      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
-      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
-      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
-      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
-    </symbol>
-    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
-      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
-      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
-      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
-      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
-      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
-    </symbol>
-    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
-      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
-      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
-      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
-    </symbol>
-    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
-      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
-      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
-      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
-      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
-    </symbol>
-    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
-      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
-      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
-      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
-      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
-    </symbol>
-    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
-      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
-      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
-      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
-      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
-    </symbol>
-  </defs>
-</svg>
+<!-- ============ LIFE-SKILLS (sub-family: titanium chip + domain glyph) ============ -->
+<symbol id="i-life-tudatossag" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M16 32C22 24 42 24 48 32C42 40 22 40 16 32Z" fill="#23212e"/><circle cx="32" cy="32" r="7" fill="url(#ig-purple)"/><circle cx="32" cy="32" r="2.5" fill="#fff"/></g></symbol>
+<symbol id="i-life-szemlelet" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="16" fill="#23212e"/><path d="M32 20l4 12-12 4Z" fill="url(#ig-blue)"/><path d="M32 44l-4-12 12-4Z" fill="#5b6b86"/></g></symbol>
+<symbol id="i-life-konyha" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M22 30C18 30 16 24 20 21C22 15 30 15 32 20C34 15 42 15 44 21C48 24 46 30 42 30Z" fill="url(#ig-lime)"/><path d="M23 30h18v10a4 4 0 0 1-4 4H27a4 4 0 0 1-4-4Z" fill="url(#ig-lime)"/></g></symbol>
+<symbol id="i-life-penzugyek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="14" fill="url(#ig-gold)"/><path d="M32 23v18M27 27l5-4 5 4" fill="none" stroke="#5a4527" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-life-produktivitas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M34 14L18 36 30 37 28 50 46 26 34 26Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/></g></symbol>
+<symbol id="i-life-tanulas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M32 18L52 27 32 36 12 27Z" fill="url(#ig-blue)"/><path d="M22 31v9c0 4 20 4 20 0v-9" fill="none" stroke="#5b6b86" stroke-width="3"/></g></symbol>
+<symbol id="i-life-kapcsolatok" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M32 46C24 40 15 34 17 25C18 17 28 17 32 25C36 17 46 17 47 25C49 34 40 40 32 46Z" fill="url(#ig-rose)"/></g></symbol>
+<symbol id="i-life-regeneracio" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M40 18C24 14 14 28 22 40C28 49 42 44 44 33C33 38 26 27 40 18Z" fill="url(#ig-purple)"/></g></symbol>
+</defs></svg>

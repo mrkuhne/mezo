@@ -2,11 +2,11 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (54 symbols) + clay-spots.svg (22 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
-// i-hold + i-termes joined the set for the Napzárás night language (mezo-d20.8.1.1).
-// 8 s-orb-* persona variants joined the spot set for Karakter (mezo-1gim.13).
-// 8 i-life-* life-area symbols joined for the F7.4 iconography round (mezo-d20.8.4.1).
-// i-muhely joined for the Receptműhely page (mezo-92pb).
+// (54 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
+// material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
+// accent — replacing the earlier warm-clay ramps. The NAMES (54 i-* + 24 s-*) are unchanged so
+// every call site and mapping table keeps compiling.
 
 test('ClaySprites mounts all 54 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
@@ -26,12 +26,12 @@ test('a két új szekció-spot a sprite-ban van, a clay recept szerint', () => {
   }
 })
 
-test('sprite gradients are copied verbatim — the orb ramp keeps its exact stops', () => {
+test('sprite gradients are copied verbatim — the titanium ramp keeps its exact stops', () => {
   render(<ClaySprites />)
-  const orb = document.querySelector('#ig-orb')
-  expect(orb).not.toBeNull()
-  const stops = Array.from(orb!.querySelectorAll('stop')).map(s => s.getAttribute('stop-color'))
-  expect(stops).toEqual(['#FFC3A8', '#FF7A55', '#D8481F'])
+  const ti = document.querySelector('#ig-titanium')
+  expect(ti).not.toBeNull()
+  const stops = Array.from(ti!.querySelectorAll('stop')).map(s => s.getAttribute('stop-color'))
+  expect(stops).toEqual(['#e9e4f6', '#8e8a9e', '#282b39', '#62697d', '#c9c7d8', '#393647'])
 })
 
 test('ClayIcon renders an aria-hidden svg with a use ref to the requested symbol', () => {
