@@ -469,7 +469,7 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
         if (el.children.length) continue
         const text = el.textContent?.trim()
         if (!text) continue
-        if (el.closest('.eyebrow, .label-mono, .overline')) continue
+        if (el.closest('.eyebrow, .label-mono, .overline, .fmx-score')) continue
         if (inScrollX(el)) continue
         // Csak a NÉV-szerű szövegeket nyújtjuk: egy számjegy, egy mértékegység vagy egy rövid
         // chip sosem lesz hosszú, és ellenük védekezni semmi ellen védekezés volna.

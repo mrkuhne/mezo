@@ -51,8 +51,10 @@ test('a recept-listán nincs Műhely gomb', () => {
 // (korábban '‹ Fuel' volt — a Receptek akkor közvetlenül a Fuel-gyökérről nyílt).
 test('a vissza-gomb a Konyhába visz', async () => {
   renderView()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Konyha')
-  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  // A vissza-vezérlő 40px-es kerek glyph-chip: a szöveges felirat kilógott belőle és ráült a
+  // címre (mezo-jb84). A szülőt a szemöldök-sor nevezi meg, a gomb a hozzáférhető nevét viszi.
+  expect(screen.getByRole('button', { name: 'Vissza a Konyhába' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza a Konyhába' }))
   expect(screen.getByTestId('location').textContent).toBe('/fuel/konyha')
 })
 

@@ -41,7 +41,9 @@ test('Titán váz: al-fejléc, kereső, darabszámos típus-szűrők, csempe-rá
   expect(container.querySelector('.mz-statstrip')).toBeNull()
   expect(screen.queryByText('Polc')).toBeNull()
   expect(screen.getByText('Kamra')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Konyha')
+  // A vissza-vezérlő 40px-es kerek glyph-chip: a szöveges felirat kilógott belőle és ráült a
+  // címre (mezo-jb84). A szülőt a szemöldök-sor nevezi meg, a gomb a hozzáférhető nevét viszi.
+  expect(screen.getByRole('button', { name: 'Vissza a Konyhába' })).toBeInTheDocument()
   expect(screen.getByLabelText('Keresés a kamrában')).toBeInTheDocument()
   // The type axis is a segmented switcher — FIVE segments (audit gap #19: med gets its own
   // Gyógyszer segment instead of folding silently into "Mind").

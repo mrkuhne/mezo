@@ -13381,10 +13381,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-ing-end b, .fmx-ing-end small,
 .fmx-mc-end b, .fmx-mc-end small { overflow: hidden; text-overflow: ellipsis; }
 
-/* A pont-chip a kártya sarkában ül: sosem tolhatja szét a csempét, akármilyen hosszú a
-   felirata (a „számolódik" állapot 10+ karakter). Zsugorodhat, és a saját sávjában vágódik. */
-.fmx-score { flex: 0 1 auto; min-width: 0; }
-.fmx-score b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A pont-chip felirata FIX UI-szöveg („folyamatban", egy pontszám) — sosem felhasználói név,
+   ezért nem zsugorodik és nem vágódik: az olvashatóság itt többet ér. A csempét nem tolhatja
+   szét, mert a szövege rövid; a kártya többi sávja (`.fkx-recipe-top`) viszont engedjen. */
 .fkx-recipe-top { min-width: 0; }
 /* ── /fuel overflow guard ── */
 
