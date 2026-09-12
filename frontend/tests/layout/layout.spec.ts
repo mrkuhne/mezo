@@ -442,6 +442,23 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
+    // A Kiegészítők / Trendek / Konyha a saját adatára VÁR — `networkidle` után is állhat még
+    // csontvázon, amiben nincs egysoros szöveg. A kör ilyenkor vakon futna, ezért megvárjuk a
+    // valódi tartalmat. Ha sosem érkezik meg, a várakozás bukik — ez is igaz eredmény.
+    await page.waitForFunction(() => {
+      const scroller = document.querySelector('.screen-content')
+      if (!scroller) return false
+      return Array.from(scroller.querySelectorAll('*')).some(el =>
+        el.children.length === 0
+        && !!el.textContent?.trim()
+        && getComputedStyle(el).whiteSpace === 'nowrap'
+        && !el.closest('.eyebrow, .label-mono, .overline'))
+    }, undefined, { timeout: 10_000 }).catch(() => {
+      throw new Error(
+        `${path} 10 mp után sem rendert egysoros felhasználói szöveget — vagy sosem tölt be, `
+        + 'vagy a lap felépítése változott meg. A kör így vakon futna, ezért inkább bukik.',
+      )
+    })
 
     const stretched = await page.evaluate((long: string) => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
