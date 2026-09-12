@@ -29,6 +29,9 @@ export type ClayIconName =
   // Fuel Titanium S1a (mezo-33k6): az owner makró-identitása a Mai hero gyűrűsorához —
   // fehérje = hús, szénhidrát = gabona, zsír = avokádó, rost = növény (a víz már megvolt).
   | 'i-hus' | 'i-gabona' | 'i-avokado' | 'i-noveny'
+  // Fuel Titanium S1b (mezo-33k6): az értékelés három dimenziójának SAJÁT arca — a generikus
+  // szimbólumok nem illettek rájuk (owner). A napi kontextus marad az óra (`i-idozito`).
+  | 'i-makro' | 'i-mikro' | 'i-feldolgozas'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'

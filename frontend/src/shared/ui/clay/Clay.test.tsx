@@ -2,15 +2,15 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (62 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (65 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 // Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
 // material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
 // accent — replacing the earlier warm-clay ramps. The existing NAMES are unchanged so every
-// call site and mapping table keeps compiling; the set only ever GROWS (62 i-* + 24 s-*).
+// call site and mapping table keeps compiling; the set only ever GROWS (65 i-* + 24 s-*).
 
-test('ClaySprites mounts all 62 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 65 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(62)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(65)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
 })
 
@@ -33,6 +33,20 @@ test('a négy makró-ikon a sprite-ban van, a titánium recept szerint', () => {
 test('a négy Fuel-fül ikon a sprite-ban van, a titánium recept szerint', () => {
   render(<ClaySprites />)
   for (const id of ['i-tanyer', 'i-kiegeszito', 'i-trend', 'i-fazek']) {
+    const sym = document.querySelector(`#${id}`)
+    expect(sym, `${id} hiányzik`).not.toBeNull()
+    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
+    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
+    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  }
+})
+
+// Fuel Titanium S1b (mezo-33k6): az AI értékelés három dimenziója saját szimbólumot kapott —
+// makró-tányér, mikro-molekula, feldolgozottság-tölcsér. Ugyanaz a titánium recept, új
+// gradiens NEM született (a paletta zárt).
+test('a három értékelés-dimenzió ikon a sprite-ban van, a titánium recept szerint', () => {
+  render(<ClaySprites />)
+  for (const id of ['i-makro', 'i-mikro', 'i-feldolgozas']) {
     const sym = document.querySelector(`#${id}`)
     expect(sym, `${id} hiányzik`).not.toBeNull()
     expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')

@@ -36,6 +36,7 @@ import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelMealDetailPage } from '@/features/fuel/pages/FuelMealDetailPage'
+import { FuelMealScorePage } from '@/features/fuel/pages/FuelMealScorePage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
@@ -269,6 +270,9 @@ export const routes: RouteObject[] = [
       { path: 'fuel/log', element: <FuelLogPage /> },
       // A blokk-CTA-k saját logoló oldala (mezo-bq2t) — a kontextus az URL-ben él (d/w/ai).
       { path: 'fuel/log/uj', element: <FuelLogNewPage /> },
+      // Fuel Titanium S1b (mezo-33k6): az étkezés AI értékelése saját oldalon — A11.
+      // A hosszabb (statikus végű) útvonal áll előbb, a fájl konvenciója szerint.
+      { path: 'fuel/etkezes/:id/ertekeles', element: <FuelMealScorePage /> },
       // Fuel Titanium S1b (mezo-33k6): egy logolt étkezés részletei — A10/A14.
       { path: 'fuel/etkezes/:id', element: <FuelMealDetailPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
