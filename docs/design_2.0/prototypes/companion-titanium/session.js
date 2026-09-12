@@ -33,6 +33,8 @@ export const sessionSnapshot = () => ({ complete: session.status === 'complete',
 
 export function openSession() {
   closeSheet();
+  glass = null;
+  view = session.status === 'complete' ? 'recap' : 'list';
   session.startedAt ??= Date.now();
   if (session.status === 'ready') session.status = 'active';
   overlay.hidden = false;
@@ -64,11 +66,9 @@ function verdictCell(exercise, index, row) {
 }
 
 function setRow(exercise, index, row) {
-  const previous = exercise.last[index];
   const label = row.extra ? '＋' : index + 1;
   return `<form class="wo-row ${row.done ? 'is-done' : ''}" data-row="${exercise.id}:${index}">
    <span class="wo-idx">${label}</span>
-   <span class="wo-prev">${previous ? `${n(previous.kg)}×${previous.reps}` : '—'}</span>
    <label class="wo-field"><input name="kg" type="number" step="0.5" min="0" max="500" value="${row.kg}" required aria-label="${exercise.name}, ${index + 1}. szett, súly kilogrammban"></label>
    <label class="wo-field"><input name="reps" type="number" step="1" min="1" max="100" value="${row.reps}" required aria-label="${exercise.name}, ${index + 1}. szett, ismétlés"></label>
    <label class="wo-field small"><input name="rir" type="number" step="1" min="0" max="10" value="${row.rir}" required aria-label="${exercise.name}, ${index + 1}. szett, RIR"></label>
@@ -83,12 +83,13 @@ function card(id, position, total) {
    <header class="wo-card-head">
     <span class="wo-card-art">${icon(exercise.art)}</span>
     <span class="wo-card-copy"><strong>${exercise.name}</strong>${skipped ? '<small>KIHAGYVA</small>' : ''}</span>
+    <button class="wo-card-log" data-history="${id}" aria-label="${exercise.name} · előzmények és rekordok">${icon('journal')}</button>
     <button class="wo-card-menu" data-menu="${id}" aria-haspopup="dialog" aria-label="${exercise.name} · további műveletek">⋮</button>
    </header>
    ${note ? `<button class="wo-note" data-note="${id}">${icon('tick')}<span>${safe(note)}</span></button>` : ''}
    ${skipped ? '' : `<div class="wo-cue">${icon('chat')}<p>${exercise.cue}</p></div>
    <div class="wo-rows">
-    <div class="wo-rows-head"><span></span><span>MÚLT</span><span>KG</span><span>REP</span><span>RIR</span><span></span><span></span></div>
+    <div class="wo-rows-head"><span></span><span>KG</span><span>REP</span><span>RIR</span><span></span><span></span></div>
     ${rows.map((row, index) => setRow(exercise, index, row)).join('')}
    </div>`}
   </section>`;
@@ -109,7 +110,6 @@ function menuGlass(id) {
     </header>
     <div class="wo-menu">
      ${item(`data-video="${id}"`, 'play', 'Videó', 'A gyakorlathoz csatolt felvétel')}
-     ${item(`data-history="${id}"`, 'journal', 'Napló', 'Előzmények, rekordok, várható ív')}
      ${item(`data-note="${id}"`, 'tick', 'Jegyzet', note(exercise, id))}
      ${item(`data-add="${id}"`, 'dumbbell', 'Szett hozzáadása', `Most ${rows.length} szett van`, skipped)}
      ${item(`data-remove="${id}"`, 'dumbbell', 'Szett elvétele', 'Csak bepipálatlan utolsó szett', skipped || rows.length <= 1 || rows[rows.length - 1].done)}
@@ -159,50 +159,60 @@ function historyGlass(id) {
   const e = exerciseById(id), h = e.history, rows = session.rows[id];
   const logged = rows.filter(r => r.done);
   const bestToday = logged.length ? logged.reduce((a, b) => (e1rm(b) > e1rm(a) ? b : a)) : null;
-  const points = [...h.trajectory];
-  const all = [...points, ...h.projected];
+  const volumeToday = logged.reduce((total, r) => total + r.kg * r.reps, 0);
+  const beatsE1rm = bestToday && e1rm(bestToday) > h.e1rm;
+  const beatsSet = bestToday && (bestToday.kg > h.best.kg || (bestToday.kg === h.best.kg && bestToday.reps > h.best.reps));
+  const beatsVolume = volumeToday > h.maxVolume.value;
+
+  const record = (art, label, value, when, today, beaten) => `<div class="rec ${beaten ? 'is-beaten' : ''}">
+   <span class="rec-art">${icon(art)}</span>
+   <span class="rec-copy"><small>${label}</small><strong>${value}</strong><i>${when}</i></span>
+   <span class="rec-today">${beaten ? `${icon('record')}<b>MA MEGDÖNTVE</b>` : today}</span>
+  </div>`;
+
+  const points = [...h.trajectory], all = [...points, ...h.projected];
   const min = Math.min(...all) - 2, max = Math.max(...all) + 2;
   const x = i => 14 + i * (300 / (all.length - 1));
   const y = v => 116 - (v - min) / (max - min) * 96;
   const past = points.map((v, i) => `${x(i)},${y(v)}`).join(' ');
   const future = [points.at(-1), ...h.projected].map((v, i) => `${x(points.length - 1 + i)},${y(v)}`).join(' ');
+
   return `<div class="wo-glass" data-glass style="--ex-color:${e.color}">
-   <div class="wo-glass-card" role="dialog" aria-label="${e.name} előzményei">
+   <div class="wo-glass-card" role="dialog" aria-label="${e.name} előzményei és rekordjai">
     <header class="wo-glass-head">
      <span class="wo-card-art">${icon(e.art)}</span>
-     <span><small>${e.muscle.toUpperCase()} · ${h.sessions} ALKALOM ${dateLabel(h.since).toUpperCase()} ÓTA</small><strong>${e.name}</strong></span>
+     <span><small>${e.muscle.toLocaleUpperCase('hu-HU')} · ${h.sessions} ALKALOM</small><strong>${e.name}</strong></span>
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
-    <div class="wo-glass-hero">
-     <span class="wo-glass-main"><strong>${n(h.e1rm)}</strong><small>kg becsült 1RM</small></span>
-     <span class="wo-glass-delta ${h.e1rm > h.e1rmPrev ? 'is-up' : 'is-hold'}">${icon(h.e1rm > h.e1rmPrev ? 'up' : 'hold')}${h.e1rm > h.e1rmPrev ? `+${n(h.e1rm - h.e1rmPrev)} kg` : 'tartás'}<i>az előző blokkhoz</i></span>
-    </div>
-    <div class="wo-glass-tiles">
-     <span><strong>${n(h.best.kg)} × ${h.best.reps}</strong><small>legjobb szett · ${dateLabel(h.best.date)}</small></span>
-     <span><strong>${n(h.volume / 1000)}t</strong><small>összes elmozgatott súly</small></span>
-     <span><strong>${n(h.lastVolume)}</strong><small>múltkori volumen (kg × rep)</small></span>
-    </div>
-    <div class="wo-glass-next">
-     <span class="wo-glass-next-art">${icon('record')}</span>
-     <span><small>A KÖVETKEZŐ REKORDOD</small><strong>${n(h.nextRecord.kg)} kg × ${h.nextRecord.reps}</strong><i>${h.nextRecord.note}</i></span>
-    </div>
-    <figure class="wo-glass-chart">
-     <figcaption><span>BECSÜLT 1RM ÍVE</span><small>folytonos: eddig · szaggatott: ha így haladsz</small></figcaption>
-     <svg viewBox="0 0 328 132" role="img" aria-label="Becsült egyismétléses maximum eddigi és előrejelzett íve">
-      <path d="M14 116H314" stroke="#ffffff1a"/>
-      <polyline points="${past}" fill="none" stroke="var(--ex-color)" stroke-width="3" stroke-linejoin="round"/>
-      <polyline points="${future}" fill="none" stroke="var(--ex-color)" stroke-width="2.4" stroke-dasharray="5 5" opacity=".62"/>
-      ${points.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="var(--ex-color)"/>`).join('')}
-      <circle cx="${x(all.length - 1)}" cy="${y(all.at(-1))}" r="4" fill="none" stroke="var(--ex-color)" stroke-width="2" opacity=".7"/>
-     </svg>
-     <p>Ha a mostani tempó tart, három blokk múlva ${n(h.projected.at(-1))} kg körüli becsült maximum jön ki. Ez vetítés, nem ígéret.</p>
-    </figure>
-    <div class="wo-glass-section"><span class="overline">MEDÁLOK</span></div>
-    <div class="wo-glass-medals">${h.medals.map(m => `<span>${icon('record')}<strong>${m.value}</strong><small>${m.kind} · ${dateLabel(m.date)}</small></span>`).join('')}</div>
+
     <div class="wo-glass-section"><span class="overline">A MÚLTKORI ALKALOM</span></div>
-    <div class="wo-glass-sets">${e.last.map((s, i) => `<span><i>${i + 1}</i><strong>${n(s.kg)} kg × ${s.reps}</strong><small>${s.rir} RIR</small></span>`).join('')}</div>
-    ${bestToday ? `<p class="wo-glass-today">Ma eddig a legjobb szetted ${n(bestToday.kg)} kg × ${bestToday.reps} — becsült maximum ${n(e1rm(bestToday))} kg.</p>` : ''}
-    <p class="wo-glass-note">Mintaadatok. A becsült maximum Epley-képlettel számol, a vetítés az eddigi ívből.</p>
+    <div class="wo-glass-sets">${e.last.map((set, i) => `<span><i>${i + 1}. szett</i><strong>${n(set.kg)} × ${set.reps}</strong><small>${set.rir} RIR</small></span>`).join('')}</div>
+
+    <div class="wo-glass-section"><span class="overline">MEGDÖNTHETŐ REKORDOK</span></div>
+    <div class="recs">
+     ${record('up', 'BECSÜLT EGYISMÉTLÉSES MAXIMUM', `${n(h.e1rm)} kg`, `${n(h.nextRecord.kg)} kg × ${h.nextRecord.reps} viszi feljebb`,
+       bestToday ? `ma ${n(e1rm(bestToday))} kg` : 'ma még nincs szett', beatsE1rm)}
+     ${record('record', 'LEGJOBB SZETT', `${n(h.best.kg)} kg × ${h.best.reps}`, `${dateLabel(h.best.date)} óta áll`,
+       bestToday ? `ma ${n(bestToday.kg)} × ${bestToday.reps}` : 'ma még nincs szett', beatsSet)}
+     ${record('kettle', 'LEGTÖBB VOLUMEN EGY EDZÉSEN', `${n(h.maxVolume.value)} kg × rep`, `${dateLabel(h.maxVolume.date)} óta áll`,
+       volumeToday ? `ma ${n(volumeToday)}` : 'ma még nincs szett', beatsVolume)}
+    </div>
+
+    <details class="wo-glass-more">
+     <summary>Hosszabb táv <span>ÍV · MEDÁLOK</span></summary>
+     <figure class="wo-glass-chart">
+      <figcaption><span>BECSÜLT 1RM ÍVE</span><small>folytonos: eddig · szaggatott: ha így haladsz</small></figcaption>
+      <svg viewBox="0 0 328 132" role="img" aria-label="Becsült egyismétléses maximum eddigi és előrejelzett íve">
+       <path d="M14 116H314" stroke="#ffffff1a"/>
+       <polyline points="${past}" fill="none" stroke="var(--ex-color)" stroke-width="3" stroke-linejoin="round"/>
+       <polyline points="${future}" fill="none" stroke="var(--ex-color)" stroke-width="2.4" stroke-dasharray="5 5" opacity=".62"/>
+       ${points.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="var(--ex-color)"/>`).join('')}
+      </svg>
+      <p>Ha a mostani tempó tart, három blokk múlva ${n(h.projected.at(-1))} kg körüli becsült maximum jön ki. Ez vetítés, nem ígéret.</p>
+     </figure>
+     <div class="wo-glass-medals">${h.medals.map(medal => `<span>${icon('record')}<strong>${medal.value}</strong><small>${medal.kind} · ${dateLabel(medal.date)}</small></span>`).join('')}</div>
+    </details>
+    <p class="wo-glass-note">Mintaadatok. A becsült maximum Epley-képlettel számol.</p>
    </div>
   </div>`;
 }
@@ -244,7 +254,7 @@ function confirmGlass() {
 
 function closeSession() {
   if (finishSession(session)) { react('celebrate'); toast('Edzés lezárva a demóban.'); }
-  render();
+  leave();
 }
 
 const starRow = (value, size = '') => {
@@ -338,6 +348,62 @@ function detailsStep() {
   </div>`;
 }
 
+/** The finished session, read back: the rating and the breakdown on one settled page. */
+function recap() {
+  const m = metrics(session), pending = pendingCount(session);
+  const minutes = Math.max(1, Math.round(((session.finishedAt || Date.now()) - (session.startedAt || Date.now())) / 60000));
+  const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
+  const score = sessionScore(session);
+  const full = Math.floor(score.stars), half = score.stars - full >= .5;
+
+  const records = session.order.flatMap(id => {
+    const e = exerciseById(id);
+    const beating = session.rows[id].filter((r, i) => r.done && setVerdict(e, i, r) === 'record');
+    if (!beating.length) return [];
+    const best = beating.reduce((a, b) => (e1rm(b) > e1rm(a) ? b : a));
+    return [{ name: e.name, color: e.color, value: `${n(best.kg)} kg × ${best.reps}` }];
+  });
+
+  return `<div class="wo-summary cer-details-screen is-told wo-recap">
+   <section class="cer is-settled" style="--p:${score.ratio}">
+    <span class="cer-sky" aria-hidden="true"></span>
+    <span class="overline">EDZÉS LEZÁRVA</span>
+    <div class="cer-stars" aria-label="${String(score.stars).replace('.', ',')} csillag az ötből">${[0, 1, 2, 3, 4].map(i =>
+      `<i class="${i < full ? 'is-lit' : i === full && half ? 'is-half' : ''}"><b class="cer-aura"></b>${icon('star')}</i>`).join('')}</div>
+    <div class="cer-bar"><i class="cer-fill"></i>${[1, 2, 3, 4].map(i => `<u style="--at:${i * 20}%"></u>`).join('')}</div>
+    <div class="cer-counters">
+     <span><i>${icon('dumbbell')}</i><strong>${m.count}</strong><small>szett</small></span>
+     <span><i>${icon('repeat')}</i><strong>${m.reps}</strong><small>ismétlés</small></span>
+     <span><i>${icon('kettle')}</i><strong>${n(m.volume)}</strong><small>kg × rep</small></span>
+    </div>
+   </section>
+
+   <div class="cer-stats">
+    <span><strong>${minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
+    <span><strong>+${m.xp}</strong><small>szerzett XP</small></span>
+   </div>
+   ${records.length ? `<div class="cer-record" style="--ex-color:${records[0].color}">${icon('record')}<span><strong>${records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong><small>${records.map(r => `${r.name} · ${r.value}`).join(' · ')}</small></span></div>` : ''}
+   ${pending ? `<p class="wo-recap-note">${pending} szett kihagyott státusszal zárult.</p>` : ''}
+
+   <section class="cer-muscles">
+    <div class="wo-sum-section"><strong>Izomcsoportok fejlődése a mai edzésen</strong></div>
+    <div class="wo-mstars">${muscleStarRows().map((row, i) => `<div class="wo-mstar" style="--ex-color:${muscleColor(row.muscleKey)};--i:${i}">
+      <span class="wo-mstar-art">${muscleIcon(row.muscleKey)}</span>
+      <span class="wo-mstar-copy"><strong>${row.name}</strong><small>${row.done} / ${row.plan} szett${row.added ? ` · ma +${row.added}` : ''}</small></span>
+      ${starRow(row.stars, 'mini')}
+      <span class="wo-mstar-track"><i class="zone" style="--a:${row.low / row.plan * 100}%;--b:${Math.min(100, row.high / row.plan * 100)}%"></i><i class="fill" style="--w:${row.ratio * 100}%"></i></span>
+     </div>`).join('')}</div>
+   </section>
+
+   <button class="cer-kcal" data-go-fuel>
+    <span class="cer-kcal-line">${icon('bowl')}<b>+</b><strong>${kcal}</strong><small>kcal</small></span>
+    <span class="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
+    <i class="cer-kcal-go">›</i></button>
+
+   <div class="cer-cta"><button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button></div>
+  </div>`;
+}
+
 /** Runs the closing ceremony once: the bar fills, the counters run with it, the stars ignite. */
 function runCeremony() {
   const root = overlay.querySelector('.cer-screen'), stage = overlay.querySelector('[data-cer]');
@@ -382,7 +448,9 @@ function render() {
    <button data-session-leave aria-label="Vissza az Edzés Mai oldalára">‹</button>
    <span><small>FELSŐTEST A · 3. HÉT / 6</small><strong>${m.count} / ${m.planned} szett</strong></span>
    <span class="wo-clock" data-session-clock>0:00</span></header>`;
-  const body = view === 'details'
+  const body = view === 'recap'
+    ? recap()
+    : view === 'details'
     ? detailsStep()
     : view === 'summary'
     ? summary()
@@ -393,6 +461,7 @@ function render() {
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
   updateTimers();
   if (view === 'summary') requestAnimationFrame(() => { runCeremony(); overlay.querySelector('h1')?.focus(); });
+  if (view === 'recap') requestAnimationFrame(() => overlay.querySelector('.wo-sum-section strong')?.focus());
   if (view === 'details') requestAnimationFrame(() => {
     // Step two plays too: the bars grow and the stars land, row by row.
     overlay.querySelector('.cer-details-screen')?.classList.add('is-told');

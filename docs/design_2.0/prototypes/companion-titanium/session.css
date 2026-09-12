@@ -70,18 +70,18 @@
 
 /* — set rows — */
 .wo-rows-head, .wo-row {
-  display: grid; grid-template-columns: 20px 52px 1fr 1fr 40px 38px 22px;
-  gap: 6px; align-items: center;
+  display: grid; grid-template-columns: 24px 1fr 1fr 46px 38px 22px;
+  gap: 7px; align-items: center;
 }
 .wo-rows-head { padding: 4px 2px 6px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; text-align: center; }
-.wo-rows-head span:first-child, .wo-rows-head span:nth-child(2) { text-align: left; }
+.wo-rows-head span:first-child { text-align: left; }
 .wo-row {
   padding: 6px 2px; margin: 4px 0; border-radius: 12px;
   border: 1px solid transparent; background: #ffffff03;
 }
 .wo-row.is-done { background: color-mix(in srgb, var(--ex-color) 9%, transparent); border-color: color-mix(in srgb, var(--ex-color) 26%, transparent); }
 .wo-idx { font-size: 12px; color: #8d9686; text-align: center; }
-.wo-prev { font-size: 10.5px; color: #ffffff4d; font-variant-numeric: tabular-nums; }
+
 .wo-field { display: block; }
 .wo-field input {
   width: 100%; min-width: 0; appearance: textfield; text-align: center; padding: 9px 2px;
@@ -275,7 +275,7 @@
 
 @media (max-width: 680px) { .wo { inset: 0; border-radius: 0; } }
 @media (max-width: 360px) {
-  .wo-rows-head, .wo-row { grid-template-columns: 18px 44px 1fr 1fr 36px 34px 20px; gap: 5px; }
+  .wo-rows-head, .wo-row { grid-template-columns: 22px 1fr 1fr 42px 34px 20px; gap: 6px; }
   .wo-field input { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -350,7 +350,13 @@
 /* The card head carries the name and the menu — nothing else. */
 .wo-card-copy strong { font-size: 17px; }
 .wo-card-copy small { font-size: 9px; letter-spacing: .16em; color: #ffffff5c; margin-top: 3px; }
-.wo-card-menu { margin-left: auto; }
+.wo-card-menu { margin-left: 0; }
+.wo-card-log {
+  margin-left: auto; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--ex-color) 26%, #ffffff14); border-radius: 12px;
+  background: color-mix(in srgb, var(--ex-color) 9%, #ffffff05);
+}
+.wo-card-log .icon { width: 24px; height: 24px; }
 
 .wo-sum-records {
   padding: 16px; margin-bottom: 16px; border: 1px solid #d9c39538; border-radius: 22px;
@@ -621,3 +627,45 @@
   .cer-details-screen.is-told .cer-kcal { transition-delay: .78s; }
   .cer-details-screen.is-told .cer-cta { transition-delay: .9s; }
 }
+
+/* The beatable records, the point of the exercise log. */
+.recs { display: grid; gap: 9px; }
+.rec {
+  display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px; padding: 13px 14px;
+  border: 1px solid #ffffff12; border-radius: 18px; background: linear-gradient(150deg, #ffffff08, #ffffff03);
+}
+.rec.is-beaten {
+  border-color: #d9c39566;
+  background: radial-gradient(110% 90% at 88% 0%, #d9c39528, transparent 64%), linear-gradient(150deg, #ffffff09, #ffffff03);
+}
+.rec-art .icon { width: 36px; height: 36px; }
+.rec-copy small { display: block; font-size: 8px; letter-spacing: .14em; color: #ffffff5e; }
+.rec-copy strong { display: block; font-size: 19px; font-weight: 400; letter-spacing: -.02em; margin: 3px 0 2px; }
+.rec-copy i { font-style: normal; font-size: 10px; color: #ffffff52; }
+.rec-today { font-size: 10.5px; color: #ffffff70; text-align: right; max-width: 92px; }
+.rec.is-beaten .rec-today { display: grid; justify-items: end; gap: 3px; }
+.rec.is-beaten .rec-today .icon { width: 24px; height: 24px; }
+.rec.is-beaten .rec-today b { font-size: 8px; letter-spacing: .1em; color: #f0dcae; }
+
+.wo-glass-more { margin-top: 18px; border-top: 1px solid #ffffff12; padding-top: 12px; }
+.wo-glass-more summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
+  font-size: 13px; color: #d3cfe0; list-style: none;
+}
+.wo-glass-more summary::-webkit-details-marker { display: none; }
+.wo-glass-more summary span { font-size: 8px; letter-spacing: .14em; color: #ffffff4a; }
+.wo-glass-more[open] summary { margin-bottom: 12px; }
+.wo-glass-sets i { display: block; font-style: normal; font-size: 8.5px; letter-spacing: .1em; color: #ffffff4a; margin-bottom: 4px; }
+
+/* The read-back: everything already told, nothing waiting to play. */
+.wo-recap { padding: 10px 4px 8px; }
+.wo-recap .cer { margin: 0 0 4px; }
+.cer.is-settled .cer-comet { display: none; }
+.cer.is-settled .cer-stars i .icon { opacity: .12; filter: grayscale(1); }
+.cer.is-settled .cer-stars i.is-half .icon { opacity: .4; filter: grayscale(.4); }
+.cer.is-settled .cer-stars i.is-lit .icon { opacity: 1; filter: none; animation: none; }
+.cer.is-settled .cer-stars i.is-lit .cer-aura { animation: none; opacity: 0; }
+.wo-recap .cer-stats { margin-bottom: 12px; }
+.wo-recap .cer-record { margin: 0 0 12px; }
+.wo-recap-note { margin: 0 0 12px; font-size: 11.5px; color: #ffffff6b; text-align: center; }
+.wo-recap .cer-kcal, .wo-recap .cer-cta { opacity: 1; translate: none; }

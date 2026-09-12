@@ -11,7 +11,7 @@ export const EXERCISES = [
     history: {
       sessions: 12, since: '2026-06-03',
       e1rm: 76.5, e1rmPrev: 74, best: { kg: 62.5, reps: 8, date: '2026-08-26' },
-      volume: 18240, lastVolume: 1667,
+      volume: 18240, lastVolume: 1667, maxVolume: { value: 1840, date: '2026-08-19' },
       nextRecord: { kg: 62.5, reps: 9, note: 'egy ismétléssel a legjobb szetted fölé' },
       trajectory: [68, 69.5, 71, 72.5, 74, 76.5], projected: [78, 79.5, 81],
       medals: [
@@ -30,7 +30,7 @@ export const EXERCISES = [
     history: {
       sessions: 14, since: '2026-05-20',
       e1rm: 58, e1rmPrev: 57, best: { kg: 47.5, reps: 11, date: '2026-08-12' },
-      volume: 21160, lastVolume: 1502,
+      volume: 21160, lastVolume: 1502, maxVolume: { value: 1620, date: '2026-08-12' },
       nextRecord: { kg: 47.5, reps: 12, note: 'a legjobb szettednél egy ismétléssel több' },
       trajectory: [52, 53.5, 54, 55.5, 57, 58], projected: [59, 60, 61],
       medals: [
@@ -48,7 +48,7 @@ export const EXERCISES = [
     history: {
       sessions: 9, since: '2026-06-24',
       e1rm: 26.5, e1rmPrev: 26.5, best: { kg: 22, reps: 9, date: '2026-08-05' },
-      volume: 7420, lastVolume: 758,
+      volume: 7420, lastVolume: 758, maxVolume: { value: 812, date: '2026-08-05' },
       nextRecord: { kg: 22, reps: 10, note: 'ugyanaz a súly, egy ismétléssel több' },
       trajectory: [24, 24.5, 25, 26, 26.5, 26.5], projected: [27, 27.5, 28],
       medals: [{ kind: 'Súlyrekord', value: '22 kg × 9', date: '2026-08-05' }],
