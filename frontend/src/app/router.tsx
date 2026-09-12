@@ -37,6 +37,8 @@ import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
+import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
+import { FuelKonyhaPage } from '@/features/fuel/pages/FuelKonyhaPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
 import { FuelStackProtocolPage } from '@/features/fuel/pages/FuelStackProtocolPage'
 import { FuelStackTodayPage } from '@/features/fuel/pages/FuelStackTodayPage'
@@ -268,6 +270,9 @@ export const routes: RouteObject[] = [
       { path: 'fuel/log/uj', element: <FuelLogNewPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
       { path: 'fuel/plan', element: <FuelPlanPage /> },
+      // Fuel Titanium S0 (mezo-o6uv): a két új cél route-ja — a tartalom S3/S4.
+      { path: 'fuel/trendek', element: <FuelTrendekPage /> },
+      { path: 'fuel/konyha', element: <FuelKonyhaPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
       { path: 'fuel/stack/protocol', element: <FuelStackProtocolPage /> },
       { path: 'fuel/stack/today', element: <FuelStackTodayPage /> },
