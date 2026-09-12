@@ -67,6 +67,60 @@ export function loggedKcalAvg(days: WeekDayVM[]): number | null {
   return logged.reduce((sum, d) => sum + d.kcal, 0) / logged.length
 }
 
+// --- C2 (mezo-83g0): hét-a-héthez változás. A prototípus `weekDeltas`-a (fuel-state.js :154) +
+// a csempe `<em>▲ …</em>`-je (fuel-pages.js :211-212), ház-szabályokkal. --------------------------
+
+/** Egy mutató-csempe változása a korábbi héthez mérve. IRÁNY és MENNYISÉG — semmi más:
+ *  szándékosan NINCS benne „jó"/„rossz", mert egy heti változás nem ítélet a felhasználóról. */
+export interface WeekDelta {
+  key: 'avg' | 'quality' | 'weight'
+  direction: 'up' | 'down'
+  /** A különbség ABSZOLÚT értéke, a csempe saját mértékegységében (kcal · 0–10 pont · kg),
+   *  a csempe megjelenítési pontosságára kerekítve. Soha nem 0 — lásd lent. */
+  amount: number
+}
+
+/** Ahány tizedessel a csempe az értéket kiírja: ennél finomabb eltérés nem látható, tehát nem is
+ *  rajzolunk rá nyilat (különben „▲ 0,0" állna ott, ami zaj, nem információ). */
+const DELTA_DECIMALS: Record<WeekDelta['key'], 0 | 1> = { avg: 0, quality: 1, weight: 1 }
+
+/** Egy delta, ŐSZINTE-NULL szabály szerint: bármelyik oldal null → nincs delta; egyenlő (vagy a
+ *  megjelenített pontosságon egyenlő) értékeknél sincs — nyíl nulla mennyiséggel nem létezik. */
+function toDelta(key: WeekDelta['key'], now: number | null, before: number | null): WeekDelta | undefined {
+  if (now == null || before == null) return undefined
+  const scale = 10 ** DELTA_DECIMALS[key]
+  const amount = Math.round(Math.abs(now - before) * scale) / scale
+  if (amount === 0) return undefined
+  return { key, direction: now > before ? 'up' : 'down', amount }
+}
+
+/** A heti étkezés-pont a csempe 0–10-es olvasatában (a VM 0..1-ben hordozza). */
+const qualityOnTileScale = (vm: WeekViewVM): number | null =>
+  vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10
+
+/**
+ * A három mutató-csempe változása a korábbi héthez mérve.
+ *
+ * `previous === null` (nincs korábbi hét — új felhasználó) ESETÉN ÜRES objektum: ez normál
+ * állapot, nem hiba, és nem „0 változás". Egy-egy kulcs akkor is kimarad, ha bármelyik hét nem
+ * tudja az értékét, vagy ha a kettő a csempén kiírt pontosságon egyenlő.
+ */
+export function weekDeltas(
+  current: WeekViewVM,
+  previous: WeekViewVM | null,
+): Partial<Record<WeekDelta['key'], WeekDelta>> {
+  if (previous == null) return {}
+  const found: Partial<Record<WeekDelta['key'], WeekDelta>> = {}
+  for (const delta of [
+    toDelta('avg', loggedKcalAvg(current.days), loggedKcalAvg(previous.days)),
+    toDelta('quality', qualityOnTileScale(current), qualityOnTileScale(previous)),
+    toDelta('weight', current.weightAvgKg, previous.weightAvgKg),
+  ]) {
+    if (delta) found[delta.key] = delta
+  }
+  return found
+}
+
 /** A hét napja a VALÓDI dátumból (0 = vasárnap) — a tömbpozíció nem hitelforrás. */
 function isWeekend(iso: string): boolean {
   const [y, m, d] = iso.split('-').map(Number)

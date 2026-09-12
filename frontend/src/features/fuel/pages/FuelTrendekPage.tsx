@@ -49,7 +49,7 @@ import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { FuelHorizon } from '@/features/fuel/components/FuelHorizon'
 import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
-import { buildWeekView, loggedKcalAvg, type WeekDayVM } from '@/features/fuel/logic/fuelWeekView'
+import { buildWeekView, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
 
 /** A három mutató-csempe — a prototípus `TX_STAT`-ja ház-tokenekkel és clay-szimbólumokkal. */
 const STAT_FACE: Record<'avg' | 'score' | 'weight', {
@@ -70,7 +70,27 @@ function CountNumeral({ value, dec }: { value: number | null; dec: 0 | 1 }) {
   return <>{dec === 1 ? hu1(counted) : huInt(counted)}</>
 }
 
-function StatTile({ kind, value }: { kind: keyof typeof STAT_FACE; value: number | null }) {
+/** C2: a múlt héthez mért változás a csempén — a prototípus `<em>▲ …</em>`-je (fuel-pages.js
+ *  :211-212). SZÉGYENMENTES: IRÁNY és mennyiség, semmi más. Nincs „jó"/„rossz" szín és nincs
+ *  minősítő szó — egy heti elmozdulás nem ítélet; a hue a lap meglévő semleges `--sub`-ja.
+ *  A nyíl önmagában a képernyőolvasónak néma, ezért mellé egy rejtett, ugyancsak semleges
+ *  mondat kerül („több"/„kevesebb"), nem pedig „javult"/„romlott". */
+function TileDelta({ delta, unit, dec }: { delta: WeekDelta; unit: string; dec: 0 | 1 }) {
+  const amount = `${dec === 1 ? hu1(delta.amount) : huInt(delta.amount)}${unit ? ` ${unit}` : ''}`
+  return (
+    <em className="ftx-delta">
+      <span aria-hidden="true">{delta.direction === 'up' ? '▲' : '▼'} {amount}</span>
+      <span className="sr-only">
+        {delta.direction === 'up' ? 'a múlt héthez mérve ennyivel több' : 'a múlt héthez mérve ennyivel kevesebb'}
+        {`: ${amount}`}
+      </span>
+    </em>
+  )
+}
+
+function StatTile({ kind, value, delta }: {
+  kind: keyof typeof STAT_FACE; value: number | null; delta?: WeekDelta
+}) {
   const face = STAT_FACE[kind]
   return (
     <div
@@ -83,6 +103,8 @@ function StatTile({ kind, value }: { kind: keyof typeof STAT_FACE; value: number
         {face.unit && <small>{face.unit}</small>}
       </strong>
       <span className="ftx-tile-label">{face.label}</span>
+      {/* Betöltés közben / korábbi hét nélkül NINCS delta — se nulla, se helykitöltő. */}
+      {delta && <TileDelta delta={delta} unit={face.unit} dec={face.dec} />}
     </div>
   )
 }
@@ -186,6 +208,25 @@ export function FuelTrendekPage() {
 
   const vm = buildWeekView({ start, days: weekDays, mealScoreAvg, weightAvgKg }, dayScores, trainingDays)
   const avgKcal = loggedKcalAvg(vm.days)
+
+  // C2: a változás mindig a NYITOTT hét és az ELŐTTE álló hét különbsége — a prototípus szerint
+  // (`fuel-pages.js:211`: `isCurrent?deltas[kind]:null`) a múlt heti nézetben nincs mihez mérni,
+  // ezért ott egyetlen delta sem áll. Amíg a korábbi hét nem oldódott fel (vagy nincs egyetlen
+  // naplózott napja sem), `null` — tehát nincs delta, nem nulla delta.
+  // A korábbi hét VM-jéhez nem kell napi pont és edzésnap: a delták csak a három átlagot olvassák.
+  const previousVm = showingPrevious || !previousHasData
+    ? null
+    : buildWeekView(
+        {
+          start: prevMonday,
+          days: previous.weekDays,
+          mealScoreAvg: previous.mealScoreAvg,
+          weightAvgKg: previous.weightAvgKg,
+        },
+        {},
+        [],
+      )
+  const deltas = weekDeltas(vm, previousVm)
   // A sávok közös léptéke: a hét legnagyobb kerete/fogyása, legalább 2400 — így egy gyéren
   // naplózott hét egyetlen napja sem nyúlik a tetőig.
   const max = Math.max(2400, ...vm.days.map(d => Math.max(d.kcal ?? 0, d.targetKcal ?? 0)))
@@ -258,10 +299,15 @@ export function FuelTrendekPage() {
           </div>
 
           <div className="ftx-tiles">
-            <StatTile kind="avg" value={avgKcal} />
-            {/* A heti étkezés-pont 0..1-ben érkezik; a 0–10-es skála a ház olvasata. */}
-            <StatTile kind="score" value={vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10} />
-            <StatTile kind="weight" value={vm.weightAvgKg} />
+            <StatTile kind="avg" value={avgKcal} delta={deltas.avg} />
+            {/* A heti étkezés-pont 0..1-ben érkezik; a 0–10-es skála a ház olvasata. A csempe
+                neve `score`, a delta kulcsa `quality` — a prototípus szótára, egy helyen kötve. */}
+            <StatTile
+              kind="score"
+              value={vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10}
+              delta={deltas.quality}
+            />
+            <StatTile kind="weight" value={vm.weightAvgKg} delta={deltas.weight} />
           </div>
 
           <h2 className="ftx-section">Hétköznap és hétvége</h2>

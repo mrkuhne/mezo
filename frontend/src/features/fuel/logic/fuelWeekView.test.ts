@@ -1,7 +1,7 @@
 // A heti kép view-modelljének tesztjei (Fuel Titanium S3, mezo-83g0 — C1 · C5 · C6).
 // Tiszta logika: se router, se QueryClient.
 import { describe, expect, test } from 'vitest'
-import { buildWeekView, loggedKcalAvg } from '@/features/fuel/logic/fuelWeekView'
+import { buildWeekView, loggedKcalAvg, weekDeltas, type WeekViewVM } from '@/features/fuel/logic/fuelWeekView'
 import type { FuelWeekData, FuelWeekDay } from '@/data/fuel/mealApi'
 
 const TARGET = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
@@ -130,5 +130,64 @@ describe('loggedKcalAvg', () => {
 
   test('naplózott nap nélkül null, nem nulla', () => {
     expect(loggedKcalAvg(buildWeekView(emptyWeek(), {}, []).days)).toBeNull()
+  })
+})
+
+// --- C2 (mezo-83g0): hét-a-héthez delták. A delta IRÁNY, nem ítélet — és csak akkor létezik, ha
+// MINDKÉT hét tudja az értéket. -----------------------------------------------------------------
+
+describe('weekDeltas', () => {
+  /** Egy heti VM a kért átlagokkal — a delták csak ezt a három értéket olvassák. */
+  const vm = (over: Partial<{ kcals: readonly (number | null)[]; mealScoreAvg: number | null; weightAvgKg: number | null }> = {}): WeekViewVM =>
+    buildWeekView(
+      {
+        ...week(over.kcals ?? KCALS),
+        mealScoreAvg: over.mealScoreAvg === undefined ? 0.78 : over.mealScoreAvg,
+        weightAvgKg: over.weightAvgKg === undefined ? 81.3 : over.weightAvgKg,
+      },
+      {},
+      [],
+    )
+
+  test('a delta a két hét különbsége, irányával', () => {
+    const d = weekDeltas(vm({ mealScoreAvg: 0.8 }), vm({ mealScoreAvg: 0.7 }))
+    expect(d.quality).toEqual({ key: 'quality', direction: 'up', amount: 1 })
+  })
+
+  test('a lefelé mutató irány is csak irány, nem minősítés', () => {
+    const d = weekDeltas(vm({ weightAvgKg: 81.3 }), vm({ weightAvgKg: 81.9 }))
+    expect(d.weight).toEqual({ key: 'weight', direction: 'down', amount: 0.6 })
+  })
+
+  test('a napi átlag deltája a NAPLÓZOTT napok átlagából jön', () => {
+    const d = weekDeltas(vm({ kcals: [2000, 2000, null, null, null, null, null] }), vm({ kcals: [1900, 1900, null, null, null, null, null] }))
+    expect(d.avg).toEqual({ key: 'avg', direction: 'up', amount: 100 })
+  })
+
+  test('hiányzó korábbi hétnél nincs egyetlen delta sem', () => {
+    expect(weekDeltas(vm(), null)).toEqual({})
+  })
+
+  test('ha bármelyik oldal ismeretlen, az a delta kimarad', () => {
+    expect(weekDeltas(vm({ weightAvgKg: 82 }), vm({ weightAvgKg: null })).weight).toBeUndefined()
+    expect(weekDeltas(vm({ weightAvgKg: null }), vm({ weightAvgKg: 82 })).weight).toBeUndefined()
+    // …a többi delta viszont megmarad: egy hiányzó érték nem viszi el az egész sort.
+    expect(weekDeltas(vm({ weightAvgKg: null }), vm({ mealScoreAvg: 0.7 })).quality).toBeDefined()
+  })
+
+  test('naplózott nap nélküli hétnél nincs napi-átlag delta', () => {
+    const empty = buildWeekView(emptyWeek(), {}, [])
+    expect(weekDeltas(empty, vm()).avg).toBeUndefined()
+    expect(weekDeltas(vm(), empty).avg).toBeUndefined()
+  })
+
+  test('azonos értéknél nincs delta, nem nulla nyíl', () => {
+    expect(weekDeltas(vm({ mealScoreAvg: 0.8 }), vm({ mealScoreAvg: 0.8 })).quality).toBeUndefined()
+    expect(weekDeltas(vm(), vm())).toEqual({})
+  })
+
+  test('a megjelenítési pontosság alatti eltérés sem lesz nulla nyíl', () => {
+    // 7,80 vs 7,83 a 0–10-es skálán — egy tizedesre ugyanaz, tehát NINCS nyíl.
+    expect(weekDeltas(vm({ mealScoreAvg: 0.78 }), vm({ mealScoreAvg: 0.783 })).quality).toBeUndefined()
   })
 })

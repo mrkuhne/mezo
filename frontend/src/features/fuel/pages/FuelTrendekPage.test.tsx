@@ -206,6 +206,41 @@ test('a hétköznap/hétvége kontraszt és a két heti átlag ott áll', () => 
   expect(container.querySelector('.ftx-tile.is-weight')).toHaveTextContent('81,3')
 })
 
+// --- C2 (mezo-83g0): hét-a-héthez változás a mutató-csempéken. --------------------------------
+
+test('a mutató-csempe a múlt héthez mért változást is mutatja', () => {
+  const { container } = renderView()
+  const tile = container.querySelector<HTMLElement>('.ftx-tile.is-score')!
+  expect(within(tile).getByText(/[▲▼]/)).toBeInTheDocument()
+  // A mock múlt hét MINDHÁROM értékben más, tehát mindhárom csempén áll változás.
+  expect(container.querySelectorAll('.ftx-delta')).toHaveLength(3)
+  // Az irány a valódi különbségé: a pontátlag 7,1 → 7,8 (fel), a súly 81,9 → 81,3 (le).
+  expect(tile.textContent).toContain('▲')
+  expect(container.querySelector('.ftx-tile.is-weight')!.textContent).toContain('▼')
+})
+
+// Szégyenmentesség: a delta nem minősít.
+test('a delta nem visel jó/rossz színt vagy szöveget', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.ftx-delta.is-good, .ftx-delta.is-bad')).toBeNull()
+  expect(container.textContent).not.toMatch(/javult|romlott|gyengébb|jobb hét|rosszabb/i)
+  expect(container.textContent).not.toMatch(/elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+})
+
+test('korábbi hét nélkül egyetlen csempén sincs delta', async () => {
+  serveEmptyPreviousWeek()
+  const { container } = renderView({ real: true })
+  await screen.findByText(/Ez az első heted/i)
+  expect(container.querySelector('.ftx-delta')).toBeNull()
+})
+
+// A prototípus szabálya: a változás a NYITOTT héten áll — a múlt heti nézetben nincs mihez mérni.
+test('a múlt heti nézetben nincs delta', async () => {
+  const { container } = renderView({ path: '/fuel/trendek?w=elozo' })
+  await screen.findByRole('button', { name: new RegExp(prevWeekFirstDay(), 'i') })
+  expect(container.querySelector('.ftx-delta')).toBeNull()
+})
+
 // C6: az edzésnap a heti képben is látszik (a mock hét első napja edzésnap).
 test('az edzésnap jelölést kap a heti képben', () => {
   const { container } = renderView()
