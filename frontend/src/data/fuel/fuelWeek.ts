@@ -1,4 +1,7 @@
+import { addDays } from '@/shared/lib/dates'
+import type { FuelWeekData } from '@/data/fuel/mealApi'
 import type {
+  MacroSet,
   MedCycleDayCell,
   GymScheduleDay,
   WeeklySupplementRow,
@@ -87,3 +90,40 @@ export const weeklyStats: WeeklyStats = {
 }
 
 
+
+// --- Trendek (Fuel Titanium S3, mezo-83g0) ---------------------------------------------------
+// C1/C2: the mock 7-day rollup the weekly picture reads, PLUS the two weekly averages the
+// backend computes (`FuelWeekResponse.mealScoreAvg` / `.weightAvgKg`) and the mapper used to
+// drop. Shaped exactly like the contract: `consumed.kcal === 0` is the ONLY "nothing logged"
+// signal the rollup carries, so two days are left at zero and the view reads them as
+// honest-null, never as a zero-height bar.
+//
+// Re-dated to whatever Monday is requested (the `mockMeWeek` idiom) so the mock page shows
+// "this week" on any clock. The shape stays fixed: 5 logged days (one over the budget, one
+// partial) + 2 unlogged.
+const ROLLUP_TARGET = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
+const ROLLUP_WEEKEND_TARGET = { kcal: 2200, p: 150, c: 230, f: 70, water: 3000 }
+/** `consumed` per weekday offset; `null` = that day has nothing logged (honest gap). */
+const ROLLUP_CONSUMED: readonly (MacroSet | null)[] = [
+  { kcal: 2115, p: 148, c: 220, f: 69, water: 2600 },
+  { kcal: 2260, p: 154, c: 245, f: 74, water: 2100 },
+  { kcal: 1180, p: 86, c: 132, f: 41, water: 1250 },
+  null,
+  { kcal: 2050, p: 112, c: 228, f: 68, water: 1600 },
+  { kcal: 2740, p: 104, c: 318, f: 104, water: 1400 },
+  null,
+]
+const ZERO_MACROS: MacroSet = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+
+export function mockWeekRollup(start: string): FuelWeekData {
+  return {
+    start,
+    days: ROLLUP_CONSUMED.map((consumed, i) => ({
+      date: addDays(start, i),
+      targets: i >= 5 ? ROLLUP_WEEKEND_TARGET : ROLLUP_TARGET,
+      consumed: consumed ?? ZERO_MACROS,
+    })),
+    mealScoreAvg: 0.78,
+    weightAvgKg: 81.3,
+  }
+}

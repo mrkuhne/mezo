@@ -23,6 +23,7 @@ import {
   weeklySupplements as mockWeeklySupplements,
   recurringPatterns as mockPatterns,
   weeklyStats as mockWeeklyStats,
+  mockWeekRollup,
 } from '@/data/fuel/fuelWeek'
 import { volleyballSessions as mockVolleyball } from '@/data/today/today'
 import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
@@ -52,6 +53,17 @@ export interface FuelWeekView {
   volleyball: VolleyballSession[]
   /** Stats-card coach prose — mock seed string; real null (proactive-epic surface). */
   weeklyNote: string | null
+  /** C1 (mezo-83g0): the ISO Monday this view describes — the weekly picture needs the axis. */
+  start: string
+  /** C1 (mezo-83g0): the 7-day rollup itself, so the Trendek weekly picture can draw the days
+   *  against their budgets. Empty until the real-mode fetch resolves — never a seeded stand-in. */
+  weekDays: FuelWeekDay[]
+  /** C2 (mezo-83g0): the week's meal-score average, 0..1. The backend has always computed it
+   *  (`FuelWeekResponse.mealScoreAvg`); until this slice the mapper discarded it. Honest-null:
+   *  null means "no scored meal this week", NOT zero. */
+  mealScoreAvg: number | null
+  /** C2 (mezo-83g0): the week's weight average in kg — null when the week has no weigh-in. */
+  weightAvgKg: number | null
 }
 
 /** Monday (DAY_ORDER week start) of the week containing `d`, as a local YYYY-MM-DD. */
@@ -129,6 +141,7 @@ export function useFuelWeek(): FuelWeekView {
   })
 
   if (mock) {
+    const rollup = mockWeekRollup(start)
     return {
       title: mockWeekTitle,
       medCycleWeek: mockMedCycleWeek,
@@ -138,6 +151,12 @@ export function useFuelWeek(): FuelWeekView {
       weeklyStats: mockWeeklyStats,
       volleyball: mockVolleyball,
       weeklyNote: mockWeeklyNote,
+      start,
+      // Mock mode seeds a deterministic rollup (byte-stable, re-dated to this Monday). Real
+      // mode NEVER substitutes one — an unresolved week is honestly empty.
+      weekDays: rollup.days,
+      mealScoreAvg: rollup.mealScoreAvg,
+      weightAvgKg: rollup.weightAvgKg,
     }
   }
   return {
@@ -149,5 +168,10 @@ export function useFuelWeek(): FuelWeekView {
     weeklyStats: deriveWeeklyStats(week?.days ?? []),
     volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], sportSlotSkips, start),
     weeklyNote: null,
+    start,
+    weekDays: week?.days ?? [],
+    // Honest-null: before the fetch resolves there is no average — not a zero.
+    mealScoreAvg: week?.mealScoreAvg ?? null,
+    weightAvgKg: week?.weightAvgKg ?? null,
   }
 }

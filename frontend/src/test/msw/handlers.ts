@@ -1327,6 +1327,11 @@ export const handlers = [
         day(1, { kcal: 2635, p: 180, c: 290, f: 75, water: 2000 }),
         day(2, zero), day(3, zero), day(4, zero), day(5, zero), day(6, zero),
       ],
+      // C2 (mezo-83g0): the two weekly averages the backend has always computed and the
+      // frontend mapper used to drop. Deliberately distinct from the mock seed so a real-mode
+      // test can tell "the fetch resolved" from "the seed leaked".
+      mealScoreAvg: 0.71,
+      weightAvgKg: 82.9,
     })
   }),
   http.post(`${API_BASE}/api/meal`, async ({ request }) => {
