@@ -12653,6 +12653,216 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
 
+/* ── fuel-stack titanium (mezo-g2vl) ──────────────────────────────────────
+   A Kiegészítők Titán felülete (fagyasztott manifeszt D1 · D2 · D3 · D4). A jóváhagyott
+   vizuális referencia a prototípus:
+   docs/design_2.0/prototypes/companion-titanium/fuel-pages.js (`stackPage` :295,
+   `stackItemGlass` :314, `protokollPage` :334, `beallitasPage` :354, `setupPick` :360,
+   `setupFacts` :369, `setupAdvice` :384) + a fuel-pages.css „Kiegészítők" szekciója (:246) és
+   `.sx-*` blokkjai (:825-980).
+
+   A `fsx-` prefix SZÁNDÉKOS: az S1 Mai blokkja `fmx-`-et használ, és a két blokk független —
+   így nem tudnak ütközni. EGY blokk, második `fuel-stack titanium` blokk nem nyílik.
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — a 120-as műszergyűrű `pathLength="100"` ív-mechanikája, a
+   sáv- és sor-ritmus, a poszter-anatómia, az üvegkártya szekcionált blokkjai, a belépő-
+   koreográfia időzítése.
+   AMIT NEM: a prototípus beégetett sötét hexeit. A Kiegészítők a ház SAJÁT (világos/sötét)
+   témájában él, ezért minden szín ház-tokenen megy keresztül — új gradiens nem nyílik, a
+   paletta zárt.
+
+   Csökkentett mozgás: minden animáció a `no-preference` ágban él, a `reduce` ág pedig explicit
+   kivezeti őket — ez a blokk csökkentett mozgás mellett teljesen statikus.
+   Ujjbarát: minden pipa/sor/ajtó legalább 44px magas tap-területet kap. */
+
+.fsx-page .mz-page-body { padding-top: 4px; }
+.fsx-body { display: grid; gap: 13px; }
+
+/* A műszer: a napi készültség gyűrűje + a KÖVETKEZIK egyérintéses sor. */
+.fsx-hero { position: relative; display: flex; align-items: center; gap: 16px;
+  padding: 6px 2px 16px; border-bottom: 1px solid var(--divider); }
+.fsx-glow { position: absolute; top: -26px; left: 10%; width: 230px; height: 210px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sage) 22%, transparent) 0, transparent 66%);
+  pointer-events: none; }
+.fsx-ring { position: relative; width: 112px; height: 112px; flex: 0 0 112px;
+  display: grid; place-items: center; }
+.fsx-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); overflow: visible; }
+.fsx-ring circle { fill: none; stroke-width: 8; }
+.fsx-ring-track { stroke: var(--surface-recess); }
+.fsx-ring-progress { stroke: var(--sage); stroke-linecap: round;
+  stroke-dasharray: var(--fsx-progress) 100; }
+.fsx-ring > span { position: relative; z-index: 1; text-align: center; }
+.fsx-ring strong { font-size: 30px; font-weight: 500; color: var(--ink); }
+.fsx-ring strong small { font-size: 14px; color: var(--sub); }
+.fsx-ring b { display: block; margin-top: 3px; font-size: 7px; letter-spacing: 1.2px;
+  color: var(--sub); }
+.fsx-hero-copy { position: relative; flex: 1; min-width: 0; }
+.fsx-overline { display: block; font-size: 9px; letter-spacing: 1.2px; color: var(--sub); }
+.fsx-next { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px;
+  margin-top: 9px; padding: 9px 11px 9px 9px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--sage) 40%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--sage) 18%, transparent), var(--surface-1));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.10); text-align: left; color: var(--ink); }
+.fsx-next-art { flex: 0 0 auto; }
+.fsx-next-copy { min-width: 0; flex: 1; }
+.fsx-next-copy small { display: block; font-size: 7px; letter-spacing: 1.2px; color: var(--sub); }
+.fsx-next-copy strong { display: block; margin-top: 2px; font-size: 15px; font-weight: 600; }
+.fsx-next-copy em { display: block; margin-top: 2px; font-style: normal; font-size: 10px;
+  color: var(--sub); }
+.fsx-next > b { flex: 0 0 auto; font-size: 8px; letter-spacing: 1px; color: var(--sage); }
+.fsx-done { display: flex; align-items: center; gap: 9px; margin: 9px 0 0; font-size: 11px;
+  line-height: 1.5; color: var(--sub); }
+
+/* Idősáv-kártya: színmosás + clay-szimbólum + készültség. A most esedékes sáv KIEMELT, de a
+   többi nem tűnik el (owner). */
+.fsx-band { margin: 0; padding: 12px 12px 4px; border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--fsx-band-color) 24%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fsx-band-color) 12%, transparent),
+    color-mix(in srgb, var(--fsx-band-color) 3%, transparent) 58%, var(--surface-1));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10); }
+.fsx-band.is-complete { opacity: 0.88; }
+.fsx-band.is-due { border-color: color-mix(in srgb, var(--fsx-band-color) 55%, transparent);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.10),
+    0 0 0 1px color-mix(in srgb, var(--fsx-band-color) 26%, transparent); }
+.fsx-band-head { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
+.fsx-band-art { flex: 0 0 auto; }
+.fsx-band-head strong { font-size: 16px; font-weight: 600; color: var(--ink); }
+.fsx-band-count { margin-left: auto; font-size: 12px; font-weight: 600;
+  color: color-mix(in srgb, var(--fsx-band-color) 72%, var(--ink)); }
+
+.fsx-row { display: flex; align-items: center; gap: 11px; min-height: 56px; padding: 8px 0;
+  border-top: 1px solid var(--divider); }
+.fsx-check { width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex: 0 0 auto;
+  display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid var(--divider); background: var(--surface-1);
+  font-size: 17px; font-weight: 700; color: var(--surface-1);
+  transition: background 0.2s, border-color 0.2s; }
+.fsx-row.is-done .fsx-check { background: var(--fsx-band-color);
+  border-color: var(--fsx-band-color); }
+.fsx-row-main { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
+  min-height: 44px; padding: 0; border: 0; background: transparent; text-align: left;
+  color: var(--ink); }
+.fsx-row-art { flex: 0 0 auto; }
+.fsx-row-copy { min-width: 0; flex: 1; }
+.fsx-row-copy strong { display: block; font-size: 14px; font-weight: 500; }
+.fsx-row.is-done .fsx-row-copy strong { color: var(--sub); }
+.fsx-row-copy small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
+.fsx-row-main > b { font-size: 16px; font-weight: 300; color: var(--sub); }
+
+/* Őszinte üresség: hívás cselekvésre, nem üres képernyő. */
+.fsx-empty { display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 8px; padding: 22px 18px; border-radius: 20px; background: var(--surface-recess); }
+.fsx-empty strong { font-size: 19px; font-weight: 600; color: var(--ink); }
+.fsx-empty p { max-width: 300px; margin: 0; font-size: 12.5px; line-height: 1.6;
+  color: var(--sub); }
+
+/* A két ajtó poszter-anatómiával: kiskapitális fejléc + egy nagy állítás. */
+.fsx-poster { display: grid; gap: 10px; width: 100%; min-height: 44px; padding: 13px 14px;
+  border-radius: 18px; text-align: left; color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--fsx-poster-color) 28%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--fsx-poster-color) 14%, transparent),
+    var(--surface-1) 70%);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.10),
+    0 0 18px color-mix(in srgb, var(--fsx-poster-color) 8%, transparent); }
+.fsx-poster.is-protocol { --fsx-poster-color: var(--sky); }
+.fsx-poster.is-setup { --fsx-poster-color: var(--lav); }
+.fsx-poster-head { display: flex; align-items: center; gap: 9px; }
+.fsx-poster-head strong { font-size: 12px; font-weight: 600; letter-spacing: 0.4px;
+  text-transform: uppercase; color: color-mix(in srgb, var(--fsx-poster-color) 72%, var(--ink)); }
+.fsx-poster-head b { margin-left: auto; font-weight: 400; color: var(--sub); }
+.fsx-poster-copy strong { display: block; font-size: 20px; font-weight: 600; color: var(--ink); }
+.fsx-poster-copy small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.5;
+  color: var(--sub); }
+
+/* Csendes sor: a Gyógyszer ajtaja (D5 — a felülete VÁLTOZATLAN). */
+.fsx-quiet { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
+  padding: 11px 13px; border-radius: 16px; border: 1px dashed var(--divider);
+  background: transparent; text-align: left; color: var(--ink); }
+.fsx-quiet strong { display: block; font-size: 13px; font-weight: 500; }
+.fsx-quiet small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--sub); }
+.fsx-quiet > span:nth-child(2) { flex: 1; min-width: 0; }
+.fsx-quiet > b { color: var(--sub); }
+
+/* Határvonal: ez tájékoztatás, nem orvosi tanács — minden adag-felületen ott áll. */
+.fsx-note { margin: 2px 0 0; font-size: 11px; line-height: 1.55; color: var(--sub);
+  text-align: center; }
+
+/* Az üvegkártya (natív <dialog class="glass">) — valódi padding, színezett szekciók. */
+.fsx-glass { position: fixed; inset: 0; margin: auto; width: min(88%, 352px); max-height: 80dvh;
+  padding: 18px 20px 26px; border-radius: 24px; border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated); color: var(--ink);
+  box-shadow: 0 34px 70px rgba(0, 0, 0, 0.34);
+  overflow-y: auto; }
+.fsx-glass::backdrop { background: rgba(5, 7, 12, 0.62); backdrop-filter: blur(15px); }
+.fsx-glass-hero { display: flex; align-items: center; gap: 14px; padding: 2px 0 14px;
+  border-bottom: 1px solid var(--divider); }
+.fsx-glass-hero strong { font-size: 34px; font-weight: 500; letter-spacing: -1.2px;
+  color: var(--ink); }
+.fsx-glass-hero small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--sub); }
+.fsx-glass-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
+.fsx-glass-chips span { padding: 4px 10px; border-radius: 12px; border: 1px solid var(--divider);
+  background: var(--surface-recess); font-size: 10.5px; color: var(--sub); }
+.fsx-glass-chips span.is-on { border-color: color-mix(in srgb, var(--sage) 45%, transparent);
+  background: color-mix(in srgb, var(--sage) 16%, transparent); color: var(--ink); }
+.fsx-glass-tick { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px;
+  margin: 14px 0 0; padding: 12px 15px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--sage) 48%, transparent);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--sage) 22%, transparent), var(--surface-1));
+  font-size: 14px; font-weight: 600; color: var(--ink); }
+.fsx-glass-tick span:nth-child(2) { flex: 1; text-align: left; }
+.fsx-glass-tick.is-done { border-color: var(--divider); background: var(--surface-recess);
+  color: var(--sub); }
+.fsx-glass-block { margin: 12px 0 0; padding: 13px 14px; border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--fsx-block-color) 26%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--fsx-block-color) 13%, transparent),
+    var(--surface-1) 68%); }
+.fsx-glass-block.is-dose { --fsx-block-color: var(--sky); }
+.fsx-glass-block.is-why { --fsx-block-color: var(--amber); }
+.fsx-glass-block.is-quiet { border-style: dashed; border-color: var(--divider);
+  background: var(--surface-recess); }
+.fsx-glass-block-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.fsx-glass-block-head strong { font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
+  color: var(--ink); }
+.fsx-glass-block p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--sub); }
+.fsx-glass-rows { display: grid; gap: 2px; margin: 0; }
+.fsx-glass-rows > div { display: flex; justify-content: space-between; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--divider); font-size: 12px; }
+.fsx-glass-rows > div:last-child { border-bottom: 0; }
+.fsx-glass-rows dt { margin: 0; color: var(--sub); }
+.fsx-glass-rows dd { margin: 0; font-weight: 600; color: var(--ink); text-align: right; }
+.fsx-glass-link { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 48px;
+  margin: 12px 0 0; padding: 12px 13px; border-radius: 16px; border: 1px solid var(--divider);
+  background: var(--surface-1); text-align: left; color: var(--ink); }
+.fsx-glass-link.is-shelf { border-color: color-mix(in srgb, var(--lav) 32%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--lav) 14%, transparent), var(--surface-1)); }
+.fsx-glass-link > span:nth-child(2) { flex: 1; min-width: 0; font-size: 13px; }
+.fsx-glass-link strong { display: block; font-size: 13px; font-weight: 500; }
+.fsx-glass-link small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
+.fsx-glass-link b { font-size: 17px; font-weight: 300; color: var(--sub); }
+.fsx-glass-close { width: 100%; min-height: 44px; margin-top: 14px; padding: 12px;
+  border-radius: 14px; border: 1px solid var(--divider); background: var(--surface-recess);
+  font-size: 13px; font-weight: 600; color: var(--ink); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .fsx-glow { animation: fsx-glow 5s ease-in-out infinite; }
+  @keyframes fsx-glow { 50% { opacity: 0.62; transform: scale(1.07); } }
+  .fsx-ring-progress { animation: fsx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+  @keyframes fsx-ring-rise { from { stroke-dasharray: 0 100; } }
+  .fsx-band { animation: fsx-band-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.1) both; }
+  @keyframes fsx-band-in { from { opacity: 0; transform: translateY(10px); } }
+  .fsx-glass[open] { animation: fsx-glass-in 0.32s cubic-bezier(0.2, 0.85, 0.3, 1.15) both; }
+  @keyframes fsx-glass-in { from { opacity: 0; transform: scale(0.93) translateY(8px); } }
+  .fsx-check, .fsx-next { transition: transform 0.12s; }
+  .fsx-check:active, .fsx-next:active { transform: scale(0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Csökkentett mozgás: MINDEN animáció kivezetve — a blokk statikus. */
+  .fsx-glow, .fsx-ring-progress, .fsx-band, .fsx-glass[open] { animation: none; }
+  .fsx-check, .fsx-next, .fsx-check:active, .fsx-next:active {
+    transform: none; transition: none; }
+}
+/* ── /fuel-stack titanium ─────────────────────────────────────────────────── */
+
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────
    A Titán Nap (`/nap`, `/nap/gyors`) SÖTÉT GRAFIT bőre — a
    `docs/design_2.0/prototypes/companion-titanium/nap.css` + `navigation.css` palettája.

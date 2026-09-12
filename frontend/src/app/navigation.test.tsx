@@ -79,9 +79,11 @@ test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20
 
 test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
   const { container } = renderApp('/fuel/stack')
-  // The hub's protocol tile is stable across loading, empty, next-action and all-done states.
+  // The hub's Protokoll door is stable across loading, empty, next-action and all-done states.
   // Real-mode CI intentionally starts with an empty protocol, while mock mode has a next item.
-  expect(await screen.findByRole('button', { name: 'Teljes protokoll' })).toBeInTheDocument()
+  // (S2/mezo-g2vl: the four-tile mosaic became the band list + two poster doors; the protocol
+  // door is the surviving stable landmark.)
+  expect(await screen.findByRole('button', { name: /Protokoll/ })).toBeInTheDocument()
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
   expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
 })
