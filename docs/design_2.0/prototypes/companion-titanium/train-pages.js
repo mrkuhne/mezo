@@ -3,6 +3,7 @@
 import { icon, safe } from './nap.js';
 
 import { workoutContent } from './workout.js';
+import { muscleMapHtml } from './muscles.js';
 import { EXERCISES as exercises, currentSession, metrics, doneCount } from './session-state.js';
 
 const PLANNED = exercises.reduce((n, e) => n + e.target.sets, 0);
@@ -24,10 +25,10 @@ const muscleRing = (name, art, done, plan, color) =>
 
 /** Impact of the day's movement on each muscle region — plain words, never set counts. */
 const REGIONS = [
-  { name: 'Mell', art: 'chest', color: '#c8e895', planned: 72, exercise: 0 },
-  { name: 'Hát', art: 'back', color: '#8ed2e8', planned: 72, exercise: 1 },
-  { name: 'Váll', art: 'shoulder', color: '#bca6f1', planned: 55, exercise: 2 },
-  { name: 'Láb', art: 'leg', color: '#e0bd8a', planned: 0, exercise: null },
+  { name: 'Mell', art: 'm-chest-mid', color: '#c8e895', planned: 72, exercise: 0 },
+  { name: 'Hát', art: 'm-back-mid', color: '#8ed2e8', planned: 72, exercise: 1 },
+  { name: 'Váll', art: 'm-shoulder-side', color: '#bca6f1', planned: 55, exercise: 2 },
+  { name: 'Láb', art: 'm-quad', color: '#e0bd8a', planned: 0, exercise: null },
 ];
 const impactWord = value => value === 0 ? 'ma nem kap' : value >= 65 ? 'erős' : value >= 35 ? 'közepes' : 'enyhe';
 
@@ -125,7 +126,7 @@ export function trainPagesContent(domain, page, date = '2026-09-09') {
   if (domain !== 'train') return null;
   if (page === 0) return date === '2026-09-09' ? trainToday(date) : workoutContent('train', 0, date);
   if (page === 1) return tervPage();
-  if (page === 2) return workoutContent('train', 1, date);
+  if (page === 2) return muscleMapHtml(['chest-mid', 'back-mid', 'shoulder-side']) + workoutContent('train', 1, date);
   if (page === 3) return gyakorlatokPage();
   return null;
 }

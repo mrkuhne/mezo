@@ -416,3 +416,14 @@
   display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 12.5px; color: #bcb2c8;
   border: 1px solid #ffffff16; border-radius: 18px; background: #ffffff04;
 }
+
+/* The body-map icon needs room and a ground to read at card size. */
+.wo-card-art, .wo-glass-head .wo-card-art {
+  width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px;
+  background: color-mix(in srgb, var(--ex-color) 13%, #ffffff06);
+  border: 1px solid color-mix(in srgb, var(--ex-color) 22%, transparent);
+}
+.wo-card-art .icon { width: 40px; height: 40px; }
+.wo-sum-record .icon, .wo-sum-ex-head .icon { width: 30px; height: 30px; }
+.wo-summary .macro-ico .icon { width: 34px; height: 34px; }
+.wo-summary .macro-name { font-size: 10px; }

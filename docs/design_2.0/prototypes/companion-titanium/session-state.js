@@ -3,7 +3,7 @@
 
 export const EXERCISES = [
   {
-    id: 'bench', name: 'Fekvenyomás', muscle: 'Mell', art: 'chest', color: '#c8e895',
+    id: 'bench', name: 'Fekvenyomás', muscle: 'Mell (közép)', art: 'm-chest-mid', color: '#c8e895',
     target: { sets: 3, kg: 60, reps: 10, rir: 2, range: [8, 12], rest: 150 },
     cue: 'Talpak lent. Stabil lapockák. Maradjon két ismétlés tartalékban.',
     video: 'Fekvenyomás · lapockazárás és rúdút',
@@ -22,7 +22,7 @@ export const EXERCISES = [
     },
   },
   {
-    id: 'row', name: 'Evezés csigán', muscle: 'Hát', art: 'back', color: '#8ed2e8',
+    id: 'row', name: 'Evezés csigán', muscle: 'Hát (közép)', art: 'm-back-mid', color: '#8ed2e8',
     target: { sets: 3, kg: 45, reps: 12, rir: 2, range: [10, 14], rest: 90 },
     cue: 'Vidd hátra a könyököd. A visszaengedés is legyen kontrollált.',
     video: 'Evezés csigán · könyökvezetés',
@@ -40,7 +40,7 @@ export const EXERCISES = [
     },
   },
   {
-    id: 'press', name: 'Vállból nyomás', muscle: 'Váll', art: 'shoulder', color: '#bca6f1',
+    id: 'press', name: 'Vállból nyomás', muscle: 'Váll (oldalsó)', art: 'm-shoulder-side', color: '#bca6f1',
     target: { sets: 3, kg: 20, reps: 10, rir: 2, range: [8, 12], rest: 90 },
     cue: 'Nyugodt tempó, stabil törzs. A súly egy kézisúlyzóra értendő.',
     video: 'Vállból nyomás · törzsstabilitás',
