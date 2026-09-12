@@ -121,7 +121,7 @@ git commit -m "feat(fuel): re-anchor the Kalauz to the rebuilt Fuel pages (mezo-
 
 - [ ] **Step 1: Prove each candidate is dead**
 
-Candidates: `FuelLogPage`, `FuelPlanPage`, `FuelNaploPage`, `FuelStackTodayPage`, the four `FuelStackManage*Page`s, and `KeretHero` (S1a left it alive because `FuelLogPage` still rendered it). For each:
+Candidates: `FuelLogPage`, `FuelPlanPage`, `FuelNaploPage`, `FuelStackTodayPage`, the four `FuelStackManage*Page`s, `KeretHero` (S1a left it alive because `FuelLogPage` still rendered it), and `FuelLogHeroTile` together with its `.fh-lt-*` CSS (S1b's meal blocks replaced it on Mai and left it unreferenced). For each:
 
 ```bash
 grep -rn "<Name" frontend/src --include=*.tsx | grep -v "pages/Name.tsx" | grep -v "\.test\."
