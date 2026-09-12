@@ -3,7 +3,8 @@ import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, initFood } from './food.js';
 import { animateFuelDashboard, fuelDashboardContent } from './fuel-dashboard.js';
 import { fuelPagesContent, initFuelPages } from './fuel-pages.js';
-import { openWorkout, workoutContent, initWorkout } from './workout.js';
+import { workoutContent, initWorkout } from './workout.js';
+import { openSession, initSession } from './session.js';
 import { trainPagesContent } from './train-pages.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
@@ -78,7 +79,7 @@ document.addEventListener('click',e=>{
  if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${c.tabs.join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
- if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openWorkout();
+ if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openSession();
  if(el.hasAttribute('data-sport'))dialog('SPORT NAPLÓZÁSA · DEMÓ',`<h2 class="sheet-title">Ami ma mozgás volt.</h2><form id="sport-form"><label class="form-field">Mi volt?<select name="kind"><option>Röplabda</option><option>Futás</option><option>Kerékpár</option><option>Úszás</option><option>Foci</option><option>Túra</option><option>Egyéb</option></select></label><label class="form-field">Időtartam (perc)<input type="number" name="minutes" min="1" value="90" required></label><label class="form-field">Terhelés (1–10)<input type="number" name="rpe" min="1" max="10" value="7" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
  if(el.hasAttribute('data-custom'))dialog('EGYEDI EDZÉS · DEMÓ',`<h2 class="sheet-title">Terv nélkül, most.</h2><p class="sheet-sub">Egy saját edzés, ami nem a futó blokkod része. Elmentve később bármikor újraindítható.</p><form id="custom-form"><label class="form-field">Az edzés neve<input name="name" value="Szabad edzés" maxlength="40" required></label><button class="sheet-action">Indítom ▸</button></form>`);
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
@@ -98,14 +99,15 @@ document.addEventListener('submit',e=>{
  const form=e.target,data=new FormData(form);
  if(form.id==='voice-form'){e.preventDefault();const command=String(data.get('command')).trim();const s=command.toLocaleLowerCase('hu');
  if(/joghurt|banán|étkez|kaj|ebéd/.test(s)){closeSheet();go('fuel',0);openFood(command);toast('Átvittelek az étkezési AI-logolás demójába.');}
- else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openWorkout();toast('Itt a mai edzésed.');}
+ else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openSession();toast('Itt a mai edzésed.');}
  else if(/napló/.test(s)){closeSheet();const note=command.split(':').slice(1).join(':').trim();openPersonalJournal(note);toast('Megnyitottam a naplódat.');}
  else {let hint=$('#voice-hint');if(!hint){hint=document.createElement('p');hint.id='voice-hint';hint.className='quiet';form.append(hint);}hint.textContent='Ez a demó az étkezés, edzésindítás és napló három példáját ismeri. Válassz egy mintamondatot.';}}
  if(form.id==='sport-form'||form.id==='weight-form'){e.preventDefault();const message=form.id==='sport-form'?`${data.get('kind')} · ${data.get('minutes')} perc · RPE ${data.get('rpe')}`:`Súly · ${data.get('weight')} kg`;closeSheet();toast(message+' · demóbejegyzés');react('connect');}
- if(form.id==='custom-form'){e.preventDefault();closeSheet();openWorkout();toast(`${data.get('name')} · a demóban a mintaedzés indul`);}
+ if(form.id==='custom-form'){e.preventDefault();closeSheet();openSession();toast(`${data.get('name')} · a demóban a mintaedzés indul`);}
 });
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
+initSession({refresh:draw,go,dialog,closeSheet});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFuelPages({refresh:draw,go,dialog,closeSheet});
 initMezo({refresh:draw});

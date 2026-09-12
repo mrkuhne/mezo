@@ -1,10 +1,11 @@
 // Edzés (Train) — Titanium pages. Owner decision 2026-09-12: the four tabs are
 // Mai · Terv · Terhelés · Gyakorlatok. The live session stays a full-screen overlay (workout.js).
 import { icon, safe } from './nap.js';
-import { exercises, metrics } from './workout-state.js';
-import { workoutContent, workoutSnapshot, currentWorkout } from './workout.js';
 
-const PLANNED = exercises.length * 3;
+import { workoutContent } from './workout.js';
+import { EXERCISES as exercises, currentSession, metrics, doneCount } from './session-state.js';
+
+const PLANNED = exercises.reduce((n, e) => n + e.target.sets, 0);
 
 const fmt = value => Math.round(value).toLocaleString('hu-HU');
 
@@ -30,11 +31,11 @@ const REGIONS = [
 ];
 const impactWord = value => value === 0 ? 'ma nem kap' : value >= 65 ? 'erős' : value >= 35 ? 'közepes' : 'enyhe';
 
-function muscleImpact(workout) {
+function muscleImpact(session) {
   return `<div class="tr-card">
    <div class="tr-card-head"><span class="overline">HATÁS AZ IZOMZATODRA</span><strong>Mit terhel a mai mozgásod</strong></div>
    <div class="tr-mus">${REGIONS.map(r => {
-    const logged = r.exercise === null ? 0 : workout.sets[r.exercise].filter(Boolean).length;
+    const logged = r.exercise === null ? 0 : doneCount(session, exercises[r.exercise].id);
     const done = Math.round(r.planned * logged / 3);
     return `<div class="tr-mus-row" style="--mus-color:${r.color}">
      <span class="tr-mus-art">${icon(r.art)}</span>
@@ -63,9 +64,9 @@ const ahead = () => `<button class="tr-block is-ahead" ${detail('Holnap: röplab
     <b>›</b></button>`;
 
 function trainToday() {
-  const workout = currentWorkout();
-  const m = metrics(workout);
-  const done = workout.status === 'complete';
+  const session = currentSession();
+  const m = metrics(session);
+  const done = session.status === 'complete';
   const share = Math.min(1, m.count / PLANNED);
   const plannedKcal = 260;
   const doneKcal = Math.round(plannedKcal * share);
@@ -96,7 +97,7 @@ function trainToday() {
    <button class="fuel-secondary" data-route="me/2">${icon('moon')}<span><strong>Alvás és regeneráció</strong></span><b>↗</b></button>
    <button class="fuel-secondary" data-route="train/1">${icon('stack')}<span><strong>A futó terved</strong></span><b>↗</b></button></details>`;
 
-  return `${poster}${cta}${quick}${energyCard(plannedKcal, doneKcal)}${muscleImpact(workout)}${ahead()}${more}`;
+  return `${poster}${cta}${quick}${energyCard(plannedKcal, doneKcal)}${muscleImpact(session)}${ahead()}${more}`;
 }
 
 /** Terv — the plan: the running block, its days, templates, sport and run schedules. Old language, next round. */
@@ -129,4 +130,4 @@ export function trainPagesContent(domain, page, date = '2026-09-09') {
   return null;
 }
 
-export { workoutSnapshot };
+

@@ -4,7 +4,7 @@ import {dayPage} from './day-pages.js';
 import {footer,safe} from './life-ui.js';
 import {closeSheet,toast,react,currentDaypart} from './nap.js';
 import {foodSnapshot} from './food.js';
-import {workoutSnapshot} from './workout.js';
+import {sessionSnapshot as workoutSnapshot} from './session.js';
 let state=createPersonal(),callbacks;
 const makeUI=()=>({weightPeriod:'14',journalFilter:'all',journalQuery:'',journalHistoryOpen:false,entryKind:'note',journalDraft:'',chatDraft:'',part:currentDaypart(),anchors:new Set()});
 let ui=makeUI();
