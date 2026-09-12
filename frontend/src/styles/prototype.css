@@ -12022,7 +12022,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    node-animációi mind a `no-preference` ágban élnek, a `reduce` ág pedig explicit
    kivezeti őket — ez a blokk csökkentett mozgás mellett teljesen statikus.
    Hatókör-szintű (`.titan-dark …`) felülírás ebbe a blokkba NEM jön; az a titan-dark
-   blokkban lakik. */
+   blokkban lakik.
+
+   A blokk az S1b részletező/értékelő oldalaival és az S1c kamera-első logolójával bővült
+   (ugyanaz a `fmx-` prefix, EGY blokk — második `fuel-mai titanium` blokk nem nyílik). */
 
 /* Hero: koppintható, egyetlen tiszta üzenet — a matek az üvegdobozban lakik.
    (prototípus: fuel-pages.css `Hero: tappable…` + fuel-compact.css `.fuel-focus`/`.fuel-visual`) */
@@ -12437,6 +12440,83 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: color-mix(in srgb, var(--amber) 62%, var(--ink)); white-space: nowrap; }
 .fmx-score-fb { margin: 14px 0 4px; }
 
+/* ── S1c: a kamera-első logoló héja (mezo-33k6; manifeszt A4 · A5 · A6 · A7) ──────────────
+   Prototípus: fuel-pages.css `Logger mode tabs` (:2), `Camera demo` (:7), `Voice demo` (:25),
+   `Usuals` (:33) és `Failure state` (:41) blokkjai — a geometria (4-es fülrács, a 150-es
+   kereső, a 74-es mikrofon-korong, a sor-rács) 1:1, a beégetett sötét hexek helyett a ház
+   tokenjeivel. A „DEMÓ KERESŐ" overlay és a minta-exponálás gombjai SZÁNDÉKOSAN nem jönnek át:
+   itt valódi kamera-input és valódi felismerés áll. */
+.fmx-logmodes { margin: 0 0 14px; }
+.fmx-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 2px 0 14px; }
+.fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 2px 8px; border: 1px solid var(--border-subtle); border-radius: 13px;
+  background: var(--surface-1); color: var(--sub); font-size: 8.5px; letter-spacing: 0.4px; }
+.fmx-mode.is-active { border-color: color-mix(in srgb, var(--sky) 45%, transparent);
+  background: color-mix(in srgb, var(--sky) 11%, var(--surface-card));
+  color: var(--ink); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 0 12px color-mix(in srgb, var(--sky) 16%, transparent); }
+
+/* A kereső: a kamera-bemenet MAGA a felület (label → rejtett file input). */
+.fmx-camera { text-align: center; }
+.fmx-finder { position: relative; display: grid; place-items: center; gap: 6px;
+  margin: 2px 0 10px; padding: 16px 10px 12px; min-height: 150px; border-radius: 18px;
+  border: 1px solid var(--border-subtle); cursor: pointer;
+  background: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--sky) 10%, var(--surface-card)), var(--surface-recess)); }
+.fmx-finder > span { position: absolute; width: 22px; height: 22px;
+  border: 2px solid color-mix(in srgb, var(--sky) 55%, transparent); }
+.fmx-finder > span:nth-child(1) { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
+.fmx-finder > span:nth-child(2) { top: 8px; right: 8px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
+.fmx-finder > span:nth-child(3) { bottom: 8px; left: 8px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
+.fmx-finder > span:nth-child(4) { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
+.fmx-finder svg { filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.3)); }
+.fmx-finder b { font-size: 12px; font-weight: 500; color: var(--ink); }
+.fmx-finder input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fmx-mode-hint { margin: 0 0 4px; font-size: 11px; line-height: 1.55; color: var(--sub); text-align: center; }
+.fmx-mode-error { margin: 6px 0 0; font-size: 11px; color: var(--error); text-align: center; }
+.fmx-mode-empty { margin: 10px 0 4px; padding: 14px 13px; border-radius: 14px;
+  border: 1px dashed var(--border-subtle); background: var(--surface-1);
+  font-size: 11.5px; line-height: 1.6; color: var(--sub); text-align: center; }
+
+/* Hang: egyetlen nagy korong — valódi felvétel, nem mintamondat-lista. */
+.fmx-voice { text-align: center; }
+.fmx-mic { width: 74px; height: 74px; margin: 6px auto 12px; display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, var(--lav) 42%, transparent); border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--lav) 22%, transparent), var(--surface-card));
+  color: var(--lav-deep); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16); }
+.fmx-mic:disabled { opacity: 0.45; }
+.fmx-mic.is-live { border-color: color-mix(in srgb, var(--coral) 55%, transparent); color: var(--coral); }
+.fmx-typed { padding: 2px 0 4px; }
+
+/* Szokásosak: egy koppintás, aztán jóváhagyás. */
+.fmx-usuals { display: grid; gap: 0; }
+.fmx-usual { display: flex; align-items: center; gap: 11px; width: 100%; padding: 13px 2px;
+  border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent;
+  text-align: left; color: var(--ink); }
+.fmx-usual-art { flex: 0 0 auto; display: grid; place-items: center;
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.22)); }
+.fmx-usual-copy { flex: 1; min-width: 0; }
+.fmx-usual-copy strong { display: block; font-size: 13px; font-weight: 500; }
+.fmx-usual-copy small { display: block; margin-top: 3px; font-size: 8.5px; color: var(--faint); }
+.fmx-usual > b { margin-left: auto; font-size: 15px; font-weight: 500; color: var(--sub); text-align: right; }
+.fmx-usual > b small { display: block; margin-top: 2px; font-size: 8px; color: var(--faint); }
+
+/* A felismerés kudarca: saját állapot, a másik három úttal — nem hibajelzés. */
+.fmx-failed { padding-top: 8px; text-align: center; }
+.fmx-failed-art { position: relative; width: 84px; height: 84px; margin: 6px auto 14px;
+  display: grid; place-items: center; border: 1px dashed color-mix(in srgb, var(--amber) 50%, transparent);
+  border-radius: 50%; }
+.fmx-failed-art i { position: absolute; right: 2px; bottom: 4px; width: 24px; height: 24px;
+  display: grid; place-items: center; border-radius: 50%; background: var(--amber);
+  color: var(--surface-card); font-style: normal; font-weight: 600; font-size: 12px; }
+.fmx-failed small { display: block; font-size: 8px; letter-spacing: 1.4px; color: var(--faint); }
+.fmx-failed strong { display: block; margin: 6px 0 8px; font-family: var(--ff-display);
+  font-size: 22px; line-height: 1.2; font-weight: 300; color: var(--ink); }
+.fmx-failed p { margin: 0 0 16px; font-size: 11px; line-height: 1.6; color: var(--sub); }
+.fmx-failed-cta { display: block; width: 100%; margin: 0 0 8px; padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--sky) 45%, transparent); border-radius: 14px;
+  background: color-mix(in srgb, var(--sky) 12%, var(--surface-card));
+  color: var(--ink); font-size: 12.5px; font-weight: 500; }
+.fmx-failed-cta.is-quiet { border-color: var(--border-subtle); background: var(--surface-1); color: var(--sub); }
+
 @media (prefers-reduced-motion: no-preference) {
   .fmx-ring-progress, .fmx-gauge-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
   /* A dimenzió-csempék egymás után úsznak be, a prototípus 40ms-os lépcsőjével. */
@@ -12489,6 +12569,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   }
   @keyframes fmx-glass-in { from { opacity: 0; transform: scale(0.92) translateY(8px); } }
   @keyframes fmx-node-in { from { opacity: 0; transform: translateX(-8px); } }
+  /* S1c: a mikrofon-korong lélegzik, amíg hallgat (prototípus `mic-breathe`), a kereső tálja
+     pedig ugyanúgy lebeg, mint a Mai műszeré. */
+  .fmx-mic:not(:disabled) { animation: fmx-mic-breathe 2.6s ease-in-out infinite; }
+  @keyframes fmx-mic-breathe {
+    0%, 100% { box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16), 0 0 12px color-mix(in srgb, var(--lav) 18%, transparent); }
+    50% { box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16), 0 0 26px color-mix(in srgb, var(--lav) 34%, transparent); }
+  }
+  .fmx-finder svg { animation: fmx-float 4.8s ease-in-out 0.3s infinite; }
 }
 /* Csökkentett mozgás: minden, amit ez a blokk indít, kivezetve. */
 @media (prefers-reduced-motion: reduce) {
@@ -12501,6 +12589,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
      az értékelés-hero fénye mind kivezetve (S1b, mezo-33k6). */
   .fmx-score, .fmx-score svg, .fmx-detail-art,
   .fmx-dim, .fmx-score-art, .fmx-score-glow { animation: none; }
+  /* S1c (mezo-33k6): a logoló-héj mikrofon-lélegzése és a kereső lebegése kivezetve. */
+  .fmx-mic, .fmx-mic:not(:disabled), .fmx-finder svg { animation: none; }
 }
 /* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
 

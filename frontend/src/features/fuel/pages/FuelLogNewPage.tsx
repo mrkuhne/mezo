@@ -11,15 +11,23 @@
 // A kontextus az URL-ben él (d = nap, w = ablak-kulcs, ai = AI-panel), így a
 // logolás deep-linkelhető és a böngésző-vissza természetes. Ismeretlen `w` nem
 // hiba: ablakon kívüli logolásra esik vissza — sosem fabrikálunk ablakot.
+//
+// S1c (mezo-33k6): az oldal a KAMERÁN nyit. A `FuelLogModes` héj adja a négy utat (fotó → hang
+// → gépelés → szokásosak), és mindegyik a MealComposer meglévő karjaiba fut — a héj egyetlen
+// AI-hívást sem indít és egyetlen tételt sem ment. Az `?ai=1` deep link értelme változatlan:
+// „nyíljon a gépelés az AI-panellel". A felismerés kudarca itt él állapotként (`failed`), hogy
+// a héj a másik három utat tudja felajánlani hibaüzenet helyett.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelDay, useFuelTimeline } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { MealComposer } from '@/features/fuel/components/MealComposer'
+import { FuelLogModes, type LogMode } from '@/features/fuel/components/FuelLogModes'
 
 // A /fuel/log stepperével azonos korlát (mezo-1j3z): egy hét pótlás, nem nyílt főkönyv.
 // A ?d= deep link ugyanide clampel — ami kívül esik (vagy nem parse-olható), az MA lesz,
@@ -43,7 +51,7 @@ export function FuelLogNewPage() {
   const past = offset > 0
   const ai = searchParams.get('ai') === '1'
 
-  const { plan, budget } = useFuelTimeline(date)
+  const { plan, budget, nowHHmm } = useFuelTimeline(date)
   const { fuel } = useFuelDay(date)
   const laneRaw = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
   const lane = past ? asPastDayLane(laneRaw) : laneRaw
@@ -64,6 +72,20 @@ export function FuelLogNewPage() {
   const back = () => navigate(`/fuel/log${past ? `?d=${date}` : ''}`, { replace: true })
 
   const dayLabel = `${huMonthDay(date).toLowerCase()}.`
+
+  // ── S1c: a négy út (mezo-33k6) ──────────────────────────────────────────────────────────────
+  // `?ai=1` a gépelésen nyit (az AI-panel nyitva) — minden más esetben a kamerán, ez az owner
+  // első számú módja. A héj állapotai itt élnek, a felismerés pedig a composer egyetlen
+  // AI-hívóhelyén fut: ide csak a FÁJL, a MONDAT és a KUDARC jele jut el.
+  const [mode, setMode] = useState<LogMode>(ai ? 'text' : 'photo')
+  const [failed, setFailed] = useState(false)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [aiTextIn, setAiTextIn] = useState<{ text: string; seq: number; run?: boolean } | null>(null)
+  const pushAiText = (text: string, run?: boolean) =>
+    setAiTextIn(prev => ({ text, seq: (prev?.seq ?? 0) + 1, run }))
+  // A szokásosak a nap logolt étkezéseiből rangsorolódnak, a terv saját órájával (nincs ambiens
+  // idő). Előzmény nélkül a lista üres — a héj ezt őszintén ki is mondja.
+  const usuals = rankUsualMeals(fuel.meals, nowHHmm)
 
   return (
     <MozaikPage tone={past ? 'gold' : 'coral'} className="flognew-page">
@@ -89,10 +111,25 @@ export function FuelLogNewPage() {
         </div>
       )}
       <PageBody>
+        <FuelLogModes
+          mode={mode}
+          onMode={(m) => { setFailed(false); setMode(m) }}
+          onPhoto={(file) => { setFailed(false); setPhoto(file) }}
+          // Egy szokásos sor a NEVÉVEL indítja a meglévő szöveg-ágat — kitalált makrókat nem
+          // viszünk be, és a piszkozatot a user továbbra is jóváhagyja.
+          onUsual={(u) => pushAiText(u.title, true)}
+          onTranscript={(text) => pushAiText(text)}
+          failed={failed}
+          usuals={usuals}
+        />
         <MealComposer
           fixedSlot={tile?.slotKey}
           prefill={prefill}
           aiPanelOpenOnMount={ai}
+          aiPanelOpen={mode === 'text' || mode === 'voice'}
+          incomingPhoto={photo}
+          incomingAiText={aiTextIn}
+          onAiFailed={() => setFailed(true)}
           logDate={past ? date : undefined}
           logTime={past ? tile?.time : undefined}
           saveLabel={past ? `✓ Pótlás · ${dayLabel}` : undefined}

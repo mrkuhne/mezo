@@ -167,6 +167,21 @@ export interface MealComposerProps {
   prefill?: MealComposerPrefill
   /** Opens the ✨ AI panel expanded on mount (the per-window "AI" action, mezo-53su). */
   aiPanelOpenOnMount?: boolean
+  /** S1c (mezo-33k6): opens the ✨ panel while true, for the camera-first shell's gépelés/hang
+   *  modes. Mount-time opening stays `aiPanelOpenOnMount`'s job — this one reacts to later flips. */
+  aiPanelOpen?: boolean
+  /** S1c héj-kar (mezo-33k6): a photo chosen OUTSIDE the composer (the camera-first shell). A new
+   *  file runs the composer's EXISTING photo arm — resizeImage → draftMealFromAi → the user
+   *  confirms. There is exactly ONE AI call site, and it is here. */
+  incomingPhoto?: File | null
+  /** S1c héj-kar: text arriving from outside — a transcribed sentence or a „szokásos" row's name.
+   *  It lands in the SAME ✨ text field the typing arm uses; `run` starts the analysis at once
+   *  (the draft still needs the user's confirmation before anything is saved). `seq` makes a
+   *  repeated identical sentence a new event. */
+  incomingAiText?: { text: string; seq: number; run?: boolean } | null
+  /** S1c: the PHOTO arm failed — the shell raises its first-class failure state (A4), which
+   *  offers the other three routes instead of an error toast. */
+  onAiFailed?: () => void
   /** Melyik napra könyvelődik a mentés (ISO local date). Absent = ma (nowOffsetIso, byte-azonos). */
   logDate?: string
   /** A loggedAt idő-komponense HH:mm (ablak-indítás: az ablak ideje). Absent = slot-alap idő. */
@@ -177,7 +192,11 @@ export interface MealComposerProps {
   onCancel: () => void
 }
 
-export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, logDate, logTime, saveLabel, onSaved, onCancel }: MealComposerProps) {
+export function MealComposer({
+  fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, aiPanelOpen,
+  incomingPhoto, incomingAiText, onAiFailed,
+  logDate, logTime, saveLabel, onSaved, onCancel,
+}: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay(logDate)
@@ -327,13 +346,15 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   }
 
   const canRunAi = aiText.trim().length > 0 || aiPhoto != null
-  const runAi = async () => {
-    if (!canRunAi) return
+  /** THE one AI call site (S1c, mezo-33k6): the panel's ✨ Elemzés, the shell's camera arm and a
+   *  „szokásos" row all enter here, so the photo/text flow and its provenance stay single-sourced. */
+  const runAiWith = async (photo: File | null, text: string) => {
+    if (!photo && text.trim().length === 0) return
     setAiBusy(true)
     setAiError(null)
     try {
-      const blob = aiPhoto ? await resizeImage(aiPhoto) : undefined
-      const draft = await draftMealFromAi({ date: logDate ?? localDateString(), text: aiText.trim() || undefined, photo: blob })
+      const blob = photo ? await resizeImage(photo) : undefined
+      const draft = await draftMealFromAi({ date: logDate ?? localDateString(), text: text.trim() || undefined, photo: blob })
       const newLines: DraftLine[] = draft.items.map((it): DraftLine => {
         const key = crypto.randomUUID()
         if (it.source === 'estimate') {
@@ -354,7 +375,9 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       })
       setLines(prev => [...prev, ...newLines])
       if (!slotLocked.current) setSlot(draft.slot)
-      setAiContribution({ photo: !!aiPhoto, rawText: aiText.trim() || null })
+      // Honest provenance: what genuinely went INTO this call (a shell-camera photo counts
+      // exactly like a panel-picked one) — never the panel's leftover state.
+      setAiContribution({ photo: photo != null, rawText: text.trim() || null })
       // A fresh backend-minted draft (mezo-76f6) — reset the "edited" flag so a PRIOR run's
       // manual tweaks (if any) don't leak an "edited" onto a since-regenerated draft.
       setAiDraftId(draft.draftId)
@@ -364,10 +387,39 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       setAiOpen(false)
     } catch {
       setAiError('Nem sikerült az AI-feldolgozás. Próbáld újra, vagy add hozzá kézzel.')
+      // A4: only a PHOTO failure is the shell's „ezt a tányért nem ismertem fel" state — a text
+      // failure must not claim a photo was misread.
+      if (photo) onAiFailed?.()
     } finally {
       setAiBusy(false)
     }
   }
+  const runAi = () => runAiWith(aiPhoto, aiText)
+
+  // ── S1c héj-karok (mezo-33k6) ───────────────────────────────────────────────────────────────
+  // The shell hands its photo / transcript DOWN here instead of calling the AI itself, so the
+  // single call site, the single ✨ text field and the provenance rules all stay in one place.
+  const shellPhotoRef = useRef<File | null>(null)
+  useEffect(() => {
+    if (!incomingPhoto || shellPhotoRef.current === incomingPhoto) return
+    shellPhotoRef.current = incomingPhoto
+    setAiPhoto(incomingPhoto)
+    void runAiWith(incomingPhoto, aiText)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a NEW file only; the text/run closure is read at that moment
+  }, [incomingPhoto])
+
+  const shellTextSeqRef = useRef(0)
+  useEffect(() => {
+    if (!incomingAiText || incomingAiText.seq === shellTextSeqRef.current) return
+    shellTextSeqRef.current = incomingAiText.seq
+    const next = aiText ? `${aiText} ${incomingAiText.text}` : incomingAiText.text
+    setAiText(next)
+    setAiOpen(true)
+    if (incomingAiText.run) void runAiWith(null, next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a NEW seq only
+  }, [incomingAiText])
+
+  useEffect(() => { if (aiPanelOpen) setAiOpen(true) }, [aiPanelOpen])
 
   const canSave = lines.length > 0
   const save = () => {
