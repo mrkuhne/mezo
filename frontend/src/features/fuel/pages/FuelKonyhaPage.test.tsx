@@ -91,3 +91,14 @@ test('nincs vonalkód-beolvasás a Konyhán', () => {
   const { container } = renderView()
   expect(container.textContent).not.toMatch(/vonalkód/i)
 })
+
+// mezo-hygp: az ajtók darabszáma DARAB — a felpörgés köztes, tört értéke sosem
+// kerülhet a képernyőre. (Élesben „0.58258258124…" állt a Receptek ajtaján.)
+test('az ajtók száma mindig egész, sosem tört', () => {
+  const { container } = renderView()
+  const numerals = Array.from(container.querySelectorAll('.fkx-poster-main > strong'))
+  expect(numerals.length).toBeGreaterThanOrEqual(2)
+  for (const n of numerals) {
+    expect(n.textContent, `tört szám az ajtón: ${n.textContent}`).toMatch(/^\d+$/)
+  }
+})

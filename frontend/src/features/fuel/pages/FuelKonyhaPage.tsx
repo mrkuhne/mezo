@@ -41,8 +41,10 @@ export function FuelKonyhaPage() {
   const items = buildKamraItems(ingredients, stash)
   const foods = items.filter(it => it.kind === 'food').length
   const extras = items.length - foods
-  const recipeCount = useFuelCountUp(recipes.length)
-  const pantryCount = useFuelCountUp(items.length)
+  // A felpörgő szám KÖZTES értéke tört — az ajtók darabszáma viszont mindig egész,
+  // ezért a megjelenítés kerekít (a többi Fuel-számláló is így tesz).
+  const recipeCount = Math.round(useFuelCountUp(recipes.length))
+  const pantryCount = Math.round(useFuelCountUp(items.length))
   // A poszter alján az a recept áll, amit a LEGTÖBBSZÖR ettél — ha egyszer sem ettél
   // semmit, a sor őszintén elmarad (nem írunk oda kitalált kedvencet).
   const favourite = [...recipes].sort((a, b) => (b.timesLogged ?? 0) - (a.timesLogged ?? 0))[0]
