@@ -250,10 +250,10 @@ function muscleStarRows() {
   });
 }
 
+/** Step one: the ceremony owns the screen, and ends with the way on. */
 function summary() {
   const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
   const minutes = Math.max(1, Math.round(((session.finishedAt || Date.now()) - (session.startedAt || Date.now())) / 60000));
-  const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
   const score = sessionScore(session);
 
   const records = session.order.flatMap(id => {
@@ -264,63 +264,71 @@ function summary() {
     return [{ name: e.name, art: e.art, color: e.color, value: `${n(best.kg)} kg × ${best.reps}`, e1rm: e1rm(best) }];
   });
 
-  // Act one fills the whole screen: the bar runs, the stars ignite as it passes them.
-  const stage = `<section class="cer" data-cer style="--p:0">
-   <span class="cer-sky" aria-hidden="true"></span>
-   <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'A MAI EDZÉSED'}</span>
-   <div class="cer-stars" aria-hidden="true">${[0, 1, 2, 3, 4].map(i => `<i data-cer-star="${i}"><b class="cer-aura"></b>${icon('star')}</i>`).join('')}</div>
-   <div class="cer-bar">
-    <i class="cer-fill"></i><span class="cer-comet"></span>
-    ${[1, 2, 3, 4].map(i => `<u style="--at:${i * 20}%"></u>`).join('')}
-   </div>
-   <div class="cer-counters">
-    <span><strong data-cer-count="sets">0</strong><small>/ ${score.target.sets} szett</small></span>
-    <span><strong data-cer-count="reps">0</strong><small>/ ${score.target.reps} ismétlés</small></span>
-    <span><strong data-cer-count="volume">0</strong><small>/ ${n(score.target.volume)} kg × rep</small></span>
-   </div>
-  </section>`;
+  return `<div class="wo-summary cer-screen">
+   <section class="cer" data-cer style="--p:0">
+    <span class="cer-sky" aria-hidden="true"></span>
+    <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'A MAI EDZÉSED'}</span>
+    <div class="cer-stars" aria-hidden="true">${[0, 1, 2, 3, 4].map(i => `<i data-cer-star="${i}"><b class="cer-aura"></b>${icon('star')}</i>`).join('')}</div>
+    <div class="cer-bar">
+     <i class="cer-fill"></i><span class="cer-comet"></span>
+     ${[1, 2, 3, 4].map(i => `<u style="--at:${i * 20}%"></u>`).join('')}
+    </div>
+    <div class="cer-counters">
+     <span><strong data-cer-count="sets">0</strong><small>/ ${score.target.sets} szett</small></span>
+     <span><strong data-cer-count="reps">0</strong><small>/ ${score.target.reps} ismétlés</small></span>
+     <span><strong data-cer-count="volume">0</strong><small>/ ${n(score.target.volume)} kg × rep</small></span>
+    </div>
+   </section>
 
-  const result = `<section class="cer-result">
-   <h1 tabindex="-1">${String(score.stars).replace('.', ',')} csillag</h1>
-   <p>${verdictFor(score.stars)}${pending ? ` ${pending} szett kihagyva.` : ''}</p>
-   <div class="cer-stats">
-    <span><strong>${m.reps}</strong><small>ismétlés</small></span>
-    <span><strong>${n(m.volume)}</strong><small>kg × rep</small></span>
-    <span><strong>${minutes}′</strong><small>idő</small></span>
-    <span><strong>+${m.xp}</strong><small>XP</small></span>
-   </div>
-   <button class="cer-details-toggle" data-cer-details aria-expanded="false">Részletek <b>⌄</b></button>
-   <div class="cer-details" hidden>
-    ${records.length ? `<div class="wo-sum-records">
-     <div class="wo-sum-records-head"><span class="wo-sum-records-art">${icon('record')}</span><span><span class="overline">ÚJ REKORD</span><strong>${records.length === 1 ? 'Egy gyakorlatban ma új csúcs.' : `${records.length} gyakorlatban ma új csúcs.`}</strong></span></div>
-     ${records.map(r => `<div class="wo-sum-record" style="--ex-color:${r.color}">${icon(r.art)}<span><strong>${r.name}</strong><small>${r.value} · becsült maximum ${n(r.e1rm)} kg</small></span><b>↑</b></div>`).join('')}
-    </div>` : ''}
-    <button class="wo-energy-row" data-go-fuel>${icon('bowl')}<span><strong>+${kcal} kcal</strong><small>a mai keretedhez</small></span><b>›</b></button>
-    <div class="wo-sum-xp"><span class="wo-sum-xp-art">${icon('gem')}</span><span><strong>A haladásod megmarad.</strong><small>${760 + m.xp} / 1 200 XP · 12. szint</small></span><span class="wo-sum-xp-track"><i style="--w:${Math.min(100, (760 + m.xp) / 1200 * 100)}%"></i></span></div>
-   </div>
-  </section>`;
+   <section class="cer-result">
+    <h1 tabindex="-1">${String(score.stars).replace('.', ',')} csillag</h1>
+    <p>${verdictFor(score.stars)}${pending ? ` ${pending} szett kihagyva.` : ''}</p>
+    <div class="cer-stats">
+     <span><strong>${m.reps}</strong><small>ismétlés</small></span>
+     <span><strong>${n(m.volume)}</strong><small>kg × rep</small></span>
+     <span><strong>${minutes}′</strong><small>idő</small></span>
+     <span><strong>+${m.xp}</strong><small>XP</small></span>
+    </div>
+    ${records.length ? `<div class="cer-record" style="--ex-color:${records[0].color}">${icon('record')}<span><strong>${records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong><small>${records.map(r => `${r.name} · ${r.value}`).join(' · ')}</small></span></div>` : ''}
+   </section>
 
-  const muscles = `<section class="cer-muscles">
-   <div class="wo-sum-section"><span class="overline">IZOMCSOPORTOK · A HETI TERVHEZ KÉPEST</span></div>
-   <div class="wo-mstars">${muscleStarRows().map((row, i) => `<div class="wo-mstar" style="--ex-color:${muscleColor(row.muscleKey)};--i:${i}">
-     <span class="wo-mstar-art">${muscleIcon(row.muscleKey)}</span>
-     <span class="wo-mstar-copy"><strong>${row.name}</strong><small>${row.done} / ${row.plan} szett${row.added ? ` · ma +${row.added}` : ''}</small></span>
-     ${starRow(row.stars, 'mini')}
-     <span class="wo-mstar-track"><i class="zone" style="--a:${row.low / row.plan * 100}%;--b:${Math.min(100, row.high / row.plan * 100)}%"></i><i class="fill" style="--w:${row.ratio * 100}%"></i></span>
-    </div>`).join('')}</div>
-  </section>`;
+   <div class="cer-foot">
+    <button class="wo-close-cta" data-cer-next><span class="wo-close-art">${icon('journal')}</span><span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><u class="chip-sheen"></u></button>
+   </div>
+  </div>`;
+}
 
-  const cta = done
+/** Step two: what the session did to the week, and the way out. */
+function detailsStep() {
+  const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
+  const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
+  return `<div class="wo-summary is-told cer-details-screen">
+   <section class="cer-muscles">
+    <div class="wo-sum-section"><span class="overline">IZOMCSOPORTOK · A HETI TERVHEZ KÉPEST</span><strong>Mit tett ez a hetedhez</strong></div>
+    <div class="wo-mstars">${muscleStarRows().map((row, i) => `<div class="wo-mstar" style="--ex-color:${muscleColor(row.muscleKey)};--i:${i}">
+      <span class="wo-mstar-art">${muscleIcon(row.muscleKey)}</span>
+      <span class="wo-mstar-copy"><strong>${row.name}</strong><small>${row.done} / ${row.plan} szett${row.added ? ` · ma +${row.added}` : ''}</small></span>
+      ${starRow(row.stars, 'mini')}
+      <span class="wo-mstar-track"><i class="zone" style="--a:${row.low / row.plan * 100}%;--b:${Math.min(100, row.high / row.plan * 100)}%"></i><i class="fill" style="--w:${row.ratio * 100}%"></i></span>
+     </div>`).join('')}</div>
+   </section>
+
+   <button class="cer-kcal" data-go-fuel>
+    <span class="cer-kcal-art">${icon('bowl')}</span>
+    <span class="cer-kcal-main"><b>+</b><strong>${kcal}</strong><small>kcal</small></span>
+    <span class="cer-kcal-copy"><strong>Ennyit nyertél a mai mozgással</strong><small>A mai keretedhez adódik</small></span>
+    <b>›</b></button>
+
+   <div class="cer-cta">${done
     ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
-    : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-session-back>Még folytatom</button>`;
-
-  return `<div class="wo-summary">${stage}${result}${muscles}<div class="cer-cta">${cta}</div>
-   <p class="wo-glass-note">Mintaedzés · a csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.</p></div>`;
+    : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-cer-back>Vissza az értékeléshez</button>`}</div>
+   <p class="wo-glass-note">Mintaedzés · a csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.</p>
+  </div>`;
 }
 
 /** Runs the closing ceremony once: the bar fills, the counters run with it, the stars ignite. */
 function runCeremony() {
-  const root = overlay.querySelector('.wo-summary'), stage = overlay.querySelector('[data-cer]');
+  const root = overlay.querySelector('.cer-screen'), stage = overlay.querySelector('[data-cer]');
   if (!root || !stage) return;
   const score = sessionScore(session);
   const fields = { sets: score.done.sets, reps: score.done.reps, volume: score.done.volume };
@@ -347,7 +355,7 @@ function runCeremony() {
     else {
       root.classList.add('is-told');
       react('celebrate');
-      overlay.querySelector('.cer-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
     }
   };
   requestAnimationFrame(frame);
@@ -362,18 +370,18 @@ function render() {
    <button data-session-leave aria-label="Vissza az Edzés Mai oldalára">‹</button>
    <span><small>FELSŐTEST A · 3. HÉT / 6</small><strong>${m.count} / ${m.planned} szett</strong></span>
    <span class="wo-clock" data-session-clock>0:00</span></header>`;
-  const body = view === 'summary'
+  const body = view === 'details'
+    ? detailsStep()
+    : view === 'summary'
     ? summary()
     : `<div class="wo-list">${session.order.map((id, i) => card(id, i, session.order.length)).join('')}
        <button class="wo-finish-link" data-session-summary ${m.count ? '' : 'disabled'}>Mára ennyi · összegzés →</button></div>`;
-  overlay.innerHTML = `${head}<div class="wo-scroll">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : glass.kind === 'menu' ? menuGlass(glass.id) : glass.kind === 'confirm' ? confirmGlass() : videoGlass(glass.id)) : ''}`;
+  overlay.innerHTML = `${head}<div class="wo-scroll ${view === 'list' ? '' : 'is-plain'}">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : glass.kind === 'menu' ? menuGlass(glass.id) : glass.kind === 'confirm' ? confirmGlass() : videoGlass(glass.id)) : ''}`;
   const scroller = overlay.querySelector('.wo-scroll');
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
   updateTimers();
-  if (view === 'summary') {
-    animateFuelDashboard(overlay);
-    requestAnimationFrame(() => { runCeremony(); overlay.querySelector('h1')?.focus(); });
-  }
+  if (view === 'summary') requestAnimationFrame(() => { runCeremony(); overlay.querySelector('h1')?.focus(); });
+  if (view === 'details') requestAnimationFrame(() => overlay.querySelector('.wo-sum-section strong')?.focus());
 }
 
 function updateTimers() {
@@ -437,13 +445,8 @@ overlay.addEventListener('click', event => {
     return closeSession();
   }
   if (el.hasAttribute('data-finish-really')) { glass = null; return closeSession(); }
-  if (el.hasAttribute('data-cer-details')) {
-    const box = overlay.querySelector('.cer-details'), open = box.hidden;
-    box.hidden = !open;
-    el.setAttribute('aria-expanded', String(open));
-    el.classList.toggle('is-open', open);
-    return;
-  }
+  if (el.hasAttribute('data-cer-next')) { view = 'details'; return render(); }
+  if (el.hasAttribute('data-cer-back')) { view = 'summary'; return render(); }
   if (el.hasAttribute('data-go-fuel')) { leave(); return callbacks.go('fuel', 0); }
   if (el.hasAttribute('data-session-leave')) return leave();
 });
