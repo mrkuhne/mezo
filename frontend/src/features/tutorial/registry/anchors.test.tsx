@@ -103,7 +103,9 @@ test.each([
   ['/fuel/log/uj', 'log-forrasok'],
   ['/fuel/stack', 'stack-hero'],
   ['/fuel/recipes', 'receptek-tabs'],
-  ['/fuel/kamra', 'kamra-hero'],
+  // S4 (mezo-hygp): a 'kamra-hero' horgony megszűnt a Titán lapon (a hős-szám a Konyha hub
+  // Kamra-poszterére költözött); a kalauz a típus-szűrőkre mutat.
+  ['/fuel/kamra', 'kamra-tabs'],
   ['/fuel/naplo', 'naplo-hero'],
 ])('%s — a(z) %s anchor jelen van', async (path, name) => {
   renderAt(path)

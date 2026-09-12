@@ -26,28 +26,53 @@ const renderView = () =>
         <Routes>
           <Route path="/fuel/kamra" element={<FuelKamraPage />} />
           <Route path="/fuel/kamra/:id" element={<LocationProbe />} />
+          <Route path="/fuel/konyha" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </QueryWrapper>,
   )
 
-test('renders the Mozaik subpage hero, stats and the type switcher', () => {
-  renderView()
-  // Kamra v2 (Mozaik re-face): the subpage hero reads "Kamra" (prototype fuel-body
-  // #page-kamra .nm), and the "Polc" list-section head sits above the grouped list.
+// Titán anatómia (mezo-hygp): a Mozaik-váz (PageHero nagy számmal + StatStrip + „Polc"
+// lista-fejléc) helyét a prototípus `kamraPage`-e vette át: al-fejléc + kereső + darabszámos
+// típus-szűrők + két-hasábos csempe-rács. A vissza-gomb a Konyhába visz (korábban '‹ Fuel').
+test('Titán váz: al-fejléc, kereső, darabszámos típus-szűrők, csempe-rács', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.mz-page')).toBeNull()
+  expect(container.querySelector('.mz-statstrip')).toBeNull()
+  expect(screen.queryByText('Polc')).toBeNull()
   expect(screen.getByText('Kamra')).toBeInTheDocument()
-  expect(screen.getByText('Polc')).toBeInTheDocument()
-  // Back chip reads "‹ Fuel" visibly; its accessible name stays the house "Vissza".
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Fuel')
-  // The type axis is a segmented switcher — now FIVE segments (audit gap #19: med gets
-  // its own Gyógyszer segment instead of folding silently into "Mind").
-  expect(screen.getByRole('button', { name: /Supp/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Gyógyszer/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Konyha')
+  expect(screen.getByLabelText('Keresés a kamrában')).toBeInTheDocument()
+  // The type axis is a segmented switcher — FIVE segments (audit gap #19: med gets its own
+  // Gyógyszer segment instead of folding silently into "Mind").
+  expect(screen.getByRole('button', { name: /^Supp/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Gyógyszer/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toBeInTheDocument()
+  expect(container.querySelectorAll('.fkx-tile-grid .fkx-item').length).toBeGreaterThan(0)
 })
+
+// B14 owner-DROP: a „Legutóbbi importok" feed leválik — az eredet a tétel részletlapján él.
+test('a kamrában nincs import-előzmény lista', () => {
+  renderView()
+  expect(screen.queryByText(/Legutóbbi importok/i)).toBeNull()
+  expect(screen.queryByText(/Legutóbb érkezett/i)).toBeNull()
+})
+
+// B16 owner-DROP: a készlet/lejárat felület a zászló mögött marad, és ez a lap nem is említi.
+test('a kamra nem hivatkozik készletre vagy lejáratra', () => {
+  const { container } = renderView()
+  expect(container.textContent).not.toMatch(/készlet|lejárat/i)
+})
+
+// B13: az okosabb csere ott marad, ahol volt.
+test('az okosabb csere szekció megmarad', () => {
+  renderView()
+  expect(screen.getByRole('heading', { name: 'Okosabb csere' })).toBeInTheDocument()
+})
+
 test('Gyógyszer segment isolates medication items (honestly empty — mock tracks no medication)', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: /Gyógyszer/ }))
+  await userEvent.click(screen.getByRole('button', { name: /^Gyógyszer/ }))
   // The mock seed has no `type: 'medication'` stash row today (Medication is a separate
   // entity from the pantry, per fuel-audit gap #19/F6.4) — the segment must filter out
   // every food item and land on the honest no-hit state, never fabricate a row.
@@ -69,12 +94,12 @@ test('type switcher filters the list to one type', async () => {
   renderView()
   // A food item is visible in "Mind"; switching to Stim hides it.
   expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /Stim/ }))
+  await userEvent.click(screen.getByRole('button', { name: /^Stim/ }))
   expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
 })
 test('query filters to empty-state', async () => {
   renderView()
-  await userEvent.type(screen.getByPlaceholderText(/Keress tétel/), 'zzzznope')
+  await userEvent.type(screen.getByLabelText('Keresés a kamrában'), 'zzzznope')
   expect(screen.getByText('Nincs egyező tétel.')).toBeInTheDocument()
 })
 test('clicking a card navigates to the item detail route', async () => {
@@ -131,9 +156,9 @@ describe('FuelKamraPage (mock mode)', () => {
   })
 })
 
-// Silent-static regression (fidelity audit, mezo-d20.11): the page carried three `.rise`
+// Silent-static regression (fidelity audit, mezo-d20.11): the page once carried `.rise`
 // elements with NO EntranceGroup around them — they rendered correctly, never animated, and
-// nothing failed. Both halves are pinned here: the wrapper exists AND no `.rise` sits outside it.
+// nothing failed. Both halves stay pinned: the wrapper exists AND no `.rise` sits outside it.
 describe('FuelKamraPage entrance choreography', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
@@ -145,12 +170,5 @@ describe('FuelKamraPage entrance choreography', () => {
     const all = [...container.querySelectorAll('.rise')]
     expect(all.length).toBeGreaterThan(2)
     expect(all.every(el => play?.contains(el))).toBe(true)
-  })
-
-  it('staggers the stat strip, the type switcher, the search row and the shelf head', () => {
-    const { container } = renderView()
-    const delays = [...container.querySelectorAll('.mz-play .rise')]
-      .map(el => (el as HTMLElement).style.getPropertyValue('--d'))
-    expect(delays.slice(0, 4)).toEqual(['20ms', '40ms', '60ms', '90ms'])
   })
 })

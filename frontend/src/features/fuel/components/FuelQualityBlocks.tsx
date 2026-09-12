@@ -203,24 +203,42 @@ export function qualityTiles(lines: FuelQualityLine[]): {
   ]
 }
 
+/** Egy minőség-lapka: EGY nagy szám (vagy „—") a saját egységével, clay szimbólummal. */
+export interface FuelNutriTile {
+  label: string
+  /** Már formázott érték, vagy `null` — a `null` „—"-t ad, sosem kitalált nullát. */
+  value: string | null
+  unit: string
+  icon: ClayIconName
+  color: string
+}
+
+/** A minőség-lapka rács — a prototípus `nutri-tiles`-a. Ezt a primitívet a recept/étkezés
+ *  Minőség szekciója ÉS a kamra-tétel per-100 g lapkái is használják (egy markup, két hívó). */
+export function FuelNutriTiles({ tiles }: { tiles: FuelNutriTile[] }) {
+  return (
+    <div className="fmx-nutri-tiles">
+      {tiles.map(t => (
+        <div key={t.label} className={`fmx-nutri-tile${t.value == null ? ' is-unknown' : ''}`}
+          style={{ '--nt-color': t.color } as React.CSSProperties}>
+          <span className="fmx-nt-top">
+            <span className="fmx-nt-art" aria-hidden="true"><ClayIcon name={t.icon} size={34} /></span>
+            <strong>{t.value == null ? '—' : t.value}{t.value != null && <small>{t.unit}</small>}</strong>
+          </span>
+          <span className="fmx-nt-label">{t.label}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** A Minőség szekció. A fejléc SZÁNDÉKOSAN nem visel darabszámot/feliratot (owner). */
 export function FuelQualitySection({ lines }: { lines: FuelQualityLine[] }) {
   const tiles = qualityTiles(lines)
   return (
     <section className="fmx-detail-sec">
       <div className="fmx-section"><h2>Minőség</h2></div>
-      <div className="fmx-nutri-tiles">
-        {tiles.map(t => (
-          <div key={t.label} className={`fmx-nutri-tile${t.value == null ? ' is-unknown' : ''}`}
-            style={{ '--nt-color': t.color } as React.CSSProperties}>
-            <span className="fmx-nt-top">
-              <span className="fmx-nt-art" aria-hidden="true"><ClayIcon name={t.icon} size={34} /></span>
-              <strong>{t.value == null ? '—' : hu1(t.value)}{t.value != null && <small>{t.unit}</small>}</strong>
-            </span>
-            <span className="fmx-nt-label">{t.label}</span>
-          </div>
-        ))}
-      </div>
+      <FuelNutriTiles tiles={tiles.map(t => ({ ...t, value: t.value == null ? null : hu1(t.value) }))} />
     </section>
   )
 }

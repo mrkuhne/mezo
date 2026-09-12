@@ -25,6 +25,7 @@ function renderView() {
           <Route path="/fuel/recipes" element={<FuelRecipesPage />} />
           <Route path="/fuel/recipes/new" element={<LocationProbe />} />
           <Route path="/fuel/recipes/:id" element={<LocationProbe />} />
+          <Route path="/fuel/konyha" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </QueryWrapper>,
@@ -34,8 +35,25 @@ function renderView() {
 test('renders the title and the segmented typebar', () => {
   renderView()
   expect(screen.getByText('Receptek')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Reggeli/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Mind/ })).toBeInTheDocument()
+  // A szűrő-gombot a kezdő-horgony különíti el a csempéktől: egy csempe meta-sora is
+  // tartalmazza a blokk nevét.
+  expect(screen.getByRole('button', { name: /^Reggeli/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Mind/ })).toBeInTheDocument()
+})
+
+// B10 owner-döntés (mezo-hygp): a Műhely-gomb a Konyha hubra költözött — itt már nincs.
+test('a recept-listán nincs Műhely gomb', () => {
+  renderView()
+  expect(screen.queryByRole('button', { name: /Műhely/ })).toBeNull()
+})
+
+// S4: a lista a Konyha egyik ajtaja mögött él, ezért a vissza-gomb a Konyhába visz
+// (korábban '‹ Fuel' volt — a Receptek akkor közvetlenül a Fuel-gyökérről nyílt).
+test('a vissza-gomb a Konyhába visz', async () => {
+  renderView()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Konyha')
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('location').textContent).toBe('/fuel/konyha')
 })
 
 test('the fake "Avg fit" stat is gone', () => {
@@ -44,50 +62,44 @@ test('the fake "Avg fit" stat is gone', () => {
   expect(screen.queryByText(/Avg fit/)).not.toBeInTheDocument()
 })
 
-// Mozaik face (fidelity audit, mezo-d20.11): the page wore the pre-Mozaik `.pghead-np`
-// header; the prototype's #page-recept is a coral MozaikPage with a ‹ Fuel back chip, a
-// `＋ Új` head action and the icon + count hero.
-test('Mozaik scaffold: coral page, ‹ Fuel back chip, i-recept hero with the catalog count', () => {
+// Titán anatómia (mezo-hygp): a Mozaik-váz (coral MozaikPage + PageHero nagy számmal +
+// `.fh-segtabs` + `.fh-lsthead` + `.mz-rcpcard`) helyét a prototípus `receptekPage`-e vette át:
+// al-fejléc + darabszámos blokk-szűrők + két-hasábos csempe-rács.
+test('Titán váz: al-fejléc, darabszámos szűrők, csempe-rács', () => {
   const { container } = renderView()
-  expect(container.querySelector('.pghead-np')).toBeNull()
-  expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
-  expect(screen.getByText('‹ Fuel')).toBeInTheDocument()
-  expect(screen.getByText('Receptek')).toBeInTheDocument()
-  expect(container.querySelector('.mz-bignum')).not.toBeNull()
-  expect(screen.getByRole('button', { name: /Új/ })).toHaveClass('pgact')
+  expect(container.querySelector('.mz-page')).toBeNull()
+  expect(container.querySelector('.fh-segtabs')).toBeNull()
+  expect(container.querySelector('.fh-lsthead')).toBeNull()
+  expect(container.querySelector('.mz-rcpcard')).toBeNull()
+  expect(container.querySelector('.fmx-subhead')).not.toBeNull()
+  expect(container.querySelectorAll('.fkx-tile-grid .fkx-recipe').length).toBeGreaterThan(0)
 })
 
-// Entrance choreography (audit group A: the page had play:0 / rise:0).
-test('the filter, the list head and every card rise inside one EntranceGroup', () => {
+// Entrance choreography: a rács minden csempéje EGY EntranceGroupon belül kel fel.
+test('every tile rises inside one EntranceGroup', () => {
   const { container } = renderView()
   const play = container.querySelector('.mz-play')
   expect(play).not.toBeNull()
-  expect(play!.querySelector('.fh-segtabs.rise')).not.toBeNull()
-  expect(play!.querySelector('.fh-lsthead.rise')).not.toBeNull()
-  const cards = [...play!.querySelectorAll('.mz-rcpcard')]
-  expect(cards.length).toBeGreaterThan(0)
-  expect(cards.every(c => c.classList.contains('rise'))).toBe(true)
-  // the prototype's 30 + i*30 ms stagger
-  expect((cards[0] as HTMLElement).style.getPropertyValue('--d')).toBe('30ms')
-  expect((cards[1] as HTMLElement).style.getPropertyValue('--d')).toBe('60ms')
+  const tiles = [...container.querySelectorAll('.fkx-recipe')]
+  expect(tiles.length).toBeGreaterThan(0)
+  expect(tiles.every(t => t.classList.contains('rise') && play!.contains(t))).toBe(true)
 })
 
-// The list head the prototype's `.lsthead` carries — a live hit count next to "Katalógus".
-test('the Katalógus list head counts the hits against the catalog', async () => {
+// A darabszám a szűrőkön él (a prototípus `receptekPage`-e), nem egy külön „Katalógus" soron.
+test('minden szűrő a saját darabszámát viszi', async () => {
   renderView()
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const total = result.current.recipes.length
-  expect(screen.getByText(`${total} / ${total}`)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /^Snack/ }))
   const snacks = result.current.recipes.filter(r => r.category === 'snack').length
-  expect(screen.getByText(`${snacks} / ${total}`)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Mind/ })).toHaveTextContent(String(total))
+  expect(screen.getByRole('button', { name: /^Snack/ })).toHaveTextContent(String(snacks))
 })
 
 test('filtering to a category with no recipes shows the empty state', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: /Vacsi/ }))
+  await userEvent.click(screen.getByRole('button', { name: /^Vacsi/ }))
   // dinner may or may not have recipes in the seed; assert the typebar stays interactive
-  expect(screen.getByRole('button', { name: /Vacsi/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Vacsi/ })).toBeInTheDocument()
 })
 
 test('Új navigates to the editor route', async () => {
@@ -98,7 +110,7 @@ test('Új navigates to the editor route', async () => {
 
 test('tapping a card navigates to the detail route', async () => {
   renderView()
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('mz-rcpcard'))
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('fkx-recipe'))
   expect(cards.length).toBeGreaterThan(0)
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
@@ -119,7 +131,7 @@ test('the typebar has a Snack segment with a live count matching the snack recip
 // implicit default and never earns a tag.
 test('the library card tags a non-standard role, and only that card (mezo-uavr)', () => {
   renderView()
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('mz-rcpcard'))
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('fkx-recipe'))
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const nonStandard = result.current.recipes.filter(r => r.role !== 'standard')
   // the seed must actually mix roles, otherwise this asserts nothing

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -42,23 +42,52 @@ test('back chip reads "‹ Kamra" (Kamra v2 Mozaik re-face, mezo-d20.4.5)', () =
   expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Kamra')
 })
 
-test('renders a food item with macros + extended nutrients', () => {
+// Titán anatómia (mezo-hygp): a Mozaik `MCells`/`km-ncells` celláit a prototípus
+// `pantryDetailPage`-e váltotta — osztott hős (kcal / 100 g) + makró-gyűrűk + per-100 g
+// Minőség lapkák. A lapkák NAGY kezdőbetűs feliratot viselnek, a bázissal együtt.
+test('renders a food item with the hero kcal, macro rings and the per-100 g quality tiles', () => {
   // ing-csirkemell · Csirkemell · friss — macros 110/23/0/1.5, protein category.
   renderDetail('ing-csirkemell', newQc())
   expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
-  // Makró cells (prototype fuel-body kihead: value + unit fused in one node, e.g. "23 g").
-  expect(screen.getByText('110')).toBeInTheDocument() // kcal — the one unitless cell
-  expect(screen.getByText('23 g')).toBeInTheDocument() // protein
-  // Tápanyag section labels present, lowercase per the prototype's ncell() copy.
-  expect(screen.getByText('rost')).toBeInTheDocument()
-  expect(screen.getByText('cukor')).toBeInTheDocument()
-  expect(screen.getByText('tel. zsír')).toBeInTheDocument()
+  expect(screen.getByText('110')).toBeInTheDocument()            // kcal a hősben
+  expect(screen.getByText(/kcal \/ 100 g/)).toBeInTheDocument()
+  // a makró-gyűrűk a tétel saját összetételét mondják
+  expect(screen.getByRole('heading', { name: 'Makrók' })).toBeInTheDocument()
+  expect(screen.getByText('23 g')).toBeInTheDocument()           // fehérje
+  // a per-100 g minőség-lapkák
+  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
+  expect(within(quality).getByText(/^Cukor · 100 g$/)).toBeInTheDocument()
+  expect(within(quality).getByText(/^Só · 100 g$/)).toBeInTheDocument()
+  expect(within(quality).getByText(/^Telített zsír · 100 g$/)).toBeInTheDocument()
 })
+
+// B14 ellenpárja (mezo-hygp): az eltávolított import-feed helyett a per-tétel EREDET a
+// részletlap forrás-kártyáján él — a felvétel MÓDJA és az IDŐPONTJA is.
+test('a kamraelem részletlapja mutatja a forrást és az időt', () => {
+  renderDetail('ing-csirkemell', newQc())
+  const src = screen.getByRole('region', { name: /Forrás/i })
+  expect(within(src).getByText(/fotó|link|katalógus|kézi/i)).toBeInTheDocument()
+  // a seed `scrapedAt`-je a felvétel ideje — kitalált dátumot nem gyártunk
+  expect(within(src).getByText(new RegExp(ingredients[0].scrapedAt!.split(' ·')[0]))).toBeInTheDocument()
+})
+
+test('időpont nélküli tételnél a forrás-kártya megmondja, hogy nincs rögzítve', () => {
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'no-when', scrapedAt: undefined }],
+    stash: [], imports: [], suggestions: [],
+  })
+  renderDetail('no-when', qc)
+  const src = screen.getByRole('region', { name: /Forrás/i })
+  expect(within(src).getByText(/az időpont nincs rögzítve/)).toBeInTheDocument()
+})
+
 test('a nutrient the seed never recorded renders the honest dash, not a fabricated 0', () => {
   // ing-kreatin carries macros (all zero, real values) but no fiberG/sugarG/saltG/
-  // saturatedFatG at all — every Tápanyag cell must show "—".
+  // saturatedFatG at all — every per-100 g Minőség cell with a missing fact must show "—".
   renderDetail('ing-kreatin', newQc())
-  expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
+  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
+  expect(within(quality).getAllByText('—').length).toBeGreaterThanOrEqual(3)
 })
 
 test('a missing id shows the not-found fallback', () => {

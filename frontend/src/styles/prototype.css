@@ -13380,6 +13380,93 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-source-copy strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
 .fkx-source-copy small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--sub); }
 
+/* Könyvtárak (Receptek · Kamra): szűrő-sor, kereső, két-hasábos csempe-rács. */
+.fkx-library { display: grid; gap: 0; }
+.fkx-head-act { display: inline-flex; align-items: center; min-height: 36px; padding: 7px 12px;
+  border-radius: 14px; font-size: 11.5px; color: var(--sub);
+  border: 1px solid var(--divider); background: var(--surface-1); }
+.fkx-head-acts { display: flex; gap: 7px; margin: 0 0 10px; }
+.fmx-subhead .fkx-head-act { margin-left: auto; }
+.fkx-search { display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+  padding: 4px 12px 4px 6px; border-radius: 16px; border: 1px solid var(--divider);
+  background: var(--surface-1); }
+.fkx-search input { flex: 1; min-width: 0; padding: 10px 0; border: 0; background: transparent;
+  color: var(--ink); font-size: 13px; outline: none; }
+.fkx-search > button { width: 32px; height: 32px; border-radius: 50%; border: 0;
+  background: transparent; color: var(--sub); font-size: 16px; }
+.fkx-filters { display: flex; gap: 6px; margin: 0 0 12px; padding-bottom: 2px;
+  overflow-x: auto; scrollbar-width: none; }
+.fkx-filters::-webkit-scrollbar { display: none; }
+.fkx-filters button { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+  min-height: 36px; padding: 6px 11px 6px 8px; border-radius: 16px; font-size: 11.5px;
+  color: var(--sub); border: 1px solid color-mix(in srgb, var(--fkx, var(--lav)) 22%, transparent);
+  background: var(--surface-1); }
+.fkx-filters button b { padding: 1px 6px; border-radius: 9px; font-size: 9.5px; font-weight: 600;
+  background: var(--surface-recess); }
+.fkx-filters button[aria-pressed="true"] { color: var(--ink);
+  border-color: color-mix(in srgb, var(--fkx) 55%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--fkx) 22%, transparent),
+    color-mix(in srgb, var(--fkx) 7%, transparent)); }
+.fkx-filter-more { margin-left: auto; }
+.fkx-catpills { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.fkx-catpills button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+  padding: 4px 10px; border-radius: 14px; font-size: 10px; color: var(--sub);
+  border: 1px solid var(--divider); background: var(--surface-1); }
+.fkx-catpills i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.fkx-nohit { margin: 12px 0; text-align: center; font-size: 12.5px; color: var(--sub); }
+
+.fkx-tile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fkx-recipe, .fkx-item { display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  min-width: 0; padding: 12px 12px 11px; border-radius: 18px; text-align: left; color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--fkx) 24%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--fkx) 14%, transparent),
+    color-mix(in srgb, var(--fkx) 3%, transparent) 62%, var(--surface-1));
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08); }
+.fkx-recipe-top, .fkx-item-top { display: flex; align-items: flex-start;
+  justify-content: space-between; width: 100%; }
+.fkx-recipe strong, .fkx-item strong { font-size: 14px; font-weight: 500; line-height: 1.25;
+  min-height: 35px; }
+.fkx-recipe-kcal, .fkx-item-fact { font-size: 10px; color: var(--sub); }
+.fkx-recipe-kcal b, .fkx-item-fact b { font-size: 17px; font-weight: 600;
+  color: color-mix(in srgb, var(--fkx) 62%, var(--ink)); }
+.fkx-macro-bar { display: flex; width: 100%; height: 6px; border-radius: 4px; overflow: hidden;
+  background: var(--surface-recess); }
+.fkx-macro-bar i { width: var(--w); background: var(--c); }
+.fkx-recipe-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  font-size: 10px; color: var(--sub); }
+.fkx-recipe-meta em { font-style: normal; font-weight: 600; color: var(--coral); }
+.fkx-item-top em { display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 50%; border: 1px solid var(--divider); background: var(--surface-1); }
+.fkx-protein { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.fkx-protein i { position: relative; display: block; height: 5px; border-radius: 3px;
+  background: var(--surface-recess); }
+.fkx-protein i b { position: absolute; inset: 0; width: var(--w); border-radius: 3px;
+  background: var(--macro-protein); }
+.fkx-protein small { font-size: 9px; color: var(--sub); }
+.fkx-item-amount { font-size: 10px; color: var(--sub); }
+.fkx-swaps { display: grid; gap: 8px; }
+
+/* Őszinte üresség: hívás cselekvésre, nem üres képernyő. */
+.fkx-empty { display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 8px; padding: 26px 18px; border-radius: 20px; border: 1px dashed var(--divider);
+  color: var(--sub); }
+.fkx-empty strong { font-size: 18px; font-weight: 600; color: var(--ink); }
+.fkx-empty p { max-width: 300px; margin: 0; font-size: 12.5px; line-height: 1.6; }
+.fkx-empty button { min-height: 44px; padding: 9px 15px; border-radius: 14px; font-size: 12.5px;
+  color: var(--ink); border: 1px solid color-mix(in srgb, var(--lav) 45%, transparent);
+  background: color-mix(in srgb, var(--lav) 14%, transparent); }
+
+/* Kamra-tétel részletlap: forrás-chip, adag-szám, a receptek kereszt-hivatkozása. */
+.fkx-source-chip { display: inline-flex; align-items: center; gap: 5px; margin-left: auto;
+  flex: 0 0 auto; padding: 5px 10px 5px 5px; border-radius: 16px; font-size: 10px;
+  color: var(--sub); border: 1px solid var(--divider); background: var(--surface-1); }
+.fmx-detail-kcal .fkx-dose { font-size: 32px; letter-spacing: -1px; }
+.fkx-used { display: flex; flex-wrap: wrap; gap: 7px; }
+.fkx-used button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
+  padding: 6px 12px 6px 6px; border-radius: 16px; font-size: 12px; color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--fkx) 34%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--fkx) 16%, transparent), var(--surface-1)); }
+
 /* Mezo jegyzete — a lusta AI-olvasat kártyája. */
 .fkx-note { margin: 14px 0 0; padding: 13px 14px; border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--lav) 26%, transparent);

@@ -246,9 +246,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         voice: 'A polcod: ételek, supplementek, stimulánsok egy leltárban. Innen logolsz grammra, és innen épül a stack.',
       },
       {
-        kind: 'hogyan', spot: 'i-polc', orb: 's-orb-figyel', anchor: 'kamra-hero',
-        title: 'Fent a leltár mérete.',
-        voice: 'A hős a tételek számát viseli, alatta típusra váltasz és keresel. A **⚙ Szűrők** a kategóriákat szűkíti, a kártya pedig a tétel saját oldalára visz.',
+        // S4 (mezo-hygp): a hős-szám a Konyha hub Kamra-poszterére költözött, ezért ez a
+        // kártya a típus-szűrőkre mutat — arra, ami ezen a lapon valóban ott van.
+        kind: 'hogyan', spot: 'i-polc', orb: 's-orb-figyel', anchor: 'kamra-tabs',
+        title: 'Típusra váltasz, és keresel.',
+        voice: 'A szűrők mindegyike a saját darabszámát viseli, fölöttük a kereső. A **Szűrők** a kategóriákat szűkíti, a csempe pedig a tétel saját oldalára visz.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
