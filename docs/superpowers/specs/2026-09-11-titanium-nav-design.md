@@ -37,9 +37,15 @@ hidden on the chrome-free routes (`/ritual`, `/train/session`, `/me/sleep/night`
 | --- | --- | --- | --- | --- |
 | **Nap** | Mai · `/nap` · `i-nap` | Beszélgetés · `/nap/uzenetek` · `i-mezo` | Rutin · `/nap/rutin` · `i-rend` | Napzárás · `/ritual` · `i-hold` |
 | **Edzés** | Mai · `/train/mai` · `i-edzes` | Terhelés · `/train/week` · `i-meso` | Napló · `/train/gym` · `i-naplo` | Tervek · `/train/mesocycles` · `i-retegek` |
-| **Fuel** | Mai · `/fuel` · `i-fuel` | Receptek · `/fuel/recipes` · `i-recept` | Kamra · `/fuel/kamra` · `i-kamra` | Kiegészítők · `/fuel/stack` · `i-stack` |
+| **Fuel** | Mai · `/fuel` · `i-tanyer` | Kiegészítők · `/fuel/stack` · `i-kiegeszito` | Trendek · `/fuel/trendek` · `i-trend` | Konyha · `/fuel/konyha` · `i-fazek` |
 | **Mezo** | Felfedezések · `/mezo` · `i-minta` | Előrejelzések · `/mezo/predictions` · `i-hajnal` | Karakter · `/mezo/karakter` · `i-kristaly` | Tudástár · `/mezo/knowledge` · `i-tudas` |
 | **Én** | Áttekintés · `/me` · `i-emberek` | Súly · `/me/weight` · `i-suly` | Alvás · `/me/sleep` · `i-alvas` | Napló · `/me/naplo` · `i-naplo` |
+
+> **Amendment 2026-09-12 (mezo-o6uv):** the Fuel row above supersedes the original
+> `Mai · Receptek · Kamra · Kiegészítők` set. Owner-approved with the Fuel Titanium prototype
+> (`docs/superpowers/specs/2026-09-11-fuel-titanium-design.md` §Prototype approval): Receptek and
+> Kamra merge into **Konyha**, the freed slot becomes **Trendek**, and the order puts the daily
+> jobs first. Route paths of the surviving destinations are unchanged.
 
 Notes / decisions:
 - **Karakter moves to Mezo** (owner decision, me-nap-deep: "character remains in Mezo"). Rename

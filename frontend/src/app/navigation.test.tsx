@@ -15,7 +15,7 @@ beforeEach(() => seedAllKalauzSeen())
 // tests. Every test here renders the nav (TabBar's effect records the visited tab), so
 // without a per-test reset the test order decides what a domain's "first visit" resolves
 // to. Under CI's order a prior test left it dirty and the switcher jumped to a remembered
-// tab instead of tab 1 (the '/nap' vs '/fuel/recipes' flake). Reset before EVERY test so
+// tab instead of tab 1 (the '/nap' vs '/fuel/stack' flake). Reset before EVERY test so
 // each one starts from clean memory and is order-independent.
 beforeEach(() => resetNavMemory())
 
@@ -118,17 +118,18 @@ test('/me/karakter/konzilium redirects to /mezo/karakter/konzilium preserving th
 // Last-tab memory (mezo-jkh4): the switcher returns each domain to its last-visited tab.
 test('the domain switcher returns to the last-visited tab (memory)', async () => {
   // navMemory is cleared in beforeEach, so this starts from a clean, order-independent store.
-  const router = createMemoryRouter(routes, { initialEntries: ['/fuel/recipes'] })
+  // mezo-o6uv: the remembered tab is Kiegészítők (`/fuel/stack`) — Receptek left the Fuel row.
+  const router = createMemoryRouter(routes, { initialEntries: ['/fuel/stack'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  // Visit a Fuel tab (Receptek) so it is remembered, then leave for another domain.
+  // Visit a Fuel tab (Kiegészítők) so it is remembered, then leave for another domain.
   await screen.findByRole('button', { name: 'Területváltó: Fuel' })
   await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
   await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Nap/ }))
   expect(router.state.location.pathname).toBe('/nap')
-  // Re-open the switcher from Nap and pick Fuel — it lands back on Receptek, not Fuel tab 1.
+  // Re-open the switcher from Nap and pick Fuel — it lands back on Kiegészítők, not Fuel tab 1.
   await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
   await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Fuel/ }))
-  expect(router.state.location.pathname).toBe('/fuel/recipes')
+  expect(router.state.location.pathname).toBe('/fuel/stack')
 })
 
 test('/mezo/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {

@@ -54,10 +54,10 @@ export const DOMAINS: NavDomain[] = [
     id: 'fuel',
     name: 'Fuel',
     tabs: [
-      { label: 'Mai', route: '/fuel', icon: 'i-fuel' },
-      { label: 'Receptek', route: '/fuel/recipes', icon: 'i-recept' },
-      { label: 'Kamra', route: '/fuel/kamra', icon: 'i-kamra' },
-      { label: 'Kiegészítők', route: '/fuel/stack', icon: 'i-stack' },
+      { label: 'Mai', route: '/fuel', icon: 'i-tanyer' },
+      { label: 'Kiegészítők', route: '/fuel/stack', icon: 'i-kiegeszito' },
+      { label: 'Trendek', route: '/fuel/trendek', icon: 'i-trend' },
+      { label: 'Konyha', route: '/fuel/konyha', icon: 'i-fazek' },
     ],
   },
   {
