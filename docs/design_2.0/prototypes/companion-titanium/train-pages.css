@@ -29,7 +29,7 @@
 }
 .tr-block.is-live { border-color: color-mix(in srgb, var(--domain-color) 45%, transparent); }
 .tr-block.is-done { background: linear-gradient(150deg, color-mix(in srgb, var(--domain-color) 14%, transparent), #ffffff05); }
-.tr-block.is-ahead { opacity: .72; }
+.tr-block.is-ahead { opacity: .88; }
 .tr-block-art { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; }
 .tr-block-art .icon { width: 38px; height: 38px; }
 .tr-block-copy { display: grid; gap: 1px; min-width: 0; }
@@ -91,7 +91,7 @@
 .tr-day-art { position: absolute; right: -6px; top: 40px; width: 108px; height: 108px; opacity: .9; }
 .tr-day-art .icon { width: 108px; height: 108px; }
 .tr-day-status {
-  position: absolute; top: 16px; right: 16px; font-size: 9px; letter-spacing: .16em;
+  font-size: 9px; letter-spacing: .16em; white-space: nowrap;
   padding: 4px 9px; border-radius: 999px; color: #0f1409;
   background: color-mix(in srgb, var(--domain-color) 85%, #fff);
 }
@@ -133,7 +133,7 @@
 .tr-mus-word { font-size: 11px; color: #ffffff70; justify-self: end; min-width: 74px; text-align: right; }
 
 /* — quick start tiles — */
-.tr-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 16px; }
+
 .tr-quick-tile {
   position: relative; display: grid; justify-items: start; gap: 2px; padding: 14px; text-align: left;
   border: 1px solid #ffffff14; border-radius: 20px; cursor: pointer; color: inherit;
@@ -148,3 +148,47 @@
   background: color-mix(in srgb, var(--domain-color) 82%, #fff);
 }
 .tr-quick-tile small { overflow-wrap: anywhere; }
+
+
+/* — the poster carries the programme AND the move that starts it — */
+.tr-day { padding: 116px 20px 18px; }
+.tr-day-scene { position: absolute; left: -8%; right: -8%; top: -46px; pointer-events: none; }
+.tr-day-scene svg { width: 100%; height: auto; display: block; max-width: none; }
+.tr-day::after {
+  content: ''; position: absolute; inset: 0 0 auto; height: 160px; pointer-events: none;
+  background: linear-gradient(#0b0d1200 42%, #0b0d12c4 78%, #0b0d12 100%);
+}
+.tr-day-top { display: flex; align-items: center; gap: 10px; }
+.tr-day-top .overline { color: #ffffff86; }
+.tr-day > * { position: relative; z-index: 1; }
+.tr-day h2 { max-width: 82%; margin-top: 10px; }
+.tr-day p { max-width: 82%; }
+
+.tr-arc { display: flex; align-items: center; gap: 6px; margin: 16px 0 14px; }
+.tr-arc i { width: 16px; height: 4px; border-radius: 999px; background: #ffffff1c; }
+.tr-arc i.past { background: color-mix(in srgb, var(--domain-color) 45%, transparent); }
+.tr-arc i.now { background: var(--domain-color); box-shadow: 0 0 10px color-mix(in srgb, var(--domain-color) 55%, transparent); }
+.tr-arc span { margin-left: 6px; font-size: 9px; letter-spacing: .16em; color: #ffffff70; }
+
+.tr-constel { display: flex; gap: 14px; margin-bottom: 18px; }
+.tr-constel span { display: grid; justify-items: center; gap: 3px; }
+.tr-constel .icon { width: 30px; height: 30px; }
+.tr-constel small { font-size: 10px; letter-spacing: .05em; color: color-mix(in srgb, var(--mus-color) 70%, #fff); }
+
+.tr-day .tr-start { width: 100%; margin: 0 0 12px; }
+.tr-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tr-alt > span { grid-column: 1 / -1; }
+.tr-alt > span { font-size: 11px; color: #ffffff5e; }
+.tr-alt button {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 10px; cursor: pointer;
+  font-size: 12px; color: #ffffffc4; border: 1px solid #ffffff1c; border-radius: 999px; background: #ffffff08;
+}
+.tr-alt button .icon { width: 20px; height: 20px; }
+
+/* — one card, two readouts — */
+.tr-energy {
+  display: grid; gap: 10px; width: 100%; margin: 14px 0 4px; padding: 0; text-align: left;
+  border: 0; background: none; color: inherit; cursor: pointer;
+}
+.tr-card-split { margin: 16px 0 2px; padding-top: 14px; border-top: 1px solid #ffffff12; }
+.tr-card-split .overline { color: #ffffff6b; letter-spacing: .16em; }

@@ -12,7 +12,7 @@ import { dayFrame } from './life-ui.js';
 const $=s=>document.querySelector(s);
 const domains={
  nap:{name:'Nap',color:'#d9c395',art:'sun',tabs:['Mai','Beszélgetés','Rutin','Napzárás'],icons:['sun','chat','ring','moon'],greeting:'Jó itt folytatni, Dani.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'},
- train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terv','Terhelés','Gyakorlatok'],icons:['dumbbell','stack','bolt','book'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
+ train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terv','Terhelés','Gyakorlatok'],icons:['dumbbell','stack','ring','book'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
  fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Konyha','Trendek','Kiegészítők'],icons:['bowl','book','ring','stack'],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
  mezo:{name:'Mezo',color:'#bca6f1',art:'gem',tabs:['Felfedezések','Előrejelzések','Karakter','Tudástár'],icons:['gem','sun','person','stack'],greeting:'Összeérnek a dolgok.',copy:'Van egy új észrevételem az estéidről. Megnézzük együtt?'},
  me:{name:'Én',color:'#d7a7bc',art:'person',tabs:['Áttekintés','Súly','Alvás','Napló'],icons:['person','ring','moon','book'],greeting:'A te ritmusod.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'},
