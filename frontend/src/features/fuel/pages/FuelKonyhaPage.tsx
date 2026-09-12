@@ -54,7 +54,9 @@ export function FuelKonyhaPage() {
     <MozaikPage tone="gold" className="fkx-page">
       <EntranceGroup>
         <PageBody className="fkx-body">
-          <div className="fkx-captures">
+          {/* A18/E11 (mezo-qt5q): a Kalauz horgonya — a két gyors-felvétel feltétel nélkül
+              renderel, tehát a „Mutasd meg a képernyőn" itt sosem degradál némán. */}
+          <div className="fkx-captures" data-kalauz-anchor="konyha-felvetel">
             <button type="button" className="fkx-capture" style={{ '--fkx': 'var(--lav)' } as React.CSSProperties}
               onClick={() => navigate('/fuel/recipes/new')}>
               <span className="fkx-capture-art" aria-hidden="true"><ClayIcon name="i-recept" size={54} /></span>

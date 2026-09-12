@@ -345,7 +345,9 @@ export function FuelTrendekPage() {
                 <small>EBBŐL ÁLL A HETI KÉP</small>
               </span>
             </div>
-            <div className="ftx-bars">
+            {/* A18/E11 (mezo-qt5q): a Kalauz „Mutasd meg a képernyőn" gombja erre a sávra
+                mutat — a heti kép feltétel nélkül renderel, tehát a horgony sosem tűnik el. */}
+            <div className="ftx-bars" data-kalauz-anchor="trendek-heti">
               {vm.days.map(day => (
                 <WeekDayBar key={day.date} day={day} max={max} onOpen={() => setOpenDate(day.date)} />
               ))}

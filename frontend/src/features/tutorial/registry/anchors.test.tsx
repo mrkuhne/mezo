@@ -7,6 +7,7 @@ import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import { FUEL_KALAUZ } from '@/features/tutorial/registry/fuel'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -93,21 +94,36 @@ test('/train/session — a prep-fázisban van mini ? gomb', async () => {
 })
 
 // ── S3b (mezo-gb1s.6): a Fuel T2 aloldalak horgonyai ─────────────────────────
-// A `/fuel/plan` és a `/fuel/gyogyszer` szándékosan horgony nélkül él: a Terv beszélő
-// felületei (heti jegyzet, gyógyszer-csík, supplement-térkép) adat-feltételesek, a
-// Gyógyszer oldalnak pedig KÉT teljesen külön arca van (üres vs. követett ciklus) —
-// egyikre sem lehet őszintén rámutatni. A `log-forrasok` a MealComposeren ül, tehát a
-// `/fuel/log/uj` teljes oldalán és a LogFlow-overlayben ugyanaz az elem.
+// A `/fuel/gyogyszer` szándékosan horgony nélkül él: KÉT teljesen külön arca van (üres vs.
+// követett ciklus) — egyikre sem lehet őszintén rámutatni. A `log-forrasok` a négy út
+// fülsávján ül, tehát a `/fuel/log/uj` teljes oldalán és a LogFlow-overlayben ugyanaz az elem.
+//
+// S5 (mezo-qt5q): a `/fuel/log` ('log-napvalto') és a `/fuel/naplo` ('naplo-hero') sora kiesett
+// — mind a két LAP megszűnt (a napi lista a Mai, a napi minőség a Trendek), tehát a horgonyuk
+// sem létezhet. A helyükre a két ÉLŐ cél-lap horgonya jött: a Trendek heti sávja és a Konyha
+// két gyors-felvétele. A Mai horgonyát ('fuel-log') a `/nap`-ról induló T1 kör fedi alább.
 test.each([
-  ['/fuel/log', 'log-napvalto'],
+  ['/fuel', 'fuel-log'],
   ['/fuel/log/uj', 'log-forrasok'],
   ['/fuel/stack', 'stack-hero'],
+  ['/fuel/trendek', 'trendek-heti'],
+  ['/fuel/konyha', 'konyha-felvetel'],
   ['/fuel/recipes', 'receptek-tabs'],
   // S4 (mezo-hygp): a 'kamra-hero' horgony megszűnt a Titán lapon (a hős-szám a Konyha hub
   // Kamra-poszterére költözött); a kalauz a típus-szűrőkre mutat.
   ['/fuel/kamra', 'kamra-tabs'],
-  ['/fuel/naplo', 'naplo-hero'],
 ])('%s — a(z) %s anchor jelen van', async (path, name) => {
   renderAt(path)
   await waitFor(() => expect(hasAnchor(name)).not.toBeNull())
+})
+
+// A18/E11 (mezo-qt5q): a lint FORDÍTOTT iránya — egy kalauz-kártya horgonya sem hivatkozhat
+// olyan elemre, ami a lapján nincs ott. A fenti táblázat a Fuel MINDEN horgonyos lépését
+// lefedi; ez a kör azt őrzi, hogy ne keletkezhessen új, lefedetlen horgony.
+test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
+  const covered = new Set(['fuel-log', 'log-forrasok', 'stack-hero', 'trendek-heti',
+    'konyha-felvetel', 'receptek-tabs', 'kamra-tabs'])
+  const anchors = FUEL_KALAUZ.flatMap(e => e.cards.flatMap(c =>
+    c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
+  expect(anchors.filter(a => !covered.has(a))).toEqual([])
 })
