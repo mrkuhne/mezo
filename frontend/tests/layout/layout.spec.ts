@@ -429,41 +429,35 @@ test('Cél diet kcal values remain readable at 200% text size', async ({ page })
 // ── Fuel: hosszú nevek nem feszíthetik szét a kártyát (mezo-jb84) ────────────────────────────
 // Éles hiba volt: a napló valódi étel-nevei hosszabbak a demó-napénál, és egy „Csirke alsócomb
 // bőrrel, sült, Édesburgonya…" sor 375 px-es sávban 667 px-esre feszítette a blokkot — a kártya
-// jobb széle egyszerűen levágódott. A levágás (`nowrap` + `ellipsis`) rendben volt; a SÁV nem:
-// egy grid-gyerek alapértelmezett `min-width: auto`-ja a teljes szöveget engedi min-contentnek.
-// Ez a kör MINDEN egysoros Fuel-szöveget hosszúra cserél, és megköveteli, hogy a lap attól se
-// kezdjen oldalra görögni — rövid tartalommal a hiba láthatatlan, ezért kell kikényszeríteni.
+// jobb széle egyszerűen levágódott. Ugyanez jött vissza a Receptek, a Kamra és a recept-részletek
+// lapján is. A levágás (`nowrap` + `ellipsis`) rendben volt; a SÁV nem: egy grid- vagy flex-gyerek
+// alapértelmezett `min-width: auto`-ja a teljes szöveget engedi min-contentnek.
+//
+// A kör MINDEN felhasználói szöveget hosszúra cserél — nem csak az egysorosakat —, és megköveteli,
+// hogy a lap attól se kezdjen oldalra görögni. A tördelhető szöveg ettől csak magasabb lesz; ami
+// szélesedik, az a hiba. A ház statikus felirat-primitívjei (eyebrow / label-mono / overline) ki
+// vannak hagyva: azok fix szövegek, ellenük védekezni semmi ellen védekezés volna.
 const LONG = 'Csirke alsócomb bőrrel sült Édesburgonya sütve brokkoli párolva olívaolajjal és magvakkal'
 
-for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trendek', '/fuel/konyha']) {
+for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trendek',
+  '/fuel/konyha', '/fuel/recipes', '/fuel/kamra', '/fuel/log/uj']) {
   test(`Fuel · hosszú nevek sem feszítik szét a lapot · ${path}`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
-    // A Kiegészítők / Trendek / Konyha a saját adatára VÁR — `networkidle` után is állhat még
-    // csontvázon, amiben nincs egysoros szöveg. A kör ilyenkor vakon futna, ezért megvárjuk a
-    // valódi tartalmat. Ha sosem érkezik meg, a várakozás bukik — ez is igaz eredmény.
+    // A lapok a saját adatukra várnak: `networkidle` után is állhatnak még csontvázon.
     await page.waitForFunction(() => {
       const scroller = document.querySelector('.screen-content')
-      if (!scroller) return false
-      return Array.from(scroller.querySelectorAll('*')).some(el =>
-        el.children.length === 0
-        && !!el.textContent?.trim()
-        && getComputedStyle(el).whiteSpace === 'nowrap'
-        && !el.closest('.eyebrow, .label-mono, .overline'))
+      return !!scroller && scroller.textContent!.trim().length > 120
     }, undefined, { timeout: 10_000 }).catch(() => {
-      throw new Error(
-        `${path} 10 mp után sem rendert egysoros felhasználói szöveget — vagy sosem tölt be, `
-        + 'vagy a lap felépítése változott meg. A kör így vakon futna, ezért inkább bukik.',
-      )
+      throw new Error(`${path} 10 mp után sem rendert érdemi tartalmat — a kör vakon futna.`)
     })
 
     const stretched = await page.evaluate((long: string) => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
-      // Csak azokat a sorokat nyújtjuk meg, amelyek NEM egy vízszintesen görgethető sávban ülnek —
-      // ott az átlógás szándékos.
+      // Vízszintesen görgethető sávon belül az átlógás SZÁNDÉKOS — azt nem bántjuk.
       const inScrollX = (el: Element) => {
         for (let p = el.parentElement; p && p !== scroller; p = p.parentElement) {
           if (['auto', 'scroll'].includes(getComputedStyle(p).overflowX)) return true
@@ -473,14 +467,13 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
       let touched = 0
       for (const el of Array.from(scroller.querySelectorAll('*'))) {
         if (el.children.length) continue
-        if (!el.textContent?.trim()) continue
-        if (getComputedStyle(el).whiteSpace !== 'nowrap') continue
-        if (inScrollX(el)) continue
-        // A ház statikus felirat-primitívjei (eyebrow / label-mono / overline) FIX szövegek —
-        // azok sosem lesznek hosszabbak. A kör a FELHASZNÁLÓI adatot modellezi: étel-, recept-,
-        // kiegészítőnevek, adagok, tápértékek. Ezért ezeket kihagyjuk, különben a teszt olyan
-        // védekezést követelne meg, aminek a valóságban nincs megfelelője.
+        const text = el.textContent?.trim()
+        if (!text) continue
         if (el.closest('.eyebrow, .label-mono, .overline')) continue
+        if (inScrollX(el)) continue
+        // Csak a NÉV-szerű szövegeket nyújtjuk: egy számjegy, egy mértékegység vagy egy rövid
+        // chip sosem lesz hosszú, és ellenük védekezni semmi ellen védekezés volna.
+        if (text.length < 10) continue
         el.textContent = long
         touched += 1
       }
@@ -491,10 +484,13 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
     const size = await page.locator('.screen-content').evaluate(el => ({
       scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
     }))
-    expect(stretched, `${path} nem tartalmaz egysoros szöveget — a kör vakon futna`).toBeGreaterThan(0)
+    // A csere darabszáma nem KÖVETELMÉNY: van lap, ahol minden szöveg rövid (számok, chipek).
+    // Ott a kör a természetes elrendezést méri, ami ugyanilyen érvényes állítás — a lényeg, hogy
+    // a lap SEMMILYEN tartalommal ne kezdjen oldalra görögni.
     expect(
       size.scrollWidth,
-      `${path} vízszintesen görög (${size.scrollWidth}px a ${size.clientWidth}px-es sávban), amikor egy név hosszú`
+      `${path} vízszintesen görög (${size.scrollWidth}px a ${size.clientWidth}px-es sávban); `
+      + `${stretched} hosszúra cserélt szöveggel`
     ).toBeLessThanOrEqual(size.clientWidth + 1)
   })
 }

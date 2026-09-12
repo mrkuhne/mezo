@@ -18,20 +18,21 @@
 // ŐSZINTE-NULL: nem naplózott napra nem találunk ki becslést, és kimondjuk, hogy kimarad a heti
 // átlagból; pontszám nélküli dimenzió „—"-t és szaggatott keretet kap, nem nullát.
 //
-// A doboz natív <dialog class="glass">: Escape és backdrop a platformtól, a `showModal`/`close`
+// A doboz natív <GlassBox onClose={onClose} class="glass">: Escape és backdrop a platformtól, a `showModal`/`close`
 // feature-detektált (a ház mintája: FuelEnergyHero, FuelStackItemGlass) — a jsdom nem hoz
 // HTMLDialogElement-et.
 //
 // C5: a felület CSAK a már kiszámolt napi értékelést OLVASSA. Étkezés-coach előzményt NEM kér és
 // nem generál — a coach-történet cache-only.
 // ============================================================
-import { useEffect, useId, useRef } from 'react'
+import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { huInt } from '@/shared/lib/huNum'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { WeekDayVM } from '@/features/fuel/logic/fuelWeekView'
+import { GlassBox } from '@/features/fuel/components/GlassBox'
 
 /** Egy dimenzió egy ténysora — címke + kész, olvasható érték. */
 export interface DimFactRow { label: string; value: string }
@@ -55,6 +56,11 @@ const pair = (value: number, target: number | null, unit: string): string =>
     ? `${huInt(value)} / ${huInt(target)}${unit ? ` ${unit}` : ''}`
     : `${huInt(value)}${unit ? ` ${unit}` : ''}`
 
+/** Az étkezés-pont egy tizedessel, magyar vesszővel — 8,2. */
+function huScore(n: number): string {
+  return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
+
 export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: {
   day: WeekDayVM
   /** A nap nyers rollup-sora — a makró-tények EGYETLEN forrása (a Fuel kanonikus adata). */
@@ -67,28 +73,17 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
    *  lap adja (`FuelTrendekPage`), mert a napi étkezés-olvasás a LAP adatforrása, nem a dobozé. */
   children?: React.ReactNode
 }) {
-  const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    // Feature-detektált: a jsdom nem implementálja a dialogot, ott az attribútum a fallback.
-    if (typeof el.showModal === 'function') el.showModal()
-    else el.setAttribute('open', '')
-  }, [])
 
   const dayName = huMonthDayDow(day.date)
 
   if (!day.logged) {
     return (
-      <dialog
-        ref={ref}
+      <GlassBox onClose={onClose}
         className="ftx-glass glass is-empty"
-        aria-labelledby={titleId}
-        onCancel={(event) => { event.preventDefault(); onClose() }}
-        onClose={onClose}
+        labelledBy={titleId}
       >
         <div className="ftx-glass-hero">
           <span aria-hidden="true"><ClayIcon name="i-tanyer" size={52} /></span>
@@ -110,7 +105,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
           <b aria-hidden="true">›</b>
         </button>
         <button type="button" className="ftx-glass-close" onClick={onClose}>Bezárom</button>
-      </dialog>
+      </GlassBox>
     )
   }
 
@@ -137,24 +132,21 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
   const overBy = day.over && day.targetKcal != null ? rollup.consumed.kcal - day.targetKcal : null
 
   return (
-    <dialog
-      ref={ref}
+    <GlassBox onClose={onClose}
       className={`ftx-glass glass${day.over ? ' is-over' : ''}`}
-      aria-labelledby={titleId}
-      onCancel={(event) => { event.preventDefault(); onClose() }}
-      onClose={onClose}
+      labelledBy={titleId}
     >
       <div className="ftx-glass-hero">
         <span aria-hidden="true"><ClayIcon name="i-heti" size={52} /></span>
         <div>
-          <strong>{day.dayScore == null ? '—' : huInt(day.dayScore)}</strong>
-          <small id={titleId}>{dayName} · napi pont</small>
+          <strong>{day.dayScore == null ? '—' : huScore(day.dayScore)}</strong>
+          <small id={titleId}>{dayName} · étkezés-pont</small>
         </div>
       </div>
 
       <div className="ftx-glass-chips">
         <span>{huInt(rollup.consumed.kcal)} / {day.targetKcal == null ? '—' : huInt(day.targetKcal)} kcal</span>
-        <span>{day.dayScore == null ? 'még nincs napi pont' : `napi pont ${huInt(day.dayScore)}/100`}</span>
+        <span>{day.dayScore == null ? 'még nincs étkezés-pont' : `étkezés-pont ${huScore(day.dayScore)}/10`}</span>
         {day.training && <span>edzésnap</span>}
       </div>
 
@@ -221,6 +213,6 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
         (edzés, alvás, naplózás, ritmus) az Én oldal napi nézetén él.
       </p>
       <button type="button" className="ftx-glass-close" onClick={onClose}>Bezárom</button>
-    </dialog>
+    </GlassBox>
   )
 }
