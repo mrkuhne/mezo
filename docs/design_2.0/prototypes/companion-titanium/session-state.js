@@ -184,3 +184,21 @@ export const legacyShape = session => ({
 // The one live session of the demo. Mutated in place, so holders keep a valid reference.
 const live = createSession();
 export const currentSession = () => live;
+
+/**
+ * Skipping an exercise keeps whatever you already logged and drops the rest of it out of the
+ * "still pending" count. Toggling it back leaves the logged sets exactly where they were.
+ */
+export function skipExercise(session, id, skipped = true) {
+  if (session.status === 'complete' || !(id in session.rows)) return false;
+  session.skipped ??= {};
+  session.skipped[id] = Boolean(skipped);
+  return true;
+}
+
+export const isSkipped = (session, id) => Boolean(session.skipped?.[id]);
+
+/** Unchecked rows that are neither done nor skipped — what a close would turn into "kihagyott". */
+export const pendingCount = session =>
+  session.order.filter(id => !isSkipped(session, id))
+    .reduce((total, id) => total + session.rows[id].filter(r => !r.done).length, 0);

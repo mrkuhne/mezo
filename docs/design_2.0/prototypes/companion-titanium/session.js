@@ -4,6 +4,7 @@
 import {
   EXERCISES, exerciseById, createSession, logSet, undoSet, addSet, removeSet, moveExercise,
   setNote, finishSession, metrics, doneCount, setVerdict, inRange, nextOpen, e1rm, currentSession,
+  skipExercise, isSkipped, pendingCount,
 } from './session-state.js';
 import { icon, safe, closeSheet, react, toast } from './nap.js';
 
@@ -73,34 +74,50 @@ function setRow(exercise, index, row) {
 
 function card(id, position, total) {
   const exercise = exerciseById(id), rows = session.rows[id], note = session.notes[id];
-  const done = doneCount(session, id), all = done === rows.length;
-  return `<section class="wo-card ${all ? 'is-complete' : ''}" style="--ex-color:${exercise.color}" aria-label="${exercise.name}">
+  const done = doneCount(session, id), skipped = isSkipped(session, id), all = done === rows.length;
+  return `<section class="wo-card ${skipped ? 'is-skipped' : all ? 'is-complete' : ''}" style="--ex-color:${exercise.color}" aria-label="${exercise.name}">
    <header class="wo-card-head">
     <span class="wo-card-art">${icon(exercise.art)}</span>
-    <span class="wo-card-copy"><strong>${exercise.name}</strong><small>${exercise.muscle} · ${rows.length} × ${exercise.target.reps} · ${exercise.target.rir} RIR</small></span>
+    <span class="wo-card-copy"><strong>${exercise.name}</strong><small>${skipped ? 'Kihagyva' : `${exercise.muscle} · ${rows.length} × ${exercise.target.reps} · ${exercise.target.rir} RIR`}</small></span>
     <span class="wo-card-count">${done}<i>/${rows.length}</i></span>
+    <button class="wo-card-menu" data-menu="${id}" aria-haspopup="dialog" aria-label="${exercise.name} · további műveletek">⋮</button>
    </header>
-   <div class="wo-card-tools">
-    <button data-video="${id}" aria-label="${exercise.name} · demóvideó">${icon('play')}</button>
-    <button data-history="${id}" aria-label="${exercise.name} · előzmények">${icon('history')}</button>
-    <button data-note="${id}" aria-label="${exercise.name} · jegyzet" class="${note ? 'has-note' : ''}">${icon('note')}</button>
-    <span class="wo-tool-gap"></span>
-    <button data-move="${id}:-1" ${position === 0 ? 'disabled' : ''} aria-label="Előrébb">↑</button>
-    <button data-move="${id}:1" ${position === total - 1 ? 'disabled' : ''} aria-label="Hátrébb">↓</button>
-   </div>
-   ${note ? `<button class="wo-note" data-note="${id}">${icon('note')}<span>${safe(note)}</span></button>` : ''}
-   <div class="wo-cue">${icon('chat')}<p>${exercise.cue}</p></div>
+   ${note ? `<button class="wo-note" data-note="${id}">${icon('tick')}<span>${safe(note)}</span></button>` : ''}
+   ${skipped ? '' : `<div class="wo-cue">${icon('chat')}<p>${exercise.cue}</p></div>
    <div class="wo-rows">
     <div class="wo-rows-head"><span></span><span>MÚLT</span><span>KG</span><span>REP</span><span>RIR</span><span></span><span></span></div>
     ${rows.map((row, index) => setRow(exercise, index, row)).join('')}
-   </div>
-   <div class="wo-card-foot">
-    <button data-add="${id}">＋ Szett</button>
-    <button data-remove="${id}" ${rows.length <= 1 || rows[rows.length - 1].done ? 'disabled' : ''}>− Szett</button>
-    <span>${exercise.target.range[0]}–${exercise.target.range[1]} ismétlés · ${clock(exercise.target.rest)} pihenő</span>
-   </div>
+   </div>`}
   </section>`;
 }
+
+/** One menu per card: everything that is not "log this set" lives here. */
+function menuGlass(id) {
+  const exercise = exerciseById(id), rows = session.rows[id];
+  const skipped = isSkipped(session, id), position = session.order.indexOf(id);
+  const item = (action, art, label, hint, disabled = false) =>
+    `<button class="wo-menu-row" ${disabled ? 'disabled' : action}>${icon(art)}<span><strong>${label}</strong><small>${hint}</small></span><b>›</b></button>`;
+  return `<div class="wo-glass" data-glass style="--ex-color:${exercise.color}">
+   <div class="wo-glass-card is-menu" role="dialog" aria-label="${exercise.name} műveletei">
+    <header class="wo-glass-head">
+     <span class="wo-card-art">${icon(exercise.art)}</span>
+     <span><small>${exercise.muscle.toUpperCase()}</small><strong>${exercise.name}</strong></span>
+     <button data-glass-close aria-label="Bezárás">×</button>
+    </header>
+    <div class="wo-menu">
+     ${item(`data-video="${id}"`, 'play', 'Videó', 'A gyakorlathoz csatolt felvétel')}
+     ${item(`data-history="${id}"`, 'journal', 'Napló', 'Előzmények, rekordok, várható ív')}
+     ${item(`data-note="${id}"`, 'tick', 'Jegyzet', note(exercise, id))}
+     ${item(`data-add="${id}"`, 'dumbbell', 'Szett hozzáadása', `Most ${rows.length} szett van`, skipped)}
+     ${item(`data-remove="${id}"`, 'dumbbell', 'Szett elvétele', 'Csak bepipálatlan utolsó szett', skipped || rows.length <= 1 || rows[rows.length - 1].done)}
+     ${item(`data-move="${id}:-1"`, 'stack', 'Előrébb', 'Egy hellyel korábban', position === 0)}
+     ${item(`data-move="${id}:1"`, 'stack', 'Hátrébb', 'Egy hellyel később', position === session.order.length - 1)}
+     ${item(`data-skip="${id}"`, 'skip', skipped ? 'Visszavesszük' : 'Gyakorlat kihagyása', skipped ? 'Újra bekerül a mai munkába' : 'A már logolt szettjeid megmaradnak')}
+    </div>
+   </div>
+  </div>`;
+}
+const note = (exercise, id) => session.notes[id] ? 'Megírt jegyzet szerkesztése' : 'Ami a következő alkalomra számít';
 
 /** The dock never changes height, so the list under it never jumps. */
 function dock() {
@@ -187,8 +204,32 @@ function videoGlass(id) {
   </div>`;
 }
 
+
+/** Closing with unticked sets is allowed — but never silently. */
+function confirmGlass() {
+  const pending = pendingCount(session), m = metrics(session);
+  const perExercise = session.order.filter(id => !isSkipped(session, id))
+    .map(id => [exerciseById(id), session.rows[id].filter(r => !r.done).length])
+    .filter(([, left]) => left > 0);
+  return `<div class="wo-glass" data-glass style="--ex-color:#d9c395">
+   <div class="wo-glass-card is-confirm" role="dialog" aria-label="Lezárás megerősítése">
+    <span class="wo-confirm-art">${icon('skip')}</span>
+    <h2>Van még ${pending} bepipálatlan szetted.</h2>
+    <p>Ha most lezárod az edzést, ezek <strong>kihagyott</strong> státusszal rögzülnek. A már elmentett ${m.count} szetted természetesen megmarad.</p>
+    <div class="wo-confirm-list">${perExercise.map(([e, left]) => `<span style="--ex-color:${e.color}">${icon(e.art)}<strong>${e.name}</strong><b>${left} szett</b></span>`).join('')}</div>
+    <button class="wo-close-cta" data-finish-really><span class="wo-close-art">${icon('tick')}</span><span><strong>Lezárom így</strong><small>${m.count} elvégzett · ${pending} kihagyott</small></span><u class="chip-sheen"></u></button>
+    <button class="wo-secondary" data-glass-close>Mégse, visszamegyek</button>
+   </div>
+  </div>`;
+}
+
+function closeSession() {
+  if (finishSession(session)) { react('celebrate'); toast('Edzés lezárva a demóban.'); }
+  render();
+}
+
 function summary() {
-  const m = metrics(session), done = session.status === 'complete';
+  const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
   // One record per exercise — the best of the day, not every set that cleared the old best.
   const records = session.order.flatMap(id => {
     const e = exerciseById(id);
@@ -204,12 +245,14 @@ function summary() {
    <div class="wo-summary-stats"><span><b>${m.reps}</b>ismétlés</span><span><b>${n(m.volume)}</b>kg × rep</span><span><b>+${m.xp}</b>demó XP</span></div>
    ${records.length ? `<div class="wo-summary-records">${icon('record')}<span><strong>${records.length} új rekord</strong><small>${records.join(' · ')}</small></span></div>` : ''}
    <div class="wo-summary-list">${session.order.map(id => {
-    const e = exerciseById(id), rows = session.rows[id].filter(r => r.done);
-    return `<div><strong>${e.name}</strong><small>${rows.length ? rows.map(r => `${n(r.kg)}×${r.reps}`).join(' · ') : 'nem logolt szett'}</small></div>`;
+    const e = exerciseById(id), logged = session.rows[id].filter(r => r.done);
+    const left = session.rows[id].length - logged.length;
+    const tail = isSkipped(session, id) ? 'kihagyott gyakorlat' : left && done ? `${left} szett kihagyva` : left ? `${left} szett még hátra` : '';
+    return `<div><strong>${e.name}</strong><small>${logged.length ? logged.map(r => `${n(r.kg)}×${r.reps}`).join(' · ') : 'nem logolt szett'}${tail ? ` · ${tail}` : ''}</small></div>`;
   }).join('')}</div>
    ${done
-    ? `<button class="wo-primary" data-session-leave>Vissza a mai napra →</button>`
-    : `<button class="wo-primary" data-finish-confirm>Edzés lezárása ✓</button><button class="wo-secondary" data-session-back>Még folytatom</button>`}
+    ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
+    : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-session-back>Még folytatom</button>`}
    <p class="wo-glass-note">Mintaedzés · a demó újratöltése törli a szetteket.</p>
   </div>`;
 }
@@ -217,6 +260,7 @@ function summary() {
 let view = 'list';
 
 function render() {
+  const keep = overlay.querySelector('.wo-scroll')?.scrollTop ?? 0;
   const m = metrics(session);
   const head = `<header class="wo-head">
    <button data-session-leave aria-label="Vissza az Edzés Mai oldalára">‹</button>
@@ -226,7 +270,9 @@ function render() {
     ? summary()
     : `<div class="wo-list">${session.order.map((id, i) => card(id, i, session.order.length)).join('')}
        <button class="wo-finish-link" data-session-summary ${m.count ? '' : 'disabled'}>Mára ennyi · összegzés →</button></div>`;
-  overlay.innerHTML = `${head}<div class="wo-scroll">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : videoGlass(glass.id)) : ''}`;
+  overlay.innerHTML = `${head}<div class="wo-scroll">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : glass.kind === 'menu' ? menuGlass(glass.id) : glass.kind === 'confirm' ? confirmGlass() : videoGlass(glass.id)) : ''}`;
+  const scroller = overlay.querySelector('.wo-scroll');
+  if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
   updateTimers();
   if (view === 'summary') requestAnimationFrame(() => overlay.querySelector('h1')?.focus());
 }
@@ -265,14 +311,22 @@ overlay.addEventListener('click', event => {
   const el = event.target.closest('button');
   if (!el) return;
   if (el.hasAttribute('data-glass-close')) { glass = null; return render(); }
+  if (el.dataset.menu) { glass = { kind: 'menu', id: el.dataset.menu }; return render(); }
+  if (el.dataset.skip) {
+    const id = el.dataset.skip;
+    skipExercise(session, id, !isSkipped(session, id));
+    toast(isSkipped(session, id) ? 'Gyakorlat kihagyva.' : 'Gyakorlat visszavéve.');
+    glass = null;
+    return render();
+  }
   if (el.dataset.history) { glass = { kind: 'history', id: el.dataset.history }; return render(); }
   if (el.dataset.video) { glass = { kind: 'video', id: el.dataset.video }; return render(); }
-  if (el.dataset.note) return noteSheet(el.dataset.note);
-  if (el.dataset.add) { addSet(session, el.dataset.add); return render(); }
-  if (el.dataset.remove) { removeSet(session, el.dataset.remove); return render(); }
+  if (el.dataset.note) { glass = null; render(); return noteSheet(el.dataset.note); }
+  if (el.dataset.add) { addSet(session, el.dataset.add); glass = null; return render(); }
+  if (el.dataset.remove) { removeSet(session, el.dataset.remove); glass = null; return render(); }
   if (el.dataset.move) {
     const [id, delta] = el.dataset.move.split(':');
-    if (moveExercise(session, id, Number(delta))) { toast('Sorrend módosítva.'); render(); }
+    if (moveExercise(session, id, Number(delta))) { toast('Sorrend módosítva.'); glass = null; render(); }
     return;
   }
   if (el.hasAttribute('data-rest-skip')) { restUntil = 0; restFor = null; return render(); }
@@ -280,9 +334,10 @@ overlay.addEventListener('click', event => {
   if (el.hasAttribute('data-finish') || el.hasAttribute('data-session-summary')) { view = 'summary'; return render(); }
   if (el.hasAttribute('data-session-back')) { view = 'list'; return render(); }
   if (el.hasAttribute('data-finish-confirm')) {
-    if (finishSession(session)) { react('celebrate'); toast('Edzés lezárva a demóban.'); }
-    return render();
+    if (pendingCount(session)) { glass = { kind: 'confirm' }; return render(); }
+    return closeSession();
   }
+  if (el.hasAttribute('data-finish-really')) { glass = null; return closeSession(); }
   if (el.hasAttribute('data-session-leave')) return leave();
 });
 

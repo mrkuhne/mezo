@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   EXERCISES, createSession, logSet, undoSet, addSet, removeSet, moveExercise, setNote,
   finishSession, metrics, doneCount, setVerdict, inRange, nextOpen, legacyShape, e1rm,
+  skipExercise, isSkipped, pendingCount,
 } from './session-state.js';
 
 const fresh = () => createSession();
@@ -127,4 +128,24 @@ test('the legacy shape exposes saved sets in order and nulls the rest', () => {
 test('the one-rep-max estimate matches what the history card shows', () => {
   assert.equal(e1rm({ kg: 60, reps: 10 }), 80);
   assert.equal(e1rm({ kg: 62.5, reps: 8 }), 79.2);
+});
+
+test('skipping an exercise keeps its logged sets and clears the rest from pending', () => {
+  const s = fresh();
+  assert.equal(pendingCount(s), 9);
+  logSet(s, 'press', 0, { kg: 20, reps: 10, rir: 2 });
+  assert.equal(pendingCount(s), 8);
+  assert.equal(skipExercise(s, 'press'), true);
+  assert.equal(isSkipped(s, 'press'), true);
+  assert.equal(pendingCount(s), 6);
+  assert.equal(doneCount(s, 'press'), 1);
+  skipExercise(s, 'press', false);
+  assert.equal(pendingCount(s), 8);
+});
+
+test('a finished session refuses to be skipped around', () => {
+  const s = fresh();
+  logSet(s, 'bench', 0, { kg: 60, reps: 10, rir: 2 });
+  finishSession(s);
+  assert.equal(skipExercise(s, 'row'), false);
 });

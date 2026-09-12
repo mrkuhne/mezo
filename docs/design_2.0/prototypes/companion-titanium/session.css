@@ -268,5 +268,65 @@
 }
 
 /* Programmatic focus (the summary headline) must not paint a browser ring. */
-.wo-summary h1:focus:not(:focus-visible) { outline: none; }
-.wo h1:focus-visible, .wo button:focus-visible, .wo input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
+/* The headline is focused only to move a screen reader there — it never paints a ring. */
+.wo-summary h1:focus { outline: none; }
+.wo button:focus-visible, .wo input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
+
+/* — one menu per card instead of a row of exposed buttons — */
+.wo-card-menu {
+  flex: 0 0 auto; width: 32px; height: 32px; margin-left: 4px; cursor: pointer;
+  border: 1px solid #ffffff14; border-radius: 11px; background: #ffffff06;
+  color: #cdd4c2; font-size: 17px; line-height: 1;
+}
+.wo-card.is-skipped { opacity: .62; border-style: dashed; }
+.wo-card.is-skipped .wo-card-count { color: #ffffff4a; }
+
+.wo-glass-card.is-menu, .wo-glass-card.is-confirm { max-height: 84%; }
+.wo-menu { display: grid; gap: 7px; }
+.wo-menu-row {
+  display: grid; grid-template-columns: 30px 1fr 14px; align-items: center; gap: 12px;
+  width: 100%; padding: 12px 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid #ffffff10; border-radius: 16px; background: #ffffff05;
+}
+.wo-menu-row:disabled { opacity: .34; cursor: default; }
+.wo-menu-row .icon { width: 28px; height: 28px; }
+.wo-menu-row strong { display: block; font-size: 14px; font-weight: 500; }
+.wo-menu-row small { display: block; font-size: 10.5px; color: #ffffff66; margin-top: 2px; }
+.wo-menu-row b { color: #ffffff4a; font-size: 15px; text-align: right; }
+
+/* — closing: a real move, and never a silent one — */
+.wo-glass-card.is-confirm { text-align: center; }
+.wo-confirm-art { display: block; margin: 4px auto 12px; }
+.wo-confirm-art .icon { width: 54px; height: 54px; }
+.wo-glass-card.is-confirm h2 { font-size: 23px; font-weight: 400; letter-spacing: -.02em; margin: 0 0 10px; }
+.wo-glass-card.is-confirm p { margin: 0 0 16px; font-size: 12.5px; line-height: 1.65; color: #ffffff8c; }
+.wo-glass-card.is-confirm p strong { color: #e3d3a8; font-weight: 600; }
+.wo-confirm-list { display: grid; gap: 7px; margin-bottom: 18px; text-align: left; }
+.wo-confirm-list span {
+  display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid #ffffff0f; border-radius: 14px; background: #ffffff04;
+}
+.wo-confirm-list .icon { width: 24px; height: 24px; }
+.wo-confirm-list strong { font-size: 13px; font-weight: 500; }
+.wo-confirm-list b { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--ex-color) 75%, #fff); }
+
+.wo-close-cta {
+  position: relative; display: flex; align-items: center; gap: 13px; width: 100%; overflow: hidden;
+  margin: 6px 0 10px; padding: 15px 18px; text-align: left; cursor: pointer; border: 0; border-radius: 20px;
+  color: #17210c;
+  background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
+  box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
+}
+.wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
+.wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
+.wo-close-art { flex: 0 0 auto; }
+.wo-close-art .icon { width: 34px; height: 34px; }
+.wo-close-cta .chip-sheen {
+  position: absolute; inset: 0 auto 0 -40%; width: 32%; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #ffffff00, #ffffff5c, #ffffff00);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
+}
+@keyframes wo-sheen { 0%, 62% { left: -40%; } 100% { left: 120%; } }
