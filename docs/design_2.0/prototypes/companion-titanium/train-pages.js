@@ -21,52 +21,82 @@ const detail = (name, copy, art = 'dumbbell') =>
 const muscleRing = (name, art, done, plan, color) =>
   `<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100, done / plan * 100)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${done} / ${plan} szett"><strong data-fuel-count="${done}">0</strong><b>/ ${plan}<i>szett</i></b></span></div><span class="macro-name">${name}</span></div>`;
 
-/** What else touches the day — only things the hero does not already say. */
-const blocks = () => `<div class="tr-blocks">
-   <button class="tr-block is-ahead" ${detail('Holnap: röplabda', 'Csütörtök 18:00 · röplabda a csapattal. A vállad és a lábad terhelése miatt a mai edzés után a pihenésed is számít. A röplabdát saját sportként tartjuk meg — nem váltjuk át gym szettekre.', 'bolt')}>
+/** Impact of the day's movement on each muscle region — plain words, never set counts. */
+const REGIONS = [
+  { name: 'Mell', art: 'chest', color: '#c8e895', planned: 72, exercise: 0 },
+  { name: 'Hát', art: 'back', color: '#8ed2e8', planned: 72, exercise: 1 },
+  { name: 'Váll', art: 'shoulder', color: '#bca6f1', planned: 55, exercise: 2 },
+  { name: 'Láb', art: 'leg', color: '#e0bd8a', planned: 0, exercise: null },
+];
+const impactWord = value => value === 0 ? 'ma nem kap' : value >= 65 ? 'erős' : value >= 35 ? 'közepes' : 'enyhe';
+
+function muscleImpact(workout) {
+  return `<div class="tr-card">
+   <div class="tr-card-head"><span class="overline">HATÁS AZ IZOMZATODRA</span><strong>Mit terhel a mai mozgásod</strong></div>
+   <div class="tr-mus">${REGIONS.map(r => {
+    const logged = r.exercise === null ? 0 : workout.sets[r.exercise].filter(Boolean).length;
+    const done = Math.round(r.planned * logged / 3);
+    return `<div class="tr-mus-row" style="--mus-color:${r.color}">
+     <span class="tr-mus-art">${icon(r.art)}</span>
+     <span class="tr-mus-name">${r.name}</span>
+     <span class="tr-mus-track"><i class="plan" style="--w:${r.planned}%"></i><i class="done" style="--w:${done}%"></i></span>
+     <span class="tr-mus-word">${r.planned === 0 ? 'ma nem kap' : done ? impactWord(done) : `tervben ${impactWord(r.planned)}`}</span></div>`;
+   }).join('')}</div>
+   <p class="tr-card-note">A halvány sáv a tervezett terhelés, a világos a már megszolgált. Becslés, nem mérés.</p></div>`;
+}
+
+/** What the day's movement gives back to the energy budget — the bridge to Fuel. */
+function energyCard(planned, done) {
+  return `<button class="tr-card is-tappable" data-route="fuel/0" aria-label="A mai kereted a Fuelben">
+   <div class="tr-card-head"><span class="overline">A MAI KERETEDHEZ</span><strong>Amit a mozgásod hozzáad</strong></div>
+   <div class="tr-energy">
+    <span class="tr-energy-main"><b>+</b><strong data-fuel-count="${planned}">0</strong><small>kcal</small></span>
+    <span class="tr-energy-split"><span><i class="done"></i>${done} kcal már megszolgálva</span><span><i class="plan"></i>${Math.max(0, planned - done)} kcal a tervben</span></span>
+   </div>
+   <span class="fuel-tapchip"><span>Megnézem a mai keretem</span><b>›</b><u class="chip-sheen"></u></span></button>`;
+}
+
+/** Tomorrow, and anything else that touches the day without being on it. */
+const ahead = () => `<button class="tr-block is-ahead" ${detail('Holnap: röplabda', 'Csütörtök 18:00 · röplabda a csapattal. A vállad és a lábad terhelése miatt a mai edzés után a pihenésed is számít. A röplabdát saját sportként tartjuk meg — nem váltjuk át gym szettekre.', 'bolt')}>
     <span class="tr-block-art">${icon('bolt')}</span>
     <span class="tr-block-copy"><span class="overline">HOLNAP 18:00 · SPORT</span><strong>Röplabda</strong><small>A vállad és a lábad is kap belőle</small></span>
-    <b>›</b></button>
-  </div>`;
+    <b>›</b></button>`;
 
-function trainToday(date) {
+function trainToday() {
   const workout = currentWorkout();
   const m = metrics(workout);
   const done = workout.status === 'complete';
-  const left = Math.max(0, PLANNED - m.count);
-  const progress = Math.min(100, m.count / PLANNED * 100);
-  const hero = `<button class="fuel-focus v-h1" ${detail('A mai edzésed', `Felsőtest A · a 6 hetes „Alapból erő" blokk 3. hete. ${exercises.length} gyakorlat, ${PLANNED} tervezett munkasorozat, 2 ismétlés tartalékkal. A becsült ${45} perc a saját eddigi tempódból jön.`)} aria-label="A mai edzés részletei">
-   <div class="hero-pair"><div class="hero-side"><strong data-fuel-count="${m.count}">0</strong><small>SZETT KÉSZ</small></div>${gauge(progress, 'small')}<div class="hero-side lead"><strong data-fuel-count="${left}">0</strong><small>${done ? 'MARADT KI' : 'MÉG HÁTRA'}</small></div></div>
-   ${tapChip('Miből áll a mai?')}</button>`;
+  const share = Math.min(1, m.count / PLANNED);
+  const plannedKcal = 260;
+  const doneKcal = Math.round(plannedKcal * share);
 
-  const title = `<div class="tr-title"><span class="overline">3. HÉT / 6 · ALAPBÓL ERŐ</span><h2>Felsőtest A</h2><div class="tr-pills"><span>17:00</span><span>${exercises.length} gyakorlat</span><span>${PLANNED} szett</span><span>~45 perc</span><span>2 RIR</span></div></div>`;
-
-  const arts = ['chest', 'back', 'shoulder'];
-  const rings = `<section class="fuel-rings three" aria-label="A mai izomcsoportok">${exercises.map((e, i) =>
-    muscleRing(e.muscle, arts[i] || 'dumbbell', workout.sets[i].filter(Boolean).length, 3, e.color)).join('')}</section>`;
+  const status = done ? '✓ LEZÁRVA' : m.count ? 'FOLYAMATBAN' : 'BETERVEZVE';
+  const poster = `<section class="tr-day ${done ? 'is-done' : m.count ? 'is-live' : ''}">
+   <span class="tr-day-status">${status}</span>
+   <span class="overline">SZERDA 17:00 · GYM</span>
+   <h2>Felsőtest A</h2>
+   <p>A 6 hetes „Alapból erő" blokk 3. hete.</p>
+   <span class="tr-day-art">${icon('dumbbell')}</span>
+   <div class="tr-pills"><span>~45 perc</span><span>felsőtest</span><span>3. hét / 6</span></div>
+  </section>`;
 
   const cta = `<button class="tr-start ${done ? 'is-done' : ''}" data-workout>
    <span class="tr-start-art">${icon(done ? 'gem' : 'dumbbell')}</span>
-   <span><strong>${done ? 'Visszanézem az edzésemet' : m.count ? 'Folytatom az edzést' : 'Kezdjük az edzést'}</strong><small>${done ? `${m.count} szett · ${fmt(m.volume)} kg × rep` : 'Súly · ismétlés · RIR · pihenőóra'}</small></span>
+   <span><strong>${done ? 'Visszanézem az edzésemet' : m.count ? 'Folytatom az edzést' : 'Kezdjük az edzést'}</strong><small>${done ? 'A mai edzésed számai' : 'A mai tervezett edzésed'}</small></span>
    <b>${done ? '↗' : '→'}</b></button>`;
 
-  const lineup = `<div class="food-list-heading"><h2>A mai három</h2><span>FÓKUSZ: FELSŐTEST</span></div>
-   <div class="tr-lineup">${exercises.map((e, i) => {
-    const logged = workout.sets[i].filter(Boolean).length;
-    return `<button class="tr-ex" data-workout-exercise="${i}" style="--ex-color:${e.color}">
-     <span class="tr-ex-index">0${i + 1}</span>
-     <span class="tr-ex-copy"><strong>${e.name}</strong><small>3 × ${e.reps} · ${e.kg} kg · ${e.rir} RIR</small><em>Múlt alkalom: ${e.last}</em></span>
-     <span class="tr-ex-ticks" aria-label="${logged} / 3 szett kész">${[0, 1, 2].map(s => `<i class="${workout.sets[i][s] ? 'done' : ''}"></i>`).join('')}</span></button>`;
-  }).join('')}</div>`;
+  const quick = `<div class="food-list-heading"><h2>Bármi más, ami ma mozgás</h2><span>GYORS INDÍTÁS</span></div>
+   <div class="tr-quick">
+    <button class="tr-quick-tile" data-custom><span>${icon('dumbbell')}</span><strong>Egyedi edzés</strong><small>Terv nélkül, most</small><b>＋</b></button>
+    <button class="tr-quick-tile" data-sport><span>${icon('bolt')}</span><strong>Sport naplózása</strong><small>Röplabda · futás · más</small><b>＋</b></button>
+   </div>`;
 
-  const log = `<button class="fuel-log-action" data-sport><span class="fuel-log-icon">${icon('bolt')}</span><span><strong>Sport naplózása</strong><small>Röplabda · futás · bármi, ami nem a gym</small></span><b>＋</b></button>`;
-
-  const more = `<details class="fuel-more flat"><summary>További részletek <span>TERHELÉS · REGENERÁCIÓ · KERET</span></summary>
+  const more = `<details class="fuel-more flat"><summary>További részletek <span>TERHELÉS · REGENERÁCIÓ · TERV</span></summary>
    <button class="fuel-secondary" data-route="train/2">${icon('bolt')}<span><strong>A heti terhelésed</strong></span><b>↗</b></button>
    <button class="fuel-secondary" data-route="me/2">${icon('moon')}<span><strong>Alvás és regeneráció</strong></span><b>↗</b></button>
-   <button class="fuel-secondary" data-route="fuel/0">${icon('bowl')}<span><strong>A mai kereted</strong></span><b>↗</b></button></details>`;
+   <button class="fuel-secondary" data-route="train/1">${icon('stack')}<span><strong>A futó terved</strong></span><b>↗</b></button></details>`;
 
-  return `${hero}${title}${rings}${cta}${blocks()}${lineup}${log}${more}`;
+  return `${poster}${cta}${quick}${energyCard(plannedKcal, doneKcal)}${muscleImpact(workout)}${ahead()}${more}`;
 }
 
 /** Terv — the plan: the running block, its days, templates, sport and run schedules. Old language, next round. */

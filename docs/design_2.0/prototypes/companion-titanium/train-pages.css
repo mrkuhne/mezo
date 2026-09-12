@@ -74,3 +74,77 @@
   color: #ffffffa8; border: 1px solid #ffffff17; background: #ffffff08;
 }
 .tr-pills span:first-child { color: #0f1409; border-color: transparent; background: color-mix(in srgb, var(--domain-color) 82%, #fff); }
+
+/* — the day's program poster: is there training today, and what is it — */
+.tr-day {
+  position: relative; display: block; margin: 4px 20px 14px; padding: 20px 20px 18px;
+  border: 1px solid #ffffff14; border-radius: 26px; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--domain-color) 20%, transparent), transparent 62%),
+    linear-gradient(155deg, #ffffff0f, #ffffff05);
+}
+.tr-day.is-live { border-color: color-mix(in srgb, var(--domain-color) 40%, transparent); }
+.tr-day.is-done { background: linear-gradient(155deg, color-mix(in srgb, var(--domain-color) 16%, transparent), #ffffff05); }
+.tr-day .overline { color: #ffffff7d; letter-spacing: .16em; }
+.tr-day h2 { font-size: 31px; line-height: 1.03; font-weight: 300; letter-spacing: -.025em; margin: 8px 0 6px; max-width: 66%; }
+.tr-day p { margin: 0; font-size: 13px; color: #ffffff7a; max-width: 66%; }
+.tr-day-art { position: absolute; right: -6px; top: 40px; width: 108px; height: 108px; opacity: .9; }
+.tr-day-art .icon { width: 108px; height: 108px; }
+.tr-day-status {
+  position: absolute; top: 16px; right: 16px; font-size: 9px; letter-spacing: .16em;
+  padding: 4px 9px; border-radius: 999px; color: #0f1409;
+  background: color-mix(in srgb, var(--domain-color) 85%, #fff);
+}
+.tr-day .tr-pills { position: relative; margin-top: 16px; }
+.tr-day .tr-pills span:first-child { color: #ffffffa8; border-color: #ffffff17; background: #ffffff08; }
+
+/* — cards: what the day's movement gives back — */
+.tr-card {
+  display: block; width: calc(100% - 40px); margin: 0 20px 14px; padding: 16px 18px; text-align: left;
+  border: 1px solid #ffffff12; border-radius: 22px; color: inherit;
+  background: linear-gradient(155deg, #ffffff0c, #ffffff04);
+}
+.tr-card.is-tappable { cursor: pointer; }
+.tr-card-head .overline { color: var(--domain-color); letter-spacing: .16em; }
+.tr-card-head strong { display: block; font-size: 17px; font-weight: 500; margin-top: 3px; }
+.tr-card-note { margin: 12px 0 0; font-size: 11px; color: #ffffff52; }
+
+.tr-energy { display: flex; align-items: center; gap: 16px; margin: 14px 0 12px; flex-wrap: wrap; }
+.tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--domain-color); }
+.tr-energy-main b { font-size: 24px; font-weight: 300; }
+.tr-energy-main strong { font-size: 44px; font-weight: 300; letter-spacing: -.03em; }
+.tr-energy-main small { font-size: 13px; color: #ffffff7a; margin-left: 4px; }
+.tr-energy-split { display: grid; gap: 4px; font-size: 12px; color: #ffffff85; }
+.tr-energy-split span { display: flex; align-items: center; gap: 7px; }
+.tr-energy-split i { width: 9px; height: 9px; border-radius: 3px; }
+.tr-energy-split i.done { background: var(--domain-color); }
+.tr-energy-split i.plan { background: #ffffff2e; }
+.tr-card .fuel-tapchip { margin-top: 2px; }
+
+/* — muscle impact: words, not set counts — */
+.tr-mus { display: grid; gap: 10px; margin-top: 14px; }
+.tr-mus-row { display: grid; grid-template-columns: 26px 44px 1fr auto; align-items: center; gap: 10px; }
+.tr-mus-art .icon, .tr-mus-art { width: 26px; height: 26px; }
+.tr-mus-name { font-size: 13px; color: #ffffffbd; }
+.tr-mus-track { position: relative; height: 8px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.tr-mus-track i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; }
+.tr-mus-track i.plan { background: color-mix(in srgb, var(--mus-color) 28%, transparent); }
+.tr-mus-track i.done { background: var(--mus-color); box-shadow: 0 0 10px color-mix(in srgb, var(--mus-color) 45%, transparent); }
+.tr-mus-word { font-size: 11px; color: #ffffff70; justify-self: end; min-width: 74px; text-align: right; }
+
+/* — quick start tiles — */
+.tr-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 16px; }
+.tr-quick-tile {
+  position: relative; display: grid; justify-items: start; gap: 2px; padding: 14px; text-align: left;
+  border: 1px solid #ffffff14; border-radius: 20px; cursor: pointer; color: inherit;
+  background: linear-gradient(155deg, #ffffff0d, #ffffff05);
+}
+.tr-quick-tile .icon { width: 32px; height: 32px; margin-bottom: 4px; }
+.tr-quick-tile strong { font-size: 14px; font-weight: 500; }
+.tr-quick-tile small { font-size: 11px; color: #ffffff6e; }
+.tr-quick-tile b {
+  position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 14px; color: #0f1409;
+  background: color-mix(in srgb, var(--domain-color) 82%, #fff);
+}
+.tr-quick-tile small { overflow-wrap: anywhere; }
