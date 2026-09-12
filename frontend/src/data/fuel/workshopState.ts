@@ -6,9 +6,13 @@
 // Kept separate from workshopApi.ts (the wire boundary) so these can be unit-tested without
 // any network/mock plumbing, mirroring recipeMacros.ts's split from recipeApi.ts.
 // ============================================================
-import { lineContribution, roundMacro } from '@/data/fuel/recipeMacros'
+import {
+  factsOf, lineContribution, lineNutrients, roundMacro, sumNutrients, NO_NUTRIENTS,
+} from '@/data/fuel/recipeMacros'
 import type { PickableIngredient } from '@/data/fuel/pantryPickables'
-import type { Recipe, RecipeInput, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine } from '@/data/types'
+import type {
+  Nutrients, Recipe, RecipeInput, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine,
+} from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
 
@@ -42,6 +46,42 @@ export function draftTotals(draft: WorkshopDraft, pool: PickableIngredient[]): M
     },
     { kcal: 0, p: 0, c: 0, f: 0 },
   )
+}
+
+/**
+ * The draft's nutrition-quality facts (fibre, sugar, salt, saturated fat) — the preview's
+ * micronutrient block reads this (Fuel Titanium S4, mezo-hygp).
+ *
+ * ŐSZINTE-NULL, ABSZOLÚT: only a resolved PANTRY row can contribute a fact. An estimate line
+ * carries `est` macros the model authored, and the model is NEVER allowed to author a nutrient
+ * number — so an estimate line (and an unresolvable pantry ref) contributes NOTHING here, and a
+ * field no line covers stays `null`, printed as „—". `sumNutrients` is the same null-preserving Σ
+ * the recipe roll-up uses, so the preview and the saved recipe agree.
+ */
+export function draftNutrients(draft: WorkshopDraft, pool: PickableIngredient[]): Nutrients {
+  return sumNutrients(draft.lines.map(line => {
+    if (line.source !== 'pantry') return NO_NUTRIENTS
+    const ing = pool.find(p => p.id === line.refId)
+    if (!ing) return NO_NUTRIENTS
+    return lineNutrients(line.amount, ing.per, factsOf(ing))
+  }))
+}
+
+/** One draft line as the quality tiles see it — the grams (only when the unit IS grams), the
+ *  line's kcal and the pantry row's NOVA group. Every unknown is `null`, never a guessed value:
+ *  an estimate line has no NOVA and no pantry mass basis, so the tiles honestly go „—". */
+export interface DraftQualityLine { grams: number | null; kcal: number | null; nova: number | null }
+
+export function draftQualityLines(draft: WorkshopDraft, pool: PickableIngredient[]): DraftQualityLine[] {
+  return draft.lines.map(line => {
+    const ing = line.source === 'pantry' ? pool.find(p => p.id === line.refId) : undefined
+    const m = lineMacros(line, pool)
+    return {
+      grams: line.unit.trim().toLowerCase() === 'g' ? line.amount : null,
+      kcal: m ? m.kcal : null,
+      nova: ing?.nova ?? null,
+    }
+  })
 }
 
 const MIN_SERVINGS = 1

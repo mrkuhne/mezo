@@ -13507,6 +13507,33 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-actions > button.fkx-del { margin-left: auto; color: var(--coral);
   border-color: color-mix(in srgb, var(--coral) 30%, transparent); }
 
+/* Receptműhely — élő vászon. A Makrók/Hozzávalók/Minőség/Mikrotápanyagok szekciók az S1
+   `fmx-` blokkjából öröklődnek (ugyanazok a komponensek), itt csak a vászon SAJÁT darabjai
+   élnek: a kiinduló kérdés, az adag-stepper és a bázis-váltó helye. */
+.fkx-ws-empty { position: relative; display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 10px 12px 18px; }
+.fkx-ws-glow { position: absolute; top: -24px; left: 50%; width: 280px; height: 230px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lav) 22%, transparent) 0,
+    transparent 66%); }
+.fkx-ws-art { position: relative; }
+.fkx-ws-empty strong { position: relative; margin-top: 8px; font-size: 22px; font-weight: 600;
+  color: var(--ink); }
+.fkx-ws-empty p { position: relative; max-width: 300px; margin: 8px 0 0; font-size: 12.5px;
+  line-height: 1.6; color: var(--sub); }
+.fkx-ws-empty small { position: relative; margin-top: 7px; font-size: 10px; color: var(--sub); }
+.fkx-ws-hero { margin-top: 4px; }
+.fkx-stepper { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px; border-radius: 15px;
+  border: 1px solid color-mix(in srgb, var(--lav) 28%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--lav) 14%, transparent), var(--surface-1)); }
+.fkx-stepper button { width: 44px; height: 44px; border-radius: 50%; font-size: 17px;
+  color: var(--ink); border: 1px solid var(--divider); background: var(--surface-1); }
+.fkx-stepper button:disabled { opacity: 0.35; }
+.fkx-stepper span { text-align: center; }
+.fkx-stepper strong { display: block; font-size: 20px; font-weight: 600; color: var(--ink); }
+.fkx-stepper small { font-size: 9px; color: var(--sub); }
+
 @media (prefers-reduced-motion: no-preference) {
   .fkx-capture-art { animation: fkx-float 5s ease-in-out infinite; }
   .fkx-capture:nth-child(2) .fkx-capture-art { animation-delay: -2.4s; }
