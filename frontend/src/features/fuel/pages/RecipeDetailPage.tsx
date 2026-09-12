@@ -35,7 +35,6 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { RecipeScoreSheet } from '@/features/fuel/sheets/RecipeScoreSheet'
 import { NO_NUTRIENTS, scaleNutrients } from '@/data/fuel/recipeMacros'
 import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
@@ -87,7 +86,6 @@ export function RecipeDetailPage() {
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
   const [logOpen, setLogOpen] = useState(false)
-  const [scoreOpen, setScoreOpen] = useState(false)
   const [logsOpen, setLogsOpen] = useState(false)
   const [delArmed, setDelArmed] = useState(false)
   // Today's logs of this recipe (mezo-cki) + the template breakdown (mezo-bw3y). Called with
@@ -175,7 +173,7 @@ export function RecipeDetailPage() {
           <span className="fkx-head-score">
             <FuelScoreChip
               scorePct={breakdownBusy || fitScore == null ? null : Math.round(fitScore * 100)}
-              onOpen={breakdown ? () => setScoreOpen(true) : undefined}
+              onOpen={breakdown ? () => navigate(`/fuel/recipes/${recipe.id}/ertekeles`) : undefined}
               size="big"
             />
           </span>
@@ -251,7 +249,7 @@ export function RecipeDetailPage() {
             <span className="fkx-fit-chip">● {fitsFor[0]}</span>
           )}
           <button type="button" className="fkx-door" data-testid="recipe-score-open"
-            disabled={!breakdown || breakdownBusy} onClick={() => setScoreOpen(true)}>
+            disabled={!breakdown || breakdownBusy} onClick={() => navigate(`/fuel/recipes/${recipe.id}/ertekeles`)}>
             <span aria-hidden="true"><ClayIcon name="i-kristaly" size={26} /></span>
             <span>
               <strong>Pontszám</strong>
@@ -303,7 +301,6 @@ export function RecipeDetailPage() {
       </EntranceGroup>
 
       {logOpen && <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
-      {scoreOpen && breakdown && <RecipeScoreSheet recipe={recipe} breakdown={breakdown} onClose={() => setScoreOpen(false)} />}
       {logsOpen && (
         <Sheet onClose={() => setLogsOpen(false)} labelledBy="recipe-logs-title">
           {(close) => (

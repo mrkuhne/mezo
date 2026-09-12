@@ -8,19 +8,20 @@
 // szekcionált blokkokkal. Anatómia: üveg-hero (az adag a nagy szám) → chipek (sáv · eredet ·
 // mai állapot) → egyérintéses pipa → termékadatok → „Miért így" → kamra-kapcsolat → határvonal.
 //
-// A kártya natív <dialog class="glass">: Escape és backdrop a platformtól, a `showModal`/`close`
+// A kártya natív <GlassBox onClose={onClose} class="glass">: Escape és backdrop a platformtól, a `showModal`/`close`
 // feature-detektált (a ház mintája: FuelEnergyHero). A jsdom nem hoz HTMLDialogElement-et.
 //
 // Őszinte-null: ha a termékről nem tudjuk, mennyi van egy egységben, NEM találunk ki darabszámot
 // — megmondjuk, mit nem tudunk, és felajánljuk a beállítót. Az elhelyezés indoka a motorból jön
 // (`placementReason`); ha nincs, nem írunk helyette kitalált miértet.
 // ============================================================
-import { useEffect, useId, useRef } from 'react'
+import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStack } from '@/data/hooks'
 import { ClayIcon } from '@/shared/ui/clay'
 import type { BandRow } from '@/features/fuel/logic/stackBands'
 import type { StackPlacementSource } from '@/data/types'
+import { GlassBox } from '@/features/fuel/components/GlassBox'
 
 const SOURCE_LABEL: Record<StackPlacementSource, string> = {
   rule: 'okos elhelyezés',
@@ -34,32 +35,21 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
   onClose: () => void
   onToggle: () => void
 }) {
-  const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const navigate = useNavigate()
   const { stash } = useStack()
   const item = stash.find(candidate => candidate.id === row.itemId)
   const taken = row.taken
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    // Feature-detektált: a jsdom nem implementálja a dialogot, ott az attribútum a fallback.
-    if (typeof el.showModal === 'function') el.showModal()
-    else el.setAttribute('open', '')
-  }, [])
 
   const stock = item && item.stock != null
     ? `${item.stock}${item.stockUnit ? ` ${item.stockUnit}` : ''}`
     : null
 
   return (
-    <dialog
-      ref={ref}
+    <GlassBox onClose={onClose}
       className="fsx-glass glass"
-      aria-labelledby={titleId}
-      onCancel={(event) => { event.preventDefault(); onClose() }}
-      onClose={onClose}
+      labelledBy={titleId}
     >
       <div className="fsx-glass-hero">
         <span aria-hidden="true"><ClayIcon name="i-kiegeszito" size={56} /></span>
@@ -157,6 +147,6 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
 
       <p className="fsx-note">Tájékoztatás, nem orvosi tanács.</p>
       <button type="button" className="fsx-glass-close" onClick={onClose}>Bezárom</button>
-    </dialog>
+    </GlassBox>
   )
 }

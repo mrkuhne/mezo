@@ -121,6 +121,7 @@ import { RunPage } from '@/features/character/pages/RunPage'
 import { AdatforrasokPage } from '@/features/character/pages/AdatforrasokPage'
 import { KorPage } from '@/features/character/pages/KorPage'
 import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
+import { FuelRecipeScorePage } from '@/features/fuel/pages/FuelRecipeScorePage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -324,6 +325,8 @@ export const routes: RouteObject[] = [
       { path: 'fuel/recipes/muhely', element: <RecipeWorkshopPage /> },
       { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
+      // mezo-jb84: a recept AI értékelése a Titán felületen — ugyanaz, mint az étkezésé.
+      { path: 'fuel/recipes/:id/ertekeles', element: <FuelRecipeScorePage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
       // Fuel settings is a full-page sibling; its meal-window row continues to the
       // dedicated slot-template editor (mezo-7102).

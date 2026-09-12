@@ -6,6 +6,7 @@ import { http } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
+import { FuelRecipeScorePage } from '@/features/fuel/pages/FuelRecipeScorePage'
 import { useRecipes } from '@/data/hooks'
 import { RECIPES_KEY } from '@/data/fuel/queryKeys'
 import { server } from '@/test/msw/server'
@@ -32,6 +33,10 @@ function renderDetail(id: string, qc: QueryClient) {
         <Routes>
           <Route path="/fuel/recipes/:id" element={<RecipeDetailPage />} />
           <Route path="/fuel/recipes/:id/edit" element={<LocationProbe />} />
+          {/* mezo-jb84: a Pontszám ajtó már nem sheetet nyit, hanem a Titán értékelő OLDALRA visz
+              — ugyanarra, amit egy logolt étkezés kap. Az oldalt itt valódiként mountoljuk, hogy
+              a lefedettség az ajtó CÉLJÁRÓL szóljon, ne egy sorompó mögötti feltevésről. */}
+          <Route path="/fuel/recipes/:id/ertekeles" element={<FuelRecipeScorePage />} />
           <Route path="/fuel/recipes/muhely" element={<LocationProbe />} />
           <Route path="/fuel/recipes" element={<LocationProbe />} />
         </Routes>
@@ -275,7 +280,7 @@ test('shows the Logok empty-state when the recipe was never logged', async () =>
   expect(await screen.findByText(/Még nem logoltad ezt a receptet/)).toBeInTheDocument()
 })
 
-test('a Pontszám ajtó a teljes bontás-sheetet nyitja (a közös ScoreBreakdownBody) (mezo-bw3y)', async () => {
+test('a Pontszám ajtó a Titán értékelő oldalra visz, a teljes bontással (mezo-bw3y)', async () => {
   const qc = newQc()
   const rec = firstId(qc)
   renderDetail(rec.id, qc)
@@ -284,11 +289,9 @@ test('a Pontszám ajtó a teljes bontás-sheetet nyitja (a közös ScoreBreakdow
   await waitFor(() => expect(door).not.toBeDisabled())
   expect(within(door).getByText(/szempont/)).toBeInTheDocument()
   await userEvent.click(door)
-  // the sheet renders the shared ScoreBreakdownBody's dimension cards. Two hits since mezo-1f7b:
-  // the ledger's named legend row and the dimension tile itself both carry the label.
+  // Az értékelő oldal a dimenzió-mozaikot rendereli — ugyanazt az envelope-ot, más bőrben.
   expect((await screen.findAllByText('Kcal & makró arány')).length).toBeGreaterThanOrEqual(1)
-  // Két találat: az ajtó saját sora és a sheet fejléce — mindkettő ugyanazt a bontást nevezi.
-  expect(screen.getAllByText(/szempont · megbízh\./).length).toBeGreaterThanOrEqual(2)
+  expect(screen.getByText('Miből áll össze?')).toBeInTheDocument()
 })
 
 // recipeToInput round-trips the whole recipe (the star toggle writes it straight back),
@@ -322,7 +325,7 @@ test('a standard recipe gets no role chip (mezo-uavr)', async () => {
   expect(screen.getByText(/létrehozva/).textContent).not.toContain('Általános')
 })
 
-test('the PONTSZÁM sheet names the rubric a non-standard role retargets to (mezo-uavr)', async () => {
+test('az értékelő oldal megnevezi a mércét, amihez egy nem-standard szerep igazodik (mezo-uavr)', async () => {
   const qc = newQc()
   const r = pickRecipe(qc, x => x.role === 'pre_workout' && !!x.templateBreakdown)
   renderDetail(r.id, qc)
@@ -330,11 +333,11 @@ test('the PONTSZÁM sheet names the rubric a non-standard role retargets to (mez
   const door = screen.getByTestId('recipe-score-open')
   await waitFor(() => expect(door).not.toBeDisabled())
   await userEvent.click(door)
-  // reads as "which yardstick was used", not as praise — the adjectival form in the sheet header
-  expect(await screen.findByText(/edzés előtti mérce/)).toBeInTheDocument()
+  // Azt mondja el, MILYEN mércével mértünk — nem dicsér. A lábjegyzetben él, az oldal alján.
+  expect(await screen.findByText(/edzés előtti/)).toBeInTheDocument()
 })
 
-test('the PONTSZÁM sheet stays rubric-free for a standard recipe (mezo-uavr)', async () => {
+test('standard receptnél az értékelő oldal nem beszél mércéről (mezo-uavr)', async () => {
   const qc = newQc()
   const r = pickRecipe(qc, x => x.role === 'standard' && !!x.templateBreakdown)
   renderDetail(r.id, qc)
@@ -342,7 +345,7 @@ test('the PONTSZÁM sheet stays rubric-free for a standard recipe (mezo-uavr)', 
   const door = screen.getByTestId('recipe-score-open')
   await waitFor(() => expect(door).not.toBeDisabled())
   await userEvent.click(door)
-  expect((await screen.findAllByText(/szempont · megbízh\./)).length).toBeGreaterThanOrEqual(2)
+  expect(await screen.findByText('Miből áll össze?')).toBeInTheDocument()
   expect(screen.queryByText(/mérce/)).toBeNull()
 })
 

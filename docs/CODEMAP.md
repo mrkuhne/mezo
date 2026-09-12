@@ -547,21 +547,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelMaiPage.tsx, FuelMealDetailPage.tsx,
-    FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx, FuelSlotsPage.tsx,
-    FuelStackAddPage.tsx, FuelStackPage.tsx, FuelStackProtocolPage.tsx, FuelTrendekPage.tsx, KamraItemDetailPage.tsx,
-    KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipeWorkshopPage.tsx,
-    RecipesSkeleton.tsx
+    FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelRecipeScorePage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx,
+    FuelSlotsPage.tsx, FuelStackAddPage.tsx, FuelStackPage.tsx, FuelStackProtocolPage.tsx, FuelTrendekPage.tsx,
+    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
+    RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx,
-    FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelQualityBlocks.tsx, FuelStackItemGlass.tsx,
-    FuelWaterModule.tsx, FuelWeekDayGlass.tsx, KamraCard.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx,
-    MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx,
-    NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
-    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
-    StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx, SuggestionCard.tsx, WorkshopChatDock.tsx,
-    WorkshopIngredientRow.tsx
+    FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelQualityBlocks.tsx, FuelScoreSurface.tsx,
+    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, KamraCard.tsx, MacroCells.tsx,
+    MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx, MicroPanel.tsx,
+    NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
+    RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx,
+    ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx,
+    SuggestionCard.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
     formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, heroWindow.ts,

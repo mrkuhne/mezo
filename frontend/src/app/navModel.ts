@@ -17,6 +17,15 @@ export interface NavTab {
   label: string
   route: string
   icon: ClayIconName
+  /**
+   * Deeper routes this tab OWNS, as path prefixes.
+   *
+   * Without it the active tab is the longest tab-route prefix, so any deep page that does not
+   * live under its tab's own path falls back to the domain home and lights the WRONG tab —
+   * `/fuel/recipes` lit „Mai" while the user was standing in Konyha (mezo-jb84). A deep page
+   * should say where it belongs; this is where it says it.
+   */
+  owns?: string[]
 }
 
 export interface NavDomain {
@@ -54,10 +63,15 @@ export const DOMAINS: NavDomain[] = [
     id: 'fuel',
     name: 'Fuel',
     tabs: [
-      { label: 'Mai', route: '/fuel', icon: 'i-tanyer' },
-      { label: 'Kiegészítők', route: '/fuel/stack', icon: 'i-kiegeszito' },
+      // A Fuel mély oldalai nem a fülük útvonala ALATT élnek (történeti route-ok), ezért
+      // mindegyik megmondja, melyik fülhöz tartozik — különben a Mai gyullad ki alattuk.
+      { label: 'Mai', route: '/fuel', icon: 'i-tanyer',
+        owns: ['/fuel/log', '/fuel/etkezes', '/fuel/settings', '/fuel/slots'] },
+      { label: 'Kiegészítők', route: '/fuel/stack', icon: 'i-kiegeszito',
+        owns: ['/fuel/gyogyszer'] },
       { label: 'Trendek', route: '/fuel/trendek', icon: 'i-trend' },
-      { label: 'Konyha', route: '/fuel/konyha', icon: 'i-fazek' },
+      { label: 'Konyha', route: '/fuel/konyha', icon: 'i-fazek',
+        owns: ['/fuel/recipes', '/fuel/kamra'] },
     ],
   },
   {
@@ -107,6 +121,11 @@ export function domainById(id: string | null): NavDomain | undefined {
  * no tab highlighted (e.g. `/train`, `/train/sport`).
  */
 export function activeTabRoute(domain: NavDomain, pathname: string): string | null {
+  // An explicitly OWNED deep route wins outright: it is a statement, not a guess, and it beats
+  // the domain home that would otherwise win on prefix length alone.
+  for (const tab of domain.tabs) {
+    if (tab.owns?.some(prefix => isPrefix(prefix, pathname))) return tab.route
+  }
   let best: string | null = null
   for (const tab of domain.tabs) {
     if (isPrefix(tab.route, pathname) && (best === null || tab.route.length > best.length)) {

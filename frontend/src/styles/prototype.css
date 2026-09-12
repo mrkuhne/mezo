@@ -11901,12 +11901,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-cell:active .fmx-ring { transform: scale(0.96); transition: transform 0.12s; }
 
 /* Üvegdoboz: a matek, csak koppintásra. Natív <dialog>, a ház „glass" anyagában. */
-.fmx-glass { position: fixed; top: 0; bottom: 0; left: 0; right: 0; margin: auto;
+/* Az üvegdoboz a KÉSZÜLÉK viewportját fedi, nem a böngészőablakot (mezo-jb84): a `.phone-screen`
+   a pozícionálás horgonya, ezért `absolute`, nem `fixed`. Natív `<dialog showModal()>`-lal ez a
+   doboz a top layerbe került és az ablakhoz méreteződött — élesben 641 px-es doboz lógott ki egy
+   416 px-es telefonból. A `GlassBox` portálozza ide; a hátlap külön elem, nem `::backdrop`. */
+.fmx-glass-layer { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; }
+.fmx-glass-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0;
+  border: 0; background: rgba(5, 7, 12, 0.62); backdrop-filter: blur(15px); cursor: pointer; }
+.fmx-glass { position: relative; margin: 0;
   width: min(86%, 338px); max-height: 74dvh; padding: 14px 21px 24px; overflow-y: auto;
   border-radius: 24px; border: 1px solid var(--border-subtle);
   background: var(--surface-elevated); backdrop-filter: blur(22px) saturate(1.25);
   box-shadow: 0 34px 70px rgba(0, 0, 0, 0.34); color: var(--ink); }
-.fmx-glass::backdrop { background: rgba(5, 7, 12, 0.62); backdrop-filter: blur(15px); }
 .fmx-glass-hero { display: flex; align-items: center; gap: 14px; padding: 8px 0 14px;
   border-bottom: 1px solid var(--divider); text-align: left; }
 .fmx-glass-hero svg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3)); }
@@ -13374,6 +13380,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fsx-proto-line-end b, .fsx-proto-line-end small,
 .fmx-ing-end b, .fmx-ing-end small,
 .fmx-mc-end b, .fmx-mc-end small { overflow: hidden; text-overflow: ellipsis; }
+
+/* A pont-chip felirata FIX UI-szöveg („folyamatban", egy pontszám) — sosem felhasználói név,
+   ezért nem zsugorodik és nem vágódik: az olvashatóság itt többet ér. A csempét nem tolhatja
+   szét, mert a szövege rövid; a kártya többi sávja (`.fkx-recipe-top`) viszont engedjen. */
+.fkx-recipe-top { min-width: 0; }
 /* ── /fuel overflow guard ── */
 
 
