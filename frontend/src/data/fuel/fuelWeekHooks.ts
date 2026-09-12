@@ -5,7 +5,7 @@
 //   volleyball from Train's sport schedule, the cycle strip from the medication cycle, and the
 //   weekly stats from the 7-day rollup (`GET /api/fuel/week/{start}`). Surfaces with no real
 //   source yet return honest-empty (`patterns`/`weeklySupplements` []) or null (`weeklyNote`,
-//   `supplementsAdherence`) — never the seed (the `useReplanScenarios` precedent).
+//   `supplementsAdherence`) — never the seed.
 //   Design: docs/superpowers/specs/2026-07-04-fuel-p4-weekly-plan-design.md.
 //
 // React rules of hooks: every hook below is called UNCONDITIONALLY in both modes; only the

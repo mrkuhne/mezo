@@ -3,7 +3,6 @@ import type {
   GymScheduleDay,
   WeeklySupplementRow,
   RecurringPattern,
-  ReplanScenario,
   WeeklyStats,
 } from '@/data/types'
 
@@ -87,78 +86,4 @@ export const weeklyStats: WeeklyStats = {
   supplementsAdherence: 92,
 }
 
-// pantry-data.js replanScenarios (559–631)
-export const replanScenarios: ReplanScenario[] = [
-  {
-    id: 'vb-cancelled',
-    title: 'Volleyball lemondva',
-    detail: 'Edző írt · Hétfő 18:15 vb elmarad',
-    icon: 'today',
-    color: 'var(--cat-tendency)',
-    cascades: [
-      { system: 'Fuel', impact: 'Vacsora −30p', detail: '21:00 → 20:30 · kitchen close vissza 21:00-ra' },
-      { system: 'Fuel', impact: 'Magnézium változatlan', detail: '21:00 stack marad · alvás-onset target nem mozdul' },
-      { system: 'Train', impact: 'Push Day +1 set', detail: 'Free vb-load · többlet-volumen behozható a Push Day-en' },
-      { system: 'Sleep', impact: 'Bedtime −15p', detail: 'Vacsora előbb → sleep onset 22:45 felé tolódik' },
-    ],
-    tools: [
-      { type: 'compute', name: 'recomputeKitchenClose()' },
-      { type: 'compute', name: 'redistributeVolume(muscle=back)' },
-      { type: 'write', name: 'updateActiveProtocol(v+1)' },
-    ],
-    confidence: 0.88,
-  },
-  {
-    id: 'gym-delayed',
-    title: 'Gym csúszik · késik a busz',
-    detail: '07:30 → 08:30 gym indítás',
-    icon: 'train',
-    color: 'var(--coral)',
-    cascades: [
-      { system: 'Fuel', impact: 'AAKG-stack 07:50', detail: 'T-40 visszaszámolva · pre-snack 07:20' },
-      { system: 'Fuel', impact: 'Reggeli 10:15', detail: 'Post-workout slot tolva · ebéd 13:30-ra' },
-      { system: 'Fuel', impact: 'Coffee window szűkül', detail: '12:00 espresso → 13:00 · 14:00 cutoff előtt épp megfér' },
-    ],
-    tools: [
-      { type: 'compute', name: 'shiftPreWorkoutChain(+60min)' },
-      { type: 'compute', name: 'validateCoffeeCutoff()' },
-    ],
-    confidence: 0.91,
-  },
-  {
-    id: 'extra-vb',
-    title: 'Extra vb · meccs hozzáadva',
-    detail: 'Szombat extra meccs 16:00',
-    icon: 'today',
-    color: 'var(--cat-tendency)',
-    cascades: [
-      { system: 'Fuel', impact: 'Pre-game snack 14:00', detail: '60-80g carb · banán + rizs · whey 20g' },
-      { system: 'Fuel', impact: 'Vacsora 19:30', detail: 'Post-meccs · omega-3 stack · kitchen close 21:30' },
-      { system: 'Train', impact: 'Vasárnapi Push light', detail: 'Csak ha az RPE <7.5 a meccsen' },
-    ],
-    tools: [
-      { type: 'read', name: 'get_sport_load(7d)' },
-      { type: 'compute', name: 'buildSatelliteMeals(event)' },
-    ],
-    confidence: 0.79,
-  },
-  {
-    id: 'missed-supp',
-    title: 'Magnézium kihagyva tegnap',
-    detail: 'Esti slot · 21:00 stack pending maradt',
-    icon: 'pill',
-    color: 'var(--warning)',
-    cascades: [
-      { system: 'Fuel', impact: 'Ma esti dupla NEM', detail: 'Mg-glicinát nem halmozódik · csak a mai dózis' },
-      { system: 'Sleep', impact: 'Pattern P2 megfigyelve', detail: 'Tegnap éjszaka quality 7.0 — várt 7.4 · Mg-stack hiánya korrelál' },
-      { system: 'Insights', impact: 'Adherence chart frissül', detail: 'Mg stack heti adherence 100% → 86%' },
-    ],
-    tools: [
-      { type: 'read', name: 'get_last_supplement_state()' },
-      { type: 'read', name: 'get_pattern_correlation(P2)' },
-      { type: 'write', name: 'logSupplementSkip(reason=missed)' },
-    ],
-    confidence: 0.95,
-  },
-]
 
