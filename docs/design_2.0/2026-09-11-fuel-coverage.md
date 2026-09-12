@@ -132,3 +132,125 @@ silently changing scope. Implementation slices: `mezo-o6uv` (S0 shell) → `mezo
 `mezo-g2vl` (S2 Kiegészítők), `mezo-83g0` (S3 Trendek), `mezo-hygp` (S4 Konyha) → `mezo-qt5q`
 (S5 cleanup). Follow-up capabilities outside this slice: `mezo-vj61` (micronutrient storage),
 `mezo-nmzh` (supplement dose advisor).
+
+---
+
+## Delivery record — MANIFEST CLOSED 2026-09-12 (S5, `mezo-qt5q`)
+
+Every row above is accounted for below: the decision as frozen, and **where it actually landed**. The
+DROPs and DEFERs are restated in full at the end so a future reader cannot mistake an owner decision
+for a gap. Slices: `mezo-o6uv` (S0 shell) → `mezo-33k6` (S1 Mai) → `mezo-g2vl` (S2 Kiegészítők) →
+`mezo-83g0` (S3 Trendek) → `mezo-hygp` (S4 Konyha) → `mezo-qt5q` (S5 closure).
+
+### A. Mai — delivered
+
+| Row | Decision | Landed in |
+|---|---|---|
+| A1 | KEEP | `components/FuelEnergyHero.tsx` — bowl-in-arc gauge, the REMAINING kcal as the one number; goal-driven target unchanged (S1a) |
+| A2 | KEEP | `components/FuelMacroRings.tsx` — five rings (P/C/F/rost/víz), staggered rise (S1a) |
+| A3 | KEEP | `/fuel/log/uj` + `components/MealComposer.tsx` — pantry/recipe/estimate lines unchanged (S1c) |
+| A4 | KEEP (emelt) | `components/FuelLogModes.tsx` — the camera tab opens first (S1c) |
+| A5 | KEEP | the Gépelés tab of the same shell (S1c) |
+| A6 | KEEP (új összekötés) | the Hang tab: `transcribe` → AI text draft (`MealComposer.voice.test.tsx`, S1c) |
+| A7 | KEEP (új) | `logic/usualMeals.ts` `rankUsualMeals` + the Szokásosak tab (S1c) |
+| A8 | KEEP (új UI) | meal edit in the logger (`MealComposer.edit.test.tsx`, S1c) |
+| A9 | KEEP (új UI) | two-step delete on the meal detail page (S1b) |
+| A10 | MERGE | `components/FuelMealBlocks.tsx` on the Mai; `/fuel/log` RETIRED → `/fuel` (S1b + S5) |
+| A11 | KEEP | `sheets/MealScoreSheet.tsx` + `/fuel/etkezes/:id/ertekeles` (S1b) |
+| A12 | KEEP | `components/FuelWaterModule.tsx` + `sheets/WaterLogSheet.tsx` with session undo (S1d) |
+| A13 | MERGE | the Mai's own `?d=` pager; `logic/backfillWindow.ts` is the ONE 7-day rule (S1d) |
+| A14 | MERGE | the window bar folded INTO each block; `?w=` deep link preserved (S1b) |
+| A15 | KEEP | the shared `sheets/EnergyBreakdownSheet.tsx`, Én usage untouched (S1a) |
+| A16 | MOVE | the quiet corner `.fmx-corner` → `/fuel/settings`; the diet save still re-prescribes the goal (S1d) |
+| A17 | MOVE | `/fuel/slots`, reached from under Beállítások (S1d) |
+| A18 | KEEP (átkötve) | `registry/fuel.ts` re-anchored; new anchors `trendek-heti`, `konyha-felvetel`; a new lint forbids a retired-path route or chip (S5) |
+| A19 | KEEP (átkötve) | FAB targets repointed, still hidden on the logger route (S1d) |
+| A20 | KEEP (átkötve) | only the Nap fuel row actually moved; the LogFlow overlay untouched (S1d) |
+
+### B. Konyha — delivered
+
+| Row | Decision | Landed in |
+|---|---|---|
+| B1 | KEEP (emelt) | the Konyha hub's „Recept mentése" capture → `/fuel/recipes/new` (S4) |
+| B2 | KEEP (emelt) | the hub's „Új elem a kamrába" capture → `sheets/ImportItemSheet.tsx` (S4) |
+| B3 | KEEP | the same sheet's photo mode (S4) |
+| B4 | KEEP | the same sheet's link mode (S4) |
+| B5 | **DROP** (owner) | barcode UI never built; `lookupPantryItem` endpoint untouched and still UI-less |
+| B6 | KEEP | `/fuel/kamra` Titanium shelf + `/fuel/kamra/:id` (S4) |
+| B7 | KEEP | the detail page's edit + two-step delete (S4) |
+| B8 | KEEP | `/fuel/recipes` tile grid + `/fuel/recipes/:id` (S4) |
+| B9 | KEEP | `/fuel/recipes/:id/edit` + detail delete (S4) |
+| B10 | KEEP | `/fuel/recipes/muhely` with a live recipe-detail-shaped preview; the Műhely button moved to the hub poster (S4) |
+| B11 | KEEP | `sheets/RecipeScoreSheet.tsx` (S4) |
+| B12 | KEEP | recipe/pantry → prefilled logger (S4) |
+| B13 | KEEP | `components/SuggestionCard.tsx` at the bottom of the Kamra (S4) |
+| B14 | **DROP** (owner, list only) | no imports feed; the per-item `Forrás` card on `/fuel/kamra/:id` carries provenance, and the import record is still WRITTEN |
+| B15 | **DROP** (owner) | shopping list: nothing existed, nothing built, no follow-up |
+| B16 | **DROP** (owner) | `SHOW_PANTRY_STOCK` stays false; no new UI references stock/expiry |
+| B17 | **DROP** (owner) | no „mit főzzünk" surface |
+
+### C. Trendek — delivered
+
+| Row | Decision | Landed in |
+|---|---|---|
+| C1 | MERGE | `/fuel/trendek` weekly picture; `/fuel/plan` RETIRED → `/fuel/trendek` (S3 + S5) |
+| C2 | KEEP (bekötve) | the mapper now passes `mealScoreAvg` + `weightAvgKg`; two stat tiles render them honest-null (S3) |
+| C3 | KEEP | `components/FuelHorizon.tsx` — intake × weight on one axis, from existing series (S3) |
+| C4 | MERGE | `logic/fuelPatternRefs.ts` — REFERENCES into the canonical Mezo item, never a copy (S3) |
+| C5 | MERGE | the day glass box's meal list + day score; `/fuel/naplo` RETIRED → `/fuel/trendek`; coach history stays cache-only (S3 + S5) |
+| C6 | MERGE | training days marked in the week view (`MeWeekDay.workoutCount`); the Plan page's caffeine/kitchen legend was NOT carried over — it was never in the manifest's new destination (S3) |
+
+### D. Kiegészítők — delivered
+
+| Row | Decision | Landed in |
+|---|---|---|
+| D1 | MERGE | `/fuel/stack` is hub + timed day in one page; `/fuel/stack/today` RETIRED → `/fuel/stack` (S2 + S5) |
+| D2 | KEEP | `/fuel/stack/protocol`; the read-path lazy backfill untouched (S2) |
+| D3 | MERGE | editing IS `sheets/StackItemSheet.tsx` opened from a Protokoll row; all four `manage/*` pages RETIRED → `/fuel/stack/protocol` (S2 + S5) |
+| D4 | MERGE | the Protokoll page's `.fsx-proto-meals` sub-section (`matchMealsToStack` + `StackMealMatch`); **this retired `/fuel/stack/meals` too — a correction to the S5 plan's first draft, which had only listed the four `manage/*` pages** (S2 + S5) |
+| D5 | KEEP (változatlan) | `/fuel/gyogyszer` unchanged, empty state alive, deep-link target survives |
+| D6 | KEEP (backend, UI nélkül) | `deleteDose` untouched, still no UI |
+| D7 | KEEP (owner) | `history[]` still mapped into state, still no UI |
+| D8 | **DROP** (owner) | `ReplanSheet.tsx` + its test + `useReplanScenarios` + the seed + the types deleted in S2 |
+| D9 | KEEP (átkötve) | `notificationScheduleWriter.ts` FUEL_SLOT → `/fuel/stack` unchanged; the retired stack paths redirect (S5) |
+
+### E. Background — verified in S5, not modified
+
+See the S5 verification pass: every row confirmed against its evidence, each with the test that pins
+it. **One row did NOT hold and was fixed: E9.** The AI draft outcome signal was reported from
+`logMeal`'s per-call `onSuccess`, and TanStack binds those callbacks to the observer — so they are
+dropped when the caller unmounts before the mutation settles. The full-page logger (`/fuel/log/uj`)
+navigates away the instant it saves, and the discard guard had already claimed the draft id, so an
+AI-drafted meal saved from that route reported **neither** accepted/edited **nor** discarded. This
+predates the rebuild (the route and its `?ai=1` deep link already existed); it surfaced only because
+S5 pins the invisible rows on the rebuilt path rather than trusting the overlay's coverage.
+
+Fix: `useMealActions` gained `logMealAsync` (resolves from the mutation itself, so it survives the
+unmount) and `MealComposer`'s AI branch uses it. A failed save still reports nothing — the draft was
+never accepted. Pinned by `pages/FuelLogNewPage.provenance.test.tsx` (E9 + E10 on the rebuilt route)
+and `data/fuel/dietSettingsHooks.test.tsx` (E1/E7/E8, a hook that had no test at all). Every other
+row held with no production change.
+
+### F. New capabilities — DEFERRED, not dropped
+
+| Row | State | Tracking |
+|---|---|---|
+| F1 | Micronutrient storage + AI extraction end-to-end is **DEFERRED** to its own feature slice. Until then the Mikrotápanyagok section shows the rost/cukor/só/telített-zsír rows that DO exist (`components/MicroPanel.tsx`) — it is not a placeholder for absent data. | `mezo-vj61` |
+| F2 | The supplement dose advisor's **backend** is DEFERRED. The frontend-side `logic/doseAdvice.ts` heuristic shipped with S2, but the real label→dose advice needs the backend slice. | `mezo-nmzh` |
+
+### Found during delivery — filed, deliberately not fixed here
+
+| Issue | Why it is not part of this rebuild |
+|---|---|
+| `mezo-0dws` — meal edit silently drops the stored provenance (write-only field) | A backend/contract bug on an existing field (E10 writes provenance; the edit path replaces it). Fixing it inside a UI slice would have changed a write contract the manifest froze. |
+| `mezo-rm6ps` — the pantry import returns void, so the dose setup cannot save a brand-new product in one pass | Needs the import endpoint to return the created id — an API change, and the dose advisor's backend (`mezo-nmzh`) is where it belongs. |
+
+### Closure gates (S5)
+
+| Check | Evidence |
+|---|---|
+| No retired route 404s | `frontend/src/app/router.fuelRetiredRedirects.test.tsx` — every row of `FUEL_RETIRED_REDIRECTS` redirects, the target is itself never retired, `?d=` survives, and the surviving siblings (`/fuel/stack/manage/add`, `/fuel/log/uj`) stay live |
+| Kalauz points only at live pages | `registry.test.ts` „egyetlen kalauz-bejegyzés és -chip sem mutat leváltott Fuel-útvonalra" + `anchors.test.tsx`'s Fuel round |
+| Deletions proven dead | per-candidate grep before each removal; coverage ported, never dropped (`FuelRecipesPage.perServing.test.tsx`, the Trendek-tile honest-null round) |
+| Both FE modes + build | mock and real suites green, `pnpm build` green |
+| CODEMAP freshness | `node scripts/gen-codemap.mjs --check` ✅ |
