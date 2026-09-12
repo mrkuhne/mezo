@@ -39,7 +39,7 @@ function renderWithRoutes() {
 }
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => { vi.unstubAllEnvs(); server.resetHandlers() })
+afterEach(() => { vi.unstubAllEnvs(); server.resetHandlers(); server.events.removeAllListeners() })
 
 /** `path` — a nyitó URL (a hét-váltó `?w=`-je linkelhető); `real` — valós mód (msw). */
 function renderView(opts: { path?: string; real?: boolean } = {}) {
@@ -191,6 +191,54 @@ test('a nem naplózott nap üvegdoboza kimondja, hogy kimarad az átlagból', as
   await userEvent.click(empty)
   expect(screen.getByRole('dialog').textContent).toMatch(/nem naplóztál/i)
   expect(screen.getByRole('dialog').textContent).toMatch(/átlagból is kimarad/i)
+})
+
+// --- C5 (mezo-83g0): a napi doboz megmutatja, MIBŐL állt a nap — a meglévő napi olvasásból. ----
+
+test('a napi üvegdoboz felsorolja a nap étkezéseit', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(loggedDay(), 'i') }))
+  const box = screen.getByRole('dialog')
+  expect(await within(box).findByText('Túrós zabkása · áfonyával')).toBeInTheDocument()
+  expect(within(box).getByRole('heading', { name: 'A nap étkezései' })).toBeInTheDocument()
+})
+
+test('az étkezés a doboz listájából a részletes oldalára visz', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(loggedDay(), 'i') }))
+  await userEvent.click(await screen.findByRole('button', { name: /Túrós zabkása/ }))
+  expect(screen.getByTestId('loc').textContent).toContain('/fuel/etkezes/')
+  // A nap is átmegy, különben a részletező lap a MAI napot olvasná, nem a megnyitottat.
+  expect(screen.getByTestId('loc').textContent).toContain(`d=${addDays(mondayIso(), 1)}`)
+})
+
+// Őszinte-null: naplózatlan nap nem „hiányzó lista", hanem naplózatlan nap.
+test('naplózatlan napnál nincs étkezés-lista, hanem a már meglévő őszinte mondat áll', async () => {
+  const { container } = renderView()
+  await userEvent.click(container.querySelector<HTMLButtonElement>('.ftx-day.is-empty')!)
+  const box = screen.getByRole('dialog')
+  expect(within(box).getByText(/nem naplóztál/i)).toBeInTheDocument()
+  expect(within(box).queryByRole('list')).toBeNull()
+  expect(within(box).queryByRole('heading', { name: 'A nap étkezései' })).toBeNull()
+})
+
+// A nap étkezései CSAK akkor töltődnek be, amikor tényleg megnyitják a dobozt — és C5: egy
+// korábbi nap megnyitása étkezés-coach verdiktet SOHA nem kér (a coach-történet cache-only).
+test('a napi olvasás csak a doboz megnyitásakor fut le, coach-kérés nélkül', async () => {
+  const dayCalls: string[] = []
+  const coachCalls: string[] = []
+  server.events.on('request:start', ({ request }) => {
+    const { pathname } = new URL(request.url)
+    if (pathname.includes('/api/fuel/day/')) dayCalls.push(pathname)
+    if (pathname.includes('coach')) coachCalls.push(pathname)
+  })
+  renderView({ real: true })
+  const monday = await screen.findByRole('button', { name: new RegExp(huMonthDay(mondayIso()), 'i') })
+  expect(dayCalls).toHaveLength(0)
+  await userEvent.click(monday)
+  await waitFor(() => expect(dayCalls).toHaveLength(1))
+  expect(dayCalls[0]).toContain(mondayIso())
+  expect(coachCalls).toEqual([])
 })
 
 // C1 + C2: a kontraszt-sorok és a Task 1 felszabadította két átlag.

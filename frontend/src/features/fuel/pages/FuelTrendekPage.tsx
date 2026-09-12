@@ -39,6 +39,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelWeek, useFuelWeekRollup, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/me/meWeekHooks'
 import { useFuelHorizon } from '@/data/fuel/fuelHorizonHooks'
+import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { usePatterns } from '@/data/insights/patternsHooks'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { addDays, huMonthDayDow } from '@/shared/lib/dates'
@@ -49,6 +50,8 @@ import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { FuelHorizon } from '@/features/fuel/components/FuelHorizon'
 import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 import { buildWeekView, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
 
 /** A három mutató-csempe — a prototípus `TX_STAT`-ja ház-tokenekkel és clay-szimbólumokkal. */
@@ -173,6 +176,59 @@ function SplitRow({ label, icon, color, pct }: {
  */
 const WEEK_PARAM = 'w'
 const PREV_WEEK_VALUE = 'elozo'
+
+/**
+ * C5 (mezo-83g0): a nap étkezései a nyitott üvegdobozban — a prototípus `trendDayGlass`
+ * étkezés-szekciója (`fuel-pages.js:244+`), a MEGLÉVŐ napi olvasásból (`useFuelDay`).
+ *
+ * FETCH-FEGYELEM: ez a komponens KIZÁRÓLAG a nyitott doboz belsejében van beillesztve, tehát a
+ * napi kérés a doboz megnyitásakor indul — nem hét nappal előre, és naplózatlan napon soha (az
+ * üvegdoboz naplózatlan ága a gyerekeket el sem rendereli).
+ *
+ * C5 MÁSODIK fele: a coach-TÖRTÉNET cache-only. Ez a lista a napot OLVASSA; étkezés-coach
+ * verdiktet nem kér és nem generál. Az étkezés pontja csak akkor látszik, ha a napi válasz MÁR
+ * hordozza — különben egyszerűen nem áll ott semmi, nem nulla és nem „folyamatban".
+ */
+function DayMealList({ date, onOpenMeal }: { date: string; onOpenMeal: (mealId: string) => void }) {
+  const { fuel, isPending } = useFuelDay(date)
+
+  if (isPending) {
+    return (
+      <>
+        <h2 className="ftx-section">A nap étkezései</h2>
+        <p className="ftx-meals-note">Töltjük a nap étkezéseit…</p>
+      </>
+    )
+  }
+  return (
+    <>
+      <h2 className="ftx-section">A nap étkezései</h2>
+      {fuel.meals.length === 0 ? (
+        // A rollup szerint volt fogyás ezen a napon, a napi olvasás mégsem ad étkezést: ezt
+        // kimondjuk, nem üres listát rajzolunk.
+        <p className="ftx-meals-note">Erről a napról nincs tételes étkezés mentve.</p>
+      ) : (
+        <ul className="ftx-meals">
+          {fuel.meals.map((meal) => (
+            <li key={meal.id}>
+              <button type="button" className="ftx-meal" onClick={() => onOpenMeal(meal.id)}>
+                <span aria-hidden="true"><ClayIcon name="i-tanyer" size={28} /></span>
+                <span className="ftx-meal-copy">
+                  <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>
+                  <small>
+                    {hhmmFromLoggedAt(meal.loggedAt, '—')} · {huInt(meal.kcal)} kcal
+                  </small>
+                </span>
+                {meal.score != null && <b className="ftx-meal-score">{hu1(meal.score * 10)}</b>}
+                <b aria-hidden="true">›</b>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
 
 export function FuelTrendekPage() {
   const navigate = useNavigate()
@@ -366,7 +422,12 @@ export function FuelTrendekPage() {
           rollup={openRollup}
           subscores={subscoresByDate[openDay.date] ?? { nutrition: null, quality: null }}
           onClose={() => setOpenDate(null)}
-        />
+        >
+          <DayMealList
+            date={openDay.date}
+            onOpenMeal={(mealId) => { setOpenDate(null); navigate(`/fuel/etkezes/${mealId}?d=${openDay.date}`) }}
+          />
+        </FuelWeekDayGlass>
       )}
     </MozaikPage>
   )

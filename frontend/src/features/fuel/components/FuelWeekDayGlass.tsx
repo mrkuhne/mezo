@@ -55,13 +55,17 @@ const pair = (value: number, target: number | null, unit: string): string =>
     ? `${huInt(value)} / ${huInt(target)}${unit ? ` ${unit}` : ''}`
     : `${huInt(value)}${unit ? ` ${unit}` : ''}`
 
-export function FuelWeekDayGlass({ day, rollup, subscores, onClose }: {
+export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: {
   day: WeekDayVM
   /** A nap nyers rollup-sora — a makró-tények EGYETLEN forrása (a Fuel kanonikus adata). */
   rollup: FuelWeekDay
   /** A hat dimenziós napi értékelés két étkezés-dimenziója, 0–100; null = nincs adat. */
   subscores: { nutrition: number | null; quality: number | null }
   onClose: () => void
+  /** C5 (mezo-83g0): „A nap étkezései" szekció — CSAK naplózott napon jelenik meg, ezért a
+   *  naplózatlan ág (lent) el sem rendereli, így a napi olvasás ott el sem indul. A tartalmat a
+   *  lap adja (`FuelTrendekPage`), mert a napi étkezés-olvasás a LAP adatforrása, nem a dobozé. */
+  children?: React.ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -202,6 +206,9 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose }: {
           </div>
         ))}
       </div>
+
+      {/* A nap étkezései — a prototípus `trendDayGlass` étkezés-szekciója (fuel-pages.js :244+). */}
+      {children}
 
       <button type="button" className="ftx-glass-link" onClick={() => { onClose(); navigate(`/fuel?d=${day.date}`) }}>
         <span aria-hidden="true"><ClayIcon name="i-naplo" size={28} /></span>

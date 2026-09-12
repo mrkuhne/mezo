@@ -13195,6 +13195,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ftx-rows span { font-size: 11px; color: var(--sub); }
 .ftx-rows b { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; }
 
+/* C5: „A nap étkezései" a napi üvegdobozban — a prototípus `glass-list`/`glass-stat` sorai. */
+.ftx-meals { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.ftx-meal { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
+  padding: 9px 2px; border: 0; border-bottom: 1px solid var(--border-subtle);
+  background: transparent; text-align: left; color: var(--ink); }
+.ftx-meals li:last-child .ftx-meal { border-bottom: 0; }
+.ftx-meal > span:first-child { line-height: 0; flex: 0 0 auto; }
+.ftx-meal-copy { flex: 1; min-width: 0; }
+.ftx-meal-copy strong { display: block; font-size: 12px; font-weight: 500; }
+.ftx-meal-copy small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
+.ftx-meal-score { font-size: 14px; font-weight: 600; white-space: nowrap;
+  color: color-mix(in srgb, var(--lav) 55%, var(--ink)); }
+.ftx-meal > b:last-child { color: var(--sub); }
+/* Őszinte hiány: „még töltődik" és „nincs tételes étkezés" — egyik sem üres lista. */
+.ftx-meals-note { margin: 0; font-size: 11px; line-height: 1.55; color: var(--faint); }
+
 .ftx-glass-link { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px;
   padding: 11px 12px; border: 1px solid var(--border-subtle); border-radius: 15px;
   background: var(--surface-recess); text-align: left; color: var(--ink); }
@@ -13347,6 +13363,62 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-ws-copy strong { display: block; font-size: 19px; font-weight: 600; }
 .fkx-ws-copy small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.5;
   color: var(--sub); }
+
+/* Részletlapok (recept · kamra-tétel). A Makrók/Hozzávalók/Minőség/Mikrotápanyagok szekciók az
+   S1 `fmx-` blokkjából öröklődnek — itt csak a lap SAJÁT darabjai élnek. */
+.fkx-detail { display: grid; gap: 0; }
+.fkx-head-score { margin-left: auto; flex: 0 0 auto; }
+.fkx-meta { margin: 10px 2px 0; font-size: 9.5px; letter-spacing: 0.06em; color: var(--sub);
+  font-variant-numeric: tabular-nums; }
+.fkx-nova { font-weight: 600; color: var(--amber); }
+.fkx-role { font-weight: 600; color: var(--coral); }
+.fkx-basis { margin: 12px 2px 2px; }
+.fkx-source { display: flex; align-items: center; gap: 11px; margin: 12px 0 0; padding: 12px 13px;
+  border-radius: 17px; border: 1px solid color-mix(in srgb, var(--sky) 26%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--sky) 12%, transparent), var(--surface-1)); }
+.fkx-source-copy { min-width: 0; flex: 1; }
+.fkx-source-copy strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+.fkx-source-copy small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--sub); }
+
+/* Mezo jegyzete — a lusta AI-olvasat kártyája. */
+.fkx-note { margin: 14px 0 0; padding: 13px 14px; border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--lav) 26%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--lav) 13%, transparent), var(--surface-1)); }
+.fkx-note-head { display: flex; align-items: center; gap: 9px; }
+.fkx-note-head strong { font-size: 15px; font-weight: 600; color: var(--ink); }
+.fkx-note-body { margin: 8px 0 0; font-size: 12px; line-height: 1.55; color: var(--sub); }
+.fkx-fit-chip { display: inline-flex; margin-top: 9px; padding: 3px 9px; border-radius: 12px;
+  font-size: 10px; color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--sage) 40%, transparent);
+  background: color-mix(in srgb, var(--sage) 14%, transparent); }
+
+/* Halk ajtó (Pontszám · Logok) és a két fő művelet. */
+.fkx-door { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 48px;
+  margin: 10px 0 0; padding: 11px 13px; border-radius: 16px; text-align: left;
+  border: 1px solid var(--divider); background: var(--surface-1); color: var(--ink); }
+.fkx-door:disabled { opacity: 0.6; }
+.fkx-door > span:nth-child(2) { min-width: 0; flex: 1; }
+.fkx-door strong { display: block; font-size: 13.5px; font-weight: 600; }
+.fkx-door small { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.45;
+  color: var(--sub); }
+.fkx-door > b { font-size: 16px; font-weight: 300; color: var(--sub); }
+.fkx-cta { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 52px;
+  margin: 12px 0 0; padding: 12px 14px; border-radius: 17px; font-size: 14px; font-weight: 600;
+  text-align: left; color: var(--ink); }
+.fkx-cta > span:nth-child(2) { flex: 1; }
+.fkx-cta > b { font-size: 17px; font-weight: 300; }
+.fkx-cta.is-primary { border: 1px solid color-mix(in srgb, var(--sage) 46%, transparent);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--sage) 22%, transparent), var(--surface-1)); }
+.fkx-cta.is-secondary { border: 1px solid color-mix(in srgb, var(--lav) 40%, transparent);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--lav) 18%, transparent), var(--surface-1)); }
+
+.fkx-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px;
+  margin: 16px 0 6px; }
+.fkx-actions > button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  padding: 8px 13px; border-radius: 14px; font-size: 12px; color: var(--sub);
+  border: 1px solid var(--divider); background: var(--surface-1); }
+.fkx-actions > button.fkx-del { margin-left: auto; color: var(--coral);
+  border-color: color-mix(in srgb, var(--coral) 30%, transparent); }
 
 @media (prefers-reduced-motion: no-preference) {
   .fkx-capture-art { animation: fkx-float 5s ease-in-out infinite; }
