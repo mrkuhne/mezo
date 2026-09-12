@@ -6,6 +6,9 @@
 // EGYETLEN más útvonalra sem szabad átszivárognia, amíg azok a saját szeletüket meg nem
 // kapják. A blokk másik fele az alap: a két útvonal a ház dark témáját kényszeríti.
 // Spec: .superpowers/sdd/2026-09-10-nap-mai-titanium/task-7-brief.md
+//
+// mezo-o6uv (Fuel Titanium S0): a Fuel megkapta a saját szeletét, ezért a `/fuel` ÁTKERÜLT
+// a „nem kap" listáról a hatókörbe — most a teljes domén grafit.
 // ============================================================
 import { render } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -46,7 +49,7 @@ test.each(['/nap', '/nap/gyors'])('a %s a titan-dark hatókört viseli', (path) 
   expect(container.querySelector('.phone-screen.titan-dark')).not.toBeNull()
 })
 
-test.each(['/train', '/fuel', '/me', '/nap/eletjel'])('a %s NEM kap titan-dark hatókört', (path) => {
+test.each(['/train', '/me', '/nap/eletjel'])('a %s NEM kap titan-dark hatókört', (path) => {
   const { container } = renderAt(path)
   expect(container.querySelector('.phone-screen')).not.toBeNull()
   expect(container.querySelector('.titan-dark')).toBeNull()
@@ -65,4 +68,20 @@ test('világos beállítású felhasználónál más útvonal NEM lesz sötét',
   localStorage.setItem('mezo-theme', 'light')
   renderAt('/train')
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
+})
+
+// Fuel Titanium (mezo-o6uv): a Fuel domén EGÉSZE a grafit bőrt viseli — a hub, a
+// mélyebb oldalak és a logoló is, különben a portálozott sheetek világosban nyílnának.
+test.each(['/fuel', '/fuel/stack', '/fuel/trendek', '/fuel/konyha', '/fuel/log/uj'])(
+  '%s a titan-dark hatókörben renderel',
+  path => {
+    const { container } = renderAt(path)
+    expect(container.querySelector('.phone-screen')?.className).toContain('titan-dark')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  },
+)
+
+test('a Fuel-on kívüli útvonal nem kap titan-dark hatókört', () => {
+  const { container } = renderAt('/me')
+  expect(container.querySelector('.phone-screen')?.className).not.toContain('titan-dark')
 })
