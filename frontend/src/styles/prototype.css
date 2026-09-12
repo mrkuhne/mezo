@@ -13053,8 +13053,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   transform: translateX(-50%); pointer-events: none;
   background: radial-gradient(circle, color-mix(in srgb, var(--sky) 20%, transparent) 0, transparent 66%); }
 .ftx-hero h1 { position: relative; margin: 0; font-size: 21px; font-weight: 600; color: var(--ink); }
-.ftx-week { position: relative; margin: 3px 0 0; font-size: 11px; letter-spacing: .4px;
-  color: var(--sub); }
+.ftx-week { position: relative; margin: 3px 0 0; font-size: 11px; font-weight: 500;
+  letter-spacing: .4px; color: var(--sub); }
+/* Hét-váltó (prototípus `.tx-weeknav`): a nyitott hét és a múlt hét között lép. */
+.ftx-weeknav { position: relative; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; margin: 5px 0 0; }
+.ftx-weeknav button { padding: 7px 12px; border: 1px solid var(--border-subtle);
+  border-radius: 13px; background: var(--surface-recess); font-size: 10px; color: var(--sub); }
+.ftx-weeknav button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--sky) 30%, transparent);
+  background: color-mix(in srgb, var(--sky) 12%, var(--surface-1));
+  color: color-mix(in srgb, var(--sky) 55%, var(--ink)); }
+.ftx-weeknav button:disabled { opacity: .5; }
+/* Őszinte állapot, nem hiba: nincs korábbi hét. */
+.ftx-weeknav-note { position: relative; margin: 7px 0 0; font-size: 10px; line-height: 1.5;
+  text-align: center; color: var(--faint); }
 .ftx-big { position: relative; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; }
 .ftx-big strong { font-size: 62px; line-height: 1; font-weight: 500; letter-spacing: -3px;
   color: var(--ink); }
@@ -13256,6 +13269,95 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     animation: none; }
 }
 /* ── /fuel-trendek titanium ───────────────────────────────────────────────── */
+
+/* ── fuel-konyha titanium (mezo-hygp) ─────────────────────────────────────
+   A Konyha Titán felülete (fagyasztott manifeszt B1–B4 · B6–B13). A jóváhagyott vizuális
+   referencia a prototípus: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
+   (`konyha` :25, `receptekPage` :43, `recipeDetailPage` :50, `recipeScoreGlass` :71,
+   `kamraPage` :83, `pantryDetailPage` :93, `muhelyPage` :115) + a fuel-pages.css
+   „Konyha" (:188) és „Konyha v2 — mosaic posters…" (:497) szekciói.
+
+   A `fkx-` prefix SZÁNDÉKOS: az S1 Mai blokkja `fmx-`, az S2 Kiegészítők `fsx-`, az S3
+   Trendek `ftx-` — ez a negyedik, független blokk. EGY blokk nyílik, második nem.
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — a poszter-anatómia (kiskapitális fejléc + spot-grafika +
+   EGY nagy szám), a két-hasábos rögzítő mozaik, a csempe-rács ritmusa, a részletlap
+   szekció-rendje és a Műhely vászon-dokk tagolása.
+   AMIT NEM: a prototípus beégetett sötét hexeit. A Konyha a ház SAJÁT (világos/sötét)
+   témájában él, ezért minden szín ház-tokenen megy keresztül — új gradiens nem nyílik.
+
+   ÚJRAHASZNÁLAT: a Hozzávalók / Minőség / Mikrotápanyagok szekciók ugyanazok a
+   komponensek, amiket a Mai étkezés-részletlap rajzol (FuelQualityBlocks), ezért a
+   stílusuk is az S1 `fmx-` blokkjából jön — itt nincs második példány belőlük.
+
+   Csökkentett mozgás: minden animáció a `no-preference` ágban él, a `reduce` ág explicit
+   kivezeti őket (a Műhely arany diff-villanását is). Ujjbarát: minden kártya/ajtó/pipa
+   legalább 44px magas tap-területet kap. */
+
+.fkx-page .mz-page-body { padding-top: 4px; }
+.fkx-body { display: grid; gap: 12px; }
+
+/* A két rögzítő művelet — ezért jön ide a felhasználó (owner). */
+.fkx-captures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fkx-capture { position: relative; display: flex; flex-direction: column; align-items: flex-start;
+  gap: 3px; min-width: 0; min-height: 44px; padding: 14px 13px 13px; border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--fkx) 34%, transparent);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--fkx) 20%, transparent),
+    color-mix(in srgb, var(--fkx) 5%, transparent) 64%, var(--surface-1));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.10),
+    0 0 22px color-mix(in srgb, var(--fkx) 12%, transparent);
+  text-align: left; color: var(--ink); }
+.fkx-plus { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; display: grid;
+  place-items: center; border-radius: 50%; font-size: 17px; font-weight: 400; color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--fkx) 50%, transparent);
+  background: color-mix(in srgb, var(--fkx) 26%, transparent); }
+.fkx-capture strong { margin-top: 6px; font-size: 15px; font-weight: 600; line-height: 1.2; }
+.fkx-capture small { font-size: 10px; line-height: 1.4; color: var(--sub); }
+
+/* Poszter-anatómia: kiskapitális fejléc + spot-grafika + EGY nagy szám. Nem lista (owner). */
+.fkx-poster { display: grid; gap: 10px; width: 100%; min-height: 44px; padding: 14px 15px;
+  border-radius: 20px; border: 1px solid color-mix(in srgb, var(--fkx) 26%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fkx) 13%, transparent),
+    color-mix(in srgb, var(--fkx) 3%, transparent) 58%, var(--surface-1));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.09); text-align: left; color: var(--ink); }
+.fkx-poster-head { display: flex; align-items: center; justify-content: space-between; }
+.fkx-poster-title { display: flex; align-items: center; gap: 9px; }
+.fkx-poster-title strong { font-size: 17px; font-weight: 600; }
+.fkx-poster-head > b { font-size: 14px; color: color-mix(in srgb, var(--fkx) 70%, var(--ink)); }
+.fkx-poster-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fkx-poster-main > strong { font-size: 50px; line-height: 1; font-weight: 500;
+  letter-spacing: -2.2px; color: color-mix(in srgb, var(--fkx) 62%, var(--ink)); }
+.fkx-bowls { display: flex; align-items: center; }
+.fkx-bowls i { width: 42px; height: 42px; margin-left: -10px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--surface-1);
+  border: 1px solid color-mix(in srgb, var(--slot) 45%, transparent); }
+.fkx-split { position: relative; flex: 1; max-width: 170px; height: 14px; border-radius: 8px;
+  overflow: hidden; background: color-mix(in srgb, var(--lav) 30%, var(--surface-recess)); }
+.fkx-split i { position: absolute; inset: 0; width: var(--w); border-radius: 8px 0 0 8px;
+  background: linear-gradient(90deg, var(--sage), var(--amber)); }
+.fkx-legend { display: flex; gap: 14px; }
+.fkx-legend em { display: inline-flex; align-items: center; gap: 5px; font-style: normal;
+  font-size: 11px; color: var(--sub); }
+.fkx-poster-foot { display: flex; align-items: center; gap: 8px; padding-top: 9px;
+  border-top: 1px solid var(--divider); font-size: 11px; color: var(--sub); }
+.fkx-poster-foot b { font-weight: 600; color: var(--ink); }
+.fkx-ws-copy strong { display: block; font-size: 19px; font-weight: 600; }
+.fkx-ws-copy small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.5;
+  color: var(--sub); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .fkx-capture-art { animation: fkx-float 5s ease-in-out infinite; }
+  .fkx-capture:nth-child(2) .fkx-capture-art { animation-delay: -2.4s; }
+  @keyframes fkx-float {
+    0%, 100% { transform: translateY(1px) rotate(-3deg); }
+    50% { transform: translateY(-3px) rotate(2deg); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Csökkentett mozgás: MINDEN animáció kivezetve — a blokk statikus. */
+  .fkx-capture-art { animation: none; }
+}
+/* ── /fuel-konyha titanium ────────────────────────────────────────────────── */
 
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────
    A Titán Nap (`/nap`, `/nap/gyors`) SÖTÉT GRAFIT bőre — a
