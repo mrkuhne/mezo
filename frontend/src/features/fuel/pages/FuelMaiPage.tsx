@@ -20,11 +20,25 @@
 // provenance — one explanation of the day's keret, never a second copy that can drift from it.
 // KeretHero itself lives on, unchanged, as the /fuel/log page's hero.
 //
+// Fuel Titanium S1b (mezo-33k6, manifest rows A10 day meal list · A11 per-meal AI evaluation ·
+// A14 the eating window folds INTO the meal block): the Mai is now the CANONICAL home of the
+// day's meals. The day's planned blocks live here — each with its budget ring, its eating-window
+// bar and its logged meal rows (`FuelMealBlocks`) — and you log INTO a block; the generic
+// „anything, anytime" log action sits BELOW them (owner). A logged meal row opens the meal's own
+// Titanium detail page (/fuel/etkezes/:id), whose AI chip opens the score page.
+//
+// WHAT LEFT with S1b: the `FuelLogHeroTile` (.fh-logtile). It was the hub's ONE door to
+// /fuel/log back when the hub carried no meal list at all (mezo-byo1) — its window dots, its
+// „x/y ablak kész" line and its log CTA now all say what the blocks say, in less space and with
+// a worse tap target. Its one unique job, the „tegnap pótolható" bait, survives as its own chip
+// under the generic log action, so the /fuel/log?d= door stays open (that page's own retirement
+// is S5, not this slice).
+//
 // Anatomy top→bottom:
 //   the shell fejléc (app/AppHeader.tsx, mezo-atry)
 //   Titán energia-hero — the remaining-kcal gauge, the tap chip, 5 macro rings (víz = a button)
-//   Logolás hero tile — ONE live door to /fuel/log (mezo-byo1; the swimlane dissolved)
-//   Mezo banner — only the counter; the voice lives on /fuel/uzenetek (iterations §2)
+//   the day's meal BLOCKS — log into a block, open a logged meal (A10/A14)
+//   the generic log action (+ the „tegnap pótolható" chip), at the BOTTOM of the meal area
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
 //   Fuel-beállítások band (→ /fuel/settings → /fuel/slots)
 //
@@ -45,8 +59,8 @@ import {
   useStackDay, useWaterActions,
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
-import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
-import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
+import { buildKeretHero, aiAverage, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -54,7 +68,7 @@ import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
-import { FuelLogHeroTile } from '@/features/fuel/components/FuelLogHeroTile'
+import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
@@ -81,8 +95,9 @@ export function FuelMaiPage() {
     slots: plan.slots, nowHHmm, fiberTargetG: dietSettings.fiberG,
   })
 
-  // ── the Logolás hero tile's VM (the /fuel/log page reads the same lane) ─
+  // ── the day's window lane — the blocks' VM (the /fuel/log page reads the same one) ─
   const lane = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
+  const doneRows = doneMealRows(fuel.meals, plan.slots)
 
   // ── hub-csali chip: tegnap pótolható ablakok (mezo-1j3z) — past-normalized lane,
   // ONE live door into `/fuel/log?d=<tegnap>`; hides itself when nothing is missed.
@@ -144,16 +159,39 @@ export function FuelMaiPage() {
           />
         </div>
 
-        {/* The window swimlane dissolved (mezo-byo1): the whole day's logging lives on
-            /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
+        {/* A10/A14: a nap blokkjai — ide logolsz, és innen nyílik egy logolt étkezés.
+            `onLogInto` a MEGLÉVŐ logoló oldalra visz az ablak-kulccsal (`?w=`, mezo-bq2t):
+            a kamera-első logoló S1c, tehát a lap minden commitnál végig működik. */}
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties} data-kalauz-anchor="fuel-log">
-          <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')}
-            pastHint={!yPending && yMissed > 0 ? {
-              dateLabel: `${huMonthDay(yesterday).toLowerCase()}.`,
-              count: yMissed,
-              onOpen: () => navigate(`/fuel/log?d=${yesterday}`),
-            } : null} />
+          <FuelMealBlocks
+            lane={lane}
+            meals={doneRows}
+            dayKcal={budget.kcal}
+            onLogInto={(tile) => {
+              const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)
+              navigate(`/fuel/log/uj${slot ? `?w=${encodeURIComponent(tileKey(slot))}` : ''}`)
+            }}
+            onOpenMeal={(mealId) => navigate(`/fuel/etkezes/${mealId}`)}
+          />
         </div>
+
+        {/* Az ÁLTALÁNOS naplózás a blokkok ALATT áll (owner): a fő útvonal a blokkba logolás. */}
+        <button type="button" className="fmx-loggeneric rise" style={{ '--d': '110ms' } as React.CSSProperties}
+          aria-label="Logolás ablakon kívül" onClick={() => navigate('/fuel/log/uj')}>
+          <ClayIcon name="i-fuel" size={30} />
+          <span className="txt"><b>Logolj bármit</b> · ablakon kívül is</span>
+          <span className="chev" aria-hidden="true">›</span>
+        </button>
+
+        {/* A tegnapi pótolható ablakok csalija — a visszavont Logolás-csempe EGYETLEN saját
+            feladata, megtartva: a /fuel/log?d= ajtó nyitva marad (a lap kivezetése S5). */}
+        {!yPending && yMissed > 0 && (
+          <button type="button" className="fmx-pastchip rise" style={{ '--d': '130ms' } as React.CSSProperties}
+            aria-label={`Pótlás · ${huMonthDay(yesterday).toLowerCase()}. · ${yMissed} ablak pótolható`}
+            onClick={() => navigate(`/fuel/log?d=${yesterday}`)}>
+            ↺ {huMonthDay(yesterday).toLowerCase()}. · {yMissed} ablak pótolható
+          </button>
+        )}
 
         <Mosaic>
           <Tile wash="white" icon="i-rend" eyebrow="Terv" delayMs={160}

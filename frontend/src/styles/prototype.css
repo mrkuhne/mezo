@@ -12207,6 +12207,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-block-log small { display: block; margin-top: 3px; font-size: 9px; color: var(--sub); }
 .fmx-block-empty { margin: 0; padding: 12px 2px; font-size: 11px; color: var(--sub); }
 
+/* Az ÁLTALÁNOS naplózás sávja: a blokkok alatt, halkabban — a fő útvonal a blokkba logolás. */
+.fmx-loggeneric { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 12px;
+  padding: 13px 15px; border-radius: 16px; border: 1px solid var(--border-subtle);
+  background: var(--surface-card); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  font-family: inherit; text-align: left; color: var(--ink); }
+.fmx-loggeneric .txt { flex: 1; font-size: 13px; color: var(--sub); }
+.fmx-loggeneric .txt b { font-weight: 600; color: var(--ink); }
+.fmx-loggeneric .chev { font-size: 20px; font-weight: 300; color: var(--sky); }
+/* Tegnapi pótolható ablakok csalija — szégyenmentes hang, egy koppintás a múltbeli napra. */
+.fmx-pastchip { display: inline-flex; align-items: center; gap: 6px; margin: 10px 0 0;
+  padding: 7px 13px; border-radius: 18px; font-family: inherit; font-size: 11px;
+  border: 1px solid color-mix(in srgb, var(--amber) 36%, transparent);
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+  color: color-mix(in srgb, var(--amber) 62%, var(--ink)); }
+
 /* ── Étkezés-részletező oldal (S1b, mezo-33k6 — A10/A11) ───────────────────
    Prototípus: fuel-pages.css `Shared sub-page head` (:107), `Meal detail page` (:113),
    `Meal detail — icon-rich, hue-coded` (:406) és a jóváhagyott v3 kalibráció,

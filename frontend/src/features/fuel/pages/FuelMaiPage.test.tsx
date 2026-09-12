@@ -1,13 +1,21 @@
 // ============================================================
 // Mezo · Fuel hub tests (Design 2.0 F3.1, mezo-d20.4.1) — the /fuel index's Mozaik
-// face: keret-hero (ONE number) → Logolás hero tile (mezo-byo1) → Mezo counter banner → 6-tile
-// mosaic → Fuel-beállítások band.
+// face: Titán energia-hero (ONE number) → the day's meal BLOCKS → the generic log action →
+// 6-tile mosaic → Fuel-beállítások band.
 //
-// Since mezo-byo1 the per-window logging surface lives on /fuel/log (FuelLogPage) —
-// the hub's contracts here are: the keret-hero stays ONE number, the Logolás hero
-// tile honestly mirrors the day's window states and opens /fuel/log, the víz ring
-// opens the water sheet, the energy chips reopen their own EnergyBreakdownSheet
-// section, and the Fuel-beállítások band opens the standalone settings page.
+// Fuel Titanium S1b (mezo-33k6, manifest A10/A11/A14): the Mai is the CANONICAL home of the
+// day's meals, so the `FuelLogHeroTile` (.fh-logtile) — the hub's old single door to
+// /fuel/log — is GONE from this page, and with it the expectations that described its face
+// (its window dots, its „x/y ablak kész" line, its all-done celebration, its next-window
+// copy). Those contracts are re-stated here on the blocks, which now carry the same truths
+// with a real tap target per window; the per-block anatomy itself is covered by
+// FuelMealBlocks.test.tsx. The tile's ONE unique job, the „tegnap pótolható" bait, survives
+// as its own chip and keeps its test.
+//
+// The hub's contracts here: the hero stays ONE number, the blocks honestly mirror the day's
+// windows and log INTO a window (`?w=`), a logged meal opens its own page, the generic log
+// action sits BELOW the blocks, the víz ring opens the water sheet, the energy chip reopens
+// the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -17,6 +25,9 @@ import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
+// Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat
+// zölden hagyná a tesztet akkor is, ha a `?w=` szerződés elmozdul.
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 
 // The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch
 // logged, the midday/evening windows open. To page-test the missed→Pótold CTA, the
@@ -87,15 +98,17 @@ test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → ban
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
-  const lane = container.querySelector('.fh-logtile')
+  // S1b: a nap blokkjai váltották a Logolás-csempét (mezo-33k6).
+  const blocks = container.querySelector('.fmx-blocks')
   const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
-  expect(lane).toBeInTheDocument()
+  expect(blocks).toBeInTheDocument()
   expect(mosaic).toBeInTheDocument()
+  expect(container.querySelector('.fh-logtile')).toBeNull()
   // The Mezo Fuel-üzenetek band is retired (mezo-04lo) — unused, tile removed with its page.
   expect(container.querySelector('.fh-mezotile')).toBeNull()
-  expect(hero!.compareDocumentPosition(lane!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(lane!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(hero!.compareDocumentPosition(blocks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(blocks!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   // The retired sky/island shell is gone.
   expect(container.querySelector('.sky-islands')).toBeNull()
   expect(container.querySelector('.kdone')).toBeNull()
@@ -170,67 +183,79 @@ test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet an
 // score chips) moved to /fuel/log and are covered by FuelLogPage.test.tsx; the hub
 // carries ONE live door whose face follows the same WindowLaneVM.
 
-test('a MOST window leads the hero tile: label · time, the plan meal, and the pulsing eyebrow', () => {
+const DONE_REGGELI: FuelSlot = {
+  time: '09:15', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
+  mealId: 'm1', mealName: 'Túrós zabkása · áfonyával', kcal: 580, p: 42, c: 78, f: 12,
+}
+const OPEN_UZSONNA: FuelSlot = {
+  time: '16:30', kind: 'snack', label: 'Uzsonna', slotKey: 'snack', state: 'pending',
+  kcal: 380, p: 26, c: 34, f: 15,
+}
+
+// A10 (mezo-33k6): a Mai a nap étkezéseinek KANONIKUS helye — a blokkok itt élnek.
+test('a Mai a blokkokat mutatja, és a blokk a naplózóba visz az ablakával', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  const { container } = renderView()
+  expect(container.querySelectorAll('.fmx-block').length).toBeGreaterThan(0)
+  await userEvent.click(screen.getByRole('button', { name: /Uzsonna/ }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('loc').textContent).toContain('w=')
+  // A kulcsot az app saját `${time}-${label}` szabálya adja, nem egy kitalált string.
+  expect(screen.getByTestId('loc').textContent)
+    .toContain(`w=${encodeURIComponent(tileKey(OPEN_UZSONNA))}`)
+})
+
+test('a logolt étkezés pont-chipje az értékelő oldalra visz', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  renderView()
+  await userEvent.click(screen.getAllByRole('button', { name: /AI értékelés/ })[0])
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/etkezes/')
+})
+
+// Az általános naplózó a lap ALJÁN marad (owner).
+test('az általános naplózás a blokkok alatt áll', () => {
+  const { container } = renderView()
+  const blocks = container.querySelector('.fmx-blocks')!
+  const generic = container.querySelector('.fmx-loggeneric')!
+  expect(blocks.compareDocumentPosition(generic) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('az általános naplózás a logoló oldalt nyitja, ablak-kulcs nélkül', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ablakon kívül' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log/uj')
+})
+
+// A blokkok a nap ablakait tükrözik — a visszavont Logolás-csempe pontsor-szerepe
+// (done/now/missed jelzés) itt, blokkonként él tovább.
+test('a blokkok a nap ablakait tükrözik, állapotostul', () => {
   hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20, mealName: 'Csirkés bowl', suggestedRecipeId: 'r-1' },
+    DONE_REGGELI,
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
   ]
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('Logolás · MOST')).toBeInTheDocument()
-  expect(within(tile).getByText('Ebéd · 13:00')).toBeInTheDocument()
-  expect(within(tile).getByText('a tervből: Csirkés bowl')).toBeInTheDocument()
-  // One dot per window, state-classed.
-  expect(tile.querySelectorAll('.fh-lt-dots i')).toHaveLength(3)
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-f')).toHaveLength(1)
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-nw')).toHaveLength(1)
-  expect(within(tile).getByText('1/3 ablak kész')).toBeInTheDocument()
+  expect(Array.from(container.querySelectorAll('.fmx-block-name')).map(e => e.textContent))
+    .toEqual(['Reggeli', 'Ebéd', 'Vacsora'])
+  expect(container.querySelectorAll('.fmx-block.is-done')).toHaveLength(1)
+  expect(container.querySelectorAll('.fmx-block.is-now')).toHaveLength(1)
+  expect(container.querySelectorAll('.fmx-block.is-future')).toHaveLength(1)
 })
 
-test('the hero tile opens /fuel/log', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Logolás' }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log')
-})
-
-test('a missed window surfaces as an honest pótolható count — never a punitive word', () => {
+test('a kihagyott ablak a blokkján is szégyenmentes — „még pótolható", nem hiba', () => {
   hoisted.injectMissedSlot = true
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(tile.textContent).toContain('1 pótolható')
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-ms')).toHaveLength(1)
+  const missed = container.querySelector('.fmx-block.is-missed')!
+  expect(missed.textContent).toContain('még pótolható')
   expect(container.textContent).not.toMatch(/bukt|elrontot|kudarc/i)
 })
 
-test('an all-done day flips the tile to the quiet sage celebration', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
-  const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(tile.classList.contains('is-alldone')).toBe(true)
-  expect(within(tile).getByText('Minden ablak kész ✓')).toBeInTheDocument()
-  expect(within(tile).getByText('2/2 ablak kész')).toBeInTheDocument()
-})
-
-test('with no MOST window the tile points at the next upcoming one', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('köv. Vacsora · 19:00')).toBeInTheDocument()
-})
-
-test('an empty day names the gap on the tile instead of fabricating windows', () => {
+test('an empty day names the gap on the blocks instead of fabricating windows', () => {
   hoisted.overrideSlots = []
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('nincs mai terv — tervezz és logolj')).toBeInTheDocument()
-  expect(tile.querySelector('.fh-lt-dots')).toBeNull()
+  expect(container.querySelectorAll('.fmx-block')).toHaveLength(0)
+  expect(within(container.querySelector('.fmx-blocks') as HTMLElement)
+    .getByText(/nincs tervezett étkezési ablak/i)).toBeInTheDocument()
 })
 
 test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?d=-re navigál', async () => {
@@ -248,8 +273,8 @@ test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?
   const chip = screen.getByRole('button', { name: /pótolható/ })
   expect(chip.textContent).toContain(dateLabel)
   expect(chip.textContent).toContain('2 ablak pótolható')
-  // The chip is a sibling of `.fh-logtile`, never nested inside it (no nested buttons).
-  expect(container.querySelector('.fh-logtile')?.contains(chip)).toBe(false)
+  // A chip a blokkok MELLETT áll, sosem beágyazva (nested button nincs).
+  expect(container.querySelector('.fmx-blocks')!.contains(chip)).toBe(false)
   await userEvent.click(chip)
   expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log?d=${yesterday}`)
 })
