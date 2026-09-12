@@ -2,7 +2,6 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
 import { FuelStackAddPage } from '@/features/fuel/pages/FuelStackAddPage'
 import { FuelStackManageMealsPage } from '@/features/fuel/pages/FuelStackManageMealsPage'
 import { FuelStackManagePage } from '@/features/fuel/pages/FuelStackManagePage'
@@ -10,8 +9,6 @@ import { FuelStackManageProtocolPage } from '@/features/fuel/pages/FuelStackMana
 import { FuelStackManageTimingPage } from '@/features/fuel/pages/FuelStackManageTimingPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
-import { API_BASE } from '@/test/msw/handlers'
-import { server } from '@/test/msw/server'
 
 function LocationProbe() { return <div data-testid="location">{useLocation().pathname}</div> }
 
@@ -80,52 +77,8 @@ describe('Stack management — mock', () => {
     },
   )
 
-  test('a Kamra-oldal szűr, jelöl és egymás után több tételt ad hozzá toasttal', async () => {
-    renderPage('/fuel/stack/manage/add')
-    const search = screen.getByRole('searchbox', { name: 'Keresés a Kamrában' })
-    await userEvent.type(search, 'cink')
-    await userEvent.click(screen.getByRole('button', { name: /Cink-biszglicinát/ }))
-    expect(await screen.findByRole('status')).toHaveTextContent('Cink-biszglicinát hozzáadva')
-    await userEvent.clear(search)
-    await userEvent.type(search, 'kreatin')
-    const kreatin = screen.getByRole('button', { name: /Kreatin monohidrát/ })
-    expect(kreatin).toHaveTextContent('a stackben')
-    await userEvent.click(kreatin)
-    expect(await screen.findByText('Kreatin monohidrát hozzáadva')).toBeInTheDocument()
-    expect(search).toBeInTheDocument()
-  })
-})
-
-test('rejected add nem mutat success-toastot', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  server.use(
-    http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [{
-      id: 'k', name: 'Kreatin', brand: 'MP', type: 'supplement', category: 'muscle', dose: '5g',
-      form: 'por', stock: 10, stockUnit: 'adag', protocol: '', timing: 'morning', taken: false,
-    }] })),
-    http.post(`${API_BASE}/api/fuel/protocol/items`, () => HttpResponse.json({ message: 'nope' }, { status: 500 })),
-  )
-  renderPage('/fuel/stack/manage/add')
-  await userEvent.click(await screen.findByRole('button', { name: /Kreatin/ }))
-  expect(screen.queryByText('Kreatin hozzáadva')).not.toBeInTheDocument()
-})
-
-test('a "null" keresőszó nem illeszkedik egy null márkájú tételre (mezo-xaq5)', async () => {
-  // Regression guard: a template literal (`${item.name} ${item.brand}`) stringifies a null
-  // brand to the literal word "null" — a bare `${item.brand}` (no `?? ''` boundary guard) would
-  // make a null-brand stash row falsely match the search term "null". pnpm build cannot catch
-  // this: the template literal accepts any type, so only a runtime assertion proves it.
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  server.use(
-    http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [{
-      id: 'null-brand', name: 'Magnézium-glicinát', brand: null, type: 'supplement', category: 'sleep',
-      dose: '300mg', form: 'kapszula', stock: 10, stockUnit: 'db', protocol: '', timing: 'evening', taken: false,
-      macros: { kcal: null, p: null, c: null, f: null },
-    }] })),
-  )
-  renderPage('/fuel/stack/manage/add')
-  const search = await screen.findByRole('searchbox', { name: 'Keresés a Kamrában' })
-  expect(await screen.findByRole('button', { name: /Magnézium-glicinát/ })).toBeInTheDocument()
-  await userEvent.type(search, 'null')
-  expect(screen.queryByRole('button', { name: /Magnézium-glicinát/ })).not.toBeInTheDocument()
+  // S2 (mezo-g2vl): a Kamra-oldal (`/fuel/stack/manage/add`) HÁROM LÉPÉSES adag-beállítóvá
+  // nőtt, és a saját tesztfájljába költözött: FuelStackAddPage.test.tsx. A korábbi
+  // „egy koppintás = felvéve" felület megszűnt — a koppintás most a termék adataihoz vezet,
+  // a felvétel a javaslat után történik.
 })
