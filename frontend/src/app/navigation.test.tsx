@@ -345,7 +345,7 @@ test('the sticky header keeps its compact aurora without covering content or dou
 
   const nap = renderApp('/nap')
   const napHeader = nap.container.querySelector('.app-head')!
-  expect.soft(napHeader.querySelector('.app-head-sec svg')).toHaveAttribute('width', '32')
+  expect.soft(napHeader.querySelector('.app-head-wordmark')?.textContent).toBe('boop')
   expect.soft(screen.getByLabelText('Napszak váltása').querySelector('svg')).toHaveAttribute('width', '24')
   expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
   expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')

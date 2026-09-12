@@ -13459,3 +13459,30 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .titan-scene canvas { display: block; width: 100%; height: 100%; }
 /* ── /titan-dark scope ───────────────────────────────────────────────────── */
+
+/* ── boop — sötét fejléc, minden oldalon (owner 2026-09-12) ────────────────────
+   A fejléc az app sötét bőrét viseli MINDEN oldalon: az amber aurora-rétegek
+   (wash/blob/deco) elmaradnak, a háttér közel fekete, a „boop" szó-logó és a gombok/menük
+   világosak. A jobb oldali ikonok a titanium clay-készletből valók (ClayIcon), a szín a
+   saját SVG-jükből jön — sötéten is olvashatók. */
+.app-head-bg { background: linear-gradient(180deg, #14161d 0%, #0b0d12 66%, transparent 100%); }
+.app-head-wash, .app-head-blob, .app-head-deco { display: none; }
+.app-head-wordmark {
+  font-family: var(--ff-display), system-ui, sans-serif;
+  font-size: 25px; font-weight: 700; letter-spacing: -0.045em; line-height: 1;
+  color: #f2eff8;
+}
+.app-head .nap-roundbtn {
+  background: rgba(240, 238, 248, 0.07);
+  border-color: rgba(240, 238, 248, 0.12);
+  box-shadow: none;
+}
+.app-head .nap-roundbtn.is-open {
+  background: color-mix(in srgb, var(--primary-base) 26%, rgba(240, 238, 248, 0.07));
+  border-color: color-mix(in srgb, var(--primary-base) 42%, transparent);
+}
+.app-head .nap-q .nap-q-glyph { color: #e6d6ad; }
+.app-head .nap-offnow { box-shadow: 0 0 0 2px #0b0d12; }
+.app-head .nap-dpmenu { background: #1a1c24; border-color: rgba(240, 238, 248, 0.08); }
+.app-head .nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 26%, transparent); }
+/* ── /boop sötét fejléc ──────────────────────────────────────────────────────── */

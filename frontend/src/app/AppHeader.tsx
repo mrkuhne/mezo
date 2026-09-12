@@ -13,7 +13,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ClayIcon, ClaySpot, type ClayIconName } from '@/shared/ui/clay'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
@@ -30,7 +30,6 @@ import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { HeaderAurora } from '@/app/HeaderAurora'
-import { sectionFor } from '@/app/headerSection'
 import { useCondensedHeader } from '@/app/useCondensedHeader'
 
 const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
@@ -51,7 +50,6 @@ export function AppHeader() {
   // A `?dp=` CSAK a Nap oldalon jelent napszak-választást; máshol a valós napszak látszik.
   const onNap = pathname === '/nap'
   // A bal oldal a szekciót mutatja („hol vagyok"); a pontos oldalcím a lapok PageHead-jéé.
-  const section = sectionFor(pathname)
   const condensed = useCondensedHeader()
 
   const { items: notifications } = useNotificationFeed()
@@ -144,13 +142,10 @@ export function AppHeader() {
   return (
     <header className={cn('nap-head app-head', condensed && 'is-cond')} ref={rootRef}>
       <HeaderAurora face={face} />
+      {/* Bal felső sarok: a „boop" szó-logó (owner 2026-09-12, az új márkanév), a korábbi
+          szekció-jel + név helyett. A fejléc sötét bőrt visel minden oldalon. */}
       <div className="nap-head-grow app-head-sec">
-        {section && (
-          <>
-            <ClaySpot name={section.spot} size={32} className="app-head-spot" />
-            <span className="app-head-title">{section.label}</span>
-          </>
-        )}
+        <span className="app-head-wordmark">boop</span>
       </div>
 
       {/* Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state).
