@@ -54,14 +54,15 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 let router: ReturnType<typeof createMemoryRouter>
-function renderAt(id: string) {
+function renderAt(id: string, search = '') {
   router = createMemoryRouter(
     [
       { path: '/fuel/etkezes/:id', element: <FuelMealDetailPage /> },
       { path: '/fuel/etkezes/:id/ertekeles', element: <div>SCORE PAGE PROBE</div> },
       { path: '/fuel', element: <div>MAI PROBE</div> },
+      { path: '/fuel/log/uj', element: <div>LOGGER PROBE</div> },
     ],
-    { initialEntries: [`/fuel/etkezes/${id}`] },
+    { initialEntries: [`/fuel/etkezes/${id}${search}`] },
   )
   return render(<RouterProvider router={router} />, { wrapper: QueryWrapper })
 }
@@ -123,4 +124,24 @@ test('az AI chip az értékelő oldalra navigál', async () => {
   renderAt('meal-1')
   await userEvent.click(screen.getByRole('button', { name: /AI értékelés/ }))
   expect(router.state.location.pathname).toBe('/fuel/etkezes/meal-1/ertekeles')
+})
+
+// ── A8 (S1c, mezo-33k6): a javítás ajtaja. A törlés SZÁNDÉKOSAN nincs itt — az a logolóban,
+// két lépésben él, mert egy részletező lapon egy koppintás nem törölhet egy napot. ───────────
+
+test('a javítás ajtaja a logoló szerkesztő módjába visz', async () => {
+  renderAt('meal-1')
+  await userEvent.click(screen.getByRole('button', { name: /Javítom ezt az étkezést/ }))
+  expect(router.state.location.pathname + router.state.location.search).toBe('/fuel/log/uj?edit=meal-1')
+})
+
+test('korábbi napi étkezésnél a nap is átmegy, hogy az idő-szerződés megmaradjon', async () => {
+  renderAt('meal-1', '?d=2026-09-10')
+  await userEvent.click(screen.getByRole('button', { name: /Javítom ezt az étkezést/ }))
+  expect(router.state.location.search).toBe('?edit=meal-1&d=2026-09-10')
+})
+
+test('a részletezőn nincs törlés — az a logolóban, két lépésben él', () => {
+  renderAt('meal-1')
+  expect(screen.queryByRole('button', { name: /Törlöm/ })).not.toBeInTheDocument()
 })

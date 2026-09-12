@@ -23,6 +23,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelDay, useFuelTimeline } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
@@ -87,16 +88,29 @@ export function FuelLogNewPage() {
   // idő). Előzmény nélkül a lista üres — a héj ezt őszintén ki is mondja.
   const usuals = rankUsualMeals(fuel.meals, nowHHmm)
 
+  // ── A8: `?edit=<mealId>` — egy MÁR logolt étkezés javítása (mezo-33k6) ──────────────────────
+  // Ilyenkor a négy rögzítő út nem jön: nem új étkezést veszünk fel, hanem egy meglévőt
+  // javítunk. A nap ugyanaz a `?d=` szerződés, hogy a múltbeli étkezés ideje megmaradjon.
+  const editMealId = searchParams.get('edit') ?? undefined
+  const editMeal = editMealId != null ? fuel.meals.find(m => m.id === editMealId) : undefined
+  const editing = editMealId != null
+
   return (
     <MozaikPage tone={past ? 'gold' : 'coral'} className="flognew-page">
       <PageHead onBack={back} label="‹ Vissza" />
       <div className={`flognew-head${past ? ' is-past' : ''}`}>
         <div className="flognew-ic"><ClayIcon name={tile?.icon ?? 'i-fuel'} size={26} /></div>
         <div className="flognew-txt">
-          <div className="flognew-eyebrow">{past ? 'Pótlás' : 'Logolás'}</div>
-          <div className="flognew-title">{tile ? tile.label : 'Ablakon kívül'}</div>
+          <div className="flognew-eyebrow">{editing ? 'Javítás' : past ? 'Pótlás' : 'Logolás'}</div>
+          <div className="flognew-title">
+            {editing
+              ? (editMeal != null ? mealDisplayName(editMeal) ?? 'Étkezés' : 'Étkezés')
+              : tile ? tile.label : 'Ablakon kívül'}
+          </div>
           <div className="flognew-sub">
-            {tile ? `${tile.time} · ablak` : 'szabad tétel · te választod a mikort'}
+            {editing
+              ? 'a tételeket és az időt is átírhatod'
+              : tile ? `${tile.time} · ablak` : 'szabad tétel · te választod a mikort'}
           </div>
         </div>
         <span className="flognew-daychip">
@@ -111,7 +125,8 @@ export function FuelLogNewPage() {
         </div>
       )}
       <PageBody>
-        <FuelLogModes
+        {/* Javításnál a négy rögzítő út nem jelenik meg: itt nem új étkezést veszünk fel. */}
+        {!editing && <FuelLogModes
           mode={mode}
           onMode={(m) => { setFailed(false); setMode(m) }}
           onPhoto={(file) => { setFailed(false); setPhoto(file) }}
@@ -121,7 +136,7 @@ export function FuelLogNewPage() {
           onTranscript={(text) => pushAiText(text)}
           failed={failed}
           usuals={usuals}
-        />
+        />}
         <MealComposer
           fixedSlot={tile?.slotKey}
           prefill={prefill}
@@ -130,6 +145,7 @@ export function FuelLogNewPage() {
           incomingPhoto={photo}
           incomingAiText={aiTextIn}
           onAiFailed={() => setFailed(true)}
+          editMealId={editMealId}
           logDate={past ? date : undefined}
           logTime={past ? tile?.time : undefined}
           saveLabel={past ? `✓ Pótlás · ${dayLabel}` : undefined}

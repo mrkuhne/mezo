@@ -99,3 +99,24 @@ test('A7: egy szokásos sor a nevével indít piszkozatot — kitalált makrók 
   await userEvent.click(rows[0])
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
 })
+
+// ── A8: `?edit=` — egy logolt étkezés javítása (mezo-33k6). A mock-nap első étkezése a
+// fixture: a lap abból indul, és a négy rögzítő út ilyenkor NEM jelenik meg. ────────────────
+
+test('A8: ?edit= a javítás módjában nyit, a rögzítő utak nélkül', async () => {
+  const { container } = renderAt('/fuel/log/uj?edit=m1')
+  expect(await screen.findByText('Javítás')).toBeInTheDocument()
+  // A fejlécben ÉS a „ez az étkezés" kártyán is a logolt étkezés saját címe áll — a javítás nem
+  // nevezi át csendben egy derivált névre.
+  expect(screen.getAllByText('Túrós zabkása · áfonyával').length).toBeGreaterThanOrEqual(2)
+  expect(container.querySelector('.fmx-mode')).toBeNull()
+  // A9: a két lépéses törlés ajtaja itt él.
+  expect(screen.getByRole('button', { name: 'Törlöm' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentem a javítást/ })).toBeInTheDocument()
+})
+
+test('ismeretlen edit-azonosítónál nem omlik össze, és nem fabrikál étkezést', async () => {
+  renderAt('/fuel/log/uj?edit=nincs-ilyen')
+  expect(await screen.findByText('Javítás')).toBeInTheDocument()
+  expect(screen.getByText('Étkezés')).toBeInTheDocument()
+})

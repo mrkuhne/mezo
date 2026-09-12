@@ -559,8 +559,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
     WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx,
-    FuelLogHeroTile.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, KamraCard.tsx, KeretHero.tsx, MacroCells.tsx,
-    MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
+    FuelLogHeroTile.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, KamraCard.tsx, KeretHero.tsx,
+    MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
     MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
     RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
@@ -571,7 +571,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, formatImpact.ts, fuelSettingsPreview.ts,
     fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts,
     mealDisplayName.ts, mealShare.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts, scoreArithmetic.ts,
-    scoreTone.ts, stackPresentation.ts, useStackIntakeToggle.ts, validateSlotPlan.ts
+    scoreTone.ts, stackPresentation.ts, useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,

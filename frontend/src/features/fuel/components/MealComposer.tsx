@@ -27,7 +27,7 @@
 // the LogFlowPage rule, kept verbatim (see that file's original header note).
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
-import type { Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
+import type { FuelMeal, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
 import { pct } from '@/shared/lib/pct'
@@ -41,6 +41,7 @@ import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import { defaultMealSlot } from '@/features/fuel/logic/defaultMealSlot'
+import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { parseAmountInput, stepAmount } from '@/features/fuel/logic/amountGuard'
 import {
   computeRecipeNutrients, computeRecipeMacrosWithOverrides, computeRecipeNutrientsWithOverrides,
@@ -158,6 +159,30 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
   }
 }
 
+/**
+ * A8 (mezo-33k6): a logolt étkezés sorai → szerkeszthető piszkozat-sorok. A becsült sor
+ * snapshotja a LOGOLT adagra van fagyasztva (`per = amount`), így a ± léptetés pontosan úgy
+ * skálázódik, ahogy az AI-piszkozatnál. `fromAi` SZÁNDÉKOSAN nincs beállítva: ezek nem ennek a
+ * munkamenetnek az AI-sorai, tehát nem is jelentünk róluk piszkozat-visszajelzést.
+ */
+function draftLinesFromMeal(m: FuelMeal): DraftLine[] {
+  return m.mealItems.map((l, i): DraftLine => {
+    if (l.source === 'estimate') {
+      return {
+        key: `edit-${i}`, source: 'estimate', name: l.name, amount: l.amount, unit: l.unit,
+        estimate: {
+          per: l.amount || 1, basisUnit: l.unit,
+          kcal: l.contribution.kcal, proteinG: l.contribution.p,
+          carbsG: l.contribution.c, fatG: l.contribution.f, nova: l.nova ?? null,
+          fiberG: l.nutrients?.fiberG ?? null, sugarG: l.nutrients?.sugarG ?? null,
+          saltG: l.nutrients?.saltG ?? null, saturatedFatG: l.nutrients?.saturatedFatG ?? null,
+        },
+      }
+    }
+    return { key: `edit-${i}`, source: l.source, refId: l.refId, name: l.name, amount: l.amount, unit: l.unit }
+  })
+}
+
 export interface MealComposerProps {
   /** Fixed slot (a window-block launch, mezo-bnsf): the MIKOR segmented control is
    *  HIDDEN and every save uses this slot — the window IS the slot. */
@@ -188,6 +213,11 @@ export interface MealComposerProps {
   logTime?: string
   /** A mentés-CTA felirata (múltbeli nap). Absent = a meglévő felirat. */
   saveLabel?: string
+  /** S1c (mezo-33k6, A8 · A9): egy MÁR LOGOLT étkezés szerkesztése. Jelen esetén a composer abból
+   *  az étkezésből indul (sorok, cím, ablak, idő), a mentés `updateMeal`-t hív `logMeal` helyett,
+   *  és megjelenik a két lépéses törlés. A javításról SOSEM megy AI-piszkozat-visszajelzés: az a
+   *  jelzés a piszkozat minőségéről beszél, nem a korrekcióról. */
+  editMealId?: string
   onSaved: () => void
   onCancel: () => void
 }
@@ -195,12 +225,12 @@ export interface MealComposerProps {
 export function MealComposer({
   fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, aiPanelOpen,
   incomingPhoto, incomingAiText, onAiFailed,
-  logDate, logTime, saveLabel, onSaved, onCancel,
+  logDate, logTime, saveLabel, editMealId, onSaved, onCancel,
 }: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay(logDate)
-  const { logMeal, draftMealFromAi } = useMealActions(logDate)
+  const { logMeal, updateMeal, deleteMeal, draftMealFromAi } = useMealActions(logDate)
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
@@ -238,6 +268,9 @@ export function MealComposer({
   useEffect(() => { aiDraftIdRef.current = aiDraftId }, [aiDraftId])
 
   const reportOutcomeOnce = (draftId: string, outcome: 'accepted' | 'edited' | 'discarded') => {
+    // A8 (mezo-33k6): egy LOGOLT étkezés javításáról nem megy visszajelzés — az a jelzés az
+    // AI-piszkozat minőségéről beszél, nem a korrekcióról. (A `discarded` ág is ide tartozik.)
+    if (editMealId) return
     if (outcomeReportedForRef.current === draftId) return
     outcomeReportedForRef.current = draftId
     reportDraftOutcome(draftId, 'meal_draft', outcome)
@@ -268,6 +301,23 @@ export function MealComposer({
     return [{ key: 'pf', source: 'pantry', refId: prefill.pantryItemId, name: '', amount: ing?.per || 100, unit: ing?.unit || 'g' }]
   })
 
+  // ── A8: egy logolt étkezés szerkesztése (mezo-33k6) ─────────────────────────────────────────
+  // A nap már be van töltve (`useFuelDay` fent) — a szerkesztett étkezés onnan jön. A seedelés
+  // EFFEKTBEN fut, mert valós módban a nap a composer után érkezik meg; a ref miatt pontosan
+  // egyszer, tehát egy közbeni refetch nem írja vissza a user javításait.
+  const editMeal = editMealId != null ? fuel.meals.find(m => m.id === editMealId) : undefined
+  const [editTime, setEditTime] = useState('')
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  const seededRef = useRef(false)
+  useEffect(() => {
+    if (editMealId == null || seededRef.current || !editMeal) return
+    seededRef.current = true
+    setLines(draftLinesFromMeal(editMeal))
+    const k = mealSlotKey(editMeal)
+    if (k) { slotLocked.current = true; setSlot(k) }
+    setEditTime(hhmmFromLoggedAt(editMeal.loggedAt, SLOT_DEFAULT_TIME[k ?? 'snack']))
+  }, [editMealId, editMeal])
+
   // STATE, not a ref (mezo-d20.9.1): the object URL is minted in an effect, so a ref would be
   // filled AFTER the render that attached the photo and the thumbnail would never paint.
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
@@ -288,6 +338,9 @@ export function MealComposer({
   // No name field any more (mezo-byo1): the meal is always named from its lines —
   // deriveMealName is the same rule buildDayPlan falls back to, so one rule holds everywhere.
   const derivedName = deriveMealName(resolved.map(({ meta }) => meta.name))
+  // Szerkesztésnél a logolt étkezés SAJÁT címe marad: ebben a felületen nincs név-mező, ezért a
+  // derivált név csendben átnevezné a már elnevezett étkezést (pl. „Túrós zabkása · áfonyával").
+  const effectiveName = editMeal?.title || derivedName
 
   // Honest totals-line label (mezo-1j3z, finding 5): "Mai nap eddig" lies when logDate targets a
   // past day — show the day it actually books to instead.
@@ -451,10 +504,14 @@ export function MealComposer({
     })
     const input: MealInput = {
       slot: fixedSlot ?? slot,
-      loggedAt: logDate != null
-        ? offsetIso(logDate, logTime ?? SLOT_DEFAULT_TIME[fixedSlot ?? slot])
-        : nowOffsetIso(),
-      title: derivedName.trim() || null,
+      // A8: a javítás az étkezés SAJÁT idejét viszi (a szerkesztő idő-mezőjéből), nem tolja
+      // mostra — különben egy reggeli javítása este átköltöztetné a reggelit.
+      loggedAt: editMeal != null
+        ? offsetIso(logDate ?? editMeal.mealDate ?? localDateString(), editTime || hhmmFromLoggedAt(editMeal.loggedAt, SLOT_DEFAULT_TIME[fixedSlot ?? slot]))
+        : logDate != null
+          ? offsetIso(logDate, logTime ?? SLOT_DEFAULT_TIME[fixedSlot ?? slot])
+          : nowOffsetIso(),
+      title: effectiveName.trim() || null,
       items,
       ...(aiContribution
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
@@ -465,6 +522,13 @@ export function MealComposer({
     // no draft to react to. Guarding the discard effect BEFORE the mutation settles matters: this
     // composer often unmounts (onSaved → onClose) well before a real-mode POST resolves, and that
     // unmount must not ALSO fire a discard for the very draft this save is reporting.
+    // A8: szerkesztésnél a MEGLÉVŐ update-művelet fut (eddig nem volt UI-ja), és visszajelzés
+    // nem megy — a javítás nem a piszkozat minőségéről szól.
+    if (editMealId != null) {
+      updateMeal(editMealId, input)
+      onSaved()
+      return
+    }
     if (aiContribution && aiDraftId) {
       const draftId = aiDraftId
       const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
@@ -686,7 +750,7 @@ export function MealComposer({
         </div>
         {/* The derived name IS the meal title (no name field, mezo-byo1) — shown where it
             will land, honest to what save() sends. */}
-        {derivedName && <div className="logflow-totname">{derivedName}</div>}
+        {effectiveName && <div className="logflow-totname">{effectiveName}</div>}
         <MCells cells={[
           { label: 'kcal', value: total.kcal, tone: 'sage' },
           { label: 'fehérje', value: `${total.p} g`, tone: 'coral' },
@@ -706,12 +770,42 @@ export function MealComposer({
         </div>
       </div>
 
+      {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
+      {editMealId != null && (
+        <label className="fmx-edit-time">
+          <span className="label-mono">MIKOR ETTÉL?</span>
+          <input type="time" value={editTime} aria-label="Mikor ettél?"
+            onChange={(e) => setEditTime(e.target.value)} />
+        </label>
+      )}
+
       <div className="row gap-sm logflow-actions" style={{ margin: '14px 0 12px' }}>
         <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
         <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
-          {saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
+          {editMealId != null
+            ? <><Icon name="check" size={15} /> Mentem a javítást</>
+            : saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
         </button>
       </div>
+
+      {/* A9: a törlés KÉT lépés (prototípus `deleteBlock`) — élesítés, majd megerősítés. Egy
+          félrekoppintás nem töröl, és a megerősítő szöveg megmondja a következményt. */}
+      {editMealId != null && (
+        <div className="fmx-delete">
+          {deleteArmed ? (
+            <>
+              <p>Biztosan törlöd? A nap összegéből is kikerül.</p>
+              <button type="button" className="fmx-delete-yes"
+                onClick={() => { deleteMeal(editMealId); onSaved() }}>
+                Biztosan törlöm
+              </button>
+              <button type="button" onClick={() => setDeleteArmed(false)}>Inkább megtartom</button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setDeleteArmed(true)}>Törlöm</button>
+          )}
+        </div>
+      )}
 
       {kamraOpen && <KamraPickSheet onPick={addPantry} onClose={() => setKamraOpen(false)} addedRefIds={addedPantryIds} />}
       {receptOpen && <ReceptPickSheet onPick={addRecipe} onClose={() => setReceptOpen(false)} />}

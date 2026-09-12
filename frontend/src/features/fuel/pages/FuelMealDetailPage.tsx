@@ -16,7 +16,9 @@
 //     „a nap céljához mérve" felirat,
 //   • a Minőség alatt van Mikrotápanyagok szekció is, ikonokkal,
 //   • sem a Hozzávalók, sem a Minőség fejléc nem visel darabszámot/feliratot,
-//   • szerkesztés NINCS a sorokon — az a logolóban él (S1c).
+//   • szerkesztés NINCS a sorokon — az a logolóban él (S1c): a lap alján egy halk ajtó visz a
+//     `/fuel/log/uj?edit=<id>` javításra (és `&d=`, ha az étkezés korábbi napra esik). A törlés
+//     szándékosan ott, két lépésben lakik — egy részletező lapon egy koppintás nem törölhet.
 //
 // ŐSZINTE-NULL, ABSZOLÚT: a mikrotápanyag-rész KIZÁRÓLAG a négy tárolt tényt mutatja
 // (rost, cukor, só, telített zsír — `Nutrients`, mezo-m6uv). Vitamin és ásványi anyag
@@ -183,6 +185,9 @@ export function FuelMealDetailPage() {
   const tiles = qualityTiles(lines)
   const micros = microRows(meal)
   const toScore = () => navigate(`/fuel/etkezes/${meal.id}/ertekeles${day ? `?d=${day}` : ''}`)
+  // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra
+  // esik — így a logoló ugyanannak a napnak az idő-szerződését tartja meg.
+  const toEdit = () => navigate(`/fuel/log/uj?edit=${meal.id}${day ? `&d=${day}` : ''}`)
 
   return (
     <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
@@ -332,6 +337,13 @@ export function FuelMealDetailPage() {
           A lábjegyzet SZÁNDÉKOSAN a szekción KÍVÜL áll: a szekció maga kizárólag a négy tárolt
           tényt tartalmazza, és a tesztje épp azt őrzi, hogy vitamin-szó ne kerüljön a tények
           közé. Ez a mondat a képesség hiányáról beszél, nem egy mikrotápanyagról. */}
+      {/* A8: a javítás ajtaja — halk, lap-szintű művelet (a sorokon továbbra sincs szerkesztés).
+          A törlés a logolóban, két lépésben él, nem itt: egy részletező lapon egy koppintás
+          nem törölhet napot. */}
+      <button type="button" className="fmx-edit-door" onClick={toEdit}>
+        Javítom ezt az étkezést
+      </button>
+
       <p className="fmx-nutri-note">
         Ezt tároljuk ma. A vitaminok és ásványi anyagok még úton vannak.
       </p>
