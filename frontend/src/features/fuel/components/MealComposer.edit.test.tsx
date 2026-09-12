@@ -28,6 +28,12 @@ const MEAL: FuelMeal = {
   loggedAt: `${MEAL_DATE}T16:20:00+02:00`, mealDate: MEAL_DATE,
 }
 
+// A rögzített `+02:00` eltolás wall-clockja a FUTTATÓ zónájától függ (Budapesten 16:20, a
+// CI UTC-jében 14:20) — ezért a várt időt UGYANAZZAL a produkciós segédfüggvénnyel vezetjük
+// le, amit a szerkesztő is használ. Így a teszt azt köti ki, ami a lényeg (az étkezés SAJÁT
+// ideje marad meg), és nem a futtató időzónáját.
+const MEAL_HHMM = hhmmFromLoggedAt(MEAL.loggedAt, '00:00')
+
 const hoisted = vi.hoisted(() => ({
   logMeal: vi.fn(),
   updateMeal: vi.fn(),
@@ -53,6 +59,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 vi.mock('@/data/aidraft/outcomeClient', () => ({ reportDraftOutcome: hoisted.reportDraftOutcome }))
 
 import { MealComposer } from '@/features/fuel/components/MealComposer'
+import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
@@ -84,13 +91,13 @@ test('a szerkesztő a meglévő étkezés soraival és idejével nyit', () => {
   renderComposer({ editMealId: 'meal-1' })
   expect(screen.getByText('Banán')).toBeInTheDocument()
   expect(screen.getByText('Skyr')).toBeInTheDocument()
-  expect(screen.getByLabelText(/Mikor ettél/i)).toHaveValue('16:20')
+  expect(screen.getByLabelText(/Mikor ettél/i)).toHaveValue(MEAL_HHMM)
 })
 
 test('a javítás az étkezés SAJÁT idejét tartja meg, nem tolja mostra', async () => {
   renderComposer({ editMealId: 'meal-1' })
   await userEvent.click(screen.getByRole('button', { name: /Mentem a javítást/ }))
-  expect(hoisted.updateMeal.mock.calls[0][1].loggedAt.startsWith(`${MEAL_DATE}T16:20`)).toBe(true)
+  expect(hoisted.updateMeal.mock.calls[0][1].loggedAt.startsWith(`${MEAL_DATE}T${MEAL_HHMM}`)).toBe(true)
 })
 
 test('a javítás nem nevezi át csendben az étkezést', async () => {

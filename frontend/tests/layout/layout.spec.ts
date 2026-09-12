@@ -53,11 +53,11 @@ for (const vp of PHONE_VIEWPORTS) {
     expect(spacing.slotsBottom).toBeLessThanOrEqual(spacing.saveTop)
   })
 
-  test(`fuel · the Logolás hero tile and the /fuel/log blocks are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
-    // mezo-byo1: the horizontal window swimlane dissolved — the hub carries ONE Logolás
-    // hero tile and the whole day's logging lives on /fuel/log as VERTICALLY stacked
-    // blocks. The invariant this file exists for is unchanged: content must be REACHABLE —
-    // either it fits, or the page scrolls to it, never eaten by a clipping ancestor.
+  test(`fuel · the Mai blocks and the logger are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
+    // Fuel Titanium (mezo-33k6 / mezo-qt5q): the Logolás hero tile and `/fuel/log` are gone —
+    // the day's blocks moved ONTO the Mai and the logger is `/fuel/log/uj`. The invariant this
+    // file exists for is unchanged: content must be REACHABLE — either it fits, or the page
+    // scrolls to it, never eaten by a clipping ancestor.
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto('/fuel')
@@ -65,54 +65,56 @@ for (const vp of PHONE_VIEWPORTS) {
     await page.evaluate(() => document.fonts.ready)
 
     const hub = await page.evaluate(() => {
-      const tile = document.querySelector('.fh-logtile') as HTMLElement | null
+      const blocks = Array.from(document.querySelectorAll('.fmx-block')) as HTMLElement[]
       const sc = document.querySelector('.screen-content') as HTMLElement
       const scRect = sc.getBoundingClientRect()
-      const tileBottom = tile
-        ? Math.round(tile.getBoundingClientRect().bottom - scRect.top + sc.scrollTop)
-        : 0
+      const bottomOf = (el: HTMLElement) =>
+        Math.round(el.getBoundingClientRect().bottom - scRect.top + sc.scrollTop)
+      const generic = document.querySelector('.fmx-loggeneric') as HTMLElement | null
       return {
-        hasTile: !!tile,
-        tileBottom,
+        blockCount: blocks.length,
+        lastBlockBottom: blocks.length ? bottomOf(blocks[blocks.length - 1]) : 0,
+        // The generic log entry is the LAST thing on the page — if it is reachable, everything is.
+        genericBottom: generic ? bottomOf(generic) : 0,
+        hasGeneric: !!generic,
         scrollHeight: sc.scrollHeight,
         pageScrollable: sc.scrollHeight > sc.clientHeight,
         contentOverflow: Math.round(sc.scrollHeight - sc.clientHeight),
       }
     })
-    expect(hub.hasTile, 'the Fuel hub renders its Logolás hero tile').toBe(true)
+    expect(hub.blockCount, 'the Mai stacks the day\'s meal blocks').toBeGreaterThan(1)
+    expect(hub.hasGeneric, 'the Mai keeps the generic log entry below the blocks').toBe(true)
     expect(
-      hub.tileBottom,
-      `the hero tile's bottom (${hub.tileBottom}px) sits past the scroller's reachable extent (${hub.scrollHeight}px)`
+      hub.lastBlockBottom,
+      `the last block's bottom (${hub.lastBlockBottom}px) sits past the scroller's reachable extent (${hub.scrollHeight}px)`
+    ).toBeLessThanOrEqual(hub.scrollHeight)
+    expect(
+      hub.genericBottom,
+      `the generic log entry's bottom (${hub.genericBottom}px) sits past the scroller's reachable extent (${hub.scrollHeight}px)`
     ).toBeLessThanOrEqual(hub.scrollHeight)
     if (hub.contentOverflow > 0) expect(hub.pageScrollable).toBe(true)
 
-    await page.goto('/fuel/log')
+    await page.goto('/fuel/log/uj')
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
 
-    const log = await page.evaluate(() => {
-      const blocks = Array.from(document.querySelectorAll('.flog-blk')) as HTMLElement[]
-      const body = document.querySelector('.mz-page-body') as HTMLElement | null
-      const bodyCs = body ? getComputedStyle(body) : null
-      const lastBottom = blocks.length && body
-        ? Math.round(blocks[blocks.length - 1].getBoundingClientRect().bottom
-            - body.getBoundingClientRect().top + body.scrollTop)
-        : 0
+    const logger = await page.evaluate(() => {
+      const sc = document.querySelector('.screen-content') as HTMLElement
+      const scRect = sc.getBoundingClientRect()
+      const modes = Array.from(document.querySelectorAll('.fmx-mode')) as HTMLElement[]
+      const last = modes.length ? modes[modes.length - 1] : null
       return {
-        blockCount: blocks.length,
-        // The page body is the vertical scroller the blocks live in.
-        bodyScrollsY: bodyCs ? ['auto', 'scroll'].includes(bodyCs.overflowY) : false,
-        lastBottom,
-        bodyScrollHeight: body ? body.scrollHeight : 0,
+        modeCount: modes.length,
+        lastModeRight: last ? Math.round(last.getBoundingClientRect().right) : 0,
+        scRight: Math.round(scRect.right),
+        noHorizontalOverflow: sc.scrollWidth <= sc.clientWidth + 1,
       }
     })
-    // The mock demo day schedules windows + the trailing Ablakon kívül block.
-    expect(log.blockCount, 'the /fuel/log page stacks its window blocks').toBeGreaterThan(1)
-    expect(log.bodyScrollsY, 'the log page body scrolls vertically rather than cropping blocks').toBe(true)
-    expect(
-      log.lastBottom,
-      `the last block's bottom (${log.lastBottom}px) sits past the body's reachable extent (${log.bodyScrollHeight}px)`
-    ).toBeLessThanOrEqual(log.bodyScrollHeight)
+    // The camera-first shell offers exactly the four approved ways in, and none of them may
+    // sit off the right edge on the narrowest phone.
+    expect(logger.modeCount, 'the logger shows its four ways in').toBe(4)
+    expect(logger.noHorizontalOverflow, 'the logger never scrolls sideways').toBe(true)
+    expect(logger.lastModeRight).toBeLessThanOrEqual(logger.scRight + 1)
   })
 }
 
@@ -262,10 +264,13 @@ test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async 
   // down to ~20px once there were more hits than fit. `flex: none` is the fix; this test
   // pins the row height so it cannot regress silently.
   await page.setViewportSize({ width: 393, height: 852 })
-  await page.goto('/fuel/log')
-  // The first openable window CTA → /fuel/log/uj (camera-first) → the Gépelés route owns the
-  // manual pickers (S1c.2, mezo-33k6) → Kamra source tile → picker.
-  await page.getByRole('button', { name: /^(Logold|Pótold) · / }).first().click()
+  // Fuel Titanium (mezo-qt5q): `/fuel/log` is retired — the day's blocks live on the Mai, and
+  // an unlogged block is the door into the camera-first logger. From there the Gépelés route
+  // owns the manual pickers (S1c.2, mezo-33k6) → Kamra source tile → picker.
+  await page.goto('/fuel')
+  await page.waitForLoadState('networkidle')
+  await page.locator('.fmx-block:not(.is-done) .fmx-block-log').first().click()
+  await page.waitForURL(/\/fuel\/log\/uj/)
   await page.getByRole('tab', { name: /Gépelés/ }).click()
   await page.getByRole('button', { name: 'Kamra · hozzáadás' }).click()
   const rows = page.locator('.fkp-item')
@@ -290,29 +295,36 @@ for (const width of [320, 390, 430]) {
     }))
     expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
 
-    for (const name of ['Teljes protokoll', 'Mai ritmus', 'Étkezéshez', 'Kezelés']) {
-      await expect(page.getByRole('button', { name })).toBeVisible()
+    // Fuel Titanium S2 (mezo-g2vl): a négy csempés mozaik helyén a mai lista idősávokban áll,
+    // alatta a KÉT ajtó (Protokoll, Új elem). A kikötés változatlan: minden elérhető marad.
+    for (const name of [/Protokoll/, /Új elem/]) {
+      await expect(page.getByRole('button', { name }).first()).toBeVisible()
     }
-    const lastTile = page.locator('.stk-hub-mosaic .mz-tile').last()
+    const lastTile = page.locator('.fsx-poster').last()
     await lastTile.scrollIntoViewIfNeeded()
     await expect(lastTile).toBeVisible()
 
-    const check = page.locator('.stk-hub-check')
+    const check = page.locator('.fsx-check').first()
     const box = await check.boundingBox()
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
   })
 }
 
-const STACK_DEPTH: Array<[string, string]> = [
-  ['/fuel/stack/protocol', '.stk-protocol-zone:last-child'],
-  ['/fuel/stack/today', '.stk-timeline-slot:last-child'],
-  ['/fuel/stack/meals', '.stk-detail-body .card:last-child'],
-  ['/fuel/stack/manage', '.stk-manage-card:last-child'],
+// Fuel Titanium (mezo-qt5q): `/fuel/stack/today`, `/fuel/stack/meals` and the four `manage/*`
+// pages are RETIRED — they redirect now, so "the last card of that page" no longer names
+// anything. The invariant they protected (the last row is reachable above the shell chrome)
+// moves to the pages that actually carry the depth today, the new destinations included.
+const FUEL_DEPTH: Array<[string, string]> = [
+  ['/fuel', '.fmx-block'],
+  ['/fuel/stack', '.fsx-poster'],
+  ['/fuel/stack/protocol', '.fsx-proto-line'],
+  ['/fuel/trendek', '.ftx-pattern, .ftx-horizon'],
+  ['/fuel/konyha', '.fkx-poster'],
 ]
 
-for (const [path, lastSelector] of STACK_DEPTH) {
-  test(`Stack page last card stays above shell chrome · ${path}`, async ({ page }) => {
+for (const [path, lastSelector] of FUEL_DEPTH) {
+  test(`Fuel page last card stays above shell chrome · ${path}`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 820 })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto(path)
