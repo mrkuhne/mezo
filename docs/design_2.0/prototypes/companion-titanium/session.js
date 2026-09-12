@@ -122,6 +122,22 @@ function menuGlass(id) {
 }
 const note = (exercise, id) => session.notes[id] ? 'Megírt jegyzet szerkesztése' : 'Ami a következő alkalomra számít';
 
+/**
+ * The one way out of the list, in three honest states: nothing logged is a skip, a partial
+ * session is the gold road to the rating, a complete one is green.
+ */
+function finishCta() {
+  const m = metrics(session), pending = pendingCount(session);
+  const state = m.count === 0 ? 'skip' : pending === 0 ? 'full' : 'partial';
+  const label = state === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése';
+  const art = state === 'skip' ? 'skip' : state === 'full' ? 'tick' : 'star';
+  return `<button class="wo-finish is-${state}" data-session-summary>
+   <span class="wo-finish-glow" aria-hidden="true"></span>
+   <span class="wo-finish-art">${icon(art)}</span>
+   <strong>${label}</strong>
+   <u class="chip-sheen"></u></button>`;
+}
+
 /** The dock never changes height, so the list under it never jumps. */
 function dock() {
   const m = metrics(session), resting = restUntil > Date.now();
@@ -217,10 +233,10 @@ function confirmGlass() {
   return `<div class="wo-glass" data-glass style="--ex-color:#d9c395">
    <div class="wo-glass-card is-confirm" role="dialog" aria-label="Lezárás megerősítése">
     <span class="wo-confirm-art">${icon('skip')}</span>
-    <h2>Van még ${pending} bepipálatlan szetted.</h2>
-    <p>Ha most lezárod az edzést, ezek <strong>kihagyott</strong> státusszal rögzülnek. A már elmentett ${m.count} szetted természetesen megmarad.</p>
+    <h2>${m.count ? `Van még ${pending} bepipálatlan szetted.` : 'Egy szettet sem rögzítettél ma.'}</h2>
+    <p>Ha most befejezed az edzést, ${m.count ? `ezek <strong>kihagyott</strong> státusszal rögzülnek. A már elmentett ${m.count} szetted természetesen megmarad.` : 'a mai edzés egésze <strong>kihagyott</strong> lesz. Ez is része a ritmusnak — a terv megvár.'}</p>
     <div class="wo-confirm-list">${perExercise.map(([e, left]) => `<span style="--ex-color:${e.color}">${icon(e.art)}<strong>${e.name}</strong><b>${left} szett</b></span>`).join('')}</div>
-    <button class="wo-close-cta" data-finish-really><span class="wo-close-art">${icon('tick')}</span><span><strong>Lezárom így</strong><small>${m.count} elvégzett · ${pending} kihagyott</small></span><u class="chip-sheen"></u></button>
+    <button class="wo-close-cta" data-cer-go><span class="wo-close-art">${icon('tick')}</span><span><strong>${m.count ? 'Befejezem így' : 'Kihagyom a mai edzést'}</strong><small>${m.count} elvégzett · ${pending} kihagyott</small></span><u class="chip-sheen"></u></button>
     <button class="wo-secondary" data-glass-close>Mégse, visszamegyek</button>
    </div>
   </div>`;
@@ -375,11 +391,7 @@ function render() {
     : view === 'summary'
     ? summary()
     : `<div class="wo-list">${session.order.map((id, i) => card(id, i, session.order.length)).join('')}
-       <button class="wo-finish" data-session-summary ${m.count ? '' : 'disabled'}>
-        <span class="wo-finish-glow" aria-hidden="true"></span>
-        <span class="wo-finish-art">${icon('star')}</span>
-        <span class="wo-finish-copy"><strong>Edzés befejezése</strong><small>${m.count ? `${m.count} / ${m.planned} szett · jöhet az értékelés` : 'Legalább egy szettet rögzíts előbb'}</small></span>
-        <b>→</b><u class="chip-sheen"></u></button></div>`;
+       ${finishCta()}</div>`;
   overlay.innerHTML = `${head}<div class="wo-scroll ${view === 'list' ? '' : 'is-plain'}">${body}</div>${view === 'list' ? dock() : ''}${glass ? (glass.kind === 'history' ? historyGlass(glass.id) : glass.kind === 'menu' ? menuGlass(glass.id) : glass.kind === 'confirm' ? confirmGlass() : videoGlass(glass.id)) : ''}`;
   const scroller = overlay.querySelector('.wo-scroll');
   if (scroller) scroller.scrollTop = view === 'summary' ? 0 : keep;
@@ -442,13 +454,14 @@ overlay.addEventListener('click', event => {
   }
   if (el.hasAttribute('data-rest-skip')) { restUntil = 0; restFor = null; return render(); }
   if (el.hasAttribute('data-rest-add')) { restUntil += 30_000; restTotal += 30; return updateTimers(); }
-  if (el.hasAttribute('data-finish') || el.hasAttribute('data-session-summary')) { view = 'summary'; return render(); }
-  if (el.hasAttribute('data-session-back')) { view = 'list'; return render(); }
-  if (el.hasAttribute('data-finish-confirm')) {
+  if (el.hasAttribute('data-finish') || el.hasAttribute('data-session-summary')) {
     if (pendingCount(session)) { glass = { kind: 'confirm' }; return render(); }
-    return closeSession();
+    view = 'summary';
+    return render();
   }
-  if (el.hasAttribute('data-finish-really')) { glass = null; return closeSession(); }
+  if (el.hasAttribute('data-cer-go')) { glass = null; view = 'summary'; return render(); }
+  if (el.hasAttribute('data-session-back')) { view = 'list'; return render(); }
+  if (el.hasAttribute('data-finish-confirm')) return closeSession();
   if (el.hasAttribute('data-cer-next')) { view = 'details'; return render(); }
   if (el.hasAttribute('data-cer-back')) { view = 'summary'; return render(); }
   if (el.hasAttribute('data-go-fuel')) { leave(); return callbacks.go('fuel', 0); }
