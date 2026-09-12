@@ -101,56 +101,60 @@ test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → ban
   expect(container.querySelector('.kdone')).toBeNull()
 })
 
-// ── keret-hero (hub v3: ONE number) ──────────────────────────────────────────
+// ── the Titanium energy hero (Fuel Titanium S1a, mezo-33k6 — manifest A1/A2/A15) ──────
+// The pre-Titanium keret-hero (`.khero-*`: the consumed-kcal numeral, the segmented day-bar,
+// the three energy chips) is GONE from this page; its own contracts live on in
+// KeretHero.test.tsx + FuelLogPage.test.tsx, which still render it on /fuel/log.
 
-test('the hero is ONE number — the kcal CONSUMED today; no eyebrow, no "eddig x / y" of-line', () => {
+// A1/A2/A15 (mezo-33k6): a Mai teteje a Titán energiaműszer. A régi KeretHero elment.
+test('a Mai a Titán energia-heroval nyit', () => {
   const { container } = renderView()
-  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 + a coherent late-miss
-  // dinner 760, fix-round-1 F1 mezo-jcpt.3, = 2060).
-  expect(container.querySelector('.khero-n')?.getAttribute('aria-label')).toBe('2 060 kcal ma')
-  expect(container.querySelector('.khero-of')).toBeNull()
+  expect(container.querySelector('.fmx-hero')).not.toBeNull()
+  expect(container.querySelector('.khero-n')).toBeNull()
+  expect(container.querySelectorAll('.fmx-cell')).toHaveLength(5)
+})
+
+test('a domináns szám a MARADÉK, és a hero nem mond „eddig x / y"-t', () => {
+  const { container } = renderView()
   const hero = container.querySelector('.fh-hero') as HTMLElement
+  const remaining = container.querySelector('.fmx-hero-remaining')!
+  expect(remaining.getAttribute('aria-label')).toMatch(/kcal (fér még bele ma|a keret felett)$/)
+  // The retired day-bar and chip row are not replaced by a second number row.
+  expect(container.querySelector('.khero-dayseg')).toBeNull()
+  expect(container.querySelector('.khero-chips')).toBeNull()
   expect(hero.textContent).not.toContain('eddig')
   expect(hero.textContent).not.toMatch(/\d+\/\d+ ablak/)
 })
 
-test('the day-bar draws one segment per done window and carries the gold now-marker', () => {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T13:30:00'))
-  try {
-    const { container } = renderView()
-    // breakfast + lunch + the fix-round-1 F1 (mezo-jcpt.3) late-miss dinner — a logged meal fills
-    // its window purely off its presence (buildDayPlan.ts step 3), never off the clock, so the
-    // 23:35 dinner is `done` even though this test's frozen `now` is 13:30.
-    expect(container.querySelectorAll('.khero-seg')).toHaveLength(3)
-    expect(container.querySelector('.khero-mark')).toBeInTheDocument()
-  } finally {
-    vi.useRealTimers()
-  }
+test('a műszer íve a nap elfogyasztott részét rajzolja ki', () => {
+  const { container } = renderView()
+  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 + a coherent late-miss
+  // dinner 760, fix-round-1 F1 mezo-jcpt.3, = 2060) against the day's own keret.
+  const gauge = container.querySelector('.fmx-gauge') as HTMLElement
+  const progress = Number(gauge.style.getPropertyValue('--fuel-progress'))
+  expect(progress).toBeGreaterThan(0)
+  expect(progress).toBeLessThanOrEqual(100)
+  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#i-fuel')
 })
 
-test('the three energy chips each reopen EnergyBreakdownSheet at their own section', async () => {
+// A15: a hero koppintása a MEGLÉVŐ, Énnel közös energia-magyarázatot nyitja — nem másolatot.
+test('a hero koppintása az energia-magyarázatot nyitja', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: /^Alap/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(await screen.findByText(/Alapanyagcsere/i)).toBeInTheDocument()
+  // The hero's own local glass box never opens on this page — one provenance surface only
+  // (the shared sheet itself is a role=dialog, so assert on the box's own element).
+  expect(document.querySelector('dialog.fmx-glass')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
-
-  await userEvent.click(screen.getByRole('button', { name: /^Mozgás/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
-  await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
-
-  await userEvent.click(screen.getByRole('button', { name: /^Cél/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
 })
 
 test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet and the log lands', async () => {
   const { container } = renderView()
-  expect(container.querySelector('[aria-label^="Fehérje "]')).toBeInTheDocument()
-  expect(container.querySelector('[aria-label^="Szénhidrát "]')).toBeInTheDocument()
-  expect(container.querySelector('[aria-label^="Zsír "]')).toBeInTheDocument()
-  expect(screen.getByText('Víz')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Fehérje:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Szénhidrát:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Zsír:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Rost:"]')).toBeInTheDocument()
 
   const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
   await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))

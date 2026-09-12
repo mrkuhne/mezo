@@ -9,10 +9,20 @@
 // stable routes — the idiom the Mezo (mezo-d20.5.1) and Én (mezo-d20.6.1) tabs took.
 // The settings entry the dropdown owned moves onto this hub's Fuel-beállítások band.
 //
+// Fuel Titanium S1a (mezo-33k6, frozen manifest docs/design_2.0/2026-09-11-fuel-coverage.md
+// rows A1 hero · A2 macro rings · A15 energy provenance): the page's top is the Titanium
+// energy instrument. `FuelEnergyHero` replaced `KeretHero` here — the hero's ONE message is
+// now the REMAINING kcal inside a bowl-in-arc gauge, with the owner-approved macro ring row
+// (hús/gabona/avokádó/növény/víz) under it, because the consumed-kcal numeral + day-bar +
+// three-chip row told the frame three times over and never told the user what still fits.
+// The chip does NOT open the hero's own glass box on this page: it opens the shared
+// `EnergyBreakdownSheet` (the same surface the Én hub uses), which stays the CANONICAL energy
+// provenance — one explanation of the day's keret, never a second copy that can drift from it.
+// KeretHero itself lives on, unchanged, as the /fuel/log page's hero.
+//
 // Anatomy top→bottom:
 //   the shell fejléc (app/AppHeader.tsx, mezo-atry)
-//   keret-hero — ONE number, the kcal consumed today; day-bar + gold now-marker;
-//     Alap/Mozgás/Cél chips that VANISH on static energy; 5 rings, víz = a button
+//   Titán energia-hero — the remaining-kcal gauge, the tap chip, 5 macro rings (víz = a button)
 //   Logolás hero tile — ONE live door to /fuel/log (mezo-byo1; the swimlane dissolved)
 //   Mezo banner — only the counter; the voice lives on /fuel/uzenetek (iterations §2)
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
@@ -42,7 +52,7 @@ import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { KeretHero } from '@/features/fuel/components/KeretHero'
+import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelLogHeroTile } from '@/features/fuel/components/FuelLogHeroTile'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
@@ -60,7 +70,7 @@ export function FuelMaiPage() {
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
 
-  // ── keret-hero (unchanged VM, v3 face) ────────────────────────────────
+  // ── keret-hero VM (unchanged data spine, Titanium face — mezo-33k6) ───
   // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
   // activity/balance are 0, so the breakdown chips would be meaningless — the whole chip
   // row vanishes (the retired DayBudgetCard's `staticEnergy` rule, kept verbatim).
@@ -126,10 +136,11 @@ export function FuelMaiPage() {
         <DietSuggestionBanner />
 
         <div className="fh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-          <KeretHero
+          <FuelEnergyHero
             vm={keretHeroVm}
-            onChip={(section) => setEnergyOpen(section)}
-            onWaterRing={() => setWaterOpen(true)}
+            // A15: the shared sheet, opened at its first section — not the hero's local box.
+            onOpenEnergy={() => setEnergyOpen('base')}
+            onWater={() => setWaterOpen(true)}
           />
         </div>
 
