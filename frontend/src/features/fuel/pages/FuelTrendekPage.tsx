@@ -35,13 +35,13 @@
 // C5: a coach-történet cache-only — ez a lap csak OLVAS, étkezés-coach generálást nem indít.
 // ============================================================
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useFuelWeek, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useFuelWeek, useFuelWeekRollup, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/me/meWeekHooks'
 import { useFuelHorizon } from '@/data/fuel/fuelHorizonHooks'
 import { usePatterns } from '@/data/insights/patternsHooks'
 import { hu1, huInt } from '@/shared/lib/huNum'
-import { huMonthDayDow } from '@/shared/lib/dates'
+import { addDays, huMonthDayDow } from '@/shared/lib/dates'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -142,9 +142,30 @@ function SplitRow({ label, icon, color, pct }: {
   )
 }
 
+/**
+ * A hét-váltó URL-értéke. FIGYELEM — ez a lap SAJÁT `?w=` paramétere: a MEGJELENÍTETT HETET
+ * választja ki (`?w=elozo` = a múlt hét), hogy a nézet linkelhető legyen és újratöltés után is
+ * megmaradjon. NEM azonos a logoló lapok `?w=` paraméterével, ami egy napon BELÜLI étkezés-ablak
+ * kulcsa (`fuelSwimlane.tileKey`). A két jelentés véletlenül ugyanazt a betűt kapta: ne vonjuk
+ * össze őket, és ne hívjuk itt a `tileKey`-t.
+ */
+const WEEK_PARAM = 'w'
+const PREV_WEEK_VALUE = 'elozo'
+
 export function FuelTrendekPage() {
   const navigate = useNavigate()
-  const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const showingPrevious = searchParams.get(WEEK_PARAM) === PREV_WEEK_VALUE
+  const thisMonday = mondayIso()
+  const prevMonday = addDays(thisMonday, -7)
+
+  const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek(showingPrevious ? prevMonday : thisMonday)
+  // C2: a MÚLT hét ugyanabból a heti végpontból, a `useFuelWeek` pontos query-kulcsával — a múlt
+  // heti nézetben ez UGYANAZ a kulcs, amit a lap már olvas, tehát nincs második letöltés.
+  const previous = useFuelWeekRollup(prevMonday)
+  const previousHasData = previous.weekDays.some((d) => d.consumed.kcal > 0)
+  // Amíg a valós olvasás nem oldódott fel, NEM állítjuk, hogy nincs korábbi hét.
+  const previousKnownEmpty = !previous.isPending && !previousHasData
   const { week: meWeek } = useMeWeek(start)
   const { weeks: horizonWeeks } = useFuelHorizon(start)
   const { patterns } = usePatterns()
@@ -196,7 +217,30 @@ export function FuelTrendekPage() {
           <div className="ftx-hero">
             <span className="ftx-glow" aria-hidden="true" />
             <h1>Trendek</h1>
-            <p className="ftx-week">{deriveWeekTitle(start === '' ? mondayIso() : start)}</p>
+            {/* A hét-váltó (prototípus `tx-weeknav`): a nyitott hét és a múlt hét között lép. */}
+            <div className="ftx-weeknav">
+              <button
+                type="button"
+                aria-pressed={showingPrevious}
+                disabled={showingPrevious || previousKnownEmpty}
+                onClick={() => setSearchParams({ [WEEK_PARAM]: PREV_WEEK_VALUE })}
+              >
+                ‹ Múlt hét
+              </button>
+              <strong className="ftx-week">{deriveWeekTitle(start === '' ? thisMonday : start)}</strong>
+              <button
+                type="button"
+                aria-pressed={!showingPrevious}
+                disabled={!showingPrevious}
+                onClick={() => setSearchParams({})}
+              >
+                Ez a hét ›
+              </button>
+            </div>
+            {/* Őszintén: új felhasználónál nincs korábbi hét — ez NORMÁL állapot, nem hiba. */}
+            {!showingPrevious && previousKnownEmpty && (
+              <p className="ftx-weeknav-note">Ez az első heted — még nincs korábbi hét, amire visszalépj.</p>
+            )}
             <div className="ftx-big">
               <strong>{vm.loggedCount}</strong>
               <span>

@@ -113,17 +113,38 @@ const ROLLUP_CONSUMED: readonly (MacroSet | null)[] = [
   { kcal: 2740, p: 104, c: 318, f: 104, water: 1400 },
   null,
 ]
+/** A KORÁBBI hét (`variant: 'past'`) saját, szintén determinisztikus alakja — C1/C2 hét-váltás és
+ *  a hét-a-héthez delták (mezo-83g0). Szándékosan MÁS számok, mint a nyitott héten: ha a két hét
+ *  ugyanaz volna, minden delta nullára kerekedne, és a „változás" tesztek vákuumba futnának.
+ *  6 naplózott nap (egy hiányzó) — a nyitott hétnél magasabb átlag, jobb súly, rosszabb pontátlag. */
+const ROLLUP_CONSUMED_PAST: readonly (MacroSet | null)[] = [
+  { kcal: 2290, p: 152, c: 248, f: 76, water: 2400 },
+  { kcal: 2180, p: 144, c: 236, f: 71, water: 2200 },
+  { kcal: 2410, p: 158, c: 262, f: 79, water: 2700 },
+  { kcal: 1960, p: 131, c: 208, f: 64, water: 1900 },
+  null,
+  { kcal: 2520, p: 139, c: 291, f: 88, water: 1700 },
+  { kcal: 2260, p: 126, c: 254, f: 74, water: 2050 },
+]
 const ZERO_MACROS: MacroSet = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
 
-export function mockWeekRollup(start: string): FuelWeekData {
+/**
+ * A mock 7 napos rollup a KÉRT hétfőre átdátumozva (soha nem beégetett dátum — éjfélkor sem
+ * romlik el). `variant` dönti el, MELYIK determinisztikus hét alakját kapjuk: a `'current'` a
+ * nyitott hét változatlan fixture-je (byte-stabil, a meglévő tesztek erre épülnek), a `'past'` a
+ * korábbi hét saját alakja. A hívó (a `useFuelWeekRollup` hook) dönt, mert a „melyik hétfő a
+ * mostani" kérdés a hook dolga — ez a seed-modul nem olvas órát.
+ */
+export function mockWeekRollup(start: string, variant: 'current' | 'past' = 'current'): FuelWeekData {
+  const past = variant === 'past'
   return {
     start,
-    days: ROLLUP_CONSUMED.map((consumed, i) => ({
+    days: (past ? ROLLUP_CONSUMED_PAST : ROLLUP_CONSUMED).map((consumed, i) => ({
       date: addDays(start, i),
       targets: i >= 5 ? ROLLUP_WEEKEND_TARGET : ROLLUP_TARGET,
       consumed: consumed ?? ZERO_MACROS,
     })),
-    mealScoreAvg: 0.78,
-    weightAvgKg: 81.3,
+    mealScoreAvg: past ? 0.71 : 0.78,
+    weightAvgKg: past ? 81.9 : 81.3,
   }
 }

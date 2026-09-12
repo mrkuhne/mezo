@@ -9,7 +9,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
-import { mondayIso } from '@/data/fuel/fuelWeekHooks'
+import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { addDays, huMonthDay } from '@/shared/lib/dates'
 import { patterns as mockPatterns } from '@/data/insights/insights'
 import { server } from '@/test/msw/server'
@@ -17,6 +17,12 @@ import { API_BASE } from '@/test/msw/handlers'
 
 function LocationProbe() {
   return <div data-testid="location">{useLocation().pathname}</div>
+}
+
+/** Útvonal + keresőstring — a hét-váltó a `?w=`-ben él, tehát a SEARCH is látszania kell. */
+function LocProbe() {
+  const loc = useLocation()
+  return <div data-testid="loc">{loc.pathname}{loc.search}</div>
 }
 
 function renderWithRoutes() {
@@ -35,20 +41,83 @@ function renderWithRoutes() {
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => { vi.unstubAllEnvs(); server.resetHandlers() })
 
-function renderView() {
+/** `path` — a nyitó URL (a hét-váltó `?w=`-je linkelhető); `real` — valós mód (msw). */
+function renderView(opts: { path?: string; real?: boolean } = {}) {
+  if (opts.real) vi.stubEnv('VITE_USE_MOCK', 'false')
   return render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/fuel/trendek']}>
-        <FuelTrendekPage />
+      <MemoryRouter initialEntries={[opts.path ?? '/fuel/trendek']}>
+        <Routes>
+          <Route path="/fuel/trendek" element={<><FuelTrendekPage /><LocProbe /></>} />
+          <Route path="*" element={<LocProbe />} />
+        </Routes>
       </MemoryRouter>
     </QueryWrapper>,
   )
+}
+
+/** Valós mód: a MÚLT hétre ÜRES (nullás) rollup — „új felhasználó", akinek nincs korábbi hete.
+ *  A nyitott hétre naplózott napokat ad, hogy a lap maga ne legyen üres. */
+function serveEmptyPreviousWeek() {
+  const prevMonday = addDays(mondayIso(), -7)
+  const zero = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+  const targets = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
+  server.use(http.get(`${API_BASE}/api/fuel/week/:start`, ({ params }) => {
+    const start = String(params.start)
+    const empty = start === prevMonday
+    return HttpResponse.json({
+      start,
+      days: Array.from({ length: 7 }, (_, i) => ({
+        date: addDays(start, i),
+        targets,
+        consumed: empty || i > 1 ? zero : { kcal: 2300, p: 150, c: 240, f: 72, water: 2200 },
+      })),
+      mealScoreAvg: empty ? null : 0.71,
+      weightAvgKg: empty ? null : 82.9,
+    })
+  }))
 }
 
 /** A mock hét 2. napja (kedd) — naplózott, keretbe belefér. */
 const loggedDay = () => huMonthDay(addDays(mondayIso(), 1))
 /** A mock hét szombatja — naplózott és a keret FELETT (2740 / 2200). */
 const overDay = () => huMonthDay(addDays(mondayIso(), 5))
+/** A MÚLT hét hétfője — a hét-váltó próbája (fix dátum nélkül, `mondayIso()`-ból). */
+const prevWeekFirstDay = () => huMonthDay(addDays(mondayIso(), -7))
+
+// --- C1 (mezo-83g0): hét-váltás — a jóváhagyott prototípus két hetet enged megnézni. ----------
+
+test('a heti kép a múlt hétre is átváltható', async () => {
+  renderView()
+  const back = screen.getByRole('button', { name: /Múlt hét/ })
+  expect(back).toHaveAttribute('aria-pressed', 'false')
+  await userEvent.click(back)
+  expect(screen.getByTestId('loc').textContent).toContain('w=elozo')
+  expect(screen.getByRole('button', { name: /Múlt hét/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: /Ez a hét/ })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('a múlt heti nézet a múlt hét napjait mutatja', async () => {
+  renderView({ path: '/fuel/trendek?w=elozo' })
+  expect(await screen.findByRole('button', { name: new RegExp(prevWeekFirstDay(), 'i') })).toBeInTheDocument()
+  // A nyitott hét CÍME is a múlt hét — különben csak a napok cserélődtek volna ki.
+  expect(screen.getByText(deriveWeekTitle(addDays(mondayIso(), -7)))).toBeInTheDocument()
+})
+
+test('a múlt heti nézetből egy koppintással vissza lehet jönni', async () => {
+  renderView({ path: '/fuel/trendek?w=elozo' })
+  await userEvent.click(screen.getByRole('button', { name: /Ez a hét/ }))
+  expect(screen.getByTestId('loc').textContent).not.toContain('w=elozo')
+  expect(screen.getByText(deriveWeekTitle(mondayIso()))).toBeInTheDocument()
+})
+
+// Új felhasználónál nincs korábbi hét — ez NORMÁL állapot, nem hiba.
+test('korábbi hét nélkül a váltó őszintén elmondja, hogy nincs tovább', async () => {
+  serveEmptyPreviousWeek()
+  renderView({ real: true })
+  expect(await screen.findByText(/Ez az első heted/i)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Múlt hét/ })).toBeDisabled()
+})
 
 test('a Trendek oldal a saját címével jelenik meg', () => {
   renderView()
