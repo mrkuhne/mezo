@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
 import { useRecipes } from '@/data/hooks'
+import { RECIPES_KEY } from '@/data/fuel/queryKeys'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { Recipe } from '@/data/types'
@@ -20,7 +21,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 function LocationProbe() {
   const loc = useLocation()
-  return <div data-testid="location">{loc.pathname}</div>
+  return <div data-testid="location">{loc.pathname}{loc.search}</div>
 }
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
@@ -31,6 +32,7 @@ function renderDetail(id: string, qc: QueryClient) {
         <Routes>
           <Route path="/fuel/recipes/:id" element={<RecipeDetailPage />} />
           <Route path="/fuel/recipes/:id/edit" element={<LocationProbe />} />
+          <Route path="/fuel/recipes/muhely" element={<LocationProbe />} />
           <Route path="/fuel/recipes" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
@@ -50,6 +52,16 @@ function firstId(qc: QueryClient) {
   return recipesOf(qc)[0]
 }
 
+/** Put a doctored copy of a seed recipe into the client-owned mock cache — the seeds are all
+ *  single-serving, so a basis test needs a multi-serving one, and an honest-null test needs a
+ *  recipe whose facts are genuinely absent. */
+function seedRecipe(qc: QueryClient, patch: Partial<Recipe>): Recipe {
+  const all = recipesOf(qc)
+  const doctored = { ...all[0], ...patch, id: patch.id ?? 'rec-doctored' }
+  qc.setQueryData(RECIPES_KEY, [doctored, ...all.filter(r => r.id !== doctored.id)])
+  return doctored
+}
+
 /** Pick a seed recipe by predicate — throws instead of silently testing nothing. */
 function pickRecipe(qc: QueryClient, match: (r: Recipe) => boolean) {
   const found = recipesOf(qc).find(match)
@@ -57,63 +69,82 @@ function pickRecipe(qc: QueryClient, match: (r: Recipe) => boolean) {
   return found
 }
 
-test('F7.3 mozaik: hero + statstrip + a négy csempe, a hozzávaló-sorok a saját nézetükben (mezo-d20.8.3.1)', async () => {
+// ── S4 (mezo-hygp): a Titán anatómia. A korábbi F7.3 Mozaik-mozaik (négy csempe + lokális
+// hozzávaló-nézet) KIVEZETVE: az owner szerint egy recept megnyitása ugyanazt a mélységet
+// adja, mint egy logolt étkezésé, ezért a blokkok a LAPON vannak, nem csempék mögött. ──────
+
+// Owner: a recept részletei ugyanazokat a blokkokat viszik, mint az étkezésé.
+test('a recept részletei ugyanazokat a blokkokat viszik, mint az étkezésé (mezo-hygp)', async () => {
   const qc = newQc()
   const r = firstId(qc)
   renderDetail(r.id, qc)
   expect(await screen.findByText(r.name)).toBeInTheDocument()
-  // whole-recipe kcal appears in the stat strip
-  expect(screen.getByText(String(r.macros.kcal))).toBeInTheDocument()
-  // the four mosaic tiles
-  expect(screen.getByTestId('recipe-score-tile')).toBeInTheDocument()
-  expect(screen.getByTestId('recipe-olvasat-tile')).toBeInTheDocument()
-  expect(screen.getByTestId('recipe-ingredients-tile')).toBeInTheDocument()
-  expect(screen.getByTestId('recipe-logs-tile')).toBeInTheDocument()
-  // ingredient LINES (with amounts) live in the local view, not on the page:
-  // the tile teases names only, so the line's amount+unit is a safe absence probe
-  expect(screen.queryByText(String(r.ingredients[0].amount), { exact: true })).toBeNull()
-  // the old tablist is gone
+  for (const name of ['Makrók', 'Hozzávalók', 'Minőség', 'Mikrotápanyagok']) {
+    expect(screen.getByRole('heading', { name })).toBeInTheDocument()
+  }
+  // Az AI értékelés a fejlécben áll (a `FuelScoreChip` akadálymentes neve), a régi
+  // csempe-mozaik pedig eltűnt.
+  await waitFor(() => expect(screen.getByRole('button', { name: /AI értékelés/ })).toBeInTheDocument())
+  expect(screen.queryByTestId('recipe-score-tile')).toBeNull()
+  expect(screen.queryByTestId('recipe-ingredients-tile')).toBeNull()
   expect(screen.queryByRole('tab')).toBeNull()
 })
 
-test('a Hozzávalók csempe a lokális nézetet nyitja a sorokkal, a vissza-chip visszahoz (mezo-d20.8.3.1)', async () => {
+// A hozzávaló-SOROK most a lapon vannak (nem lokális nézet mögött) — a soronkénti
+// mennyiség a legbiztosabb jelenlét-próba.
+test('a hozzávaló-sorok a lapon vannak, nem egy csempe mögött', async () => {
   const qc = newQc()
   const r = firstId(qc)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  await userEvent.click(screen.getByTestId('recipe-ingredients-tile'))
   expect(screen.getByText(r.ingredients[0].name!)).toBeInTheDocument()
-  expect(screen.getByText(`Hozzávalók · ${r.ingredients.length}`)).toBeInTheDocument()
-  // the main page's actions are not part of the local view
-  expect(screen.queryByRole('button', { name: /mai étkezéshez/i })).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-  expect(screen.getByRole('button', { name: /mai étkezéshez/i })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Törlés/ })).toBeInTheDocument()
+  // …és a lap fő műveletei ugyanott maradnak, nem kell visszanavigálni értük
+  expect(screen.getByRole('button', { name: /Logolás/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Törlés' })).toBeInTheDocument()
 })
 
-test('the hero meta line carries the NOVA value and the meta strip is gone (mezo-n3xa)', async () => {
+// F1 őszinteség: csak a tárolt négy tény, kitalált vitamin nincs.
+test('a mikrotápanyagok csak a tárolt tényeket mutatják', async () => {
   const qc = newQc()
   const r = firstId(qc)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  // NOVA moved into the hero meta line (textContent spans the colored child span)
+  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section')!
+  for (const label of ['Rost', 'Cukor', 'Só', 'Telített zsír']) {
+    expect(within(micro).getByText(label)).toBeInTheDocument()
+  }
+  expect(within(micro).queryByText(/vitamin/i)).toBeNull()
+})
+
+// B12: a receptből naplózás előtöltve indul, a kamera-felület kihagyásával.
+test('a receptből naplózás előtöltve nyílik', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  fireEvent.click(screen.getByRole('button', { name: /Logolás/ }))
+  expect(await screen.findByRole('dialog', { name: /Mit ettél/ })).toBeInTheDocument()
+})
+
+// B10: a részletlapról a Műhelybe lehet iterálni, a receptet magával víve.
+test('a részletlapról a Műhely a recepttel indul', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  await userEvent.click(screen.getByRole('button', { name: /Iterálás a Műhelyben/ }))
+  expect(screen.getByTestId('location').textContent).toContain(`recipeId=${r.id}`)
+})
+
+test('a meta-sor viszi a NOVA-értéket és a létrehozás dátumát (mezo-n3xa)', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
   expect(screen.getByText(/létrehozva/).textContent).toContain(`NOVA ${r.novaDominant}`)
-  // the old 4-cell meta strip is deleted
+  // a régi négy-cellás meta-csík nem tért vissza
   expect(screen.queryByText('Idő')).toBeNull()
   expect(screen.queryByText('Hozzáv.')).toBeNull()
-})
-
-// Napiv de-darkening (mezo-8141): the hero title/meta moved OFF the media band onto
-// the card surface below it — var(--ink)/var(--faint), never the retired
-// dark-media text tokens.
-test('the hero title/meta render off the media band in the Mozaik ink tokens', async () => {
-  const qc = newQc()
-  const r = firstId(qc)
-  renderDetail(r.id, qc)
-  const title = await screen.findByText(r.name)
-  expect(title.style.color).toBe('var(--text-primary)')
-  const meta = screen.getByText(/létrehozva/)
-  expect(meta.style.color).toBe('var(--text-tertiary)')
 })
 
 test('a missing id shows the not-found fallback', async () => {
@@ -123,12 +154,41 @@ test('a missing id shows the not-found fallback', async () => {
 
 test('the serving toggle switches the macro basis', async () => {
   const qc = newQc()
-  const r = firstId(qc)
+  // A seedek mind EGY adagosak, ezért ott a váltónak nincs mit mutatnia: ez a próba egy két
+  // adagos receptet tesz a kliens-oldali cache-be, hogy a két bázis tényleg elváljon.
+  const r = seedRecipe(qc, { servings: 2, macros: { kcal: 600, p: 40, c: 60, f: 20 } })
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
+  expect(screen.getByText('300')).toBeInTheDocument()          // 600 / 2 adag
+  expect(screen.getByText(/kcal \/ adag/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Egész/ }))
-  // whole-recipe kcal stays present in the "egész" basis
-  expect(screen.getByText(String(r.macros.kcal))).toBeInTheDocument()
+  expect(screen.getByText('600')).toBeInTheDocument()
+  expect(screen.getByText(/kcal · egész/)).toBeInTheDocument()
+})
+
+test('a mikrotápanyag-blokk is követi a /adag ↔ egész váltót', async () => {
+  const qc = newQc()
+  const r = seedRecipe(qc, { servings: 2, nutrients: { fiberG: 8, sugarG: 12, saltG: 1, saturatedFatG: 4 } })
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  const rostCard = () => screen.getByText('Rost').closest('.fmx-micro-card') as HTMLElement
+  expect(within(rostCard()).getByText('4 g')).toBeInTheDocument()   // 8 g / 2 adag
+  await userEvent.click(screen.getByRole('button', { name: /Egész/ }))
+  expect(within(rostCard()).getByText('8 g')).toBeInTheDocument()
+})
+
+// Őszinte-null az ÚJ felületen: amire nincs tárolt tény, az „—" és „nincs adat", nem nulla.
+// (A korábbi változat a visszavont lokális Hozzávalók-nézet per-soros tápérték-celláit
+// vizsgálta; a Titán hozzávaló-sor kcal-t és mennyiséget mond, tápérték-cellákat nem.)
+test('tárolt tény nélkül a mikrotápanyag-kártya gondolatjelet ad, nem kitalált nullát', async () => {
+  const qc = newQc()
+  const r = seedRecipe(qc, { nutrients: undefined })
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section')!
+  expect(within(micro).getAllByText('—')).toHaveLength(4)
+  expect(within(micro).getAllByText('nincs adat')).toHaveLength(4)
+  expect(within(micro).queryByText('0 g')).toBeNull()
 })
 
 test('Szerkesztés navigates to the edit route', async () => {
@@ -140,7 +200,9 @@ test('Szerkesztés navigates to the edit route', async () => {
   expect(screen.getByTestId('location').textContent).toBe(`/fuel/recipes/${r.id}/edit`)
 })
 
-test('Törlés removes the recipe and navigates back to the library', async () => {
+// S4: a törlés KÉT lépés lett (a prototípus `deleteControl`-ja + a kamra-tétel lap precedense) —
+// egy részletező lapon egy koppintás nem törölhet receptet.
+test('Törlés két lépés: az első koppintás csak felfegyverzi a megerősítést', async () => {
   const qc = newQc()
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
@@ -150,18 +212,26 @@ test('Törlés removes the recipe and navigates back to the library', async () =
   const r = result.current.recipes[0]
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  await userEvent.click(screen.getByRole('button', { name: /Törlés/ }))
-  await waitFor(() => expect(result.current.recipes.some(x => x.id === r.id)).toBe(false))
-  expect(screen.getByTestId('location').textContent).toBe('/fuel/recipes')
+  await userEvent.click(screen.getByRole('button', { name: 'Törlés' }))
+  expect(await screen.findByRole('button', { name: /Biztos\? Még egy érintés a törléshez/ })).toBeInTheDocument()
+  expect(result.current.recipes.some(x => x.id === r.id)).toBe(true)
+  expect(screen.queryByTestId('location')).toBeNull()
 })
 
-test('opens LogFlowPage pre-filled when "+ Mai étkezéshez" is tapped', async () => {
+test('Törlés removes the recipe on the SECOND tap and navigates back to the library', async () => {
   const qc = newQc()
-  const r = firstId(qc)
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useRecipes(), { wrapper })
+  await waitFor(() => expect(result.current.recipes.length).toBeGreaterThan(0))
+  const r = result.current.recipes[0]
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  fireEvent.click(screen.getByRole('button', { name: /mai étkezéshez/i }))
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Törlés' }))
+  await userEvent.click(screen.getByRole('button', { name: /Biztos\?/ }))
+  await waitFor(() => expect(result.current.recipes.some(x => x.id === r.id)).toBe(false))
+  expect(screen.getByTestId('location').textContent).toBe('/fuel/recipes')
 })
 
 test('Csillag toggles the starred flag', async () => {
@@ -179,12 +249,12 @@ test('Csillag toggles the starred flag', async () => {
   await waitFor(() => expect(result.current.recipes.find(x => x.id === r.id)?.starred).toBe(!before))
 })
 
-test('a Logok csempe a log-sheetet nyitja a pontozott loggal', async () => {
+test('a Logok ajtó a log-sheetet nyitja a pontozott loggal', async () => {
   const qc = newQc()
   const r = firstId(qc) // recipes[0] = rec-1, which has a scored recentLog (0.92)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  await userEvent.click(screen.getByTestId('recipe-logs-tile'))
+  await userEvent.click(screen.getByTestId('recipe-logs-open'))
   // the scored log renders its delta-vs-baseline line (RecipeLogsList scored branch)
   expect(await screen.findByText(/vs baseline/)).toBeInTheDocument()
 })
@@ -200,26 +270,25 @@ test('shows the Logok empty-state when the recipe was never logged', async () =>
   const unlogged = result.current.recipes.find(x => x.id === 'rec-3') ?? result.current.recipes[2]
   renderDetail(unlogged.id, qc)
   await screen.findByText(unlogged.name)
-  // the tile is honest about the empty ledger…
   expect(screen.getByText('ma még nincs logolva')).toBeInTheDocument()
-  // …and the sheet carries the empty-state copy
-  await userEvent.click(screen.getByTestId('recipe-logs-tile'))
+  await userEvent.click(screen.getByTestId('recipe-logs-open'))
   expect(await screen.findByText(/Még nem logoltad ezt a receptet/)).toBeInTheDocument()
 })
 
-test('a Pontszám csempe a teljes bontás-sheetet nyitja (a közös ScoreBreakdownBody) (mezo-bw3y + F7.3)', async () => {
+test('a Pontszám ajtó a teljes bontás-sheetet nyitja (a közös ScoreBreakdownBody) (mezo-bw3y)', async () => {
   const qc = newQc()
   const rec = firstId(qc)
   renderDetail(rec.id, qc)
   await screen.findByText(rec.name)
-  const tile = screen.getByTestId('recipe-score-tile')
-  await waitFor(() => expect(tile).not.toBeDisabled())
-  expect(within(tile).getByText(/szempont/)).toBeInTheDocument()
-  await userEvent.click(tile)
+  const door = screen.getByTestId('recipe-score-open')
+  await waitFor(() => expect(door).not.toBeDisabled())
+  expect(within(door).getByText(/szempont/)).toBeInTheDocument()
+  await userEvent.click(door)
   // the sheet renders the shared ScoreBreakdownBody's dimension cards. Two hits since mezo-1f7b:
   // the ledger's named legend row and the dimension tile itself both carry the label.
   expect((await screen.findAllByText('Kcal & makró arány')).length).toBeGreaterThanOrEqual(1)
-  expect(screen.getByText(/szempont · megbízh\./)).toBeInTheDocument()
+  // Két találat: az ajtó saját sora és a sheet fejléce — mindkettő ugyanazt a bontást nevezi.
+  expect(screen.getAllByText(/szempont · megbízh\./).length).toBeGreaterThanOrEqual(2)
 })
 
 // recipeToInput round-trips the whole recipe (the star toggle writes it straight back),
@@ -234,13 +303,12 @@ test('preserves the role through recipeToInput', () => {
 // The role RETARGETS the rubric (mezo-uavr) — the read surfaces must NAME the yardstick,
 // otherwise a pre-workout template reads as a mediocre "general" meal. „Általános" is the
 // implicit default, so it is never rendered: only a non-standard role earns a chip.
-test('the hero meta line carries the role chip for a non-standard recipe (mezo-uavr)', async () => {
+test('the meta line carries the role chip for a non-standard recipe (mezo-uavr)', async () => {
   const qc = newQc()
   const r = pickRecipe(qc, x => x.role === 'pre_workout')
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
   expect(screen.getByText('Edzés előtt')).toBeInTheDocument()
-  // it sits in the hero meta line, alongside NOVA / létrehozva
   expect(screen.getByText(/létrehozva/).textContent).toContain('Edzés előtt')
 })
 
@@ -254,63 +322,39 @@ test('a standard recipe gets no role chip (mezo-uavr)', async () => {
   expect(screen.getByText(/létrehozva/).textContent).not.toContain('Általános')
 })
 
-test('the PONTSZÁM header names the rubric a non-standard role retargets to (mezo-uavr)', async () => {
+test('the PONTSZÁM sheet names the rubric a non-standard role retargets to (mezo-uavr)', async () => {
   const qc = newQc()
   const r = pickRecipe(qc, x => x.role === 'pre_workout' && !!x.templateBreakdown)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  const tile = screen.getByTestId('recipe-score-tile')
-  await waitFor(() => expect(tile).not.toBeDisabled())
-  await userEvent.click(tile)
+  const door = screen.getByTestId('recipe-score-open')
+  await waitFor(() => expect(door).not.toBeDisabled())
+  await userEvent.click(door)
   // reads as "which yardstick was used", not as praise — the adjectival form in the sheet header
   expect(await screen.findByText(/edzés előtti mérce/)).toBeInTheDocument()
 })
 
-test('the PONTSZÁM header stays rubric-free for a standard recipe (mezo-uavr)', async () => {
+test('the PONTSZÁM sheet stays rubric-free for a standard recipe (mezo-uavr)', async () => {
   const qc = newQc()
   const r = pickRecipe(qc, x => x.role === 'standard' && !!x.templateBreakdown)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  const tile = screen.getByTestId('recipe-score-tile')
-  await waitFor(() => expect(tile).not.toBeDisabled())
-  await userEvent.click(tile)
-  expect(await screen.findByText(/szempont · megbízh\./)).toBeInTheDocument()
+  const door = screen.getByTestId('recipe-score-open')
+  await waitFor(() => expect(door).not.toBeDisabled())
+  await userEvent.click(door)
+  expect((await screen.findAllByText(/szempont · megbízh\./)).length).toBeGreaterThanOrEqual(2)
   expect(screen.queryByText(/mérce/)).toBeNull()
 })
 
-test('a tápérték-sor követi a /adag ↔ egész váltót', async () => {
-  const qc = newQc()
-  const r = pickRecipe(qc, x => x.id === 'rec-1')
-  renderDetail(r.id, qc)
-  await screen.findByText(r.name)
-  // F7.3: the recipe-level NutrientCells moved into the Hozzávalók local view
-  await userEvent.click(screen.getByTestId('recipe-ingredients-tile'))
-  const telitett = screen.getAllByText('Telített')[0]
-  expect(telitett).toBeInTheDocument()
-  const nutrientRow = telitett.closest('.row')
-  expect(nutrientRow).not.toBeNull()
-  expect(within(nutrientRow as HTMLElement).getByText('Rost')).toBeInTheDocument()
-})
-
-test('a hozzávalók fülön a tápérték nélküli sor gondolatjelet mutat', async () => {
-  const qc = newQc()
-  const r = pickRecipe(qc, x => x.id === 'rec-2') // ing-spenot: szándékosan tápérték nélküli seed-sor
-  renderDetail(r.id, qc)
-  await screen.findByText(r.name)
-  await userEvent.click(screen.getByTestId('recipe-ingredients-tile'))
-  expect(screen.getAllByText('—').length).toBeGreaterThan(0)
-})
-
-test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {
+test('renders the Mezo jegyzete card with the first fit chip when the seed carries a summary', async () => {
   const qc = newQc()
   const rec = firstId(qc)
-  if (!rec.templateBreakdown?.summary) return // seed without prose → the card honestly hides
+  if (!rec.templateBreakdown?.summary) return // seed without prose → the card honestly says so
   renderDetail(rec.id, qc)
   await screen.findByText(rec.name)
-  // F7.3: the reading lives on the olvasat tile; the tile teases the FIRST fit chip
-  const tile = screen.getByTestId('recipe-olvasat-tile')
-  await waitFor(() => expect(within(tile).queryByText(/Még nincs olvasat/)).toBeNull())
-  expect(within(tile).getByText(`● ${rec.mezoFit.fitsFor[0]}`)).toBeInTheDocument()
+  const note = screen.getByRole('region', { name: 'Mezo jegyzete' })
+  await waitFor(() => expect(within(note).queryByText(/Még nincs olvasat/)).toBeNull())
+  expect(within(note).getByText(`● ${rec.mezoFit.fitsFor[0]}`)).toBeInTheDocument()
 })
 
 // Background re-evaluation (mezo-uavr) — real mode only: an edit / role change nulls the
@@ -324,19 +368,19 @@ describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
   it('renders the re-evaluating copy instead of stale prose while refetching (mezo-uavr)', async () => {
     const qc = newQc()
     renderDetail(REAL_RECIPE_ID, qc)
-    // first load resolves the MSW breakdown envelope: prose + score section on screen
+    // first load resolves the MSW breakdown envelope: prose + score door on screen
     expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
-    expect(within(screen.getByTestId('recipe-score-tile')).getByText(/szempont/)).toBeInTheDocument()
+    expect(within(screen.getByTestId('recipe-score-open')).getByText(/szempont/)).toBeInTheDocument()
 
     // the regeneration the write path triggers is slow (LLM seconds) — never resolves here
     server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
     act(() => { void qc.invalidateQueries({ queryKey: ['recipeBreakdown', REAL_RECIPE_ID] }) })
 
     expect(await screen.findByText('Mezo újraértékeli…')).toBeInTheDocument()
-    // the whole stale block is gone — prose AND the score tile's dims; the tile is disabled
+    // the whole stale block is gone — prose AND the dimension count; the door is disabled
     expect(screen.queryByText('MSW sablon-olvasat.')).toBeNull()
     expect(screen.queryByText(/szempont/)).toBeNull()
-    expect(screen.getByTestId('recipe-score-tile')).toBeDisabled()
+    expect(screen.getByTestId('recipe-score-open')).toBeDisabled()
     // and it does NOT claim a first evaluation
     expect(screen.queryByText('Mezo értékeli…')).toBeNull()
   })
@@ -351,7 +395,7 @@ describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
   // A plain revalidation (staleTime expiry on remount, window refocus) is NOT a regeneration:
   // it returns the SAME cached envelope, so claiming „újraértékeli" would be a false statement
   // and a pointless layout jump. Only a write-driven INVALIDATION counts (mezo-uavr).
-  it('a background revalidation that is NOT an invalidation keeps the score section (mezo-uavr)', async () => {
+  it('a background revalidation that is NOT an invalidation keeps the score block (mezo-uavr)', async () => {
     const qc = newQc()
     renderDetail(REAL_RECIPE_ID, qc)
     expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
@@ -364,8 +408,8 @@ describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
 
     expect(screen.queryByText('Mezo újraértékeli…')).toBeNull()
     expect(screen.queryByText('Mezo értékeli…')).toBeNull()
-    // the cached reading stays on screen — no blanked score tile
+    // the cached reading stays on screen — no blanked score door
     expect(screen.getByText('MSW sablon-olvasat.')).toBeInTheDocument()
-    expect(within(screen.getByTestId('recipe-score-tile')).getByText(/szempont/)).toBeInTheDocument()
+    expect(within(screen.getByTestId('recipe-score-open')).getByText(/szempont/)).toBeInTheDocument()
   })
 })
