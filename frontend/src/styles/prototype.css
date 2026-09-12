@@ -12114,7 +12114,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-ing-end > small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
 
 /* Minőség-lapkák. `is-unknown` = őszinte hiány: szaggatott, halkabb, „—". */
-.fmx-nutri-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fmx-nutri-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .fmx-nutri-tile { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--nt-color) 26%, transparent);
   background: linear-gradient(155deg, color-mix(in srgb, var(--nt-color) 14%, transparent), var(--surface-card) 62%);
@@ -12187,7 +12187,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-subhead-end { margin-left: auto; font-size: 11px; color: var(--sub); white-space: nowrap; }
 
 /* Dimenzió-mozaik: minden szempont saját hue-ban, KOPPINTÁSRA nyílik (nem lenyíló). */
-.fmx-dims { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 6px; }
+.fmx-dims { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 6px; }
 .fmx-dim { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0;
   padding: 12px 12px 11px; border-radius: 17px; font-family: inherit; text-align: left; color: var(--ink);
   border: 1px solid color-mix(in srgb, var(--dim-color) 24%, transparent);
@@ -12248,7 +12248,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    tokenjeivel. A „DEMÓ KERESŐ" overlay és a minta-exponálás gombjai SZÁNDÉKOSAN nem jönnek át:
    itt valódi kamera-input és valódi felismerés áll. */
 .fmx-logmodes { margin: 0 0 14px; }
-.fmx-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 2px 0 14px; }
+.fmx-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 2px 0 14px; }
 .fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 5px;
   padding: 9px 2px 8px; border: 1px solid var(--border-subtle); border-radius: 13px;
   background: var(--surface-1); color: var(--sub); font-size: 8.5px; letter-spacing: 0.4px; }
@@ -13081,7 +13081,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-body { display: grid; gap: 12px; }
 
 /* A két rögzítő művelet — ezért jön ide a felhasználó (owner). */
-.fkx-captures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fkx-captures { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .fkx-capture { position: relative; display: flex; flex-direction: column; align-items: flex-start;
   gap: 3px; min-width: 0; min-height: 44px; padding: 14px 13px 13px; border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--fkx) 34%, transparent);
@@ -13311,6 +13311,53 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fkx-capture-art { animation: none; }
 }
 /* ── /fuel-konyha titanium ────────────────────────────────────────────────── */
+
+/* ── fuel overflow guard (mezo-jb84) ──────────────────────────────────────────────────────────
+   A Fuel-felületek sok szövegsora EGYSOROS, levágott sor (`white-space: nowrap` +
+   `text-overflow: ellipsis`). Egy ilyen sor min-content szélessége a TELJES szöveg, és egy
+   grid/flex gyerek alapértelmezett `min-width: auto`-ja ezt érvényre is juttatja — ezért egyetlen
+   hosszú étel-, recept- vagy kiegészítőnév kifeszítette a kártyát a képernyőn túlra (éles hiba:
+   375 px-es sávban 667 px-es blokk, a jobb széle levágva). A levágás rendben volt; a SÁV nem.
+   Ezért minden Fuel-rács egyoszlopos sávja `minmax(0, 1fr)`, és a gyerekei `min-width: 0` —
+   a szöveg így a sávon BELÜL vágódik, sosem tolja szét a kártyát.
+   Rövid tartalommal ez a hiba láthatatlan: a mock-nap nevei rövidek, a valódi naplóé nem. */
+.fmx-blocks, .fmx-ing-list, .fmx-micro-list, .fmx-usuals,
+.fsx-body, .fsx-glass-rows, .fsx-proto-list, .fsx-setup, .fsx-picks, .fsx-form,
+.ftx-body, .ftx-split, .ftx-glass, .ftx-dims, .ftx-rows, .ftx-meals, .ftx-patterns,
+.fkx-body, .fkx-detail, .fkx-library { grid-template-columns: minmax(0, 1fr); }
+
+.fmx-blocks > *, .fmx-ing-list > *, .fmx-micro-list > *, .fmx-usuals > *,
+.fmx-nutri-tiles > *, .fmx-dims > *, .fmx-modes > *, .fmx-rings > *, .fmx-detail-rings > *,
+.fsx-body > *, .fsx-glass-rows > *, .fsx-proto-list > *, .fsx-setup > *, .fsx-picks > *,
+.fsx-form > *, .fsx-summary > *,
+.ftx-body > *, .ftx-split > *, .ftx-glass > *, .ftx-dims > *, .ftx-rows > *, .ftx-meals > *,
+.ftx-patterns > *, .ftx-tiles > *,
+.fkx-body > *, .fkx-detail > *, .fkx-library > *, .fkx-captures > *,
+/* …és MAGUK a rácsok is: egy rács ugyanúgy lehet egy másik rács gyereke, és ott is
+   `min-width: auto`-val indul — a Protokoll összegző sávja épp így nőtt 1247 px-esre. */
+.fmx-blocks, .fmx-rings, .fmx-detail-rings, .fmx-nutri-tiles, .fmx-dims, .fmx-modes,
+.fmx-ing-list, .fmx-micro-list, .fmx-usuals,
+.fsx-body, .fsx-summary, .fsx-glass-rows, .fsx-proto-list, .fsx-setup, .fsx-picks, .fsx-form,
+.ftx-body, .ftx-tiles, .ftx-split, .ftx-glass, .ftx-dims, .ftx-rows, .ftx-meals, .ftx-patterns,
+.fkx-body, .fkx-captures, .fkx-detail, .fkx-library { min-width: 0; }
+
+/* A Protokoll a shell `.stk-detail-body` törzsében ül, ami maga is egyoszlopos rács: a
+   sávja min-contentre nőtt (919 px a 375-ös törzsben), és MINDEN gyereke vele. A törzs
+   sávja sem lépheti túl a saját szélességét. */
+.stk-detail-body { grid-template-columns: minmax(0, 1fr); }
+.stk-detail-body > * { min-width: 0; }
+
+
+/* A sorok JOBB oldali szövegoszlopai eddig `flex: 0 0 auto`-val álltak: egy hosszabb adag-
+   vagy tápérték-string így a sorral együtt kitolta a kártyát. Zsugorodhatnak, és a saját
+   sávjukon belül vágódnak — a fix méretű ikon-oszlopok (`-art`) ÉS a 44 px-es érintő-
+   felületek (`.fsx-check`) szándékosan maradnak nem-zsugorodók. */
+.fsx-proto-line-end, .fmx-ing-end, .fmx-mc-end { flex: 0 1 auto; max-width: 46%; }
+.fsx-proto-line-end b, .fsx-proto-line-end small,
+.fmx-ing-end b, .fmx-ing-end small,
+.fmx-mc-end b, .fmx-mc-end small { overflow: hidden; text-overflow: ellipsis; }
+/* ── /fuel overflow guard ── */
+
 
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────
    A Titán Nap (`/nap`, `/nap/gyors`) SÖTÉT GRAFIT bőre — a

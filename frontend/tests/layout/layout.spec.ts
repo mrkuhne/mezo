@@ -425,3 +425,59 @@ test('Cél diet kcal values remain readable at 200% text size', async ({ page })
   }))
   expect(clipped).not.toContain(true)
 })
+
+// ── Fuel: hosszú nevek nem feszíthetik szét a kártyát (mezo-jb84) ────────────────────────────
+// Éles hiba volt: a napló valódi étel-nevei hosszabbak a demó-napénál, és egy „Csirke alsócomb
+// bőrrel, sült, Édesburgonya…" sor 375 px-es sávban 667 px-esre feszítette a blokkot — a kártya
+// jobb széle egyszerűen levágódott. A levágás (`nowrap` + `ellipsis`) rendben volt; a SÁV nem:
+// egy grid-gyerek alapértelmezett `min-width: auto`-ja a teljes szöveget engedi min-contentnek.
+// Ez a kör MINDEN egysoros Fuel-szöveget hosszúra cserél, és megköveteli, hogy a lap attól se
+// kezdjen oldalra görögni — rövid tartalommal a hiba láthatatlan, ezért kell kikényszeríteni.
+const LONG = 'Csirke alsócomb bőrrel sült Édesburgonya sütve brokkoli párolva olívaolajjal és magvakkal'
+
+for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trendek', '/fuel/konyha']) {
+  test(`Fuel · hosszú nevek sem feszítik szét a lapot · ${path}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const stretched = await page.evaluate((long: string) => {
+      const scroller = document.querySelector('.screen-content') as HTMLElement
+      // Csak azokat a sorokat nyújtjuk meg, amelyek NEM egy vízszintesen görgethető sávban ülnek —
+      // ott az átlógás szándékos.
+      const inScrollX = (el: Element) => {
+        for (let p = el.parentElement; p && p !== scroller; p = p.parentElement) {
+          if (['auto', 'scroll'].includes(getComputedStyle(p).overflowX)) return true
+        }
+        return false
+      }
+      let touched = 0
+      for (const el of Array.from(scroller.querySelectorAll('*'))) {
+        if (el.children.length) continue
+        if (!el.textContent?.trim()) continue
+        if (getComputedStyle(el).whiteSpace !== 'nowrap') continue
+        if (inScrollX(el)) continue
+        // A ház statikus felirat-primitívjei (eyebrow / label-mono / overline) FIX szövegek —
+        // azok sosem lesznek hosszabbak. A kör a FELHASZNÁLÓI adatot modellezi: étel-, recept-,
+        // kiegészítőnevek, adagok, tápértékek. Ezért ezeket kihagyjuk, különben a teszt olyan
+        // védekezést követelne meg, aminek a valóságban nincs megfelelője.
+        if (el.closest('.eyebrow, .label-mono, .overline')) continue
+        el.textContent = long
+        touched += 1
+      }
+      return touched
+    }, LONG)
+
+    await page.waitForTimeout(120)
+    const size = await page.locator('.screen-content').evaluate(el => ({
+      scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
+    }))
+    expect(stretched, `${path} nem tartalmaz egysoros szöveget — a kör vakon futna`).toBeGreaterThan(0)
+    expect(
+      size.scrollWidth,
+      `${path} vízszintesen görög (${size.scrollWidth}px a ${size.clientWidth}px-es sávban), amikor egy név hosszú`
+    ).toBeLessThanOrEqual(size.clientWidth + 1)
+  })
+}
