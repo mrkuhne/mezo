@@ -200,6 +200,7 @@ export function FuelMaiPage() {
           <div className="fh-hero rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             <FuelEnergyHero
               vm={keretHeroVm}
+              past={past}
               // A15: the shared sheet, opened at its first section — not the hero's local box.
               onOpenEnergy={() => setEnergyOpen('base')}
               onWater={() => setWaterOpen(true)}

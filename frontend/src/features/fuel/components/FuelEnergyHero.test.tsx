@@ -83,3 +83,18 @@ test('onOpenEnergy-vel a chip a szülőt hívja, nem a helyi dobozt', async () =
   expect(opened).toBe(1)
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
+
+// A13 (mezo-33k6): egy MÚLTBELI napot nézve a „ma" szó hazugság lenne — a lapozás
+// bevezetésével a hero szövege is a nézett naphoz igazodik, a képernyőolvasóé is.
+test('múltbeli napon a hero nem mondja azt, hogy „ma”', () => {
+  const { container } = render(<FuelEnergyHero vm={vm()} past />)
+  expect(container.textContent).not.toMatch(/\bma\b/)
+  expect(container.querySelector('.fmx-eaten')!.textContent).toMatch(/aznap/)
+  expect(container.querySelector('.fmx-hero-remaining')!.getAttribute('aria-label'))
+    .toMatch(/fért még bele/)
+})
+
+test('a mai napon marad a „ma” megfogalmazás', () => {
+  const { container } = render(<FuelEnergyHero vm={vm()} />)
+  expect(container.querySelector('.fmx-eaten')!.textContent).toMatch(/ettél ma/)
+})

@@ -48,7 +48,7 @@ function nodeValue(line: EquationLine): string {
   return `${line.sign} ${huInt(Math.abs(line.value))}`
 }
 
-function EquationBox({ vm, onClose }: { vm: KeretHeroVM; onClose: () => void }) {
+function EquationBox({ vm, past, onClose }: { vm: KeretHeroVM; past: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const lines = heroEquationLines(vm)
@@ -74,7 +74,7 @@ function EquationBox({ vm, onClose }: { vm: KeretHeroVM; onClose: () => void }) 
         <ClayIcon name="i-fuel" size={56} />
         <div>
           <strong>{huInt(Math.abs(vm.remainingKcal))}</strong>
-          <small id={titleId}>kcal {over ? 'a keret felett' : 'fér még bele ma'}</small>
+          <small id={titleId}>kcal {over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}</small>
         </div>
       </div>
       <div className="fmx-glass-bar" role="img"
@@ -105,8 +105,10 @@ function EquationBox({ vm, onClose }: { vm: KeretHeroVM; onClose: () => void }) 
   )
 }
 
-export function FuelEnergyHero({ vm, onOpenEnergy, onWater }: {
+export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
   vm: KeretHeroVM
+  /** A13: egy MÚLTBELI napot nézünk — a „ma” szó ilyenkor hazugság lenne. */
+  past?: boolean
   /** A15: hands the tap to the parent's shared EnergyBreakdownSheet instead of the local box. */
   onOpenEnergy?: () => void
   /** Keeps the víz ring a live water-logging door (see FuelMacroRings). */
@@ -131,13 +133,13 @@ export function FuelEnergyHero({ vm, onOpenEnergy, onWater }: {
           <small>{over ? 'A KERET FELETT' : 'MÉG BELEFÉR'}</small>
           {/* ONE sentence for the screen reader; the count-up digits are its decoration. */}
           <strong className="fmx-hero-remaining"
-            aria-label={`${huInt(vm.remainingKcal)} kcal ${over ? 'a keret felett' : 'fér még bele ma'}`}>
+            aria-label={`${huInt(vm.remainingKcal)} kcal ${over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}`}>
             <span aria-hidden="true">{huInt(remaining)}</span>
           </strong>
-          <span>kcal ma</span>
+          <span>{past ? 'kcal aznap' : 'kcal ma'}</span>
         </div>
       </div>
-      <p className="fmx-eaten"><b>{huInt(vm.consumedKcal)}</b> kcal·t ettél ma</p>
+      <p className="fmx-eaten"><b>{huInt(vm.consumedKcal)}</b> kcal·t ettél {past ? 'aznap' : 'ma'}</p>
       <button type="button" className="fmx-tapchip"
         onClick={() => (onOpenEnergy ? onOpenEnergy() : setBoxOpen(true))}>
         <span>Miből jön össze?</span>
@@ -145,7 +147,7 @@ export function FuelEnergyHero({ vm, onOpenEnergy, onWater }: {
         <u className="fmx-chip-sheen" aria-hidden="true" />
       </button>
       <FuelMacroRings rings={vm.rings} onWater={onWater} />
-      {boxOpen && <EquationBox vm={vm} onClose={() => setBoxOpen(false)} />}
+      {boxOpen && <EquationBox vm={vm} past={past} onClose={() => setBoxOpen(false)} />}
     </div>
   )
 }
