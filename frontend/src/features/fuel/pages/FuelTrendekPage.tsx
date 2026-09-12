@@ -37,12 +37,14 @@
 import { useState } from 'react'
 import { useFuelWeek, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/me/meWeekHooks'
+import { useFuelHorizon } from '@/data/fuel/fuelHorizonHooks'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
+import { FuelHorizon } from '@/features/fuel/components/FuelHorizon'
 import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { buildWeekView, loggedKcalAvg, type WeekDayVM } from '@/features/fuel/logic/fuelWeekView'
 
@@ -140,6 +142,7 @@ function SplitRow({ label, icon, color, pct }: {
 export function FuelTrendekPage() {
   const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek()
   const { week: meWeek } = useMeWeek(start)
+  const { weeks: horizonWeeks } = useFuelHorizon(start)
   const [openDate, setOpenDate] = useState<string | null>(null)
 
   // A nap AI pontja és az edzésnap-jelölés a MEGLÉVŐ napi értékelésből (új formula nélkül).
@@ -225,6 +228,9 @@ export function FuelTrendekPage() {
               </p>
             )}
           </div>
+
+          <h2 className="ftx-section">Hosszabb táv</h2>
+          <FuelHorizon weeks={horizonWeeks} />
         </PageBody>
       </EntranceGroup>
 

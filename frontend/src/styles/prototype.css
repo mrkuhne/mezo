@@ -13190,6 +13190,35 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: var(--surface-recess); font-size: 12px; color: var(--sub); }
 .ftx-note { margin: 0; font-size: 10px; line-height: 1.55; color: var(--faint); }
 
+/* A hosszabb táv — evés × súly EGY időtengelyen (C3). A prototípus `horizonChart` geometriája
+   (336×150 viewBox, 18..318 sáv, három halk rácsvonal), ház-tokenekkel. */
+.ftx-horizon { display: grid; gap: 7px; padding: 13px 12px 11px; border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--sky) 22%, transparent);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--sky) 10%, var(--surface-1)),
+    var(--surface-1) 62%); }
+.ftx-horizon-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.ftx-horizon-grid { fill: none; stroke: var(--divider); }
+.ftx-horizon-kcal { fill: none; stroke: var(--sky); stroke-width: 2.6; stroke-linejoin: round;
+  stroke-linecap: round; }
+/* A súly szaggatott — MÁSODIK sorozat ugyanazon a tengelyen, nem ugyanaz a mérték. */
+.ftx-horizon-weight { fill: none; stroke: var(--rose); stroke-width: 2.4; stroke-dasharray: 1 6;
+  stroke-linecap: round; }
+.ftx-horizon-dot { fill: var(--rose); }
+.ftx-horizon-axis { font-size: 8px; fill: var(--faint); }
+.ftx-horizon-legend { display: flex; gap: 14px; margin: 0; }
+.ftx-horizon-legend em { display: inline-flex; align-items: center; gap: 5px; font-style: normal;
+  font-size: 9px; color: var(--sub); }
+.ftx-horizon-legend em::before { content: ''; width: 9px; height: 9px; border-radius: 50%; }
+.ftx-horizon-legend .is-kcal::before { background: var(--sky); }
+.ftx-horizon-legend .is-weight::before { background: var(--rose); }
+.ftx-horizon-lead { margin: 0; font-size: 11px; line-height: 1.55; color: var(--sub); }
+/* Őszinte hiány: a szakadás ki van MONDVA, nem csak rajzolva. */
+.ftx-horizon-gapnote { margin: 0; font-size: 10px; line-height: 1.5; color: var(--faint); }
+.ftx-horizon-wait { display: flex; align-items: flex-start; gap: 10px; margin: 0;
+  font-size: 11.5px; line-height: 1.6; color: var(--sub); }
+.ftx-horizon-wait > span:first-child { line-height: 0; flex: 0 0 auto; }
+.ftx-horizon.is-waiting { border-style: dashed; background: var(--surface-recess); }
+
 /* Belépő-koreográfia: a sávok felnőnek, a kontraszt-sávok kitöltődnek — egyszer, lépcsőzve. */
 @media (prefers-reduced-motion: no-preference) {
   .ftx-fill, .ftx-gap { animation: ftx-rise .75s cubic-bezier(.2, .78, .24, 1) both; }

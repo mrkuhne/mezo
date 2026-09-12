@@ -121,3 +121,15 @@ test('az edzésnap jelölést kap a heti képben', () => {
   const { container } = renderView()
   expect(container.querySelectorAll('.ftx-day .ftx-train').length).toBeGreaterThan(0)
 })
+
+// C3: a hosszabb táv a heti kép ALATT áll, és a két sorozat egy tengelyen fut.
+test('a hosszabb táv a heti kép alatt, egy időtengelyen rajzol', () => {
+  const { container } = renderView()
+  expect(screen.getByRole('heading', { name: 'Hosszabb táv' })).toBeInTheDocument()
+  expect(container.querySelector('.ftx-horizon-kcal')).not.toBeNull()
+  expect(container.querySelector('.ftx-horizon-weight')).not.toBeNull()
+  // A sorrend kötött: a heti kép a protagonista.
+  const hero = container.querySelector('.ftx-hero')!
+  const horizon = container.querySelector('.ftx-horizon')!
+  expect(hero.compareDocumentPosition(horizon) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
