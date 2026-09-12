@@ -290,20 +290,17 @@ function summary() {
      ${[1, 2, 3, 4].map(i => `<u style="--at:${i * 20}%"></u>`).join('')}
     </div>
     <div class="cer-counters">
-     <span><strong data-cer-count="sets">0</strong><small>/ ${score.target.sets} szett</small></span>
-     <span><strong data-cer-count="reps">0</strong><small>/ ${score.target.reps} ismétlés</small></span>
-     <span><strong data-cer-count="volume">0</strong><small>/ ${n(score.target.volume)} kg × rep</small></span>
+     <span><i>${icon('dumbbell')}</i><strong data-cer-count="sets">0</strong><small>szett</small></span>
+     <span><i>${icon('repeat')}</i><strong data-cer-count="reps">0</strong><small>ismétlés</small></span>
+     <span><i>${icon('kettle')}</i><strong data-cer-count="volume">0</strong><small>kg × rep</small></span>
     </div>
    </section>
 
    <section class="cer-result">
-    <h1 tabindex="-1">${String(score.stars).replace('.', ',')} csillag</h1>
-    <p>${verdictFor(score.stars)}${pending ? ` ${pending} szett kihagyva.` : ''}</p>
+    <h1 class="sr-only" tabindex="-1">${String(score.stars).replace('.', ',')} csillag</h1>
     <div class="cer-stats">
-     <span><strong>${m.reps}</strong><small>ismétlés</small></span>
-     <span><strong>${n(m.volume)}</strong><small>kg × rep</small></span>
-     <span><strong>${minutes}′</strong><small>idő</small></span>
-     <span><strong>+${m.xp}</strong><small>XP</small></span>
+     <span><strong>${minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
+     <span><strong>+${m.xp}</strong><small>szerzett XP</small></span>
     </div>
     ${records.length ? `<div class="cer-record" style="--ex-color:${records[0].color}">${icon('record')}<span><strong>${records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong><small>${records.map(r => `${r.name} · ${r.value}`).join(' · ')}</small></span></div>` : ''}
    </section>

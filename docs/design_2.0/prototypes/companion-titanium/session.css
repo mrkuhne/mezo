@@ -451,9 +451,12 @@
 /* Act one owns the screen. */
 .cer {
   position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 22px; flex: 1 1 auto; padding: 24px 16px; text-align: center;
+  justify-content: center; gap: 22px; flex: 0 0 auto; padding: 8px 16px 4px; text-align: center;
 }
+/* Free space splits above the ceremony and below the result, so the group sits centred
+   while the way on stays pinned near the thumb. */
 .cer-screen { display: flex; flex-direction: column; min-height: 100%; padding: 0 4px; }
+.cer-screen .cer { margin-top: auto; }
 .cer-foot { margin-top: auto; padding: 4px 0 10px; }
 .cer-details-screen { padding: 6px 4px 8px; }
 .cer-sky {
@@ -462,9 +465,9 @@
 }
 .cer > .overline { position: relative; color: #d5c096; letter-spacing: .2em; }
 
-.cer-stars { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 320px; }
-.cer-stars i { position: relative; justify-self: end; width: 40px; height: 40px; translate: 20px 0; display: grid; place-items: center; }
-.cer-stars i .icon { width: 40px; height: 40px; opacity: .12; filter: grayscale(1); transition: none; }
+.cer-stars { position: relative; display: flex; justify-content: center; gap: 12px; }
+.cer-stars i { position: relative; width: 42px; height: 42px; display: grid; place-items: center; }
+.cer-stars i .icon { width: 42px; height: 42px; opacity: .12; filter: grayscale(1); transition: none; }
 .cer-stars i.is-half .icon { opacity: .4; filter: grayscale(.4); }
 .cer-stars i.is-lit .icon {
   opacity: 1; filter: none;
@@ -494,10 +497,26 @@
   background: radial-gradient(circle, #fffdf4 0%, #ffc76a 26%, #ff7a2f66 48%, transparent 70%);
 }
 
-.cer-counters { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 340px; }
-.cer-counters span { padding: 11px 4px; border: 1px solid #ffffff0f; border-radius: 16px; background: #ffffff05; }
-.cer-counters strong { display: block; font-size: 22px; font-weight: 300; letter-spacing: -.03em; color: #ffe9c4; font-variant-numeric: tabular-nums; }
-.cer-counters small { display: block; font-size: 9px; color: #ffffff5e; margin-top: 4px; }
+.cer-counters { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; width: 100%; max-width: 340px; }
+.cer-counters span {
+  position: relative; overflow: hidden; display: grid; justify-items: center; gap: 2px; padding: 13px 4px 11px;
+  border-radius: 18px; border: 1px solid color-mix(in srgb, #ffb347 calc(14% + var(--p) * 26%), #ffffff14);
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, #ffb347 calc(var(--p) * 16%), transparent), transparent 66%),
+    linear-gradient(#ffffff0a, #ffffff03);
+  box-shadow: 0 1px 0 #ffffff1a inset, 0 10px 24px -20px color-mix(in srgb, #ff9a4a calc(var(--p) * 90%), transparent);
+}
+.cer-counters span::before {
+  content: ''; position: absolute; inset: 0 20% auto; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #ffd9a0 calc(30% + var(--p) * 70%), transparent), transparent);
+}
+.cer-counters i { display: block; width: 22px; height: 22px; opacity: calc(.35 + var(--p) * .55); }
+.cer-counters i .icon { width: 22px; height: 22px; }
+.cer-counters strong {
+  display: block; font-size: 26px; font-weight: 300; letter-spacing: -.035em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(#fff6e2, #ffca86); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.cer-counters small { display: block; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #ffffff6b; }
 
 /* Acts two and three wait for the bar. */
 /* The result and the way on wait for the bar — but they hold their space, so nothing jumps. */
@@ -508,14 +527,21 @@
 }
 .cer-screen.is-told .cer-foot { transition-delay: .22s; }
 
-.cer-result { text-align: center; padding: 4px 12px 14px; }
+.cer-result { text-align: center; padding: 20px 12px 4px; }
 .cer-result h1 { font-size: 32px; font-weight: 300; letter-spacing: -.03em; margin: 10px 0 4px; }
 .cer-result h1:focus { outline: none; }
 .cer-result > p { margin: 0 0 16px; font-size: 13px; color: #ffffff85; }
-.cer-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.cer-stats span { padding: 11px 3px; border: 1px solid #ffffff0f; border-radius: 14px; background: #ffffff05; }
-.cer-stats strong { display: block; font-size: 16px; font-weight: 500; color: #e6eeda; }
-.cer-stats small { display: block; font-size: 8.5px; color: #ffffff5e; margin-top: 4px; }
+.cer-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.cer-stats span {
+  position: relative; overflow: hidden; padding: 14px 8px; border-radius: 18px;
+  border: 1px solid #ffffff14; background: linear-gradient(#ffffff0a, #ffffff03);
+  box-shadow: 0 1px 0 #ffffff14 inset;
+}
+.cer-stats span::before { content: ''; position: absolute; inset: 0 24% auto; height: 1px; background: linear-gradient(90deg, transparent, #ffffff40, transparent); }
+.cer-stats strong { display: block; font-size: 27px; font-weight: 300; letter-spacing: -.035em; color: #eef3e4; }
+.cer-stats strong i { font-style: normal; font-size: 18px; color: #ffffff70; }
+.cer-stats small { display: block; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #ffffff5e; margin-top: 5px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .cer-record {
   display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 11px; margin-top: 14px;
