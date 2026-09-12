@@ -1,0 +1,76 @@
+/* Edzés (Train) — Titanium pages. Reuses the Fuel kit (.fuel-focus, .fuel-gauge, .fuel-ring,
+   .fuel-tapchip, .fuel-log-action, .fuel-more) so the two domains speak one language. */
+
+.tr-title { padding: 0 20px; margin: 2px 0 18px; }
+.tr-title .overline { color: var(--domain-color); letter-spacing: .18em; }
+.tr-title h2 { font-size: 34px; line-height: 1.05; margin: 6px 0 4px; font-weight: 300; letter-spacing: -.02em; }
+.tr-title p { margin: 0; color: #ffffff7a; font-size: 13px; }
+
+/* — the one big move: start / continue / review the session — */
+.tr-start {
+  display: flex; align-items: center; gap: 14px; width: calc(100% - 40px); margin: 4px 20px 22px;
+  padding: 16px 18px; border: 0; border-radius: 22px; text-align: left; cursor: pointer;
+  color: #0d1108; background: linear-gradient(135deg, color-mix(in srgb, var(--domain-color) 92%, #fff), color-mix(in srgb, var(--domain-color) 70%, #3d4a28));
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--domain-color) 80%, transparent), 0 2px 0 #ffffff40 inset;
+}
+.tr-start.is-done { color: #eae6f8; background: linear-gradient(135deg, #2b2c3d, #1a1b26); box-shadow: 0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset; }
+.tr-start strong { display: block; font-size: 17px; font-weight: 600; }
+.tr-start small { display: block; font-size: 12px; opacity: .72; margin-top: 2px; }
+.tr-start b { margin-left: auto; font-size: 20px; }
+.tr-start-art { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; }
+.tr-start-art .icon { width: 34px; height: 34px; }
+
+/* — the day's movement blocks — */
+.tr-blocks { display: grid; gap: 10px; padding: 0 20px 20px; }
+.tr-block {
+  display: flex; align-items: center; gap: 13px; width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid #ffffff14; border-radius: 20px; cursor: pointer; color: inherit;
+  background: linear-gradient(150deg, #ffffff0d, #ffffff05);
+}
+.tr-block.is-live { border-color: color-mix(in srgb, var(--domain-color) 45%, transparent); }
+.tr-block.is-done { background: linear-gradient(150deg, color-mix(in srgb, var(--domain-color) 14%, transparent), #ffffff05); }
+.tr-block.is-ahead { opacity: .72; }
+.tr-block-art { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; }
+.tr-block-art .icon { width: 38px; height: 38px; }
+.tr-block-copy { display: grid; gap: 1px; min-width: 0; }
+.tr-block-copy .overline { font-size: 9px; letter-spacing: .16em; color: #ffffff6b; }
+.tr-block-copy strong { font-size: 16px; font-weight: 500; }
+.tr-block-copy small { font-size: 12px; color: #ffffff70; }
+.tr-block b { margin-left: auto; color: #ffffff5c; font-size: 17px; }
+
+/* — the three exercises of the day — */
+.tr-lineup { display: grid; gap: 8px; padding: 0 20px 18px; }
+.tr-ex {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; text-align: left;
+  border: 1px solid #ffffff10; border-radius: 18px; cursor: pointer; color: inherit;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ex-color) 9%, #ffffff07), #ffffff04);
+}
+.tr-ex-index { font-size: 11px; letter-spacing: .1em; color: color-mix(in srgb, var(--ex-color) 75%, #fff); flex: 0 0 auto; }
+.tr-ex-copy { display: grid; gap: 1px; min-width: 0; }
+.tr-ex-copy strong { font-size: 15px; font-weight: 500; }
+.tr-ex-copy small { font-size: 12px; color: #ffffff72; }
+.tr-ex-copy em { font-size: 11px; font-style: normal; color: #ffffff4d; }
+.tr-ex-ticks { margin-left: auto; display: flex; gap: 4px; flex: 0 0 auto; }
+.tr-ex-ticks i { width: 7px; height: 7px; border-radius: 50%; background: #ffffff1f; }
+.tr-ex-ticks i.done { background: var(--ex-color); box-shadow: 0 0 8px color-mix(in srgb, var(--ex-color) 60%, transparent); }
+
+/* — honest placeholder for the tabs we have not rebuilt yet — */
+.tr-soon {
+  display: grid; justify-items: start; gap: 6px; margin: 0 20px 18px; padding: 18px;
+  border: 1px dashed #ffffff1f; border-radius: 22px; background: #ffffff06;
+}
+.tr-soon .icon { width: 40px; height: 40px; }
+.tr-soon .overline { color: var(--domain-color); letter-spacing: .16em; }
+.tr-soon strong { font-size: 17px; font-weight: 500; }
+.tr-soon p { margin: 0; font-size: 13px; color: #ffffff78; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-start, .tr-block, .tr-ex { transition: none !important; }
+}
+
+.tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tr-pills span {
+  font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
+  color: #ffffffa8; border: 1px solid #ffffff17; background: #ffffff08;
+}
+.tr-pills span:first-child { color: #0f1409; border-color: transparent; background: color-mix(in srgb, var(--domain-color) 82%, #fff); }
