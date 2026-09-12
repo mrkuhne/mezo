@@ -4,10 +4,13 @@
 import {
   EXERCISES, exerciseById, createSession, logSet, undoSet, addSet, removeSet, moveExercise,
   setNote, finishSession, metrics, doneCount, setVerdict, inRange, nextOpen, e1rm, currentSession,
-  skipExercise, isSkipped, pendingCount,
+  skipExercise, isSkipped, pendingCount, starsFor, sessionStars, starLedger,
 } from './session-state.js';
 import { icon, safe, closeSheet, react, toast } from './nap.js';
 import { animateFuelDashboard } from './fuel-dashboard.js';
+import { loadRows } from './workout-state.js';
+import { legacyShape } from './session-state.js';
+import { muscleIcon, muscleLabel, muscleColor } from './muscles.js';
 
 const $ = s => document.querySelector(s);
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
@@ -228,12 +231,38 @@ function closeSession() {
   render();
 }
 
+const starRow = (value, size = '') => {
+  const full = Math.floor(value), half = value - full >= .5;
+  return `<span class="stars ${size}" aria-label="${String(value).replace('.', ',')} csillag az ötből">${[0, 1, 2, 3, 4].map(i =>
+    `<i style="--i:${i}">${icon(i < full ? 'star' : i === full && half ? 'star-half' : 'star-empty')}</i>`).join('')}</span>`;
+};
+
+const VERDICTS = [
+  [5, 'Hibátlan nap.', 'Minden előírt szett megvan. Ez az a nap, amire a blokk épül.'],
+  [4, 'Erős nap.', 'Majdnem a teljes terv megvan — ennyi bőven elég a fejlődéshez.'],
+  [3, 'Rendben volt.', 'A terv nagy része megvan. A hiányzó rész a heti képben még behozható.'],
+  [1.5, 'Elindult.', 'Kevesebb lett a tervezettnél, de a nulla és ez között nagy a különbség.'],
+  [0, 'Ma nem jött össze.', 'Ez is a ritmus része. A következő edzés vár.'],
+];
+const verdictFor = stars => VERDICTS.find(([min]) => stars >= min);
+
+/** Weekly muscle load turned into stars: where the week stands against the mesocycle plan. */
+function muscleStarRows() {
+  return loadRows(legacyShape(session)).map(row => {
+    const ratio = row.plan ? row.done / row.plan : 0;
+    return { ...row, ratio: Math.min(1, ratio), stars: starsFor(ratio), muscleKey: { chest: 'chest-mid', back: 'back-mid', shoulder: 'shoulder-side', leg: 'quad' }[row.key] };
+  });
+}
+
 function summary() {
   const m = metrics(session), done = session.status === 'complete', pending = pendingCount(session);
   const minutes = Math.max(1, Math.round(((session.finishedAt || Date.now()) - (session.startedAt || Date.now())) / 60000));
   const kcal = Math.round(260 * (m.planned ? m.count / m.planned : 0));
+  const stars = sessionStars(session);
+  const [, headline, blurb] = verdictFor(stars);
+  const ledger = starLedger(session);
+  const weekStars = ledger.reduce((total, d) => total + (d.stars ?? 0), 0);
 
-  // One record per exercise — the best of the day, not every set that cleared the old best.
   const records = session.order.flatMap(id => {
     const e = exerciseById(id);
     const beating = session.rows[id].filter((r, i) => r.done && setVerdict(e, i, r) === 'record');
@@ -242,49 +271,47 @@ function summary() {
     return [{ name: e.name, art: e.art, color: e.color, value: `${n(best.kg)} kg × ${best.reps}`, e1rm: e1rm(best) }];
   });
 
-  const ring = (name, art, value, target, color) =>
-    `<div class="macro-cell"><span class="macro-ico">${icon(art)}</span><div class="fuel-ring" style="--macro-color:${color};--ring-progress:${Math.min(100, target ? value / target * 100 : 0)}"><svg viewBox="0 0 80 80" aria-hidden="true"><circle class="fuel-ring-track" cx="40" cy="40" r="34" pathLength="100"/><circle class="fuel-ring-progress" cx="40" cy="40" r="34" pathLength="100"/></svg><span aria-label="${name}: ${value} / ${target} szett"><strong data-fuel-count="${value}">0</strong><b>/ ${target}<i>szett</i></b></span></div><span class="macro-name">${name}</span></div>`;
-
-  const hero = `<section class="wo-sum-hero ${done ? 'is-done' : ''}">
-   <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'MÁRA ENNYI'}</span>
-   <div class="wo-sum-art">${icon(records.length ? 'record' : 'gem')}<i></i><i></i><i></i></div>
-   <h1 tabindex="-1">${done ? 'Beletetted. Megmarad.' : records.length ? 'Ma megdöntöttél valamit.' : 'Ennyit tettél bele.'}</h1>
-   <div class="wo-sum-number"><strong data-fuel-count="${m.count}">0</strong><small>elvégzett munkasorozat${pending ? ` · ${pending} kihagyott` : ''}</small></div>
+  const hero = `<section class="wo-cer ${done ? 'is-done' : ''}">
+   <span class="wo-cer-glow" aria-hidden="true"></span>
+   <span class="overline">${done ? 'EDZÉS LEZÁRVA' : 'A MAI EDZÉSED ÉRTÉKELÉSE'}</span>
+   ${starRow(stars, 'big')}
+   <p class="wo-cer-score"><strong>${String(stars).replace('.', ',')}</strong><small>/ 5 csillag</small></p>
+   <h1 tabindex="-1">${headline}</h1>
+   <p class="wo-cer-blurb">${blurb}</p>
+   <div class="wo-cer-bar"><i style="--w:${m.planned ? m.count / m.planned * 100 : 0}%"></i><span>${m.count} / ${m.planned} szett${pending ? ` · ${pending} kihagyott` : ''}</span></div>
+   <div class="wo-cer-strip">
+    <span><strong>${m.reps}</strong><small>ismétlés</small></span>
+    <span><strong>${n(m.volume)}</strong><small>kg × rep</small></span>
+    <span><strong>${minutes}′</strong><small>idő</small></span>
+    <span><strong>+${m.xp}</strong><small>XP</small></span>
+   </div>
   </section>`;
 
-  const rings = `<section class="fuel-rings three" aria-label="Izomcsoportonkénti munka">${session.order.map(id => {
-    const e = exerciseById(id);
-    return ring(e.muscle, e.art, doneCount(session, id), session.rows[id].length, e.color);
-  }).join('')}</section>`;
+  const ledgerHtml = `<section class="wo-ledger">
+   <div class="wo-ledger-head"><span><span class="overline">NAPI CSILLAGOK</span><strong>Ezen a héten ${String(weekStars).replace('.', ',')} csillag</strong></span><span class="wo-ledger-total">${icon('star')}${String(weekStars).replace('.', ',')}</span></div>
+   <div class="wo-ledger-week">${ledger.map((d, i) => `<span class="wo-ledger-day ${d.today ? 'is-today' : ''} ${d.stars === null ? 'is-blank' : ''}" style="--i:${i}">
+     <small>${d.day}</small>
+     <b>${d.stars === null ? '·' : String(d.stars).replace('.', ',')}</b>
+     <i class="wo-ledger-fill" style="--w:${(d.stars ?? 0) / 5 * 100}%"></i>
+    </span>`).join('')}</div>
+   <p class="wo-ledger-note">Minden nap ötből annyi csillagot ér, amennyit a tervezett munkából megcsináltál. A heti gyűjtés a mezociklusod végén záródik.</p>
+  </section>`;
 
-  const tiles = `<div class="wo-sum-tiles">
-   <span><strong data-fuel-count="${m.reps}">0</strong><small>ismétlés</small></span>
-   <span><strong data-fuel-count="${m.volume}">0</strong><small>kg × ismétlés</small></span>
-   <span><strong>${minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
-   <span><strong>+${m.xp}</strong><small>demó XP</small></span>
-  </div>`;
+  const muscles = `<div class="wo-sum-section"><span class="overline">IZOMCSOPORTOK · A HETI TERVHEZ KÉPEST</span></div>
+   <div class="wo-mstars">${muscleStarRows().map((row, i) => `<div class="wo-mstar" style="--ex-color:${muscleColor(row.muscleKey)};--i:${i}">
+     <span class="wo-mstar-art">${muscleIcon(row.muscleKey)}</span>
+     <span class="wo-mstar-copy"><strong>${row.name}</strong><small>${row.done} / ${row.plan} szett${row.added ? ` · ma +${row.added}` : ''}</small></span>
+     ${starRow(row.stars, 'mini')}
+     <span class="wo-mstar-track"><i class="zone" style="--a:${row.low / row.plan * 100}%;--b:${Math.min(100, row.high / row.plan * 100)}%"></i><i class="fill" style="--w:${row.ratio * 100}%"></i></span>
+    </div>`).join('')}</div>`;
 
   const recordCard = records.length ? `<section class="wo-sum-records">
    <div class="wo-sum-records-head"><span class="wo-sum-records-art">${icon('record')}</span><span><span class="overline">ÚJ REKORD</span><strong>${records.length === 1 ? 'Egy gyakorlatban ma új csúcs.' : `${records.length} gyakorlatban ma új csúcs.`}</strong></span></div>
    ${records.map(r => `<div class="wo-sum-record" style="--ex-color:${r.color}">${icon(r.art)}<span><strong>${r.name}</strong><small>${r.value} · becsült maximum ${n(r.e1rm)} kg</small></span><b>↑</b></div>`).join('')}
   </section>` : '';
 
-  const energy = `<button class="wo-sum-energy" data-go-fuel>
-   <span class="wo-sum-energy-art">${icon('bowl')}</span>
-   <span class="wo-sum-energy-main"><b>+</b><strong data-fuel-count="${kcal}">0</strong><small>kcal a mai keretedhez</small></span>
-   <span class="fuel-tapchip"><span>Megnézem a keretem</span><b>›</b><u class="chip-sheen"></u></span></button>`;
-
-  const impact = `<div class="wo-sum-section"><span class="overline">AMIT MA MEGTERHELTÉL</span></div>
-   <div class="tr-mus">${session.order.map(id => {
-    const e = exerciseById(id), rows = session.rows[id], logged = doneCount(session, id);
-    const plan = 72, madeShare = rows.length ? logged / rows.length : 0;
-    const word = isSkipped(session, id) ? 'kihagyva' : !logged ? 'nem kapott' : madeShare === 1 ? 'teljes' : madeShare >= .5 ? 'nagyrészt' : 'részben';
-    return `<div class="tr-mus-row" style="--mus-color:${e.color}">
-     <span class="tr-mus-art">${icon(e.art)}</span>
-     <span class="tr-mus-name">${e.muscle}</span>
-     <span class="tr-mus-track"><i class="plan" style="--w:${plan}%"></i><i class="done" style="--w:${Math.round(plan * madeShare)}%"></i></span>
-     <span class="tr-mus-word">${word}</span></div>`;
-  }).join('')}</div>`;
+  const energy = `<button class="wo-energy-row" data-go-fuel>
+   ${icon('bowl')}<span><strong>+${kcal} kcal</strong><small>a mai keretedhez</small></span><b>›</b></button>`;
 
   const list = `<div class="wo-sum-section"><span class="overline">GYAKORLATONKÉNT</span></div>
    <div class="wo-sum-list">${session.order.map(id => {
@@ -304,8 +331,8 @@ function summary() {
     ? `<button class="wo-close-cta is-done" data-session-leave><span class="wo-close-art">${icon('tick')}</span><span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><u class="chip-sheen"></u></button>`
     : `<button class="wo-close-cta" data-finish-confirm><span class="wo-close-art">${icon('tick')}</span><span><strong>Edzés lezárása</strong><small>${pending ? `${m.count} elvégzett · ${pending} még bepipálatlan` : `Mind a ${m.count} szetted megvan`}</small></span><u class="chip-sheen"></u></button><button class="wo-secondary" data-session-back>Még folytatom</button>`;
 
-  return `<div class="wo-summary">${hero}${rings}${tiles}${recordCard}${energy}${impact}${list}${xp}${cta}
-   <p class="wo-glass-note">Mintaedzés · a demó újratöltése törli a szetteket.</p></div>`;
+  return `<div class="wo-summary">${hero}${ledgerHtml}${muscles}${recordCard}${energy}${list}${xp}${cta}
+   <p class="wo-glass-note">Mintaedzés · a csillagok a tervezett munkából számolnak, nem AI-értékelés.</p></div>`;
 }
 
 let view = 'list';
@@ -327,7 +354,11 @@ function render() {
   updateTimers();
   if (view === 'summary') {
     animateFuelDashboard(overlay);
-    requestAnimationFrame(() => overlay.querySelector('h1')?.focus());
+    // One-shot ceremony: the bars and stars only start once the page is mounted.
+    requestAnimationFrame(() => {
+      overlay.querySelector('.wo-summary')?.classList.add('is-in');
+      overlay.querySelector('h1')?.focus();
+    });
   }
 }
 

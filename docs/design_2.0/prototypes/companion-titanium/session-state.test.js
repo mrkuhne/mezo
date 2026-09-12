@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   EXERCISES, createSession, logSet, undoSet, addSet, removeSet, moveExercise, setNote,
   finishSession, metrics, doneCount, setVerdict, inRange, nextOpen, legacyShape, e1rm,
-  skipExercise, isSkipped, pendingCount,
+  skipExercise, isSkipped, pendingCount, starsFor, sessionStars, starLedger,
 } from './session-state.js';
 
 const fresh = () => createSession();
@@ -148,4 +148,30 @@ test('a finished session refuses to be skipped around', () => {
   logSet(s, 'bench', 0, { kg: 60, reps: 10, rir: 2 });
   finishSession(s);
   assert.equal(skipExercise(s, 'row'), false);
+});
+
+test('stars come in halves and never leave the 0..5 scale', () => {
+  assert.equal(starsFor(0), 0);
+  assert.equal(starsFor(1), 5);
+  assert.equal(starsFor(0.5), 2.5);
+  assert.equal(starsFor(0.44), 2);
+  assert.equal(starsFor(1.9), 5);
+  assert.equal(starsFor(-3), 0);
+});
+
+test('the session earns its stars from the work actually done', () => {
+  const s = fresh();
+  assert.equal(sessionStars(s), 0);
+  s.order.forEach(id => s.rows[id].forEach((r, i) => logSet(s, id, i, { kg: 40, reps: 10, rir: 2 })));
+  assert.equal(sessionStars(s), 5);
+});
+
+test('the week ledger puts the live session on today and leaves the future blank', () => {
+  const s = fresh();
+  logSet(s, 'bench', 0, { kg: 60, reps: 10, rir: 2 });
+  const ledger = starLedger(s);
+  assert.equal(ledger[2].today, true);
+  assert.equal(ledger[2].stars, starsFor(1 / 9));
+  assert.equal(ledger[3].stars, null);
+  assert.equal(ledger[0].stars, 5);
 });

@@ -202,3 +202,29 @@ export const isSkipped = (session, id) => Boolean(session.skipped?.[id]);
 export const pendingCount = session =>
   session.order.filter(id => !isSkipped(session, id))
     .reduce((total, id) => total + session.rows[id].filter(r => !r.done).length, 0);
+
+/**
+ * Stars, in halves, from a 0..1 ratio. The scale is deliberately generous at the top and honest
+ * at the bottom: finishing what was planned is five stars, half of it is two and a half.
+ */
+export const starsFor = ratio => Math.max(0, Math.min(5, Math.round(Math.max(0, ratio) * 10) / 2));
+
+/** How much of today's prescribed work actually happened. Skipped exercises still count as missed. */
+export const sessionStars = session => {
+  const m = metrics(session);
+  return starsFor(m.planned ? m.count / m.planned : 0);
+};
+
+/** The week's demo star ledger; today's entry is whatever the live session has earned so far. */
+export const STAR_WEEK = [
+  { day: 'H', label: 'Hétfő', stars: 5, kind: 'gym' },
+  { day: 'K', label: 'Kedd', stars: 4, kind: 'sport' },
+  { day: 'Sze', label: 'Szerda', stars: null, kind: 'gym' },
+  { day: 'Cs', label: 'Csütörtök', stars: null, kind: 'sport' },
+  { day: 'P', label: 'Péntek', stars: null, kind: 'gym' },
+  { day: 'Szo', label: 'Szombat', stars: null, kind: 'rest' },
+  { day: 'V', label: 'Vasárnap', stars: null, kind: 'rest' },
+];
+
+export const starLedger = session =>
+  STAR_WEEK.map((entry, index) => (index === 2 ? { ...entry, stars: sessionStars(session), today: true } : entry));
