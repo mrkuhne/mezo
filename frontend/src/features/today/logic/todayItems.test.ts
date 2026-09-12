@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   buildTodayItems, isFillableSlot, itemsForFace, openCountByFace,
 } from '@/features/today/logic/todayItems'
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import type {
   CheckinSlot, DailyQuest, FuelSlot, HabitChainInfo, HabitItem, RitualDay,
 } from '@/data/types'
@@ -266,6 +267,19 @@ describe('buildTodayItems — fuel slots', () => {
     expect(live.status).toBe('open')
     expect(live.subtitle).toBe('MOST')
     expect(later.subtitle).toBeNull()
+  })
+
+  // A20 (mezo-33k6): a Nap étkezés-sora a KAMERA-ELSŐ naplózóba visz, az ablak kulcsával —
+  // nem a Fuel hubra, ahol a user újra meg kellene keresnie ugyanezt az ablakot. A kulcsot az
+  // app saját `tileKey` szabálya adja, sosem egy kézzel összerakott string.
+  test('a fuel-sor a naplózóba visz az ablak saját kulcsával', () => {
+    const slot = fuel('13:00', 'now', 'Ebéd')
+    const items = buildTodayItems({ ...EMPTY, fuelSlots: [slot] })
+    expect(items[0].action).toEqual({
+      kind: 'nav',
+      to: `/fuel/log/uj?w=${encodeURIComponent(tileKey(slot))}`,
+      label: 'Logold',
+    })
   })
 
   test('MOST joins the meal name rather than replacing it', () => {

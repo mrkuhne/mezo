@@ -5,6 +5,9 @@ import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { AUTO_DELAY_MS, TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
 import { WELCOME_VERSION } from '@/features/tutorial/registry/welcome'
+// A `fuel` kalauz verziója a REGISTRYBŐL jön, nem beégetve: S5 (mezo-qt5q) bumpolta, amikor a
+// Mai-lap kártyái átírták a T1 kört, és egy beégetett `1` ilyenkor hamisan pirosodik.
+import { versionOf } from '@/features/tutorial/registry'
 import { readLocalProgress, writeLocalProgress } from '@/shared/lib/tutorialSeen'
 import { API_BASE } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
@@ -82,7 +85,7 @@ test('/fuel első belépésre a késleltetés után felugrik, és a megjelenésk
   flush()
   expect(await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
   expect(screen.getByTestId('unseen')).toHaveTextContent('false')
-  expect(readLocalProgress().fuel?.version).toBe(1)
+  expect(readLocalProgress().fuel?.version).toBe(versionOf('fuel'))
   expect(readLocalProgress().fuel?.completedAt).toBeNull()
 })
 
@@ -110,7 +113,7 @@ test('Kihagyom → dismissedAtStep; nem ugrik fel újra ugyanabban a sessionben,
 
 test('látott kalauz nem ugrik fel, de a „?" (open) bármikor nyit', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  writeLocalProgress({ fuel: { version: 1, seenAt: '2026-09-01T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
+  writeLocalProgress({ fuel: { version: versionOf('fuel')!, seenAt: '2026-09-01T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
   renderAt('/fuel')
   flush()
   expect(screen.queryByRole('dialog')).toBeNull()
@@ -239,7 +242,7 @@ test('PUT-hiba esetén a lokális írás (seenAt) marad az igazság, a sheet nem
   flush()
   await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })
   await waitFor(() => expect(readLocalProgress().fuel).toBeDefined())
-  expect(readLocalProgress().fuel?.version).toBe(1)
+  expect(readLocalProgress().fuel?.version).toBe(versionOf('fuel'))
   expect(screen.getByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
 })
 

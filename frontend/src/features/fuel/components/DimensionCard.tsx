@@ -18,6 +18,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
 import { dimensionFace } from '@/features/fuel/logic/dimensionFace'
+import { dimContributionPts, dimWeightPct } from '@/features/fuel/logic/scoreArithmetic'
 import { MacroPanel } from '@/features/fuel/components/MacroPanel'
 import { MicroPanel } from '@/features/fuel/components/MicroPanel'
 import { NovaPanel } from '@/features/fuel/components/NovaPanel'
@@ -33,7 +34,7 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
   const [open, setOpen] = useState(defaultOpen)
   const id = useId()
   const sub = Math.round(dim.score * 100)
-  const contribution = hu1(dim.score * dim.weight * 100)
+  const contribution = hu1(dimContributionPts(dim))
   const face = dimensionFace(dim)
   const ghost = face.tone === 'ghost'
 
@@ -67,7 +68,7 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
         <span className="sb-dim-txt">
           <span className="sb-dim-lb">{dim.label}</span>
           <span className="sb-dim-w">
-            súly <b>{Math.round(dim.weight * 100)}%</b> → <b>{contribution}</b> pont
+            súly <b>{dimWeightPct(dim)}%</b> → <b>{contribution}</b> pont
             {/* Partial coverage is a fact about the SCORE, so it rides the weight line where the
                 other arithmetic lives — not the end of `detail`, which the two-line clamp below
                 would cut off exactly when there is most to say (mezo-mxmh). Full coverage stays

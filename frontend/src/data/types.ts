@@ -780,17 +780,6 @@ export interface WeeklyStats {
 }
 export interface WeeklySupplementRow { name: string; dose: string; days: number[]; color: string; note?: string }
 export interface RecurringPattern { icon: IconName; color: string; title: string; detail: string }
-export interface ReplanCascade { system: 'Fuel' | 'Train' | 'Sleep' | 'Insights'; impact: string; detail: string }
-export interface ReplanScenario {
-  id: string
-  title: string
-  detail: string
-  icon: IconName
-  color: string
-  cascades: ReplanCascade[]
-  tools: { type: ToolType; name: string }[]
-  confidence: number
-}
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'

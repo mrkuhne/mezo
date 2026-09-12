@@ -77,7 +77,7 @@ function renderAt(entry: string) {
   router = createMemoryRouter(
     [
       { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
-      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+      { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
   )
@@ -92,7 +92,7 @@ function renderAtSharedClient(entry: string) {
   router = createMemoryRouter(
     [
       { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
-      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+      { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
   )
@@ -109,12 +109,19 @@ function renderAtSharedClient(entry: string) {
   }
 }
 
-/** Egy kamra-tétel felvétele a composerbe, majd mentés a (múltbeli) Pótlás-CTA-val. */
-async function addPantryLineAndSave(user: ReturnType<typeof userEvent.setup>) {
+/** Egy kamra-tétel felvétele a composerbe. S1c.2 (mezo-33k6): a kézi pickerek a GÉPELÉS úton
+ *  élnek — a lap a kamerán nyit, ezért a kézi út EGY koppintással kezdődik. */
+async function addPantryLine(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
   await user.click(await screen.findByRole('button', { name: 'Kamra · hozzáadás' }))
   const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
   await user.click(addBtn)
   await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+}
+
+/** Egy kamra-tétel felvétele a composerbe, majd mentés a (múltbeli) Pótlás-CTA-val. */
+async function addPantryLineAndSave(user: ReturnType<typeof userEvent.setup>) {
+  await addPantryLine(user)
   await user.click(screen.getByRole('button', { name: /pótlás/i }))
 }
 
@@ -155,18 +162,26 @@ test('ai=1 SZÁNDÉKOSAN kihagyja a terv-recept előtöltést', async () => {
   expect(screen.queryByText(recipe.name)).not.toBeInTheDocument()
 })
 
+// S1c.2 (mezo-33k6): a MIKOR szegmens a MEGERŐSÍTŐ részhez tartozik — az első tétellel jön.
+// Az „ablakon kívül" ígérete változatlan: ott a user maga választ ablakot, tehát a szegmensnek
+// ott KELL lennie, amint van mit könyvelni (rögzített ablaknál pedig sosem — azt a
+// MealComposer.shell.test.tsx őrzi).
 test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
   renderAt('/fuel/log/uj?w=99:99-Nincs')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   expect(screen.getByText('szabad tétel · te választod a mikort')).toBeInTheDocument()
+  await addPantryLine(user)
   expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
 })
 
 test('hiányzó w-nél is ablakon kívüli mód, sosem fabrikál ablakot', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
   renderAt('/fuel/log/uj')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
+  await addPantryLine(user)
   expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
 })
 
@@ -199,6 +214,44 @@ test('MAX_BACK-en túli múltbeli d-t mára clampel', async () => {
   expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
 })
 
+// ── S1c.2 (mezo-33k6): a naplózó EGY felület ─────────────────────────────────────────────────
+// A kamera alatt nem áll ott a régi szerkesztő: nincs második ✨ AI bejárat, nincs üres
+// tétel-lista. A kézi út nem veszett el, csak a GÉPELÉS fülön él (manifeszt A3).
+
+test('a kamerás nézet nem mutat második AI bejáratot és üres tétel-listát', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  renderAt('/fuel/log/uj')
+  expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /AI · fotó vagy szöveg/ })).not.toBeInTheDocument()
+  // Pontos, kisbetű-érzékeny egyezés: a héj saját súgója is tartalmazza a „tételeket" szót.
+  expect(screen.queryByText('TÉTELEK')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Még nincs tétel/)).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Logolás · \+10 XP/ })).not.toBeInTheDocument()
+})
+
+test('a gépelés fülön előjönnek a kézi források', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
+  renderAt('/fuel/log/uj')
+  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
+  expect(screen.getByRole('button', { name: 'Kamra · hozzáadás' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Recept · hozzáadás' })).toBeInTheDocument()
+  // …és innen valóban FEL IS lehet venni egy sort: a picker nem dísz.
+  await addPantryLine(user)
+  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeEnabled()
+})
+
+test('a gépelés fülön sem jön vissza a második AI kártya — egy AI bejárat van', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
+  renderAt('/fuel/log/uj')
+  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
+  expect(screen.queryByRole('button', { name: /AI · fotó vagy szöveg/ })).not.toBeInTheDocument()
+  // Az EGYETLEN AI-bejárat a héj nyitotta szövegmező.
+  expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
+})
+
 test('ai=1 nyitott AI panellel indul', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj?ai=1')
@@ -210,7 +263,7 @@ test('Mégse a listára visz vissza ugyanarra a napra', async () => {
   const y = addDays(localDateString(), -1)
   renderAt(`/fuel/log/uj?d=${y}`)
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
-  expect(currentPath()).toBe(`/fuel/log?d=${y}`)
+  expect(currentPath()).toBe(`/fuel?d=${y}`)
   expect(screen.getByText('LOG PAGE PROBE')).toBeInTheDocument()
 })
 
@@ -218,14 +271,14 @@ test('Mégse mai napon a lista alap-URL-jére visz', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
-  expect(currentPath()).toBe('/fuel/log')
+  expect(currentPath()).toBe('/fuel')
 })
 
 test('a ‹ Vissza fejléc-gomb is a listára visz', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
-  expect(currentPath()).toBe('/fuel/log')
+  expect(currentPath()).toBe('/fuel')
 })
 
 // ── A múltbeli könyvelés IGAZSÁGA (a FuelLogPage.test.tsx „múltbeli mentés a választott nap

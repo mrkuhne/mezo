@@ -78,6 +78,19 @@ describe('useFuelWeek (mock mode)', () => {
     expect(result.current.weeklyStats.supplementsAdherence).toBe(92)
     expect(result.current.weeklyNote).toContain('középmagas-protein')
   })
+
+  // C1/C2 (mezo-83g0): a heti kép a rollupot és a két heti átlagot is a hookból kapja.
+  it('surfaces the 7-day rollup and both weekly averages', () => {
+    const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
+    expect(result.current.start).toBe(mondayIso())
+    expect(result.current.weekDays).toHaveLength(7)
+    expect(result.current.weekDays[0].date).toBe(mondayIso())
+    // Őszinte-null: a mock hétben két nap nincs naplózva — a rollup ezt nullás `consumed`-del
+    // hordozza (a szerződésnek nincs külön „naplózva" jelzője), a nézet olvassa őszinte hiánynak.
+    expect(result.current.weekDays.filter(d => d.consumed.kcal === 0)).toHaveLength(2)
+    expect(result.current.mealScoreAvg).toBe(0.78)
+    expect(result.current.weightAvgKg).toBe(81.3)
+  })
 })
 
 // --- useFuelWeek (real mode) — composed from Train + medication + the week rollup ---
@@ -118,6 +131,22 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.weeklyNote).toBeNull()
     expect(result.current.title).not.toBe('Máj 18 – 24')
     expect(result.current.title).toBe(deriveWeekTitle(mondayIso()))
+
+    // C2 (mezo-83g0): the two averages come from the fetched week, distinct from the mock seed.
+    expect(result.current.mealScoreAvg).toBe(0.71)
+    expect(result.current.weightAvgKg).toBe(82.9)
+    expect(result.current.weekDays).toHaveLength(7)
+  })
+
+  // Őszinte-null: a backend NULL átlagot küld (nincs pontozott étkezés / nincs mérés) — nem nulla.
+  it('keeps a null weekly average null, never zero', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/week/:start`, ({ params }) => HttpResponse.json({
+      start: String(params.start), days: [], mealScoreAvg: null, weightAvgKg: null,
+    })))
+    const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.weekDays).toEqual([]))
+    expect(result.current.mealScoreAvg).toBeNull()
+    expect(result.current.weightAvgKg).toBeNull()
   })
 
   // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport

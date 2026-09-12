@@ -1,3 +1,22 @@
+// ============================================================
+// Mezo · Fuel kalauz-bejegyzések (mezo-gb1s.6 · újrahorgonyozva: Fuel Titanium S5, mezo-qt5q).
+//
+// A18/E11: a Kalauz minden Fuel-lépése ÉLŐ oldalra és a lapon TÉNYLEG ott lévő horgonyra mutat.
+// Egy leváltott útvonalra mutató lépés halott, de az is halott, amelyik élő útvonalon RÉGI
+// felületet ír le — a copy-drift ugyanolyan törés, mint a 404.
+//
+// Ami S5-ben megszűnt, és hova került:
+//   • `fuel-log` (`/fuel/log`) — a napi lista a MAI lap kanonikus része (A10), ezért ez a
+//     bejegyzés BEOLVADT a `fuel` T1-be: a dátum-lapozás és a blokkok onnan szólnak.
+//   • `fuel-naplo` (`/fuel/naplo`) — a napi minőség a Trendekbe költözött (C5), ezért a
+//     pontszám-fogalom kártyája a Trendek-bejegyzésben él tovább.
+//   • `fuel-terv` (`/fuel/plan`) — a heti kép a Trendek (C1/C6): UGYANEZ a bejegyzés maradt,
+//     csak az útvonala, a címkéje és a kártyái követték a lapot. Az `id` szándékosan NEM
+//     változott (a seen-store kulcsa), a `version` viszont nőtt, hogy a felhasználó egyszer
+//     újra lássa az új lapot.
+//   • `fuel-konyha` (`/fuel/konyha`) — ÚJ bejegyzés: a negyedik cél-lap, a Receptek és a Kamra
+//     szülője, eddig kalauz nélkül állt.
+// ============================================================
 import { fogalom } from '@/features/tutorial/registry/fogalmak'
 import type { KalauzEntry } from '@/features/tutorial/registry/types'
 
@@ -6,7 +25,9 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
     id: 'fuel',
     route: '/fuel',
     tier: 'T1',
-    version: 1,
+    // v2 (mezo-qt5q): a Mai lap a Titán energiaműszert, az étkezés-blokkokat és a közös
+    // dátum-lapozást hordozza — a `/fuel/log` bejegyzés ide olvadt.
+    version: 2,
     label: 'Fuel',
     cards: [
       {
@@ -17,18 +38,18 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       {
         kind: 'fogalom', spot: 's-energia', orb: 's-orb',
         title: 'A napi keret és a makrók.',
-        voice: 'A tested minden nap kap egy **keretet** — ennyi energia fér bele. A gyűrű fent mutatja, hol tartunk.',
+        voice: 'A tested minden nap kap egy **keretet** — ennyi energia fér bele. Fent az energiaív és a négy gyűrű mutatja, hol tartunk.',
         ...fogalom('makro'),
       },
       {
         kind: 'hogyan', spot: 'i-reggeli', orb: 's-orb-figyel', anchor: 'fuel-log',
-        title: 'Logolni egy koppintás.',
-        voice: 'A **+** gombbal vagy a Logolás-csempéből. Elég egy fotó vagy egy mondat — „egy tál zabkása banánnal" — a többit Mezo kitalálja.',
+        title: 'A nap étkezései blokkonként.',
+        voice: 'Minden étkezési ablak saját blokkot kap, és a blokk gombja visz a naplózóra. Egy mentett étkezés a pontszámával együtt a saját oldalára nyílik.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Evés után, pár másodperc.',
-        voice: 'Nem szükséges tökéletesnek lennie. Ha kimaradt egy étkezés, később is **pótoljuk** — a nap ettől nem lesz kevesebb.',
+        voice: 'A dátum nyilai hét napot visznek vissza, és a régebbi nap **Pótlás** módban nyílik. Ha kimaradt egy étkezés, később is pótoljuk — a nap ettől nem lesz kevesebb.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
@@ -43,60 +64,21 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       },
     ],
   },
-  // ── T2 aloldalak (mezo-gb1s.6) ──────────────────────────────────────────────
-  // Címke = a hub-csempe saját szava (FuelMaiPage.tsx:150-160), szó szerint. A `/fuel/plan`
-  // és a `/fuel/gyogyszer` szándékosan horgony nélkül él: az előbbi beszélő kártyái
-  // adat-feltételesek, az utóbbinak két külön arca van (üres vs. követett ciklus) —
-  // a „Mutasd meg a képernyőn" ott némán degradál (KalauzSheet.tsx:64).
+  // ── T2 aloldalak (mezo-gb1s.6, S5-ben újrahorgonyozva) ──────────────────────
+  // Címke = a lap SAJÁT szava (a fül-sáv `navModel.ts` nevei), szó szerint. A
+  // `/fuel/gyogyszer` szándékosan horgony nélkül él: KÉT teljesen külön arca van (üres vs.
+  // követett ciklus), egyikre sem lehet őszintén rámutatni — a „Mutasd meg a képernyőn"
+  // ott némán degradál (KalauzSheet.tsx:64).
   // A spec §10 T2-listájának „Gyors logolás sheet" (`quickinput`) tétele NEM ide tartozik:
   // nem route, tehát a Provider route-effektje nem tudja triggerelni — komponens-esemény
-  // seam kellene hozzá, ami motor-munka; az S4-be csúszott (epic-komment).
-  {
-    id: 'fuel-log',
-    route: '/fuel/log',
-    tier: 'T2',
-    version: 1,
-    label: 'Logolás',
-    cards: [
-      {
-        kind: 'intro', spot: 'i-fuel', orb: 's-orb',
-        title: 'Ez a napi logolás.',
-        voice: 'A napod étkezési ablakai egymás alatt, blokkonként. Fent a keret: mennyi energia ment be eddig, és mennyi fér még.',
-      },
-      {
-        kind: 'fogalom', spot: 'i-reggeli', orb: 's-orb',
-        title: 'Az ablak a nap ritmusa.',
-        voice: 'Az ablakok a napod típusából jönnek — edzésnapon máshol vannak, mint pihenőn. Ha kimarad egy, a nap attól még egész.',
-        ...fogalom('ablak'),
-      },
-      {
-        kind: 'hogyan', spot: 's-energia', orb: 's-orb-figyel', anchor: 'log-napvalto',
-        title: 'A nap tetején lépkedsz.',
-        voice: 'A dátum nyilai hét napot visznek vissza, és a régebbi nap **Pótlás** módban nyílik. Alatta ablakonként egy blokk: a gombja átvisz a logolóra.',
-      },
-      {
-        kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
-        title: 'Evés után, amíg friss.',
-        voice: 'Pár másodperc a legjobb pillanatban. Ha kimaradt, a Pótlás egy hétig nyitva áll — visszamenőleg is pontozódik.',
-      },
-      {
-        kind: 'kapcsolat', orb: 's-orb-unnepel',
-        title: 'Innen indul a tétel.',
-        voice: 'A blokk átvisz a logoló oldalra, ahol a tételek összeállnak — a keretet pedig a Terv és az edzésnapod alakítja.',
-        links: [
-          { to: '/fuel/log/uj', label: 'Új tétel', icon: 'i-fuel', effect: 'itt áll össze az étkezés' },
-          { to: '/fuel/plan', label: 'Terv', icon: 'i-rend' },
-          { to: '/fuel', label: 'Fuel', icon: 'i-fuel' },
-        ],
-      },
-    ],
-  },
+  // seam kellene hozzá, ami motor-munka.
   {
     id: 'fuel-log-uj',
     route: '/fuel/log/uj',
     tier: 'T2',
-    version: 1,
-    label: 'Új tétel',
+    // v2 (mezo-qt5q): S1c NÉGY útra cserélte a három forrást — a kártya szövege követte.
+    version: 2,
+    label: 'Naplózás',
     cards: [
       {
         kind: 'intro', spot: 'i-ebed', orb: 's-orb',
@@ -104,9 +86,17 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         voice: 'Tételenként rakod hozzá, amit ettél. A fejléc mutatja, melyik ablakba és melyik napra könyvelődik.',
       },
       {
+        kind: 'fogalom', spot: 'i-reggeli', orb: 's-orb',
+        title: 'Az ablak a nap ritmusa.',
+        voice: 'Az ablakok a napod típusából jönnek — edzésnapon máshol vannak, mint pihenőn. A naplózó azt jelzi, melyik ablak esedékes most.',
+        ...fogalom('ablak'),
+      },
+      {
+        // A horgony a négy fül sávja (`FuelLogModes.tsx` `.fmx-logmodes`) — pontosan az, amit
+        // ez a kártya leír. A LogFlow-overlayben ugyanaz az elem a MealComposeren ül.
         kind: 'hogyan', spot: 'i-kamra', orb: 's-orb-figyel', anchor: 'log-forrasok',
-        title: 'Három forrás, egy tányér.',
-        voice: '**Kamra** grammra, **Recept** adagra, **✨ AI** fotóból vagy egy mondatból. Keverheted őket ugyanabban az étkezésben.',
+        title: 'Négy út egy tányérig.',
+        voice: '**Fotó**, **Hang**, **Gépelés** és a **Szokásosak** — a fülekkel váltasz köztük. A kamera nyit elsőre, mert a fotó a leggyorsabb út.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
@@ -120,41 +110,84 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/fuel/kamra', label: 'Kamra', icon: 'i-kamra', effect: 'grammra pontos tételek' },
           { to: '/fuel/recipes', label: 'Receptek', icon: 'i-recept', effect: 'egész tányér egyben' },
-          { to: '/fuel/log', label: 'Logolás', icon: 'i-fuel' },
+          { to: '/fuel', label: 'Mai', icon: 'i-fuel' },
         ],
       },
     ],
   },
   {
+    // Az id a `/fuel/plan` Terv-bejegyzéséé volt; a lap a Trendekbe költözött (C1/C5/C6), a
+    // kulcs viszont stabil marad — lásd a fájl fejlécét.
     id: 'fuel-terv',
-    route: '/fuel/plan',
+    route: '/fuel/trendek',
     tier: 'T2',
-    version: 1,
-    label: 'Terv',
+    version: 2,
+    label: 'Trendek',
     cards: [
       {
-        kind: 'intro', spot: 'i-rend', orb: 's-orb',
-        title: 'Ez a heti terv.',
-        voice: 'Egy képernyő a hetedről: kalória-átlag, protein-napok, stack-adherencia, edzés- és sportnapok.',
+        kind: 'intro', spot: 'i-trend', orb: 's-orb',
+        title: 'Ez a heti kép.',
+        voice: 'Egy képernyő a hetedről: a napok a keretedhez mérve, mindegyiken a nap pontja. Alatta a hosszabb táv és a mintázatok.',
       },
       {
-        kind: 'hogyan', spot: 'i-heti', orb: 's-orb-figyel',
-        title: 'A számsor a heti valóság.',
-        voice: 'Minden szám a tényleges logjaidból jön. Ami még nincs mérve, gondolatjelet kap — sose kitalált értéket.',
+        kind: 'fogalom', spot: 's-energia', orb: 's-orb',
+        title: 'A pontszám nem osztályzat.',
+        voice: 'Azt méri, mennyire illett az étkezés a napodhoz — a keretedhez és a makróidhoz. A nap bontása a sávra koppintva nyílik.',
+        ...fogalom('pontszam'),
+      },
+      {
+        kind: 'hogyan', spot: 'i-heti', orb: 's-orb-figyel', anchor: 'trendek-heti',
+        title: 'A hét napjai a kerethez mérve.',
+        voice: 'Minden sáv a tényleges logjaidból jön, a szám fölötte a nap pontja. Amiről nincs adat, kimarad az átlagokból — kitalált nulla sosem áll ott.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Hét végén, egyszer.',
-        voice: 'Vasárnap este vagy hétfő reggel: egy pillantás arra, merre ment a hét. Napi döntéshez a Logolás a hely.',
+        voice: 'Vasárnap este vagy hétfő reggel: egy pillantás arra, merre ment a hét. Napi döntéshez a Mai a hely.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
-        title: 'A hét két oldalról áll össze.',
-        voice: 'Az étkezés-oldalt a Napló és a Stack tölti, az edzés-oldalt a heti edzésterved.',
+        title: 'A hét több oldalról áll össze.',
+        voice: 'Az étkezés-oldalt a Mai napjai és a Kiegészítők töltik, az edzés-oldalt a heti edzésterved.',
         links: [
-          { to: '/fuel/naplo', label: 'Napló', icon: 'i-naplo' },
-          { to: '/fuel/stack', label: 'Stack', icon: 'i-stack' },
+          { to: '/fuel', label: 'Mai', icon: 'i-fuel', effect: 'innen jön az adat' },
+          { to: '/fuel/stack', label: 'Kiegészítők', icon: 'i-stack' },
           { to: '/train/week', label: 'Heti terv', icon: 'i-edzes', effect: 'edzésnap → +keret' },
+          { to: '/mezo/patterns', label: 'Minták', icon: 'i-minta' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'fuel-konyha',
+    route: '/fuel/konyha',
+    tier: 'T2',
+    version: 1,
+    label: 'Konyha',
+    cards: [
+      {
+        kind: 'intro', spot: 'i-fazek', orb: 's-orb',
+        title: 'Ez a Konyha.',
+        voice: 'A receptjeid és a kamrád egy helyen. Innen épül fel minden, amit később grammra logolsz.',
+      },
+      {
+        kind: 'hogyan', spot: 'i-recept', orb: 's-orb-figyel', anchor: 'konyha-felvetel',
+        title: 'Két felvétel a lap tetején.',
+        voice: '**Recept mentése** a saját szavaiddal, **Új elem a kamrába** a címke fotójából vagy egy termék linkjéből. Alattuk a Receptműhely, a receptjeid és a polcod posztere.',
+      },
+      {
+        kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
+        title: 'Bevásárlás vagy főzés után.',
+        voice: 'Amit gyakran eszel, vedd fel egyszer. Utána minden naplózás gyorsabb, és a makrói is pontosabbak.',
+      },
+      {
+        kind: 'kapcsolat', orb: 's-orb-unnepel',
+        title: 'Innen nyílik a két lista.',
+        voice: 'A poszterek a saját teljes oldalukra visznek, a Műhely pedig beszélgetve rak össze új receptet.',
+        links: [
+          { to: '/fuel/recipes', label: 'Receptek', icon: 'i-recept' },
+          { to: '/fuel/kamra', label: 'Kamra', icon: 'i-kamra' },
+          { to: '/fuel/recipes/muhely', label: 'Műhely', icon: 'i-muhely', effect: 'AI-val összerakva' },
         ],
       },
     ],
@@ -163,8 +196,9 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
     id: 'fuel-stack',
     route: '/fuel/stack',
     tier: 'T2',
-    version: 1,
-    label: 'Stack',
+    // v2 (mezo-qt5q): a Protokoll és a Kezelés EGY lap lett (D3), a Terv pedig Trendek.
+    version: 2,
+    label: 'Kiegészítők',
     cards: [
       {
         kind: 'intro', spot: 'i-stack', orb: 's-orb',
@@ -190,11 +224,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'A polcról jön, a hétbe fut.',
-        voice: 'A tételeket a Kamrából adod hozzá, az adherencia pedig a heti Tervben köszön vissza.',
+        voice: 'A tételeket a Kamrából adod hozzá, a szerkesztés a Protokoll-lapon él, az adherencia pedig a Trendekben köszön vissza.',
         links: [
           { to: '/fuel/kamra', label: 'Kamra', icon: 'i-kamra', effect: 'innen adsz hozzá' },
-          { to: '/fuel/plan', label: 'Terv', icon: 'i-rend', effect: 'heti adherencia' },
-          { to: '/fuel', label: 'Fuel', icon: 'i-fuel' },
+          { to: '/fuel/stack/protocol', label: 'Protokoll', icon: 'i-lombik', effect: 'mit miért, és a szerkesztés' },
+          { to: '/fuel/trendek', label: 'Trendek', icon: 'i-trend', effect: 'heti adherencia' },
         ],
       },
     ],
@@ -203,7 +237,8 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
     id: 'fuel-receptek',
     route: '/fuel/recipes',
     tier: 'T2',
-    version: 1,
+    // v2 (mezo-qt5q): S4 a Műhely-gombot a Konyha főlapjára vitte — a kártya követte.
+    version: 2,
     label: 'Receptek',
     cards: [
       {
@@ -214,7 +249,7 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-muhely', orb: 's-orb-figyel', anchor: 'receptek-tabs',
         title: 'Szűrj a sávval.',
-        voice: '**Mind · Reggeli · Ebéd · Vacsi · ★** — minden szegmens a saját darabszámát viseli. Fent a **✨ Műhely** beszélgetve rak össze újat, a **＋ Új** kézzel.',
+        voice: '**Mind · Reggeli · Ebéd · Vacsi · ★** — minden szegmens a saját darabszámát viseli. A **＋ Új** kézzel ment receptet; a Receptműhely a Konyha főlapjáról nyílik.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
@@ -224,11 +259,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'A recept tovább él.',
-        voice: 'A hozzávalók a polcodról jönnek, a kész recept pedig a logolóban vár egy adagra.',
+        voice: 'A hozzávalók a polcodról jönnek, a kész recept pedig a naplózóban vár egy adagra.',
         links: [
-          { to: '/fuel/recipes/muhely', label: 'Műhely', icon: 'i-muhely', effect: 'AI-val összerakva' },
+          { to: '/fuel/konyha', label: 'Konyha', icon: 'i-fazek', effect: 'innen nyílik a Műhely' },
           { to: '/fuel/kamra', label: 'Kamra', icon: 'i-kamra' },
-          { to: '/fuel/log/uj', label: 'Új tétel', icon: 'i-fuel', effect: 'adagra logolva' },
+          { to: '/fuel/log/uj', label: 'Naplózás', icon: 'i-fuel', effect: 'adagra logolva' },
         ],
       },
     ],
@@ -246,9 +281,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         voice: 'A polcod: ételek, supplementek, stimulánsok egy leltárban. Innen logolsz grammra, és innen épül a stack.',
       },
       {
-        kind: 'hogyan', spot: 'i-polc', orb: 's-orb-figyel', anchor: 'kamra-hero',
-        title: 'Fent a leltár mérete.',
-        voice: 'A hős a tételek számát viseli, alatta típusra váltasz és keresel. A **⚙ Szűrők** a kategóriákat szűkíti, a kártya pedig a tétel saját oldalára visz.',
+        // S4 (mezo-hygp): a hős-szám a Konyha hub Kamra-poszterére költözött, ezért ez a
+        // kártya a típus-szűrőkre mutat — arra, ami ezen a lapon valóban ott van.
+        kind: 'hogyan', spot: 'i-polc', orb: 's-orb-figyel', anchor: 'kamra-tabs',
+        title: 'Típusra váltasz, és keresel.',
+        voice: 'A szűrők mindegyike a saját darabszámát viseli, fölöttük a kereső. A **Szűrők** a kategóriákat szűkíti, a csempe pedig a tétel saját oldalára visz.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
@@ -260,9 +297,9 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         title: 'A polc három helyre dolgozik.',
         voice: 'A tételeidből lesz a napi stack, a receptek hozzávalói és a grammra pontos log.',
         links: [
-          { to: '/fuel/stack', label: 'Stack', icon: 'i-stack' },
+          { to: '/fuel/stack', label: 'Kiegészítők', icon: 'i-stack' },
           { to: '/fuel/recipes', label: 'Receptek', icon: 'i-recept' },
-          { to: '/fuel/log/uj', label: 'Új tétel', icon: 'i-fuel' },
+          { to: '/fuel/log/uj', label: 'Naplózás', icon: 'i-fuel' },
         ],
       },
     ],
@@ -271,7 +308,8 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
     id: 'fuel-gyogyszer',
     route: '/fuel/gyogyszer',
     tier: 'T2',
-    version: 1,
+    // v2 (mezo-qt5q): a heti kontextus a Trendek, nem a visszavont Terv-lap.
+    version: 2,
     label: 'Gyógyszer',
     cards: [
       {
@@ -292,46 +330,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'Külön él a stacktől.',
-        voice: 'A napi kiegészítők a Stackben laknak; a heti Terv csak akkor mutat gyógyszer-csíkot, ha van élő ciklus.',
+        voice: 'A napi kiegészítők a Kiegészítők lapon laknak; a Trendek heti képe csak akkor mutat gyógyszer-csíkot, ha van élő ciklus.',
         links: [
-          { to: '/fuel/stack', label: 'Stack', icon: 'i-stack' },
-          { to: '/fuel/plan', label: 'Terv', icon: 'i-rend' },
+          { to: '/fuel/stack', label: 'Kiegészítők', icon: 'i-stack' },
+          { to: '/fuel/trendek', label: 'Trendek', icon: 'i-trend' },
           { to: '/fuel/kamra', label: 'Kamra', icon: 'i-kamra' },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'fuel-naplo',
-    route: '/fuel/naplo',
-    tier: 'T2',
-    version: 1,
-    label: 'Napló',
-    cards: [
-      {
-        kind: 'intro', spot: 'i-naplo', orb: 's-orb',
-        title: 'Ez a fuel-napló.',
-        voice: 'A mai étkezéseid egymás alatt, mindegyik a saját pontszámával. Fent a napi átlag.',
-      },
-      {
-        kind: 'fogalom', spot: 's-energia', orb: 's-orb',
-        title: 'A pontszám nem osztályzat.',
-        voice: 'Azt méri, mennyire illett az étkezés a mai napodhoz — a keretedhez és a makróidhoz. A bontás a számra koppintva nyílik.',
-        ...fogalom('pontszam'),
-      },
-      {
-        kind: 'hogyan', spot: 'i-minta', orb: 's-orb-figyel', anchor: 'naplo-hero',
-        title: 'Ha nincs mit mutatni, gondolatjel áll.',
-        voice: 'A hős az AI-átlagot viseli, de pontozatlan napon **—** kerül oda. Kitalált nulla sose.',
-      },
-      {
-        kind: 'kapcsolat', orb: 's-orb-unnepel',
-        title: 'A pontokból minta lesz.',
-        voice: 'Ami itt naponta összeáll, a heti Tervben és Mezo mintáiban köszön vissza.',
-        links: [
-          { to: '/fuel/log', label: 'Logolás', icon: 'i-fuel', effect: 'innen jön az adat' },
-          { to: '/fuel/plan', label: 'Terv', icon: 'i-rend' },
-          { to: '/mezo/patterns', label: 'Minták', icon: 'i-minta' },
         ],
       },
     ],

@@ -24,6 +24,14 @@ export type ClayIconName =
   | 'i-life-produktivitas' | 'i-life-tanulas' | 'i-life-kapcsolatok' | 'i-life-regeneracio'
   // Receptműhely (mezo-92pb): the AI recipe workshop's own symbol — tányér + szikrák.
   | 'i-muhely'
+  // Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma.
+  | 'i-tanyer' | 'i-kiegeszito' | 'i-trend' | 'i-fazek'
+  // Fuel Titanium S1a (mezo-33k6): az owner makró-identitása a Mai hero gyűrűsorához —
+  // fehérje = hús, szénhidrát = gabona, zsír = avokádó, rost = növény (a víz már megvolt).
+  | 'i-hus' | 'i-gabona' | 'i-avokado' | 'i-noveny'
+  // Fuel Titanium S1b (mezo-33k6): az értékelés három dimenziójának SAJÁT arca — a generikus
+  // szimbólumok nem illettek rájuk (owner). A napi kontextus marad az óra (`i-idozito`).
+  | 'i-makro' | 'i-mikro' | 'i-feldolgozas'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'

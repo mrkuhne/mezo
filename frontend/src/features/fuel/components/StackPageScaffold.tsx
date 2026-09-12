@@ -6,8 +6,10 @@ import { MozaikPage, PageBody, PageHead, PageHero, type PageTone } from '@/share
 
 interface StackPageScaffoldProps {
   tone: PageTone
-  backTo: '/fuel/stack' | '/fuel/stack/manage'
-  backLabel: '‹ Stack' | '‹ Kezelés'
+  // S5 (mezo-qt5q): a `/fuel/stack/manage` négyes megszűnt — a Kezelés a Protokoll-lap
+  // szekciója lett (D3), tehát a visszaút oda vezet, nem egy leváltott útvonalra.
+  backTo: '/fuel/stack' | '/fuel/stack/protocol'
+  backLabel: '‹ Stack' | '‹ Protokoll'
   icon: ClayIconName
   name: string
   big?: ReactNode

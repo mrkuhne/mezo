@@ -15,6 +15,9 @@
 // ============================================================
 import type { MealDimension } from '@/data/types'
 import { hu1 } from '@/shared/lib/huNum'
+// A megszerzett/elérhető pont a közös aritmetikából (mezo-33k6) — a Titán értékelő oldal
+// ugyanezt a két számot írja ki, tehát nem lehet két másolt szorzás.
+import { dimAvailablePts, dimContributionPts } from '@/features/fuel/logic/scoreArithmetic'
 
 export function ScoreLedger({ dimensions }: { dimensions: MealDimension[] }) {
   // A degraded dimension (weight 0 — no input coverage) contributes nothing to the score and
@@ -23,7 +26,7 @@ export function ScoreLedger({ dimensions }: { dimensions: MealDimension[] }) {
   // a "Nincs adat" line under the bar — honest absence, not silent disappearance (mezo-jcpt.1).
   const live = dimensions.filter(d => d.weight > 0)
   const degraded = dimensions.filter(d => d.weight === 0)
-  const sum = live.reduce((s, d) => s + d.weight * d.score * 100, 0)
+  const sum = live.reduce((s, d) => s + dimContributionPts(d), 0)
   return (
     <div className="sb-ledger" aria-label="Pontszám-összetétel">
       <div className="sb-ledger-bar">
@@ -40,8 +43,8 @@ export function ScoreLedger({ dimensions }: { dimensions: MealDimension[] }) {
           <div key={d.id} className="sb-ledger-row" style={{ '--c': d.color } as React.CSSProperties}>
             <i aria-hidden="true" />
             <span>{d.label}</span>
-            <b>{hu1(d.weight * d.score * 100)}</b>
-            <em>/ {hu1(d.weight * 100)}</em>
+            <b>{hu1(dimContributionPts(d))}</b>
+            <em>/ {hu1(dimAvailablePts(d))}</em>
           </div>
         ))}
       </div>

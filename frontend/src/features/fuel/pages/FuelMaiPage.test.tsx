@@ -1,13 +1,21 @@
 // ============================================================
 // Mezo · Fuel hub tests (Design 2.0 F3.1, mezo-d20.4.1) — the /fuel index's Mozaik
-// face: keret-hero (ONE number) → Logolás hero tile (mezo-byo1) → Mezo counter banner → 6-tile
-// mosaic → Fuel-beállítások band.
+// face: Titán energia-hero (ONE number) → the day's meal BLOCKS → the generic log action →
+// 6-tile mosaic → Fuel-beállítások band.
 //
-// Since mezo-byo1 the per-window logging surface lives on /fuel/log (FuelLogPage) —
-// the hub's contracts here are: the keret-hero stays ONE number, the Logolás hero
-// tile honestly mirrors the day's window states and opens /fuel/log, the víz ring
-// opens the water sheet, the energy chips reopen their own EnergyBreakdownSheet
-// section, and the Fuel-beállítások band opens the standalone settings page.
+// Fuel Titanium S1b (mezo-33k6, manifest A10/A11/A14): the Mai is the CANONICAL home of the
+// day's meals, so the `FuelLogHeroTile` (.fh-logtile) — the hub's old single door to
+// /fuel/log — is GONE from this page, and with it the expectations that described its face
+// (its window dots, its „x/y ablak kész" line, its all-done celebration, its next-window
+// copy). Those contracts are re-stated here on the blocks, which now carry the same truths
+// with a real tap target per window; the per-block anatomy itself is covered by
+// FuelMealBlocks.test.tsx. The tile's ONE unique job, the „tegnap pótolható" bait, survives
+// as its own chip and keeps its test.
+//
+// The hub's contracts here: the hero stays ONE number, the blocks honestly mirror the day's
+// windows and log INTO a window (`?w=`), a logged meal opens its own page, the generic log
+// action sits BELOW the blocks, the víz ring opens the water sheet, the energy chip reopens
+// the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -16,23 +24,43 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
+import { addDays, localDateString, huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
+// Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat
+// zölden hagyná a tesztet akkor is, ha a `?w=` szerződés elmozdul.
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 
 // The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch
 // logged, the midday/evening windows open. To page-test the missed→Pótold CTA, the
 // all-done seed and the empty day deterministically, known slots can be injected into
 // the composed timeline (ADDED to the real seed, or a full REPLACEMENT); both off by
 // default, so every other test sees the unmodified real timeline.
+//
+// A13 (mezo-33k6): a lapozás bizonyítéka az, hogy a DÁTUM eléri az adatréteget — nem a címke.
+// Ezért a mock FELJEGYZI, milyen nappal hívták a `useFuelDay`/`useFuelTimeline`-t, és egy nap
+// őszintén üresre is állítható (mock módban ugyanis a seed MINDEN napra ugyanazt adná vissza).
 const hoisted = vi.hoisted(() => ({
   injectOpenSlot: false,
   injectMissedSlot: false,
   overrideSlots: null as FuelSlot[] | null,
+  emptyDates: [] as string[],
+  dayCalls: [] as string[],
+  timelineCalls: [] as string[],
 }))
+const ZERO = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
+    useFuelDay: (date?: string) => {
+      hoisted.dayCalls.push(date ?? '(ma)')
+      const real = actual.useFuelDay(date)
+      if (date != null && hoisted.emptyDates.includes(date)) {
+        return { ...real, fuel: { ...real.fuel, meals: [], consumed: ZERO } }
+      }
+      return real
+    },
     useFuelTimeline: (date?: string) => {
+      hoisted.timelineCalls.push(date ?? '(ma)')
       const real = actual.useFuelTimeline(date)
       if (hoisted.overrideSlots) return { ...real, plan: { ...real.plan, slots: hoisted.overrideSlots } }
       const extra: FuelSlot[] = []
@@ -62,6 +90,9 @@ afterEach(() => {
   hoisted.injectOpenSlot = false
   hoisted.injectMissedSlot = false
   hoisted.overrideSlots = null
+  hoisted.emptyDates = []
+  hoisted.dayCalls = []
+  hoisted.timelineCalls = []
 })
 
 /** Reports the live URL so navigations are observable. */
@@ -87,70 +118,77 @@ test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → ban
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
-  const lane = container.querySelector('.fh-logtile')
+  // S1b: a nap blokkjai váltották a Logolás-csempét (mezo-33k6).
+  const blocks = container.querySelector('.fmx-blocks')
   const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
-  expect(lane).toBeInTheDocument()
+  expect(blocks).toBeInTheDocument()
   expect(mosaic).toBeInTheDocument()
+  expect(container.querySelector('.fh-logtile')).toBeNull()
   // The Mezo Fuel-üzenetek band is retired (mezo-04lo) — unused, tile removed with its page.
   expect(container.querySelector('.fh-mezotile')).toBeNull()
-  expect(hero!.compareDocumentPosition(lane!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(lane!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(hero!.compareDocumentPosition(blocks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(blocks!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   // The retired sky/island shell is gone.
   expect(container.querySelector('.sky-islands')).toBeNull()
   expect(container.querySelector('.kdone')).toBeNull()
 })
 
-// ── keret-hero (hub v3: ONE number) ──────────────────────────────────────────
+// ── the Titanium energy hero (Fuel Titanium S1a, mezo-33k6 — manifest A1/A2/A15) ──────
+// The pre-Titanium keret-hero (`.khero-*`: the consumed-kcal numeral, the segmented day-bar,
+// the three energy chips) is GONE from this page. S5 (mezo-qt5q) retired its last host
+// (`/fuel/log`), so `KeretHero.tsx` went with the page — the day's energy contract now lives
+// ONLY here, on `FuelEnergyHero` (see the hero block below).
 
-test('the hero is ONE number — the kcal CONSUMED today; no eyebrow, no "eddig x / y" of-line', () => {
+// A1/A2/A15 (mezo-33k6): a Mai teteje a Titán energiaműszer. A régi KeretHero elment.
+test('a Mai a Titán energia-heroval nyit', () => {
   const { container } = renderView()
-  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 + a coherent late-miss
-  // dinner 760, fix-round-1 F1 mezo-jcpt.3, = 2060).
-  expect(container.querySelector('.khero-n')?.getAttribute('aria-label')).toBe('2 060 kcal ma')
-  expect(container.querySelector('.khero-of')).toBeNull()
+  expect(container.querySelector('.fmx-hero')).not.toBeNull()
+  expect(container.querySelector('.khero-n')).toBeNull()
+  expect(container.querySelectorAll('.fmx-cell')).toHaveLength(5)
+})
+
+test('a domináns szám a MARADÉK, és a hero nem mond „eddig x / y"-t', () => {
+  const { container } = renderView()
   const hero = container.querySelector('.fh-hero') as HTMLElement
+  const remaining = container.querySelector('.fmx-hero-remaining')!
+  expect(remaining.getAttribute('aria-label')).toMatch(/kcal (fér még bele ma|a keret felett)$/)
+  // The retired day-bar and chip row are not replaced by a second number row.
+  expect(container.querySelector('.khero-dayseg')).toBeNull()
+  expect(container.querySelector('.khero-chips')).toBeNull()
   expect(hero.textContent).not.toContain('eddig')
   expect(hero.textContent).not.toMatch(/\d+\/\d+ ablak/)
 })
 
-test('the day-bar draws one segment per done window and carries the gold now-marker', () => {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T13:30:00'))
-  try {
-    const { container } = renderView()
-    // breakfast + lunch + the fix-round-1 F1 (mezo-jcpt.3) late-miss dinner — a logged meal fills
-    // its window purely off its presence (buildDayPlan.ts step 3), never off the clock, so the
-    // 23:35 dinner is `done` even though this test's frozen `now` is 13:30.
-    expect(container.querySelectorAll('.khero-seg')).toHaveLength(3)
-    expect(container.querySelector('.khero-mark')).toBeInTheDocument()
-  } finally {
-    vi.useRealTimers()
-  }
+test('a műszer íve a nap elfogyasztott részét rajzolja ki', () => {
+  const { container } = renderView()
+  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 + a coherent late-miss
+  // dinner 760, fix-round-1 F1 mezo-jcpt.3, = 2060) against the day's own keret.
+  const gauge = container.querySelector('.fmx-gauge') as HTMLElement
+  const progress = Number(gauge.style.getPropertyValue('--fuel-progress'))
+  expect(progress).toBeGreaterThan(0)
+  expect(progress).toBeLessThanOrEqual(100)
+  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#i-fuel')
 })
 
-test('the three energy chips each reopen EnergyBreakdownSheet at their own section', async () => {
+// A15: a hero koppintása a MEGLÉVŐ, Énnel közös energia-magyarázatot nyitja — nem másolatot.
+test('a hero koppintása az energia-magyarázatot nyitja', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: /^Alap/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(await screen.findByText(/Alapanyagcsere/i)).toBeInTheDocument()
+  // The hero's own local glass box never opens on this page — one provenance surface only
+  // (the shared sheet itself is a role=dialog, so assert on the box's own element).
+  expect(document.querySelector('dialog.fmx-glass')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
-
-  await userEvent.click(screen.getByRole('button', { name: /^Mozgás/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
-  await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
-
-  await userEvent.click(screen.getByRole('button', { name: /^Cél/ }))
-  expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
 })
 
 test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet and the log lands', async () => {
   const { container } = renderView()
-  expect(container.querySelector('[aria-label^="Fehérje "]')).toBeInTheDocument()
-  expect(container.querySelector('[aria-label^="Szénhidrát "]')).toBeInTheDocument()
-  expect(container.querySelector('[aria-label^="Zsír "]')).toBeInTheDocument()
-  expect(screen.getByText('Víz')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Fehérje:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Szénhidrát:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Zsír:"]')).toBeInTheDocument()
+  expect(container.querySelector('[aria-label^="Rost:"]')).toBeInTheDocument()
 
   const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
   await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
@@ -163,70 +201,82 @@ test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet an
 
 // ── the Logolás hero tile (mezo-byo1 — the swimlane's successor) ─────────────
 // The per-window logging behaviors (slot seeding, Pótold, AI arm, out-of-window,
-// score chips) moved to /fuel/log and are covered by FuelLogPage.test.tsx; the hub
-// carries ONE live door whose face follows the same WindowLaneVM.
+// score chips) live on the `/fuel/log/uj` logger (FuelLogNewPage.test.tsx) since S1c; the hub
+// carries the blocks whose face follows the same WindowLaneVM.
 
-test('a MOST window leads the hero tile: label · time, the plan meal, and the pulsing eyebrow', () => {
+const DONE_REGGELI: FuelSlot = {
+  time: '09:15', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
+  mealId: 'm1', mealName: 'Túrós zabkása · áfonyával', kcal: 580, p: 42, c: 78, f: 12,
+}
+const OPEN_UZSONNA: FuelSlot = {
+  time: '16:30', kind: 'snack', label: 'Uzsonna', slotKey: 'snack', state: 'pending',
+  kcal: 380, p: 26, c: 34, f: 15,
+}
+
+// A10 (mezo-33k6): a Mai a nap étkezéseinek KANONIKUS helye — a blokkok itt élnek.
+test('a Mai a blokkokat mutatja, és a blokk a naplózóba visz az ablakával', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  const { container } = renderView()
+  expect(container.querySelectorAll('.fmx-block').length).toBeGreaterThan(0)
+  await userEvent.click(screen.getByRole('button', { name: /Uzsonna/ }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('loc').textContent).toContain('w=')
+  // A kulcsot az app saját `${time}-${label}` szabálya adja, nem egy kitalált string.
+  expect(screen.getByTestId('loc').textContent)
+    .toContain(`w=${encodeURIComponent(tileKey(OPEN_UZSONNA))}`)
+})
+
+test('a logolt étkezés pont-chipje az értékelő oldalra visz', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  renderView()
+  await userEvent.click(screen.getAllByRole('button', { name: /AI értékelés/ })[0])
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/etkezes/')
+})
+
+// Az általános naplózó a lap ALJÁN marad (owner).
+test('az általános naplózás a blokkok alatt áll', () => {
+  const { container } = renderView()
+  const blocks = container.querySelector('.fmx-blocks')!
+  const generic = container.querySelector('.fmx-loggeneric')!
+  expect(blocks.compareDocumentPosition(generic) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('az általános naplózás a logoló oldalt nyitja, ablak-kulcs nélkül', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ablakon kívül' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log/uj')
+})
+
+// A blokkok a nap ablakait tükrözik — a visszavont Logolás-csempe pontsor-szerepe
+// (done/now/missed jelzés) itt, blokkonként él tovább.
+test('a blokkok a nap ablakait tükrözik, állapotostul', () => {
   hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20, mealName: 'Csirkés bowl', suggestedRecipeId: 'r-1' },
+    DONE_REGGELI,
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
   ]
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('Logolás · MOST')).toBeInTheDocument()
-  expect(within(tile).getByText('Ebéd · 13:00')).toBeInTheDocument()
-  expect(within(tile).getByText('a tervből: Csirkés bowl')).toBeInTheDocument()
-  // One dot per window, state-classed.
-  expect(tile.querySelectorAll('.fh-lt-dots i')).toHaveLength(3)
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-f')).toHaveLength(1)
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-nw')).toHaveLength(1)
-  expect(within(tile).getByText('1/3 ablak kész')).toBeInTheDocument()
+  expect(Array.from(container.querySelectorAll('.fmx-block-name')).map(e => e.textContent))
+    .toEqual(['Reggeli', 'Ebéd', 'Vacsora'])
+  expect(container.querySelectorAll('.fmx-block.is-done')).toHaveLength(1)
+  expect(container.querySelectorAll('.fmx-block.is-now')).toHaveLength(1)
+  expect(container.querySelectorAll('.fmx-block.is-future')).toHaveLength(1)
 })
 
-test('the hero tile opens /fuel/log', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Logolás' }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log')
-})
-
-test('a missed window surfaces as an honest pótolható count — never a punitive word', () => {
+test('a kihagyott ablak a blokkján is szégyenmentes — „még pótolható", nem hiba', () => {
   hoisted.injectMissedSlot = true
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(tile.textContent).toContain('1 pótolható')
-  expect(tile.querySelectorAll('.fh-lt-dots i.is-ms')).toHaveLength(1)
+  const missed = container.querySelector('.fmx-block.is-missed')!
+  expect(missed.textContent).toContain('még pótolható')
   expect(container.textContent).not.toMatch(/bukt|elrontot|kudarc/i)
 })
 
-test('an all-done day flips the tile to the quiet sage celebration', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
-  const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(tile.classList.contains('is-alldone')).toBe(true)
-  expect(within(tile).getByText('Minden ablak kész ✓')).toBeInTheDocument()
-  expect(within(tile).getByText('2/2 ablak kész')).toBeInTheDocument()
-})
-
-test('with no MOST window the tile points at the next upcoming one', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('köv. Vacsora · 19:00')).toBeInTheDocument()
-})
-
-test('an empty day names the gap on the tile instead of fabricating windows', () => {
+test('an empty day names the gap on the blocks instead of fabricating windows', () => {
   hoisted.overrideSlots = []
   const { container } = renderView()
-  const tile = container.querySelector('.fh-logtile') as HTMLElement
-  expect(within(tile).getByText('nincs mai terv — tervezz és logolj')).toBeInTheDocument()
-  expect(tile.querySelector('.fh-lt-dots')).toBeNull()
+  expect(container.querySelectorAll('.fmx-block')).toHaveLength(0)
+  expect(within(container.querySelector('.fmx-blocks') as HTMLElement)
+    .getByText(/nincs tervezett étkezési ablak/i)).toBeInTheDocument()
 })
 
 test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?d=-re navigál', async () => {
@@ -244,10 +294,11 @@ test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?
   const chip = screen.getByRole('button', { name: /pótolható/ })
   expect(chip.textContent).toContain(dateLabel)
   expect(chip.textContent).toContain('2 ablak pótolható')
-  // The chip is a sibling of `.fh-logtile`, never nested inside it (no nested buttons).
-  expect(container.querySelector('.fh-logtile')?.contains(chip)).toBe(false)
+  // A chip a blokkok MELLETT áll, sosem beágyazva (nested button nincs).
+  expect(container.querySelector('.fmx-blocks')!.contains(chip)).toBe(false)
   await userEvent.click(chip)
-  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log?d=${yesterday}`)
+  // S5 (mezo-qt5q): a pótlás ajtaja a Mai lapozója — a `/fuel/log` lap megszűnt.
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel?d=${yesterday}`)
 })
 
 test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
@@ -259,44 +310,178 @@ test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
   expect(screen.queryByRole('button', { name: /pótolható/ })).toBeNull()
 })
 
+// ── napozás: a Mai lapozható (Fuel Titanium S1d, mezo-33k6 — manifest A13) ───
+// A pótlás NEM külön oldal többé: a Mai maga lapozható, a naplózóval KÖZÖS 7 napos
+// ablakon belül (backfillWindow.ts). A `?d=` az URL-ben él, hogy a nap deep-linkelhető
+// legyen és a böngésző-vissza természetes maradjon.
+
+const TODAY = localDateString()
+// Szándékosan NEM tegnap: a tegnapi napot a „pótolható" csali amúgy is beolvassa, így egy
+// tegnapra írt állítás akkor is zöld lenne, ha a lapozás egyáltalán nem érné el az adatréteget.
+const D3 = addDays(TODAY, -3)
+
+test('a visszalapozott nap a saját adatával jelenik meg', async () => {
+  renderView(`/fuel?d=${D3}`)
+  expect(await screen.findByText(huMonthDayDow(D3))).toBeInTheDocument()
+  expect(hoisted.dayCalls).toContain(D3)
+  expect(hoisted.timelineCalls).toContain(D3)
+})
+
+test('hét napnál régebbre nem lehet lapozni', () => {
+  renderView(`/fuel?d=${addDays(TODAY, -7)}`)
+  expect(screen.getByRole('button', { name: 'Előző nap' })).toBeDisabled()
+})
+
+test('a jövőbe nem lehet lapozni', () => {
+  renderView('/fuel')
+  expect(screen.getByRole('button', { name: 'Következő nap' })).toBeDisabled()
+})
+
+// A naplózó `?d=` clampje és a lapozó alsó kapuja UGYANAZ a szabály: az ablakon kívüli
+// deep link MA-ra esik vissza, nem egy olyan napra, amit a naplózó visszautasítana.
+test('az ablakon kívüli ?d= MA-ra esik vissza', () => {
+  renderView(`/fuel?d=${addDays(TODAY, -9)}`)
+  expect(screen.getByText('Ma')).toBeInTheDocument()
+  expect(hoisted.dayCalls).toContain(TODAY)
+  expect(hoisted.dayCalls).not.toContain(addDays(TODAY, -9))
+})
+
+test('múltbeli napon a blokk a pótlásba visz, a nap megtartásával', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  renderView(`/fuel?d=${D3}`)
+  await userEvent.click(screen.getAllByRole('button', { name: /Uzsonna/ })[0])
+  const loc = screen.getByTestId('loc').textContent!
+  expect(loc).toContain('/fuel/log/uj')
+  expect(loc).toContain(`d=${D3}`)
+  // Az ablak-kulcs továbbra is az app saját szabályából jön.
+  expect(loc).toContain(`w=${encodeURIComponent(tileKey(OPEN_UZSONNA))}`)
+})
+
+test('múltbeli napon az általános naplózás is megtartja a napot', async () => {
+  renderView(`/fuel?d=${D3}`)
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ablakon kívül' }))
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log/uj?d=${D3}`)
+})
+
+// Őszinte üres állapot: egy régi nap adat nélkül NEM nullákat mutat — a keret-műszer eltűnik,
+// mert egy lezárt napon a „még belefér <teljes keret>" olvasat valótlan lenne.
+test('adat nélküli múltbeli nap őszintén üres', () => {
+  hoisted.emptyDates = [D3]
+  const { container } = renderView(`/fuel?d=${D3}`)
+  expect(screen.getByText(/Erre a napra nincs adat/i)).toBeInTheDocument()
+  expect(container.querySelector('.fmx-hero')).toBeNull()
+  // Szégyenmentes: az üresség nem hiba.
+  expect(container.textContent).not.toMatch(/kihagytad|bukt|hiba/i)
+})
+
+// A lapozás az URL-ben él (ez teszi a későbbi, domének közti közös dátum-tengelyt olcsóvá).
+test('a lapozás a ?d=-t írja, a mai nap pedig paraméter nélkül marad', async () => {
+  renderView('/fuel')
+  await userEvent.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel?d=${addDays(TODAY, -1)}`)
+  await userEvent.click(screen.getByRole('button', { name: 'Következő nap' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel')
+})
+
+// ── a víz-modul (Fuel Titanium S1d, mezo-33k6 — manifest A12) ────────────────
+// A víz a Mai-on MARAD (owner), első osztályú modulként a blokkok ALATT — a hero
+// víz-gyűrűje továbbra is a sheet ajtaja, a modul pedig a gyorsgombokat adja.
+
+test('a víz-modul a blokkok alatt, a mozaik előtt áll', () => {
+  const { container } = renderView()
+  const blocks = container.querySelector('.fmx-blocks')!
+  const water = container.querySelector('.fmx-water')!
+  const mosaic = container.querySelector('.mz-mosaic')!
+  expect(water).toBeInTheDocument()
+  expect(blocks.compareDocumentPosition(water) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(water.compareDocumentPosition(mosaic) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('a víz-modul gyorsgombja a napot írja, és a hero gyűrűje követi', async () => {
+  renderView()
+  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
+  await userEvent.click(screen.getByRole('button', { name: '+2,5 dl' }))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Víz logolása/ })
+    .getAttribute('aria-label')).not.toBe(before))
+})
+
 // ── the 6-tile mosaic ────────────────────────────────────────────────────────
 
-test('the mosaic carries exactly the six Fuel tiles, each navigating to its own page', async () => {
+// S5 (mezo-qt5q): MINDEN csempe ÉLŐ lapra nyílik — egyik sem fut bele egy redirectbe. A `Terv`
+// (`/fuel/plan`) és a `Napló` (`/fuel/naplo`) csempe egy Trendek-csempévé olvadt, mert mind a két
+// lap a Trendekbe költözött (C1/C5); két csempe ugyanarra a lapra félrevezető lenne.
+test('the mosaic carries exactly the five Fuel tiles, each navigating to its own LIVE page', async () => {
   renderView()
-  for (const [label, path] of [
-    ['Terv', '/fuel/plan'],
+  const expected = [
+    ['Trendek', '/fuel/trendek'],
     ['Stack', '/fuel/stack'],
     ['Receptek', '/fuel/recipes'],
     ['Kamra', '/fuel/kamra'],
     ['Gyógyszer', '/fuel/gyogyszer'],
-    ['Napló', '/fuel/naplo'],
-  ] as const) {
+  ] as const
+  for (const [label, path] of expected) {
     const tile = screen.getByRole('button', { name: label })
     fireEvent.click(tile)
     expect(screen.getByTestId('loc').textContent).toBe(path)
   }
+  // A retirált két ajtó NEM él tovább csempeként.
+  expect(screen.queryByRole('button', { name: 'Terv' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Napló' })).toBeNull()
 })
 
-test('tile lines come from the pages\' own data — a Terv line, a Kamra count, no fabricated numbers', () => {
+test('tile lines come from the pages\' own data — a Kamra count, no fabricated numbers', () => {
   renderView()
-  expect(screen.getByRole('button', { name: 'Terv' })).toHaveTextContent(/^Terv.*Protein \d\/7 nap$/)
   expect(screen.getByRole('button', { name: 'Kamra' })).toHaveTextContent(/\d+ tétel/)
 })
 
-test('a Napló line only appears once something is scored today — never a fake AI average', () => {
+// A napi AI-átlag a visszavont Napló-csempe EGYETLEN saját jele volt — S5 (mezo-qt5q) a
+// Trendek-csempére vitte át, és az őszinte-null szabály VÁLTOZATLAN: pontozatlan napon nem
+// kitalált nulla áll ott, hanem a heti protein-sor veszi át a helyét.
+test('a Trendek-csempe AI-átlagot ír, amint van pontozott étkezés — kitalált nulla sosem', () => {
   hoisted.overrideSlots = [
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'now', kcal: 600, p: 35, c: 60, f: 18 },
   ]
   renderView()
   // The mock day's own logged meals ARE scored, so the line is present and honest.
-  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(/AI-átlag \d+/)
+  const tile = screen.getByRole('button', { name: 'Trendek' })
+  expect(tile).toHaveTextContent(/AI-átlag \d+/)
+  expect(tile).not.toHaveTextContent(/AI-átlag 0\b/)
 })
 
-// ── the Fuel-beállítások band (the retired dropdown's extra action) ──────────
+test('pontozatlan napon a Trendek-csempe a heti protein-sort írja, nem AI-átlag nullát', () => {
+  // Egy őszintén ÜRES nap (a mock minden napra ugyanazt a seedet adná) — nincs pontozott
+  // étkezés, tehát nincs AI-átlag sem.
+  const empty = addDays(localDateString(), -2)
+  hoisted.emptyDates = [empty]
+  renderView(`/fuel?d=${empty}`)
+  const tile = screen.getByRole('button', { name: 'Trendek' })
+  expect(tile).toHaveTextContent(/Protein \d\/7 nap/)
+  expect(tile).not.toHaveTextContent(/AI-átlag/)
+})
 
-test('the Fuel-beállítások band navigates to its own page', async () => {
+// ── the quiet settings corner (Fuel Titanium S1d, mezo-33k6 — manifest A16) ───
+// Owner-döntés (spec 7): a beállítás CSENDES sarok — nem csempe, nem hangsúlyos, mosott
+// sáv. A korábbi `.fh-band` ezt a döntést sértette; a viselkedése (a saját oldalára visz)
+// változatlan, a HANGJA lett csendes.
+
+test('the Fuel settings entry navigates to its own page', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Fuel-beállítások' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
+})
+
+test('a beállítások csendes sarokként, a lap alján érhetők el', async () => {
+  const { container } = renderView()
+  const corner = container.querySelector('.fmx-corner') as HTMLElement
+  expect(corner).toBeInTheDocument()
+  // Se csempe, se mosott sáv — a két hangsúlyos forma, amit az owner kizárt.
+  expect(corner.className).not.toContain('mz-tile')
+  expect(container.querySelector('.fh-band')).toBeNull()
+  // A lap ALJA: a mozaik után, és utána már nincs más modul.
+  const mosaic = container.querySelector('.mz-mosaic')!
+  expect(mosaic.compareDocumentPosition(corner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(corner.nextElementSibling).toBeNull()
+  await userEvent.click(within(corner).getByRole('button', { name: /beállítások/i }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
 })
 

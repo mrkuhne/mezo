@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -166,4 +166,54 @@ test('an estimate amount cleared to 0 and retyped rescales from the original bas
   await userEvent.clear(field)      // passes through amount 0 — est must survive untouched
   await userEvent.type(field, '300')
   expect(screen.getByText('4500')).toBeInTheDocument()
+})
+
+// ── S4 (mezo-hygp): az ÉLŐ ELŐNÉZET. Owner-döntés: a Műhelyben előre látszik, milyen lesz a
+// recept — UGYANAZOKKAL a blokkokkal, amiket a recept-részletlap (és az étkezés-részletlap)
+// rajzol, mert különben nem ugyanazt kapod, amit ígértünk. ───────────────────────────────
+
+test('a vázlat előnézete a recept-részletlap blokkjait mutatja', async () => {
+  renderPage()
+  await sendFirstTurn()
+  for (const name of ['Makrók', 'Hozzávalók', 'Minőség', 'Mikrotápanyagok']) {
+    expect(screen.getByRole('heading', { name })).toBeInTheDocument()
+  }
+})
+
+// Őszinte-null: az AI NEM talál ki tápanyag-tényt — amire nincs kamra-sor, az „—".
+test('kamra-tény nélküli sor nem ad számot a minőség-lapkáknak', async () => {
+  renderPage()
+  await sendFirstTurn()
+  // a becsült sornak (Citrom + fűszerek) nincs NOVA-ja, ezért az Alapanyag-arány őszintén „—"
+  const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
+  const base = within(quality).getByText('Alapanyag-arány').closest('.fmx-nutri-tile') as HTMLElement
+  expect(within(base).getByText('—')).toBeInTheDocument()
+  expect(base.className).toContain('is-unknown')
+})
+
+test('a mikrotápanyag-blokk csak a négy tárolt tényt viszi, vitamint nem', async () => {
+  renderPage()
+  await sendFirstTurn()
+  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section') as HTMLElement
+  for (const label of ['Rost', 'Cukor', 'Só', 'Telített zsír']) {
+    expect(within(micro).getByText(label)).toBeInTheDocument()
+  }
+  expect(within(micro).queryByText(/vitamin/i)).toBeNull()
+})
+
+// B1 owner-DROP: link-alapú RECEPT-import nincs (a kamra URL-importja ettől független).
+test('a Műhelyben nincs link-alapú recept-import', () => {
+  const { container } = renderPage()
+  expect(screen.queryByLabelText(/recept linkje/i)).toBeNull()
+  expect(container.textContent).not.toMatch(/recept linkje|URL-ből/i)
+})
+
+// A cél-csempék a kiinduló vásznon állnak (a prototípus `wsx-goals`-a), és egy koppintás a
+// saját utasítás-körét küldi el.
+test('az üres vászon cél-csempéket ad, és egy csempe elindítja a saját körét', async () => {
+  renderPage()
+  expect(screen.getAllByRole('button', { name: /High protein/ }).length).toBeGreaterThan(0)
+  await userEvent.click(screen.getAllByRole('button', { name: /High protein/ })[0])
+  await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(1))
+  expect(turnImpl.mock.calls[0][0].goal).toBe('high_protein')
 })

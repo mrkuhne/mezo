@@ -106,13 +106,20 @@ export function useMealActions(date: string = localDateString()) {
   // The optional `onSuccess` is a PER-CALL callback (TanStack merges it with the hook-level one
   // above) — MealComposer uses it to fire the meal_draft outcome signal (mezo-76f6) only once the
   // save has genuinely succeeded, never optimistically.
+  //
+  // mezo-qt5q (manifest E9): a per-call callback is DROPPED when the caller unmounts before the
+  // mutation settles — TanStack binds those callbacks to the observer, not the mutation. The
+  // full-page logger (`/fuel/log/uj`) navigates away the instant it saves, so on that route the
+  // outcome signal silently never fired. `logMealAsync` resolves from the mutation itself and
+  // therefore survives the unmount; use it whenever the report MUST outlive the component.
   const logMeal = useCallback(
     (input: MealInput, options?: { onSuccess?: () => void }) => logM.mutate(input, options),
     [logM],
   )
+  const logMealAsync = useCallback((input: MealInput) => logM.mutateAsync(input), [logM])
   const updateMeal = useCallback((id: string, input: MealInput) => updateM.mutate({ id, input }), [updateM])
   const deleteMeal = useCallback((id: string) => deleteM.mutate(id), [deleteM])
-  return { logMeal, updateMeal, deleteMeal, draftMealFromAi }
+  return { logMeal, logMealAsync, updateMeal, deleteMeal, draftMealFromAi }
 }
 
 /** Water intake write on the ['fuelDay', date] cache. Mock increments consumed.water in place;

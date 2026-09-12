@@ -35,7 +35,6 @@ export type { MemoryRetrievalFeedbackHandle } from '@/data/insights/memoryFeedba
 export type { MemoryRetrievalFeedback, MemoryRetrievalFeedbackAction } from '@/data/insights/memoryFeedbackApi'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
 export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'
-export { useReplanScenarios } from '@/data/fuel/fuelReadHooks'
 export { useStack, useProtocol, useStackActions, useProtocolActions, useIntakes } from '@/data/fuel/stackHooks'
 export { useStackDay } from '@/data/fuel/stackDayHooks'
 export { useTrain, useOpenWorkout, useQuickLogSport } from '@/data/train/trainHooks'

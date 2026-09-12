@@ -18,11 +18,16 @@ export interface DimFace { tone: DimTone; icon: ClayIconName }
 
 // Icon names are the clay kit's REAL symbols (`frontend/src/shared/ui/clay/index.tsx`),
 // which all carry the `i-` prefix — the brief's map was written without it.
+// Fuel Titanium S1b (mezo-33k6): a makró-, mikro- és feldolgozottság-dimenzió SAJÁT clay
+// szimbólumot kapott — az owner szerint a generikus darabok (tál, életjel, termés) „nem
+// illettek" rájuk. A napi kontextus marad az óra. A csere mindkét felületre hat (a sheet
+// DimensionCard-ja és az új FuelMealScorePage is ezt a térképet olvassa) — szándékosan: egy
+// dimenziónak EGY arca van.
 const FACE: Record<MealDimension['id'], DimFace> = {
-  macro: { tone: 'sage', icon: 'i-fuel' },
-  nova: { tone: 'gold', icon: 'i-termes' },
+  macro: { tone: 'sage', icon: 'i-makro' },
+  nova: { tone: 'gold', icon: 'i-feldolgozas' },
   context: { tone: 'sky', icon: 'i-idozito' },
-  micro: { tone: 'rose', icon: 'i-eletjel' },
+  micro: { tone: 'rose', icon: 'i-mikro' },
   who: { tone: 'white', icon: 'i-rend' },
   fat_quality: { tone: 'white', icon: 'i-lombik' },
   plant_diversity: { tone: 'white', icon: 'i-kamra' },

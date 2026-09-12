@@ -16,6 +16,15 @@
 // Minden állapot LOKÁLIS (nincs perzisztálás): egy műhely-menet a mentésig él. A ?recipeId
 // paraméter egy meglévő receptből tölti a vázlatot (`recipeToDraft`) + a base-metát, és
 // mentéskor update-et csinál create helyett.
+//
+// S4 (Fuel Titanium, mezo-hygp) — ÉLŐ ELŐNÉZET: a vászon azokat a blokkokat rajzolja, amiket a
+// recept-részletlap (és az étkezés-részletlap) visz — Makrók / Hozzávalók / Minőség /
+// Mikrotápanyagok —, UGYANAZOKKAL a komponensekkel (`FuelQualityBlocks`). Owner-döntés: amit
+// iterálás közben látsz, az legyen a mentett recept. A Minőség és a Mikrotápanyagok SZÁMAI
+// kizárólag valódi kamra-tényből jönnek (`draftQualityLines` / `draftNutrients`): egy becsült
+// sor NEM ad tápanyag-számot, mert a modell tápanyag-tényt SOHA nem találhat ki.
+// Vizuális referencia: a prototípus `muhelyPage` (:115) vászon-dokk tagolása, `runTurn` (:158)
+// és `saveWorkshop` (:171).
 // ============================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -26,18 +35,23 @@ import { useRecipes, useRecipeActions, useWorkshop } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { recipeApi } from '@/data/fuel/recipeApi'
 import { usePickableIngredients, type PickableIngredient } from '@/data/fuel/pantryPickables'
-import { roundMacro } from '@/data/fuel/recipeMacros'
+import { NO_NUTRIENTS, roundMacro, scaleNutrients } from '@/data/fuel/recipeMacros'
 import {
-  draftTotals, draftToInput, diffLineKeys, goalRole, lineKey, lineMacros, recipeToDraft, scaleServings,
+  draftNutrients, draftQualityLines, draftTotals, draftToInput, diffLineKeys, goalRole, lineKey,
+  lineMacros, recipeToDraft, scaleServings,
 } from '@/data/fuel/workshopState'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { MozaikPage, PageHead, PageBody, CollapsibleStrip } from '@/shared/ui/mozaik'
+import { huInt } from '@/shared/lib/huNum'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
-import { type ServingBasis } from '@/features/fuel/components/ServingToggle'
-import { WorkshopMacroCard } from '@/features/fuel/components/workshop/WorkshopMacroCard'
+import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
+import {
+  FuelMacroShareSection, FuelMicroNote, FuelMicroSection, FuelQualitySection,
+} from '@/features/fuel/components/FuelQualityBlocks'
+import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { WorkshopIngredientRow } from '@/features/fuel/components/workshop/WorkshopIngredientRow'
 import { WorkshopChatDock, type WorkshopChatMessage } from '@/features/fuel/components/workshop/WorkshopChatDock'
 
@@ -285,6 +299,22 @@ export function RecipeWorkshopPage() {
 
   const totals = draft ? draftTotals(draft, pool) : { kcal: 0, p: 0, c: 0, f: 0 }
   const flashSet = new Set(diffKeys)
+  // Az előnézet számai: a bázis-váltó csak OSZT, új makrót nem szül.
+  const per = basis === 'whole' ? 1 : Math.max(1, draft?.servings ?? 1)
+  const shown = {
+    kcal: Math.round(totals.kcal / per),
+    p: Math.round(totals.p / per),
+    c: Math.round(totals.c / per),
+    f: Math.round(totals.f / per),
+  }
+  const shares = mealMacroShare(shown)
+  // Amit a kamra nem tud feloldani, azt MEGNEVEZZÜK — nem pótoljuk becsléssel.
+  const unresolved = draft
+    ? draft.lines.filter(l => l.source === 'pantry' && lineMacros(l, pool) == null).length
+    : 0
+  const qualityLines = draft ? draftQualityLines(draft, pool) : []
+  const rawNutrients = draft ? draftNutrients(draft, pool) : NO_NUTRIENTS
+  const previewNutrients = basis === 'whole' ? rawNutrients : scaleNutrients(rawNutrients, 1 / per)
 
   return (
     <MozaikPage tone="sage">
@@ -302,14 +332,20 @@ export function RecipeWorkshopPage() {
           </div>
 
           {!draft && (
-            <div className="mz-qcard rise" style={{ padding: '26px 18px', textAlign: 'center', borderStyle: 'dashed' }}>
-              <ClayIcon name="i-muhely" size={40} />
-              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.5 }}>
-                Írd le, mit főznél — vagy jelölj a kamrából, és a Műhely összerakja az első vázlatot.
+            /* A kiinduló vászon (prototípus `wsx-empty`): egy kérdés, és a cél-csempék a
+               dokkban várnak — nem üres képernyő.
+               NB: a „Mit főzzünk ki?" a CHAT nyitó kérdése (prototípus-szöveg), NEM a B17
+               „mit főzzünk az itthon lévőből" felület — az owner azt kivette, és nem is épült
+               meg: itt te mondod meg a célt, nem a kamra-készlet generál listát. */
+            <div className="fkx-ws-empty rise">
+              <span className="fkx-ws-glow" aria-hidden="true" />
+              <span className="fkx-ws-art" aria-hidden="true"><ClayIcon name="i-muhely" size={96} /></span>
+              <strong>Mit főzzünk ki?</strong>
+              <p>
+                Válassz egy célt alul, vagy írd le a saját szavaiddal. Én hozzávalót és
+                mennyiséget javaslok — a számokat mindig a kamrád adja.
               </p>
-              <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 6 }}>
-                Minden kör patch-ként érkezik, a kézi szerkesztéseid megmaradnak.
-              </p>
+              <small>Minden kör patch-ként érkezik, a kézi szerkesztéseid megmaradnak.</small>
             </div>
           )}
 
@@ -331,33 +367,70 @@ export function RecipeWorkshopPage() {
                 </div>
               </div>
 
-              <WorkshopMacroCard
-                totals={totals}
-                servings={draft.servings}
-                basis={basis}
-                onBasis={setBasis}
-                onServings={n => setDraft(d => (d ? scaleServings(d, n) : d))}
-              />
-
-              <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 9px' }}>
-                <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>HOZZÁVALÓK</span>
-                <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{draft.lines.length}</span>
-                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+              {/* Titán hős: bal = tál-ikon és ALATTA a kcal; jobb = adag-stepper és a bázis-váltó.
+                  A számok már KÉSZEN jönnek (`draftTotals` a kamra-tényekből) — itt nem
+                  születik makró. */}
+              <div className="fmx-detail-hero fkx-ws-hero">
+                <span className="fmx-detail-glow" aria-hidden="true" />
+                <div className="fmx-detail-left">
+                  <span className="fmx-detail-art" aria-hidden="true"><ClayIcon name="i-tanyer" size={96} /></span>
+                  <div className="fmx-detail-kcal">
+                    <strong>{huInt(shown.kcal)}</strong>
+                    <small>kcal {basis === 'whole' ? '· egész' : '/ adag'}</small>
+                  </div>
+                </div>
+                <div className="fmx-detail-right">
+                  <div className="fkx-stepper">
+                    <button type="button" aria-label="Kevesebb adag" disabled={draft.servings <= 1}
+                      onClick={() => setDraft(d => (d ? scaleServings(d, d.servings - 1) : d))}>−</button>
+                    <span><strong>{draft.servings}</strong><small>adag</small></span>
+                    <button type="button" aria-label="Több adag" disabled={draft.servings >= 12}
+                      onClick={() => setDraft(d => (d ? scaleServings(d, d.servings + 1) : d))}>＋</button>
+                  </div>
+                  <div className="fkx-basis">
+                    <ServingToggle value={basis} servings={draft.servings} onChange={setBasis} />
+                  </div>
+                </div>
               </div>
 
-              <div className="col gap-sm">
-                {draft.lines.map((line, i) => (
-                  <WorkshopIngredientRow
-                    key={`${lineKey(line)}-${i}`}
-                    line={line}
-                    macros={lineMacros(line, pool)}
-                    flash={flashSet.has(lineKey(line))}
-                    onAmount={n => patchLine(i, l => setAmount(l, n))}
-                    onRemove={() => dropLine(i)}
-                    onReplace={() => setPicker(i)}
-                  />
-                ))}
-              </div>
+              {/* Őszinte-null: ha egy sor makrója nem oldható fel, azt MEGMONDJUK, nem pótoljuk. */}
+              {unresolved > 0 && (
+                <p className="fmx-nutri-note">
+                  {unresolved} sorhoz nincs tápérték a kamrában — a számokból kimarad, nem találgatjuk.
+                </p>
+              )}
+
+              <FuelMacroShareSection shares={shares}
+                groupLabel="A vázlat energiájának megoszlása" frame="a vázlat energiájának" />
+
+              <section className="fmx-detail-sec">
+                <div className="fmx-section"><h2>Hozzávalók</h2></div>
+                <div className="col gap-sm">
+                  {draft.lines.map((line, i) => (
+                    <WorkshopIngredientRow
+                      key={`${lineKey(line)}-${i}`}
+                      line={line}
+                      macros={lineMacros(line, pool)}
+                      flash={flashSet.has(lineKey(line))}
+                      onAmount={n => patchLine(i, l => setAmount(l, n))}
+                      onRemove={() => dropLine(i)}
+                      onReplace={() => setPicker(i)}
+                    />
+                  ))}
+                  {draft.lines.length === 0 && (
+                    <p className="fmx-block-empty">
+                      Nincs hozzávaló — kérj egyet alul, vagy válassz a kamrából.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* UGYANAZ a két szekció, amit a recept- és az étkezés-részletlap rajzol. A
+                  számaik kizárólag valódi kamra-tényből jönnek: egy becsült sor „—"-t hagy. */}
+              <FuelQualitySection lines={qualityLines} />
+              <FuelMicroSection nutrients={previewNutrients}
+                frame={basis === 'whole' ? 'a recept' : 'az adag'} />
+              <FuelMicroNote />
 
               {draft.steps.length > 0 && (
                 <div style={{ marginTop: 10 }}>

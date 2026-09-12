@@ -1,4 +1,4 @@
-import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows, heroEquationLines } from '@/features/fuel/logic/keretHero'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
@@ -251,4 +251,31 @@ test('asPastDayHero: chips + now-marker go, everything else stays (energy/clock 
   expect(past.chips).toBeNull()
   expect(past.nowFrac).toBeNull()
   expect({ ...past, chips: vm.chips, nowFrac: vm.nowFrac }).toEqual(vm)
+})
+
+// ── hero-egyenlet (A1/A15, mezo-33k6) ─────────────────────────────────────────
+
+// A1/A15 (mezo-33k6): az üvegdoboz egyenlete a hero számából vezethető le, és NEM talál ki
+// értéket — ha az energiaszámítás nincs meg (statikus keret), a mozgás sora üres marad.
+describe('heroEquationLines', () => {
+  test('a négy sor sorrendje és előjele rögzített', () => {
+    const lines = heroEquationLines(build())
+    expect(lines.map(l => l.key)).toEqual(['base', 'activity', 'eaten', 'remaining'])
+    expect(lines.map(l => l.sign)).toEqual([null, '+', '−', '='])
+  })
+
+  test('a sorok a hero számaiból jönnek, nem külön forrásból', () => {
+    const vm = build({ consumed: { kcal: 800, p: 40, c: 90, f: 20 } })
+    const lines = heroEquationLines(vm)
+    const by = (k: string) => lines.find(l => l.key === k)!
+    expect(by('eaten').value).toBe(vm.consumedKcal)
+    expect(by('remaining').value).toBe(vm.remainingKcal)
+    expect(by('base').value).toBe(vm.chips!.base)
+    expect(by('activity').value).toBe(vm.chips!.activity)
+  })
+
+  test('statikus keretnél a mozgás sora őszintén üres, nem nulla', () => {
+    const lines = heroEquationLines(build({ staticEnergy: true }))
+    expect(lines.find(l => l.key === 'activity')!.value).toBeNull()
+  })
 })
