@@ -174,3 +174,25 @@ export function aiAverage(scorePcts: (number | null | undefined)[]): number | nu
 export function asPastDayHero(vm: KeretHeroVM): KeretHeroVM {
   return { ...vm, chips: null, nowFrac: null }
 }
+
+/** Egy sor a hero üvegdobozának egyenletében (A15). */
+export interface EquationLine {
+  key: 'base' | 'activity' | 'eaten' | 'remaining'
+  label: string
+  value: number | null
+  sign: '+' | '−' | '=' | null
+}
+
+/**
+ * A `keret − étel + mozgás` egyenlet sorai — KIZÁRÓLAG a hero saját számaiból.
+ * Statikus keretnél (a felhasználó fix kalóriacélt kért) nincs mozgás-komponens: a sor
+ * `null` marad, és a felület gondolatjelet ír, nem nullát (őszinte-null szabály).
+ */
+export function heroEquationLines(vm: KeretHeroVM): EquationLine[] {
+  return [
+    { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
+    { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },
+    { key: 'eaten', label: 'Étel', value: vm.consumedKcal, sign: '−' },
+    { key: 'remaining', label: 'Marad', value: vm.remainingKcal, sign: '=' },
+  ]
+}
