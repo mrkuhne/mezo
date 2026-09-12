@@ -537,15 +537,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useDietSettingsPreview`, `useFuelDay`, `useFuelSettings`, `useFuelSettingsActions`, `useFuelTimeline`,
     `useFuelWeek`, `useIntakes`, `useMealActions`, `useMealCoach`, `useMealCoachFor`, `useMedication`,
     `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
-    `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useReplanScenarios`, `useSlotTemplateActions`,
-    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`,
-    `useWorkshop`
+    `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`,
+    `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, fuel.ts, fuelApi.ts,
-    fuelConfig.ts, fuelHooks.ts, fuelReadHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts,
-    fuelWeekHooks.ts, mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts,
-    pantryHooks.ts, pantryImpact.ts, pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts,
-    slotTemplateApi.ts, slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts,
-    workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
+    fuelConfig.ts, fuelHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts,
+    medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts,
+    pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts,
+    slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts,
+    workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx,
     FuelMealDetailPage.tsx, FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelNaploPage.tsx, FuelPlanPage.tsx,
@@ -556,24 +555,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
-    MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
-    WaterLogSheet.tsx
+    MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx,
-    FuelLogHeroTile.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelWaterModule.tsx, KamraCard.tsx,
-    KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx,
-    MedicationCycleBar.tsx, MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx,
-    PatternRow.tsx, RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx,
-    RecipeLogsList.tsx, RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx,
-    ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx, StackManageCard.tsx, StackManageOccurrenceList.tsx,
-    StackMealMatch.tsx, StackNextHero.tsx, StackPageScaffold.tsx, StackRhythmPreview.tsx, StackTimeline.tsx,
-    SuggestionCard.tsx, WeekRhythmGrid.tsx, WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx,
-    WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
+    FuelLogHeroTile.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelStackItemGlass.tsx,
+    FuelWaterModule.tsx, KamraCard.tsx, KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx,
+    MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx, MedicationWeekStrip.tsx, MicroPanel.tsx,
+    NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx, RecipeCard.tsx, RecipeFitBadge.tsx,
+    RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx,
+    ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
+    StackManageCard.tsx, StackManageOccurrenceList.tsx, StackMealMatch.tsx, StackNextHero.tsx, StackPageScaffold.tsx,
+    StackRhythmPreview.tsx, StackTimeline.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx, WeeklySupplementGrid.tsx,
+    WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
-    compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, formatImpact.ts,
-    fuelSettingsPreview.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts,
-    matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, mealShare.ts, projectStackDay.ts, recipeRole.ts,
-    resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackPresentation.ts, useStackIntakeToggle.ts, usualMeals.ts,
-    validateSlotPlan.ts
+    compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
+    formatImpact.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
+    macroSplit.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, mealShare.ts, projectStackDay.ts,
+    recipeRole.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts, stackPresentation.ts,
+    useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,

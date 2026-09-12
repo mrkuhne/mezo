@@ -71,6 +71,15 @@ describe('buildScheduleEntries (pure)', () => {
     expect(entry.body).toContain('Kreatin')
   })
 
+  // D9 (mezo-g2vl): a Kiegészítők átépítése NEM mozdította el a push cél-route-ját, és a
+  // kategória-kulcs SEM változhat — a már beütemezett sorok szerződése. Ez a két érték
+  // együtt az, amit egy jövőbeli route-átnevezés elfelejthet, ezért külön rögzítjük.
+  it('keeps the fuel deeplink target and category key stable across the S2 rebuild', () => {
+    const [entry] = buildScheduleEntries([], [stackSlot({ zone: 'wake', time: '06:50' })])
+    expect(entry.deeplink).toBe('/fuel/stack')
+    expect(entry.category).toBe('fuel_slot')
+  })
+
   it('only ever emits checkin/fuel_slot categories — never a backend-native one', () => {
     const entries = buildScheduleEntries(CHECKINS, [
       stackSlot({ zone: 'wake', time: '06:50' }),
