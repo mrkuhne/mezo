@@ -547,12 +547,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     slotTemplateApi.ts, slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts,
     workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
-  - **pages:** FuelKamraPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx,
-    FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx, FuelSlotsPage.tsx,
-    FuelStackAddPage.tsx, FuelStackManageMealsPage.tsx, FuelStackManagePage.tsx, FuelStackManageProtocolPage.tsx,
-    FuelStackManageTimingPage.tsx, FuelStackMealsPage.tsx, FuelStackPage.tsx, FuelStackProtocolPage.tsx,
-    FuelStackTodayPage.tsx, KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx,
-    RecipeEditorPage.tsx, RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
+  - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx,
+    FuelMedicationPage.tsx, FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx,
+    FuelSlotsPage.tsx, FuelStackAddPage.tsx, FuelStackManageMealsPage.tsx, FuelStackManagePage.tsx,
+    FuelStackManageProtocolPage.tsx, FuelStackManageTimingPage.tsx, FuelStackMealsPage.tsx, FuelStackPage.tsx,
+    FuelStackProtocolPage.tsx, FuelStackTodayPage.tsx, FuelTrendekPage.tsx, KamraItemDetailPage.tsx, KamraSkeleton.tsx,
+    LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
