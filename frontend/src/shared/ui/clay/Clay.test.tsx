@@ -2,16 +2,30 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (58 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (62 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 // Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
 // material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
-// accent — replacing the earlier warm-clay ramps. The NAMES (54 i-* + 24 s-*) are unchanged so
-// every call site and mapping table keeps compiling.
+// accent — replacing the earlier warm-clay ramps. The existing NAMES are unchanged so every
+// call site and mapping table keeps compiling; the set only ever GROWS (62 i-* + 24 s-*).
 
-test('ClaySprites mounts all 58 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 62 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(58)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(62)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
+})
+
+// Fuel Titanium S1a (mezo-33k6): az owner rögzített makró-identitása — hús/gabona/avokádó/növény
+// a Mai hero gyűrűsorához. Ugyanaz a titánium recept: 64-es viewBox, titánium alap + EGY akcentus
+// a zárt ig-* palettáról, tompított árnyék. Új gradiens nem született.
+test('a négy makró-ikon a sprite-ban van, a titánium recept szerint', () => {
+  render(<ClaySprites />)
+  for (const id of ['i-hus', 'i-gabona', 'i-avokado', 'i-noveny']) {
+    const sym = document.querySelector(`#${id}`)
+    expect(sym, `${id} hiányzik`).not.toBeNull()
+    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
+    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
+    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  }
 })
 
 // Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma — tányér, kiegészítő-tégely,

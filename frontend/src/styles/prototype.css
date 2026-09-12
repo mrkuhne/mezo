@@ -12001,6 +12001,67 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-composer { width: 100%; }
 /* ── /nap-mai titanium ───────────────────────────────────────────────────── */
 
+/* ── fuel-mai titanium (mezo-33k6) ────────────────────────────────────────
+   A Fuel Mai Titán energiaműszere (fagyasztott manifeszt A1 · A2 · A15). A jóváhagyott
+   vizuális referencia a prototípus:
+   docs/design_2.0/prototypes/companion-titanium/fuel-dashboard.js (`ring`, `gauge`,
+   `tapChip`, `heroSection`, `energyDetailHtml`) + fuel-pages.css
+   `/* Hero: tappable… ` (:271), `/* Macro cells… ` (:288), `/* Glass box dialog ` (:298),
+   `/* Tap chip… ` (:317) és `/* Glass modal: visual equation flow ` (:325) blokkjai,
+   plusz a `.fuel-gauge`/`.fuel-ring` alapgeometria a fuel-compact.css-ből (:20-47).
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — gyűrő-sugarak, vonalszélességek, a 150-es műszer és a
+   benne ülő 106-os tál (ez MÁR a 10%-kal nagyobb, jóváhagyott kalibráció), a betűméretek, a
+   `pathLength="100"` + `stroke-dasharray` ív-mechanika, a rács- és hézag-értékek, a
+   belépő-koreográfia időzítése.
+   AMIT NEM: a prototípus beégetett sötét hexeit. A Mai oldal a ház SAJÁT (világos/sötét)
+   témájában él — nem a `/nap` titan-dark bőrében —, így minden szín a ház tokenjein
+   keresztül megy, különben a világos témán láthatatlan lenne a műszer.
+
+   Csökkentett mozgás: a gyűrű-ív, a tál lebegése, a chip-fény és az üvegdoboz
+   node-animációi mind a `no-preference` ágban élnek, a `reduce` ág pedig explicit
+   kivezeti őket — ez a blokk csökkentett mozgás mellett teljesen statikus.
+   Hatókör-szintű (`.titan-dark …`) felülírás ebbe a blokkba NEM jön; az a titan-dark
+   blokkban lakik. */
+
+/* Makró-cellák: szám-only gyűrűk, a clay ikon a gyűrű FÖLÖTT (owner-döntés — a prototípus
+   alá tette). Öt egyenlő hasáb, a prototípus 5-ös rácsa és 5px-es hézaga. */
+.fmx-rings { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px;
+  padding: 16px 2px 4px; }
+.fmx-cell { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0;
+  padding: 0; border: 0; background: none; color: inherit; font-family: inherit; text-align: center; }
+.fmx-ico { width: 29px; height: 29px; display: grid; place-items: center; }
+.fmx-ico svg { width: 29px; height: 29px; filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.32)); }
+.fmx-ring { position: relative; display: grid; place-items: center; width: 100%; aspect-ratio: 1; min-width: 0; }
+.fmx-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--macro-color) 28%, transparent)); }
+.fmx-ring circle { fill: none; stroke-width: 5.5; }
+.fmx-ring-track { stroke: var(--surface-recess); }
+.fmx-ring-progress { stroke: var(--macro-color); stroke-linecap: round;
+  stroke-dasharray: var(--ring-progress) 100; }
+/* Őszinte-null: ismeretlen cél → nincs ív. Nem 0%-os ív, hanem semmi. */
+.fmx-ring.is-empty .fmx-ring-progress { stroke-dasharray: 0 100; }
+.fmx-ring > span { position: relative; z-index: 1; display: flex; flex-direction: column;
+  align-items: center; line-height: 1; }
+.fmx-ring strong { font-size: 19px; font-weight: 600; color: var(--macro-color); }
+.fmx-ring b { margin-top: 4px; font-size: 9px; font-weight: 500; color: var(--sub); }
+.fmx-ring b i { font-style: normal; font-size: 8px; margin-left: 1px; }
+.fmx-cell:active .fmx-ring { transform: scale(0.96); transition: transform 0.12s; }
+@media (prefers-reduced-motion: no-preference) {
+  .fmx-ring-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+  .fmx-cell:nth-child(2) .fmx-ring-progress { animation-delay: 0.08s; }
+  .fmx-cell:nth-child(3) .fmx-ring-progress { animation-delay: 0.16s; }
+  .fmx-cell:nth-child(4) .fmx-ring-progress { animation-delay: 0.24s; }
+  .fmx-cell:nth-child(5) .fmx-ring-progress { animation-delay: 0.32s; }
+  @keyframes fmx-ring-rise { from { stroke-dasharray: 0 100; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fmx-ring-progress { transition: none; animation: none; }
+  .fmx-cell:active .fmx-ring { transform: none; transition: none; }
+}
+/* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
+
 /* ── titan-dark scope (mezo-mhum) ─────────────────────────────────────────
    A Titán Nap (`/nap`, `/nap/gyors`) SÖTÉT GRAFIT bőre — a
    `docs/design_2.0/prototypes/companion-titanium/nap.css` + `navigation.css` palettája.

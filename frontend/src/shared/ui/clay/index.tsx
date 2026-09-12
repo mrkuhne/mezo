@@ -26,6 +26,9 @@ export type ClayIconName =
   | 'i-muhely'
   // Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma.
   | 'i-tanyer' | 'i-kiegeszito' | 'i-trend' | 'i-fazek'
+  // Fuel Titanium S1a (mezo-33k6): az owner makró-identitása a Mai hero gyűrűsorához —
+  // fehérje = hús, szénhidrát = gabona, zsír = avokádó, rost = növény (a víz már megvolt).
+  | 'i-hus' | 'i-gabona' | 'i-avokado' | 'i-noveny'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'
