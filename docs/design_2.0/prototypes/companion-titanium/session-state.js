@@ -228,3 +228,27 @@ export const STAR_WEEK = [
 
 export const starLedger = session =>
   STAR_WEEK.map((entry, index) => (index === 2 ? { ...entry, stars: sessionStars(session), today: true } : entry));
+
+/**
+ * What the closing bar actually fills with: sets, reps and moved weight, each against what the
+ * day prescribed. The three weigh equally, so a short set still moves the bar, and finishing the
+ * plan with heavier sets than prescribed cannot inflate it past five stars.
+ */
+export function sessionScore(session) {
+  const target = { sets: 0, reps: 0, volume: 0 }, done = { sets: 0, reps: 0, volume: 0 };
+  for (const id of session.order) {
+    const prescription = exerciseById(id).target;
+    for (const row of session.rows[id]) {
+      target.sets += 1;
+      target.reps += prescription.reps;
+      target.volume += prescription.kg * prescription.reps;
+      if (!row.done) continue;
+      done.sets += 1;
+      done.reps += row.reps;
+      done.volume += row.kg * row.reps;
+    }
+  }
+  const part = (a, b) => (b ? Math.min(1, a / b) : 0);
+  const ratio = (part(done.sets, target.sets) + part(done.reps, target.reps) + part(done.volume, target.volume)) / 3;
+  return { target, done, ratio, stars: starsFor(ratio) };
+}

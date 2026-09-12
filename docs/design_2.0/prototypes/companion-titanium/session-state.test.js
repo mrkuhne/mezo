@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   EXERCISES, createSession, logSet, undoSet, addSet, removeSet, moveExercise, setNote,
   finishSession, metrics, doneCount, setVerdict, inRange, nextOpen, legacyShape, e1rm,
-  skipExercise, isSkipped, pendingCount, starsFor, sessionStars, starLedger,
+  skipExercise, isSkipped, pendingCount, starsFor, sessionStars, starLedger, sessionScore,
 } from './session-state.js';
 
 const fresh = () => createSession();
@@ -174,4 +174,34 @@ test('the week ledger puts the live session on today and leaves the future blank
   assert.equal(ledger[2].stars, starsFor(1 / 9));
   assert.equal(ledger[3].stars, null);
   assert.equal(ledger[0].stars, 5);
+});
+
+test('the closing score weighs sets, reps and moved weight equally', () => {
+  const s = fresh();
+  assert.equal(sessionScore(s).ratio, 0);
+  assert.equal(sessionScore(s).target.sets, 9);
+  s.order.forEach(id => s.rows[id].forEach((r, i) => {
+    const t = EXERCISES.find(e => e.id === id).target;
+    logSet(s, id, i, { kg: t.kg, reps: t.reps, rir: t.rir });
+  }));
+  const full = sessionScore(s);
+  assert.equal(full.ratio, 1);
+  assert.equal(full.stars, 5);
+});
+
+test('beating the prescription never pushes the bar past full', () => {
+  const s = fresh();
+  s.order.forEach(id => s.rows[id].forEach((r, i) => logSet(s, id, i, { kg: 200, reps: 40, rir: 0 })));
+  assert.equal(sessionScore(s).ratio, 1);
+});
+
+test('half the planned work lands near half the bar', () => {
+  const s = fresh();
+  ['bench', 'row'].forEach(id => s.rows[id].forEach((r, i) => {
+    if (i > 1) return;
+    const t = EXERCISES.find(e => e.id === id).target;
+    logSet(s, id, i, { kg: t.kg, reps: t.reps, rir: t.rir });
+  }));
+  const score = sessionScore(s);
+  assert.ok(score.ratio > 0.35 && score.ratio < 0.55, `ratio was ${score.ratio}`);
 });
