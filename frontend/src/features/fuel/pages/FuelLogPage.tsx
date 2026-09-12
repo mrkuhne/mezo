@@ -28,6 +28,7 @@ import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { useDietSettings, useFuelDay, useFuelTimeline, useWaterActions } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
 import { buildKeretHero, asPastDayHero } from '@/features/fuel/logic/keretHero'
+import { MAX_BACKFILL_DAYS, backfillOffset } from '@/features/fuel/logic/backfillWindow'
 import { huInt } from '@/shared/lib/huNum'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -41,8 +42,10 @@ import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 
 // How far back the stepper lets you go — a week of catch-up, not an open-ended ledger
 // (mezo-1j3z). The ?d= deep link clamps to the same window (anything outside it, or
-// unparsable, falls back to today rather than silently misdating a log).
-const MAX_BACK = 7
+// unparsable, falls back to today rather than silently misdating a log). S1d (mezo-33k6)
+// lifted BOTH the limit and the clamp into logic/backfillWindow.ts, so the Mai's day pager
+// cannot reach a day this page would refuse.
+const MAX_BACK = MAX_BACKFILL_DAYS
 
 export function FuelLogPage() {
   const navigate = useNavigate()
@@ -52,12 +55,7 @@ export function FuelLogPage() {
   // per navigation, so the staleness window is bounded to a single visit.
   const [today] = useState(() => localDateString())
 
-  const initialOffset = (() => {
-    const d = searchParams.get('d')
-    if (!d) return 0
-    const diff = Math.round((+new Date(today) - +new Date(d)) / 86_400_000)
-    return Number.isFinite(diff) && diff >= 1 && diff <= MAX_BACK ? diff : 0
-  })()
+  const initialOffset = backfillOffset(searchParams.get('d'), today)
   const [offset, setOffset] = useState(initialOffset)
   const date = addDays(today, -offset)
   const past = offset > 0

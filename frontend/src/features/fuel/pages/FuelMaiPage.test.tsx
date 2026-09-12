@@ -24,7 +24,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
+import { addDays, localDateString, huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 // Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat
 // zölden hagyná a tesztet akkor is, ha a `?w=` szerződés elmozdul.
 import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
@@ -34,16 +34,33 @@ import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 // all-done seed and the empty day deterministically, known slots can be injected into
 // the composed timeline (ADDED to the real seed, or a full REPLACEMENT); both off by
 // default, so every other test sees the unmodified real timeline.
+//
+// A13 (mezo-33k6): a lapozás bizonyítéka az, hogy a DÁTUM eléri az adatréteget — nem a címke.
+// Ezért a mock FELJEGYZI, milyen nappal hívták a `useFuelDay`/`useFuelTimeline`-t, és egy nap
+// őszintén üresre is állítható (mock módban ugyanis a seed MINDEN napra ugyanazt adná vissza).
 const hoisted = vi.hoisted(() => ({
   injectOpenSlot: false,
   injectMissedSlot: false,
   overrideSlots: null as FuelSlot[] | null,
+  emptyDates: [] as string[],
+  dayCalls: [] as string[],
+  timelineCalls: [] as string[],
 }))
+const ZERO = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
+    useFuelDay: (date?: string) => {
+      hoisted.dayCalls.push(date ?? '(ma)')
+      const real = actual.useFuelDay(date)
+      if (date != null && hoisted.emptyDates.includes(date)) {
+        return { ...real, fuel: { ...real.fuel, meals: [], consumed: ZERO } }
+      }
+      return real
+    },
     useFuelTimeline: (date?: string) => {
+      hoisted.timelineCalls.push(date ?? '(ma)')
       const real = actual.useFuelTimeline(date)
       if (hoisted.overrideSlots) return { ...real, plan: { ...real.plan, slots: hoisted.overrideSlots } }
       const extra: FuelSlot[] = []
@@ -73,6 +90,9 @@ afterEach(() => {
   hoisted.injectOpenSlot = false
   hoisted.injectMissedSlot = false
   hoisted.overrideSlots = null
+  hoisted.emptyDates = []
+  hoisted.dayCalls = []
+  hoisted.timelineCalls = []
 })
 
 /** Reports the live URL so navigations are observable. */
@@ -286,6 +306,79 @@ test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
   ]
   renderView()
   expect(screen.queryByRole('button', { name: /pótolható/ })).toBeNull()
+})
+
+// ── napozás: a Mai lapozható (Fuel Titanium S1d, mezo-33k6 — manifest A13) ───
+// A pótlás NEM külön oldal többé: a Mai maga lapozható, a naplózóval KÖZÖS 7 napos
+// ablakon belül (backfillWindow.ts). A `?d=` az URL-ben él, hogy a nap deep-linkelhető
+// legyen és a böngésző-vissza természetes maradjon.
+
+const TODAY = localDateString()
+// Szándékosan NEM tegnap: a tegnapi napot a „pótolható" csali amúgy is beolvassa, így egy
+// tegnapra írt állítás akkor is zöld lenne, ha a lapozás egyáltalán nem érné el az adatréteget.
+const D3 = addDays(TODAY, -3)
+
+test('a visszalapozott nap a saját adatával jelenik meg', async () => {
+  renderView(`/fuel?d=${D3}`)
+  expect(await screen.findByText(huMonthDayDow(D3))).toBeInTheDocument()
+  expect(hoisted.dayCalls).toContain(D3)
+  expect(hoisted.timelineCalls).toContain(D3)
+})
+
+test('hét napnál régebbre nem lehet lapozni', () => {
+  renderView(`/fuel?d=${addDays(TODAY, -7)}`)
+  expect(screen.getByRole('button', { name: 'Előző nap' })).toBeDisabled()
+})
+
+test('a jövőbe nem lehet lapozni', () => {
+  renderView('/fuel')
+  expect(screen.getByRole('button', { name: 'Következő nap' })).toBeDisabled()
+})
+
+// A naplózó `?d=` clampje és a lapozó alsó kapuja UGYANAZ a szabály: az ablakon kívüli
+// deep link MA-ra esik vissza, nem egy olyan napra, amit a naplózó visszautasítana.
+test('az ablakon kívüli ?d= MA-ra esik vissza', () => {
+  renderView(`/fuel?d=${addDays(TODAY, -9)}`)
+  expect(screen.getByText('Ma')).toBeInTheDocument()
+  expect(hoisted.dayCalls).toContain(TODAY)
+  expect(hoisted.dayCalls).not.toContain(addDays(TODAY, -9))
+})
+
+test('múltbeli napon a blokk a pótlásba visz, a nap megtartásával', async () => {
+  hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
+  renderView(`/fuel?d=${D3}`)
+  await userEvent.click(screen.getAllByRole('button', { name: /Uzsonna/ })[0])
+  const loc = screen.getByTestId('loc').textContent!
+  expect(loc).toContain('/fuel/log/uj')
+  expect(loc).toContain(`d=${D3}`)
+  // Az ablak-kulcs továbbra is az app saját szabályából jön.
+  expect(loc).toContain(`w=${encodeURIComponent(tileKey(OPEN_UZSONNA))}`)
+})
+
+test('múltbeli napon az általános naplózás is megtartja a napot', async () => {
+  renderView(`/fuel?d=${D3}`)
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ablakon kívül' }))
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log/uj?d=${D3}`)
+})
+
+// Őszinte üres állapot: egy régi nap adat nélkül NEM nullákat mutat — a keret-műszer eltűnik,
+// mert egy lezárt napon a „még belefér <teljes keret>" olvasat valótlan lenne.
+test('adat nélküli múltbeli nap őszintén üres', () => {
+  hoisted.emptyDates = [D3]
+  const { container } = renderView(`/fuel?d=${D3}`)
+  expect(screen.getByText(/Erre a napra nincs adat/i)).toBeInTheDocument()
+  expect(container.querySelector('.fmx-hero')).toBeNull()
+  // Szégyenmentes: az üresség nem hiba.
+  expect(container.textContent).not.toMatch(/kihagytad|bukt|hiba/i)
+})
+
+// A lapozás az URL-ben él (ez teszi a későbbi, domének közti közös dátum-tengelyt olcsóvá).
+test('a lapozás a ?d=-t írja, a mai nap pedig paraméter nélkül marad', async () => {
+  renderView('/fuel')
+  await userEvent.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel?d=${addDays(TODAY, -1)}`)
+  await userEvent.click(screen.getByRole('button', { name: 'Következő nap' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel')
 })
 
 // ── the 6-tile mosaic ────────────────────────────────────────────────────────

@@ -12024,8 +12024,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Hatókör-szintű (`.titan-dark …`) felülírás ebbe a blokkba NEM jön; az a titan-dark
    blokkban lakik.
 
-   A blokk az S1b részletező/értékelő oldalaival és az S1c kamera-első logolójával bővült
-   (ugyanaz a `fmx-` prefix, EGY blokk — második `fuel-mai titanium` blokk nem nyílik). */
+   A blokk az S1b részletező/értékelő oldalaival, az S1c kamera-első logolójával és az S1d
+   nap-lapozójával/víz-moduljával/csendes sarkával bővült (ugyanaz a `fmx-` prefix, EGY blokk
+   — második `fuel-mai titanium` blokk nem nyílik). */
+
+/* S1d (A13): a nap-lapozó keretezése. A nyilakat és a naptár-pilulát a megosztott
+   `DayNavigator` primitív hozza (saját inline stílusaival), itt csak a lap ritmusába
+   illesztjük — saját vizuális nyelvet NEM tanítunk neki. */
+.fmx-daynav { padding: 2px 2px 0; }
+
+/* Őszinte üresség: egy lezárt nap adat nélkül ezt mondja a keret-műszer HELYETT. Semleges
+   hang, nem hibaállapot — a pótlás útja (a blokkok) alatta nyitva marad. */
+.fmx-nodata { margin: 2px 0 0; padding: 18px 16px; border-radius: 18px;
+  background: var(--surface-recess); color: var(--sub);
+  font-size: 12.5px; line-height: 1.6; text-align: center; }
 
 /* Hero: koppintható, egyetlen tiszta üzenet — a matek az üvegdobozban lakik.
    (prototípus: fuel-pages.css `Hero: tappable…` + fuel-compact.css `.fuel-focus`/`.fuel-visual`) */

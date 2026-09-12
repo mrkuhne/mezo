@@ -22,6 +22,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelDay, useFuelTimeline } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { backfillOffset } from '@/features/fuel/logic/backfillWindow'
 import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
@@ -30,11 +31,6 @@ import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { MealComposer } from '@/features/fuel/components/MealComposer'
 import { FuelLogModes, type LogMode } from '@/features/fuel/components/FuelLogModes'
 
-// A /fuel/log stepperével azonos korlát (mezo-1j3z): egy hét pótlás, nem nyílt főkönyv.
-// A ?d= deep link ugyanide clampel — ami kívül esik (vagy nem parse-olható), az MA lesz,
-// sosem csúszik el csendben egy rossz napra.
-const MAX_BACK = 7
-
 export function FuelLogNewPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -42,12 +38,10 @@ export function FuelLogNewPage() {
   // elmozdítaná a `date`-et — és vele a nyitott composer logDate-jét — szerkesztés közben.
   const [today] = useState(() => localDateString())
 
-  const offset = (() => {
-    const d = searchParams.get('d')
-    if (!d) return 0
-    const diff = Math.round((+new Date(today) - +new Date(d)) / 86_400_000)
-    return Number.isFinite(diff) && diff >= 1 && diff <= MAX_BACK ? diff : 0
-  })()
+  // A pótlási ablak EGY szabály (S1d, mezo-33k6): ugyanaz a helper clampeli a /fuel/log
+  // stepperjét és a Mai lapozóját is, hogy a lapozó ne érhessen el olyan napot, amit ez a
+  // lap visszautasít. Ami kívül esik (vagy nem parse-olható), az MA lesz.
+  const offset = backfillOffset(searchParams.get('d'), today)
   const date = addDays(today, -offset)
   const past = offset > 0
   const ai = searchParams.get('ai') === '1'
