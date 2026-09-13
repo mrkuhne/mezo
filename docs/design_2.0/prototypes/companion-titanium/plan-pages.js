@@ -129,30 +129,75 @@ function planDay(token) {
 
 /* ── the week's muscle review ────────────────────────────────────────────────────────── */
 
+/** A muscle's own six-week ramp, small enough to sit inside its row. */
+function muscleSpark(muscle, meso = MESO) {
+  const values = Array.from({ length: meso.weeks }, (_, i) => setsAt(muscle, i + 1));
+  const high = Math.max(...values) || 1;
+  return `<span class="pl-spark" aria-hidden="true">${values.map((value, i) => {
+    const week = i + 1;
+    const state = isDeloadWeek(meso, week) ? 'is-deload' : week === meso.currentWeek ? 'is-now' : week < meso.currentWeek ? 'is-past' : '';
+    return `<i class="${state}" style="--h:${Math.round(18 + value / high * 82)}%"></i>`;
+  }).join('')}</span>`;
+}
+
 function planWeek() {
-  const meso = MESO, total = weekTotal(meso), last = weekTotal(meso, meso.currentWeek - 1);
+  const meso = MESO, phase = phaseOf(meso);
+  const total = weekTotal(meso), last = weekTotal(meso, meso.currentWeek - 1), delta = total - last;
   const soon = nextRollover(meso);
+  const climbing = soon.rows.filter(r => r.move === 'up').length;
+  const holding = soon.rows.length - climbing;
+  const atCeiling = meso.muscles.filter(m => bandPosition(m).atCeiling).length;
   const notes = adjacencyNotes(meso);
+
+  const hero = `<section class="pl-whero">
+   <span class="pl-whero-glow" aria-hidden="true"></span>
+   <span class="pl-whero-top"><span class="overline">${meso.currentWeek}. HÉT / ${meso.weeks}</span><span class="pl-phase is-${phase.key}">${phase.label}</span></span>
+   <div class="pl-whero-number"><strong data-fuel-count="${total}">0</strong><small>munkasorozat ezen a héten</small></div>
+   <p class="pl-whero-delta ${delta >= 0 ? 'is-up' : 'is-down'}">${icon(delta >= 0 ? 'up' : 'down')}${delta >= 0 ? `+${delta}` : delta} szett a múlt héthez képest</p>
+   ${weekArc(meso)}
+  </section>`;
+
+  const tiles = `<div class="pl-wtiles">
+   <span><strong data-fuel-count="${climbing}">0</strong><small>izom rámpázik</small></span>
+   <span><strong data-fuel-count="${holding}">0</strong><small>izom tart</small></span>
+   <span><strong data-fuel-count="${atCeiling}">0</strong><small>a plafonján</small></span>
+   <span><strong>${peakWeek(meso)}.</strong><small>a csúcshét</small></span>
+  </div>`;
+
+  const rollover = `<div class="pl-wroll">${icon('chat')}<p>${soon.deload
+    ? 'Hétfőtől deload: minden izomból visszaveszünk, hogy a következő blokk friss izmokat kapjon.'
+    : `Hétfőn ${climbing} izom lép feljebb két szettel, ${holding} tart. A görgetés hajnalban fut magától.`}</p></div>`;
+
+  const legend = `<div class="pl-legend"><span><i class="k-zone"></i>optimális sáv</span><span><i class="k-fill"></i>most</span><span><i class="k-ceil"></i>a te plafonod</span></div>`;
+
+  const muscles = `<div class="pl-muscles">${meso.muscles.map((muscle, i) => {
+    const p = bandPosition(muscle), row = soon.rows.find(r => r.key === muscle.key);
+    const status = p.atCeiling
+      ? (muscle.tier === 'maintain' ? 'Tartáson — ez a szintje, nem hiányzik semmi.' : 'A plafonodon vagy — innen a következő blokk visz tovább.')
+      : `Még ${p.ceiling - p.now} szett fér bele a blokkban.`;
+    const move = row?.move === 'up' ? `<span class="pl-move is-up">${icon('up')}hétfőn +${row.delta}</span>`
+      : row?.move === 'deload' ? `<span class="pl-move is-deload">${icon('down')}deload: ${row.next}</span>`
+        : '<span class="pl-move is-hold">tart</span>';
+    return `<button class="pl-muscle" style="--mus-color:${muscleColor(muscle.key)};--i:${i}" ${route('muscle', muscle.key)}>
+     <span class="pl-muscle-art">${muscleIcon(muscle.key)}</span>
+     <span class="pl-muscle-title"><strong>${muscle.name}</strong>${tierChip(muscle)}</span>
+     <span class="pl-muscle-count"><b>${p.now}</b><i>/ ${p.ceiling}</i></span>
+     ${band(muscle)}
+     <span class="pl-muscle-scale"><i>${muscle.mev}</i><i>${muscle.mav}</i><i>${muscle.mrv}</i></span>
+     <span class="pl-muscle-meta">${muscleSpark(muscle)}<span class="pl-muscle-freq">${muscle.freq}× / hét</span>${move}</span>
+     <span class="pl-muscle-foot">${status}</span>
+    </button>`;
+  }).join('')}</div>`;
+
+  const coach = `<div class="pl-lint">${icon('chat')}<p>${notes.length
+    ? `${notes.map(note => `${muscleLabel(note.key)}: ${note.from} és ${note.to} egymás után.`).join(' ')} Nem hiba — csak érdemes tudni.`
+    : 'Nincs két egymást követő nap ugyanarra az izomra. A pihenőnapok jó helyen vannak.'}</p></div>`;
+
   return `<div class="pl-sub">
    <button class="pl-back" ${route()}>‹ A blokk</button>
-   <header class="pl-sub-head"><span class="overline">${meso.currentWeek}. HÉT · ${phaseOf(meso).label.toLocaleUpperCase('hu-HU')}</span><h2>Heti vizsgálat</h2>
-    <p>${total} szett ezen a héten · ${total - last >= 0 ? `+${total - last}` : total - last} a múlt héthez képest</p></header>
-
-   <div class="pl-legend"><span><i class="k-zone"></i>optimális sáv</span><span><i class="k-fill"></i>most</span><span><i class="k-ceil"></i>a te plafonod</span></div>
-
-   <div class="pl-muscles">${meso.muscles.map((muscle, i) => {
-    const p = bandPosition(muscle), row = soon.rows.find(r => r.key === muscle.key);
-    return `<button class="pl-muscle" style="--mus-color:${muscleColor(muscle.key)};--i:${i}" ${route('muscle', muscle.key)}>
-     <span class="pl-muscle-head">${muscleIcon(muscle.key)}<strong>${muscle.name}</strong>${tierChip(muscle)}<span class="pl-muscle-freq">${muscle.freq}× / hét</span></span>
-     <span class="pl-muscle-count"><b>${p.now}</b><i>/ ${p.ceiling} szett</i></span>
-     ${band(muscle)}
-     <span class="pl-muscle-foot">${p.atCeiling ? 'A plafonodon vagy — innen tartás.' : `Még ${p.ceiling - p.now} szett fér bele.`}${row && row.move === 'up' ? ` Hétfőn +${row.delta}.` : ''}</span>
-    </button>`;
-  }).join('')}</div>
-
-   <div class="pl-lint">${icon('chat')}<p>${notes.length
-    ? `${notes.map(note => `${muscleLabel(note.key)}: ${note.from} és ${note.to} egymás után.`).join(' ')} Nem hiba — csak érdemes tudni.`
-    : 'Nincs két egymást követő nap ugyanarra az izomra. A pihenőnapok jó helyen vannak.'}</p></div>
+   <header class="pl-sub-head"><span class="overline">HETI VIZSGÁLAT</span><h2>Hol tart minden izmod</h2>
+    <p>Ez a szám vezérli a jövő hetedet is — ezért érdemes ránézni, mielőtt a hétfő magától lép.</p></header>
+   ${hero}${tiles}${rollover}${legend}${muscles}${coach}
   </div>`;
 }
 

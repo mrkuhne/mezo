@@ -126,10 +126,10 @@
 .pl-sub-head p b { font-weight: 600; color: var(--mus-color, var(--domain-color)); }
 .pl-sub-head small { display: block; margin-top: 7px; font-size: 10.5px; color: #ffffff52; }
 .pl-muscle-head-page { display: grid; grid-template-columns: 54px 1fr; gap: 13px; align-items: center; }
-.pl-muscle-art { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 17px;
+.pl-muscle-head-page .pl-muscle-art { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 17px;
   border: 1px solid color-mix(in srgb, var(--mus-color) 26%, #ffffff14);
   background: color-mix(in srgb, var(--mus-color) 12%, #ffffff05); }
-.pl-muscle-art .icon { width: 46px; height: 46px; }
+.pl-muscle-head-page .pl-muscle-art .icon { width: 46px; height: 46px; }
 .pl-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: #ffffff5e; }
 .pl-empty { padding: 30px 20px; text-align: center; }
 .pl-empty .icon { width: 54px; height: 54px; margin-bottom: 12px; }
@@ -154,23 +154,71 @@
 .pl-legend .k-fill { background: var(--domain-color); }
 .pl-legend .k-ceil { width: 2px; height: 12px; border-radius: 1px; background: #fff; }
 
-/* — the muscle list — */
-.pl-muscles { display: grid; gap: 9px; }
-.pl-muscle {
-  display: grid; gap: 6px; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid #ffffff10; border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color) 9%, #ffffff06), #ffffff03);
+/* — the week review — */
+.pl-whero {
+  position: relative; overflow: hidden; margin-bottom: 12px; padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--domain-color) 24%, transparent); border-radius: 24px;
+  background:
+    radial-gradient(130% 90% at 80% 0%, color-mix(in srgb, var(--domain-color) 18%, transparent), transparent 62%),
+    linear-gradient(155deg, #191e28, #11151c);
 }
-.pl-muscle-head { display: flex; align-items: center; gap: 8px; }
-.pl-muscle-head .icon { width: 28px; height: 28px; }
-.pl-muscle-head strong { font-size: 15px; font-weight: 500; }
-.pl-muscle-freq { margin-left: auto; font-size: 9.5px; color: #ffffff52; }
-.pl-tier { font-size: 8.5px; letter-spacing: .1em; padding: 3px 8px; border-radius: 999px; border: 1px solid #ffffff1c; color: #ffffff8c; }
-.pl-tier.is-emphasize { color: #0f1409; border-color: transparent; background: color-mix(in srgb, var(--mus-color) 80%, #fff); }
-.pl-tier.is-maintain { opacity: .7; }
-.pl-muscle-count b { font-size: 22px; font-weight: 400; color: var(--mus-color); }
-.pl-muscle-count i { font-style: normal; font-size: 11px; color: #ffffff6b; margin-left: 4px; }
-.pl-muscle-foot { font-size: 10.5px; color: #ffffff66; }
+.pl-whero-glow {
+  position: absolute; right: -40px; top: -60px; width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--domain-color) 20%, transparent), transparent 68%);
+  pointer-events: none;
+}
+.pl-whero-top { position: relative; display: flex; align-items: center; gap: 10px; }
+.pl-whero-top .overline { color: #ffffff86; letter-spacing: .16em; }
+.pl-whero-number { position: relative; margin: 12px 0 4px; }
+.pl-whero-number strong { font-size: 62px; font-weight: 200; letter-spacing: -.05em; line-height: 1; color: #eef3e4; }
+.pl-whero-number small { display: block; font-size: 11px; color: #ffffff6b; margin-top: 7px; }
+.pl-whero-delta { position: relative; display: flex; align-items: center; gap: 6px; margin: 0 0 16px; font-size: 12px; color: #ffffff8c; }
+.pl-whero-delta .icon { width: 20px; height: 20px; }
+
+.pl-wtiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+.pl-wtiles span { padding: 11px 3px; text-align: center; border: 1px solid #ffffff0f; border-radius: 15px; background: #ffffff05; }
+.pl-wtiles strong { display: block; font-size: 22px; font-weight: 300; letter-spacing: -.03em; color: #e6eeda; }
+.pl-wtiles small { display: block; font-size: 8.5px; letter-spacing: .06em; color: #ffffff5e; margin-top: 4px; line-height: 1.3; }
+
+.pl-wroll {
+  display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; margin-bottom: 14px;
+  padding: 13px 14px; border: 1px solid #bca6f125; border-radius: 18px;
+  background: linear-gradient(115deg, #bca6f110, #bca6f103);
+}
+.pl-wroll .icon { width: 22px; height: 22px; }
+.pl-wroll p { margin: 0; font-size: 12px; line-height: 1.65; color: #bbb1c9; }
+
+/* — one muscle, one card — */
+.pl-muscles { display: grid; gap: 10px; }
+.pl-muscle {
+  display: grid; grid-template-columns: 38px 1fr auto; align-items: center; column-gap: 11px; row-gap: 7px;
+  padding: 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid color-mix(in srgb, var(--mus-color) 18%, #ffffff0d); border-radius: 20px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color) 10%, #ffffff06), #ffffff03);
+}
+.pl-muscle-art .icon { width: 38px; height: 38px; }
+.pl-muscle-title { display: flex; align-items: center; gap: 8px; }
+.pl-muscle-title strong { font-size: 16px; font-weight: 500; }
+.pl-muscle-count { text-align: right; white-space: nowrap; }
+.pl-muscle-count b { font-size: 24px; font-weight: 400; color: var(--mus-color); }
+.pl-muscle-count i { font-style: normal; font-size: 12px; color: #ffffff6b; margin-left: 3px; }
+.pl-muscle .pl-band { grid-column: 1 / -1; height: 11px; margin: 2px 0 0; }
+.pl-muscle-scale { grid-column: 1 / -1; display: flex; justify-content: space-between; margin-top: -3px; }
+.pl-muscle-scale i { font-style: normal; font-size: 9px; color: #ffffff42; }
+.pl-muscle-meta { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
+.pl-muscle-freq { font-size: 9.5px; color: #ffffff52; }
+.pl-muscle-foot { grid-column: 1 / -1; font-size: 10.5px; color: #ffffff6b; }
+
+.pl-spark { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
+.pl-spark i { width: 6px; height: max(14%, var(--h)); border-radius: 2px; background: #ffffff1a; }
+.pl-spark i.is-past { background: color-mix(in srgb, var(--mus-color) 40%, transparent); }
+.pl-spark i.is-now { background: var(--mus-color); box-shadow: 0 0 8px color-mix(in srgb, var(--mus-color) 50%, transparent); }
+.pl-spark i.is-deload { background: repeating-linear-gradient(135deg, #ffffff26 0 3px, #ffffff0a 3px 6px); }
+
+.pl-move { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #ffffff7a; }
+.pl-move .icon { width: 16px; height: 16px; }
+.pl-move.is-up { color: color-mix(in srgb, var(--mus-color) 68%, #fff); }
+.pl-move.is-hold { color: #ffffff52; }
 
 .pl-lint {
   display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; margin-top: 14px;
@@ -239,5 +287,16 @@
 .pl-steps small { grid-column: 2; font-size: 10.5px; color: #ffffff5e; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .pl-arc i, .pl-band .fill, .pl-dayload-track i { transition: height .6s cubic-bezier(.2, .8, .2, 1), width .6s cubic-bezier(.2, .8, .2, 1); }
+  .pl-arc i, .pl-dayload-track i { transition: height .6s cubic-bezier(.2, .8, .2, 1), width .6s cubic-bezier(.2, .8, .2, 1); }
+  /* One-shot entrance: each row's band runs out, then the next. */
+  .pl-band .fill { animation: pl-fill .85s cubic-bezier(.22, .9, .25, 1) backwards; animation-delay: calc(.1s + var(--i, 0) * .09s); }
+  .pl-spark i { animation: pl-rise .7s cubic-bezier(.22, .9, .25, 1) backwards; animation-delay: calc(.2s + var(--i, 0) * .09s); }
+  .pl-arc i { animation: pl-rise .8s cubic-bezier(.22, .9, .25, 1) backwards; }
+  .pl-arc i:nth-child(2) { animation-delay: .06s; }
+  .pl-arc i:nth-child(3) { animation-delay: .12s; }
+  .pl-arc i:nth-child(4) { animation-delay: .18s; }
+  .pl-arc i:nth-child(5) { animation-delay: .24s; }
+  .pl-arc i:nth-child(6) { animation-delay: .3s; }
 }
+@keyframes pl-fill { from { width: 0; } }
+@keyframes pl-rise { from { height: 0; opacity: 0; } }
