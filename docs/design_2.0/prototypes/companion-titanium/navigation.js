@@ -5,6 +5,7 @@ import { animateFuelDashboard, fuelDashboardContent } from './fuel-dashboard.js'
 import { fuelPagesContent, initFuelPages } from './fuel-pages.js';
 import { workoutContent, initWorkout } from './workout.js';
 import { openSession, initSession } from './session.js';
+import { openSport, initSport } from './sport.js';
 import { trainPagesContent } from './train-pages.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
@@ -80,7 +81,7 @@ document.addEventListener('click',e=>{
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
  if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openSession();
- if(el.hasAttribute('data-sport'))dialog('SPORT NAPLÓZÁSA · DEMÓ',`<h2 class="sheet-title">Ami ma mozgás volt.</h2><form id="sport-form"><label class="form-field">Mi volt?<select name="kind"><option>Röplabda</option><option>Futás</option><option>Kerékpár</option><option>Úszás</option><option>Foci</option><option>Túra</option><option>Egyéb</option></select></label><label class="form-field">Időtartam (perc)<input type="number" name="minutes" min="1" value="90" required></label><label class="form-field">Terhelés (1–10)<input type="number" name="rpe" min="1" max="10" value="7" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
+ if(el.hasAttribute('data-sport'))openSport();
  if(el.hasAttribute('data-custom'))dialog('EGYEDI EDZÉS · DEMÓ',`<h2 class="sheet-title">Terv nélkül, most.</h2><p class="sheet-sub">Egy saját edzés, ami nem a futó blokkod része. Elmentve később bármikor újraindítható.</p><form id="custom-form"><label class="form-field">Az edzés neve<input name="name" value="Szabad edzés" maxlength="40" required></label><button class="sheet-action">Indítom ▸</button></form>`);
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
  if(el.dataset.detail)dialog('MEZO · RÉSZLET DEMÓ',`${icon(el.dataset.art||'gem')}<h2 class="sheet-title">${safe(el.dataset.detail)}</h2><p class="sheet-sub">${safe(el.dataset.copy)}</p>`);
@@ -108,6 +109,7 @@ document.addEventListener('submit',e=>{
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initSession({refresh:draw,go,dialog,closeSheet});
+initSport({refresh:draw,go,dialog,closeSheet});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFuelPages({refresh:draw,go,dialog,closeSheet});
 initMezo({refresh:draw});
