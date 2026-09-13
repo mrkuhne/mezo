@@ -135,3 +135,26 @@ test('the floating FAB navigates to the full-page picker from /nap exactly', asy
   expect(screen.queryByText('Gyors logolás', { selector: 'h2' })).not.toBeInTheDocument()
   expect(screen.getByTestId('loc')).toHaveTextContent('/nap/gyors')
 })
+
+// mezo-jb84: a Fuel mély oldalai nem a fülük útvonala alatt élnek (`/fuel/recipes`,
+// `/fuel/kamra`, `/fuel/etkezes/…`), ezért prefix-hosszra a `/fuel` — a Mai — nyert, és a
+// felhasználó a Konyhában állva a Mai fület látta kigyulladva. Élesben ez jött vissza.
+test.each([
+  ['/fuel/recipes', 'Konyha'],
+  ['/fuel/recipes/r1', 'Konyha'],
+  ['/fuel/recipes/muhely', 'Konyha'],
+  ['/fuel/kamra', 'Konyha'],
+  ['/fuel/kamra/p1', 'Konyha'],
+  ['/fuel/etkezes/m1', 'Mai'],
+  ['/fuel/log/uj', 'Mai'],
+  ['/fuel/settings', 'Mai'],
+  ['/fuel/gyogyszer', 'Kiegészítők'],
+  ['/fuel/stack/protocol', 'Kiegészítők'],
+  ['/fuel/trendek', 'Trendek'],
+  ['/fuel', 'Mai'],
+])('%s a(z) %s fület gyújtja ki', (path, tab) => {
+  renderAt(path, <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
+  expect(within(bar).getByRole('link', { name: new RegExp(tab) }))
+    .toHaveAttribute('aria-current', 'page')
+})

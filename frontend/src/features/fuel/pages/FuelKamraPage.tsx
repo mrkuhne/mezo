@@ -4,7 +4,7 @@
 //
 // Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
 // `kamraPage` (:83) + `pantryTile` (:78), a fuel-pages.css „Konyha v2" (:497) blokkjával.
-// Anatómia: al-fejléc (‹ Konyha + KONYHA/Kamra, a három felvevő-ajtóval) → kereső → típus-
+// Anatómia: al-fejléc (‹ vissza + KONYHA/Kamra, a három felvevő-ajtóval) → kereső → típus-
 // szűrők a saját darabszámukkal → két-hasábos csempe-rács → „Okosabb csere" (B13).
 //
 // B14 owner-DROP: a „Legutóbbi importok" feed LEVÁLT erről a lapról. Az import-rekord
@@ -126,7 +126,7 @@ export function FuelKamraPage() {
     <div className="fmx-page fkx-library">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza">‹ Konyha</button>
+          <button type="button" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
           <span>
             <small>KONYHA</small>
             <strong>Kamra</strong>

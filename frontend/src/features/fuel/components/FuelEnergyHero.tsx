@@ -14,7 +14,7 @@
 // A15 — one provenance surface, not two: with `onOpenEnergy` the chip hands the tap to the
 // parent (FuelMaiPage opens the shared EnergyBreakdownSheet, the same surface the Én hub
 // uses). Standalone (no prop) the hero opens its own glass box, which renders
-// `heroEquationLines(vm)` as the prototype's equation flow. The box is a native <dialog>:
+// `heroEquationLines(vm)` as the prototype's equation flow. The box is a native <GlassBox onClose={onClose}>:
 // Escape and the backdrop are the platform's job, not ours. jsdom ships no HTMLDialogElement,
 // so `showModal`/`close` are feature-detected and fall back to the `open` attribute.
 //
@@ -22,12 +22,13 @@
 // and the label reads „A keret felett" — never a word that grades the user. Honest-null: a
 // missing equation component renders „—", never a fabricated 0.
 // ============================================================
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt } from '@/shared/lib/huNum'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings, useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
+import { GlassBox } from '@/features/fuel/components/GlassBox'
 
 // One hue + one clay symbol per equation row — the prototype's `glass-node` palette, expressed
 // in house tokens so the box reads in both themes.
@@ -49,26 +50,15 @@ function nodeValue(line: EquationLine): string {
 }
 
 function EquationBox({ vm, past, onClose }: { vm: KeretHeroVM; past: boolean; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const lines = heroEquationLines(vm)
   const over = vm.remainingKcal < 0
 
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    // Feature-detected: jsdom has no dialog implementation, so the attribute is the fallback.
-    if (typeof el.showModal === 'function') el.showModal()
-    else el.setAttribute('open', '')
-  }, [])
 
   return (
-    <dialog
-      ref={ref}
-      className="fmx-glass glass"
-      aria-labelledby={titleId}
-      onCancel={(e) => { e.preventDefault(); onClose() }}
-      onClose={onClose}
+    <GlassBox onClose={onClose}
+      
+      labelledBy={titleId}
     >
       <div className="fmx-glass-hero">
         <ClayIcon name="i-fuel" size={56} />
@@ -101,7 +91,7 @@ function EquationBox({ vm, past, onClose }: { vm: KeretHeroVM; past: boolean; on
         újraszületik.
       </p>
       <button type="button" className="fmx-glass-close" onClick={onClose}>Bezárom</button>
-    </dialog>
+    </GlassBox>
   )
 }
 

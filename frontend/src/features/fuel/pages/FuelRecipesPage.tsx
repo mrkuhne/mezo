@@ -4,7 +4,7 @@
 //
 // Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
 // `receptekPage` (:43) + `recipeTile` (:39), a fuel-pages.css „Konyha v2" (:497) blokkjával.
-// Anatómia: al-fejléc (‹ Konyha + KONYHA/Receptek) → blokk-szűrők a saját darabszámukkal →
+// Anatómia: al-fejléc (‹ vissza + KONYHA/Receptek) → blokk-szűrők a saját darabszámukkal →
 // két-hasábos csempe-rács (blokk-hue, tál-ikon, AI-pontszám chip, kcal/adag, makró-sáv) →
 // őszinte üres állapot, ami cselekvésre hív.
 //
@@ -89,7 +89,7 @@ export function FuelRecipesPage() {
     <div className="fmx-page fkx-library">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza">‹ Konyha</button>
+          <button type="button" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
           <span>
             <small>KONYHA</small>
             <strong>Receptek</strong>
