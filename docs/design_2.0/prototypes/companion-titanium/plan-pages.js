@@ -33,7 +33,7 @@ function band(muscle) {
   return `<span class="pl-band" style="--mus-color:${muscleColor(muscle.key)}">
    <i class="zone" style="--a:${p.mev * 100}%;--b:${p.mav * 100}%"></i>
    <i class="fill" style="--w:${p.share * 100}%"></i>
-   <u class="ceil" style="--at:${p.ceiling / muscle.mrv * 100}%"></u>
+   <u class="ceil" style="--at:${Math.min(99, p.ceiling / muscle.mrv * 100)}%"></u>
   </span>`;
 }
 
@@ -206,38 +206,73 @@ function planWeek() {
 function planMuscle(key) {
   const muscle = MESO.muscles.find(m => m.key === key);
   if (!muscle) return `<div class="pl-empty">${icon('chat')}<h2>Ez az izom nincs a heti vizsgálatban.</h2><p>Csak azok szerepelnek, amikhez a blokkod tartozik terhelést rendel.</p><button class="pl-back" ${route('week')}>Vissza a heti vizsgálathoz</button></div>`;
-  const p = bandPosition(muscle), rows = whereItWorks(key), soon = nextRollover(MESO).rows.find(r => r.key === key);
-  return `<div class="pl-sub" style="--mus-color:${muscleColor(key)}">
-   <button class="pl-back" ${route('week')}>‹ Heti vizsgálat</button>
-   <header class="pl-sub-head pl-muscle-head-page">
-    <span class="pl-muscle-art">${muscleIcon(key)}</span>
-    <span><span class="overline">${TIERS[muscle.tier].label.toLocaleUpperCase('hu-HU')} · ${muscle.freq}× / HÉT</span><h2>${muscle.name}</h2>
-    <p><b>${p.now}</b> szett most · a plafonod ${p.ceiling}</p></span></header>
 
-   <div class="wo-sum-section"><strong>Hol tartasz a sávban</strong></div>
+  const p = bandPosition(muscle), rows = whereItWorks(key);
+  const soon = nextRollover(MESO).rows.find(r => r.key === key);
+  const start = setsAt(muscle, 1), top = setsAt(muscle, peakWeek(MESO));
+  const previous = muscle.previous;
+
+  const hero = `<section class="pl-mhero">
+   <span class="pl-mhero-glow" aria-hidden="true"></span>
+   <span class="pl-muscle-art">${muscleIcon(key)}</span>
+   <span class="pl-mhero-copy">
+    <span class="pl-mhero-top"><span class="overline">${MESO.currentWeek}. HÉT</span>${tierChip(muscle)}</span>
+    <h2>${muscle.name}</h2>
+    <span class="pl-mhero-count"><strong data-fuel-count="${p.now}">0</strong><small>szett most · a plafonod ${p.ceiling}</small></span>
+   </span>
+  </section>`;
+
+  const tiles = `<div class="pl-wtiles">
+   <span><strong>${muscle.freq}×</strong><small>hetente</small></span>
+   <span><strong>${start}</strong><small>az 1. héten</small></span>
+   <span><strong>${top}</strong><small>a csúcshéten</small></span>
+   <span><strong>${soon?.move === 'up' ? `+${soon.delta}` : soon?.move === 'deload' ? soon.next : '—'}</strong><small>${soon?.move === 'up' ? 'hétfőn jön' : soon?.move === 'deload' ? 'deloadban' : 'hétfőn tart'}</small></span>
+  </div>`;
+
+  const coach = muscle.tier === 'maintain'
+    ? 'Tartáson van: ezt az izmot nem rámpázzuk. Épp annyi munkát kap, amennyi megtartja, amíg máshol építesz — nem hiányzik belőle semmi.'
+    : p.atCeiling
+      ? 'A plafonodon állsz. Innen a több szett már nem hoz többet — a következő blokk visz tovább, magasabb kiindulásról.'
+      : soon?.move === 'up'
+        ? `Hétfőn +${soon.delta} szett jön, ha a hét célja megvan és nem volt darálós. Darálásnak azt hívjuk, ha a szettjeid rendre a célod alatt zárulnak.`
+        : 'Ezen a héten tart a szint — a következő görgetés dönt a folytatásról.';
+
+  const band3 = `<div class="wo-sum-section"><strong>Hol tartasz a sávban</strong></div>
    ${band(muscle)}
    <div class="pl-scale"><span>alsó határ ${muscle.mev}</span><span>optimum ${muscle.mav}</span><span>felső határ ${muscle.mrv}</span></div>
+   <p class="pl-note">Az alsó határ alatt nincs elég inger a fejlődéshez, a felső fölött pedig már nem térül meg. A fehér vonal a te plafonod — a fókuszod szabja meg.</p>`;
 
-   <div class="wo-sum-section"><strong>A blokk íve</strong></div>
+  const arc = `<div class="wo-sum-section"><strong>A blokk íve</strong></div>
    ${weekArc(MESO, muscle)}
-   <p class="pl-note">${muscle.tier === 'maintain'
-    ? 'Tartáson van: ezt az izmot nem rámpázzuk, csak megtartjuk, amíg máshol építesz.'
-    : soon?.move === 'up' ? `Hétfőn +${soon.delta} szett jön, ha a hét célja megvan és nem volt darálós.`
-      : 'A plafonodon áll — innen a következő blokk visz tovább.'}</p>
+   <div class="pl-arclbl"><span>1. hét · ${start}</span><span>csúcs · ${top}</span><span>deload · ${setsAt(muscle, MESO.weeks)}</span></div>
+   <div class="pl-coach">${icon('chat')}<p>${coach}</p></div>`;
 
-   <div class="wo-sum-section"><strong>Hol dolgozik ezen a héten</strong></div>
+  const where = `<div class="wo-sum-section"><strong>Hol dolgozik ezen a héten</strong></div>
    <div class="pl-where">${rows.map(row => `<button class="pl-where-row" ${route('day', row.day)}>
      <span class="pl-where-day">${row.day}</span>
-     <span><strong>${row.type}</strong><small>${row.exercises.map(e => e.name).join(' · ')}</small></span>
-     <b>${row.sets} szett</b></button>`).join('')}</div>
+     <span><strong>${row.type}</strong><small>${row.exercises.map(e => `${e.name} · ${e.sets}×`).join(' · ')}</small></span>
+     <b>${row.sets} szett</b></button>`).join('')}</div>`;
 
-   <div class="wo-sum-section"><strong>Honnan jön ez a szám</strong></div>
+  const derivation = `<div class="wo-sum-section"><strong>Honnan jön ez a szám</strong></div>
    <ol class="pl-steps">
     <li><span>Alapérték</span><b>${muscle.mev} szett</b><small>ennyitől kezd el fejlődni</small></li>
     <li><span>A fókuszod</span><b>${TIERS[muscle.tier].label}</b><small>ezért ${p.ceiling} a plafonod</small></li>
-    <li><span>Heti rámpa</span><b>+2 / hét</b><small>amíg a cél megvan és nincs darálás</small></li>
-    <li><span>Most</span><b>${p.now} szett</b><small>${MESO.currentWeek}. hét</small></li>
-   </ol>
+    <li><span>Heti rámpa</span><b>${muscle.tier === 'maintain' ? 'nincs' : '+2 / hét'}</b><small>${muscle.tier === 'maintain' ? 'tartáson nem emelünk' : 'amíg a cél megvan és nincs darálás'}</small></li>
+    <li class="is-now"><span>Most</span><b>${p.now} szett</b><small>${MESO.currentWeek}. hét</small></li>
+   </ol>`;
+
+  const history = `<div class="wo-sum-section"><strong>Előző blokk</strong></div>
+   ${previous ? `<div class="pl-prev">
+    <div class="pl-prev-row"><span>Akkor</span><span class="pl-prev-track"><i style="--w:${previous.start / previous.ceiling * 100}%"></i><u style="--at:${previous.peak / previous.ceiling * 100}%"></u></span><b>${previous.start} → ${previous.peak}</b></div>
+    <div class="pl-prev-row is-now"><span>Most</span><span class="pl-prev-track"><i style="--w:${start / p.ceiling * 100}%"></i><u style="--at:${top / p.ceiling * 100}%"></u></span><b>${start} → ${top}</b></div>
+    <p class="pl-note">${top > previous.peak
+      ? `A mostani blokkod ${top - previous.peak} szettel magasabbra visz, mint az előző.`
+      : top === previous.peak ? 'Ugyanoda visz, mint az előző blokk — ez tartás, nem visszaesés.' : 'Az előző blokk magasabbra vitt — most más izom kapja a hangsúlyt.'}</p>
+   </div>` : '<p class="pl-note">Ehhez az izomhoz nincs előző blokkod — ez az első, amiben számon tartjuk.</p>'}`;
+
+  return `<div class="pl-sub" style="--mus-color:${muscleColor(key)}">
+   <button class="pl-back" ${route('week')}>‹ Heti vizsgálat</button>
+   ${hero}${tiles}${band3}${arc}${where}${derivation}${history}
   </div>`;
 }
 

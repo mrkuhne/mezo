@@ -300,3 +300,56 @@
 }
 @keyframes pl-fill { from { width: 0; } }
 @keyframes pl-rise { from { height: 0; opacity: 0; } }
+
+/* — one muscle, its whole story — */
+.pl-mhero {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 68px 1fr; gap: 14px;
+  align-items: center; margin-bottom: 12px; padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--mus-color) 26%, transparent); border-radius: 24px;
+  background:
+    radial-gradient(130% 90% at 82% 0%, color-mix(in srgb, var(--mus-color) 20%, transparent), transparent 62%),
+    linear-gradient(155deg, #191e28, #11151c);
+}
+.pl-mhero-glow {
+  position: absolute; right: -40px; top: -56px; width: 170px; height: 170px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--mus-color) 22%, transparent), transparent 68%);
+  pointer-events: none;
+}
+.pl-mhero .pl-muscle-art {
+  position: relative; width: 68px; height: 68px; display: grid; place-items: center; border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--mus-color) 30%, #ffffff14);
+  background: color-mix(in srgb, var(--mus-color) 14%, #ffffff05);
+}
+.pl-mhero .pl-muscle-art .icon { width: 56px; height: 56px; }
+.pl-mhero-copy { position: relative; }
+.pl-mhero-top { display: flex; align-items: center; gap: 8px; }
+.pl-mhero-top .overline { color: #ffffff7a; letter-spacing: .16em; }
+.pl-mhero h2 { font-size: 28px; font-weight: 300; letter-spacing: -.03em; margin: 5px 0 4px; }
+.pl-mhero-count { display: flex; align-items: baseline; gap: 6px; }
+.pl-mhero-count strong { font-size: 34px; font-weight: 300; letter-spacing: -.03em; color: var(--mus-color); }
+.pl-mhero-count small { font-size: 11px; color: #ffffff6b; }
+
+.pl-arclbl { display: flex; justify-content: space-between; margin: 2px 0 12px; }
+.pl-arclbl span { font-size: 9.5px; color: #ffffff52; }
+
+.pl-coach {
+  display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; margin-top: 12px;
+  padding: 13px 14px; border: 1px solid #bca6f125; border-radius: 18px;
+  background: linear-gradient(115deg, #bca6f110, #bca6f103);
+}
+.pl-coach .icon { width: 22px; height: 22px; }
+.pl-coach p { margin: 0; font-size: 12px; line-height: 1.65; color: #bbb1c9; }
+
+.pl-steps li.is-now { border-color: color-mix(in srgb, var(--mus-color) 40%, transparent); background: color-mix(in srgb, var(--mus-color) 9%, transparent); }
+.pl-steps li.is-now b { color: var(--mus-color); }
+
+.pl-prev { display: grid; gap: 9px; }
+.pl-prev-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 11px; }
+.pl-prev-row > span:first-child { font-size: 10px; letter-spacing: .1em; color: #ffffff52; }
+.pl-prev-track { position: relative; height: 9px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.pl-prev-track i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; background: #ffffff2e; }
+.pl-prev-track u { position: absolute; top: -2px; bottom: -2px; left: var(--at); width: 2px; background: #ffffff6b; }
+.pl-prev-row.is-now .pl-prev-track i { background: color-mix(in srgb, var(--mus-color) 55%, transparent); }
+.pl-prev-row.is-now .pl-prev-track u { background: var(--mus-color); }
+.pl-prev-row b { font-size: 12px; font-weight: 500; color: #ffffff9c; }
+.pl-prev-row.is-now b { color: var(--mus-color); }

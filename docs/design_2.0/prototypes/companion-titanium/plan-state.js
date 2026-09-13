@@ -41,13 +41,13 @@ export const MESO = {
     ] },
   ],
   muscles: [
-    { key: 'chest-mid', name: 'Mell', tier: 'grow', mev: 8, mav: 14, mrv: 18, series: [8, 10, 12, 14, 14, 7], freq: 2 },
-    { key: 'back-mid', name: 'Hát', tier: 'emphasize', mev: 10, mav: 16, mrv: 20, series: [12, 14, 16, 18, 20, 10], freq: 2 },
-    { key: 'shoulder-side', name: 'Váll', tier: 'grow', mev: 6, mav: 12, mrv: 16, series: [6, 8, 10, 12, 12, 6], freq: 2 },
-    { key: 'quad', name: 'Comb', tier: 'grow', mev: 8, mav: 14, mrv: 18, series: [8, 10, 12, 14, 14, 7], freq: 1 },
-    { key: 'ham', name: 'Lábhajlító', tier: 'maintain', mev: 6, mav: 12, mrv: 16, series: [6, 6, 6, 6, 6, 4], freq: 1 },
-    { key: 'biceps-short', name: 'Bicepsz', tier: 'grow', mev: 6, mav: 10, mrv: 14, series: [6, 8, 8, 10, 10, 5], freq: 1 },
-    { key: 'calf', name: 'Vádli', tier: 'maintain', mev: 6, mav: 10, mrv: 14, series: [6, 6, 6, 6, 6, 4], freq: 1 },
+    { previous: { start: 8, peak: 12, ceiling: 14 }, key: 'chest-mid', name: 'Mell', tier: 'grow', mev: 8, mav: 14, mrv: 18, series: [8, 10, 12, 14, 14, 7], freq: 2 },
+    { previous: { start: 10, peak: 16, ceiling: 18 }, key: 'back-mid', name: 'Hát', tier: 'emphasize', mev: 10, mav: 16, mrv: 20, series: [12, 14, 16, 18, 20, 10], freq: 2 },
+    { previous: { start: 6, peak: 10, ceiling: 12 }, key: 'shoulder-side', name: 'Váll', tier: 'grow', mev: 6, mav: 12, mrv: 16, series: [6, 8, 10, 12, 12, 6], freq: 2 },
+    { previous: { start: 8, peak: 12, ceiling: 14 }, key: 'quad', name: 'Comb', tier: 'grow', mev: 8, mav: 14, mrv: 18, series: [8, 10, 12, 14, 14, 7], freq: 1 },
+    { previous: { start: 6, peak: 6, ceiling: 6 }, key: 'ham', name: 'Lábhajlító', tier: 'maintain', mev: 6, mav: 12, mrv: 16, series: [6, 6, 6, 6, 6, 4], freq: 1 },
+    { previous: { start: 4, peak: 8, ceiling: 10 }, key: 'biceps-short', name: 'Bicepsz', tier: 'grow', mev: 6, mav: 10, mrv: 14, series: [6, 8, 8, 10, 10, 5], freq: 1 },
+    { previous: null, key: 'calf', name: 'Vádli', tier: 'maintain', mev: 6, mav: 10, mrv: 14, series: [6, 6, 6, 6, 6, 4], freq: 1 },
   ],
 };
 

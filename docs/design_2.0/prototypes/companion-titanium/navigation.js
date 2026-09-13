@@ -77,7 +77,7 @@ document.addEventListener('click',e=>{
  const el=e.target.closest('button');if(!el)return;
  if(el.dataset.dayShift){moveDay(Number(el.dataset.dayShift));return;}
  if(el.hasAttribute('data-day-today')){if(dayNav.today()){dayMotion='right';draw();}return;}
- if(el.hasAttribute('data-route')){closeSheet();const [d,p]=el.dataset.route.split('/');go(d,Number(p));}
+ if(el.hasAttribute('data-route')){closeSheet();const parts=el.dataset.route.split('/');if(parts.length>2){const h='#'+el.dataset.route;if(location.hash===h)draw();else location.hash=h;}else go(parts[0],Number(parts[1]));}
  if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${c.tabs.join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
