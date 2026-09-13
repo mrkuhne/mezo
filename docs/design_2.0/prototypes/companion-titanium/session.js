@@ -189,8 +189,11 @@ function historyGlass(id) {
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
 
-    <h3 class="wo-glass-title">A múltkori alkalom</h3>
-    <div class="wo-glass-sets">${e.last.map((set, i) => `<span><i>${i + 1}. szett</i><strong>${n(set.kg)} × ${set.reps}</strong><small>${set.rir} RIR</small></span>`).join('')}</div>
+    <h3 class="wo-glass-title">A múltkori alkalom<span>${dateLabel(h.lastDate)} · ${e.last.length} szett · ${n(e.last.reduce((total, set) => total + set.kg * set.reps, 0))} kg × rep</span></h3>
+    <div class="last">
+     <div class="last-head"><span></span><span>KG</span><span>REP</span><span>RIR</span></div>
+     ${e.last.map((set, i) => `<div class="last-row"><span>${i + 1}</span><strong>${n(set.kg)}</strong><strong>${set.reps}</strong><span>${set.rir}</span></div>`).join('')}
+    </div>
 
     <h3 class="wo-glass-title">Megdönthető rekordok</h3>
     ${bestToday ? '' : '<p class="rec-empty">Ma még nem logoltál ehhez szettet — a sávok üresen állnak.</p>'}

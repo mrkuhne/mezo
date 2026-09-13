@@ -630,6 +630,17 @@
 
 /* The beatable records: tight rows, and a bar that says how close today already is. */
 .wo-glass-title { font-size: 17px; font-weight: 500; letter-spacing: -.01em; margin: 20px 0 10px; }
+.wo-glass-title span { display: block; font-size: 10px; font-weight: 400; letter-spacing: .02em; color: #ffffff5e; margin-top: 3px; }
+
+/* The last session speaks the same table as the live rows — index, kg, rep, rir. */
+.last { border: 1px solid #ffffff10; border-radius: 16px; padding: 4px 12px 8px; background: #ffffff04; }
+.last-head, .last-row { display: grid; grid-template-columns: 22px 1fr 1fr 46px; gap: 7px; align-items: center; text-align: center; }
+.last-head { padding: 7px 0 5px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; }
+.last-head span:first-child { text-align: left; }
+.last-row { padding: 8px 0; border-top: 1px solid #ffffff0a; }
+.last-row > span:first-child { font-size: 11px; color: #8d9686; text-align: left; }
+.last-row strong { font-size: 15px; font-weight: 500; color: #dbe4cd; font-variant-numeric: tabular-nums; }
+.last-row > span:last-child { font-size: 12px; color: #ffffff70; }
 .wo-glass-head + .wo-glass-title { margin-top: 4px; }
 .rec-empty { margin: -4px 0 10px; font-size: 11.5px; color: #ffffff6b; }
 

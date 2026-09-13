@@ -9,7 +9,7 @@ export const EXERCISES = [
     video: 'Fekvenyomás · lapockazárás és rúdút',
     last: [{ kg: 57.5, reps: 10, rir: 2 }, { kg: 57.5, reps: 9, rir: 1 }, { kg: 55, reps: 9, rir: 1 }],
     history: {
-      sessions: 12, since: '2026-06-03',
+      sessions: 12, since: '2026-06-03', lastDate: '2026-09-02',
       e1rm: 76.5, e1rmPrev: 74, best: { kg: 62.5, reps: 8, date: '2026-08-26' },
       volume: 18240, lastVolume: 1667, maxVolume: { value: 1840, date: '2026-08-19' },
       nextRecord: { kg: 62.5, reps: 9, note: 'egy ismétléssel a legjobb szetted fölé' },
@@ -28,7 +28,7 @@ export const EXERCISES = [
     video: 'Evezés csigán · könyökvezetés',
     last: [{ kg: 45, reps: 11, rir: 2 }, { kg: 45, reps: 11, rir: 1 }, { kg: 42.5, reps: 12, rir: 1 }],
     history: {
-      sessions: 14, since: '2026-05-20',
+      sessions: 14, since: '2026-05-20', lastDate: '2026-09-02',
       e1rm: 58, e1rmPrev: 57, best: { kg: 47.5, reps: 11, date: '2026-08-12' },
       volume: 21160, lastVolume: 1502, maxVolume: { value: 1620, date: '2026-07-29' },
       nextRecord: { kg: 47.5, reps: 12, note: 'a legjobb szettednél egy ismétléssel több' },
@@ -46,7 +46,7 @@ export const EXERCISES = [
     video: 'Vállból nyomás · törzsstabilitás',
     last: [{ kg: 20, reps: 10, rir: 2 }, { kg: 20, reps: 9, rir: 1 }, { kg: 18, reps: 10, rir: 1 }],
     history: {
-      sessions: 9, since: '2026-06-24',
+      sessions: 9, since: '2026-06-24', lastDate: '2026-09-02',
       e1rm: 26.5, e1rmPrev: 26.5, best: { kg: 22, reps: 9, date: '2026-08-05' },
       volume: 7420, lastVolume: 758, maxVolume: { value: 812, date: '2026-08-05' },
       nextRecord: { kg: 22, reps: 10, note: 'ugyanaz a súly, egy ismétléssel több' },
