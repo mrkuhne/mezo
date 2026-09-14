@@ -116,14 +116,19 @@ function loadBars(day) {
 function exRows(day) {
   if (!day.exercises.length) return '<p class="pl-foot-say">Még nincs itt gyakorlat — kezdd a hozzáadással.</p>';
   return day.exercises.map((e, i) => `<div class="wz-ex" style="--mus-color:${muscleColor(e.muscle)}">
-   ${muscleIcon(e.muscle)}
-   <span class="wz-ex-name"><strong>${safe(e.name)}</strong><small>${muscleLabel(e.muscle)}</small></span>
-   <span class="wz-step"><button data-wiz="sets:${i}:-1" aria-label="Kevesebb szett">−</button><b>${e.sets}</b><button data-wiz="sets:${i}:1" aria-label="Több szett">＋</button></span>
-   <span class="wz-ex-tools">
-    <button data-wiz="move:${i}:-1" aria-label="Feljebb">↑</button>
-    <button data-wiz="move:${i}:1" aria-label="Lejjebb">↓</button>
-    <button data-wiz="drop:${i}" aria-label="Törlés">✕</button>
-   </span>
+   <div class="wz-ex-top">
+    ${muscleIcon(e.muscle)}
+    <strong>${safe(e.name)}</strong>
+    <span class="wz-ex-tools">
+     <button data-wiz="move:${i}:-1" aria-label="Feljebb">↑</button>
+     <button data-wiz="move:${i}:1" aria-label="Lejjebb">↓</button>
+     <button data-wiz="drop:${i}" aria-label="Törlés">✕</button>
+    </span>
+   </div>
+   <div class="wz-ex-foot">
+    <small>${muscleLabel(e.muscle)}</small>
+    <span class="wz-step"><button data-wiz="sets:${i}:-1" aria-label="Kevesebb szett">−</button><b>${e.sets}</b><button data-wiz="sets:${i}:1" aria-label="Több szett">＋</button><small>szett</small></span>
+   </div>
   </div>`).join('');
 }
 
@@ -297,7 +302,7 @@ export function initPlanWizard({ dialog, closeSheet }) {
       draft.focus[a] = b;
       const row = draftMuscles(draft).find(r => r.key === a);
       const card = document.querySelector(`[data-wz-mus="${a}"]`);
-      if (card && row) card.outerHTML = focusCard(draft, row).replace(' data-reveal', ' data-reveal class-keep');
+      if (card && row) card.outerHTML = focusCard(draft, row).replace(' data-reveal>', '>');
     }
     if (action === 'start') {
       draft.start = a;

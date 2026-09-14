@@ -595,15 +595,17 @@
 }
 
 .wz-ex {
-  display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 10px 12px;
+  display: grid; gap: 9px; margin: 0 0 8px; padding: 11px 13px;
   border: 1px solid #ffffff10; border-radius: 16px; background: #ffffff05;
 }
-.wz-ex > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
-.wz-ex-name { flex: 1; min-width: 0; display: grid; gap: 1px; }
-.wz-ex-name strong { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wz-ex-name small { font-size: 10px; color: #ffffff5c; }
-.wz-ex .wz-step button { width: 26px; height: 26px; font-size: 14px; border-radius: 9px; }
-.wz-ex .wz-step b { min-width: 20px; font-size: 13px; }
+.wz-ex-top { display: flex; align-items: center; gap: 10px; }
+.wz-ex-top > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
+.wz-ex-top strong { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; line-height: 1.3; }
+.wz-ex-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-left: 36px; }
+.wz-ex-foot > small { font-size: 10.5px; color: #ffffff5c; }
+.wz-ex .wz-step button { width: 28px; height: 28px; font-size: 14px; border-radius: 10px; }
+.wz-ex .wz-step b { min-width: 24px; font-size: 13.5px; }
+.wz-ex .wz-step small { margin-left: 3px; font-size: 10.5px; color: #ffffff5c; }
 .wz-ex-tools { display: inline-flex; gap: 4px; }
 .wz-ex-tools button {
   width: 26px; height: 26px; display: grid; place-items: center; cursor: pointer; font-size: 12px; color: #ffffff70;
