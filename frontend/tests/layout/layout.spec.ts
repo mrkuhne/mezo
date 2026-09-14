@@ -501,12 +501,13 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
 test('a részletek fejlécében a pont-chip és a mikor-kártya nem fedi egymást', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
-  await page.goto('/fuel')
+  // KÖZVETLENÜL nyitjuk a részleteket, nem a Mai sorára kattintva: a kattintás-alapú út a CI
+  // lassabb gépén megbízhatatlanul vitt tovább, és ennek a körnek a GEOMETRIA a dolga. Hogy a
+  // chip melyik oldalra visz, azt a saját egységtesztje köti ki (FuelMaiPage.test.tsx).
+  // Az `m1` a mock-nap első logolt étkezése; ha ez elmozdul, a lenti állítás hangosan bukik.
+  await page.goto('/fuel/etkezes/m1')
   await page.waitForLoadState('networkidle')
-  // Egy logolt étkezés sorából nyitjuk meg a részleteket — ugyanazon az úton, ahogy a felhasználó.
-  await page.locator('.fmx-meal-main').first().click()
-  await page.waitForURL(/\/fuel\/etkezes\//)
-  await page.waitForLoadState('networkidle')
+  await page.waitForSelector('.fmx-detail-hero', { timeout: 10_000 })
   await page.evaluate(() => document.fonts.ready)
 
   const boxes = await page.evaluate(() => {
