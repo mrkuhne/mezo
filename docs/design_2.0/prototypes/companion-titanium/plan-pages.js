@@ -59,14 +59,22 @@ function planHome() {
   const meso = MESO, soon = nextRollover(meso);
   const total = weekTotal(meso), last = weekTotal(meso, meso.currentWeek - 1), delta = total - last;
   const weeksToDeload = meso.weeks - meso.currentWeek;
-  const trainingDays = meso.days.length;
+  const done = (meso.currentWeek - 1) / meso.weeks * 100;
 
   const headline = `A hat hétből a ${meso.currentWeek}. héten jársz.`;
-  const line = `${delta > 0 ? `Ez a hét ${delta} szettel több, mint a múlt heti` : delta < 0 ? `Ez a hét ${-delta} szettel kevesebb` : 'Ez a hét ugyanannyi, mint a múlt heti'} — összesen ${total} szett, ${trainingDays} edzésnapra osztva.${
+  const line = `${delta > 0 ? `Ez a hét ${delta} szettel több, mint a múlt heti` : delta < 0 ? `Ez a hét ${-delta} szettel kevesebb` : 'Ez a hét ugyanannyi, mint a múlt heti'} — összesen ${total} szett, ${meso.days.length} edzésnapra osztva.${
     weeksToDeload === 1 ? ' A jövő hét már pihenőhét.' : weeksToDeload > 0 ? ` ${weeksToDeload} hét múlva jön a pihenőhét.` : ''}`;
 
   const poster = `<section class="pl-poster">
    <span class="pl-poster-glow" aria-hidden="true"></span>
+   <span class="pl-poster-sheen" aria-hidden="true"></span>
+   <div class="pl-poster-top">
+    <div class="pl-week"><strong data-fuel-count="${meso.currentWeek}">0</strong><small>. hét</small><i>/ ${meso.weeks}</i></div>
+    <div class="pl-ring" style="--p:${done}" aria-hidden="true">
+     <svg viewBox="0 0 72 72"><circle class="t" cx="36" cy="36" r="31" pathLength="100"/><circle class="f" cx="36" cy="36" r="31" pathLength="100"/></svg>
+     <b>${icon('stack')}</b>
+    </div>
+   </div>
    <h2>${meso.name}</h2>
    <p class="pl-say">${headline}</p>
    <p class="pl-sub-say">${line}</p>
@@ -74,24 +82,38 @@ function planHome() {
   </section>`;
 
   const days = `<h3 class="pl-h3">A heted</h3>
-   <div class="pl-days">${DAY_ORDER.map(token => {
+   <div class="pl-days">${DAY_ORDER.map((token, i) => {
     const day = dayByToken(token);
-    if (!day) return `<div class="pl-day is-rest"><small>${token}</small><span>pihenő</span></div>`;
-    return `<button class="pl-day ${token === 'Sze' ? 'is-now' : ''}" ${route('day', token)}>
-     <small>${token === 'Sze' ? 'MA' : DAY_NAMES[token]}</small>
-     <strong>${day.type}</strong>
-     <span class="pl-day-meta">${daySets(day)} szett · ${day.minutes} perc</span>
-    </button>`;
+    if (!day) return `<div class="pl-day is-rest" style="--i:${i}"><span class="pl-day-tag">${token}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
+    const load = dayLoad(day);
+    const today = token === 'Sze';
+    return `<button class="pl-day ${today ? 'is-now' : ''}" style="--i:${i}" ${route('day', token)}>
+     <span class="pl-day-tag">${today ? 'MA' : DAY_NAMES[token]}</span>
+     <span class="pl-day-body">
+      <strong>${day.type}</strong>
+      <small>${daySets(day)} szett · ${day.minutes} perc · ${day.exercises.length} gyakorlat</small>
+      <span class="pl-day-bars">${load.map(r => `<i style="--mus-color:${muscleColor(r.key)};--w:${Math.min(100, r.sets / 8 * 100)}%"></i>`).join('')}</span>
+     </span>
+     <b>›</b></button>`;
   }).join('')}</div>`;
 
-  const week = `<button class="pl-row" ${route('week')}>
-   <span><strong>Melyik izmod hol tart</strong><small>${meso.muscles.length} izomcsoport ezen a héten</small></span><b>›</b></button>`;
-  const library = `<button class="pl-row" ${route('library')}>
-   <span><strong>Edzéstervek</strong><small>Amiből indíthatsz, és amit már lezártál</small></span><b>›</b></button>`;
-  const close = `<button class="pl-row is-quiet" data-detail="Edzésterv lezárása" data-copy="Lezáráskor elkészül az összegzés: mennyit edzettél, mennyivel lettél erősebb, milyen rekordokat döntöttél. Utána indíthatsz újat." data-art="stack">
+  const climbing = soon.rows.filter(r => r.move === 'up').length;
+  const dest = `<div class="pl-dests">
+   <button class="pl-dest is-muscle" ${route('week')}>
+    <span class="pl-dest-art">${muscleIcon('back-mid')}</span>
+    <strong>Melyik izmod hol tart</strong>
+    <small>${climbing} izom kap többet hétfőtől</small>
+    <b>↗</b></button>
+   <button class="pl-dest is-plans" ${route('library')}>
+    <span class="pl-dest-art">${icon('stack')}</span>
+    <strong>Edzéstervek</strong>
+    <small>Amiből indíthatsz</small>
+    <b>↗</b></button>
+  </div>
+  <button class="pl-row is-quiet" data-detail="Edzésterv lezárása" data-copy="Lezáráskor elkészül az összegzés: mennyit edzettél, mennyivel lettél erősebb, milyen rekordokat döntöttél. Utána indíthatsz újat." data-art="stack">
    <span><strong>Edzésterv lezárása</strong><small>Ha ezt a hat hetet végigcsináltad</small></span><b>›</b></button>`;
 
-  return `${poster}${days}${week}${library}${close}`;
+  return `${poster}${days}${dest}`;
 }
 
 /* ── a day of the block ──────────────────────────────────────────────────────────────── */
