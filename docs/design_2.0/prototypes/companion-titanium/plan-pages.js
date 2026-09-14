@@ -222,11 +222,12 @@ function planWeek() {
 
 function planMuscle(key) {
   const muscle = MESO.muscles.find(m => m.key === key);
-  if (!muscle) return `<div class="pl-empty"><h2>Ezt az izmot nem edzed ebben a blokkban.</h2><button class="pl-back" ${route('week')}>Vissza</button></div>`;
+  if (!muscle) return `<div class="pl-empty"><h2>Ezt az izmot nem edzed ebben a tervben.</h2><button class="pl-back" ${route('week')}>Vissza</button></div>`;
 
   const p = bandPosition(muscle), rows = whereItWorks(key);
   const soon = nextRollover(MESO).rows.find(r => r.key === key);
-  const top = setsAt(muscle, peakWeek(MESO)), previous = muscle.previous;
+  const start = setsAt(muscle, 1), top = setsAt(muscle, peakWeek(MESO)), previous = muscle.previous;
+  const scale = Math.max(muscle.mrv, top);
 
   const say = muscle.tier === 'maintain'
     ? `Hetente ${p.now} szett megy a ${muscle.name.toLowerCase()}ra, és ez így is marad. Most máshol építesz — ez az izom közben megtartja, amit tud.`
@@ -238,34 +239,72 @@ function planMuscle(key) {
     : soon?.move === 'deload' ? `Hétfőtől pihenőhét: ${soon.next} szettre esik vissza.`
       : 'Hétfőn nem változik.';
 
+  const hero = `<section class="pl-mhero">
+   <span class="pl-mhero-art" aria-hidden="true">${bodyMap([key])}</span>
+   <h2>${muscle.name}</h2>
+   <p class="pl-say">${say}</p>
+   <p class="pl-sub-say">${next}</p>
+  </section>`;
+
+  const stats = `<div class="pl-mstats">
+   <span><strong data-fuel-count="${muscle.freq}">0</strong><small>edzés hetente</small></span>
+   <span><strong data-fuel-count="${start}">0</strong><small>szett az 1. héten</small></span>
+   <span><strong data-fuel-count="${top}">0</strong><small>a legtöbb lesz</small></span>
+  </div>`;
+
+  const gauge = `<h3 class="pl-h3">Hol tartasz ${info('Mit jelentenek a jelölések?',
+    `A ${muscle.mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`)}</h3>
+   <div class="pl-scale-wrap" data-reveal>
+    <span class="pl-scale-bar">
+     <i class="fill" style="--w:${p.now / scale * 100}%"></i>
+     <u class="mark is-mev" style="--at:${muscle.mev / scale * 100}%"></u>
+     <u class="mark is-top" style="--at:${p.ceiling / scale * 100}%"></u>
+     <b class="pin" style="--at:${p.now / scale * 100}%">${p.now}</b>
+    </span>
+    <span class="pl-scale-legend">
+     <i style="--at:${muscle.mev / scale * 100}%">${muscle.mev}<small>ennyitől fejlődik</small></i>
+     <i style="--at:${p.ceiling / scale * 100}%">${p.ceiling}<small>eddig mész el</small></i>
+    </span>
+   </div>`;
+
+  const arc = `<h3 class="pl-h3">A hat hét</h3>
+   ${weekArc(MESO, muscle)}
+   <div class="pl-weekvals">${Array.from({ length: MESO.weeks }, (_, i) => {
+    const week = i + 1;
+    return `<i class="${week === MESO.currentWeek ? 'is-now' : ''}">${setsAt(muscle, week)}</i>`;
+  }).join('')}</div>
+   <p class="pl-foot-say">${isDeloadWeek(MESO, MESO.weeks) ? `Az utolsó hét pihenőhét — ott ${setsAt(muscle, MESO.weeks)} szettre esik vissza, hogy kipihend a hat hetet.` : ''}</p>`;
+
+  const where = `<h3 class="pl-h3">Hol edzed</h3>
+   <div class="pl-exs">${rows.map((row, i) => `<button class="pl-ex is-link" data-reveal style="--ex-color:${muscleColor(key)};--i:${i}" ${route('day', row.day)}>
+     <span class="pl-ex-index">${row.day}</span>
+     <span class="pl-ex-art">${muscleIcon(key)}</span>
+     <span class="pl-ex-copy"><strong>${row.type}</strong><small>${row.exercises.map(e => e.name).join(', ')}</small></span>
+     <span class="pl-ex-sets">${row.sets}<i>szett</i></span>
+    </button>`).join('')}</div>`;
+
+  const history = previous ? `<h3 class="pl-h3">Az előző tervhez képest</h3>
+   <div class="pl-versus" data-reveal>
+    <div class="pl-versus-row">
+     <span>Akkor</span>
+     <span class="pl-versus-bar"><i style="--w:${previous.peak / scale * 100}%"></i></span>
+     <b>${previous.start} → ${previous.peak}</b>
+    </div>
+    <div class="pl-versus-row is-now">
+     <span>Most</span>
+     <span class="pl-versus-bar"><i style="--w:${top / scale * 100}%"></i></span>
+     <b>${start} → ${top}</b>
+    </div>
+   </div>
+   <p class="pl-foot-say">${top > previous.peak
+    ? `Ez a terv ${top - previous.peak} szettel visz magasabbra, mint az előző.`
+    : top === previous.peak ? 'Ez a terv ugyanoda visz, mint az előző — ez tartás, nem visszaesés.'
+      : 'Az előző terv magasabbra vitt — most más izom kapja a hangsúlyt.'}</p>`
+    : '<h3 class="pl-h3">Az előző tervhez képest</h3><p class="pl-foot-say">Ehhez az izomhoz még nincs korábbi terved — ez az első, amiben számon tartjuk.</p>';
+
   return `<div class="pl-sub" style="--mus-color:${muscleColor(key)}">
    <button class="pl-back" ${route('week')}>‹ Vissza</button>
-   <section class="pl-mhero">
-    <span class="pl-mhero-art" aria-hidden="true">${bodyMap([key])}</span>
-    <h2>${muscle.name}</h2>
-    <p class="pl-say">${say}</p>
-    <p class="pl-sub-say">${next}</p>
-   </section>
-
-   <div class="pl-gauge">
-    <span class="pl-gauge-bar"><i style="--w:${p.now / p.ceiling * 100}%"></i></span>
-    <span class="pl-gauge-ends"><i>most ${p.now}</i><i>felső érték ${p.ceiling}</i></span>
-   </div>
-
-   <h3 class="pl-h3">A hat hét</h3>
-   ${weekArc(MESO, muscle)}
-   <p class="pl-foot-say">Az 1. héten ${setsAt(muscle, 1)} szettel indultál, a legtöbb ${top} lesz, a pihenőhéten ${setsAt(muscle, MESO.weeks)}.</p>
-
-   <h3 class="pl-h3">Hol edzed</h3>
-   <div class="pl-list">${rows.map(row => `<button class="pl-item is-flat" ${route('day', row.day)}>
-     <span class="pl-item-name">${DAY_NAMES[row.day]}</span>
-     <span class="pl-item-say">${row.exercises.map(e => e.name).join(', ')}</span>
-     <span class="pl-item-count">${row.sets}<i>szett</i></span>
-     <b>›</b></button>`).join('')}</div>
-
-   ${previous ? `<h3 class="pl-h3">Az előző tervhez képest</h3>
-   <p class="pl-foot-say">Akkor ${previous.start} szettről ${previous.peak}-ig jutottál. Most ${setsAt(muscle, 1)}-ről indultál, és ${top}-ig mész — ${
-    top > previous.peak ? `${top - previous.peak} szettel magasabbra` : top === previous.peak ? 'ugyanoda' : 'lejjebb, mert most más izom kapja a hangsúlyt'}.</p>` : ''}
+   ${hero}${stats}${gauge}${arc}${where}${history}
   </div>`;
 }
 
