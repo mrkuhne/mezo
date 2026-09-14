@@ -232,6 +232,8 @@ export function FuelMaiPage() {
               navigate(`/fuel/log/uj${q ? `?${q}` : ''}`)
             }}
             onOpenMeal={(mealId) => navigate(`/fuel/etkezes/${mealId}`)}
+            // A pont-chip az AI ÉRTÉKELÉSRE visz — a sor többi része a részletekre.
+            onOpenScore={(mealId) => navigate(`/fuel/etkezes/${mealId}/ertekeles`)}
           />
         </div>
 

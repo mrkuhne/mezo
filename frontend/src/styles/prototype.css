@@ -12085,7 +12085,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 7px color-mix(in srgb, var(--block-color) 30%, transparent)); }
 .fmx-detail-when strong, .fmx-detail-share strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
 .fmx-detail-when small, .fmx-detail-share small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
-.fmx-detail-score { position: absolute; top: 0; right: 0; }
+/* A pont-chip a jobb oszlop első SORA — nem lebeg fölötte (mezo-jb84: rálógott a
+   „mikor logoltad" kártyára). Jobbra zárva marad, ahogy az owner kérte. */
+.fmx-detail-score { display: flex; justify-content: flex-end; }
 @media (max-width: 360px) {
   .fmx-detail-hero { grid-template-columns: 1fr; }
   .fmx-detail-left { min-width: 0; }

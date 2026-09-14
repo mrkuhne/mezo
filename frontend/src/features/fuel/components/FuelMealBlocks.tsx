@@ -123,12 +123,14 @@ export function FuelScoreChip({ scorePct, onOpen, size }: {
   )
 }
 
-function BlockCard({ tile, rows, dayKcal, onLogInto, onOpenMeal }: {
+function BlockCard({ tile, rows, dayKcal, onLogInto, onOpenMeal, onOpenScore }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
   dayKcal: number
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
+  /** A pont-chip SAJÁT célja: az AI értékelés, nem az étkezés részletei (mezo-jb84). */
+  onOpenScore: (mealId: string) => void
 }) {
   const loggedKcal = rows.length
     ? rows.reduce<number | null>((sum, r) => (sum == null || r.kcal == null ? null : sum + r.kcal), 0)
@@ -152,7 +154,9 @@ function BlockCard({ tile, rows, dayKcal, onLogInto, onOpenMeal }: {
               <small>{r.proteinG == null ? 'részletek' : `${huInt(r.proteinG)} g fehérje`}</small>
             </span>
           </button>
-          <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenMeal(r.mealId)} />
+          {/* A chip az ÉRTÉKELÉSRE mutat — a sor többi része a részletekre. Eddig mindkettő
+              ugyanoda vitt, így az AI pontszámra koppintva nem az értékelés nyílt meg. */}
+          <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} />
         </div>
       ))}
       {rows.length === 0 && (
@@ -170,13 +174,14 @@ function BlockCard({ tile, rows, dayKcal, onLogInto, onOpenMeal }: {
   )
 }
 
-export function FuelMealBlocks({ lane, meals, dayKcal, onLogInto, onOpenMeal }: {
+export function FuelMealBlocks({ lane, meals, dayKcal, onLogInto, onOpenMeal, onOpenScore }: {
   lane: WindowLaneVM
   meals: DoneMealRow[]
   /** A nap energia-kerete — a blokkgyűrű ívének nevezője (honest: ha 0, nincs ív). */
   dayKcal: number
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
+  onOpenScore: (mealId: string) => void
 }) {
   if (lane.tiles.length === 0) {
     return (
@@ -190,7 +195,7 @@ export function FuelMealBlocks({ lane, meals, dayKcal, onLogInto, onOpenMeal }: 
       {lane.tiles.map(tile => (
         <BlockCard key={tile.key} tile={tile} dayKcal={dayKcal}
           rows={meals.filter(m => m.mealId === tile.mealId)}
-          onLogInto={onLogInto} onOpenMeal={onOpenMeal} />
+          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} />
       ))}
     </div>
   )
