@@ -254,19 +254,24 @@
 @keyframes pl-arcin { from { stroke-dasharray: 0 100; } }
 
 /* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral — */
+/* Full-bleed: the day's colour runs edge to edge and fades into the page. */
 .pl-dhero {
-  position: relative; overflow: hidden; margin-bottom: 6px; padding: 20px 20px 18px; min-height: 232px;
-  border: 1px solid color-mix(in srgb, var(--mus-color) 30%, transparent); border-radius: 28px;
+  position: relative; overflow: hidden; margin: -8px -20px 14px; padding: 22px 20px 26px; min-height: 244px;
+  border: 0; border-radius: 0;
   background:
-    radial-gradient(120% 100% at 88% 10%, color-mix(in srgb, var(--mus-color) 26%, transparent), transparent 62%),
-    linear-gradient(155deg, #1b2029, #10141b);
+    radial-gradient(110% 100% at 85% 8%, color-mix(in srgb, var(--mus-color) 30%, transparent), transparent 64%),
+    linear-gradient(168deg, color-mix(in srgb, var(--mus-color) 13%, #1b2029) 0%, #14181f 62%, #0f1218 100%);
+}
+.pl-dhero::after {
+  content: ''; position: absolute; inset: auto 0 0; height: 54px; pointer-events: none;
+  background: linear-gradient(#0f121800, #0f1218);
 }
 .pl-dhero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
   background: radial-gradient(circle, color-mix(in srgb, var(--mus-color) 30%, transparent), transparent 66%);
 }
 .pl-dhero-art {
-  position: absolute; right: 14px; top: 26px; width: 132px; height: 132px; display: grid; place-items: center;
+  position: absolute; right: 10px; top: 30px; width: 132px; height: 132px; display: grid; place-items: center;
   pointer-events: none;
 }
 .pl-dhero-art .icon {
