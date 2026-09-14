@@ -84,10 +84,10 @@ function planHome() {
   const days = `<h3 class="pl-h3">A heted</h3>
    <div class="pl-days">${DAY_ORDER.map((token, i) => {
     const day = dayByToken(token);
-    if (!day) return `<div class="pl-day is-rest" style="--i:${i}"><span class="pl-day-tag">${token}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
+    if (!day) return `<div class="pl-day is-rest" data-reveal style="--i:${i}"><span class="pl-day-tag">${token}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
     const load = dayLoad(day);
     const today = token === 'Sze';
-    return `<button class="pl-day ${today ? 'is-now' : ''}" style="--i:${i}" ${route('day', token)}>
+    return `<button class="pl-day ${today ? 'is-now' : ''}" data-reveal style="--i:${i}" ${route('day', token)}>
      <span class="pl-day-tag">${today ? 'MA' : DAY_NAMES[token]}</span>
      <span class="pl-day-body">
       <strong>${day.type}</strong>
@@ -99,12 +99,12 @@ function planHome() {
 
   const climbing = soon.rows.filter(r => r.move === 'up').length;
   const dest = `<div class="pl-dests">
-   <button class="pl-dest is-muscle" ${route('week')}>
+   <button class="pl-dest is-muscle" data-reveal ${route('week')}>
     <span class="pl-dest-art">${muscleIcon('back-mid')}</span>
     <strong>Melyik izmod hol tart</strong>
     <small>${climbing} izom kap többet hétfőtől</small>
     <b>↗</b></button>
-   <button class="pl-dest is-plans" ${route('library')}>
+   <button class="pl-dest is-plans" data-reveal ${route('library')}>
     <span class="pl-dest-art">${icon('stack')}</span>
     <strong>Edzéstervek</strong>
     <small>Amiből indíthatsz</small>
@@ -175,7 +175,7 @@ function planWeek() {
 
    <div class="pl-list">${ordered.map((muscle, i) => {
     const p = bandPosition(muscle);
-    return `<button class="pl-item" style="--mus-color:${muscleColor(muscle.key)};--i:${i}" ${route('muscle', muscle.key)}>
+    return `<button class="pl-item" data-reveal style="--mus-color:${muscleColor(muscle.key)};--i:${i}" ${route('muscle', muscle.key)}>
      <span class="pl-item-art">${muscleIcon(muscle.key)}</span>
      <span class="pl-item-name">${muscle.name}</span>
      <span class="pl-item-count">${p.now}<i>szett</i></span>
@@ -261,3 +261,24 @@ export function planContent() {
 
 /** The landing keeps the tab's page heading; the subpages carry their own. */
 export const planHasOwnHead = () => location.hash.slice(1).split('/')[2] !== undefined && location.hash.slice(1).split('/')[2] !== '';
+
+/**
+ * Nothing plays off-screen: a row only runs its entrance when it is actually scrolled into view.
+ * Rows already visible on arrival intersect immediately, so the top of the page still greets you.
+ */
+export function animatePlan(root = document) {
+  const targets = root.querySelectorAll('[data-reveal]:not(.is-in)');
+  if (!targets.length) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    targets.forEach(el => el.classList.add('is-in'));
+    return;
+  }
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.add('is-in');
+      observer.unobserve(entry.target);
+    }
+  }, { root: document.querySelector('#app-scroll'), rootMargin: '0px 0px -8% 0px', threshold: 0.15 });
+  targets.forEach(el => observer.observe(el));
+}
