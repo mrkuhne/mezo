@@ -325,22 +325,31 @@
 .pl-mrow-count { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--mus-color) 78%, #fff); white-space: nowrap; }
 .pl-mrow-count i { font-style: normal; font-size: 9.5px; color: #ffffff52; margin-left: 4px; }
 
-/* — one exercise, one row — */
-.pl-exs { display: grid; gap: 7px; }
+/* — the exercise keeps room: a header line, then its prescription in labelled cells — */
+.pl-exs { display: grid; gap: 9px; }
 .pl-ex {
-  position: relative; overflow: hidden; display: grid; grid-template-columns: 20px 34px 1fr auto;
-  align-items: center; column-gap: 10px; padding: 11px 13px;
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 22px 38px 1fr auto;
+  align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
   border: 1px solid color-mix(in srgb, var(--ex-color) 18%, #ffffff0c); border-radius: 16px;
   background:
     radial-gradient(110% 130% at 100% 0%, color-mix(in srgb, var(--ex-color) 13%, transparent), transparent 58%),
     linear-gradient(155deg, #ffffff08, #ffffff03);
 }
 .pl-ex-index { font-size: 11px; color: color-mix(in srgb, var(--ex-color) 58%, #fff); }
-.pl-ex-art .icon { width: 34px; height: 34px; }
+.pl-ex-art .icon { width: 38px; height: 38px; }
 .pl-ex-copy { min-width: 0; }
-.pl-ex-copy strong { display: block; font-size: 14.5px; font-weight: 500; }
-.pl-ex-copy small { display: block; font-size: 10.5px; line-height: 1.45; color: #ffffff70; margin-top: 3px; }
-.pl-ex-copy small b { font-weight: 600; color: color-mix(in srgb, var(--ex-color) 72%, #fff); }
+.pl-ex-copy strong { display: block; font-size: 15.5px; font-weight: 500; }
+.pl-ex-copy small { display: block; font-size: 10.5px; color: #ffffff66; margin-top: 2px; }
+
+.pl-ex-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 6px; }
+.pl-ex-grid span {
+  padding: 9px 6px; text-align: center; border: 1px solid #ffffff0f; border-radius: 12px; background: #ffffff05;
+}
+.pl-ex-grid b { display: block; font-size: 15px; font-weight: 500; color: #e6ecdc; }
+.pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: #ffffff52; margin-top: 4px; }
+.pl-ex-grid .is-main { border-color: transparent; background: color-mix(in srgb, var(--ex-color) 80%, #fff); }
+.pl-ex-grid .is-main b { color: #0f1409; font-weight: 700; }
+.pl-ex-grid .is-main i { color: #0f140988; }
 .pl-ex-move { display: flex; gap: 5px; }
 .pl-ex-move button {
   width: 26px; height: 26px; cursor: pointer; font-size: 13px; color: #cdd4c2;

@@ -158,11 +158,17 @@ function planDay(token) {
      <span class="pl-ex-art">${muscleIcon(e.muscle)}</span>
      <span class="pl-ex-copy">
       <strong>${e.name}</strong>
-      <small><b>${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b> · ${e.rir} RIR · ${e.kg ? `${n(e.kg)} kg` : 'saját testsúly'}${e.warmup ? ` · +${e.warmup} bem.` : ''}</small>
+      <small>${muscleLabel(e.muscle)}</small>
      </span>
      <span class="pl-ex-move">
       <button ${i === 0 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Előrébb">↑</button>
       <button ${i === day.exercises.length - 1 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Hátrébb">↓</button>
+     </span>
+     <span class="pl-ex-grid">
+      <span class="is-main"><b>${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b><i>szett × ismétlés</i></span>
+      <span><b>${e.rir}</b><i>RIR</i></span>
+      <span><b>${e.kg ? n(e.kg) : '—'}</b><i>${e.kg ? 'kg induló' : 'testsúly'}</i></span>
+      <span><b>${e.warmup || '—'}</b><i>bemelegítő</i></span>
      </span>
     </div>`).join('')}</div>
    <button class="pl-add" data-detail="Gyakorlat hozzáadása" data-copy="A katalógusból választasz: kereséssel, izomcsoport szerint szűrve, demóképpel és videóval. Egy megnyitásból többet is hozzáadhatsz." data-art="book">＋ Gyakorlat hozzáadása</button>`;
