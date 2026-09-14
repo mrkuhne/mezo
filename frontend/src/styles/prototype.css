@@ -11859,6 +11859,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-hero-remaining { margin: 0; }
 
 /* A blokkok fejléce (prototípus `food-list-heading`). */
+/* A dátumsor jobb szélén ülő beállítás-fogaskerék: a sáv vezérlői közé tartozik, de
+   csendes — nincs felirata, és nem versenyez a heroval. */
+.fmx-daynav { display: flex; align-items: center; gap: 8px; }
+.fmx-daynav > :first-child { flex: 1; min-width: 0; }
+.fmx-daynav-set { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-1);
+  color: var(--sub); }
+
 .fmx-blocks-head { display: flex; align-items: baseline; justify-content: space-between;
   gap: 10px; margin: 18px 2px 10px; }
 .fmx-blocks-head h2 { margin: 0; font-size: 17px; font-weight: 500; color: var(--ink); }
