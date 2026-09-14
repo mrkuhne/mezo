@@ -171,7 +171,7 @@ function focusStep(draft) {
   return `<div class="pl-sub pl-lib wz">
    <button class="pl-back" ${route('days')}>‹ Vissza</button>
    ${stepsBar(2)}
-   ${heroHead('IZMOK', 'Melyik kapjon többet?', 'Hétről hétre emelünk — itt döntöd el, melyik izomnál meddig megyünk.')}
+   ${heroHead('IZMOK', 'Melyik kapjon többet?', `Amit a napokba beírtál, az az első heted. Innen hétről hétre emelünk — itt azt döntöd el, meddig. <button class="pl-info" data-detail="Hogyan emelkednek a szettek?" data-art="ring" data-copy="A napokba írt szettekkel indul az első hét. Utána a terv izmonként két szettel emel hetente, a gyakorlataid között elosztva — addig, amíg el nem éri az itt választott felső értéket. Tartás: marad az induló szint. Építés: mérsékelt emelés. Hangsúly: magasabbra mehet. Az utolsó hét pihenőhét, fele annyi szettel." aria-label="Hogyan emelkednek a szettek?">${icon('info')}</button>`)}
    ${body}
    <button class="pl-lib-new is-start" data-reveal ${route('review')}>
     <span class="pl-lib-new-art">${icon('bolt')}</span>
