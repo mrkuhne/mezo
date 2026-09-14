@@ -18,7 +18,7 @@ const modeTabs=()=>`<div class="food-modes" role="tablist" aria-label="Naplózá
 const camGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 7L10.5 4H13.5L15 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
 const keyGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 10H8M11 10H12M15 10H16M7 14H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const repeatGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='glucose'?'Vércukor-válasz':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():stage==='glucose'?glucoseView():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();if(stage==='saved')runFoodCeremony();}
+function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='glucose'?'Vércukor-válasz':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():stage==='glucose'?glucoseView():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();if(stage==='saved')runFoodCeremony();if(stage==='glucose')runBudgetFill();}
 function inputView(){return {photo:photoView,voice:voiceView,text:textView,usual:usualView}[mode]();}
 function photoView(){return `<div class="food-camera" aria-label="Kamera-előnézet, demó"><div class="food-finder"><span></span><span></span><span></span><span></span>${art}<p>DEMÓ KERESŐ · NEM VALÓDI KAMERA</p></div><p class="food-camera-hint">Fotózd le a tányért — a többit én kitöltöm, te csak jóváhagyod.</p><div class="food-shots"><button data-food-shot="known">${camGlyph}<span><strong>Exponálás</strong><small>Minta: joghurt és banán</small></span></button><button class="ghost" data-food-shot="unknown">${camGlyph}<span><strong>Másik tányér</strong><small>Minta: felismerés nem sikerül</small></span></button></div><p class="food-note">Működési demó: két mintafotót ismer. Nincs valódi kamera vagy AI-hívás.</p>`;}
 function voiceView(){return `<div class="food-voice"><button class="food-mic" data-food-say="Egy joghurt és egy banán volt." aria-label="Mintamondat bemondása">${micArt}</button><p class="food-camera-hint">Mondd el egy mondatban. Koppints a mikrofonra a mintamondathoz.</p><div class="voice-lines">${['Egy joghurt és egy banán volt.','Ettem egy tál zabkását.'].map(t=>`<button data-food-say="${safe(t)}">${micArt}<span>${t}</span></button>`).join('')}</div><p class="food-note">Működési demó: nincs hangrögzítés. A joghurt–banán mondatot érti; a másikat a szokásosakhoz irányítja.</p>`;}
@@ -75,7 +75,7 @@ function saved(){
    <h1 class="sr-only" tabindex="-1">${stars} csillag az ötből</h1>
    <p class="fcer-verdict">${verdictFor(stars)}</p>
    <p class="fcer-meal">${mealLabel()} · ${draft.time}</p>
-   <div class="fcer-score"><span class="glu-pebble gold" aria-hidden="true"></span><span class="fcer-score-copy"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></span></div>
+   <div class="fcer-score">${icon('score')}<span class="fcer-score-copy"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></span></div>
   </section>
   <div class="fcer-foot">
    <button class="fcer-cta" data-food-details><span class="fcer-cta-art">${icon('score')}</span><span><strong>Részletek</strong><small>Vércukor-válasz és a mai kereted</small></span></button>
@@ -96,10 +96,30 @@ function glucoseView(){
    ${glucoseExpectHtml(g)}
   </div>
   <div class="fcer-glu-tip">${icon('sprout')}<span><strong>${g.tip.title}</strong><p>${g.tip.body}</p></span></div>`:`<p class="food-note">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>`}
-  <div class="saved-budget"><small>EDDIG MA</small><strong>${fmt(t.kcal)}<span> / 2 400 kcal</span></strong><div class="food-budget-bar"><i style="width:${Math.min(100,t.kcal/2400*100)}%"></i></div></div>
+  <div class="fcer-bud"><span class="overline">A MAI KERETED</span>${[['Kalória',t.kcal,2400,'kcal','#8ed2e8','bowl'],['Fehérje',t.p,160,'g','#e08a7c','meat'],['Szénhidrát',t.c,270,'g','#d9c395','carb'],['Zsír',t.f,76,'g','#cdd170','avocado']].map(([l,v,max,u,col,a],i)=>`<div class="fcer-bud-row" style="--bud-color:${col};--w:${Math.min(100,v/max*100)}%;--i:${i}">${icon(a)}<span class="fcer-bud-copy"><span class="fcer-bud-head"><strong>${l}</strong><b>${fmt(v)} / ${fmt(max)} ${u}</b></span><i class="fcer-bud-bar"><b></b></i><small>${v>=max?'a mai keret betelt':`még ${fmt(max-v)} ${u} fér bele`}</small></span></div>`).join('')}</div>
   ${button('Vissza a Mai oldalra ✓','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}
   <p class="food-note">Minta-becslés az étel összetételéből, a Glucose Goddess-módszer elvei szerint. Nem mérés és nem orvosi előrejelzés — élesben is kategóriát mutatunk, számot nem.</p>
  </div>`;
+}
+/* The budget bars fill by rAF, not CSS transition — a throttled/hidden pane freezes a
+   just-started transition at 0, while a driven frame loop (the ceremony's own technique)
+   always lands. Reduced motion keeps the CSS-final widths untouched. */
+function runBudgetFill(){
+ const rows=[...screen.querySelectorAll('.fcer-bud-row')];
+ if(!rows.length||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ rows.forEach((row,i)=>{
+  const b=row.querySelector('.fcer-bud-bar b'),target=parseFloat(row.style.getPropertyValue('--w'));
+  if(!b||!Number.isFinite(target))return;
+  b.style.width='0%';
+  const started=performance.now()+150+i*140,duration=900;
+  const frame=now=>{
+   if(!b.isConnected)return;
+   const t=Math.min(1,Math.max(0,(now-started)/duration));
+   b.style.width=`${target*(1-(1-t)**3)}%`;
+   if(t<1)requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+ });
 }
 /* One 2400ms pass drives the bar, the counters and the star ignitions together (train twin). */
 function runFoodCeremony(){
