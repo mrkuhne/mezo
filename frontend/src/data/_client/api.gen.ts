@@ -8748,10 +8748,10 @@ export interface components {
             carbsPctX10?: number;
             fatPctX10?: number;
             /**
-             * @description g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine config)
+             * @description Protein band endpoint. The tier moves BOTH engine coefficients (mezo-jb84): low=1.6 g/kg BW + 2.3 g/kg LBM, moderate=2.0 + 2.7, high=2.2 + 3.1. The target is the higher of the two paths, capped at 2.6 g/kg BW. Exact values are engine config.
              * @enum {string}
              */
-            proteinTier: "moderate" | "high";
+            proteinTier: "low" | "moderate" | "high";
             waterMl: number;
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
@@ -8779,7 +8779,7 @@ export interface components {
             carbsPctX10?: number;
             fatPctX10?: number;
             /** @enum {string} */
-            proteinTier: "moderate" | "high";
+            proteinTier: "low" | "moderate" | "high";
             waterMl: number;
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */

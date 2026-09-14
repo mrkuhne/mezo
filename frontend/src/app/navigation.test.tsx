@@ -70,10 +70,10 @@ test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.
 
 test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.4.1)', async () => {
   renderApp('/fuel')
-  // The Fuel-beállítások band (the retired SubNavDropdown's ⚙️ extra action, re-homed)
-  // and the tile mosaic are the face-independent landmarks.
+  // mezo-jb84 (owner): a csempe-sáv lekerült a Mai-ról, a beállítás pedig a dátumsorba
+  // költözött. A face-független horgony így a beállítás-ikon és a nap blokkjai.
   expect(await screen.findByRole('button', { name: 'Fuel-beállítások' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Receptek' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Receptek' })).not.toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).not.toBeInTheDocument()
 })
 

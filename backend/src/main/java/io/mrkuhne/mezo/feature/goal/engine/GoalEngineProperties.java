@@ -97,6 +97,7 @@ public record GoalEngineProperties(
         @NotNull @Positive Double gPerKgBwFloor,   // 1.6 — BW-based lower bound
         @NotNull @Positive Double gPerKgBwCeil,    // 2.2 — BW-based upper bound
         @NotNull @Positive Double gPerKgLbmLow,    // 2.3 — LBM-based lower bound
+        @NotNull @Positive Double gPerKgLbmMid,    // 2.7 — LBM-based middle (moderate tier)
         @NotNull @Positive Double gPerKgLbmHigh,   // 3.1 — LBM-based upper bound
         @NotNull @Positive Double gPerKgBwCap      // 2.6 — absolute BW-based cap
     ) {

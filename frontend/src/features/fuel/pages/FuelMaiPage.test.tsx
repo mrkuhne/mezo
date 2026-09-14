@@ -17,7 +17,7 @@
 // action sits BELOW the blocks, the víz ring opens the water sheet, the energy chip reopens
 // the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -113,22 +113,21 @@ const renderView = (path = '/fuel') =>
 
 // ── shell dissolution + page anatomy ─────────────────────────────────────────
 
-test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → band, no sub-nav shell', () => {
+test('a Mai anatómiája: hero → blokkok, csempe-sáv és alnavigáció nélkül', () => {
   const { container } = renderView()
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
   // S1b: a nap blokkjai váltották a Logolás-csempét (mezo-33k6).
   const blocks = container.querySelector('.fmx-blocks')
-  const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
   expect(blocks).toBeInTheDocument()
-  expect(mosaic).toBeInTheDocument()
+  // mezo-jb84 (owner): a csempe-sáv lekerült.
+  expect(container.querySelector('.mz-mosaic')).toBeNull()
   expect(container.querySelector('.fh-logtile')).toBeNull()
   // The Mezo Fuel-üzenetek band is retired (mezo-04lo) — unused, tile removed with its page.
   expect(container.querySelector('.fh-mezotile')).toBeNull()
   expect(hero!.compareDocumentPosition(blocks!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(blocks!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   // The retired sky/island shell is gone.
   expect(container.querySelector('.sky-islands')).toBeNull()
   expect(container.querySelector('.kdone')).toBeNull()
@@ -402,82 +401,41 @@ test('a lapozás a ?d=-t írja, a mai nap pedig paraméter nélkül marad', asyn
 // A víz a Mai-on MARAD (owner), első osztályú modulként a blokkok ALATT — a hero
 // víz-gyűrűje továbbra is a sheet ajtaja, a modul pedig a gyorsgombokat adja.
 
-test('a víz-modul a blokkok alatt, a mozaik előtt áll', () => {
+// mezo-jb84 (owner): a víz-KÁRTYA lekerült a lapról. A képesség nem: a hero víz-gyűrűje maga
+// a gomb, és a gyorsgombos lapot nyitja — ezek a körök ezt kötik ki, nem a kártyát.
+test('a víz-kártya nincs a lapon, a gyűrű viszont nyitja a vízlogolást', async () => {
   const { container } = renderView()
-  const blocks = container.querySelector('.fmx-blocks')!
-  const water = container.querySelector('.fmx-water')!
-  const mosaic = container.querySelector('.mz-mosaic')!
-  expect(water).toBeInTheDocument()
-  expect(blocks.compareDocumentPosition(water) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(water.compareDocumentPosition(mosaic) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(container.querySelector('.fmx-water')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
 })
 
-test('a víz-modul gyorsgombja a napot írja, és a hero gyűrűje követi', async () => {
+test('a gyűrűből logolt víz a napot írja, és a gyűrű követi', async () => {
   renderView()
-  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
-  await userEvent.click(screen.getByRole('button', { name: '+2,5 dl' }))
-  await waitFor(() => expect(screen.getByRole('button', { name: /^Víz logolása/ })
-    .getAttribute('aria-label')).not.toBe(before))
+  const label = () => screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
+  const before = label()
+  await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
+  await userEvent.click(await screen.findByRole('button', { name: '250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await waitFor(() => expect(label()).not.toBe(before))
 })
 
-// ── the 6-tile mosaic ────────────────────────────────────────────────────────
-
-// S5 (mezo-qt5q): MINDEN csempe ÉLŐ lapra nyílik — egyik sem fut bele egy redirectbe. A `Terv`
-// (`/fuel/plan`) és a `Napló` (`/fuel/naplo`) csempe egy Trendek-csempévé olvadt, mert mind a két
-// lap a Trendekbe költözött (C1/C5); két csempe ugyanarra a lapra félrevezető lenne.
-test('the mosaic carries exactly the five Fuel tiles, each navigating to its own LIVE page', async () => {
-  renderView()
-  const expected = [
-    ['Trendek', '/fuel/trendek'],
-    ['Stack', '/fuel/stack'],
-    ['Receptek', '/fuel/recipes'],
-    ['Kamra', '/fuel/kamra'],
-    ['Gyógyszer', '/fuel/gyogyszer'],
-  ] as const
-  for (const [label, path] of expected) {
-    const tile = screen.getByRole('button', { name: label })
-    fireEvent.click(tile)
-    expect(screen.getByTestId('loc').textContent).toBe(path)
+// ── a csempe-sáv LEKERÜLT (owner, mezo-jb84) ─────────────────────────────────
+// A Trendek / Kiegészítők / Konyha a fül-sávból egy koppintás, a Receptek és a Kamra a Konyha
+// ajtói mögül, a Gyógyszer a Kiegészítők felől. A csempék ezeket ismételték meg harmadszor.
+// Ez a kör az ELTŰNÉST köti ki, hogy egy későbbi kör ne építse vissza őket véletlenül.
+test('a Mai nem hoz csempe-sávot', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.mz-mosaic')).toBeNull()
+  for (const label of ['Trendek', 'Stack', 'Receptek', 'Kamra', 'Gyógyszer']) {
+    expect(screen.queryByRole('button', { name: label })).toBeNull()
   }
-  // A retirált két ajtó NEM él tovább csempeként.
-  expect(screen.queryByRole('button', { name: 'Terv' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Napló' })).toBeNull()
 })
 
-test('tile lines come from the pages\' own data — a Kamra count, no fabricated numbers', () => {
-  renderView()
-  expect(screen.getByRole('button', { name: 'Kamra' })).toHaveTextContent(/\d+ tétel/)
-})
-
-// A napi AI-átlag a visszavont Napló-csempe EGYETLEN saját jele volt — S5 (mezo-qt5q) a
-// Trendek-csempére vitte át, és az őszinte-null szabály VÁLTOZATLAN: pontozatlan napon nem
-// kitalált nulla áll ott, hanem a heti protein-sor veszi át a helyét.
-test('a Trendek-csempe AI-átlagot ír, amint van pontozott étkezés — kitalált nulla sosem', () => {
-  hoisted.overrideSlots = [
-    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'now', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  renderView()
-  // The mock day's own logged meals ARE scored, so the line is present and honest.
-  const tile = screen.getByRole('button', { name: 'Trendek' })
-  expect(tile).toHaveTextContent(/AI-átlag \d+/)
-  expect(tile).not.toHaveTextContent(/AI-átlag 0\b/)
-})
-
-test('pontozatlan napon a Trendek-csempe a heti protein-sort írja, nem AI-átlag nullát', () => {
-  // Egy őszintén ÜRES nap (a mock minden napra ugyanazt a seedet adná) — nincs pontozott
-  // étkezés, tehát nincs AI-átlag sem.
-  const empty = addDays(localDateString(), -2)
-  hoisted.emptyDates = [empty]
-  renderView(`/fuel?d=${empty}`)
-  const tile = screen.getByRole('button', { name: 'Trendek' })
-  expect(tile).toHaveTextContent(/Protein \d\/7 nap/)
-  expect(tile).not.toHaveTextContent(/AI-átlag/)
-})
-
-// ── the quiet settings corner (Fuel Titanium S1d, mezo-33k6 — manifest A16) ───
-// Owner-döntés (spec 7): a beállítás CSENDES sarok — nem csempe, nem hangsúlyos, mosott
-// sáv. A korábbi `.fh-band` ezt a döntést sértette; a viselkedése (a saját oldalára visz)
-// változatlan, a HANGJA lett csendes.
+// ── a beállítás-bejárat (A16) ────────────────────────────────────────────────
+// Owner-döntés (spec 7) szerint CSENDES — de a lap alján gyakorlatilag megtalálhatatlan volt
+// (2107 px-es lapon az 1929-esnél). mezo-jb84: a dátumsor jobb szélére költözött, ikonként.
+// Csendes maradt, csak már látszik is.
 
 test('the Fuel settings entry navigates to its own page', async () => {
   renderView()
@@ -485,18 +443,17 @@ test('the Fuel settings entry navigates to its own page', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
 })
 
-test('a beállítások csendes sarokként, a lap alján érhetők el', async () => {
+test('a beállítás a dátumsorban, csendesen, de láthatóan érhető el', async () => {
   const { container } = renderView()
-  const corner = container.querySelector('.fmx-corner') as HTMLElement
-  expect(corner).toBeInTheDocument()
+  const daynav = container.querySelector('.fmx-daynav') as HTMLElement
+  const gear = within(daynav).getByRole('button', { name: 'Fuel-beállítások' })
   // Se csempe, se mosott sáv — a két hangsúlyos forma, amit az owner kizárt.
-  expect(corner.className).not.toContain('mz-tile')
+  expect(gear.className).not.toContain('mz-tile')
   expect(container.querySelector('.fh-band')).toBeNull()
-  // A lap ALJA: a mozaik után, és utána már nincs más modul.
-  const mosaic = container.querySelector('.mz-mosaic')!
-  expect(mosaic.compareDocumentPosition(corner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(corner.nextElementSibling).toBeNull()
-  await userEvent.click(within(corner).getByRole('button', { name: /beállítások/i }))
+  // A lap TETEJÉN: a blokkok előtt, tehát görgetés nélkül elérhető.
+  const blocks = container.querySelector('.fmx-blocks')!
+  expect(daynav.compareDocumentPosition(blocks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  await userEvent.click(gear)
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
 })
 

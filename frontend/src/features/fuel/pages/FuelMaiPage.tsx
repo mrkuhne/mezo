@@ -65,23 +65,18 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import {
-  useDietSettings, useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
-  useStackDay, useWaterActions,
+  useDietSettings, useFuelDay, useFuelTimeline, useWaterActions,
 } from '@/data/hooks'
-import { toMin } from '@/data/fuel/fuelConfig'
-import { buildKeretHero, aiAverage, asPastDayHero, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { buildKeretHero, asPastDayHero, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
-import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { backfillDate, earliestBackfillDate } from '@/features/fuel/logic/backfillWindow'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
-import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
-import { FuelWaterModule } from '@/features/fuel/components/FuelWaterModule'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
@@ -142,43 +137,8 @@ export function FuelMaiPage() {
   const laneY = asPastDayLane(buildWindowLane({ slots: planY.slots, budget: budgetY, meals: fuelY.meals }))
   const yMissed = laneY.tiles.filter(t => t.state === 'missed').length
 
-  // ── tile lines — each from its own page's hook, honest while unresolved ──
-  const { weeklyStats } = useFuelWeek()
-  const tervLine = `Protein ${weeklyStats.proteinHitDays}/7 nap`
-
-  const { slots: stackSlots } = useStackDay()
-  const stackEntries = stackSlots.flatMap(s => s.entries.filter(e => !e.skippedToday))
-  const stackTaken = stackEntries.filter(e => e.taken).length
-  // "köv." is the next zone still AHEAD on the clock — a still-untaken morning zone is a
-  // gap to catch up, not the next thing coming; fall back to the earliest untaken one when
-  // the day has no upcoming zone left.
-  const untakenZones = stackSlots.filter(s => s.entries.some(e => !e.skippedToday && !e.taken))
-  const nextZone = untakenZones.find(s => toMin(s.time) >= toMin(nowHHmm)) ?? untakenZones[0]
-  const stackLine = stackEntries.length === 0
-    ? undefined
-    : `${stackTaken}/${stackEntries.length} ma${nextZone ? ` · köv. ${nextZone.time}` : ''}`
-
-  const { recipes } = useRecipes()
-  const starred = recipes.filter(r => r.starred).length
-  const recipeLine = recipes.length === 0
-    ? undefined
-    : `${recipes.length}${starred > 0 ? ` · ${starred} csillagos` : ''}`
-
-  // The Kamra page's own item composition (ingredients + stash), so the tile counts
-  // exactly what the page lists — not a second, drifting definition of "tétel".
-  const { ingredients, stash } = usePantry()
-  const pantryCount = buildKamraItems(ingredients, stash).length
-  const kamraLine = pantryCount === 0 ? undefined : `${pantryCount} tétel`
-
-  const { cycle } = useMedication()
-  const medLine = cycle.cycleDay > 0 ? `D${cycle.cycleDay} · ${cycle.phaseLabel}` : undefined
-
-  // Trendek line: today's own AI average off the logged meals — no fabricated 0 when nothing
-  // is scored yet (`aiAverage` returns null, and the weekly protein line takes over).
-  // S5 (mezo-qt5q): ez a szám a visszavont Napló-csempe egyetlen saját jele volt; a lap a
-  // Trendekbe olvadt (C5), tehát a jel is a Trendek-csempére költözött — nem vész el.
-  const todayAvg = aiAverage(fuel.meals.map(m => (m.score != null ? Math.round(m.score * 100) : null)))
-  const trendekLine = todayAvg == null ? tervLine : `AI-átlag ${todayAvg}`
+  // mezo-jb84: a Receptek / Kamra / Gyógyszer / Trendek csempék adat-sorai a csempékkel együtt
+  // elmentek. A lekérdezéseiket is elhagyjuk — egy lap ne olvasson adatot, amit nem mutat.
 
   return (
     <div className="fh-hub">
@@ -192,6 +152,13 @@ export function FuelMaiPage() {
         <div className="fmx-daynav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <DayNavigator date={date} onChange={goDay} maxDate={today}
             minDate={earliestBackfillDate(today)} eyebrow />
+          {/* A16 (owner, mezo-jb84): a beállítás a lap ALJÁN gyakorlatilag megtalálhatatlan volt
+              — 2107 px-es lapon az 1929-esnél kezdődött. A dátumsor a lap vezérlő-sávja, ide
+              tartozik. Csendes marad: ikon felirat nélkül, a hero mérete nem mozdul. */}
+          <button type="button" className="fmx-daynav-set np-press"
+            aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
+            <ClayIcon name="i-beallitas" size={19} />
+          </button>
         </div>
 
         {emptyPast ? (
@@ -258,42 +225,14 @@ export function FuelMaiPage() {
           </button>
         )}
 
-        {/* A12: a víz a Mai-on marad (owner) — a blokkok ALATT, gyorsgombokkal és a
-            session-alapú visszavonással. A hero víz-gyűrűje továbbra is a sheet ajtaja. */}
-        <div className="rise" style={{ '--d': '150ms' } as React.CSSProperties}>
-          <FuelWaterModule date={date} currentMl={fuel.consumed.water} targetMl={fuel.targets.water} />
-        </div>
-
-        {/* S5 (mezo-qt5q): a csempe-sáv MINDEN ajtaja élő lapra nyílik. A `Terv` (`/fuel/plan`,
-            C1) és a `Napló` (`/fuel/naplo`, C5) csempe EGY Trendek-csempévé olvadt, mert mind a
-            két lap a Trendekbe költözött — két csempe ugyanarra a lapra félrevezető lenne. A
-            Trendek/Konyha/Kiegészítők hármas egyébként a fül-sávból (navModel) is elérhető; ezek
-            a csempék a lapon belüli rövidítések, a saját élő adat-soraikkal. */}
-        <Mosaic>
-          <Tile wash="white" icon="i-trend" eyebrow="Trendek" delayMs={160}
-            line={trendekLine} onClick={() => navigate('/fuel/trendek')} aria-label="Trendek" />
-          <Tile wash="sage" icon="i-stack" eyebrow="Stack" delayMs={200} className="fh-eb-sage"
-            line={stackLine} onClick={() => navigate('/fuel/stack')} aria-label="Stack" />
-          <Tile wash="coral" icon="i-recept" eyebrow="Receptek" delayMs={240} className="fh-eb-coral"
-            line={recipeLine} onClick={() => navigate('/fuel/recipes')} aria-label="Receptek" />
-          <Tile wash="gold" icon="i-kamra" eyebrow="Kamra" delayMs={280} className="fh-eb-gold"
-            line={kamraLine} onClick={() => navigate('/fuel/kamra')} aria-label="Kamra" />
-          <Tile wash="lav" icon="i-injekcio" eyebrow="Gyógyszer" delayMs={320} className="fh-eb-lav"
-            line={medLine} onClick={() => navigate('/fuel/gyogyszer')} aria-label="Gyógyszer" />
-        </Mosaic>
-
-        {/* A16 (mezo-33k6): a beállítás CSENDES SAROK a lap alján (owner, spec 7) — nem csempe
-            és nem mosott sáv (a korábbi `.fh-band`), mert a napi használatban a beállítás a
-            legritkább út. A viselkedés változatlan: a standalone beállítás-oldalra visz, és
-            onnan nyílik tovább az étkezési ablakok szerkesztője (A17). */}
-        <div className="fmx-corner rise" style={{ '--d': '400ms' } as React.CSSProperties}>
-          <button type="button" className="fmx-corner-link"
-            aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
-            <ClayIcon name="i-beallitas" size={18} />
-            <span>Beállítások</span>
-            <span aria-hidden="true">›</span>
-          </button>
-        </div>
+        {/* A12 (owner, mezo-jb84): a víz-KÁRTYA lekerült. A vízlogolás nem veszett el: a hero
+            víz-gyűrűje maga a gomb, az nyitja a gyorsgombos lapot a visszavonással együtt —
+            a kártya ugyanazt mondta el másodszor, lejjebb. */}
+        {/* mezo-jb84 (owner): a csempe-sáv LEKERÜLT. A Trendek, a Kiegészítők és a Konyha a
+            fül-sávból egy koppintás, a Kamra és a Receptek a Konyha ajtói mögül, a víz pedig
+            saját modult kapott a lapon — a csempék ezeket ismételték meg harmadszor. A
+            Gyógyszer lap él, csak innen nem hirdetjük (a Kiegészítők felől érhető el).
+            A Mai így arról szól, amiért nyitod: hogy állsz ma, és logolj. */}
       </EntranceGroup>
 
       {waterOpen && (

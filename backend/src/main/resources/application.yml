@@ -177,6 +177,7 @@ mezo:
       g-per-kg-bw-floor: 1.6
       g-per-kg-bw-ceil: 2.2
       g-per-kg-lbm-low: 2.3
+      g-per-kg-lbm-mid: 2.7
       g-per-kg-lbm-high: 3.1
       g-per-kg-bw-cap: 2.6
     rate:
