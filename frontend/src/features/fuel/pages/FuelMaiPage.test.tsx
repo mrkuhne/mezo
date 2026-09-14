@@ -17,7 +17,7 @@
 // action sits BELOW the blocks, the víz ring opens the water sheet, the energy chip reopens
 // the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'

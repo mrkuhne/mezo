@@ -80,7 +80,7 @@ export interface DietSettings {
   proteinPctX10: number | null
   carbsPctX10: number | null
   fatPctX10: number | null
-  proteinTier: 'moderate' | 'high'
+  proteinTier: 'low' | 'moderate' | 'high'
   waterMl: number
   fiberG: number
   dayTypeShiftKcal: number

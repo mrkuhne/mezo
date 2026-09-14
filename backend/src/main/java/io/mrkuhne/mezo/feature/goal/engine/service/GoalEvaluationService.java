@@ -269,23 +269,46 @@ public class GoalEvaluationService {
     // ── protein target ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * Protein target (g/day). The BW path is {@code gPerKgBwDefault} (2.0) × weight — or, for the
-     * {@code high} protein tier, {@code gPerKgBwCeil} (2.2) × weight; when bf% is known the LBM path
-     * {@code gPerKgLbmHigh} (3.1) × LBM is also considered, the higher of the two is taken, and the
-     * result is capped at {@code gPerKgBwCap} (2.6) × weight. Rounded to whole grams.
+     * Protein target (g/day) — the higher of a body-weight and a lean-body-mass path, capped at
+     * {@code gPerKgBwCap} (2.6) × weight. Rounded to whole grams.
+     *
+     * <p>The tier moves BOTH coefficients (mezo-jb84). Until then it moved only the BW one
+     * (2.0 ↔ 2.2) while the LBM path stayed pinned at its high end (3.1) — so for anyone whose
+     * LBM path wins, which is anyone reasonably lean, the switch changed nothing at all and the
+     * target sat at the cap no matter what was chosen. The lower band endpoints were already
+     * configured ({@code gPerKgBwFloor} 1.6, {@code gPerKgLbmLow} 2.3) and simply never read.
+     *
+     * <table>
+     *   <tr><th>tier</th><th>BW</th><th>LBM</th></tr>
+     *   <tr><td>low</td><td>gPerKgBwFloor (1.6)</td><td>gPerKgLbmLow (2.3)</td></tr>
+     *   <tr><td>moderate</td><td>gPerKgBwDefault (2.0)</td><td>gPerKgLbmMid (2.7)</td></tr>
+     *   <tr><td>high</td><td>gPerKgBwCeil (2.2)</td><td>gPerKgLbmHigh (3.1)</td></tr>
+     * </table>
+     *
+     * <p>An unknown tier falls back to {@code moderate}: a stored value we do not recognise must
+     * not silently become the highest target.
      */
     int proteinTargetGrams(BigDecimal weightKg, BigDecimal bodyFatPct, String proteinTier) {
-        double gPerKgBw = "high".equals(proteinTier)
-            ? props.protein().gPerKgBwCeil() : props.protein().gPerKgBwDefault();
-        BigDecimal bwTarget = BigDecimal.valueOf(gPerKgBw).multiply(weightKg);
-        BigDecimal target = bwTarget;
+        GoalEngineProperties.Protein cfg = props.protein();
+        double gPerKgBw;
+        double gPerKgLbm;
+        if ("low".equals(proteinTier)) {
+            gPerKgBw = cfg.gPerKgBwFloor();
+            gPerKgLbm = cfg.gPerKgLbmLow();
+        } else if ("high".equals(proteinTier)) {
+            gPerKgBw = cfg.gPerKgBwCeil();
+            gPerKgLbm = cfg.gPerKgLbmHigh();
+        } else {
+            gPerKgBw = cfg.gPerKgBwDefault();
+            gPerKgLbm = cfg.gPerKgLbmMid();
+        }
+        BigDecimal target = BigDecimal.valueOf(gPerKgBw).multiply(weightKg);
         if (bodyFatPct != null) {
             BigDecimal lbm = weightKg.multiply(
                 BigDecimal.ONE.subtract(bodyFatPct.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP)));
-            BigDecimal lbmTarget = BigDecimal.valueOf(props.protein().gPerKgLbmHigh()).multiply(lbm);
-            target = target.max(lbmTarget);
+            target = target.max(BigDecimal.valueOf(gPerKgLbm).multiply(lbm));
         }
-        BigDecimal cap = BigDecimal.valueOf(props.protein().gPerKgBwCap()).multiply(weightKg);
+        BigDecimal cap = BigDecimal.valueOf(cfg.gPerKgBwCap()).multiply(weightKg);
         return target.min(cap).setScale(0, RoundingMode.HALF_UP).intValueExact();
     }
 
