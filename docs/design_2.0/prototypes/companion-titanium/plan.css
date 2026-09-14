@@ -405,21 +405,21 @@
 .pl-scale-bar .mark { position: absolute; top: -4px; bottom: -4px; left: var(--at); width: 2px; background: #ffffff3d; }
 .pl-scale-bar .mark.is-top { background: #fff; opacity: .8; }
 .pl-scale-bar .pin {
-  position: absolute; bottom: 22px; left: var(--at); translate: -50% 0; padding: 4px 10px; border-radius: 999px;
+  position: absolute; bottom: 22px; left: var(--at); translate: var(--nudge, -50%) 0; padding: 4px 10px; border-radius: 999px;
   font-size: 13px; font-weight: 600; color: #0f1409; white-space: nowrap;
   background: color-mix(in srgb, var(--mus-color) 85%, #fff);
 }
 .pl-scale-bar .pin::after {
-  content: ''; position: absolute; left: 50%; bottom: -4px; translate: -50% 0; width: 8px; height: 8px; rotate: 45deg;
+  content: ''; position: absolute; left: calc(50% - (var(--nudge, -50%) + 50%)); bottom: -4px; translate: -50% 0; width: 8px; height: 8px; rotate: 45deg;
   background: color-mix(in srgb, var(--mus-color) 85%, #fff);
 }
 .pl-scale-legend { position: relative; display: block; height: 34px; margin-top: 9px; }
 .pl-scale-legend i {
-  position: absolute; left: var(--at); translate: -50% 0; text-align: center; font-style: normal;
+  position: absolute; left: var(--at); translate: var(--nudge, -50%) 0; text-align: center; font-style: normal;
   font-size: 13px; font-weight: 500; color: #ffffffb0; white-space: nowrap;
 }
 .pl-scale-legend i small { display: block; font-size: 9px; color: #ffffff52; margin-top: 2px; }
-.pl-scale-legend i:last-child { translate: -70% 0; }
+
 
 .pl-weekvals { display: flex; gap: 6px; margin: 4px 0 0; }
 .pl-weekvals i { flex: 1; text-align: center; font-style: normal; font-size: 11px; color: #ffffff5e; }

@@ -252,18 +252,24 @@ function planMuscle(key) {
    <span><strong data-fuel-count="${top}">0</strong><small>a legtöbb lesz</small></span>
   </div>`;
 
+  // A muscle you only hold has its threshold and its ceiling in the same place — one label, not two.
+  const mevPct = muscle.mev / scale * 100, topPct = p.ceiling / scale * 100;
+  const together = Math.abs(topPct - mevPct) < 7;
+  const nudge = at => (at > 86 ? '-84%' : at < 14 ? '-16%' : '-50%');
   const gauge = `<h3 class="pl-h3">Hol tartasz ${info('Mit jelentenek a jelölések?',
     `A ${muscle.mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`)}</h3>
    <div class="pl-scale-wrap" data-reveal>
     <span class="pl-scale-bar">
      <i class="fill" style="--w:${p.now / scale * 100}%"></i>
-     <u class="mark is-mev" style="--at:${muscle.mev / scale * 100}%"></u>
-     <u class="mark is-top" style="--at:${p.ceiling / scale * 100}%"></u>
-     <b class="pin" style="--at:${p.now / scale * 100}%">${p.now}</b>
+     ${together ? '' : `<u class="mark is-mev" style="--at:${mevPct}%"></u>`}
+     <u class="mark is-top" style="--at:${topPct}%"></u>
+     <b class="pin" style="--at:${p.now / scale * 100}%;--nudge:${nudge(p.now / scale * 100)}">${p.now}</b>
     </span>
     <span class="pl-scale-legend">
-     <i style="--at:${muscle.mev / scale * 100}%">${muscle.mev}<small>ennyitől fejlődik</small></i>
-     <i style="--at:${p.ceiling / scale * 100}%">${p.ceiling}<small>eddig mész el</small></i>
+     ${together
+      ? `<i style="--at:${topPct}%;--nudge:${nudge(topPct)}">${p.ceiling}<small>ennyitől fejlődik — és itt tartod</small></i>`
+      : `<i style="--at:${mevPct}%;--nudge:${nudge(mevPct)}">${muscle.mev}<small>ennyitől fejlődik</small></i>
+     <i style="--at:${topPct}%;--nudge:${nudge(topPct)}">${p.ceiling}<small>eddig mész el</small></i>`}
     </span>
    </div>`;
 
