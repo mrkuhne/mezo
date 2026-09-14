@@ -452,3 +452,97 @@
 [data-reveal].is-in .pl-versus-bar i { width: var(--w); transition: width .8s cubic-bezier(.22, .9, .25, 1) .12s; }
 [data-reveal] .pl-scale-bar .pin { opacity: 0; }
 [data-reveal].is-in .pl-scale-bar .pin { opacity: 1; transition: opacity .3s ease .75s; }
+
+/* — the library — */
+.pl-lhero { min-height: 0; }
+.pl-lhero .pl-poster-foot { position: relative; margin-top: 12px; }
+.pl-lhero-art { position: absolute; right: 6px; top: 14px; width: 96px; height: 96px; pointer-events: none; }
+.pl-lhero-art .icon { position: absolute; inset: 18px; width: 60px; height: 60px; filter: drop-shadow(0 10px 18px #00000066); }
+.pl-lhero-art i {
+  position: absolute; inset: 0; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--mus-color) 38%, transparent);
+  animation: pl-spin 26s linear infinite;
+}
+.pl-lhero-art i:nth-of-type(2) { inset: 9px; rotate: 58deg; opacity: .55; animation-duration: 19s; animation-direction: reverse; }
+.pl-lhero-map { position: absolute; right: 2px; top: 10px; pointer-events: none; }
+.pl-lhero-body { width: 104px; height: 104px; filter: drop-shadow(0 10px 18px #00000066); }
+.pl-lhero-stars { position: relative; margin: 4px 0 10px; }
+.pl-lhero-stars .icon { width: 30px; height: 30px; }
+.pl-lhero.is-closed h2 { margin-bottom: 2px; }
+
+.pl-stars { display: inline-flex; gap: 3px; }
+.pl-stars .icon { width: 18px; height: 18px; }
+
+/* the library's fact boxes never push wider than the page */
+.pl-lib .pl-day-facts, .pl-lib .pl-day-facts i { min-width: 0; }
+.pl-lib .pl-day-facts b { white-space: nowrap; }
+
+/* one card grammar for the running, queued, template and closed rows */
+.pl-lib-card {
+  display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
+  border: 1px solid #ffffff12; border-radius: 20px; background: linear-gradient(150deg, #ffffff09, #ffffff03);
+}
+.pl-lib-card.is-now {
+  border-color: color-mix(in srgb, var(--domain-color) 34%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--domain-color) 13%, transparent), #ffffff03);
+}
+.pl-lib-card.is-now .pl-arc { height: 44px; margin: 0 0 14px; }
+.pl-lib-head { display: flex; align-items: baseline; gap: 9px; }
+.pl-lib-head strong { font-size: 15.5px; font-weight: 500; }
+.pl-lib-head em { font-style: normal; font-size: 11px; color: #ffffff66; }
+.pl-lib-head b { margin-left: auto; color: #ffffff3d; font-size: 15px; }
+.pl-lib-card .pl-day-facts { min-width: 0; }
+.pl-lib-card .pl-day-facts i { min-width: 0; }
+.pl-lib-card .pl-day-facts b.is-word { font-size: 11px; line-height: 1.2; white-space: nowrap; }
+.pl-lib-note { font-size: 10.5px; color: #ffffff52; }
+.pl-lib-mus { display: flex; flex-wrap: wrap; gap: 4px; }
+.pl-lib-mus i {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px;
+  background: color-mix(in srgb, var(--mus-color) 12%, transparent);
+}
+.pl-lib-mus .icon { width: 21px; height: 21px; }
+.pl-lib-closed-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.pl-lib-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #ffffff7d; }
+.pl-lib-meta .icon { width: 16px; height: 16px; }
+
+/* the one loud button: making something new */
+.pl-lib-new {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 18px 0 4px; padding: 14px 16px; cursor: pointer;
+  text-align: left; border: 1px solid #bca6f13d; border-radius: 22px;
+  background: linear-gradient(120deg, #bca6f122, #bca6f10a 55%, #78cfe712);
+  box-shadow: 0 10px 26px -18px #bca6f1aa;
+}
+.pl-lib-new-art { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: #bca6f11f; flex: 0 0 auto; }
+.pl-lib-new-art .icon { width: 30px; height: 30px; }
+.pl-lib-new strong { display: block; font-size: 14.5px; font-weight: 600; }
+.pl-lib-new small { display: block; margin-top: 2px; font-size: 11px; color: #ffffff70; }
+.pl-lib-new b { margin-left: auto; font-size: 19px; color: #d8cdf3; }
+.pl-lib-new.is-start { margin-top: 22px; }
+
+/* muscle rows: plain on the template page, with a journey bar on the closed one */
+.pl-lib-muslist { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pl-lib-muslist.is-bars { grid-template-columns: 1fr; }
+.pl-lib-musrow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid #ffffff10; border-radius: 16px; background: #ffffff05;
+}
+.pl-lib-musrow > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
+.pl-lib-musrow strong { font-size: 13px; font-weight: 500; }
+.pl-lib-mustext { display: grid; gap: 1px; min-width: 108px; }
+.pl-lib-mustext small { font-size: 10px; color: #ffffff5c; }
+.pl-lib-musbar { position: relative; flex: 1; height: 10px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.pl-lib-musbar i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 34%, transparent) var(--a), var(--mus-color));
+}
+.pl-lib-musrow b { font-size: 11.5px; font-weight: 500; color: #ffffff8c; white-space: nowrap; }
+[data-reveal] .pl-lib-musbar i { width: 0; }
+[data-reveal].is-in .pl-lib-musbar i { width: var(--w); transition: width .9s cubic-bezier(.22, .9, .25, 1) .12s; }
+
+/* the then-vs-now pairs on the closed page */
+.pl-lib-versus { gap: 14px; }
+.pl-versus-pair { display: grid; gap: 6px; }
+.pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; }
+.pl-versus-name .icon { width: 20px; height: 20px; }
+
+@keyframes pl-spin { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }

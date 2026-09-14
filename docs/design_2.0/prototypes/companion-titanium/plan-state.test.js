@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MESO, TIERS, phaseOf, isDeloadWeek, ceilingOf, setsAt, currentSets, peakWeek, nextRollover,
   bandPosition, dayByToken, isTrainingDay, dayLoad, daySets, whereItWorks, weekTotal, adjacencyNotes,
+  LIBRARY, template, closedRun, templateStory, closedShare,
 } from './plan-state.js';
 
 test('the run is internally consistent: a curve per week and a series per muscle', () => {
@@ -116,4 +117,41 @@ test('back-to-back days sharing a muscle are noted, and a gap is not', () => {
   });
   assert.equal(tight.length, 1);
   assert.deepEqual(tight[0], { key: 'chest-mid', from: 'Hét', to: 'K' });
+});
+
+test('the library is internally consistent: dates ordered, honest counts, known sources', () => {
+  for (const run of LIBRARY.closed) {
+    assert.ok(run.start < run.end, `${run.key} runs backwards`);
+    assert.ok(run.done <= run.planned, `${run.key} claims more sessions than planned`);
+    assert.ok(run.stars >= 0 && run.stars <= 5, `${run.key} stars off the scale`);
+    assert.ok(LIBRARY.templates.some(t => t.key === run.from), `${run.key} came from an unknown template`);
+    for (const m of run.muscles) assert.ok(m.peak >= m.start, `${run.key}/${m.key} peaked below its start`);
+  }
+  for (const run of LIBRARY.planned) {
+    assert.ok(LIBRARY.templates.some(t => t.key === run.from), `${run.key} came from an unknown template`);
+  }
+  assert.ok(LIBRARY.templates.some(t => t.key === LIBRARY.active.from), 'the running block has an unknown source');
+});
+
+test('templates and closed runs resolve by key, and a miss is null not a crash', () => {
+  assert.equal(template('alap-ero').name, 'Alapból erő');
+  assert.equal(template('nincs'), null);
+  assert.equal(closedRun('hyper-nyar').records, 7);
+  assert.equal(closedRun('nincs'), null);
+});
+
+test('a template tells its whole story: what runs now, what waits, what closed', () => {
+  const alap = templateStory('alap-ero');
+  assert.equal(alap.activeNow, MESO);
+  assert.deepEqual(alap.planned.map(r => r.key), ['osz-ero']);
+  assert.deepEqual(alap.closed.map(r => r.key), ['tavasz-alap']);
+  const nyar = templateStory('nyari-tomeg');
+  assert.equal(nyar.activeNow, null);
+  assert.deepEqual(nyar.closed.map(r => r.key), ['hyper-nyar']);
+});
+
+test('the delivered share is honest and capped', () => {
+  assert.equal(closedShare({ done: 15, planned: 18 }), 15 / 18);
+  assert.equal(closedShare({ done: 20, planned: 18 }), 1);
+  assert.equal(closedShare({ done: 3, planned: 0 }), 0);
 });

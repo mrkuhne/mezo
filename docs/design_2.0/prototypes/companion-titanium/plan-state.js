@@ -150,3 +150,55 @@ export function adjacencyNotes(meso = MESO) {
   }
   return notes;
 }
+
+/* ── the library: templates, the queued run, and the closed ones ─────────────────────── */
+// A template is a blueprint; stamping it makes a run with dates; a closed run keeps its story.
+
+export const LIBRARY = {
+  active: { from: 'alap-ero' },
+  planned: [
+    { key: 'osz-ero', name: 'Erő ősszel', from: 'alap-ero', start: '2026-10-12', weeks: 6, daysPerWeek: 3, split: 'Felső / alsó' },
+  ],
+  templates: [
+    { key: 'alap-ero', name: 'Alapból erő', split: 'Felső / alsó', weeks: 6, daysPerWeek: 3, minutes: 48,
+      muscles: ['chest-mid', 'back-mid', 'shoulder-side', 'quad', 'ham', 'biceps-short', 'calf'] },
+    { key: 'vall-hat', name: 'Váll és hát', split: 'Húzó / toló', weeks: 5, daysPerWeek: 4, minutes: 55,
+      muscles: ['shoulder-side', 'shoulder-rear', 'back-wide', 'back-mid', 'traps', 'biceps-short'] },
+    { key: 'nyari-tomeg', name: 'Nyári tömegelés', split: 'Teljes test', weeks: 6, daysPerWeek: 4, minutes: 58,
+      muscles: ['chest-mid', 'back-wide', 'shoulder-side', 'quad', 'ham', 'glute', 'triceps-long'] },
+  ],
+  closed: [
+    { key: 'hyper-nyar', name: 'Hypertrophy · Nyár', from: 'nyari-tomeg', start: '2026-06-15', end: '2026-07-26',
+      weeks: 6, done: 22, planned: 24, stars: 4.5, records: 7, volumeKg: 128400,
+      say: 'A hátad vitte a legtöbbet — a végére húsz szettet is bírt hetente.',
+      muscles: [
+        { key: 'back-wide', start: 10, peak: 20, note: 'végig bírta az emelést' },
+        { key: 'chest-mid', start: 8, peak: 12, note: 'a negyedik héten állt meg' },
+        { key: 'quad', start: 8, peak: 12, note: 'stabilan hozta' },
+        { key: 'shoulder-side', start: 6, peak: 10, note: 'új rekordig jutott' },
+      ] },
+    { key: 'tavasz-alap', name: 'Tavaszi alapozás', from: 'alap-ero', start: '2026-03-02', end: '2026-04-12',
+      weeks: 6, done: 15, planned: 18, stars: 3, records: 3, volumeKg: 84600,
+      say: 'Egy beteg hét kimaradt, mégis hoztad a terv nagyját.',
+      muscles: [
+        { key: 'chest-mid', start: 8, peak: 12, note: 'két hét kellett a ritmushoz' },
+        { key: 'back-mid', start: 10, peak: 14, note: 'egyenletesen nőtt' },
+        { key: 'quad', start: 8, peak: 12, note: 'a kihagyás itt látszott' },
+      ] },
+  ],
+};
+
+export const template = key => LIBRARY.templates.find(t => t.key === key) ?? null;
+export const closedRun = key => LIBRARY.closed.find(r => r.key === key) ?? null;
+
+/** Every run stamped from this template, newest first — the running and queued ones included. */
+export function templateStory(key, library = LIBRARY, meso = MESO) {
+  return {
+    activeNow: library.active.from === key ? meso : null,
+    planned: library.planned.filter(r => r.from === key),
+    closed: library.closed.filter(r => r.from === key),
+  };
+}
+
+/** How much of the planned work a closed run actually delivered, 0..1. */
+export const closedShare = run => (run.planned ? Math.min(1, run.done / run.planned) : 0);

@@ -3,7 +3,7 @@
 import {
   MESO, DAY_ORDER, DAY_NAMES, TIERS, phaseOf, isDeloadWeek, ceilingOf, setsAt, currentSets,
   peakWeek, nextRollover, bandPosition, dayByToken, dayLoad, daySets, whereItWorks, weekTotal,
-  adjacencyNotes,
+  adjacencyNotes, LIBRARY, template, closedRun, templateStory, closedShare,
 } from './plan-state.js';
 import { icon, safe } from './nap.js';
 import { muscleIcon, muscleLabel, muscleColor, bodyMap } from './muscles.js';
@@ -320,14 +320,178 @@ function planMuscle(key) {
   </div>`;
 }
 
-/* ── the quiet library ───────────────────────────────────────────────────────────────── */
+/* ── the library: what runs, what waits, what closed ─────────────────────────────────── */
 
-const planLibrary = () => `<div class="pl-sub">
-  <button class="pl-back" ${route()}>‹ A blokk</button>
-  <header class="pl-sub-head"><span class="overline">MÁSODLAGOS BELÉPŐ</span><h2>Sablonok és futamok</h2>
-   <p>Ritkán kell — ezért került a futó blokkod mögé.</p></header>
-  <div class="tr-soon">${icon('stack')}<span class="overline">KÖVETKEZŐ KÖR</span><strong>Ez a lap még nem épült át.</strong><p>Ide kerül a sablonkönyvtár, a tervező-varázsló, a tervezett futamok és a lezárt blokkok a zárójelentésükkel és az összevetéssel.</p></div>
- </div>`;
+const LIB_COLOR = '#bca6f1';
+
+/** Five clay stars, halves included — the same scale the ceremony hands out. */
+const starRow = value => `<span class="pl-stars" role="img" aria-label="${n(value)} csillag az ötből">${
+  Array.from({ length: 5 }, (_, i) => icon(value >= i + 1 ? 'star' : value >= i + 0.5 ? 'star-half' : 'star-empty')).join('')}</span>`;
+
+const rangeLabel = run => `${dateLabel(run.start)} – ${dateLabel(run.end)}`;
+
+function planLibrary() {
+  const lib = LIBRARY, meso = MESO;
+
+  const hero = `<header class="pl-dhero pl-lhero" style="--mus-color:${LIB_COLOR}" data-reveal>
+   <span class="pl-dhero-wash"></span>
+   <div class="pl-lhero-art">${icon('stack')}<i></i><i></i></div>
+   <span class="overline">EDZÉSTERVEK</span>
+   <h2>A terveid</h2>
+   <p class="pl-say">Ami most fut, ami következik, és amit már végigcsináltál — egy helyen.</p>
+   <div class="pl-poster-foot">
+    <span>1 fut</span><span>${lib.planned.length} következik</span>
+    <span>${lib.templates.length} sablon</span><span>${lib.closed.length} lezárva</span>
+   </div>
+  </header>`;
+
+  const now = `<h3 class="pl-h3">Most fut</h3>
+  <button class="pl-lib-card is-now" data-reveal ${route()}>
+   <span class="pl-lib-head"><strong>${meso.name}</strong><em>${meso.currentWeek}. hét a ${meso.weeks}-ból</em><b>›</b></span>
+   ${weekArc(meso)}
+  </button>`;
+
+  const queued = lib.planned.map(run => `<button class="pl-lib-card is-queued" data-reveal ${route('library', 'template', run.from)}>
+   <span class="pl-lib-head"><strong>${run.name}</strong><em>${dateLabel(run.start)}-től</em><b>›</b></span>
+   <span class="pl-day-facts">
+    <i>${icon('history')}<b>${run.weeks}</b><small>hét</small></i>
+    <i>${icon('dumbbell')}<b>${run.daysPerWeek}</b><small>nap hetente</small></i>
+    <i>${icon('stack')}<b class="is-word">${run.split}</b></i>
+   </span>
+   <small class="pl-lib-note">Akkor indul, amikor a mostani terved lezárul.</small>
+  </button>`).join('');
+  const queuedSec = lib.planned.length ? `<h3 class="pl-h3">Következik</h3>${queued}` : '';
+
+  const create = `<button class="pl-lib-new" data-reveal data-detail="Új terv összeállítása" data-art="stack"
+   data-copy="Lépésről lépésre raksz össze egy tervet: napok, gyakorlatok, és hogy melyik izmod kapjon többet. Indulhatsz egy sablonból is — az gyorsabb, és utána bármit átírhatsz.">
+   <span class="pl-lib-new-art">${icon('stack')}</span>
+   <span><strong>Új terv összeállítása</strong><small>Sablonból indulsz, vagy nulláról építed</small></span>
+   <b>＋</b></button>`;
+
+  const templates = `<h3 class="pl-h3">Sablonjaid</h3>${lib.templates.map(t => {
+    const story = templateStory(t.key);
+    const uses = story.closed.length + (story.activeNow ? 1 : 0);
+    const use = story.activeNow ? 'Ebből fut a mostani terved'
+      : uses ? `${uses} ${plural(uses, 'futam indult', 'futam indult')} belőle` : 'Még nem indítottál belőle';
+    return `<button class="pl-lib-card" data-reveal ${route('library', 'template', t.key)}>
+    <span class="pl-lib-head"><strong>${t.name}</strong><em>${t.split}</em><b>›</b></span>
+    <span class="pl-day-facts">
+     <i>${icon('history')}<b>${t.weeks}</b><small>hét</small></i>
+     <i>${icon('dumbbell')}<b>${t.daysPerWeek}</b><small>nap hetente</small></i>
+     <i>${icon('clock')}<b>~${t.minutes}</b><small>perc</small></i>
+    </span>
+    <span class="pl-lib-mus">${t.muscles.map(key => `<i style="--mus-color:${muscleColor(key)}">${muscleIcon(key)}</i>`).join('')}</span>
+    <small class="pl-lib-note">${use}</small>
+   </button>`;
+  }).join('')}`;
+
+  const closed = `<h3 class="pl-h3">Lezárt futamaid</h3>${lib.closed.map(run => `<button class="pl-lib-card is-closed" data-reveal ${route('library', 'closed', run.key)}>
+   <span class="pl-lib-head"><strong>${run.name}</strong><em>${rangeLabel(run)}</em><b>›</b></span>
+   <span class="pl-lib-closed-row">${starRow(run.stars)}
+    <span class="pl-lib-meta">${icon('tick')}${run.done} edzés a ${run.planned}-ból</span>
+    <span class="pl-lib-meta">${icon('record')}${run.records} rekord</span>
+   </span>
+  </button>`).join('')}`;
+
+  return `<div class="pl-sub pl-lib">
+   <button class="pl-back" ${route()}>‹ A terved</button>
+   ${hero}${now}${queuedSec}${create}${templates}${closed}
+  </div>`;
+}
+
+/* ── one template ────────────────────────────────────────────────────────────────────── */
+
+function planLibraryTemplate(key) {
+  const t = template(key);
+  if (!t) return planLibrary();
+  const story = templateStory(key);
+
+  const hero = `<header class="pl-dhero pl-lhero" style="--mus-color:${LIB_COLOR}" data-reveal>
+   <span class="pl-dhero-wash"></span>
+   <div class="pl-lhero-map">${bodyMap(t.muscles, { className: 'body-map pl-lhero-body' })}</div>
+   <span class="overline">SABLON</span>
+   <h2>${t.name}</h2>
+   <p class="pl-say">${t.weeks} hét, hetente ${t.daysPerWeek} edzésnap — ${t.split.toLowerCase()} felosztásban.</p>
+   <div class="pl-poster-foot"><span>~${t.minutes} perc egy edzés</span><span>${t.muscles.length} izomcsoport</span></div>
+  </header>`;
+
+  const muscles = `<h3 class="pl-h3">Amit edz ${info('Mit jelent a lista?', 'Ezek az izmok kapnak saját heti szettszámot a sablonban. Amikor futamot indítasz belőle, hétről hétre ez emelkedik.')}</h3>
+  <div class="pl-lib-muslist" data-reveal>${t.muscles.map(mkey => `<span class="pl-lib-musrow" style="--mus-color:${muscleColor(mkey)}">
+    ${muscleIcon(mkey)}<strong>${muscleLabel(mkey)}</strong>
+   </span>`).join('')}</div>`;
+
+  const runRow = (label, sub, to, mod = '') => `<button class="pl-row ${mod}" data-reveal ${to}>
+   <span><strong>${label}</strong><small>${sub}</small></span><b>›</b></button>`;
+  const runs = [
+    story.activeNow ? runRow(story.activeNow.name, `Most fut — ${story.activeNow.currentWeek}. hét a ${story.activeNow.weeks}-ból`, route(), 'is-live') : '',
+    ...story.planned.map(run => runRow(run.name, `${dateLabel(run.start)}-től következik`, route('library'), '')),
+    ...story.closed.map(run => runRow(run.name, `${rangeLabel(run)} · ${n(run.stars)} csillag`, route('library', 'closed', run.key), '')),
+  ].filter(Boolean).join('');
+  const runsSec = runs ? `<h3 class="pl-h3">Futamok ebből a sablonból</h3>${runs}`
+    : `<h3 class="pl-h3">Futamok ebből a sablonból</h3><p class="pl-foot-say" data-reveal>Ebből a sablonból még nem indítottál futamot.</p>`;
+
+  const start = `<button class="pl-lib-new is-start" data-reveal data-detail="Futam indítása ebből" data-art="stack"
+   data-copy="Kezdőnapot választasz, és a sablonból kész terv lesz: dátumokkal, heti emeléssel, pihenőhéttel a végén. A sablon maga nem változik — abból bármikor indíthatsz újat.">
+   <span class="pl-lib-new-art">${icon('bolt')}</span>
+   <span><strong>Futam indítása ebből</strong><small>A sablon marad, a terv a tiéd lesz</small></span>
+   <b>›</b></button>`;
+
+  return `<div class="pl-sub pl-lib">
+   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   ${hero}${muscles}${runsSec}${start}
+  </div>`;
+}
+
+/* ── one closed run: the story it left behind ────────────────────────────────────────── */
+
+function planLibraryClosed(key) {
+  const run = closedRun(key);
+  if (!run) return planLibrary();
+
+  const hero = `<header class="pl-dhero pl-lhero is-closed" style="--mus-color:${LIB_COLOR}" data-reveal>
+   <span class="pl-dhero-wash"></span>
+   <span class="overline">LEZÁRT FUTAM · ${rangeLabel(run).toUpperCase()}</span>
+   <h2>${run.name}</h2>
+   <div class="pl-lhero-stars">${starRow(run.stars)}</div>
+   <p class="pl-say">${run.say}</p>
+  </header>`;
+
+  const share = Math.round(closedShare(run) * 100);
+  const facts = `<div class="pl-day-facts pl-lib-facts" data-reveal>
+   <i>${icon('tick')}<b>${run.done}</b><small>edzés a ${run.planned}-ból</small></i>
+   <i>${icon('record')}<b>${run.records}</b><small>megdöntött rekord</small></i>
+   <i>${icon('kettle')}<b>${Math.round(run.volumeKg / 1000)} t</b><small>összsúly</small></i>
+  </div>
+  <p class="pl-foot-say" data-reveal>A tervezett edzéseid ${share}%-át végigcsináltad.</p>`;
+
+  const peakMax = Math.max(...run.muscles.map(m => m.peak));
+  const muscles = `<h3 class="pl-h3">Izmaid ebben a futamban ${info('Mit mutat a sáv?', 'Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét.')}</h3>
+  <div class="pl-lib-muslist is-bars" data-reveal>${run.muscles.map(m => `<span class="pl-lib-musrow" style="--mus-color:${muscleColor(m.key)}">
+    ${muscleIcon(m.key)}
+    <span class="pl-lib-mustext"><strong>${muscleLabel(m.key)}</strong><small>${m.note}</small></span>
+    <span class="pl-lib-musbar"><i style="--a:${m.start / peakMax * 100}%;--w:${m.peak / peakMax * 100}%"></i></span>
+    <b>${m.start} → ${m.peak}</b>
+   </span>`).join('')}</div>`;
+
+  const shared = run.muscles.filter(m => MESO.muscles.some(mm => mm.key === m.key));
+  const versus = shared.length ? `<h3 class="pl-h3">A mostani tervedhez képest</h3>
+  <p class="pl-foot-say" data-reveal>Ugyanazok az izmok — mennyit bírtak akkor a csúcson, és mennyit bírnak majd most.</p>
+  <div class="pl-versus pl-lib-versus" data-reveal>${shared.map(m => {
+    const nowMuscle = MESO.muscles.find(mm => mm.key === m.key);
+    const nowPeak = setsAt(nowMuscle, peakWeek(MESO));
+    const top = Math.max(m.peak, nowPeak) || 1;
+    return `<div class="pl-versus-pair" style="--mus-color:${muscleColor(m.key)}">
+     <span class="pl-versus-name">${muscleIcon(m.key)}${muscleLabel(m.key)}</span>
+     <div class="pl-versus-row"><span>akkor</span><span class="pl-versus-bar"><i style="--w:${m.peak / top * 100}%"></i></span><b>${m.peak}</b></div>
+     <div class="pl-versus-row is-now"><span>most</span><span class="pl-versus-bar"><i style="--w:${nowPeak / top * 100}%"></i></span><b>${nowPeak}</b></div>
+    </div>`;
+  }).join('')}</div>` : '';
+
+  return `<div class="pl-sub pl-lib">
+   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   ${hero}${facts}${muscles}${versus}
+  </div>`;
+}
 
 /* ── entry ───────────────────────────────────────────────────────────────────────────── */
 
@@ -336,7 +500,12 @@ export function planContent() {
   if (view === 'day') return planDay(decodeURIComponent(id));
   if (view === 'week') return planWeek();
   if (view === 'muscle') return planMuscle(id);
-  if (view === 'library') return planLibrary();
+  if (view === 'library') {
+    const [, , , sub = '', subId = ''] = location.hash.slice(1).split('/');
+    if (sub === 'template') return planLibraryTemplate(decodeURIComponent(subId));
+    if (sub === 'closed') return planLibraryClosed(decodeURIComponent(subId));
+    return planLibrary();
+  }
   return planHome();
 }
 
