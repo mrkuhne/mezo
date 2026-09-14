@@ -127,31 +127,34 @@ function planDay(token) {
   if (!day) return `<div class="pl-empty"><h2>Ezen a napon nem edzel.</h2><p>A ${DAY_NAMES[token] ?? token} pihenőnap ebben a tervben.</p><button class="pl-back" ${route()}>Vissza</button></div>`;
 
   const load = dayLoad(day).sort((a, b) => b.sets - a.sets);
+  const lead = load[0];
   const today = token === 'Sze';
+  const share = Math.round(daySets(day) / weekTotal(MESO) * 100);
 
-  const poster = `<section class="pl-dposter">
-   <span class="pl-poster-glow" aria-hidden="true"></span>
-   <span class="pl-dtag">${today ? 'MA' : DAY_NAMES[token]}</span>
+  // Poster anatomy: eyebrow, one spot graphic, one dominant numeral.
+  const poster = `<section class="pl-dhero" style="--mus-color:${muscleColor(lead.key)}">
+   <span class="pl-dhero-wash" aria-hidden="true"></span>
+   <span class="pl-dhero-art" aria-hidden="true"><i></i><i></i><i></i>${muscleIcon(lead.key)}</span>
+   <span class="pl-dhero-tag">${today ? 'MA' : DAY_NAMES[token].toLocaleUpperCase('hu-HU')} · A TERV ${MESO.currentWeek}. HETE</span>
    <h2>${day.type}</h2>
-   <div class="pl-dstats">
-    <span><strong data-fuel-count="${daySets(day)}">0</strong><small>szett</small></span>
-    <span><strong data-fuel-count="${day.minutes}">0</strong><small>perc</small></span>
-    <span><strong data-fuel-count="${day.exercises.length}">0</strong><small>gyakorlat</small></span>
-   </div>
+   <div class="pl-dhero-number"><strong data-fuel-count="${daySets(day)}">0</strong><small>szett</small></div>
+   <div class="pl-dhero-pills"><span>${day.minutes} perc</span><span>${day.exercises.length} gyakorlat</span><span>a heted ${share}%-a</span></div>
+   <span class="pl-dhero-constel">${load.map(r => `<i style="--mus-color:${muscleColor(r.key)}">${muscleIcon(r.key)}</i>`).join('')}</span>
   </section>`;
 
   const muscles = `<h3 class="pl-h3">Mit terhel ez a nap ${info('Miért nyolcnál a jelölés?',
-    'Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés a sávon, hogy lásd, hol jársz.')}</h3>
-   <div class="pl-list">${load.map((r, i) => `<div class="pl-mrow" data-reveal style="--mus-color:${muscleColor(r.key)};--i:${i}">
-     <span class="pl-mrow-art">${muscleIcon(r.key)}</span>
-     <span class="pl-mrow-name">${muscleLabel(r.key)}</span>
-     <span class="pl-mrow-count">${r.sets}<i>szett</i></span>
-     <span class="pl-mrow-bar"><i style="--w:${Math.min(100, r.sets / 10 * 100)}%"></i><u style="--at:80%"></u></span>
+    'Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz.')}</h3>
+   <div class="pl-mtiles">${load.map((r, i) => `<div class="pl-mtile" data-reveal style="--mus-color:${muscleColor(r.key)};--i:${i}">
+     <span class="pl-mtile-art">${muscleIcon(r.key)}</span>
+     <strong>${r.sets}<i>szett</i></strong>
+     <small>${muscleLabel(r.key)}</small>
+     <span class="pl-mtile-bar"><i style="--w:${Math.min(100, r.sets / 10 * 100)}%"></i><u style="--at:80%"></u></span>
     </div>`).join('')}</div>`;
 
   const exercises = `<h3 class="pl-h3">A nap gyakorlatai ${info('Mikortól él a változtatás?',
     'Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted.')}</h3>
    <div class="pl-exs">${day.exercises.map((e, i) => `<div class="pl-ex" data-reveal style="--ex-color:${muscleColor(e.muscle)};--i:${i}">
+     <span class="pl-ex-index">${String(i + 1).padStart(2, '0')}</span>
      <span class="pl-ex-art">${muscleIcon(e.muscle)}</span>
      <span class="pl-ex-copy"><strong>${e.name}</strong><small>${muscleLabel(e.muscle)}</small></span>
      <span class="pl-ex-move">
@@ -162,8 +165,8 @@ function planDay(token) {
       <b class="is-main">${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b>
       <b>${e.rir} RIR</b>
       <b>${e.kg ? `${n(e.kg)} kg` : 'saját testsúly'}</b>
+      ${e.warmup ? `<b class="is-warm">+${e.warmup} bemelegítő</b>` : ''}
      </span>
-     ${e.warmup ? `<span class="pl-ex-warm">+ ${e.warmup} bemelegítő szett</span>` : ''}
     </div>`).join('')}</div>
    <button class="pl-add" data-detail="Gyakorlat hozzáadása" data-copy="A katalógusból választasz: kereséssel, izomcsoport szerint szűrve, demóképpel és videóval. Egy megnyitásból többet is hozzáadhatsz." data-art="book">＋ Gyakorlat hozzáadása</button>`;
 
