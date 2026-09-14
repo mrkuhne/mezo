@@ -84,17 +84,23 @@ function planHome() {
   const days = `<h3 class="pl-h3">A heted</h3>
    <div class="pl-days">${DAY_ORDER.map((token, i) => {
     const day = dayByToken(token);
-    if (!day) return `<div class="pl-day is-rest" data-reveal style="--i:${i}"><span class="pl-day-tag">${DAY_NAMES[token]}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
-    const load = dayLoad(day);
     const today = token === 'Sze';
+    if (!day) return `<div class="pl-day is-rest" data-reveal style="--i:${i}">
+     <span class="pl-day-tag">${DAY_NAMES[token]}</span>${today ? '<span class="pl-today">MA</span>' : ''}
+     <span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
+    const load = dayLoad(day);
     return `<button class="pl-day ${today ? 'is-now' : ''}" data-reveal style="--i:${i}" ${route('day', token)}>
-     <span class="pl-day-tag">${DAY_NAMES[token]}</span>
-     <span class="pl-day-body">
-      <strong>${day.type}</strong>
-      <small>${daySets(day)} szett · ${day.minutes} perc · ${day.exercises.length} gyakorlat</small>
-      <span class="pl-day-bars">${load.map(r => `<i style="--mus-color:${muscleColor(r.key)};--w:${Math.min(100, r.sets / 8 * 100)}%"></i>`).join('')}</span>
+     <span class="pl-day-head">
+      <span class="pl-day-tag">${DAY_NAMES[token]}</span>${today ? '<span class="pl-today">MA</span>' : ''}
+      <strong>${day.type}</strong><b>›</b>
      </span>
-     <b>›</b></button>`;
+     <span class="pl-day-facts">
+      <i>${icon('dumbbell')}<b>${daySets(day)}</b><small>szett</small></i>
+      <i>${icon('clock')}<b>${day.minutes}</b><small>perc</small></i>
+      <i>${icon('stack')}<b>${day.exercises.length}</b><small>gyakorlat</small></i>
+     </span>
+     <span class="pl-day-bars">${load.map(r => `<i style="--mus-color:${muscleColor(r.key)};--w:${Math.min(100, r.sets / 8 * 100)}%"></i>`).join('')}</span>
+    </button>`;
   }).join('')}</div>`;
 
   const climbing = soon.rows.filter(r => r.move === 'up').length;
