@@ -546,3 +546,11 @@
 
 @keyframes pl-spin { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }
+
+/* — the library's two doorways and its slim list heroes — */
+.pl-lib-dests { padding: 22px 0 4px; }
+.pl-dest.is-done { --wash: #ffd88a; }
+.pl-lhero.is-slim { padding-bottom: 20px; }
+.pl-lhero.is-slim h2 { font-size: 25px; }
+.pl-lhero.is-slim .pl-say { margin-bottom: 4px; }
+.pl-lib .pl-lib-new { margin-top: 14px; }

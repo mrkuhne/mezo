@@ -368,34 +368,86 @@ function planLibrary() {
    <span><strong>Új terv összeállítása</strong><small>Sablonból indulsz, vagy nulláról építed</small></span>
    <b>＋</b></button>`;
 
-  const templates = `<h3 class="pl-h3">Sablonjaid</h3>${lib.templates.map(t => {
-    const story = templateStory(t.key);
-    const uses = story.closed.length + (story.activeNow ? 1 : 0);
-    const use = story.activeNow ? 'Ebből fut a mostani terved'
-      : uses ? `${uses} ${plural(uses, 'futam indult', 'futam indult')} belőle` : 'Még nem indítottál belőle';
-    return `<button class="pl-lib-card" data-reveal ${route('library', 'template', t.key)}>
-    <span class="pl-lib-head"><strong>${t.name}</strong><em>${t.split}</em><b>›</b></span>
-    <span class="pl-day-facts">
-     <i>${icon('history')}<b>${t.weeks}</b><small>hét</small></i>
-     <i>${icon('dumbbell')}<b>${t.daysPerWeek}</b><small>nap hetente</small></i>
-     <i>${icon('clock')}<b>~${t.minutes}</b><small>perc</small></i>
-    </span>
-    <span class="pl-lib-mus">${t.muscles.map(key => `<i style="--mus-color:${muscleColor(key)}">${muscleIcon(key)}</i>`).join('')}</span>
-    <small class="pl-lib-note">${use}</small>
-   </button>`;
-  }).join('')}`;
-
-  const closed = `<h3 class="pl-h3">Lezárt futamaid</h3>${lib.closed.map(run => `<button class="pl-lib-card is-closed" data-reveal ${route('library', 'closed', run.key)}>
-   <span class="pl-lib-head"><strong>${run.name}</strong><em>${rangeLabel(run)}</em><b>›</b></span>
-   <span class="pl-lib-closed-row">${starRow(run.stars)}
-    <span class="pl-lib-meta">${icon('tick')}${run.done} edzés a ${run.planned}-ból</span>
-    <span class="pl-lib-meta">${icon('record')}${run.records} rekord</span>
-   </span>
-  </button>`).join('')}`;
+  const dests = `<div class="pl-dests pl-lib-dests">
+   <button class="pl-dest is-plans" data-reveal ${route('library', 'templates')}>
+    <span class="pl-dest-art">${icon('stack')}</span>
+    <strong>Sablonjaid</strong>
+    <small>${lib.templates.length} sablon, amiből indíthatsz</small>
+    <b>↗</b></button>
+   <button class="pl-dest is-done" data-reveal ${route('library', 'closed')}>
+    <span class="pl-dest-art">${icon('star')}</span>
+    <strong>Lezárt futamaid</strong>
+    <small>${lib.closed.length} végigvitt terv története</small>
+    <b>↗</b></button>
+  </div>`;
 
   return `<div class="pl-sub pl-lib">
    <button class="pl-back" ${route()}>‹ A terved</button>
-   ${hero}${now}${queuedSec}${create}${templates}${closed}
+   ${hero}${now}${queuedSec}${create}${dests}
+  </div>`;
+}
+
+/* ── the embedded lists: templates, and the closed runs ─────────────────────────────── */
+
+const templateCard = t => {
+  const story = templateStory(t.key);
+  const uses = story.closed.length + (story.activeNow ? 1 : 0);
+  const use = story.activeNow ? 'Ebből fut a mostani terved'
+    : uses ? `${uses} futam indult belőle` : 'Még nem indítottál belőle';
+  return `<button class="pl-lib-card" data-reveal ${route('library', 'template', t.key)}>
+   <span class="pl-lib-head"><strong>${t.name}</strong><em>${t.split}</em><b>›</b></span>
+   <span class="pl-day-facts">
+    <i>${icon('history')}<b>${t.weeks}</b><small>hét</small></i>
+    <i>${icon('dumbbell')}<b>${t.daysPerWeek}</b><small>nap hetente</small></i>
+    <i>${icon('clock')}<b>~${t.minutes}</b><small>perc</small></i>
+   </span>
+   <span class="pl-lib-mus">${t.muscles.map(key => `<i style="--mus-color:${muscleColor(key)}">${muscleIcon(key)}</i>`).join('')}</span>
+   <small class="pl-lib-note">${use}</small>
+  </button>`;
+};
+
+const closedCard = run => `<button class="pl-lib-card is-closed" data-reveal ${route('library', 'closed', run.key)}>
+  <span class="pl-lib-head"><strong>${run.name}</strong><em>${rangeLabel(run)}</em><b>›</b></span>
+  <span class="pl-lib-closed-row">${starRow(run.stars)}
+   <span class="pl-lib-meta">${icon('tick')}${run.done} edzés a ${run.planned}-ból</span>
+   <span class="pl-lib-meta">${icon('record')}${run.records} rekord</span>
+  </span>
+ </button>`;
+
+function planLibraryTemplates() {
+  const hero = `<header class="pl-dhero pl-lhero is-slim" style="--mus-color:${LIB_COLOR}" data-reveal>
+   <span class="pl-dhero-wash"></span>
+   <div class="pl-lhero-art">${icon('stack')}<i></i><i></i></div>
+   <span class="overline">SABLONJAID</span>
+   <h2>Amiből indíthatsz</h2>
+   <p class="pl-say">Egy sablon a recept — futamot indítasz belőle, és az már a te terved.</p>
+  </header>`;
+  return `<div class="pl-sub pl-lib">
+   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   ${hero}${LIBRARY.templates.map(templateCard).join('')}
+   <button class="pl-lib-new" data-reveal data-detail="Új terv összeállítása" data-art="stack"
+    data-copy="Lépésről lépésre raksz össze egy tervet: napok, gyakorlatok, és hogy melyik izmod kapjon többet. Indulhatsz egy sablonból is — az gyorsabb, és utána bármit átírhatsz.">
+    <span class="pl-lib-new-art">${icon('stack')}</span>
+    <span><strong>Új terv összeállítása</strong><small>Sablonból indulsz, vagy nulláról építed</small></span>
+    <b>＋</b></button>
+  </div>`;
+}
+
+function planLibraryClosedList() {
+  const runs = LIBRARY.closed;
+  const sessions = runs.reduce((t, r) => t + r.done, 0);
+  const records = runs.reduce((t, r) => t + r.records, 0);
+  const hero = `<header class="pl-dhero pl-lhero is-slim" style="--mus-color:${LIB_COLOR}" data-reveal>
+   <span class="pl-dhero-wash"></span>
+   <div class="pl-lhero-art">${icon('star')}<i></i><i></i></div>
+   <span class="overline">LEZÁRT FUTAMAID</span>
+   <h2>Amit végigvittél</h2>
+   <p class="pl-say">Minden lezárt terv itt őrzi a történetét — mit bírtál, és mit döntöttél meg.</p>
+   <div class="pl-poster-foot"><span>${sessions} edzés</span><span>${records} rekord</span></div>
+  </header>`;
+  return `<div class="pl-sub pl-lib">
+   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   ${hero}${runs.map(closedCard).join('')}
   </div>`;
 }
 
@@ -437,7 +489,7 @@ function planLibraryTemplate(key) {
    <b>›</b></button>`;
 
   return `<div class="pl-sub pl-lib">
-   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   <button class="pl-back" ${route('library', 'templates')}>‹ Sablonjaid</button>
    ${hero}${muscles}${runsSec}${start}
   </div>`;
 }
@@ -488,7 +540,7 @@ function planLibraryClosed(key) {
   }).join('')}</div>` : '';
 
   return `<div class="pl-sub pl-lib">
-   <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
+   <button class="pl-back" ${route('library', 'closed')}>‹ Lezárt futamaid</button>
    ${hero}${facts}${muscles}${versus}
   </div>`;
 }
@@ -502,8 +554,9 @@ export function planContent() {
   if (view === 'muscle') return planMuscle(id);
   if (view === 'library') {
     const [, , , sub = '', subId = ''] = location.hash.slice(1).split('/');
+    if (sub === 'templates') return planLibraryTemplates();
     if (sub === 'template') return planLibraryTemplate(decodeURIComponent(subId));
-    if (sub === 'closed') return planLibraryClosed(decodeURIComponent(subId));
+    if (sub === 'closed') return subId ? planLibraryClosed(decodeURIComponent(subId)) : planLibraryClosedList();
     return planLibrary();
   }
   return planHome();
