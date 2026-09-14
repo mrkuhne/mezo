@@ -84,11 +84,11 @@ function planHome() {
   const days = `<h3 class="pl-h3">A heted</h3>
    <div class="pl-days">${DAY_ORDER.map((token, i) => {
     const day = dayByToken(token);
-    if (!day) return `<div class="pl-day is-rest" data-reveal style="--i:${i}"><span class="pl-day-tag">${token}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
+    if (!day) return `<div class="pl-day is-rest" data-reveal style="--i:${i}"><span class="pl-day-tag">${DAY_NAMES[token]}</span><span class="pl-day-rest">${icon('moon')}pihenőnap</span></div>`;
     const load = dayLoad(day);
     const today = token === 'Sze';
     return `<button class="pl-day ${today ? 'is-now' : ''}" data-reveal style="--i:${i}" ${route('day', token)}>
-     <span class="pl-day-tag">${today ? 'MA' : DAY_NAMES[token]}</span>
+     <span class="pl-day-tag">${DAY_NAMES[token]}</span>
      <span class="pl-day-body">
       <strong>${day.type}</strong>
       <small>${daySets(day)} szett · ${day.minutes} perc · ${day.exercises.length} gyakorlat</small>
