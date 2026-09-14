@@ -144,11 +144,11 @@ function planDay(token) {
 
   const muscles = `<h3 class="pl-h3">Mit terhel ez a nap ${info('Miért nyolcnál a jelölés?',
     'Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz.')}</h3>
-   <div class="pl-mtiles">${load.map((r, i) => `<div class="pl-mtile" data-reveal style="--mus-color:${muscleColor(r.key)};--i:${i}">
-     <span class="pl-mtile-art">${muscleIcon(r.key)}</span>
-     <strong>${r.sets}<i>szett</i></strong>
-     <small>${muscleLabel(r.key)}</small>
-     <span class="pl-mtile-bar"><i style="--w:${Math.min(100, r.sets / 10 * 100)}%"></i><u style="--at:80%"></u></span>
+   <div class="pl-mrows">${load.map((r, i) => `<div class="pl-mrow" data-reveal style="--mus-color:${muscleColor(r.key)};--i:${i}">
+     <span class="pl-mrow-art">${muscleIcon(r.key)}</span>
+     <span class="pl-mrow-name">${muscleLabel(r.key)}</span>
+     <span class="pl-mrow-bar"><i style="--w:${Math.min(100, r.sets / 10 * 100)}%"></i><u style="--at:80%"></u></span>
+     <span class="pl-mrow-count">${r.sets}<i>szett</i></span>
     </div>`).join('')}</div>`;
 
   const exercises = `<h3 class="pl-h3">A nap gyakorlatai ${info('Mikortól él a változtatás?',
@@ -156,16 +156,13 @@ function planDay(token) {
    <div class="pl-exs">${day.exercises.map((e, i) => `<div class="pl-ex" data-reveal style="--ex-color:${muscleColor(e.muscle)};--i:${i}">
      <span class="pl-ex-index">${String(i + 1).padStart(2, '0')}</span>
      <span class="pl-ex-art">${muscleIcon(e.muscle)}</span>
-     <span class="pl-ex-copy"><strong>${e.name}</strong><small>${muscleLabel(e.muscle)}</small></span>
+     <span class="pl-ex-copy">
+      <strong>${e.name}</strong>
+      <small><b>${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b> · ${e.rir} RIR · ${e.kg ? `${n(e.kg)} kg` : 'saját testsúly'}${e.warmup ? ` · +${e.warmup} bem.` : ''}</small>
+     </span>
      <span class="pl-ex-move">
       <button ${i === 0 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Előrébb">↑</button>
       <button ${i === day.exercises.length - 1 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Hátrébb">↓</button>
-     </span>
-     <span class="pl-ex-recipe">
-      <b class="is-main">${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b>
-      <b>${e.rir} RIR</b>
-      <b>${e.kg ? `${n(e.kg)} kg` : 'saját testsúly'}</b>
-      ${e.warmup ? `<b class="is-warm">+${e.warmup} bemelegítő</b>` : ''}
      </span>
     </div>`).join('')}</div>
    <button class="pl-add" data-detail="Gyakorlat hozzáadása" data-copy="A katalógusból választasz: kereséssel, izomcsoport szerint szűrve, demóképpel és videóval. Egy megnyitásból többet is hozzáadhatsz." data-art="book">＋ Gyakorlat hozzáadása</button>`;
