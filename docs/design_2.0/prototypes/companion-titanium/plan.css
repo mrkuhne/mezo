@@ -1,12 +1,17 @@
 /* Terv — the running mesocycle as the page itself. */
 
 /* — the block poster — */
+/* Every hero in this tab runs edge to edge and fades into the page. */
 .pl-poster {
-  position: relative; overflow: hidden; margin: 4px 20px 14px; padding: 20px;
-  border: 1px solid color-mix(in srgb, var(--domain-color) 26%, transparent); border-radius: 26px;
+  position: relative; overflow: hidden; margin: -8px 0 16px; padding: 22px 20px 26px;
+  border: 0; border-radius: 0;
   background:
-    radial-gradient(130% 90% at 85% 0%, color-mix(in srgb, var(--domain-color) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, #191e28, #11151c);
+    radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--domain-color) 24%, transparent), transparent 64%),
+    linear-gradient(168deg, color-mix(in srgb, var(--domain-color) 11%, #1b2029) 0%, #14181f 62%, #0f1218 100%);
+}
+.pl-poster::after, .pl-whero::after, .pl-mhero::after {
+  content: ''; position: absolute; inset: auto 0 0; height: 50px; pointer-events: none;
+  background: linear-gradient(#0f121800, #0f1218);
 }
 .pl-poster-glow {
   position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
@@ -21,7 +26,7 @@
 }
 .pl-phase.is-peak { background: linear-gradient(120deg, #ffe9b5, #e0bd8a); }
 .pl-phase.is-deload { color: #cfd7e6; background: #ffffff1a; }
-.pl-poster h2 { position: relative; font-size: 32px; font-weight: 300; letter-spacing: -.03em; margin: 10px 0 6px; }
+.pl-poster h2 { position: relative; font-size: 30px; font-weight: 300; letter-spacing: -.03em; margin: 10px 0 6px; }
 .pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: #ffffff7a; max-width: 34ch; }
 .pl-poster-foot { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .pl-poster-foot span {
@@ -377,3 +382,25 @@
 }
 @keyframes pl-pop { from { scale: .82; opacity: 0; } }
 @keyframes pl-ring { to { rotate: 388deg; } }
+
+/* — the composite body map — */
+.body-map { width: 100%; height: 100%; display: block; }
+.pl-dhero-art.is-wide { width: 176px; right: -6px; }
+.pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color) 40%, transparent)); }
+.pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color) 45%, transparent)); }
+.pl-mhero .pl-muscle-art { width: 78px; height: 78px; }
+.pl-mhero .pl-muscle-art .body-map { width: 64px; height: 64px; }
+
+/* — the week and muscle heroes carry their own body map — */
+.pl-whero-art, .pl-mhero-art {
+  position: absolute; right: -10px; top: 14px; width: 150px; height: 112px; pointer-events: none; opacity: .9;
+}
+.pl-whero-art .body-map, .pl-mhero-art .body-map {
+  filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color, var(--domain-color)) 40%, transparent));
+}
+.pl-mhero-art { width: 118px; }
+.pl-whero h2, .pl-mhero h2 {
+  position: relative; font-size: 29px; font-weight: 300; letter-spacing: -.03em; margin: 0 0 4px; max-width: 62%;
+}
+.pl-whero .pl-say, .pl-mhero .pl-say { position: relative; max-width: 88%; }
+.pl-whero .pl-sub-say, .pl-mhero .pl-sub-say { position: relative; }

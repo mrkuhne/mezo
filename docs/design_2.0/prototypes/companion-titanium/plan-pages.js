@@ -6,7 +6,7 @@ import {
   adjacencyNotes,
 } from './plan-state.js';
 import { icon, safe } from './nap.js';
-import { muscleIcon, muscleLabel, muscleColor } from './muscles.js';
+import { muscleIcon, muscleLabel, muscleColor, bodyMap } from './muscles.js';
 
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
 const dateLabel = iso => new Date(`${iso}T12:00:00Z`).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
@@ -134,7 +134,7 @@ function planDay(token) {
   // Poster anatomy: eyebrow, one spot graphic, one dominant numeral.
   const poster = `<section class="pl-dhero" style="--mus-color:${muscleColor(lead.key)}">
    <span class="pl-dhero-wash" aria-hidden="true"></span>
-   <span class="pl-dhero-art" aria-hidden="true"><i></i><i></i><i></i>${muscleIcon(lead.key)}</span>
+   <span class="pl-dhero-art ${load.length > 2 ? 'is-wide' : ''}" aria-hidden="true"><i></i><i></i><i></i>${bodyMap(load.map(r => r.key))}</span>
    <span class="pl-dhero-tag">${today ? 'MA' : DAY_NAMES[token].toLocaleUpperCase('hu-HU')} · A TERV ${MESO.currentWeek}. HETE</span>
    <h2>${day.type}</h2>
    <div class="pl-dhero-number"><strong data-fuel-count="${daySets(day)}">0</strong><small>szett</small></div>
@@ -197,8 +197,11 @@ function planWeek() {
 
   return `<div class="pl-sub">
    <button class="pl-back" ${route()}>‹ Vissza</button>
-   <h2 class="pl-title">Melyik izmod hol tart</h2>
-   <p class="pl-say">${meso.muscles.length} izomcsoportot edzel ezen a héten. ${parts.join(', ')}.</p>
+   <section class="pl-whero">
+    <span class="pl-whero-art" aria-hidden="true">${bodyMap(meso.muscles.map(m => m.key))}</span>
+    <h2>Melyik izmod hol tart</h2>
+    <p class="pl-say">${meso.muscles.length} izomcsoportot edzel ezen a héten. ${parts.join(', ')}.</p>
+   </section>
 
    <div class="pl-list">${ordered.map((muscle, i) => {
     const p = bandPosition(muscle);
@@ -237,12 +240,12 @@ function planMuscle(key) {
 
   return `<div class="pl-sub" style="--mus-color:${muscleColor(key)}">
    <button class="pl-back" ${route('week')}>‹ Vissza</button>
-   <header class="pl-mhead">
-    <span class="pl-muscle-art">${muscleIcon(key)}</span>
+   <section class="pl-mhero">
+    <span class="pl-mhero-art" aria-hidden="true">${bodyMap([key])}</span>
     <h2>${muscle.name}</h2>
-   </header>
-   <p class="pl-say">${say}</p>
-   <p class="pl-sub-say">${next}</p>
+    <p class="pl-say">${say}</p>
+    <p class="pl-sub-say">${next}</p>
+   </section>
 
    <div class="pl-gauge">
     <span class="pl-gauge-bar"><i style="--w:${p.now / p.ceiling * 100}%"></i></span>
