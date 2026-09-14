@@ -118,37 +118,58 @@ function planHome() {
 
 /* ── a day of the block ──────────────────────────────────────────────────────────────── */
 
+/** A quiet ⓘ that hands the explanation to the usual detail sheet instead of the page. */
+const info = (title, copy, art = 'info') =>
+  `<button class="pl-info" data-detail="${safe(title)}" data-copy="${safe(copy)}" data-art="${art}" aria-label="${safe(title)} — mit jelent?">${icon('info')}</button>`;
+
 function planDay(token) {
   const day = dayByToken(token);
-  if (!day) return `<div class="pl-empty">${icon('moon')}<h2>Ez a nap nincs a blokkban.</h2><p>A ${DAY_NAMES[token] ?? token} pihenőnap ebben a mezociklusban.</p><button class="pl-back" ${route()}>Vissza a blokkhoz</button></div>`;
-  const load = dayLoad(day);
-  return `<div class="pl-sub">
-   <button class="pl-back" ${route()}>‹ A blokk</button>
-   <header class="pl-sub-head"><span class="overline">${DAY_NAMES[token]} · ${MESO.currentWeek}. HÉT</span><h2>${day.type}</h2>
-    <p>${daySets(day)} szett · ~${day.minutes} perc · ${day.exercises.length} gyakorlat</p>
-    <small>A szerkesztés a következő edzéstől él — a mai futó edzésedet nem írja át.</small></header>
+  if (!day) return `<div class="pl-empty"><h2>Ezen a napon nem edzel.</h2><p>A ${DAY_NAMES[token] ?? token} pihenőnap ebben a tervben.</p><button class="pl-back" ${route()}>Vissza</button></div>`;
 
-   <div class="wo-sum-section"><strong>Amit ez a nap kér</strong></div>
-   <div class="pl-dayload">${load.map(r => `<div class="pl-dayload-row" style="--mus-color:${muscleColor(r.key)}">
-     ${muscleIcon(r.key)}<span>${muscleLabel(r.key)}</span>
-     <span class="pl-dayload-track"><i style="--w:${Math.min(100, r.sets / 8 * 100)}%"></i></span>
-     <b>${r.sets}<i>/8</i></b></div>`).join('')}</div>
-   <p class="pl-note">A nyolc szett egy izomra egy edzésen belül nem tiltás, csak jelzés: efölött romlik a megtérülés.</p>
+  const load = dayLoad(day).sort((a, b) => b.sets - a.sets);
+  const today = token === 'Sze';
 
-   <div class="wo-sum-section"><strong>A nap gyakorlatai</strong></div>
-   <div class="pl-exs">${day.exercises.map((e, i) => `<div class="pl-ex" style="--ex-color:${muscleColor(e.muscle)}">
+  const poster = `<section class="pl-dposter">
+   <span class="pl-poster-glow" aria-hidden="true"></span>
+   <span class="pl-dtag">${today ? 'MA' : DAY_NAMES[token]}</span>
+   <h2>${day.type}</h2>
+   <div class="pl-dstats">
+    <span><strong data-fuel-count="${daySets(day)}">0</strong><small>szett</small></span>
+    <span><strong data-fuel-count="${day.minutes}">0</strong><small>perc</small></span>
+    <span><strong data-fuel-count="${day.exercises.length}">0</strong><small>gyakorlat</small></span>
+   </div>
+  </section>`;
+
+  const muscles = `<h3 class="pl-h3">Mit terhel ez a nap ${info('Miért nyolcnál a jelölés?',
+    'Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés a sávon, hogy lásd, hol jársz.')}</h3>
+   <div class="pl-list">${load.map((r, i) => `<div class="pl-mrow" data-reveal style="--mus-color:${muscleColor(r.key)};--i:${i}">
+     <span class="pl-mrow-art">${muscleIcon(r.key)}</span>
+     <span class="pl-mrow-name">${muscleLabel(r.key)}</span>
+     <span class="pl-mrow-count">${r.sets}<i>szett</i></span>
+     <span class="pl-mrow-bar"><i style="--w:${Math.min(100, r.sets / 10 * 100)}%"></i><u style="--at:80%"></u></span>
+    </div>`).join('')}</div>`;
+
+  const exercises = `<h3 class="pl-h3">A nap gyakorlatai ${info('Mikortól él a változtatás?',
+    'Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted.')}</h3>
+   <div class="pl-exs">${day.exercises.map((e, i) => `<div class="pl-ex" data-reveal style="--ex-color:${muscleColor(e.muscle)};--i:${i}">
      <span class="pl-ex-art">${muscleIcon(e.muscle)}</span>
      <span class="pl-ex-copy"><strong>${e.name}</strong><small>${muscleLabel(e.muscle)}</small></span>
-     <span class="pl-ex-move"><button data-detail="Sorrend" data-copy="A gyakorlatok sorrendje a nap sorrendje. Az új felületen fel-le nyilakkal rendezed, nem húzással." data-art="stack" ${i === 0 ? 'disabled' : ''} aria-label="Előrébb">↑</button><button data-detail="Sorrend" data-copy="A gyakorlatok sorrendje a nap sorrendje. Az új felületen fel-le nyilakkal rendezed, nem húzással." data-art="stack" ${i === day.exercises.length - 1 ? 'disabled' : ''} aria-label="Hátrébb">↓</button></span>
-     <span class="pl-ex-recipe">
-      <span><b>${e.sets}</b><small>éles</small></span>
-      <span><b>${e.warmup}</b><small>bemelegítő</small></span>
-      <span><b>${e.repMin ? `${e.repMin}–${e.repMax}` : '—'}</b><small>ismétlés</small></span>
-      <span><b>${e.rir}</b><small>RIR</small></span>
-      <span><b>${e.kg ? `${n(e.kg)} kg` : 'auto'}</b><small>kiinduló</small></span>
+     <span class="pl-ex-move">
+      <button ${i === 0 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Előrébb">↑</button>
+      <button ${i === day.exercises.length - 1 ? 'disabled' : ''} data-detail="Sorrend" data-copy="A gyakorlatok ebben a sorrendben jönnek az edzésen. Fel-le nyilakkal rendezed át." data-art="stack" aria-label="Hátrébb">↓</button>
      </span>
+     <span class="pl-ex-recipe">
+      <b class="is-main">${e.sets} × ${e.repMin ? `${e.repMin}–${e.repMax}` : 'tartás'}</b>
+      <b>${e.rir} RIR</b>
+      <b>${e.kg ? `${n(e.kg)} kg` : 'saját testsúly'}</b>
+     </span>
+     ${e.warmup ? `<span class="pl-ex-warm">+ ${e.warmup} bemelegítő szett</span>` : ''}
     </div>`).join('')}</div>
-   <button class="pl-add" data-detail="Gyakorlat hozzáadása" data-copy="A katalógusból választasz: keresés, izomcsoport-szűrő, demókép és videó. Egy megnyitásból többet is hozzáadhatsz." data-art="book">＋ Gyakorlat hozzáadása</button>
+   <button class="pl-add" data-detail="Gyakorlat hozzáadása" data-copy="A katalógusból választasz: kereséssel, izomcsoport szerint szűrve, demóképpel és videóval. Egy megnyitásból többet is hozzáadhatsz." data-art="book">＋ Gyakorlat hozzáadása</button>`;
+
+  return `<div class="pl-sub">
+   <button class="pl-back" ${route()}>‹ Vissza</button>
+   ${poster}${muscles}${exercises}
   </div>`;
 }
 
