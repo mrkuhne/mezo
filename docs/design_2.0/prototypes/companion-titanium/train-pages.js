@@ -3,7 +3,7 @@
 import { icon, safe } from './nap.js';
 
 import { workoutContent } from './workout.js';
-import { muscleMapHtml } from './muscles.js';
+import { loadContent } from './load-pages.js';
 import { planContent, planHasOwnHead } from './plan-pages.js';
 import { EXERCISES as exercises, currentSession, metrics, doneCount } from './session-state.js';
 
@@ -127,7 +127,7 @@ export function trainPagesContent(domain, page, date = '2026-09-09') {
   if (domain !== 'train') return null;
   if (page === 0) return date === '2026-09-09' ? trainToday(date) : workoutContent('train', 0, date);
   if (page === 1) return planContent();
-  if (page === 2) return muscleMapHtml(['chest-mid', 'back-mid', 'shoulder-side']) + workoutContent('train', 1, date);
+  if (page === 2) return loadContent();
   if (page === 3) return gyakorlatokPage();
   return null;
 }

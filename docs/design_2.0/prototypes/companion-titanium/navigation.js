@@ -9,6 +9,7 @@ import { openSport, initSport } from './sport.js';
 import { trainPagesContent } from './train-pages.js';
 import { planHasOwnHead, animatePlan } from './plan-pages.js';
 import { initPlanWizard } from './plan-wizard.js';
+import { initLoad } from './load-pages.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
 import { createDayNavigation, dayDescriptor, dayRoute, swipeDayDelta } from './day-navigation-state.js';
@@ -61,7 +62,7 @@ function draw(){
  $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
  $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;const view=location.hash.slice(1).split('/')[2]||'',raw=content(d,p,dayNav.date);panel.innerHTML=dayRoute(d,p,view)?dayFrame(raw,dayNav.date,dayNav.max,dayMotion):raw;dayMotion='';
  if(d==='fuel'||d==='train')animateFuelDashboard(panel);
- if(d==='train'&&p===1)animatePlan(panel);
+ if(d==='train'&&(p===1||p===2))animatePlan(panel);
  // Owner decision 2026-09-11: no 3D companion on any Fuel page — the arrival stays hidden there.
  $('.arrival').hidden=p!==0||d==='fuel'||d==='train'||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
  if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
@@ -116,6 +117,7 @@ initSport({refresh:draw,go,dialog,closeSheet});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFuelPages({refresh:draw,go,dialog,closeSheet});
 initPlanWizard({dialog,closeSheet});
+initLoad({dialog});
 initMezo({refresh:draw});
 initPersonal({refresh:draw});
 $('#restart').addEventListener('click',()=>{dayNav=createDayNavigation('2026-09-09');dayMotion='';draw();});
