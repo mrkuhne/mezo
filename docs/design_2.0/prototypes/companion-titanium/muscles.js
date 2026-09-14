@@ -103,15 +103,17 @@ const figure = (keys, view, dx = 0) => `<g transform="translate(${dx} 0)">
  </g>`;
 
 /**
- * Every area the session trains, lit on one figure — and on two when the work spans both sides of
- * the body, because a quad and a hamstring cannot honestly share a silhouette.
+ * Every trained area lit on ONE figure. When the work spans both sides of the body we show the
+ * side that carries the most of it — by sets when we know them, by count otherwise — because two
+ * silhouettes side by side read as two icons rather than one picture.
  */
-export function bodyMap(keys, { className = 'body-map' } = {}) {
+export function bodyMap(keys, { className = 'body-map', weights = null } = {}) {
   const known = keys.filter(key => AREAS[key]);
+  if (!known.length) return '';
   const front = known.filter(key => AREAS[key][0] === 'front');
   const back = known.filter(key => AREAS[key][0] === 'back');
-  if (!front.length && !back.length) return '';
-  if (!back.length) return `<svg class="${className}" viewBox="0 0 64 64" aria-hidden="true">${figure(front, 'front')}</svg>`;
-  if (!front.length) return `<svg class="${className}" viewBox="0 0 64 64" aria-hidden="true">${figure(back, 'back')}</svg>`;
-  return `<svg class="${className} is-pair" viewBox="0 0 132 64" aria-hidden="true">${figure(front, 'front')}${figure(back, 'back', 68)}</svg>`;
+  const weigh = list => list.reduce((total, key) => total + (weights?.[key] ?? 1), 0);
+  const view = weigh(back) > weigh(front) ? 'back' : 'front';
+  const shown = view === 'back' ? back : front;
+  return `<svg class="${className}" viewBox="0 0 64 64" aria-hidden="true">${figure(shown, view)}</svg>`;
 }

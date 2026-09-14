@@ -134,7 +134,7 @@ function planDay(token) {
   // Poster anatomy: eyebrow, one spot graphic, one dominant numeral.
   const poster = `<section class="pl-dhero" style="--mus-color:${muscleColor(lead.key)}">
    <span class="pl-dhero-wash" aria-hidden="true"></span>
-   <span class="pl-dhero-art ${load.length > 2 ? 'is-wide' : ''}" aria-hidden="true"><i></i><i></i><i></i>${bodyMap(load.map(r => r.key))}</span>
+   <span class="pl-dhero-art ${load.length > 2 ? 'is-wide' : ''}" aria-hidden="true"><i></i><i></i><i></i>${bodyMap(load.map(r => r.key), { weights: Object.fromEntries(load.map(r => [r.key, r.sets])) })}</span>
    <span class="pl-dhero-tag">${today ? 'MA' : DAY_NAMES[token].toLocaleUpperCase('hu-HU')} · A TERV ${MESO.currentWeek}. HETE</span>
    <h2>${day.type}</h2>
    <div class="pl-dhero-number"><strong data-fuel-count="${daySets(day)}">0</strong><small>szett</small></div>
@@ -198,7 +198,7 @@ function planWeek() {
   return `<div class="pl-sub">
    <button class="pl-back" ${route()}>‹ Vissza</button>
    <section class="pl-whero">
-    <span class="pl-whero-art" aria-hidden="true">${bodyMap(meso.muscles.map(m => m.key))}</span>
+    <span class="pl-whero-art" aria-hidden="true">${bodyMap(meso.muscles.map(m => m.key), { weights: Object.fromEntries(meso.muscles.map(m => [m.key, currentSets(m)])) })}</span>
     <h2>Melyik izmod hol tart</h2>
     <p class="pl-say">${meso.muscles.length} izomcsoportot edzel ezen a héten. ${parts.join(', ')}.</p>
    </section>

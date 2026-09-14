@@ -385,7 +385,7 @@
 
 /* — the composite body map — */
 .body-map { width: 100%; height: 100%; display: block; }
-.pl-dhero-art.is-wide { width: 176px; right: -6px; }
+.pl-dhero-art.is-wide { width: 132px; right: 8px; }
 .pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color) 40%, transparent)); }
 .pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color) 45%, transparent)); }
 .pl-mhero .pl-muscle-art { width: 78px; height: 78px; }
