@@ -53,6 +53,7 @@ const props = (over: Record<string, unknown> = {}) => ({
   ...fixture(over as { missed?: boolean }),
   onLogInto: vi.fn(),
   onOpenMeal: vi.fn(),
+  onOpenScore: vi.fn(),
   ...over,
 })
 
@@ -84,12 +85,16 @@ test('az üres blokk koppintása a saját ablakával indítja a naplózást', as
   expect(onLogInto.mock.calls[0][0].slotKey).toBe('snack')
 })
 
-// A11: a pontszám-chip kattintható és a részletekbe visz.
-test('a logolt étkezés pont-chipje a részletekbe visz', async () => {
+// A11 (mezo-jb84): a pontszám-chipnek SAJÁT célja van — az AI értékelés. Ez a teszt korábban
+// a részletekre kötötte, azaz magát a hibát rögzítette: a chip azért mozog, hogy az értékelésre
+// hívjon, és élesben mégis ugyanoda vitt, mint a sor többi része.
+test('a pont-chip az AI értékelésre visz, a sor pedig a részletekre', async () => {
   const onOpenMeal = vi.fn()
-  render(<FuelMealBlocks {...props({ onOpenMeal })} />)
+  const onOpenScore = vi.fn()
+  render(<FuelMealBlocks {...props({ onOpenMeal, onOpenScore })} />)
   await userEvent.click(screen.getByRole('button', { name: /AI értékelés/ }))
-  expect(onOpenMeal).toHaveBeenCalledWith('meal-1')
+  expect(onOpenScore).toHaveBeenCalledWith('meal-1')
+  expect(onOpenMeal).not.toHaveBeenCalled()
 })
 
 // Őszinte-null + szégyenmentesség: kihagyott ablak nem hibaállapot.

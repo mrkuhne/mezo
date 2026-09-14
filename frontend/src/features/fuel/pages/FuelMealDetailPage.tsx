@@ -153,6 +153,12 @@ export function FuelMealDetailPage() {
           </div>
         </div>
         <div className="fmx-detail-right">
+          {/* Az AI értékelés a jobb oszlop TETEJÉN áll (owner: „jobb fent"), de a sorban —
+              korábban abszolút pozícióval lebegett a mikor-kártya fölött, és rálógott. */}
+          <div className="fmx-detail-score">
+            <FuelScoreChip scorePct={meal.score == null ? null : Math.round(meal.score * 100)}
+              onOpen={toScore} size="big" />
+          </div>
           <div className="fmx-detail-when">
             <span className="fmx-di-art" aria-hidden="true"><ClayIcon name={block.icon} size={30} /></span>
             <span>
@@ -167,10 +173,6 @@ export function FuelMealDetailPage() {
               <small>{dayTarget > 0 ? `a ${huInt(dayTarget)} kcal-os keretből` : 'a napi keret még nem ismert'}</small>
             </span>
           </div>
-        </div>
-        <div className="fmx-detail-score">
-          <FuelScoreChip scorePct={meal.score == null ? null : Math.round(meal.score * 100)}
-            onOpen={toScore} size="big" />
         </div>
       </div>
 

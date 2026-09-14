@@ -509,3 +509,18 @@ test('the diet-suggestion banner shows in mock mode (one open fixture suggestion
   await userEvent.click(banner!)
   expect(screen.getByTestId('loc').textContent).toBe('/me/goals/weight')
 })
+
+// mezo-jb84: a pont-chipnek SAJÁT célja van. Élesben mindkettő a részletekre vitt, így az AI
+// pontszámra koppintva nem az értékelés nyílt meg — pedig épp azért mozog, hogy oda hívjon.
+test('a blokk pont-chipje az AI értékelésre visz, nem a részletekre', async () => {
+  renderView()
+  const chip = screen.getAllByRole('button', { name: /AI értékelés/ })[0]
+  await userEvent.click(chip)
+  expect(screen.getByTestId('loc').textContent).toMatch(/^\/fuel\/etkezes\/[^/]+\/ertekeles$/)
+})
+
+test('az étkezés sora továbbra is a részletekre visz', async () => {
+  renderView()
+  await userEvent.click(screen.getAllByRole('button', { name: /Túrós zabkása/ })[0])
+  expect(screen.getByTestId('loc').textContent).toMatch(/^\/fuel\/etkezes\/[^/]+$/)
+})

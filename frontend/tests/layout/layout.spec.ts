@@ -494,3 +494,40 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
     ).toBeLessThanOrEqual(size.clientWidth + 1)
   })
 }
+
+// ── Az étkezés-részletek fejléce: semmi nem lóg egymásra (mezo-jb84) ──────────────────────────
+// Az AI pont-chip abszolút pozícióval lebegett a jobb oszlop fölött, és ráült a „mikor logoltad"
+// kártyára. Két egymásra rajzolt elem jsdom-ban láthatatlan — geometria kell hozzá, ezért él itt.
+test('a részletek fejlécében a pont-chip és a mikor-kártya nem fedi egymást', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.goto('/fuel')
+  await page.waitForLoadState('networkidle')
+  // Egy logolt étkezés sorából nyitjuk meg a részleteket — ugyanazon az úton, ahogy a felhasználó.
+  await page.locator('.fmx-meal-main').first().click()
+  await page.waitForURL(/\/fuel\/etkezes\//)
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  const boxes = await page.evaluate(() => {
+    const rect = (sel: string) => {
+      const el = document.querySelector(sel)
+      if (!el) return null
+      const b = el.getBoundingClientRect()
+      return { top: b.top, bottom: b.bottom, left: b.left, right: b.right }
+    }
+    return { score: rect('.fmx-detail-score'), when: rect('.fmx-detail-when'), share: rect('.fmx-detail-share') }
+  })
+
+  expect(boxes.score, 'a részletek fejléce nem hozott pont-chipet').not.toBeNull()
+  expect(boxes.when, 'a részletek fejléce nem hozott mikor-kártyát').not.toBeNull()
+  const overlaps = (a: { top: number; bottom: number; left: number; right: number },
+                    b: { top: number; bottom: number; left: number; right: number }) =>
+    !(a.bottom <= b.top + 1 || b.bottom <= a.top + 1 || a.right <= b.left + 1 || b.right <= a.left + 1)
+  expect(overlaps(boxes.score!, boxes.when!), 'a pont-chip rálóg a mikor-kártyára').toBe(false)
+  if (boxes.share) {
+    expect(overlaps(boxes.score!, boxes.share), 'a pont-chip rálóg a nap-arány kártyára').toBe(false)
+  }
+  // Az owner elrendezése: az értékelés JOBB FENT áll — a mikor-kártya fölött.
+  expect(boxes.score!.bottom).toBeLessThanOrEqual(boxes.when!.top + 1)
+})
