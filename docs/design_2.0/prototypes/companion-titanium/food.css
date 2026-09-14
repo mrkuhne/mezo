@@ -64,8 +64,8 @@
 @keyframes fcer-aura{0%{opacity:.95;scale:.3}100%{opacity:0;scale:1.9}}
 .fcer-bar{position:relative;width:100%;max-width:300px;height:16px;border-radius:999px;background:#ffffff10;box-shadow:0 0 0 1px #ffffff10 inset}
 .fcer-bar u{position:absolute;top:3px;bottom:3px;left:var(--at);width:1px;background:#ffffff26}
-.fcer-fill{position:absolute;inset:0 auto 0 0;width:calc(var(--p)*100%);border-radius:999px;background:linear-gradient(90deg,#ff7a2f,#ffb347 42%,#ffe9a8 78%,#fffdf4);box-shadow:0 0 18px #ff9a4a88,0 0 42px #ff7a2f55}
-.fcer-comet{position:absolute;top:50%;left:calc(var(--p)*100%);width:46px;height:46px;translate:-50% -50%;pointer-events:none;opacity:calc(min(1,var(--p)*14));background:radial-gradient(circle,#fffdf4 0%,#ffc76a 26%,#ff7a2f66 48%,transparent 70%)}
+.fcer-fill{position:absolute;inset:0 auto 0 0;width:calc(var(--p)*100%);border-radius:999px;background:linear-gradient(90deg,#8a6f4d,#dbc4a0 26%,#fff0c8 48%,#af9371 74%,#e8d3a8);box-shadow:inset 0 1px 1px #fff3d2aa,inset 0 -1px 1px #5a462f88,0 0 16px #d9c39577,0 0 38px #af937144}
+.fcer-comet{position:absolute;top:50%;left:calc(var(--p)*100%);width:46px;height:46px;translate:-50% -50%;pointer-events:none;opacity:calc(min(1,var(--p)*14));background:radial-gradient(circle,#fffdf4 0%,#ffe9b0 28%,#d9c39566 50%,transparent 70%)}
 .fcer-counters{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:330px}
 .fcer-counters span{position:relative;overflow:hidden;display:grid;justify-items:center;gap:2px;padding:13px 4px 11px;border-radius:18px;border:1px solid color-mix(in srgb,#ffb347 calc(14% + var(--p)*26%),#ffffff14);background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,#ffb347 calc(var(--p)*16%),transparent),transparent 66%),linear-gradient(#ffffff0a,#ffffff03);box-shadow:0 1px 0 #ffffff1a inset,0 10px 24px -20px color-mix(in srgb,#ff9a4a calc(var(--p)*90%),transparent)}
 .fcer-counters span::before{content:'';position:absolute;inset:0 20% auto;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,#ffd9a0 calc(30% + var(--p)*70%),transparent),transparent)}
@@ -145,3 +145,37 @@
 .fcer-bud-bar{display:block;position:relative;height:7px;border-radius:999px;background:#ffffff10;overflow:hidden;margin:8px 0 6px}
 .fcer-bud-bar b{position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--bud-color) 55%,#20242b),var(--bud-color));box-shadow:0 0 10px color-mix(in srgb,var(--bud-color) 45%,transparent)}
 .fcer-bud-row small{font-size:9px;color:#8ba0ab}
+
+/* ---- rv: the review (pontosítás) screen retold — staged, tinted, alive (owner 2026-09-14). ---- */
+.rv-aura{position:absolute;inset:0 0 auto 0;height:300px;pointer-events:none;overflow:hidden;border-radius:43px 43px 0 0}
+.rv-aura i,.rv-aura b{position:absolute;width:230px;height:230px;border-radius:50%;filter:blur(55px);opacity:.1}
+.rv-aura i{left:-60px;top:-40px;background:#8ed2e8}
+.rv-aura b{right:-70px;top:60px;background:#bca6f1;opacity:.08}
+.food-steps{margin-bottom:26px}
+.food-steps .done{color:#a9c78f}
+.rv-twinkle{display:inline-block}
+.rv-card{border-color:color-mix(in srgb,var(--item-color) 26%,transparent);background:radial-gradient(ellipse at 92% 0%,color-mix(in srgb,var(--item-color) 11%,transparent),transparent 65%),linear-gradient(135deg,#202d34,#151e26)}
+.rv-card .food-item-head small{color:color-mix(in srgb,var(--item-color) 75%,#fff)}
+.rv-live{position:relative;overflow:hidden}
+.rv-live>.overline{position:relative}
+.rv-sheen{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(120deg,transparent 0 26px,color-mix(in srgb,#8ed2e8 4%,transparent) 27px 28px)}
+#food-preview strong em{font-style:normal}
+.rv-macro-bar{display:block;height:3px;border-radius:3px;background:#ffffff10;overflow:hidden;margin-top:7px}
+.rv-macro-bar u{display:block;height:100%;border-radius:3px;transition:width .45s cubic-bezier(.22,.9,.25,1)}
+@media(prefers-reduced-motion:no-preference){
+ .rv-block{animation:rv-in .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d)*75ms)}
+ @keyframes rv-in{from{opacity:0;transform:translateY(14px)}}
+ .rv-aura i{animation:rv-drift 13s ease-in-out infinite alternate}
+ .rv-aura b{animation:rv-drift 17s ease-in-out infinite alternate-reverse}
+ @keyframes rv-drift{to{transform:translate(50px,30px) scale(1.15)}}
+ .rv-card .food-item-head .icon{animation:rv-float 4.8s ease-in-out infinite}
+ @keyframes rv-float{50%{transform:translateY(-4px) rotate(-3deg)}}
+ .rv-twinkle{animation:rv-twinkle 2.6s ease-in-out infinite}
+ @keyframes rv-twinkle{50%{opacity:.45;transform:scale(.82) rotate(18deg)}}
+ .estimate-pill{animation:rv-pill 3.2s ease-in-out infinite}
+ @keyframes rv-pill{50%{border-color:#c9b38260;background:#c9b38218}}
+ #food-preview strong em.pop{animation:rv-pop .34s cubic-bezier(.2,1.4,.4,1)}
+ @keyframes rv-pop{40%{transform:scale(1.09)}}
+ #food-preview strong em{display:inline-block}
+ .portion-field button:active{transform:scale(.88);transition:transform .1s}
+}
