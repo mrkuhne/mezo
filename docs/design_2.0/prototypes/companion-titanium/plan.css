@@ -678,3 +678,11 @@
 .pl-tpl-ex b { font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--mus-color) 75%, #fff); white-space: nowrap; }
 .pl-tpl-ex small { font-size: 10.5px; color: #ffffff5c; white-space: nowrap; min-width: 74px; text-align: right; }
 .pl-tpl-load { margin-bottom: 4px; }
+
+/* the heads a group card covers */
+.wz-mus-parts { display: flex; flex-wrap: wrap; gap: 5px; }
+.wz-mus-parts i {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 5px;
+  font-size: 10px; color: #ffffff7d; border: 1px solid #ffffff12; border-radius: 999px; background: #ffffff05;
+}
+.wz-mus-parts .icon { width: 17px; height: 17px; }

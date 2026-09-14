@@ -38,7 +38,7 @@ test('exercises add from the catalog, move by arrows, and leave cleanly', () => 
   toggleDay(d, 'Hét');
   addExercise(d, 'Hét', 'Guggolás'); addExercise(d, 'Hét', 'Fekvenyomás'); addExercise(d, 'Hét', 'nincs-ilyen');
   assert.deepEqual(draftDay(d, 'Hét').exercises.map(e => e.name), ['Guggolás', 'Fekvenyomás']);
-  assert.equal(d.focus.quad, 'grow');
+  assert.equal(d.focus.leg, 'grow', 'the focus lands on the muscle group, not the head');
   moveExercise(d, 'Hét', 1, -1);
   assert.deepEqual(draftDay(d, 'Hét').exercises.map(e => e.name), ['Fekvenyomás', 'Guggolás']);
   moveExercise(d, 'Hét', 0, -1);
@@ -109,4 +109,17 @@ test('the catalog search is accent-blind and filters by region too', async () =>
   assert.equal(searchCatalog('', 'leg').every(c => ['quad', 'ham', 'glute', 'calf'].includes(c.muscle)), true);
   assert.equal(searchCatalog('nyomás', 'chest').every(c => c.muscle.startsWith('chest')), true);
   assert.deepEqual(searchCatalog('nincsilyen'), []);
+});
+
+test('the heads of one group climb together: chest counts as one card', async () => {
+  const { draftGroups, newDraft: nd, toggleDay: td, addExercise: ae } = await import('./plan-wizard-state.js');
+  const d = nd();
+  td(d, 'Hét'); td(d, 'Cs');
+  ae(d, 'Hét', 'Fekvenyomás'); ae(d, 'Hét', 'Ferde padnyomás'); ae(d, 'Cs', 'Tárogatás kábelen'); ae(d, 'Cs', 'Guggolás');
+  const groups = draftGroups(d);
+  const chest = groups.find(g => g.key === 'chest');
+  assert.equal(chest.sets, 9, 'all three chest moves add up');
+  assert.equal(chest.days, 2, 'both days reach the chest');
+  assert.deepEqual([...chest.muscles].sort(), ['chest-mid', 'chest-upper']);
+  assert.equal(groups.find(g => g.key === 'leg').sets, 3);
 });

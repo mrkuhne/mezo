@@ -2,7 +2,8 @@
 // State lives in plan-wizard-state.js — these pages only draw it and route between steps.
 import {
   CATALOG, searchCatalog, wizardDraft, startWizard, dropWizard, draftDay, toggleDay, addExercise,
-  removeExercise, moveExercise, changeSets, dayMinutes, draftMuscles, rampSeries, lintDraft, stampRun,
+  removeExercise, moveExercise, changeSets, dayMinutes, draftMuscles, draftGroups, rampSeries,
+  lintDraft, stampRun,
 } from './plan-wizard-state.js';
 import { LIBRARY, MESO, TIERS, DAY_ORDER, DAY_NAMES, daySets } from './plan-state.js';
 import { icon, safe, toast } from './nap.js';
@@ -152,20 +153,22 @@ function dayStep(draft, token) {
 const rampArc = (series, weeks) => `<div class="pl-arc wz-arc is-mini" aria-hidden="true">${series.map((v, i) =>
   `<i class="${i === weeks - 1 ? 'is-deload' : ''}" style="--h:${Math.round(20 + v / Math.max(...series) * 80)}%"></i>`).join('')}</div>`;
 
-function focusCard(draft, row) {
-  const tier = draft.focus[row.key] ?? 'grow';
-  const series = rampSeries(row.sets, tier, draft.weeks);
-  const words = { maintain: 'marad ennyi', grow: `${row.sets} → ${Math.max(...series)} szett`, emphasize: `${row.sets} → ${Math.max(...series)} szett` };
-  return `<div class="wz-mus" data-wz-mus="${row.key}" style="--mus-color:${muscleColor(row.key)}" data-reveal>
-   <span class="wz-mus-head">${muscleIcon(row.key)}<strong>${muscleLabel(row.key)}</strong><small>heti ${row.sets} szettről indul</small></span>
-   <span class="wz-seg" role="group" aria-label="${muscleLabel(row.key)} — mennyit kapjon">${Object.entries(TIERS).map(([key, t]) =>
-    `<button class="${key === tier ? 'is-on' : ''}" data-wiz="focus:${row.key}:${key}" aria-pressed="${key === tier}">${t.label}</button>`).join('')}</span>
+function focusCard(draft, group) {
+  const tier = draft.focus[group.key] ?? 'grow';
+  const series = rampSeries(group.sets, tier, draft.weeks);
+  const color = REGIONS.find(r => r.key === group.key)?.color ?? '#bca6f1';
+  const words = { maintain: 'marad ennyi', grow: `${group.sets} → ${Math.max(...series)} szett`, emphasize: `${group.sets} → ${Math.max(...series)} szett` };
+  return `<div class="wz-mus" data-wz-mus="${group.key}" style="--mus-color:${color}" data-reveal>
+   <span class="wz-mus-head">${muscleIcon(group.muscles[0])}<strong>${group.label}</strong><small>heti ${group.sets} szettről indul</small></span>
+   ${group.muscles.length > 1 ? `<span class="wz-mus-parts">${group.muscles.map(key => `<i>${muscleIcon(key)}${muscleLabel(key)}</i>`).join('')}</span>` : ''}
+   <span class="wz-seg" role="group" aria-label="${group.label} — mennyit kapjon">${Object.entries(TIERS).map(([key, t]) =>
+    `<button class="${key === tier ? 'is-on' : ''}" data-wiz="focus:${group.key}:${key}" aria-pressed="${key === tier}">${t.label}</button>`).join('')}</span>
    <span class="wz-mus-ramp">${rampArc(series, draft.weeks)}<small>${words[tier]}</small></span>
   </div>`;
 }
 
 function focusStep(draft) {
-  const rows = draftMuscles(draft);
+  const rows = draftGroups(draft);
   const body = rows.length ? rows.map(row => focusCard(draft, row)).join('')
     : '<p class="pl-foot-say" data-reveal>Előbb tegyél gyakorlatokat a napokba — az izmok abból rajzolódnak ki.</p>';
   return `<div class="pl-sub pl-lib wz">
@@ -300,9 +303,9 @@ export function initPlanWizard({ dialog, closeSheet }) {
     if (action === 'drop') { removeExercise(draft, currentDayToken(), Number(a)); redrawDay(currentDayToken()); }
     if (action === 'focus') {
       draft.focus[a] = b;
-      const row = draftMuscles(draft).find(r => r.key === a);
+      const group = draftGroups(draft).find(g => g.key === a);
       const card = document.querySelector(`[data-wz-mus="${a}"]`);
-      if (card && row) card.outerHTML = focusCard(draft, row).replace(' data-reveal>', '>');
+      if (card && group) card.outerHTML = focusCard(draft, group).replace(' data-reveal>', '>');
     }
     if (action === 'start') {
       draft.start = a;

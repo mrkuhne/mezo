@@ -1,7 +1,7 @@
 // Building a new mesocycle: a draft you shape step by step, then stamp into a queued run.
 // Pure state and math — the pages live in plan-wizard.js.
 import { DAY_ORDER, LIBRARY, template } from './plan-state.js';
-import { MUSCLES, muscleLabel } from './muscle-taxonomy.js';
+import { MUSCLES, REGIONS, muscleLabel } from './muscle-taxonomy.js';
 
 /** A small catalog to pick from — name plus the muscle it works. */
 export const CATALOG = [
@@ -42,6 +42,8 @@ export function searchCatalog(query = '', region = '') {
 
 const exerciseOf = item => ({ name: item.name, muscle: item.muscle, sets: 3, warmup: 1, repMin: 8, repMax: 12, rir: 2, kg: item.kg });
 
+export const regionOf = muscleKey => MUSCLES.find(m => m.key === muscleKey)?.region ?? null;
+
 export function newDraft() {
   return { source: 'blank', name: '', weeks: 6, days: [], focus: {} };
 }
@@ -52,7 +54,7 @@ export function draftFromTemplate(key) {
   if (!t) return newDraft();
   const draft = { source: key, name: t.name, weeks: t.weeks, days: [], focus: {} };
   draft.days = (t.days ?? []).map(d => ({ day: d.day, type: d.type, exercises: d.exercises.map(e => ({ ...e })) }));
-  for (const m of draftMuscles(draft)) draft.focus[m.key] = 'grow';
+  for (const g of draftGroups(draft)) draft.focus[g.key] = 'grow';
   return draft;
 }
 
@@ -74,7 +76,8 @@ export function addExercise(draft, token, name) {
   const item = catalogItem(name), day = draftDay(draft, token);
   if (!item || !day) return draft;
   day.exercises.push(exerciseOf(item));
-  if (!draft.focus[item.muscle]) draft.focus[item.muscle] = 'grow';
+  const region = regionOf(item.muscle);
+  if (region && !draft.focus[region]) draft.focus[region] = 'grow';
   return draft;
 }
 
@@ -115,6 +118,24 @@ export function draftMuscles(draft) {
   return [...rows.values()].map(({ seen, ...row }) => row).sort((a, b) => b.sets - a.sets);
 }
 
+/** The focus is chosen per muscle group: every head of the chest climbs together. */
+export function draftGroups(draft) {
+  const groups = new Map();
+  for (const row of draftMuscles(draft)) {
+    const region = regionOf(row.key);
+    if (!region) continue;
+    const group = groups.get(region) ?? { key: region, label: REGIONS.find(r => r.key === region)?.label ?? region, sets: 0, muscles: [], seen: new Set() };
+    group.sets += row.sets;
+    group.muscles.push(row.key);
+    groups.set(region, group);
+  }
+  for (const day of draft.days) for (const e of day.exercises) {
+    const group = groups.get(regionOf(e.muscle));
+    if (group) group.seen.add(day.day);
+  }
+  return [...groups.values()].map(({ seen, ...g }) => ({ ...g, days: seen.size })).sort((a, b) => b.sets - a.sets);
+}
+
 /** Week one is what the days say; the focus decides how far it may climb; the last week rests. */
 export function rampSeries(startSets, tier, weeks) {
   const ceiling = tier === 'maintain' ? startSets : tier === 'emphasize' ? startSets + 10 : startSets + 6;
@@ -136,9 +157,9 @@ export function lintDraft(draft) {
     if (next) for (const m of muscles) if (next.has(m)) shared.add(m);
   }
   if (shared.size) notes.push({ say: `${shared.size} izom két egymás utáni napon is dolgozik — pihenőnap nélkül nehezebben épül.` });
-  for (const row of draftMuscles(draft)) {
-    if (draft.focus[row.key] === 'emphasize' && row.days < 2)
-      notes.push({ say: 'Van izom, ami hangsúlyt kap, de hetente csak egyszer éred el — két alkalom többet hozna.' });
+  for (const group of draftGroups(draft)) {
+    if (draft.focus[group.key] === 'emphasize' && group.days < 2)
+      notes.push({ say: `A ${group.label.toLocaleLowerCase('hu')} hangsúlyt kap, de hetente csak egyszer éred el — két alkalom többet hozna.` });
   }
   return notes.slice(0, 4);
 }
