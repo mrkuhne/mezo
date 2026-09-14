@@ -115,12 +115,40 @@ export function loadContent() {
   </div>`;
 }
 
-export function initLoad({ dialog }) {
+export function initLoad() {
+  let layer = null;
+  const close = () => { layer?.remove(); layer = null; };
+
+  const open = key => {
+    const group = groupLoad().find(g => g.key === key);
+    if (!group) return;
+    close();
+    layer = document.createElement('div');
+    layer.className = 'ld-glass-layer';
+    layer.innerHTML = `<div class="wo-glass" data-glass style="--ex-color:${group.color}">
+     <div class="wo-glass-card" role="dialog" aria-label="${group.label} — ezen a héten">
+      <header class="wo-glass-head">
+       ${muscleIcon(group.heads[0].key)}
+       <div><small>EZEN A HÉTEN</small><strong>${group.label}</strong></div>
+       <button data-glass-close aria-label="Bezárás">×</button>
+      </header>
+      <div class="wo-glass-hero">
+       <span class="wo-glass-main"><strong>${group.done}</strong><small>/ ${group.planned} szett</small></span>
+      </div>
+      ${groupGlass(key)}
+     </div>
+    </div>`;
+    document.querySelector('.device').append(layer);
+    layer.addEventListener('click', event => {
+      if (event.target.closest('[data-glass-close]') || !event.target.closest('.wo-glass-card')) close();
+    });
+    layer.querySelector('[data-glass-close]').focus();
+  };
+
   document.addEventListener('click', event => {
     const el = event.target.closest('[data-load-group]');
-    if (!el) return;
-    const key = el.dataset.loadGroup;
-    const group = groupLoad().find(g => g.key === key);
-    if (group) dialog(`${group.label.toUpperCase()} · EZEN A HÉTEN`, `<h2 class="sheet-title">${group.label}</h2><p class="sheet-sub">${group.done} szett megvan a ${group.planned}-ből.</p>${groupGlass(key)}`);
+    if (el) open(el.dataset.loadGroup);
   });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && layer) close(); });
+  window.addEventListener('hashchange', close);
 }

@@ -135,3 +135,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ld-hero-art i, .ld-hero-bar em, .ld-ma { animation: none; }
 }
+
+/* — the group glass floats over the phone screen, workout-style — */
+.ld-glass-layer { position: absolute; inset: 10px; z-index: 15; border-radius: 43px; overflow: hidden; }
+.ld-glass-layer .wo-glass-head > .icon { width: 34px; height: 34px; }
+.ld-glass-layer .wo-glass-main strong { color: color-mix(in srgb, var(--ex-color) 75%, #fff); }
+.ld-glass-layer .ld-glass { --mus-color: var(--ex-color); }
+.ld-glass-layer .ld-group-bar i { width: var(--w); }

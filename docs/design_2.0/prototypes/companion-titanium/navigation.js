@@ -117,7 +117,7 @@ initSport({refresh:draw,go,dialog,closeSheet});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFuelPages({refresh:draw,go,dialog,closeSheet});
 initPlanWizard({dialog,closeSheet});
-initLoad({dialog});
+initLoad();
 initMezo({refresh:draw});
 initPersonal({refresh:draw});
 $('#restart').addEventListener('click',()=>{dayNav=createDayNavigation('2026-09-09');dayMotion='';draw();});
