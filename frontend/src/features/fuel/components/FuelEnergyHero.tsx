@@ -49,7 +49,11 @@ function nodeValue(line: EquationLine): string {
   return `${line.sign} ${huInt(Math.abs(line.value))}`
 }
 
-function EquationBox({ vm, past, onClose }: { vm: KeretHeroVM; past: boolean; onClose: () => void }) {
+function EquationBox({ vm, past, onClose, onFull }: {
+  vm: KeretHeroVM; past: boolean; onClose: () => void
+  /** A15: a MEGLÉVŐ, Énnel közös energia-magyarázat — a doboz csendes ajtaja. */
+  onFull?: () => void
+}) {
   const titleId = useId()
   const lines = heroEquationLines(vm)
   const over = vm.remainingKcal < 0
@@ -90,6 +94,13 @@ function EquationBox({ vm, past, onClose }: { vm: KeretHeroVM; past: boolean; on
         A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap
         újraszületik.
       </p>
+      {/* A15: a részletes, Énnel KÖZÖS energia-magyarázat nem veszik el — csendes ajtót kap,
+          hogy a doboz maradhasson az, aminek a prototípus szánta: az egyenlet. */}
+      {onFull && (
+        <button type="button" className="fmx-glass-more" onClick={onFull}>
+          Részletesen, honnan jön a keret <b aria-hidden="true">›</b>
+        </button>
+      )}
       <button type="button" className="fmx-glass-close" onClick={onClose}>Bezárom</button>
     </GlassBox>
   )
@@ -99,7 +110,8 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
   vm: KeretHeroVM
   /** A13: egy MÚLTBELI napot nézünk — a „ma” szó ilyenkor hazugság lenne. */
   past?: boolean
-  /** A15: hands the tap to the parent's shared EnergyBreakdownSheet instead of the local box. */
+  /** A15: a doboz csendes ajtaja a szülő MEGLÉVŐ, Énnel közös energia-magyarázatához.
+   *  A chip maga MINDIG a jóváhagyott üvegdobozt nyitja (mezo-jb84: élesben a régi lap jött). */
   onOpenEnergy?: () => void
   /** Keeps the víz ring a live water-logging door (see FuelMacroRings). */
   onWater?: () => void
@@ -141,13 +153,16 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
         </div>
       </div>
       <button type="button" className="fmx-tapchip"
-        onClick={() => (onOpenEnergy ? onOpenEnergy() : setBoxOpen(true))}>
+        onClick={() => setBoxOpen(true)}>
         <span>Miből jön össze?</span>
         <b aria-hidden="true">›</b>
         <u className="fmx-chip-sheen" aria-hidden="true" />
       </button>
       <FuelMacroRings rings={vm.rings} onWater={onWater} />
-      {boxOpen && <EquationBox vm={vm} past={past} onClose={() => setBoxOpen(false)} />}
+      {boxOpen && (
+        <EquationBox vm={vm} past={past} onClose={() => setBoxOpen(false)}
+          onFull={onOpenEnergy ? () => { setBoxOpen(false); onOpenEnergy() } : undefined} />
+      )}
     </div>
   )
 }

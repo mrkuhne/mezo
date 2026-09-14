@@ -171,14 +171,26 @@ test('a műszer íve a nap elfogyasztott részét rajzolja ki', () => {
   expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#i-fuel')
 })
 
-// A15: a hero koppintása a MEGLÉVŐ, Énnel közös energia-magyarázatot nyitja — nem másolatot.
-test('a hero koppintása az energia-magyarázatot nyitja', async () => {
+// mezo-jb84: a chip a JÓVÁHAGYOTT üvegdobozt nyitja — élesben a régi, közös lap jött fel
+// helyette. A15 viszont nem veszik el: a doboz csendes ajtaja továbbra is a MEGLÉVŐ, Énnel
+// közös energia-magyarázathoz visz, tehát a részletes eredet egy koppintásra marad.
+test('a hero koppintása az egyenlet-üvegdobozt nyitja', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const box = await screen.findByRole('dialog')
+  expect(box.className).toContain('fmx-glass')
+  for (const label of ['Alap', 'Mozgás', 'Étel', 'Marad']) {
+    expect(within(box).getByText(label)).toBeInTheDocument()
+  }
+  // A régi, közös lap NEM ez — az csak a doboz ajtaján túl van.
+  expect(screen.queryByText(/Alapanyagcsere/i)).toBeNull()
+})
+
+test('az üvegdoboz ajtaja a részletes, Énnel közös magyarázatot nyitja', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Részletesen, honnan jön a keret/ }))
   expect(await screen.findByText(/Alapanyagcsere/i)).toBeInTheDocument()
-  // The hero's own local glass box never opens on this page — one provenance surface only
-  // (the shared sheet itself is a role=dialog, so assert on the box's own element).
-  expect(document.querySelector('dialog.fmx-glass')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
 })

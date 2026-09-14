@@ -80,14 +80,23 @@ test('túllépett keretnél a felirat mondja meg az irányt, és nem minősít',
   expect(container.textContent).not.toMatch(/elrontott|túlevés|hiba/i)
 })
 
-// A15: ha a szülő a MEGLÉVŐ, Énnel közös energia-magyarázatot kezeli, a chip azt hívja, és
-// a helyi üvegdoboz nem nyílik ki — egy felület, nem kettő.
-test('onOpenEnergy-vel a chip a szülőt hívja, nem a helyi dobozt', async () => {
+// mezo-jb84: a chip MINDIG a saját üvegdobozát nyitja — korábban `onOpenEnergy` mellett a
+// szülő régi lapja jött fel helyette. A szülő felülete nem veszik el: a doboz ajtaja hívja.
+test('a chip a saját dobozát nyitja, a szülő felületét pedig a doboz ajtaja', async () => {
   let opened = 0
   render(<FuelEnergyHero vm={vm()} onOpenEnergy={() => { opened += 1 }} />)
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  expect(opened).toBe(0)
+  await userEvent.click(screen.getByRole('button', { name: /Részletesen, honnan jön a keret/ }))
   expect(opened).toBe(1)
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('ajtó nélkül a doboz nem kínál részletes utat', async () => {
+  render(<FuelEnergyHero vm={vm()} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.queryByRole('button', { name: /Részletesen/ })).not.toBeInTheDocument()
 })
 
 // A13 (mezo-33k6): egy MÚLTBELI napot nézve a „ma" szó hazugság lenne — a lapozás
