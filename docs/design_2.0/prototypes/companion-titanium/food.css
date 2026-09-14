@@ -47,3 +47,69 @@
 .fuel-secondary strong{display:block;font-size:10px;font-weight:500;color:#c6d5d8}
 .fuel-secondary small{display:block;margin-top:3px;font-size:8px;line-height:1.45;color:#788f98}
 .fuel-secondary b{margin-left:auto;font-weight:400;color:#8ed2e8}
+
+/* ---- fcer: post-log reward ceremony + glucose panel (mezo-6z0ai). Fuel twin of the train star
+   ceremony; --p runs 0..score/10 during the one-shot pass. glu-chip lives on the Mai meal rows. ---- */
+.fcer-screen{display:flex;flex-direction:column;min-height:calc(100% - 70px);text-align:center}
+.fcer{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:26px 6px 6px;margin-top:auto}
+.fcer-sky{position:absolute;left:50%;top:50%;width:420px;height:420px;translate:-50% -50%;pointer-events:none;background:radial-gradient(circle,color-mix(in srgb,#ffb347 calc(var(--p)*26%),transparent),transparent 62%)}
+.fcer>.overline{position:relative;color:#d5c096;letter-spacing:.2em;font-size:8px}
+.fcer-stars{position:relative;display:flex;justify-content:center;gap:12px}
+.fcer-stars i{position:relative;width:42px;height:42px;display:grid;place-items:center}
+.fcer-stars i .icon{width:42px;height:42px;opacity:.12;filter:grayscale(1);transition:none}
+.fcer-stars i.is-lit .icon{opacity:1;filter:none;animation:fcer-pop .55s cubic-bezier(.2,1.7,.35,1)}
+.fcer-aura{position:absolute;inset:-14px;border-radius:50%;opacity:0;pointer-events:none;background:radial-gradient(circle,#ffd98a 0%,#ff8a3c55 38%,transparent 68%)}
+.fcer-stars i.is-lit .fcer-aura{animation:fcer-aura .7s ease-out}
+@keyframes fcer-pop{0%{scale:.3;rotate:-25deg}60%{scale:1.25;rotate:6deg}100%{scale:1;rotate:0deg}}
+@keyframes fcer-aura{0%{opacity:.95;scale:.3}100%{opacity:0;scale:1.9}}
+.fcer-bar{position:relative;width:100%;max-width:300px;height:16px;border-radius:999px;background:#ffffff10;box-shadow:0 0 0 1px #ffffff10 inset}
+.fcer-bar u{position:absolute;top:3px;bottom:3px;left:var(--at);width:1px;background:#ffffff26}
+.fcer-fill{position:absolute;inset:0 auto 0 0;width:calc(var(--p)*100%);border-radius:999px;background:linear-gradient(90deg,#ff7a2f,#ffb347 42%,#ffe9a8 78%,#fffdf4);box-shadow:0 0 18px #ff9a4a88,0 0 42px #ff7a2f55}
+.fcer-comet{position:absolute;top:50%;left:calc(var(--p)*100%);width:46px;height:46px;translate:-50% -50%;pointer-events:none;opacity:calc(min(1,var(--p)*14));background:radial-gradient(circle,#fffdf4 0%,#ffc76a 26%,#ff7a2f66 48%,transparent 70%)}
+.fcer-counters{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:330px}
+.fcer-counters span{position:relative;overflow:hidden;display:grid;justify-items:center;gap:2px;padding:13px 4px 11px;border-radius:18px;border:1px solid color-mix(in srgb,#ffb347 calc(14% + var(--p)*26%),#ffffff14);background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,#ffb347 calc(var(--p)*16%),transparent),transparent 66%),linear-gradient(#ffffff0a,#ffffff03);box-shadow:0 1px 0 #ffffff1a inset,0 10px 24px -20px color-mix(in srgb,#ff9a4a calc(var(--p)*90%),transparent)}
+.fcer-counters span::before{content:'';position:absolute;inset:0 20% auto;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,#ffd9a0 calc(30% + var(--p)*70%),transparent),transparent)}
+.fcer-counters i{display:block;width:24px;height:24px;opacity:calc(.35 + var(--p)*.55)}
+.fcer-counters i .icon{width:24px;height:24px}
+.fcer-counters strong{display:block;font-size:24px;font-weight:300;letter-spacing:-.035em;font-variant-numeric:tabular-nums;background:linear-gradient(#fff6e2,#ffca86);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fcer-counters small{display:block;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#ffffff6b}
+.fcer-screen .fcer-result,.fcer-screen .fcer-foot{opacity:0;translate:0 14px;pointer-events:none}
+.fcer-screen.is-told .fcer-result,.fcer-screen.is-told .fcer-foot{opacity:1;translate:0 0;pointer-events:auto;transition:opacity .5s ease,translate .5s cubic-bezier(.2,.8,.2,1)}
+.fcer-screen.is-told .fcer-foot{transition-delay:.22s}
+.fcer-result{padding:22px 12px 4px}
+.fcer-verdict{font-size:30px;font-weight:300;letter-spacing:-.03em;margin:6px 0 8px;color:#f4ecdc}
+.fcer-meal{margin:0 0 18px;font-size:12px;color:#ffffff85}
+.fcer-score{display:inline-grid;gap:6px;padding:14px 26px;border-radius:20px;border:1px solid #d9c39533;background:linear-gradient(#ffffff0a,#ffffff03);box-shadow:0 1px 0 #ffffff14 inset}
+.fcer-score .overline{font-size:7px;letter-spacing:.16em;color:#c9b988}
+.fcer-score strong{font-size:34px;font-weight:300;letter-spacing:-.03em;color:#f2e4c2}
+.fcer-score strong small{font-size:14px;color:#ffffff70}
+.fcer-foot{margin-top:auto;padding:18px 0 8px}
+.fcer-cta{position:relative;display:grid;grid-template-columns:40px 1fr;align-items:center;gap:12px;width:100%;padding:15px 17px;text-align:left;color:inherit;border:1px solid #d9c39548;border-radius:20px;background:linear-gradient(130deg,#2c2820,#171519);box-shadow:0 10px 30px -18px #d9c39566}
+.fcer-cta-art .icon{width:38px;height:38px}
+.fcer-cta strong{display:block;font-size:15px;font-weight:600}
+.fcer-cta small{display:block;font-size:10px;color:#ffffff70;margin-top:3px}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* Level palette: sage / gold / coral — the house tones, one per verdict band. */
+.lvl-low{--glu-color:#b8db86}.lvl-mid{--glu-color:#d9c395}.lvl-high{--glu-color:#f0a08a}
+.fcer-curve{display:block;width:100%;max-width:320px;margin:6px auto;color:var(--glu-color,#d9c395)}
+.fcer-curve.mini{width:30px;height:16px;margin:0}
+.fcer-glucose{text-align:left}
+.fcer-glu-card{padding:18px;border:1px solid color-mix(in srgb,var(--glu-color) 30%,transparent);border-radius:22px;background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--glu-color) 10%,transparent),transparent 60%),linear-gradient(#ffffff05,#ffffff02);margin:6px 0 12px}
+.fcer-glu-pill{display:inline-block;padding:7px 12px;border-radius:20px;border:1px solid color-mix(in srgb,var(--glu-color) 45%,transparent);background:color-mix(in srgb,var(--glu-color) 12%,transparent);color:var(--glu-color);font-size:8px;letter-spacing:.12em;font-weight:700}
+.fcer-glu-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.fcer-glu-facts span small{display:block;font-size:7px;letter-spacing:.6px;color:#8ba0ab;text-transform:uppercase}
+.fcer-glu-facts span b{display:block;font-size:13px;font-weight:500;color:#d5e4e8;margin-top:5px}
+.fcer-glu-tip{display:flex;gap:12px;align-items:flex-start;padding:15px;border:1px solid #b8db8628;border-radius:18px;background:#b8db8608;margin:0 0 14px}
+.fcer-glu-tip .icon{width:34px;height:34px;flex:0 0 auto}
+.fcer-glu-tip strong{display:block;font-size:12.5px;font-weight:600;color:#cfe0b2}
+.fcer-glu-tip p{margin:5px 0 0;font-size:10.5px;line-height:1.7;color:#a8b8a0}
+/* The row chip: the mini curve in the verdict color, left of the score chip. */
+.glu-chip{display:grid;place-items:center;flex:0 0 auto;width:44px;height:42px;margin-right:-3px;padding:0;border:1px solid color-mix(in srgb,var(--glu-color) 34%,transparent);border-radius:22px;background:color-mix(in srgb,var(--glu-color) 9%,transparent);color:var(--glu-color)}
+/* The glass sheet body reuses the panel pieces. */
+.glass-glucose .glass-hero-art .icon{width:44px;height:44px}
+.glass-glucose .glass-hero strong{text-transform:capitalize;color:var(--glu-color)}
+.glass-glucose .fcer-curve{max-width:100%}
+@media(prefers-reduced-motion:reduce){
+ .fcer-stars i.is-lit .icon,.fcer-stars i.is-lit .fcer-aura{animation:none}
+ .fcer-screen .fcer-result,.fcer-screen .fcer-foot{opacity:1;translate:none;pointer-events:auto}
+}

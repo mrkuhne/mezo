@@ -1,4 +1,4 @@
-import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals } from './food-state.js';
+import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals, glycemicFor } from './food-state.js';
 import { safe, icon, closeSheet, react } from './nap.js';
 const $=s=>document.querySelector(s),fmt=v=>Math.round(v).toLocaleString('hu-HU');
 let day=createFoodDay(),draft=null,stage='input',mode='photo',source='',blockTime='',deleteArmed=false,callbacks;
@@ -18,7 +18,7 @@ const modeTabs=()=>`<div class="food-modes" role="tablist" aria-label="Naplózá
 const camGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 7L10.5 4H13.5L15 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
 const keyGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 10H8M11 10H12M15 10H16M7 14H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const repeatGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();}
+function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='glucose'?'Vércukor-válasz':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():stage==='glucose'?glucoseView():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();if(stage==='saved')runFoodCeremony();}
 function inputView(){return {photo:photoView,voice:voiceView,text:textView,usual:usualView}[mode]();}
 function photoView(){return `<div class="food-camera" aria-label="Kamera-előnézet, demó"><div class="food-finder"><span></span><span></span><span></span><span></span>${art}<p>DEMÓ KERESŐ · NEM VALÓDI KAMERA</p></div><p class="food-camera-hint">Fotózd le a tányért — a többit én kitöltöm, te csak jóváhagyod.</p><div class="food-shots"><button data-food-shot="known">${camGlyph}<span><strong>Exponálás</strong><small>Minta: joghurt és banán</small></span></button><button class="ghost" data-food-shot="unknown">${camGlyph}<span><strong>Másik tányér</strong><small>Minta: felismerés nem sikerül</small></span></button></div><p class="food-note">Működési demó: két mintafotót ismer. Nincs valódi kamera vagy AI-hívás.</p>`;}
 function voiceView(){return `<div class="food-voice"><button class="food-mic" data-food-say="Egy joghurt és egy banán volt." aria-label="Mintamondat bemondása">${micArt}</button><p class="food-camera-hint">Mondd el egy mondatban. Koppints a mikrofonra a mintamondathoz.</p><div class="voice-lines">${['Egy joghurt és egy banán volt.','Ettem egy tál zabkását.'].map(t=>`<button data-food-say="${safe(t)}">${micArt}<span>${t}</span></button>`).join('')}</div><p class="food-note">Működési demó: nincs hangrögzítés. A joghurt–banán mondatot érti; a másikat a szokásosakhoz irányítja.</p>`;}
@@ -32,7 +32,79 @@ function review(){if(draft.fixed)return fixedReview();return `<div class="food-i
 function fixedReview(){const v=nutrition(draft);return `<div class="food-intro"><span class="overline">${existing()?'NAPLÓZOTT ÉTKEZÉS':'A SZOKÁSOSODBÓL'}</span><h1>${safe(draft.name)}</h1></div><form id="food-review-form"><section class="nutrition-preview" aria-label="Étkezés értékei"><span class="overline">ISMERT ÉRTÉKEK</span><div><strong>${fmt(v.kcal)}<small>kcal</small></strong><div><span><b>${fmt(v.p)} g</b>fehérje</span><span><b>${fmt(v.c)} g</b>szénhidrát</span><span><b>${fmt(v.f)} g</b>zsír</span></div></div></section><label class="food-time">Mikor ettél?<input type="time" name="time" value="${safe(draft.time)}" required></label>${button(existing()?'Mentem a javítást ✓':'Rögzítem az étkezést ✓','type="submit"')}<p id="food-review-error" role="alert"></p>${deleteBlock()}<p class="food-note">Ismert értékekkel megy — nincs mit becsülni. Újratöltéskor a demó törlődik.</p></form>`;}
 function readDraft(){const form=$('#food-review-form');if(!form||!draft)return;if(draft.fixed){draft.time=form.elements.time.value;return;}draft.items[0]={key:form.elements.yogurt.value,grams:Number(form.elements.yogurtGrams.value)};draft.items[1].grams=Number(form.elements.bananaGrams.value);draft.time=form.elements.time.value;}
 function updatePreview(){const el=$('#food-preview');if(!el)return;readDraft();if(draft.items.some(i=>!Number.isFinite(i.grams)||i.grams<1||i.grams>2000)){el.textContent='Adj meg 1–2000 g közötti mennyiséget.';return;}const v=nutrition(draft);el.innerHTML=`<strong>${fmt(v.kcal)}<small>kcal</small></strong><div><span><b>${fmt(v.p)} g</b>fehérje</span><span><b>${fmt(v.c)} g</b>szénhidrát</span><span><b>${fmt(v.f)} g</b>zsír</span></div>`;}
-function saved(){const v=nutrition(draft),t=totals(day);return `<div class="food-success"><div class="food-success-art">${icon('bowl')}<span>✓</span></div><span class="overline">A NAPOD RÉSZE LETT</span><h1>Megérkezett<br>az étkezésed.</h1><p>${draft.fixed?safe(draft.name):`${foods[draft.items[0].key].name} · banán`}<br>${draft.time} · ${fmt(v.kcal)} kcal</p><div class="saved-budget"><small>EDDIG MA</small><strong>${fmt(t.kcal)}<span> / 2 400 kcal</span></strong><div class="food-budget-bar"><i style="width:${Math.min(100,t.kcal/2400*100)}%"></i></div></div>${button('Megnézem a mai keretem →','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}<p class="food-note">Mentve a demóban. Nincs valódi adatmentés.</p></div>`;}
+/* ---- Post-log reward ceremony (mezo-6z0ai): the fuel twin of the train star ceremony. ---- */
+const mealStars=score=>Math.max(1,Math.min(5,Math.ceil(score/2)));
+const VERDICTS=[[5,'Hibátlan választás.'],[4,'Erős tányér.'],[3,'Rendben van.'],[2,'Ez is számít.'],[0,'Rögzítve — minden adat segít.']];
+const verdictFor=stars=>VERDICTS.find(([min])=>stars>=min)[1];
+const mealLabel=()=>draft.fixed?safe(draft.name):`${foods[draft.items[0].key].name} · banán`;
+// The stylized "Glucose Goddess" response curve: a shape, not a measurement — axes stay unlabeled.
+export function glucoseCurve(level,mini=false){
+ const path=level==='high'?'M8 78C46 76 62 14 90 12 112 11 122 52 142 82 160 106 208 90 232 84':level==='mid'?'M8 78C50 76 76 42 116 40 158 40 190 68 232 78':'M8 78C56 76 92 62 128 60 166 60 200 72 232 78';
+ const peak=level==='high'?[90,12]:level==='mid'?[116,40]:[128,60];
+ return `<svg class="fcer-curve${mini?' mini':''}" viewBox="0 0 240 108" aria-hidden="true"><line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/><path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/>${mini?'':`<text x="${peak[0]+10}" y="${Math.max(14,peak[1]-2)}" fill="currentColor" font-size="10" font-style="italic">${level==='high'?'csúcs':level==='mid'?'enyhe emelkedés':'lapos domb'}</text>`}${!mini&&level==='high'?'<text x="150" y="103" fill="#ffffff66" font-size="9" font-style="italic">utána visszaesés</text>':''}</svg>`;
+}
+function saved(){
+ const v=nutrition(draft);
+ if(draft.score==null)return `<div class="food-success"><div class="food-success-art">${icon('bowl')}<span>✓</span></div><span class="overline">A NAPOD RÉSZE LETT</span><h1>Megérkezett<br>az étkezésed.</h1><p>${mealLabel()}<br>${draft.time} · ${fmt(v.kcal)} kcal</p>${button('Megnézem a mai keretem →','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}<p class="food-note">Az AI-értékelés még készül. Mentve a demóban.</p></div>`;
+ const stars=mealStars(draft.score);
+ return `<div class="fcer-screen" data-fcer style="--p:0">
+  <section class="fcer">
+   <span class="fcer-sky" aria-hidden="true"></span>
+   <span class="overline">A NAPOD RÉSZE LETT</span>
+   <div class="fcer-stars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-fcer-star="${i}"><b class="fcer-aura"></b>${icon('star')}</i>`).join('')}</div>
+   <div class="fcer-bar"><i class="fcer-fill"></i><span class="fcer-comet"></span>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div>
+   <div class="fcer-counters">
+    <span><i>${icon('bowl')}</i><strong data-fcer-count="kcal">0</strong><small>kcal</small></span>
+    <span><i>${icon('protein')}</i><strong data-fcer-count="p">0</strong><small>g fehérje</small></span>
+    <span><i>${icon('carb')}</i><strong data-fcer-count="c">0</strong><small>g szénhidrát</small></span>
+   </div>
+  </section>
+  <section class="fcer-result">
+   <h1 class="sr-only" tabindex="-1">${stars} csillag az ötből</h1>
+   <p class="fcer-verdict">${verdictFor(stars)}</p>
+   <p class="fcer-meal">${mealLabel()} · ${draft.time}</p>
+   <div class="fcer-score"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></div>
+  </section>
+  <div class="fcer-foot">
+   <button class="fcer-cta" data-food-details><span class="fcer-cta-art">${icon('score')}</span><span><strong>Részletek</strong><small>Vércukor-válasz és a mai kereted</small></span></button>
+  </div>
+ </div>`;
+}
+/* Step two: what this meal likely does to the glucose curve, and the way back to the day. */
+function glucoseView(){
+ const v=nutrition(draft),t=totals(day),g=glycemicFor({...v,sugar:nutrientFor(draft).sugar});
+ return `<div class="fcer-glucose lvl-${g?.level??'none'}">
+  <div class="food-intro"><span class="overline">VÉRCUKOR-VÁLASZ · MINTAELEMZÉS</span><h1>${g?g.level==='high'?'Ez most megdobja.':g.level==='mid'?'Egy szelídebb domb.':'Szépen simít.':'Ehhez kevés az adat.'}</h1></div>
+  ${g?`<div class="fcer-glu-card">
+   <div class="fcer-glu-head"><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span></div>
+   ${glucoseCurve(g.level)}
+   <div class="fcer-glu-facts">${g.facts.map(([k,val])=>`<span><small>${k}</small><b>${val}</b></span>`).join('')}</div>
+  </div>
+  <div class="fcer-glu-tip">${icon('sprout')}<span><strong>${g.tip.title}</strong><p>${g.tip.body}</p></span></div>`:`<p class="food-note">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>`}
+  <div class="saved-budget"><small>EDDIG MA</small><strong>${fmt(t.kcal)}<span> / 2 400 kcal</span></strong><div class="food-budget-bar"><i style="width:${Math.min(100,t.kcal/2400*100)}%"></i></div></div>
+  ${button('Vissza a Mai oldalra ✓','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}
+  <p class="food-note">Minta-becslés az étel összetételéből, a Glucose Goddess-módszer elvei szerint. Nem mérés és nem orvosi előrejelzés — élesben is kategóriát mutatunk, számot nem.</p>
+ </div>`;
+}
+/* One 2400ms pass drives the bar, the counters and the star ignitions together (train twin). */
+function runFoodCeremony(){
+ const root=screen.querySelector('[data-fcer]');if(!root||!draft||draft.score==null)return;
+ const v=nutrition(draft),stars=mealStars(draft.score),fields={kcal:v.kcal,p:v.p,c:v.c};
+ const paint=progress=>{
+  root.style.setProperty('--p',String(progress*draft.score/10));
+  root.querySelectorAll('[data-fcer-count]').forEach(el=>{el.textContent=fmt(fields[el.dataset.fcerCount]*progress);});
+  root.querySelectorAll('[data-fcer-star]').forEach(star=>{star.classList.toggle('is-lit',progress*stars>=Number(star.dataset.fcerStar)+1-.001);});
+ };
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){paint(1);root.classList.add('is-told');return;}
+ const started=performance.now(),duration=2400;
+ const frame=now=>{
+  const t=Math.min(1,(now-started)/duration);
+  paint(1-(1-t)**3);
+  if(t<1&&root.isConnected)requestAnimationFrame(frame);
+  else if(root.isConnected){root.classList.add('is-told');react('celebrate');}
+ };
+ requestAnimationFrame(frame);
+}
 function syncOverview(){const tile=document.querySelector('#tiles [data-open="fuel"]'),t=totals(day);if(tile){tile.querySelector('.tile-value').innerHTML=`${fmt(t.kcal)}<small>kcal</small>`;tile.querySelector('.tile-hint').textContent=`Eddig ma · ${fmt(t.p)} g fehérje`;}}
 export function mealName(m){return m.fixed?m.name:'Joghurt és banán';}
 export function mealHint(m){return m.fixed?(m.slot||'Szokásos'):`${m.items[0].grams} g + ${m.items[1].grams} g · pontosítható`;}
@@ -52,6 +124,7 @@ export function initFood(options){callbacks=options;document.addEventListener('m
  if(el.hasAttribute('data-food-example')){source='Egy joghurt és egy banán.';$('#food-input-form textarea').value=source;}
  if(el.hasAttribute('data-food-rewrite')){stage='input';mode='text';render();}
  if(el.dataset.portion){const input=screen.querySelector(`[name="${el.dataset.portion}"]`);input.value=String(Math.max(1,Math.min(2000,Number(input.value)+Number(el.dataset.delta))));updatePreview();}
+ if(el.hasAttribute('data-food-details')){stage='glucose';render();}
  if(el.hasAttribute('data-food-done')){leave();callbacks.go('fuel',0);}
  if(el.hasAttribute('data-food-correct')){draft=structuredClone(day.meals.find(m=>m.id===draft.id));stage='review';render();}
  if(el.hasAttribute('data-food-delete-arm')){deleteArmed=true;render();}
@@ -62,7 +135,7 @@ export function initFood(options){callbacks=options;document.addEventListener('m
  });
  document.addEventListener('input',e=>{if(e.target.closest('#food-review-form'))updatePreview();});
  document.addEventListener('change',e=>{if(e.target.closest('#food-review-form'))updatePreview();});
- document.addEventListener('submit',e=>{if(e.target.id==='food-input-form'){e.preventDefault();source=new FormData(e.target).get('meal').trim();if(!/joghurt/i.test(source)||!/banán/i.test(source)){$('#food-input-error').textContent='Ebben a demóban a joghurt és banán példát tudjuk elemezni. A mintamondattal végigpróbálhatod.';return;}const originalId=draft?.id;draft=sampleDraft(blockTime||'15:30');if(originalId)draft.id=originalId;stage='review';render();react('connect',2000);}if(e.target.id==='food-review-form'){e.preventDefault();readDraft();if(!saveMeal(day,draft)){$('#food-review-error').textContent='Ellenőrizd az adagokat és az időpontot.';return;}stage='saved';render();react('connect',2500);callbacks.refresh();syncOverview();}});
+ document.addEventListener('submit',e=>{if(e.target.id==='food-input-form'){e.preventDefault();source=new FormData(e.target).get('meal').trim();if(!/joghurt/i.test(source)||!/banán/i.test(source)){$('#food-input-error').textContent='Ebben a demóban a joghurt és banán példát tudjuk elemezni. A mintamondattal végigpróbálhatod.';return;}const originalId=draft?.id;draft=sampleDraft(blockTime||'15:30');if(originalId)draft.id=originalId;stage='review';render();react('connect',2000);}if(e.target.id==='food-review-form'){e.preventDefault();readDraft();if(!saveMeal(day,draft)){$('#food-review-error').textContent='Ellenőrizd az adagokat és az időpontot.';return;}stage='saved';render();callbacks.refresh();syncOverview();}});
  $('#restart').addEventListener('click',()=>{day=createFoodDay();draft=null;leave();});
 }
 export const foodSnapshot=()=>({...totals(day)});

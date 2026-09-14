@@ -36,6 +36,30 @@ const validFixed=d=>d.name&&d.fixed&&['kcal','p','c','f','fiber'].every(k=>Numbe
 const validItems=d=>Array.isArray(d.items)&&d.items.length&&d.items.every(i=>Object.hasOwn(foods,i.key)&&Number.isFinite(i.grams)&&i.grams>0&&i.grams<=2000);
 export function saveMeal(day,draft){if(!draft.id||!/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time))return false;if(!(draft.fixed?validFixed(draft):validItems(draft)))return false;const copy=structuredClone(draft),index=day.meals.findIndex(m=>m.id===draft.id);if(index<0)day.meals.push(copy);else day.meals[index]=copy;return true;}
 export function deleteMeal(day,id){const index=day.meals.findIndex(m=>m.id===id);if(index<0)return false;day.meals.splice(index,1);return true;}
+// Demo glycemic-response verdict ("vércukor-válasz"), Glucose-Goddess-informed, deliberately
+// categorical: a GL-style load from carbs weighted by their refined (sugar) share, braked by the
+// fiber/protein/fat that "clothe" them. No numeric GI is shown anywhere — mixed-meal GI math
+// mispredicts by 22-50%, so the demo (like the planned live feature) commits to three honest bands.
+export function glycemicFor({c,fiber,p,f,sugar}={}){
+ if(!Number.isFinite(c))return null;
+ const s=Number.isFinite(sugar)?sugar:c*.3,fb=Number.isFinite(fiber)?fiber:0,pr=Number.isFinite(p)?p:0,fa=Number.isFinite(f)?f:0;
+ const load=c*(.6+.4*Math.min(1,s/Math.max(1,c))),brake=fb*2+pr*.25+fa*.2,index=load-brake;
+ const level=index<12?'low':index<24?'mid':'high';
+ const sugary=s>=c*.45&&s>=12,bare=fb<4&&pr<15;
+ const tip=level==='low'
+  ?{title:'Szép egyensúly',body:'A fehérje és a rost lassan engedi fel a vércukrot — ez a tányér magától simít.'}
+  :level==='high'
+  ?(sugary
+    ?{title:'Öltöztesd fel a szénhidrátot',body:'Az édes rész magában gyorsan felszív. Egy kis fehérje vagy zsír mellé — joghurt, dió — sokat lapít a csúcson.'}
+    :{title:'Egy séta most sokat ér',body:'10-15 perc mozgás evés után az izmok azonnal elhasználják a glükóz egy részét — a csúcs láthatóan kisebb lesz.'})
+  :(bare
+    ?{title:'Rost előre',body:'Pár falat zöldség vagy saláta a szénhidrát előtt lassítja a felszívódást — a domb így laposabb.'}
+    :{title:'Jó irány, egy aprósággal',body:'Ha teheted, a zöldséget és a fehérjét edd előre, a szénhidrátot utoljára — a sorrend önmagában simít a görbén.'});
+ return {level,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,
+  facts:[['szénhidrát',`${Math.round(c)} g`],['ebből cukor',Number.isFinite(sugar)?`${Math.round(sugar)} g`:'becsült'],['rost',`${Math.round(fb)} g`],['fehérje',`${Math.round(pr)} g`]]};
+}
+// The same verdict straight from a meal record ({macros,nutrients}) or a live draft.
+export const glycemicForMeal=rec=>rec?glycemicFor({...(rec.macros||{}),sugar:rec.nutrients?.sugar}):null;
 export function totals(day){return day.meals.reduce((out,m)=>{const n=nutrition(m);for(const k of ['kcal','p','c','f','fiber'])out[k]+=n[k];return out;},{kcal:0,p:0,c:0,f:0,fiber:0});}
 // Time-of-day-ranked quick repeats ("szokásosak"): recency+frequency sample, morning items first in the morning.
 const usualRows=[

@@ -3,7 +3,7 @@ import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, add
 import { mealBlocks } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
-import { energyDetailHtml, dimGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
+import { energyDetailHtml, dimGlassHtml, glucoseGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
 const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
@@ -410,6 +410,7 @@ export function initFuelPages(options){callbacks=options;
   if(el.dataset.mealOpen)location.hash=`#fuel/0/meal/${el.dataset.mealOpen}`;
   if(el.hasAttribute('data-energy-detail')){callbacks.dialog('A NAPI KERETED',energyDetailHtml());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.dim){const [mealId,dimId]=el.dataset.dim.split('|');callbacks.dialog('AI-ÉRTÉKELÉS · SZEMPONT',dimGlassHtml(mealId,dimId));document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.glucose){callbacks.dialog('VÉRCUKOR-VÁLASZ · MINTA',glucoseGlassHtml(el.dataset.glucose));document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.scoreFeedback){toast(el.dataset.scoreFeedback==='up'?'Köszönöm — ez segít pontosítani.':'Értem. Ezt a visszajelzést is tanulom.');react('connect',1200);}
   if(el.hasAttribute('data-konyha-recipe'))callbacks.dialog('KONYHA · RECEPT',workshopSheet());
   if(el.hasAttribute('data-konyha-pantry'))callbacks.dialog('KONYHA · KAMRA',pantrySheet());
