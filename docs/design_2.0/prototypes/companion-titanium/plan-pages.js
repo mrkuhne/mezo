@@ -6,6 +6,7 @@ import {
   adjacencyNotes, LIBRARY, template, closedRun, templateStory, closedShare,
 } from './plan-state.js';
 import { icon, safe } from './nap.js';
+import { wizardContent } from './plan-wizard.js';
 import { muscleIcon, muscleLabel, muscleColor, bodyMap } from './muscles.js';
 
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
@@ -351,7 +352,7 @@ function planLibrary() {
    ${weekArc(meso)}
   </button>`;
 
-  const queued = lib.planned.map(run => `<button class="pl-lib-card is-queued" data-reveal ${route('library', 'template', run.from)}>
+  const queued = lib.planned.map(run => `<button class="pl-lib-card is-queued" data-reveal ${run.from ? route('library', 'template', run.from) : route('library')}>
    <span class="pl-lib-head"><strong>${run.name}</strong><em>${dateLabel(run.start)}-től</em><b>›</b></span>
    <span class="pl-day-facts">
     <i>${icon('history')}<b>${run.weeks}</b><small>hét</small></i>
@@ -362,8 +363,7 @@ function planLibrary() {
   </button>`).join('');
   const queuedSec = lib.planned.length ? `<h3 class="pl-h3">Következik</h3>${queued}` : '';
 
-  const create = `<button class="pl-lib-new" data-reveal data-detail="Új terv összeállítása" data-art="stack"
-   data-copy="Lépésről lépésre raksz össze egy tervet: napok, gyakorlatok, és hogy melyik izmod kapjon többet. Indulhatsz egy sablonból is — az gyorsabb, és utána bármit átírhatsz.">
+  const create = `<button class="pl-lib-new" data-reveal data-route="train/1/new">
    <span class="pl-lib-new-art">${icon('stack')}</span>
    <span><strong>Új terv összeállítása</strong><small>Sablonból indulsz, vagy nulláról építed</small></span>
    <b>＋</b></button>`;
@@ -425,8 +425,7 @@ function planLibraryTemplates() {
   return `<div class="pl-sub pl-lib">
    <button class="pl-back" ${route('library')}>‹ Edzéstervek</button>
    ${hero}${LIBRARY.templates.map(templateCard).join('')}
-   <button class="pl-lib-new" data-reveal data-detail="Új terv összeállítása" data-art="stack"
-    data-copy="Lépésről lépésre raksz össze egy tervet: napok, gyakorlatok, és hogy melyik izmod kapjon többet. Indulhatsz egy sablonból is — az gyorsabb, és utána bármit átírhatsz.">
+   <button class="pl-lib-new" data-reveal data-route="train/1/new">
     <span class="pl-lib-new-art">${icon('stack')}</span>
     <span><strong>Új terv összeállítása</strong><small>Sablonból indulsz, vagy nulláról építed</small></span>
     <b>＋</b></button>
@@ -549,6 +548,7 @@ function planLibraryClosed(key) {
 
 export function planContent() {
   const [, , view = '', id = ''] = location.hash.slice(1).split('/');
+  if (view === 'new') return wizardContent(id, location.hash.slice(1).split('/')[4] ?? '');
   if (view === 'day') return planDay(decodeURIComponent(id));
   if (view === 'week') return planWeek();
   if (view === 'muscle') return planMuscle(id);
