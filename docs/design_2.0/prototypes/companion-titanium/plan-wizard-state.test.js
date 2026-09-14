@@ -101,3 +101,12 @@ test('stamping puts a queued run on the shelf and derives its shape from the day
   assert.equal(run.from, 'vall-hat');
   assert.equal(run.start, '2026-10-12');
 });
+
+test('the catalog search is accent-blind and filters by region too', async () => {
+  const { searchCatalog } = await import('./plan-wizard-state.js');
+  assert.ok(searchCatalog('gugg').some(c => c.name === 'Guggolás'));
+  assert.ok(searchCatalog('vall').some(c => c.muscle === 'shoulder-side'), 'a bare "vall" reaches the shoulder work');
+  assert.equal(searchCatalog('', 'leg').every(c => ['quad', 'ham', 'glute', 'calf'].includes(c.muscle)), true);
+  assert.equal(searchCatalog('nyomás', 'chest').every(c => c.muscle.startsWith('chest')), true);
+  assert.deepEqual(searchCatalog('nincsilyen'), []);
+});

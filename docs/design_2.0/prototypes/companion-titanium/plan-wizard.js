@@ -1,8 +1,8 @@
 // The plan wizard: full pages, never drawers; arrows, never drag; notes, never blockers.
 // State lives in plan-wizard-state.js — these pages only draw it and route between steps.
 import {
-  CATALOG, wizardDraft, startWizard, dropWizard, draftDay, toggleDay, addExercise, removeExercise,
-  moveExercise, changeSets, dayMinutes, draftMuscles, rampSeries, lintDraft, stampRun,
+  CATALOG, searchCatalog, wizardDraft, startWizard, dropWizard, draftDay, toggleDay, addExercise,
+  removeExercise, moveExercise, changeSets, dayMinutes, draftMuscles, rampSeries, lintDraft, stampRun,
 } from './plan-wizard-state.js';
 import { LIBRARY, MESO, TIERS, DAY_ORDER, DAY_NAMES, daySets } from './plan-state.js';
 import { icon, safe, toast } from './nap.js';
@@ -242,14 +242,27 @@ export function initPlanWizard({ dialog, closeSheet }) {
     if (load) load.innerHTML = loadBars(day);
   };
 
+  /* the picker remembers what you typed and which region chip is lit, until it closes */
+  let pick = { query: '', region: '' };
+
+  const pickRows = () => {
+    const rows = searchCatalog(pick.query, pick.region);
+    if (!rows.length) return '<p class="wz-pick-none">Nincs ilyen gyakorlat a katalógusban.</p>';
+    return rows.map(c => `<button class="sheet-row" data-wiz="add:${safe(c.name)}">
+      <span>${muscleIcon(c.muscle)}</span>
+      <span><strong>${safe(c.name)}</strong><small>${muscleLabel(c.muscle)}</small></span>
+      <span class="row-end">＋</span></button>`).join('');
+  };
+
+  const pickChips = () => `<button class="wz-chip ${pick.region ? '' : 'is-on'}" data-wiz="pickregion:">Mind</button>` +
+    REGIONS.map(r => `<button class="wz-chip ${pick.region === r.key ? 'is-on' : ''}" style="--mus-color:${r.color}" data-wiz="pickregion:${r.key}">${r.label}</button>`).join('');
+
   const pickSheet = () => {
-    const groups = REGIONS.map(region => {
-      const rows = CATALOG.filter(c => MUSCLES.find(m => m.key === c.muscle)?.region === region.key);
-      if (!rows.length) return '';
-      return `<div class="wz-pick-group" style="--mus-color:${region.color}"><span class="overline">${region.label.toUpperCase()}</span>${rows.map(c =>
-        `<button class="sheet-row" data-wiz="add:${safe(c.name)}"><span>${muscleIcon(c.muscle)}</span><span><strong>${safe(c.name)}</strong><small>${muscleLabel(c.muscle)}</small></span><span class="row-end">＋</span></button>`).join('')}</div>`;
-    }).join('');
-    dialog('GYAKORLAT HOZZÁADÁSA', `<h2 class="sheet-title">Mit tegyünk a napba?</h2><div class="wz-pick">${groups}</div>`);
+    pick = { query: '', region: '' };
+    dialog('GYAKORLAT HOZZÁADÁSA', `<h2 class="sheet-title">Mit tegyünk a napba?</h2>
+     <label class="wz-pick-search"><input id="wz-pick-search" type="search" placeholder="Keresés névre vagy izomra…" autocomplete="off"></label>
+     <div class="wz-chips wz-pick-chips" id="wz-pick-chips" role="group" aria-label="Izomcsoport-szűrő">${pickChips()}</div>
+     <div class="wz-pick" id="wz-pick-list">${pickRows()}</div>`);
   };
 
   document.addEventListener('click', event => {
@@ -271,6 +284,11 @@ export function initPlanWizard({ dialog, closeSheet }) {
       document.querySelector('#wz-days-body').innerHTML = dayCards(draft);
     }
     if (action === 'pick') pickSheet();
+    if (action === 'pickregion') {
+      pick.region = a ?? '';
+      document.querySelector('#wz-pick-chips').innerHTML = pickChips();
+      document.querySelector('#wz-pick-list').innerHTML = pickRows();
+    }
     if (action === 'add') { addExercise(draft, currentDayToken(), a); closeSheet(); redrawDay(currentDayToken()); }
     if (action === 'sets') { changeSets(draft, currentDayToken(), Number(a), Number(b)); redrawDay(currentDayToken()); }
     if (action === 'move') { moveExercise(draft, currentDayToken(), Number(a), Number(b)); redrawDay(currentDayToken()); }
@@ -297,8 +315,13 @@ export function initPlanWizard({ dialog, closeSheet }) {
   });
 
   document.addEventListener('input', event => {
-    if (event.target.id !== 'wz-name') return;
-    const draft = wizardDraft();
-    if (draft) draft.name = event.target.value;
+    if (event.target.id === 'wz-name') {
+      const draft = wizardDraft();
+      if (draft) draft.name = event.target.value;
+    }
+    if (event.target.id === 'wz-pick-search') {
+      pick.query = event.target.value;
+      document.querySelector('#wz-pick-list').innerHTML = pickRows();
+    }
   });
 }

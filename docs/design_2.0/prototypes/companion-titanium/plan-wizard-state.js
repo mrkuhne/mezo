@@ -1,6 +1,7 @@
 // Building a new mesocycle: a draft you shape step by step, then stamp into a queued run.
 // Pure state and math — the pages live in plan-wizard.js.
-import { DAY_ORDER, LIBRARY, MESO, TIERS, template } from './plan-state.js';
+import { DAY_ORDER, LIBRARY, MESO, template } from './plan-state.js';
+import { MUSCLES, muscleLabel } from './muscle-taxonomy.js';
 
 /** A small catalog to pick from — name plus the muscle it works. */
 export const CATALOG = [
@@ -23,6 +24,19 @@ export const CATALOG = [
   { name: 'Plank sorozat', muscle: 'core', kg: 0 },
 ];
 export const catalogItem = name => CATALOG.find(c => c.name === name) ?? null;
+
+/** Accent-blind lowercase, so "vall" finds "Váll" and "gugg" finds "Guggolás". */
+const plain = text => text.toLocaleLowerCase('hu').normalize('NFD').replace(/\p{M}/gu, '');
+
+/** The catalog filtered by a region and a free-typed search over names and muscle names. */
+export function searchCatalog(query = '', region = '') {
+  const needle = plain(query.trim());
+  return CATALOG.filter(item => {
+    if (region && MUSCLES.find(m => m.key === item.muscle)?.region !== region) return false;
+    if (!needle) return true;
+    return plain(item.name).includes(needle) || plain(muscleLabel(item.muscle)).includes(needle);
+  });
+}
 
 const exerciseOf = item => ({ name: item.name, muscle: item.muscle, sets: 3, warmup: 1, repMin: 8, repMax: 12, rir: 2, kg: item.kg });
 
