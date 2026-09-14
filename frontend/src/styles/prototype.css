@@ -11905,6 +11905,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    a pozícionálás horgonya, ezért `absolute`, nem `fixed`. Natív `<dialog showModal()>`-lal ez a
    doboz a top layerbe került és az ablakhoz méreteződött — élesben 641 px-es doboz lógott ki egy
    416 px-es telefonból. A `GlassBox` portálozza ide; a hátlap külön elem, nem `::backdrop`. */
+.fmx-glass-more { display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; margin-top: 10px; padding: 9px 12px; border-radius: 13px;
+  border: 1px solid var(--border-subtle); background: transparent;
+  font-family: inherit; font-size: 11px; color: var(--sub); }
+.fmx-glass-more b { font-size: 13px; }
+
 .fmx-glass-layer { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; }
 .fmx-glass-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0;
   border: 0; background: rgba(5, 7, 12, 0.62); backdrop-filter: blur(15px); cursor: pointer; }
