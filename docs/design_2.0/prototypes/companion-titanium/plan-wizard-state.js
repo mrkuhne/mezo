@@ -1,6 +1,6 @@
 // Building a new mesocycle: a draft you shape step by step, then stamp into a queued run.
 // Pure state and math — the pages live in plan-wizard.js.
-import { DAY_ORDER, LIBRARY, MESO, template } from './plan-state.js';
+import { DAY_ORDER, LIBRARY, template } from './plan-state.js';
 import { MUSCLES, muscleLabel } from './muscle-taxonomy.js';
 
 /** A small catalog to pick from — name plus the muscle it works. */
@@ -16,6 +16,8 @@ export const CATALOG = [
   { name: 'Hátsó váll gépen', muscle: 'shoulder-rear', kg: 30 },
   { name: 'Bicepsz hajlítás', muscle: 'biceps-short', kg: 14 },
   { name: 'Tricepsz letolás', muscle: 'triceps-lateral', kg: 25 },
+  { name: 'Francia nyomás', muscle: 'triceps-long', kg: 25 },
+  { name: 'Vállvonogatás', muscle: 'traps', kg: 40 },
   { name: 'Guggolás', muscle: 'quad', kg: 80 },
   { name: 'Lábtolás', muscle: 'quad', kg: 120 },
   { name: 'Román felhúzás', muscle: 'ham', kg: 70 },
@@ -49,16 +51,7 @@ export function draftFromTemplate(key) {
   const t = template(key);
   if (!t) return newDraft();
   const draft = { source: key, name: t.name, weeks: t.weeks, days: [], focus: {} };
-  if (key === LIBRARY.active.from) {
-    draft.days = MESO.days.map(d => ({ day: d.day, type: d.type, exercises: d.exercises.map(e => ({ ...e })) }));
-  } else {
-    const slots = ['Hét', 'Sze', 'P', 'K', 'Cs'].slice(0, t.daysPerWeek).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
-    const picks = t.muscles.map(m => CATALOG.find(c => c.muscle === m)).filter(Boolean);
-    draft.days = slots.map((day, i) => ({
-      day, type: `${i + 1}. nap`,
-      exercises: picks.filter((_, j) => j % slots.length === i).map(exerciseOf),
-    }));
-  }
+  draft.days = (t.days ?? []).map(d => ({ day: d.day, type: d.type, exercises: d.exercises.map(e => ({ ...e })) }));
   for (const m of draftMuscles(draft)) draft.focus[m.key] = 'grow';
   return draft;
 }

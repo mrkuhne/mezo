@@ -13,7 +13,7 @@ test('a blank draft starts truly blank', () => {
   assert.deepEqual(d.focus, {});
 });
 
-test('the running plan template clones its real days; another template gets a fair spread', () => {
+test('a template hands the wizard its own days, cloned and safe to edit', () => {
   const own = draftFromTemplate('alap-ero');
   assert.equal(own.days.length, MESO.days.length);
   assert.equal(own.days[0].exercises[0].name, MESO.days[0].exercises[0].name);
@@ -21,7 +21,7 @@ test('the running plan template clones its real days; another template gets a fa
   assert.notEqual(MESO.days[0].exercises[0].sets, 99, 'the clone must not touch the running plan');
   const other = draftFromTemplate('vall-hat');
   assert.equal(other.days.length, 4);
-  assert.ok(other.days.every(d => d.exercises.length >= 1));
+  assert.ok(other.days.every(d => d.exercises.length >= 2), 'every template day arrives with its exercises');
   assert.ok(Object.values(other.focus).every(t => t === 'grow'));
 });
 

@@ -7,6 +7,7 @@ import {
 } from './plan-state.js';
 import { icon, safe } from './nap.js';
 import { wizardContent } from './plan-wizard.js';
+import { dayMinutes } from './plan-wizard-state.js';
 import { muscleIcon, muscleLabel, muscleColor, bodyMap } from './muscles.js';
 
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
@@ -466,10 +467,30 @@ function planLibraryTemplate(key) {
    <div class="pl-poster-foot"><span>~${t.minutes} perc egy edzés</span><span>${t.muscles.length} izomcsoport</span></div>
   </header>`;
 
-  const muscles = `<h3 class="pl-h3">Amit edz ${info('Mit jelent a lista?', 'Ezek az izmok kapnak saját heti szettszámot a sablonban. Amikor futamot indítasz belőle, hétről hétre ez emelkedik.')}</h3>
-  <div class="pl-lib-muslist" data-reveal>${t.muscles.map(mkey => `<span class="pl-lib-musrow" style="--mus-color:${muscleColor(mkey)}">
-    ${muscleIcon(mkey)}<strong>${muscleLabel(mkey)}</strong>
-   </span>`).join('')}</div>`;
+  const week = `<h3 class="pl-h3">A hét felépítése</h3>${(t.days ?? []).map(day => `
+   <div class="pl-lib-card is-open" data-reveal>
+    <span class="pl-lib-head"><strong>${DAY_NAMES[day.day]}</strong><em>${safe(day.type)}</em></span>
+    <span class="pl-day-facts">
+     <i>${icon('stack')}<b>${day.exercises.length}</b><small>gyakorlat</small></i>
+     <i>${icon('dumbbell')}<b>${daySets(day)}</b><small>szett</small></i>
+     <i>${icon('clock')}<b>~${dayMinutes(day)}</b><small>perc</small></i>
+    </span>
+    <span class="pl-tpl-exs">${day.exercises.map(e => `<span class="pl-tpl-ex" style="--mus-color:${muscleColor(e.muscle)}">
+      ${muscleIcon(e.muscle)}
+      <strong>${safe(e.name)}</strong>
+      <b>${e.sets}×${e.repMin && e.repMax ? `${e.repMin}–${e.repMax}` : 'tartás'}</b>
+      <small>${e.kg ? `${e.kg} kg` : 'saját testsúly'}</small>
+     </span>`).join('')}</span>
+   </div>`).join('')}`;
+
+  const weekly = new Map();
+  for (const day of t.days ?? []) for (const row of dayLoad(day)) weekly.set(row.key, (weekly.get(row.key) ?? 0) + row.sets);
+  const top = Math.max(1, ...weekly.values());
+  const loads = `<h3 class="pl-h3">Heti szettek izmonként ${info('Mit jelent a szám?', 'Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet.')}</h3>
+  <div class="wz-load pl-tpl-load" data-reveal>${[...weekly].sort((a, b) => b[1] - a[1]).map(([key, sets]) => `<span class="wz-load-row" style="--mus-color:${muscleColor(key)}">
+   ${muscleIcon(key)}<small>${muscleLabel(key)}</small>
+   <i style="--w:${Math.min(100, sets / top * 100)}%"></i><b>${sets}</b>
+  </span>`).join('')}</div>`;
 
   const runRow = (label, sub, to, mod = '') => `<button class="pl-row ${mod}" data-reveal ${to}>
    <span><strong>${label}</strong><small>${sub}</small></span><b>›</b></button>`;
@@ -489,7 +510,7 @@ function planLibraryTemplate(key) {
 
   return `<div class="pl-sub pl-lib">
    <button class="pl-back" ${route('library', 'templates')}>‹ Sablonjaid</button>
-   ${hero}${muscles}${runsSec}${start}
+   ${hero}${week}${loads}${runsSec}${start}
   </div>`;
 }
 

@@ -154,6 +154,10 @@ export function adjacencyNotes(meso = MESO) {
 /* ── the library: templates, the queued run, and the closed ones ─────────────────────── */
 // A template is a blueprint; stamping it makes a run with dates; a closed run keeps its story.
 
+/** Shorthand for a template exercise row — same shape the running plan speaks. */
+const ex = (name, muscle, sets, kg, repMin = 8, repMax = 12, rir = 2, warmup = 1) =>
+  ({ name, muscle, sets, warmup, repMin, repMax, rir, kg });
+
 export const LIBRARY = {
   active: { from: 'alap-ero' },
   planned: [
@@ -161,11 +165,40 @@ export const LIBRARY = {
   ],
   templates: [
     { key: 'alap-ero', name: 'Alapból erő', split: 'Felső / alsó', weeks: 6, daysPerWeek: 3, minutes: 48,
-      muscles: ['chest-mid', 'back-mid', 'shoulder-side', 'quad', 'ham', 'biceps-short', 'calf'] },
+      muscles: ['chest-mid', 'back-mid', 'shoulder-side', 'quad', 'ham', 'biceps-short', 'calf'],
+      days: MESO.days },
     { key: 'vall-hat', name: 'Váll és hát', split: 'Húzó / toló', weeks: 5, daysPerWeek: 4, minutes: 55,
-      muscles: ['shoulder-side', 'shoulder-rear', 'back-wide', 'back-mid', 'traps', 'biceps-short'] },
+      muscles: ['shoulder-side', 'shoulder-rear', 'back-wide', 'back-mid', 'traps', 'biceps-short'],
+      days: [
+        { day: 'Hét', type: 'Húzó A', exercises: [
+          ex('Húzódzkodás', 'back-wide', 3, 0, 6, 10), ex('Evezés csigán', 'back-mid', 3, 45, 10, 14),
+          ex('Vállvonogatás', 'traps', 3, 40, 10, 15, 1, 0), ex('Bicepsz hajlítás', 'biceps-short', 3, 14, 10, 14, 1, 0)] },
+        { day: 'K', type: 'Toló A', exercises: [
+          ex('Vállból nyomás', 'shoulder-side', 3, 20), ex('Oldalemelés', 'shoulder-side', 3, 8, 12, 16, 1, 0),
+          ex('Hátsó váll gépen', 'shoulder-rear', 3, 30, 12, 16, 1, 0)] },
+        { day: 'Cs', type: 'Húzó B', exercises: [
+          ex('Lehúzás széles fogással', 'back-wide', 3, 50, 10, 14), ex('Evezés csigán', 'back-mid', 3, 45, 10, 14),
+          ex('Bicepsz hajlítás', 'biceps-short', 3, 14, 10, 14, 1, 0)] },
+        { day: 'P', type: 'Toló B', exercises: [
+          ex('Vállból nyomás', 'shoulder-side', 3, 20), ex('Hátsó váll gépen', 'shoulder-rear', 3, 30, 12, 16, 1, 0),
+          ex('Vállvonogatás', 'traps', 2, 40, 10, 15, 1, 0)] },
+      ] },
     { key: 'nyari-tomeg', name: 'Nyári tömegelés', split: 'Teljes test', weeks: 6, daysPerWeek: 4, minutes: 58,
-      muscles: ['chest-mid', 'back-wide', 'shoulder-side', 'quad', 'ham', 'glute', 'triceps-long'] },
+      muscles: ['chest-mid', 'back-wide', 'shoulder-side', 'quad', 'ham', 'glute', 'triceps-long'],
+      days: [
+        { day: 'Hét', type: '1. nap', exercises: [
+          ex('Guggolás', 'quad', 4, 80, 6, 10, 2, 2), ex('Fekvenyomás', 'chest-mid', 3, 60, 8, 12, 2, 2),
+          ex('Lehúzás széles fogással', 'back-wide', 3, 50, 10, 14)] },
+        { day: 'Sze', type: '2. nap', exercises: [
+          ex('Román felhúzás', 'ham', 3, 70), ex('Vállból nyomás', 'shoulder-side', 3, 20),
+          ex('Francia nyomás', 'triceps-long', 3, 25, 10, 14, 1, 0)] },
+        { day: 'P', type: '3. nap', exercises: [
+          ex('Lábtolás', 'quad', 3, 120, 10, 14), ex('Húzódzkodás', 'back-wide', 3, 0, 6, 10),
+          ex('Tárogatás kábelen', 'chest-mid', 3, 15, 12, 16, 1, 0)] },
+        { day: 'Szo', type: '4. nap', exercises: [
+          ex('Csípőemelés', 'glute', 3, 60, 10, 14), ex('Oldalemelés', 'shoulder-side', 3, 8, 12, 16, 1, 0),
+          ex('Francia nyomás', 'triceps-long', 2, 25, 10, 14, 1, 0)] },
+      ] },
   ],
   closed: [
     { key: 'hyper-nyar', name: 'Hypertrophy · Nyár', from: 'nyari-tomeg', start: '2026-06-15', end: '2026-07-26',
