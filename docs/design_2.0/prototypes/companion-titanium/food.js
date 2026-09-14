@@ -75,7 +75,7 @@ function saved(){
    <h1 class="sr-only" tabindex="-1">${stars} csillag az ötből</h1>
    <p class="fcer-verdict">${verdictFor(stars)}</p>
    <p class="fcer-meal">${mealLabel()} · ${draft.time}</p>
-   <div class="fcer-score"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></div>
+   <div class="fcer-score"><span class="glu-pebble gold" aria-hidden="true"></span><span class="fcer-score-copy"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></span></div>
   </section>
   <div class="fcer-foot">
    <button class="fcer-cta" data-food-details><span class="fcer-cta-art">${icon('score')}</span><span><strong>Részletek</strong><small>Vércukor-válasz és a mai kereted</small></span></button>
