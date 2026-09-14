@@ -55,3 +55,30 @@ test('an empty week tells the truth instead of a zero parade', () => {
   assert.equal(story.say, 'Ez a hét még előtted áll.');
   assert.equal(story.lead, null);
 });
+
+test('the map heat speaks four honest states and never a fake percent', async () => {
+  const { mapHeat } = await import('./load-state.js');
+  const rows = mapHeat('done');
+  assert.equal(rows.find(r => r.key === 'back-wide').state, 'done', 'the finished pull-up work is done');
+  assert.equal(rows.find(r => r.key === 'quad').state, 'none', 'legs are untouched until Friday');
+  assert.equal(rows.find(r => r.key === 'back-mid').state, 'none');
+  assert.ok(rows.every(r => r.value >= 0 && r.value <= 1));
+  const planned = mapHeat('planned');
+  assert.ok(planned.every(r => r.state === 'planned'), 'the planned mode paints the ask, not progress');
+});
+
+test('the untouched list names what still waits, and sport reach stays an estimate list', async () => {
+  const { untouched, sportTouched } = await import('./load-state.js');
+  assert.ok(untouched().some(r => r.key === 'quad'));
+  assert.ok(!untouched().some(r => r.key === 'back-wide'), 'worked muscles are not on the waiting list');
+  assert.deepEqual(sportTouched(), ['shoulder-side', 'quad', 'calf', 'core']);
+});
+
+test('the movement week adds gym estimate and logged sport without mixing their honesty', async () => {
+  const { movementWeek } = await import('./load-state.js');
+  const m = movementWeek();
+  assert.equal(m.gymMin, 8 + 12 * 4, 'one done gym day, estimated from its sets');
+  assert.equal(m.sportMin, 95);
+  assert.equal(m.totalMin, m.gymMin + m.sportMin);
+  assert.equal(m.totalKcal, m.gymKcal + 610);
+});

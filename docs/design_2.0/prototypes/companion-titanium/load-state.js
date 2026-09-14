@@ -9,7 +9,8 @@ export const TODAY = 'Sze';
 export const WEEK_LOG = {
   doneDays: ['Hét'],
   sports: [
-    { name: 'Röplabda', icon: 'volley', day: 'K', minutes: 95, kcal: 610, note: 'váll és láb is dolgozott' },
+    { name: 'Röplabda', icon: 'volley', day: 'K', minutes: 95, kcal: 610, note: 'váll és láb is dolgozott',
+      muscles: ['shoulder-side', 'quad', 'calf', 'core'] },
   ],
 };
 
@@ -93,5 +94,47 @@ export function loadStory(meso = MESO, log = WEEK_LOG) {
     say: lead
       ? `A ${lead.label.toLocaleLowerCase('hu')} vitte eddig a legtöbbet${today ? ` — ma este a ${today.type} jön` : ''}.`
       : 'Ez a hét még előtted áll.',
+  };
+}
+
+/* ── the body-map heat and the combined movement of the week ─────────────────────────── */
+
+/**
+ * The four honest states of a muscle's week — the same language every surface speaks:
+ * untouched, started, on track, done. Never a percentage in words.
+ */
+export function mapHeat(mode = 'done', meso = MESO, log = WEEK_LOG) {
+  const top = Math.max(1, ...weekLoad(meso, log).map(r => r.planned));
+  return weekLoad(meso, log)
+    .filter(r => r.planned > 0 || r.done > 0)
+    .map(r => {
+      const share = r.planned ? Math.min(1, r.done / r.planned) : 1;
+      const state = mode === 'planned' ? 'planned'
+        : r.done === 0 ? 'none' : share < 0.5 ? 'started' : share < 1 ? 'ontrack' : 'done';
+      return { key: r.key, name: r.name, value: mode === 'planned' ? r.planned / top : share, state };
+    });
+}
+
+/** The most actionable list on the screen: what got no work yet this week. */
+export const untouched = (meso = MESO, log = WEEK_LOG) =>
+  weekLoad(meso, log).filter(r => r.planned > 0 && r.done === 0);
+
+/** Which muscles the week's sport reached — an estimate, and always said so. */
+export const sportTouched = (log = WEEK_LOG) =>
+  [...new Set(log.sports.flatMap(s => s.muscles ?? []))];
+
+const GYM_KCAL_PER_MIN = 7;
+
+/** Every movement of the week in one place: gym minutes are an estimate, sport is logged. */
+export function movementWeek(meso = MESO, log = WEEK_LOG) {
+  const gymMin = log.doneDays.reduce((total, token) => {
+    const day = dayByToken(token, meso);
+    return total + (day ? 8 + dayLoad(day).reduce((t, r) => t + r.sets, 0) * 4 : 0);
+  }, 0);
+  const sportMin = log.sports.reduce((t, s) => t + s.minutes, 0);
+  const sportKcal = log.sports.reduce((t, s) => t + s.kcal, 0);
+  return {
+    gymMin, sportMin, totalMin: gymMin + sportMin,
+    gymKcal: gymMin * GYM_KCAL_PER_MIN, sportKcal, totalKcal: gymMin * GYM_KCAL_PER_MIN + sportKcal,
   };
 }

@@ -78,3 +78,22 @@ export function bodyMap(keys, { className = 'body-map', weights = null } = {}) {
   const shown = view === 'back' ? back : front;
   return `<svg class="${className}" viewBox="0 0 64 64" aria-hidden="true">${figure(shown, view)}</svg>`;
 }
+
+/**
+ * Both views side by side with a heat per muscle — the load map. Each area keeps its region
+ * color; how much of the week it already carries sets its strength. An untouched muscle stays
+ * a faint outline: honestly empty, never invisible.
+ */
+export function bodyMapDuo(rows, { className = 'body-duo' } = {}) {
+  const strength = row =>
+    row.state === 'planned' ? 0.3 + row.value * 0.65
+    : row.state === 'none' ? 0.14
+    : row.state === 'started' ? 0.45
+    : row.state === 'ontrack' ? 0.72 : 1;
+  const view = (which, dx) => `<g transform="translate(${dx} 0)">
+   <g fill="url(#mg-body)" filter="url(#shadow)" opacity=".5">${FIGURE}${which === 'back' ? SPINE : ''}</g>
+   ${rows.filter(row => AREAS[row.key]?.[0] === which).map(row =>
+     `<g fill="${muscleColor(row.key)}" stroke="#ffffff55" stroke-width=".4" opacity="${strength(row).toFixed(2)}">${AREAS[row.key][1]}</g>`).join('')}
+  </g>`;
+  return `<svg class="${className}" viewBox="0 0 132 64" aria-hidden="true">${view('front', 0)}${view('back', 68)}</svg>`;
+}
