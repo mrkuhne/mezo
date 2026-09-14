@@ -55,7 +55,12 @@ export function glycemicFor({c,fiber,p,f,sugar}={}){
   :(bare
     ?{title:'Rost előre',body:'Pár falat zöldség vagy saláta a szénhidrát előtt lassítja a felszívódást — a domb így laposabb.'}
     :{title:'Jó irány, egy aprósággal',body:'Ha teheted, a zöldséget és a fehérjét edd előre, a szénhidrátot utoljára — a sorrend önmagában simít a görbén.'});
- return {level,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,
+ const expect=level==='low'
+  ?{energy:'Egyenletes energia 3-4 órára',back:'Kb. 2 óra múlva ér vissza az alapszintre, finoman',hunger:'Az éhség későn, fokozatosan tér vissza'}
+  :level==='mid'
+  ?{energy:'Stabil energia 2-3 órára',back:'Kb. 2 óra múlva újra alapszinten',hunger:'Az éhség 2-3 óra múlva jelentkezik'}
+  :{energy:'Gyors löket, majd visszaesés',back:'Kb. 1,5 óra múlva zuhan — az alapszint alá is eshet',hunger:'A visszaesés után korán, akár 1-1,5 óra múlva újra megéhezhetsz'};
+ return {level,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,expect,
   facts:[['szénhidrát',`${Math.round(c)} g`],['ebből cukor',Number.isFinite(sugar)?`${Math.round(sugar)} g`:'becsült'],['rost',`${Math.round(fb)} g`],['fehérje',`${Math.round(pr)} g`]]};
 }
 // The same verdict straight from a meal record ({macros,nutrients}) or a live draft.

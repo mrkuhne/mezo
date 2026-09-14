@@ -37,11 +37,23 @@ const mealStars=score=>Math.max(1,Math.min(5,Math.ceil(score/2)));
 const VERDICTS=[[5,'Hibátlan választás.'],[4,'Erős tányér.'],[3,'Rendben van.'],[2,'Ez is számít.'],[0,'Rögzítve — minden adat segít.']];
 const verdictFor=stars=>VERDICTS.find(([min])=>stars>=min)[1];
 const mealLabel=()=>draft.fixed?safe(draft.name):`${foods[draft.items[0].key].name} · banán`;
-// The stylized "Glucose Goddess" response curve: a shape, not a measurement — axes stay unlabeled.
+// The stylized "Glucose Goddess" response curve. The big variant reads as a story: time axis
+// from the bite ("evés") to +3 hours, the fasting baseline named, the peak annotated, and the
+// high curve visibly dipping under the baseline — that dip IS the early-hunger crash.
 export function glucoseCurve(level,mini=false){
  const path=level==='high'?'M8 78C46 76 62 14 90 12 112 11 122 52 142 82 160 106 208 90 232 84':level==='mid'?'M8 78C50 76 76 42 116 40 158 40 190 68 232 78':'M8 78C56 76 92 62 128 60 166 60 200 72 232 78';
  const peak=level==='high'?[90,12]:level==='mid'?[116,40]:[128,60];
- return `<svg class="fcer-curve${mini?' mini':''}" viewBox="0 0 240 108" aria-hidden="true"><line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/><path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/>${mini?'':`<text x="${peak[0]+10}" y="${Math.max(14,peak[1]-2)}" fill="currentColor" font-size="10" font-style="italic">${level==='high'?'csúcs':level==='mid'?'enyhe emelkedés':'lapos domb'}</text>`}${!mini&&level==='high'?'<text x="150" y="103" fill="#ffffff66" font-size="9" font-style="italic">utána visszaesés</text>':''}</svg>`;
+ if(mini)return `<svg class="fcer-curve mini" viewBox="0 0 240 108" aria-hidden="true"><line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/><path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/></svg>`;
+ return `<svg class="fcer-curve" viewBox="0 0 240 122" aria-hidden="true">
+  <line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/>
+  <text x="8" y="72" fill="#ffffff55" font-size="8">alapszint</text>
+  <path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/>
+  <path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/>
+  <text x="${peak[0]+10}" y="${Math.max(14,peak[1]-2)}" fill="currentColor" font-size="10" font-style="italic">${level==='high'?'csúcs':level==='mid'?'enyhe emelkedés':'lapos domb'}</text>
+  ${level==='high'?'<text x="150" y="119" fill="currentColor" font-size="9" font-style="italic">visszaesés</text>':''}
+  ${[[8,'evés'],[82,'+1 ó'],[157,'+2 ó'],[218,'+3 ó']].map(([x,l])=>`<line x1="${x===8?9:x}" y1="76" x2="${x===8?9:x}" y2="81" stroke="#ffffff33"/><text x="${x}" y="92" fill="#ffffff55" font-size="8">${l}</text>`).join('')}
+ </svg>`;
 }
 function saved(){
  const v=nutrition(draft);
@@ -70,15 +82,18 @@ function saved(){
   </div>
  </div>`;
 }
+/* What the curve means in lived terms: energy, when the line settles, when hunger returns. */
+export const glucoseExpectHtml=g=>`<div class="fcer-glu-expect">${[['bolt','Energia',g.expect.energy],['clock','Alapszint',g.expect.back],['bowl','Éhség',g.expect.hunger]].map(([a,k,v])=>`<div>${icon(a)}<span><small>${k}</small><b>${v}</b></span></div>`).join('')}</div><p class="fcer-glu-meaning">Minél laposabb a domb, annál egyenletesebb az energiád — a magas, hegyes csúcs gyors visszaesést és korai éhséget hoz.</p>`;
 /* Step two: what this meal likely does to the glucose curve, and the way back to the day. */
 function glucoseView(){
  const v=nutrition(draft),t=totals(day),g=glycemicFor({...v,sugar:nutrientFor(draft).sugar});
  return `<div class="fcer-glucose lvl-${g?.level??'none'}">
   <div class="food-intro"><span class="overline">VÉRCUKOR-VÁLASZ · MINTAELEMZÉS</span><h1>${g?g.level==='high'?'Ez most megdobja.':g.level==='mid'?'Egy szelídebb domb.':'Szépen simít.':'Ehhez kevés az adat.'}</h1></div>
   ${g?`<div class="fcer-glu-card">
-   <div class="fcer-glu-head"><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span></div>
+   <div class="fcer-glu-head"><span class="glu-pebble" aria-hidden="true"></span><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span></div>
    ${glucoseCurve(g.level)}
    <div class="fcer-glu-facts">${g.facts.map(([k,val])=>`<span><small>${k}</small><b>${val}</b></span>`).join('')}</div>
+   ${glucoseExpectHtml(g)}
   </div>
   <div class="fcer-glu-tip">${icon('sprout')}<span><strong>${g.tip.title}</strong><p>${g.tip.body}</p></span></div>`:`<p class="food-note">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>`}
   <div class="saved-budget"><small>EDDIG MA</small><strong>${fmt(t.kcal)}<span> / 2 400 kcal</span></strong><div class="food-budget-bar"><i style="width:${Math.min(100,t.kcal/2400*100)}%"></i></div></div>

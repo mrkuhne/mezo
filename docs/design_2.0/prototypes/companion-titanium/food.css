@@ -113,3 +113,20 @@
  .fcer-stars i.is-lit .icon,.fcer-stars i.is-lit .fcer-aura{animation:none}
  .fcer-screen .fcer-result,.fcer-screen .fcer-foot{opacity:1;translate:none;pointer-events:auto}
 }
+
+/* The presentation frame's polished-stone material, brought inside (owner request 2026-09-14):
+   one pebble per verdict band, the swatch recipe verbatim — alternating light/dark stops,
+   inner top-light edge, weighted drop shadow. The gold stone IS the frame's "Ritmus" swatch. */
+.lvl-low{--glu-stone:linear-gradient(145deg,#f0f7dd,#93b06c 24%,#28321d 52%,#c9e0a2)}
+.lvl-mid{--glu-stone:linear-gradient(145deg,#fff0c8,#af9371 24%,#322a29 52%,#dbc4a0)}
+.lvl-high{--glu-stone:linear-gradient(145deg,#ffe2d4,#c17d66 24%,#3a241d 52%,#eab8a2)}
+.glu-pebble{display:block;width:44px;height:48px;border-radius:17px;transform:rotate(-14deg);background:var(--glu-stone);box-shadow:inset 1px 1px 1px #eee4ff77,0 8px 20px #0008;flex:0 0 auto}
+.glu-pebble.big{width:54px;height:58px;border-radius:20px}
+.fcer-glu-head{display:flex;align-items:center;gap:15px;margin-bottom:10px}
+.fcer-glu-expect{display:grid;gap:8px;margin-top:14px}
+.fcer-glu-expect>div{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border:1px solid #ffffff0e;border-radius:14px;background:#ffffff04;text-align:left}
+.fcer-glu-expect .icon{width:26px;height:26px;flex:0 0 auto}
+.fcer-glu-expect small{display:block;font-size:7px;letter-spacing:.8px;text-transform:uppercase;color:#8ba0ab}
+.fcer-glu-expect b{display:block;font-size:10.5px;font-weight:500;color:#d5e4e8;margin-top:4px;line-height:1.55}
+.fcer-glu-meaning{font-size:9.5px;line-height:1.7;color:#93a3ad;margin:12px 2px 0;text-align:left}
+.glass-glucose .glass-hero-art{display:grid;place-items:center}

@@ -1,4 +1,4 @@
-import { fuelOverview, mealInfo, mealRecord, glucoseCurve } from './food.js';
+import { fuelOverview, mealInfo, mealRecord, glucoseCurve, glucoseExpectHtml } from './food.js';
 import { mealBlocks, blockFor, minutesOf, mealFacts, foods, glycemicForMeal } from './food-state.js';
 import { icon, safe } from './nap.js';
 
@@ -206,10 +206,11 @@ export function glucoseGlassHtml(mealId){
  const m=mealInfo(mealId);if(!m)return '<p class="sheet-sub">Nincs meg ez az étkezés.</p>';
  const g=glycemicForMeal(mealRecord(mealId));if(!g)return '<p class="sheet-sub">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>';
  return `<div class="glass-glucose lvl-${g.level}">
-  <div class="glass-hero dim"><span class="glass-hero-art">${icon('sugar')}</span><div><strong>${g.label}</strong><small>várható vércukor-hatás</small></div></div>
+  <div class="glass-hero dim"><span class="glass-hero-art"><span class="glu-pebble big" aria-hidden="true"></span></span><div><strong>${g.label}</strong><small>várható vércukor-hatás</small></div></div>
   <p class="glass-lead">${safe(m.name)} · ${m.time}</p>
   ${glucoseCurve(g.level)}
   <div class="glass-chips">${g.facts.map(([k,v])=>`<span>${k} ${v}</span>`).join('')}</div>
+  ${glucoseExpectHtml(g)}
   <div class="glass-callout"><span>${icon('sprout')}</span><p><small>${safe(g.tip.title).toLocaleUpperCase('hu-HU')}</small>${safe(g.tip.body)}</p></div>
   <p class="glass-fact">Minta-becslés az összetételből, a Glucose Goddess-módszer elvei szerint — nem mérés és nem orvosi előrejelzés.</p>
  </div>`;
