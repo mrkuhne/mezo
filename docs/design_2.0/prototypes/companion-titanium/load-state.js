@@ -55,7 +55,7 @@ export function groupLoad(meso = MESO, log = WEEK_LOG) {
   }
   return [...groups.values()]
     .map(g => ({ ...g, share: g.planned ? Math.min(1, g.done / g.planned) : 0 }))
-    .sort((a, b) => b.planned - a.planned);
+    .sort((a, b) => b.done - a.done || b.planned - a.planned);
 }
 
 /** The whole week in three numbers — done, planned, and the share between them. */

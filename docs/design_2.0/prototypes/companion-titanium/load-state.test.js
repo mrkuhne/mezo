@@ -15,7 +15,9 @@ test('groups add their heads and the share never lies past one', () => {
   const back = groups.find(g => g.key === 'back');
   assert.equal(back.done, 3, 'the Monday pull-ups landed on the wide back');
   assert.ok(groups.every(g => g.share >= 0 && g.share <= 1));
-  assert.ok(groups[0].planned >= groups[groups.length - 1].planned, 'sorted by how much the plan asks');
+  assert.ok(groups[0].done >= groups[groups.length - 1].done, 'the worked groups lead, descending');
+  const zeros = groups.filter(g => !g.done);
+  assert.ok(zeros[0].planned >= zeros[zeros.length - 1].planned, 'untouched groups follow by what the plan asks');
 });
 
 test('the week progress counts every muscle the week touches, tracked or not', () => {
