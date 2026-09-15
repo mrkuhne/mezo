@@ -1404,13 +1404,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, VolumeBand.tsx, WeekLoadPanel.tsx,
     WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneBar.tsx,
     ZoneMiniGrid.tsx, ZoneTrack.tsx
-  - **logic:** actualDuration.ts, agenda.ts, challengeOutcome.ts, dayStripItems.ts, exerciseDefaults.ts,
-    growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts,
-    mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts,
-    muscleWeek.ts, offDay.ts, peakWeekFit.ts, prepBriefing.ts, restTimer.ts, runToTemplate.ts, sessionLength.ts,
-    sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts, summaryStats.ts,
-    templatePoster.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
-    weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+  - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, challengeOutcome.ts, dayStripItems.ts,
+    exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts,
+    mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, morningWindow.ts, muscleColors.ts,
+    muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, prepBriefing.ts, restTimer.ts,
+    runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts,
+    structureLint.ts, summaryStats.ts, templatePoster.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
+    weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts,
+    workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 13 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
@@ -1528,8 +1529,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### scripts
 
 - **scripts/:** backup-live-db.sh, check-beads-backup.mjs, check-generator-toolchain.mjs, com.mezo.db-backup.plist,
-  gen-codemap.mjs, gen-codemap.test.mjs, import-exercise-images.mjs, lint-conflict-markers.mjs, lint-docs.mjs,
-  lint-liquibase.mjs, purge-restart.sql, setup-git.sh
+  gen-body-geometry.mjs, gen-codemap.mjs, gen-codemap.test.mjs, import-exercise-images.mjs, lint-conflict-markers.mjs,
+  lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql, setup-git.sh
 
 ## Unaligned
 
