@@ -55,9 +55,14 @@ export function AppLayout() {
   const hideHeader = hideChrome || location.pathname === '/mezo/chat'
   // Titán Nap (mezo-mhum, Task 7): az újraépített Nap-képernyők a prototípus SÖTÉT grafit
   // bőrét viselik — és mivel a fejléc meg a TabBar a shellé, a scope-osztály is ide való,
-  // nem az oldalra. Pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI (Életjelek,
-  // Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
+  // nem az oldalra. A Napnál pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI
+  // (Életjelek, Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
+  //
+  // A Titán grafit bőr hatóköre: a Nap két útvonala (mezo-mhum) ÉS a teljes Fuel domén
+  // (mezo-o6uv) — a fejléc, a TabBar és a portálozott sheetek a shellé, ezért a scope a
+  // burkon ül, és a doménen belül sehol nem villanhat vissza világosra.
   const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
+    || location.pathname === '/fuel' || location.pathname.startsWith('/fuel/')
   // A sötét ALAP a ház meglévő dark témája — ugyanaz a fogás, amivel a Napzárás rituálé is
   // sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és a shell összes
   // portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark` scope ERRE ÜL RÁ

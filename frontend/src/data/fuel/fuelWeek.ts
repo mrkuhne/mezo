@@ -1,9 +1,11 @@
+import { addDays } from '@/shared/lib/dates'
+import type { FuelWeekData } from '@/data/fuel/mealApi'
 import type {
+  MacroSet,
   MedCycleDayCell,
   GymScheduleDay,
   WeeklySupplementRow,
   RecurringPattern,
-  ReplanScenario,
   WeeklyStats,
 } from '@/data/types'
 
@@ -87,78 +89,62 @@ export const weeklyStats: WeeklyStats = {
   supplementsAdherence: 92,
 }
 
-// pantry-data.js replanScenarios (559–631)
-export const replanScenarios: ReplanScenario[] = [
-  {
-    id: 'vb-cancelled',
-    title: 'Volleyball lemondva',
-    detail: 'Edző írt · Hétfő 18:15 vb elmarad',
-    icon: 'today',
-    color: 'var(--cat-tendency)',
-    cascades: [
-      { system: 'Fuel', impact: 'Vacsora −30p', detail: '21:00 → 20:30 · kitchen close vissza 21:00-ra' },
-      { system: 'Fuel', impact: 'Magnézium változatlan', detail: '21:00 stack marad · alvás-onset target nem mozdul' },
-      { system: 'Train', impact: 'Push Day +1 set', detail: 'Free vb-load · többlet-volumen behozható a Push Day-en' },
-      { system: 'Sleep', impact: 'Bedtime −15p', detail: 'Vacsora előbb → sleep onset 22:45 felé tolódik' },
-    ],
-    tools: [
-      { type: 'compute', name: 'recomputeKitchenClose()' },
-      { type: 'compute', name: 'redistributeVolume(muscle=back)' },
-      { type: 'write', name: 'updateActiveProtocol(v+1)' },
-    ],
-    confidence: 0.88,
-  },
-  {
-    id: 'gym-delayed',
-    title: 'Gym csúszik · késik a busz',
-    detail: '07:30 → 08:30 gym indítás',
-    icon: 'train',
-    color: 'var(--coral)',
-    cascades: [
-      { system: 'Fuel', impact: 'AAKG-stack 07:50', detail: 'T-40 visszaszámolva · pre-snack 07:20' },
-      { system: 'Fuel', impact: 'Reggeli 10:15', detail: 'Post-workout slot tolva · ebéd 13:30-ra' },
-      { system: 'Fuel', impact: 'Coffee window szűkül', detail: '12:00 espresso → 13:00 · 14:00 cutoff előtt épp megfér' },
-    ],
-    tools: [
-      { type: 'compute', name: 'shiftPreWorkoutChain(+60min)' },
-      { type: 'compute', name: 'validateCoffeeCutoff()' },
-    ],
-    confidence: 0.91,
-  },
-  {
-    id: 'extra-vb',
-    title: 'Extra vb · meccs hozzáadva',
-    detail: 'Szombat extra meccs 16:00',
-    icon: 'today',
-    color: 'var(--cat-tendency)',
-    cascades: [
-      { system: 'Fuel', impact: 'Pre-game snack 14:00', detail: '60-80g carb · banán + rizs · whey 20g' },
-      { system: 'Fuel', impact: 'Vacsora 19:30', detail: 'Post-meccs · omega-3 stack · kitchen close 21:30' },
-      { system: 'Train', impact: 'Vasárnapi Push light', detail: 'Csak ha az RPE <7.5 a meccsen' },
-    ],
-    tools: [
-      { type: 'read', name: 'get_sport_load(7d)' },
-      { type: 'compute', name: 'buildSatelliteMeals(event)' },
-    ],
-    confidence: 0.79,
-  },
-  {
-    id: 'missed-supp',
-    title: 'Magnézium kihagyva tegnap',
-    detail: 'Esti slot · 21:00 stack pending maradt',
-    icon: 'pill',
-    color: 'var(--warning)',
-    cascades: [
-      { system: 'Fuel', impact: 'Ma esti dupla NEM', detail: 'Mg-glicinát nem halmozódik · csak a mai dózis' },
-      { system: 'Sleep', impact: 'Pattern P2 megfigyelve', detail: 'Tegnap éjszaka quality 7.0 — várt 7.4 · Mg-stack hiánya korrelál' },
-      { system: 'Insights', impact: 'Adherence chart frissül', detail: 'Mg stack heti adherence 100% → 86%' },
-    ],
-    tools: [
-      { type: 'read', name: 'get_last_supplement_state()' },
-      { type: 'read', name: 'get_pattern_correlation(P2)' },
-      { type: 'write', name: 'logSupplementSkip(reason=missed)' },
-    ],
-    confidence: 0.95,
-  },
-]
 
+
+// --- Trendek (Fuel Titanium S3, mezo-83g0) ---------------------------------------------------
+// C1/C2: the mock 7-day rollup the weekly picture reads, PLUS the two weekly averages the
+// backend computes (`FuelWeekResponse.mealScoreAvg` / `.weightAvgKg`) and the mapper used to
+// drop. Shaped exactly like the contract: `consumed.kcal === 0` is the ONLY "nothing logged"
+// signal the rollup carries, so two days are left at zero and the view reads them as
+// honest-null, never as a zero-height bar.
+//
+// Re-dated to whatever Monday is requested (the `mockMeWeek` idiom) so the mock page shows
+// "this week" on any clock. The shape stays fixed: 5 logged days (one over the budget, one
+// partial) + 2 unlogged.
+const ROLLUP_TARGET = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
+const ROLLUP_WEEKEND_TARGET = { kcal: 2200, p: 150, c: 230, f: 70, water: 3000 }
+/** `consumed` per weekday offset; `null` = that day has nothing logged (honest gap). */
+const ROLLUP_CONSUMED: readonly (MacroSet | null)[] = [
+  { kcal: 2115, p: 148, c: 220, f: 69, water: 2600 },
+  { kcal: 2260, p: 154, c: 245, f: 74, water: 2100 },
+  { kcal: 1180, p: 86, c: 132, f: 41, water: 1250 },
+  null,
+  { kcal: 2050, p: 112, c: 228, f: 68, water: 1600 },
+  { kcal: 2740, p: 104, c: 318, f: 104, water: 1400 },
+  null,
+]
+/** A KORÁBBI hét (`variant: 'past'`) saját, szintén determinisztikus alakja — C1/C2 hét-váltás és
+ *  a hét-a-héthez delták (mezo-83g0). Szándékosan MÁS számok, mint a nyitott héten: ha a két hét
+ *  ugyanaz volna, minden delta nullára kerekedne, és a „változás" tesztek vákuumba futnának.
+ *  6 naplózott nap (egy hiányzó) — a nyitott hétnél magasabb átlag, jobb súly, rosszabb pontátlag. */
+const ROLLUP_CONSUMED_PAST: readonly (MacroSet | null)[] = [
+  { kcal: 2290, p: 152, c: 248, f: 76, water: 2400 },
+  { kcal: 2180, p: 144, c: 236, f: 71, water: 2200 },
+  { kcal: 2410, p: 158, c: 262, f: 79, water: 2700 },
+  { kcal: 1960, p: 131, c: 208, f: 64, water: 1900 },
+  null,
+  { kcal: 2520, p: 139, c: 291, f: 88, water: 1700 },
+  { kcal: 2260, p: 126, c: 254, f: 74, water: 2050 },
+]
+const ZERO_MACROS: MacroSet = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+
+/**
+ * A mock 7 napos rollup a KÉRT hétfőre átdátumozva (soha nem beégetett dátum — éjfélkor sem
+ * romlik el). `variant` dönti el, MELYIK determinisztikus hét alakját kapjuk: a `'current'` a
+ * nyitott hét változatlan fixture-je (byte-stabil, a meglévő tesztek erre épülnek), a `'past'` a
+ * korábbi hét saját alakja. A hívó (a `useFuelWeekRollup` hook) dönt, mert a „melyik hétfő a
+ * mostani" kérdés a hook dolga — ez a seed-modul nem olvas órát.
+ */
+export function mockWeekRollup(start: string, variant: 'current' | 'past' = 'current'): FuelWeekData {
+  const past = variant === 'past'
+  return {
+    start,
+    days: (past ? ROLLUP_CONSUMED_PAST : ROLLUP_CONSUMED).map((consumed, i) => ({
+      date: addDays(start, i),
+      targets: i >= 5 ? ROLLUP_WEEKEND_TARGET : ROLLUP_TARGET,
+      consumed: consumed ?? ZERO_MACROS,
+    })),
+    mealScoreAvg: past ? 0.71 : 0.78,
+    weightAvgKg: past ? 81.9 : 81.3,
+  }
+}

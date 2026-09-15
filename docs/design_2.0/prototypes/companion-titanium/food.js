@@ -1,7 +1,7 @@
-import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals } from './food-state.js';
+import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals, glycemicFor } from './food-state.js';
 import { safe, icon, closeSheet, react } from './nap.js';
 const $=s=>document.querySelector(s),fmt=v=>Math.round(v).toLocaleString('hu-HU');
-let day=createFoodDay(),draft=null,stage='input',mode='photo',source='',blockTime='',deleteArmed=false,callbacks;
+let day=createFoodDay(),draft=null,stage='input',mode='photo',source='',blockTime='',deleteArmed=false,callbacks,lastKcal=null;
 const FOOD_TODAY='2026-09-09';
 const foodHistory={
  '2026-09-08':{kcal:2260,p:154,c:245,f:74,fiber:27,training:'Röplabda · 90 perc',meals:[{id:'h0908-1',time:'08:10',name:'Joghurtos zabkása',slot:'Reggeli',kcal:440,score:8.1},{id:'h0908-2',time:'12:40',name:'Csirkés rizstál',slot:'Ebéd',kcal:760,score:8.4},{id:'h0908-3',time:'16:20',name:'Banán és skyr',slot:'Uzsonna',kcal:310,score:8.0},{id:'h0908-4',time:'20:35',name:'Tojásos tortilla',slot:'Vacsora',kcal:750,score:7.1}]},
@@ -12,13 +12,13 @@ const button=(label,attr='',secondary=false)=>`<button class="food-action ${seco
 const art=`<svg class="food-art" viewBox="0 0 300 170" aria-hidden="true"><defs><linearGradient id="food-cup" x2=".7" y2="1"><stop stop-color="#eaf4f4"/><stop offset=".5" stop-color="#9bbdc6"/><stop offset="1" stop-color="#355468"/></linearGradient><linearGradient id="food-banana" x2=".3" y2="1"><stop stop-color="#fff4ad"/><stop offset=".5" stop-color="#e1c566"/><stop offset="1" stop-color="#8b6537"/></linearGradient></defs><ellipse cx="150" cy="145" rx="100" ry="13" fill="#000" opacity=".25"/><g transform="rotate(-8 115 85)"><path d="M58 45L73 133Q112 151 149 132L165 45Z" fill="url(#food-cup)" stroke="#b3d4db"/><ellipse cx="111" cy="45" rx="54" ry="16" fill="#d9eaec" stroke="#91b3bc"/><ellipse cx="111" cy="45" rx="46" ry="11" fill="#f9f0db"/><path d="M76 78Q112 94 151 78L146 109Q113 125 81 109Z" fill="#4d767f"/><path d="M103 87L98 102 117 106 124 91Z" fill="#d5eaa6"/><path d="M73 57L83 75" stroke="#ffffff77" stroke-width="3" stroke-linecap="round"/></g><path d="M157 116C207 128 249 75 230 34L239 27C277 76 235 147 179 143Z" fill="url(#food-banana)" stroke="#e6c370" stroke-width="1.5"/><path d="M171 126C220 130 251 77 237 41" fill="none" stroke="#fff0a9" stroke-width="2"/><path d="M229 34L231 24 240 24 239 31" fill="#63583a"/></svg>`;
 const micArt=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v3M9 21h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const daypart=()=>({Reggel:'reggel','Napközben':'nap',Este:'este'})[$('#part-label')?.textContent]||'nap';
-export function openFood(text='',startMode='photo',block=''){closeSheet();source=text;draft=null;blockTime=block;deleteArmed=false;stage='input';mode=text?'text':startMode;screen.hidden=false;$('.device').classList.add('in-food');if(text&&/joghurt/i.test(text)&&/banán/i.test(text)){draft=sampleDraft(blockTime||'15:30');stage='review';}render();}
+export function openFood(text='',startMode='photo',block=''){closeSheet();lastKcal=null;source=text;draft=null;blockTime=block;deleteArmed=false;stage='input';mode=text?'text':startMode;screen.hidden=false;$('.device').classList.add('in-food');if(text&&/joghurt/i.test(text)&&/banán/i.test(text)){draft=sampleDraft(blockTime||'15:30');stage='review';}render();}
 function leave(){screen.hidden=true;$('.device').classList.remove('in-food');callbacks?.refresh();syncOverview();}
 const modeTabs=()=>`<div class="food-modes" role="tablist" aria-label="Naplózási mód">${[['photo','Fotó','📷'],['voice','Hang',''],['text','Gépelés','⌨'],['usual','Szokásosak','↻']].map(([m,label])=>`<button role="tab" aria-selected="${mode===m}" class="${mode===m?'on':''}" data-food-mode="${m}">${m==='voice'?micArt:m==='photo'?camGlyph:m==='text'?keyGlyph:repeatGlyph}<span>${label}</span></button>`).join('')}</div>`;
 const camGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 7L10.5 4H13.5L15 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
 const keyGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 10H8M11 10H12M15 10H16M7 14H17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const repeatGlyph=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();}
+function render(){screen.innerHTML=`<div class="food-scroll"><header class="food-header"><button data-food-leave aria-label="Vissza a Fuel Mai oldalára">‹</button><span><small>FUEL · DEMÓ</small><strong>${stage==='saved'?'Étkezés rögzítve':stage==='glucose'?'Vércukor-válasz':stage==='failed'?'Ezt most nem ismertem fel':'Naplózzunk. Villámgyorsan.'}</strong></span>${icon('bowl')}</header>${stage==='input'?modeTabs()+inputView():stage==='failed'?failedView():stage==='review'?review():stage==='glucose'?glucoseView():saved()}</div>`;screen.querySelector('.food-scroll').scrollTop=0;updatePreview();if(stage==='saved')runFoodCeremony();if(stage==='glucose')runBudgetFill();}
 function inputView(){return {photo:photoView,voice:voiceView,text:textView,usual:usualView}[mode]();}
 function photoView(){return `<div class="food-camera" aria-label="Kamera-előnézet, demó"><div class="food-finder"><span></span><span></span><span></span><span></span>${art}<p>DEMÓ KERESŐ · NEM VALÓDI KAMERA</p></div><p class="food-camera-hint">Fotózd le a tányért — a többit én kitöltöm, te csak jóváhagyod.</p><div class="food-shots"><button data-food-shot="known">${camGlyph}<span><strong>Exponálás</strong><small>Minta: joghurt és banán</small></span></button><button class="ghost" data-food-shot="unknown">${camGlyph}<span><strong>Másik tányér</strong><small>Minta: felismerés nem sikerül</small></span></button></div><p class="food-note">Működési demó: két mintafotót ismer. Nincs valódi kamera vagy AI-hívás.</p>`;}
 function voiceView(){return `<div class="food-voice"><button class="food-mic" data-food-say="Egy joghurt és egy banán volt." aria-label="Mintamondat bemondása">${micArt}</button><p class="food-camera-hint">Mondd el egy mondatban. Koppints a mikrofonra a mintamondathoz.</p><div class="voice-lines">${['Egy joghurt és egy banán volt.','Ettem egy tál zabkását.'].map(t=>`<button data-food-say="${safe(t)}">${micArt}<span>${t}</span></button>`).join('')}</div><p class="food-note">Működési demó: nincs hangrögzítés. A joghurt–banán mondatot érti; a másikat a szokásosakhoz irányítja.</p>`;}
@@ -28,11 +28,137 @@ function failedView(){return `<div class="food-failed"><div class="food-failed-a
 function portion(name,value,label,hint){return `<div class="portion"><span><small>ADAG</small><span class="portion-field"><button type="button" data-portion="${name}" data-delta="-10" aria-label="${label} csökkentése">−</button><input type="number" name="${name}" aria-label="${label}" min="1" max="2000" step="1" value="${value}" required><b>g</b><button type="button" data-portion="${name}" data-delta="10" aria-label="${label} növelése">+</button></span></span><small>${hint}</small></div>`;}
 const existing=()=>draft&&day.meals.some(m=>m.id===draft.id);
 const deleteBlock=()=>existing()?`<div class="food-delete">${deleteArmed?`<p>Biztosan törlöd? A napi összegből is kikerül.</p><button type="button" class="danger" data-food-delete-confirm>Igen, törlöm</button><button type="button" data-food-delete-cancel>Mégse</button>`:`<button type="button" data-food-delete-arm>Étkezés törlése</button>`}</div>`:'';
-function review(){if(draft.fixed)return fixedReview();return `<div class="food-intro"><span class="overline">FELISMERT TÉTELEK · MINTAELEMZÉS</span><h1>Két apróság.<br>Egy kis feltöltődés.</h1></div><div class="food-source">${icon('chat')}<p>${safe(source||'Joghurt és banán')}</p><button data-food-rewrite aria-label="Étkezés leírásának átírása">✎</button></div><div class="food-attention"><span>✦</span><p>A joghurt típusát nem tudom biztosan. Natúrral és becsült adagokkal indulunk — pontosítsd lent.</p></div><form id="food-review-form"><div class="food-item"><div class="food-item-head">${icon('bowl')}<span><small>01 · TEJTERMÉK</small><strong>Joghurt</strong></span><span class="estimate-pill">BECSÜLT</span></div><label class="food-label">Milyen joghurt?<select name="yogurt"><option value="yogurt" ${draft.items[0].key==='yogurt'?'selected':''}>Natúr joghurt</option><option value="greek" ${draft.items[0].key==='greek'?'selected':''}>Görög joghurt</option></select></label>${portion('yogurtGrams',draft.items[0].grams,'Joghurt mennyisége grammban','Egy pohár ≈ 150 g')}</div><div class="food-item"><div class="food-item-head">${icon('sun')}<span><small>02 · GYÜMÖLCS</small><strong>Banán</strong></span><span class="estimate-pill">BECSÜLT</span></div>${portion('bananaGrams',draft.items[1].grams,'Banán mennyisége grammban','Egy közepes darab ≈ 120 g, héj nélkül')}</div><label class="food-time">Mikor ettél?<input type="time" name="time" value="${safe(draft.time)}" required></label><section class="nutrition-preview" aria-label="Étkezés előnézete"><span class="overline">AZ ADAGJAIDDAL SZÁMOLVA</span><div id="food-preview"></div></section><div class="food-reading"><span class="overline">MEZO · MINTAÉRTÉKELÉS</span><p>Gyümölcs és joghurt egy gyors uzsonnához. A fehérje mennyiségét a választott joghurt és az adagja is alakítja.</p></div>${button('Rögzítem az étkezést ✓','type="submit"')}<p id="food-review-error" role="alert"></p>${deleteBlock()}<p class="food-note">Becsült mintaértékek, nem termékadatok. Csak mentéskor változik a napi összeg. Újratöltéskor a demó törlődik.</p></form>`;}
+function review(){if(draft.fixed)return fixedReview();return `<div class="rv-aura" aria-hidden="true"><i></i><b></b></div>
+<div class="food-steps rv-block" style="--d:0"><span class="done">✓ FELISMERÉS</span><i></i><span class="on">PONTOSÍTÁS</span><i></i><span>MENTÉS</span></div>
+<div class="food-intro rv-block" style="--d:1"><span class="overline">FELISMERT TÉTELEK · MINTAELEMZÉS</span><h1>Két apróság.<br>Egy kis feltöltődés.</h1></div>
+<div class="food-source rv-block" style="--d:2">${icon('chat')}<p>${safe(source||'Joghurt és banán')}</p><button data-food-rewrite aria-label="Étkezés leírásának átírása">✎</button></div>
+<div class="food-attention rv-block" style="--d:3"><span class="rv-twinkle">✦</span><p>A joghurt típusát nem tudom biztosan. Natúrral és becsült adagokkal indulunk — pontosítsd lent.</p></div>
+<form id="food-review-form">
+<div class="food-item rv-card rv-tight rv-block" style="--d:4;--item-color:#8ed2e8"><div class="rv-row">${icon('bowl')}<span class="rv-copy"><small>01 · TEJTERMÉK · BECSÜLT</small><select name="yogurt" class="rv-select" aria-label="Milyen joghurt?"><option value="yogurt" ${draft.items[0].key==='yogurt'?'selected':''}>Natúr joghurt</option><option value="greek" ${draft.items[0].key==='greek'?'selected':''}>Görög joghurt</option></select></span><span class="portion-field rv-stepper"><button type="button" data-portion="yogurtGrams" data-delta="-10" aria-label="Joghurt mennyiségének csökkentése">−</button><input type="number" name="yogurtGrams" aria-label="Joghurt mennyisége grammban" min="1" max="2000" step="1" value="${draft.items[0].grams}" required><b>g</b><button type="button" data-portion="yogurtGrams" data-delta="10" aria-label="Joghurt mennyiségének növelése">+</button></span></div><small class="rv-hint">Egy pohár ≈ 150 g</small></div>
+<div class="food-item rv-card rv-tight rv-block" style="--d:5;--item-color:#d9c395"><div class="rv-row">${icon('sun')}<span class="rv-copy"><small>02 · GYÜMÖLCS · BECSÜLT</small><strong>Banán</strong></span><span class="portion-field rv-stepper"><button type="button" data-portion="bananaGrams" data-delta="-10" aria-label="Banán mennyiségének csökkentése">−</button><input type="number" name="bananaGrams" aria-label="Banán mennyisége grammban" min="1" max="2000" step="1" value="${draft.items[1].grams}" required><b>g</b><button type="button" data-portion="bananaGrams" data-delta="10" aria-label="Banán mennyiségének növelése">+</button></span></div><small class="rv-hint">Egy közepes darab ≈ 120 g, héj nélkül</small></div>
+<label class="food-time rv-block" style="--d:6">Mikor ettél?<input type="time" name="time" value="${safe(draft.time)}" required></label>
+<section class="nutrition-preview rv-live rv-block" style="--d:7" aria-label="Étkezés előnézete"><span class="rv-sheen" aria-hidden="true"></span><span class="overline">AZ ADAGJAIDDAL SZÁMOLVA · ÉLŐBEN</span><div id="food-preview"></div></section>
+<div class="food-reading rv-block" style="--d:8"><span class="overline">MEZO · MINTAÉRTÉKELÉS</span><p>Gyümölcs és joghurt egy gyors uzsonnához. A fehérje mennyiségét a választott joghurt és az adagja is alakítja.</p></div>
+${button('Rögzítem az étkezést ✓','type="submit"')}<p id="food-review-error" role="alert"></p>${deleteBlock()}<p class="food-note">Becsült mintaértékek, nem termékadatok. Csak mentéskor változik a napi összeg. Újratöltéskor a demó törlődik.</p></form>`;}
 function fixedReview(){const v=nutrition(draft);return `<div class="food-intro"><span class="overline">${existing()?'NAPLÓZOTT ÉTKEZÉS':'A SZOKÁSOSODBÓL'}</span><h1>${safe(draft.name)}</h1></div><form id="food-review-form"><section class="nutrition-preview" aria-label="Étkezés értékei"><span class="overline">ISMERT ÉRTÉKEK</span><div><strong>${fmt(v.kcal)}<small>kcal</small></strong><div><span><b>${fmt(v.p)} g</b>fehérje</span><span><b>${fmt(v.c)} g</b>szénhidrát</span><span><b>${fmt(v.f)} g</b>zsír</span></div></div></section><label class="food-time">Mikor ettél?<input type="time" name="time" value="${safe(draft.time)}" required></label>${button(existing()?'Mentem a javítást ✓':'Rögzítem az étkezést ✓','type="submit"')}<p id="food-review-error" role="alert"></p>${deleteBlock()}<p class="food-note">Ismert értékekkel megy — nincs mit becsülni. Újratöltéskor a demó törlődik.</p></form>`;}
 function readDraft(){const form=$('#food-review-form');if(!form||!draft)return;if(draft.fixed){draft.time=form.elements.time.value;return;}draft.items[0]={key:form.elements.yogurt.value,grams:Number(form.elements.yogurtGrams.value)};draft.items[1].grams=Number(form.elements.bananaGrams.value);draft.time=form.elements.time.value;}
-function updatePreview(){const el=$('#food-preview');if(!el)return;readDraft();if(draft.items.some(i=>!Number.isFinite(i.grams)||i.grams<1||i.grams>2000)){el.textContent='Adj meg 1–2000 g közötti mennyiséget.';return;}const v=nutrition(draft);el.innerHTML=`<strong>${fmt(v.kcal)}<small>kcal</small></strong><div><span><b>${fmt(v.p)} g</b>fehérje</span><span><b>${fmt(v.c)} g</b>szénhidrát</span><span><b>${fmt(v.f)} g</b>zsír</span></div>`;}
-function saved(){const v=nutrition(draft),t=totals(day);return `<div class="food-success"><div class="food-success-art">${icon('bowl')}<span>✓</span></div><span class="overline">A NAPOD RÉSZE LETT</span><h1>Megérkezett<br>az étkezésed.</h1><p>${draft.fixed?safe(draft.name):`${foods[draft.items[0].key].name} · banán`}<br>${draft.time} · ${fmt(v.kcal)} kcal</p><div class="saved-budget"><small>EDDIG MA</small><strong>${fmt(t.kcal)}<span> / 2 400 kcal</span></strong><div class="food-budget-bar"><i style="width:${Math.min(100,t.kcal/2400*100)}%"></i></div></div>${button('Megnézem a mai keretem →','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}<p class="food-note">Mentve a demóban. Nincs valódi adatmentés.</p></div>`;}
+function updatePreview(){const el=$('#food-preview');if(!el)return;readDraft();if(draft.items.some(i=>!Number.isFinite(i.grams)||i.grams<1||i.grams>2000)){el.textContent='Adj meg 1–2000 g közötti mennyiséget.';lastKcal=null;return;}const v=nutrition(draft);
+ el.innerHTML=`<strong><em id="rv-kcal-n">${fmt(v.kcal)}</em><small>kcal</small></strong><div class="rv-macros4">${[['fehérje',v.p,160,'#e08a7c'],['szénhidrát',v.c,270,'#d9c395'],['zsír',v.f,76,'#cdd170'],['rost',v.fiber,30,'#8fd97a']].map(([l,g,target,col])=>`<span><b>${fmt(g)} g</b>${l}<i class="rv-macro-bar"><u style="width:${Math.min(100,Math.round(g/target*100))}%;background:${col}"></u></i></span>`).join('')}</div>`;
+ const n=el.querySelector('#rv-kcal-n'),prev=lastKcal;lastKcal=v.kcal;
+ if(n&&prev!=null&&Math.round(prev)!==Math.round(v.kcal)&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  n.classList.add('pop');
+  const started=performance.now(),duration=340;
+  const frame=now=>{const t=Math.min(1,(now-started)/duration);n.textContent=fmt(prev+(v.kcal-prev)*(1-(1-t)**3));if(t<1&&n.isConnected)requestAnimationFrame(frame);};
+  requestAnimationFrame(frame);
+ }}
+/* ---- Post-log reward ceremony (mezo-6z0ai): the fuel twin of the train star ceremony. ---- */
+const mealStars=score=>Math.max(1,Math.min(5,Math.ceil(score/2)));
+const VERDICTS=[[5,'Hibátlan választás.'],[4,'Erős tányér.'],[3,'Rendben van.'],[2,'Ez is számít.'],[0,'Rögzítve — minden adat segít.']];
+const verdictFor=stars=>VERDICTS.find(([min])=>stars>=min)[1];
+const mealLabel=()=>draft.fixed?safe(draft.name):`${foods[draft.items[0].key].name} · banán`;
+// The stylized "Glucose Goddess" response curve. The big variant reads as a story: time axis
+// from the bite ("evés") to +3 hours, the fasting baseline named, the peak annotated, and the
+// high curve visibly dipping under the baseline — that dip IS the early-hunger crash.
+export function glucoseCurve(level,mini=false){
+ const path=level==='high'?'M8 78C46 76 62 14 90 12 112 11 122 52 142 82 160 106 208 90 232 84':level==='mid'?'M8 78C50 76 76 42 116 40 158 40 190 68 232 78':'M8 78C56 76 92 62 128 60 166 60 200 72 232 78';
+ const peak=level==='high'?[90,12]:level==='mid'?[116,40]:[128,60];
+ if(mini)return `<svg class="fcer-curve mini" viewBox="0 0 240 108" aria-hidden="true"><line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/><path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/><path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/></svg>`;
+ return `<svg class="fcer-curve" viewBox="0 0 240 122" aria-hidden="true">
+  <line x1="8" y1="78" x2="232" y2="78" stroke="#ffffff22" stroke-dasharray="3 5"/>
+  <text x="8" y="72" fill="#ffffff55" font-size="8">alapszint</text>
+  <path d="${path} L232 108 8 108Z" fill="currentColor" opacity=".13" stroke="none"/>
+  <path d="${path}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="${peak[0]}" cy="${peak[1]}" r="3.4" fill="currentColor"/>
+  <text x="${peak[0]+10}" y="${Math.max(14,peak[1]-2)}" fill="currentColor" font-size="10" font-style="italic">${level==='high'?'csúcs':level==='mid'?'enyhe emelkedés':'lapos domb'}</text>
+  ${level==='high'?'<text x="150" y="119" fill="currentColor" font-size="9" font-style="italic">visszaesés</text>':''}
+  ${[[8,'evés'],[82,'+1 ó'],[157,'+2 ó'],[218,'+3 ó']].map(([x,l])=>`<line x1="${x===8?9:x}" y1="76" x2="${x===8?9:x}" y2="81" stroke="#ffffff33"/><text x="${x}" y="92" fill="#ffffff55" font-size="8">${l}</text>`).join('')}
+ </svg>`;
+}
+function saved(){
+ const v=nutrition(draft);
+ if(draft.score==null)return `<div class="food-success"><div class="food-success-art">${icon('bowl')}<span>✓</span></div><span class="overline">A NAPOD RÉSZE LETT</span><h1>Megérkezett<br>az étkezésed.</h1><p>${mealLabel()}<br>${draft.time} · ${fmt(v.kcal)} kcal</p>${button('Megnézem a mai keretem →','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}<p class="food-note">Az AI-értékelés még készül. Mentve a demóban.</p></div>`;
+ const stars=mealStars(draft.score);
+ return `<div class="fcer-screen" data-fcer style="--p:0">
+  <section class="fcer">
+   <span class="fcer-sky" aria-hidden="true"></span>
+   <span class="overline">A NAPOD RÉSZE LETT</span>
+   <div class="fcer-stars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-fcer-star="${i}"><b class="fcer-aura"></b>${icon('star')}</i>`).join('')}</div>
+   <div class="fcer-bar"><i class="fcer-fill"></i><span class="fcer-comet"></span>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div>
+   <div class="fcer-counters">
+    <span><i>${icon('bowl')}</i><strong data-fcer-count="kcal">0</strong><small>kcal</small></span>
+    <span><i>${icon('protein')}</i><strong data-fcer-count="p">0</strong><small>g fehérje</small></span>
+    <span><i>${icon('carb')}</i><strong data-fcer-count="c">0</strong><small>g szénhidrát</small></span>
+   </div>
+  </section>
+  <section class="fcer-result">
+   <h1 class="sr-only" tabindex="-1">${stars} csillag az ötből</h1>
+   <p class="fcer-verdict">${verdictFor(stars)}</p>
+   <p class="fcer-meal">${mealLabel()} · ${draft.time}</p>
+   <div class="fcer-score">${icon('score')}<span class="fcer-score-copy"><span class="overline">AI-ÉRTÉKELÉS · MINTA</span><strong>${draft.score.toLocaleString('hu-HU',{minimumFractionDigits:1})}<small> / 10</small></strong></span></div>
+  </section>
+  <div class="fcer-foot">
+   <button class="fcer-cta" data-food-details><span class="fcer-cta-art">${icon('score')}</span><span><strong>Részletek</strong><small>Vércukor-válasz és a mai kereted</small></span></button>
+  </div>
+ </div>`;
+}
+/* What the curve means in lived terms: energy, when the line settles, when hunger returns. */
+export const glucoseExpectHtml=g=>`<div class="fcer-glu-expect">${[['bolt','Energia',g.expect.energy],['clock','Alapszint',g.expect.back],['bowl','Éhség',g.expect.hunger]].map(([a,k,v])=>`<div>${icon(a)}<span><small>${k}</small><b>${v}</b></span></div>`).join('')}</div><p class="fcer-glu-meaning">Minél laposabb a domb, annál egyenletesebb az energiád — a magas, hegyes csúcs gyors visszaesést és korai éhséget hoz.</p>`;
+/* Step two: what this meal likely does to the glucose curve, and the way back to the day. */
+function glucoseView(){
+ const v=nutrition(draft),t=totals(day),g=glycemicFor({...v,sugar:nutrientFor(draft).sugar});
+ return `<div class="fcer-glucose lvl-${g?.level??'none'}">
+  <div class="food-intro"><span class="overline">VÉRCUKOR-VÁLASZ · MINTAELEMZÉS</span><h1>${g?g.level==='high'?'Ez most megdobja.':g.level==='mid'?'Egy szelídebb domb.':'Szépen simít.':'Ehhez kevés az adat.'}</h1></div>
+  ${g?`<div class="fcer-glu-card">
+   <div class="fcer-glu-head"><span class="glu-pebble" aria-hidden="true"></span><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span></div>
+   ${glucoseCurve(g.level)}
+   <div class="fcer-glu-facts">${g.facts.map(([k,val])=>`<span><small>${k}</small><b>${val}</b></span>`).join('')}</div>
+   ${glucoseExpectHtml(g)}
+  </div>
+  <div class="fcer-glu-tip">${icon('sprout')}<span><strong>${g.tip.title}</strong><p>${g.tip.body}</p></span></div>`:`<p class="food-note">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>`}
+  <div class="fcer-bud"><span class="overline">A MAI KERETED</span>${[['Kalória',t.kcal,2400,'kcal','#8ed2e8','bowl'],['Fehérje',t.p,160,'g','#e08a7c','meat'],['Szénhidrát',t.c,270,'g','#d9c395','carb'],['Zsír',t.f,76,'g','#cdd170','avocado']].map(([l,v,max,u,col,a],i)=>`<div class="fcer-bud-row" style="--bud-color:${col};--w:${Math.min(100,v/max*100)}%;--i:${i}">${icon(a)}<span class="fcer-bud-copy"><span class="fcer-bud-head"><strong>${l}</strong><b>${fmt(v)} / ${fmt(max)} ${u}</b></span><i class="fcer-bud-bar"><b></b></i><small>${v>=max?'a mai keret betelt':`még ${fmt(max-v)} ${u} fér bele`}</small></span></div>`).join('')}</div>
+  ${button('Vissza a Mai oldalra ✓','data-food-done')}${button('Pontosítok még rajta','data-food-correct',true)}
+  <p class="food-note">Minta-becslés az étel összetételéből, a Glucose Goddess-módszer elvei szerint. Nem mérés és nem orvosi előrejelzés — élesben is kategóriát mutatunk, számot nem.</p>
+ </div>`;
+}
+/* The budget bars fill by rAF, not CSS transition — a throttled/hidden pane freezes a
+   just-started transition at 0, while a driven frame loop (the ceremony's own technique)
+   always lands. Reduced motion keeps the CSS-final widths untouched. */
+function runBudgetFill(){
+ const rows=[...screen.querySelectorAll('.fcer-bud-row')];
+ if(!rows.length||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ rows.forEach((row,i)=>{
+  const b=row.querySelector('.fcer-bud-bar b'),target=parseFloat(row.style.getPropertyValue('--w'));
+  if(!b||!Number.isFinite(target))return;
+  b.style.width='0%';
+  const started=performance.now()+150+i*140,duration=900;
+  const frame=now=>{
+   if(!b.isConnected)return;
+   const t=Math.min(1,Math.max(0,(now-started)/duration));
+   b.style.width=`${target*(1-(1-t)**3)}%`;
+   if(t<1)requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+ });
+}
+/* One 2400ms pass drives the bar, the counters and the star ignitions together (train twin). */
+function runFoodCeremony(){
+ const root=screen.querySelector('[data-fcer]');if(!root||!draft||draft.score==null)return;
+ const v=nutrition(draft),stars=mealStars(draft.score),fields={kcal:v.kcal,p:v.p,c:v.c};
+ const paint=progress=>{
+  root.style.setProperty('--p',String(progress*draft.score/10));
+  root.querySelectorAll('[data-fcer-count]').forEach(el=>{el.textContent=fmt(fields[el.dataset.fcerCount]*progress);});
+  root.querySelectorAll('[data-fcer-star]').forEach(star=>{star.classList.toggle('is-lit',progress*stars>=Number(star.dataset.fcerStar)+1-.001);});
+ };
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){paint(1);root.classList.add('is-told');return;}
+ const started=performance.now(),duration=2400;
+ const frame=now=>{
+  const t=Math.min(1,(now-started)/duration);
+  paint(1-(1-t)**3);
+  if(t<1&&root.isConnected)requestAnimationFrame(frame);
+  else if(root.isConnected){root.classList.add('is-told');react('celebrate');}
+ };
+ requestAnimationFrame(frame);
+}
 function syncOverview(){const tile=document.querySelector('#tiles [data-open="fuel"]'),t=totals(day);if(tile){tile.querySelector('.tile-value').innerHTML=`${fmt(t.kcal)}<small>kcal</small>`;tile.querySelector('.tile-hint').textContent=`Eddig ma · ${fmt(t.p)} g fehérje`;}}
 export function mealName(m){return m.fixed?m.name:'Joghurt és banán';}
 export function mealHint(m){return m.fixed?(m.slot||'Szokásos'):`${m.items[0].grams} g + ${m.items[1].grams} g · pontosítható`;}
@@ -52,6 +178,7 @@ export function initFood(options){callbacks=options;document.addEventListener('m
  if(el.hasAttribute('data-food-example')){source='Egy joghurt és egy banán.';$('#food-input-form textarea').value=source;}
  if(el.hasAttribute('data-food-rewrite')){stage='input';mode='text';render();}
  if(el.dataset.portion){const input=screen.querySelector(`[name="${el.dataset.portion}"]`);input.value=String(Math.max(1,Math.min(2000,Number(input.value)+Number(el.dataset.delta))));updatePreview();}
+ if(el.hasAttribute('data-food-details')){stage='glucose';render();}
  if(el.hasAttribute('data-food-done')){leave();callbacks.go('fuel',0);}
  if(el.hasAttribute('data-food-correct')){draft=structuredClone(day.meals.find(m=>m.id===draft.id));stage='review';render();}
  if(el.hasAttribute('data-food-delete-arm')){deleteArmed=true;render();}
@@ -62,7 +189,7 @@ export function initFood(options){callbacks=options;document.addEventListener('m
  });
  document.addEventListener('input',e=>{if(e.target.closest('#food-review-form'))updatePreview();});
  document.addEventListener('change',e=>{if(e.target.closest('#food-review-form'))updatePreview();});
- document.addEventListener('submit',e=>{if(e.target.id==='food-input-form'){e.preventDefault();source=new FormData(e.target).get('meal').trim();if(!/joghurt/i.test(source)||!/banán/i.test(source)){$('#food-input-error').textContent='Ebben a demóban a joghurt és banán példát tudjuk elemezni. A mintamondattal végigpróbálhatod.';return;}const originalId=draft?.id;draft=sampleDraft(blockTime||'15:30');if(originalId)draft.id=originalId;stage='review';render();react('connect',2000);}if(e.target.id==='food-review-form'){e.preventDefault();readDraft();if(!saveMeal(day,draft)){$('#food-review-error').textContent='Ellenőrizd az adagokat és az időpontot.';return;}stage='saved';render();react('connect',2500);callbacks.refresh();syncOverview();}});
+ document.addEventListener('submit',e=>{if(e.target.id==='food-input-form'){e.preventDefault();source=new FormData(e.target).get('meal').trim();if(!/joghurt/i.test(source)||!/banán/i.test(source)){$('#food-input-error').textContent='Ebben a demóban a joghurt és banán példát tudjuk elemezni. A mintamondattal végigpróbálhatod.';return;}const originalId=draft?.id;draft=sampleDraft(blockTime||'15:30');if(originalId)draft.id=originalId;stage='review';render();react('connect',2000);}if(e.target.id==='food-review-form'){e.preventDefault();readDraft();if(!saveMeal(day,draft)){$('#food-review-error').textContent='Ellenőrizd az adagokat és az időpontot.';return;}stage='saved';render();callbacks.refresh();syncOverview();}});
  $('#restart').addEventListener('click',()=>{day=createFoodDay();draft=null;leave();});
 }
 export const foodSnapshot=()=>({...totals(day)});

@@ -103,7 +103,10 @@ export function mealSlotKey(m: FuelMeal): SlotKey | null {
   if (s === 'breakfast' || s.includes('reggeli')) return 'breakfast'
   if (s === 'lunch' || s.includes('ebéd') || s.includes('ebed')) return 'lunch'
   if (s === 'dinner' || s.includes('vacsora')) return 'dinner'
-  if (s === 'snack' || s.includes('snack')) return 'snack'
+  // S1b (mezo-33k6): a magyar snack-ablakok saját nevükön is felismerhetők — `placeWindows`
+  // „Uzsonna"/„Tízórai"-nak hívja őket (:217-218), tehát egy ilyen címkét viselő logolt étkezés
+  // snack, nem „ismeretlen".
+  if (s === 'snack' || s.includes('snack') || s.includes('uzsonna') || s.includes('tízórai') || s.includes('tizorai')) return 'snack'
   return null
 }
 
@@ -349,7 +352,7 @@ export const ZONE_FUEL_KIND: Record<StackZoneKey, FuelKind> = {
  *  instant (real mode: `…T07:15:00Z`), an explicit offset (`…T09:15:00+02:00`) and an offset-less
  *  local mock string (`…T09:15:00`, which parses as local) all render the LOCAL wall-clock uniformly.
  *  Invalid date → the caller's fallback window/now time. */
-function hhmmFromLoggedAt(iso: string, fallback: string): string {
+export function hhmmFromLoggedAt(iso: string, fallback: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return fallback
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`

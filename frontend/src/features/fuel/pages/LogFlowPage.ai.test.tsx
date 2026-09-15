@@ -22,7 +22,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...actual,
     useMealActions: (date?: string) => ({
       ...actual.useMealActions(date),
-      ...(hoisted.logMeal ? { logMeal: hoisted.logMeal } : {}),
+      ...(hoisted.logMeal
+        // mezo-qt5q (E9): az AI-ág `logMealAsync`-et hív, hogy a piszkozat-eredményjelzés
+        // túlélje a lap azonnali elhagyását. Ugyanaz a kém figyeli mindkét utat, így a
+        // payload-állítások változatlanul a `logMeal.mock.calls`-ból olvasnak.
+        ? { logMeal: hoisted.logMeal, logMealAsync: async (i: MealInput) => { hoisted.logMeal!(i) } }
+        : {}),
     }),
   }
 })

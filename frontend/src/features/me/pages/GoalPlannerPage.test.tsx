@@ -147,6 +147,14 @@ test('GoalPlannerPage real-mode cél step renders the derived rate + verdict fro
 
 test('GoalPlannerPage real-mode aggressive preview offers a realistic date that re-previews on accept', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
+  // Anchored to the real clock: previewable requires targetDate > startDate (today), so the
+  // suggested date must stay strictly in the future — a fixed ISO date here is a time bomb
+  // that detonates the day the calendar catches up with it (it did, on 2026-09-15).
+  const suggestedDate = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 60)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })()
   const bodies: Record<string, unknown>[] = []
   server.use(
     http.post(`${API_BASE}/api/goals/feasibility-preview`, async ({ request }) => {
@@ -154,14 +162,14 @@ test('GoalPlannerPage real-mode aggressive preview offers a realistic date that 
       bodies.push(body)
       // The first (default-window) draft is over the cap → aggressive + a suggestion.
       // Once the date is bumped to the suggestion the window widens → feasible.
-      if (body.targetDate === '2026-09-15') {
+      if (body.targetDate === suggestedDate) {
         return HttpResponse.json({ derivedRatePctPerWeek: 0.6, withinSafeBand: true, verdict: 'feasible' })
       }
       return HttpResponse.json({
         derivedRatePctPerWeek: 1.3,
         withinSafeBand: false,
         verdict: 'aggressive',
-        suggestedTargetDate: '2026-09-15',
+        suggestedTargetDate: suggestedDate,
       })
     }),
   )
@@ -186,8 +194,8 @@ test('GoalPlannerPage real-mode aggressive preview offers a realistic date that 
 
   // Accepting the suggestion sets the cél-dátum input + fires a fresh preview.
   fireEvent.click(accept)
-  expect((screen.getByLabelText('Cél dátum') as HTMLInputElement).value).toBe('2026-09-15')
-  await waitFor(() => expect(bodies.some(b => b.targetDate === '2026-09-15')).toBe(true))
+  expect((screen.getByLabelText('Cél dátum') as HTMLInputElement).value).toBe(suggestedDate)
+  await waitFor(() => expect(bodies.some(b => b.targetDate === suggestedDate)).toBe(true))
   // The new preview flips the panel to feasible.
   await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
   vi.unstubAllEnvs()

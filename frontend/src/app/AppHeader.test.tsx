@@ -201,18 +201,21 @@ test('a nap-orb a mai nap-oldalára visz', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent(`/me/week/napok/${localDateString()}`)
 })
 
-// ── item 7: a bal oldal a SZEKCIÓT mutatja (mezo-8az6, korábban dátum-eyebrow) ──
-test('a fejléc a szekció nevével és spotjával kezdődik', async () => {
+// ── item 7: a bal felső sarok a „boop" szó-logót viseli (owner 2026-09-12, az új
+//    márkanév) — minden oldalon UGYANAZ, nem a szekciótól függ (a korábbi spot+cím helyett) ──
+test('a fejléc a „boop" szó-logóval kezdődik', async () => {
   const { container } = renderAt('/fuel')
   await screen.findByRole('button', { name: /^A mai napod/ })
-  expect(container.querySelector('.app-head-title')!.textContent).toBe('Fuel')
-  expect(container.querySelector('.app-head-sec use')!.getAttribute('href')).toBe('#s-fuel')
+  expect(container.querySelector('.app-head-wordmark')!.textContent).toBe('boop')
+  // A régi szekció-jelölés (cím + spot) végleg lekerült.
+  expect(container.querySelector('.app-head-title')).toBeNull()
+  expect(container.querySelector('.app-head-sec use')).toBeNull()
 })
 
-test('mélyoldalon a szekció címkéje marad', async () => {
+test('a szó-logó mélyoldalon is ugyanaz — nem a szekciótól függ', async () => {
   const { container } = renderAt('/train/mesocycles')
   await screen.findByRole('button', { name: /^A mai napod/ })
-  expect(container.querySelector('.app-head-title')!.textContent).toBe('Edzés')
+  expect(container.querySelector('.app-head-wordmark')!.textContent).toBe('boop')
 })
 
 // A dátum a telefon státuszsávján látszik — a fejlécből tudatosan kikerült.

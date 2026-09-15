@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  lineMacros, draftTotals, scaleServings, diffLineKeys, draftToInput, goalRole,
+  lineMacros, draftTotals, draftNutrients, draftQualityLines, scaleServings, diffLineKeys,
+  draftToInput, goalRole,
 } from '@/data/fuel/workshopState'
 import type { WorkshopDraft, WorkshopLine } from '@/data/types'
 import type { PickableIngredient } from '@/data/fuel/pantryPickables'
@@ -8,10 +9,53 @@ import type { PickableIngredient } from '@/data/fuel/pantryPickables'
 const zab: PickableIngredient = {
   id: 'ing-zab', name: 'Zabpehely', brand: '', source: 'kifli.hu', category: 'carb',
   per: 100, unit: 'g', macros: { kcal: 372, p: 13.5, c: 60, f: 7 },
+  // A négy tárolt tény /100 g — a `draftNutrients` próbái ezen mérnek.
+  fiberG: 10, sugarG: 1, saltG: 0.02, saturatedFatG: 1.2,
   price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null,
   lastUsed: '—', usedInRecipes: 0, kind: 'food',
 }
 const pool: PickableIngredient[] = [zab]
+
+// Őszinte-null a Műhely előnézetében (mezo-hygp): a vázlat tápérték-tényei KIZÁRÓLAG feloldott
+// kamra-sorból jöhetnek — a modell makrót javasolhat (`est`), tápanyag-tényt SOHA.
+describe('draftNutrients', () => {
+  const withEstimate: WorkshopDraft = {
+    name: 'Teszt', category: 'lunch', servings: 1, steps: [],
+    lines: [
+      { source: 'pantry', refId: 'ing-zab', name: 'Zabpehely', amount: 100, unit: 'g' },
+      { source: 'estimate', refId: null, name: 'Fűszerek', amount: 1, unit: 'adag', est: { kcal: 15, p: 1, c: 3, f: 0 } },
+    ],
+  }
+
+  it('only a resolved pantry row contributes a fact', () => {
+    expect(draftNutrients(withEstimate, pool)).toEqual({
+      fiberG: 10, sugarG: 1, saltG: 0.02, saturatedFatG: 1.2,
+    })
+  })
+
+  it('a draft with no resolvable pantry row keeps every fact null (never a fabricated 0)', () => {
+    const estimateOnly: WorkshopDraft = { ...withEstimate, lines: [withEstimate.lines[1]] }
+    expect(draftNutrients(estimateOnly, pool)).toEqual({
+      fiberG: null, sugarG: null, saltG: null, saturatedFatG: null,
+    })
+  })
+})
+
+describe('draftQualityLines', () => {
+  it('an estimate line has no NOVA and no gram basis — both honestly null', () => {
+    const draft: WorkshopDraft = {
+      name: 'Teszt', category: 'lunch', servings: 1, steps: [],
+      lines: [
+        { source: 'pantry', refId: 'ing-zab', name: 'Zabpehely', amount: 70, unit: 'g' },
+        { source: 'estimate', refId: null, name: 'Fűszerek', amount: 1, unit: 'adag', est: { kcal: 15, p: 1, c: 3, f: 0 } },
+      ],
+    }
+    expect(draftQualityLines(draft, pool)).toEqual([
+      { grams: 70, kcal: 260, nova: 1 },
+      { grams: null, kcal: 15, nova: null },
+    ])
+  })
+})
 
 describe('lineMacros', () => {
   it('pantry line resolves via lineContribution', () => {

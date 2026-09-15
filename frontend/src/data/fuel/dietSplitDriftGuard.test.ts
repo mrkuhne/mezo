@@ -5,7 +5,9 @@ import { DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
 // DRIFT-GUARD (Diet Plan slice 1): these MUST match backend `mezo.goal.diet` + `mezo.diet-settings`
 // in application.yml. If you change one side, change the other — this test is the tripwire.
 const BACKEND_FAT_SHARES = { balanced: 0.275, low_fat: 0.2, low_carb: 0.4, high_carb: 0.22 }
-const BACKEND_PROTEIN_TIERS = { moderate: 2.0, high: 2.2 }
+// mezo-jb84: a sáv HÁROM végpontot kapott — a low a config `g-per-kg-bw-floor`-ja (1.6),
+// ami eddig deklarálva volt, de soha nem olvasta senki.
+const BACKEND_PROTEIN_TIERS = { low: 1.6, moderate: 2.0, high: 2.2 }
 const BACKEND_GHOST = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
   proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0,

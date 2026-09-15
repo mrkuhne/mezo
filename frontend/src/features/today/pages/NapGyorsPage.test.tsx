@@ -7,6 +7,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { initialCheckins } from '@/data/today/checkins'
 import { localDateString } from '@/shared/lib/dates'
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 
 // Same data-layer stubs as QuickInputSheet.test.tsx (the two surfaces share the same
 // `QuickLogSurface` grid — mezo-mhum) so this page's tiles/sublines render deterministically.
@@ -131,4 +132,14 @@ test('the Étkezés tile navigates to the fuel logger without also invoking the 
   await vi.waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj'))
   expect(navigateCalls).not.toContain(-1)
   expect(navigateCalls.some(c => typeof c === 'string' && c.startsWith('/fuel/log/uj'))).toBe(true)
+})
+
+// A19 (mezo-33k6): a gyorsnaplózó étkezés-csempéje a kamera-első naplózóba visz AZ AKTUÁLIS
+// ABLAKKAL — és a kulcs az app saját `tileKey` szabályából jön, nem egy kézzel írt stringből.
+test('a gyors étkezés-logolás az aktuális ablak kulcsát viszi', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
+  // A `LocationProbe` csak a pathname-et írja ki, ezért a cél a rögzített navigate-argumentum.
+  await vi.waitFor(() => expect(navigateCalls).toContain(
+    `/fuel/log/uj?w=${encodeURIComponent(tileKey(NOW_WINDOW))}`))
 })

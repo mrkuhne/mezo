@@ -24,8 +24,8 @@ export const DIET_SPLIT_PRESETS: Record<'balanced' | 'low_fat' | 'low_carb' | 'h
 // (g-per-kg-bw-default / g-per-kg-bw-ceil) — dietSplitDriftGuard.test.ts is the tripwire. Used
 // ONLY by the mock-mode diet-settings preview projection; real mode gets the engine's own number
 // from POST /api/diet/settings/preview.
-export const PROTEIN_TIER_G_PER_KG_BW: Record<'moderate' | 'high', number> = {
-  moderate: 2.0, high: 2.2,
+export const PROTEIN_TIER_G_PER_KG_BW: Record<'low' | 'moderate' | 'high', number> = {
+  low: 1.6, moderate: 2.0, high: 2.2,
 }
 
 // Keret-hero rost-gyűrű (mezo-c9t5, frontend-only rost-bővítés). Static default target — no

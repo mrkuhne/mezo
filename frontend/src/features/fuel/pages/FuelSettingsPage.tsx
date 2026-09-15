@@ -273,10 +273,17 @@ export function FuelSettingsPage() {
           <div className="fset-row">
             <span>Fehérje-szint</span>
             <div className="fset-segments">
-              <button type="button" className="chip np-press" aria-pressed={proteinTier === 'moderate'}
-                onClick={() => { setTouchedDiet(true); setProteinTier('moderate') }}>Mérsékelt</button>
-              <button type="button" className="chip np-press" aria-pressed={proteinTier === 'high'}
-                onClick={() => { setTouchedDiet(true); setProteinTier('high') }}>Magas</button>
+              {/* mezo-jb84: HÁROM fokozat, és mindegyik tényleg mozgatja a célt. Korábban a
+                  kapcsoló csak a testsúly-ágat állította, a zsírmentes tömeg ágát nem — így
+                  aki karcsúbb, annál a váltás semmit nem változtatott. */}
+              {([
+                ['low', 'Alacsony'],
+                ['moderate', 'Mérsékelt'],
+                ['high', 'Magas'],
+              ] as const).map(([key, label]) => (
+                <button key={key} type="button" className="chip np-press" aria-pressed={proteinTier === key}
+                  onClick={() => { setTouchedDiet(true); setProteinTier(key) }}>{label}</button>
+              ))}
             </div>
           </div>
           <div className="fset-row">
@@ -286,6 +293,11 @@ export function FuelSettingsPage() {
               onChange={(value) => { setTouchedDiet(true); setDayTypeShiftKcal(value) }} />
           </div>
           <p>Pihenőnapról edzőnapra átcsoportosított kcal; a heti keret nem változik.</p>
+          <p>
+            A fehérje-szint a testsúlyod ÉS a zsírmentes tömeged szerinti számítást is állítja —
+            a cél a kettő közül a nagyobb, egy felső korláttal. A mentés után a Makrók előnézete
+            rögtön a választott szint szerinti grammot mutatja.
+          </p>
         </section>
 
         <button type="button" className="fset-card fset-slots np-press rise"

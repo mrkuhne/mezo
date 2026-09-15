@@ -5,7 +5,7 @@
 //   volleyball from Train's sport schedule, the cycle strip from the medication cycle, and the
 //   weekly stats from the 7-day rollup (`GET /api/fuel/week/{start}`). Surfaces with no real
 //   source yet return honest-empty (`patterns`/`weeklySupplements` []) or null (`weeklyNote`,
-//   `supplementsAdherence`) — never the seed (the `useReplanScenarios` precedent).
+//   `supplementsAdherence`) — never the seed.
 //   Design: docs/superpowers/specs/2026-07-04-fuel-p4-weekly-plan-design.md.
 //
 // React rules of hooks: every hook below is called UNCONDITIONALLY in both modes; only the
@@ -23,6 +23,7 @@ import {
   weeklySupplements as mockWeeklySupplements,
   recurringPatterns as mockPatterns,
   weeklyStats as mockWeeklyStats,
+  mockWeekRollup,
 } from '@/data/fuel/fuelWeek'
 import { volleyballSessions as mockVolleyball } from '@/data/today/today'
 import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
@@ -52,6 +53,17 @@ export interface FuelWeekView {
   volleyball: VolleyballSession[]
   /** Stats-card coach prose — mock seed string; real null (proactive-epic surface). */
   weeklyNote: string | null
+  /** C1 (mezo-83g0): the ISO Monday this view describes — the weekly picture needs the axis. */
+  start: string
+  /** C1 (mezo-83g0): the 7-day rollup itself, so the Trendek weekly picture can draw the days
+   *  against their budgets. Empty until the real-mode fetch resolves — never a seeded stand-in. */
+  weekDays: FuelWeekDay[]
+  /** C2 (mezo-83g0): the week's meal-score average, 0..1. The backend has always computed it
+   *  (`FuelWeekResponse.mealScoreAvg`); until this slice the mapper discarded it. Honest-null:
+   *  null means "no scored meal this week", NOT zero. */
+  mealScoreAvg: number | null
+  /** C2 (mezo-83g0): the week's weight average in kg — null when the week has no weigh-in. */
+  weightAvgKg: number | null
 }
 
 /** Monday (DAY_ORDER week start) of the week containing `d`, as a local YYYY-MM-DD. */
@@ -116,17 +128,60 @@ export function deriveWeeklyStats(days: FuelWeekDay[]): WeeklyStats {
   }
 }
 
-export function useFuelWeek(): FuelWeekView {
+/** C1/C2 (mezo-83g0): EGY hétfő 7 napos rollupja, a weekly endpoint egyetlen olvasásából. */
+export interface FuelWeekRollupView {
+  weekDays: FuelWeekDay[]
+  mealScoreAvg: number | null
+  weightAvgKg: number | null
+  /** A valós olvasás még nem oldódott fel — a nézet ilyenkor nem állíthat semmit a hétről. */
+  isPending: boolean
+}
+
+/**
+ * Egy ADOTT hétfő rollupja — `useFuelWeek` PONTOS query-kulcsával és cache-alakjával
+ * (`['fuelWeek', start]`), hogy a Trendek hét-váltója és a hét-a-héthez delták ne töltsék be
+ * ugyanazt a hetet kétszer (C1/C2, mezo-83g0). `useFuelWeek` maga is ezen keresztül olvas, tehát
+ * a kulcs EGY helyen van definiálva, nem két másolatban.
+ *
+ * Mock mód: a kért hétfőre átdátumozott determinisztikus hét. A „melyik hétfő a mostani" döntés
+ * ITT születik (a seed-modul nem olvas órát): a mostani hétfő előtti bármelyik hétfő a `'past'`
+ * variánst kapja, így két egymást követő hét SOHA nem azonos — különben minden delta nulla volna.
+ * Valós mód: a backend hete, feloldódásig őszintén üres — seed soha.
+ */
+export function useFuelWeekRollup(start: string): FuelWeekRollupView {
   const mock = isMockMode()
-  const { gymSchedule: trainGym, sport, sportSlotSkips } = useTrain()
-  const { cycle } = useMedication()
-  const start = mondayIso()
-  const { data: week } = useQuery({
+  const { data: week, isPending } = useQuery({
     queryKey: ['fuelWeek', start],
     queryFn: mock ? async () => null : () => mealApi.getWeek(start),
     initialData: mock ? null : undefined,
     staleTime: mock ? Infinity : 0,
   })
+  if (mock) {
+    const rollup = mockWeekRollup(start, start < mondayIso() ? 'past' : 'current')
+    return {
+      weekDays: rollup.days,
+      mealScoreAvg: rollup.mealScoreAvg,
+      weightAvgKg: rollup.weightAvgKg,
+      isPending: false,
+    }
+  }
+  return {
+    weekDays: week?.days ?? [],
+    // Honest-null: before the fetch resolves there is no average — not a zero.
+    mealScoreAvg: week?.mealScoreAvg ?? null,
+    weightAvgKg: week?.weightAvgKg ?? null,
+    isPending,
+  }
+}
+
+/** `startIso` — C1 (mezo-83g0): the ISO Monday to describe; omitted means the current week.
+ *  Only Trendek's week switch passes one; every other caller keeps the current week verbatim. */
+export function useFuelWeek(startIso?: string): FuelWeekView {
+  const mock = isMockMode()
+  const { gymSchedule: trainGym, sport, sportSlotSkips } = useTrain()
+  const { cycle } = useMedication()
+  const start = startIso ?? mondayIso()
+  const rollup = useFuelWeekRollup(start)
 
   if (mock) {
     return {
@@ -138,6 +193,12 @@ export function useFuelWeek(): FuelWeekView {
       weeklyStats: mockWeeklyStats,
       volleyball: mockVolleyball,
       weeklyNote: mockWeeklyNote,
+      start,
+      // Mock mode seeds a deterministic rollup (byte-stable, re-dated to the requested Monday).
+      // Real mode NEVER substitutes one — an unresolved week is honestly empty.
+      weekDays: rollup.weekDays,
+      mealScoreAvg: rollup.mealScoreAvg,
+      weightAvgKg: rollup.weightAvgKg,
     }
   }
   return {
@@ -146,8 +207,12 @@ export function useFuelWeek(): FuelWeekView {
     gymSchedule: (trainGym?.weeklyTimes ?? []).map(withDefaultDuration),
     weeklySupplements: [],
     patterns: [],
-    weeklyStats: deriveWeeklyStats(week?.days ?? []),
+    weeklyStats: deriveWeeklyStats(rollup.weekDays),
     volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], sportSlotSkips, start),
     weeklyNote: null,
+    start,
+    weekDays: rollup.weekDays,
+    mealScoreAvg: rollup.mealScoreAvg,
+    weightAvgKg: rollup.weightAvgKg,
   }
 }

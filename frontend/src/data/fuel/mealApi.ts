@@ -136,6 +136,13 @@ export interface FuelWeekDay {
 export interface FuelWeekData {
   start: string
   days: FuelWeekDay[]
+  /** C2 (mezo-83g0): the week's deterministic meal-score average, 0..1 — NULL when no meal in
+   *  the week carries a score. The backend has always computed it (FuelWeekResponse.mealScoreAvg);
+   *  this mapper used to drop it on the floor. Honest-null: a missing average is never 0. */
+  mealScoreAvg: number | null
+  /** C2 (mezo-83g0): the week's weight average in kg (one value per day that has a weigh-in,
+   *  that day's latest) — NULL when the week has no weigh-in at all. Never 0-as-a-fake. */
+  weightAvgKg: number | null
 }
 
 /** Editor input → contract request. A recipe/pantry `refId` is routed to recipeId | pantryItemId
@@ -250,7 +257,11 @@ export const mealApi = {
   getWeek: (start: string): Promise<FuelWeekData> =>
     apiFetch<FuelWeekResponse>(`/api/fuel/week/${start}`).then((w) => ({
       start: w.start,
-      days: w.days.map((d) => ({ date: d.date, targets: d.targets, consumed: d.consumed })),
+      days: (w.days ?? []).map((d) => ({ date: d.date, targets: d.targets, consumed: d.consumed })),
+      // `?? null` (not `|| null`): a legitimate 0 average must survive as 0, only
+      // null/undefined collapse to the honest null.
+      mealScoreAvg: w.mealScoreAvg ?? null,
+      weightAvgKg: w.weightAvgKg ?? null,
     })),
   create: (input: MealInput): Promise<void> =>
     apiFetch('/api/meal', { method: 'POST', body: JSON.stringify(toRequest(input)) }).then(() => undefined),

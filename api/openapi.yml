@@ -21775,11 +21775,14 @@ components:
         proteinTier:
           type: string
           enum:
+            - low
             - moderate
             - high
           description: >-
-            g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine
-            config)
+            Protein band endpoint. The tier moves BOTH engine coefficients
+            (mezo-jb84): low=1.6 g/kg BW + 2.3 g/kg LBM, moderate=2.0 + 2.7,
+            high=2.2 + 3.1. The target is the higher of the two paths, capped at
+            2.6 g/kg BW. Exact values are engine config.
         waterMl:
           type: integer
           minimum: 500
@@ -21859,6 +21862,7 @@ components:
         proteinTier:
           type: string
           enum:
+            - low
             - moderate
             - high
         waterMl:

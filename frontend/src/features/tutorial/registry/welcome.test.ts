@@ -44,8 +44,11 @@ test('a tabbar-lépés az öt VALÓDI fület hordozza, a valódi ikonokkal', () 
 })
 
 test('versionOf: a welcome verziója a registryn kívülről is megszólal', async () => {
-  const { versionOf } = await import('@/features/tutorial/registry')
+  const { versionOf, getKalauz } = await import('@/features/tutorial/registry')
   expect(versionOf('welcome')).toBe(WELCOME_VERSION)
-  expect(versionOf('fuel')).toBe(1)
+  // A registry-beli id verziója a REGISTRYBŐL jön (nem a WELCOME_VERSION, és nem null) — egy
+  // beégetett szám itt minden kalauz-bumpnál hamisan pirosodna (mezo-qt5q).
+  expect(versionOf('fuel')).toBe(getKalauz('fuel')!.version)
+  expect(versionOf('fuel')).toBeGreaterThanOrEqual(1)
   expect(versionOf('nincs-ilyen')).toBeNull()
 })

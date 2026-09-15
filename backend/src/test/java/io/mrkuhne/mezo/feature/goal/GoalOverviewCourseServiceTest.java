@@ -114,7 +114,7 @@ class GoalOverviewCourseServiceTest {
     private static GoalEngineProperties properties() {
         return new GoalEngineProperties(
             new GoalEngineProperties.Neat(1.2, 1.35, 1.5), 7700,
-            new GoalEngineProperties.Protein(2.0, 1.6, 2.2, 2.3, 3.1, 2.6),
+            new GoalEngineProperties.Protein(2.0, 1.6, 2.2, 2.3, 2.7, 3.1, 2.6),
             new GoalEngineProperties.Rate(0.7, 1.0, 0.5, 1.0),
             new GoalEngineProperties.Volume(8, 6), new GoalEngineProperties.Strength(-5.0),
             new GoalEngineProperties.Ewma(10),

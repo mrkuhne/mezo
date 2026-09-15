@@ -19,6 +19,9 @@
 import { faceOf, type DayFace, DAY_FACES } from '@/features/today/logic/dayFace'
 import { habitIcon } from '@/features/today/logic/itemIcon'
 import { questAction } from '@/features/today/logic/questAction'
+// A `?w=` ablak-kulcs szerződését EGY hely mondja ki (fuelSwimlane.tileKey, mezo-bq2t) —
+// egy kézzel összerakott `${time}-${label}` itt csendben eltörné a kör-utat.
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import type { AnchorTimes } from '@/features/today/logic/windDown'
 import type {
   CheckinSlot, DailyQuest, FuelSlot, HabitChainInfo, HabitDaypart, HabitItem, RitualDay,
@@ -236,7 +239,16 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: f.time,
       xp: null,
       group: 'Fuel',
-      action: { kind: 'nav', to: '/fuel', label: 'Logold' }, linkUrl: null,
+      // A20 (mezo-33k6): a sor a KAMERA-ELSŐ naplózóba visz, ennek az ablaknak a kulcsával —
+      // korábban a Fuel hubra vitt, ahol a user újra megkereste ugyanezt az ablakot. A kulcsot
+      // a swimlane exportált `tileKey`-e adja (a `?w=` szerződés másik vége, mezo-bq2t); egy
+      // ismeretlen kulcs ott a becsületes „Ablakon kívül" ág, sosem fabrikált ablak.
+      action: {
+        kind: 'nav',
+        to: `/fuel/log/uj?w=${encodeURIComponent(tileKey(f))}`,
+        label: 'Logold',
+      },
+      linkUrl: null,
     })
   }
 

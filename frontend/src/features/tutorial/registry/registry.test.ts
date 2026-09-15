@@ -1,5 +1,5 @@
 import { matchRoutes } from 'react-router-dom'
-import { routes } from '@/app/router'
+import { FUEL_RETIRED_REDIRECTS, routes } from '@/app/router'
 import { KALAUZ_REGISTRY, type KalauzEntry, findKalauz, getKalauz, resolveKalauz } from '@/features/tutorial/registry'
 import { FOGALMAK, type FogalomKey } from '@/features/tutorial/registry/fogalmak'
 import { FORBIDDEN, countSentences } from '@/features/tutorial/registry/lint'
@@ -16,10 +16,10 @@ const routeExists = (to: string) => {
 
 // A hub és az aloldala KÜLÖN kalauz (a route `end: true`-val matchel), és van olyan
 // Fuel-útvonal, ami szándékosan kalauz nélkül él — a /fuel/slots csak a beállítás-lapról
-// érhető el, a spec §10 T2-listája nem sorolja (S4-ig marad üresen).
-test('a /fuel-nek és a /fuel/log-nak külön kalauza van, a /fuel/slots-nak nincs', () => {
+// érhető el, a spec §10 T2-listája nem sorolja.
+test('a /fuel-nek és a /fuel/trendek-nek külön kalauza van, a /fuel/slots-nak nincs', () => {
   expect(findKalauz('/fuel')?.id).toBe('fuel')
-  expect(findKalauz('/fuel/log')?.id).toBe('fuel-log')
+  expect(findKalauz('/fuel/trendek')?.id).toBe('fuel-terv')
   expect(findKalauz('/fuel/slots')).toBeNull()
   expect(getKalauz('fuel')?.label).toBe('Fuel')
   expect(getKalauz('nincs-ilyen')).toBeNull()
@@ -177,9 +177,13 @@ test('S3a: minden Nap + Edzés fő aloldalnak van T2 kalauza', () => {
 // route-effekt ott külön auto-opent futtat. A listából KIMARAD a „Gyors logolás sheet"
 // (`quickinput`): nem route, a motor route-effektje nem tudja triggerelni — az S4
 // komponens-esemény seamjére csúszott (epic-komment).
+// S5 (mezo-qt5q): a lista a LESZÁLLÍTOTT felületet követi. A `/fuel/log` és a `/fuel/naplo`
+// kiesett (a lapjuk megszűnt: a napi lista a Mai T1 kalauza, a napi minőség a Trendek), a
+// `/fuel/plan` helyére a `/fuel/trendek` lépett, és a negyedik cél-lap, a `/fuel/konyha` is
+// kalauzt kapott.
 const S3B_T2_ROUTES = [
-  '/fuel/log', '/fuel/log/uj', '/fuel/plan', '/fuel/stack',
-  '/fuel/recipes', '/fuel/kamra', '/fuel/gyogyszer', '/fuel/naplo',
+  '/fuel/log/uj', '/fuel/trendek', '/fuel/konyha', '/fuel/stack',
+  '/fuel/recipes', '/fuel/kamra', '/fuel/gyogyszer',
 ]
 
 test('S3b: minden Fuel fő aloldalnak van T2 kalauza', () => {
@@ -187,5 +191,22 @@ test('S3b: minden Fuel fő aloldalnak van T2 kalauza', () => {
     const e = KALAUZ_REGISTRY.find((k) => k.route === route)
     expect(e, route).toBeDefined()
     expect(e!.tier, route).toBe('T2')
+  }
+})
+
+// ── A18/E11 (mezo-qt5q): a kalauz nem mutathat LEVÁLTOTT útvonalra ────────────
+// A `routeExists` lint ezt NEM fogja el: a leváltott path ott van a routerben, csak redirectet
+// renderel — a kalauz tehát „létező" útvonalon nyitna egy halott lapot, a kapcsolat-chipje meg
+// átpattanna máshová. Ezért a tábla MINDKÉT irányból tilos: route-ként és linkként is.
+test('egyetlen kalauz-bejegyzés és -chip sem mutat leváltott Fuel-útvonalra', () => {
+  const retired = Object.keys(FUEL_RETIRED_REDIRECTS)
+  for (const e of KALAUZ_REGISTRY) {
+    expect(retired, `${e.id}: route → ${e.route}`).not.toContain(e.route)
+    for (const c of e.cards) {
+      if (c.kind !== 'kapcsolat') continue
+      for (const l of c.links) {
+        expect(retired, `${e.id}: ${l.label} → ${l.to}`).not.toContain(l.to)
+      }
+    }
   }
 })

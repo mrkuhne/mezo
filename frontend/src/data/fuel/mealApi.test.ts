@@ -291,6 +291,41 @@ describe('mealApi', () => {
     expect(day.meals[0].mealItems).toHaveLength(2)
   })
 
+  // C2 (mezo-83g0): a backend kiszámolja a heti étkezés-pontszám és súly átlagot
+  // (FuelWeekResponse.mealScoreAvg / .weightAvgKg), a mapper eddig eldobta őket.
+  const weekResponse = (avgs: { mealScoreAvg: number | null; weightAvgKg: number | null }) => ({
+    start: '2026-09-07',
+    days: [{ date: '2026-09-07', targets: { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 },
+      consumed: { kcal: 2115, p: 148, c: 220, f: 69, water: 2600 } }],
+    ...avgs,
+  })
+
+  it('a heti válasz átlagai átjutnak a mapperen', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/week/2026-09-07`,
+      () => HttpResponse.json(weekResponse({ mealScoreAvg: 0.78, weightAvgKg: 82.4 }))))
+    const week = await mealApi.getWeek('2026-09-07')
+    expect(week.mealScoreAvg).toBe(0.78)
+    expect(week.weightAvgKg).toBe(82.4)
+  })
+
+  it('hiányzó átlag null marad, nem nulla', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/week/2026-09-07`,
+      () => HttpResponse.json(weekResponse({ mealScoreAvg: null, weightAvgKg: null }))))
+    const week = await mealApi.getWeek('2026-09-07')
+    expect(week.mealScoreAvg).toBeNull()
+    expect(week.weightAvgKg).toBeNull()
+  })
+
+  // Őszinte-null: a mező TELJES hiánya (régi backend) sem nulla — null.
+  it('a hiányzó mező is null, nem undefined és nem nulla', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/week/2026-09-07`, () => HttpResponse.json({
+      start: '2026-09-07', days: [],
+    })))
+    const week = await mealApi.getWeek('2026-09-07')
+    expect(week.mealScoreAvg).toBeNull()
+    expect(week.weightAvgKg).toBeNull()
+  })
+
   it('create POSTs the mapped body and resolves void on 201', async () => {
     let body: unknown
     server.use(http.post(`${API_BASE}/api/meal`, async ({ request }) => {

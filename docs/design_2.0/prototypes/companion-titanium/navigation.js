@@ -19,7 +19,7 @@ const $=s=>document.querySelector(s);
 const domains={
  nap:{name:'Nap',color:'#d9c395',art:'sun',tabs:['Mai','Beszélgetés','Rutin','Napzárás'],icons:['sun','chat','ring','moon'],greeting:'Jó itt folytatni, Dani.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'},
  train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terv','Terhelés','Gyakorlatok'],icons:['dumbbell','stack','ring','book'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
- fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Konyha','Trendek','Kiegészítők'],icons:['bowl','book','ring','stack'],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
+ fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Konyha','Trendek','Kiegészítők'],icons:['plate','pot','trend','supps'],order:[0,3,2,1],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
  mezo:{name:'Mezo',color:'#bca6f1',art:'gem',tabs:['Felfedezések','Előrejelzések','Karakter','Tudástár'],icons:['gem','sun','person','stack'],greeting:'Összeérnek a dolgok.',copy:'Van egy új észrevételem az estéidről. Megnézzük együtt?'},
  me:{name:'Én',color:'#d7a7bc',art:'person',tabs:['Áttekintés','Súly','Alvás','Napló'],icons:['person','ring','moon','book'],greeting:'A te ritmusod.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'},
 };
@@ -107,7 +107,7 @@ document.addEventListener('click',e=>{
  if(el.dataset.dayShift){moveDay(Number(el.dataset.dayShift));return;}
  if(el.hasAttribute('data-day-today')){if(dayNav.today()){dayMotion='right';draw();}return;}
  if(el.hasAttribute('data-route')){closeSheet();const parts=el.dataset.route.split('/');if(parts.length>2){const h='#'+el.dataset.route;if(location.hash===h)draw();else location.hash=h;}else go(parts[0],Number(parts[1]));}
- if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${c.tabs.join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
+ if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${(c.order??c.tabs.map((_,i)=>i)).map(i=>c.tabs[i]).join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
  if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openSession();

@@ -1,5 +1,9 @@
 # Mezo-szerkesztő · design-iterációk
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 **Prototípus:** `prototypes/mezo-szerkeszto.html` (forrás: `prototypes/src/mezo-szerkeszto-{head,body}.html`)
 **Spec:** `docs/superpowers/specs/2026-09-07-mezo-szerkeszto-redesign-design.md` · **Issue:** mezo-yty6
 

@@ -16,17 +16,11 @@ import { formatImpact } from '@/features/fuel/logic/formatImpact'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 import { ScoreLedger } from '@/features/fuel/components/ScoreLedger'
+// A súlyozott Σ (a volt `totalOf`) kiemelve, hogy az új FuelMealScorePage UGYANAZT a számot
+// mondja, ne egy másolt aritmetikát (mezo-33k6).
+import { breakdownTotalPct } from '@/features/fuel/logic/scoreArithmetic'
 
 const PONT_RE = /^([+−]\d+) pont$/
-
-/** Fallback total mirrors ScoreLedger's honest Σ: only live (weight > 0) dimensions count
- *  (a degraded dim's weight is already 0, so including it is a no-op mathematically — this
- *  filter documents the intent and matches the ledger's rendering, not just its arithmetic). */
-function totalOf(b: MealBreakdown, scorePct?: number) {
-  return scorePct ?? Math.round(
-    b.dimensions.filter(d => d.weight > 0).reduce((s, d) => s + d.weight * d.score * 100, 0),
-  )
-}
 
 /**
  * „Miből áll össze" head + the Σ ledger tile, as its OWN section (mezo-1f7b).
@@ -42,7 +36,7 @@ export function ScoreLedgerSection({ breakdown, scorePct }: {
   return (
     <>
       <div className="sb-sec">
-        <Eyebrow>Miből áll össze a {totalOf(breakdown, scorePct)}</Eyebrow>
+        <Eyebrow>Miből áll össze a {breakdownTotalPct(breakdown, scorePct)}</Eyebrow>
         <span className="sb-sec-r">{breakdown.dimensions.length} dimenzió · súlyozva</span>
       </div>
       <ScoreLedger dimensions={breakdown.dimensions} />

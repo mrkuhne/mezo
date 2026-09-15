@@ -48,7 +48,8 @@ test('the bar shows the switch mark + the current domain (Nap) and its four tabs
     expect(screen.getByText(label)).toBeInTheDocument()
   }
   // The other domains' tabs are NOT on the bar — this is a contextual bar, not a flat one.
-  expect(screen.queryByText('Receptek')).not.toBeInTheDocument()
+  // (mezo-o6uv: 'Receptek' left the Fuel row, so 'Konyha' is the live Fuel-only label here.)
+  expect(screen.queryByText('Konyha')).not.toBeInTheDocument()
   expect(screen.queryByText('Súly')).not.toBeInTheDocument()
 })
 
@@ -57,6 +58,28 @@ test("each tab renders its clay icon via a sprite use ref (Nap's four + the swit
   for (const sym of ['i-mezo', 'i-nap', 'i-rend', 'i-hold']) {
     expect(container.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
   }
+})
+
+// Fuel Titanium (mezo-o6uv): az owner által jóváhagyott sorrend és a négy új ikon.
+// A sáv a navModel mátrixból épül, a fülek Link-ek a tab.route-ra (TabBar.tsx:50-64).
+test('a Fuel fülsor a jóváhagyott sorrendet és ikonokat viseli', () => {
+  renderAt('/fuel', <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
+  const tabs = within(bar).getAllByRole('link')
+  expect(tabs.map(a => a.textContent?.trim())).toEqual(['Mai', 'Kiegészítők', 'Trendek', 'Konyha'])
+  expect(tabs.map(a => a.getAttribute('href'))).toEqual([
+    '/fuel', '/fuel/stack', '/fuel/trendek', '/fuel/konyha',
+  ])
+  expect(tabs.map(a => a.querySelector('use')?.getAttribute('href'))).toEqual([
+    '#i-tanyer', '#i-kiegeszito', '#i-trend', '#i-fazek',
+  ])
+})
+
+// A leghosszabb-prefix aktív-fül szabály (navModel.activeTabRoute) a mély Fuel-oldalakon is tart.
+test('a Kiegészítők fül aktív a stack mélyebb oldalain is', () => {
+  renderAt('/fuel/stack/protocol', <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
+  expect(within(bar).getByRole('link', { name: /Kiegészítők/ })).toHaveAttribute('aria-current', 'page')
 })
 
 test('marks the active tab via longest-matching-prefix — /nap/rutin lights Rutin, not Mai', () => {
@@ -111,4 +134,27 @@ test('the floating FAB navigates to the full-page picker from /nap exactly', asy
   await userEvent.click(screen.getByRole('button', { name: 'Gyors logolás' }))
   expect(screen.queryByText('Gyors logolás', { selector: 'h2' })).not.toBeInTheDocument()
   expect(screen.getByTestId('loc')).toHaveTextContent('/nap/gyors')
+})
+
+// mezo-jb84: a Fuel mély oldalai nem a fülük útvonala alatt élnek (`/fuel/recipes`,
+// `/fuel/kamra`, `/fuel/etkezes/…`), ezért prefix-hosszra a `/fuel` — a Mai — nyert, és a
+// felhasználó a Konyhában állva a Mai fület látta kigyulladva. Élesben ez jött vissza.
+test.each([
+  ['/fuel/recipes', 'Konyha'],
+  ['/fuel/recipes/r1', 'Konyha'],
+  ['/fuel/recipes/muhely', 'Konyha'],
+  ['/fuel/kamra', 'Konyha'],
+  ['/fuel/kamra/p1', 'Konyha'],
+  ['/fuel/etkezes/m1', 'Mai'],
+  ['/fuel/log/uj', 'Mai'],
+  ['/fuel/settings', 'Mai'],
+  ['/fuel/gyogyszer', 'Kiegészítők'],
+  ['/fuel/stack/protocol', 'Kiegészítők'],
+  ['/fuel/trendek', 'Trendek'],
+  ['/fuel', 'Mai'],
+])('%s a(z) %s fület gyújtja ki', (path, tab) => {
+  renderAt(path, <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
+  expect(within(bar).getByRole('link', { name: new RegExp(tab) }))
+    .toHaveAttribute('aria-current', 'page')
 })
