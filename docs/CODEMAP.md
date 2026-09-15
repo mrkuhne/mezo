@@ -1383,8 +1383,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExercisesPage.tsx, ExercisesSkeleton.tsx,
     GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoKonyvtarPage.tsx, MesoMusclePage.tsx,
-    MesoReportPage.tsx, MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoWeekPage.tsx,
-    MesocycleBuilderPage.tsx, MesocycleLibraryPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
+    MesoReportPage.tsx, MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoTervPage.tsx,
+    MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
     PrepBemelegitesPage.tsx, PrepFejlodesPage.tsx, PrepGyakorlatokPage.tsx, PrepHetiZonaPage.tsx,
     PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,
     SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx,

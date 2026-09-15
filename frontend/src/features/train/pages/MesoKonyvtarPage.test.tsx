@@ -56,8 +56,9 @@ describe('mounted at /train/mesocycles/konyvtar via the router', () => {
     renderApp('/train/mesocycles/konyvtar')
     await screen.findByRole('heading', { level: 1, name: 'Edzéstervek' })
     await user.click(screen.getByRole('button', { name: 'Vissza' }))
-    // The landing re-mounts at /train/mesocycles — its own header proves the navigation.
-    expect(await screen.findByRole('heading', { level: 1, name: 'Mesociklusok' })).toBeInTheDocument()
+    // The landing re-mounts at /train/mesocycles — since T9 Task 3 that is the running
+    // block's poster (MesoTervPage), whose whole-poster button proves the navigation.
+    expect(await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })).toBeInTheDocument()
   })
 })
 

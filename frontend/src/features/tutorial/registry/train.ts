@@ -247,8 +247,8 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     cards: [
       {
         kind: 'intro', spot: 'i-meso', orb: 's-orb',
-        title: 'Ez a Mesociklusok.',
-        voice: 'A többhetes blokkjaid könyvtára: az aktív futam felül, alatta a történet.',
+        title: 'Ez a futó blokkod.',
+        voice: 'Nem lista: maga a blokk, ami most megy — hányadik héten jársz, és mi vár rád a hét minden napján.',
       },
       {
         kind: 'fogalom', spot: 's-hegycel', orb: 's-orb',
@@ -258,8 +258,8 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       },
       {
         kind: 'hogyan', spot: 'i-naplo', orb: 's-orb-figyel', anchor: 'mesociklus-mosaic',
-        title: 'Négy csempe, négy irány.',
-        voice: 'A **Heti vizsgálat** az aktív hétbe visz, a **Történet** a lezárt futamokhoz, a **Sablonok** a terveidhez, az **Új blokk** a tervezőbe.',
+        title: 'Két ajtó a blokk alatt.',
+        voice: 'A **Melyik izmod hol tart** az aktív hétbe visz, az **Edzéstervek** pedig a terveidhez, a történetedhez és az új blokk indításához.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
