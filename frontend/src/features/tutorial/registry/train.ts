@@ -23,13 +23,26 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-mai',
     route: '/train/mai',
     tier: 'T2',
-    version: 2,
+    // v3 (fix round 1, mezo-88iwa.5): a T1 „missing tab-level orientation" review-találat
+    // kártyát kért a négy fülről (Mai/Terv/Terhelés/Gyakorlatok). Külön T1 bejegyzés nem
+    // fér bele: a route-lint (registry.test.ts) tiltja a `/train/mai` route duplikálását,
+    // az S3a-lista pedig itt rögzíti a tier-t T2-re — a `/train` route maga elesett Task
+    // 2-ben, mert a redirect előtt sosem renderel (lásd a fájl fejléce). A tabsor-tanítás
+    // ezért ide, a de facto landolt oldal elé került, a fuel.ts négy-fülű hogyan-idiómáját
+    // követve, `train-tabs` anchorral (TabBar.tsx — a sáv MAGA a négy fül, minden
+    // /train/*-on).
+    version: 3,
     label: 'Mai nap',
     cards: [
       {
         kind: 'intro', spot: 'i-edzes', orb: 's-orb',
         title: 'Ez a Mai nap.',
         voice: 'Egy nap teljes edzés-menetrendje: gym, sport vagy futás — ami mára ki van osztva, itt sorakozik.',
+      },
+      {
+        kind: 'hogyan', spot: 'i-retegek', orb: 's-orb-figyel', anchor: 'train-tabs',
+        title: 'Ez az Edzés.',
+        voice: 'A **Mai** a mai edzésed, a sport és az egyedi edzés indítása, a **Terv** a futó terved hétről hétre a sablonjaiddal és az új tervvel, a **Terhelés** azt mutatja, mit kapott a tested a héten izmonként, a **Gyakorlatok** pedig minden mozdulatod a rekordjaiddal. Lent ez a négy fül visz mindenhová.',
       },
       {
         kind: 'hogyan', spot: 'i-heti', orb: 's-orb-figyel', anchor: 'mai-napsav',
@@ -115,7 +128,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'közös terhelés-kép' },
           { to: '/fuel', label: 'Fuel', icon: 'i-fuel', effect: 'edzésnap → +keret' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
+          { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
     ],
@@ -149,7 +162,6 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
         ],
       },
     ],
@@ -183,7 +195,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/mesocycles', label: 'Mesociklusok', icon: 'i-meso', effect: 'innen válogat a terv' },
           { to: '/train/session', label: 'Indítás', icon: 'i-lang', effect: 'a szettek ide íródnak' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
+          { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
     ],
@@ -217,7 +229,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'a lezárt alkalmakból' },
           { to: '/me/growth', label: 'Growth', icon: 'i-growth', effect: 'XP-ként is számít' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
+          { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
     ],
@@ -257,7 +269,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'az aktív hét' },
           { to: '/train/templates', label: 'Sablonok', icon: 'i-polc' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
+          { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
     ],
@@ -297,7 +309,6 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/exercises', label: 'Gyakorlatok', icon: 'i-polc', effect: 'rekordok és videók' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
         ],
       },
     ],
@@ -326,7 +337,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         links: [
           { to: '/train/medals', label: 'Medálok', icon: 'i-erme', effect: 'a csúcsok ide kerülnek' },
           { to: '/train/week', label: 'Heti', icon: 'i-heti' },
-          { to: '/train', label: 'Edzés', icon: 'i-edzes' },
+          { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
     ],
