@@ -16,8 +16,10 @@
 // The live-rollover banner stays — it is the one thing on this page that talks
 // about the FUTURE (what Monday changes), and nothing else carries it.
 // Was the `.mz-wtile` mosaic (mesocycle pages v2, mezo-d20.15) with per-tile
-// `VolumeBand` + 6-bar sparks; the band/ceiling math is unchanged (`muscleTiles`,
-// logic/mesoWeek.ts) — only the face is new.
+// band + 6-bar sparks; the band/ceiling math is unchanged (`muscleTiles`,
+// logic/mesoWeek.ts) — only the face is new. `VolumeBand.tsx` (that old per-tile
+// band) had no consumers left once this and the muscle page were refaced, and
+// was removed (T9 sweep).
 // Language (T9 jargon ban): „felső érték", never „plafon"; „terv", never „blokk";
 // the tier words are Hungarian-only (tierLabel.ts). Percent is never printed —
 // the room is drawn as a bar and said in sets.
@@ -146,7 +148,7 @@ export function MesoWeekPage() {
             message={
               arcError
                 ? 'Nem sikerült betölteni a heti vizsgálatot — próbáld újra.'
-                : 'A heti vizsgálat a blokk első edzése után jelenik meg.'
+                : 'A heti vizsgálat a terv első edzése után jelenik meg.'
             }
             ctaLabel={arcError ? 'Újra' : undefined}
             onCta={arcError ? () => void refetchArc() : undefined}

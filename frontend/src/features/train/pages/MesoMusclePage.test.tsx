@@ -72,7 +72,8 @@ test('the three plain facts: sessions a week, week one, the most this plan asks'
   expect(values.slice(1)).toEqual(['10', '16'])
 })
 
-// ── The gauge (this page only — VolumeBand is untouched for every other consumer) ──
+// ── The gauge (this page only — the old per-tile VolumeBand.tsx had no other consumer
+//    left once this page and the week page were refaced, and was removed T9 sweep) ──
 test('the gauge draws the fill, both landmarks and a labelled pin at the current number', () => {
   setup('back')
   const bar = document.querySelector('.pl-scale-bar')!
@@ -265,7 +266,7 @@ describe('MesoMusclePage (real mode)', () => {
     expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
   })
 
-  test('a FAILED arc fetch says try again, not „a blokk első edzése után"', async () => {
+  test('a FAILED arc fetch says try again, not „a terv első edzése után"', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => new HttpResponse(null, { status: 500 })),
     )
@@ -341,6 +342,9 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Az előző tervhez képest')
+
+    // The previous plan's own identity stays legible, not just its numbers.
+    expect(screen.getByText('Előző terved: Hypertrophy 03')).toBeInTheDocument()
 
     const rows = Array.from(document.querySelectorAll('.pl-versus-row'))
     expect(rows).toHaveLength(2)

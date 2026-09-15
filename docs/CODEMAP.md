@@ -1384,7 +1384,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExercisesPage.tsx, ExercisesSkeleton.tsx,
     GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoKonyvtarPage.tsx, MesoMusclePage.tsx,
     MesoReportPage.tsx, MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoTervPage.tsx,
-    MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
+    MesoTervSkeleton.tsx, MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
     PrepBemelegitesPage.tsx, PrepFejlodesPage.tsx, PrepGyakorlatokPage.tsx, PrepHetiZonaPage.tsx,
     PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,
     SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx,
@@ -1402,8 +1402,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MusclePriorityPicker.tsx, PeakFitCard.tsx, PlannedMesoCard.tsx, PrepExerciseTile.tsx, ProgressionBanner.tsx,
     RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx,
     SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
-    VolumeArcChart.tsx, VolumeBand.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx,
-    WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
+    VolumeArcChart.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WeeklyDayRow.tsx,
+    WorkoutSummary.tsx, ZoneBar.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, challengeOutcome.ts, dayImpact.ts,
     dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts,
     mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, morningWindow.ts,

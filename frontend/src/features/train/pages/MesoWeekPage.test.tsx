@@ -110,7 +110,7 @@ test('tapping a row navigates to the muscle page', async () => {
 
 test('a mesocycle with no volume profile shows the ghost state, not a broken mosaic', () => {
   setup(`/train/mesocycles/meso-str-02/week`) // planned run — no volumePerMuscle
-  expect(screen.getByText('A heti vizsgálat a blokk első edzése után jelenik meg.')).toBeInTheDocument()
+  expect(screen.getByText('A heti vizsgálat a terv első edzése után jelenik meg.')).toBeInTheDocument()
 })
 
 test('an unknown mesocycle id says so instead of crashing', () => {
@@ -164,13 +164,13 @@ describe('MesoWeekPage (real mode)', () => {
     expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
   })
 
-  test('a FAILED arc fetch says try again (with a retry) — not „a blokk első edzése után"', async () => {
+  test('a FAILED arc fetch says try again (with a retry) — not „a terv első edzése után"', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => new HttpResponse(null, { status: 404 })),
     )
     setup(`/train/mesocycles/${REAL_MESO_ID}/week`)
     expect(await screen.findByText('Nem sikerült betölteni a heti vizsgálatot — próbáld újra.')).toBeInTheDocument()
-    expect(screen.queryByText('A heti vizsgálat a blokk első edzése után jelenik meg.')).not.toBeInTheDocument()
+    expect(screen.queryByText('A heti vizsgálat a terv első edzése után jelenik meg.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
   })
 

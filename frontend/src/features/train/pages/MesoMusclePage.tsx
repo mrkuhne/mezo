@@ -10,8 +10,10 @@
 //                      (what Monday does to it).
 //   `.pl-mstats`     — the three plain facts: sessions a week, week-one sets, the most
 //                      this plan will ever ask.
-//   `.pl-scale`      — THE GAUGE (this page only; `VolumeBand` is untouched for any
-//                      other consumer): a fill to the current number, a landmark mark
+//   `.pl-scale`      — THE GAUGE (this page only; the old per-tile `VolumeBand.tsx`
+//                      had no consumer left once this page and the week page were
+//                      refaced, and was removed T9 sweep): a fill to the current
+//                      number, a landmark mark
 //                      at the lower threshold and one at the ceiling, and a labelled
 //                      pin. TWO rules the prototype pins and this page implements:
 //                        · MERGED LABEL — a muscle you only hold has its threshold and
@@ -104,7 +106,7 @@ export function MesoMusclePage() {
       ? 'Ez a mesociklus nem található.'
       : arcError
         ? 'Nem sikerült betölteni a heti vizsgálatot — próbáld újra.'
-        : 'A heti vizsgálat a blokk első edzése után jelenik meg.'
+        : 'A heti vizsgálat a terv első edzése után jelenik meg.'
     return (
       <MozaikPage tone="coral">
         <PageHead onBack={goBack} label="‹ Heti vizsgálat" />
@@ -142,10 +144,11 @@ export function MesoMusclePage() {
   const weekOneValue = tile.series[0]?.planned ?? tile.mev
   const seriesToNow = tile.series.filter((s) => s.week <= arc.currentWeek)
   // The plan's own peak („a legtöbb lesz") — the MAX planned value over the non-pihenőhét
-  // weeks, not merely the LAST one: `peakWeek` (mesoWeek.ts) answers a different question
-  // (where the ramp's own last working week sits, used for its index), and a tapering plan
-  // whose highest week isn't its last working week would under-report both this fact and the
-  // gauge scale if the last-week value stood in for the true peak.
+  // weeks, not merely the LAST one: a tapering plan whose highest week isn't its last
+  // working week would under-report both this fact and the gauge scale if the last-week
+  // value stood in for the true peak. (mesoWeek.ts's old `peakWeek` helper answered a
+  // different question — where the ramp's own last working week sits, used for its index
+  // — and was removed once nothing still called it, T9 sweep.)
   const nonDeloadPlanned = tile.series.filter((s) => !s.deload).map((s) => s.planned)
   const top = nonDeloadPlanned.length > 0 ? Math.max(...nonDeloadPlanned) : tile.current
   // One scale for the gauge AND the versus bars, so „akkor" and „most" are measured against
@@ -332,6 +335,7 @@ export function MesoMusclePage() {
           <h3 className="pl-h3 rise">Az előző tervhez képest</h3>
           {prev ? (
             <>
+              <p className="pl-versus-title rise">Előző terved: {prev.title}</p>
               <div className="pl-versus rise" style={accent}>
                 <div className="pl-versus-row">
                   <span>Akkor</span>

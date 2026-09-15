@@ -127,7 +127,7 @@ export function MesoDayPage() {
           <span className="pl-dhero-art">
             <BodyMap heat={heat} views="auto" ariaLabel={`${day.type} nap — érintett izmok`} />
           </span>
-          <span className="pl-dhero-tag">{day.day.toUpperCase()} · A TERV {meso.currentWeek}. HETE</span>
+          <span className="pl-dhero-tag tr-eyebrow">{day.day.toUpperCase()} · A TERV {meso.currentWeek}. HETE</span>
           <h2>{day.type} nap</h2>
           <div className="pl-dhero-number"><strong>{tile.sets}</strong><small>szett</small></div>
           <div className="pl-dhero-pills">

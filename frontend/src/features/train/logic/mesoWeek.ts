@@ -107,17 +107,6 @@ export function muscleTiles(arc: MesoVolumeArc, meso: Mesocycle): MuscleWeekTile
     .sort((a, b) => b.ceiling - a.ceiling)
 }
 
-/** The block's own peak („csúcs") week for a muscle: the LAST non-deload entry of the arc
- *  series. Deload, when present, is always the final week(s), so this is the top of the ramp
- *  whatever the block length is — a fixed `series[4]` is only ever right for a 6-week block
- *  (5 weeks would point at the deload, 7–8 would understate the peak, 4 is undefined).
- *  null for an all-deload / empty series. */
-export function peakWeek(series: MuscleWeekTile['series']): { index: number; week: number; planned: number } | null {
-  const index = series.reduce((last, s, i) => (s.deload ? last : i), -1)
-  const hit = index >= 0 ? series[index] : undefined
-  return hit ? { index, week: hit.week, planned: hit.planned } : null
-}
-
 export interface WeekWorkDay {
   day: string
   type: string

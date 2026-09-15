@@ -9049,9 +9049,11 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 /* ---- Heti vizsgálat + izom-részlet (#page-week / #page-muscle, mezo-d20.15 Task 4) ----
    The week mosaic tile (`.mz-wtile`), its week-spark (`.mz-wspark`) and the muscle page's
    4-layer derivation timeline (`.mz-dsteps`/`.mz-dstep`/`.mz-dnum`/`.mz-dcells`). The
-   MEV/MAV/MRV band itself stays inline-style (VolumeBand.tsx, VolumeBar.tsx's own idiom —
+   MEV/MAV/MRV band itself stays inline-style (VolumeBar.tsx's own idiom —
    percentages of the 0→MRV span don't tokenize cleanly), so only the tile chrome, the
-   spark bars and the derivation timeline get classes here. */
+   spark bars and the derivation timeline get classes here. VolumeBand.tsx, the old
+   per-tile band component this mosaic used, was removed once T9 refaced this page and
+   the muscle page (its only consumers) — see mesoWeek.ts's `muscleTiles` for the math. */
 .mz-wtile { border-radius: 16px; padding: 10px 11px; text-align: left; font-family: inherit;
   color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow);
   background: var(--mz-wash, var(--mz-wash-white)); display: flex; flex-direction: column;
@@ -14220,6 +14222,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-scale-legend i small { display: block; font-size: 9px; color: var(--text-tertiary); margin-top: 2px; }
 
 /* — versus bars: this week against last week, per muscle — */
+.pl-versus-title { margin: 0 0 9px; font-size: 11.5px; color: var(--text-tertiary); }
 .pl-versus { display: grid; gap: 9px; }
 .pl-versus-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 11px; }
 .pl-versus-row > span:first-child { font-size: 11px; color: var(--text-tertiary); }
