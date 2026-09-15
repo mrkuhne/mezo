@@ -14,6 +14,8 @@ describe('PrepFejlodesPage · overload honesty', () => {
     )
     expect(screen.queryByText(/Túlterhelés/)).toBeNull()
     expect(screen.getByText(/2× −súly/)).toBeInTheDocument()
+    expect(screen.getByText(/A visszavett súly is a terv része — innen indul a következő emelkedés\./)).toBeInTheDocument()
+    expect(screen.queryByText(/Ezek a gyakorlatok adják az XP-lökés nagyját ma\./)).toBeNull()
   })
 
   test('a mixed day shows both directions side by side', () => {

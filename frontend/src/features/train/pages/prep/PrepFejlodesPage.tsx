@@ -86,7 +86,11 @@ export function PrepFejlodesPage({ forecast, workSets, overload, onBack }: {
                       overload.weightDown > 0 ? `${overload.weightDown}× −súly` : null,
                     ].filter(Boolean).join(' · ')}
                   </div>
-                  <div className="mz-qwhy">Ezek a gyakorlatok adják az XP-lökés nagyját ma.</div>
+                  <div className="mz-qwhy">
+                    {(overload.weightUp + overload.repUp) === 0
+                      ? 'A visszavett súly is a terv része — innen indul a következő emelkedés.'
+                      : 'Ezek a gyakorlatok adják az XP-lökés nagyját ma.'}
+                  </div>
                 </div>
               </div>
             </div>
