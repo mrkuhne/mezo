@@ -198,3 +198,14 @@
 #food-preview>.rv-macros4{grid-template-columns:repeat(4,1fr)}
 #food-preview>.rv-macros4 b{font-size:13px;margin-bottom:4px}
 @media(prefers-reduced-motion:no-preference){.rv-row>.icon{animation:rv-float 4.8s ease-in-out infinite}}
+
+/* scx: the supplements zone-completion ceremony overlay — the fcer scene over the fuel page. */
+.scx-overlay{position:absolute;inset:10px;z-index:17;border-radius:43px;background:radial-gradient(ellipse at 50% 20%,#1b1710,transparent 60%),#0c1117;overflow-y:auto;scrollbar-width:none;padding:22px 20px 30px}
+.scx-screen{min-height:100%}
+.scx-art{position:relative;width:96px;height:96px;display:grid;place-items:center;border-radius:50%;border:1px solid color-mix(in srgb,var(--kx) 34%,transparent);background:radial-gradient(circle,color-mix(in srgb,var(--kx) 14%,transparent),transparent 70%)}
+.scx-art .icon{width:64px;height:64px}
+.scx-art.is-lit .icon{animation:fcer-pop .55s cubic-bezier(.2,1.7,.35,1)}
+.scx-art.is-lit .fcer-aura{animation:fcer-aura .7s ease-out}
+.fcer-counters.scx-two{grid-template-columns:1fr 1fr;max-width:280px}
+@media(max-width:680px){.scx-overlay{inset:0;border-radius:0;padding:calc(18px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom))}}
+@media(prefers-reduced-motion:reduce){.scx-art.is-lit .icon,.scx-art.is-lit .fcer-aura{animation:none}}
