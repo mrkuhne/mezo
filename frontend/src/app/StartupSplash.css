@@ -25,6 +25,7 @@
 }
 
 .startup-splash__light { width: 100%; height: 100%; }
+.startup-stage[data-ready="false"] .startup-splash__mark { visibility: hidden; }
 
 .startup-splash__mark::before {
   content: '';
@@ -48,9 +49,9 @@
 .startup-splash .titan-core { animation: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .startup-stage { animation: startup-reveal 300ms ease-out 2700ms both; }
-  .startup-splash__mark { animation: startup-pulse 3s cubic-bezier(.4, 0, .2, 1) both; }
-  .startup-splash__light { animation: startup-flashes 3s linear both; }
+  .startup-stage[data-ready="true"] { animation: startup-reveal 300ms ease-out 2700ms both; }
+  .startup-stage[data-ready="true"] .startup-splash__mark { animation: startup-pulse 3s cubic-bezier(.4, 0, .2, 1) both; }
+  .startup-stage[data-ready="true"] .startup-splash__light { animation: startup-flashes 3s linear both; }
 }
 
 @keyframes startup-pulse {

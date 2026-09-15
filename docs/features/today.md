@@ -295,7 +295,12 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in
   `TitanCompanion.tsx`. `TitanMark` uses per-instance SVG gradient IDs so the splash and
   Dashboard fallback can coexist. The splash has one slow scale pulse with three distinct
-  light flashes and reveals the app after 3 seconds including fade. Desktop previews
+  light flashes and reveals the app after 3 seconds including fade, measured from the first
+  rendered frame. During lazy loading the startup artwork is blank instead of flashing its
+  2D fallback. `TitanScene` accepts `decorations={false}` for this core-only startup variant
+  (no orbital rings/beads, core ring, particles or ground glow); the Dashboard retains the
+  default scene. Its `onReady` callback fires after the first composed frame, and
+  `onUnavailable` selects the static terminal fallback on renderer/context failure. Desktop previews
   use the existing phone frame; real mobile fills the display. The existing `/` → `/nap`
   landing is unchanged.
   Reduced-motion/missing-WebGL browsers get the existing SVG; an artwork chunk failure

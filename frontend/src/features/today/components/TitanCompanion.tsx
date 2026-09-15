@@ -13,7 +13,7 @@
 // chunkjában maradjon; a `live` kapu miatt a dinamikus import el sem indul, ha a jelenet
 // úgysem futna. A Suspense fallback ugyanaz az SVG, tehát a helye sosem ugrik meg.
 // ============================================================
-import { Suspense, lazy, useId, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useId, useState } from 'react'
 import type { NeedState } from '@/features/today/logic/needs'
 import { NEED_META } from '@/features/today/logic/needs'
 import { cn } from '@/shared/lib/cn'
@@ -56,7 +56,7 @@ function detectLive(): boolean {
 }
 
 /** A statikus jel: a nyugalmi állapot ÉS a jelenet betöltése alatti fallback. */
-function TitanMark() {
+function TitanMark({ decorations = true }: { decorations?: boolean }) {
   const id = useId()
   return (
     <svg className="titan-svg" viewBox="0 0 180 180" aria-hidden="true">
@@ -77,11 +77,11 @@ function TitanMark() {
         </radialGradient>
       </defs>
       <g className="titan-form">
-        <g className="titan-rings">
+        {decorations && <g className="titan-rings">
           <ellipse cx="90" cy="90" rx="76" ry="36" transform="rotate(-30 90 90)" fill="none" stroke="#9c8cbb" strokeWidth="1.4" />
           <ellipse cx="90" cy="90" rx="66" ry="30" transform="rotate(38 90 90)" fill="none" stroke="#c9bfe0" strokeWidth="1" />
           <circle className="titan-planet" cx="152" cy="59" r="6" fill={`url(#${id}-planet)`} />
-        </g>
+        </g>}
         <g className="titan-petals" fill={`url(#${id}-metal)`} stroke="#b6b1c8" strokeWidth="1">
           <path d="M84 20C22 31 25 107 62 124L73 90C48 70 61 47 84 20Z" />
           <path d="M84 20C22 31 25 107 62 124L73 90C48 70 61 47 84 20Z" transform="rotate(120 90 90)" />
@@ -93,13 +93,25 @@ function TitanMark() {
   )
 }
 
-/** The same Titanium geometry as the Dashboard, without its signals button or need aura. */
-export function TitanArtwork() {
+/** Static terminal fallback, never the placeholder for a loading 3D scene. */
+function StartupMark({ onReady }: { onReady?: () => void }) {
+  useEffect(() => { onReady?.() }, [onReady])
+  return <TitanMark decorations={false} />
+}
+
+/** The Dashboard's core geometry, without orbital decorations or a transient 2D placeholder. */
+export function TitanArtwork({ onReady }: { onReady?: () => void }) {
   const [live] = useState(detectLive)
+  const [failed, setFailed] = useState(false)
+  const onUnavailable = useCallback(() => setFailed(true), [])
   return (
     <span className="titan-artwork" aria-hidden="true">
-      <ErrorBoundary fallback={() => <TitanMark />}>
-        {live ? <Suspense fallback={<TitanMark />}><TitanScene /></Suspense> : <TitanMark />}
+      <ErrorBoundary fallback={() => <StartupMark onReady={onReady} />}>
+        {live && !failed ? (
+          <Suspense fallback={null}>
+            <TitanScene decorations={false} onReady={onReady} onUnavailable={onUnavailable} />
+          </Suspense>
+        ) : <StartupMark onReady={onReady} />}
       </ErrorBoundary>
     </span>
   )

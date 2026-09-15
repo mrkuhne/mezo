@@ -700,9 +700,13 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
   document. The existing `PhoneFrame` contains the theme-token startup canvas, so desktop
   demos show it inside the same phone bezel as the app; real mobile/PWA stays full-bleed.
   The Titanium artwork makes one slow 3000 ms scale pulse, with three independent light
-  flashes peaking at 480, 1380 and 2340 ms. A 300 ms fade ends at 3000 ms. The router mounts
+  flashes peaking at 480, 1380 and 2340 ms. A 300 ms fade ends at 3000 ms. Timing starts
+  after `TitanScene` renders its first frame; loading shows only the background, never a
+  transient SVG. The startup variant contains only the titanium body and gold core, without
+  orbital rings, beads, particles or the ground glow. The router mounts
   under an inert, `aria-hidden` wrapper, so data can load without allowing early interaction.
-  The timer removes the overlay even when CSS or the lazy 3D chunk cannot finish.
+  The timer removes the overlay independently of CSS completion. A separate 5-second
+  loading deadline reveals the app if its artwork never becomes ready.
   Internal navigation and background/foreground transitions never replay it; a reload does.
   Reduced motion keeps the 3-second static mark without pulses/fade. The normal `/` entry
   still resolves to `/nap`; explicit deep links and authentication remain router-owned.
