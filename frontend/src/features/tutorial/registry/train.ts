@@ -31,7 +31,11 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     // ezért ide, a de facto landolt oldal elé került, a fuel.ts négy-fülű hogyan-idiómáját
     // követve, `train-tabs` anchorral (TabBar.tsx — a sáv MAGA a négy fül, minden
     // /train/*-on).
-    version: 3,
+    // v4 (final-review fix wave, mezo-88iwa.6 T5): a napsáv kártyája a törölt „‹ Ma gomb"-ot
+    // tanította — a page-header (és vele a gomb) a T5 posztererrel megszűnt. Copy-drift,
+    // ugyanaz a szabály, ami a fuel.ts fejlécét is version-bumpre kötelezi: az élő oldalt
+    // rosszul leíró kártyát azok is újra kell hogy lássák, akik a régit már látták.
+    version: 4,
     label: 'Mai nap',
     cards: [
       {
@@ -47,7 +51,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-heti', orb: 's-orb-figyel', anchor: 'mai-napsav',
         title: 'A napsáv lapoz.',
-        voice: 'Fent a hét napjai — koppints egyre, és az ő menetrendje jön fel. A ‹ Ma gomb mindig visszahoz a mába.',
+        voice: 'Fent a hét napjai — koppints egyre, és az ő menetrendje jön fel. A mai napod saját MA chipje mindig visszahoz a mába.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',

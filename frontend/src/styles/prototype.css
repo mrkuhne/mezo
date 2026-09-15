@@ -13669,7 +13669,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    custom-property mechanikája.
    AMIT NEM: a prototípus beégetett sötét (#ffffffXX) hexeit és a runtime
    `var(--domain-color)`-t — a ház a MEGLÉVŐ edzés-tónus tokeneket használja
-   (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.trainhero` ma is visel, lásd :2542),
+   (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.todaycard-gym` ma is visel, lásd :2539),
    a sikeres/figyelmeztető állapotokhoz pedig a ház `--sage`/`--sage-deep` és
    `--amber`/`--amber-deep` szemantikus tokenjeit — így a lap a világos ÉS a sötét
    témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül.
@@ -13686,6 +13686,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Csökkentett mozgás: a család a `.rise`/`EntranceGroup` meglévő belépő-idiómáját
    használja (nincs saját keyframe); a `.tr-mus-track` sávjai a `mz-play`/`rise`
    ugyanazon egyszeri-lépés mintáját öröklik, mint a többi sáv a fájlban. */
+
+/* Az eyebrow-sor: `.overline` ütközne a Tailwind v4 text-decoration:overline
+   utility-jével (a Mai eyebrow-k szó szerinti áthúzott vonalként, 14px testszövegként
+   renderelődtek volna) — innen a `tr-` prefix és a saját bázis-szabály, a `.fsx-overline`
+   mintáját követve (:12570). */
+.tr-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--text-tertiary); }
 
 /* — a nap posztere: van-e ma edzés, és mi az — */
 .tr-day {
@@ -13710,7 +13716,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 15%, transparent), transparent 62%),
     linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 18%, transparent), var(--surface-card) 68%);
 }
-.tr-day .overline { color: var(--text-secondary); letter-spacing: .16em; }
+.tr-day .tr-eyebrow { color: var(--text-secondary); letter-spacing: .16em; }
 .tr-day h2 {
   font-family: var(--ff-display); font-size: 27px; line-height: 1.06; font-weight: 700;
   letter-spacing: -.02em; margin: 8px 0 6px; max-width: 70%; color: var(--text-primary);
@@ -13791,7 +13797,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
   border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
 }
-.tr-energy .overline { color: var(--tag-gym); letter-spacing: .16em; }
+.tr-energy .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-energy h3 { margin: 4px 0 12px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--tag-gym); }
 .tr-energy-main b { font-size: 22px; font-weight: 700; }
@@ -13813,7 +13819,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
   border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
 }
-.tr-mus .overline { color: var(--tag-gym); letter-spacing: .16em; }
+.tr-mus .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-mus h3 { margin: 4px 0 14px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .tr-mus-row {
   display: grid; grid-template-columns: 30px 68px 1fr auto; align-items: center; gap: 10px;

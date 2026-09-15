@@ -9,7 +9,8 @@
 // Titanium face (mezo-88iwa.6, T5): the today-gym hero is the `.tr-day` poster —
 // status pill (BETERVEZVE/FOLYAMATBAN/KÉSZ), the session title, the meso sub-line, a
 // muscle constellation, the chip row and the in-poster three-state CTA — with the
-// „Vagy inkább” `.tr-alt` pair under it. The legacy `.page-header` (Eyebrow + „Mai nap”
+// energy card and the muscle-impact card below it, and the „Vagy inkább” `.tr-alt`
+// pair after those two. The legacy `.page-header` (Eyebrow + „Mai nap”
 // h1 + „← Ma”) is GONE: the poster names the session and the DayStrip names the day, so
 // the strip is the page's first element. Today's own chip took over „← Ma”'s job — it
 // CLEARS `?day=` instead of pinning today's index (see `selectDay`).
@@ -426,10 +427,13 @@ export function TrainTodayPage() {
             // ONE condition drives BOTH the status pill and the CTA — no second state.
             const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
             // The constellation: one small MuscleChip per region today's plan actually
-            // loads (Task 1's dayImpact; silent regions carry plannedSets 0 and drop out).
-            const constellation = dayImpact(
-              workout.exercises.map((e) => ({ muscle: e.muscle, workingSets: e.workingSets })),
-            ).filter((r) => r.plannedSets > 0 && r.token)
+            // loads (silent regions carry plannedSets 0 and drop out). Reuses `impactRows`
+            // (computed once above, outside this map, off the SAME `workout.exercises`
+            // mapping) rather than calling `dayImpact` a second time with identical
+            // exercise input — `doneByMuscle` only changes `doneSets`, which this filter
+            // never reads, so the result is byte-identical either way (final-review fix
+            // wave, mezo-88iwa.6).
+            const constellation = impactRows.filter((r) => r.plannedSets > 0 && r.token)
             // Held at 0 (the chip's existing "no minutes" treatment, `workoutMinutes > 0 &&`
             // below) while the profile fetch is pending — never the static fallback, which
             // would render then swap to the calibrated number the instant the fetch lands.
@@ -444,9 +448,10 @@ export function TrainTodayPage() {
                 <span className="tr-day-status">
                   {completedTodayWorkout ? 'KÉSZ' : gymInProgress ? 'FOLYAMATBAN' : 'BETERVEZVE'}
                 </span>
-                {/* Inline flex rather than a new class: the T5 CSS section defines no
-                    over-line row of its own, and one row is not worth a token. */}
-                <span className="overline" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {/* Inline flex (not a new class) for the icon+text layout only — `.tr-eyebrow`
+                    (final-review fix wave) still carries the eyebrow's own typography; a
+                    second layout-only class for one row is not worth a token. */}
+                <span className="tr-eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {/* The gym glyph is a clay symbol now — the eyebrow keeps the spoken „GYM”. */}
                   <ClayIcon name="i-edzes" size={18} />
                   <span>{gymEyebrow}</span>
@@ -619,7 +624,7 @@ export function TrainTodayPage() {
       {isTodayShown && !energyCardPendingGym && energyBlocks.length > 0 && (
         <div className="rise" style={{ padding: '0 6px', '--d': '220ms' } as CSSProperties}>
           <section className="tr-energy">
-            <span className="overline">A MAI KERETEDHEZ</span>
+            <span className="tr-eyebrow">A MAI KERETEDHEZ</span>
             <h3>Amit a mozgásod hozzáad</h3>
             {dayEnergy.known ? (
               <>
@@ -645,7 +650,7 @@ export function TrainTodayPage() {
       {isTodayShown && hasImpact && (
         <div className="rise" style={{ padding: '0 6px', '--d': '230ms' } as CSSProperties}>
           <section className="tr-mus">
-            <span className="overline">HATÁS AZ IZOMZATODRA</span>
+            <span className="tr-eyebrow">HATÁS AZ IZOMZATODRA</span>
             <h3>Mit terhel a mai mozgásod</h3>
             {impactRows.map((row) => {
               const planPct = (row.plannedSets / maxPlannedImpact) * 100

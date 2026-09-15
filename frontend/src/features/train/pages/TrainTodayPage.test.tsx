@@ -938,9 +938,22 @@ describe('TrainTodayPage (real mode, pending)', () => {
     // 18px + strong 16px/1.5 + small 12px/1.5 + small's 2px margin-top = 74px total),
     // corrected from the earlier 56px placeholder (mezo-88iwa.6 fix round 1).
     expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '74px')).toHaveLength(1)
-    // the „Vagy inkább" pair under the poster (`.tr-alt`) — two 44px-tall placeholders,
-    // the real `.tr-alt button` min-height, now that the pair always renders.
+    // the energy card (`.tr-energy`, ~189px) and the muscle-impact card (`.tr-mus`,
+    // ~255px) — the two cards that now sit BETWEEN the poster and the „Vagy inkább"
+    // pair (Task 5, mezo-88iwa.6); their derivation is documented in
+    // TrainTodaySkeleton.tsx next to each placeholder.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '189px')).toHaveLength(1)
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '255px')).toHaveLength(1)
+    // the „Vagy inkább" pair (`.tr-alt`) — two 44px-tall placeholders, the real
+    // `.tr-alt button` min-height, now that the pair always renders AFTER the two
+    // cards above (not directly under the poster any more).
     expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '44px')).toHaveLength(2)
+    // Order matters — this is the one thing the skeleton exists to get right: poster
+    // CTA → energy card → impact card → alt pair, matching the real document order.
+    const order = sk
+      .map((el) => el.style.height)
+      .filter((h) => ['74px', '189px', '255px', '44px'].includes(h))
+    expect(order).toEqual(['74px', '189px', '255px', '44px', '44px'])
   })
 })
 
