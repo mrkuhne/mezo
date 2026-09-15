@@ -247,10 +247,14 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     cards: [
       {
         kind: 'intro', spot: 'i-meso', orb: 's-orb',
-        title: 'Ez a Mesociklusok.',
-        voice: 'A többhetes blokkjaid könyvtára: az aktív futam felül, alatta a történet.',
+        title: 'Ez a futó terved.',
+        voice: 'Nem lista: maga a terv, ami most megy — hányadik héten jársz, és mi vár rád a hét minden napján.',
       },
       {
+        // NOTE (T9 fix round 1, mezo banned-word sweep): this `fogalom` card predates
+        // this task's copy — its „A blokk a motor." title/voice is left as-is, OUT of
+        // scope per the review finding. Every other card in this section is this task's
+        // OWN new copy and has been swept for „blokk"/„rámpa" below.
         kind: 'fogalom', spot: 's-hegycel', orb: 's-orb',
         title: 'A blokk a motor.',
         voice: 'A heti edzéseidet az aktív blokk osztja ki — itt látod, hol tart, és itt születik a következő.',
@@ -258,18 +262,18 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       },
       {
         kind: 'hogyan', spot: 'i-naplo', orb: 's-orb-figyel', anchor: 'mesociklus-mosaic',
-        title: 'Négy csempe, négy irány.',
-        voice: 'A **Heti vizsgálat** az aktív hétbe visz, a **Történet** a lezárt futamokhoz, a **Sablonok** a terveidhez, az **Új blokk** a tervezőbe.',
+        title: 'Két ajtó a terv alatt.',
+        voice: 'A **Melyik izmod hol tart** az aktív hétbe visz, az **Edzéstervek** pedig a terveidhez, a történetedhez és az új terv indításához.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
-        title: 'Blokk-váltáskor.',
-        voice: 'Blokk végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
+        title: 'Tervváltáskor.',
+        voice: 'Terv végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'Innen indul minden hét.',
-        voice: 'A blokk adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
+        voice: 'A terv adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'az aktív hét' },
           { to: '/train/templates', label: 'Sablonok', icon: 'i-polc' },

@@ -17,7 +17,8 @@ import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
-import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
+import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
+import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
 import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
@@ -264,7 +265,11 @@ export const routes: RouteObject[] = [
       { path: 'train/futas', element: <RunningPage /> },
       { path: 'train/exercises', element: <ExercisesPage /> },
       { path: 'train/medals', element: <MedalsPage /> },
-      { path: 'train/mesocycles', element: <MesocycleLibraryPage /> },
+      { path: 'train/mesocycles', element: <MesoTervPage /> },
+      // The plan library (Train Titanium T9 Task 2, mezo-88iwa.10): the landing's
+      // Sablonok/Új blokk/Futóblokkok tiles + Tervezett + Történet moved here intact
+      // behind the landing's `Edzéstervek` doorway.
+      { path: 'train/mesocycles/konyvtar', element: <MesoKonyvtarPage /> },
       // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
       // route stays reachable (the library's nav row still links here).
       { path: 'train/templates', element: <MesoTemplatesPage /> },

@@ -36,35 +36,73 @@ function setup(path = `/train/mesocycles/${MESO_ID}/week`) {
 test('the hero names this week, the total and the delta vs. last week', () => {
   setup()
   expect(screen.getByText('Heti vizsgálat · 3. hét')).toBeInTheDocument()
+  expect(screen.getByText('Melyik izmod hol tart')).toBeInTheDocument()
   expect(screen.getByText(/a múlt héthez képest/)).toBeInTheDocument()
 })
 
-test('the stat strip carries four cells: total, delta, up, hold', () => {
+// Was „the stat strip carries four cells" (T9 Task 5): the four `StatCell`s are gone — the
+// Titanium hero says the same four facts as ONE sentence (the owner's rule: the sentence is
+// the page), and the raw word „rámpázik" the old `up` cell carried is itself on the banned
+// list. Same contract, re-pinned on the sentence: the total, and how many muscles are
+// growing / capped / merely held.
+test('the hero sentence counts the growing, the capped and the held muscles', () => {
   setup()
-  const strip = document.querySelector('.mz-statstrip')!
-  expect(strip.textContent).toContain('W3')
-  expect(strip.textContent).toContain('vs. W2')
-  expect(strip.textContent).toContain('rámpázik')
-  expect(strip.textContent).toContain('tart')
+  const hero = document.querySelector('.pl-dhero')!
+  // meso-hyp-04 @ W3: chest 12/14 and back 14/16 still have room; five sit at their
+  // ceiling; shoulder is the maintain group.
+  expect(hero.textContent).toContain('8 izomcsoportot edzel ezen a héten')
+  expect(hero.textContent).toContain('2 izomban van még hova nőni')
+  expect(hero.textContent).toContain('5 elérte a felső értéket')
+  expect(hero.textContent).toContain('1 izmot csak szinten tartasz')
+  expect(hero.querySelector('.pl-dhero-number')?.textContent).toContain('88')
 })
 
-test('one tile per arc muscle, with landmarks, no percentages', () => {
+test('the hero carries the week body map — both sides, since a week touches both', () => {
   setup()
-  // meso-hyp-04 carries 8 volumePerMuscle groups — one tile each.
+  const map = screen.getByRole('img', { name: 'A heted izomtérképe' })
+  expect(map).toHaveClass('body-map-duo')
+  expect(document.querySelector('.pl-dhero-art')).toContainElement(map)
+})
+
+test('one row per arc muscle, with landmarks, no percentages', () => {
+  setup()
+  // meso-hyp-04 carries 8 volumePerMuscle groups — one row each.
   expect(screen.getAllByRole('button', { name: /részletek$/ })).toHaveLength(8)
   expect(screen.getByText('Hát')).toBeInTheDocument()
   expect(screen.getByText('Mell')).toBeInTheDocument()
   expect(document.body.textContent).not.toMatch(/%/)
 })
 
-test('the emphasized (highest-ceiling) tile leads the mosaic', () => {
+// The rows rank by ROOM TO THE CEILING (the prototype's rule), not by raw ceiling: the
+// muscles with something still to give lead. Hát and Mell both have 2 sets of room, and the
+// bigger ceiling breaks the tie — so Hát still leads, and the five capped groups follow.
+test('the rows rank by room to the ceiling, the capped ones last', () => {
   setup()
-  const tiles = screen.getAllByRole('button', { name: /részletek$/ })
-  // Hát has the highest ceiling (MAV 16) among meso-hyp-04's groups.
-  expect(tiles[0]).toHaveAccessibleName('Hát részletek')
+  const names = screen.getAllByRole('button', { name: /részletek$/ }).map((b) => b.getAttribute('aria-label'))
+  expect(names[0]).toBe('Hát részletek')
+  expect(names[1]).toBe('Mell részletek')
+  expect(names.slice(2)).not.toContain('Hát részletek')
 })
 
-test('tapping a tile navigates to the muscle page', async () => {
+// The three verdict SENTENCES the slice pins — each prefixed by the Hungarian tier word
+// (tierLabel), never a raw English tier and never a bare number pair.
+test('each row says its verdict in words, prefixed by the tier', () => {
+  setup()
+  const say = (label: string) =>
+    screen.getByRole('button', { name: `${label} részletek` }).querySelector('.pl-item-say')?.textContent
+  expect(say('Hát')).toBe('Építés · Még 2 szett fér bele.')
+  expect(say('Váll')).toBe('Tartás · Ezt most szinten tartod.')
+  expect(say('Bicepsz')).toBe('Építés · Elérte a felső értéket ebben a tervben.')
+  expect(document.body.textContent).not.toMatch(/Emphasize|Maintain|Grow/)
+})
+
+// The one thing on this page that talks about the FUTURE — nothing else carries it.
+test('the live-rollover banner stays', () => {
+  setup()
+  expect(screen.getByText(/Élő rendszer/)).toBeInTheDocument()
+})
+
+test('tapping a row navigates to the muscle page', async () => {
   const router = setup()
   await userEvent.click(screen.getByRole('button', { name: 'Hát részletek' }))
   await waitFor(() => expect(router.state.location.pathname).toBe(`/train/mesocycles/${MESO_ID}/week/back`))
@@ -72,7 +110,7 @@ test('tapping a tile navigates to the muscle page', async () => {
 
 test('a mesocycle with no volume profile shows the ghost state, not a broken mosaic', () => {
   setup(`/train/mesocycles/meso-str-02/week`) // planned run — no volumePerMuscle
-  expect(screen.getByText('A heti vizsgálat a blokk első edzése után jelenik meg.')).toBeInTheDocument()
+  expect(screen.getByText('A heti vizsgálat a terv első edzése után jelenik meg.')).toBeInTheDocument()
 })
 
 test('an unknown mesocycle id says so instead of crashing', () => {
@@ -112,7 +150,7 @@ describe('MesoWeekPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('a skeleton holds the page while the block and the arc are in flight, then the mosaic lands', async () => {
+  test('a skeleton holds the page while the block and the arc are in flight, then the list lands', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => HttpResponse.json(realArc)),
     )
@@ -126,17 +164,17 @@ describe('MesoWeekPage (real mode)', () => {
     expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
   })
 
-  test('a FAILED arc fetch says try again (with a retry) — not „a blokk első edzése után"', async () => {
+  test('a FAILED arc fetch says try again (with a retry) — not „a terv első edzése után"', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => new HttpResponse(null, { status: 404 })),
     )
     setup(`/train/mesocycles/${REAL_MESO_ID}/week`)
     expect(await screen.findByText('Nem sikerült betölteni a heti vizsgálatot — próbáld újra.')).toBeInTheDocument()
-    expect(screen.queryByText('A heti vizsgálat a blokk első edzése után jelenik meg.')).not.toBeInTheDocument()
+    expect(screen.queryByText('A heti vizsgálat a terv első edzése után jelenik meg.')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
   })
 
-  test('an arc with no muscles is still an arc — the hero renders, the mosaic is simply empty', async () => {
+  test('an arc with no muscles is still an arc — the hero renders, the list is simply empty', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
         HttpResponse.json({ ...realArc, muscles: [] })),
@@ -145,5 +183,62 @@ describe('MesoWeekPage (real mode)', () => {
     expect(await screen.findByText('Heti vizsgálat · 3. hét')).toBeInTheDocument()
     expect(screen.queryAllByRole('button', { name: /részletek$/ })).toHaveLength(0)
     expect(screen.queryByText(/Nem sikerült betölteni/)).not.toBeInTheDocument()
+  })
+
+  // Fix round 1 (review finding 2): the hero sentence and the body map both key off
+  // `statusTone` now, not room-to-ceiling. A grind-held muscle (current < ceiling, held for
+  // a grind week) still has room, so a room-based count used to call it „van még hova nőni"
+  // while the map painted it at the ceiling's colour (gold — same tone `HEAT_BY_TONE` maps
+  // to 'over'). Fixed: it's counted (and spoken) as capped, and its own row gets a verdict
+  // sentence that doesn't claim it reached the ceiling either.
+  test('a grind-held muscle is counted and spoken from statusTone, agreeing with the heat (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([{
+          id: REAL_MESO_ID, title: 'Hypertrophy 04 · Tavasz', shortTitle: 'Hypertrophy 04',
+          status: 'active', goal: 'Felsőtest hypertrophy · izomtömeg építés',
+          startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6, currentWeek: 3,
+          split: 'Pull / Push / Legs · 5×/hét', style: 'RP · 6 hét',
+          phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+          musclePriorities: {}, days: [],
+          volumePerMuscle: {
+            chest: {
+              mev: 8, mav: 16, mrv: 20, current: 14,
+              source: { baseline: { name: 'RP guidelines · intermediate', mev: 8, mav: 16, mrv: 20 }, adjustments: [], confidence: 0.8 },
+            },
+          },
+          // chest's latest recompute is a HOLD ('tartás') — grind-held: current (14) < ceiling
+          // (mav 16), so it is NOT at its ceiling, and it is not a maintain tier either.
+          volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'chest', change: 'tart (14)', reason: 'tartás' }] },
+        }]),
+      ),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        HttpResponse.json({
+          ...realArc,
+          muscles: [{
+            muscle: 'chest', region: 'coral', mrv: 20,
+            weeks: [
+              { week: 1, phase: 'MEV', planned: 8, actual: 8, isCurrent: false },
+              { week: 2, phase: 'MEV', planned: 10, actual: 10, isCurrent: false },
+              { week: 3, phase: 'MAV', planned: 14, actual: null, isCurrent: true },
+              { week: 4, phase: 'MAV', planned: 16, actual: null, isCurrent: false },
+              { week: 5, phase: 'MRV', planned: 16, actual: null, isCurrent: false },
+              { week: 6, phase: 'Deload', planned: 7, actual: null, isCurrent: false },
+            ],
+          }],
+        }),
+      ),
+    )
+    setup(`/train/mesocycles/${REAL_MESO_ID}/week`)
+    const hero = await screen.findByText('Heti vizsgálat · 3. hét')
+    const dhero = hero.closest('.pl-dhero')!
+    // Counted as capped (statusTone 'gold'), never as „van még hova nőni" — a room-based
+    // count would have said the opposite, disagreeing with the gold heat the map paints.
+    expect(dhero.textContent).toContain('1 izomcsoportot edzel ezen a héten.')
+    expect(dhero.textContent).toContain('1 elérte a felső értéket')
+    expect(dhero.textContent).not.toContain('van még hova nőni')
+    // Its own row gets the grind-held verdict, not the plain „Még N szett fér bele."
+    const say = screen.getByRole('button', { name: 'Mell részletek' }).querySelector('.pl-item-say')?.textContent
+    expect(say).toBe('Építés · Most szinten tartod — múlt héten nehezen ment.')
   })
 })
