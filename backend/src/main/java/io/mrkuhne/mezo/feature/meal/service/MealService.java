@@ -37,6 +37,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -209,12 +211,16 @@ public class MealService {
     }
 
     /**
-     * Deterministic score at write (mezo-yta, ADR 0006): builds one {@link ScoredLine} per item —
-     * contribution via the SAME amount/snapshotPer formula as the mapper, nutrition-quality facts
-     * from the item's OWN FROZEN snapshot (mezo-m6uv), scaled by that same factor — and sets
-     * {@code score} + {@code breakdown} atomically. There is now exactly ONE route to those four
-     * numbers: the write-time freeze. NOVA is likewise frozen; only {@code category} (plant
-     * diversity) is still read live off the pantry row.
+     * Deterministic score at write (mezo-yta, ADR 0006): builds the scorer's lines via
+     * {@link #scoringLines} — contribution via the SAME amount/snapshotPer formula as the mapper,
+     * nutrition-quality facts from the frozen snapshot (mezo-m6uv), scaled by that same factor —
+     * and sets {@code score} + {@code breakdown} atomically. There is now exactly ONE route to
+     * those four numbers: the write-time freeze. NOVA is likewise frozen; only {@code category}
+     * (plant diversity) is still read live off the pantry row.
+     *
+     * <p>Since mezo-tm3sb a {@code source='recipe'} item is NOT one line: it expands into one line
+     * per ingredient, so the quality dimensions judge what was actually eaten. See
+     * {@link #scoringLines}.
      *
      * <p>The rubric's macro targets are the goal-aware {@link DailyTargets} (mezo-3g5w): the
      * active goal's prescribed day when one covers {@code meal.mealDate}, else the config
@@ -226,9 +232,7 @@ public class MealService {
      * a metódus update-kor és re-score-kor is fut, amikor az étkezés már a napban van.
      */
     private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
-        List<ScoredLine> lines = meal.getItems().stream()
-            .map(item -> toScoredLine(userId, item))
-            .toList();
+        List<ScoredLine> lines = scoringLines(userId, meal);
         List<MealScoringService.WorkoutWindow> windows = workoutWindowQueryService
             .windowsFor(userId, meal.getMealDate()).stream()
             .map(w -> new MealScoringService.WorkoutWindow(w.start(), w.end(), w.done()))
@@ -242,6 +246,84 @@ public class MealService {
             scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
+    }
+
+    /**
+     * The scorer's input lines: one per item, EXCEPT a {@code source='recipe'} item, which expands
+     * into one line per ingredient (mezo-tm3sb).
+     *
+     * <p>Why the expansion. A recipe item is a single composite row: the recipe's name, its
+     * per-serving macro rollup, one {@code novaDominant} stamp and an {@code "adag"} basis that
+     * carries no gram mass. Handed to the scorer that way, {@code nova} read 100% of one group for
+     * EVERY recipe-logged meal, {@code plant_diversity} saw a null category and degraded, and
+     * {@code energy_density} degraded for want of a mass — while the same recipe's own template
+     * breakdown, built per ingredient by {@code RecipeService.fitLines}, got all three right.
+     *
+     * <p>The fallback to the composite row is not a nicety: a recipe deleted (or emptied) after the
+     * log must still score the meal from its FROZEN snapshot rather than drop it to zero. The
+     * macros the user sees are unaffected either way — {@code MealItemEntity} is not touched here,
+     * so the frozen snapshot stays the single source of the meal's numbers; only the quality
+     * dimensions gain the ingredient-level view.
+     *
+     * <p>Query shape: the recipes are resolved once each (Hibernate's first-level cache serves the
+     * one {@code buildItem} already loaded on the write path) and the pantry rows behind ALL their
+     * lines come back in ONE batch read, as {@code RecipeService} does — never a query per line.
+     */
+    private List<ScoredLine> scoringLines(UUID userId, MealEntity meal) {
+        Map<UUID, RecipeEntity> recipes = recipesOf(userId, meal);
+        Map<UUID, PantryItemEntity> pantryById = pantryForLinesOf(recipes.values());
+        List<ScoredLine> lines = new ArrayList<>(meal.getItems().size());
+        for (MealItemEntity item : meal.getItems()) {
+            RecipeEntity recipe = "recipe".equals(item.getSource()) && item.getRecipeId() != null
+                ? recipes.get(item.getRecipeId()) : null;
+            if (recipe == null || recipe.getLines().isEmpty()) {
+                lines.add(toScoredLine(userId, item)); // frozen-snapshot fallback
+            } else {
+                lines.addAll(MealCompositeLines.expandRecipeItem(
+                    recipe, overridesOf(item), item.getAmount(), pantryById));
+            }
+        }
+        return lines;
+    }
+
+    /** Owner-scoped, not-deleted recipes behind the meal's recipe items; a gone recipe is absent. */
+    private Map<UUID, RecipeEntity> recipesOf(UUID userId, MealEntity meal) {
+        Map<UUID, RecipeEntity> byId = new LinkedHashMap<>();
+        for (MealItemEntity item : meal.getItems()) {
+            if (!"recipe".equals(item.getSource()) || item.getRecipeId() == null
+                || byId.containsKey(item.getRecipeId())) {
+                continue;
+            }
+            recipeRepository.findByIdAndCreatedByAndDeletedFalse(item.getRecipeId(), userId)
+                .ifPresent(r -> byId.put(r.getId(), r));
+        }
+        return byId;
+    }
+
+    /** ONE batch pantry read for the live NOVA + category of every expanded ingredient. */
+    private Map<UUID, PantryItemEntity> pantryForLinesOf(Collection<RecipeEntity> recipes) {
+        List<UUID> ids = recipes.stream()
+            .flatMap(r -> r.getLines().stream().map(RecipeIngredientEntity::getPantryItemId))
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        return ids.isEmpty() ? Map.of() : pantryItemRepository.findAllWithCatalogByIdIn(ids).stream()
+            .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
+    }
+
+    /** The stored override envelope → {@code lineOrder → amount}; a NULL envelope means "as written". */
+    private static Map<Integer, BigDecimal> overridesOf(MealItemEntity item) {
+        List<MealItemRecipeOverrideJson> stored = item.getRecipeOverrides();
+        if (stored == null || stored.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, BigDecimal> byOrder = new LinkedHashMap<>();
+        for (MealItemRecipeOverrideJson o : stored) {
+            if (o != null && o.lineOrder() != null && o.amount() != null) {
+                byOrder.put(o.lineOrder(), o.amount());
+            }
+        }
+        return byOrder;
     }
 
     private ScoredLine toScoredLine(UUID userId, MealItemEntity item) {

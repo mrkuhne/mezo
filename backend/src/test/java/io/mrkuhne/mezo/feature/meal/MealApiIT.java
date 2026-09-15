@@ -266,7 +266,8 @@ class MealApiIT extends ApiIntegrationTest {
         // deterministic score at write (mezo-yta): scalar + 8-dim envelope (mezo-7797). These plain
         // foods carry no NOVA / nutrition facts / category -> micro/who/fat_quality/nova/
         // plant_diversity degrade honestly (weight 0); macro + context stay real and energy_density
-        // lights up from the 200 g gram-based pantry arm.
+        // lights up from BOTH arms' gram mass: the 200 g pantry arm plus — since mezo-tm3sb — the
+        // recipe arm's expanded ingredient (200 g of the food ÷ 2 servings = 100 g).
         assertThat(created.getScore().getValue()).isNotNull();
         assertThat(created.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
         MealBreakdown breakdown = created.getScore().getBreakdown();
@@ -280,7 +281,12 @@ class MealApiIT extends ApiIntegrationTest {
             .containsExactly("micro", "who", "fat_quality", "nova", "plant_diversity");
         assertThat(breakdown.getSummary()).isNull();   // P8 prose stays honest-empty
         assertThat(breakdown.getImprove()).isEmpty();
-        assertThat(breakdown.getConfidence().doubleValue()).isLessThan(1.0);
+        // Confidence is the coverage-weighted say of the dimensions that could score at all, and
+        // since mezo-tm3sb all three of them see the WHOLE meal: macro and context always do, and
+        // energy_density now covers 330 of 330 kcal (110 from the expanded recipe ingredient's
+        // 100 g + 220 from the pantry arm's 200 g). It used to read 220/330 because the composite
+        // recipe row carried an "adag" basis and therefore no gram mass at all.
+        assertThat(breakdown.getConfidence()).isEqualByComparingTo("1");
 
         // GET /api/fuel/day/{date}: targets from config, consumed = sum of the day's meals
         FuelDayResponse day = getForBody(

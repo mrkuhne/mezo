@@ -2,15 +2,15 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (65 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (66 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 // Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
 // material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
 // accent — replacing the earlier warm-clay ramps. The existing NAMES are unchanged so every
-// call site and mapping table keeps compiling; the set only ever GROWS (65 i-* + 24 s-*).
+// call site and mapping table keeps compiling; the set only ever GROWS (66 i-* + 24 s-*).
 
-test('ClaySprites mounts all 65 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 66 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(65)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(66)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
 })
 
@@ -52,6 +52,23 @@ test('a három értékelés-dimenzió ikon a sprite-ban van, a titánium recept 
     expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
     expect(sym!.innerHTML).toContain('url(#ig-titanium)')
     expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  }
+})
+
+// Fuel · vércukor-válasz (mezo-6mi43): a negyedik Minőség-kártya saját szimbóluma — a
+// prototípus „domb" metaforája: alapszint-tengely, rajta a kék válasz-görbe és egy arany
+// csúcs-kavics. Titánium alap + zárt palettás akcentusok, új gradiens NEM született.
+test('a vércukor-válasz ikon a sprite-ban van, a titánium recept szerint', () => {
+  render(<ClaySprites />)
+  const sym = document.querySelector('#i-vercukor')
+  expect(sym, 'i-vercukor hiányzik').not.toBeNull()
+  expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
+  expect(sym!.innerHTML).toContain('url(#ig-titanium)')
+  expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  // a paletta zárt: csak a meglévő ig-* rámpákat használja
+  for (const grad of sym!.innerHTML.matchAll(/url\(#(ig-[a-z]+)\)/g)) {
+    expect(['ig-titanium', 'ig-blue', 'ig-gold', 'ig-purple', 'ig-lime', 'ig-rose', 'ig-shadow'])
+      .toContain(grad[1])
   }
 })
 

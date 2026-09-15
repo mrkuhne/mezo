@@ -32,6 +32,7 @@
 // és a Receptműhely előre ugyanezt mutatja. Egy példány, három hívó; a markup és a `fmx-`
 // osztályok változatlanok, csak már nem itt laknak.
 // ============================================================
+import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useFuelDay } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
@@ -47,6 +48,9 @@ import {
   FuelIngredientSection, FuelMacroShareSection, FuelMicroNote, FuelMicroSection, FuelQualitySection,
   type FuelIngredientRowVM, type FuelQualityLine,
 } from '@/features/fuel/components/FuelQualityBlocks'
+import { mealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
+import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
+import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
 
 /** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
  *  `fuel-mai titanium` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
@@ -93,6 +97,9 @@ export function FuelMealDetailPage() {
   // a /fuel/log `?d=` szerződésének mintájára.
   const day = search.get('d')
   const { fuel } = useFuelDay(day ?? undefined)
+  // A hook a hiányzó-étkezés korai visszatérés ELŐTT áll, hogy a hook-sorrend sose függjön attól,
+  // megtalálható-e az étkezés.
+  const [glucoseOpen, setGlucoseOpen] = useState(false)
   const meal = fuel.meals.find(m => m.id === id)
 
   if (!meal) {
@@ -128,6 +135,12 @@ export function FuelMealDetailPage() {
     origin: SOURCE[line.source],
     nova: line.nova ?? null,
   }))
+  // A vércukor-sáv az étkezés SAJÁT összetételéből (mezo-6mi43). A rost és a cukor a négy tárolt
+  // tényből jön; ha a cukrot a forrás nem adta meg, a sáv becsül, és a kártya/doboz ezt kimondja.
+  const mealFacts = mealNutrients(meal)
+  const band = glycemicBand({
+    c: meal.c, sugarG: mealFacts.sugarG, fiberG: mealFacts.fiberG, p: meal.p, f: meal.f,
+  })
   const toScore = () => navigate(`/fuel/etkezes/${meal.id}/ertekeles${day ? `?d=${day}` : ''}`)
   // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra
   // esik — így a logoló ugyanannak a napnak az idő-szerződését tartja meg.
@@ -183,7 +196,15 @@ export function FuelMealDetailPage() {
       <FuelIngredientSection rows={ingredientRows}
         empty="Ehhez az étkezéshez nincsenek részletezett sorok." />
 
-      <FuelQualitySection lines={lines.map(qualityLineOf)} />
+      {/* A Minőség lapkák a BONTÁSBÓL olvassák a három tényt (mezo-tm3sb): a tételsorok egy
+          receptet EGY összecsukott sorként hordoznak, amiből az alapanyag-arány csak 0% vagy 100%
+          tud kijönni, és gramm sincs. A bontást a háttérrendszer immár hozzávalónként számolja,
+          és ugyanaz a bontás adta az AI-pontszámot — így a lapka és a pontszám nem tud elcsúszni.
+          A negyedik kártya a vércukor-válasz SÁVJA (mezo-6mi43); koppintásra a saját doboza nyílik. */}
+      <FuelQualitySection lines={lines.map(qualityLineOf)}
+        truth={mealQualityTruth(meal.breakdown)}
+        glycemic={band} onOpenGlycemic={band ? () => setGlucoseOpen(true) : undefined} />
+      {glucoseOpen && band && <GlycemicGlass band={band} onClose={() => setGlucoseOpen(false)} />}
 
       <FuelMicroSection nutrients={mealNutrients(meal)} frame="az étkezés" />
       {/* Ismert hiány, nem figyelmetlenség: vitamin/ásványi anyag = mezo-vj61, manifeszt F1.

@@ -46,6 +46,13 @@ class MealOverridesScoringIT extends ApiIntegrationTest {
         r.setProteinG(new BigDecimal("13"));
         r.setCarbsG(new BigDecimal("4"));
         r.setFatG(new BigDecimal("4.5"));
+        // The túró carries a small salt fact of its own (mezo-tm3sb). It is not decoration: WHO's
+        // coverage is kcal-WEIGHTED, so a fact only counts for the energy of the line carrying it.
+        // The salt line below is 0 kcal, so once the composite row is expanded per ingredient its
+        // salt covers 0 kcal — and WHO would degrade in every arm of this test, hiding the override
+        // instead of showing it. The composite row used to paper over that by attributing the whole
+        // recipe's energy to a rollup that merely CONTAINED the salt line's fact.
+        r.setSaltG(new BigDecimal("0.08"));
         r.setNova(1);
         return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
     }
@@ -133,18 +140,20 @@ class MealOverridesScoringIT extends ApiIntegrationTest {
         MealResponse asWritten = log(auth, recipe.getId(), null);
         MealResponse halved = log(auth, recipe.getId(), List.of(halfSalt));
 
-        // As written: only the Só line carries facts — 40 g/100 g × 20 g = 8.0 g whole,
-        // ÷ 2 servings = 4.0 g on the logged 1 adag.
-        assertThat(saltGramsOf(asWritten.getScore().getBreakdown())).isEqualTo(4.0);
-        // Halved: 40 g/100 g × 10 g = 4.0 g whole, ÷ 2 = 2.0 g — exactly half, not 0 and not 4.
-        assertThat(saltGramsOf(halved.getScore().getBreakdown())).isEqualTo(2.0);
+        // As written: the Só line gives 40 g/100 g × 20 g = 8.0 g whole, ÷ 2 servings = 4.0 g on
+        // the logged 1 adag, on top of the túró's constant 0.08 g/100 g × 250 g ÷ 2 = 0.1 g.
+        assertThat(saltGramsOf(asWritten.getScore().getBreakdown())).isEqualTo(4.1);
+        // Halved: 40 g/100 g × 10 g = 4.0 g whole, ÷ 2 = 2.0 g — the Só line's own contribution is
+        // exactly halved (not 0 and not 4), and the túró's 0.1 g rides along unchanged.
+        assertThat(saltGramsOf(halved.getScore().getBreakdown())).isEqualTo(2.1);
         // …and the macro-neutral line leaves the kcal (hence the WHO salt allotment) untouched,
         // so the 4 -> 2 move is the override's doing and nothing else's.
         assertThat(halved.getMacros().getKcal()).isEqualByComparingTo(asWritten.getMacros().getKcal());
-        // The SCORE deliberately does not move here: the allotment is 5 g × 138/3100 = 0.22 g, and
-        // the WHO limit subscore floors at 0 beyond 2× the allotment — both 4 g and 2 g are far past
-        // it. The gram value, not the score, is what a partial override is observable in (the sibling
-        // test below zeroes the line, which lifts the subscore off the floor and does move the score).
+        // The SCORE deliberately does not move here: the allotment is 5 g × 137.5/3100 = 0.22 g
+        // (137.5 kcal is the energy the salt fact is known over), and the WHO limit subscore floors
+        // at 0 beyond 2× the allotment — both 4.1 g and 2.1 g are far past it. The gram value, not
+        // the score, is what a partial override is observable in (the sibling test below zeroes the
+        // line, which lifts the subscore off the floor and does move the score).
         assertThat(halved.getScore().getValue())
             .isEqualByComparingTo(asWritten.getScore().getValue());
     }
