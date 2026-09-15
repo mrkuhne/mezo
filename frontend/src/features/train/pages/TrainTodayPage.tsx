@@ -45,7 +45,7 @@ import { DayStrip } from '@/features/train/components/DayStrip'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { daySessions } from '@/features/train/logic/agenda'
-import { dayImpact, type DayImpactRow } from '@/features/train/logic/dayImpact'
+import { dayImpact, regionRepresentativeToken, type DayImpactRow } from '@/features/train/logic/dayImpact'
 import { trainDayEnergy, type Block } from '@/features/train/logic/trainDayEnergy'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
@@ -295,6 +295,12 @@ export function TrainTodayPage() {
       }, [])
     : []
   const dayEnergy = trainDayEnergy(energyBlocks, weightKg || null)
+  // Fix round 1 (finding 1, ship-blocking): a day whose blocks include gym must hold the
+  // WHOLE card while the timing profile is pending — not just the gym block's own minutes.
+  // `gymMinutesToday` above is already held at 0 while pending, but the card doesn't gate
+  // on that, so real mode's first paint (no timing profile fetched yet) briefly rendered
+  // "+0 kcal" from the still-empty gym block instead of the poster's own no-flash rule.
+  const energyCardPendingGym = gymPosterShown && timingProfilePending
 
   // The muscle-impact rows: a gym day reads `dayImpact` off today's plan (Task 1) +
   // today's logged working sets (`doneByMuscle`, joined by exercise id — see below); a
@@ -326,18 +332,38 @@ export function TrainTodayPage() {
     // max per region across slots (mirrors `sportMuscleLoad.ts`'s own per-event
     // aggregation) — no set counts exist here, so `load` (1–3) stands in for
     // `plannedSets` purely to drive the track's relative width.
+    // `events` is index-aligned with `sportSlotsToday` — `sportLoadForWeek` pushes
+    // exactly one event per input slot, in the same order, with no filtering — so
+    // `events[i]` is slot `sportSlotsToday[i]`'s own load (fix round 1, finding 2:
+    // per-event attribution, not a single `anySportDone` flag that lit EVERY region
+    // once any one sport was logged).
     const { events } = sportLoadForWeek(sportSlotsToday, [])
     const byRegion = new Map<RegionKey, { label: string; load: number }>()
-    for (const ev of events) {
+    const doneByRegion = new Map<RegionKey, number>()
+    events.forEach((ev, idx) => {
+      const slot = sportSlotsToday[idx]
+      const slotDone = Boolean(slot) && sportDoneOn(shownIso, sportOf(slot))
       for (const rl of ev.regionLoads) {
         const cur = byRegion.get(rl.region)
         if (!cur || rl.load > cur.load) byRegion.set(rl.region, { label: rl.label, load: rl.load })
+        if (slotDone) {
+          const curDone = doneByRegion.get(rl.region) ?? 0
+          if (rl.load > curDone) doneByRegion.set(rl.region, rl.load)
+        }
       }
-    }
-    const anySportDone = sportSlotsToday.some((vb) => sportDoneOn(shownIso, sportOf(vb)))
+    })
     impactRows = Array.from(byRegion.entries())
       .map(([region, { label, load }]) => ({
-        region, label, token: '', plannedSets: load, doneSets: anySportDone ? load : 0, word: wordFromLoad(load),
+        region,
+        label,
+        // Zero-planned-row fallback token doesn't apply here (this branch never emits
+        // a zero-planned row), but the representative-token helper is still the right
+        // draw source — the sport heuristic carries no per-exercise muscle, only a
+        // region-level load (fix round 1, finding 3).
+        token: regionRepresentativeToken(region),
+        plannedSets: load,
+        doneSets: doneByRegion.get(region) ?? 0,
+        word: wordFromLoad(load),
       }))
       .sort((a, b) => b.plannedSets - a.plannedSets)
   }
@@ -585,7 +611,7 @@ export function TrainTodayPage() {
           already-earned vs. still-in-the-plan. Absent whenever today carries no
           training block at all — an empty rest day gets no "add your weight" pitch
           for movement that does not exist. */}
-      {isTodayShown && energyBlocks.length > 0 && (
+      {isTodayShown && !energyCardPendingGym && energyBlocks.length > 0 && (
         <div className="rise" style={{ padding: '0 6px', '--d': '220ms' } as CSSProperties}>
           <section className="tr-energy">
             <span className="overline">A MAI KERETEDHEZ</span>
@@ -644,7 +670,11 @@ export function TrainTodayPage() {
           mounts (CustomWorkoutSheet / SportLogSheet), no new surface. Aligned to the
           poster's own inner gutter (the scroller's --screen-gutter + 6px). */}
       {gymPosterShown && (
-        <div className="rise" style={{ padding: '0 6px', '--d': '200ms' } as CSSProperties}>
+        // Fix round 1 (finding 4): rebalanced from 200ms — the .tr-alt pair sits BELOW
+        // the energy (220ms) / muscle-impact (230ms) cards in document order, so its own
+        // delay must be >= 230ms too (document order = delay order), not earlier than
+        // both.
+        <div className="rise" style={{ padding: '0 6px', '--d': '235ms' } as CSSProperties}>
           <div className="tr-alt">
             <button type="button" onClick={() => setCustomOpen(true)}>
               <ClayIcon name="i-edzes" size={22} />

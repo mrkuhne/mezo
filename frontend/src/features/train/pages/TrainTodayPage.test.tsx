@@ -27,6 +27,11 @@ vi.mock('react-router-dom', async () => {
 // already uses for its `daysOverride`.
 let trainOverride: ((real: ReturnType<typeof import('@/data/hooks').useTrain>) => Record<string, unknown>) | null = null
 let goalOverride: ((real: ReturnType<typeof import('@/data/hooks').useGoal>) => Record<string, unknown>) | null = null
+// Fix round 1 (finding 1): mock mode's own `useTimingProfile` is always synchronous
+// (`isPending` never true) — so a "real-mode style, timing profile still pending" case
+// needs its own override, the same graft-a-partial-override idiom as train/goal above,
+// rather than standing up the whole real-mode msw fixture set just for this one flag.
+let timingProfileOverride: ((real: ReturnType<typeof import('@/data/hooks').useTimingProfile>) => Record<string, unknown>) | null = null
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -38,6 +43,10 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useGoal: (...args: Parameters<typeof actual.useGoal>) => {
       const real = actual.useGoal(...args)
       return goalOverride ? { ...real, ...goalOverride(real) } : real
+    },
+    useTimingProfile: (...args: Parameters<typeof actual.useTimingProfile>) => {
+      const real = actual.useTimingProfile(...args)
+      return timingProfileOverride ? { ...real, ...timingProfileOverride(real) } : real
     },
   }
 })
@@ -53,6 +62,7 @@ afterEach(() => {
   vi.unstubAllEnvs()
   trainOverride = null
   goalOverride = null
+  timingProfileOverride = null
 })
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
@@ -1265,4 +1275,88 @@ test('nothing planned today: neither card renders (never an all-zero table)', ()
     expect(container.querySelector('.tr-energy')).toBeNull()
     expect(container.querySelector('.tr-mus')).toBeNull()
   })
+})
+
+// ---- Fix round 1 (mezo-88iwa.6 review) ----
+
+// Finding 1 (ship-blocking): a real-mode first paint with the timing profile still
+// pending must hold the WHOLE energy card, not render "+0 kcal" from the still-empty
+// gym block. Mock's own `useTimingProfile` is always synchronous, so the override
+// above stands in for "real mode, pending" without standing up the whole msw fixture.
+test('energy card: held entirely while the timing profile is pending on a gym day, appears once resolved', () => {
+  timingProfileOverride = () => ({ data: null, isPending: true })
+  const { container, rerender } = renderView()
+  expect(container.querySelector('.tr-energy')).toBeNull()
+  timingProfileOverride = () => ({ data: null, isPending: false })
+  rerender(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+  expect(container.querySelector('.tr-energy')).not.toBeNull()
+  expect(container.querySelector('.tr-energy-main strong')).not.toBeNull()
+})
+
+const addTwoTodaySportSlots = (real: ReturnType<typeof import('@/data/hooks').useTrain>, loggedKind: 'volleyball' | 'cross') => {
+  const schedule = real.sport.schedule
+  if (!schedule) return {}
+  const iso = csuDateIso()
+  return {
+    sport: {
+      ...real.sport,
+      schedule: {
+        ...schedule,
+        volleyball: {
+          ...schedule.volleyball,
+          sessions: [
+            ...schedule.volleyball.sessions,
+            { day: 'Csü', time: '18:00', duration: 60, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés', sport: 'volleyball' as const, today: true },
+            { day: 'Csü', time: '07:00', duration: 45, court: 'Otthon', intensity: 'könnyű', role: 'edzés', sport: 'cross' as const, today: true },
+          ],
+        },
+      },
+      sessions: [
+        ...real.sport.sessions,
+        {
+          id: 'ss-fixture', sport: loggedKind, date: huMonthDayDow(iso), isoDate: iso, time: '18:00', duration: 60,
+          setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null, jumpCount: null, notes: null,
+        },
+      ],
+    },
+  }
+}
+
+// Finding 2: two sport slots today, only one logged — the earned bar must light up
+// ONLY the logged event's own regions, not every region any planned sport touches
+// (the old `anySportDone` boolean lit everything once ANY sport was logged).
+test('two sports today, logging one earns only its own regions (per-event attribution)', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTwoTodaySportSlots(real, 'volleyball') })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.tr-mus-name')!.textContent, r]))
+  // cross (planned, NOT logged) is the only sport touching Kar (rose, triceps-medial) —
+  // volleyball never does, so Kar's earned bar must stay at zero width.
+  const karDone = byName['Kar'].querySelector('.tr-mus-track i.done') as HTMLElement
+  expect(karDone.style.getPropertyValue('--w')).toBe('0%')
+  // volleyball (logged) touches Váll (lav, shoulder-front) — its earned bar must light.
+  const vallDone = byName['Váll'].querySelector('.tr-mus-track i.done') as HTMLElement
+  expect(vallDone.style.getPropertyValue('--w')).not.toBe('0%')
+})
+
+// Finding 3: MuscleChip renders null for an empty token — every impact row (gym-day
+// zero-planned big-family rows, and the sport-estimate rows) must carry a non-empty,
+// drawable token.
+test('every impact row renders a chip (no empty token, gym day)', () => {
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    expect(row.querySelector('.tr-mus-art .muscle-chip')).not.toBeNull()
+  }
+})
+
+test('every impact row renders a chip (no empty token, rest day with sport)', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    expect(row.querySelector('.tr-mus-art .muscle-chip')).not.toBeNull()
+  }
 })

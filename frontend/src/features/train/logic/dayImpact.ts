@@ -4,7 +4,7 @@
 // into the prototype's plain-language ladder (train-pages.js:36) instead of
 // raw set counts. Zero UI imports — pure module, table-tested.
 // ============================================================
-import { muscleRegion, REGION_LABELS, REGION_ORDER, type RegionKey } from '@/features/train/logic/muscleColors'
+import { muscleRegion, REGION_LABELS, REGION_MUSCLES, REGION_ORDER, type RegionKey } from '@/features/train/logic/muscleColors'
 
 export type DayImpactRow = {
   region: string // muscleColors region id (6 families)
@@ -17,6 +17,17 @@ export type DayImpactRow = {
 
 /** The four big families the prototype always shows, even when today gives them nothing. */
 const BIG_FAMILIES: readonly RegionKey[] = ['coral', 'sky', 'lav', 'sage'] // Mell / Hát / Váll / Láb
+
+/**
+ * A region's representative muscle token — the FIRST token of that region in
+ * `REGION_MUSCLES` (muscleColors' own authoritative region→muscles source). Used as the
+ * chip-drawable fallback for a zero-planned big-family row (`token` would otherwise stay
+ * `''`, which `MuscleChip` renders as nothing — an empty art cell, fix round 1). Exported
+ * so the sport-heuristic impact rows on `TrainTodayPage` can reuse the same fallback.
+ */
+export function regionRepresentativeToken(region: RegionKey): string {
+  return REGION_MUSCLES.find((g) => g.region === region)?.muscles[0] ?? ''
+}
 
 function impactWord(plannedSets: number): DayImpactRow['word'] {
   if (plannedSets === 0) return 'ma nem kap'
@@ -68,7 +79,10 @@ export function dayImpact(
     rows.push({
       region,
       label: REGION_LABELS[region],
-      token,
+      // Zero-planned big-family row: `token` stays '' above (no exercise contributed to
+      // it) — fall back to the region's representative token so MuscleChip still has
+      // something drawable instead of rendering null (fix round 1).
+      token: token || regionRepresentativeToken(region),
       plannedSets,
       doneSets: doneByRegion.get(region) ?? 0, // raw — the bar caps it at render time, not here
       word: impactWord(plannedSets),

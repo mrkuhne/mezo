@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayImpact } from '@/features/train/logic/dayImpact'
+import { dayImpact, regionRepresentativeToken } from '@/features/train/logic/dayImpact'
 
 const ex = (muscle: string, workingSets: number) => ({ muscle, workingSets })
 
@@ -38,11 +38,24 @@ describe('dayImpact', () => {
     const rows = dayImpact([])
     expect(rows.map((r) => r.label)).toEqual(['Mell', 'Hát', 'Váll', 'Láb'])
     expect(rows.every((r) => r.word === 'ma nem kap' && r.plannedSets === 0 && r.doneSets === 0)).toBe(true)
+    // Fix round 1 (finding 3): a zero-planned big-family row still carries a non-empty,
+    // MuscleChip-drawable token — the region's own representative (first) token from
+    // muscleColors' REGION_MUSCLES — instead of '' (which MuscleChip renders as nothing).
+    expect(rows.every((r) => r.token.length > 0)).toBe(true)
+    expect(rows.map((r) => r.token)).toEqual([
+      regionRepresentativeToken('coral'),
+      regionRepresentativeToken('sky'),
+      regionRepresentativeToken('lav'),
+      regionRepresentativeToken('sage'),
+    ])
   })
 
   it('drops an unknown muscle token silently — no region, no row, no crash', () => {
     const rows = dayImpact([ex('jetpack-fuel', 5)])
     expect(rows.every((r) => r.plannedSets === 0)).toBe(true)
     expect(rows.map((r) => r.label)).toEqual(['Mell', 'Hát', 'Váll', 'Láb'])
+    // Same zero-planned fallback applies here — the unknown token contributed no region,
+    // so every row is the empty-day case and still carries a drawable token.
+    expect(rows.every((r) => r.token.length > 0)).toBe(true)
   })
 })
