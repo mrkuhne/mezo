@@ -249,10 +249,10 @@ export function TrainTodayPage() {
   // of the two carries the CTA and it is never duplicated (mezo-eahv).
   const restDayCard =
     !shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout)
-  // The today-gym poster's own render condition, hoisted: the `.tr-alt` quick pair hangs
-  // directly under the poster, and the dashed „Saját edzés” footer stands down while the
-  // pair is there so exactly ONE one-off-workout entry exists (the same mutual exclusion
-  // the rest-day card already had with the footer, mezo-eahv).
+  // The today-gym poster's own render condition, hoisted: the `.tr-alt` quick pair follows
+  // the energy and muscle-impact cards in render order, and the dashed „Saját edzés”
+  // footer stands down while the pair is there so exactly ONE one-off-workout entry exists
+  // (the same mutual exclusion the rest-day card already had with the footer, mezo-eahv).
   const gymPosterShown = isTodayShown && Boolean(workout) && orderedToday.some((it) => it.kind === 'gym')
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
@@ -677,10 +677,11 @@ export function TrainTodayPage() {
         </div>
       )}
 
-      {/* „Vagy inkább” — the two other doors, directly under the poster: a one-off
-          workout and a sport log. They open the SAME two sheets this page already
-          mounts (CustomWorkoutSheet / SportLogSheet), no new surface. Aligned to the
-          poster's own inner gutter (the scroller's --screen-gutter + 6px). */}
+      {/* „Vagy inkább” — the two other doors (Custom Workout and Sport Log), rendered
+          below the energy and muscle-impact cards in the cascade. They open the SAME
+          two sheets this page already mounts (CustomWorkoutSheet / SportLogSheet), no
+          new surface. Aligned to the poster's own inner gutter (the scroller's
+          --screen-gutter + 6px). */}
       {gymPosterShown && (
         // Fix round 1 (finding 4): rebalanced from 200ms — the .tr-alt pair sits BELOW
         // the energy (220ms) / muscle-impact (230ms) cards in document order, so its own
