@@ -13668,3 +13668,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .app-head .nap-dpmenu { background: #1a1c24; border-color: rgba(240, 238, 248, 0.08); }
 .app-head .nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 26%, transparent); }
 /* ── /boop sötét fejléc ──────────────────────────────────────────────────────── */
+
+/* ── BodyMap — two-view real-anatomy heat component (mezo-88iwa.4) ──────────────────────── */
+.body-map { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.body-map-figure { height: 100%; max-width: 100%; }
+.body-map-duo .body-map-figure { flex: 1 1 0; }
+.body-map-shape { transition: opacity 0.3s ease; }
+@media (prefers-reduced-motion: reduce) { .body-map-shape { transition: none; } }

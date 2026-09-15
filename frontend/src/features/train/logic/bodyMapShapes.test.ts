@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BODY } from './bodyGeometry.gen'
 import { LIVE_MUSCLES } from './muscleColors'
-import { TOKEN_SHAPES, shapesFor } from './bodyMapShapes'
+import { shapesFor } from './bodyMapShapes'
 
 describe('bodyMapShapes', () => {
   it('resolves every live token to at least one shape the artwork really has', () => {
