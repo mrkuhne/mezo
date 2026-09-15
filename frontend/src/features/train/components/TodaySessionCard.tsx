@@ -5,12 +5,13 @@
 // render the same card. Kept as a named seam so Train's call sites keep
 // their session vocabulary (`SessionTone`) instead of the broader `ItemTone`.
 // ============================================================
+import type { ReactNode } from 'react'
 import { ItemCard } from '@/shared/ui/ItemCard'
 import type { SessionTone } from '@/features/train/logic/sportKinds'
 
 interface TodaySessionCardProps {
   tone: SessionTone
-  emoji: string
+  emoji: ReactNode
   tag: string
   time?: string | null
   title: string

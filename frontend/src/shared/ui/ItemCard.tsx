@@ -20,8 +20,8 @@ export type ItemTone = 'gym' | 'sport' | 'cross' | 'trx' | 'run' | 'body' | 'min
 export interface ItemCardProps {
   /** Drives `--tc-accent`/`--tc-wash` and the type-tag variant. */
   tone: ItemTone
-  /** Icon-shield glyph. */
-  emoji: string
+  /** Icon-shield glyph — an emoji string, or a node (the clay symbols Train passes). */
+  emoji: React.ReactNode
   /** Uppercase type word shown in the eyebrow tag (`FUTÁS`, `RÖPI`…). */
   tag: string
   /** Item time; omitted from the eyebrow when absent. */
