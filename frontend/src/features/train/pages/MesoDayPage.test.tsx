@@ -86,12 +86,12 @@ test('back lands on the run page', async () => {
 
 test('a day the block does not have says so instead of an empty editor', () => {
   setup('Vasárnap')
-  expect(screen.getByText('Ez a nap nincs a blokkban.')).toBeInTheDocument()
+  expect(screen.getByText('Ez a nap nincs a tervedben.')).toBeInTheDocument()
 })
 
 // ── Real mode ────────────────────────────────────────────────────────────────
 // The regression this pins: in real mode the block list is a fetch, and the page used to
-// render „Ez a nap nincs a blokkban." for the whole in-flight window — a valid deep link
+// render „Ez a nap nincs a tervedben." for the whole in-flight window — a valid deep link
 // (or a shared URL opened cold) flashed as a dead one before resolving.
 describe('MesoDayPage (real mode)', () => {
   const REAL_MESO_ID = 'b6f3a0e2-0000-4000-8000-000000000001'
@@ -99,10 +99,10 @@ describe('MesoDayPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('a skeleton holds the page while the block is in flight — never a „nincs a blokkban" flash', async () => {
+  test('a skeleton holds the page while the block is in flight — never a „nincs a tervedben" flash', async () => {
     setup('Csü', REAL_MESO_ID)
     expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
-    expect(screen.queryByText('Ez a nap nincs a blokkban.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ez a nap nincs a tervedben.')).not.toBeInTheDocument()
     expect(screen.queryByText('Ez a mesociklus nem található.')).not.toBeInTheDocument()
 
     expect(await screen.findByText('Pull nap')).toBeInTheDocument()
@@ -112,7 +112,7 @@ describe('MesoDayPage (real mode)', () => {
 
   test('a RESOLVED block without the day is still a dead link, and says so', async () => {
     setup('Vas', REAL_MESO_ID)
-    expect(await screen.findByText('Ez a nap nincs a blokkban.')).toBeInTheDocument()
+    expect(await screen.findByText('Ez a nap nincs a tervedben.')).toBeInTheDocument()
   })
 
   test('an unknown block id resolves to the not-found ghost, not an endless skeleton', async () => {

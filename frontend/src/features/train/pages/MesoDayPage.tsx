@@ -94,9 +94,9 @@ export function MesoDayPage() {
   if (!meso || !day) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ A blokkod" />
+        <PageHead onBack={goBack} label="‹ A terved" />
         <PageBody>
-          <GhostState message={meso ? 'Ez a nap nincs a blokkban.' : 'Ez a mesociklus nem található.'} />
+          <GhostState message={meso ? 'Ez a nap nincs a tervedben.' : 'Ez a mesociklus nem található.'} />
         </PageBody>
       </MozaikPage>
     )
@@ -117,7 +117,7 @@ export function MesoDayPage() {
 
   return (
     <MozaikPage tone={TONE[tile.tone]}>
-      <PageHead onBack={goBack} label="‹ A blokkod" />
+      <PageHead onBack={goBack} label="‹ A terved" />
       <EntranceGroup>
         {/* The day, as a poster: eyebrow, the body-map spot graphic, one dominant numeral. */}
         <section className="pl-dhero rise" style={{ '--mus-color': accent } as CSSProperties}>

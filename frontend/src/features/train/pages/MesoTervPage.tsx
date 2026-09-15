@@ -151,7 +151,7 @@ export function MesoTervPage() {
             lines={2}
             message={
               mesocycles.length === 0
-                ? 'Még nincs mesociklusod — itt fognak élni a blokkjaid.'
+                ? 'Még nincs mesociklusod — itt fognak élni a terveid.'
                 : 'Most nem fut terv — a terveid az Edzéstervek mögött várnak.'
             }
           />
