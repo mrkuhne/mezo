@@ -76,6 +76,29 @@ class WorkoutTodayProgressionIT extends AbstractIntegrationTest {
         assertThat(te.getProgression().getDeltaKg().signum()).isNegative();
     }
 
+    @Test
+    void testGetToday_shouldTallyWeightDown_whenHistoryGrindsBelowRepRange() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        // repMin=6, repMax=8, targetRir=0 (createExercise(..., muscle, type) idiom) — reps=5 <
+        // repMin AND rir=0 <= targetRir → grind branch: Lever.WEIGHT with a NEGATIVE deltaKg.
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        var instance = train.createWorkoutInstance(owner, day, LocalDate.now().minusDays(7), "completed");
+        train.createLoggedSet(owner, ex.getId(), instance.getId(), 0, "60", 5, 0);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        var te = res.getExercises().get(0);
+        assertThat(te.getProgression()).isNotNull();
+        assertThat(te.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
+        assertThat(te.getProgression().getDeltaKg().signum()).isNegative();
+        assertThat(res.getOverloadSummary()).isNotNull();
+        assertThat(res.getOverloadSummary().getWeightDown()).isEqualTo(1);
+        assertThat(res.getOverloadSummary().getWeightUp()).isEqualTo(0);
+    }
+
     /** Find-or-create yields the demodata-seeded owner's id — the single-user principal. */
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());

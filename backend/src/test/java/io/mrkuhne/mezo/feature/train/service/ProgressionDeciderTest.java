@@ -54,6 +54,15 @@ class ProgressionDeciderTest {
     }
 
     @Test
+    void grindBelowRange_dropsLoad_withNegativeDelta() {
+        // rp < repMin AND slack <= 0 → Lever.WEIGHT with a NEGATIVE deltaKg (pins the sign
+        // contract the overload-summary tally in WorkoutService depends on)
+        Decision d = ProgressionDecider.decide(ref("60", 6, 1), 8, 12, 2, INC, STEP, false);
+        assertThat(d.lever()).isEqualTo(Lever.WEIGHT);
+        assertThat(d.deltaKg()).isNegative();
+    }
+
+    @Test
     void decide_shouldHold_whenBelowRangeButNotGrind() {
         Decision d = ProgressionDecider.decide(ref("62.5", 5, 3), 6, 8, 2, INC, STEP, false);
         assertThat(d.lever()).isEqualTo(Lever.HOLD);
