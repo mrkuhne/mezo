@@ -689,6 +689,56 @@ Both modes and both layers must stay green.
 - `frontend/src/features/train/components/RestTimerBar.tsx` — the `.restbar` CTA-morph bar (draining fill, ⏸/▶ + ⏭ buttons, inert body); swaps in for `.donebtn` in the excard
 - `frontend/src/features/train/logic/restTimer.ts` — pure `restSecondsFor(type)` (150s compound / 90s else, hardcoded) + `fmtMMSS` — the only place the rest duration is decided
 
+**FE — real-anatomy body geometry (Train Titanium T3, `mezo-88iwa.4`; no consumer yet — T12)**
+The artwork is vendored, not drawn: `scripts/vendor/musclemap/{MaleFrontPaths,MaleBackPaths}.swift`
+are the **MIT**-licensed path data from [MuscleMap](https://github.com/melihcolpan/MuscleMap)
+(Copyright (c) Melih Colpan — see [NOTICE.md](../../NOTICE.md) at the repo root); openGym's own
+converted paths are **AGPL-3.0** and were never copied — full provenance + the two bbox-math bugs
+found while building the generator are in
+[`docs/research/musclemap-body-geometry.md`](../research/musclemap-body-geometry.md).
+- `scripts/gen-body-geometry.mjs` — turns the two Swift files into the generated
+  `frontend/src/features/train/logic/bodyGeometry.gen.ts` (`BODY: Record<'front'|'back', {vb, p, b}>`,
+  `// Generated … — do not hand-edit.` banner): `parse()` kebab-cases each `BodyPartPathData` slug
+  and collects its path strings, `bbox()` walks the path cursor through both absolute AND relative
+  commands (many shapes draw their whole outline in lowercase relative curves) to derive each
+  shape's viewBox/crop box. `node scripts/gen-body-geometry.mjs --check` regenerates to a temp
+  buffer and diffs against the committed file — 0 exit means generator and output agree; run it
+  after touching the vendored sources or the generator itself.
+- `frontend/src/features/train/logic/bodyMapShapes.ts` — the tested 21-token→shape table
+  (`shapesFor(token)`, legacy keys `chest`/`lats`/`back`/`shoulder`/`rear-delt`/`biceps`/`triceps`
+  remapped to the nearest live token): `chest-upper→front/upper-chest`, `chest-mid→front/chest`,
+  `chest-lower→front/lower-chest`, `back-wide`/`back-mid→back/upper-back`, `back-lower→back/lower-back`,
+  `traps→back/trapezius`, `shoulder-front→front/front-deltoid`, `shoulder-side→front/deltoids`,
+  `shoulder-rear→back/deltoids`, **`biceps-long`/`biceps-short`/`biceps-brachialis→front/biceps`**
+  (all three heads collapse onto MuscleMap's one arm shape), **`triceps-long`/`triceps-lateral`/
+  `triceps-medial→back/triceps`** (same collapse), `quad→front/quadriceps`+`inner-quad`+`outer-quad`,
+  `ham→back/hamstring`, `glute→back/gluteal`, `calf→back/calves`,
+  `core→front/abs`+`upper-abs`+`lower-abs`+`obliques`. Where several tokens share one shape, **a
+  renderer combines them per its own semantics, not the table** — `bodyMapShapes.ts` itself takes no
+  position on sum vs max. An unmapped token is dropped, never guessed.
+- `frontend/src/features/train/components/BodyMap.tsx` — two-view (`front`/`back`) heat silhouette:
+  one faint ink outline of the whole body plus one lit `<g>` per drawable shape carrying heat
+  (`OPACITY` keyed on `weekZone.ts`'s `'none'|'below'|'entering'|'in'|'over'` vocabulary); a shape
+  shared by several tokens takes their **MAX** opacity (heat is a scale, not additive — see the
+  table note above). `views:'auto'` shows whichever side (front/back) sums more heat (`viewLoad`),
+  `views:'both'` shows both. The root reserves its `aspect-ratio` box (`66/64` single, `132/64` duo)
+  before geometry arrives, so nothing below it jumps on load.
+- `frontend/src/features/train/components/MuscleChip.tsx` — one-token zoom-crop icon: union bbox of
+  the token's shapes → 30% air on every side (`side = max(w,h) * 1.6`), squared, centered (the
+  prototype's `muscleIcon` math). First paint uses the **generated** `BODY[view].b` boxes as a
+  fallback crop (works in jsdom, which has no `getBBox`); in a real browser the first mounted
+  instance per shape-set **refines** the crop once via `groupRef.current.getBBox()` and caches the
+  result module-wide (`cropCache`, keyed `"<view>/<slug1>,<slug2>,…"`) so later instances and
+  re-renders skip remeasuring. An unknown token (`shapesFor` → `[]`) renders `null` immediately; a
+  known token still waiting on geometry/crop renders a **reserved-space placeholder**
+  (`<span style={{width,height}}>`) instead of `null`, so a chip never collapses its layout slot.
+- **Dynamic-import rule:** both components load `bodyGeometry.gen` via `import('../logic/bodyGeometry.gen')`
+  inside `useEffect`, never a static top-level import — the module is ~90kB of path data and must
+  never land in the main bundle. As of this slice **neither component has a production consumer**
+  (nothing under `frontend/src` imports `BodyMap`/`MuscleChip` outside their own tests), so Rollup
+  currently tree-shakes them — and their dynamic import — out of the build entirely; re-verify the
+  chunk actually splits once a later task (T12) wires one of them into a real page.
+
 **FE — screens / views**
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — **the Edzés tab's Mozaik hub at `/train`** (`mezo-d20.3.1`): the shell's `AppHeader` (own header before `mezo-atry`) → today's-session hero (TrainTodayPage's honest states, one CTA) → the six-tile mosaic with per-page live lines. **`TrainSection.tsx`, `tabs.ts`/`TRAIN_TABS` and `TrainSubNav.tsx` are deleted** with the shell.
 - `frontend/src/shared/ui/mozaik/` + `frontend/src/shared/ui/clay/` — the shared Mozaik primitives (`Tile`/`Mosaic`/`MozaikPage`/`PageHead`/`PageHero`/`PageBody`/`StatStrip`/`StatCell`/`MCells`/`CollapsibleStrip`, `motion.tsx`'s `EntranceGroup`+`useCountUp`) and the clay SVG sprites (`ClayIcon`/`ClaySpot`) every re-faced Train page consumes; tokens are the `--mz-*` family in `frontend/src/styles/prototype.css`. Cross-domain — see [`_platform-design-system.md`](_platform-design-system.md).
