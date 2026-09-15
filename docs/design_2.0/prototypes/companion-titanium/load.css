@@ -202,3 +202,10 @@
 
 /* the ⓘ glass copy */
 .info-glass-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: #d6d2e2; }
+
+/* — real-anatomy figures — */
+.body-duo { display: flex; align-items: flex-start; justify-content: center; gap: 4%; }
+.body-duo-view { width: 44%; height: auto; }
+.ld-map-mini { width: 96px; }
+.ld-map-mini .body-duo-view { width: 48%; }
+.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; }

@@ -43,3 +43,32 @@ export const muscle = key => byKey[key] ?? null;
 export const muscleLabel = key => byKey[key]?.label ?? key;
 export const muscleColor = key => regionByKey[byKey[key]?.region]?.color ?? '#9c96b0';
 
+
+/**
+ * Which drawable shapes carry each muscle, and on which view. The artwork is coarser than the
+ * planner on purpose: the three biceps heads share one shape, the mid back rides on the upper
+ * back (no rhomboid shape upstream) — where tokens share a shape, their load is summed.
+ */
+export const TOKEN_SHAPES = {
+  'chest-upper': [['front', 'upper-chest']],
+  'chest-mid': [['front', 'chest']],
+  'chest-lower': [['front', 'lower-chest']],
+  'back-wide': [['back', 'upper-back']],
+  'back-mid': [['back', 'upper-back']],
+  'back-lower': [['back', 'lower-back']],
+  traps: [['back', 'trapezius']],
+  'shoulder-front': [['front', 'front-deltoid']],
+  'shoulder-side': [['front', 'deltoids']],
+  'shoulder-rear': [['back', 'deltoids']],
+  'biceps-long': [['front', 'biceps']],
+  'biceps-short': [['front', 'biceps']],
+  'biceps-brachialis': [['front', 'biceps']],
+  'triceps-long': [['back', 'triceps']],
+  'triceps-lateral': [['back', 'triceps']],
+  'triceps-medial': [['back', 'triceps']],
+  quad: [['front', 'quadriceps'], ['front', 'inner-quad'], ['front', 'outer-quad']],
+  ham: [['back', 'hamstring']],
+  glute: [['back', 'gluteal']],
+  calf: [['back', 'calves']],
+  core: [['front', 'abs'], ['front', 'upper-abs'], ['front', 'lower-abs'], ['front', 'obliques']],
+};

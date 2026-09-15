@@ -1,6 +1,7 @@
 // The clay symbols and the body map for the taxonomy in muscle-taxonomy.js.
 import { icon } from './nap.js';
-import { REGIONS, MUSCLES, muscle, muscleLabel, muscleColor } from './muscle-taxonomy.js';
+import { REGIONS, MUSCLES, muscle, muscleLabel, muscleColor, TOKEN_SHAPES } from './muscle-taxonomy.js';
+import { BODY } from './body-geometry.js';
 export { REGIONS, MUSCLES, muscle, muscleLabel, muscleColor };
 
 export const muscleIcon = key => icon(`m-${key}`);
@@ -18,65 +19,45 @@ export function muscleMapHtml(active = []) {
   </section>`;
 }
 
-/* ── the body map: one figure, every trained area lit at once ─────────────────────────── */
+/* ── the body map: real anatomy from the MIT MuscleMap geometry (see NOTICE.md) ───────── */
 
-const FIGURE = '<circle cx="32" cy="8.5" r="5.4"/>'
-  + '<path d="M25 15h14l6 3 2.4 11-5 1.2-2.4-7 .8 12-2 10H25.2l-2-10 .8-12-2.4 7-5-1.2L19 18Z"/>'
-  + '<path d="M18.4 19.6 14 22l-3 12.4 4.2 1.2 3.2-11Z"/><path d="M14.9 36.2 12.6 48l4.2 1.2 3.2-11.8Z"/>'
-  + '<path d="M45.6 19.6 50 22l3 12.4-4.2 1.2-3.2-11Z"/><path d="M49.1 36.2 51.4 48l-4.2 1.2-3.2-11.8Z"/>'
-  + '<path d="M25 42h6.2l-.8 9.4.8 11.6h-6.2l-.8-11.6Z"/><path d="M32.8 42H39l.8 9.4-.8 11.6h-6.2l-.8-11.6Z"/>';
+const silhouette = view =>
+  `<g fill="url(#mg-body)" opacity=".42">${Object.values(BODY[view].p).flat().map(d => `<path d="${d}"/>`).join('')}</g>`;
 
-const SPINE = '<path d="M32 16.5v25" stroke="#00000070" stroke-width="1.6" stroke-linecap="round" fill="none"/>'
-  + '<path d="M27 19.6c1.4 2.8 2.8 4.4 4.6 5.4M37 19.6c-1.4 2.8-2.8 4.4-4.6 5.4" fill="none" stroke="#00000055" stroke-width="1.3" stroke-linecap="round"/>';
+/** Collapse tokens onto drawable shapes for one view; shared shapes sum their tokens. */
+function shapeRows(view, entries) {
+  const rows = new Map();
+  for (const { key, value } of entries) {
+    for (const [shapeView, slug] of TOKEN_SHAPES[key] ?? []) {
+      if (shapeView !== view) continue;
+      const row = rows.get(slug) ?? { slug, color: muscleColor(key), value: 0 };
+      row.value += value;
+      rows.set(slug, row);
+    }
+  }
+  return [...rows.values()];
+}
 
-const blob = (cx, cy, rx, ry, rot = 0) =>
-  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ''}/>`;
-const pair = (cx, cy, rx, ry, rot = 0) => blob(cx, cy, rx, ry, rot) + blob(64 - cx, cy, rx, ry, -rot);
+const heatPaths = (view, rows, alpha) => rows.map(row =>
+  `<g fill="${row.color}" stroke="#ffffff33" stroke-width="1.5" opacity="${alpha(row.value).toFixed(2)}">${
+    (BODY[view].p[row.slug] ?? []).map(d => `<path d="${d}"/>`).join('')}</g>`).join('');
 
-/** Where each muscle sits on the figure, and which way the figure has to be facing. */
-const AREAS = {
-  'chest-upper': ['front', blob(32, 19.5, 8.6, 2.4)],
-  'chest-mid': ['front', blob(32, 23.5, 9.2, 2.8)],
-  'chest-lower': ['front', blob(32, 27.5, 8.2, 2.4)],
-  traps: ['back', blob(32, 16.8, 9.4, 2.6) + pair(25, 18.6, 3.4, 2)],
-  'back-wide': ['back', pair(26, 25, 4, 6.6, 12)],
-  'back-mid': ['back', blob(32, 26, 7.6, 4)],
-  'back-lower': ['back', blob(32, 35.5, 6.4, 3.4)],
-  'shoulder-front': ['front', pair(22.6, 19.4, 3.6, 3.2)],
-  'shoulder-side': ['front', pair(19.4, 21.4, 3.2, 3.8, 18)],
-  'shoulder-rear': ['back', pair(21.4, 20.6, 3.4, 3.2, -12)],
-  'biceps-long': ['front', pair(16.6, 26, 2.6, 4.2, 14)],
-  'biceps-short': ['front', pair(15.6, 31, 2.6, 3.6, 14)],
-  'biceps-brachialis': ['front', pair(14.6, 35.6, 2.4, 3, 14)],
-  'triceps-long': ['back', pair(17.4, 25.4, 2.6, 4.2, 14)],
-  'triceps-lateral': ['back', pair(16.2, 31, 2.6, 3.6, 14)],
-  'triceps-medial': ['back', pair(15, 36, 2.4, 3, 14)],
-  quad: ['front', pair(27.8, 46.8, 3.2, 5.6)],
-  ham: ['back', pair(27.8, 47.6, 3, 5.2)],
-  glute: ['back', pair(28, 41.4, 3.8, 3.2)],
-  calf: ['back', pair(27.6, 57, 2.8, 4.2)],
-  core: ['front', blob(32, 31, 5.6, 3) + blob(32, 36.5, 5.2, 2.8) + blob(32, 41, 4.6, 2.4)],
-};
-
-const figure = (keys, view, dx = 0) => `<g transform="translate(${dx} 0)">
-  <g fill="url(#mg-body)" filter="url(#shadow)" opacity=".5">${FIGURE}${view === 'back' ? SPINE : ''}</g>
-  ${keys.map(key => `<g fill="${muscleColor(key)}" stroke="#ffffff70" stroke-width=".5" opacity=".92">${AREAS[key][1]}</g>`).join('')}
- </g>`;
+const bodySvg = (view, inner, className) =>
+  `<svg class="${className}" viewBox="${BODY[view].vb}" aria-hidden="true">${silhouette(view)}${inner}</svg>`;
 
 /**
  * Every trained area lit on ONE figure. When the work spans both sides of the body we show the
  * side that carries the most of it — by sets when we know them, by count otherwise — because two
- * silhouettes side by side read as two icons rather than one picture.
+ * bodies side by side read as decoration; one reads as you.
  */
 export function bodyMap(keys, { className = 'body-map', weights = null } = {}) {
-  const known = keys.filter(key => AREAS[key]);
-  if (!known.length) return '';
-  const front = known.filter(key => AREAS[key][0] === 'front');
-  const back = known.filter(key => AREAS[key][0] === 'back');
-  const weigh = list => list.reduce((total, key) => total + (weights?.[key] ?? 1), 0);
-  const view = weigh(back) > weigh(front) ? 'back' : 'front';
-  const shown = view === 'back' ? back : front;
-  return `<svg class="${className}" viewBox="0 0 64 64" aria-hidden="true">${figure(shown, view)}</svg>`;
+  const entries = keys.filter(key => TOKEN_SHAPES[key]).map(key => ({ key, value: weights?.[key] ?? 1 }));
+  if (!entries.length) return '';
+  const weigh = view => entries.filter(e => TOKEN_SHAPES[e.key].some(([v]) => v === view)).reduce((t, e) => t + e.value, 0);
+  const view = weigh('back') > weigh('front') ? 'back' : 'front';
+  const rows = shapeRows(view, entries);
+  const top = Math.max(1, ...rows.map(r => r.value));
+  return bodySvg(view, heatPaths(view, rows, v => 0.4 + v / top * 0.55), className);
 }
 
 /**
@@ -85,15 +66,14 @@ export function bodyMap(keys, { className = 'body-map', weights = null } = {}) {
  * a faint outline: honestly empty, never invisible.
  */
 export function bodyMapDuo(rows, { className = 'body-duo' } = {}) {
-  const strength = row =>
-    row.state === 'planned' ? 0.3 + row.value * 0.65
-    : row.state === 'none' ? 0.14
-    : row.state === 'started' ? 0.45
-    : row.state === 'ontrack' ? 0.72 : 1;
-  const view = (which, dx) => `<g transform="translate(${dx} 0)">
-   <g fill="url(#mg-body)" filter="url(#shadow)" opacity=".5">${FIGURE}${which === 'back' ? SPINE : ''}</g>
-   ${rows.filter(row => AREAS[row.key]?.[0] === which).map(row =>
-     `<g fill="${muscleColor(row.key)}" stroke="#ffffff55" stroke-width=".4" opacity="${strength(row).toFixed(2)}">${AREAS[row.key][1]}</g>`).join('')}
-  </g>`;
-  return `<svg class="${className}" viewBox="0 0 132 64" aria-hidden="true">${view('front', 0)}${view('back', 68)}</svg>`;
+  const strength = state => state === 'none' ? 0.13 : state === 'started' ? 0.42 : state === 'ontrack' ? 0.7 : 1;
+  const view = which => {
+    const entries = rows.map(row => ({
+      key: row.key,
+      value: row.state === 'planned' ? 0.3 + row.value * 0.65 : strength(row.state),
+    }));
+    const shapes = shapeRows(which, entries).map(r => ({ ...r, value: Math.min(1, r.value) }));
+    return bodySvg(which, heatPaths(which, shapes, v => v), 'body-duo-view');
+  };
+  return `<span class="${className}">${view('front')}${view('back')}</span>`;
 }
