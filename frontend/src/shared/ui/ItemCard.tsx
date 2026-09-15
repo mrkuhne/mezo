@@ -9,6 +9,7 @@
 // The `.todaycard*` class family is intentionally kept under its original
 // names — the extraction is a pure move, proven by the unchanged Train goldens.
 // ============================================================
+import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
 import { DoneBar } from '@/features/train/components/DoneBar'
@@ -21,7 +22,7 @@ export interface ItemCardProps {
   /** Drives `--tc-accent`/`--tc-wash` and the type-tag variant. */
   tone: ItemTone
   /** Icon-shield glyph — an emoji string, or a node (the clay symbols Train passes). */
-  emoji: React.ReactNode
+  emoji: ReactNode
   /** Uppercase type word shown in the eyebrow tag (`FUTÁS`, `RÖPI`…). */
   tag: string
   /** Item time; omitted from the eyebrow when absent. */
@@ -43,7 +44,7 @@ export interface ItemCardProps {
   /** Opens the log surface (from the CTA, or from the DoneBar once logged). */
   onLog?: () => void
   /** Extra content rendered between the head and the pills (e.g. a hero's progress bar). */
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
 export function ItemCard({

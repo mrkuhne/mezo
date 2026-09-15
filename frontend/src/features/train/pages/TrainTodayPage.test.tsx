@@ -110,9 +110,14 @@ test('today gym hero renders (the weekly list + load tiles + note now live on He
   // "Pull Day" is the poster's title (h2); the poster itself is unique via .tr-day.
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
   expect(container.querySelector('.tr-day')).not.toBeNull()
-  expect(screen.getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+  const start = screen.getByRole('button', { name: /Indítsuk/ })
+  expect(start).toBeInTheDocument()
   // nothing logged today yet ⇒ the poster's status pill reads BETERVEZVE
   expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
+  // fresh-state poster: the `.tr-start.is-go` CTA opens the active session (mirrors the
+  // is-review/is-resume CTAs' own navigate assertions below).
+  fireEvent.click(start)
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
 })
 
 // The one-day rework (mezo-9bbc) dropped the unconditional `+ Saját edzés`
@@ -265,7 +270,7 @@ test('the Mezociklus card navigates to the overview (mezo-hi9m)', () => {
 // no entry point of its own on Mai — restore reachability with a nav row.
 test('the Sport entry row navigates to /train/sport', () => {
   renderView()
-  fireEvent.click(screen.getByRole('button', { name: /Sport naplózása és szezonod/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Sportjaid és szezonod/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/sport')
 })
 
@@ -1266,6 +1271,19 @@ test('rest day with a sport slot: the impact card falls back to the sport heuris
   expect(byName['Hát']).toBeUndefined()
   expect(byName['Mell']).toBeUndefined()
   expect(container.querySelector('.tr-mus-note')!.textContent).toMatch(/^A sáv a sport becsült terhelése/)
+})
+
+// Sweep finding f (mezo-88iwa.6): a gym day that ALSO carries a sport slot only ever
+// feeds the gym plan into the impact card (the sport branch is `else if`) — the
+// sport's load is silently dropped, not merely estimated separately. The footer must
+// say so instead of over-promising "Mit terhel a mai mozgásod" covers everything.
+test('gym day with a sport slot too: the impact footer admits the sport load is estimated separately', () => {
+  trainOverride = (real) => addTodaySportSlot(real, false) // Pull Day stays active, plus a Csü volleyball slot
+  const { container } = renderView()
+  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0) // the gym plan is still the source of the table
+  const note = container.querySelector('.tr-mus-note')!.textContent!
+  expect(note).toMatch(/^A halvány sáv a tervezett terhelés/) // still the gym-table note, not the sport-estimate one
+  expect(note).toMatch(/gym terved látod itt.*sportod terhelését külön, becsléssel/)
 })
 
 test('nothing planned today: neither card renders (never an all-zero table)', () => {

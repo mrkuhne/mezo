@@ -368,6 +368,11 @@ export function TrainTodayPage() {
       .sort((a, b) => b.plannedSets - a.plannedSets)
   }
   const impactIsSportEstimate = !(gymPosterShown && workout) && impactRows.length > 0
+  // Honest-state footer (mezo-88iwa.6 sweep, finding f): a gym day that ALSO carries a
+  // sport slot only ever feeds the gym plan into `dayImpact` above (the sport branch is
+  // `else if`) — the heading "Mit terhel a mai mozgásod" would otherwise silently claim
+  // to cover movement it never counted. One appended sentence, only in this combo.
+  const gymAndSportToday = Boolean(gymPosterShown && workout) && sportSlotsToday.length > 0
   const hasImpact = impactRows.some((r) => r.plannedSets > 0)
   const maxPlannedImpact = Math.max(1, ...impactRows.map((r) => r.plannedSets))
 
@@ -615,6 +620,7 @@ export function TrainTodayPage() {
         <div className="rise" style={{ padding: '0 6px', '--d': '220ms' } as CSSProperties}>
           <section className="tr-energy">
             <span className="overline">A MAI KERETEDHEZ</span>
+            <h3>Amit a mozgásod hozzáad</h3>
             {dayEnergy.known ? (
               <>
                 <div className="tr-energy-main">
@@ -622,7 +628,7 @@ export function TrainTodayPage() {
                 </div>
                 <div className="tr-energy-split">
                   <span><i className="done" />{dayEnergy.earnedKcal} kcal már megszolgálva</span>
-                  <span><i className="plan" />{dayEnergy.plannedKcal - dayEnergy.earnedKcal} a tervben</span>
+                  <span><i className="plan" />{dayEnergy.plannedKcal - dayEnergy.earnedKcal} kcal a tervben</span>
                 </div>
               </>
             ) : (
@@ -660,6 +666,7 @@ export function TrainTodayPage() {
               {impactIsSportEstimate
                 ? 'A sáv a sport becsült terhelése — nem mért adat. Becslés, nem mérés.'
                 : 'A halvány sáv a tervezett terhelés, a világos a már megszolgált. Becslés, nem mérés.'}
+              {gymAndSportToday && ' A mai gym terved látod itt — a sportod terhelését külön, becsléssel számoljuk.'}
             </p>
           </section>
         </div>
@@ -693,7 +700,10 @@ export function TrainTodayPage() {
           poster pairing owns the top of the face (mezo-88iwa.6, T5). Their markup is
           unchanged; only their place in the cascade moved. */}
       {/* Mezociklus overview entry card (active meso only) */}
-      <div className="rise" style={{ padding: '0 24px 12px', '--d': '240ms' } as CSSProperties}>
+      {/* Gutter aligned to the poster's own 18px inset (mezo-88iwa.6 sweep): the
+          screen scroller already contributes --screen-gutter (12px), so +6px here
+          matches the `.tr-alt` wrapper below, not a bare 24px literal. */}
+      <div className="rise" style={{ padding: '0 6px 12px', '--d': '240ms' } as CSSProperties}>
         {/* The DS canonical row: a 56px nav row at body size with a trailing chevron. */}
         <button
           type="button"
@@ -713,14 +723,14 @@ export function TrainTodayPage() {
           Sport (and its szezon nézet) with no entry point of its own — Mai owns
           `/train/sport` (navModel.ts) but nothing on this face pointed at it. Same
           `.mesorow` idiom as the Mezociklus row above. */}
-      <div className="rise" style={{ padding: '0 24px 12px', '--d': '260ms' } as CSSProperties}>
+      <div className="rise" style={{ padding: '0 6px 12px', '--d': '260ms' } as CSSProperties}>
         <button
           type="button"
           className="card mesorow"
           onClick={() => navigate('/train/sport')}
         >
           <ClayIcon name="i-sport" size={28} />
-          <span className="mesorow-tx">Sport naplózása és szezonod</span>
+          <span className="mesorow-tx">Sportjaid és szezonod</span>
           <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
         </button>
       </div>

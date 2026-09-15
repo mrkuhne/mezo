@@ -2532,31 +2532,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .dayrow .done-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
 .dayrow .log-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; }
 
-/* ===== Napív train hero (Mai, spec §4.3) ===== */
-/* The gym hero, DS-migrated (mezo-setx.6.2): it now speaks `.todaycard`'s chrome —
-   same gradient formula, radius, padding, shadow and border — so Mai's gym hero and
-   its sport/run siblings finally read as one card family. Its bespoke COMPOSITION
-   (eyebrow + h2 + typetag + fact pills + the three-state CTA block) stays: that
-   markup carries the done/in-progress/fresh gating, which is behaviour, not chrome. */
-.trainhero {
-  --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym);
-  position: relative; overflow: hidden;
-  margin: 14px 24px 12px;
-  padding: var(--sp-4);
-  border-radius: var(--r-2xl);
-  background: linear-gradient(165deg, var(--tc-wash), var(--surface-card) 72%);
-  border: 1px solid color-mix(in srgb, var(--tc-accent) 16%, transparent);
-  box-shadow: var(--shadow-sm);
-}
-.trainhero::after { content: ''; position: absolute; top: -46px; right: -46px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--primary-base) 17%, transparent), transparent 68%); }
-/* DS text-eyebrow role (12/700/0.22em) — was 11/800/.8px. */
-.trainhero-over { font: 700 12px/1.4 var(--ff-body); letter-spacing: .22em; text-transform: uppercase; color: var(--primary-deep); }
-/* DS text-h2 role (24/700/-0.02em) — was 30/800/-.5px. */
-.trainhero .h2row h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
-.trainhero .typetag { background: var(--surface-card); color: var(--tag-gym); }
-.trainhero .chips { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); flex-wrap: wrap; }
-.trainhero .np-ctarow { margin-top: 14px; }
-
 /* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
    The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
    full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
