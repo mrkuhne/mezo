@@ -43,14 +43,21 @@ export function MuscleChip({ token, size = 40, className }: {
   className?: string
 }) {
   const [geometry, setGeometry] = useState<Geometry | null>(null)
+  const [failed, setFailed] = useState(false)
   const groupRef = useRef<SVGGElement>(null)
   const [, refine] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    import('../logic/bodyGeometry.gen').then((mod) => {
-      if (!cancelled) setGeometry(mod.BODY)
-    })
+    import('../logic/bodyGeometry.gen')
+      .then((mod) => {
+        if (!cancelled) setGeometry(mod.BODY)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.warn('MuscleChip: failed to load body geometry chunk', err)
+        setFailed(true)
+      })
     return () => { cancelled = true }
   }, [])
 
@@ -80,15 +87,15 @@ export function MuscleChip({ token, size = 40, className }: {
   const hasShapes = view && slugs.length > 0
   const isReady = geometry && crop
 
-  // Unknown token: return null immediately
-  if (!hasShapes) return null
+  // Unknown token, or the geometry chunk failed to load: render nothing.
+  if (!hasShapes || failed) return null
 
   // Known token but not ready: render placeholder
   if (!isReady) {
     return (
       <span
         aria-hidden="true"
-        className={className}
+        className={cn('muscle-chip', className)}
         style={{ display: 'inline-block', width: size, height: size }}
       />
     )
@@ -110,7 +117,7 @@ export function MuscleChip({ token, size = 40, className }: {
       <g fill="var(--mz-ink-mut)" opacity={0.42}>
         {Object.values(body.p).flat().map((d, i) => <path key={i} d={d} />)}
       </g>
-      <g ref={groupRef} fill={fill} opacity={0.95} stroke="#ffffff2e" strokeWidth={2}>
+      <g ref={groupRef} fill={fill} opacity={0.95} stroke="var(--mz-body-outline)" strokeWidth={2}>
         {slugs.map((slug) => body.p[slug]?.map((d, i) => <path key={`${slug}-${i}`} d={d} />))}
       </g>
     </svg>

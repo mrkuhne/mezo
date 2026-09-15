@@ -5,7 +5,7 @@
 `frontend/src/features/train/logic/bodyGeometry.gen.ts` is generated (see
 `scripts/gen-body-geometry.mjs`, from the vendored sources under `scripts/vendor/musclemap/`)
 from the anatomy path data of **MuscleMap** — https://github.com/melihcolpan/MuscleMap —
-Copyright (c) Melih Colpan, licensed under the MIT License:
+Copyright © 2026 Melih Colpan, licensed under the MIT License:
 
 > Permission is hereby granted, free of charge, to any person obtaining a copy of this
 > software and associated documentation files (the "Software"), to deal in the Software

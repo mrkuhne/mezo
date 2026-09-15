@@ -14,8 +14,9 @@ import { cn } from '@/shared/lib/cn'
 import type { BodyView } from '../logic/bodyGeometry.gen'
 import { shapesFor } from '../logic/bodyMapShapes'
 import { muscleRegion, regionColor } from '../logic/muscleColors'
+import type { WeekZoneStatus } from '../logic/weekZone'
 
-export type BodyHeat = { token: string; level: 'none' | 'below' | 'entering' | 'in' | 'over' }
+export type BodyHeat = { token: string; level: WeekZoneStatus | 'none' }
 
 // weekZone.ts's WeekZoneStatus vocabulary ('below' | 'entering' | 'in' | 'over') plus the
 // untouched 'none' state — the prototype's opacity scale, with 'entering' interpolated
@@ -50,9 +51,12 @@ function shapeRows(view: BodyView, heat: BodyHeat[]): Map<string, { opacity: num
   return rows
 }
 
+/** Sum of opacity for `view`'s shapes, counting only trained heat ('none' rows are the
+ *  untouched baseline and must not weigh in — otherwise a view with more mapped shapes
+ *  wins `views:'auto'` even when nothing on it is actually trained. */
 function viewLoad(view: BodyView, heat: BodyHeat[]): number {
   let total = 0
-  for (const { opacity } of shapeRows(view, heat).values()) total += opacity
+  for (const { opacity } of shapeRows(view, heat.filter((h) => h.level !== 'none')).values()) total += opacity
   return total
 }
 
@@ -92,12 +96,19 @@ export function BodyMap({ heat, views = 'auto', className, ariaLabel }: {
   ariaLabel: string
 }) {
   const [geometry, setGeometry] = useState<Geometry | null>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    import('../logic/bodyGeometry.gen').then((mod) => {
-      if (!cancelled) setGeometry(mod.BODY)
-    })
+    import('../logic/bodyGeometry.gen')
+      .then((mod) => {
+        if (!cancelled) setGeometry(mod.BODY)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.warn('BodyMap: failed to load body geometry chunk', err)
+        setFailed(true)
+      })
     return () => { cancelled = true }
   }, [])
 
@@ -111,6 +122,7 @@ export function BodyMap({ heat, views = 'auto', className, ariaLabel }: {
       aria-label={ariaLabel}
       className={cn('body-map', views === 'both' ? 'body-map-duo' : 'body-map-single', className)}
       style={{ aspectRatio: views === 'both' ? '132 / 64' : '66 / 64' }}
+      data-geometry={failed ? 'failed' : undefined}
     >
       {geometry && activeViews.map((view) => (
         <BodyFigure key={view} view={view} heat={heat} geometry={geometry} />

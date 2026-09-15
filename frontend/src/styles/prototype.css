@@ -207,6 +207,10 @@
   --mz-deload-stripe: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px);
   --mz-dstep-custom: #6C5FA3; /* derivation timeline's 03 „Rád szabva" disc */
   --mz-ink-mut: #A2958A;
+  /* BodyMap/MuscleChip lit-shape hairline (mezo-88iwa.4) — a subtle stroke that separates a
+     trained shape from its neighbors without competing with the heat fill. Dark párja a
+     dark blokkban, azonos névvel. */
+  --mz-body-outline: #2b21182e;
   /* ── Fejléc-aurora (mezo-8az6) — napszak-tónusok. A wash a sáv teteje, a foltok
         adják a mélységet; a réteg alja maszkkal fakul a tartalomba. Dark párjuk a
         dark blokkban, azonos nevekkel. */
@@ -609,6 +613,8 @@
   --lg-ok-wash2: color-mix(in srgb, var(--dv-sage) 8%, var(--surface-card));
   --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
   --mz-ink-mut: #8A7A6A;
+  /* BodyMap/MuscleChip lit-shape hairline (mezo-88iwa.4) — light párja a light blokkban. */
+  --mz-body-outline: #ffffff2e;
   /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
         vászon fölé; a foltok ugyanazok a színek, a wash viszi a sötétítést. */
   --mzh-wash-reggel: linear-gradient(155deg, #5A4224 0%, #3E2E1C 55%, #241C14 100%);

@@ -25,4 +25,24 @@ describe('BodyMap', () => {
     await waitFor(() => expect(container.querySelectorAll('svg').length).toBe(1));
     expect(container.querySelector('[data-shape="back/upper-back"]')).not.toBeNull();
   });
+
+  it('auto view ignores untouched rows: a full 21-token catalog with only one back token trained still picks back', async () => {
+    // The front catalog maps to more distinct shapes than the back one (chest x3, shoulder x2,
+    // biceps, quad x3, core x4 vs. back-wide/mid sharing a shape, lower-back, traps, rear delt,
+    // triceps, ham, glute, calf) — with every row's opacity counted (including 'none'), that
+    // shape-count skew alone used to pick the empty front view over the one trained back muscle.
+    const allNone = [
+      'chest-upper', 'chest-mid', 'chest-lower',
+      'back-mid', 'back-lower',
+      'traps',
+      'shoulder-front', 'shoulder-side', 'shoulder-rear',
+      'biceps-long', 'biceps-short', 'biceps-brachialis',
+      'triceps-long', 'triceps-lateral', 'triceps-medial',
+      'quad', 'ham', 'glute', 'calf', 'core',
+    ].map((token) => ({ token, level: 'none' as const }));
+    const heat21 = [...allNone, { token: 'back-wide', level: 'in' as const }];
+    const { container } = render(<BodyMap heat={heat21} views="auto" ariaLabel="Terhelés" />);
+    await waitFor(() => expect(container.querySelectorAll('svg').length).toBe(1));
+    expect(container.querySelector('[data-shape="back/upper-back"]')).not.toBeNull();
+  });
 });
