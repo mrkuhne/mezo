@@ -179,3 +179,22 @@
  #food-preview strong em{display:inline-block}
  .portion-field button:active{transform:scale(.88);transition:transform .1s}
 }
+
+/* Tight item rows + the four-macro compact preview (owner 2026-09-15): name and grams in one
+   line; the mini bars show this meal's share of the DAY's macro targets, rost included. */
+.rv-tight{padding:12px 13px 10px}
+.rv-row{display:flex;align-items:center;gap:11px}
+.rv-row>.icon{width:34px;height:34px;flex:0 0 auto}
+.rv-copy{flex:1;min-width:0}
+.rv-copy small{display:block;font-size:7px;letter-spacing:1px;color:#8fb3bc;margin-bottom:4px}
+.rv-copy strong{font-size:16px;font-weight:500;letter-spacing:-.3px}
+.rv-select{border:0;background:none;color:#e0eff0;font:inherit;font-size:15px;font-weight:500;letter-spacing:-.3px;padding:0;max-width:100%}
+.rv-stepper{flex:0 0 auto}
+.rv-stepper input{width:48px;font-size:20px;padding:4px 0}
+.rv-stepper button{width:30px;height:32px;font-size:18px;border-radius:9px}
+.rv-hint{display:block;font-size:8px;color:#7b939f;margin:7px 0 0 45px}
+.rv-live{padding:15px 16px}
+#food-preview>strong{font-size:33px;margin:8px 0 13px;letter-spacing:-1px}
+#food-preview>.rv-macros4{grid-template-columns:repeat(4,1fr)}
+#food-preview>.rv-macros4 b{font-size:13px;margin-bottom:4px}
+@media(prefers-reduced-motion:no-preference){.rv-row>.icon{animation:rv-float 4.8s ease-in-out infinite}}
