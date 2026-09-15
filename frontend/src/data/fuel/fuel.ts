@@ -87,10 +87,16 @@ const m1Dimensions: MealDimension[] = [
     note: 'A túró itt nem gyengeség — kulturált tejtermékként NOVA 3, de messze van az ultra-feldolgozott tartománytól.',
     nova: {
       dominant: 1,
+      // A részesedések a SAJÁT hozzávalóiból vannak levezetve (mezo-tm3sb), nem kézzel írva. A
+      // korábbi 78/6/16 nem jött ki semmiből: a lista alatti öt tétel kcal-ja 393 / 36 / 260 a
+      // recept 689 kcal-jából (zab 260 + áfonya 46 + mandula 87 NOVA 1; méz 36 NOVA 2; túró 260
+      // NOVA 3), ami 57 / 5 / 38. A skálázás nem mozdítja az arányokat, tehát az étkezés 580
+      // kcal-jára is ez érvényes. Ez a sor azért fontos, mert a Minőség lapkák MOST ebből
+      // olvasnak — egy kitalált érték itt pontosan azt a hibát mímelné, amit a szelet javít.
       stack: [
-        { nova: 1, pct: 78, label: 'Zab · áfonya · mandula' },
-        { nova: 2, pct: 6, label: 'Méz' },
-        { nova: 3, pct: 16, label: 'Túró' },
+        { nova: 1, pct: 57, label: 'Zab · áfonya · mandula' },
+        { nova: 2, pct: 5, label: 'Méz' },
+        { nova: 3, pct: 38, label: 'Túró' },
         { nova: 4, pct: 0, label: '—' },
       ],
       items: [

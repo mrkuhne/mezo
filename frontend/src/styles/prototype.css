@@ -12175,6 +12175,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-nutri-tile strong small { margin-left: 3px; font-size: 11px; letter-spacing: 0; color: var(--sub); }
 .fmx-nt-label { font-size: 12px; color: var(--sub); }
 .fmx-nutri-tile.is-unknown { border-style: dashed; opacity: 0.78; }
+/* Koppintható lapka (mezo-6mi43): a vércukor-kártya ajtó, a többi három nem. Gombként a böngésző
+   alapjait vissza kell venni, és a lapka SZÓT visel szám helyett — a hosszabb szó ezért törhet,
+   hogy egy fél szélességű lapkából ne feszüljön ki. */
+.fmx-nutri-tile.is-door { font-family: inherit; text-align: left; cursor: pointer;
+  appearance: none; -webkit-appearance: none; }
+.fmx-nutri-tile.is-door strong { min-width: 0; overflow-wrap: anywhere; }
+/* A sáv szava hosszabb, mint egy szám — egy fokkal kisebb, hogy a „Vércukor-válasz" felirat
+   alatta mindig egy sorban maradjon. */
+.fmx-nutri-tile.is-door strong { font-size: 21px; }
 
 /* Mikrotápanyag-kártyák: a NÉGY tárolt tény. `is-unknown` = a forrás nem adott értéket. */
 .fmx-micro-list { display: grid; gap: 8px; }

@@ -556,18 +556,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx,
     FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelQualityBlocks.tsx, FuelScoreSurface.tsx,
-    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, KamraCard.tsx, MacroCells.tsx,
-    MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx, MicroPanel.tsx,
-    NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
+    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx,
+    MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
+    MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
     RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx,
     ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx,
     SuggestionCard.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
-    formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, heroWindow.ts,
-    kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, mealShare.ts,
-    pantryProvenance.ts, projectStackDay.ts, recipeRole.ts, recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts,
-    scoreTone.ts, stackBands.ts, useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
+    formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, glycemicBand.ts,
+    heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts,
+    mealDisplayName.ts, mealQualityTruth.ts, mealShare.ts, pantryProvenance.ts, projectStackDay.ts, recipeRole.ts,
+    recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts, useStackIntakeToggle.ts,
+    usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -901,8 +902,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`, `MealAiDraftValidator`,
-    `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`,
-    `WaterLogService`
+    `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`,
+    `MealService`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -912,13 +913,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 24 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 25 IT + 7 unit
   - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`,
     `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`,
     `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`,
     `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`,
-    `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`,
-    `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
+    `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`,
+    `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
     `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 

@@ -32,12 +32,47 @@ const MEAL: FuelMeal = {
   tags: [],
   loggedAt: '2026-09-12T16:40:00',
   mealDate: '2026-09-12',
-}
+  // A bontás HOZZÁVALÓ-szintű, ahogy a háttérrendszer mostantól számolja (mezo-tm3sb): a NOVA
+  // stack valódi megoszlás, a tétel-lista a hozzávalókat nevezi meg, és az energiasűrűség-dimenzió
+  // hordozza a saját „Sűrűség" sorát. A Minőség lapkák EBBŐL olvasnak, nem a tételsorokból — abból
+  // egy receptes étkezésre csak 0% vagy 100% jönne ki.
+  breakdown: {
+    confidence: 0.8, summary: null, tagline: null, improve: [], tools: [],
+    dimensions: [
+      {
+        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.18, score: 0.9,
+        color: 'var(--cat-tendency)', detail: '', coverage: 1,
+        nova: {
+          dominant: 1,
+          stack: [
+            { nova: 1, pct: 57, label: 'Görög joghurt · Zabpehely' },
+            { nova: 2, pct: 6, label: 'Méz' },
+            { nova: 3, pct: 37, label: 'Túró' },
+            { nova: 4, pct: 0, label: '—' },
+          ],
+          items: [
+            { name: 'Görög joghurt 150g', nova: 1 },
+            { name: 'Zabpehely 45g', nova: 1 },
+            { name: 'Méz 15g', nova: 2 },
+          ],
+        },
+      },
+      {
+        id: 'energy_density', label: 'Energia-sűrűség', weight: 0.1, score: 0.7,
+        color: 'var(--coral)', detail: '', coverage: 1,
+        context: [{ label: 'Sűrűség', value: '183 kcal/100g' }],
+      },
+    ],
+  },
+} as unknown as FuelMeal
+
+/** Ugyanaz az étkezés bontás NÉLKÜL — a friss log és a pontozás előtti sor alakja. */
+const MEAL_NO_BREAKDOWN: FuelMeal = { ...MEAL, id: 'meal-no-breakdown', breakdown: undefined }
 
 const DAY: FuelDay = {
   targets: { kcal: 2400, p: 180, c: 240, f: 72, water: 3000 },
   consumed: { kcal: 430, p: 30, c: 40, f: 12, water: 500 },
-  meals: [MEAL],
+  meals: [MEAL, MEAL_NO_BREAKDOWN],
   pacing: { msg: '' },
   micronutrients: [],
   supplements: [],
@@ -108,6 +143,57 @@ test('a gyűrűben a gramm a nagy szám, a százalék alatta', () => {
   // A felolvasott mondat is a grammal nyit, ahogy a látvány.
   expect(rings[0].querySelector('span[aria-label]')!.getAttribute('aria-label'))
     .toBe('Fehérje: 30 g, az étkezés energiájának 31%-a')
+})
+
+// mezo-tm3sb: a Minőség lapkák a BONTÁSBÓL olvasnak, nem az összecsukott tételsorokból. A fixtúra
+// egyetlen sora receptes lenne élesben; a bontás viszont hozzávaló-szintű igazságot hordoz.
+test('a Minőség lapkák a bontás hozzávaló-szintű tényeit mutatják, nem a sorokból számolt 0%-ot', () => {
+  const { container } = renderAt('meal-1')
+  const tiles = Array.from(container.querySelectorAll('.fmx-nutri-tile'))
+  const byLabel = (label: string) => tiles.find(t => t.textContent?.includes(label))!
+  expect(byLabel('Alapanyag-arány').textContent).toContain('57')
+  expect(byLabel('Energiasűrűség').textContent).toContain('183')
+  expect(byLabel('Ultra-feldolgozott').textContent).toContain('0')
+})
+
+// Őszinte-null: bontás nélkül a három lapka gondolatjel — NEM esik vissza a sorokra, mert abból
+// épp a hamis 0% jönne ki. Ez a visszaesés volt a hiba, nem a megoldás.
+test('bontás nélkül a Minőség lapkák gondolatjelet mutatnak, nem kiszámolt nullát', () => {
+  const { container } = renderAt('meal-no-breakdown')
+  const tiles = Array.from(container.querySelectorAll('.fmx-nutri-tile'))
+  const byLabel = (label: string) => tiles.find(t => t.textContent?.includes(label))!
+  for (const label of ['Alapanyag-arány', 'Energiasűrűség', 'Ultra-feldolgozott']) {
+    expect(byLabel(label).textContent).toContain('—')
+  }
+})
+
+// mezo-6mi43: a negyedik kártya a vércukor-válasz SÁVJA, és koppintásra a saját doboza nyílik.
+test('a negyedik Minőség kártya a vércukor-válasz sávja, és megnyitja a dobozát', async () => {
+  const { container } = renderAt('meal-1')
+  const card = container.querySelector('.fmx-nutri-tile.is-door')!
+  expect(card.textContent).toMatch(/Vércukor-válasz/)
+  expect(card.textContent).toMatch(/alacsony|közepes|magas/)
+  // A dobozt a DOKUMENTUMBAN keressük, nem a komponens fájában: a `GlassBox` szándékosan a
+  // telefon-keretbe portáloz, hogy a doboz a készülék-viewporthoz méreteződjön és ne az ablakhoz.
+  expect(document.querySelector('[role="dialog"]')).toBeNull()
+  await userEvent.click(card)
+  expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+})
+
+// AZ OWNER DÖNTÉSE, KÉTSZER MEGERŐSÍTVE: sáv, nem szám. A vegyes étkezés glikémiás indexe
+// 22-50%-ot téved, ezért a felület sosem ír ki GI-számot, és a szó sem szerepel. Ez az a döntés,
+// amit egy későbbi menet a legkönnyebben „kijavítana" — ez a kör az, ami nem hagyja.
+test('sem a kártyán, sem a dobozban nincs glikémiás index — se szám, se szó', async () => {
+  const { container } = renderAt('meal-1')
+  const card = container.querySelector('.fmx-nutri-tile.is-door')!
+  expect(card.textContent).not.toMatch(/glik[eé]mi[aá]s\s*index|\bGI\b/i)
+  // A nagy „numerál" helyén SZÓ áll, nem számjegy.
+  expect(card.querySelector('strong')!.textContent).not.toMatch(/\d/)
+  await userEvent.click(card)
+  const box = document.querySelector('[role="dialog"]')!
+  expect(box.textContent).not.toMatch(/glik[eé]mi[aá]s\s*index|\bGI\b/i)
+  // …és szégyenmentes: a magas sáv sem hiba.
+  expect(box.textContent).not.toMatch(/elrontott|hiba|rossz|bukta|kudarc|túlléptél/i)
 })
 
 test('a hozzávalók abból állnak, amiből az étkezés összeállt', () => {

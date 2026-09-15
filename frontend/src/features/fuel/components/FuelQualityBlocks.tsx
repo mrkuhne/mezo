@@ -26,6 +26,8 @@ import { hu1, huInt } from '@/shared/lib/huNum'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import type { Nutrients } from '@/data/types'
 import type { MealShareRow } from '@/features/fuel/logic/mealShare'
+import type { MealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
+import type { GlycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 
 /** NOVA-csoport rövid neve + hue (prototípus `NOVA_SHORT` :179 / `NOVA_COLOR` :91). */
@@ -193,8 +195,17 @@ export interface FuelQualityLine { grams: number | null; kcal: number | null; no
 /** Minőség-lapkák a prototípus `qualityTilesHtml` (:104) számai szerint, honest-nullal:
  *  amit a sorok nem árulnak el, az „—". A növényfélék száma SZÁNDÉKOSAN nincs itt: azt a
  *  produkció per-étkezés/per-recept nem tárolja, és egy kitalált szám tiltott. */
+/** A három számolt lapka stabil kulcsa — erre köt a `truth` felülírás (mezo-tm3sb). */
+export type QualityTileKey = 'base' | 'density' | 'ultra'
+
+/** Melyik `truth`-tény tartozik melyik lapkához. Egy lapka-átrendezés ezt nem tudja elrontani. */
+const TRUTH_OF: Record<QualityTileKey, keyof MealQualityTruth> = {
+  base: 'basePct', density: 'densityKcalPer100g', ultra: 'ultraItems',
+}
+
 export function qualityTiles(lines: FuelQualityLine[]): {
-  label: string; value: number | null; unit: string; icon: ClayIconName; color: string
+  key: QualityTileKey; label: string; value: number | null; unit: string
+  icon: ClayIconName; color: string
 }[] {
   const lineKcal = lines.reduce((s, l) => s + (l.kcal ?? 0), 0)
   const hasNova = lines.length > 0 && lines.every(l => l.nova != null)
@@ -209,20 +220,23 @@ export function qualityTiles(lines: FuelQualityLine[]): {
     : null
   const ultra = hasNova ? lines.filter(l => l.nova === 4).length : null
   return [
-    { label: 'Alapanyag-arány', value: baseShare, unit: '%', icon: 'i-termes', color: 'var(--amber)' },
-    { label: 'Energiasűrűség', value: density, unit: 'kcal/100 g', icon: 'i-lang', color: 'var(--coral)' },
-    { label: 'Ultra-feldolgozott', value: ultra, unit: 'tétel', icon: 'i-retegek', color: ultra ? 'var(--coral)' : 'var(--sky)' },
+    { key: 'base', label: 'Alapanyag-arány', value: baseShare, unit: '%', icon: 'i-termes', color: 'var(--amber)' },
+    { key: 'density', label: 'Energiasűrűség', value: density, unit: 'kcal/100 g', icon: 'i-lang', color: 'var(--coral)' },
+    { key: 'ultra', label: 'Ultra-feldolgozott', value: ultra, unit: 'tétel', icon: 'i-retegek', color: ultra ? 'var(--coral)' : 'var(--sky)' },
   ]
 }
 
 /** Egy minőség-lapka: EGY nagy szám (vagy „—") a saját egységével, clay szimbólummal. */
 export interface FuelNutriTile {
   label: string
-  /** Már formázott érték, vagy `null` — a `null` „—"-t ad, sosem kitalált nullát. */
+  /** Már formázott érték, vagy `null` — a `null` „—"-t ad, sosem kitalált nullát. Lehet SZÓ is,
+   *  nem csak szám: a vércukor-kártya a sáv szavát viseli itt, szándékosan szám helyett. */
   value: string | null
   unit: string
   icon: ClayIconName
   color: string
+  /** Megadva a lapka gombbá válik és ezt hívja. A többi lapka nem interaktív. */
+  onOpen?: () => void
 }
 
 /** A minőség-lapka rács — a prototípus `nutri-tiles`-a. Ezt a primitívet a recept/étkezés
@@ -230,29 +244,84 @@ export interface FuelNutriTile {
 export function FuelNutriTiles({ tiles }: { tiles: FuelNutriTile[] }) {
   return (
     <div className="fmx-nutri-tiles">
-      {tiles.map(t => (
-        <div key={t.label} className={`fmx-nutri-tile${t.value == null ? ' is-unknown' : ''}`}
-          style={{ '--nt-color': t.color } as React.CSSProperties}>
-          <span className="fmx-nt-top">
-            <span className="fmx-nt-art" aria-hidden="true"><ClayIcon name={t.icon} size={34} /></span>
-            <strong>{t.value == null ? '—' : t.value}{t.value != null && <small>{t.unit}</small>}</strong>
-          </span>
-          <span className="fmx-nt-label">{t.label}</span>
-        </div>
-      ))}
+      {tiles.map(t => {
+        const body = (
+          <>
+            <span className="fmx-nt-top">
+              <span className="fmx-nt-art" aria-hidden="true"><ClayIcon name={t.icon} size={34} /></span>
+              <strong>{t.value == null ? '—' : t.value}{t.value != null && t.unit !== '' && <small>{t.unit}</small>}</strong>
+            </span>
+            <span className="fmx-nt-label">{t.label}</span>
+          </>
+        )
+        const cls = `fmx-nutri-tile${t.value == null ? ' is-unknown' : ''}`
+        const style = { '--nt-color': t.color } as React.CSSProperties
+        // Csak a `onOpen`-t hordozó lapka gomb — a többi nem koppintható, és nem is úgy néz ki.
+        return t.onOpen ? (
+          <button key={t.label} type="button" className={`${cls} is-door np-press`} style={style}
+            onClick={t.onOpen} aria-label={`${t.label}: ${t.value ?? 'nincs adat'} — részletek`}>
+            {body}
+          </button>
+        ) : (
+          <div key={t.label} className={cls} style={style}>{body}</div>
+        )
+      })}
     </div>
   )
 }
 
-/** A Minőség szekció. A fejléc SZÁNDÉKOSAN nem visel darabszámot/feliratot (owner). */
-export function FuelQualitySection({ lines }: { lines: FuelQualityLine[] }) {
-  const tiles = qualityTiles(lines)
+/**
+ * A Minőség szekció. A fejléc SZÁNDÉKOSAN nem visel darabszámot/feliratot (owner).
+ *
+ * `truth` (mezo-tm3sb) — HA meg van adva, az felülírja a tételsoros számítást lapkánként. A
+ * logolt étkezés részletlapja ezt adja, mert ott a tételsorok egy receptet EGY összecsukott
+ * sorként hordoznak, és abból az alapanyag-arány csak 0% vagy 100% tud kijönni. A recept és a
+ * Receptműhely NEM ad `truth`-ot: ott a sorok valóban hozzávalók, tehát a helyi számítás helyes.
+ *
+ * FONTOS: egy `truth`-beli `null` azt jelenti, hogy „nem tudjuk" — NEM azt, hogy „számold ki a
+ * sorokból". A visszaesés épp az a hazugság lenne, ami ellen ez az egész változás született: ha a
+ * háttérrendszer degradálta egy dimenziót, ő már eldöntötte, hogy az adat nem megbízható.
+ *
+ * `glycemic` — a negyedik kártya (mezo-6mi43), a vércukor-válasz SÁVJA. Sáv, nem szám: a vegyes
+ * étkezés GI-matematikája 22-50%-ot téved (owner-döntés). `null` → a kártya nem jelenik meg.
+ */
+export function FuelQualitySection({ lines, truth, glycemic, onOpenGlycemic }: {
+  lines: FuelQualityLine[]
+  truth?: MealQualityTruth
+  glycemic?: GlycemicBand | null
+  onOpenGlycemic?: () => void
+}) {
+  const computed = qualityTiles(lines)
+  // Kulcsra kötve, NEM sorrendre: egy átrendezés így nem tud csendben rossz számot a rossz
+  // lapkára tenni.
+  const tiles: FuelNutriTile[] = computed.map(t => {
+    const value = truth ? truth[TRUTH_OF[t.key]] : t.value
+    return { ...t, value: value == null ? null : hu1(value) }
+  })
+  if (glycemic) {
+    tiles.push({
+      label: 'Vércukor-válasz',
+      // A SÁV SZAVA áll a nagy-szám helyén. Ha a cukor becsült, a kártya kimondja — feltevést
+      // mért adatként bemutatni tilos.
+      value: glycemic.label,
+      unit: glycemic.sugarEstimated ? 'becsült' : '',
+      icon: 'i-vercukor',
+      color: GLYCEMIC_COLOR[glycemic.level],
+      onOpen: onOpenGlycemic,
+    })
+  }
   return (
     <section className="fmx-detail-sec">
       <div className="fmx-section"><h2>Minőség</h2></div>
-      <FuelNutriTiles tiles={tiles.map(t => ({ ...t, value: t.value == null ? null : hu1(t.value) }))} />
+      <FuelNutriTiles tiles={tiles} />
     </section>
   )
+}
+
+/** A sáv hangulat-színe. A „magas" LILA, nem a ház hiba-korallja: egy magas vércukor-válasz nem
+ *  kudarc, csak egy tény a tányérról (szégyenmentes keretezés). */
+const GLYCEMIC_COLOR: Record<GlycemicBand['level'], string> = {
+  low: 'var(--sage)', mid: 'var(--amber)', high: 'var(--lav)',
 }
 
 // ── Mikrotápanyagok ───────────────────────────────────────────────────────────────────────

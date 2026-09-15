@@ -79,8 +79,21 @@ public class MealScoringService {
      * étkezés máig „nincs adat"-ot mutat Zsírminőségre, pedig a tételei hordozzák a tényt. A
      * mezo-mxmh fix ezt előre megakadályozza (a backfill maga érvényteleníti, amit érvénytelenít),
      * de a két deploy közti ablakban keletkezett maradékot nem éri el — azt ez a bump viszi el.
+     *
+     * <p>`6` (mezo-tm3sb): a receptből logolt étkezés a HOZZÁVALÓIBÓL pontozódik, nem egy
+     * összecsukott kompozit sorból. Eddig egy recept-tétel EGY {@code ScoredLine} volt, ami a
+     * recept egyetlen domináns NOVA-bélyegét vitte és semmilyen grammos tömeget — így a NOVA-stack
+     * minden receptes étkezésen a domináns csoport 100%-át mutatta, a növényi diverzitás nullát
+     * számolt (a recept-sor kategóriája szándékosan null: kompozit), az energia-sűrűség pedig tömeg
+     * híján degradált. Ugyanannak a receptnek a SAJÁT template-bontása közben helyes volt, mert azt
+     * a {@code RecipeService} hozzávalónként építi — ez az aszimmetria volt a hiba.
+     *
+     * <p>A számok MINDEN meglévő receptes étkezésen elmozdulnak, és ezt a repó tulajdonosa
+     * kifejezetten jóváhagyta (2026-09-15). Enélkül a bélyeg nélkül a javítás csak az új írásokra
+     * hatna — a felhasználó pedig épp azt jelentette, hogy a MEGLÉVŐ étkezésein állnak nullán a
+     * számok. Ez a bump az, ami a már tárolt envelope-okat a runner látókörébe hozza.
      */
-    public static final int FORMULA_VERSION = 5;
+    public static final int FORMULA_VERSION = 6;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
