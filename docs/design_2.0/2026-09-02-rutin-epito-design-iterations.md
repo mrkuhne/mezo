@@ -1,5 +1,9 @@
 # Rutin-építő design iteration — round 1 (2026-09-02)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 Daniel asked for the routine page to leave the Growth tab, get its own tile under Én, its own
 page, and a wizard that helps people build a routine on two named frameworks: James Clear's
 **Four Laws of Behavior Change** (cue → craving → response → reward; make it obvious /

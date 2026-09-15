@@ -1,5 +1,5 @@
-import { fuelOverview, mealInfo, mealRecord } from './food.js';
-import { mealBlocks, blockFor, minutesOf, mealFacts, foods } from './food-state.js';
+import { fuelOverview, mealInfo, mealRecord, glucoseCurve, glucoseExpectHtml } from './food.js';
+import { mealBlocks, blockFor, minutesOf, mealFacts, foods, glycemicForMeal } from './food-state.js';
 import { icon, safe } from './nap.js';
 
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
@@ -25,8 +25,10 @@ export function animateFuelDashboard(root=document){
 }
 
 const scoreChip=m=>m.score==null?`<span class="score-chip pending">${icon('score')}<b>folyamatban</b></span>`:`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`;
+// Glycemic-response reopener (mezo-6z0ai): the mini curve IS the icon — its shape and color carry the verdict.
+const glucoseChip=m=>{const g=glycemicForMeal(mealRecord(m.id));return g?`<button class="glu-chip lvl-${g.level}" data-glucose="${m.id}" aria-label="Vércukor-válasz: ${g.label}">${glucoseCurve(g.level,true)}</button>`:'';};
 // Row kcal intentionally omitted: the block ring already carries the number (owner 2026-09-11).
-const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span></button>${scoreChip(m)}</div>`;
+const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span></button>${glucoseChip(m)}${scoreChip(m)}</div>`;
 
 // 5-hour window bar: the optimal range highlighted inside the box, one marker per logged meal.
 function windowBar(block,rows){
@@ -198,6 +200,20 @@ export function dimGlassHtml(mealId,dimId){
  if(d.context)body+=`<div class="glass-list">${d.context.map(([l,v])=>`<div class="glass-kv"><span>${safe(l)}</span><b>${safe(v)}</b></div>`).join('')}</div>`;
  if(d.note)body+=`<div class="glass-callout"><span>${icon('score')}</span><p><small>MEZO JEGYZETE</small>${safe(d.note)}</p></div>`;
  return `<div class="glass-dim" style="--dim-color:${color}"><div class="glass-hero dim"><span class="glass-hero-art">${icon(art)}</span><div><strong>${degraded?'—':score1(d.score)}</strong><small>${d.label}</small></div></div><div class="glass-chips"><span>súly ${weightPct(d,env.wsum)}%</span>${d.coverage!=null?`<span>lefedettség ${Math.round(d.coverage*100)}%</span>`:''}</div><div class="glass-bar dimbar"><i style="--w:${degraded?0:d.score*10}%"></i></div><p class="glass-lead">${safe(d.detail)}</p>${body}</div>`;
+}
+// Glass-box body for the glycemic verdict (mezo-6z0ai): category + curve + one hack, no fake number.
+export function glucoseGlassHtml(mealId){
+ const m=mealInfo(mealId);if(!m)return '<p class="sheet-sub">Nincs meg ez az étkezés.</p>';
+ const g=glycemicForMeal(mealRecord(mealId));if(!g)return '<p class="sheet-sub">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>';
+ return `<div class="glass-glucose lvl-${g.level}">
+  <div class="glass-hero dim"><span class="glass-hero-art"><span class="glu-pebble big" aria-hidden="true"></span></span><div><strong>${g.label}</strong><small>várható vércukor-hatás</small></div></div>
+  <p class="glass-lead">${safe(m.name)} · ${m.time}</p>
+  ${glucoseCurve(g.level)}
+  <div class="glass-chips">${g.facts.map(([k,v])=>`<span>${k} ${v}</span>`).join('')}</div>
+  ${glucoseExpectHtml(g)}
+  <div class="glass-callout"><span>${icon('sprout')}</span><p><small>${safe(g.tip.title).toLocaleUpperCase('hu-HU')}</small>${safe(g.tip.body)}</p></div>
+  <p class="glass-fact">Minta-becslés az összetételből, a Glucose Goddess-módszer elvei szerint — nem mérés és nem orvosi előrejelzés.</p>
+ </div>`;
 }
 function scorePage(id){
  const m=mealInfo(id);

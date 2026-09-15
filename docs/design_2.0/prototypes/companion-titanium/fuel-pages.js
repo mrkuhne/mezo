@@ -3,7 +3,7 @@ import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, add
 import { mealBlocks } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
-import { energyDetailHtml, dimGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
+import { energyDetailHtml, dimGlassHtml, glucoseGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
 import { icon, safe, toast, react } from './nap.js';
 const fmt=v=>Math.round(v).toLocaleString('hu-HU');
 const fmt1=v=>v==null?'—':Number(v).toLocaleString('hu-HU',{maximumFractionDigits:1});
@@ -292,6 +292,48 @@ const stackRow=item=>{
  const done=stack.taken.has(item.id),time=stack.times?.[item.id];
  return `<div class="sx-row ${done?'done':''}"><button class="sx-check" data-stack-tick="${item.id}" aria-pressed="${done}" aria-label="${safe(item.name)}: ${done?'visszavonom':'bevettem'}">${done?'✓':''}</button><button class="sx-row-main" data-stack-item="${item.id}"><span class="sx-row-art">${icon('micro')}</span><span class="sx-row-copy"><strong>${safe(item.name)}</strong><small>${safe(item.dose)} · ${safe(item.zoneLabel)}${done&&time?` · bevéve ${time}`:''}</small></span><b>›</b></button></div>`;
 };
+/* Zone-completion ceremony (mezo-6z0ai): fires only when a whole block (Reggel/Délben/Este)
+   turns complete — a one-item block completes on its single tick. Reuses the fcer gold-stone
+   language; the fill is rAF-driven like the meal ceremony, so a throttled pane cannot freeze it. */
+function showStackCeremony(zone){
+ document.querySelector('.scx-overlay')?.remove();
+ const [color,art,label]=ZONE_STYLE[zone],rows=stack.items.filter(i=>i.zone===zone),progress=stackProgress(stack);
+ const allDone=progress.taken===progress.total;
+ const verdict=allDone?'Mára minden megvan.':zone==='reggel'?'A reggeli adagod a helyén.':zone==='delben'?'A déli adag megvan.':'Az esti adag is a helyén.';
+ const overlay=document.createElement('div');overlay.className='scx-overlay';
+ overlay.innerHTML=`<div class="fcer-screen scx-screen" data-scx style="--p:0">
+  <section class="fcer">
+   <span class="fcer-sky" aria-hidden="true"></span>
+   <span class="overline">KIEGÉSZÍTŐK · ${label.toLocaleUpperCase('hu-HU')}</span>
+   <div class="scx-art" style="--kx:${color}"><b class="fcer-aura"></b>${icon(art)}</div>
+   <div class="fcer-bar"><i class="fcer-fill"></i><span class="fcer-comet"></span></div>
+   <div class="fcer-counters scx-two">
+    <span><i>${icon('micro')}</i><strong data-scx-count="zone">0</strong><small>${rows.length===1?'elem · kipipálva':`elem · mind megvan`}</small></span>
+    <span><i>${icon('stack')}</i><strong data-scx-count="day">0</strong><small>/ ${progress.total} ma összesen</small></span>
+   </div>
+  </section>
+  <section class="fcer-result">
+   <p class="fcer-verdict">${verdict}</p>
+   <p class="fcer-meal">${rows.map(r=>safe(r.name)).join(' · ')}</p>
+   ${allDone?`<div class="fcer-score">${icon('score')}<span class="fcer-score-copy"><span class="overline">A TELJES NAPI PROTOKOLL</span><strong>${progress.total}<small> / ${progress.total}</small></strong></span></div>`:''}
+  </section>
+  <div class="fcer-foot"><button class="fcer-cta" data-scx-close><span class="fcer-cta-art">${icon('stack')}</span><span><strong>Vissza a kiegészítőkhöz</strong><small>A pipák bármikor visszavonhatók</small></span></button></div>
+ </div>`;
+ document.querySelector('.device').append(overlay);
+ overlay.addEventListener('click',e=>{if(e.target.closest('[data-scx-close]'))overlay.remove();});
+ const root=overlay.querySelector('[data-scx]'),fields={zone:rows.length,day:progress.taken};
+ const paint=p=>{root.style.setProperty('--p',String(p));root.querySelectorAll('[data-scx-count]').forEach(n=>{n.textContent=String(Math.round(fields[n.dataset.scxCount]*p));});};
+ const settle=()=>{root.classList.add('is-told');overlay.querySelector('.scx-art')?.classList.add('is-lit');react('celebrate');};
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){paint(1);settle();return;}
+ const started=performance.now(),duration=1600;
+ const frame=now=>{
+  if(!root.isConnected)return;
+  const t=Math.min(1,(now-started)/duration);
+  paint(1-(1-t)**3);
+  if(t<1)requestAnimationFrame(frame);else settle();
+ };
+ requestAnimationFrame(frame);
+}
 function stackPage(){
  const progress=stackProgress(stack),pct=Math.round(progress.taken/progress.total*100),next=nextDue(stack);
  const [nextColor]=next?ZONE_STYLE[next.zone]:['#8fd97a'];
@@ -410,6 +452,7 @@ export function initFuelPages(options){callbacks=options;
   if(el.dataset.mealOpen)location.hash=`#fuel/0/meal/${el.dataset.mealOpen}`;
   if(el.hasAttribute('data-energy-detail')){callbacks.dialog('A NAPI KERETED',energyDetailHtml());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.dim){const [mealId,dimId]=el.dataset.dim.split('|');callbacks.dialog('AI-ÉRTÉKELÉS · SZEMPONT',dimGlassHtml(mealId,dimId));document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.glucose){callbacks.dialog('VÉRCUKOR-VÁLASZ · MINTA',glucoseGlassHtml(el.dataset.glucose));document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.scoreFeedback){toast(el.dataset.scoreFeedback==='up'?'Köszönöm — ez segít pontosítani.':'Értem. Ezt a visszajelzést is tanulom.');react('connect',1200);}
   if(el.hasAttribute('data-konyha-recipe'))callbacks.dialog('KONYHA · RECEPT',workshopSheet());
   if(el.hasAttribute('data-konyha-pantry'))callbacks.dialog('KONYHA · KAMRA',pantrySheet());
@@ -448,7 +491,7 @@ export function initFuelPages(options){callbacks=options;
   if(el.dataset.txStat){callbacks.dialog('TRENDEK · MUTATÓ',trendStatGlass(el.dataset.txStat));document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.txPattern){callbacks.dialog('TRENDEK · MINTÁZAT',trendPatternGlass(el.dataset.txPattern));document.querySelector('#sheet').classList.add('glass');}
   if(el.hasAttribute('data-tx-horizon')){callbacks.dialog('TRENDEK · HOSSZABB TÁV',trendHorizonGlass());document.querySelector('#sheet').classList.add('glass');}
-  if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick,'14:20');if(taken!==null){toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);if(document.querySelector('#sheet')?.open)callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackTick)),document.querySelector('#sheet').classList.add('glass');keepScroll();}}
+  if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick,'14:20');if(taken!==null){const item=stack.items.find(i=>i.id===el.dataset.stackTick),zoneRows=stack.items.filter(i=>i.zone===item.zone),zoneDone=taken===true&&zoneRows.every(r=>stack.taken.has(r.id));if(zoneDone){callbacks.closeSheet();showStackCeremony(item.zone);}else{toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);if(document.querySelector('#sheet')?.open)callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackTick)),document.querySelector('#sheet').classList.add('glass');}keepScroll();}}
   if(el.dataset.stackItem){callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackItem));document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.goto){if(el.dataset.goto==='fuel/3/beallitas')resetSetup();callbacks.closeSheet();location.hash=`#${el.dataset.goto}`;}
   if(el.dataset.sxStep){setup.step=Number(el.dataset.sxStep);keepScroll();}
