@@ -1,5 +1,9 @@
 # Heti áttekintés — implementációs handoff (mezo-88jw → mezo-d20)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 > **Ezt a fájlt azért írtuk, hogy egy másik gépen folytatható legyen a Heti oldal
 > implementációja.** Nem ismétli meg a design-igazságot — megmondja, hol van, mi hiányzik a
 > backendből, és milyen sorrendben érdemes szeletelni.

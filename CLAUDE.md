@@ -86,14 +86,18 @@ result:**
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
-Every UI design, mockup, and prototype MUST follow the **design 2.0 / "Mozaik 2.0"** visual
-language (`docs/design_2.0/` — handoff doc + `prototypes/`): the living, breathing, colorful
-Huawei-Health-inspired direction. That means: tile mosaic with domain-color washes,
-poster-anatomy cards (eyebrow + spot graphic + one big numeral), data drawn as graphics
-(rings, gauges, sparklines), clay 3D SVG icons (NEVER emojis), two-layer colored shadows,
-one-shot entrance choreography, tile → full-page Huawei slide-in pattern. Do NOT produce
-flat/minimal/list-style designs. Start from the existing prototypes in
-`docs/design_2.0/prototypes/` and the shared `mozaik`/`clay` UI kit
+Every UI design, mockup, and prototype MUST follow the **design 2.0 "Titanium"** visual
+language — the living, breathing, tactile direction that evolved from Mozaik 2.0. Orient via
+the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)** (current vs superseded
+docs); key canon: the production rebuild handoff, the **ceremony (reward screen) pattern**
+(`docs/design_2.0/2026-09-15-ceremony-pattern.md`), and the living prototypes in
+`docs/design_2.0/prototypes/companion-titanium/`. That means: dark liquid-metal ground with
+domain-color washes, poster-anatomy cards (eyebrow + spot graphic + one big numeral), data
+drawn as graphics (rings, gauges, sparklines, story-curves), clay 3D SVG icons (NEVER emojis),
+polished-stone (gold "Ritmus") materials for celebratory surfaces, one-shot rAF-driven
+choreography with a reduced-motion branch, tile → full-page slide-in pattern. Do NOT produce
+flat/minimal/list-style designs, and do NOT start from the Mozaik-era docs marked superseded
+in the index. In-app work reuses the shared `mozaik`/`clay` UI kit
 (`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`) rather than inventing a look.
 
 ## Claude-specific notes

@@ -1,5 +1,9 @@
 # Growth-tab design iteration — round 1 (2026-09-02)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 Daniel reviewed the first-ship `growth-tab` prototype (published artifact) and approved it
 without a second round — *„jó lesz, perfekt."* This file records **what was decided, why, and
 what it means for implementation** — `prototypes/src/growth-head.html` +

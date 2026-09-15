@@ -1,5 +1,9 @@
 # Design 2.0 — 1:1 hűség-audit, nyitó leletek (mezo-d20.11)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 > Daniel 2026-08-29-én jelezte, hogy a leszállított felületek több ponton **nem 1:1-ek** a
 > prototípusokkal, és hogy **sok oldalról hiányoznak az animációk** (felpörgő számok, töltődő
 > sávok, animált progress-gyűrűk). Ez a fájl a kiinduló bizonyíték-lista: nem teljes, hanem

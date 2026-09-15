@@ -1,5 +1,9 @@
 # Karakter-tab design iteration — round 1 (2026-08-31)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 Daniel reviewed the first-ship `karakter-tab` prototype (published artifact) and gave four
 directions for the next pass. This file records **what changed, why, and what it means for
 implementation** — `prototypes/src/karakter-head.html` + `prototypes/src/karakter-body.html`
