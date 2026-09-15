@@ -29,9 +29,12 @@ import { loadGroups, movementWeek } from '@/features/train/logic/loadWeek'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { budgetGroup } from '@/features/train/logic/setBudget'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { muscleColor, regionColor } from '@/features/train/logic/muscleColors'
+import { DAY_LABELS } from '@/data/train/train'
 import type { Block } from '@/features/train/logic/trainDayEnergy'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
+
+const tri = (n: number) => '▲'.repeat(n)
 
 /** done / planned as a bar width — never fabricated: no plan and no work is a 0% bar. */
 function shareOf(row: { doneSets: number; plannedSets: number }): number {
@@ -68,12 +71,12 @@ export function TrainWeekMozgasPage() {
   const { sport, activeMeso, workoutPending } = useTrain()
   const { activeRunningBlock, runningPending, runSessions: loggedRunSessions } = useRunning()
   const weekLog = useWeekMuscleLog()
-  const { goal, goalResponse, pending: goalPending } = useGoal()
-  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
+  const { goal, goalResponse } = useGoal()
+  const { data: timingProfile } = useTimingProfile()
   const navigate = useNavigate()
   const goBack = useBackNav('/train/week')
 
-  if (workoutPending || runningPending || weekLog.pending || goalPending || timingProfilePending) {
+  if (workoutPending || runningPending || weekLog.pending) {
     return <MozgasSkeleton />
   }
 
@@ -176,6 +179,38 @@ export function TrainWeekMozgasPage() {
               </div>
             ))}
           </div>
+
+          <h3 className="ld-h3">Sport és futás a heti rendben</h3>
+          {load.events.length === 0 ? (
+            <p className="ld-events-empty rise" style={{ '--d': '160ms' } as CSSProperties}>
+              Nincs tervezett sport/futás esemény ezen a héten.
+            </p>
+          ) : (
+            <div className="ld-events rise" style={{ '--d': '160ms' } as CSSProperties}>
+              {load.events.map((e, i) => (
+                <div key={`${e.kind}-${e.day}-${i}`} className="ld-event">
+                  <span className="ld-event-head">
+                    <span className="ld-event-tag" style={{ '--mus-color': e.tag === 'FUTÁS' ? 'var(--tag-run)' : 'var(--tag-sport)' } as CSSProperties}>
+                      {e.tag}
+                    </span>
+                    <strong className="ld-event-title">{e.title}</strong>
+                    <span className="ld-event-when">{DAY_LABELS[e.day] ?? e.day}{e.time ? ` · ${e.time}` : ''}</span>
+                  </span>
+                  <span className="ld-event-chips">
+                    {e.regionLoads.map((rl) => {
+                      const fam = regionColor(rl.region)
+                      return (
+                        <span key={rl.region} className="ld-event-chip" style={{ background: fam.wash, color: fam.deep }}>
+                          {rl.label} {tri(rl.load)}
+                        </span>
+                      )
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="ld-events-note">Becslés, nem mérés.</p>
         </PageBody>
       </EntranceGroup>
     </MozaikPage>

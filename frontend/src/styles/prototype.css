@@ -14172,6 +14172,25 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   padding: 3px 8px; border-radius: 999px; color: var(--tag-sport); background: var(--wash-sport);
 }
 
+/* — a heti sport/futás események listája: mozgás-oldal, clay-only kártyák — */
+.ld-events { display: grid; gap: 8px; }
+.ld-event {
+  border-radius: 16px; padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-sport) 8%, var(--surface-card)), var(--surface-card) 72%);
+}
+.ld-event-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.ld-event-tag {
+  font-size: 9px; font-weight: 800; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px;
+  color: var(--mus-color, var(--tag-sport)); background: color-mix(in srgb, var(--mus-color, var(--tag-sport)) 18%, transparent);
+}
+.ld-event-title { font-size: 12.5px; font-weight: 600; }
+.ld-event-when { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
+.ld-event-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.ld-event-chip { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.ld-events-empty { font-size: 11px; color: var(--text-tertiary); margin: 0; }
+.ld-events-note { font-size: 9.5px; color: var(--text-quaternary); margin: 10px 2px 0; text-align: center; }
+
 @media (prefers-reduced-motion: reduce) {
   .ld-hero-art i { animation: none; }
   .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i { animation: none; transform: none; }
