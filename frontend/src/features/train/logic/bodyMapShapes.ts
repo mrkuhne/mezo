@@ -1,8 +1,9 @@
 /**
  * Which drawable shapes carry each muscle token, and on which view. The artwork is coarser than
  * the planner ON PURPOSE: the three biceps heads share one shape, the mid back rides on the
- * upper back (no rhomboid shape upstream). Where tokens share a shape, the shape's load is the
- * SUM of its tokens. Anything unmapped is dropped, never guessed.
+ * upper back (no rhomboid shape upstream). Where several tokens share one shape, a renderer
+ * combines them per its own semantics — BodyMap takes the MAX heat (a scale, not additive);
+ * a future weighted map may sum. Anything unmapped is dropped, never guessed.
  */
 import type { BodyView } from './bodyGeometry.gen'
 
