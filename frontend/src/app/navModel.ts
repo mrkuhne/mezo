@@ -124,7 +124,11 @@ export function domainById(id: string | null): NavDomain | undefined {
  * The active tab within a domain = the tab whose route is the LONGEST prefix of the
  * pathname (so `/fuel/stack/manage` still lights Kiegészítők). Returns null when no
  * tab route matches — a domain sub-page that isn't one of the four keeps the bar with
- * no tab highlighted (e.g. `/train`, `/train/sport`).
+ * no tab highlighted. Train Titanium T4 (2026-09-12) gave every Train deep route an
+ * explicit `owns` entry, so `/train/sport` now lights Mai rather than falling through
+ * here — the only Train path this still applies to is the bare `/train` itself
+ * (its tab is `/train/mai`, not `/train`), and that path never actually renders the
+ * bar: `TrainIndex` (`router.tsx`) redirects it to `/train/mai` before paint.
  */
 export function activeTabRoute(domain: NavDomain, pathname: string): string | null {
   // An explicitly OWNED deep route wins outright: it is a statement, not a guess, and it beats

@@ -249,12 +249,13 @@ export const routes: RouteObject[] = [
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
-      // Edzés tab — Design 2.0 shell dissolution (mezo-d20.3.1): the Train shell
-      // (AppHero + SubNavDropdown over an <Outlet>) is gone. /train is the hub Mozaik
-      // face (hero + six tiles); the former sub-tabs are FULL-PAGE SIBLINGS on their
-      // stable paths, keeping their current faces until their own F2 slices land —
-      // the idiom the Mezo (d20.5.1) and Én (d20.6.1) tabs took. Mai — previously the
-      // /train index — keeps its whole day view at /train/mai.
+      // Edzés tab — Train Titanium T4 (mezo-88iwa.5): the six-tile Mozaik hub that
+      // replaced the original AppHero/SubNavDropdown shell is ITSELF retired now.
+      // /train has no face of its own any more — TrainIndex below unconditionally
+      // redirects it to /train/mai. Four owner-approved tabs (Mai/Terv/Terhelés/
+      // Gyakorlatok, navModel.ts's `train` row) light the global TabBar; every route
+      // below is a full-page sibling reached either as a tab home or via that tab's
+      // `owns` deep-route list — see docs/features/train.md for the tab → route map.
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },

@@ -28,6 +28,7 @@ import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
+import { ClayIcon } from '@/shared/ui/clay'
 import { Chip } from '@/shared/ui/Chip'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
@@ -298,6 +299,22 @@ export function TrainTodayPage() {
           <span className="mesorow-tx">
             {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
           </span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        </button>
+      </div>
+
+      {/* Sport entry row (final-review fix wave, mezo-88iwa.5): the hub retirement left
+          Sport (and its szezon nézet) with no entry point of its own — Mai owns
+          `/train/sport` (navModel.ts) but nothing on this face pointed at it. Same
+          `.mesorow` idiom as the Mezociklus row above. */}
+      <div className="rise" style={{ padding: '0 24px 12px', '--d': '80ms' } as CSSProperties}>
+        <button
+          type="button"
+          className="card mesorow"
+          onClick={() => navigate('/train/sport')}
+        >
+          <ClayIcon name="i-sport" size={28} />
+          <span className="mesorow-tx">Sport naplózása és szezonod</span>
           <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
         </button>
       </div>

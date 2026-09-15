@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import { FUEL_KALAUZ } from '@/features/tutorial/registry/fuel'
+import { TRAIN_KALAUZ } from '@/features/tutorial/registry/train'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -66,6 +67,7 @@ test.each([
   ['/nap/rutin', 'rutin-lista'],
   ['/nap/checkin', 'checkin-sor'],
   ['/nap/eletjel', 'eletjel-gyuru'],
+  ['/train/mai', 'train-tabs'],
   ['/train/mai', 'mai-napsav'],
   ['/train/week', 'heti-napok'],
   ['/train/sport', 'sport-tabs'],
@@ -120,6 +122,17 @@ test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
   const covered = new Set(['fuel-log', 'log-forrasok', 'stack-hero', 'trendek-heti',
     'konyha-felvetel', 'receptek-tabs', 'kamra-tabs'])
   const anchors = FUEL_KALAUZ.flatMap(e => e.cards.flatMap(c =>
+    c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
+  expect(anchors.filter(a => !covered.has(a))).toEqual([])
+})
+
+// A18/E11 lint, Fuel-idiom átvéve a Train Titanium T4 kalauzára (mezo-88iwa.5, final-
+// review fix wave): a fenti S3a-kör (a `/train/*` sorok) + a `train-tabs` (TabBar.tsx,
+// minden /train/*-on) fedi le a TRAIN_KALAUZ MINDEN „hogyan" horgonyát.
+test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
+  const covered = new Set(['train-tabs', 'mai-napsav', 'heti-napok', 'sport-tabs',
+    'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start'])
+  const anchors = TRAIN_KALAUZ.flatMap(e => e.cards.flatMap(c =>
     c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
   expect(anchors.filter(a => !covered.has(a))).toEqual([])
 })

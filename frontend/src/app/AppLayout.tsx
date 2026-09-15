@@ -64,7 +64,7 @@ export function AppLayout() {
   // belül sehol nem villanhat vissza világosra.
   const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
     || location.pathname === '/fuel' || location.pathname.startsWith('/fuel/')
-    || location.pathname.startsWith('/train')
+    || location.pathname === '/train' || location.pathname.startsWith('/train/')
   // A sötét ALAP a ház meglévő dark témája — ugyanaz a fogás, amivel a Napzárás rituálé is
   // sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és a shell összes
   // portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark` scope ERRE ÜL RÁ
