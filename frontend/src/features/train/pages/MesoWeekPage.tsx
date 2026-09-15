@@ -18,10 +18,10 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { nextRolloverChips } from '@/features/train/logic/mesoBands'
 import { muscleTiles, peakWeek, weekSummary } from '@/features/train/logic/mesoWeek'
 import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
+import { tierLabel } from '@/features/train/logic/tierLabel'
 import { VolumeBand } from '@/features/train/components/VolumeBand'
 import { cn } from '@/shared/lib/cn'
 
-const TIER_LABEL = { emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' } as const
 /** The rollover forecast reads as a sentence, so it stops at FIVE muscles and says how many
  *  it left out — a 10-muscle block turned the banner into an unreadable wall of chips. */
 function rolloverLine(chips: { text: string }[]): string {
@@ -148,7 +148,7 @@ export function MesoWeekPage() {
                   <div className="mz-band-row">
                     <span className="mz-pill" style={{ background: fam.wash, color: fam.deep }}>{t.label}</span>
                     <span className="mz-grow" />
-                    <span className={`mz-tchip mz-tchip-${t.tier}`}>{TIER_LABEL[t.tier]}</span>
+                    <span className={`mz-tchip mz-tchip-${t.tier}`}>{tierLabel(t.tier)}</span>
                   </div>
                   <div className="mz-wnums" style={{ color: fam.deep }}>
                     {t.current}

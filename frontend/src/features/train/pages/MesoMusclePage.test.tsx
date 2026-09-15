@@ -61,7 +61,7 @@ test('the derivation has 4 numbered steps', () => {
   const nums = document.querySelectorAll('.mz-dnum')
   expect(Array.from(nums).map((n) => n.textContent)).toEqual(['1', '2', '3', '4'])
   expect(screen.getByText('Baseline · RP tábla')).toBeInTheDocument()
-  expect(screen.getByText('Fókusz-sáv · Grow')).toBeInTheDocument()
+  expect(screen.getByText('Fókusz-sáv · Építés')).toBeInTheDocument()
   expect(screen.getByText('Rád szabva')).toBeInTheDocument()
   expect(screen.getByText('Eredő · a blokkban')).toBeInTheDocument()
 })
@@ -134,8 +134,8 @@ describe('MesoMusclePage (real mode)', () => {
     // Never the „nincs ilyen izom" / „nincs ilyen blokk" ghost mid-flight.
     expect(screen.queryByText(/nincs a heti vizsgálatban|nem található/)).not.toBeInTheDocument()
 
-    // current 14 → ceiling 14 (chest is Grow, so MAV is the plafon) — the resolved hero.
-    expect(await screen.findByText(/Mell · Grow/)).toBeInTheDocument()
+    // current 14 → ceiling 14 (chest is Építés/grow, so MAV is the plafon) — the resolved hero.
+    expect(await screen.findByText(/Mell · Építés/)).toBeInTheDocument()
     expect(screen.getByText('Honnan a sáv · levezetés')).toBeInTheDocument()
     expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
   })
@@ -146,5 +146,61 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('chest', REAL_MESO_ID)
     expect(await screen.findByText('Nem sikerült betölteni a heti vizsgálatot — próbáld újra.')).toBeInTheDocument()
+  })
+
+  // The fixture's musclePriorities carry `back: 'emphasize'` — the tier chip renders the
+  // shared Hungarian vocabulary (tierLabel.ts), never the raw English tier name that used
+  // to be inlined on this page's hero line.
+  test('an emphasize-tier muscle renders "Hangsúly", never "Emphasize"', async () => {
+    server.use(
+      // The default REAL_MESO_ID fixture's volumePerMuscle only carries `chest` — runBands
+      // (mesoBands.ts) needs a `back` profile to resolve a tile at all, so this test adds one
+      // alongside the fixture's existing `back: 'emphasize'` musclePriorities entry.
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([
+          {
+            id: REAL_MESO_ID,
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            status: 'active',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6, currentWeek: 3,
+            split: 'Pull / Push / Legs · 5×/hét', style: 'RP · 6 hét',
+            phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+            musclePriorities: { back: 'emphasize' },
+            volumePerMuscle: {
+              back: {
+                mev: 10, mav: 16, mrv: 22, current: 16,
+                source: {
+                  baseline: { name: 'RP guidelines · intermediate', mev: 10, mav: 14, mrv: 20 },
+                  adjustments: [],
+                  confidence: 0.8,
+                },
+              },
+            },
+            days: [],
+          },
+        ]),
+      ),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => HttpResponse.json({
+        ...realArc,
+        muscles: [
+          {
+            muscle: 'back', region: 'coral', mrv: 22,
+            weeks: [
+              { week: 1, phase: 'MEV', planned: 10, actual: 10, isCurrent: false },
+              { week: 2, phase: 'MEV', planned: 12, actual: 12, isCurrent: false },
+              { week: 3, phase: 'MAV', planned: 16, actual: null, isCurrent: true },
+              { week: 4, phase: 'MAV', planned: 18, actual: null, isCurrent: false },
+              { week: 5, phase: 'MRV', planned: 20, actual: null, isCurrent: false },
+              { week: 6, phase: 'Deload', planned: 10, actual: null, isCurrent: false },
+            ],
+          },
+        ],
+      })),
+    )
+    setup('back', REAL_MESO_ID)
+    expect(await screen.findByText(/Hát · Hangsúly/)).toBeInTheDocument()
+    expect(screen.queryByText(/Emphasize/)).not.toBeInTheDocument()
   })
 })

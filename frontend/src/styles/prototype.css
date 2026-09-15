@@ -13848,3 +13848,357 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-mus-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
 /* ── /train mai titanium ───────────────────────────────────────────────────── */
+
+/* ── terv titanium (mezo-88iwa.10, T9) ─────────────────────────────────────
+   The Terv tab's core pages (mesocycle landing poster, day-by-day week list,
+   a day's own hero + exercise cells, and the muscle detail's "where you
+   stand" gauge) as poster-anatomy cards, ported from the prototype:
+   docs/design_2.0/prototypes/companion-titanium/plan.css `.pl-poster` (:5),
+   `.pl-days`/`.pl-day*` (:176), `.pl-dests`/`.pl-dest*` (:216), `.pl-dhero*`
+   (:256), `.pl-exs`/`.pl-ex*` (:332), `.pl-list`/`.pl-item*` (:121),
+   `.pl-scale-wrap`/`.pl-scale-bar*`/`.pl-scale-legend` (:407) and
+   `.pl-versus*` (:441).
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — rádiuszok, rács-oszlopok, betűméretek,
+   a `--w` szélesség- és `--at`/`--nudge` pozíció-mechanika a sávokon/pinen.
+   AMIT NEM: a prototípus beégetett `var(--domain-color)`-ját és sötét
+   (#ffffffXX / #0f1218 stb.) hexeit — a ház a train-domén MEGLÉVŐ tónus-
+   tokenjeit használja (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.tr-day`
+   is visel a train mai titanium blokkban), a csúcs/deload jelzésekhez a ház
+   `--amber`/`--amber-deep` szemantikus tokenjeit, az izom-specifikus
+   színekhez pedig a meglévő `--mus-color` inline custom property-t
+   (muscleColors.ts, ugyanaz, amit a `.tr-mus-track` is visel) — így a lapok
+   a világos ÉS a sötét témában is olvashatók maradnak.
+
+   Az eyebrow-sorok a MEGLÉVŐ `.tr-eyebrow` osztályt viselik (nem egy saját
+   `.pl-eyebrow`-t) — a T5 lecke (`.overline` ütközne a Tailwind v4
+   text-decoration:overline utility-jével) itt is érvényes, és a `.tr-`
+   osztály már a ház saját, nem ütköző bázis-szabálya.
+
+   Csökkentett mozgás: a család a `.rise`/`EntranceGroup` meglévő
+   egyszeri-lépés idiómáját örökli (nincs saját IntersectionObserver) — a
+   sávok szélessége egyszerű `width: var(--w)` + `transition: width`, a
+   poszter gyűrűjének ívbehúzása pedig a ház meglévő `.mz-play`-armed
+   mintáját követi (lásd `.mz-play .lg-ring .arc` :9132, `.mz-play .ad-ring
+   .arc` :11149) — ugyanaz az arming osztály, amit az EntranceGroup már
+   minden más lapon karbantart, nincs új belépő-mechanika. A poszter fénye
+   (`.pl-poster-sheen`) és a gyűrű lélegző fénye (`.pl-poster-glow`) ambiens,
+   hurkolt animáció — nem belépő-effekt —, a `.fmx-chip-sheen` mintáját
+   követve (:11814) `prefers-reduced-motion: no-preference` mögé zárva. */
+
+/* — the block poster: week numeral, progress ring, sheen, week arc — */
+.pl-poster {
+  position: relative; overflow: hidden;
+  margin: 4px 0 16px; margin-inline: calc(-1 * var(--screen-gutter));
+  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  border: 0; border-radius: 0;
+  --tr-accent: var(--tag-gym); --tr-wash: var(--wash-gym);
+  background:
+    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
+    linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
+  border-bottom: 1px solid color-mix(in srgb, var(--tr-accent) 18%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+.pl-poster-glow {
+  position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tr-accent) 22%, transparent), transparent 68%);
+  pointer-events: none;
+}
+.pl-poster-sheen {
+  position: absolute; inset: 0 auto 0 -50%; width: 38%; transform: skewX(-16deg); pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+}
+.pl-poster-top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.pl-phase {
+  position: relative; font-size: 9px; letter-spacing: .14em; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  color: var(--text-inverse); background: color-mix(in srgb, var(--tr-accent) 85%, var(--surface-card));
+}
+.pl-phase.is-peak { background: linear-gradient(120deg, var(--amber), var(--amber-deep)); }
+.pl-phase.is-deload { color: var(--text-secondary); background: var(--surface-recess); }
+.pl-poster h2 {
+  position: relative; font-family: var(--ff-display); font-size: 29px; font-weight: 300;
+  letter-spacing: -.03em; margin: 14px 0 6px; color: var(--text-primary);
+}
+.pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
+.pl-poster-foot { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.pl-poster-foot span {
+  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
+  border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
+
+/* — the week numeral + progress ring, sharing the poster's top row — */
+.pl-week { position: relative; display: flex; align-items: baseline; gap: 2px; }
+.pl-week strong { font-family: var(--ff-display); font-size: 48px; font-weight: 200; letter-spacing: -.05em; line-height: 1; color: var(--tr-accent); }
+.pl-week small { font-size: 16px; color: var(--tr-accent); }
+.pl-week i { font-style: normal; font-size: 13px; color: var(--text-tertiary); margin-left: 7px; }
+.pl-ring { position: relative; width: 68px; height: 68px; flex: 0 0 auto; }
+.pl-ring svg { width: 68px; height: 68px; transform: rotate(-90deg); }
+.pl-ring circle { fill: none; stroke-width: 5; }
+.pl-ring .t { stroke: var(--surface-recess); }
+.pl-ring .f {
+  stroke: var(--tr-accent); stroke-linecap: round; stroke-dasharray: 0 100;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--tr-accent) 55%, transparent));
+}
+.mz-play .pl-ring .f { animation: pl-arcin .9s cubic-bezier(.22, .9, .25, 1) forwards; animation-delay: var(--d, 150ms); }
+.pl-ring b { position: absolute; inset: 0; display: grid; place-items: center; }
+.pl-ring b .icon { width: 30px; height: 30px; }
+@keyframes pl-arcin { to { stroke-dasharray: var(--p, 0) 100; } }
+
+/* — the week ramp bars — */
+.pl-arc { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 60px; margin: 0; }
+.pl-arc i {
+  position: relative; flex: 1; height: max(8%, var(--h)); border-radius: 7px 7px 4px 4px;
+  background: var(--surface-recess); display: block;
+}
+.pl-arc i.is-past { background: color-mix(in srgb, var(--tr-accent) 34%, transparent); }
+.pl-arc i.is-now {
+  background: linear-gradient(color-mix(in srgb, var(--sage) 70%, white), var(--tr-accent));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--tr-accent) 45%, transparent);
+}
+.pl-arc i.is-deload {
+  background: repeating-linear-gradient(135deg,
+    color-mix(in srgb, var(--text-primary) 12%, transparent) 0 4px,
+    color-mix(in srgb, var(--text-primary) 5%, transparent) 4px 8px);
+}
+.pl-arc i b { position: absolute; left: 0; right: 0; bottom: -16px; text-align: center; font-size: 8.5px; font-weight: 400; color: var(--text-tertiary); }
+.pl-arc i.is-now b { color: var(--tr-accent); }
+.pl-poster .pl-arc { margin-bottom: 18px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pl-poster-sheen { animation: pl-sheen 6s ease-in-out 1s infinite; }
+  .pl-poster-glow { animation: pl-breathe 5s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .pl-ring .f { animation: none; stroke-dasharray: var(--p, 0) 100; }
+}
+@keyframes pl-sheen { 0%, 70% { left: -50%; } 100% { left: 130%; } }
+@keyframes pl-breathe { 0%, 100% { opacity: .75; scale: 1; } 50% { opacity: 1; scale: 1.1; } }
+
+/* — one day per row: full name, MA chip, boxed facts, muscle bars — */
+.pl-days { display: grid; gap: 8px; padding: 0 var(--screen-gutter); }
+.pl-day {
+  display: grid; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid var(--border-subtle); border-radius: 18px;
+  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  box-shadow: var(--shadow-sm);
+}
+.pl-day-head { display: flex; align-items: center; gap: 9px; }
+.pl-day-head strong { font-size: 16px; font-weight: 500; color: var(--text-primary); }
+.pl-day-head b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-today {
+  font-size: 9px; letter-spacing: .12em; font-weight: 700; padding: 3px 7px; border-radius: 999px;
+  color: var(--text-inverse); background: color-mix(in srgb, var(--tr-accent, var(--tag-gym)) 85%, var(--surface-card));
+}
+.pl-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pl-day-facts i {
+  display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-style: normal; min-width: 0;
+  border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+}
+.pl-day-facts .icon { width: 22px; height: 22px; flex: 0 0 auto; }
+.pl-day-facts b { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
+.pl-day-facts small { font-size: 9.5px; color: var(--text-tertiary); }
+.pl-day.is-now {
+  border-color: color-mix(in srgb, var(--tag-gym) 46%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
+    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+}
+.pl-day-tag {
+  display: inline-grid; place-items: center; height: 28px; padding: 0 11px; border-radius: 10px;
+  font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-recess);
+}
+.pl-day.is-now .pl-day-tag { color: var(--text-primary); border-color: color-mix(in srgb, var(--tag-gym) 40%, transparent); }
+.pl-day-bars { display: flex; gap: 4px; }
+.pl-day-bars i { height: 5px; width: calc(var(--w) * .34); min-width: 12px; border-radius: 999px; background: var(--mus-color); }
+.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .55; cursor: default; padding: 11px 14px; }
+.pl-day-rest { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--text-secondary); }
+.pl-day-rest .icon { width: 22px; height: 22px; }
+
+/* — the two destination tiles (muscle-detail / plans doorways) — */
+.pl-dests { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 18px var(--screen-gutter) 4px; }
+.pl-dest {
+  position: relative; overflow: hidden; display: grid; justify-items: start; gap: 3px;
+  padding: 16px 14px 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, var(--border-subtle)); border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 18%, transparent), transparent 64%),
+    var(--surface-card);
+}
+.pl-dest.is-muscle { --wash: var(--sky); }
+.pl-dest.is-plans { --wash: var(--lav); }
+.pl-dest.is-done { --wash: var(--amber); }
+.pl-dest-art { margin-bottom: 7px; }
+.pl-dest-art .icon { width: 40px; height: 40px; }
+.pl-dest strong { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text-primary); }
+.pl-dest small { font-size: 10.5px; color: var(--text-secondary); line-height: 1.35; }
+.pl-dest b {
+  position: absolute; top: 13px; right: 13px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 13px; color: var(--text-inverse);
+  background: color-mix(in srgb, var(--wash, var(--tag-gym)) 80%, var(--surface-card));
+}
+
+/* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral — */
+.pl-dhero {
+  position: relative; overflow: hidden; min-height: 220px;
+  margin: 4px 0 14px; margin-inline: calc(-1 * var(--screen-gutter));
+  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  border: 0; border-radius: 0;
+  background:
+    radial-gradient(120% 90% at 85% 6%, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent), transparent 64%),
+    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 68%);
+  border-bottom: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 18%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+.pl-dhero-wash {
+  position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 26%, transparent), transparent 66%);
+}
+.pl-dhero-art {
+  position: absolute; right: 10px; top: 26px; width: 128px; height: 128px; display: grid; place-items: center;
+  pointer-events: none;
+}
+.pl-dhero-art .icon {
+  width: 108px; height: 108px; position: relative; z-index: 1;
+  filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 40%, transparent));
+}
+.pl-dhero-art i {
+  position: absolute; width: 118px; height: 118px; border-radius: 34px;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 30%, transparent); rotate: 28deg;
+}
+.pl-dhero-art i:nth-of-type(2) { width: 138px; height: 138px; rotate: 56deg; opacity: .55; }
+.pl-dhero-art i:nth-of-type(3) { width: 158px; height: 158px; rotate: 84deg; opacity: .25; }
+.pl-dhero-tag { position: relative; display: inline-block; }
+.pl-dhero h2 {
+  position: relative; font-family: var(--ff-display); font-size: 28px; font-weight: 300;
+  letter-spacing: -.03em; margin: 9px 0 2px; max-width: 58%; color: var(--text-primary);
+}
+.pl-dhero-number { position: relative; display: flex; align-items: baseline; gap: 7px; margin: 10px 0 14px; }
+.pl-dhero-number strong {
+  font-family: var(--ff-display); font-size: 58px; font-weight: 200; letter-spacing: -.05em; line-height: 1;
+  color: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary));
+}
+.pl-dhero-number small { font-size: 13px; color: var(--text-secondary); }
+.pl-dhero-pills { position: relative; display: flex; flex-wrap: wrap; gap: 6px; }
+.pl-dhero-pills span {
+  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
+  border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
+.pl-dhero-constel { position: relative; display: flex; gap: 8px; margin-top: 14px; }
+.pl-dhero-constel i {
+  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, var(--border-subtle));
+  background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-recess));
+}
+.pl-dhero-constel .icon { width: 26px; height: 26px; }
+
+/* — the body-map slot the day/muscle heroes carry — */
+.pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 40%, transparent)); }
+.pl-dhero-art.is-wide { width: 128px; right: 8px; }
+.pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 36%, transparent)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .pl-dhero-wash { animation: pl-breathe 5.5s ease-in-out infinite; }
+  .pl-dhero-art .icon, .pl-dhero-art .body-map { animation: pl-pop .8s cubic-bezier(.2, .9, .25, 1); }
+  .pl-dhero-art i { animation: pl-ring-spin 22s linear infinite; }
+  .pl-dhero-art i:nth-of-type(2) { animation-duration: 30s; animation-direction: reverse; }
+  .pl-dhero-art i:nth-of-type(3) { animation-duration: 40s; }
+}
+@keyframes pl-pop { from { scale: .82; opacity: 0; } }
+@keyframes pl-ring-spin { to { rotate: 388deg; } }
+
+/* — the exercise view cells: a header line, then a 4-cell prescription grid — */
+.pl-exs { display: grid; gap: 9px; }
+.pl-ex {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 22px 38px 1fr auto;
+  align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, var(--border-subtle)); border-radius: 16px;
+  background:
+    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 12%, transparent), transparent 58%),
+    var(--surface-card);
+}
+.pl-ex-index { font-size: 11px; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 65%, var(--text-primary)); }
+.pl-ex-art .icon { width: 38px; height: 38px; }
+.pl-ex-copy { min-width: 0; }
+.pl-ex-copy strong { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.pl-ex-copy small { display: block; font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; }
+.pl-ex-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 6px; }
+.pl-ex-grid span {
+  padding: 9px 6px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+}
+.pl-ex-grid b { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: var(--text-tertiary); margin-top: 4px; }
+.pl-ex-grid .is-main { border-color: transparent; background: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 80%, var(--surface-card)); }
+.pl-ex-grid .is-main b { color: var(--text-inverse); font-weight: 700; }
+.pl-ex-grid .is-main i { color: color-mix(in srgb, var(--text-inverse) 55%, transparent); }
+.pl-ex-move { display: flex; gap: 5px; }
+.pl-ex-move button {
+  width: 26px; height: 26px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  border: 1px solid var(--border-subtle); border-radius: 9px; background: var(--surface-recess);
+}
+.pl-ex-move button:disabled { opacity: .3; cursor: default; }
+.pl-add {
+  display: block; width: 100%; margin-top: 12px; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
+}
+.pl-ex.is-link { grid-template-columns: 34px 34px 1fr auto; cursor: pointer; }
+.pl-ex-sets { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 78%, var(--text-primary)); white-space: nowrap; }
+.pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
+
+/* — the ranked list: name, number, bar, verdict — */
+.pl-list { display: grid; gap: 7px; }
+.pl-item {
+  display: grid; grid-template-columns: 32px 1fr auto 14px; align-items: center; column-gap: 11px; row-gap: 6px;
+  width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-card);
+}
+.pl-item-art .icon { width: 32px; height: 32px; }
+.pl-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+.pl-item-count { font-size: 20px; font-weight: 400; color: var(--mus-color, var(--text-primary)); white-space: nowrap; }
+.pl-item-count i { font-style: normal; font-size: 10px; color: var(--text-tertiary); margin-left: 4px; }
+.pl-item-bar { grid-column: 2 / 4; height: 6px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
+.pl-item-bar i { display: block; height: 100%; width: var(--w); border-radius: 999px; background: var(--mus-color); transition: width .3s ease; }
+.pl-item-say { grid-column: 2 / 4; font-size: 12px; color: var(--text-secondary); }
+.pl-item > b { grid-row: 1 / -1; grid-column: 4; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-item.is-flat { grid-template-columns: 1fr auto 14px; }
+.pl-item.is-flat .pl-item-say { grid-column: 1 / 2; }
+.pl-item.is-flat .pl-item-count { grid-column: 2; grid-row: 1 / -1; }
+
+/* — the muscle gauge: current → ceiling, MEV/MAV/MRV landmarks, a labelled pin — */
+.pl-scale-wrap { padding-top: 20px; }
+.pl-scale-bar { position: relative; display: block; height: 16px; border-radius: 999px; background: var(--surface-recess); }
+.pl-scale-bar .fill {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transition: width .3s ease;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 55%, transparent), var(--mus-color));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--mus-color) 40%, transparent);
+}
+.pl-scale-bar .mark { position: absolute; top: -4px; bottom: -4px; left: var(--at); width: 2px; background: color-mix(in srgb, var(--text-primary) 24%, transparent); }
+.pl-scale-bar .mark.is-top { background: var(--text-primary); opacity: .8; }
+/* The pin's own left anchor is `--at`; `--nudge` (a translate-X override, e.g. `-100%`/`0%`)
+   pulls it back onto the track when `--at` sits near either edge (mirrors the prototype's
+   `translate: var(--nudge, -50%) 0` clamp — component-supplied per pin, not a CSS default). */
+.pl-scale-bar .pin {
+  position: absolute; bottom: 22px; left: var(--at); translate: var(--nudge, -50%) 0; padding: 4px 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: var(--text-inverse); white-space: nowrap;
+  background: color-mix(in srgb, var(--mus-color) 85%, var(--text-inverse));
+}
+.pl-scale-bar .pin::after {
+  content: ''; position: absolute; left: calc(50% - (var(--nudge, -50%) + 50%)); bottom: -4px; translate: -50% 0; width: 8px; height: 8px; rotate: 45deg;
+  background: color-mix(in srgb, var(--mus-color) 85%, var(--text-inverse));
+}
+.pl-scale-legend { position: relative; display: block; height: 34px; margin-top: 9px; }
+.pl-scale-legend i {
+  position: absolute; left: var(--at); translate: var(--nudge, -50%) 0; text-align: center; font-style: normal;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary); white-space: nowrap;
+}
+.pl-scale-legend i small { display: block; font-size: 9px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* — versus bars: this week against last week, per muscle — */
+.pl-versus { display: grid; gap: 9px; }
+.pl-versus-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 11px; }
+.pl-versus-row > span:first-child { font-size: 11px; color: var(--text-tertiary); }
+.pl-versus-bar { height: 10px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
+.pl-versus-bar i { display: block; height: 100%; width: var(--w); border-radius: 999px; background: color-mix(in srgb, var(--text-primary) 16%, transparent); transition: width .3s ease; }
+.pl-versus-row.is-now .pl-versus-bar i { background: var(--mus-color); }
+.pl-versus-row b { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
+.pl-versus-row.is-now b { color: color-mix(in srgb, var(--mus-color) 78%, var(--text-primary)); }
+/* ── /terv titanium ────────────────────────────────────────────────────── */

@@ -16,6 +16,7 @@ import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, type Pag
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { muscleTiles, peakWeek, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
 import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
+import { tierLabel } from '@/features/train/logic/tierLabel'
 import { VolumeBand } from '@/features/train/components/VolumeBand'
 import { DerivationSteps } from '@/features/train/components/DerivationSteps'
 
@@ -95,7 +96,7 @@ export function MesoMusclePage() {
         <PageHero
           icon="i-meso"
           big={tile.tier === 'maintain' ? tile.current : `${tile.current} → ${tile.ceiling}`}
-          name={`${tile.label} · ${{ emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' }[tile.tier]} · ${tile.tier === 'maintain' ? 'MV-n tart' : `MEV${tile.tier === 'emphasize' ? '+2' : ''} → ${tile.tier === 'emphasize' ? 'MRV' : 'MAV'}`}`}
+          name={`${tile.label} · ${tierLabel(tile.tier)} · ${tile.tier === 'maintain' ? 'MV-n tart' : `MEV${tile.tier === 'emphasize' ? '+2' : ''} → ${tile.tier === 'emphasize' ? 'MRV' : 'MAV'}`}`}
           sub={`${arc.currentWeek}. hét · ${freq}×/hét · ${tile.step > 0 ? `+${tile.step} e héten` : 'most tartás'}`}
         />
         <PageBody principle="A baseline sosem íródik felül — a Felülír csak egy újabb réteg rá. Piros itt sincs: a tartás döntés, nem hiba.">
