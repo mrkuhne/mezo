@@ -12,6 +12,9 @@ import { loadRows } from './workout-state.js';
 import { legacyShape } from './session-state.js';
 import { muscleIcon, muscleLabel, muscleColor } from './muscles.js';
 
+/** An exercise's mark: the real-anatomy muscle chip when it has one, a clay icon otherwise. */
+const exArt = e => (e.art.startsWith('m-') ? muscleIcon(e.art.slice(2)) : icon(e.art));
+
 const $ = s => document.querySelector(s);
 const n = v => v.toLocaleString('hu-HU', { maximumFractionDigits: 1 });
 const clock = seconds => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
@@ -81,7 +84,7 @@ function card(id, position, total) {
   const skipped = isSkipped(session, id), all = doneCount(session, id) === rows.length;
   return `<section class="wo-card ${skipped ? 'is-skipped' : all ? 'is-complete' : ''}" style="--ex-color:${exercise.color}" aria-label="${exercise.name}">
    <header class="wo-card-head">
-    <span class="wo-card-art">${exercise.art.startsWith('m-') ? muscleIcon(exercise.art.slice(2)) : icon(exercise.art)}</span>
+    <span class="wo-card-art">${exArt(exercise)}</span>
     <span class="wo-card-copy"><strong>${exercise.name}</strong>${skipped ? '<small>KIHAGYVA</small>' : ''}</span>
     <button class="wo-card-log" data-history="${id}" aria-label="${exercise.name} · előzmények és rekordok">${icon('journal')}</button>
     <button class="wo-card-menu" data-menu="${id}" aria-haspopup="dialog" aria-label="${exercise.name} · további műveletek">⋮</button>
@@ -104,7 +107,7 @@ function menuGlass(id) {
   return `<div class="wo-glass" data-glass style="--ex-color:${exercise.color}">
    <div class="wo-glass-card is-menu" role="dialog" aria-label="${exercise.name} műveletei">
     <header class="wo-glass-head">
-     <span class="wo-card-art">${exercise.art.startsWith('m-') ? muscleIcon(exercise.art.slice(2)) : icon(exercise.art)}</span>
+     <span class="wo-card-art">${exArt(exercise)}</span>
      <span><small>${exercise.muscle.toUpperCase()}</small><strong>${exercise.name}</strong></span>
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
@@ -184,7 +187,7 @@ function historyGlass(id) {
   return `<div class="wo-glass" data-glass style="--ex-color:${e.color}">
    <div class="wo-glass-card" role="dialog" aria-label="${e.name} előzményei és rekordjai">
     <header class="wo-glass-head">
-     <span class="wo-card-art">${icon(e.art)}</span>
+     <span class="wo-card-art">${exArt(e)}</span>
      <span><small>${e.muscle.toLocaleUpperCase('hu-HU')} · ${h.sessions} ALKALOM</small><strong>${e.name}</strong></span>
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
@@ -231,7 +234,7 @@ function videoGlass(id) {
   return `<div class="wo-glass" data-glass style="--ex-color:${e.color}">
    <div class="wo-glass-card is-video" role="dialog" aria-label="${e.name} demóvideó">
     <header class="wo-glass-head">
-     <span class="wo-card-art">${icon(e.art)}</span>
+     <span class="wo-card-art">${exArt(e)}</span>
      <span><small>DEMÓVIDEÓ</small><strong>${e.name}</strong></span>
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>
@@ -254,7 +257,7 @@ function confirmGlass() {
     <span class="wo-confirm-art">${icon('skip')}</span>
     <h2>${m.count ? `Van még ${pending} bepipálatlan szetted.` : 'Egy szettet sem rögzítettél ma.'}</h2>
     <p>Ha most befejezed az edzést, ${m.count ? `ezek <strong>kihagyott</strong> státusszal rögzülnek. A már elmentett ${m.count} szetted természetesen megmarad.` : 'a mai edzés egésze <strong>kihagyott</strong> lesz. Ez is része a ritmusnak — a terv megvár.'}</p>
-    <div class="wo-confirm-list">${perExercise.map(([e, left]) => `<span style="--ex-color:${e.color}">${icon(e.art)}<strong>${e.name}</strong><b>${left} szett</b></span>`).join('')}</div>
+    <div class="wo-confirm-list">${perExercise.map(([e, left]) => `<span style="--ex-color:${e.color}">${exArt(e)}<strong>${e.name}</strong><b>${left} szett</b></span>`).join('')}</div>
     <button class="wo-close-cta" data-cer-go><span class="wo-close-art">${icon('tick')}</span><span><strong>${m.count ? 'Befejezem így' : 'Kihagyom a mai edzést'}</strong><small>${m.count} elvégzett · ${pending} kihagyott</small></span><u class="chip-sheen"></u></button>
     <button class="wo-secondary" data-glass-close>Mégse, visszamegyek</button>
    </div>
