@@ -81,7 +81,7 @@ function card(id, position, total) {
   const skipped = isSkipped(session, id), all = doneCount(session, id) === rows.length;
   return `<section class="wo-card ${skipped ? 'is-skipped' : all ? 'is-complete' : ''}" style="--ex-color:${exercise.color}" aria-label="${exercise.name}">
    <header class="wo-card-head">
-    <span class="wo-card-art">${icon(exercise.art)}</span>
+    <span class="wo-card-art">${exercise.art.startsWith('m-') ? muscleIcon(exercise.art.slice(2)) : icon(exercise.art)}</span>
     <span class="wo-card-copy"><strong>${exercise.name}</strong>${skipped ? '<small>KIHAGYVA</small>' : ''}</span>
     <button class="wo-card-log" data-history="${id}" aria-label="${exercise.name} · előzmények és rekordok">${icon('journal')}</button>
     <button class="wo-card-menu" data-menu="${id}" aria-haspopup="dialog" aria-label="${exercise.name} · további műveletek">⋮</button>
@@ -104,7 +104,7 @@ function menuGlass(id) {
   return `<div class="wo-glass" data-glass style="--ex-color:${exercise.color}">
    <div class="wo-glass-card is-menu" role="dialog" aria-label="${exercise.name} műveletei">
     <header class="wo-glass-head">
-     <span class="wo-card-art">${icon(exercise.art)}</span>
+     <span class="wo-card-art">${exercise.art.startsWith('m-') ? muscleIcon(exercise.art.slice(2)) : icon(exercise.art)}</span>
      <span><small>${exercise.muscle.toUpperCase()}</small><strong>${exercise.name}</strong></span>
      <button data-glass-close aria-label="Bezárás">×</button>
     </header>

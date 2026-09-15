@@ -4,6 +4,7 @@ import { icon, safe } from './nap.js';
 
 import { workoutContent } from './workout.js';
 import { loadContent } from './load-pages.js';
+import { muscleIcon } from './muscles.js';
 import { planContent, planHasOwnHead } from './plan-pages.js';
 import { EXERCISES as exercises, currentSession, metrics, doneCount } from './session-state.js';
 
@@ -40,7 +41,7 @@ function muscleImpact(session) {
     const logged = r.exercise === null ? 0 : doneCount(session, exercises[r.exercise].id);
     const done = Math.round(r.planned * logged / 3);
     return `<div class="tr-mus-row" style="--mus-color:${r.color}">
-     <span class="tr-mus-art">${icon(r.art)}</span>
+     <span class="tr-mus-art">${muscleIcon(r.art.slice(2))}</span>
      <span class="tr-mus-name">${r.name}</span>
      <span class="tr-mus-track"><i class="plan" style="--w:${r.planned}%"></i><i class="done" style="--w:${done}%"></i></span>
      <span class="tr-mus-word">${r.planned === 0 ? 'ma nem kap' : done ? impactWord(done) : `tervben ${impactWord(r.planned)}`}</span></div>`;
