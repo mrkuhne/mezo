@@ -12,6 +12,8 @@ import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
+import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
+import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
@@ -259,6 +261,11 @@ export const routes: RouteObject[] = [
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },
+      // Terhelés subpages (Train Titanium T12 Task 4): both sit UNDER /train/week,
+      // so navModel's own prefix rule lights the Terhelés tab for them — no `owns`
+      // entry needed (navModel.ts's `isPrefix`).
+      { path: 'train/week/terkep', element: <TrainWeekMapPage /> },
+      { path: 'train/week/mozgas', element: <TrainWeekMozgasPage /> },
       { path: 'train/gym', element: <GymPage /> },
       { path: 'train/sport', element: <SportPage /> },
       { path: 'train/futas', element: <RunningPage /> },

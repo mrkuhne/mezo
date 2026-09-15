@@ -14108,6 +14108,70 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-glass-foot { margin: 6px 0 0; font-size: 10px; line-height: 1.5; color: #ffffff70; }
 .ld-glass-empty { margin: 0; font-size: 11.5px; color: #ffffff8c; }
 
+/* — a két aloldal (Izomtérkép / Minden mozgásod, T12 Task 4) — vékony, teli-
+   szélességű hős, a vissza-pill BEDOKKOLVA a hősbe (prototípus `.pl-back.is-
+   inhero` mintája, train-pages.css :179 — „option A: the back pill lives
+   inside the poster"). A pill maga a ház `.mz-backbtn` (PageHead), csak a
+   helyzete más: a hős SAJÁT gyermeke, nem egy fölötte lévő külön sor. */
+.ld-hero.is-slim { padding-top: 56px; padding-bottom: 16px; }
+.ld-hero .ld-back {
+  position: absolute; left: 14px; top: 14px; z-index: 2;
+  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.ld-hero.is-slim .ld-hero-say { margin-top: 8px; }
+
+/* — nézet-kapcsoló (Eddig megvolt / A heti terv): a ház .segtabs/.segtab adja a
+   chip-vizuált, itt csak a hős alá igazítjuk. */
+.ld-modes { margin: 4px 0 14px; }
+
+/* — a nagy test-térkép + jelmagyarázat (Izomtérkép) — */
+.ld-map-stage { padding: 4px 0 0; }
+.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: block; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
+.ld-map-sides { display: flex; justify-content: space-around; margin: 6px 0 12px; }
+.ld-map-sides span { font-size: 9.5px; letter-spacing: .12em; color: var(--text-quaternary); text-transform: uppercase; }
+.ld-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 0 0 6px; }
+.ld-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-tertiary); }
+.ld-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--ld-accent, var(--tag-gym)); }
+.ld-legend .is-none i { opacity: .14; outline: 1px solid var(--border-subtle); }
+.ld-legend .is-below i { opacity: .42; }
+.ld-legend .is-in i { opacity: .72; }
+.ld-legend .is-over i { opacity: 1; }
+.ld-legend .is-planned i { opacity: .6; }
+
+/* — „még munkára vár" lista (Izomtérkép) — */
+.ld-wait { display: grid; gap: 7px; margin-top: 4px; }
+.ld-wait-row {
+  display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card) 72%);
+}
+.ld-wait-row strong { font-size: 13px; font-weight: 600; }
+.ld-wait-row small { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
+.ld-wait-done { margin: 4px 2px 0; font-size: 12px; color: var(--text-tertiary); }
+
+/* — a sport-érintés jegyzet a térkép-oldalon — */
+.ld-sport-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary); }
+.ld-sport-note em { font-style: normal; display: block; color: var(--text-quaternary); }
+
+/* — Minden mozgásod: gym/sport két doboz, SOSEM összemosva — */
+.ld-move-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
+.ld-move-box {
+  display: grid; gap: 4px; padding: 14px 13px; border-radius: 18px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+}
+.ld-move-box strong { font-size: 17px; font-weight: 700; }
+.ld-move-box small { font-size: 10.5px; color: var(--text-tertiary); }
+.ld-move-box em { font-style: normal; font-size: 9.5px; color: var(--text-quaternary); }
+
+/* — a mozgás-oldal izomcsoport-sorai: lapos (nem koppintható), sport-jellel — */
+.ld-group.is-flat { cursor: default; }
+.ld-sport-chip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
+  padding: 3px 8px; border-radius: 999px; color: var(--tag-sport); background: var(--wash-sport);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ld-hero-art i { animation: none; }
   .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i { animation: none; transform: none; }
