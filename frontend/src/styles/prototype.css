@@ -1035,8 +1035,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
 
 /* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
-   backdrop is portaled into .phone-screen the same way) is open */
-.phone-screen:has(.sheet-backdrop, .dd-backdrop) .screen-content {
+   backdrop is portaled into .phone-screen the same way) is open. GlassBox
+   (.gl-backdrop) is portaled into .phone-screen the same way (mezo-88iwa.13
+   fix round 1) and must lock scroll too. */
+.phone-screen:has(.sheet-backdrop, .dd-backdrop, .gl-backdrop) .screen-content {
   overflow: hidden !important;
   touch-action: none;
 }
@@ -13869,8 +13871,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    media guard) so both the backdrop fade and the card slide-up can be
    asserted directly in tests; reduced motion renders the final state with no
    class and thus no animation at all. */
+/* z-index ladder (mezo-88iwa.13 fix round 1): GlassBox is a Sheet-SIBLING dialog
+   primitive — T6 opens it on pages that also host a <Sheet>, so it cannot sit at
+   the shared "page takeover" tier (60, shared with .welcome/.fmx-glass-layer)
+   or it renders BEHIND an open sheet. It mirrors the Sheet backdrop/panel pair
+   (200/201) one tier up — 220/221 — so it always stacks above a Sheet while
+   staying below the toast stack (300). Full ladder: tab-bar 40 · page-takeovers
+   60 · Sheet 200/201 (nested 210/211) · GlassBox 220/221 · toast 300. */
 .gl-backdrop {
-  position: fixed; inset: 0; z-index: 60;
+  position: fixed; inset: 0; z-index: 220;
   display: flex; align-items: flex-end; justify-content: center;
   background: rgba(5, 7, 10, 0.72);
   backdrop-filter: blur(18px) saturate(0.85);
@@ -13880,6 +13889,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card {
   --gl-tint: var(--primary-base);
   position: relative;
+  z-index: 221;
   width: 100%; max-width: 428px; max-height: 92%; overflow-y: auto; scrollbar-width: none;
   padding: 18px 18px calc(26px + env(safe-area-inset-bottom));
   border: 1px solid color-mix(in srgb, var(--gl-tint) 26%, rgba(255, 255, 255, 0.1));

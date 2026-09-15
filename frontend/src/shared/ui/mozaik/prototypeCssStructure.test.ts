@@ -239,3 +239,30 @@ describe('the titanium glass primitive section is registered (mezo-88iwa.13)', (
     }
   })
 })
+
+/**
+ * Fix round 1 (mezo-88iwa.13, T12 Task 2 review): GlassBox is a Sheet-SIBLING
+ * dialog — pages that host a <Sheet> may also open a GlassBox on top of it — so
+ * two things a CSS-parsing test can actually pin down without a real browser
+ * layout pass: it must sit above the Sheet's 200/201 pair (not the shared
+ * page-takeover tier, 60), and the background-scroll lock must know about it.
+ */
+describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () => {
+  test('the background-scroll-lock :has() selector includes .gl-backdrop', () => {
+    expect(rawCss).toContain(
+      '.phone-screen:has(.sheet-backdrop, .dd-backdrop, .gl-backdrop) .screen-content',
+    )
+  })
+
+  test('.gl-backdrop / .gl-card sit above the Sheet pair (200/201), not at the page-takeover tier (60)', () => {
+    const backdropMatch = rawCss.match(/\.gl-backdrop\s*\{[^}]*z-index:\s*(\d+)/)
+    const cardMatch = rawCss.match(/\.gl-card\s*\{[^}]*z-index:\s*(\d+)/)
+    expect(backdropMatch, '.gl-backdrop has no z-index in its own rule').not.toBeNull()
+    expect(cardMatch, '.gl-card has no z-index in its own rule').not.toBeNull()
+    const backdropZ = Number(backdropMatch![1])
+    const cardZ = Number(cardMatch![1])
+    expect(backdropZ).toBeGreaterThan(201) // above the Sheet backdrop/panel pair
+    expect(cardZ).toBeGreaterThan(backdropZ) // the card rides above its own backdrop
+    expect(cardZ).toBeLessThan(300) // stays below the toast stack
+  })
+})
