@@ -5,6 +5,7 @@ import { icon, safe } from './nap.js';
 import { workoutContent } from './workout.js';
 import { loadContent } from './load-pages.js';
 import { muscleIcon } from './muscles.js';
+import { gyakContent } from './gyak-pages.js';
 import { planContent, planHasOwnHead } from './plan-pages.js';
 import { EXERCISES as exercises, currentSession, metrics, doneCount } from './session-state.js';
 
@@ -115,21 +116,12 @@ function tervPage() {
 }
 
 /** Gyakorlatok — the library: catalogue, records, medals. Old language, later round. */
-function gyakorlatokPage() {
-  const row = (art, name, sub, action = '') =>
-    `<button class="sheet-row" ${action}><span>${icon(art)}</span><span><strong>${name}</strong><small>${sub}</small></span><span class="row-end">↗</span></button>`;
-  return `<div class="tr-soon">${icon('book')}<span class="overline">KÖVETKEZŐ KÖRÖK</span><strong>Ez a lap még a régi nyelven van.</strong><p>Ide kerül a gyakorlattár, a gyakorlatonkénti rekordjaid, a medálkabinet és a saját gyakorlataid.</p></div>
-  ${row('book', 'Gyakorlattár', '166 alap + a sajátjaid', detail('Gyakorlattár', 'Böngészés izomcsoport szerint, demóképekkel és videóval.', 'book'))}
-  ${row('gem', 'Rekordjaid', 'Legjobb szett · becsült 1RM · összvolumen', detail('Rekordok', 'Gyakorlatonként a legjobb szetted és a becsült egyismétléses maximumod.', 'gem'))}
-  ${row('ring', 'Medálkabinet', 'Dátumozott rekordtörténet', detail('Medálok', 'Minden megdöntött rekord egy medál, a dátumával és azzal, mit vert meg.', 'ring'))}`;
-}
-
 export function trainPagesContent(domain, page, date = '2026-09-09') {
   if (domain !== 'train') return null;
   if (page === 0) return date === '2026-09-09' ? trainToday(date) : workoutContent('train', 0, date);
   if (page === 1) return planContent();
   if (page === 2) return loadContent();
-  if (page === 3) return gyakorlatokPage();
+  if (page === 3) return gyakContent();
   return null;
 }
 
