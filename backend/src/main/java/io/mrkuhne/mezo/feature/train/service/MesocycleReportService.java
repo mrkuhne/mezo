@@ -81,8 +81,6 @@ public class MesocycleReportService {
     /** Top strength/record entries the report carries (the FE shows the biggest jumps). */
     private static final int TOP_HIGHLIGHTS = 5;
 
-    private static final BigDecimal THIRTY = BigDecimal.valueOf(30);
-
     /** Shape-safe stand-in if a row ever carries a null {@code report} jsonb (nullable column). */
     private static final MesoReportJson EMPTY_REPORT = new MesoReportJson(
         new MesoReportJson.Adherence(0, 0, 0, 0, 0), null, List.of(),
@@ -333,7 +331,10 @@ public class MesocycleReportService {
         return row.getCatalogId() != null ? "c:" + row.getCatalogId() : "n:" + row.getName();
     }
 
-    /** One week bucket's best working set. {@code e1rm} is null for a weightless (bodyweight) set. */
+    /**
+     * One week bucket's best working set. {@code e1rm} is null for a weightless (bodyweight) set,
+     * and also for a set whose reps exceed {@link OneRepMax#REP_CAP}.
+     */
     private record TopSet(BigDecimal weightKg, int reps, Double e1rm) {}
 
     /**
@@ -351,15 +352,14 @@ public class MesocycleReportService {
         return new TopSet(best.getWeightKg(), best.getReps(), e1rm(best));
     }
 
-    /** Epley: {@code weight × (1 + reps/30)}; null (not zero) when the set carries no load. */
+    /**
+     * Epley e1RM — delegates the FORMULA to {@link OneRepMax} (Titanium T2 single source of truth);
+     * null (not zero) when the set carries no load OR its reps sit above {@link OneRepMax#REP_CAP}.
+     * The weightless/uncapped-reps-ranks-below comparator in {@link #topSetOf} is unchanged.
+     */
     private static Double e1rm(ExerciseSetEntity set) {
-        if (set.getWeightKg() == null) {
-            return null;
-        }
-        return set.getWeightKg()
-            .multiply(BigDecimal.valueOf(30L + set.getReps()))
-            .divide(THIRTY, 6, RoundingMode.HALF_UP)
-            .doubleValue();
+        BigDecimal estimate = OneRepMax.estimate(set.getWeightKg(), set.getReps());
+        return estimate == null ? null : estimate.doubleValue();
     }
 
     /** Absolute gain in the LOAD actually lifted; null when either end was weightless. */

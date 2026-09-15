@@ -96,4 +96,26 @@ class ProgressionServiceIT extends AbstractIntegrationTest {
         assertThat(skillProgressRepository.findByCreatedByAndSkillKey(user, "max_strength"))
             .get().satisfies(s -> assertThat(s.getCumulativeXp()).isEqualTo(200L + expected));
     }
+
+    @Test
+    void testApplyGym_shouldStillPayThePrBonus_whenBestE1rmIsNullButRecordMedalsWereEarned() {
+        // Titanium T2 (OneRepMax.REP_CAP=12): a session whose weighted working sets are all
+        // above the cap has bestE1rm == null, but weight/reps-at-weight RECORD medals can still
+        // fire independently of the e1RM estimate. The PR bonus must not be lost in that case —
+        // only the e1RM-derived XP is zero.
+        UUID user = databasePopulator.populateUser("pr-nocap@test.local");
+        UUID instance = UUID.randomUUID();
+        GymSignal signal = new GymSignal(instance, Map.of(), null, 1, 0, 1, 0);
+
+        LevelUpResult result = progressionService.applyGym(user, signal);
+
+        ProgressionProperties.Gym gym = progressionProperties.gym();
+        long expected = gym.prBonusXp(); // NO e1RM XP, exactly one recordMedalCount's worth of bonus
+        assertThat(result.gains()).anySatisfy(g -> {
+            assertThat(g.skillKey()).isEqualTo("max_strength");
+            assertThat(g.xpGained()).isEqualTo(expected);
+        });
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(user, "max_strength"))
+            .get().satisfies(s -> assertThat(s.getCumulativeXp()).isEqualTo(expected));
+    }
 }

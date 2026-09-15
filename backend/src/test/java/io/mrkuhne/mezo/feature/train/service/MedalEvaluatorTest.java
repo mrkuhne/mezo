@@ -120,4 +120,13 @@ class MedalEvaluatorTest {
     void testEpley_shouldMatchTheRecordServiceFormula_whenGivenAWeightedSet() {
         assertThat(MedalEvaluator.epley(new BigDecimal("100"), 8)).isEqualByComparingTo("126.6667");
     }
+
+    @Test
+    void testForSet_shouldNotAwardE1rm_butStillAwardRepsAtWeight_whenRepsExceedTheCap() {
+        // 13 reps is above OneRepMax.REP_CAP (12): both the candidate's and the prior's e1RM
+        // estimate are null, so the E1RM comparison must not NPE and must not award — but
+        // REPS_AT_WEIGHT compares raw reps at the same weight and is unaffected by the cap.
+        var awards = MedalEvaluator.forSet(set("100", 13), List.of(prior("100", 8)));
+        assertThat(kinds(awards)).containsExactly(MedalKind.REPS_AT_WEIGHT);
+    }
 }

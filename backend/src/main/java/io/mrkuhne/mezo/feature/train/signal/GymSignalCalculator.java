@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository.ExerciseIdentityRow;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
+import io.mrkuhne.mezo.feature.train.service.OneRepMax;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GymSignalCalculator {
 
-    private static final BigDecimal THIRTY = new BigDecimal("30");
     private static final String OTHER_MUSCLE = "other";
 
     private final ExerciseSetRepository exerciseSetRepository;
@@ -61,8 +61,9 @@ public class GymSignalCalculator {
             long vol = s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps()))
                 .setScale(0, RoundingMode.HALF_UP).longValueExact();
             volumeByMuscle.merge(muscle, vol, Long::sum);
+            // OneRepMax refuses reps > REP_CAP (null) — skip those rather than crash the running max.
             BigDecimal e1rm = epley(s.getWeightKg(), s.getReps());
-            if (bestE1rm == null || e1rm.compareTo(bestE1rm) > 0) {
+            if (e1rm != null && (bestE1rm == null || e1rm.compareTo(bestE1rm) > 0)) {
                 bestE1rm = e1rm;
             }
         }
@@ -87,8 +88,8 @@ public class GymSignalCalculator {
         return (muscle == null || muscle.isBlank()) ? OTHER_MUSCLE : muscle;
     }
 
-    /** Epley e1RM: weight × (30 + reps) / 30, scale 4 HALF_UP (matches ExerciseRecordService). */
+    /** Epley e1RM — delegates to {@link OneRepMax} (Titanium T2 single source of truth). */
     private BigDecimal epley(BigDecimal weightKg, int reps) {
-        return weightKg.multiply(BigDecimal.valueOf(30L + reps)).divide(THIRTY, 4, RoundingMode.HALF_UP);
+        return OneRepMax.estimate(weightKg, reps);
     }
 }

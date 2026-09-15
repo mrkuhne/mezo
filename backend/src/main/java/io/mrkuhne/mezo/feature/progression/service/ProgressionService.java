@@ -90,11 +90,19 @@ public class ProgressionService {
         });
         // best e1RM → max_strength XP. The PR bonus now pays per genuinely broken RECORD-tier
         // medal (mezo-wp6n); before this it fired on the first-ever weighted session only —
-        // a v1 stand-in for the record detection that did not exist yet.
+        // a v1 stand-in for the record detection that did not exist yet. The two halves are
+        // independent: bestE1rm is null whenever every weighted working set is above
+        // OneRepMax.REP_CAP (Titanium T2), but weight/reps-at-weight RECORD medals can still
+        // fire in that case, so the PR bonus must not be gated behind the e1RM null guard.
+        long maxStrengthXp = 0L;
         if (signal.bestE1rm() != null) {
-            long xp = (long) signal.bestE1rm().intValue() * g.e1rmXpPerKg()
-                + (long) signal.recordMedalCount() * g.prBonusXp();
-            deltas.merge("max_strength", xp, Long::sum);
+            maxStrengthXp += (long) signal.bestE1rm().intValue() * g.e1rmXpPerKg();
+        }
+        if (signal.recordMedalCount() > 0) {
+            maxStrengthXp += (long) signal.recordMedalCount() * g.prBonusXp();
+        }
+        if (maxStrengthXp > 0) {
+            deltas.merge("max_strength", maxStrengthXp, Long::sum);
             kinds.put("max_strength", "ATHLETIC");
         }
         // work sets → strength_endurance; bodyweight reps → flat strength_endurance too;

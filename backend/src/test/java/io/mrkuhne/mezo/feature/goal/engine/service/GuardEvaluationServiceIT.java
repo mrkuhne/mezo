@@ -8,12 +8,15 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -24,9 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Verifies the soft guards (spec §5.3, D9 — WARN, never block): the strength guard (e1RM trend on
- * the main lift, Epley, reps&gt;10 discarded), the muscle-volume guard (per-muscle weekly hard sets
- * vs maintenance/warn floor), and the rate-cap guard (the trailing-4w EWMA slope, NOT the lagging
- * whole-series slope). Protein monitoring is deferred (Fuel not built) → always {@code false}.
+ * the main lift, Epley via {@code OneRepMax}, warmups excluded and reps&gt;{@code REP_CAP} (12)
+ * discarded), the muscle-volume guard (per-muscle weekly hard sets vs maintenance/warn floor), and
+ * the rate-cap guard (the trailing-4w EWMA slope, NOT the lagging whole-series slope). Protein
+ * monitoring is deferred (Fuel not built) → always {@code false}.
  *
  * <p>The {@link WeightTrendResponse} is passed in directly (the service is pure w.r.t. that input),
  * so the rate-cap numbers are deterministic; the goal/meso/sets/volume-logs are seeded in the DB and
@@ -40,6 +44,7 @@ class GuardEvaluationServiceIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private GoalRepository goalRepository;
+    @Autowired private ExerciseSetRepository exerciseSetRepository;
 
     /** A trend with the given trailing-4w + whole-series rates against an 84 kg latest weight. */
     private WeightTrendResponse trend(String last4wKgPerWeek, String weeklyKgPerWeek) {
@@ -90,6 +95,26 @@ class GuardEvaluationServiceIT extends AbstractIntegrationTest {
 
     private static String fmt(double kg) {
         return new java.math.BigDecimal(kg).setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
+    }
+
+    /**
+     * A warmup-kind set — {@link #trainPopulator}'s {@code createLoggedSet} idiom always logs
+     * {@code kind = "working"}, so a warmup fixture is built directly against the entity/repository
+     * the way {@code TrainPopulator.set(kind, ...)} does for its own kind-carrying rows.
+     */
+    private void seedWarmupSet(UUID user, UUID exerciseId, UUID workoutSessionId, int setIndex,
+            String weightKg, int reps, Instant doneAt) {
+        ExerciseSetEntity s = new ExerciseSetEntity();
+        s.setCreatedBy(user);
+        s.setExerciseId(exerciseId);
+        s.setWorkoutSessionId(workoutSessionId);
+        s.setSetIndex(setIndex);
+        s.setKind("warmup");
+        s.setWeightKg(new BigDecimal(weightKg));
+        s.setReps(reps);
+        s.setRir(3);
+        s.setDoneAt(doneAt);
+        exerciseSetRepository.saveAndFlush(s);
     }
 
     // ── Muscle guard: below-maintenance volume is flagged, at/above maintenance is not ────────────
@@ -155,6 +180,33 @@ class GuardEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(status.strength().active()).isTrue();
         assertThat(status.strength().breached()).isFalse();
         assertThat(status.strength().e1rmTrendPct().doubleValue()).isGreaterThan(-5.0);
+    }
+
+    @Test
+    void testEvaluate_shouldIgnoreWarmupSets_whenComputingStrengthTrend() {
+        UUID user = databasePopulator.populateUser("guard-str-warmup@test.local");
+        GoalEntity goal = goalWithGuards(user, List.of("strength"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        WorkoutSessionEntity session =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Push", "lift", 0, "completed");
+        ExerciseEntity bench = trainPopulator.createExercise(
+            user, session.getId(), "Fekvenyomás", 0, "mell", "compound", null);
+
+        Instant early = Instant.now().minus(28, ChronoUnit.DAYS);
+        Instant recent = Instant.now().minus(2, ChronoUnit.DAYS);
+        // Same -6% working-set series as the breach test above (5 reps ⇒ e1RM moves with weight).
+        trainPopulator.createLoggedSet(user, bench.getId(), session.getId(), 0, fmt(100.0), 5, 1, early);
+        trainPopulator.createLoggedSet(user, bench.getId(), session.getId(), 1, fmt(94.0), 5, 1, recent);
+        // An absurd warmup load logged in the recent window must NOT move the trend — warmups are
+        // excluded upstream (findByCreatedByAndRepsNotNullAndKind("working")), never even reaching
+        // the OneRepMax.eligible filter.
+        seedWarmupSet(user, bench.getId(), session.getId(), 2, "300", 1, recent);
+
+        GuardStatus status = service.evaluate(goal, List.of(meso.getId()), trend("-0.40", "-0.40"));
+
+        assertThat(status.strength().active()).isTrue();
+        assertThat(status.strength().breached()).isTrue();
+        assertThat(status.strength().e1rmTrendPct()).isEqualByComparingTo(new BigDecimal("-6.00"));
     }
 
     // ── Rate-cap: reacts to the trailing-4w rate, NOT the lagging whole-series rate ───────────────

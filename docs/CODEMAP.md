@@ -1330,9 +1330,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **services:** `CatalogMediaResolver`, `ClosingBlockService`, `EwmaEstimator`, `ExerciseCatalogService`,
     `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`, `MedalEvaluator`,
     `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
-    `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `Prescription`,
-    `PriorityTier`, `ProgressionDecider`, `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`,
-    `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
+    `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
+    `Prescription`, `PriorityTier`, `ProgressionDecider`, `RunningService`, `SessionTimingCalculator`,
+    `SetRecommendationService`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
     `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`,
     `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WorkoutAutoCloseService`,
     `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
@@ -1412,7 +1412,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     templatePoster.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts,
     weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 13 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 14 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
