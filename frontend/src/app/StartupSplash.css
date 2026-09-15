@@ -1,0 +1,73 @@
+.startup-content { display: contents; }
+
+.startup-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+
+.startup-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--surface-page);
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.startup-splash__mark {
+  position: relative;
+  width: min(86%, 360px, 72dvh);
+  aspect-ratio: 1;
+}
+
+.startup-splash__light { width: 100%; height: 100%; }
+.startup-stage[data-ready="false"] .startup-splash__mark { visibility: hidden; }
+
+.startup-splash__mark::before {
+  content: '';
+  position: absolute;
+  inset: 5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-base) 12%, transparent), transparent 68%);
+}
+
+.startup-splash .titan-artwork { display: block; width: 100%; height: 100%; }
+.startup-splash .titan-scene {
+  border-radius: 0;
+  /* Bloom's dark render-target edges must dissolve into both theme canvases. */
+  mask-image: radial-gradient(ellipse at center, #000 42%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 42%, transparent 72%);
+}
+/* The intro owns its pulse and flashes; the SVG must not add its own glow loop. */
+.startup-splash .titan-form,
+.startup-splash .titan-rings,
+.startup-splash .titan-planet,
+.startup-splash .titan-core { animation: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .startup-stage[data-ready="true"] { animation: startup-reveal 300ms ease-out 2700ms both; }
+  .startup-stage[data-ready="true"] .startup-splash__mark { animation: startup-pulse 3s cubic-bezier(.4, 0, .2, 1) both; }
+  .startup-stage[data-ready="true"] .startup-splash__light { animation: startup-flashes 3s linear both; }
+}
+
+@keyframes startup-pulse {
+  0%, 100% { transform: scale(.96); }
+  48% { transform: scale(1.08); }
+}
+
+/* Three separate light accents inside ONE slow breath: quick rise, softer decay. */
+@keyframes startup-flashes {
+  0%, 10%, 30%, 40%, 59%, 72%, 94%, 100% { filter: brightness(1); }
+  16% { filter: brightness(1.9); }
+  46% { filter: brightness(1.65); }
+  78% { filter: brightness(2.1); }
+}
+
+@keyframes startup-reveal {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

@@ -13,10 +13,11 @@
 // chunkjában maradjon; a `live` kapu miatt a dinamikus import el sem indul, ha a jelenet
 // úgysem futna. A Suspense fallback ugyanaz az SVG, tehát a helye sosem ugrik meg.
 // ============================================================
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useId, useState } from 'react'
 import type { NeedState } from '@/features/today/logic/needs'
 import { NEED_META } from '@/features/today/logic/needs'
 import { cn } from '@/shared/lib/cn'
+import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 
 const TitanScene = lazy(() =>
   import('@/features/today/components/TitanScene').then((m) => ({ default: m.TitanScene })),
@@ -55,39 +56,64 @@ function detectLive(): boolean {
 }
 
 /** A statikus jel: a nyugalmi állapot ÉS a jelenet betöltése alatti fallback. */
-function TitanMark() {
+function TitanMark({ decorations = true }: { decorations?: boolean }) {
+  const id = useId()
   return (
     <svg className="titan-svg" viewBox="0 0 180 180" aria-hidden="true">
       <defs>
-        <radialGradient id="titan-gold" cx="50%" cy="42%" r="60%">
+        <radialGradient id={`${id}-gold`} cx="50%" cy="42%" r="60%">
           <stop offset="0%" stopColor="#fff6da" />
           <stop offset="55%" stopColor="#e7c467" />
           <stop offset="100%" stopColor="#a9803a" />
         </radialGradient>
-        <linearGradient id="titan-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={`${id}-metal`} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#e4e1ec" />
           <stop offset="45%" stopColor="#b6b1c8" />
           <stop offset="100%" stopColor="#8b86a3" />
         </linearGradient>
-        <radialGradient id="titan-planet" cx="35%" cy="35%" r="65%">
+        <radialGradient id={`${id}-planet`} cx="35%" cy="35%" r="65%">
           <stop offset="0%" stopColor="#e3d3ff" />
           <stop offset="100%" stopColor="#8f6fd1" />
         </radialGradient>
       </defs>
       <g className="titan-form">
-        <g className="titan-rings">
+        {decorations && <g className="titan-rings">
           <ellipse cx="90" cy="90" rx="76" ry="36" transform="rotate(-30 90 90)" fill="none" stroke="#9c8cbb" strokeWidth="1.4" />
           <ellipse cx="90" cy="90" rx="66" ry="30" transform="rotate(38 90 90)" fill="none" stroke="#c9bfe0" strokeWidth="1" />
-          <circle className="titan-planet" cx="152" cy="59" r="6" fill="url(#titan-planet)" />
-        </g>
-        <g className="titan-petals" fill="url(#titan-metal)" stroke="#b6b1c8" strokeWidth="1">
+          <circle className="titan-planet" cx="152" cy="59" r="6" fill={`url(#${id}-planet)`} />
+        </g>}
+        <g className="titan-petals" fill={`url(#${id}-metal)`} stroke="#b6b1c8" strokeWidth="1">
           <path d="M84 20C22 31 25 107 62 124L73 90C48 70 61 47 84 20Z" />
           <path d="M84 20C22 31 25 107 62 124L73 90C48 70 61 47 84 20Z" transform="rotate(120 90 90)" />
           <path d="M84 20C22 31 25 107 62 124L73 90C48 70 61 47 84 20Z" transform="rotate(240 90 90)" />
         </g>
-        <circle className="titan-core" cx="90" cy="90" r="24" fill="url(#titan-gold)" />
+        <circle className="titan-core" cx="90" cy="90" r="24" fill={`url(#${id}-gold)`} />
       </g>
     </svg>
+  )
+}
+
+/** Static terminal fallback, never the placeholder for a loading 3D scene. */
+function StartupMark({ onReady }: { onReady?: () => void }) {
+  useEffect(() => { onReady?.() }, [onReady])
+  return <TitanMark decorations={false} />
+}
+
+/** The Dashboard's core geometry, without orbital decorations or a transient 2D placeholder. */
+export function TitanArtwork({ onReady }: { onReady?: () => void }) {
+  const [live] = useState(detectLive)
+  const [failed, setFailed] = useState(false)
+  const onUnavailable = useCallback(() => setFailed(true), [])
+  return (
+    <span className="titan-artwork" aria-hidden="true">
+      <ErrorBoundary fallback={() => <StartupMark onReady={onReady} />}>
+        {live && !failed ? (
+          <Suspense fallback={null}>
+            <TitanScene decorations={false} onReady={onReady} onUnavailable={onUnavailable} />
+          </Suspense>
+        ) : <StartupMark onReady={onReady} />}
+      </ErrorBoundary>
+    </span>
   )
 }
 
