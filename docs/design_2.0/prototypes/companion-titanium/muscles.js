@@ -42,6 +42,17 @@ const silhouette = view => `<g fill="url(#mg-body)" opacity=".42"><use href="#bm
  * One muscle, zoomed on its own body — the symbol every list and card wears. The viewBox
  * closes in on the lit shapes (squared, with air around them) so a 24px icon still reads.
  */
+const measured = new Map();
+/** The browser measures the def group itself, so the crop is exact — never an estimate. */
+function shapeBox(view, slug) {
+  const id = `bm-${view}-${slug}`;
+  if (!measured.has(id)) {
+    const box = document.getElementById(id)?.getBBox();
+    measured.set(id, box && box.width ? [box.x, box.y, box.width, box.height] : BODY[view].b[slug]);
+  }
+  return measured.get(id);
+}
+
 export function muscleIcon(key) {
   ensureDefs();
   const shapes = TOKEN_SHAPES[key];
@@ -50,7 +61,7 @@ export function muscleIcon(key) {
   const slugs = shapes.filter(([v]) => v === view).map(([, slug]) => slug);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const slug of slugs) {
-    const [bx, by, bw, bh] = BODY[view].b[slug];
+    const [bx, by, bw, bh] = shapeBox(view, slug);
     x0 = Math.min(x0, bx); y0 = Math.min(y0, by); x1 = Math.max(x1, bx + bw); y1 = Math.max(y1, by + bh);
   }
   const pad = Math.max(x1 - x0, y1 - y0) * 0.3;

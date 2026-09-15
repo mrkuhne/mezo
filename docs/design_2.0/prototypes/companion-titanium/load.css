@@ -206,6 +206,6 @@
 /* — real-anatomy figures — */
 .body-duo { display: flex; align-items: flex-start; justify-content: center; gap: 4%; }
 .body-duo-view { width: 44%; height: auto; }
-.ld-map-mini { width: 96px; }
-.ld-map-mini .body-duo-view { width: 48%; }
+.ld-map-mini { width: 96px; height: 82px; align-items: center; overflow: hidden; flex: 0 0 auto; }
+.ld-map-mini .body-duo-view { width: auto; height: 100%; }
 .ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; }
