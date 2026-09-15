@@ -127,6 +127,9 @@ test.each([
   ['/train/session', 'Mai'],
   ['/train/review/abc', 'Mai'],
   ['/train/mesocycles/x/days/Hét', 'Terv'],
+  // The moved library (Train Titanium T9 Task 2, mezo-88iwa.10) lights Terv via the plain
+  // longest-prefix rule — `/train/mesocycles` IS its tab route, so no `owns` entry is needed.
+  ['/train/mesocycles/konyvtar', 'Terv'],
   ['/train/futas/123', 'Terv'],
   ['/train/gym', 'Terhelés'],
   ['/train/medals', 'Gyakorlatok'],
