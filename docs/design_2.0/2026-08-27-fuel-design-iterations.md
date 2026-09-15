@@ -1,5 +1,9 @@
 # Fuel design iterations — Daniel's direction log (2026-08-27)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 The fuel-tab prototype went through an iteration loop with Daniel after the first hub ship.
 This file records **what changed, why, and what it means for implementation** — the prototype
 (`prototypes/fuel-tab.html`, artifact `e0da58f6…`) is the visual truth, this is the rationale.
