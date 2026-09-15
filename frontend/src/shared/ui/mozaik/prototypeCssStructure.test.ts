@@ -178,3 +178,36 @@ describe('prototype.css stays structurally intact (mezo-d20.9.1)', () => {
     expect(rawCss).toContain('prefers-reduced-motion')
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.6, T5): the file's own convention for a named block is an
+ * opening comment "dashes name dashes" and a matching closing comment "dashes slash-name
+ * dashes" (see e.g. fuel-mai titanium :11767/:12549, titan-dark scope :13503/:13649) — this is
+ * the same open/close pairing mozaikCssTokens.test.ts's mozaikSection() already leans on for
+ * the Mozaik block. This guard registers the .tr-* Titanium section (the Mai day-poster/CTA/
+ * energy/impact family) the same way: both markers must exist, in order, and the block
+ * between them must be non-trivial — so a future merge that drops the CSS (the exact failure
+ * mode this whole test file exists to catch) fails HERE with a one-line pointer, not as a
+ * silent missing style downstream.
+ */
+describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
+  const START_MARKER = 'train mai titanium'
+  const END_MARKER = '/train mai titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the tr- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.tr-mus-track']) {
+      expect(section, `${cls} missing from the train mai titanium section`).toContain(cls)
+    }
+  })
+})

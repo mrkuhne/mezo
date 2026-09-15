@@ -9,7 +9,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { snoozeKey } from '@/features/train/logic/morningWindow'
-import { localDateString } from '@/shared/lib/dates'
+import { localDateString, huMonthDayDow } from '@/shared/lib/dates'
+import { weekDateIso } from '@/features/train/logic/weekAgenda'
 
 // Weekly-row gym taps route straight to the session/review (direct-start flow,
 // mezo-bxpg) via useNavigate; mock it so we can assert the exact target
@@ -20,6 +21,36 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// Task 5 (mezo-88iwa.6) card tests need deterministic control over the mock fixture's
+// weight/gym/sport shape — wrap the real `useTrain`/`useGoal` and let each test graft a
+// partial override onto the otherwise-real mock data, the same idiom TrainWeekPage.test.tsx
+// already uses for its `daysOverride`.
+let trainOverride: ((real: ReturnType<typeof import('@/data/hooks').useTrain>) => Record<string, unknown>) | null = null
+let goalOverride: ((real: ReturnType<typeof import('@/data/hooks').useGoal>) => Record<string, unknown>) | null = null
+// Fix round 1 (finding 1): mock mode's own `useTimingProfile` is always synchronous
+// (`isPending` never true) — so a "real-mode style, timing profile still pending" case
+// needs its own override, the same graft-a-partial-override idiom as train/goal above,
+// rather than standing up the whole real-mode msw fixture set just for this one flag.
+let timingProfileOverride: ((real: ReturnType<typeof import('@/data/hooks').useTimingProfile>) => Record<string, unknown>) | null = null
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useTrain: (...args: Parameters<typeof actual.useTrain>) => {
+      const real = actual.useTrain(...args)
+      return trainOverride ? { ...real, ...trainOverride(real) } : real
+    },
+    useGoal: (...args: Parameters<typeof actual.useGoal>) => {
+      const real = actual.useGoal(...args)
+      return goalOverride ? { ...real, ...goalOverride(real) } : real
+    },
+    useTimingProfile: (...args: Parameters<typeof actual.useTimingProfile>) => {
+      const real = actual.useTimingProfile(...args)
+      return timingProfileOverride ? { ...real, ...timingProfileOverride(real) } : real
+    },
+  }
+})
+
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
 beforeEach(() => {
@@ -27,7 +58,12 @@ beforeEach(() => {
   mockNavigate.mockReset()
   localStorage.removeItem(snoozeKey()) // the morning-training card state must not leak between tests
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  trainOverride = null
+  goalOverride = null
+  timingProfileOverride = null
+})
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
@@ -59,22 +95,42 @@ const currentUrl = () => screen.getByTestId('loc').textContent
 const findTodayCard = async (title: string) =>
   (await screen.findByText(title, { selector: '.todaycard-title' })).closest('.todaycard') as HTMLElement
 
+// ---- Titanium face (mezo-88iwa.6, T5) ----
+// The legacy `.page-header` (Eyebrow + „Mai nap” h1 + „← Ma”) is gone: the poster names
+// the session and the DayStrip announces WHICH day is rendered. So every „which day is
+// shown” assertion reads the strip's selected chip (its aria-label starts with the
+// weekday), and the way back to today is today's own chip — which CLEARS `?day=` exactly
+// as „← Ma” did, so the URL guarantees below are unchanged.
+const shownDayLabel = () =>
+  screen.getByRole('tab', { selected: true }).getAttribute('aria-label')!.split(' · ')[0]
+const backToToday = () => fireEvent.click(screen.getByRole('tab', { name: /· ma ·/ }))
+
 test('today gym hero renders (the weekly list + load tiles + note now live on Heti)', () => {
   const { container } = renderView()
-  // "Pull Day" is the gym hero's title (h2); the hero itself is unique via .trainhero.
+  // "Pull Day" is the poster's title (h2); the poster itself is unique via .tr-day.
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(container.querySelector('.trainhero')).not.toBeNull()
-  expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
+  expect(container.querySelector('.tr-day')).not.toBeNull()
+  const start = screen.getByRole('button', { name: /Indítsuk/ })
+  expect(start).toBeInTheDocument()
+  // nothing logged today yet ⇒ the poster's status pill reads BETERVEZVE
+  expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
+  // fresh-state poster: the `.tr-start.is-go` CTA opens the active session (mirrors the
+  // is-review/is-resume CTAs' own navigate assertions below).
+  fireEvent.click(start)
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
 })
 
 // The one-day rework (mezo-9bbc) dropped the unconditional `+ Saját edzés`
 // footer, leaving the CTA only on rest days — a day WITH scheduled sessions had
 // no way to assemble a one-off workout for today (mezo-eahv).
-test('a day with scheduled sessions still offers the Saját edzés CTA', () => {
+test('a day with scheduled sessions still offers a custom-workout CTA', () => {
   renderView()
-  // mock today (Csü) carries the gym hero — the footer CTA must still be there
-  expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /Saját edzés/ }))
+  // mock today (Csü) carries the gym poster — the one-off workout entry must still be
+  // there; on a poster day it is the `.tr-alt` „Egyedi edzés” chip (the dashed footer
+  // renders exactly when the poster does not, the same mutual exclusion the rest-day
+  // card already had).
+  expect(screen.getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Egyedi edzés/ }))
   expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
 })
 
@@ -82,20 +138,20 @@ test('a non-today selection offers no Saját edzés CTA (today-only entry)', () 
   render(
     <QueryWrapper><MemoryRouter initialEntries={['/train?day=1']}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>,
   )
-  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Saját edzés/ })).not.toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Kedd')
+  expect(screen.queryByRole('button', { name: /Saját edzés|Egyedi edzés/ })).not.toBeInTheDocument()
 })
 
 test('day strip: selecting another day swaps the rendered sessions, no refetch', async () => {
   renderView()
   // mock week: today is Csü (gym Pull Day). Kedd carries volleyball 17:00.
-  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Csütörtök')
   fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
-  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Kedd')
   expect(await screen.findByText('Volleyball', { selector: '.todaycard-title' })).toBeInTheDocument()
-  // back to today
-  fireEvent.click(screen.getByRole('button', { name: /Ma$/ }))
-  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  // back to today — today's own chip
+  backToToday()
+  expect(shownDayLabel()).toBe('Csütörtök')
 })
 
 // Mock mode's gymDoneDates (trainHooks.ts) always marks the WALL-CLOCK "today" ISO
@@ -137,7 +193,7 @@ test('?day= initialises the selection (drill-in from Heti)', () => {
   render(
     <QueryWrapper><MemoryRouter initialEntries={['/train?day=1']}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>,
   )
-  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Kedd')
 })
 
 // ---- I3 (mezo-9bbc final review): the URL is the single source of truth ----
@@ -146,31 +202,32 @@ test('?day= initialises the selection (drill-in from Heti)', () => {
 // day) and `← Ma` cleared the state but not the query (a reload re-selected that
 // day with no button left to escape it).
 
-test('selecting a day writes ?day= to the URL, and ← Ma clears it again', () => {
+test("selecting a day writes ?day= to the URL, and today's own chip clears it again", () => {
   renderAt('/train')
   expect(currentUrl()).toBe('/train')
   fireEvent.click(screen.getByRole('tab', { name: /^Szombat ·/ }))
-  expect(screen.getByRole('heading', { name: 'Szombat' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Szombat')
   expect(currentUrl()).toBe('/train?day=5')
-  fireEvent.click(screen.getByRole('button', { name: /Ma$/ }))
-  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  // The Titanium face has no „← Ma” button; today's own chip carries that job and must
+  // CLEAR the param (not pin today's index), or a reload tomorrow would open on today.
+  backToToday()
+  expect(shownDayLabel()).toBe('Csütörtök')
   expect(currentUrl()).toBe('/train')
 })
 
 test('dropping ?day= without a remount (the Mai sub-nav tap) snaps the page back to today', () => {
   renderAt('/train?day=5')
-  expect(screen.getByRole('heading', { name: 'Szombat' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Szombat')
   // the same mounted element, only the query changes — the page must follow it
   fireEvent.click(screen.getByRole('link', { name: 'Mai-fül' }))
   expect(currentUrl()).toBe('/train')
-  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Ma$/ })).not.toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Csütörtök')
 })
 
 test('hostile ?day= values fall back to today and leave the URL alone', () => {
   for (const raw of ['', '7', '-1', '1.5', 'kedd']) {
     const view = renderAt(`/train?day=${raw}`)
-    expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+    expect(shownDayLabel()).toBe('Csütörtök')
     expect(currentUrl()).toBe(`/train?day=${raw}`)
     view.unmount()
   }
@@ -183,11 +240,18 @@ test('today-only blocks hide on a non-today selection', () => {
   expect(screen.queryByText(/Reggeli edzés/i)).not.toBeInTheDocument()
 })
 
-test('own page-header: Mai nap h1 + Napiv over-line', () => {
-  renderView()
-  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
-  // today is Csü ⇒ "Edzés · Csütörtök · W3"
-  expect(screen.getByText('Edzés · Csütörtök · W3')).toBeInTheDocument()
+test('the Titanium face drops the page-header — the poster and the strip name the day', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.page-header')).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Mai nap' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Edzés · Csütörtök · W3')).not.toBeInTheDocument()
+  // the poster carries the place instead: „MA {idő} · {fázis} · GYM” over-line + the
+  // session title, and the strip's selected chip says which day that is.
+  const poster = container.querySelector('.tr-day') as HTMLElement
+  expect(poster).not.toBeNull()
+  expect(within(poster).getByText(/^MA .* · GYM$/)).toBeInTheDocument()
+  expect(within(poster).getByRole('heading', { name: 'Pull Day' })).toBeInTheDocument()
+  expect(shownDayLabel()).toBe('Csütörtök')
 })
 
 test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', () => {
@@ -206,7 +270,7 @@ test('the Mezociklus card navigates to the overview (mezo-hi9m)', () => {
 // no entry point of its own on Mai — restore reachability with a nav row.
 test('the Sport entry row navigates to /train/sport', () => {
   renderView()
-  fireEvent.click(screen.getByRole('button', { name: /Sport naplózása és szezonod/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Sportjaid és szezonod/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/sport')
 })
 
@@ -235,7 +299,7 @@ test('mock mode: the flagged day IS today for the date math, so today\'s run car
   vi.setSystemTime(new Date('2026-07-17T12:00:00'))
   try {
     renderView()
-    expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+    expect(shownDayLabel()).toBe('Csütörtök') // the fixture's flagged day IS what renders
     // Friday's prescribed run is merged into today's row by `todayRuns`
     const runCard = await findTodayCard('Piramis-intervallum')
     expect(within(runCard).getByText('MA')).toBeInTheDocument()
@@ -427,9 +491,10 @@ test('real mode: today\'s OWN chip on a rest day still reads as today (Mai nap +
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderAt(todayDrillIn())
-  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Ma$/ })).not.toBeInTheDocument()
-  expect(screen.getByText(/Ma pihenőnap/)).toBeInTheDocument()
+  // today-ness is what this test guards: today's rest copy + the today-only Saját edzés
+  // entry (both vanish the moment the page decides the drilled-in day is NOT today).
+  expect(await screen.findByText(/Ma pihenőnap/)).toBeInTheDocument()
+  expect(shownDayLabel()).toBe(DAY_LABELS[todayLabel()])
   expect(screen.getByRole('button', { name: /Saját edzés/ })).toBeInTheDocument()
 })
 
@@ -452,8 +517,8 @@ test('real mode: today\'s OWN chip on a rest day keeps the in-progress resume ca
     ),
   )
   renderAt(todayDrillIn())
-  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
-  expect(screen.getByText('● Folyamatban')).toBeInTheDocument()
+  expect(await screen.findByText('● Folyamatban')).toBeInTheDocument()
+  expect(shownDayLabel()).toBe(DAY_LABELS[todayLabel()])
   expect(screen.getByText(/Folytassuk → · 1 szett kész/)).toBeInTheDocument()
 })
 
@@ -477,10 +542,10 @@ test('real mode: today\'s OWN chip on a run-only day still reads as today', asyn
     }])),
   )
   renderAt(todayDrillIn())
-  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Ma$/ })).not.toBeInTheDocument()
+  const sprint = await findTodayCard('Reggeli sprint')
+  expect(shownDayLabel()).toBe(DAY_LABELS[todayLabel()])
   // and today's own run card keeps today's copy, not a retroactive Pótold
-  expect(within(await findTodayCard('Reggeli sprint')).getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
+  expect(within(sprint).getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
 })
 
 // ---- I6 (mezo-9bbc final review): completed custom workouts must reach Mai ----
@@ -551,7 +616,7 @@ test('real mode orders the morning run hero above the evening gym hero', async (
   // both heroes present (K3: emoji lives in the icon shield now, the eyebrow tag is text-only —
   // scope to .typetag-run, since the weekly row's own .stag-run tag reads the same "FUTÁS").
   const runTag = await screen.findByText('FUTÁS', { selector: '.typetag-run' })
-  const startBtn = await screen.findByRole('button', { name: 'Indítsuk →' }) // gym hero CTA
+  const startBtn = await screen.findByRole('button', { name: /Indítsuk/ }) // gym poster CTA
   // run hero (08:00) must precede gym hero (18:30) in the DOM
   expect(runTag.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
@@ -765,12 +830,14 @@ test('real mode: a completed today instance renders the Kész hero with Megnéze
     ),
   )
   renderView()
-  // done-state hero: the shared DoneBar (3 non-skipped sets), no start CTA. The bar's
-  // accessible name is its explicit ariaLabel, not its visible summary/detail text (mezo-9bbc).
-  expect(await screen.findByRole('button', { name: 'Befejezett edzés áttekintése' })).toBeInTheDocument()
-  expect(screen.getByText('Kész · 3 szett')).toBeInTheDocument()
-  expect(screen.getByText('Megnézem az összegzést')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Indítsuk →' })).not.toBeInTheDocument()
+  // done-state poster: KÉSZ pill + the `.tr-start.is-review` CTA carrying the same
+  // 3-non-skipped-set count, and no start CTA. The CTA opens the read-only review.
+  const review = await screen.findByRole('button', { name: /Eredmény/ })
+  expect(screen.getByText('KÉSZ')).toBeInTheDocument()
+  expect(screen.getByText('3 szett · megnézem')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  fireEvent.click(review)
+  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-done')
 })
 
 test('real mode: an open instance renders the Folyamatban hero with Folytassuk', async () => {
@@ -798,10 +865,12 @@ test('real mode: an open instance renders the Folyamatban hero with Folytassuk',
     ),
   )
   renderView()
-  expect(await screen.findByText('● Folyamatban')).toBeInTheDocument()
+  // in-progress poster: FOLYAMATBAN pill + the `.tr-start.is-resume` CTA carrying the
+  // same 2-non-skipped-set count.
+  expect(await screen.findByText('FOLYAMATBAN')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
-  expect(screen.getByText(/Folytassuk → · 2 szett kész/)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Indítsuk →' })).not.toBeInTheDocument()
+  expect(screen.getByText('2 szett kész')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
 
 test('real mode: prescribed run logged today ⇒ run hero flips to the done summary, not the log CTA', async () => {
@@ -865,9 +934,26 @@ describe('TrainTodayPage (real mode, pending)', () => {
     // prevent (mezo-9bbc final review, I4).
     const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
     expect(sk.filter((el) => el.style.width === '62px')).toHaveLength(7)
-    // the only remaining full-width block is the gym hero's CTA — 48px since the DS
-    // re-skin gave it the minimum tap height (mezo-setx.6.2)
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '48px')).toHaveLength(1)
+    // the poster's in-poster CTA — 74px, the real `.tr-start` height (padding 15px
+    // 18px + strong 16px/1.5 + small 12px/1.5 + small's 2px margin-top = 74px total),
+    // corrected from the earlier 56px placeholder (mezo-88iwa.6 fix round 1).
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '74px')).toHaveLength(1)
+    // the energy card (`.tr-energy`, ~189px) and the muscle-impact card (`.tr-mus`,
+    // ~255px) — the two cards that now sit BETWEEN the poster and the „Vagy inkább"
+    // pair (Task 5, mezo-88iwa.6); their derivation is documented in
+    // TrainTodaySkeleton.tsx next to each placeholder.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '189px')).toHaveLength(1)
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '255px')).toHaveLength(1)
+    // the „Vagy inkább" pair (`.tr-alt`) — two 44px-tall placeholders, the real
+    // `.tr-alt button` min-height, now that the pair always renders AFTER the two
+    // cards above (not directly under the poster any more).
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '44px')).toHaveLength(2)
+    // Order matters — this is the one thing the skeleton exists to get right: poster
+    // CTA → energy card → impact card → alt pair, matching the real document order.
+    const order = sk
+      .map((el) => el.style.height)
+      .filter((h) => ['74px', '189px', '255px', '44px'].includes(h))
+    expect(order).toEqual(['74px', '189px', '255px', '44px', '44px'])
   })
 })
 
@@ -1058,12 +1144,250 @@ test('a past unlogged run slot offers Pótold and logs it on that day', async ()
 // tap so a swapped day stages in instead of snapping.
 test("the day body staggers inside an armed entrance group", async () => {
   const { container } = renderView()
-  await screen.findByRole("heading", { name: "Mai nap" })
+  await screen.findByText("Pull Day", { selector: ".tr-day h2" })
   const play = container.querySelector(".mz-play")
   expect(play).not.toBeNull()
   const risen = [...play!.querySelectorAll(".rise")] as HTMLElement[]
   expect(risen.length).toBeGreaterThan(1)
-  // the Mezociklus nav row at 70ms, then the day s hero cards from 120ms
-  expect(risen.some((el) => el.style.getPropertyValue("--d") === "70ms")).toBe(true)
+  // the day's poster/hero cards from 120ms, then the nav rows below them (240ms)
   expect(risen.some((el) => el.style.getPropertyValue("--d") === "120ms")).toBe(true)
+  expect(risen.some((el) => el.style.getPropertyValue("--d") === "240ms")).toBe(true)
+})
+
+// ---- Task 5 (mezo-88iwa.6): the energy + muscle-impact cards ----
+// Mock today is Csü (fixture-flagged `today: true` on the gym slot, independent of the
+// real weekday), carrying the Pull Day gym plan (back-mid × ex1/ex3, back-wide × ex2,
+// biceps-brachialis × ex4, shoulder-rear × ex5). `weekDateIso` computes the SAME real-
+// clock-relative ISO date `buildWeekAgenda` gives that row, so an injected sport slot's
+// logged entry can be matched against it exactly like `sportDoneOn` matches it on the page.
+const csuDateIso = () => weekDateIso(DAY_ORDER.indexOf('Csü'))
+const inactivateGym = (real: ReturnType<typeof import('@/data/hooks').useTrain>) => ({
+  gymSchedule: real.gymSchedule
+    ? { ...real.gymSchedule, weeklyTimes: real.gymSchedule.weeklyTimes.map((d) => (d.day === 'Csü' ? { ...d, active: false } : d)) }
+    : real.gymSchedule,
+})
+const addTodaySportSlot = (real: ReturnType<typeof import('@/data/hooks').useTrain>, done: boolean) => {
+  const schedule = real.sport.schedule
+  if (!schedule) return {}
+  const iso = csuDateIso()
+  return {
+    sport: {
+      ...real.sport,
+      schedule: {
+        ...schedule,
+        volleyball: {
+          ...schedule.volleyball,
+          sessions: [
+            ...schedule.volleyball.sessions,
+            { day: 'Csü', time: '18:00', duration: 60, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés', sport: 'volleyball' as const, today: true },
+          ],
+        },
+      },
+      sessions: done
+        ? [
+            ...real.sport.sessions,
+            {
+              id: 'ss-fixture', sport: 'volleyball', date: huMonthDayDow(iso), isoDate: iso, time: '18:00', duration: 60,
+              setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null, jumpCount: null, notes: null,
+            },
+          ]
+        : real.sport.sessions,
+    },
+  }
+}
+// A generic single-line "N kcal" number extractor for the split rows.
+const firstNumber = (text: string) => Number(text.match(/-?\d+(\.\d+)?/)?.[0])
+
+// Mock's active running block only prescribes Kedd/Pén (dayOfWeek 1/4, running.ts) — freeze
+// the clock to a Thursday (2026-07-16, the same fixed date the rest of this suite already
+// uses for day-of-week determinism, mezo-pfdv) so `todayIdx()` never silently folds a
+// real-weekday run into these blocks and turns a deliberately-empty day non-empty.
+const withFrozenThursday = (run: () => void) => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00'))
+  try {
+    run()
+  } finally {
+    vi.useRealTimers()
+  }
+}
+
+test('energy card: a planned+done mix splits honestly into earned vs. still-planned', () => {
+  trainOverride = (real) => addTodaySportSlot(real, true) // gym still planned (not completed), sport already logged
+  withFrozenThursday(() => {
+    const { container } = renderView()
+    const card = container.querySelector('.tr-energy')
+    expect(card).not.toBeNull()
+    const plannedKcal = firstNumber(card!.querySelector('.tr-energy-main strong')!.textContent!)
+    const spans = card!.querySelectorAll('.tr-energy-split span')
+    const earnedKcal = firstNumber(spans[0].textContent!)
+    const remainingKcal = firstNumber(spans[1].textContent!)
+    expect(spans[0].textContent).toMatch(/már megszolgálva/)
+    expect(spans[1].textContent).toMatch(/a tervben/)
+    // a real mix: both sides carry weight, and they honestly sum back to the headline
+    expect(earnedKcal).toBeGreaterThan(0)
+    expect(remainingKcal).toBeGreaterThan(0)
+    expect(earnedKcal + remainingKcal).toBe(plannedKcal)
+    expect(card!.querySelector('.tr-energy-note')!.textContent).toBe('Becslés, nem mérés.')
+  })
+})
+
+test('a non-today selection hides both the energy and the muscle-impact card', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.tr-energy')).not.toBeNull() // sanity: today shows it
+  fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
+  expect(container.querySelector('.tr-energy')).toBeNull()
+  expect(container.querySelector('.tr-mus')).toBeNull()
+})
+
+test('energy card: no weight on file renders the honest sentence, never a fabricated number', () => {
+  goalOverride = () => ({ goal: null, goalResponse: null })
+  const { container } = renderView()
+  const card = container.querySelector('.tr-energy')
+  expect(card).not.toBeNull()
+  expect(card!.querySelector('.tr-energy-main')).toBeNull()
+  expect(card!.querySelector('.tr-energy-empty')!.textContent).toBe(
+    'Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.',
+  )
+})
+
+test('muscle-impact card: the ladder word tracks planned volume, and earned never overflows planned', () => {
+  // Log far more "back" sets than the day's own Hát region plans (10) — the earned
+  // bar must cap at the region's own planned width, never spill past it.
+  trainOverride = () => ({
+    completedTodayWorkout: {
+      id: 'wi-fixture', templateSessionId: 'today', date: csuDateIso(), status: 'completed' as const,
+      sets: Array.from({ length: 15 }, (_, i) => ({ id: `s${i}`, exerciseId: 'ex1', setIndex: i, kind: 'working' as const, skipped: false })),
+    },
+  })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const hatRow = rows.find((r) => r.querySelector('.tr-mus-name')?.textContent === 'Hát')!
+  expect(hatRow).toBeTruthy()
+  expect(hatRow.querySelector('.tr-mus-word')!.textContent).toBe('erős') // 10 planned sets > 6
+  const planW = (hatRow.querySelector('.tr-mus-track i.plan') as HTMLElement).style.getPropertyValue('--w')
+  const doneW = (hatRow.querySelector('.tr-mus-track i.done') as HTMLElement).style.getPropertyValue('--w')
+  expect(doneW).toBe(planW) // capped at the row's own planned width, not the 15 raw logged sets
+})
+
+test('rest day with a sport slot: the impact card falls back to the sport heuristic, never an all-zero gym table', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
+  const { container } = renderView()
+  expect(screen.queryByText('Pull Day')).not.toBeInTheDocument() // the gym plan itself is gone
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.tr-mus-name')!.textContent, r]))
+  // volleyball's static heuristic (sportMuscleLoad.ts): shoulder-front 3/shoulder-rear 1 -> Váll
+  // (max 3, erős), quad 2/calf 2 -> Láb (közepes), core 1 -> Core (enyhe). Mell/Hát/Kar absent.
+  expect(byName['Váll'].querySelector('.tr-mus-word')!.textContent).toBe('erős')
+  expect(byName['Láb'].querySelector('.tr-mus-word')!.textContent).toBe('közepes')
+  expect(byName['Core'].querySelector('.tr-mus-word')!.textContent).toBe('enyhe')
+  expect(byName['Hát']).toBeUndefined()
+  expect(byName['Mell']).toBeUndefined()
+  expect(container.querySelector('.tr-mus-note')!.textContent).toMatch(/^A sáv a sport becsült terhelése/)
+})
+
+// Sweep finding f (mezo-88iwa.6): a gym day that ALSO carries a sport slot only ever
+// feeds the gym plan into the impact card (the sport branch is `else if`) — the
+// sport's load is silently dropped, not merely estimated separately. The footer must
+// say so instead of over-promising "Mit terhel a mai mozgásod" covers everything.
+test('gym day with a sport slot too: the impact footer admits the sport load is estimated separately', () => {
+  trainOverride = (real) => addTodaySportSlot(real, false) // Pull Day stays active, plus a Csü volleyball slot
+  const { container } = renderView()
+  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0) // the gym plan is still the source of the table
+  const note = container.querySelector('.tr-mus-note')!.textContent!
+  expect(note).toMatch(/^A halvány sáv a tervezett terhelés/) // still the gym-table note, not the sport-estimate one
+  expect(note).toMatch(/gym terved látod itt.*sportod terhelését külön, becsléssel/)
+})
+
+test('nothing planned today: neither card renders (never an all-zero table)', () => {
+  trainOverride = (real) => inactivateGym(real) // Csü rest day, mock carries no sport slot on Csü by default
+  withFrozenThursday(() => {
+    const { container } = renderView()
+    expect(container.querySelector('.tr-energy')).toBeNull()
+    expect(container.querySelector('.tr-mus')).toBeNull()
+  })
+})
+
+// ---- Fix round 1 (mezo-88iwa.6 review) ----
+
+// Finding 1 (ship-blocking): a real-mode first paint with the timing profile still
+// pending must hold the WHOLE energy card, not render "+0 kcal" from the still-empty
+// gym block. Mock's own `useTimingProfile` is always synchronous, so the override
+// above stands in for "real mode, pending" without standing up the whole msw fixture.
+test('energy card: held entirely while the timing profile is pending on a gym day, appears once resolved', () => {
+  timingProfileOverride = () => ({ data: null, isPending: true })
+  const { container, rerender } = renderView()
+  expect(container.querySelector('.tr-energy')).toBeNull()
+  timingProfileOverride = () => ({ data: null, isPending: false })
+  rerender(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+  expect(container.querySelector('.tr-energy')).not.toBeNull()
+  expect(container.querySelector('.tr-energy-main strong')).not.toBeNull()
+})
+
+const addTwoTodaySportSlots = (real: ReturnType<typeof import('@/data/hooks').useTrain>, loggedKind: 'volleyball' | 'cross') => {
+  const schedule = real.sport.schedule
+  if (!schedule) return {}
+  const iso = csuDateIso()
+  return {
+    sport: {
+      ...real.sport,
+      schedule: {
+        ...schedule,
+        volleyball: {
+          ...schedule.volleyball,
+          sessions: [
+            ...schedule.volleyball.sessions,
+            { day: 'Csü', time: '18:00', duration: 60, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés', sport: 'volleyball' as const, today: true },
+            { day: 'Csü', time: '07:00', duration: 45, court: 'Otthon', intensity: 'könnyű', role: 'edzés', sport: 'cross' as const, today: true },
+          ],
+        },
+      },
+      sessions: [
+        ...real.sport.sessions,
+        {
+          id: 'ss-fixture', sport: loggedKind, date: huMonthDayDow(iso), isoDate: iso, time: '18:00', duration: 60,
+          setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null, jumpCount: null, notes: null,
+        },
+      ],
+    },
+  }
+}
+
+// Finding 2: two sport slots today, only one logged — the earned bar must light up
+// ONLY the logged event's own regions, not every region any planned sport touches
+// (the old `anySportDone` boolean lit everything once ANY sport was logged).
+test('two sports today, logging one earns only its own regions (per-event attribution)', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTwoTodaySportSlots(real, 'volleyball') })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.tr-mus-name')!.textContent, r]))
+  // cross (planned, NOT logged) is the only sport touching Kar (rose, triceps-medial) —
+  // volleyball never does, so Kar's earned bar must stay at zero width.
+  const karDone = byName['Kar'].querySelector('.tr-mus-track i.done') as HTMLElement
+  expect(karDone.style.getPropertyValue('--w')).toBe('0%')
+  // volleyball (logged) touches Váll (lav, shoulder-front) — its earned bar must light.
+  const vallDone = byName['Váll'].querySelector('.tr-mus-track i.done') as HTMLElement
+  expect(vallDone.style.getPropertyValue('--w')).not.toBe('0%')
+})
+
+// Finding 3: MuscleChip renders null for an empty token — every impact row (gym-day
+// zero-planned big-family rows, and the sport-estimate rows) must carry a non-empty,
+// drawable token.
+test('every impact row renders a chip (no empty token, gym day)', () => {
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    expect(row.querySelector('.tr-mus-art .muscle-chip')).not.toBeNull()
+  }
+})
+
+test('every impact row renders a chip (no empty token, rest day with sport)', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    expect(row.querySelector('.tr-mus-art .muscle-chip')).not.toBeNull()
+  }
 })

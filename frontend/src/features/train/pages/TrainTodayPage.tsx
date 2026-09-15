@@ -6,13 +6,20 @@
 // a reload, a back/forward step and the `Mai` sub-nav entry all agree with what
 // the page renders. The weekly list + load tiles + provenance note now
 // live on TrainWeekPage (/train/week, "Heti").
-// A full-page sibling of the Edzés hub — it owns its own .page-header.
+// Titanium face (mezo-88iwa.6, T5): the today-gym hero is the `.tr-day` poster —
+// status pill (BETERVEZVE/FOLYAMATBAN/KÉSZ), the session title, the meso sub-line, a
+// muscle constellation, the chip row and the in-poster three-state CTA — with the
+// energy card and the muscle-impact card below it, and the „Vagy inkább” `.tr-alt`
+// pair after those two. The legacy `.page-header` (Eyebrow + „Mai nap”
+// h1 + „← Ma”) is GONE: the poster names the session and the DayStrip names the day, so
+// the strip is the page's first element. Today's own chip took over „← Ma”'s job — it
+// CLEARS `?day=` instead of pinning today's index (see `selectDay`).
 // ============================================================
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile } from '@/data/hooks'
+import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile, useGoal } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
 import {
@@ -24,14 +31,12 @@ import {
   snoozeHash,
 } from '@/features/train/logic/morningWindow'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
+import { DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
-import { Chip } from '@/shared/ui/Chip'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
@@ -39,13 +44,17 @@ import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { DayStrip } from '@/features/train/components/DayStrip'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
-import { DoneBar } from '@/features/train/components/DoneBar'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { daySessions } from '@/features/train/logic/agenda'
+import { dayImpact, regionRepresentativeToken, type DayImpactRow } from '@/features/train/logic/dayImpact'
+import { trainDayEnergy, type Block } from '@/features/train/logic/trainDayEnergy'
+import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
+import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { dayStripItems } from '@/features/train/logic/dayStripItems'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
-import { SPORT_TONE, sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_TONE, sportOf, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
@@ -66,6 +75,10 @@ export function TrainTodayPage() {
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit/prepBriefing deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
+  // Same weight source `deriveDailyBudget` reads for Fuel's calorie budget
+  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — Mai's energy card must never
+  // drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
+  const { goal, goalResponse } = useGoal()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
   const mtrWindow = morningWindow(sleepGoal.wakeTime)
@@ -103,10 +116,6 @@ export function TrainTodayPage() {
     if (index === null) next.delete('day')
     else next.set('day', String(index))
     setSearchParams(next, { replace: true })
-  }
-  const selectDay = (day: string) => {
-    const index = DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])
-    writeDay(index >= 0 ? index : null)
   }
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
@@ -189,6 +198,18 @@ export function TrainTodayPage() {
   // `shownDay` means today by definition (nothing selected, or a stale selection
   // that fell back to an undefined `todayRow` on a rest day).
   const isTodayShown = selectedDay === null || (shownDay?.date ?? todayIso) === todayIso
+  // The day key today's own DayStrip chip carries — the same fallback the strip's
+  // `selected` prop uses below (a real-mode rest day flags no agenda row at all).
+  const todayDayKey = todayRow?.day ?? DAY_ORDER[todayIdx()]
+  const selectDay = (day: string) => {
+    // Tapping today's own chip is the way back to today now that the page-header's
+    // „← Ma” is gone — so it CLEARS `?day=` rather than pinning today's index. Pinning
+    // it would mean a reload tomorrow re-opened on *this* weekday, the exact guarantee
+    // „← Ma” carried (mezo-88iwa.6, T5).
+    if (day === todayDayKey) return writeDay(null)
+    const index = DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])
+    writeDay(index >= 0 ? index : null)
+  }
 
   // Pull today's runs separately (date-based) and merge them with the flag-based
   // today row into a synthetic day, so a run-only-today still shows its hero — but
@@ -228,6 +249,11 @@ export function TrainTodayPage() {
   // of the two carries the CTA and it is never duplicated (mezo-eahv).
   const restDayCard =
     !shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout)
+  // The today-gym poster's own render condition, hoisted: the `.tr-alt` quick pair follows
+  // the energy and muscle-impact cards in render order, and the dashed „Saját edzés”
+  // footer stands down while the pair is there so exactly ONE one-off-workout entry exists
+  // (the same mutual exclusion the rest-day card already had with the footer, mezo-eahv).
+  const gymPosterShown = isTodayShown && Boolean(workout) && orderedToday.some((it) => it.kind === 'gym')
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
   const loggedSportOn = (iso: string, k: SportKind) =>
@@ -239,26 +265,120 @@ export function TrainTodayPage() {
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
 
+  // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
+  // Weight source: the SAME hook `deriveDailyBudget` reads for the Fuel calorie budget
+  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — `useGoal()`, read above. Falling
+  // back to 0 (not a static default) keeps the "no weight on file" honest state identical
+  // to Fuel's own fallback chain.
+  const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
+  // A run block carries no plan-level duration (`RunPrescribedSession` has none) — the
+  // same 40-minute stand-in `buildEnergyBreakdown` (Fuel's own energy-explain sheet) uses
+  // for a duration-less block, so the two surfaces never quote different run burns.
+  const DEFAULT_RUN_MIN = 40
+  // Held at 0 while the timing profile is still pending — same "never a numeric
+  // flash-then-swap" rule the poster's own `workoutMinutes` follows above.
+  const gymMinutesToday = gymPosterShown && workout && !timingProfilePending
+    ? estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
+    : 0
+  // Today's training blocks, in the exact shape `trainDayEnergy` wants — built from
+  // the SAME ordered-today list the hero cards above already render, so the energy
+  // card can never disagree with what's on-screen just above it.
+  const energyBlocks: Block[] = isTodayShown
+    ? orderedToday.reduce<Block[]>((acc, item) => {
+        if (item.kind === 'gym') {
+          if (gymPosterShown) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
+        } else if (item.kind === 'sport') {
+          acc.push({ kind: 'sport', minutes: item.sport.duration, done: sportDoneOn(shownIso, sportOf(item.sport)) })
+        } else if (item.kind === 'running') {
+          acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(runLoggedFor(item.running.key)) })
+        }
+        return acc
+      }, [])
+    : []
+  const dayEnergy = trainDayEnergy(energyBlocks, weightKg || null)
+  // Fix round 1 (finding 1, ship-blocking): a day whose blocks include gym must hold the
+  // WHOLE card while the timing profile is pending — not just the gym block's own minutes.
+  // `gymMinutesToday` above is already held at 0 while pending, but the card doesn't gate
+  // on that, so real mode's first paint (no timing profile fetched yet) briefly rendered
+  // "+0 kcal" from the still-empty gym block instead of the poster's own no-flash rule.
+  const energyCardPendingGym = gymPosterShown && timingProfilePending
+
+  // The muscle-impact rows: a gym day reads `dayImpact` off today's plan (Task 1) +
+  // today's logged working sets (`doneByMuscle`, joined by exercise id — see below); a
+  // rest day carrying a sport slot instead reads the sport's static heuristic table
+  // (`sportMuscleLoad.ts:62`) so a röplabda-only rest day is never a blank card.
+  // doneByMuscle: the open (in-progress) or just-completed instance's LOGGED working
+  // sets, mapped from exerciseId back to the day plan's muscle token. Both
+  // `todaySession.openWorkout` and `completedTodayWorkout` are already on this page
+  // (no speculative new fetch) — a plain three-state resume/review CTA is what
+  // Mai already reads them for above.
+  const exerciseMuscleById = new Map((workout?.exercises ?? []).map((e) => [e.id, e.muscle] as const))
+  const loggedInstance = completedTodayWorkout ?? todaySession?.openWorkout ?? null
+  const doneByMuscle: Record<string, number> = {}
+  if (gymPosterShown && loggedInstance) {
+    for (const s of loggedInstance.sets) {
+      if (s.kind !== 'working' || s.skipped) continue
+      const muscle = exerciseMuscleById.get(s.exerciseId)
+      if (!muscle) continue
+      doneByMuscle[muscle] = (doneByMuscle[muscle] ?? 0) + 1
+    }
+  }
+  const wordFromLoad = (load: number): DayImpactRow['word'] => (load <= 1 ? 'enyhe' : load === 2 ? 'közepes' : 'erős')
+  const sportSlotsToday = shownDay?.sport ?? []
+  let impactRows: DayImpactRow[] = []
+  if (gymPosterShown && workout) {
+    impactRows = dayImpact(workout.exercises.map((e) => ({ muscle: e.muscle, workingSets: e.workingSets })), doneByMuscle)
+  } else if (isTodayShown && sportSlotsToday.length > 0) {
+    // Rest-day-with-sport: aggregate every today sport slot's static heuristic load,
+    // max per region across slots (mirrors `sportMuscleLoad.ts`'s own per-event
+    // aggregation) — no set counts exist here, so `load` (1–3) stands in for
+    // `plannedSets` purely to drive the track's relative width.
+    // `events` is index-aligned with `sportSlotsToday` — `sportLoadForWeek` pushes
+    // exactly one event per input slot, in the same order, with no filtering — so
+    // `events[i]` is slot `sportSlotsToday[i]`'s own load (fix round 1, finding 2:
+    // per-event attribution, not a single `anySportDone` flag that lit EVERY region
+    // once any one sport was logged).
+    const { events } = sportLoadForWeek(sportSlotsToday, [])
+    const byRegion = new Map<RegionKey, { label: string; load: number }>()
+    const doneByRegion = new Map<RegionKey, number>()
+    events.forEach((ev, idx) => {
+      const slot = sportSlotsToday[idx]
+      const slotDone = Boolean(slot) && sportDoneOn(shownIso, sportOf(slot))
+      for (const rl of ev.regionLoads) {
+        const cur = byRegion.get(rl.region)
+        if (!cur || rl.load > cur.load) byRegion.set(rl.region, { label: rl.label, load: rl.load })
+        if (slotDone) {
+          const curDone = doneByRegion.get(rl.region) ?? 0
+          if (rl.load > curDone) doneByRegion.set(rl.region, rl.load)
+        }
+      }
+    })
+    impactRows = Array.from(byRegion.entries())
+      .map(([region, { label, load }]) => ({
+        region,
+        label,
+        // Zero-planned-row fallback token doesn't apply here (this branch never emits
+        // a zero-planned row), but the representative-token helper is still the right
+        // draw source — the sport heuristic carries no per-exercise muscle, only a
+        // region-level load (fix round 1, finding 3).
+        token: regionRepresentativeToken(region),
+        plannedSets: load,
+        doneSets: doneByRegion.get(region) ?? 0,
+        word: wordFromLoad(load),
+      }))
+      .sort((a, b) => b.plannedSets - a.plannedSets)
+  }
+  const impactIsSportEstimate = !(gymPosterShown && workout) && impactRows.length > 0
+  // Honest-state footer (mezo-88iwa.6 sweep, finding f): a gym day that ALSO carries a
+  // sport slot only ever feeds the gym plan into `dayImpact` above (the sport branch is
+  // `else if`) — the heading "Mit terhel a mai mozgásod" would otherwise silently claim
+  // to cover movement it never counted. One appended sentence, only in this combo.
+  const gymAndSportToday = Boolean(gymPosterShown && workout) && sportSlotsToday.length > 0
+  const hasImpact = impactRows.some((r) => r.plannedSets > 0)
+  const maxPlannedImpact = Math.max(1, ...impactRows.map((r) => r.plannedSets))
+
   return (
     <>
-      {/* Header — selection-aware: the over-line + h1 read the shown day, and a
-          non-today selection gets a "← Ma" way back to today. */}
-      <div className="page-header">
-        <div>
-          <Eyebrow brand>
-            {shownDay ? `Edzés · ${DAY_LABELS[shownDay.day] ?? shownDay.day} · W${activeMeso.currentWeek}` : `Edzés · W${activeMeso.currentWeek}`}
-          </Eyebrow>
-          <PageTitle style={{ marginTop: 4 }}>
-            {isTodayShown ? 'Mai nap' : (DAY_LABELS[shownDay?.day ?? ''] ?? 'Mai nap')}
-          </PageTitle>
-        </div>
-        {!isTodayShown && (
-          <button type="button" className="pgact" onClick={() => writeDay(null)}>
-            <Icon name="chevron-left" size={14} /> Ma
-          </button>
-        )}
-      </div>
-
       {/* One-shot entrance choreography (mezo-d20.11 — `/train/mai` shipped with
           NONE). The replayKey is the shown day, so a DayStrip tap re-stages the
           swapped day's cards instead of snapping them in. The prototype does not
@@ -286,39 +406,6 @@ export function TrainTodayPage() {
         onSelect={selectDay}
       />
 
-      {/* Mezociklus overview entry card (active meso only) */}
-      <div className="rise" style={{ padding: '0 24px 12px', '--d': '70ms' } as CSSProperties}>
-        {/* The DS canonical row: a 56px nav row at body size with a trailing chevron. */}
-        <button
-          type="button"
-          className="card mesorow"
-          onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
-          aria-label={`Mezociklus áttekintő · ${activeMeso.shortTitle}`}
-        >
-          <span aria-hidden="true">🗓</span>
-          <span className="mesorow-tx">
-            {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
-          </span>
-          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
-        </button>
-      </div>
-
-      {/* Sport entry row (final-review fix wave, mezo-88iwa.5): the hub retirement left
-          Sport (and its szezon nézet) with no entry point of its own — Mai owns
-          `/train/sport` (navModel.ts) but nothing on this face pointed at it. Same
-          `.mesorow` idiom as the Mezociklus row above. */}
-      <div className="rise" style={{ padding: '0 24px 12px', '--d': '80ms' } as CSSProperties}>
-        <button
-          type="button"
-          className="card mesorow"
-          onClick={() => navigate('/train/sport')}
-        >
-          <ClayIcon name="i-sport" size={28} />
-          <span className="mesorow-tx">Sport naplózása és szezonod</span>
-          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
-        </button>
-      </div>
-
       {/* The shown day's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
           its bespoke markup; the today gym hero additionally requires the /today workout. */}
@@ -332,12 +419,21 @@ export function TrainTodayPage() {
           const gym = item.gym
           if (isTodayShown) {
             if (!workout) return null
-            const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase}`
-            // Three-state gating (spec 2026-07-15): a completed instance wins (Kész ·
-            // Megnézem review), else an open instance (● Folyamatban · Folytassuk),
+            const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase} · GYM`
+            // Three-state gating (spec 2026-07-15): a completed instance wins (KÉSZ ·
+            // Eredmény review), else an open instance (FOLYAMATBAN · Folytassuk),
             // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
             // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
+            // ONE condition drives BOTH the status pill and the CTA — no second state.
             const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
+            // The constellation: one small MuscleChip per region today's plan actually
+            // loads (silent regions carry plannedSets 0 and drop out). Reuses `impactRows`
+            // (computed once above, outside this map, off the SAME `workout.exercises`
+            // mapping) rather than calling `dayImpact` a second time with identical
+            // exercise input — `doneByMuscle` only changes `doneSets`, which this filter
+            // never reads, so the result is byte-identical either way (final-review fix
+            // wave, mezo-88iwa.6).
+            const constellation = impactRows.filter((r) => r.plannedSets > 0 && r.token)
             // Held at 0 (the chip's existing "no minutes" treatment, `workoutMinutes > 0 &&`
             // below) while the profile fetch is pending — never the static fallback, which
             // would render then swap to the calibrated number the instant the fetch lands.
@@ -345,43 +441,63 @@ export function TrainTodayPage() {
               ? 0
               : estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
             return (
-              <section key="hero-gym" className="trainhero np-anim">
-                <div className="trainhero-over">
-                  {gymEyebrow}
-                  {gymInProgress && (
-                    <Chip variant="warning" style={{ marginLeft: 8 }}>● Folyamatban</Chip>
-                  )}
-                </div>
-                <div className="h2row">
-                  <h2>{workout.title}</h2>
-                  <span className="typetag typetag-gym">🏋️ GYM</span>
-                </div>
-                <div className="chips">
-                  <span className="metapill">{workout.exercises.length} gyakorlat</span>
-                  <span className="metapill">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
-                  {workoutMinutes > 0 && <span className="metapill">~{workoutMinutes} perc</span>}
-                  {gym.type && <span className="metapill">{gym.type}</span>}
+              <section
+                key="hero-gym"
+                className={cn('tr-day', completedTodayWorkout ? 'is-done' : gymInProgress && 'is-live')}
+              >
+                <span className="tr-day-status">
+                  {completedTodayWorkout ? 'KÉSZ' : gymInProgress ? 'FOLYAMATBAN' : 'BETERVEZVE'}
+                </span>
+                {/* Inline flex (not a new class) for the icon+text layout only — `.tr-eyebrow`
+                    (final-review fix wave) still carries the eyebrow's own typography; a
+                    second layout-only class for one row is not worth a token. */}
+                <span className="tr-eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {/* The gym glyph is a clay symbol now — the eyebrow keeps the spoken „GYM”. */}
+                  <ClayIcon name="i-edzes" size={18} />
+                  <span>{gymEyebrow}</span>
+                </span>
+                <h2>{workout.title}</h2>
+                <p>{activeMeso.shortTitle} · {activeMeso.currentWeek}. hét / {activeMeso.weeks}</p>
+                {constellation.length > 0 && (
+                  <div className="tr-day-constellation">
+                    {constellation.map((r) => (
+                      <MuscleChip key={r.region} token={r.token} size={28} />
+                    ))}
+                  </div>
+                )}
+                <div className="tr-pills">
+                  <span>{workout.exercises.length} gyakorlat</span>
+                  <span>{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
+                  {workoutMinutes > 0 && <span>~{workoutMinutes} perc</span>}
+                  {gym.type && <span>{gym.type}</span>}
                 </div>
                 {completedTodayWorkout ? (
-                  // Done-state: the workout is over (no restart until next week) — the shared
-                  // DoneBar opens the read-only review of the completed instance (mezo-9bbc).
-                  <DoneBar
-                    summary={`Kész · ${completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett`}
-                    detail="Megnézem az összegzést"
-                    onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
-                    ariaLabel="Befejezett edzés áttekintése"
-                  />
+                  // Done-state: the workout is over (no restart until next week) — the CTA
+                  // opens the read-only review of the completed instance (mezo-9bbc).
+                  <button type="button" className="tr-start is-review" onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}>
+                    <span className="tr-start-art"><ClayIcon name="i-erme" size={26} /></span>
+                    <span>
+                      <strong>Eredmény</strong>
+                      <small>{completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett · megnézem</small>
+                    </span>
+                  </button>
                 ) : todaySession?.openWorkout ? (
                   // In-progress: an open instance exists — resume it (count the logged sets).
-                  <div className="np-ctarow">
-                    <button type="button" className="np-cta np-press" onClick={openSession}>
-                      Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
-                    </button>
-                  </div>
+                  <button type="button" className="tr-start is-resume" onClick={openSession}>
+                    <span className="tr-start-art"><ClayIcon name="i-edzes" size={26} /></span>
+                    <span>
+                      <strong>Folytassuk</strong>
+                      <small>{todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész</small>
+                    </span>
+                  </button>
                 ) : (
-                  <div className="np-ctarow">
-                    <button type="button" className="np-cta np-press" onClick={openSession}>Indítsuk →</button>
-                  </div>
+                  <button type="button" className="tr-start is-go" onClick={openSession}>
+                    <span className="tr-start-art"><ClayIcon name="i-edzes" size={26} /></span>
+                    <span>
+                      <strong>Indítsuk</strong>
+                      <small>A mai tervezett edzésed</small>
+                    </span>
+                  </button>
                 )}
               </section>
             )
@@ -396,7 +512,7 @@ export function TrainTodayPage() {
             <TodaySessionCard
               key="hero-gym"
               tone="gym"
-              emoji="🏋️"
+              emoji={<ClayIcon name="i-edzes" size={26} />}
               tag="GYM"
               time={gym.time}
               title={gym.type ?? md?.type ?? 'Gym'}
@@ -419,7 +535,7 @@ export function TrainTodayPage() {
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
               tone={SPORT_TONE[k]}
-              emoji={SPORT_EMOJI[k]}
+              emoji={<ClayIcon name="i-sport" size={26} />}
               tag={SPORT_TAGS[k]}
               time={vb.time}
               title={SPORT_TITLES[k]}
@@ -454,7 +570,7 @@ export function TrainTodayPage() {
             <TodaySessionCard
               key={`hero-custom-${c.id}`}
               tone="gym"
-              emoji="🏋️"
+              emoji={<ClayIcon name="i-edzes" size={26} />}
               tag="SAJÁT"
               title={c.title}
               facts={[]}
@@ -482,7 +598,7 @@ export function TrainTodayPage() {
           <TodaySessionCard
             key={s.key}
             tone="run"
-            emoji="🏃"
+            emoji={<ClayIcon name="i-futas" size={26} />}
             tag="FUTÁS"
             time={s.timeOfDay}
             title={s.label}
@@ -500,6 +616,130 @@ export function TrainTodayPage() {
         })()}
         </div>
       ))}
+
+      {/* Energy card (Task 5, mezo-88iwa.6): today's movement kcal, split honestly into
+          already-earned vs. still-in-the-plan. Absent whenever today carries no
+          training block at all — an empty rest day gets no "add your weight" pitch
+          for movement that does not exist. */}
+      {isTodayShown && !energyCardPendingGym && energyBlocks.length > 0 && (
+        <div className="rise" style={{ padding: '0 6px', '--d': '220ms' } as CSSProperties}>
+          <section className="tr-energy">
+            <span className="tr-eyebrow">A MAI KERETEDHEZ</span>
+            <h3>Amit a mozgásod hozzáad</h3>
+            {dayEnergy.known ? (
+              <>
+                <div className="tr-energy-main">
+                  <b>+</b><strong>{dayEnergy.plannedKcal}</strong><small>kcal</small>
+                </div>
+                <div className="tr-energy-split">
+                  <span><i className="done" />{dayEnergy.earnedKcal} kcal már megszolgálva</span>
+                  <span><i className="plan" />{dayEnergy.plannedKcal - dayEnergy.earnedKcal} kcal a tervben</span>
+                </div>
+              </>
+            ) : (
+              <p className="tr-energy-empty">Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.</p>
+            )}
+            <p className="tr-energy-note">Becslés, nem mérés.</p>
+          </section>
+        </div>
+      )}
+
+      {/* Muscle-impact card (Task 5, mezo-88iwa.6): what today's movement loads, region
+          by region, in words — never an all-zero table when nothing is actually
+          planned (a real rest day with no sport gets no card at all). */}
+      {isTodayShown && hasImpact && (
+        <div className="rise" style={{ padding: '0 6px', '--d': '230ms' } as CSSProperties}>
+          <section className="tr-mus">
+            <span className="tr-eyebrow">HATÁS AZ IZOMZATODRA</span>
+            <h3>Mit terhel a mai mozgásod</h3>
+            {impactRows.map((row) => {
+              const planPct = (row.plannedSets / maxPlannedImpact) * 100
+              const donePct = (Math.min(row.doneSets, row.plannedSets) / maxPlannedImpact) * 100
+              return (
+                <div className="tr-mus-row" key={row.region}>
+                  <span className="tr-mus-art"><MuscleChip token={row.token} size={28} /></span>
+                  <span className="tr-mus-name">{row.label}</span>
+                  <span className="tr-mus-track" style={{ '--mus-color': regionColor(row.region as RegionKey).rail } as CSSProperties}>
+                    <i className="plan" style={{ '--w': `${planPct}%` } as CSSProperties} />
+                    <i className="done" style={{ '--w': `${donePct}%` } as CSSProperties} />
+                  </span>
+                  <span className="tr-mus-word">{row.word}</span>
+                </div>
+              )
+            })}
+            <p className="tr-mus-note">
+              {impactIsSportEstimate
+                ? 'A sáv a sport becsült terhelése — nem mért adat. Becslés, nem mérés.'
+                : 'A halvány sáv a tervezett terhelés, a világos a már megszolgált. Becslés, nem mérés.'}
+              {gymAndSportToday && ' A mai gym terved látod itt — a sportod terhelését külön, becsléssel számoljuk.'}
+            </p>
+          </section>
+        </div>
+      )}
+
+      {/* „Vagy inkább” — the two other doors (Custom Workout and Sport Log), rendered
+          below the energy and muscle-impact cards in the cascade. They open the SAME
+          two sheets this page already mounts (CustomWorkoutSheet / SportLogSheet), no
+          new surface. Aligned to the poster's own inner gutter (the scroller's
+          --screen-gutter + 6px). */}
+      {gymPosterShown && (
+        // Fix round 1 (finding 4): rebalanced from 200ms — the .tr-alt pair sits BELOW
+        // the energy (220ms) / muscle-impact (230ms) cards in document order, so its own
+        // delay must be >= 230ms too (document order = delay order), not earlier than
+        // both.
+        <div className="rise" style={{ padding: '0 6px', '--d': '235ms' } as CSSProperties}>
+          <div className="tr-alt">
+            <button type="button" onClick={() => setCustomOpen(true)}>
+              <ClayIcon name="i-edzes" size={22} />
+              <span><small>Gyors indítás</small><strong>Egyedi edzés</strong></span>
+            </button>
+            <button type="button" onClick={() => setSportLogSport('volleyball')}>
+              <ClayIcon name="i-sport" size={22} />
+              <span><small>Gyors indítás</small><strong>Sport naplózása</strong></span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mezociklus + Sport entry rows — secondary navigation, so they sit BELOW the
+          poster and its quick pair now that the page-header is gone and the DayStrip →
+          poster pairing owns the top of the face (mezo-88iwa.6, T5). Their markup is
+          unchanged; only their place in the cascade moved. */}
+      {/* Mezociklus overview entry card (active meso only) */}
+      {/* Gutter aligned to the poster's own 18px inset (mezo-88iwa.6 sweep): the
+          screen scroller already contributes --screen-gutter (12px), so +6px here
+          matches the `.tr-alt` wrapper below, not a bare 24px literal. */}
+      <div className="rise" style={{ padding: '0 6px 12px', '--d': '240ms' } as CSSProperties}>
+        {/* The DS canonical row: a 56px nav row at body size with a trailing chevron. */}
+        <button
+          type="button"
+          className="card mesorow"
+          onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+          aria-label={`Mezociklus áttekintő · ${activeMeso.shortTitle}`}
+        >
+          <ClayIcon name="i-meso" size={28} />
+          <span className="mesorow-tx">
+            {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
+          </span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        </button>
+      </div>
+
+      {/* Sport entry row (final-review fix wave, mezo-88iwa.5): the hub retirement left
+          Sport (and its szezon nézet) with no entry point of its own — Mai owns
+          `/train/sport` (navModel.ts) but nothing on this face pointed at it. Same
+          `.mesorow` idiom as the Mezociklus row above. */}
+      <div className="rise" style={{ padding: '0 6px 12px', '--d': '260ms' } as CSSProperties}>
+        <button
+          type="button"
+          className="card mesorow"
+          onClick={() => navigate('/train/sport')}
+        >
+          <ClayIcon name="i-sport" size={28} />
+          <span className="mesorow-tx">Sportjaid és szezonod</span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        </button>
+      </div>
 
       {/* Open custom (saját) instance on a rest day (real mode, today only): the gym hero
           above only renders when today has a gym schedule slot, so an open instance
@@ -550,10 +790,10 @@ export function TrainTodayPage() {
       {/* Saját edzés footer — a one-off workout for TODAY must stay reachable even
           when the day already carries scheduled sessions; the mezo-9bbc one-day
           rework dropped this unconditional entry and left it rest-day-only
-          (mezo-eahv). The rest-day card above carries its own copy, so the footer
-          renders exactly when that card does not. Non-today selections are
-          read-only — no entry there. */}
-      {isTodayShown && !restDayCard && (
+          (mezo-eahv). The rest-day card above carries its own copy, and so does the
+          poster's `.tr-alt` pair, so the footer renders exactly when NEITHER does.
+          Non-today selections are read-only — no entry there. */}
+      {isTodayShown && !restDayCard && !gymPosterShown && (
         <div className="rise" style={{ padding: '0 24px 16px', '--d': '340ms' } as CSSProperties}>
           <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
             width: '100%', minHeight: 48, padding: '12px 16px', background: 'transparent',

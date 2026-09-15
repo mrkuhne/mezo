@@ -245,7 +245,9 @@ test('the tab bar stays visible on the regular Train tab', () => {
 test('the Edzés tab lands on Mai — no subnav dropdown (mezo-88iwa.5)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/train'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  // Mai's Titanium face dropped the „Mai nap” h1 (mezo-88iwa.6) — the DayStrip is the
+  // page's first element, so that is what proves the landing.
+  expect(await screen.findByRole('tablist', { name: 'Hét napjai' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/train/mai')
   expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
 })

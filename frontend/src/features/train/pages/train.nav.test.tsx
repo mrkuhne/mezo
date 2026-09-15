@@ -44,12 +44,17 @@ test('the Gym view stays reachable on its own route, without the retired sub-nav
 // drill-in's `?day=` deep link is forwarded there with the selection intact.
 test('the full Mai day view lives at /train/mai and /train?day= forwards to it', async () => {
   renderApp('/train/mai')
-  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  // The Titanium face has no „Mai nap” h1 any more (mezo-88iwa.6) — the DayStrip is the
+  // page's first element and its selected chip names the rendered day.
+  expect(await screen.findByRole('tablist', { name: 'Hét napjai' })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { selected: true }).getAttribute('aria-label')).toMatch(/^Csütörtök ·/)
   cleanup()
 
   const router = createMemoryRouter(routes, { initialEntries: ['/train?day=0'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await screen.findByRole('heading', { name: /Hétfő|Mai nap/ })
+  await screen.findByRole('tablist', { name: 'Hét napjai' })
+  // the drill-in's selection survives the forward
+  expect(screen.getByRole('tab', { selected: true }).getAttribute('aria-label')).toMatch(/^Hétfő ·/)
   expect(router.state.location.pathname).toBe('/train/mai')
   expect(router.state.location.search).toBe('?day=0')
 })
