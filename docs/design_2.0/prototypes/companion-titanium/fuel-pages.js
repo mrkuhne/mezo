@@ -1,6 +1,6 @@
 // Konyha (fuel/1), Trendek (fuel/2) and Kiegészítők (fuel/3) full-page renderers.
 import { createRecipes, addRecipe, updateRecipe, removeRecipe, createPantry, addPantryItem, removePantryItem, pantrySwaps, createStack, toggleIntake, stackProgress, addStackItem, nextDue, stackZones, doseAdvice, weekData, weekSummary, weekCompare, weekDeltas, fuelDayScore, longHorizon, patterns } from './fuel-state.js';
-import { mealBlocks } from './food-state.js';
+import { mealBlocks, MEAL_ROLES, applyRole, setWindowTime, addWindow, removeWindow, windowByKey } from './food-state.js';
 import { GOALS, draftFromRecipe, draftNutrition, lineMacros, draftTotals, canSave, setLineAmount, scaleServings, replaceWithPantry, dropLine, workshopTurn } from './workshop-state.js';
 import { openFoodFixed } from './food.js';
 import { energyDetailHtml, dimGlassHtml, glucoseGlassHtml, skipNextCountUp, ingredientStyle, NOVA_COLOR, NOVA_SHORT, qualityTilesHtml, microCardsHtml } from './fuel-dashboard.js';
@@ -444,7 +444,16 @@ const medicationSheet=()=>`<div class="glass-dim" style="--dim-color:#8ed2e8"><d
 
 export function fuelPagesContent(domain,page){if(domain!=='fuel')return null;const [,, view='',itemId='']=location.hash.slice(1).split('/');if(page===1)return view==='receptek'?receptekPage():view==='kamra'?kamraPage():view==='recept'?recipeDetailPage(itemId):view==='elem'?pantryDetailPage(itemId):view==='muhely'?muhelyPage(itemId):konyha();if(page===2)return trendek();if(page===3)return view==='protokoll'?protokollPage():view==='beallitas'?beallitasPage():stackPage();return null;}
 function keepScroll(){const sc=document.querySelector('#app-scroll'),y=sc.scrollTop;skipNextCountUp();callbacks.refresh();requestAnimationFrame(()=>sc.scrollTo({top:y,behavior:'instant'}));}
-export function initFuelPages(options){callbacks=options;
+export function initFuelPages(options){
+ document.addEventListener('change',e=>{
+  const f=e.target.closest('[data-wx-field]');if(!f)return;
+  const [field,key]=f.dataset.wxField.split('|'),b=windowByKey(key);if(!b)return;
+  if(field==='label'){b.label=(f.value||'Ablak').slice(0,18);}
+  else if(field==='time'){if(!setWindowTime(b,f.value)){f.value=b.time;return;}mealBlocks.sort((a,x)=>a.time.localeCompare(x.time));}
+  else if(field==='budget'){const v=Number(f.value);if(Number.isFinite(v)&&v>=0&&v<=3000)b.budget=Math.round(v);else f.value=b.budget;}
+  else if(/^mix[pcf]$/.test(field)){const v=Number(f.value);const k=field.slice(3);if(Number.isFinite(v)&&v>=0&&v<=100)b.mix={...b.mix,[k]:Math.round(v)};else f.value=b.mix?.[k]??0;}
+  keepScroll();
+ });callbacks=options;
  document.querySelector('#sheet')?.addEventListener('close',e=>e.target.classList.remove('glass'));
  document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;
   if(el.dataset.subroute)location.hash=`#fuel/1/${el.dataset.subroute}`;
@@ -493,6 +502,10 @@ export function initFuelPages(options){callbacks=options;
   if(el.hasAttribute('data-tx-horizon')){callbacks.dialog('TRENDEK · HOSSZABB TÁV',trendHorizonGlass());document.querySelector('#sheet').classList.add('glass');}
   if(el.dataset.stackTick){const taken=toggleIntake(stack,el.dataset.stackTick,'14:20');if(taken!==null){const item=stack.items.find(i=>i.id===el.dataset.stackTick),zoneRows=stack.items.filter(i=>i.zone===item.zone),zoneDone=taken===true&&zoneRows.every(r=>stack.taken.has(r.id));if(zoneDone){callbacks.closeSheet();showStackCeremony(item.zone);}else{toast(taken?'Bevéve. Még egy érintés visszavonja.':'Visszavonva.');react('connect',1200);if(document.querySelector('#sheet')?.open)callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackTick)),document.querySelector('#sheet').classList.add('glass');}keepScroll();}}
   if(el.dataset.stackItem){callbacks.dialog('KIEGÉSZÍTŐ',stackItemGlass(el.dataset.stackItem));document.querySelector('#sheet').classList.add('glass');}
+  if(el.dataset.wxRole){const [key,roleId]=el.dataset.wxRole.split('|');const b=windowByKey(key);if(b&&applyRole(b,roleId)){toast(`${b.label}: ${MEAL_ROLES[roleId].label} — az ajánlás beállt, minden szám átírható.`);keepScroll();}}
+  if(el.dataset.wxReset){const b=windowByKey(el.dataset.wxReset);if(b&&applyRole(b,b.role)){toast('Vissza az ajánlott előbeállításra.');keepScroll();}}
+  if(el.hasAttribute('data-wx-add')){addWindow();keepScroll();}
+  if(el.dataset.wxDel){if(removeWindow(el.dataset.wxDel))keepScroll();}
   if(el.dataset.goto){if(el.dataset.goto==='fuel/3/beallitas')resetSetup();callbacks.closeSheet();location.hash=`#${el.dataset.goto}`;}
   if(el.dataset.sxStep){setup.step=Number(el.dataset.sxStep);keepScroll();}
   if(el.dataset.sxPick){const item=pantry.find(k=>k.id===el.dataset.sxPick);if(item){const perUnit=/([\d.,]+)\s*(NE|mg|µg|g)/i.exec(item.dose||'');setup={...setup,step:2,source:'pantry',name:item.name,perUnit:perUnit?Number(perUnit[1].replace(',','.')):null,unit:perUnit?perUnit[2]:'',unitForm:/tabletta/i.test(`${item.dose||''} ${item.amount||''}`)?'tabletta':'kapszula',container:Number((/(\d+)/.exec(item.amount||'')||[])[1])||null};keepScroll();}}

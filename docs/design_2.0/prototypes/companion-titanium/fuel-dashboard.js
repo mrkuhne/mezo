@@ -1,5 +1,5 @@
 import { fuelOverview, mealInfo, mealRecord, glucoseCurve, glucoseExpectHtml } from './food.js';
-import { mealBlocks, blockFor, minutesOf, mealFacts, foods, glycemicForMeal } from './food-state.js';
+import { mealBlocks, blockFor, minutesOf, mealFacts, foods, glycemicForMeal, MEAL_ROLES, roleOf, roleForTime, roleDefaults, presetDrift, applyRole, setWindowTime, addWindow, removeWindow, windowByKey, DAILY_KCAL } from './food-state.js';
 import { icon, safe } from './nap.js';
 
 const fmt=value=>Math.round(value).toLocaleString('hu-HU');
@@ -26,7 +26,7 @@ export function animateFuelDashboard(root=document){
 
 const scoreChip=m=>m.score==null?`<span class="score-chip pending">${icon('score')}<b>folyamatban</b></span>`:`<button class="score-chip" data-score="${m.id}" aria-label="AI-értékelés: ${score1(m.score)}">${icon('score')}<b>${score1(m.score)}</b></button>`;
 // Glycemic-response reopener (mezo-6z0ai): the mini curve IS the icon — its shape and color carry the verdict.
-const glucoseChip=m=>{const g=glycemicForMeal(mealRecord(m.id));return g?`<button class="glu-chip lvl-${g.level}" data-glucose="${m.id}" aria-label="Vércukor-válasz: ${g.label}">${glucoseCurve(g.level,true)}</button>`:'';};
+const glucoseChip=m=>{const g=glycemicForMeal(mealRecord(m.id),roleForTime(m.time));return g?`<button class="glu-chip lvl-${g.level}" data-glucose="${m.id}" aria-label="Vércukor-válasz: ${g.label}">${glucoseCurve(g.level,true)}</button>`:'';};
 // Row kcal intentionally omitted: the block ring already carries the number (owner 2026-09-11).
 const mealRow=m=>`<div class="block-meal"><button class="block-meal-main" data-meal-open="${m.id}"><span class="block-meal-copy"><strong>${safe(m.name)}</strong></span></button>${glucoseChip(m)}${scoreChip(m)}</div>`;
 
@@ -45,7 +45,8 @@ function blockCard(block,rows,current,budgetMode='head'){
  if(budgetMode==='head')headRight=rows.length?`<span class="block-sum">${fmt(logged)} <small>/ ${fmt(block.budget)} kcal</small></span>`:`<span class="block-sum quiet">kb. ${fmt(block.budget)} kcal</span>`;
  else if(budgetMode==='bar'){headRight=rows.length?`<span class="block-sum">${fmt(logged)} kcal</span>`:'';afterWindow=`<div class="budget-bar ${rows.length?'':'empty'}"><i><b style="--w:${Math.min(100,logged/block.budget*100)}%"></b></i><span>${rows.length?`${fmt(logged)} / ${fmt(block.budget)}`:`kb. ${fmt(block.budget)} kcal keret`}</span></div>`;}
  else if(budgetMode==='ring')headRight=budgetRing(logged,block.budget);
- return `<section class="meal-block v-a" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head"><span class="block-art">${icon(block.art)}</span><strong>${block.label}</strong>${headRight}</div>${windowBar(block,rows)}${afterWindow}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
+ const role=roleOf(block);
+ return `<section class="meal-block v-a" style="--block-color:${block.color}" aria-label="${block.label}"><div class="block-head"><span class="block-art">${icon(block.art)}</span><span class="block-title"><strong>${block.label}</strong>${role?`<small class="block-role" style="--role-color:${role.color}">${icon(role.art)}${role.label}</small>`:''}</span>${headRight}</div>${windowBar(block,rows)}${afterWindow}${rows.map(mealRow).join('')}${!rows.length&&current?`<button class="block-log" data-food-block="${block.time}"><span>＋</span><span><strong>Logolás ide</strong></span></button>`:!rows.length?`<p class="block-empty">Ezen a napon üresen maradt.</p>`:''}</section>`;
 }
 let budgetMode='ring';
 function blocksSection({current,meals}){
@@ -160,14 +161,14 @@ function buildEnvelope(m){
  ].filter(Boolean):[];
  const microDegraded=microRows.length<3;
  const dims=[
-  {id:'macro',label:'Makró-egyensúly',weight:.22,score:clamp(base+.4),coverage:1,detail:'A fehérje–szénhidrát–zsír arány a napi célodhoz képest.',macro:{ratioP:32,ratioC:44,ratioF:24,targetP:'25–35%',targetC:'40–50%',targetF:'20–30%',kcalShareOfDay:Math.round(m.kcal/2400*100),targetOrigin:'az aktív célod előírásából'}},
+  {id:'macro',label:'Makró-egyensúly',weight:.22,score:clamp(base+.4),coverage:1,detail:`A fehérje–szénhidrát–zsír arány az ablak szerepéhez (${roleOf(block)?.label?.toLocaleLowerCase('hu-HU')??'általános'}) képest.`,macro:{ratioP:32,ratioC:44,ratioF:24,targetP:`${(block?.mix?.p??30)-5}–${(block?.mix?.p??30)+5}%`,targetC:`${(block?.mix?.c??40)-5}–${(block?.mix?.c??40)+5}%`,targetF:`${(block?.mix?.f??30)-5}–${(block?.mix?.f??30)+5}%`,kcalShareOfDay:Math.round(m.kcal/2400*100),targetOrigin:roleOf(block)?`az ablak „${roleOf(block).label}” szerepéből`:'az aktív célod előírásából'}},
   {id:'micro',label:'Mikrotápanyagok',weight:microDegraded?0:.10,score:microDegraded?0:clamp(base-.6),coverage:microDegraded?.4:.9,detail:microDegraded?'Nem volt elég adat — a szempont kimaradt, a többi súlya átveszi.':'Rost, cukor, só és telített zsír az étkezés-keretedhez mérve.',micros:microRows},
   {id:'who',label:'WHO-irányelvek',weight:.14,score:clamp(base+.1),coverage:.9,detail:'Cukor-, só- és zsírbevitel a WHO ajánlásaihoz képest.',context:[['Hozzáadott cukor','ajánláson belül'],['Só','megfelelő'],['Zsírarány','rendben']]},
   {id:'fat_quality',label:'Zsírminőség',weight:.10,score:clamp(base+(n?.satfat!=null&&n.satfat>9?-1.2:.2)),coverage:n?.satfat==null?.5:1,detail:n?.satfat==null?'A telített zsírról nem volt adat minden sorban.':'Telített és telítetlen zsírok aránya.',context:[['Telített zsír',n?.satfat==null?'—':`${fmt1(n.satfat)} g`],['Arány a zsírokon belül',n?.satfat==null?'nem látható':'kiegyensúlyozott']]},
   {id:'nova',label:'Feldolgozottság',weight:.18,score:clamp(base+(novaLines.some(l=>l.nova===4)?-1.4:.9)),coverage:1,detail:'Minél közelebb az alapanyagokhoz, annál jobb.',nova:{dominant:novaLines.some(l=>l.nova===4)&&novaShare(4)>40?4:1,stack:[1,2,3,4].map(g=>({nova:g,pct:novaShare(g),label:novaLines.filter(l=>l.nova===g).map(l=>l.name).join(', ')||'—'})),items:novaLines.map(l=>({...l,warning:l.nova===4}))}},
   {id:'plant_diversity',label:'Növényi változatosság',weight:.08,score:clamp(4+plants*1.4),coverage:1,detail:'Hányféle növény került a tányérra.',context:[['Növényfélék száma',String(plants)],['A heti 30-féle célhoz','minden féle számít']]},
   {id:'energy_density',label:'Energiasűrűség',weight:.06,score:clamp(base+.5),coverage:1,detail:'Mennyire laktató a kalóriájához képest.',context:[['Energiasűrűség','mérsékelt'],['Teltségérzet','jó']]},
-  {id:'context',label:'Napi kontextus',weight:.12,score:clamp(base+.3),coverage:1,detail:'Hogyan illeszkedik az addigi napodhoz és az étkezés-ablakodhoz.',context:[['A nap addigi része','kereten belül'],['Fehérje eddig','jó ütemben']],timing:{eatenAt:m.time,windowFrom:block?.time??null,windowTo:block?block.time.replace(/^(\d\d)/,h=>String(Number(h)+2).padStart(2,'0')):null,slotLabel:block?.label?.toLocaleLowerCase('hu-HU')??'nasi'},note:'Jó ütemben jött — az ablakod közepén, és hagyott teret a vacsorának.'},
+  {id:'context',label:'Napi kontextus',weight:.12,score:clamp(base+.3),coverage:1,detail:'Hogyan illeszkedik az addigi napodhoz és az étkezés-ablakodhoz.',context:[['A nap addigi része','kereten belül'],['Fehérje eddig','jó ütemben']],timing:{eatenAt:m.time,windowFrom:block?.optimal?.[0]??null,windowTo:block?.optimal?.[1]??null,slotLabel:block?.label?.toLocaleLowerCase('hu-HU')??'nasi'},note:'Jó ütemben jött — az ablakod közepén, és hagyott teret a vacsorának.'},
  ];
  const active=dims.filter(d=>d.weight>0),wsum=active.reduce((s,d)=>s+d.weight,0);
  const confidence=Math.round(dims.reduce((s,d)=>s+(d.coverage??1),0)/dims.length*100);
@@ -204,16 +205,45 @@ export function dimGlassHtml(mealId,dimId){
 // Glass-box body for the glycemic verdict (mezo-6z0ai): category + curve + one hack, no fake number.
 export function glucoseGlassHtml(mealId){
  const m=mealInfo(mealId);if(!m)return '<p class="sheet-sub">Nincs meg ez az étkezés.</p>';
- const g=glycemicForMeal(mealRecord(mealId));if(!g)return '<p class="sheet-sub">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>';
+ const g=glycemicForMeal(mealRecord(mealId),roleForTime(m.time));if(!g)return '<p class="sheet-sub">Ehhez az étkezéshez nincs elég tápanyag-adat a becsléshez.</p>';
  return `<div class="glass-glucose lvl-${g.level}">
   <div class="glass-hero dim"><span class="glass-hero-art"><span class="glu-pebble big" aria-hidden="true"></span></span><div><strong>${g.label}</strong><small>várható vércukor-hatás</small></div></div>
   <p class="glass-lead">${safe(m.name)} · ${m.time}</p>
   ${glucoseCurve(g.level)}
-  <div class="glass-chips">${g.facts.map(([k,v])=>`<span>${k} ${v}</span>`).join('')}</div>
+  <div class="glass-chips">${g.peri?`<span class="glu-peri-chip">edzés-közeli ablak</span>`:''}${g.facts.map(([k,v])=>`<span>${k} ${v}</span>`).join('')}</div>
   ${glucoseExpectHtml(g)}
   <div class="glass-callout"><span>${icon('sprout')}</span><p><small>${safe(g.tip.title).toLocaleUpperCase('hu-HU')}</small>${safe(g.tip.body)}</p></div>
   <p class="glass-fact">Minta-becslés az összetételből, a Glucose Goddess-módszer elvei szerint — nem mérés és nem orvosi előrejelzés.</p>
  </div>`;
+}
+/* Meal-window settings (mezo-ud77t): each window carries a role; picking one fills the smart
+   preset (soft share of the daily budget + macro mix), every number stays hand-editable.
+   The daily total is the only hard target — the copy says so out loud. */
+const mixBar=mix=>`<span class="wx-mixbar" role="img" aria-label="fehérje ${mix.p}%, szénhidrát ${mix.c}%, zsír ${mix.f}%"><i style="--w:${mix.p}%;background:#e08a7c"></i><i style="--w:${mix.c}%;background:#d9c395"></i><i style="--w:${mix.f}%;background:#cdd170"></i></span>`;
+function windowCard(block){
+ const role=roleOf(block),d=roleDefaults(block.role),drift=presetDrift(block),mixSum=(block.mix?.p??0)+(block.mix?.c??0)+(block.mix?.f??0);
+ return `<section class="wx-card" style="--kx:${role?.color??block.color}">
+  <div class="wx-head"><span class="wx-art">${icon(role?.art??block.art)}</span>
+   <input class="wx-name" data-wx-field="label|${block.key}" value="${safe(block.label)}" aria-label="Ablak neve" maxlength="18">
+   <input class="wx-time" type="time" data-wx-field="time|${block.key}" value="${block.time}" aria-label="${safe(block.label)} időpontja">
+   ${mealBlocks.length>1?`<button class="wx-del" data-wx-del="${block.key}" aria-label="${safe(block.label)} törlése">×</button>`:''}</div>
+  <div class="wx-roles" role="group" aria-label="Szerep">${Object.entries(MEAL_ROLES).map(([id,r])=>`<button class="wx-role ${block.role===id?'on':''}" style="--kx:${r.color}" data-wx-role="${block.key}|${id}" aria-pressed="${block.role===id}">${icon(r.art)}<span>${r.label}</span></button>`).join('')}</div>
+  ${role?`<p class="wx-hint">${role.hint}${role.peri?' Edzés-közeli ablak: a vércukor-tanács itt üzemanyag-szemléletű.':''}</p>`:''}
+  <div class="wx-budget"><label>Keret<span class="wx-kcal"><input type="number" min="0" max="3000" step="10" data-wx-field="budget|${block.key}" value="${block.budget}" aria-label="${safe(block.label)} keret kcal"><b>kcal</b></span></label>
+   ${mixBar(block.mix??{p:30,c:40,f:30})}
+   <span class="wx-mix">${[['p','fehérje','#e08a7c'],['c','szénhidrát','#d9c395'],['f','zsír','#cdd170']].map(([k,l,c])=>`<label style="--mx:${c}"><input type="number" min="0" max="100" data-wx-field="mix${k}|${block.key}" value="${block.mix?.[k]??0}" aria-label="${l} arány százalék"><small>% ${l}</small></label>`).join('')}</span>
+   ${mixSum!==100?`<small class="wx-warn">Az arányok összege most ${mixSum}% — 100% az irányadó.</small>`:''}
+   ${drift?`<button class="wx-reset" data-wx-reset="${block.key}">↺ Vissza az ajánlásra (${fmt(d.budget)} kcal · ${d.mix.p}/${d.mix.c}/${d.mix.f})</button>`:`<small class="wx-preset-note">Az ajánlott előbeállításon.</small>`}</div>
+ </section>`;
+}
+function windowsPage(){
+ const total=mealBlocks.reduce((s,b)=>s+b.budget,0);
+ return `<div class="score-head"><button data-route="fuel/0" aria-label="Vissza a Mai oldalra">‹</button><span><small>FUEL · BEÁLLÍTÁSOK</small><strong>Étkezés-ablakok</strong></span><b>${mealBlocks.length} ablak</b></div>
+ <p class="wx-lead">Mondd meg, melyik étkezésed mire való — a szerep adja az oda várt keretet és makró-arányt. Minden szám átírható; a kemény cél a napi összkeret marad, az ablakok irányadók.</p>
+ ${mealBlocks.map(windowCard).join('')}
+ <button class="wx-add" data-wx-add>${icon('stack')}<span><strong>Új ablak</strong><small>Könnyű falatként indul — utána átszabhatod</small></span><b>＋</b></button>
+ <div class="wx-total ${total>DAILY_KCAL*1.05?'over':''}"><span>Az ablakok együtt</span><b>${fmt(total)} / ${fmt(DAILY_KCAL)} kcal</b></div>
+ <p class="food-note">Minta-beállítások a demóban. A szerep-ajánlások sporttudományi hüvelykujjszabályok (szénhidrát az edzés köré, zsír távolabb, fehérje egyenletesen) — nem orvosi előírások.</p>`;
 }
 function scorePage(id){
  const m=mealInfo(id);
@@ -235,7 +265,8 @@ export function fuelDashboardContent(domain,page,date){
  if(segments[2]==='score')return scorePage(segments[3]||'');
  if(segments[2]==='meal')return mealDetailPage(segments[3]||'');
  if(segments[2]==='variants')return variantsPage(fuelOverview(date));
+ if(segments[2]==='ablakok')return windowsPage();
  const overview=fuelOverview(date);
  const {current,record,values,remaining}=overview;
- return `${heroSection(values,remaining,current,record,heroVariant)}<section class="fuel-rings" aria-label="Makrók, víz és rost">${ring('Fehérje','meat',values.p,160,'#e08a7c')}${ring('Szénhidrát','carb',values.c,270,'#d9c395')}${ring('Zsír','avocado',values.f,76,'#cdd170')}${ring('Víz','water',(values.water||0)/1000,2.5,'#8ed2e8','l')}${ring('Rost','fiber',values.fiber,30,'#8fd97a')}</section><div class="food-list-heading"><h2>${current?'A mai blokkjaid':'Ezen a napon'}</h2><span>${overview.mealCount} ÉTKEZÉS</span></div>${current||record?blocksSection(overview):`<div class="food-day-empty flat">${icon('bowl')}<strong>Nincs étkezés.</strong></div>`}<button class="fuel-log-action" ${current?'data-food':'data-day-today'}><span class="fuel-log-icon">${icon('chat')}</span><span><strong>${current?'Étkezés logolása':'Vissza a mai naphoz'}</strong><small>${current?'Kamera · hang · gépelés · szokásosak':'Logolni mindig a mai naphoz tudsz'}</small></span><b>${current?'＋':'→'}</b></button><details class="fuel-more flat"><summary>További részletek <span>KERET · MOZGÁS · RECEPTEK</span></summary><button class="fuel-secondary" data-food-budget>${icon('ring')}<span><strong>Keretszámítás</strong></span><b>↗</b></button>${record||current?`<button class="fuel-secondary" data-route="train/0">${icon('dumbbell')}<span><strong>${current?'Felsőtest A':record.training}</strong></span><b>↗</b></button>`:''}<button class="fuel-secondary" data-route="fuel/1">${icon('bowl')}<span><strong>Konyha</strong></span><b>↗</b></button></details>`;
+ return `${heroSection(values,remaining,current,record,heroVariant)}<section class="fuel-rings" aria-label="Makrók, víz és rost">${ring('Fehérje','meat',values.p,160,'#e08a7c')}${ring('Szénhidrát','carb',values.c,270,'#d9c395')}${ring('Zsír','avocado',values.f,76,'#cdd170')}${ring('Víz','water',(values.water||0)/1000,2.5,'#8ed2e8','l')}${ring('Rost','fiber',values.fiber,30,'#8fd97a')}</section><div class="food-list-heading"><h2>${current?'A mai blokkjaid':'Ezen a napon'}</h2><span>${overview.mealCount} ÉTKEZÉS</span></div>${current||record?blocksSection(overview):`<div class="food-day-empty flat">${icon('bowl')}<strong>Nincs étkezés.</strong></div>`}<button class="fuel-log-action" ${current?'data-food':'data-day-today'}><span class="fuel-log-icon">${icon('chat')}</span><span><strong>${current?'Étkezés logolása':'Vissza a mai naphoz'}</strong><small>${current?'Kamera · hang · gépelés · szokásosak':'Logolni mindig a mai naphoz tudsz'}</small></span><b>${current?'＋':'→'}</b></button><details class="fuel-more flat"><summary>További részletek <span>KERET · ABLAKOK · RECEPTEK</span></summary><button class="fuel-secondary" data-route="fuel/0/ablakok">${icon('clock')}<span><strong>Étkezés-ablakok</strong></span><b>↗</b></button><button class="fuel-secondary" data-food-budget>${icon('ring')}<span><strong>Keretszámítás</strong></span><b>↗</b></button>${record||current?`<button class="fuel-secondary" data-route="train/0">${icon('dumbbell')}<span><strong>${current?'Felsőtest A':record.training}</strong></span><b>↗</b></button>`:''}<button class="fuel-secondary" data-route="fuel/1">${icon('bowl')}<span><strong>Konyha</strong></span><b>↗</b></button></details>`;
 }

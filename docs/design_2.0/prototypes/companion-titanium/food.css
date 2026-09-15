@@ -209,3 +209,4 @@
 .fcer-counters.scx-two{grid-template-columns:1fr 1fr;max-width:280px}
 @media(max-width:680px){.scx-overlay{inset:0;border-radius:0;padding:calc(18px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:reduce){.scx-art.is-lit .icon,.scx-art.is-lit .fcer-aura{animation:none}}
+.fcer-glu-peri{display:inline-block;margin-left:8px;padding:7px 10px;border-radius:20px;border:1px solid #8ed2e84a;background:#8ed2e810;color:#9cd3e2;font-size:8px;letter-spacing:.1em;font-weight:700}

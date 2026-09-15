@@ -978,3 +978,47 @@ dialog.glass{padding:18px 20px 26px}
 .sx-item-link span{flex:1;min-width:0;font-size:13px}
 .sx-item-link b{font-size:17px;font-weight:300;color:#9fb0b8}
 .sx-item .food-note{margin-top:14px}
+
+/* ---- wx: meal-window settings (mezo-ud77t) — role-driven soft budgets, hand-editable. ---- */
+.wx-lead{font-size:11px;line-height:1.8;color:#9fb0ba;margin:14px 2px 18px}
+.wx-card{border:1px solid color-mix(in srgb,var(--kx) 26%,transparent);border-radius:21px;padding:15px;margin:12px 0;background:radial-gradient(ellipse at 92% 0%,color-mix(in srgb,var(--kx) 10%,transparent),transparent 65%),linear-gradient(135deg,#1d252d,#141b23)}
+.wx-head{display:flex;align-items:center;gap:10px}
+.wx-art .icon{width:36px;height:36px}
+.wx-name{flex:1;min-width:0;border:0;background:none;color:#e6eef0;font:inherit;font-size:17px;font-weight:600;letter-spacing:-.4px;padding:6px 4px;border-bottom:1px dashed #ffffff14}
+.wx-name:focus-visible{outline:none;border-bottom-color:var(--kx)}
+.wx-time{border:1px solid #ffffff16;background:#10161d;color:#d5e4e8;border-radius:11px;padding:8px 9px;font-size:13px}
+.wx-del{width:30px;height:30px;border:1px solid #ffffff14;border-radius:50%;background:none;color:#8b9aa5;font-size:15px}
+.wx-roles{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0 4px}
+.wx-role{display:flex;align-items:center;gap:6px;padding:7px 11px 7px 7px;border-radius:20px;border:1px solid #ffffff14;background:#ffffff04;color:#aebbc4;font-size:9.5px}
+.wx-role .icon{width:22px;height:22px;opacity:.75}
+.wx-role.on{border-color:color-mix(in srgb,var(--kx) 60%,transparent);background:color-mix(in srgb,var(--kx) 14%,transparent);color:#eef4f6;font-weight:600}
+.wx-role.on .icon{opacity:1}
+.wx-hint{font-size:10px;line-height:1.7;color:#93a58f;margin:8px 2px 2px}
+.wx-budget{margin-top:12px;border-top:1px solid #ffffff0c;padding-top:12px}
+.wx-budget>label{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:#8fa4ae}
+.wx-kcal{display:flex;align-items:baseline;gap:6px}
+.wx-kcal input{width:74px;border:0;background:none;color:#e6eef0;font-size:26px;font-weight:500;letter-spacing:-1px;text-align:right;appearance:textfield}
+.wx-kcal input::-webkit-inner-spin-button{appearance:none}
+.wx-kcal b{font-size:10px;font-weight:400;color:#859ba5}
+.wx-mixbar{display:flex;height:8px;border-radius:6px;overflow:hidden;margin:10px 0 8px;background:#ffffff08}
+.wx-mixbar i{display:block;height:100%;width:var(--w)}
+.wx-mix{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wx-mix label{display:flex;align-items:baseline;gap:4px;font-size:8px;color:#8b9aa5}
+.wx-mix input{width:38px;border:1px solid #ffffff14;border-radius:8px;background:#10161d;color:var(--mx);font-size:13px;font-weight:600;text-align:center;padding:5px 2px;appearance:textfield}
+.wx-mix input::-webkit-inner-spin-button{appearance:none}
+.wx-warn{display:block;margin-top:8px;font-size:9px;color:#e8c498}
+.wx-reset{margin-top:10px;border:1px solid #ffffff14;border-radius:11px;background:#ffffff04;color:#b4c4cc;font-size:9.5px;padding:9px 12px}
+.wx-preset-note{display:block;margin-top:10px;font-size:8.5px;color:#7e929e}
+.wx-add{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:16px 0 6px;padding:14px;border:1px dashed #8ed2e83a;border-radius:17px;background:#8ed2e806;color:inherit}
+.wx-add .icon{width:32px;height:32px}
+.wx-add strong{display:block;font-size:13px;font-weight:600}
+.wx-add small{display:block;font-size:9px;color:#8ba0ab;margin-top:3px}
+.wx-add b{margin-left:auto;font-size:20px;color:#9cd3e2}
+.wx-total{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border:1px solid #ffffff10;border-radius:14px;background:#ffffff03;font-size:11px;color:#9fb0ba}
+.wx-total b{color:#d5e4e8;font-variant-numeric:tabular-nums}
+.wx-total.over{border-color:#e8c49845}.wx-total.over b{color:#e8c498}
+/* Mai block heads: the role reads under the window name. */
+.block-title{display:flex;flex-direction:column;gap:4px;min-width:0}
+.block-role{display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.6px;color:var(--role-color)}
+.block-role .icon{width:15px;height:15px}
+.glu-peri-chip{border-color:#8ed2e84a!important;color:#9cd3e2!important}
