@@ -14096,6 +14096,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-dhero-art.is-wide { width: 128px; right: 8px; }
 .pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 36%, transparent)); }
 
+/* — a pill that's a graphic, not a bare percent: a mini bar + words — */
+.pl-dhero-pills .pl-share { display: inline-flex; align-items: center; gap: 6px; }
+.pl-dhero-pills .pl-share i {
+  display: block; width: 28px; height: 4px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
+}
+.pl-dhero-pills .pl-share i b {
+  display: block; height: 100%; width: var(--w); border-radius: 999px;
+  background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 85%, transparent);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .pl-dhero-wash { animation: pl-breathe 5.5s ease-in-out infinite; }
   .pl-dhero-art .icon, .pl-dhero-art .body-map { animation: pl-pop .8s cubic-bezier(.2, .9, .25, 1); }
@@ -14105,6 +14116,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 @keyframes pl-pop { from { scale: .82; opacity: 0; } }
 @keyframes pl-ring-spin { to { rotate: 388deg; } }
+
+/* — a section header, shared by the muscle breakdown and the exercise cells — */
+.pl-h3 { font-size: 13px; font-weight: 500; letter-spacing: .02em; color: var(--text-tertiary); margin: 26px 0 10px; display: flex; align-items: center; gap: 7px; }
+
+/* — the per-muscle breakdown: icon, name, a bar to the shared 8-set marker, count — */
+.pl-mrows { display: grid; gap: 6px; }
+.pl-mrow {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 10px; row-gap: 4px;
+  padding: 6px 2px;
+}
+.pl-mrow-name { font-size: 12.5px; color: var(--text-secondary); }
+.pl-mrow-bar { grid-column: 2; position: relative; height: 5px; border-radius: 999px; background: var(--surface-recess); }
+.pl-mrow-bar i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; background: var(--mus-color); transition: width .3s ease; }
+.pl-mrow-bar u { position: absolute; top: -3px; bottom: -3px; left: var(--at); width: 2px; background: color-mix(in srgb, var(--text-primary) 24%, transparent); }
+.pl-mrow-count { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--mus-color) 78%, var(--text-primary)); white-space: nowrap; }
+.pl-mrow-count i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
 
 /* — the exercise view cells: a header line, then a 4-cell prescription grid — */
 .pl-exs { display: grid; gap: 9px; }
