@@ -37,3 +37,13 @@ Interface: `StartupSplash({ children }: { children: ReactNode })` wraps the rout
 
 Refresh Beads backup, push `feat/titanium-startup`, open the self-PR, and follow the
 repository's CI/premerge gate before integration. Record actual results in Beads.
+
+## Verification outcome
+
+Build passed; focused startup/Titanium tests: 10 passed in each mode; Playwright:
+2 passed (mobile pulses/landing/navigation and desktop reduced-motion/deep link).
+Full suites each reached 769 passing files and one failing file: the unchanged
+`GoalPlannerPage.test.tsx:190` date fixture expires on 2026-09-15. The same failure
+was reproduced on an isolated archive of the original source; tracked separately
+as `mezo-r7cm7`. The startup change is ready for PR, but the full-suite merge gate
+remains blocked by that existing failure. Doc error gate and CODEMAP check passed.

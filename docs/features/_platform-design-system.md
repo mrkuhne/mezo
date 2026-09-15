@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-06
+updated: 2026-09-15
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -696,6 +696,17 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 ## 9. Decisions, gotchas & deferred
 
+- **Startup (`mezo-qducz`):** `main.tsx` wraps the router in `StartupSplash` once per
+  document. A fullscreen theme-token canvas displays the existing Titanium artwork with
+  three 900 ms brightness pulses and a 300 ms fade (3000 ms total). The router mounts
+  under an inert, `aria-hidden` wrapper, so data can load without allowing early interaction.
+  The timer removes the overlay even when CSS or the lazy 3D chunk cannot finish.
+  Internal navigation and background/foreground transitions never replay it; a reload does.
+  Reduced motion keeps the 3-second static mark without pulses/fade. The normal `/` entry
+  still resolves to `/nap`; explicit deep links and authentication remain router-owned.
+  Focused tests: `app/StartupSplash.test.tsx`; browser geometry, motion and navigation:
+  `tests/layout/startup.spec.ts`.
+
 - **Tokens-not-`rgba()` & no `dangerouslySetInnerHTML`** are hard house rules from the phase-1 spec; `SafeMarkdown` exists specifically to enforce the latter (React nodes only, escapes everything but `**bold**`).
 - **`Sheet` portals to `.phone-screen`, not `<body>`** (`Sheet.tsx:28–30`) — so the backdrop covers the tab bar and `position: absolute` anchors to the device viewport. Falls back to `<body>` in tests. The close animation deliberately kills the entrance keyframe + forces a reflow (`Sheet.tsx:43–65`) to get a real start→end transform delta — a subtle gotcha if refactored. It respects `prefers-reduced-motion`.
 - **Light is the default AND the CSS base (Napív, `mezo-8141`) — this inverts the pre-Napív/mezo-sb6z shape.** Before Napív, the _default theme_ was light but the _CSS base_ (`:root`, the attribute-absent state) stayed dark, so light needed `data-theme="light"` added. Napív collapses that split: `:root` **is** the light base now, so light needs **no attribute at all**; dark is the opt-in override, selected by **adding** `data-theme="dark"` (`applyTheme`, `theme.ts:21–26`). **Never add `data-theme="light"`** — there is no such block; light is attribute-absence. (Symmetric to the old rule this replaces, which forbade `data-theme="dark"` for the same reason in the other direction.)
@@ -754,6 +765,9 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `CountUp.tsx` — shared rAF ease-out count-up primitive (`mezo-ilsj`, generalized out of `LevelUpScreen`'s inline count-up hook for the ritual Harvest act's XP total); skips to the final value under reduced motion or jsdom. See [ritual.md](ritual.md).
 
 **App shell** (`frontend/src/app/`)
+
+- `StartupSplash.tsx` / `StartupSplash.css` — app-root 3-second fullscreen startup,
+  mounted in `frontend/src/main.tsx`; reused artwork from `TitanCompanion.tsx`.
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell. `ScreenContent` owns `.screen-content`, the single app scroller, and resets it to the top on every **route** change; the reset itself is `scrollToTop()` from **`shared/lib/screenScroll.ts`** (`mezo-vad0`), which also exports the `screenScroller()` lookup so a page that swaps its whole tree WITHOUT navigating can ask for the same reset (the active workout's phase flips — see [train.md §2](train.md)). Both go through an **instant** `scrollTo` on purpose: `.screen-content` carries `scroll-behavior: smooth`, so a bare `scrollTop =` starts an animated scroll that keeps running into the next frames and overrides whatever the landing screen does (it ate the chat's scroll-to-newest, `mezo-at8x.2`).
 - `TabBar.tsx` / `AppLayout.tsx` — 5-tab nav + layout (anchor-mode wiring). The floating **`QuickLogFab`** (`app/QuickLogFab.tsx`) owns its own `open` state and conditionally mounts `QuickInputSheet`, independently of `TabBar` (Design 2.0, `mezo-d20.1.1`). `AppLayout` also mounts **`CircadianTheme`** (`mezo-d71m`) and hides `TabBar` on `/train/session`, **`/me/sleep/night`** (the night page's light would defeat the sub-30-lux point, `mezo-d71m`), **and `/ritual`** (the full-screen Napzárás flow, `mezo-ilsj` — see [ritual.md](ritual.md)) via `hideChrome` (called `hideTabBar` until `mezo-atry`); its `LiveActivityProvider` mount was deleted in `mezo-xt65` — the rest timer is Train-local now.
 - `AppHeader.tsx` — the app's ONE header, since `mezo-atry` (previously five per-hub `.nap-head` copies). A real `<header>` element (`className="nap-head app-head"`), mounted by `AppLayout` as the first child inside `ScreenContent`, and **`position: sticky` (`mezo-8az6`)** so it kitapad at the top of the scroller instead of scrolling away, on every route except the three `hideChrome` chrome-free ones. Both popovers close on Escape, on an outside click and on a route change; the daypart items are `menuitemradio`+`aria-checked`; focus management is deliberately deferred ([today.md](today.md) §9). Six elements: **the section label + clay spot** (`headerSection.ts`, `mezo-8az6` — replaced the date eyebrow) · [kalauz „?"] · daypart switch (`?dp=` read only on `/nap`; picking one always navigates to `/nap`) · a Mezo-messages circle → `/nap/uzenetek` (the tile this pulled out of Today's daypart mosaics) · a notification bell (unread badge, 3-row peek menu) · a profile orb → `/me`. See [today.md](today.md#the-header-is-the-shells-not-the-hubs) for the full behavior contract.

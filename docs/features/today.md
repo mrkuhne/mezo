@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-10
+updated: 2026-09-15
 tags: [today, nap, mozaik, titanium, biometrics, frontend, data-layer, ritual, needs]
 key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
@@ -290,6 +290,14 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 **Commands:** `VITE_USE_MOCK=false pnpm test` + `VITE_USE_MOCK=true pnpm test` (unset = mock — the bare command runs mock twice and the real-mode gate is vacuous), `pnpm vitest run src/features/today` focused, `pnpm build`, `pnpm test:layout` (structural Playwright specs, `frontend/tests/layout/layout.spec.ts` — includes a `/nap` reachability check against `.nap-hub`, unchanged by the Titanium rebuild since the class survived; **not** a screenshot suite — see the goldens-retired note above).
 
 ## 9. Decisions, gotchas & deferred
+
+- **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
+  lazy Titanium geometry through the non-interactive `TitanArtwork` export in
+  `TitanCompanion.tsx`. `TitanMark` uses per-instance SVG gradient IDs so the splash and
+  Dashboard fallback can coexist. The splash has three gentle pulses and reveals the
+  app after 3 seconds including fade; the existing `/` → `/nap` landing is unchanged.
+  Reduced-motion/missing-WebGL browsers get the existing SVG; an artwork chunk failure
+  is contained by an error boundary. See [platform startup behavior](_platform-design-system.md#9-decisions-gotchas--deferred).
 
 - **Decisions:** the current structure is **[ADR 0032 — five-tab IA, dissolved section shells](../decisions/0032-five-tab-ia-dissolved-section-shells.md)** (5 first-class tabs, no center-FAB tab bar, no `SubNavDropdown`, tile → full-page sibling, the floating quick-log FAB) and **[ADR 0033 — Mozaik 2.0 tile language](../decisions/0033-mozaik-2-tile-language.md)** (tile mosaic, clay icons, the `--mz-*` token family, one-shot entrance choreography), over [`specs/2026-08-27-design-2.0-implementation-spec.md`](../superpowers/specs/2026-08-27-design-2.0-implementation-spec.md). **ADR 0033 supersedes [ADR 0026](../decisions/0026-today-ios-list-language.md)**, which had superseded the *render layer* of [ADR 0025](../decisions/0025-today-daypart-tabs.md), itself over [ADR 0022](../decisions/0022-today-three-islands.md) and [ADR 0014](../decisions/0014-today-daypart-faces.md). **ADR 0014's day model, act-anywhere and dedup decisions remain in force through all five render layers**, as do the honest-completion decisions ([`specs/2026-07-04-…`](../superpowers/specs/2026-07-04-today-honest-completion-design.md)) and **ADR 0010** (nothing self-completes — visible in `NapRutinPage`'s non-interactive tick and `NapKuldetesekPage`'s "záródik magától" copy).
 - **The prior layer's central trade-off is now closed by deletion, not by unification.** ADR 0026 deliberately left `shared/ui/ItemRow` untouched, so the app spoke two row languages, and filed `mezo-jaoy` to unify them. The Design 2.0 cleanup deleted Today's whole `.td-*` row family instead: nothing under `features/today/` imports `ItemRow`/`ItemCard` any more. `ItemRow` survives for its other consumers (the Me routine editor, and wherever Fuel still uses it) — `mezo-jaoy` is therefore moot **for Today**, not resolved globally.
