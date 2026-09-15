@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository.ExerciseIdentityRow;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.service.OneRepMax;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -30,11 +31,14 @@ import org.springframework.stereotype.Service;
  * <ol>
  *   <li><b>Strength (e1RM):</b> active iff {@code "strength" ∈ goal.guards}. Computes the main lift's
  *       estimated-1RM trend by reusing the {@code ExerciseRecordService} aggregation idiom — group
- *       the owner's logged sets by lift identity ({@code catalog_id} else {@code name}, resolved over
- *       soft-deleted rows too), discard {@code reps > 10}, take the Epley e1RM
- *       ({@code weight × (30 + reps) / 30}). The main lift = the identity with the most logged
- *       weighted sets; its trend % is the change between the best e1RM in an early window and a recent
- *       window. {@code breached} when that % drops to {@code strength.e1rmBreachPct} (−5%) or below.</li>
+ *       the owner's logged WORKING sets (warmups excluded upstream) by lift identity
+ *       ({@code catalog_id} else {@code name}, resolved over soft-deleted rows too), keep only sets
+ *       {@link io.mrkuhne.mezo.feature.train.service.OneRepMax#eligible eligible} for an estimate
+ *       (reps 1–{@link io.mrkuhne.mezo.feature.train.service.OneRepMax#REP_CAP REP_CAP}), take the
+ *       Epley e1RM ({@code weight × (30 + reps) / 30}). The main lift = the identity with the most
+ *       logged weighted sets; its trend % is the change between the best e1RM in an early window and
+ *       a recent window. {@code breached} when that % drops to {@code strength.e1rmBreachPct} (−5%)
+ *       or below.</li>
  *   <li><b>Muscle volume:</b> active iff {@code "muscle" ∈ goal.guards}. Reads the per-muscle prescribed
  *       weekly hard sets ({@code MuscleGroupVolumeLog.currentSets}) across the goal's linked mesos;
  *       {@code minWeeklySetsPerMuscle} = the floor across muscles, {@code belowMaintenanceMuscles} =
@@ -59,13 +63,9 @@ public class GuardEvaluationService {
     private static final String GUARD_STRENGTH = "strength";
     private static final String GUARD_MUSCLE = "muscle";
 
-    /** Epley reps cap — sets above this are too far from a true 1RM to estimate (spec / surface). */
-    private static final int MAX_E1RM_REPS = 10;
-
     /** Trailing window (days) that counts as the "recent" e1RM bucket for the trend. */
     private static final int RECENT_WINDOW_DAYS = 14;
 
-    private static final BigDecimal THIRTY = new BigDecimal("30");
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
     private static final int PCT_SCALE = 2;
 
@@ -96,8 +96,11 @@ public class GuardEvaluationService {
     // ── strength leg ──────────────────────────────────────────────────────────────────────────────
 
     private GuardStatus.Strength evaluateStrength(UUID userId) {
-        List<ExerciseSetEntity> sets = exerciseSetRepository.findByCreatedByAndRepsNotNull(userId).stream()
-            .filter(s -> s.getWeightKg() != null && s.getReps() != null && s.getReps() <= MAX_E1RM_REPS)
+        // WORKING sets only (warmups carry no signal) + OneRepMax.eligible (reps 1–REP_CAP,
+        // not skipped, positive weight) — the single home for what counts toward an e1RM estimate.
+        List<ExerciseSetEntity> sets = exerciseSetRepository
+            .findByCreatedByAndRepsNotNullAndKind(userId, "working").stream()
+            .filter(OneRepMax::eligible)
             .toList();
         if (sets.isEmpty()) {
             // strength guard requested but no logged lifts yet → active but nothing to flag.
@@ -168,10 +171,9 @@ public class GuardEvaluationService {
         return group.stream().map(this::epley).max(Comparator.naturalOrder()).orElse(null);
     }
 
-    /** Epley estimated 1RM: weight × (1 + reps/30) = weight × (30 + reps) / 30 (matches ExerciseRecordService). */
+    /** Epley estimated 1RM — delegates to {@link OneRepMax} (Titanium T2 single source of truth). */
     private BigDecimal epley(ExerciseSetEntity s) {
-        return s.getWeightKg().multiply(BigDecimal.valueOf(30L + s.getReps()))
-            .divide(THIRTY, 4, RoundingMode.HALF_UP);
+        return OneRepMax.estimate(s.getWeightKg(), s.getReps());
     }
 
     private Instant setInstant(ExerciseSetEntity s) {

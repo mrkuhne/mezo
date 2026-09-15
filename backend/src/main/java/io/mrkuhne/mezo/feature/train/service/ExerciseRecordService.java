@@ -39,8 +39,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ExerciseRecordService {
 
-    private static final BigDecimal THIRTY = new BigDecimal("30");
-
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
@@ -92,8 +90,11 @@ public class ExerciseRecordService {
             Comparator.comparing(ExerciseSetEntity::getWeightKg)
                 .thenComparing(ExerciseSetEntity::getReps)
                 .thenComparing(this::setInstant)).orElse(null);
-        ExerciseSetEntity bestE1rmSet = weighted.stream().max(
-            Comparator.comparing(this::epley).thenComparing(this::setInstant)).orElse(null);
+        // OneRepMax refuses reps > REP_CAP (null) — exclude those before ranking so the comparator
+        // never sees a null key.
+        ExerciseSetEntity bestE1rmSet = weighted.stream()
+            .filter(s -> epley(s) != null)
+            .max(Comparator.comparing(this::epley).thenComparing(this::setInstant)).orElse(null);
 
         // session = workout instance; legacy sets without instance group by exercise row
         Map<UUID, List<ExerciseSetEntity>> bySession = sets.stream().collect(Collectors.groupingBy(
@@ -153,10 +154,9 @@ public class ExerciseRecordService {
             .build();
     }
 
-    /** Epley estimated 1RM: weight × (1 + reps/30) = weight × (30 + reps) / 30. */
+    /** Epley estimated 1RM — delegates to {@link OneRepMax} (Titanium T2 single source of truth). */
     private BigDecimal epley(ExerciseSetEntity s) {
-        return s.getWeightKg().multiply(BigDecimal.valueOf(30L + s.getReps()))
-            .divide(THIRTY, 4, RoundingMode.HALF_UP);
+        return OneRepMax.estimate(s.getWeightKg(), s.getReps());
     }
 
     private Instant setInstant(ExerciseSetEntity s) {

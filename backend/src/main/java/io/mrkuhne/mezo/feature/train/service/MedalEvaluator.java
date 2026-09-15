@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Pure medal rules (spec 2026-07-30-medal-collection-design.md §6). No Spring, no DB — given one
@@ -18,8 +19,6 @@ import java.util.List;
  * history-independent and compares only against the set's own snapshotted prescription.
  */
 public final class MedalEvaluator {
-
-    private static final BigDecimal THIRTY = new BigDecimal("30");
 
     private MedalEvaluator() {}
 
@@ -53,13 +52,18 @@ public final class MedalEvaluator {
                     BigDecimal.valueOf(candidate.reps()), BigDecimal.valueOf(bestRepsAtWeight)));
             }
 
+            // OneRepMax refuses reps > REP_CAP (null) — both the candidate and priors can land there.
             BigDecimal e1rm = epley(w, candidate.reps());
-            BigDecimal bestE1rm = priors.stream()
-                .filter(p -> p.weightKg() != null)
-                .map(p -> epley(p.weightKg(), p.reps())).max(BigDecimal::compareTo).orElse(null);
-            if (bestE1rm != null && e1rm.compareTo(bestE1rm) > 0) {
-                awards.add(new Award(MedalKind.E1RM,
-                    e1rm.setScale(1, RoundingMode.HALF_UP), bestE1rm.setScale(1, RoundingMode.HALF_UP)));
+            if (e1rm != null) {
+                BigDecimal bestE1rm = priors.stream()
+                    .filter(p -> p.weightKg() != null)
+                    .map(p -> epley(p.weightKg(), p.reps()))
+                    .filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo).orElse(null);
+                if (bestE1rm != null && e1rm.compareTo(bestE1rm) > 0) {
+                    awards.add(new Award(MedalKind.E1RM,
+                        e1rm.setScale(1, RoundingMode.HALF_UP), bestE1rm.setScale(1, RoundingMode.HALF_UP)));
+                }
             }
         }
 
@@ -80,8 +84,8 @@ public final class MedalEvaluator {
         return new Award(MedalKind.SESSION_VOLUME, sessionVolume, bestPriorSessionVolume);
     }
 
-    /** Epley e1RM: weight × (30 + reps) / 30, scale 4 HALF_UP (matches ExerciseRecordService). */
+    /** Epley e1RM — delegates to {@link OneRepMax} (Titanium T2 single source of truth). */
     public static BigDecimal epley(BigDecimal weightKg, int reps) {
-        return weightKg.multiply(BigDecimal.valueOf(30L + reps)).divide(THIRTY, 4, RoundingMode.HALF_UP);
+        return OneRepMax.estimate(weightKg, reps);
     }
 }
