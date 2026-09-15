@@ -1,64 +1,173 @@
 // ============================================================
-// Mezo · TrainWeekPage („Heti") — Mozaik 2.0 re-face (mezo-d20.3.2).
-// Source of truth: docs/design_2.0/prototypes/src/edzes-body.html #page-heti
-// (p-gold tone, ×1.18): compact-subpage-hero (i-edzes clay icon + "{done}/{total}"
-// big number, no subtitle) → stat strip → the week's day list → a static
-// izom-zóna panel. GymPage folds in here (mezo-d20.3.2 scope note): its
-// muscle-zone meta card (schedule chip, Mezociklus áttekintő chip, live zone
-// rows, MuscleWeekSheet detail) moves onto Heti; GymPage.tsx itself becomes a
-// thin `/train/week` redirect (its per-day GymDayCard list is dropped as a
-// true duplicate — Heti's own day list already routes every gym day through
-// the same `gymDayTarget` direct-start/review logic via WeeklyDayRow).
+// Mezo · TrainWeekPage („Terhelés") — Titanium face (mezo-88iwa.13, T12 Task 3).
+// Source of truth: docs/design_2.0/prototypes/companion-titanium/load-pages.js
+// (`loadHero`, `mapCard`, `groupCards`, `groupGlass`, `sportCard`, `movementCard`)
+// + load.css, ported onto tokens as the `.ld-` section in styles/prototype.css.
 //
-// Dropped (deliberate, noted in the branch report): the meta card's Fázis/
-// Split/PhaseDots readout — the prototype's Heti never repeats the active
-// phase (that's Mesociklus's job); the "Mezociklus áttekintő" chip still
-// reaches it. Also dropped: a fabricated "RPE átlag" stat — the prototype
-// shows one, but no cross-domain (gym RIR + sport RPE) weekly aggregate
-// exists yet; honest-states over pixel-matching a number nothing computes.
+// The page tells ONE story, top to bottom: how deep into the week you are (the
+// full-bleed hero with the DRAWN percent), where that work landed on your body
+// (the map doorway), which group got how much (the group cards, each opening a
+// GlassBox with its own detail), what the sport added beside the sets, and where
+// every movement of the week lives (the Mozgás doorway).
 //
-// Every data hook, mutation and behavioral contract is verbatim from before
-// this slice — only the face + page composition changed.
+// ---- THE DAY-STRIP FUNCTION INVENTORY (T12 spec, owner-approved) -------------
+// The WeeklyDayRow strip LEFT this page. Every function it carried has a named,
+// still-tested home — nothing was dropped, only moved:
+//   · drill-to-day (`toMai`, `/train?day=N`)  → Mai's own DayStrip
+//     (TrainTodayPage.test.tsx '?day= initialises the selection'); the `/train`
+//     redirect contract stays covered by app/router.trainIndexRedirect.test.tsx.
+//   · Időpontok / GymScheduleSheet            → KEPT HERE, as a hero-row chip.
+//   · non-today gym → session routing         → Mai's poster CTA
+//     (TrainTodayPage.test.tsx 'a non-today gym day renders … direct-start CTA').
+//   · done-day → review routing               → Mai's past days
+//     (TrainTodayPage.test.tsx 'a completed today instance renders the Kész hero').
+//   · the `heti-terheles` kalauz anchor       → re-anchored to the hero (was
+//     `heti-napok` on the day list; registry copy + anchors test moved with it).
+//   · medál / StatStrip facts                 → the hero (medál chip via useMedals,
+//     the one honest sentence) and the group glass (per-muscle detail + XP).
+// The old LoadTiles / ZoneMiniGrid / MuscleWeekSheet surfaces retire with this
+// face — their data is what the hero, the groups and the glass now draw.
+//
+// Two row sets, deliberately (NOT a duplicated read):
+//   · `doneRows` — the week as LOGGED. The hero totals, the group numbers and the
+//     group WORDS read this, so nothing ever credits a session that has not
+//     happened yet (the prototype's own reading: done vs. the week's ask).
+//   · `heatRows` — the same week PLUS today's plan. Only the body map needs it:
+//     without `todayPlan` the 'entering' status ("today's session crosses the
+//     floor") is unreachable, and the map would have no way to say it.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain, useRunning, useWeekWorkouts, useWeekMuscleLog, useMedals } from '@/data/hooks'
-import { DAY_ORDER } from '@/data/train/train'
-import { huMonthDayDow } from '@/shared/lib/dates'
+import {
+  useTrain, useRunning, useWeekMuscleLog, useMedals, useProgressionProfile,
+} from '@/data/hooks'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageHead, PageHero, PageBody, StatCell } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
+import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { LoadTiles } from '@/features/train/components/LoadTiles'
-import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
-import { ZoneMiniGrid } from '@/features/train/components/ZoneMiniGrid'
+import { ClayIcon } from '@/shared/ui/clay'
+import { BodyMap } from '@/features/train/components/BodyMap'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
-import { MuscleWeekSheet } from '@/features/train/sheets/MuscleWeekSheet'
-import { buildWeekAgenda, weekDateIso } from '@/features/train/logic/weekAgenda'
-import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
-import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
-import { selectGymRows, weekZoneRows } from '@/features/train/logic/weekZone'
-import { sportOf, type SportKind } from '@/features/train/logic/sportKinds'
-import type { GymScheduleSlot } from '@/data/types'
+import { weekDateIso } from '@/features/train/logic/weekAgenda'
+import { weekZoneRows } from '@/features/train/logic/weekZone'
+import {
+  loadGroups, loadWeekTotals, mapHeat, sportReach, untouchedMuscles,
+  type LoadGroupRow, type LoadWeek,
+} from '@/features/train/logic/loadWeek'
+import { budgetGroup } from '@/features/train/logic/setBudget'
+import { muscleColor } from '@/features/train/logic/muscleColors'
+import { muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
+import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
+import { growthForecast } from '@/features/train/logic/growthForecast'
+import type { RunPrescribedSession } from '@/data/train/runningApi'
+import type { GymScheduleSlot, MesoDay, VolleyballSession } from '@/data/types'
 import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 
-// Heti never logs a session itself: every sport/run tap drills into Mai (`toMai`),
-// which owns the log sheets and the retroactive `date` threading (mezo-9bbc).
+/** The ONE sentence the hero says — the strongest fact that is actually true right now. */
+function heroSay(totals: LoadWeek, untouchedCount: number): string {
+  if (totals.plannedSets === 0) return 'Ezen a héten még nincs betervezett szett — azt a mesociklus adja meg.'
+  if (totals.doneSets === 0) return 'A hét még előtted van: eddig egyetlen szett sem ment le.'
+  if (totals.percent >= 100) return 'A hét munkáját letudtad — innen már a pihenés dolgozik.'
+  if (untouchedCount === 0) return 'Minden izomcsoport kapott már munkát ezen a héten.'
+  return `${untouchedCount} izomcsoport még munkára vár ezen a héten.`
+}
+
+/** done / planned as a bar width — never fabricated: no plan and no work is a 0% bar. */
+function shareOf(row: { doneSets: number; plannedSets: number }): number {
+  if (row.plannedSets > 0) return Math.round(Math.min(1, row.doneSets / row.plannedSets) * 100)
+  return row.doneSets > 0 ? 100 : 0
+}
+
+/**
+ * The glass behind a group card — the migrated MuscleWeekSheet content, for THIS group only:
+ * the group's own heads with their planned week, the sport/run stimulus chips (an estimate,
+ * said out loud) and the XP forecast. Owns `useProgressionProfile` itself, exactly as the
+ * retired sheet did, so the page's own mount stays cheap: the query fires when the glass opens.
+ */
+function GroupGlassBody({ group, days, sportSlots, runSessions }: {
+  group: LoadGroupRow
+  days: MesoDay[]
+  sportSlots: VolleyballSession[]
+  runSessions: RunPrescribedSession[]
+}) {
+  const { data: profile } = useProgressionProfile()
+  const rows = muscleWeekFromMeso(days).filter((r) => budgetGroup(r.muscle) === group.group)
+  const load = sportLoadForWeek(sportSlots, runSessions)
+  const forecast = growthForecast({ days, slots: sportSlots, runSessions, athletic: profile?.athletic ?? [] })
+  const groupXp = rows.reduce((total, r) => total + (forecast.muscleXp[r.muscle] ?? 0), 0)
+  const anySport = rows.some((r) => (load.perMuscle[r.muscle] ?? []).length > 0)
+
+  return (
+    <div className="ld-glass" style={{ '--mus-color': muscleColor(group.colorMuscle).rail } as CSSProperties}>
+      <div className="ld-glass-hero">
+        <strong>{group.doneSets}</strong>
+        <small>/ {group.plannedSets} szett</small>
+      </div>
+      <p className="ld-glass-word">{group.word}</p>
+      {rows.length === 0 ? (
+        <p className="ld-glass-empty">Ezen a héten nincs rá külön gyakorlat a tervben.</p>
+      ) : (
+        <div className="ld-glass-rows">
+          {rows.map((r) => {
+            const sources = load.perMuscle[r.muscle] ?? []
+            const xp = forecast.muscleXp[r.muscle]
+            return (
+              <div key={r.muscle} className="ld-glass-row">
+                <MuscleChip token={r.muscle} size={26} />
+                <span className="ld-glass-name">
+                  <strong>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</strong>
+                  <small>
+                    {r.workingSets} szett · {r.repMinTotal}–{r.repMaxTotal} ismétlés · {r.gymFrequency}×/hét
+                  </small>
+                  {sources.length > 0 && (
+                    <span className="ld-glass-chips">
+                      {sources.map((s) => (
+                        <span key={s.kind}>
+                          {'▲'.repeat(s.load)} {s.label}{s.count > 1 ? ` ×${s.count}` : ''}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+                {xp ? <b className="ld-glass-xp">+~{xp} XP</b> : null}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {/* The XP forecast line always speaks — an honest "no estimate yet" beats a silent gap.
+          growthForecast only earns volume XP from exercises that carry a weight anchor, so a
+          plan without anchors has nothing to forecast, and says exactly that. */}
+      <p className="ld-glass-foot">
+        {groupXp > 0
+          ? `A tervezett hét ~${groupXp} XP-t hoz ennek a csoportnak — becslés; a valós XP a logolt munkából számolódik.`
+          : 'XP-előrejelzés ehhez a csoporthoz még nincs — ahhoz súly-alap kell a tervben.'}
+      </p>
+      {anySport && (
+        <p className="ld-glass-foot">
+          ▲ = sport/futás plusz-stimulus — becslés, a szettszámokba nem számít bele.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function TrainWeekPage() {
   const {
-    gymSchedule, sport, activeMeso, gymDoneDates, workoutPending, todaySession, gymSlots, saveGymSchedule,
-    sportSlotSkips,
+    sport, activeMeso, workoutPending, gymSlots, saveGymSchedule,
+    workout, completedTodayWorkout,
   } = useTrain()
-  const { activeRunningBlock, runSessions, runningPending } = useRunning()
-  const { workouts: weekWorkouts } = useWeekWorkouts()
+  const { activeRunningBlock, runningPending } = useRunning()
   const weekLog = useWeekMuscleLog()
   const { data: medals } = useMedals()
   const navigate = useNavigate()
   const [customOpen, setCustomOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
-  const [muscleOpen, setMuscleOpen] = useState(false)
-  // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots
-  // (folded in from GymPage, mezo-d20.3.2 — same override idiom, unchanged behavior).
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+  // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots.
   const [gymOverride, setGymOverride] = useState<GymScheduleSlot[] | null>(null)
 
   if (workoutPending || runningPending) return <TrainWeekSkeleton />
@@ -66,150 +175,190 @@ export function TrainWeekPage() {
   if (!activeMeso) {
     return (
       <MozaikPage tone="gold">
-        <PageHead onBack={() => navigate('/train')} label="‹ Edzés" />
-        <PageHero icon="i-edzes" name="Heti edzések" />
         <PageBody>
-          <GhostState lines={3} message="A heti rended itt jelenik majd meg — előbb tervezz egy mesociklust."
+          <GhostState lines={3} message="A heti terhelésed itt jelenik majd meg — előbb tervezz egy mesociklust."
             ctaLabel="+ Tervezz mesociklust" onCta={() => navigate('/train/mesocycles/new')} />
         </PageBody>
       </MozaikPage>
     )
   }
 
-  const agenda = buildWeekAgenda({
-    gymTimes: gymSchedule?.weeklyTimes ?? [],
-    sportSlots: sport.schedule?.volleyball.sessions ?? [],
-    runningBlock: activeRunningBlock,
-    weekWorkouts,
-    skips: sportSlotSkips,
-  })
-  const sessionCount = agenda.filter((a) => a.gym || a.sport.length || a.running.length).length
-  const sportDoneOn = (iso: string | undefined, k: SportKind) =>
-    Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
-  const workoutIdByDate = Object.fromEntries(
-    weekWorkouts.filter((w) => w.status === 'completed' && w.origin === 'meso').map((w) => [w.date, w.id]),
-  )
-  const runLoggedFor = (key: string) =>
-    runSessions.some(
-      (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
-    )
-  const toMai = (day: string) => navigate(`/train?day=${DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])}`)
-
-  // Whole-day completion (hero big number): every item the day actually holds
-  // (gym and/or sport and/or run) is done. A rest day never counts either way.
-  const doneCount = agenda.filter((a) => {
-    const hasContent = Boolean(a.gym) || a.sport.length > 0 || a.running.length > 0
-    if (!hasContent) return false
-    const gymOk = !a.gym || (Boolean(a.date) && gymDoneDates.includes(a.date!))
-    const sportOk = a.sport.every((s) => sportDoneOn(a.date, sportOf(s)))
-    const runOk = a.running.every((r) => runLoggedFor(r.key))
-    return gymOk && sportOk && runOk
-  }).length
-
-  // Folded in from GymPage's meta card (mezo-d20.3.2): planned-set total + live
-  // zone rows for the week's gym days.
   const days = activeMeso.days ?? []
-  const gymDays = days.filter((d) => d.exerciseCount > 0)
-  const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
-  const doneGymDays = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
-  const zoneRows = selectGymRows(weekZoneRows({ plannedDays: days, completed: weekLog.details }))
+  const sportSlots = sport.schedule?.volleyball.sessions ?? []
+  const runSessions: RunPrescribedSession[] = activeRunningBlock
+    ? (activeRunningBlock.structure.weeks[activeRunningBlock.currentWeek - 1]?.sessions ?? [])
+    : []
 
-  // Medals earned within this Mon–Sun week (weekDateIso is ISO, so lexical
-  // comparison sorts correctly) — a real, always-defined count (0 is honest).
-  const weekStart = weekDateIso(0)
-  const weekEnd = weekDateIso(6)
-  const weekMedalCount = medals.filter((m) => m.date >= weekStart && m.date <= weekEnd).length
+  // See the header note: `doneRows` is the week as logged (the numbers and the words),
+  // `heatRows` adds today's plan so the map can say 'entering'.
+  const doneRows = weekZoneRows({ plannedDays: days, completed: weekLog.details })
+  const todayPlan = !completedTodayWorkout && workout
+    ? workout.exercises.map((e) => ({
+      muscle: e.muscle, type: e.type, workingSets: e.workingSets, targetRIR: e.targetRIR,
+    }))
+    : null
+  const heatRows = weekZoneRows({ plannedDays: days, completed: weekLog.details, todayPlan })
+
+  // „sok" = the week's PLAN asks for more than the fatigue budget — verbatim the meaning the
+  // retired ZoneMiniGrid's ⚠ carried (`row.planBudget > 1`, ZoneMiniGrid.tsx), which is a
+  // property of the plan, not of the live status. LoadGroupRow deliberately does not carry
+  // planBudget (it is a display row), so the set is built from the rows themselves.
+  const planOverGroups = new Set(doneRows.filter((r) => r.planBudget > 1).map((r) => r.group))
+  const totals = loadWeekTotals(doneRows)
+  const groups = loadGroups(doneRows)
+  const waiting = untouchedMuscles(doneRows)
+  const heat = mapHeat(heatRows, 'done')
+  const reach = sportReach(sportLoadForWeek(sportSlots, runSessions))
+  const sportMinutes = sportSlots.reduce((total, s) => total + (s.duration ?? 0), 0)
+
+  // Medals earned within this Mon–Sun week (weekDateIso is ISO, so lexical comparison
+  // sorts correctly) — a real, always-defined count (0 is honest).
+  const weekMedalCount = medals.filter((m) => m.date >= weekDateIso(0) && m.date <= weekDateIso(6)).length
+  const phase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
+  const glassGroup = groups.find((g) => g.group === openGroup) ?? null
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/train')} label="‹ Edzés">
-        <button type="button" className="mz-pgact" onClick={() => setScheduleOpen(true)}>Időpontok</button>
-        <button
-          type="button"
-          className="mz-pgact"
-          onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
-          aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
-        >
-          W{activeMeso.currentWeek}/{activeMeso.weeks} ›
-        </button>
-      </PageHead>
       <EntranceGroup>
-        <PageHero icon="i-edzes" big={`${doneCount}/${sessionCount}`} name="Heti edzések" />
-        <PageBody>
-          {/* The prototype's #page-heti stagger: strip 40ms, the day list 100ms,
-              the zone panel 160ms — .rise inside the armed .mz-play wrapper
-              (adding one without the other is the silent-static bug). */}
-          <div className="mz-statstrip rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-            <StatCell value={totalSets} label="szett terv" />
-            <StatCell value={`${doneGymDays}/${gymDays.length}`} label="gym nap kész" />
-            <StatCell value={weekMedalCount} label="medál e héten" />
+        {/* The hero is a DIRECT child of .mz-page, which already pulls itself out of the
+            scroller's --screen-gutter — that is the whole full-bleed recipe, no new
+            negative-margin invention (prototype.css :4558). */}
+        <header className="ld-hero rise" data-kalauz-anchor="heti-terheles" style={{ '--d': '40ms' } as CSSProperties}>
+          <span className="ld-hero-wash" />
+          <span className="ld-hero-art">
+            <BodyMap heat={heat} views="auto" className="ld-hero-body" ariaLabel="A heti terhelésed a testeden" />
+            <i />
+            <i />
+          </span>
+          <span className="ld-eyebrow">
+            Terhelés · {activeMeso.currentWeek}. hét{phase ? ` · ${phase}` : ''}
+          </span>
+          {/* The percent is DRAWN, not spelled out: a big numeral plus a bar that grows on
+              reveal. A bare text percentage would be the one thing the prototype forbids. */}
+          <div className="ld-hero-pct"><b>{totals.percent}</b><em>%</em></div>
+          <p className="ld-hero-sub">
+            a heti munkádból megvan — <b>{totals.doneSets}</b> szett a {totals.plannedSets}-ből
+          </p>
+          <div className="ld-hero-bar">
+            <i style={{ '--w': `${totals.percent}%` } as CSSProperties} />
           </div>
+          <p className="ld-hero-say">{heroSay(totals, waiting.length)}</p>
+          <div className="ld-hero-chips">
+            <button type="button" className="mz-pgact" onClick={() => setScheduleOpen(true)}>Időpontok</button>
+            <button
+              type="button"
+              className="mz-pgact"
+              onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+              aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
+            >
+              W{activeMeso.currentWeek}/{activeMeso.weeks} ›
+            </button>
+            <span className="ld-hero-medal">
+              <ClayIcon name="i-erme" size={16} />
+              {weekMedalCount} medál e héten
+            </span>
+          </div>
+        </header>
 
-          <div className="col gap-sm mt-md" data-kalauz-anchor="heti-napok">
-            {agenda.map((a, i) => (
-              <div key={a.day} className="rise" style={{ '--d': `${100 + i * 40}ms` } as React.CSSProperties}>
-              <WeeklyDayRow
-                agenda={a}
-                gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
-                gymInProgress={Boolean(a.isToday && todaySession?.openWorkout)}
-                isSportLogged={(s) => sportDoneOn(a.date, sportOf(s))}
-                isRunLogged={(key) => runLoggedFor(key)}
-                onStartGym={() => navigate('/train/session')}
-                onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
-                onOpenGymDay={(() => {
-                  const md = activeMeso.days?.find((d) => d.day === a.day && d.exerciseCount > 0)
-                  if (!md) return undefined
-                  const target = gymDayTarget(md, weekWorkouts)
-                  return target ? () => navigate(target) : undefined
-                })()}
-                onLogSport={() => toMai(a.day)}
-                onLogRun={() => toMai(a.day)}
-                onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
-              />
-              </div>
+        <PageBody>
+          <h3 className="ld-h3">A tested térképe</h3>
+          <button
+            type="button"
+            className="ld-map-card rise"
+            style={{ '--d': '110ms' } as CSSProperties}
+            onClick={() => navigate('/train/week/terkep')}
+          >
+            <BodyMap heat={heat} views="both" className="ld-map-mini" ariaLabel="Elöl és hátul: a hét terhelése" />
+            <span className="ld-map-copy">
+              <strong>Elöl és hátul, ami már dolgozott</strong>
+              <small>
+                {waiting.length > 0
+                  ? `${waiting.length} izomcsoport még munkára vár ezen a héten.`
+                  : 'Minden izomcsoportod sorra került ezen a héten.'}
+              </small>
+            </span>
+            <b>›</b>
+          </button>
+
+          <h3 className="ld-h3">Izomcsoportok ezen a héten</h3>
+          <div className="ld-groups">
+            {groups.map((g, i) => (
+              <button
+                key={g.group}
+                type="button"
+                className="ld-group rise"
+                data-status={g.status}
+                data-plan={planOverGroups.has(g.group) ? 'over' : undefined}
+                style={{
+                  '--mus-color': muscleColor(g.colorMuscle).rail,
+                  '--d': `${160 + i * 40}ms`,
+                } as CSSProperties}
+                onClick={() => setOpenGroup(g.group)}
+                aria-label={`${g.label} — ezen a héten`}
+              >
+                <span className="ld-group-head">
+                  <MuscleChip token={g.colorMuscle} size={26} />
+                  <strong>{g.label}</strong>
+                  {/* The week's plan asks for a lot here — a flag in the house amber, never a
+                      red alarm (the retired ZoneMiniGrid's ⚠ said the same thing in a glyph). */}
+                  {planOverGroups.has(g.group) && (
+                    <span className="ld-group-much" title="A heti terv sok ide">sok</span>
+                  )}
+                  <b>{g.doneSets} / {g.plannedSets} <small>szett</small></b>
+                </span>
+                <span className="ld-group-bar">
+                  <i style={{ '--w': `${shareOf(g)}%` } as CSSProperties} />
+                </span>
+                <small className="ld-group-note">{g.word}</small>
+              </button>
             ))}
           </div>
 
-          <div className="rise" style={{ '--d': '380ms' } as React.CSSProperties}>
-            <LoadTiles tiles={weeklyLoad(agenda)} />
-          </div>
+          {(sportMinutes > 0 || reach.length > 0) && (
+            <>
+              <h3 className="ld-h3">Sport a héten</h3>
+              <section className="ld-sport rise" style={{ '--d': '380ms' } as CSSProperties}>
+                <span className="ld-sport-art"><ClayIcon name="i-sport" size={30} /></span>
+                <span className="ld-sport-copy">
+                  <strong>{sportMinutes} perc sport a heti rendben</strong>
+                  <small>
+                    {reach.length > 0
+                      ? `Ezeket is dolgoztatja: ${reach.join(', ')}.`
+                      : 'A heti rendben van sport, izomcsoportra vetítve még nincs mit mutatni.'}
+                  </small>
+                  <em>Becslés — a szettszámokba nem számít bele.</em>
+                </span>
+              </section>
+            </>
+          )}
+
+          <button
+            type="button"
+            className="ld-move-card rise"
+            style={{ '--d': '410ms' } as CSSProperties}
+            onClick={() => navigate('/train/week/mozgas')}
+          >
+            <span className="ld-sport-art"><ClayIcon name="i-lang" size={30} /></span>
+            <span className="ld-map-copy">
+              <strong>Minden mozgásod a héten</strong>
+              <small>Gym és sport együtt — percek és a belőlük becsült kalória.</small>
+            </span>
+            <b>›</b>
+          </button>
 
           <button
             type="button"
             onClick={() => setCustomOpen(true)}
             className="card dashedcta mt-md rise"
-            style={{ '--d': '410ms' } as React.CSSProperties}
+            style={{ '--d': '440ms' } as CSSProperties}
           >
             + Saját edzés
           </button>
 
-          {zoneRows.length > 0 && (
-            <>
-              <span
-                className="mz-eyebrow rise"
-                style={{ display: 'block', padding: '14px 2px 8px', '--d': '440ms' } as React.CSSProperties}
-              >
-                Izom-zónák · e hét
-              </span>
-              <button
-                type="button"
-                className="mz-panel rise"
-                style={{ width: '100%', textAlign: 'left', border: '0.5px solid rgba(43, 33, 24, 0.07)', cursor: 'pointer', '--d': '470ms' } as React.CSSProperties}
-                onClick={() => setMuscleOpen(true)}
-                aria-label="Heti izomterhelés — részletek"
-              >
-                <ZoneMiniGrid rows={zoneRows} />
-              </button>
-            </>
-          )}
-
-          <div
-            className="card rise"
-            style={{ marginTop: 12, padding: 'var(--sp-4)', background: 'var(--primary-bg)', '--d': '500ms' } as React.CSSProperties}
-          >
-            <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-              A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
-              pacing-et, alvás-onsetet és a vacsora-időt.
+          <div className="ld-note rise" style={{ '--d': '470ms' } as CSSProperties}>
+            <p>
+              A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv
+              együtt-mozgatja a pacing-et, alvás-onsetet és a vacsora-időt.
             </p>
           </div>
         </PageBody>
@@ -226,13 +375,16 @@ export function TrainWeekPage() {
           onClose={() => setScheduleOpen(false)}
         />
       )}
-      {muscleOpen && (
-        <MuscleWeekSheet
-          meso={activeMeso}
-          sportSlots={sport.schedule?.volleyball.sessions ?? []}
-          onClose={() => setMuscleOpen(false)}
-        />
-      )}
+      <GlassBox
+        open={glassGroup !== null}
+        onClose={() => setOpenGroup(null)}
+        label={glassGroup ? `${glassGroup.label} · ezen a héten` : ''}
+        tint={glassGroup ? muscleColor(glassGroup.colorMuscle).rail : undefined}
+      >
+        {glassGroup && (
+          <GroupGlassBody group={glassGroup} days={days} sportSlots={sportSlots} runSessions={runSessions} />
+        )}
+      </GlassBox>
     </MozaikPage>
   )
 }

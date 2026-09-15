@@ -266,3 +266,42 @@ describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () 
     expect(cardZ).toBeLessThan(300) // stays below the toast stack
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.13, T12 Task 3): the Terhelés (TrainWeekPage) face's
+ * `.ld-*` section — the full-bleed hero, the two doorway cards, the group cards and the
+ * group-glass body — registered exactly like the two blocks above.
+ */
+describe('the train terheles titanium section is registered (mezo-88iwa.13)', () => {
+  const START_MARKER = 'train terheles titanium'
+  const END_MARKER = '/train terheles titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the ld- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.ld-hero', '.ld-hero-bar', '.ld-hero-pct', '.ld-eyebrow', '.ld-map-card',
+      '.ld-move-card', '.ld-groups', '.ld-group-bar', '.ld-group-note', '.ld-sport', '.ld-glass-rows',
+    ]) {
+      expect(section, `${cls} missing from the train terheles titanium section`).toContain(cls)
+    }
+  })
+
+  // The bars are drawn-on-reveal: the FINAL width is the base rule (so the portaled
+  // group glass and a settled 'pop' arrival both show a full bar), and only the armed
+  // `.mz-play` subtree animates the growth — the `.gr-tbar` idiom. A future edit that
+  // flips this (base scaleX(0)) silently blanks every bar outside an entrance group.
+  test('the ld- bars default to their final width and only grow inside .mz-play', () => {
+    expect(rawCss).toContain('.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i')
+    expect(rawCss).toMatch(/@keyframes ld-fill \{ from \{ transform: scaleX\(0\); \}/)
+  })
+})

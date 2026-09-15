@@ -13914,3 +13914,202 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .gl-backdrop.gl-anim, .gl-card.gl-anim { animation: none; }
 }
 /* ── /titanium glass primitive ───────────────────────────────────────────── */
+
+/* ── train terheles titanium (mezo-88iwa.13, T12 Task 3) ─────────────────────
+   A Terhelés (TrainWeekPage) Titán arca: a heti munka RAJZOLT aránya a full-bleed
+   hősben, a test-térkép ajtaja, az izomcsoport-kártyák növő sávval, a sport-kártya
+   és a „Minden mozgásod" ajtó. Jóváhagyott vizuális referencia a prototípus:
+   docs/design_2.0/prototypes/companion-titanium/load.css `.ld-hero` (:3),
+   `.ld-group*` (:56), `.ld-glass*` (:76), `.ld-sport*` (:88) és `.ld-map-card` (:112)
+   családjai + load-pages.js `loadHero`/`groupCards`/`mapCard`/`groupGlass`.
+
+   AMIT ÁTVESZÜNK 1:1: a hős anatómiája (körbe-forgó szaggatott gyűrűk a kis
+   anatómia-figura körül, nagy vékony százalék + `%`, egy alsáv, egy mondat), a sáv
+   `--w` custom-property mechanikája, a csoport-kártya háromsoros ritmusa, az
+   üvegdoboz soranatómiája (ikon · név+alcím · sáv/XP).
+   AMIT NEM: a prototípus beégetett hideg hexeit (#0f1218, #ffffffXX) — a lap a
+   `.titan-dark` hatókörben renderel (AppLayout, mezo-88iwa.5), tehát a ház
+   `--surface-card`/`--text-*`/`--border-subtle` tokenjei MÁR hideg grafitot adnak,
+   a doménszín pedig a meglévő `--tag-gym`/`--wash-gym` páros. Így a lap a világos
+   témában is olvasható marad, saját scope-felülírás nélkül.
+   KIVÉTEL: a `.ld-glass*` család fehér-alfákat visel — az KIZÁRÓLAG a `.gl-card`
+   belsejében él (GlassBox, Task 2), ami MINDIG sötét, tehát ott a fehér-alfa a
+   helyes, tokenre váltása rontana rajta.
+
+   Prefix: `ld-` és semmi rövidebb — a T5 `.overline` tanulsága (a Tailwind v4
+   egyszavas utility-jei csendben ütköznek), ezért a hős szemöldöke is `.ld-eyebrow`,
+   nem `.overline`.
+
+   Full-bleed: a hős a `.mz-page` KÖZVETLEN gyermeke, az pedig már kihúzza magát a
+   scroller `--screen-gutter` paddingjából (:4558) — nincs szükség új negatív margó-
+   receptre, csak a hős saját belső paddingjára.
+
+   Mozgás: a sávok a ház `.mz-play` egyszeri-belépő idiómáját öröklik (a `.gr-tbar`
+   minta, :6559) — az ALAPÁLLAPOT a kész, teljes szélesség, és csak az ARMED
+   `.mz-play` belsejében indul a `ld-fill` növés. Így az üvegdoboz (ami a
+   `.mz-play` fán KÍVÜL portálozódik) és a visszatérő „pop" érkezés is kész sávot
+   mutat, sosem 0-t. Csökkentett mozgás mellett minden animáció kivezetve. */
+
+/* — a hős: milyen mélyen vagy a hétben — */
+.ld-hero {
+  position: relative; overflow: hidden;
+  padding: 18px calc(var(--screen-gutter) + 6px) 20px;
+  --ld-accent: var(--tag-gym);
+  background:
+    radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--ld-accent) 22%, transparent), transparent 64%),
+    linear-gradient(168deg, var(--wash-gym), var(--surface-card) 62%, var(--canvas) 100%);
+  border-bottom: 1px solid color-mix(in srgb, var(--ld-accent) 18%, transparent);
+}
+.ld-hero-wash {
+  position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ld-accent) 20%, transparent), transparent 66%);
+}
+.ld-hero-art { position: absolute; right: 10px; top: 20px; width: 112px; height: 112px; pointer-events: none; }
+.ld-hero-body { position: absolute; inset: 6px; width: 100px; height: 100px; }
+.ld-hero-art i {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--ld-accent) 38%, transparent);
+  animation: ld-spin 28s linear infinite;
+}
+.ld-hero-art i:nth-of-type(2) { inset: -9px; rotate: 58deg; opacity: .5; animation-duration: 20s; animation-direction: reverse; }
+.ld-eyebrow {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.ld-hero .ld-eyebrow { position: relative; }
+.ld-hero-pct {
+  position: relative; display: flex; align-items: baseline; gap: 3px; margin: 9px 0 2px;
+  color: var(--text-primary);
+}
+.ld-hero-pct b {
+  font-family: var(--ff-display); font-size: 52px; font-weight: 300; letter-spacing: -.04em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ld-hero-pct em { font-style: normal; font-size: 23px; font-weight: 600; color: var(--ld-accent); }
+.ld-hero-sub { position: relative; margin: 0 0 13px; font-size: 12px; color: var(--text-secondary); max-width: 30ch; }
+.ld-hero-sub b { color: var(--text-primary); font-weight: 600; }
+.ld-hero-bar {
+  position: relative; height: 12px; margin: 0 0 13px; max-width: 320px; border-radius: 999px;
+  background: var(--surface-recess); overflow: hidden;
+}
+.ld-hero-bar i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transform-origin: left;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ld-accent) 45%, transparent), var(--ld-accent));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ld-accent) 40%, transparent);
+}
+.ld-hero-say { position: relative; margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
+.ld-hero-chips { position: relative; display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.ld-hero-medal {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
+
+/* — a szakasz-fejek — */
+.ld-h3 { margin: 22px 2px 10px; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.ld-h3:first-child { margin-top: 6px; }
+
+/* — a két ajtó: a test térképe és az összes mozgás — */
+.ld-map-card, .ld-move-card {
+  display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 14px; cursor: pointer;
+  text-align: left; font: inherit; color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: 20px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 9%, var(--surface-card)), var(--surface-card) 70%);
+}
+.ld-move-card {
+  margin-top: 16px;
+  border-color: color-mix(in srgb, var(--tag-sport) 24%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 9%, var(--surface-card)), var(--surface-card) 70%);
+}
+.ld-map-mini { width: 96px; height: 78px; flex: 0 0 auto; overflow: hidden; }
+.ld-map-copy { flex: 1; min-width: 0; }
+.ld-map-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
+.ld-map-copy small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-tertiary); line-height: 1.45; }
+.ld-map-card > b, .ld-move-card > b { color: var(--text-quaternary); font-size: 15px; }
+
+/* — az izomcsoportok — */
+.ld-groups { display: grid; gap: 8px; }
+.ld-group {
+  display: grid; gap: 9px; width: 100%; padding: 12px 13px; cursor: pointer; text-align: left;
+  font: inherit; color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+}
+.ld-group-head { display: flex; align-items: center; gap: 9px; }
+.ld-group-head strong { font-size: 14px; font-weight: 600; }
+.ld-group-head b {
+  margin-left: auto; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--mus-color, var(--tag-gym));
+}
+.ld-group-head b small { font-size: 10px; font-weight: 500; color: var(--text-tertiary); }
+/* Sok-jel: a ház borostyánja (a T5 `.tr-start.is-resume` szemantikája), sosem piros
+   vészjelzés — a heti terv bőségét jelzi, nem hibát. */
+.ld-group-much {
+  font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px;
+  color: var(--amber-deep); background: color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.ld-group-bar {
+  position: relative; display: block; height: 10px; border-radius: 999px;
+  background: var(--surface-recess); overflow: hidden;
+}
+.ld-group-bar i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transform-origin: left;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 55%, transparent), var(--mus-color, var(--tag-gym)));
+}
+.ld-group-note { font-size: 10.5px; color: var(--text-tertiary); }
+
+/* — a sáv-növés: csak az ARMED belépő-csoport belsejében — */
+.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i {
+  animation: ld-fill .85s cubic-bezier(.22, .9, .25, 1) both;
+  animation-delay: var(--d, 120ms);
+}
+@keyframes ld-fill { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes ld-spin { to { rotate: 360deg; } }
+
+/* — a sport-kártya — */
+.ld-sport {
+  display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 24%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 10%, var(--surface-card)), var(--surface-card) 72%);
+}
+.ld-sport-art {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; flex: 0 0 auto;
+  background: color-mix(in srgb, var(--tag-sport) 16%, transparent);
+}
+.ld-sport-copy { flex: 1; min-width: 0; }
+.ld-sport-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
+.ld-sport-copy small { display: block; font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+.ld-sport-copy em { display: block; margin-top: 3px; font-style: normal; font-size: 10px; color: var(--text-quaternary); }
+
+/* — a záró jegyzet: honnan jön a két ütemterv — */
+.ld-note {
+  margin: 16px 0 0; padding: 14px 15px; border-radius: 18px;
+  border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
+.ld-note p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); }
+
+/* — az üvegdoboz tartalma (a GlassBox `.gl-card` belsejében, MINDIG sötét) — */
+.ld-glass { display: grid; gap: 10px; text-align: left; }
+.ld-glass-hero { display: flex; align-items: baseline; gap: 5px; }
+.ld-glass-hero strong { font-family: var(--ff-display); font-size: 34px; font-weight: 300; line-height: 1; color: var(--mus-color, #fff); }
+.ld-glass-hero small { font-size: 12px; color: #ffffff8c; }
+.ld-glass-word { margin: -4px 0 2px; font-size: 11.5px; color: #ffffff8c; }
+.ld-glass-rows { display: grid; gap: 8px; }
+.ld-glass-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; }
+.ld-glass-name strong { display: block; font-size: 12.5px; font-weight: 600; color: #fff; }
+.ld-glass-name small { display: block; font-size: 10.5px; color: #ffffff8c; }
+.ld-glass-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ld-glass-chips span {
+  font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+  color: #cfe3ea; background: #78cfe71f;
+}
+.ld-glass-xp { font-size: 11.5px; font-weight: 800; color: color-mix(in srgb, var(--mus-color, #fff) 70%, #fff); }
+.ld-glass-foot { margin: 6px 0 0; font-size: 10px; line-height: 1.5; color: #ffffff70; }
+.ld-glass-empty { margin: 0; font-size: 11.5px; color: #ffffff8c; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ld-hero-art i { animation: none; }
+  .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i { animation: none; transform: none; }
+}
+/* ── /train terheles titanium ─────────────────────────────────────────────── */
