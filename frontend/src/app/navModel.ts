@@ -53,10 +53,16 @@ export const DOMAINS: NavDomain[] = [
     id: 'train',
     name: 'Edzés',
     tabs: [
-      { label: 'Mai', route: '/train/mai', icon: 'i-edzes' },
-      { label: 'Terhelés', route: '/train/week', icon: 'i-meso' },
-      { label: 'Napló', route: '/train/gym', icon: 'i-naplo' },
-      { label: 'Tervek', route: '/train/mesocycles', icon: 'i-retegek' },
+      // Owner-approved four tabs (2026-09-12): sport/running are not a tab — logging
+      // lives on Mai, plans on Terv, history beside the volume on Terhelés.
+      { label: 'Mai', route: '/train/mai', icon: 'i-edzes',
+        owns: ['/train/session', '/train/review', '/train/sport', '/train/custom'] },
+      { label: 'Terv', route: '/train/mesocycles', icon: 'i-retegek',
+        owns: ['/train/templates', '/train/futas'] },
+      { label: 'Terhelés', route: '/train/week', icon: 'i-meso',
+        owns: ['/train/gym'] },
+      { label: 'Gyakorlatok', route: '/train/exercises', icon: 'i-naplo',
+        owns: ['/train/medals'] },
     ],
   },
   {

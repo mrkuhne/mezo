@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { TabBar } from '@/app/TabBar'
 import { QuickLogFab } from '@/app/QuickLogFab'
-import { resetNavMemory } from '@/app/navModel'
+import { resetNavMemory, DOMAINS, activeTabRoute } from '@/app/navModel'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 
@@ -91,17 +91,57 @@ test('marks the active tab via longest-matching-prefix — /nap/rutin lights Rut
 test('the active domain is derived from the first path segment — /train/week shows Edzés', () => {
   renderAt('/train/week', <TabBar />)
   expect(screen.getByRole('button', { name: 'Területváltó: Edzés' })).toBeInTheDocument()
-  for (const label of ['Mai', 'Terhelés', 'Napló', 'Tervek']) {
+  for (const label of ['Mai', 'Terv', 'Terhelés', 'Gyakorlatok']) {
     expect(screen.getByText(label)).toBeInTheDocument()
   }
   expect(screen.getByText('Terhelés').closest('a')!.className).toContain('active')
 })
 
 test('a domain sub-page that is not one of the four keeps the bar with no tab highlighted', () => {
-  const { container } = renderAt('/train/sport', <TabBar />)
+  // /train itself is the pre-redirect domain home — none of the four tabs own it (Task 2
+  // adds the /train → /train/mai redirect; here the bare contract stays: no tab lights up).
+  const { container } = renderAt('/train', <TabBar />)
   expect(container.querySelector('a.tab-item.active')).toBeNull()
   // The domain bar itself still resolves to Edzés.
   expect(screen.getByRole('button', { name: 'Területváltó: Edzés' })).toBeInTheDocument()
+})
+
+// Train Titanium (mezo-88iwa.5): az owner által jóváhagyott sorrend és a négy fül (2026-09-12
+// döntés — sport/futás nem önálló fül: a logolás a Main, a tervek a Terven, a történet a
+// Terhelésen él a volumen mellett).
+test('a Train fülsor a jóváhagyott sorrendet és ikonokat viseli', () => {
+  renderAt('/train/mai', <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Edzés menü' })
+  const tabs = within(bar).getAllByRole('link')
+  expect(tabs.map(a => a.textContent?.trim())).toEqual(['Mai', 'Terv', 'Terhelés', 'Gyakorlatok'])
+  expect(tabs.map(a => a.getAttribute('href'))).toEqual([
+    '/train/mai', '/train/mesocycles', '/train/week', '/train/exercises',
+  ])
+  expect(tabs.map(a => a.querySelector('use')?.getAttribute('href'))).toEqual([
+    '#i-edzes', '#i-retegek', '#i-meso', '#i-naplo',
+  ])
+})
+
+// A leghosszabb-prefix / owns szabály (navModel.activeTabRoute) a mély Train-oldalakon is tart.
+test.each([
+  ['/train/session', 'Mai'],
+  ['/train/review/abc', 'Mai'],
+  ['/train/mesocycles/x/days/Hét', 'Terv'],
+  ['/train/futas/123', 'Terv'],
+  ['/train/gym', 'Terhelés'],
+  ['/train/medals', 'Gyakorlatok'],
+])('%s a(z) %s fület gyújtja ki', (path, tab) => {
+  renderAt(path, <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Edzés menü' })
+  expect(within(bar).getByRole('link', { name: new RegExp(tab) }))
+    .toHaveAttribute('aria-current', 'page')
+})
+
+// mezo-88iwa.5: a pre-redirect szerződés — /train önmaga egyik fület sem gyújtja ki, amíg
+// a Task 2 redirectje be nem kerül (itt csak a navModel-szintű kontraktust rögzítjük).
+test('activeTabRoute /train-en null-t ad vissza (pre-redirect szerződés)', () => {
+  const train = DOMAINS.find(d => d.id === 'train')!
+  expect(activeTabRoute(train, '/train')).toBeNull()
 })
 
 test('the switch mark opens the domain-switcher dialog listing the five domains', async () => {
