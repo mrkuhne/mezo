@@ -41,13 +41,13 @@ import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ClayIcon } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { nextRolloverChips, phaseChip, runBands, weekDots } from '@/features/train/logic/mesoBands'
+import { nextRolloverChips, phaseChip, runBands, weekDots, type Phase } from '@/features/train/logic/mesoBands'
 import { todayDayToken } from '@/features/train/logic/mesoDates'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { SESSION_MUSCLE_CAP } from '@/features/train/logic/setBudget'
 import { dayTileData } from '@/features/train/wizard/dayTiles'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
-import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
+import MesoTervSkeleton from '@/features/train/pages/MesoTervSkeleton'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -57,9 +57,11 @@ const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
  *  knows only THIS week), and inventing one would draw a ramp nobody planned. */
 const PHASE_HEIGHT: Record<MesoPhase, number> = { MEV: 34, MAV: 66, MRV: 100, Deload: 26 }
 
-/** The phase pill in the owner's words. „Deload" is engine vocabulary; the page says
- *  „Pihenőhét" (the T9 language rule). */
-const PHASE_LABEL: Record<string, string> = { Rámpa: 'Rámpa', Csúcs: 'Csúcs', Deload: 'Pihenőhét' }
+/** The phase pill in the owner's words. Keyed on `Phase` (mesoBands.ts) so the map is
+ *  exhaustive and the pill can never fall back to a raw wire value — the owner's word
+ *  list bans „rámpa"/„blokk" in user-facing copy (T9 fix round 1), so `phaseChip`'s own
+ *  „Rámpa" label needs its own honest translation here too, not just „Deload". */
+const PHASE_LABEL: Record<Phase, string> = { Rámpa: 'Emelkedés', Csúcs: 'Csúcshét', Deload: 'Pihenőhét' }
 
 /** The day IF the block actually trains on it, else null — rest (`muscle: ''`) and sport
  *  (`muscle: 'sport'`) days are off-days by the shared rule, and an empty exercise list is
@@ -92,7 +94,7 @@ export function MesoTervPage() {
 
   // Real-mode loading: show the layout-aware skeleton until the meso list resolves.
   // Mock seeds synchronously → no skeleton.
-  if (workoutPending) return <MesocycleSkeleton />
+  if (workoutPending) return <MesoTervSkeleton />
 
   const meso = mesocycles.find((m) => m.status === 'active') ?? null
   const openKonyvtar = () => navigate('/train/mesocycles/konyvtar')
@@ -150,7 +152,7 @@ export function MesoTervPage() {
             message={
               mesocycles.length === 0
                 ? 'Még nincs mesociklusod — itt fognak élni a blokkjaid.'
-                : 'Most nem fut blokk — a terveid az Edzéstervek mögött várnak.'
+                : 'Most nem fut terv — a terveid az Edzéstervek mögött várnak.'
             }
           />
         </div>
@@ -169,13 +171,26 @@ export function MesoTervPage() {
       <EntranceGroup>
         {/* The poster. One button, one accessible name — the same whole-card idiom
             `ActiveMesoCard` carried, so the builder deep-link keeps its door. */}
-        <div className="rise" style={{ padding: '0 6px', ...delay(40) }}>
+        <div className="rise" style={delay(40)}>
           <button
             type="button"
             className="pl-poster"
             aria-label="Aktív mezociklus megnyitása"
             onClick={() => navigate(`/train/mesocycles/${meso.id}`)}
-            style={{ display: 'block', width: '100%', textAlign: 'left', font: 'inherit', cursor: 'pointer' }}
+            style={{
+              display: 'block',
+              // NOT width: 'auto' — a display:block <button> is still a form control and
+              // shrink-to-fits its content rather than auto-filling like `.tr-day`'s bare
+              // <section> (TrainTodayPage.tsx:444-446). The wrapper carries no horizontal
+              // padding any more (T9 fix round 1, measured regression: `padding: '0 6px'`
+              // + `width: 100%` rendered 6px left / 30px right instead of edge-to-edge), so
+              // the poster's own `.pl-poster` negative `margin-inline` (prototype.css:13891)
+              // needs an explicit width that accounts for it on both sides.
+              width: 'calc(100% + 2 * var(--screen-gutter))',
+              textAlign: 'left',
+              font: 'inherit',
+              cursor: 'pointer',
+            }}
           >
             <span className="pl-poster-glow" aria-hidden="true" />
             <span className="pl-poster-sheen" aria-hidden="true" />
@@ -186,7 +201,7 @@ export function MesoTervPage() {
                 <i>/ {meso.weeks}</i>
               </span>
               <span className={cn('pl-phase', phase === 'Csúcs' && 'is-peak', phase === 'Deload' && 'is-deload')}>
-                {PHASE_LABEL[phase] ?? phase}
+                {PHASE_LABEL[phase]}
               </span>
               <span className="pl-ring" style={{ '--p': done } as CSSProperties} aria-hidden="true">
                 <svg viewBox="0 0 72 72">

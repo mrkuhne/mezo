@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, it, vi } from 'vitest'
-import { http } from 'msw'
+import { afterEach, beforeEach, describe, it, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -48,17 +48,78 @@ test('the poster leads with the week numeral (3. hét / 6)', () => {
   expect(poster).toHaveTextContent('/ 6')
 })
 
-test('the phase pill reads the derived phase (meso-hyp-04 week 3 = MAV -> Rámpa)', () => {
-  setup()
-  expect(screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })).toHaveTextContent('Rámpa')
-})
-
-test('a Deload week says Pihenőhét in the pill — never the engine word', () => {
-  // The language rule (T9): `deload` is engine vocabulary; the page speaks „pihenőhét".
-  // Derivation check on the copy map, mirrored by the sentence assertion below.
+test('the phase pill reads the derived phase in the owner\'s words (meso-hyp-04 week 3 = MAV -> Rámpa -> Emelkedés)', () => {
+  // The banned-word sweep (T9 fix round 1): `phaseChip`'s own „Rámpa" is itself the
+  // banned word, so PHASE_LABEL must translate ALL three phases, not just Deload.
   setup()
   const poster = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
-  expect(poster).not.toHaveTextContent(/deload/i)
+  expect(poster).toHaveTextContent('Emelkedés')
+  expect(poster).not.toHaveTextContent(/rámpa/i)
+})
+
+// A REAL deload fixture (T9 fix round 1 — the earlier version of this test rendered
+// week 3, MAV, and only asserted "not deload text", which would pass even if the pill
+// rendered nothing at all). meso-hyp-04's own shape (id b6f3a0e2…, real-mode handler
+// default) at currentWeek 6 lands squarely on its phaseCurve's `Deload` entry.
+describe('a Deload week', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('makes the pill POSITIVELY say Pihenőhét — never the engine word', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([
+          {
+            id: 'b6f3a0e2-0000-4000-8000-000000000001',
+            title: 'Hypertrophy 04 · Tavasz',
+            shortTitle: 'Hypertrophy 04',
+            status: 'active',
+            goal: 'Felsőtest hypertrophy · izomtömeg építés',
+            startDate: '2026-05-01',
+            endDate: '2026-06-12',
+            weeks: 6,
+            currentWeek: 6,
+            split: 'Pull / Push / Legs · 5×/hét',
+            style: 'RP · 6 hét',
+            phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+            musclePriorities: { back: 'emphasize' },
+            volumePerMuscle: {
+              chest: {
+                mev: 8, mav: 14, mrv: 20, current: 14,
+                source: {
+                  baseline: { name: 'RP guidelines · intermediate', mev: 8, mav: 12, mrv: 18 },
+                  adjustments: [],
+                  confidence: 0.78,
+                },
+              },
+            },
+            days: [
+              {
+                id: 'a1f3a0e2-0000-4000-8000-000000000010',
+                day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1, current: true,
+                exercises: [
+                  {
+                    id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+                    muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound',
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+      ),
+    )
+    render(
+      <QueryWrapper>
+        <MemoryRouter>
+          <MesoTervPage />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    const poster = await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })
+    expect(poster).toHaveTextContent('Pihenőhét')
+    expect(poster).not.toHaveTextContent(/deload/i)
+  })
 })
 
 test('the poster carries ONE plain sentence: where you are, what it weighs, when the pihenőhét lands', () => {
@@ -185,9 +246,12 @@ test('the kalauz anchor sits on the dest row, which always renders', () => {
   expect(container.querySelector('[data-kalauz-anchor="mesociklus-mosaic"]')).not.toBeNull()
 })
 
-// Loading skeleton (mezo-f2z) — real mode shows the MesocycleSkeleton (role="status")
-// while the meso/today queries are unresolved (workoutPending, which drives `mesocycles`);
-// mock seeds → no skeleton.
+// Loading skeleton (mezo-f2z; re-shaped T9 fix round 1) — real mode shows the
+// layout-aware MesoTervSkeleton (role="status"), which mirrors THIS page's own
+// poster → day-rows → dest-tiles anatomy, not the deleted library's page-header/
+// card-list shape (`MesocycleSkeleton` — still correct, but now only for
+// MesoKonyvtarPage) — while the meso/today queries are unresolved (workoutPending,
+// which drives `mesocycles`); mock seeds → no skeleton.
 describe('MesoTervPage (real mode, pending)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
@@ -198,7 +262,24 @@ describe('MesoTervPage (real mode, pending)', () => {
       http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
     )
     setup()
-    expect(await screen.findByRole('status')).toBeInTheDocument()
+    const status = await screen.findByRole('status')
+    expect(status).toBeInTheDocument()
+    // The T5 skeleton-test idiom (TrainTodayPage.test.tsx): read every `.sk` placeholder
+    // and check the SHAPE, not just presence — the poster block, the day-card rows, and
+    // the dest tiles, in the real page's own document order.
+    const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
+    // the poster (`.pl-poster`) — one full-width 281px placeholder, derived in
+    // MesoTervSkeleton.tsx next to the real `.pl-poster` CSS it mirrors.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '281px')).toHaveLength(1)
+    // the day-card rows (`.pl-day`) — 5 reserved 126px placeholders.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '126px')).toHaveLength(5)
+    // the two dest tiles (`.pl-dests`/`.pl-dest`) — 115px each.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '115px')).toHaveLength(2)
+    // Order matters — poster → day rows → dest tiles, matching the real document order.
+    const order = sk
+      .map((el) => el.style.height)
+      .filter((h) => ['281px', '126px', '115px'].includes(h))
+    expect(order).toEqual(['281px', '126px', '126px', '126px', '126px', '126px', '115px', '115px'])
   })
 })
 
