@@ -72,3 +72,9 @@ frontend/tests/parity/
 /p7-*.png
 /p7-*.yml
 /vr-qa-*.jpeg
+
+# A prototípusok helyi telepítései SOHA ne kerüljenek verziókövetés alá (mezo-0zznq): egy
+# ilyen jelkapocs a fejlesztői gép absztolút útvonalára mutat, az ArgoCD pedig a repón kívülre
+# mutató jelkapcsot elutasítja — attól MINDEN telepítés csendben leáll, zöld CI és zöld deploy
+# mellett.
+docs/design_2.0/prototypes/**/node_modules
