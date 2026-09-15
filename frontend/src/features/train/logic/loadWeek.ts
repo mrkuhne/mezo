@@ -24,6 +24,7 @@ import { REGION_LABELS, REGION_ORDER, muscleRegion } from '@/features/train/logi
 import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
 import type { WeekZoneRow, WeekZoneStatus } from '@/features/train/logic/weekZone'
 import type { BodyHeat } from '@/features/train/components/BodyMap'
+import type { RunPrescribedSession } from '@/data/train/runningApi'
 
 export type LoadWeek = { doneSets: number; plannedSets: number; percent: number }
 
@@ -89,12 +90,45 @@ export function mapHeat(rows: WeekZoneRow[], mode: MapMode): BodyHeat[] {
   }))
 }
 
+/**
+ * The map's OWN heat — 'done' mode, but honest about what "already worked" means.
+ * `heatRows` folds TONIGHT's plan in (so 'entering' — "today's session crosses the
+ * floor" — is reachable), but that unlogged plan must never inflate a group all the
+ * way to 'over': the map's caption ("ami már dolgozott") promises logged work only,
+ * so 'over' is kept ONLY when the LOGGED-only rows (`doneRows`, no today's plan)
+ * already cross the budget on their own. 'entering' is untouched — mapHeat's own
+ * doneSets===0 collapse already keeps it from firing on a plan with nothing logged.
+ */
+export function mapWeekHeat(doneRows: WeekZoneRow[], heatRows: WeekZoneRow[]): BodyHeat[] {
+  const doneByGroup = new Map(doneRows.map((r) => [r.group, r]))
+  const honestRows = heatRows.map((hr) => {
+    if (hr.status !== 'over') return hr
+    const logged = doneByGroup.get(hr.group)
+    return logged?.status === 'over' ? hr : { ...hr, status: logged?.status ?? 'below' }
+  })
+  return mapHeat(honestRows, 'done')
+}
+
 /** Groups the plan asked for that got zero live work yet — the most actionable list on screen. */
 export function untouchedMuscles(rows: WeekZoneRow[]): Array<{ label: string; plannedSets: number; colorMuscle: string }> {
   return rows
     .filter((r) => r.plannedSets > 0 && r.doneSets === 0)
     .sort((a, b) => b.plannedSets - a.plannedSets || a.label.localeCompare(b.label))
     .map((r) => ({ label: r.label, plannedSets: r.plannedSets, colorMuscle: r.colorMuscle }))
+}
+
+/**
+ * Total run minutes across the week's prescribed sessions — real clock time from every
+ * segment (warmup/work/rest/cooldown alike, sprint's rest included), not just the "work"
+ * slices growthForecast's XP math cares about. A runner-only user's card must count this
+ * alongside sportSlots' minutes, or the headline reads "0 perc sport" while a whole
+ * running plan sits in the week.
+ */
+export function runMinutesForWeek(runSessions: RunPrescribedSession[]): number {
+  return runSessions.reduce(
+    (total, s) => total + Math.round(s.segments.reduce((t, seg) => t + seg.durationSec, 0) / 60),
+    0,
+  )
 }
 
 /** Which region labels the week's sport touched at all — an estimate, never claimed exact. */

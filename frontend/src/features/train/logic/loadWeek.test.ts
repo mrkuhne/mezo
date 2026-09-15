@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { Block } from '@/features/train/logic/trainDayEnergy'
 import type { WeekZoneRow, WeekZoneStatus } from '@/features/train/logic/weekZone'
 import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
+import type { RunPrescribedSession } from '@/data/train/runningApi'
 import {
-  loadGroups, loadWeekTotals, mapHeat, movementWeek, sportReach, untouchedMuscles,
+  loadGroups, loadWeekTotals, mapHeat, mapWeekHeat, movementWeek, runMinutesForWeek,
+  sportReach, untouchedMuscles,
 } from '@/features/train/logic/loadWeek'
 
 // Minimal WeekZoneRow builder — only the fields loadWeek.ts's exports read are meaningful,
@@ -99,6 +101,50 @@ describe('mapHeat — done vs planned honesty', () => {
     const rows = [row({ colorMuscle: 'chest-mid' }), row({ colorMuscle: 'back-wide', plannedSets: 5 })]
     expect(mapHeat(rows, 'done').map((h) => h.token)).toEqual(['chest-mid', 'back-wide'])
     expect(mapHeat(rows, 'planned').map((h) => h.token)).toEqual(['chest-mid', 'back-wide'])
+  })
+})
+
+describe('mapWeekHeat — over must come from LOGGED work, never tonight\'s unlogged plan', () => {
+  it('a group with 0 done and a big today plan does not paint over — or anything at all', () => {
+    const doneRows = [row({ colorMuscle: 'quad', doneSets: 0, status: 'below' })]
+    const heatRows = [row({ colorMuscle: 'quad', doneSets: 0, todaySets: 20, todayBudget: 3, status: 'over' })]
+    expect(mapWeekHeat(doneRows, heatRows)).toEqual([{ token: 'quad', level: 'none' }])
+  })
+  it('a little logged work plus a big today plan is clamped to the LOGGED-only status, not over', () => {
+    const doneRows = [row({ colorMuscle: 'chest-mid', doneSets: 1, doneBudget: 0.3, status: 'below' })]
+    const heatRows = [row({
+      colorMuscle: 'chest-mid', doneSets: 1, doneBudget: 0.3, todaySets: 20, todayBudget: 3, status: 'over',
+    })]
+    expect(mapWeekHeat(doneRows, heatRows)).toEqual([{ token: 'chest-mid', level: 'below' }])
+  })
+  it('over survives when the LOGGED work alone already busts the budget', () => {
+    const doneRows = [row({ colorMuscle: 'back-wide', doneSets: 10, doneBudget: 1.4, status: 'over' })]
+    const heatRows = [row({
+      colorMuscle: 'back-wide', doneSets: 10, doneBudget: 1.4, todaySets: 2, todayBudget: 1.6, status: 'over',
+    })]
+    expect(mapWeekHeat(doneRows, heatRows)).toEqual([{ token: 'back-wide', level: 'over' }])
+  })
+  it('a non-over status (e.g. entering) rides through untouched', () => {
+    const doneRows = [row({ colorMuscle: 'glute', doneSets: 2, status: 'below' })]
+    const heatRows = [row({ colorMuscle: 'glute', doneSets: 2, todaySets: 3, status: 'entering' })]
+    expect(mapWeekHeat(doneRows, heatRows)).toEqual([{ token: 'glute', level: 'entering' }])
+  })
+})
+
+describe('runMinutesForWeek', () => {
+  const session = (over: Partial<RunPrescribedSession>): RunPrescribedSession => ({
+    key: 'r1', dayOfWeek: 2, label: 'Steady', kind: 'steady', rpeTarget: { min: 5, max: 6 }, segments: [],
+    ...over,
+  })
+  it('sums every segment\'s durationSec across every session, in minutes', () => {
+    const total = runMinutesForWeek([
+      session({ segments: [{ type: 'work', durationSec: 1800 }] }), // 30 min
+      session({ key: 'r2', segments: [{ type: 'warmup', durationSec: 300 }, { type: 'work', durationSec: 900 }] }), // 20 min
+    ])
+    expect(total).toBe(50)
+  })
+  it('is 0 with no running sessions at all', () => {
+    expect(runMinutesForWeek([])).toBe(0)
   })
 })
 

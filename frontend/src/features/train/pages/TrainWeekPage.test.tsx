@@ -11,7 +11,8 @@ import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
 import type { WorkoutDetailResponse } from '@/data/train/trainApi'
-import type { MesoDay, WorkoutPlan } from '@/data/types'
+import type { RunningBlockResponse } from '@/data/train/runningApi'
+import type { MesoDay, SportSchedule, WorkoutPlan } from '@/data/types'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -26,23 +27,34 @@ let daysOverride: MesoDay[] | null = null
 // what crosses the MEV floor — a state mock mode has no fixture for (it persists no
 // instances at all). Overriding these two reads is the cheapest honest way to stage it.
 let workoutOverride: WorkoutPlan | null = null
-let weekLogOverride: { details: WorkoutDetailResponse[] } | null = null
+let weekLogOverride: { details: WorkoutDetailResponse[]; pending?: boolean } | null = null
+// The runner-only sport-minutes test needs an empty sport schedule alongside an active
+// running block — mock mode's own fixture always carries a volleyball slot.
+let sportScheduleOverride: SportSchedule | null | undefined = undefined
+let runningBlockOverride: RunningBlockResponse | null = null
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useTrain: (...args: Parameters<typeof actual.useTrain>) => {
       const real = actual.useTrain(...args)
-      if (!daysOverride && !workoutOverride) return real
+      if (!daysOverride && !workoutOverride && sportScheduleOverride === undefined) return real
       return {
         ...real,
         workout: workoutOverride ?? real.workout,
         activeMeso: daysOverride && real.activeMeso ? { ...real.activeMeso, days: daysOverride } : real.activeMeso,
+        sport: sportScheduleOverride !== undefined ? { ...real.sport, schedule: sportScheduleOverride } : real.sport,
       }
+    },
+    useRunning: (...args: Parameters<typeof actual.useRunning>) => {
+      const real = actual.useRunning(...args)
+      return runningBlockOverride ? { ...real, activeRunningBlock: runningBlockOverride } : real
     },
     useWeekMuscleLog: (...args: Parameters<typeof actual.useWeekMuscleLog>) => {
       const real = actual.useWeekMuscleLog(...args)
-      return weekLogOverride ? { ...real, details: weekLogOverride.details } : real
+      return weekLogOverride
+        ? { ...real, details: weekLogOverride.details, pending: weekLogOverride.pending ?? real.pending }
+        : real
     },
   }
 })
@@ -61,6 +73,8 @@ afterEach(() => {
   daysOverride = null
   workoutOverride = null
   weekLogOverride = null
+  sportScheduleOverride = undefined
+  runningBlockOverride = null
 })
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainWeekPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
@@ -229,8 +243,34 @@ test('the Minden mozgásod card opens the Mozgás subscreen', () => {
 
 test('the sport card names the week’s sport minutes and says it is an estimate', () => {
   renderPage()
-  expect(screen.getByText(/perc sport a heti rendben/)).toBeInTheDocument()
+  expect(screen.getByText(/perc sport és futás a heti rendben/)).toBeInTheDocument()
   expect(screen.getByText('Becslés — a szettszámokba nem számít bele.')).toBeInTheDocument()
+})
+
+// A runner-only user has NO sport (volleyball/cross/TRX) slots at all — only a running
+// block. Before the fix, sportMinutes summed sportSlots alone, so the card said "0 perc
+// sport" while `reach` (which DOES read runSessions) still listed the muscles running
+// touches — a number and a sentence disagreeing on screen.
+test('a runner-only week (no sport slots) still counts run minutes and covers both in the headline', () => {
+  sportScheduleOverride = { volleyball: { team: '', sessions: [], season: '', weeklyHours: 0 } }
+  runningBlockOverride = {
+    id: 'rb-runner-only', title: 'Base', kind: 'interval', status: 'active',
+    startDate: '2026-05-18', endDate: '2026-06-29', weeks: 6, currentWeek: 1,
+    structure: {
+      weeks: [{
+        weekNumber: 1, phaseLabel: 'Base',
+        sessions: [{
+          key: 'run-1', dayOfWeek: 2, label: 'Steady', kind: 'steady',
+          rpeTarget: { min: 5, max: 6 },
+          segments: [{ type: 'work', durationSec: 1800 }],
+        }],
+      }],
+    },
+  } as unknown as RunningBlockResponse
+  renderPage()
+  // 1800s of work = 30 minutes, and no sport slots at all — the number must be run-only,
+  // and the headline must not claim "sport" alone when it is really futás doing the work.
+  expect(screen.getByText('30 perc sport és futás a heti rendben')).toBeInTheDocument()
 })
 
 test('the Mezociklus áttekintő chip navigates to the overview (mezo-hi9m)', () => {
@@ -345,4 +385,23 @@ test('the skeleton mirrors the new order: hero, one map card, group cards, no da
   expect(container.querySelectorAll('.sk').length).toBeGreaterThan(8)
   // the retired face promised seven day cards + three load tiles; neither may survive here
   expect(container.querySelectorAll('.card')).not.toHaveLength(7)
+})
+
+// weekLog.pending must gate too (ActiveWorkoutPage.tsx :778 precedent) — without it, real
+// mode draws a 0% hero and speaks "a hét még előtted van" while the week's own detail
+// fetches are still in flight, then jumps once they land: a loading week rendering as an
+// EMPTY week, then silently becoming a different week under the reader's eyes.
+test('the week log still loading renders the skeleton, not a fabricated 0% hero', () => {
+  weekLogOverride = { details: [], pending: true }
+  const { container } = renderPage()
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
+  expect(container.querySelector('.ld-hero')).toBeNull()
+  expect(screen.queryByText('A hét még előtted van: eddig egyetlen szett sem ment le.')).toBeNull()
+})
+
+test('the week log resolving renders the real hero, not the skeleton', async () => {
+  weekLogOverride = { details: [], pending: false }
+  renderPage()
+  await screen.findByText(/szett a \d+-ből/)
+  expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull()
 })

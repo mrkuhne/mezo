@@ -400,6 +400,36 @@ test('real mode renders the today card and agenda from the active meso + /today'
   expect(await screen.findByText('~23 perc')).toBeInTheDocument()
 })
 
+// The Task 3 (Terhelés reface) test-migration table cited this page's Kész-hero test (:805,
+// TODAY's own completed instance) as the review-routing home for the retired Heti test "a
+// weekly gym row completed this week on ANOTHER date routes to its review, not a restart" —
+// but that is a DIFFERENT code path (`completedTodayWorkout`, not `gymDayTarget`). The actual
+// pulled-forward-to-another-date routing decision only ever had unit coverage
+// (`gymDayTarget.test.ts` :16 — "a template day completed this week... routes to its review,
+// even pulled forward to another date"); nothing at the PAGE level proved the non-today
+// card's CTA actually fires it. Restored here (fix round 1, migration accounting).
+test('real mode: a non-today gym day completed this week (pulled forward) routes to its review', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const otherDayLabel = DAY_ORDER[(todayIdx + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/workouts`, () =>
+      HttpResponse.json([
+        { id: 'w-pulled', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
+      ]),
+    ),
+  )
+  renderView()
+  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) }))
+  fireEvent.click(await screen.findByRole('button', { name: /Kezdjük el/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
+})
+
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(

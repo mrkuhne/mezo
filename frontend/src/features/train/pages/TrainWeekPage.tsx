@@ -34,7 +34,10 @@
 //     happened yet (the prototype's own reading: done vs. the week's ask).
 //   · `heatRows` — the same week PLUS today's plan. Only the body map needs it:
 //     without `todayPlan` the 'entering' status ("today's session crosses the
-//     floor") is unreachable, and the map would have no way to say it.
+//     floor") is unreachable, and the map would have no way to say it. mapWeekHeat
+//     (loadWeek.ts) folds the two back together honestly: 'over' is kept ONLY when
+//     `doneRows` alone already crosses the budget — the map's own caption ("ami már
+//     dolgozott") must never be inflated by tonight's still-unlogged plan.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -54,7 +57,7 @@ import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import {
-  loadGroups, loadWeekTotals, mapHeat, sportReach, untouchedMuscles,
+  loadGroups, loadWeekTotals, mapWeekHeat, runMinutesForWeek, sportReach, untouchedMuscles,
   type LoadGroupRow, type LoadWeek,
 } from '@/features/train/logic/loadWeek'
 import { budgetGroup } from '@/features/train/logic/setBudget'
@@ -120,7 +123,7 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
                 <span className="ld-glass-name">
                   <strong>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</strong>
                   <small>
-                    {r.workingSets} szett · {r.repMinTotal}–{r.repMaxTotal} ismétlés · {r.gymFrequency}×/hét
+                    {r.workingSets} szett · {r.repMinTotal}–{r.repMaxTotal} ismétlés · {r.gymFrequency}×/hét — a heti tervből
                   </small>
                   {sources.length > 0 && (
                     <span className="ld-glass-chips">
@@ -170,7 +173,11 @@ export function TrainWeekPage() {
   // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots.
   const [gymOverride, setGymOverride] = useState<GymScheduleSlot[] | null>(null)
 
-  if (workoutPending || runningPending) return <TrainWeekSkeleton />
+  // weekLog.pending must gate too (ActiveWorkoutPage.tsx :778 precedent) — without it, real
+  // mode draws a 0% hero and speaks "a hét még előtted van" while the (up to 7) per-day
+  // detail fetches are still in flight, then jumps once they land. A loading week is not an
+  // empty week.
+  if (workoutPending || runningPending || weekLog.pending) return <TrainWeekSkeleton />
 
   if (!activeMeso) {
     return (
@@ -207,9 +214,12 @@ export function TrainWeekPage() {
   const totals = loadWeekTotals(doneRows)
   const groups = loadGroups(doneRows)
   const waiting = untouchedMuscles(doneRows)
-  const heat = mapHeat(heatRows, 'done')
+  const heat = mapWeekHeat(doneRows, heatRows)
   const reach = sportReach(sportLoadForWeek(sportSlots, runSessions))
-  const sportMinutes = sportSlots.reduce((total, s) => total + (s.duration ?? 0), 0)
+  // Sport AND run minutes, together — a runner-only user (no volleyball/cross/TRX slots)
+  // still has a whole running plan in the week; counting sportSlots alone would say
+  // "0 perc sport" while reach still lists the muscles running touches.
+  const sportMinutes = sportSlots.reduce((total, s) => total + (s.duration ?? 0), 0) + runMinutesForWeek(runSessions)
 
   // Medals earned within this Mon–Sun week (weekDateIso is ISO, so lexical comparison
   // sorts correctly) — a real, always-defined count (0 is honest).
@@ -287,7 +297,6 @@ export function TrainWeekPage() {
                 key={g.group}
                 type="button"
                 className="ld-group rise"
-                data-status={g.status}
                 data-plan={planOverGroups.has(g.group) ? 'over' : undefined}
                 style={{
                   '--mus-color': muscleColor(g.colorMuscle).rail,
@@ -320,7 +329,7 @@ export function TrainWeekPage() {
               <section className="ld-sport rise" style={{ '--d': '380ms' } as CSSProperties}>
                 <span className="ld-sport-art"><ClayIcon name="i-sport" size={30} /></span>
                 <span className="ld-sport-copy">
-                  <strong>{sportMinutes} perc sport a heti rendben</strong>
+                  <strong>{sportMinutes} perc sport és futás a heti rendben</strong>
                   <small>
                     {reach.length > 0
                       ? `Ezeket is dolgoztatja: ${reach.join(', ')}.`
