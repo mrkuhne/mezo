@@ -3,7 +3,14 @@ import { mezoContent, mezoDetail, initMezo } from './mezo.js';
 import { openFood, initFood } from './food.js';
 import { animateFuelDashboard, fuelDashboardContent } from './fuel-dashboard.js';
 import { fuelPagesContent, initFuelPages } from './fuel-pages.js';
-import { openWorkout, workoutContent, initWorkout } from './workout.js';
+import { workoutContent, initWorkout } from './workout.js';
+import { openSession, initSession } from './session.js';
+import { openSport, initSport } from './sport.js';
+import { trainPagesContent } from './train-pages.js';
+import { planHasOwnHead, animatePlan } from './plan-pages.js';
+import { initPlanWizard } from './plan-wizard.js';
+import { initLoad } from './load-pages.js';
+import { initGyak } from './gyak-pages.js';
 import { openSheet, closeSheet, react, toast, safe, icon } from './nap.js';
 import { initialNavigation, resolveRoute, rememberRoute } from './navigation-state.js';
 import { createDayNavigation, dayDescriptor, dayRoute, swipeDayDelta } from './day-navigation-state.js';
@@ -11,7 +18,7 @@ import { dayFrame } from './life-ui.js';
 const $=s=>document.querySelector(s);
 const domains={
  nap:{name:'Nap',color:'#d9c395',art:'sun',tabs:['Mai','Beszélgetés','Rutin','Napzárás'],icons:['sun','chat','ring','moon'],greeting:'Jó itt folytatni, Dani.',copy:'A délelőtt mögötted. Beszéljük át, mi fér ma bele.'},
- train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terhelés','Napló','Tervek'],icons:['dumbbell','bolt','book','stack'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
+ train:{name:'Edzés',color:'#c8e895',art:'dumbbell',tabs:['Mai','Terv','Terhelés','Gyakorlatok'],icons:['dumbbell','stack','ring','book'],greeting:'Erőt építünk.',copy:'Ma felsőtest. Nézzünk rá együtt, mennyi fér bele.'},
  fuel:{name:'Fuel',color:'#8ed2e8',art:'bowl',tabs:['Mai','Konyha','Trendek','Kiegészítők'],icons:['plate','pot','trend','supps'],order:[0,3,2,1],greeting:'Van miből építkezned.',copy:'Az étkezésed és a mozgásod egy nap része. Segítek összehangolni.'},
  mezo:{name:'Mezo',color:'#bca6f1',art:'gem',tabs:['Felfedezések','Előrejelzések','Karakter','Tudástár'],icons:['gem','sun','person','stack'],greeting:'Összeérnek a dolgok.',copy:'Van egy új észrevételem az estéidről. Megnézzük együtt?'},
  me:{name:'Én',color:'#d7a7bc',art:'person',tabs:['Áttekintés','Súly','Alvás','Napló'],icons:['person','ring','moon','book'],greeting:'A te ritmusod.',copy:'Súly, alvás, mozgás. Az egész történetet nézzük, együtt.'},
@@ -33,16 +40,11 @@ function content(d,p,date){
  const mezoPage=mezoContent(d,p);if(mezoPage!==null)return mezoPage;
  const fuelDashboard=fuelDashboardContent(d,p,date);if(fuelDashboard!==null)return fuelDashboard;
  const fuelPage=fuelPagesContent(d,p);if(fuelPage!==null)return fuelPage;
- const detailed=workoutContent(d,p,date);if(detailed!==null)return detailed;
+ const trainPage=trainPagesContent(d,p,date);if(trainPage!==null)return trainPage;
  if(d==='nap')return [ '',
  `<div class="chat-bubble"><span class="chat-time">MEZO · MA</span>Ma 17:00-kor Felsőtest A vár. A napod első fele mögötted — az edzésről beszéljünk, vagy arról, hogy vagy?</div><details class="context"><summary>Miből indulok ki?</summary><p>7 óra 42 perc alvás · mai felsőtest · 1 180 kcal eddig · fokozatos erőépítés.</p><p>Karakter · szereted előre látni a napod menetét. Ez egy javítható mintaértelmezés.</p><small>Bemutatókontextus, nem személyes adatlekérés.</small></details><button class="sheet-action" data-voice>Elmondom, mi jár a fejemben</button>${row('book','Inkább leírom','Új naplóbejegyzés','data-open="journal"')}`,
  card('A RUTINOD','2 / 4 lépés','A rendszeresség megtart.','ring','data-open="routine"')+row('sun','Reggeli fény','Egy kis idő a szabadban','data-open="routine"')+row('moon','Esti lecsendesedés','Lassan helyére kerül a nap','data-open="routine"'),
  card('ESTI MEGÉRKEZÉS','Mára elég.','Tedd le, ami ma benned maradt.','moon','data-open="ritual"')+row('book','A mai gondolataid','Vidd magaddal, ami számított','data-open="journal"')][p];
- if(d==='train')return [
- card('17:00 · 3. HÉT / 6','Felsőtest A','3 gyakorlat · 9 munkasorozat','dumbbell','data-workout')+stats([['9','tervezett szett'],['2 RIR','tartalék'],['45′','becsült idő']])+row('dumbbell','Edzés indítása','Súly · ismétlés · RIR','data-workout')+row('bolt','Röplabda logolása','Időtartam és megélt terhelés','data-sport')+row('ring','Heti terhelés','Gym + sport együtt',jump('train',1)),
- card('EZ A HETED','Építkezésben','A kész volumen és a hátralévő terv együtt.','bolt',detail('A terhelés forrásai','A gym szettek logolt adatok. A sport izomterhelése becslés. Az AI-mondat ebben a prototípusban mintaszöveg.'))+bars([['Mell','6 / 12 szett',50],['Hát','9 / 14 szett',64],['Váll','4 / 8 szett',50],['Láb','8 / 12 szett',67]])+`<div class="chat-bubble">A röplabda is terheli a vállad. A gym volumenét a sporttal és a regenerációval együtt érdemes néznünk.<span class="chat-time">DEMO · SPORTTERHELÉS: BECSLÉS</span></div>`+row('moon','Regeneráció','7 óra 42 perc alvás',jump('me',2)),
- row('dumbbell','Hétfő · Felsőtest B','12 szett · 48 perc',detail('Felsőtest B','Fekvenyomás 3 × 10 · 60 kg. Evezés 3 × 12 · 45 kg. Mintaedzés.','dumbbell'))+row('bolt','Kedd · Röplabda','90 perc · RPE 7',detail('Röplabda','90 perc edzés · terhelés 7 / 10. Mintaadat.','bolt'))+row('dumbbell','Ma · Felsőtest A','Még előtted áll','data-workout'),
- card('AKTÍV MEZOCIKLUS','Alapból erő','3. hét / 6 · hypertrophy','stack',detail('Alapból erő','Hat hét, heti három gym nap. Aktív mezociklus és heti volumenív bemutató.','stack'))+row('stack','Mezociklusok és sablonok','Aktív, tervezett és lezárt ciklusok',detail('Mezociklusok','Alapból erő · aktív. Felső / alsó · sablon. Új ciklus építése itt kap helyet.'))+row('bolt','Sporttervek','Röplabda · futóblokkok',detail('Sporttervek','Kedd és csütörtök 18:00 · Röplabda. Futóblokkok és sportbeosztások egy helyen.'))+row('dumbbell','Gyakorlatkatalógus','Böngészés és saját gyakorlatok',detail('Gyakorlatok','Fekvenyomás · Evezés · Vállból nyomás. A választó az edzésszerkesztőből is elérhető.'))][p];
  if(d==='mezo')return [
  card('EGY ÚJ ÉSZREVÉTEL','Az estéd számít.','A késői étkezés és az alvás együtt változhat.','gem',detail('Az estéd számít','Minta: együttjárás, nem bizonyított ok. Innen nyílna a bizonyíték, a visszajelzés és a kapcsolódó kísérlet.'))+row('ring','Minták','Amit figyelünk és amit megerősítettél',detail('Minták','Késői étkezés × alvásminőség · megfigyelés alatt. Sport × alvás · még gyűlik az adat.'))+row('chat','Járjunk utána','Miért vagyok fáradt?',detail('Járjunk utána','Alvás, terhelés és étkezés: lehetséges magyarázatok és kipróbálható változtatások.'))+row('bolt','Kísérletek','Egy változtatás, követhető eredmény',detail('Korábbi vacsora','7 napos mintakísérlet · 3. nap. Itt látnád az eredményt és a kapcsolódó mintát.')),
  card('A KÖVETKEZŐ NAPOK','Több tér a pihenésnek','Egy előrejelzés, amit később visszanézünk.','sun',detail('Előrejelzés','Demófeltevés: a korábbi vacsorákkal az alvásminőség javulhat. Még nem értékelt.'))+row('ring','Korábbi előrejelzések','Mi vált be, és mi nem?',detail('Visszamérés','Az előrejelzés mellett a tényleges eredményt is megmutatjuk.')),
@@ -58,34 +60,61 @@ function go(d,p){const h=`#${d}/${p}`;if(location.hash===h)draw();else location.
 function arrivalFor(domain,cfg,date){if(date===dayNav.max)return personalArrival(domain)||cfg;const label=dayDescriptor(date,dayNav.max).label;if(domain==='train')return {greeting:'Itt volt a mozgásod.',copy:date==='2026-09-08'?'Ezen a napon röplabdáztál. A terhelés és a regeneráció együtt marad előtted.':date==='2026-09-07'?'Ezen a napon egy teljes testes edzést zártál le.':'Ezen a napon nincs naplózott edzésed.'};if(domain==='fuel')return {greeting:'Ilyen volt a tányérod.',copy:`${label} étkezései, makrói és mozgása egy napi történetben.`};return personalArrival(domain)||cfg;}
 function draw(){
  route=resolveRoute(location.hash);rememberRoute(memory,route.domain,route.page);const {domain:d,page:p}=route,cfg=domains[d];
- $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+(cfg.order??cfg.tabs.map((_,i)=>i)).map(i=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${cfg.tabs[i]}</span></button>`).join('');
+ $('.device').classList.toggle('in-night',d==='me'&&location.hash.split('/')[2]==='night');$('.avatar').firstChild.textContent=personalInitial();$('.device').style.setProperty('--domain-color',cfg.color);$('.tabbar').innerHTML=`<button class="domain-switch" aria-label="Területváltó: ${cfg.name}" aria-haspopup="dialog" data-switch>${mini}<span>${cfg.name} <b>⌃</b></span></button>`+cfg.tabs.map((label,i)=>`<button class="tab ${p===i?'active':''}" data-route="${d}/${i}" ${p===i?'aria-current="page"':''}>${icon(cfg.icons[i])}<span>${label}</span></button>`).join('');
  $('.tabbar').setAttribute('aria-label',`${cfg.name} menü`);original.hidden=true;panel.hidden=false;const view=location.hash.slice(1).split('/')[2]||'',raw=content(d,p,dayNav.date);panel.innerHTML=dayRoute(d,p,view)?dayFrame(raw,dayNav.date,dayNav.max,dayMotion):raw;dayMotion='';
- if(d==='fuel')animateFuelDashboard(panel);
+ if(d==='fuel'||d==='train')animateFuelDashboard(panel);
+ if(d==='train'&&p>=1)animatePlan(panel);
  // Owner decision 2026-09-11: no 3D companion on any Fuel page — the arrival stays hidden there.
- $('.arrival').hidden=p!==0||d==='fuel'||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
+ $('.arrival').hidden=p!==0||d==='fuel'||d==='train'||mezoDetail()||personalDetail();$('.arrival').classList.toggle('compact',d==='train');$('.arrival').classList.toggle('fuel-compact',d==='fuel');
  if(p===0){const dated=['train','fuel'].includes(d),date=dated?dayNav.date:dayNav.max,arrival=arrivalFor(d,cfg,date);$('.arrival .date').textContent=dayDescriptor(date,dayNav.max).label.toLocaleUpperCase('hu-HU');$('#greeting').textContent=arrival.greeting;$('#hero-message').textContent=arrival.copy;}
  // Életjel-aura: Nap/Mai-on a társ fényét a saját jelzéseid színezik; koppintva nyílnak az életjelek.
  const auraOn=d==='nap'&&p===0&&!personalDetail();$('.arrival').classList.toggle('has-aura',auraOn);
  if(auraOn){const aura=needsAura();$('.arrival').style.setProperty('--aura-water',aura.water);$('.arrival').style.setProperty('--aura-sleep',aura.sleep);$('.arrival').style.setProperty('--aura-energy',aura.energy);$('.presence').innerHTML=`<span class="presence-dot"></span> VELED VAGYOK · <button class="presence-signals" data-life="nap/0/signals">ÉLETJELEK ↗</button>`;}
  else $('.presence').innerHTML='<span class="presence-dot"></span> VELED VAGYOK';
- if(!['mezo','me','nap'].includes(d)&&!(d==='fuel'&&view))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ // Subpage header (owner decision 2026-09-15, option A): the poster is the first thing on
+ // every train subpage — no big tab title, the back pill lives inside the hero.
+ // Owner 2026-09-15: the train tab carries no page heading anywhere — the posters name the place.
+ if(!['mezo','me','nap','train'].includes(d)&&!(d==='fuel'&&view))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ if(d==='train'&&view)dockBackIntoHero();
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
+function dockBackIntoHero(){
+ const back=panel.querySelector('.pl-back');if(!back)return;
+ const hero=panel.querySelector('.pl-dhero,.pl-poster,.ld-hero,.mm-head');
+ if(hero){hero.prepend(back);back.classList.add('is-inhero');}
+}
 function moveDay(amount){if(!dayNav.shift(amount))return;dayMotion=amount>0?'left':'right';draw();}
+let infoLayer=null;
+const infoClose=()=>{infoLayer?.remove();infoLayer=null;};
+// Every ⓘ opens the workout-style 3D glass, never the drawer (owner call 2026-09-15).
+function infoGlass(title,copy,art){
+ infoClose();closeSheet();
+ infoLayer=document.createElement('div');infoLayer.className='ld-glass-layer';
+ infoLayer.innerHTML=`<div class="wo-glass" data-glass style="--ex-color:#bca6f1"><div class="wo-glass-card" role="dialog" aria-label="${safe(title)}">
+  <header class="wo-glass-head">${icon(art)}<div><small>MEZO · RÉSZLET</small><strong>${safe(title)}</strong></div>
+  <button data-glass-close aria-label="Bezárás">×</button></header>
+  <p class="info-glass-copy">${safe(copy)}</p></div></div>`;
+ document.querySelector('.device').append(infoLayer);
+ infoLayer.addEventListener('click',e=>{if(e.target.closest('[data-glass-close]')||!e.target.closest('.wo-glass-card'))infoClose();});
+ infoLayer.querySelector('[data-glass-close]').focus();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&infoLayer)infoClose();});
+window.addEventListener('hashchange',infoClose);
 function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading;$('#sheet-body').innerHTML=html;$('#sheet').showModal();}
 function voice(){react('connect');dialog('MEZO · MŰVELETPRÓBA',`${mini}<h2 class="sheet-title">Mondd, és indulunk.</h2><p class="sheet-sub">Válassz egy mintamondatot, vagy írd át. Ez a demó nem rögzít hangot és nem hív valódi AI-t.</p><div class="voice-examples">${[['food','Logolj AI-értékeléssel egy joghurtot és egy banánt.'],['workout','Indítsuk az edzést.'],['journal','Szeretnék naplóbejegyzést írni.']].map(([id,t])=>`<button data-example="${id}">${mic}<span>${t}</span></button>`).join('')}</div><form id="voice-form"><label class="form-field">A mondatod<textarea name="command" required>Logolj AI-értékeléssel egy joghurtot és egy banánt.</textarea></label><button class="sheet-action">Mutasd, hova viszel ↗</button></form>`);}
 document.addEventListener('click',e=>{
  const el=e.target.closest('button');if(!el)return;
  if(el.dataset.dayShift){moveDay(Number(el.dataset.dayShift));return;}
  if(el.hasAttribute('data-day-today')){if(dayNav.today()){dayMotion='right';draw();}return;}
- if(el.hasAttribute('data-route')){closeSheet();const [d,p]=el.dataset.route.split('/');go(d,Number(p));}
+ if(el.hasAttribute('data-route')){closeSheet();const parts=el.dataset.route.split('/');if(parts.length>2){const h='#'+el.dataset.route;if(location.hash===h)draw();else location.hash=h;}else go(parts[0],Number(parts[1]));}
  if(el.hasAttribute('data-switch'))dialog('MERRE MENJÜNK?',`<h2 class="sheet-title">Egy társ. Öt világ.</h2><div class="domain-list">${Object.entries(domains).map(([d,c])=>`<button style="--domain-color:${c.color}" data-route="${d}/${memory[d]}" ${d===route.domain?'aria-current="true"':''}>${icon(c.art)}<span><strong>${c.name}</strong><small>${(c.order??c.tabs.map((_,i)=>i)).map(i=>c.tabs[i]).join(' · ')}</small></span><b>${d===route.domain?'✓':'↗'}</b></button>`).join('')}</div>`);
  if(el.hasAttribute('data-voice'))voice();
  if(el.dataset.example){const examples={food:'Logolj AI-értékeléssel egy joghurtot és egy banánt.',workout:'Indítsuk az edzést.',journal:'Szeretnék naplóbejegyzést írni.'};$('#voice-form [name=command]').value=examples[el.dataset.example];}
- if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openWorkout();
- if(el.hasAttribute('data-sport'))dialog('RÖPLABDA · DEMÓ',`<h2 class="sheet-title">A pályán töltött idő.</h2><form id="sport-form"><label class="form-field">Időtartam (perc)<input type="number" name="minutes" min="1" value="90" required></label><label class="form-field">Terhelés (1–10)<input type="number" name="rpe" min="1" max="10" value="7" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
+ if(el.hasAttribute('data-food'))openFood();if(el.hasAttribute('data-workout'))openSession();
+ if(el.hasAttribute('data-sport'))openSport();
+ if(el.hasAttribute('data-custom'))dialog('EGYEDI EDZÉS · DEMÓ',`<h2 class="sheet-title">Terv nélkül, most.</h2><p class="sheet-sub">Egy saját edzés, ami nem a futó blokkod része. Elmentve később bármikor újraindítható.</p><form id="custom-form"><label class="form-field">Az edzés neve<input name="name" value="Szabad edzés" maxlength="40" required></label><button class="sheet-action">Indítom ▸</button></form>`);
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
- if(el.dataset.detail)dialog('MEZO · RÉSZLET DEMÓ',`${icon(el.dataset.art||'gem')}<h2 class="sheet-title">${safe(el.dataset.detail)}</h2><p class="sheet-sub">${safe(el.dataset.copy)}</p>`);
+ if(el.dataset.detail)infoGlass(el.dataset.detail,el.dataset.copy,el.dataset.art||'gem');
 });
 document.addEventListener('change',e=>{if(!e.target.matches('[data-day-picker]'))return;const previous=dayNav.date;if(dayNav.select(e.target.value)){dayMotion=e.target.value>previous?'left':'right';draw();}});
 let swipe=null;
@@ -101,15 +130,21 @@ document.addEventListener('submit',e=>{
  const form=e.target,data=new FormData(form);
  if(form.id==='voice-form'){e.preventDefault();const command=String(data.get('command')).trim();const s=command.toLocaleLowerCase('hu');
  if(/joghurt|banán|étkez|kaj|ebéd/.test(s)){closeSheet();go('fuel',0);openFood(command);toast('Átvittelek az étkezési AI-logolás demójába.');}
- else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openWorkout();toast('Itt a mai edzésed.');}
+ else if(/edzés|edzést/.test(s)){closeSheet();go('train',0);openSession();toast('Itt a mai edzésed.');}
  else if(/napló/.test(s)){closeSheet();const note=command.split(':').slice(1).join(':').trim();openPersonalJournal(note);toast('Megnyitottam a naplódat.');}
  else {let hint=$('#voice-hint');if(!hint){hint=document.createElement('p');hint.id='voice-hint';hint.className='quiet';form.append(hint);}hint.textContent='Ez a demó az étkezés, edzésindítás és napló három példáját ismeri. Válassz egy mintamondatot.';}}
- if(form.id==='sport-form'||form.id==='weight-form'){e.preventDefault();const message=form.id==='sport-form'?`Röplabda · ${data.get('minutes')} perc · RPE ${data.get('rpe')}`:`Súly · ${data.get('weight')} kg`;closeSheet();toast(message+' · demóbejegyzés');react('connect');}
+ if(form.id==='sport-form'||form.id==='weight-form'){e.preventDefault();const message=form.id==='sport-form'?`${data.get('kind')} · ${data.get('minutes')} perc · RPE ${data.get('rpe')}`:`Súly · ${data.get('weight')} kg`;closeSheet();toast(message+' · demóbejegyzés');react('connect');}
+ if(form.id==='custom-form'){e.preventDefault();closeSheet();openSession();toast(`${data.get('name')} · a demóban a mintaedzés indul`);}
 });
 document.addEventListener('mezo:day-render',()=>{if(route.domain!=='nap'){const cfg=domains[route.domain];$('#greeting').textContent=cfg.greeting;$('#hero-message').textContent=cfg.copy;}});
 initWorkout({refresh:draw,go,detail:(name,copy)=>dialog('TERHELÉS · FORRÁSOK',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
+initSession({refresh:draw,go,dialog,closeSheet});
+initSport({refresh:draw,go,dialog,closeSheet});
 initFood({refresh:draw,go,detail:(name,copy)=>dialog('FUEL · A KERETED',`<h2 class="sheet-title">${safe(name)}</h2><p class="sheet-sub">${safe(copy)}</p>`)});
 initFuelPages({refresh:draw,go,dialog,closeSheet});
+initPlanWizard({dialog,closeSheet});
+initLoad();
+initGyak();
 initMezo({refresh:draw});
 initPersonal({refresh:draw});
 $('#restart').addEventListener('click',()=>{dayNav=createDayNavigation('2026-09-09');dayMotion='';draw();});

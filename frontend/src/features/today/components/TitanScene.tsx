@@ -43,7 +43,12 @@ const MAX_PIXEL_RATIO = 1.75
 /** Embed-kamera: a Nap-oldalon a prototípus iframe-je is ezt az állást mutatja. */
 const EMBED_CAMERA_Z = 7.8
 
-export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
+export function TitanScene({ mode = 'listen', decorations = true, onReady, onUnavailable }: {
+  mode?: TitanMode
+  decorations?: boolean
+  onReady?: () => void
+  onUnavailable?: () => void
+}) {
   // `<span>`, nem `<div>`: a jelenet a TitanCompanion `<button>`-jén BELÜL él, oda pedig
   // blokk-szintű elem nem kerülhet (érvénytelen HTML, a React is figyelmeztetne rá).
   const hostRef = useRef<HTMLSpanElement>(null)
@@ -56,8 +61,8 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
     } catch {
-      // WebGL-t a hívó már ellenőrizte; ha mégis elszáll, a társ egyszerűen üres marad
-      // (a TitanCompanion aurája és gombja változatlanul ott van körülötte).
+      // Startup switches to its terminal fallback; other callers retain their aura/button.
+      onUnavailable?.()
       return
     }
 
@@ -207,7 +212,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       track(new THREE.MeshBasicMaterial({ color: '#e8ba7b' })),
     )
     coreRing.rotation.set(0.2, 0.35, 0.2)
-    group.add(coreRing)
+    if (decorations) group.add(coreRing)
 
     // ── A pálya-síkok a forgó titán testtől FÜGGETLENÜL mozognak.
     const orbits: THREE.Group[] = []
@@ -215,7 +220,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     const orbitSystem = new THREE.Group()
     scene.add(orbitSystem)
     const orbitColors = ['#c8a571', '#b6a0e4', '#91cbd8', '#c4b4cd']
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < (decorations ? 4 : 0); i++) {
       const orbit = new THREE.Group()
       orbit.rotation.set(0.9 + i * 0.65, 0.3 + i * 0.7, 0.3 - i * 0.8)
       orbit.add(new THREE.Mesh(
@@ -237,7 +242,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       }
     }
 
-    const particleCount = 110
+    const particleCount = decorations ? 110 : 0
     const particles = track(new THREE.BufferGeometry())
     const particlePositions = new Float32Array(particleCount * 3)
     const seeds: { angle: number; radius: number; z: number; speed: number }[] = []
@@ -249,13 +254,13 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       color: '#d7bbf9', size: 0.016, transparent: true, opacity: 0.5,
       blending: THREE.AdditiveBlending, depthWrite: false,
     }))
-    group.add(new THREE.Points(particles, pointsMat))
+    if (decorations) group.add(new THREE.Points(particles, pointsMat))
     const pulse = new THREE.Mesh(
       track(new THREE.RingGeometry(0.99, 1.005, 160)),
       track(new THREE.MeshBasicMaterial({ color: '#f0c988', transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })),
     )
     pulse.position.z = -0.35
-    group.add(pulse)
+    if (decorations) group.add(pulse)
 
     // ── Sötét, tükröződőnek látszó tócsa: horgonyt ad a lebegő formának talapzat nélkül.
     const glowCanvas = document.createElement('canvas')
@@ -274,7 +279,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       track(new THREE.MeshBasicMaterial({ map: track(new THREE.CanvasTexture(glowCanvas)), transparent: true, depthWrite: false })),
     )
     ground.position.set(0, -2.06, -0.4)
-    scene.add(ground)
+    if (decorations) scene.add(ground)
 
     // FIGYELEM (mezo-mhum javítóhullám): az `EffectComposer.dispose()` a three 0.180-ban CSAK a
     // saját két írás/olvasás pufferét szabadítja fel — a hozzáadott passzokhoz HOZZÁ SEM NYÚL.
@@ -309,6 +314,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     let last = performance.now()
     let time = 0, orbitTime = 0, burst = 0
     const energy = 0.55
+    let announced = false
 
     function frame(now: number) {
       raf = requestAnimationFrame(frame)
@@ -375,6 +381,10 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       pulse.scale.setScalar(1 + (1 - burst) * 2.2)
       pulse.material.opacity = 0
       composer.render()
+      if (!announced && host!.clientWidth > 0 && host!.clientHeight > 0) {
+        announced = true
+        onReady?.()
+      }
     }
 
     // A hurok TÉNYLEG áll, amíg a lap háttérben van — a prototípus csak a rajzolást hagyta
@@ -383,7 +393,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
     const stop = () => { if (raf) { cancelAnimationFrame(raf); raf = 0 } }
     const onVisibility = () => { if (document.hidden) stop(); else start() }
     const onReduced = (e: MediaQueryListEvent) => { paused = e.matches }
-    const onContextLost = (e: Event) => { e.preventDefault(); lost = true; stop() }
+    const onContextLost = (e: Event) => { e.preventDefault(); lost = true; stop(); onUnavailable?.() }
 
     document.addEventListener('visibilitychange', onVisibility)
     reduced?.addEventListener('change', onReduced)
@@ -404,7 +414,7 @@ export function TitanScene({ mode = 'listen' }: { mode?: TitanMode }) {
       renderer.dispose()
       renderer.forceContextLoss()
     }
-  }, [mode])
+  }, [mode, decorations, onReady, onUnavailable])
 
   return <span className="titan-scene" ref={hostRef} aria-hidden="true" />
 }

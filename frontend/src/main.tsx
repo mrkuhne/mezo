@@ -2,6 +2,7 @@ import { StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/app/ThemeProvider'
+import { StartupSplash } from '@/app/StartupSplash'
 import { QueryProvider } from '@/app/providers/QueryProvider'
 import { routes } from '@/app/router'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
@@ -26,14 +27,16 @@ createRoot(document.getElementById('root')!).render(
     >
       <QueryProvider>
         <ThemeProvider>
-          {/* App-root boundary for the FIRST lazily-loaded chunk (mezo-d5iy.9): AdminLayout
-              itself is behind a React.lazy(), so a Suspense mounted only inside it can't
-              cover its own load — this one catches the gap between navigating to /admin
-              and that chunk (plus every other lazy admin page) arriving. Every non-admin
-              route already renders synchronously, so this fallback is otherwise inert. */}
-          <Suspense fallback={<div className="ad-loading">Betöltés…</div>}>
-            <RouterProvider router={router} />
-          </Suspense>
+          <StartupSplash>
+            {/* App-root boundary for the FIRST lazily-loaded chunk (mezo-d5iy.9): AdminLayout
+                itself is behind a React.lazy(), so a Suspense mounted only inside it can't
+                cover its own load — this one catches the gap between navigating to /admin
+                and that chunk (plus every other lazy admin page) arriving. Every non-admin
+                route already renders synchronously, so this fallback is otherwise inert. */}
+            <Suspense fallback={<div className="ad-loading">Betöltés…</div>}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </StartupSplash>
         </ThemeProvider>
       </QueryProvider>
     </ErrorBoundary>
