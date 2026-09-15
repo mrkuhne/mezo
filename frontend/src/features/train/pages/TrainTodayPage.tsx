@@ -18,7 +18,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile } from '@/data/hooks'
+import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile, useGoal } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
 import {
@@ -45,7 +45,10 @@ import { DayStrip } from '@/features/train/components/DayStrip'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { daySessions } from '@/features/train/logic/agenda'
-import { dayImpact } from '@/features/train/logic/dayImpact'
+import { dayImpact, type DayImpactRow } from '@/features/train/logic/dayImpact'
+import { trainDayEnergy, type Block } from '@/features/train/logic/trainDayEnergy'
+import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
+import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { dayStripItems } from '@/features/train/logic/dayStripItems'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
@@ -71,6 +74,10 @@ export function TrainTodayPage() {
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit/prepBriefing deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
+  // Same weight source `deriveDailyBudget` reads for Fuel's calorie budget
+  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — Mai's energy card must never
+  // drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
+  const { goal, goalResponse } = useGoal()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
   const mtrWindow = morningWindow(sleepGoal.wakeTime)
@@ -256,6 +263,87 @@ export function TrainTodayPage() {
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
+
+  // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
+  // Weight source: the SAME hook `deriveDailyBudget` reads for the Fuel calorie budget
+  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — `useGoal()`, read above. Falling
+  // back to 0 (not a static default) keeps the "no weight on file" honest state identical
+  // to Fuel's own fallback chain.
+  const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
+  // A run block carries no plan-level duration (`RunPrescribedSession` has none) — the
+  // same 40-minute stand-in `buildEnergyBreakdown` (Fuel's own energy-explain sheet) uses
+  // for a duration-less block, so the two surfaces never quote different run burns.
+  const DEFAULT_RUN_MIN = 40
+  // Held at 0 while the timing profile is still pending — same "never a numeric
+  // flash-then-swap" rule the poster's own `workoutMinutes` follows above.
+  const gymMinutesToday = gymPosterShown && workout && !timingProfilePending
+    ? estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
+    : 0
+  // Today's training blocks, in the exact shape `trainDayEnergy` wants — built from
+  // the SAME ordered-today list the hero cards above already render, so the energy
+  // card can never disagree with what's on-screen just above it.
+  const energyBlocks: Block[] = isTodayShown
+    ? orderedToday.reduce<Block[]>((acc, item) => {
+        if (item.kind === 'gym') {
+          if (gymPosterShown) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
+        } else if (item.kind === 'sport') {
+          acc.push({ kind: 'sport', minutes: item.sport.duration, done: sportDoneOn(shownIso, sportOf(item.sport)) })
+        } else if (item.kind === 'running') {
+          acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(runLoggedFor(item.running.key)) })
+        }
+        return acc
+      }, [])
+    : []
+  const dayEnergy = trainDayEnergy(energyBlocks, weightKg || null)
+
+  // The muscle-impact rows: a gym day reads `dayImpact` off today's plan (Task 1) +
+  // today's logged working sets (`doneByMuscle`, joined by exercise id — see below); a
+  // rest day carrying a sport slot instead reads the sport's static heuristic table
+  // (`sportMuscleLoad.ts:62`) so a röplabda-only rest day is never a blank card.
+  // doneByMuscle: the open (in-progress) or just-completed instance's LOGGED working
+  // sets, mapped from exerciseId back to the day plan's muscle token. Both
+  // `todaySession.openWorkout` and `completedTodayWorkout` are already on this page
+  // (no speculative new fetch) — a plain three-state resume/review CTA is what
+  // Mai already reads them for above.
+  const exerciseMuscleById = new Map((workout?.exercises ?? []).map((e) => [e.id, e.muscle] as const))
+  const loggedInstance = completedTodayWorkout ?? todaySession?.openWorkout ?? null
+  const doneByMuscle: Record<string, number> = {}
+  if (gymPosterShown && loggedInstance) {
+    for (const s of loggedInstance.sets) {
+      if (s.kind !== 'working' || s.skipped) continue
+      const muscle = exerciseMuscleById.get(s.exerciseId)
+      if (!muscle) continue
+      doneByMuscle[muscle] = (doneByMuscle[muscle] ?? 0) + 1
+    }
+  }
+  const wordFromLoad = (load: number): DayImpactRow['word'] => (load <= 1 ? 'enyhe' : load === 2 ? 'közepes' : 'erős')
+  const sportSlotsToday = shownDay?.sport ?? []
+  let impactRows: DayImpactRow[] = []
+  if (gymPosterShown && workout) {
+    impactRows = dayImpact(workout.exercises.map((e) => ({ muscle: e.muscle, workingSets: e.workingSets })), doneByMuscle)
+  } else if (isTodayShown && sportSlotsToday.length > 0) {
+    // Rest-day-with-sport: aggregate every today sport slot's static heuristic load,
+    // max per region across slots (mirrors `sportMuscleLoad.ts`'s own per-event
+    // aggregation) — no set counts exist here, so `load` (1–3) stands in for
+    // `plannedSets` purely to drive the track's relative width.
+    const { events } = sportLoadForWeek(sportSlotsToday, [])
+    const byRegion = new Map<RegionKey, { label: string; load: number }>()
+    for (const ev of events) {
+      for (const rl of ev.regionLoads) {
+        const cur = byRegion.get(rl.region)
+        if (!cur || rl.load > cur.load) byRegion.set(rl.region, { label: rl.label, load: rl.load })
+      }
+    }
+    const anySportDone = sportSlotsToday.some((vb) => sportDoneOn(shownIso, sportOf(vb)))
+    impactRows = Array.from(byRegion.entries())
+      .map(([region, { label, load }]) => ({
+        region, label, token: '', plannedSets: load, doneSets: anySportDone ? load : 0, word: wordFromLoad(load),
+      }))
+      .sort((a, b) => b.plannedSets - a.plannedSets)
+  }
+  const impactIsSportEstimate = !(gymPosterShown && workout) && impactRows.length > 0
+  const hasImpact = impactRows.some((r) => r.plannedSets > 0)
+  const maxPlannedImpact = Math.max(1, ...impactRows.map((r) => r.plannedSets))
 
   return (
     <>
@@ -492,6 +580,64 @@ export function TrainTodayPage() {
         })()}
         </div>
       ))}
+
+      {/* Energy card (Task 5, mezo-88iwa.6): today's movement kcal, split honestly into
+          already-earned vs. still-in-the-plan. Absent whenever today carries no
+          training block at all — an empty rest day gets no "add your weight" pitch
+          for movement that does not exist. */}
+      {isTodayShown && energyBlocks.length > 0 && (
+        <div className="rise" style={{ padding: '0 6px', '--d': '220ms' } as CSSProperties}>
+          <section className="tr-energy">
+            <span className="overline">A MAI KERETEDHEZ</span>
+            {dayEnergy.known ? (
+              <>
+                <div className="tr-energy-main">
+                  <b>+</b><strong>{dayEnergy.plannedKcal}</strong><small>kcal</small>
+                </div>
+                <div className="tr-energy-split">
+                  <span><i className="done" />{dayEnergy.earnedKcal} kcal már megszolgálva</span>
+                  <span><i className="plan" />{dayEnergy.plannedKcal - dayEnergy.earnedKcal} a tervben</span>
+                </div>
+              </>
+            ) : (
+              <p className="tr-energy-empty">Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.</p>
+            )}
+            <p className="tr-energy-note">Becslés, nem mérés.</p>
+          </section>
+        </div>
+      )}
+
+      {/* Muscle-impact card (Task 5, mezo-88iwa.6): what today's movement loads, region
+          by region, in words — never an all-zero table when nothing is actually
+          planned (a real rest day with no sport gets no card at all). */}
+      {isTodayShown && hasImpact && (
+        <div className="rise" style={{ padding: '0 6px', '--d': '230ms' } as CSSProperties}>
+          <section className="tr-mus">
+            <span className="overline">HATÁS AZ IZOMZATODRA</span>
+            <h3>Mit terhel a mai mozgásod</h3>
+            {impactRows.map((row) => {
+              const planPct = (row.plannedSets / maxPlannedImpact) * 100
+              const donePct = (Math.min(row.doneSets, row.plannedSets) / maxPlannedImpact) * 100
+              return (
+                <div className="tr-mus-row" key={row.region}>
+                  <span className="tr-mus-art"><MuscleChip token={row.token} size={28} /></span>
+                  <span className="tr-mus-name">{row.label}</span>
+                  <span className="tr-mus-track" style={{ '--mus-color': regionColor(row.region as RegionKey).rail } as CSSProperties}>
+                    <i className="plan" style={{ '--w': `${planPct}%` } as CSSProperties} />
+                    <i className="done" style={{ '--w': `${donePct}%` } as CSSProperties} />
+                  </span>
+                  <span className="tr-mus-word">{row.word}</span>
+                </div>
+              )
+            })}
+            <p className="tr-mus-note">
+              {impactIsSportEstimate
+                ? 'A sáv a sport becsült terhelése — nem mért adat. Becslés, nem mérés.'
+                : 'A halvány sáv a tervezett terhelés, a világos a már megszolgált. Becslés, nem mérés.'}
+            </p>
+          </section>
+        </div>
+      )}
 
       {/* „Vagy inkább” — the two other doors, directly under the poster: a one-off
           workout and a sport log. They open the SAME two sheets this page already

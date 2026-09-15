@@ -9,7 +9,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { snoozeKey } from '@/features/train/logic/morningWindow'
-import { localDateString } from '@/shared/lib/dates'
+import { localDateString, huMonthDayDow } from '@/shared/lib/dates'
+import { weekDateIso } from '@/features/train/logic/weekAgenda'
 
 // Weekly-row gym taps route straight to the session/review (direct-start flow,
 // mezo-bxpg) via useNavigate; mock it so we can assert the exact target
@@ -20,6 +21,27 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// Task 5 (mezo-88iwa.6) card tests need deterministic control over the mock fixture's
+// weight/gym/sport shape — wrap the real `useTrain`/`useGoal` and let each test graft a
+// partial override onto the otherwise-real mock data, the same idiom TrainWeekPage.test.tsx
+// already uses for its `daysOverride`.
+let trainOverride: ((real: ReturnType<typeof import('@/data/hooks').useTrain>) => Record<string, unknown>) | null = null
+let goalOverride: ((real: ReturnType<typeof import('@/data/hooks').useGoal>) => Record<string, unknown>) | null = null
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useTrain: (...args: Parameters<typeof actual.useTrain>) => {
+      const real = actual.useTrain(...args)
+      return trainOverride ? { ...real, ...trainOverride(real) } : real
+    },
+    useGoal: (...args: Parameters<typeof actual.useGoal>) => {
+      const real = actual.useGoal(...args)
+      return goalOverride ? { ...real, ...goalOverride(real) } : real
+    },
+  }
+})
+
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
 beforeEach(() => {
@@ -27,7 +49,11 @@ beforeEach(() => {
   mockNavigate.mockReset()
   localStorage.removeItem(snoozeKey()) // the morning-training card state must not leak between tests
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  trainOverride = null
+  goalOverride = null
+})
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
@@ -1098,4 +1124,145 @@ test("the day body staggers inside an armed entrance group", async () => {
   // the day's poster/hero cards from 120ms, then the nav rows below them (240ms)
   expect(risen.some((el) => el.style.getPropertyValue("--d") === "120ms")).toBe(true)
   expect(risen.some((el) => el.style.getPropertyValue("--d") === "240ms")).toBe(true)
+})
+
+// ---- Task 5 (mezo-88iwa.6): the energy + muscle-impact cards ----
+// Mock today is Csü (fixture-flagged `today: true` on the gym slot, independent of the
+// real weekday), carrying the Pull Day gym plan (back-mid × ex1/ex3, back-wide × ex2,
+// biceps-brachialis × ex4, shoulder-rear × ex5). `weekDateIso` computes the SAME real-
+// clock-relative ISO date `buildWeekAgenda` gives that row, so an injected sport slot's
+// logged entry can be matched against it exactly like `sportDoneOn` matches it on the page.
+const csuDateIso = () => weekDateIso(DAY_ORDER.indexOf('Csü'))
+const inactivateGym = (real: ReturnType<typeof import('@/data/hooks').useTrain>) => ({
+  gymSchedule: real.gymSchedule
+    ? { ...real.gymSchedule, weeklyTimes: real.gymSchedule.weeklyTimes.map((d) => (d.day === 'Csü' ? { ...d, active: false } : d)) }
+    : real.gymSchedule,
+})
+const addTodaySportSlot = (real: ReturnType<typeof import('@/data/hooks').useTrain>, done: boolean) => {
+  const schedule = real.sport.schedule
+  if (!schedule) return {}
+  const iso = csuDateIso()
+  return {
+    sport: {
+      ...real.sport,
+      schedule: {
+        ...schedule,
+        volleyball: {
+          ...schedule.volleyball,
+          sessions: [
+            ...schedule.volleyball.sessions,
+            { day: 'Csü', time: '18:00', duration: 60, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés', sport: 'volleyball' as const, today: true },
+          ],
+        },
+      },
+      sessions: done
+        ? [
+            ...real.sport.sessions,
+            {
+              id: 'ss-fixture', sport: 'volleyball', date: huMonthDayDow(iso), isoDate: iso, time: '18:00', duration: 60,
+              setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null, jumpCount: null, notes: null,
+            },
+          ]
+        : real.sport.sessions,
+    },
+  }
+}
+// A generic single-line "N kcal" number extractor for the split rows.
+const firstNumber = (text: string) => Number(text.match(/-?\d+(\.\d+)?/)?.[0])
+
+// Mock's active running block only prescribes Kedd/Pén (dayOfWeek 1/4, running.ts) — freeze
+// the clock to a Thursday (2026-07-16, the same fixed date the rest of this suite already
+// uses for day-of-week determinism, mezo-pfdv) so `todayIdx()` never silently folds a
+// real-weekday run into these blocks and turns a deliberately-empty day non-empty.
+const withFrozenThursday = (run: () => void) => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00'))
+  try {
+    run()
+  } finally {
+    vi.useRealTimers()
+  }
+}
+
+test('energy card: a planned+done mix splits honestly into earned vs. still-planned', () => {
+  trainOverride = (real) => addTodaySportSlot(real, true) // gym still planned (not completed), sport already logged
+  withFrozenThursday(() => {
+    const { container } = renderView()
+    const card = container.querySelector('.tr-energy')
+    expect(card).not.toBeNull()
+    const plannedKcal = firstNumber(card!.querySelector('.tr-energy-main strong')!.textContent!)
+    const spans = card!.querySelectorAll('.tr-energy-split span')
+    const earnedKcal = firstNumber(spans[0].textContent!)
+    const remainingKcal = firstNumber(spans[1].textContent!)
+    expect(spans[0].textContent).toMatch(/már megszolgálva/)
+    expect(spans[1].textContent).toMatch(/a tervben/)
+    // a real mix: both sides carry weight, and they honestly sum back to the headline
+    expect(earnedKcal).toBeGreaterThan(0)
+    expect(remainingKcal).toBeGreaterThan(0)
+    expect(earnedKcal + remainingKcal).toBe(plannedKcal)
+    expect(card!.querySelector('.tr-energy-note')!.textContent).toBe('Becslés, nem mérés.')
+  })
+})
+
+test('a non-today selection hides both the energy and the muscle-impact card', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.tr-energy')).not.toBeNull() // sanity: today shows it
+  fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
+  expect(container.querySelector('.tr-energy')).toBeNull()
+  expect(container.querySelector('.tr-mus')).toBeNull()
+})
+
+test('energy card: no weight on file renders the honest sentence, never a fabricated number', () => {
+  goalOverride = () => ({ goal: null, goalResponse: null })
+  const { container } = renderView()
+  const card = container.querySelector('.tr-energy')
+  expect(card).not.toBeNull()
+  expect(card!.querySelector('.tr-energy-main')).toBeNull()
+  expect(card!.querySelector('.tr-energy-empty')!.textContent).toBe(
+    'Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.',
+  )
+})
+
+test('muscle-impact card: the ladder word tracks planned volume, and earned never overflows planned', () => {
+  // Log far more "back" sets than the day's own Hát region plans (10) — the earned
+  // bar must cap at the region's own planned width, never spill past it.
+  trainOverride = () => ({
+    completedTodayWorkout: {
+      id: 'wi-fixture', templateSessionId: 'today', date: csuDateIso(), status: 'completed' as const,
+      sets: Array.from({ length: 15 }, (_, i) => ({ id: `s${i}`, exerciseId: 'ex1', setIndex: i, kind: 'working' as const, skipped: false })),
+    },
+  })
+  const { container } = renderView()
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const hatRow = rows.find((r) => r.querySelector('.tr-mus-name')?.textContent === 'Hát')!
+  expect(hatRow).toBeTruthy()
+  expect(hatRow.querySelector('.tr-mus-word')!.textContent).toBe('erős') // 10 planned sets > 6
+  const planW = (hatRow.querySelector('.tr-mus-track i.plan') as HTMLElement).style.getPropertyValue('--w')
+  const doneW = (hatRow.querySelector('.tr-mus-track i.done') as HTMLElement).style.getPropertyValue('--w')
+  expect(doneW).toBe(planW) // capped at the row's own planned width, not the 15 raw logged sets
+})
+
+test('rest day with a sport slot: the impact card falls back to the sport heuristic, never an all-zero gym table', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
+  const { container } = renderView()
+  expect(screen.queryByText('Pull Day')).not.toBeInTheDocument() // the gym plan itself is gone
+  const rows = [...container.querySelectorAll('.tr-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.tr-mus-name')!.textContent, r]))
+  // volleyball's static heuristic (sportMuscleLoad.ts): shoulder-front 3/shoulder-rear 1 -> Váll
+  // (max 3, erős), quad 2/calf 2 -> Láb (közepes), core 1 -> Core (enyhe). Mell/Hát/Kar absent.
+  expect(byName['Váll'].querySelector('.tr-mus-word')!.textContent).toBe('erős')
+  expect(byName['Láb'].querySelector('.tr-mus-word')!.textContent).toBe('közepes')
+  expect(byName['Core'].querySelector('.tr-mus-word')!.textContent).toBe('enyhe')
+  expect(byName['Hát']).toBeUndefined()
+  expect(byName['Mell']).toBeUndefined()
+  expect(container.querySelector('.tr-mus-note')!.textContent).toMatch(/^A sáv a sport becsült terhelése/)
+})
+
+test('nothing planned today: neither card renders (never an all-zero table)', () => {
+  trainOverride = (real) => inactivateGym(real) // Csü rest day, mock carries no sport slot on Csü by default
+  withFrozenThursday(() => {
+    const { container } = renderView()
+    expect(container.querySelector('.tr-energy')).toBeNull()
+    expect(container.querySelector('.tr-mus')).toBeNull()
+  })
 })
