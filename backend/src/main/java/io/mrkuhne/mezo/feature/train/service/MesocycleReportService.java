@@ -331,7 +331,10 @@ public class MesocycleReportService {
         return row.getCatalogId() != null ? "c:" + row.getCatalogId() : "n:" + row.getName();
     }
 
-    /** One week bucket's best working set. {@code e1rm} is null for a weightless (bodyweight) set. */
+    /**
+     * One week bucket's best working set. {@code e1rm} is null for a weightless (bodyweight) set,
+     * and also for a set whose reps exceed {@link OneRepMax#REP_CAP}.
+     */
     private record TopSet(BigDecimal weightKg, int reps, Double e1rm) {}
 
     /**
