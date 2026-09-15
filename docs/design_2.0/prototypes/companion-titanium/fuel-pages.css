@@ -1022,3 +1022,6 @@ dialog.glass{padding:18px 20px 26px}
 .block-role{display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.6px;color:var(--role-color)}
 .block-role .icon{width:15px;height:15px}
 .glu-peri-chip{border-color:#8ed2e84a!important;color:#9cd3e2!important}
+.heading-tools{display:flex;align-items:center;gap:10px}
+.blocks-settings{display:flex;align-items:center;gap:6px;border:1px solid #8ed2e83a;border-radius:18px;background:#8ed2e80a;color:#9cd3e2;font-size:9px;font-weight:600;padding:6px 11px 6px 7px}
+.blocks-settings .icon{width:18px;height:18px}
