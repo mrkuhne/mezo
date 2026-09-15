@@ -90,6 +90,26 @@ test('a makró gyűrűk az étkezés saját összetételét mutatják', () => {
   expect(pcts.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(101)
 })
 
+// Owner-kérés (mezo-n9peo): a gyűrű BELSEJÉBEN a gramm a nagy, színes szám, és ALATTA a
+// százalék áll — korábban fordítva volt. A gramm az, amit az owner olvas; a részesedés a
+// kontextus, nem a főszereplő.
+test('a gyűrűben a gramm a nagy szám, a százalék alatta', () => {
+  const { container } = renderAt('meal-1')
+  const rings = Array.from(container.querySelectorAll('.fmx-detail-rings .fmx-ring'))
+  const text = (el: Element, sel: string) => el.querySelector(sel)!.textContent!.replace(/\s+/g, ' ')
+  // A nagy, makró-színű elem a gramm — és pontosan az étkezés MAKRÓJA (30/40/12), nem a
+  // felszámolás egy félúti állapota: jsdom-ban a `useFuelCountUp` egyből a végértéken áll.
+  expect(rings.map(r => text(r, '.fmx-share-g'))).toEqual(['30 g', '40 g', '12 g'])
+  // …a halk, alatta futó pedig a százalék.
+  for (const r of rings) expect(text(r, '.fmx-share-pct')).toMatch(/^\d+%$/)
+  // A sorrend a DOM-ban is ez: a gramm előbb jön, tehát felül áll.
+  const inner = Array.from(rings[0].querySelectorAll('.fmx-share-g, .fmx-share-pct'))
+  expect(inner[0]).toHaveClass('fmx-share-g')
+  // A felolvasott mondat is a grammal nyit, ahogy a látvány.
+  expect(rings[0].querySelector('span[aria-label]')!.getAttribute('aria-label'))
+    .toBe('Fehérje: 30 g, az étkezés energiájának 31%-a')
+})
+
 test('a hozzávalók abból állnak, amiből az étkezés összeállt', () => {
   renderAt('meal-1')
   expect(screen.getByRole('heading', { name: 'Hozzávalók' })).toBeInTheDocument()

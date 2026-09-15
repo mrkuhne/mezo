@@ -12019,6 +12019,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-meal-copy strong { display: block; font-size: 16px; font-weight: 500; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
 .fmx-meal-copy small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
+/* Makró-csík a sor ALSÓ sorában (mezo-n9peo): clay szimbólum + gramm, makró-feliratok nélkül —
+   a hue viszi az azonosságot, ugyanaz a három, mint a részletlap gyűrűin. `flex-wrap`, mert egy
+   keskeny készüléken a három csíp inkább tördelődjön, mint hogy a sort szétfeszítse. */
+.fmx-meal-macros { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 5px; }
+.fmx-mm { display: inline-flex; align-items: center; gap: 3px; font-style: normal;
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--mm-color); }
+.fmx-mm svg { width: 15px; height: 15px; flex: 0 0 auto;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.26)); }
 
 /* Pont-chip: finom figyelem-pulzus, hogy KOPPINTHATÓNAK olvasódjon (owner). */
 .fmx-score { display: flex; align-items: center; gap: 6px; flex: 0 0 auto;
@@ -12115,7 +12123,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* Megoszlás-gyűrűk: az S1a gyűrű-geometria, három hasábban, az étkezés SAJÁT arányaival. */
 .fmx-detail-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;
   padding: 4px 16px 6px; }
+/* mezo-n9peo: a gyűrű belsejében a GRAMM a nagy, makró-színű szám (`strong`), a részesedés
+   pedig a halk sor alatta (`b`) — az egységet a `strong i` viszi, hogy a számjegy maradjon a
+   hangsúlyos. A színt a `.fmx-ring strong { color: var(--macro-color) }` adja, változatlanul. */
 .fmx-ring.is-share strong { display: flex; align-items: baseline; font-size: 21px; }
+/* A térköz a szövegben levő nem-törő szóköz — ezért itt NINCS margó (kettő együtt sok lenne). */
+.fmx-ring.is-share strong i { font-style: normal; font-size: 11px; font-weight: 500; }
 .fmx-ring.is-share b { font-size: 10px; }
 .fmx-share-name { font-size: 11px; color: var(--sub); }
 

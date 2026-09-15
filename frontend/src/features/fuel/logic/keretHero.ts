@@ -142,7 +142,14 @@ export function deriveMealRole(mealTimeHHmm: string, workoutTime: string | null)
   return 'standard'
 }
 
-export interface DoneMealRow { mealId: string; name: string; time: string; kcal: number | null; proteinG: number | null; scorePct: number | null }
+export interface DoneMealRow {
+  mealId: string; name: string; time: string; kcal: number | null
+  /** All three macros in grams (mezo-n9peo): the Mai block row prints them as an icon+gram strip,
+   *  so carbs and fat now travel with the protein instead of the row having only the one. Each is
+   *  independently nullable — a source that gave no value gets an em dash, never a fabricated 0. */
+  proteinG: number | null; carbsG: number | null; fatG: number | null
+  scorePct: number | null
+}
 
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join
  *  windowIslands.ts's `buildWindowRiver` couldn't do — it never received a `meals` array). */
@@ -160,6 +167,8 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
         time: s.time,
         kcal: meal?.kcal ?? s.kcal ?? null,
         proteinG: meal?.p ?? s.p ?? null,
+        carbsG: meal?.c ?? s.c ?? null,
+        fatG: meal?.f ?? s.f ?? null,
         scorePct: meal?.score != null ? Math.round(meal.score * 100) : null,
       }
     })

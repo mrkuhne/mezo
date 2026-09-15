@@ -53,13 +53,21 @@ export function ingredientStyle(name: string): { color: string; icon: ClayIconNa
 
 // ── Makrók ────────────────────────────────────────────────────────────────────────────────
 
-/** Egy makró-gyűrű: a saját összetétel százaléka + a gramm. Honest-null: ismeretlen
- *  részesedésnél az ív üres marad és a szám „—", nem 0. */
+/**
+ * Egy makró-gyűrű: a GRAMM a nagy, makró-színű szám a gyűrű belsejében, ALATTA a saját
+ * összetételből vett százalék (owner, mezo-n9peo — korábban fordítva volt). Az ívet továbbra
+ * is a részesedés rajzolja: a gyűrű alakja a megoszlásról beszél, a számjegy a mennyiségről.
+ *
+ * Honest-null, KÜLÖN a két tényre: ismeretlen részesedésnél az ív üres és a százalék „—";
+ * ismeretlen grammnál a nagy szám „—" — egyik sem esik vissza nullára, és a hiányzó gramm nem
+ * viszi magával a meglévő százalékot.
+ */
 function ShareRing({ label, grams, sharePct, color, icon, frame }: {
   label: string; grams: number | null; sharePct: number | null
   color: string; icon: ClayIconName; frame: string
 }) {
-  const counted = useFuelCountUp(sharePct ?? 0)
+  // A felszámolás azt a számot kíséri, ami NAGY — az most a gramm.
+  const counted = useFuelCountUp(grams ?? 0)
   return (
     <div className="fmx-cell">
       <span className="fmx-ico" aria-hidden="true"><ClayIcon name={icon} size={29} /></span>
@@ -69,11 +77,15 @@ function ShareRing({ label, grams, sharePct, color, icon, frame }: {
           <circle className="fmx-ring-track" cx="40" cy="40" r="34" pathLength={100} />
           <circle className="fmx-ring-progress" cx="40" cy="40" r="34" pathLength={100} />
         </svg>
-        <span aria-label={`${label}: ${sharePct == null ? 'nincs adat' : `${frame} ${sharePct}%-a`}, ${grams == null ? 'nincs adat' : `${huInt(grams)} g`}`}>
-          <strong aria-hidden="true" className="fmx-share-pct">
-            {sharePct == null ? '—' : `${Math.round(counted)}%`}
+        {/* A felolvasott mondat a GRAMMAL nyit, ahogy a látvány is. */}
+        <span aria-label={`${label}: ${grams == null ? 'nincs adat' : `${huInt(grams)} g`}, ${sharePct == null ? 'nincs adat' : `${frame} ${sharePct}%-a`}`}>
+          <strong aria-hidden="true" className="fmx-share-g">
+            {/* A „ g" a SZÖVEGBEN él, nem margóban: így a gyűrű belseje egyetlen olvasható
+                karakterláncot ad („23 g"), és a felületet szövegre kereső tesztek nem egy
+                elemhatáron hasadó számot látnak. */}
+            {grams == null ? '—' : <>{huInt(Math.round(counted))}<i>&nbsp;g</i></>}
           </strong>
-          <b aria-hidden="true">{grams == null ? '—' : `${huInt(grams)} g`}</b>
+          <b aria-hidden="true" className="fmx-share-pct">{sharePct == null ? '—' : `${sharePct}%`}</b>
         </span>
       </div>
       <span className="fmx-share-name">{label}</span>

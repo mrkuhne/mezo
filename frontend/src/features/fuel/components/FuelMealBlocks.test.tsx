@@ -97,6 +97,34 @@ test('a pont-chip az AI értékelésre visz, a sor pedig a részletekre', async 
   expect(onOpenMeal).not.toHaveBeenCalled()
 })
 
+// Owner-kérés (mezo-n9peo): a logolt étkezés sorának ALSÓ sora a három makró, színes kis
+// számokkal és ikonnal — a makró NEVE nélkül, mert a színről felismerhető. Korábban egyetlen
+// makró volt itt, szövegesen („36 g fehérje").
+test('a logolt étkezés sora mindhárom makrót viszi, grammban, a makró neve nélkül', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const strip = container.querySelector('.fmx-block.is-done .fmx-meal-macros')!
+  const chips = Array.from(strip.querySelectorAll('.fmx-mm'))
+  expect(chips.map(c => c.textContent)).toEqual(['36 g', '48 g', '9 g'])
+  // A hue viszi az azonosságot, nem felirat — se rövidítés, se szó nincs a csíkon.
+  expect(strip.textContent).not.toMatch(/fehérje|szénhidrát|zsír|prot|carb|fat/i)
+  // …a képernyőolvasó viszont szavakat kap, nem három puszta számot.
+  expect(strip.getAttribute('aria-label')).toBe('fehérje 36 g, szénhidrát 48 g, zsír 9 g')
+  // Mindhárom csíp visz saját clay szimbólumot.
+  expect(strip.querySelectorAll('.fmx-mm svg')).toHaveLength(3)
+})
+
+// Őszinte-null a csíkon: amit a forrás nem adott meg, gondolatjel — nem nulla gramm.
+test('a hiányzó makró gondolatjel a csíkon, nem nulla', () => {
+  const rows = [{
+    mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
+    proteinG: 36, carbsG: null, fatG: null, scorePct: 88,
+  }]
+  const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
+  const strip = container.querySelector('.fmx-block.is-done .fmx-meal-macros')!
+  expect(Array.from(strip.querySelectorAll('.fmx-mm')).map(c => c.textContent)).toEqual(['36 g', '—', '—'])
+  expect(strip.getAttribute('aria-label')).toBe('fehérje 36 g, szénhidrát nincs adat, zsír nincs adat')
+})
+
 // Őszinte-null + szégyenmentesség: kihagyott ablak nem hibaállapot.
 test('a kihagyott ablak semlegesen jelenik meg, pontszám nélkül', () => {
   const { container } = render(<FuelMealBlocks {...props({ missed: true })} />)
