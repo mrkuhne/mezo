@@ -1,5 +1,5 @@
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import type { WeeklyAgendaDay } from '@/features/train/logic/agenda'
 
 type Day = Pick<WeeklyAgendaDay, 'gym' | 'sport' | 'running'>
 const gym = (duration: number | null): Day['gym'] => ({ day: 'Hét', type: 'Push', time: '07:30', duration, active: true })
