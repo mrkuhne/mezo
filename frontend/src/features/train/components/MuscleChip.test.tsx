@@ -16,4 +16,18 @@ describe('MuscleChip', () => {
     const { container } = render(<MuscleChip token="nincs-ilyen" />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('reserves space with a sized placeholder before geometry loads', () => {
+    // Known token should render a sized placeholder synchronously (before waitFor)
+    const { container } = render(<MuscleChip token="chest-mid" size={48} />);
+    const placeholder = container.querySelector('span');
+    expect(placeholder).not.toBeNull();
+    expect(placeholder).toHaveStyle({ display: 'inline-block', width: '48px', height: '48px' });
+  });
+
+  it('renders nothing synchronously for an unknown token', () => {
+    // Unknown token should not render a placeholder
+    const { container } = render(<MuscleChip token="nincs-ilyen" />);
+    expect(container.firstChild).toBeNull();
+  });
 });

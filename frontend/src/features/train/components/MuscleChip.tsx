@@ -77,7 +77,22 @@ export function MuscleChip({ token, size = 40, className }: {
     }
   })
 
-  if (!view || slugs.length === 0 || !geometry || !crop) return null
+  const hasShapes = view && slugs.length > 0
+  const isReady = geometry && crop
+
+  // Unknown token: return null immediately
+  if (!hasShapes) return null
+
+  // Known token but not ready: render placeholder
+  if (!isReady) {
+    return (
+      <span
+        aria-hidden="true"
+        className={className}
+        style={{ display: 'inline-block', width: size, height: size }}
+      />
+    )
+  }
 
   const body = geometry[view]
   const region = muscleRegion(token)
