@@ -1,0 +1,184 @@
+// Building a new mesocycle: a draft you shape step by step, then stamp into a queued run.
+// Pure state and math — the pages live in plan-wizard.js.
+import { DAY_ORDER, LIBRARY, template } from './plan-state.js';
+import { MUSCLES, REGIONS, muscleLabel } from './muscle-taxonomy.js';
+
+/** A small catalog to pick from — name plus the muscle it works. */
+export const CATALOG = [
+  { name: 'Fekvenyomás', muscle: 'chest-mid', kg: 60 },
+  { name: 'Ferde padnyomás', muscle: 'chest-upper', kg: 45 },
+  { name: 'Tárogatás kábelen', muscle: 'chest-mid', kg: 15 },
+  { name: 'Húzódzkodás', muscle: 'back-wide', kg: 0 },
+  { name: 'Evezés csigán', muscle: 'back-mid', kg: 45 },
+  { name: 'Lehúzás széles fogással', muscle: 'back-wide', kg: 50 },
+  { name: 'Vállból nyomás', muscle: 'shoulder-side', kg: 20 },
+  { name: 'Oldalemelés', muscle: 'shoulder-side', kg: 8 },
+  { name: 'Hátsó váll gépen', muscle: 'shoulder-rear', kg: 30 },
+  { name: 'Bicepsz hajlítás', muscle: 'biceps-short', kg: 14 },
+  { name: 'Tricepsz letolás', muscle: 'triceps-lateral', kg: 25 },
+  { name: 'Francia nyomás', muscle: 'triceps-long', kg: 25 },
+  { name: 'Vállvonogatás', muscle: 'traps', kg: 40 },
+  { name: 'Guggolás', muscle: 'quad', kg: 80 },
+  { name: 'Lábtolás', muscle: 'quad', kg: 120 },
+  { name: 'Román felhúzás', muscle: 'ham', kg: 70 },
+  { name: 'Csípőemelés', muscle: 'glute', kg: 60 },
+  { name: 'Vádli gépben', muscle: 'calf', kg: 60 },
+  { name: 'Plank sorozat', muscle: 'core', kg: 0 },
+];
+export const catalogItem = name => CATALOG.find(c => c.name === name) ?? null;
+
+/** Accent-blind lowercase, so "vall" finds "Váll" and "gugg" finds "Guggolás". */
+const plain = text => text.toLocaleLowerCase('hu').normalize('NFD').replace(/\p{M}/gu, '');
+
+/** The catalog filtered by a region and a free-typed search over names and muscle names. */
+export function searchCatalog(query = '', region = '') {
+  const needle = plain(query.trim());
+  return CATALOG.filter(item => {
+    if (region && MUSCLES.find(m => m.key === item.muscle)?.region !== region) return false;
+    if (!needle) return true;
+    return plain(item.name).includes(needle) || plain(muscleLabel(item.muscle)).includes(needle);
+  });
+}
+
+const exerciseOf = item => ({ name: item.name, muscle: item.muscle, sets: 3, warmup: 1, repMin: 8, repMax: 12, rir: 2, kg: item.kg });
+
+export const regionOf = muscleKey => MUSCLES.find(m => m.key === muscleKey)?.region ?? null;
+
+export function newDraft() {
+  return { source: 'blank', name: '', weeks: 6, days: [], focus: {} };
+}
+
+/** A draft prefilled from a template: its own plan copies its days, the rest get a spread. */
+export function draftFromTemplate(key) {
+  const t = template(key);
+  if (!t) return newDraft();
+  const draft = { source: key, name: t.name, weeks: t.weeks, days: [], focus: {} };
+  draft.days = (t.days ?? []).map(d => ({ day: d.day, type: d.type, exercises: d.exercises.map(e => ({ ...e })) }));
+  for (const g of draftGroups(draft)) draft.focus[g.key] = 'grow';
+  return draft;
+}
+
+const dayIndex = token => DAY_ORDER.indexOf(token);
+export const draftDay = (draft, token) => draft.days.find(d => d.day === token) ?? null;
+
+/** A weekday joins or leaves the plan; the week keeps its natural order. */
+export function toggleDay(draft, token) {
+  const found = draftDay(draft, token);
+  if (found) draft.days = draft.days.filter(d => d !== found);
+  else {
+    draft.days.push({ day: token, type: `${draft.days.length + 1}. nap`, exercises: [] });
+    draft.days.sort((a, b) => dayIndex(a.day) - dayIndex(b.day));
+  }
+  return draft;
+}
+
+export function addExercise(draft, token, name) {
+  const item = catalogItem(name), day = draftDay(draft, token);
+  if (!item || !day) return draft;
+  day.exercises.push(exerciseOf(item));
+  const region = regionOf(item.muscle);
+  if (region && !draft.focus[region]) draft.focus[region] = 'grow';
+  return draft;
+}
+
+export function removeExercise(draft, token, index) {
+  const day = draftDay(draft, token);
+  if (day) day.exercises.splice(index, 1);
+  return draft;
+}
+
+/** Reorder by arrows only — the ends simply do nothing. */
+export function moveExercise(draft, token, index, dir) {
+  const day = draftDay(draft, token), to = index + dir;
+  if (!day || to < 0 || to >= day.exercises.length) return draft;
+  const [row] = day.exercises.splice(index, 1);
+  day.exercises.splice(to, 0, row);
+  return draft;
+}
+
+export function changeSets(draft, token, index, delta) {
+  const day = draftDay(draft, token);
+  if (!day || !day.exercises[index]) return draft;
+  day.exercises[index].sets = Math.min(8, Math.max(1, day.exercises[index].sets + delta));
+  return draft;
+}
+
+/** Rough honest guess: warm-in plus about four minutes per working set. */
+export const dayMinutes = day => (day.exercises.length ? 8 + day.exercises.reduce((t, e) => t + e.sets, 0) * 4 : 0);
+
+/** Every muscle the draft touches, with its weekly working sets and how many days reach it. */
+export function draftMuscles(draft) {
+  const rows = new Map();
+  for (const day of draft.days) for (const e of day.exercises) {
+    const row = rows.get(e.muscle) ?? { key: e.muscle, sets: 0, days: 0, seen: new Set() };
+    row.sets += e.sets;
+    if (!row.seen.has(day.day)) { row.seen.add(day.day); row.days += 1; }
+    rows.set(e.muscle, row);
+  }
+  return [...rows.values()].map(({ seen, ...row }) => row).sort((a, b) => b.sets - a.sets);
+}
+
+/** The focus is chosen per muscle group: every head of the chest climbs together. */
+export function draftGroups(draft) {
+  const groups = new Map();
+  for (const row of draftMuscles(draft)) {
+    const region = regionOf(row.key);
+    if (!region) continue;
+    const group = groups.get(region) ?? { key: region, label: REGIONS.find(r => r.key === region)?.label ?? region, sets: 0, muscles: [], seen: new Set() };
+    group.sets += row.sets;
+    group.muscles.push(row.key);
+    groups.set(region, group);
+  }
+  for (const day of draft.days) for (const e of day.exercises) {
+    const group = groups.get(regionOf(e.muscle));
+    if (group) group.seen.add(day.day);
+  }
+  return [...groups.values()].map(({ seen, ...g }) => ({ ...g, days: seen.size })).sort((a, b) => b.sets - a.sets);
+}
+
+/** Week one is what the days say; the focus decides how far it may climb; the last week rests. */
+export function rampSeries(startSets, tier, weeks) {
+  const ceiling = tier === 'maintain' ? startSets : tier === 'emphasize' ? startSets + 10 : startSets + 6;
+  const series = [];
+  for (let week = 1; week < weeks; week += 1) series.push(Math.min(ceiling, startSets + (week - 1) * 2));
+  series.push(Math.max(1, Math.ceil(series[series.length - 1] / 2)));
+  return series;
+}
+
+/** Notes, never blockers — the plan starts even if every one of them stands. */
+export function lintDraft(draft) {
+  const notes = [];
+  if (!draft.days.length) return [{ say: 'Még nincs edzésnap a tervben.' }];
+  for (const day of draft.days) if (!day.exercises.length) notes.push({ say: `A ${day.day} napra még nem tettél gyakorlatot.` });
+  const byDay = new Map(draft.days.map(d => [dayIndex(d.day), new Set(d.exercises.map(e => e.muscle))]));
+  const shared = new Set();
+  for (const [i, muscles] of byDay) {
+    const next = byDay.get(i + 1);
+    if (next) for (const m of muscles) if (next.has(m)) shared.add(m);
+  }
+  if (shared.size) notes.push({ say: `${shared.size} izom két egymás utáni napon is dolgozik — pihenőnap nélkül nehezebben épül.` });
+  for (const group of draftGroups(draft)) {
+    if (draft.focus[group.key] === 'emphasize' && group.days < 2)
+      notes.push({ say: `A ${group.label.toLocaleLowerCase('hu')} hangsúlyt kap, de hetente csak egyszer éred el — két alkalom többet hozna.` });
+  }
+  return notes.slice(0, 4);
+}
+
+/** The draft becomes a queued run on the library shelf; the draft itself is spent. */
+export function stampRun(draft, startIso, library = LIBRARY) {
+  const run = {
+    key: `draft-${library.planned.length + 1}`,
+    name: draft.name || 'Névtelen terv',
+    from: draft.source === 'blank' ? null : draft.source,
+    start: startIso, weeks: draft.weeks, daysPerWeek: draft.days.length,
+    split: template(draft.source)?.split ?? `${draft.days.length} napos hét`,
+  };
+  library.planned.push(run);
+  return run;
+}
+
+/* the one draft being shaped right now */
+let draft = null;
+export const wizardDraft = () => draft;
+export const startWizard = source => { draft = source === 'blank' ? newDraft() : draftFromTemplate(source); return draft; };
+export const dropWizard = () => { draft = null; };

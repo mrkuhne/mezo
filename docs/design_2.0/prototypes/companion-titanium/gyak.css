@@ -1,0 +1,87 @@
+/* Gyakorlatok — the moves and the records they carry. */
+
+.gy .gy-search { display: block; margin-bottom: 10px; }
+.gy-list { display: grid; gap: 8px; }
+.gy-card {
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; cursor: pointer; text-align: left;
+  border: 1px solid #ffffff10; border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color) 6%, transparent), #ffffff03);
+}
+.gy-card > .icon { width: 34px; height: 34px; flex: 0 0 auto; }
+.gy-card-name { flex: 1; min-width: 0; }
+.gy-card-name strong { display: block; font-size: 13.5px; font-weight: 500; line-height: 1.3; }
+.gy-card-name small { font-size: 10.5px; color: #ffffff5e; }
+.gy-card-best { display: grid; justify-items: end; gap: 2px; }
+.gy-card-best b { font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--mus-color) 78%, #fff); }
+.gy-card-best small { font-size: 9px; color: #ffffff52; }
+.gy-medals { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: #ffd88a; }
+.gy-medals .icon { width: 15px; height: 15px; }
+.gy-card-empty { font-size: 10px; color: #ffffff44; }
+.gy-card-go { color: #ffffff3d; font-size: 15px; }
+
+/* — the detail hero — */
+.gy-hero { min-height: 0; }
+.gy-hero-art { position: absolute; right: 10px; top: 16px; width: 92px; height: 92px; pointer-events: none; }
+.gy-hero-art .icon { position: absolute; inset: 12px; width: 68px; height: 68px; filter: drop-shadow(0 10px 18px #00000066); }
+.gy-hero-art i {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--mus-color) 42%, transparent);
+  animation: ld-spin 26s linear infinite;
+}
+.gy-hero-art i:nth-of-type(2) { inset: 8px; rotate: 58deg; opacity: .5; animation-duration: 19s; animation-direction: reverse; }
+
+/* — records — */
+.gy-recs { display: grid; gap: 8px; }
+.gy-rec {
+  display: grid; gap: 6px; padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--mus-color) 16%, #ffffff10); border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color) 8%, transparent), #ffffff03);
+}
+.gy-rec .overline { color: #ffffff66; letter-spacing: .14em; }
+.gy-rec strong { font-size: 21px; font-weight: 500; letter-spacing: -.02em; }
+.gy-rec strong small { font-size: 12px; color: #ffffff7d; font-weight: 400; }
+.gy-rec-bar { display: block; height: 8px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.gy-rec-bar b {
+  display: block; height: 100%; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 50%, transparent), var(--mus-color));
+}
+.gy-rec > small { font-size: 10.5px; color: #ffffff5e; }
+[data-reveal] .gy-rec-bar b { width: 0; }
+[data-reveal].is-in .gy-rec-bar b { width: var(--w); transition: width .85s cubic-bezier(.22, .9, .25, 1) .15s; }
+.gy-next {
+  display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 12px 13px;
+  font-size: 12px; line-height: 1.55; color: #e8d9b8;
+  border: 1px solid #ffd88a2e; border-radius: 15px; background: linear-gradient(120deg, #ffd88a14, #ffd88a05);
+}
+.gy-next .icon { width: 20px; height: 20px; flex: 0 0 auto; }
+.gy-next b { font-weight: 600; }
+
+/* — the strength curve — */
+.gy-curve-box {
+  position: relative; padding: 14px 14px 10px; border: 1px solid #ffffff10; border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, #c8e895) 6%, transparent), #ffffff03);
+}
+.gy-curve-val { position: absolute; right: 14px; top: 12px; text-align: right; }
+.gy-curve-val b { font-size: 22px; font-weight: 500; }
+.gy-curve-val small { display: block; font-size: 9.5px; color: #ffffff5e; }
+.gy-curve { width: 100%; height: auto; }
+.gy-curve-was { fill: none; stroke: var(--domain-color); stroke-width: 3; stroke-linecap: round; }
+.gy-curve-will { fill: none; stroke: #ffffff4d; stroke-width: 2.5; stroke-dasharray: 5 6; stroke-linecap: round; }
+.gy-curve-now { fill: #fff; stroke: var(--domain-color); stroke-width: 3; }
+[data-reveal] .gy-curve-was { stroke-dasharray: 600; stroke-dashoffset: 600; }
+[data-reveal].is-in .gy-curve-was { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s cubic-bezier(.3, .7, .3, 1) .15s; }
+.gy-curve-cap { display: flex; justify-content: space-between; margin-top: 4px; }
+.gy-curve-cap i { font-style: normal; font-size: 9.5px; color: #ffffff52; }
+.gy-curve-cap .is-will { color: #ffffff70; }
+
+/* — medals — */
+.gy-medal-rows { display: grid; gap: 7px; }
+.gy-medal {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid #ffd88a24; border-radius: 15px; background: linear-gradient(120deg, #ffd88a10, #ffd88a04);
+}
+.gy-medal > .icon { width: 24px; height: 24px; }
+.gy-medal strong { display: block; font-size: 12.5px; font-weight: 500; }
+.gy-medal small { font-size: 10.5px; color: #ffffff6b; }
+.gy-medal-date { margin-left: auto; }
+.gy .pl-row { width: 100%; margin: 0 0 8px; }

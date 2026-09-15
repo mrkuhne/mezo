@@ -1,0 +1,185 @@
+/* Edzés (Train) — Titanium pages. Reuses the Fuel kit (.fuel-focus, .fuel-gauge, .fuel-ring,
+   .fuel-tapchip, .fuel-log-action, .fuel-more) so the two domains speak one language. */
+
+.tr-title { padding: 0 20px; margin: 2px 0 18px; }
+.tr-title .overline { color: var(--domain-color); letter-spacing: .18em; }
+.tr-title h2 { font-size: 34px; line-height: 1.05; margin: 6px 0 4px; font-weight: 300; letter-spacing: -.02em; }
+.tr-title p { margin: 0; color: #ffffff7a; font-size: 13px; }
+
+/* — the one big move: start / continue / review the session — */
+.tr-start {
+  display: flex; align-items: center; gap: 14px; width: calc(100% - 40px); margin: 4px 20px 22px;
+  padding: 16px 18px; border: 0; border-radius: 22px; text-align: left; cursor: pointer;
+  color: #0d1108; background: linear-gradient(135deg, color-mix(in srgb, var(--domain-color) 92%, #fff), color-mix(in srgb, var(--domain-color) 70%, #3d4a28));
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--domain-color) 80%, transparent), 0 2px 0 #ffffff40 inset;
+}
+.tr-start.is-done { color: #eae6f8; background: linear-gradient(135deg, #2b2c3d, #1a1b26); box-shadow: 0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset; }
+.tr-start strong { display: block; font-size: 17px; font-weight: 600; }
+.tr-start small { display: block; font-size: 12px; opacity: .72; margin-top: 2px; }
+.tr-start b { margin-left: auto; font-size: 20px; }
+.tr-start-art { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; }
+.tr-start-art .icon { width: 34px; height: 34px; }
+
+/* — the day's movement blocks — */
+.tr-blocks { display: grid; gap: 10px; padding: 0 20px 20px; }
+.tr-block {
+  display: flex; align-items: center; gap: 13px; width: 100%; padding: 14px 16px; text-align: left;
+  border: 1px solid #ffffff14; border-radius: 20px; cursor: pointer; color: inherit;
+  background: linear-gradient(150deg, #ffffff0d, #ffffff05);
+}
+.tr-block.is-live { border-color: color-mix(in srgb, var(--domain-color) 45%, transparent); }
+.tr-block.is-done { background: linear-gradient(150deg, color-mix(in srgb, var(--domain-color) 14%, transparent), #ffffff05); }
+.tr-block.is-ahead { opacity: .72; }
+.tr-block-art { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; }
+.tr-block-art .icon { width: 38px; height: 38px; }
+.tr-block-copy { display: grid; gap: 1px; min-width: 0; }
+.tr-block-copy .overline { font-size: 9px; letter-spacing: .16em; color: #ffffff6b; }
+.tr-block-copy strong { font-size: 16px; font-weight: 500; }
+.tr-block-copy small { font-size: 12px; color: #ffffff70; }
+.tr-block b { margin-left: auto; color: #ffffff5c; font-size: 17px; }
+
+/* — the three exercises of the day — */
+.tr-lineup { display: grid; gap: 8px; padding: 0 20px 18px; }
+.tr-ex {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; text-align: left;
+  border: 1px solid #ffffff10; border-radius: 18px; cursor: pointer; color: inherit;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ex-color) 9%, #ffffff07), #ffffff04);
+}
+.tr-ex-index { font-size: 11px; letter-spacing: .1em; color: color-mix(in srgb, var(--ex-color) 75%, #fff); flex: 0 0 auto; }
+.tr-ex-copy { display: grid; gap: 1px; min-width: 0; }
+.tr-ex-copy strong { font-size: 15px; font-weight: 500; }
+.tr-ex-copy small { font-size: 12px; color: #ffffff72; }
+.tr-ex-copy em { font-size: 11px; font-style: normal; color: #ffffff4d; }
+.tr-ex-ticks { margin-left: auto; display: flex; gap: 4px; flex: 0 0 auto; }
+.tr-ex-ticks i { width: 7px; height: 7px; border-radius: 50%; background: #ffffff1f; }
+.tr-ex-ticks i.done { background: var(--ex-color); box-shadow: 0 0 8px color-mix(in srgb, var(--ex-color) 60%, transparent); }
+
+/* — honest placeholder for the tabs we have not rebuilt yet — */
+.tr-soon {
+  display: grid; justify-items: start; gap: 6px; margin: 0 20px 18px; padding: 18px;
+  border: 1px dashed #ffffff1f; border-radius: 22px; background: #ffffff06;
+}
+.tr-soon .icon { width: 40px; height: 40px; }
+.tr-soon .overline { color: var(--domain-color); letter-spacing: .16em; }
+.tr-soon strong { font-size: 17px; font-weight: 500; }
+.tr-soon p { margin: 0; font-size: 13px; color: #ffffff78; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-start, .tr-block, .tr-ex { transition: none !important; }
+}
+
+.tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tr-pills span {
+  font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
+  color: #ffffffa8; border: 1px solid #ffffff17; background: #ffffff08;
+}
+.tr-pills span:first-child { color: #0f1409; border-color: transparent; background: color-mix(in srgb, var(--domain-color) 82%, #fff); }
+
+/* — the day's program poster: is there training today, and what is it — */
+.tr-day {
+  position: relative; display: block; margin: 4px 20px 14px; padding: 20px 20px 18px;
+  border: 1px solid #ffffff14; border-radius: 26px; overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--domain-color) 20%, transparent), transparent 62%),
+    linear-gradient(155deg, #ffffff0f, #ffffff05);
+}
+.tr-day.is-live { border-color: color-mix(in srgb, var(--domain-color) 40%, transparent); }
+.tr-day.is-done { background: linear-gradient(155deg, color-mix(in srgb, var(--domain-color) 16%, transparent), #ffffff05); }
+.tr-day .overline { color: #ffffff7d; letter-spacing: .16em; }
+.tr-day h2 { font-size: 31px; line-height: 1.03; font-weight: 300; letter-spacing: -.025em; margin: 8px 0 6px; max-width: 66%; }
+.tr-day p { margin: 0; font-size: 13px; color: #ffffff7a; max-width: 66%; }
+.tr-day-art { position: absolute; right: -6px; top: 40px; width: 108px; height: 108px; opacity: .9; }
+.tr-day-art .icon { width: 108px; height: 108px; }
+.tr-day-status {
+  position: absolute; top: 16px; right: 16px; font-size: 9px; letter-spacing: .16em;
+  padding: 4px 9px; border-radius: 999px; color: #0f1409;
+  background: color-mix(in srgb, var(--domain-color) 85%, #fff);
+}
+.tr-day .tr-pills { position: relative; margin-top: 16px; }
+.tr-day .tr-pills span:first-child { color: #ffffffa8; border-color: #ffffff17; background: #ffffff08; }
+
+/* — cards: what the day's movement gives back — */
+.tr-card {
+  display: block; width: calc(100% - 40px); margin: 0 20px 14px; padding: 16px 18px; text-align: left;
+  border: 1px solid #ffffff12; border-radius: 22px; color: inherit;
+  background: linear-gradient(155deg, #ffffff0c, #ffffff04);
+}
+.tr-card.is-tappable { cursor: pointer; }
+.tr-card-head .overline { color: var(--domain-color); letter-spacing: .16em; }
+.tr-card-head strong { display: block; font-size: 17px; font-weight: 500; margin-top: 3px; }
+.tr-card-note { margin: 12px 0 0; font-size: 11px; color: #ffffff52; }
+
+.tr-energy { display: flex; align-items: center; gap: 16px; margin: 14px 0 12px; flex-wrap: wrap; }
+.tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--domain-color); }
+.tr-energy-main b { font-size: 24px; font-weight: 300; }
+.tr-energy-main strong { font-size: 44px; font-weight: 300; letter-spacing: -.03em; }
+.tr-energy-main small { font-size: 13px; color: #ffffff7a; margin-left: 4px; }
+.tr-energy-split { display: grid; gap: 4px; font-size: 12px; color: #ffffff85; }
+.tr-energy-split span { display: flex; align-items: center; gap: 7px; }
+.tr-energy-split i { width: 9px; height: 9px; border-radius: 3px; }
+.tr-energy-split i.done { background: var(--domain-color); }
+.tr-energy-split i.plan { background: #ffffff2e; }
+.tr-card .fuel-tapchip { margin-top: 2px; }
+
+/* — muscle impact: words, not set counts — */
+.tr-mus { display: grid; gap: 10px; margin-top: 14px; }
+.tr-mus-row { display: grid; grid-template-columns: 30px 44px 1fr auto; align-items: center; gap: 10px; }
+.tr-mus-art { width: 30px; height: 30px; display: grid; place-items: center; }
+.tr-mus-art .icon { width: 30px; height: 30px; }
+.tr-mus-name { font-size: 13px; color: #ffffffbd; }
+.tr-mus-track { position: relative; height: 8px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.tr-mus-track i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; }
+.tr-mus-track i.plan { background: color-mix(in srgb, var(--mus-color) 28%, transparent); }
+.tr-mus-track i.done { background: var(--mus-color); box-shadow: 0 0 10px color-mix(in srgb, var(--mus-color) 45%, transparent); }
+.tr-mus-word { font-size: 11px; color: #ffffff70; justify-self: end; min-width: 74px; text-align: right; }
+
+/* — quick start tiles — */
+.tr-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 16px; }
+.tr-quick-tile {
+  position: relative; display: grid; justify-items: start; gap: 2px; padding: 14px; text-align: left;
+  border: 1px solid #ffffff14; border-radius: 20px; cursor: pointer; color: inherit;
+  background: linear-gradient(155deg, #ffffff0d, #ffffff05);
+}
+.tr-quick-tile .icon { width: 32px; height: 32px; margin-bottom: 4px; }
+.tr-quick-tile strong { font-size: 14px; font-weight: 500; }
+.tr-quick-tile small { font-size: 11px; color: #ffffff6e; }
+.tr-quick-tile b {
+  position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 14px; color: #0f1409;
+  background: color-mix(in srgb, var(--domain-color) 82%, #fff);
+}
+.tr-quick-tile small { overflow-wrap: anywhere; }
+
+/* — the muscle map: one silhouette per region, the head lit — */
+.mm { padding: 0 20px 20px; }
+.mm-head { margin-bottom: 16px; }
+.mm-head .overline { color: var(--domain-color); letter-spacing: .16em; }
+.mm-head strong { display: block; font-size: 20px; font-weight: 400; margin: 5px 0 4px; }
+.mm-head small { display: block; font-size: 11.5px; line-height: 1.6; color: #ffffff6b; }
+.mm-region {
+  margin-bottom: 10px; padding: 13px 14px; border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--mm-color) 24%, transparent);
+  background: radial-gradient(110% 80% at 90% 0%, color-mix(in srgb, var(--mm-color) 12%, transparent), transparent 65%), #ffffff04;
+}
+.mm-region-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mm-region-head strong { font-size: 15px; font-weight: 500; color: color-mix(in srgb, var(--mm-color) 72%, #fff); }
+.mm-region-head span { font-size: 9px; letter-spacing: .12em; color: #ffffff52; }
+.mm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mm-cell {
+  display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px;
+  border: 1px solid #ffffff0d; border-radius: 15px; background: #ffffff04;
+}
+.mm-cell.is-live { border-color: color-mix(in srgb, var(--mm-color) 55%, transparent); background: color-mix(in srgb, var(--mm-color) 10%, transparent); }
+.mm-cell .icon { width: 40px; height: 40px; }
+.mm-cell small { font-size: 9px; line-height: 1.3; text-align: center; color: #ffffff7a; }
+.mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color) 70%, #fff); }
+.mm-cell .icon { filter: drop-shadow(0 2px 6px #0008); }
+
+/* — subpage header (option A): the back pill lives inside the poster — */
+.pl-back.is-inhero {
+  position: absolute; left: 14px; top: 14px; z-index: 3; margin: 0;
+  background: #0b0d1299; backdrop-filter: blur(10px); border-color: #ffffff26;
+}
+.pl-dhero, .pl-poster, .ld-hero, .mm-head { position: relative; }
+.pl-dhero:has(> .pl-back.is-inhero), .pl-poster:has(> .pl-back.is-inhero),
+.ld-hero:has(> .pl-back.is-inhero), .mm-head:has(> .pl-back.is-inhero) { padding-top: 58px; }
