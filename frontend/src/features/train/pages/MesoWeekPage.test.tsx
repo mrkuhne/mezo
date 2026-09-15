@@ -184,4 +184,61 @@ describe('MesoWeekPage (real mode)', () => {
     expect(screen.queryAllByRole('button', { name: /részletek$/ })).toHaveLength(0)
     expect(screen.queryByText(/Nem sikerült betölteni/)).not.toBeInTheDocument()
   })
+
+  // Fix round 1 (review finding 2): the hero sentence and the body map both key off
+  // `statusTone` now, not room-to-ceiling. A grind-held muscle (current < ceiling, held for
+  // a grind week) still has room, so a room-based count used to call it „van még hova nőni"
+  // while the map painted it at the ceiling's colour (gold — same tone `HEAT_BY_TONE` maps
+  // to 'over'). Fixed: it's counted (and spoken) as capped, and its own row gets a verdict
+  // sentence that doesn't claim it reached the ceiling either.
+  test('a grind-held muscle is counted and spoken from statusTone, agreeing with the heat (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([{
+          id: REAL_MESO_ID, title: 'Hypertrophy 04 · Tavasz', shortTitle: 'Hypertrophy 04',
+          status: 'active', goal: 'Felsőtest hypertrophy · izomtömeg építés',
+          startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6, currentWeek: 3,
+          split: 'Pull / Push / Legs · 5×/hét', style: 'RP · 6 hét',
+          phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+          musclePriorities: {}, days: [],
+          volumePerMuscle: {
+            chest: {
+              mev: 8, mav: 16, mrv: 20, current: 14,
+              source: { baseline: { name: 'RP guidelines · intermediate', mev: 8, mav: 16, mrv: 20 }, adjustments: [], confidence: 0.8 },
+            },
+          },
+          // chest's latest recompute is a HOLD ('tartás') — grind-held: current (14) < ceiling
+          // (mav 16), so it is NOT at its ceiling, and it is not a maintain tier either.
+          volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'chest', change: 'tart (14)', reason: 'tartás' }] },
+        }]),
+      ),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        HttpResponse.json({
+          ...realArc,
+          muscles: [{
+            muscle: 'chest', region: 'coral', mrv: 20,
+            weeks: [
+              { week: 1, phase: 'MEV', planned: 8, actual: 8, isCurrent: false },
+              { week: 2, phase: 'MEV', planned: 10, actual: 10, isCurrent: false },
+              { week: 3, phase: 'MAV', planned: 14, actual: null, isCurrent: true },
+              { week: 4, phase: 'MAV', planned: 16, actual: null, isCurrent: false },
+              { week: 5, phase: 'MRV', planned: 16, actual: null, isCurrent: false },
+              { week: 6, phase: 'Deload', planned: 7, actual: null, isCurrent: false },
+            ],
+          }],
+        }),
+      ),
+    )
+    setup(`/train/mesocycles/${REAL_MESO_ID}/week`)
+    const hero = await screen.findByText('Heti vizsgálat · 3. hét')
+    const dhero = hero.closest('.pl-dhero')!
+    // Counted as capped (statusTone 'gold'), never as „van még hova nőni" — a room-based
+    // count would have said the opposite, disagreeing with the gold heat the map paints.
+    expect(dhero.textContent).toContain('1 izomcsoportot edzel ezen a héten.')
+    expect(dhero.textContent).toContain('1 elérte a felső értéket')
+    expect(dhero.textContent).not.toContain('van még hova nőni')
+    // Its own row gets the grind-held verdict, not the plain „Még N szett fér bele."
+    const say = screen.getByRole('button', { name: 'Mell részletek' }).querySelector('.pl-item-say')?.textContent
+    expect(say).toBe('Építés · Most szinten tartod — múlt héten nehezen ment.')
+  })
 })

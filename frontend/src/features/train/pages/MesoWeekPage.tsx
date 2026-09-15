@@ -51,10 +51,14 @@ function rolloverLine(chips: { text: string }[]): string {
 const roomOf = (t: MuscleWeekTile) => t.ceiling - t.current
 
 /** The verdict, in words. The page says what the number MEANS first (the owner's rule);
- *  the set count next to it is only the backing evidence. */
+ *  the set count next to it is only the backing evidence. A grind-held muscle (statusTone
+ *  'gold' with room still left — mesoWeek.ts's `grindHeldGroups`) gets its OWN sentence:
+ *  it isn't at its ceiling, so „elérte a felső értéket" would be a claim the numbers don't
+ *  back, and it isn't a maintain tier either, so the plain hold sentence doesn't fit. */
 function verdict(t: MuscleWeekTile): string {
   if (t.tier === 'maintain') return 'Ezt most szinten tartod.'
   const left = roomOf(t)
+  if (t.statusTone === 'gold' && left > 0) return 'Most szinten tartod — múlt héten nehezen ment.'
   return left > 0 ? `Még ${left} szett fér bele.` : 'Elérte a felső értéket ebben a tervben.'
 }
 
@@ -67,12 +71,16 @@ const HEAT_BY_TONE: Record<MuscleWeekTile['statusTone'], BodyHeat['level']> = {
   mut: 'below', // maintain — present, not pushed
 }
 
-/** The hero's one sentence: how many muscles are in each of the three states. Clauses are
+/** The hero's one sentence: how many muscles are in each of the three states. Counted off
+ *  `statusTone` — the SAME field the body map paints its heat from (`HEAT_BY_TONE` above) —
+ *  never off room-to-ceiling directly: a grind-held muscle still has room (`roomOf > 0`) but
+ *  paints at the ceiling's colour (gold, „held after a grind week"), and a room-based count
+ *  used to call it „van még hova nőni" while the map painted it maxed out. Clauses are
  *  dropped when their count is 0, so a plan where everything grows says exactly that. */
 function weekSentence(tiles: MuscleWeekTile[]): string {
-  const growing = tiles.filter((t) => t.tier !== 'maintain' && roomOf(t) > 0).length
-  const maxed = tiles.filter((t) => t.tier !== 'maintain' && roomOf(t) <= 0).length
-  const held = tiles.filter((t) => t.tier === 'maintain').length
+  const growing = tiles.filter((t) => t.statusTone === 'sage').length
+  const maxed = tiles.filter((t) => t.statusTone === 'gold').length
+  const held = tiles.filter((t) => t.statusTone === 'mut').length
   const parts: string[] = []
   if (growing > 0) parts.push(`${growing} izomban van még hova nőni`)
   if (maxed > 0) parts.push(`${maxed} elérte a felső értéket`)

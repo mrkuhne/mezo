@@ -48,7 +48,7 @@ import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozai
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { muscleTiles, peakWeek, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
+import { muscleTiles, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
 import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { tierLabel } from '@/features/train/logic/tierLabel'
 import { DerivationSteps } from '@/features/train/components/DerivationSteps'
@@ -141,17 +141,31 @@ export function MesoMusclePage() {
 
   const weekOneValue = tile.series[0]?.planned ?? tile.mev
   const seriesToNow = tile.series.filter((s) => s.week <= arc.currentWeek)
-  // The plan's own peak („a legtöbb lesz") — the LAST non-pihenőhét week, whatever the plan
-  // length is (a fixed series[4] is only ever right for a 6-week plan).
-  const peak = peakWeek(tile.series)
-  const top = peak?.planned ?? tile.current
+  // The plan's own peak („a legtöbb lesz") — the MAX planned value over the non-pihenőhét
+  // weeks, not merely the LAST one: `peakWeek` (mesoWeek.ts) answers a different question
+  // (where the ramp's own last working week sits, used for its index), and a tapering plan
+  // whose highest week isn't its last working week would under-report both this fact and the
+  // gauge scale if the last-week value stood in for the true peak.
+  const nonDeloadPlanned = tile.series.filter((s) => !s.deload).map((s) => s.planned)
+  const top = nonDeloadPlanned.length > 0 ? Math.max(...nonDeloadPlanned) : tile.current
   // One scale for the gauge AND the versus bars, so „akkor" and „most" are measured against
   // the same ruler: the muscle's raw MRV, widened if this plan's own peak goes past it.
   const scale = Math.max(tile.mrv, top) || 1
+  // The versus bars' OWN ruler, gauge scale untouched: an archived plan that peaked above
+  // this plan's scale would otherwise clamp both versus bars to 100% at the same pixel width
+  // while their numbers still differ — widen just for those two rows when that happens.
+  const versusScale = Math.max(scale, prev?.peak ?? 0) || 1
   const nowPct = Math.min(100, (tile.current / scale) * 100)
   const lowPct = (tile.mev / scale) * 100
   const topPct = (tile.ceiling / scale) * 100
+  // The 7-point rule governs the MARK/LABEL GEOMETRY (two landmarks close enough to read as
+  // one) — it still drops the lower mark whenever the two are visually on top of each other.
+  // The merged CAPTION TEXT („ennyitől fejlődik — és itt tartod") is a stronger claim: it's
+  // only true when the threshold IS the ceiling. A muscle that merely LOOKS merged at this
+  // scale (mev !== ceiling) keeps both captions, nudged apart, so the text never says
+  // something the numbers don't back up.
   const merged = labelsMerge(lowPct, topPct)
+  const mergedText = tile.mev === tile.ceiling
 
   const say =
     tile.tier === 'maintain'
@@ -161,14 +175,17 @@ export function MesoMusclePage() {
         : `A ${name} hetente ${tile.current} szettet kap — ennél többet ez a terv már nem ad. A következő tervben indulsz majd magasabbról.`
 
   // What Monday does, read straight off the arc's NEXT week — never a promise the plan's own
-  // series doesn't already carry.
+  // series doesn't already carry. The PROMISE itself is clamped to `tile.step` (mesoWeek.ts),
+  // not the raw arc delta: a grind-held muscle's next planned week can still show +2 in the
+  // raw series while the engine's own step is 0 (current < ceiling, held for a grind) — the
+  // step exists precisely so this sentence never promises what the engine isn't giving.
   const nextWeek = tile.series.find((s) => s.week === arc.currentWeek + 1)
   const next = !nextWeek
     ? 'Ez a terv utolsó hete — hétfőn már nem változik.'
     : nextWeek.deload
       ? `Hétfőtől pihenőhét: ${nextWeek.planned} szettre esik vissza.`
-      : nextWeek.planned > tile.current
-        ? `Hétfőn ${nextWeek.planned - tile.current} szettel többet kapsz.`
+      : tile.step > 0
+        ? `Hétfőn ${tile.step} szettel többet kapsz.`
         : 'Hétfőn nem változik.'
 
   const lastWeek = tile.series[tile.series.length - 1]
@@ -216,7 +233,7 @@ export function MesoMusclePage() {
               </b>
             </span>
             <span className="pl-scale-legend">
-              {merged ? (
+              {mergedText ? (
                 <i style={{ '--at': `${topPct}%`, '--nudge': nudgeFor(topPct) } as CSSProperties}>
                   {tile.ceiling}<small>ennyitől fejlődik — és itt tartod</small>
                 </i>
@@ -319,14 +336,14 @@ export function MesoMusclePage() {
                 <div className="pl-versus-row">
                   <span>Akkor</span>
                   <span className="pl-versus-bar">
-                    <i style={{ '--w': `${Math.min(100, (prev.peak / scale) * 100)}%` } as CSSProperties} />
+                    <i style={{ '--w': `${Math.min(100, (prev.peak / versusScale) * 100)}%` } as CSSProperties} />
                   </span>
                   <b>{prev.start} → {prev.peak}</b>
                 </div>
                 <div className="pl-versus-row is-now">
                   <span>Most</span>
                   <span className="pl-versus-bar">
-                    <i style={{ '--w': `${Math.min(100, (top / scale) * 100)}%` } as CSSProperties} />
+                    <i style={{ '--w': `${Math.min(100, (top / versusScale) * 100)}%` } as CSSProperties} />
                   </span>
                   <b>{weekOneValue} → {top}</b>
                 </div>

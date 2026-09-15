@@ -199,8 +199,14 @@ describe('MesoMusclePage (real mode)', () => {
   }
 
   /** The run list, with an optional `back` profile and an optional ARCHIVED sibling run —
-   *  `previousBlock` reads the archived runs' own `volumePerMuscle` snapshots. */
-  function runList(back: Record<string, unknown> | null, archivedBack: Record<string, unknown> | null) {
+   *  `previousBlock` reads the archived runs' own `volumePerMuscle` snapshots. An optional
+   *  `volumeRecompute` lands on the ACTIVE run only — `grindHeldGroups` (mesoBands.ts) reads
+   *  it straight off the mesocycle the page found, the same seam the real backend uses. */
+  function runList(
+    back: Record<string, unknown> | null,
+    archivedBack: Record<string, unknown> | null,
+    volumeRecompute?: Record<string, unknown>,
+  ) {
     const base = {
       title: 'Hypertrophy 04 · Tavasz', shortTitle: 'Hypertrophy 04',
       goal: 'Felsőtest hypertrophy · izomtömeg építés',
@@ -212,6 +218,7 @@ describe('MesoMusclePage (real mode)', () => {
     const runs: unknown[] = [{
       ...base, id: REAL_MESO_ID, status: 'active',
       volumePerMuscle: back ? { back } : {},
+      ...(volumeRecompute ? { volumeRecompute } : {}),
     }]
     if (archivedBack) {
       runs.push({
@@ -343,5 +350,108 @@ describe('MesoMusclePage (real mode)', () => {
     expect(rows[1].className).toBe('pl-versus-row is-now')
     expect(document.querySelector('.pl-versus')!.innerHTML).not.toMatch(/red|danger|warn|is-down|is-bad|negative/i)
     expect(screen.getByText('Az előző terv magasabbra vitt — most más izom kapja a hangsúlyt.')).toBeInTheDocument()
+  })
+
+  // ── Fix round 1 (review findings 1, 3, 4, 5) ─────────────────────────────────
+
+  // Finding 1: the „Hétfőn N szettel többet kapsz" promise is clamped to `tile.step`
+  // (mesoWeek.ts), not the raw arc delta — a grind-held muscle (current < ceiling, held for
+  // a grind week) has step 0, even though its own next planned week still shows +2 in the
+  // raw series. Fixture built through the page's normal data seam (MSW handlers), mirroring
+  // mesoWeek.test.ts's own grind-held fixture (`volumeRecompute.changes[…].reason === 'tartás'`).
+  test('a grind-held muscle never promises Monday sets the engine is not giving (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json(runList(
+          {
+            mev: 10, mav: 16, mrv: 22, current: 14,
+            source: { baseline: { name: 'RP guidelines · intermediate', mev: 10, mav: 16, mrv: 22 }, adjustments: [], confidence: 0.8 },
+          },
+          null,
+          { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'back', change: 'tart (14)', reason: 'tartás' }] },
+        ))),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        // Week 4 (next Monday) plans 16 — a raw +2 over the current 14 — but the muscle is
+        // grind-held (current 14 < ceiling 16), so the engine's own step is 0.
+        HttpResponse.json(backArc([10, 12, 14, 16, 16, 8], 22))),
+    )
+    setup('back', REAL_MESO_ID)
+    await screen.findByText('Hát')
+    const hero = document.querySelector('.pl-dhero')!
+    expect(hero.querySelector('.pl-sub-say')?.textContent).toBe('Hétfőn nem változik.')
+  })
+
+  // Finding 3: the 7-point merged-LABEL rule (mark/label geometry) and the merged-CAPTION
+  // TEXT are different questions. mev 19 and ceiling 20 land within 7 points of each other
+  // on this scale (geometry merges, one mark), but 19 !== 20 — the text „ennyitől fejlődik —
+  // és itt tartod" would be a lie, so both captions must render, nudged apart.
+  test('a near-but-not-equal threshold/ceiling renders both captions, not the merged text (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json(runList({
+          mev: 19, mav: 20, mrv: 26, current: 19,
+          source: { baseline: { name: 'RP guidelines · intermediate', mev: 19, mav: 20, mrv: 26 }, adjustments: [], confidence: 0.8 },
+        }, null))),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        HttpResponse.json(backArc([15, 17, 19, 20, 20, 10], 26))),
+    )
+    setup('back', REAL_MESO_ID)
+    await screen.findByText('Hol tartasz')
+    // Geometry: the two landmarks are 3.8 points apart (< 7) — still ONE mark on the bar.
+    expect(document.querySelectorAll('.pl-scale-bar .mark')).toHaveLength(1)
+    // Text: mev (19) !== ceiling (20) — both captions render, neither says „és itt tartod".
+    const legend = gaugeLegend()
+    expect(legend).toHaveLength(2)
+    expect(legend.map((n) => n.querySelector('small')?.textContent)).toEqual(['ennyitől fejlődik', 'eddig mész el'])
+  })
+
+  // Finding 4: the plan's peak is the MAX planned value over the non-pihenőhét weeks, not
+  // the LAST one — a tapering plan (peak mid-block, tapering into the final working week)
+  // would otherwise under-report both the „a legtöbb lesz" fact and the gauge scale.
+  test('a tapering plan\'s peak is the block MAX, not its last working week (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json(runList({
+          mev: 10, mav: 20, mrv: 18, current: 18,
+          source: { baseline: { name: 'RP guidelines · intermediate', mev: 10, mav: 20, mrv: 18 }, adjustments: [], confidence: 0.8 },
+        }, null))),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        // Week 4 (20) is the true peak; week 5 (16) — the last non-deload week — tapers down
+        // before the week-6 deload. The LAST-week reading would report 16.
+        HttpResponse.json(backArc([10, 14, 18, 20, 16, 8], 18))),
+    )
+    setup('back', REAL_MESO_ID)
+    await screen.findByText('Hol tartasz')
+    const stats = document.querySelector('.pl-mstats')!
+    const values = Array.from(stats.querySelectorAll('strong')).map((n) => n.textContent)
+    expect(values[2]).toBe('20') // „a legtöbb lesz" — the MAX (week 4), not the last (16).
+    // The gauge scale widens to the true peak (max(mrv 18, peak 20) = 20), not to 18: the
+    // fill reads 18/20 = 90%, not 18/18 = 100%.
+    const bar = document.querySelector('.pl-scale-bar')!
+    expect(bar.querySelector('.fill')?.getAttribute('style')).toContain('--w: 90')
+  })
+
+  // Finding 5: the versus bars clamp against their OWN scale (`versusScale`), not the
+  // gauge's `scale` — an archived peak above this plan's scale must not pin both bars to an
+  // identical 100% width while their numbers still differ.
+  test('an archived peak above the current scale renders unequal versus bar widths (fix round 1)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json(runList({
+          mev: 10, mav: 20, mrv: 20, current: 18,
+          source: { baseline: { name: 'RP guidelines · intermediate', mev: 10, mav: 20, mrv: 20 }, adjustments: [], confidence: 0.8 },
+        }, { mev: 10, mav: 20, mrv: 20, current: 30 }))), // archived peak (30) far above this plan's scale (20)
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        HttpResponse.json(backArc([10, 14, 18, 20, 20, 10], 20))),
+    )
+    setup('back', REAL_MESO_ID)
+    await screen.findByText('Az előző tervhez képest')
+    const bars = Array.from(document.querySelectorAll('.pl-versus-bar i'))
+    expect(bars).toHaveLength(2)
+    const widths = bars.map((b) => b.getAttribute('style'))
+    // versusScale = max(scale 20, prev.peak 30) = 30 → akkor 30/30 = 100%, most 20/30 ≈ 66.7%.
+    expect(widths[0]).toContain('--w: 100')
+    expect(widths[1]).toContain('--w: 66.6')
+    expect(widths[0]).not.toBe(widths[1])
   })
 })
