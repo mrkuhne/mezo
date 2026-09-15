@@ -350,7 +350,7 @@ export function TrainWeekPage() {
             <span className="ld-sport-art"><ClayIcon name="i-lang" size={30} /></span>
             <span className="ld-map-copy">
               <strong>Minden mozgásod a héten</strong>
-              <small>Gym és sport együtt — percek és a belőlük becsült kalória.</small>
+              <small>Gym és sport együtt, eddig a héten — percek és a belőlük becsült kalória.</small>
             </span>
             <b>›</b>
           </button>

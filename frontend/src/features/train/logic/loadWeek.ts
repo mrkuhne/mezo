@@ -150,7 +150,12 @@ export type MovementWeek = {
  * Every movement of the week in one place: gym kcal reuses trainDayEnergy's MET math and
  * its honesty rule (unknown weight → unknown kcal, never a fabricated number); sport kcal
  * is whatever was logged (unknown when any session came back without one). An empty side
- * contributes 0 known minutes/kcal — it never drags the other, present side into unknown.
+ * contributes 0 known MINUTES (there is genuinely nothing to sum) but a NULL kcal — 0 kcal
+ * would read as "we measured zero calories", which is a fabrication for a side with no
+ * blocks/sessions at all (fix round 2, mezo-88iwa.13 review: caught as "sport · 0 kcal —
+ * naplóztad" rendering with nothing logged). `known` still stays true for an empty side —
+ * emptiness is itself a known, honest state — so it never drags the other, present side
+ * into `known: false`.
  */
 export function movementWeek(
   gymBlocks: Block[],
@@ -162,10 +167,10 @@ export function movementWeek(
 
   const gymEnergy = trainDayEnergy(gymBlocks, weightKg)
   const gymKnown = gymBlocks.length === 0 || gymEnergy.known
-  const gymKcal = gymBlocks.length === 0 ? 0 : gymEnergy.known ? gymEnergy.plannedKcal : null
+  const gymKcal = gymBlocks.length === 0 ? null : gymEnergy.known ? gymEnergy.plannedKcal : null
 
   const sportKnown = sport.every((s) => s.kcal !== null)
-  const sportKcal = sport.length === 0 ? 0 : sportKnown ? sport.reduce((t, s) => t + (s.kcal ?? 0), 0) : null
+  const sportKcal = sport.length === 0 ? null : sportKnown ? sport.reduce((t, s) => t + (s.kcal ?? 0), 0) : null
 
   return {
     gymMin, sportMin, totalMin: gymMin + sportMin,

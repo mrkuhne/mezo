@@ -7,6 +7,19 @@
 // backdrop-click idioms follow Sheet.tsx. Deliberately generic
 // (open/onClose/label/tint/children only) — the T6 active-workout slice
 // reuses this component unchanged for its confirm/menu surfaces.
+//
+// Geometry (mezo-88iwa.13 fix round 2): backdrop and card are rendered as
+// SIBLINGS below, exactly like Sheet.tsx's `.sheet-backdrop` + `.sheet` pair —
+// deliberately NOT nesting the card inside the backdrop. Both are taken out
+// of normal flow purely via CSS position in prototype.css (`.gl-backdrop`
+// `position: absolute; inset: 0`, `.gl-card` `position: absolute; left: 0;
+// right: 0; bottom: 0`), anchored to this portal target (`.phone-screen`,
+// itself `position: relative`) the same way Sheet's pair is. Previously the
+// backdrop was `position: fixed` (frosted the whole browser window instead of
+// the phone frame on desktop) and the card was `position: relative` (joined
+// normal flow and shrank `.screen-content` by its own height on open,
+// measured 812→524px). jsdom can't verify the resulting geometry — see the
+// sibling-shape invariant test in GlassBox.test.tsx and verify visually live.
 // ============================================================
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'

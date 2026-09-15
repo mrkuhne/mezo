@@ -101,3 +101,33 @@ test('portals into .phone-screen when present (Sheet.tsx idiom)', () => {
   expect(document.querySelector('.gl-card')?.closest('.phone-screen')).toBeTruthy()
   document.querySelector('.phone-screen')!.remove()
 })
+
+// mezo-88iwa.13 fix round 2: GlassBox is a Sheet-SIBLING dialog, not a true
+// overlay — the backdrop was `position: fixed` (frosts the whole browser
+// window, not the phone frame) and the card was `position: relative` (joins
+// normal flow and SHRINKS `.screen-content` by its own height on open). The
+// fix mirrors Sheet.tsx's proven structure exactly: backdrop and card are
+// SIBLINGS under the same portal target (`.phone-screen` here, `.sheet-backdrop`
+// + `.sheet` there), both taken out of flow via CSS position (`.gl-backdrop`
+// `absolute; inset: 0`, `.gl-card` `absolute; left/right/bottom: 0` in
+// prototype.css). jsdom computes no layout, so geometry itself (does the card
+// actually sit at the bottom, does opening it leave `.screen-content`'s height
+// untouched) is NOT assertable here — that needs a live/manual check. What IS
+// assertable, and asserted below, is the DOM-structure invariant the CSS fix
+// depends on: card and backdrop are siblings (not nested) directly under the
+// portal host, matching Sheet's shape one-for-one.
+test('backdrop and card are siblings directly under the portal host (Sheet.tsx shape)', () => {
+  document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
+  render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)
+  const host = document.querySelector('.phone-screen')!
+  const backdrop = document.querySelector('.gl-backdrop')!
+  const card = document.querySelector('.gl-card')!
+  expect(backdrop.parentElement).toBe(host)
+  expect(card.parentElement).toBe(host)
+  expect(card.previousElementSibling).toBe(backdrop)
+  // Neither is nested inside the other — the CSS ports Sheet's sibling
+  // pattern rather than nesting the card inside the backdrop.
+  expect(backdrop.contains(card)).toBe(false)
+  expect(card.contains(backdrop)).toBe(false)
+  document.querySelector('.phone-screen')!.remove()
+})

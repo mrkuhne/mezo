@@ -4,15 +4,24 @@
 // titanium/load-pages.js (`movementScreen`) + load.css `.ld-move-*`, ported
 // onto the `.ld-` house section (styles/prototype.css).
 //
-// The week's WHOLE movement, gym and sport drawn side by side but NEVER
+// What has moved SO FAR this week, gym and sport drawn side by side but NEVER
 // mixed into one number (`movementWeek`, loadWeek.ts): the gym side is an
-// ESTIMATE (minutes from `estimateSessionMinutes` off the week's own plan,
-// kcal from trainDayEnergy's MET math — both need a weight on file), the
-// sport side is what was actually LOGGED this week (volleyball sessions +
-// run logs, real minutes) with a kcal the app has no source for yet — so it
-// stays honestly unknown rather than borrowing the gym side's MET formula.
+// ESTIMATE (minutes from `estimateSessionMinutes`, kcal from trainDayEnergy's
+// MET math — both need a weight on file) over DONE days only, the sport side
+// is what was actually LOGGED this week (volleyball sessions + run logs, real
+// minutes) with a kcal the app has no source for yet — so it stays honestly
+// unknown rather than borrowing the gym side's MET formula.
 // `known:false` on either side renders the honest sentence, never a
 // fabricated number (the same rule trainDayEnergy's own callers follow).
+//
+// Fix round 2 (mezo-88iwa.13 review): the hero used to sum the WHOLE-WEEK
+// gym PLAN (every day with exercises, done or not) against logged-only sport
+// — an apples-to-oranges total ("460 perc" = 370 planned + 90 logged) that
+// read as "this week's total" while actually being plan+log. gymBlocks now
+// only covers days the week has ALREADY DONE (weekLog.details' dayLabel,
+// mirroring the approved prototype's `movementWeek` over `log.doneDays` —
+// load-state.js), so both sides are the same tense: "eddig a héten" (so far
+// this week), never "this week" as a whole.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -108,11 +117,17 @@ export function TrainWeekMozgasPage() {
     Object.keys(load.perMuscle).map((m) => budgetGroup(m)).filter((g): g is string => g !== null),
   )
 
-  // Gym side: an ESTIMATE off the week's own plan — one block per day that carries
-  // exercises, timed the same way the prep/MesoEditor screens time a session.
+  // Gym side: an ESTIMATE, but only over days ALREADY DONE this week — never the
+  // whole-week plan (fix round 2, mezo-88iwa.13 review: the hero previously mixed the
+  // WHOLE-WEEK gym plan with logged-only sport, e.g. "460 perc" = 370 planned + 90
+  // logged, an apples-to-oranges total). The approved prototype's own movementWeek
+  // (load-state.js) sums `log.doneDays` only — mirrored here via `weekLog.details`
+  // (WorkoutDetailResponse[], already in scope for `doneRows` above), whose
+  // `dayLabel` ('Hét'..'Vas') is the same token MesoDay.day carries.
+  const doneDayLabels = new Set(weekLog.details.map((w) => w.dayLabel))
   const gymBlocks: Block[] = days
-    .filter((d) => d.exercises.length > 0)
-    .map((d) => ({ kind: 'gym', minutes: estimateSessionMinutes(d.exercises, timingProfile ?? undefined), done: false }))
+    .filter((d) => d.exercises.length > 0 && doneDayLabels.has(d.day))
+    .map((d) => ({ kind: 'gym', minutes: estimateSessionMinutes(d.exercises, timingProfile ?? undefined), done: true }))
 
   // Sport side: what was actually LOGGED this Mon–Sun week — real minutes, no kcal
   // source yet (neither volleyball nor a run log carries one), so it stays honestly
@@ -135,10 +150,10 @@ export function TrainWeekMozgasPage() {
         <header className="ld-hero is-slim rise" style={{ '--d': '40ms', '--ld-accent': 'var(--tag-sport)' } as CSSProperties}>
           <span className="ld-hero-wash" />
           <button type="button" className="mz-backbtn ld-back" onClick={goBack}>‹ Terhelés</button>
-          <span className="ld-eyebrow">Minden mozgásod</span>
+          <span className="ld-eyebrow">Minden mozgásod eddig a héten</span>
           <div className="ld-hero-pct"><b>{move.totalMin}</b><em>perc</em></div>
           <p className="ld-hero-say">
-            Gym és sport együtt — a kettő máshogy számít, ezért külön is mutatjuk.
+            Gym és sport együtt, eddig a héten — a kettő máshogy számít, ezért külön is mutatjuk.
           </p>
         </header>
 
@@ -148,13 +163,21 @@ export function TrainWeekMozgasPage() {
               <ClayIcon name="i-edzes" size={26} />
               <strong>{move.gymMin} perc</strong>
               <small>gym{move.gymKcal !== null ? ` · ~${move.gymKcal} kcal` : ''}</small>
-              <em>{move.gymKcal !== null ? 'becslés a szettjeidből' : 'nincs elég adat a kalóriához — adj meg testsúlyt'}</em>
+              <em>
+                {move.gymMin === 0
+                  ? 'még nincs lezárt edzésnap ezen a héten'
+                  : move.gymKcal !== null ? 'becslés a szettjeidből' : 'nincs elég adat a kalóriához — adj meg testsúlyt'}
+              </em>
             </div>
             <div className="ld-move-box" style={{ '--mus-color': 'var(--tag-sport)' } as CSSProperties}>
               <ClayIcon name="i-sport" size={26} />
               <strong>{move.sportMin} perc</strong>
               <small>sport{move.sportKcal !== null ? ` · ${move.sportKcal} kcal` : ''}</small>
-              <em>{move.sportKcal !== null ? 'naplóztad' : 'naplóztad — a kalóriáját még nem tudjuk becsülni'}</em>
+              <em>
+                {move.sportMin === 0
+                  ? 'nincs naplózott sport ezen a héten'
+                  : move.sportKcal !== null ? 'naplóztad' : 'naplóztad — a kalóriáját még nem tudjuk becsülni'}
+              </em>
             </div>
           </div>
 

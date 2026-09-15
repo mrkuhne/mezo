@@ -73,7 +73,12 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-week',
     route: '/train/week',
     tier: 'T2',
-    version: 1,
+    // v2 (final-review fix wave, mezo-88iwa.13 T12): a napsáv-horgony kártya a HŐSre
+    // költözött (lásd a `hogyan` kártya kommentjét lentebb) — ugyanaz a szabály, ami a
+    // train-mai fejlécét is version-bumpre kötelezte (lásd ott a v4 komment): az élő oldalt
+    // rosszul leíró/elavult horgonyú kártyát azok is újra kell hogy lássák, akik a régit már
+    // látták.
+    version: 2,
     label: 'Terhelés',
     cards: [
       {

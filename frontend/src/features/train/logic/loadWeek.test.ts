@@ -199,15 +199,20 @@ describe('movementWeek', () => {
   })
   it('is unknown with a null sport kcal when any logged session is missing one', () => {
     const week = movementWeek([], [{ minutes: 30, kcal: 150 }, { minutes: 20, kcal: null }], 80)
-    expect(week).toEqual({ gymMin: 0, sportMin: 50, totalMin: 50, gymKcal: 0, sportKcal: null, known: false })
+    expect(week).toEqual({ gymMin: 0, sportMin: 50, totalMin: 50, gymKcal: null, sportKcal: null, known: false })
   })
-  it('an empty gym side contributes trivially-known zero, never dragging a known sport side down', () => {
+  // Fix round 2 (mezo-88iwa.13 review): an empty side used to fabricate a known-ZERO kcal
+  // ("sport · 0 kcal — naplóztad" with nothing logged) — 0 reads as "we measured zero
+  // calories", which is a lie for a side with no blocks/sessions at all. It must render
+  // NO kcal number (null), while still staying `known: true` overall so it never drags a
+  // present, genuinely-known other side into `known: false`.
+  it('an empty gym side is trivially known but renders no kcal number, never a fabricated zero', () => {
     const week = movementWeek([], [{ minutes: 90, kcal: 400 }], null)
-    expect(week).toEqual({ gymMin: 0, sportMin: 90, totalMin: 90, gymKcal: 0, sportKcal: 400, known: true })
+    expect(week).toEqual({ gymMin: 0, sportMin: 90, totalMin: 90, gymKcal: null, sportKcal: 400, known: true })
   })
-  it('an empty sport side contributes trivially-known zero, never dragging a known gym side down', () => {
+  it('an empty sport side is trivially known but renders no kcal number, never a fabricated zero', () => {
     const week = movementWeek([gymBlock(60)], [], 80)
-    expect(week).toEqual({ gymMin: 60, sportMin: 0, totalMin: 60, gymKcal: 480, sportKcal: 0, known: true })
+    expect(week).toEqual({ gymMin: 60, sportMin: 0, totalMin: 60, gymKcal: 480, sportKcal: null, known: true })
   })
 })
 

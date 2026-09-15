@@ -4,6 +4,7 @@ import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
+import type { WorkoutDetailResponse } from '@/data/train/trainApi'
 
 // The mock/week fixtures always carry at least one sport/run event — the honest-absence
 // test needs to force sportLoadForWeek's result to empty rather than fighting the fixtures.
@@ -27,12 +28,20 @@ vi.mock('react-router-dom', async () => {
 // always carries a weight on file. The skeleton test needs the week's own detail fetch
 // still pending — mock mode resolves synchronously otherwise.
 let weightOverride: number | null | undefined
-let weekLogOverride: { details: []; pending: boolean } | null = null
+let weekLogOverride: { details: WorkoutDetailResponse[]; pending: boolean } | null = null
 // Fix round 1 (mezo-88iwa.13 review): goal/timing-profile pending must NOT gate the whole
 // page — only per-card honesty (known:false fallbacks) should react to it, mirroring
 // TrainTodayPage's workoutPending||runningPending-only gate.
 let goalPendingOverride = false
 let timingPendingOverride = false
+// Fix round 2 (mezo-88iwa.13 review): the "sport box never claims a kcal number it has no
+// source for" test was vacuous — the mock fixtures always carry at least one logged sport/
+// run session with kcal:null, so `sportKcal` was already null for a reason UNRELATED to the
+// empty-side fabricated-zero bug (loadWeek.ts movementWeek used to return `sportKcal: 0` for
+// a truly EMPTY sport side, which this test never exercised). This override forces both the
+// logged volleyball sessions and the logged run sessions to empty so the empty-side path is
+// actually hit.
+let emptySportFixture = false
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -51,6 +60,14 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       const real = actual.useWeekMuscleLog(...args)
       return weekLogOverride ? { ...real, details: weekLogOverride.details, pending: weekLogOverride.pending } : real
     },
+    useTrain: (...args: Parameters<typeof actual.useTrain>) => {
+      const real = actual.useTrain(...args)
+      return emptySportFixture ? { ...real, sport: { ...real.sport, sessions: [] } } : real
+    },
+    useRunning: (...args: Parameters<typeof actual.useRunning>) => {
+      const real = actual.useRunning(...args)
+      return emptySportFixture ? { ...real, runSessions: [] } : real
+    },
   }
 })
 
@@ -68,6 +85,7 @@ afterEach(() => {
   goalPendingOverride = false
   timingPendingOverride = false
   sportLoadOverride = null
+  emptySportFixture = false
 })
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><TrainWeekMozgasPage /></MemoryRouter></QueryWrapper>)
@@ -97,9 +115,17 @@ test('the gym-estimate and sport-logged boxes never mix into one number', async 
 })
 
 // With no weight on file, the gym side's kcal is honestly unknown — a number must never
-// be fabricated where trainDayEnergy itself would return `known: false`.
+// be fabricated where trainDayEnergy itself would return `known: false`. This needs an
+// actual DONE gym day in the fixture (fix round 2, mezo-88iwa.13 review: gymBlocks now
+// only covers done days, mock mode's own weekLog.details is otherwise always empty — see
+// weekMuscleLogHooks.ts) so the "known:false" branch under test is the weight-missing one,
+// not the separate "nothing done yet" one.
 test('movementWeek known:false renders the honest sentence, never a fabricated kcal', async () => {
   weightOverride = 0
+  weekLogOverride = {
+    details: [{ id: 'w1', templateSessionId: 't1', date: '2026-05-18', status: 'completed', title: 'Push', dayLabel: 'Hét', exercises: [] }],
+    pending: false,
+  }
   const { container } = renderPage()
   await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
   const gymBox = container.querySelectorAll('.ld-move-box')[0] as HTMLElement
@@ -114,6 +140,24 @@ test('the sport box never claims a kcal number it has no source for', async () =
   await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
   const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
   expect(within(sportBox).queryByText(/kcal/)).toBeNull()
+})
+
+// Fix round 2 (mezo-88iwa.13 review): the test above was vacuous for the EMPTY-side bug —
+// the mock fixtures already have a logged session with kcal:null, so `sportKcal` was null
+// for the "unknown source" reason, never for the "nothing logged at all" reason. loadWeek.ts's
+// movementWeek used to fabricate `sportKcal: 0` for a truly empty sport side, which rendered
+// as "sport · 0 kcal — naplóztad" — a claimed measurement of zero calories for a session that
+// was never logged. With an actually-empty sport/run fixture this must render no kcal number
+// AND no "naplóztad" (you logged it) claim.
+test('an empty-sport week renders no kcal number and no false "naplóztad" claim, never a fabricated zero', async () => {
+  emptySportFixture = true
+  const { container } = renderPage()
+  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
+  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
+  expect(within(sportBox).getByText('0 perc')).toBeInTheDocument()
+  expect(within(sportBox).queryByText(/kcal/)).toBeNull()
+  expect(within(sportBox).queryByText('naplóztad')).toBeNull()
+  expect(within(sportBox).getByText(/nincs naplózott sport/)).toBeInTheDocument()
 })
 
 test('the group rows carry a "sport is" chip only where the sport/futás estimate reaches them', async () => {
