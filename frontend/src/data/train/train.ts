@@ -839,7 +839,7 @@ export const workout: WorkoutPlan = {
   title: 'Pull Day',
   tag: 'Week 3 · MAV',
   durationEst: 78,
-  overloadSummary: { weightUp: 2, repUp: 1, hold: 0 },
+  overloadSummary: { weightUp: 2, weightDown: 1, repUp: 1, hold: 0 },
   exercises: [
     {
       id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -901,6 +901,7 @@ export const workout: WorkoutPlan = {
         { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
       ],
       lastWeek: { weight: 18, reps: 11, rir: 1 },
+      progression: { lever: 'weight', deltaKg: -2.5, deltaReps: null, targetWeightKg: 15.5, targetReps: 10, rationale: 'Múlt hét 11 × 18 kg grind volt, visszavesszük: −2,5 kg' },
     },
     {
       id: 'ex5', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation',

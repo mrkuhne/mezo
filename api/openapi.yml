@@ -13305,13 +13305,18 @@ components:
       type: object
       description: >-
         Day-level count of how many exercises move via each lever (PrepHero
-        chip).
+        chip). weightUp counts load INCREASES only; a load reduction (grind
+        back-off) counts in weightDown and must never be presented as
+        progressive overload.
       required:
         - weightUp
+        - weightDown
         - repUp
         - hold
       properties:
         weightUp:
+          type: integer
+        weightDown:
           type: integer
         repUp:
           type: integer

@@ -5476,9 +5476,10 @@ export interface components {
             /** @description Short HU explanation (e.g. "Múlt hét könnyen ment (RIR 3) → +1 rep"). */
             rationale: string;
         };
-        /** @description Day-level count of how many exercises move via each lever (PrepHero chip). */
+        /** @description Day-level count of how many exercises move via each lever (PrepHero chip). weightUp counts load INCREASES only; a load reduction (grind back-off) counts in weightDown and must never be presented as progressive overload. */
         OverloadSummary: {
             weightUp: number;
+            weightDown: number;
             repUp: number;
             hold: number;
         };

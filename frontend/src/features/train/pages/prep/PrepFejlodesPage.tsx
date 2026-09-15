@@ -74,18 +74,23 @@ export function PrepFejlodesPage({ forecast, workSets, overload, onBack }: {
               </div>
             </>
           )}
-          {overload && (overload.weightUp + overload.repUp) > 0 && (
+          {overload && (overload.weightUp + overload.repUp + overload.weightDown) > 0 && (
             <div className="mz-qcard">
               <div className="row" style={{ gap: 9, alignItems: 'flex-start' }}>
                 <ClayIcon name="i-lang" size={22} />
                 <div className="mz-qgrow">
                   <div className="mz-qtitle" style={{ fontSize: 12 }}>
-                    ⚡ Túlterhelés · {[
+                    {(overload.weightUp + overload.repUp) > 0 ? '⚡ Túlterhelés' : 'Visszavett súlyok'} · {[
                       overload.weightUp > 0 ? `${overload.weightUp}× +súly` : null,
                       overload.repUp > 0 ? `${overload.repUp}× +rep` : null,
+                      overload.weightDown > 0 ? `${overload.weightDown}× −súly` : null,
                     ].filter(Boolean).join(' · ')}
                   </div>
-                  <div className="mz-qwhy">Ezek a gyakorlatok adják az XP-lökés nagyját ma.</div>
+                  <div className="mz-qwhy">
+                    {(overload.weightUp + overload.repUp) === 0
+                      ? 'A visszavett súly is a terv része — innen indul a következő emelkedés.'
+                      : 'Ezek a gyakorlatok adják az XP-lökés nagyját ma.'}
+                  </div>
                 </div>
               </div>
             </div>

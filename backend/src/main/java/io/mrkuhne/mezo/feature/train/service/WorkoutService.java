@@ -241,6 +241,7 @@ public class WorkoutService {
             .map(a -> (int) a.getSetDelta())
             .orElse(0);
         int weightUp = 0;
+        int weightDown = 0;
         int repUp = 0;
         int hold = 0;
         List<TodayExercise> mapped = new ArrayList<>();
@@ -264,8 +265,16 @@ public class WorkoutService {
                 t.setRationale(p.rationale());
                 t.setProgression(p.progression());
                 if (p.progression() != null) {
-                    switch (p.progression().getLever()) {
-                        case WEIGHT -> weightUp++;
+                    var signal = p.progression();
+                    switch (signal.getLever()) {
+                        case WEIGHT -> {
+                            // A null/zero deltaKg is currently unreachable here: ProgressionDecider
+                            // always sets a non-zero ± increment for the WEIGHT lever. If that ever
+                            // changes, this deliberately falls through to weightUp so the tally total
+                            // still matches the exercise count.
+                            if (signal.getDeltaKg() != null && signal.getDeltaKg().signum() < 0) weightDown++;
+                            else weightUp++;
+                        }
                         case REP -> repUp++;
                         default -> hold++; // HOLD, DELOAD
                     }
@@ -274,7 +283,7 @@ public class WorkoutService {
             mapped.add(t);
         }
         OverloadSummary overloadSummary = hypertrophyGate.getIfAvailable() != null
-            ? OverloadSummary.builder().weightUp(weightUp).repUp(repUp).hold(hold).build()
+            ? OverloadSummary.builder().weightUp(weightUp).weightDown(weightDown).repUp(repUp).hold(hold).build()
             : null;
         return WorkoutTodayResponse.builder()
             .templateSessionId(day.getId())

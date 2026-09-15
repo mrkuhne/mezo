@@ -99,7 +99,12 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
     })),
     challenges: [],
     overloadSummary: r.overloadSummary
-      ? { weightUp: r.overloadSummary.weightUp, repUp: r.overloadSummary.repUp, hold: r.overloadSummary.hold }
+      ? {
+          weightUp: r.overloadSummary.weightUp,
+          weightDown: r.overloadSummary.weightDown,
+          repUp: r.overloadSummary.repUp,
+          hold: r.overloadSummary.hold,
+        }
       : null,
   }
 }
