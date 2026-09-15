@@ -1,5 +1,9 @@
 # Mezo + Én tab design iterations — Daniel's direction log (2026-08-27)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 The Mezo and Én tabs went through iteration loops with Daniel after their first ships. This
 file records **what changed, why, and what it means for implementation** — the prototypes
 (`prototypes/mezo-tab.html`, artifact `797270dd…`; `prototypes/en-tab.html`, artifact

@@ -1,5 +1,9 @@
 # Mezo — UI/IA Redesign Handoff (Claude Code → Claude Design)
 
+> **Státusz: vizuálisan meghaladott (Mozaik-kor).** A továbbvitt irány a Titanium —
+> új munkát a [design 2.0 index](README.md) szerinti friss dokumentumokból indíts.
+
+
 > **How to use this document:** paste or attach it as the FIRST message of the Claude Design
 > conversation. It carries the full context of a brainstorming session held in Claude Code on
 > 2026-08-25/26 (bd issue `mezo-88jw`). Everything below was verified against the codebase and
