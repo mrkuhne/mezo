@@ -12386,8 +12386,73 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-color: color-mix(in srgb, var(--coral) 55%, transparent);
   color: color-mix(in srgb, var(--coral) 75%, var(--ink)); }
 
+/* ── Vércukor-válasz üvegdoboz (mezo-6mi43) ───────────────────────────────
+   Jóváhagyott referencia: a companion-titanium prototípus `glucoseView` / `glucoseCurve` és a
+   food.css `.fcer-glu*` blokkjai. A görbe-geometria 1:1 (240×122-es viewBox, 78-as alapszint).
+
+   A SÁV SZAVA áll a nagy numerál helyén: a dobozban glikémiás index — se szó, se szám — nem
+   jelenik meg (owner-döntés). A sáv-szín HANGULAT, nem érdemjegy: a „magas" ezért LILA
+   (--lav) és nem korall — a korall a ház hibaállapot-színe, és egy magas vércukor-válasz nem
+   hiba, hanem egy tény, amivel lehet mit kezdeni. */
+.fmx-glu-glass { --glu-color: var(--sky); }
+.fmx-glu-glass.lvl-low { --glu-color: var(--sage); }
+.fmx-glu-glass.lvl-mid { --glu-color: var(--amber); }
+.fmx-glu-glass.lvl-high { --glu-color: var(--lav); }
+.fmx-glu-hero strong { font-size: 30px; letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--glu-color) 62%, var(--ink)); text-transform: lowercase; }
+.fmx-glu-hero svg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3))
+  drop-shadow(0 0 14px color-mix(in srgb, var(--glu-color) 32%, transparent)); }
+.fmx-glu-headline { margin: 14px 0 6px; font-family: var(--ff-display); font-size: 19px;
+  font-weight: 300; line-height: 1.3; color: var(--ink); text-align: left; }
+
+/* A görbe: a vonal és a csúcs a sáv színén, a tengely és az alapszint csendes. */
+.fmx-glu-curve { display: block; width: 100%; height: auto; color: var(--glu-color); }
+.fmx-glu-base { stroke: var(--border-subtle); }
+.fmx-glu-tick { stroke: var(--border-subtle); }
+.fmx-glu-axis { fill: var(--faint); font-size: 8px; }
+.fmx-glu-fill { fill: currentColor; opacity: 0.15; stroke: none; }
+.fmx-glu-line { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.fmx-glu-dot { fill: currentColor; }
+.fmx-glu-note { fill: currentColor; font-size: 10px; font-style: italic; }
+
+.fmx-glu-facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin: 12px 0 0; padding: 10px 0; border-top: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider); }
+.fmx-glu-facts span { display: flex; flex-direction: column; gap: 3px; text-align: center; }
+.fmx-glu-facts small { font-size: 8.5px; letter-spacing: 0.4px; color: var(--faint); }
+.fmx-glu-facts b { font-size: 13px; font-weight: 600; color: var(--ink); }
+/* Őszinte becslés: a feltevést kimondjuk, nem mért adatként tesszük ki. */
+.fmx-glu-estimated { margin: 10px 0 0; padding: 9px 11px; border-radius: 12px;
+  background: var(--surface-recess); color: var(--sub);
+  font-size: 10.5px; line-height: 1.55; text-align: left; }
+
+.fmx-glu-expect { display: grid; gap: 9px; margin: 14px 0 0; text-align: left; }
+.fmx-glu-expect > div { display: flex; align-items: flex-start; gap: 10px; }
+.fmx-glu-expect > div > span:last-child { min-width: 0; }
+.fmx-glu-expect small { display: block; font-size: 8.5px; letter-spacing: 0.9px;
+  text-transform: uppercase; color: var(--faint); }
+.fmx-glu-expect b { display: block; margin-top: 2px; font-size: 12px; font-weight: 500;
+  line-height: 1.45; color: var(--ink); }
+.fmx-glu-meaning { margin: 12px 0 0; font-size: 11px; line-height: 1.6; color: var(--sub);
+  text-align: left; }
+.fmx-glu-tip { display: flex; align-items: flex-start; gap: 11px; margin: 13px 0 0;
+  padding: 12px; border-radius: 16px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--glu-color) 32%, transparent);
+  background: color-mix(in srgb, var(--glu-color) 9%, var(--surface-card)); }
+.fmx-glu-tip svg { flex: 0 0 auto; }
+.fmx-glu-tip strong { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.fmx-glu-tip p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--sub); }
+
 @media (prefers-reduced-motion: no-preference) {
   .fmx-ring-progress, .fmx-gauge-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+  /* A válasz-görbe megrajzolja magát, a csúcs-kavics utána ül le. A JS is kapuzza
+     (`useReducedMotion` → `is-draw`), ez itt a második, CSS-oldali kapu. */
+  .fmx-glu-curve.is-draw .fmx-glu-line { stroke-dasharray: 320; animation: fmx-glu-draw 1.1s ease-out both; }
+  .fmx-glu-curve.is-draw .fmx-glu-fill { animation: fmx-glu-fade 0.7s ease-out 0.5s both; }
+  .fmx-glu-curve.is-draw .fmx-glu-dot { animation: fmx-glu-pop 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.4) 0.85s both; }
+  @keyframes fmx-glu-draw { from { stroke-dashoffset: 320; } }
+  @keyframes fmx-glu-fade { from { opacity: 0; } }
+  @keyframes fmx-glu-pop { from { r: 0; } }
   /* A dimenzió-csempék egymás után úsznak be, a prototípus 40ms-os lépcsőjével. */
   .fmx-dim { animation: fmx-tile-rise 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.1) both; }
   .fmx-dim:nth-child(2) { animation-delay: 0.04s; }
@@ -12462,6 +12527,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-mic, .fmx-mic:not(:disabled), .fmx-finder svg { animation: none; }
   /* S1d (mezo-33k6): a víz-gyorsgomb nyomás-visszajelzése kivezetve. */
   .fmx-water-add, .fmx-water-add:active { transform: none; transition: none; }
+  /* mezo-6mi43: a vércukor-görbe önrajzolása kivezetve — a végállapot statikusan látszik. */
+  .fmx-glu-curve .fmx-glu-line, .fmx-glu-curve .fmx-glu-fill, .fmx-glu-curve .fmx-glu-dot {
+    animation: none; stroke-dasharray: none; }
 }
 /* ── /fuel-mai titanium ──────────────────────────────────────────────────── */
 

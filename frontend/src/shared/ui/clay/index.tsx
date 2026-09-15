@@ -32,6 +32,9 @@ export type ClayIconName =
   // Fuel Titanium S1b (mezo-33k6): az értékelés három dimenziójának SAJÁT arca — a generikus
   // szimbólumok nem illettek rájuk (owner). A napi kontextus marad az óra (`i-idozito`).
   | 'i-makro' | 'i-mikro' | 'i-feldolgozas'
+  // Fuel · vércukor-válasz (mezo-6mi43): a negyedik Minőség-kártya és az üvegdoboza arca —
+  // a prototípus „domb" metaforája (alapszint-tengely + válasz-görbe + csúcs-kavics).
+  | 'i-vercukor'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'
