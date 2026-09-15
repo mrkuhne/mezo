@@ -19,14 +19,42 @@ export const createFoodDay=()=>({meals:[
  {id:'seed-breakfast',time:'08:00',name:'Zabkása gyümölccsel',slot:'Reggeli',score:8.2,fixed:{kcal:420,p:22,c:64,f:9,fiber:7}},
  {id:'seed-lunch',time:'12:30',name:'Csirkés rizstál',slot:'Ebéd',score:8.4,fixed:{kcal:760,p:64,c:64,f:27,fiber:11}},
 ]});
-// Planned meal windows: the Mai page lists these blocks and logging targets one of them.
-export const mealBlocks=[
- {key:'reggeli',label:'Reggeli',time:'08:00',budget:520,box:['06:00','11:00'],optimal:['07:30','09:30'],color:'#d9c395',art:'sun'},
- {key:'ebed',label:'Ebéd',time:'12:30',budget:760,box:['10:30','15:30'],optimal:['12:00','14:00'],color:'#c8e895',art:'bowl'},
- {key:'uzsonna',label:'Uzsonna',time:'16:00',budget:320,box:['14:00','19:00'],optimal:['15:30','17:00'],color:'#8ed2e8',art:'bolt'},
- {key:'vacsora',label:'Vacsora',time:'19:30',budget:800,box:['17:00','22:00'],optimal:['18:30','20:30'],color:'#bca6f1',art:'moon'},
-];
+// --- Meal-window roles (mezo-ud77t) -----------------------------------------------------------
+// Role presets follow the sports-science rule engine (RP-style): carbs toward training, fat away
+// from it, protein spread evenly (ISSN 0.25-0.4 g/kg per meal). `share` is the window's soft
+// share of the daily kcal budget — the DAILY total stays the only hard target; window budgets
+// are guides, never red/green grades. `peri` marks training-adjacent windows where glucose-spike
+// advice relaxes (contraction-driven GLUT4 uptake disposes the carbs).
+export const MEAL_ROLES={
+ pre:{label:'Edzés előtti',art:'bolt',color:'#8ed2e8',share:.14,mix:{p:25,c:55,f:20},peri:true,hint:'Könnyű, szénhidrát-hangsúlyos adag az edzés elé.'},
+ during:{label:'Edzés közbeni',art:'water',color:'#7dd4f1',share:.06,mix:{p:10,c:85,f:5},peri:true,hint:'Gyors szénhidrát hosszú edzéshez vagy versenyhez.'},
+ post:{label:'Edzés utáni',art:'dumbbell',color:'#c8e895',share:.22,mix:{p:35,c:45,f:20},peri:true,hint:'Szénhidrát és fehérje a regenerációhoz.'},
+ main:{label:'Főétkezés',art:'bowl',color:'#d9c395',share:.30,mix:{p:30,c:40,f:30},peri:false,hint:'Kiegyensúlyozott, fehérje-erős nagy étkezés.'},
+ snack:{label:'Könnyű falat',art:'sprout',color:'#8fd97a',share:.10,mix:{p:35,c:35,f:30},peri:false,hint:'Kis adag, fehérje- és rost-hangsúllyal.'},
+ night:{label:'Lefekvés előtti',art:'moon',color:'#bca6f1',share:.10,mix:{p:50,c:15,f:35},peri:false,hint:'Lassú fehérje estére, kevés szénhidrát.'},
+};
+export const DAILY_KCAL=2400;
 export const minutesOf=t=>Number(t.slice(0,2))*60+Number(t.slice(3));
+export const timeOf=m=>{const c=Math.max(0,Math.min(1439,Math.round(m)));return `${String(Math.floor(c/60)).padStart(2,'0')}:${String(c%60).padStart(2,'0')}`;};
+// Planned meal windows: the Mai page lists these blocks and logging targets one of them.
+// Demo seeds tell the feature's story: the 16:00 window is pre-workout for the 17:00 session.
+export const mealBlocks=[
+ {key:'reggeli',label:'Reggeli',role:'main',mix:{...MEAL_ROLES.main.mix},time:'08:00',budget:520,box:['06:00','11:00'],optimal:['07:30','09:30'],color:'#d9c395',art:'sun'},
+ {key:'ebed',label:'Ebéd',role:'main',mix:{...MEAL_ROLES.main.mix},time:'12:30',budget:760,box:['10:30','15:30'],optimal:['12:00','14:00'],color:'#c8e895',art:'bowl'},
+ {key:'uzsonna',label:'Uzsonna',role:'pre',mix:{...MEAL_ROLES.pre.mix},time:'16:00',budget:320,box:['14:00','19:00'],optimal:['15:30','17:00'],color:'#8ed2e8',art:'bolt'},
+ {key:'vacsora',label:'Vacsora',role:'main',mix:{...MEAL_ROLES.main.mix},time:'19:30',budget:800,box:['17:00','22:00'],optimal:['18:30','20:30'],color:'#bca6f1',art:'moon'},
+];
+export const roleOf=block=>MEAL_ROLES[block?.role]??null;
+export const roleDefaults=(roleId,daily=DAILY_KCAL)=>{const r=MEAL_ROLES[roleId];return r?{budget:Math.round(r.share*daily/10)*10,mix:{...r.mix}}:null;};
+// Picking a role fills the smart preset; every number stays hand-editable afterwards.
+export function applyRole(block,roleId,daily=DAILY_KCAL){const d=roleDefaults(roleId,daily);if(!d)return false;block.role=roleId;block.budget=d.budget;block.mix=d.mix;return true;}
+export const presetDrift=(block,daily=DAILY_KCAL)=>{const d=roleDefaults(block.role,daily);return d?block.budget!==d.budget||['p','c','f'].some(k=>block.mix?.[k]!==d.mix[k]):false;}
+// Moving a window recomputes its 5h box and the optimal band around the new time.
+export function setWindowTime(block,time){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return false;const m=minutesOf(time);block.time=time;block.box=[timeOf(m-120),timeOf(m+180)];block.optimal=[timeOf(m-30),timeOf(m+90)];return true;}
+let windowSerial=0;
+export function addWindow(daily=DAILY_KCAL){const block={key:`ablak-${++windowSerial}`,label:'Új ablak',role:'snack',mix:{...MEAL_ROLES.snack.mix},time:'11:00',budget:roleDefaults('snack',daily).budget,box:['09:00','14:00'],optimal:['10:30','12:30'],color:MEAL_ROLES.snack.color,art:MEAL_ROLES.snack.art};setWindowTime(block,block.time);mealBlocks.push(block);mealBlocks.sort((a,b)=>a.time.localeCompare(b.time));return block;}
+export function removeWindow(key){const i=mealBlocks.findIndex(b=>b.key===key);if(i<0||mealBlocks.length<=1)return false;mealBlocks.splice(i,1);return true;}
+export const windowByKey=key=>mealBlocks.find(b=>b.key===key)??null;
 export function blockFor(time){if(time<'10:30')return 'reggeli';if(time<'14:30')return 'ebed';if(time<'18:00')return 'uzsonna';return 'vacsora';}
 let serial=0;
 export const sampleDraft=(time='15:30')=>({id:`food-demo-${++serial}`,time,score:7.6,items:[{key:'yogurt',grams:150},{key:'banana',grams:120}]});
@@ -40,12 +68,21 @@ export function deleteMeal(day,id){const index=day.meals.findIndex(m=>m.id===id)
 // categorical: a GL-style load from carbs weighted by their refined (sugar) share, braked by the
 // fiber/protein/fat that "clothe" them. No numeric GI is shown anywhere — mixed-meal GI math
 // mispredicts by 22-50%, so the demo (like the planned live feature) commits to three honest bands.
-export function glycemicFor({c,fiber,p,f,sugar}={}){
+export function glycemicFor({c,fiber,p,f,sugar}={},role=null){
  if(!Number.isFinite(c))return null;
  const s=Number.isFinite(sugar)?sugar:c*.3,fb=Number.isFinite(fiber)?fiber:0,pr=Number.isFinite(p)?p:0,fa=Number.isFinite(f)?f:0;
  const load=c*(.6+.4*Math.min(1,s/Math.max(1,c))),brake=fb*2+pr*.25+fa*.2,index=load-brake;
  const level=index<12?'low':index<24?'mid':'high';
  const sugary=s>=c*.45&&s>=12,bare=fb<4&&pr<15;
+ // Training-adjacent windows: contraction-driven glucose uptake makes the same spike useful —
+ // the band stays honest, the advice flips from damping to fueling.
+ const peri=MEAL_ROLES[role]?.peri===true;
+ if(peri){const tip=level==='low'
+   ?{title:'Könnyű és edzésbarát',body:'Alacsony vércukor-terhelés — edzés-közeli ablakban akár több gyors szénhidrát is elférne.'}
+   :{title:'Ezt az edzésed használja el',body:'Edzés-közeli ablakban a dolgozó izom közvetlenül felveszi a glükózt — ez a csúcs munkára megy, nem raktárba.'};
+  return {level,peri:true,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,
+   expect:{energy:'Gyors üzemanyag az edzésedhez',back:'A mozgás maga viszi le — edzés közben/után gyorsan alapszintre ér',hunger:'Edzés után jelentkezik majd — a következő ablakod fedezi'},
+   facts:[['szénhidrát',`${Math.round(c)} g`],['ebből cukor',Number.isFinite(sugar)?`${Math.round(sugar)} g`:'becsült'],['rost',`${Math.round(fb)} g`],['fehérje',`${Math.round(pr)} g`]]};}
  const tip=level==='low'
   ?{title:'Szép egyensúly',body:'A fehérje és a rost lassan engedi fel a vércukrot — ez a tányér magától simít.'}
   :level==='high'
@@ -60,11 +97,13 @@ export function glycemicFor({c,fiber,p,f,sugar}={}){
   :level==='mid'
   ?{energy:'Stabil energia 2-3 órára',back:'Kb. 2 óra múlva újra alapszinten',hunger:'Az éhség 2-3 óra múlva jelentkezik'}
   :{energy:'Gyors löket, majd visszaesés',back:'Kb. 1,5 óra múlva zuhan — az alapszint alá is eshet',hunger:'A visszaesés után korán, akár 1-1,5 óra múlva újra megéhezhetsz'};
- return {level,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,expect,
+ return {level,peri:false,label:level==='low'?'alacsony':level==='mid'?'közepes':'magas',tip,expect,
   facts:[['szénhidrát',`${Math.round(c)} g`],['ebből cukor',Number.isFinite(sugar)?`${Math.round(sugar)} g`:'becsült'],['rost',`${Math.round(fb)} g`],['fehérje',`${Math.round(pr)} g`]]};
 }
 // The same verdict straight from a meal record ({macros,nutrients}) or a live draft.
-export const glycemicForMeal=rec=>rec?glycemicFor({...(rec.macros||{}),sugar:rec.nutrients?.sugar}):null;
+export const glycemicForMeal=(rec,role=null)=>rec?glycemicFor({...(rec.macros||{}),sugar:rec.nutrients?.sugar},role):null;
+// The role of the window a given eating time falls into — feeds role-aware glucose advice.
+export const roleForTime=time=>windowByKey(blockFor(time))?.role??mealBlocks.find(b=>b.key===blockFor(time))?.role??null;
 export function totals(day){return day.meals.reduce((out,m)=>{const n=nutrition(m);for(const k of ['kcal','p','c','f','fiber'])out[k]+=n[k];return out;},{kcal:0,p:0,c:0,f:0,fiber:0});}
 // Time-of-day-ranked quick repeats ("szokásosak"): recency+frequency sample, morning items first in the morning.
 const usualRows=[
