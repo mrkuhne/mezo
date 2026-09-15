@@ -50,7 +50,10 @@ const BASE_CONTROLS = [
 // A teljes gomblistát nézzük, nem prefixet — így egy oda nem illő extra gomb is kibukik.
 test.each([
   ['/nap', 'nap'],
-  ['/train', 'train'],
+  // /train nincs többé saját arca (Train Titanium T4, mezo-88iwa.5): a bejegyzés a
+  // valódi tab-otthonra, /train/mai-re költözött (id: train-mai) — a redirect maga a
+  // router.trainIndexRedirect.test.tsx dolga.
+  ['/train/mai', 'train-mai'],
   ['/fuel', 'fuel'],
   ['/mezo', 'mezo'],
   ['/me', 'me'],

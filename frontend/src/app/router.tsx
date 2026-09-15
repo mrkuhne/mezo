@@ -10,7 +10,6 @@ import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
-import { EdzesHubPage } from '@/features/train/pages/EdzesHubPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
@@ -218,14 +217,12 @@ function MeKnowledgeRedirect() {
   return <Navigate to={`/mezo/knowledge?view=kategoriak${kind ? `&kind=${kind}` : ''}`} replace />
 }
 
-/** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
- *  `?day={0..6}`: that deep link belongs to the full day view and is forwarded to
- *  `/train/mai` with the selection intact (Mai derives it from the URL). */
+/** `/train` has no face of its own under the four-tab IA (owner 2026-09-12) — it forwards
+ *  to Mai, keeping the legacy Heti `?day={0..6}` deep-link intact. */
 function TrainIndex() {
   const [params] = useSearchParams()
   const day = params.get('day')
-  if (day !== null && day !== '') return <Navigate to={`/train/mai?day=${day}`} replace />
-  return <EdzesHubPage />
+  return <Navigate to={`/train/mai${day !== null && day !== '' ? `?day=${day}` : ''}`} replace />
 }
 
 export const routes: RouteObject[] = [

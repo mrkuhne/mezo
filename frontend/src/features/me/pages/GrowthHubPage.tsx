@@ -68,7 +68,8 @@ export function GrowthHubPage() {
           <MaStrip />
           <Mosaic className="mt-md">
             {/* Skillek + Kitüntetések wear clay SPOTS (s-hajtas / s-medal), so they are composed by
-                hand like EdzesHubPage's Medálok tile — Tile's icon slot only takes i-* icons. */}
+                hand, the same idiom the (now-retired) Edzés hub's Medálok tile used — Tile's
+                icon slot only takes i-* icons. */}
             <button type="button" className="mz-tile mz-w-lav rise" style={{ '--d': '170ms' } as CSSProperties}
               aria-label="Skillek" onClick={() => navigate('/me/growth/skillek')}>
               <div className="mz-tile-top"><span className="mz-eyebrow">Skillek</span></div>

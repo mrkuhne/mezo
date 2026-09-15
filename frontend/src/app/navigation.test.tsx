@@ -239,10 +239,14 @@ test('the tab bar stays visible on the regular Train tab', () => {
   expect(container.querySelector('.tab-bar')).toBeTruthy()
 })
 
-test('the Edzés tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.3.1)', async () => {
-  renderApp('/train')
-  expect(await screen.findByRole('button', { name: 'Heti terv' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument()
+// The six-tile Edzés hub retired in Train Titanium T4 (mezo-88iwa.5) — /train forwards
+// to Mai (router.trainIndexRedirect.test.tsx owns the redirect itself); this asserts
+// the landed page still carries no subnav dropdown, the property the retired test named.
+test('the Edzés tab lands on Mai — no subnav dropdown (mezo-88iwa.5)', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/train'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  expect(await screen.findByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/train/mai')
   expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
 })
 

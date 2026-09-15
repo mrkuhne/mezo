@@ -41,7 +41,10 @@ function Probe() {
       <span data-testid="current">{t.current?.id ?? '-'}</span>
       <span data-testid="unseen">{String(t.isUnseen('fuel'))}</span>
       <button onClick={() => t.open('fuel')}>nyisd</button>
-      <button onClick={() => navigate('/train')}>train</button>
+      {/* /train maga sosem kalauzos (a hat-csempés hub retirált, Train Titanium T4,
+          mezo-88iwa.5): a router azonnal /train/mai-re irányít, tehát a kalauz-lint
+          szemével is a landolt route számít — a próba egyenesen oda navigál. */}
+      <button onClick={() => navigate('/train/mai')}>train</button>
       <button onClick={() => navigate('/fuel')}>fuel</button>
       <button onClick={() => navigate('/nap')}>nap</button>
       {/* /me/sleep/night: az éjszakai mód D11 szerint SOSEM kap kalauzt (rituális
@@ -303,7 +306,7 @@ test('látott welcome mellett a /nap kalauza normálisan felugrik', async () => 
 })
 
 test('a függő welcome MÁS route kalauzát nem nyomja el', async () => {
-  renderAt('/train')
+  renderAt('/train/mai')
   await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
   expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
 })

@@ -1381,9 +1381,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts,
     workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
-  - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, EdzesHubPage.tsx, ExercisesPage.tsx,
-    ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoMusclePage.tsx,
-    MesoReportPage.tsx, MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoWeekPage.tsx,
+  - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExercisesPage.tsx, ExercisesSkeleton.tsx,
+    GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx,
+    MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoWeekPage.tsx,
     MesocycleBuilderPage.tsx, MesocycleLibraryPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
     PrepBemelegitesPage.tsx, PrepFejlodesPage.tsx, PrepGyakorlatokPage.tsx, PrepHetiZonaPage.tsx,
     PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,

@@ -34,14 +34,10 @@ test.each(['/nap?dp=reggel', '/nap?dp=nap', '/nap?dp=este', '/nap?day=rough'])(
   },
 )
 
-// A /train hőse hat SZÁMÍTOTT variáns (EdzesHubPage.tsx:109,129,163,185,215,235), egyszer
-// renderelve (:302). Mock-módban a mai nap edzés-variánst ad; a többi variánst a
-// registry-lint nem látja, ezért az attribútum mind a hatra kikerül — a code review
-// feladata, hogy egyik se maradjon le.
-test('/train — a train-hero anchor jelen van', () => {
-  renderAt('/train')
-  expect(hasAnchor('train-hero')).not.toBeNull()
-})
+// A hat számított hős-variánsos EdzésHub (train-hero anchor) a Train Titanium T4
+// shell-IA-ban megszűnt — /train ma azonnal /train/mai-re irányít (router.tsx
+// TrainIndex), a hero-anchor pedig csak a törölt hub-ban élt. A /train/mai saját
+// anchorát (mai-napsav) a lenti S3a-blokk teszteli.
 
 // A /mezo döntéskártyája (:174) és a /me cél-kártyája (:108) adat-feltételes, ezért NEM
 // anchor: a „Mutasd meg" gomb némán eltűnne. A chat-nyitó és az identitás-hős
