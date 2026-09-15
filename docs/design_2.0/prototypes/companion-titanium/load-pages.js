@@ -29,31 +29,6 @@ function loadHero() {
   </header>`;
 }
 
-/* ── the week, day by day ────────────────────────────────────────────────────────────── */
-
-const DAY_STATE = {
-  done: { icon: 'tick', word: 'megvolt' },
-  today: { icon: 'bolt', word: 'ma este' },
-  missed: { icon: 'skip', word: 'kimaradt' },
-  ahead: { icon: 'clock', word: 'még jön' },
-  rest: { icon: 'moon', word: 'pihenő' },
-  'rest-today': { icon: 'moon', word: 'ma pihenő' },
-};
-
-function weekStrip() {
-  return `<h3 class="pl-h3">A heted napról napra</h3>
-  <div class="ld-days">${weekDays().map(day => {
-    const state = DAY_STATE[day.state];
-    return `<div class="ld-day is-${day.state}" data-reveal>
-     <span class="ld-day-name">${day.name}${day.state === 'today' ? '<b class="ld-ma">MA</b>' : ''}</span>
-     <span class="ld-day-what">${day.type ? `<strong>${day.type}</strong><small>${day.sets} szett</small>` : day.sport ? '' : `<small>pihenőnap</small>`}
-      ${day.sport ? `<span class="ld-sport-chip">${icon(day.sport.icon)}${day.sport.name} · ${day.sport.minutes} perc</span>` : ''}
-     </span>
-     <span class="ld-day-state">${icon(state.icon)}<small>${state.word}</small></span>
-    </div>`;
-  }).join('')}</div>`;
-}
-
 /* ── the muscle groups, each openable into its glass ─────────────────────────────────── */
 
 function groupCards() {
@@ -211,7 +186,6 @@ export function loadContent() {
    ${muscleMapHtml(weekLoad().filter(r => r.done > 0).map(r => r.key))}
   </div>`;
   return `${loadHero()}<div class="ld-body">
-   ${weekStrip()}
    ${mapCard()}
    ${groupCards()}
    ${sportCard()}
