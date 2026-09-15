@@ -893,9 +893,13 @@ describe('TrainTodayPage (real mode, pending)', () => {
     // prevent (mezo-9bbc final review, I4).
     const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
     expect(sk.filter((el) => el.style.width === '62px')).toHaveLength(7)
-    // the only remaining full-width block is the poster's in-poster CTA — 56px, the
-    // `.tr-start` height the Titanium face gave it (mezo-88iwa.6)
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '56px')).toHaveLength(1)
+    // the poster's in-poster CTA — 74px, the real `.tr-start` height (padding 15px
+    // 18px + strong 16px/1.5 + small 12px/1.5 + small's 2px margin-top = 74px total),
+    // corrected from the earlier 56px placeholder (mezo-88iwa.6 fix round 1).
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '74px')).toHaveLength(1)
+    // the „Vagy inkább" pair under the poster (`.tr-alt`) — two 44px-tall placeholders,
+    // the real `.tr-alt button` min-height, now that the pair always renders.
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '44px')).toHaveLength(2)
   })
 })
 

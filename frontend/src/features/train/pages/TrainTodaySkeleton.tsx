@@ -34,9 +34,18 @@ export default function TrainTodaySkeleton() {
               <Skeleton key={i} width={78} height={24} radius={999} />
             ))}
           </div>
-          {/* the in-poster CTA (`.tr-start`) */}
-          <Skeleton className="mt-md" width="100%" height={56} radius={20} />
+          {/* the in-poster CTA (`.tr-start`) — padding 15px 18px + strong (16px/1.5 =
+              24px) + small (12px/1.5 = 18px, +2px margin-top) = 30 + 24 + 2 + 18 = 74px. */}
+          <Skeleton className="mt-md" width="100%" height={74} radius={20} />
         </SkeletonCard>
+      </div>
+      {/* the „Vagy inkább" pair (`.tr-alt`) — now ALWAYS under the poster, so the
+          skeleton must reserve its space too: min-height 44px + margin-bottom 16px. */}
+      <div style={{ padding: '0 6px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+          <Skeleton width="100%" height={44} radius={16} />
+          <Skeleton width="100%" height={44} radius={16} />
+        </div>
       </div>
     </div>
   )
