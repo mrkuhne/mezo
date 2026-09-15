@@ -71,26 +71,17 @@ function draw(){
  const auraOn=d==='nap'&&p===0&&!personalDetail();$('.arrival').classList.toggle('has-aura',auraOn);
  if(auraOn){const aura=needsAura();$('.arrival').style.setProperty('--aura-water',aura.water);$('.arrival').style.setProperty('--aura-sleep',aura.sleep);$('.arrival').style.setProperty('--aura-energy',aura.energy);$('.presence').innerHTML=`<span class="presence-dot"></span> VELED VAGYOK · <button class="presence-signals" data-life="nap/0/signals">ÉLETJELEK ↗</button>`;}
  else $('.presence').innerHTML='<span class="presence-dot"></span> VELED VAGYOK';
- // Header experiment (owner round 2026-09-15): ?hdr=a|b|c picks how subpage headers work.
- const hdrMode=new URLSearchParams(location.search).get('hdr')||'a';
+ // Subpage header (owner decision 2026-09-15, option A): the poster is the first thing on
+ // every train subpage — no big tab title, the back pill lives inside the hero.
  const trainSub=d==='train'&&Boolean(view);
- if(!['mezo','me','nap'].includes(d)&&!(d==='fuel'&&view)&&!(trainSub&&hdrMode!=='c'))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
- if(trainSub)applyHeaderMode(hdrMode);
+ if(!['mezo','me','nap'].includes(d)&&!(d==='fuel'&&view)&&!trainSub)panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ if(trainSub)dockBackIntoHero();
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
-// A: the back pill moves into the poster. B: a slim sticky bar replaces the big title.
-// C: the big title stays but shares its row with the back pill.
-function applyHeaderMode(mode){
+function dockBackIntoHero(){
  const back=panel.querySelector('.pl-back');if(!back)return;
  const hero=panel.querySelector('.pl-dhero,.pl-poster,.ld-hero,.mm-head');
- if(mode==='a'&&hero){hero.prepend(back);back.classList.add('is-inhero');}
- if(mode==='b'){
-  const title=hero?.querySelector('h2')?.textContent??back.textContent.replace('‹','').trim();
-  const bar=document.createElement('div');bar.className='subbar';
-  bar.innerHTML=`<button class="subbar-back" data-route="${back.dataset.route}" aria-label="Vissza">‹</button><strong>${title}</strong>`;
-  panel.prepend(bar);back.hidden=true;
- }
- if(mode==='c'){const heading=panel.querySelector('.page-heading');if(heading){heading.classList.add('is-inline');heading.prepend(back);}}
+ if(hero){hero.prepend(back);back.classList.add('is-inhero');}
 }
 function moveDay(amount){if(!dayNav.shift(amount))return;dayMotion=amount>0?'left':'right';draw();}
 let infoLayer=null;
