@@ -166,7 +166,12 @@ public class MealAiDraftService {
             Rules:
             - Match a food against the CATALOG below only when it is clearly the same item; then copy
               the EXACT id into pantryItemId or recipeId. NEVER invent or alter an id.
-            - For a pantry match give amount in the row's serving unit; for a recipe match amount = servings.
+            - For a pantry match, amount is the QUANTITY measured in the row's serving UNIT — the unit
+              symbol after the number in the serving column (row "100 g" -> unit "g", row "1 db" ->
+              unit "db"). NEVER answer with the number of servings: one medium apple on a "100 g" row
+              is amount 150 and unit "g", not amount 1.5 or 1. Convert spoken measures (dl, bögre,
+              marék, szelet) into that unit yourself.
+            - For a recipe match amount = servings.
             - ALWAYS fill name + kcal/proteinG/carbsG/fatG as your estimate for the stated amount,
               matched lines included (they are a fallback only).
             - ALSO estimate fiberG/sugarG/saltG/saturatedFatG in GRAMS for the stated amount — these
@@ -242,7 +247,13 @@ public class MealAiDraftService {
         if (pantryId != null) {
             PantryItemEntity p = pantryById.get(pantryId);
             if (p != null) {
-                return pantryItem(p, line, false);
+                ExtractedLine inBasis = toBasisAmount(p, line);
+                if (inBasis == null) {
+                    log.warn("Meal AI draft: unit '{}' disagrees with the serving basis of {} — demoted",
+                            line.unit(), p.getId());
+                    return estimateItem(line, true);
+                }
+                return pantryItem(p, inBasis, false);
             }
             log.warn("Meal AI draft: hallucinated pantry id {} demoted", pantryId);
             return matchByNameOrEstimate(userId, line, nameIndex, true);
@@ -274,6 +285,34 @@ public class MealAiDraftService {
             return pantryItem(mine, line, true);
         }
         return estimateItem(line, demoted);
+    }
+
+    /**
+     * Reconciles the LLM's unit with the id-matched row's serving basis (mezo-6ezjv): gpt-5.6-luna
+     * reads the catalog's "serving: 100 g" column as a UNIT and answers amount in SERVINGS
+     * ({@code amount:1.5, unit:"100 g"} for a 150 g apple), which the old blind
+     * {@code setAmount(line.amount())} then rebranded as 1.5 GRAMS. Returns the line with amount
+     * converted to the basis unit, unchanged when the units already agree (or the LLM sent none),
+     * and null on a genuine disagreement — the caller demotes to the LLM's own portion estimate.
+     */
+    private static ExtractedLine toBasisAmount(PantryItemEntity p, ExtractedLine line) {
+        var c = p.getCatalog();
+        String unit = line.unit();
+        String basisUnit = c.getServingUnit() == null ? "unit" : c.getServingUnit();
+        if (unit == null || unit.isBlank() || PantryNameIndex.sameUnit(unit, basisUnit)) {
+            return line;
+        }
+        BigDecimal per = c.getServingAmount() == null ? BigDecimal.ONE : c.getServingAmount();
+        if (PantryNameIndex.isServingExpression(unit, per, basisUnit)) {
+            if (line.amount() == null) {
+                return line; // pantryItem's fallback (amount = per) is already one serving
+            }
+            return new ExtractedLine(line.pantryItemId(), line.recipeId(), line.name(),
+                    line.amount().multiply(per), basisUnit, line.kcal(), line.proteinG(),
+                    line.carbsG(), line.fatG(), line.fiberG(), line.sugarG(), line.saltG(),
+                    line.saturatedFatG());
+        }
+        return null;
     }
 
     private static UUID parseUuid(String raw) {

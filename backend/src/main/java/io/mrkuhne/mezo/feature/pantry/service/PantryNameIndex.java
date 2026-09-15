@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.pantry.service;
 
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
+import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,5 +126,33 @@ public final class PantryNameIndex {
     private static String canonicalUnit(String raw) {
         String normalized = normalize(raw);
         return UNIT_SYNONYMS.getOrDefault(normalized, normalized);
+    }
+
+    /** Canonical equality of two unit spellings ("gramm" == "g"); blank on either side never agrees. */
+    public static boolean sameUnit(String a, String b) {
+        String ca = canonicalUnit(a);
+        return !ca.isEmpty() && ca.equals(canonicalUnit(b));
+    }
+
+    /** "150 g", "1,5 db", "100g" — a number glued to a unit word. */
+    private static final Pattern QUANTIFIED_UNIT =
+            Pattern.compile("^\\s*(\\d+(?:[.,]\\d+)?)\\s*(\\p{L}+)\\s*$");
+
+    /**
+     * True when {@code draftUnit} spells out the row's WHOLE serving ("100 g", "100g" against a
+     * 100 g row) — the mezo-6ezjv failure shape: gpt-5.6-luna reads the catalog's serving column
+     * as a unit and answers amount in servings of that size. The caller then multiplies the
+     * amount by the serving size instead of mislabeling a serving count as grams.
+     */
+    public static boolean isServingExpression(String draftUnit, BigDecimal servingAmount, String servingUnit) {
+        if (draftUnit == null || servingAmount == null) {
+            return false;
+        }
+        var m = QUANTIFIED_UNIT.matcher(draftUnit);
+        if (!m.matches()) {
+            return false;
+        }
+        return new BigDecimal(m.group(1).replace(',', '.')).compareTo(servingAmount) == 0
+                && sameUnit(m.group(2), servingUnit);
     }
 }

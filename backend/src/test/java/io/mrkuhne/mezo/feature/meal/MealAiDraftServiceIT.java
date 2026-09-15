@@ -247,6 +247,89 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         assertThat(line.getKcal()).isEqualByComparingTo("220"); // the LLM's own numbers
     }
 
+    /**
+     * mezo-6ezjv: gpt-5.6-luna reads the catalog's "serving: 100 g" as a UNIT and answers amount
+     * in SERVINGS ({@code amount:1.5, unit:"100 g"} for a 150 g apple). The pantry arm must
+     * convert that back to the basis unit instead of stamping "g" on the serving count.
+     */
+    @Test
+    void testDraft_shouldConvertServingsToBasis_whenUnitIsTheRowsServingExpression() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryItemEntity pantry = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusDays(30));
+
+        String json = """
+            {"slot":"breakfast","title":null,"note":null,"items":[
+              {"pantryItemId":"%s","recipeId":null,"name":"Zabpehely","amount":1.5,"unit":"100 g",
+               "kcal":78,"proteinG":0.4,"carbsG":20.7,"fatG":0.3},
+              {"pantryItemId":"%s","recipeId":null,"name":"Zabpehely","amount":0.75,"unit":"100g",
+               "kcal":46,"proteinG":0.8,"carbsG":11,"fatG":0.4}
+            ]}""".formatted(pantry.getId(), pantry.getId());
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        assertThat(res.getItems()).hasSize(2);
+        MealAiDraftItem spaced = res.getItems().getFirst();
+        assertThat(spaced.getSource()).isEqualTo("pantry");
+        assertThat(spaced.getAmount()).isEqualByComparingTo("150");   // 1.5 servings × 100 g
+        assertThat(spaced.getUnit()).isEqualTo("g");
+        assertThat(spaced.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal());
+        assertThat(spaced.getNeedsReview()).isFalse();                // deterministic conversion
+
+        MealAiDraftItem unspaced = res.getItems().get(1);
+        assertThat(unspaced.getAmount()).isEqualByComparingTo("75");  // "100g" reads the same
+        assertThat(unspaced.getSource()).isEqualTo("pantry");
+    }
+
+    /** mezo-6ezjv defense: an id-matched line whose unit genuinely disagrees with the row's
+     *  serving basis keeps the LLM's own portion macros instead of mislabeling the amount. */
+    @Test
+    void testDraft_shouldDemoteToEstimate_whenIdMatchedUnitDisagrees() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryItemEntity pantry = pantryItemPopulator.createFood(owner, "Alma", LocalDate.now().plusDays(30)); // serving: 100 g
+
+        String json = """
+            {"slot":"snack","title":null,"note":null,"items":[
+              {"pantryItemId":"%s","recipeId":null,"name":"Alma","amount":1,"unit":"db",
+               "kcal":78,"proteinG":0.4,"carbsG":20.7,"fatG":0.3}
+            ]}""".formatted(pantry.getId());
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("estimate");
+        assertThat(line.getPantryItemId()).isNull();
+        assertThat(line.getKcal()).isEqualByComparingTo("78");   // the LLM's portion estimate
+        assertThat(line.getUnit()).isEqualTo("db");
+        assertThat(line.getNeedsReview()).isTrue();
+    }
+
+    /** Unit synonyms ("gramm") and a blank unit both keep today's trusted-amount behavior. */
+    @Test
+    void testDraft_shouldTrustAmount_whenUnitAgreesOrIsBlank() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryItemEntity pantry = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusDays(30));
+
+        String json = """
+            {"slot":"breakfast","title":null,"note":null,"items":[
+              {"pantryItemId":"%s","recipeId":null,"name":"Zabpehely","amount":60,"unit":"gramm",
+               "kcal":220,"proteinG":8,"carbsG":38,"fatG":4},
+              {"pantryItemId":"%s","recipeId":null,"name":"Zabpehely","amount":40,"unit":"",
+               "kcal":150,"proteinG":5,"carbsG":25,"fatG":3}
+            ]}""".formatted(pantry.getId(), pantry.getId());
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        assertThat(res.getItems()).hasSize(2);
+        assertThat(res.getItems().getFirst().getSource()).isEqualTo("pantry");
+        assertThat(res.getItems().getFirst().getAmount()).isEqualByComparingTo("60");
+        assertThat(res.getItems().getFirst().getNeedsReview()).isFalse();
+        assertThat(res.getItems().get(1).getSource()).isEqualTo("pantry");
+        assertThat(res.getItems().get(1).getAmount()).isEqualByComparingTo("40");
+    }
+
     @Test
     void testDraft_shouldMatchByName_whenTheLlmIdWasHallucinated() {
         UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
