@@ -1,4 +1,4 @@
-import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals, glycemicFor } from './food-state.js';
+import { foods, createFoodDay, sampleDraft, fixedDraft, nutrition, nutrientFor, mealFacts, saveMeal, deleteMeal, totals, usualMeals, glycemicFor, roleForTime } from './food-state.js';
 import { safe, icon, closeSheet, react } from './nap.js';
 const $=s=>document.querySelector(s),fmt=v=>Math.round(v).toLocaleString('hu-HU');
 let day=createFoodDay(),draft=null,stage='input',mode='photo',source='',blockTime='',deleteArmed=false,callbacks,lastKcal=null;
@@ -105,11 +105,11 @@ function saved(){
 export const glucoseExpectHtml=g=>`<div class="fcer-glu-expect">${[['bolt','Energia',g.expect.energy],['clock','Alapszint',g.expect.back],['bowl','Éhség',g.expect.hunger]].map(([a,k,v])=>`<div>${icon(a)}<span><small>${k}</small><b>${v}</b></span></div>`).join('')}</div><p class="fcer-glu-meaning">Minél laposabb a domb, annál egyenletesebb az energiád — a magas, hegyes csúcs gyors visszaesést és korai éhséget hoz.</p>`;
 /* Step two: what this meal likely does to the glucose curve, and the way back to the day. */
 function glucoseView(){
- const v=nutrition(draft),t=totals(day),g=glycemicFor({...v,sugar:nutrientFor(draft).sugar});
+ const v=nutrition(draft),t=totals(day),g=glycemicFor({...v,sugar:nutrientFor(draft).sugar},roleForTime(draft.time));
  return `<div class="fcer-glucose lvl-${g?.level??'none'}">
   <div class="food-intro"><span class="overline">VÉRCUKOR-VÁLASZ · MINTAELEMZÉS</span><h1>${g?g.level==='high'?'Ez most megdobja.':g.level==='mid'?'Egy szelídebb domb.':'Szépen simít.':'Ehhez kevés az adat.'}</h1></div>
   ${g?`<div class="fcer-glu-card">
-   <div class="fcer-glu-head"><span class="glu-pebble" aria-hidden="true"></span><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span></div>
+   <div class="fcer-glu-head"><span class="glu-pebble" aria-hidden="true"></span><span class="fcer-glu-pill">${g.label.toUpperCase()} VÁRHATÓ HATÁS</span>${g.peri?`<span class="fcer-glu-peri">EDZÉS-KÖZELI ABLAK</span>`:''}</div>
    ${glucoseCurve(g.level)}
    <div class="fcer-glu-facts">${g.facts.map(([k,val])=>`<span><small>${k}</small><b>${val}</b></span>`).join('')}</div>
    ${glucoseExpectHtml(g)}
