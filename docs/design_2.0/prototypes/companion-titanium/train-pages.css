@@ -174,3 +174,27 @@
 .mm-cell small { font-size: 9px; line-height: 1.3; text-align: center; color: #ffffff7a; }
 .mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color) 70%, #fff); }
 .mm-cell .icon { filter: drop-shadow(0 2px 6px #0008); }
+
+/* — subpage header experiment: ?hdr=a|b|c — */
+.pl-back.is-inhero {
+  position: absolute; left: 14px; top: 14px; z-index: 3; margin: 0;
+  background: #0b0d1299; backdrop-filter: blur(10px); border-color: #ffffff26;
+}
+.pl-dhero, .pl-poster, .ld-hero { position: relative; }
+.pl-back.is-inhero ~ .overline, .pl-dhero .pl-back.is-inhero + * { margin-top: 34px; }
+.subbar {
+  position: sticky; top: 0; z-index: 8; display: flex; align-items: center; gap: 11px;
+  margin: -8px -20px 8px; padding: 9px 16px;
+  background: #0b0d12d6; backdrop-filter: blur(16px) saturate(.9);
+  border-bottom: 1px solid #ffffff0d;
+}
+.pl-sub .subbar { margin: -8px -20px 8px; }
+.subbar-back {
+  width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer;
+  font-size: 17px; color: #d6d1e4; border: 1px solid #ffffff1c; border-radius: 50%; background: #ffffff0a;
+}
+.subbar strong { font-size: 14px; font-weight: 500; letter-spacing: -.01em; }
+.page-heading.is-inline { display: flex; align-items: center; gap: 12px; }
+.page-heading.is-inline .overline { display: none; }
+.page-heading.is-inline h2 { font-size: 21px; margin: 0; }
+.page-heading.is-inline .pl-back { margin: 0; }
