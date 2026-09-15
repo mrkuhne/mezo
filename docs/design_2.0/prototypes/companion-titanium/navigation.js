@@ -73,9 +73,9 @@ function draw(){
  else $('.presence').innerHTML='<span class="presence-dot"></span> VELED VAGYOK';
  // Subpage header (owner decision 2026-09-15, option A): the poster is the first thing on
  // every train subpage — no big tab title, the back pill lives inside the hero.
- const trainSub=d==='train'&&Boolean(view);
- if(!['mezo','me','nap'].includes(d)&&!(d==='fuel'&&view)&&!trainSub)panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
- if(trainSub)dockBackIntoHero();
+ // Owner 2026-09-15: the train tab carries no page heading anywhere — the posters name the place.
+ if(!['mezo','me','nap','train'].includes(d)&&!(d==='fuel'&&view))panel.insertAdjacentHTML('afterbegin',`<div class="page-heading"><span class="overline">${cfg.name} · DEMÓ</span><h2>${cfg.tabs[p]}</h2></div>`);
+ if(d==='train'&&view)dockBackIntoHero();
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
 function dockBackIntoHero(){
