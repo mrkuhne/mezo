@@ -13,8 +13,10 @@
 // Owner-döntések, amiket a markup hordoz:
 //   • a blokkok a lista, és a naplózás a BLOKKBA történik (a generikus naplózás a lap alján,
 //     FuelMaiPage),
-//   • a logolt étkezés sora a nevét és az AI pontszámát viszi — kcal-t NEM (azt a blokk gyűrűje
-//     mondja el egyszer), ikont sem, „ajánlott keret" számot sem,
+//   • a logolt étkezés sora a nevét, a három makrót grammban és az AI pontszámát viszi — kcal-t
+//     NEM (azt a blokk gyűrűje mondja el egyszer), „ajánlott keret" számot sem. A makró-csík
+//     ikonjai mezo-n9peo-val jöttek: az owner színes, ikonos grammokat kért felirat nélkül,
+//     ezért a korábbi „a sor nem visel ikont" megkötés erre a csíkra már nem áll,
 //   • a sor IDEJE az ablak-csíkon él, nem külön szövegként,
 //   • a pont-chip finoman animál, hogy koppinthatónak olvasódjon (a `reduce` ág kivezeti).
 //
@@ -28,6 +30,35 @@ import { ClayIcon } from '@/shared/ui/clay'
 import type { MealSlot } from '@/data/types'
 import type { WindowLaneVM, WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DoneMealRow } from '@/features/fuel/logic/keretHero'
+
+/**
+ * A logolt étkezés-sor alsó sorának makró-hármasa (owner, mezo-n9peo): clay szimbólum + a
+ * gramm, a makró NEVE nélkül — a hue viszi az azonosságot. Ugyanaz a három hue és ugyanaz a
+ * három ikon, mint a részletlap gyűrűin (`FuelQualityBlocks`), hogy a szín ugyanazt jelentse
+ * mindkét felületen; a `word` csak a képernyőolvasó mondatába kerül, a képernyőre nem.
+ */
+const MACRO_STRIP = [
+  { key: 'proteinG' as const, word: 'fehérje', color: 'var(--macro-protein)', icon: 'i-hus' as const },
+  { key: 'carbsG' as const, word: 'szénhidrát', color: 'var(--macro-carbs)', icon: 'i-gabona' as const },
+  { key: 'fatG' as const, word: 'zsír', color: 'var(--macro-fat)', icon: 'i-avokado' as const },
+]
+
+/** A makró-csík. Őszinte-null makrónként: a forrás nem adta meg → „—", sosem 0 g. */
+function MacroStrip({ row }: { row: DoneMealRow }) {
+  const label = MACRO_STRIP
+    .map(m => `${m.word} ${row[m.key] == null ? 'nincs adat' : `${huInt(row[m.key] as number)} g`}`)
+    .join(', ')
+  return (
+    <span className="fmx-meal-macros" role="img" aria-label={label}>
+      {MACRO_STRIP.map(m => (
+        <em key={m.key} className="fmx-mm" style={{ '--mm-color': m.color } as React.CSSProperties}>
+          <ClayIcon name={m.icon} size={15} />
+          {row[m.key] == null ? '—' : `${huInt(row[m.key] as number)} g`}
+        </em>
+      ))}
+    </span>
+  )
+}
 
 /** Blokk-hue a ház tokenjeiből (a prototípus beégetett hexei helyett — a Mai a ház saját
  *  világos/sötét témájában él, lásd a prototype.css `fuel-mai titanium` blokk fejlécét). */
@@ -150,8 +181,10 @@ function BlockCard({ tile, rows, dayKcal, onLogInto, onOpenMeal, onOpenScore }: 
           <button type="button" className="fmx-meal-main" onClick={() => onOpenMeal(r.mealId)}>
             <span className="fmx-meal-copy">
               <strong>{r.name || 'Étkezés'}</strong>
-              {/* Provenancia-nyom, nem második kcal: ennyi fehérjét vitt a tányér. */}
-              <small>{r.proteinG == null ? 'részletek' : `${huInt(r.proteinG)} g fehérje`}</small>
+              {/* A sor alsó sora: a három makró grammban, ikonnal és színnel — NEM második
+                  kcal (azt a blokk gyűrűje mondja el egyszer). Korábban egyetlen makró állt
+                  itt szövegesen; az owner mindhármat kérte, felirat nélkül (mezo-n9peo). */}
+              <MacroStrip row={r} />
             </span>
           </button>
           {/* A chip az ÉRTÉKELÉSRE mutat — a sor többi része a részletekre. Eddig mindkettő

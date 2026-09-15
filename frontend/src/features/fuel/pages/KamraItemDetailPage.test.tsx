@@ -53,7 +53,10 @@ test('renders a food item with the hero kcal, macro rings and the per-100 g qual
   expect(screen.getByText(/kcal \/ 100 g/)).toBeInTheDocument()
   // a makró-gyűrűk a tétel saját összetételét mondják
   expect(screen.getByRole('heading', { name: 'Makrók' })).toBeInTheDocument()
-  expect(screen.getByText('23 g')).toBeInTheDocument()           // fehérje
+  // A gramm a gyűrű NAGY száma (mezo-n9peo), és az egységét saját elem viszi — ezért a
+  // gyűrű belsejét olvassuk, nem egy összefüggő szövegdarabot keresünk.
+  const macros = screen.getByRole('heading', { name: 'Makrók' }).closest('section') as HTMLElement
+  expect(macros.querySelector('.fmx-share-g')!.textContent!.replace(/\s+/g, ' ')).toBe('23 g') // fehérje
   // a per-100 g minőség-lapkák
   const quality = screen.getByRole('heading', { name: 'Minőség' }).closest('section') as HTMLElement
   expect(within(quality).getByText(/^Cukor · 100 g$/)).toBeInTheDocument()

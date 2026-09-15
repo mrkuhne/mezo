@@ -171,15 +171,30 @@ test('nowFrac is null once every window is already logged (no open window left)'
 
 // ── doneMealRows ─────────────────────────────────────────────────────────────
 
-test('doneMealRows lists the done windows chronologically, carrying name/time/kcal/protein/score', () => {
-  const lunch = meal({ id: 'lunch', title: 'Csirkés rizs', score: 0.92, kcal: 640, p: 48 })
-  const breakfast = meal({ id: 'breakfast', title: 'Zabkása', score: 0.7, kcal: 420, p: 32 })
+test('doneMealRows lists the done windows chronologically, carrying name/time/kcal/all three macros/score', () => {
+  const lunch = meal({ id: 'lunch', title: 'Csirkés rizs', score: 0.92, kcal: 640, p: 48, c: 72, f: 16 })
+  const breakfast = meal({ id: 'breakfast', title: 'Zabkása', score: 0.7, kcal: 420, p: 32, c: 50, f: 10 })
   const s1 = slot({ time: '12:30', slotKey: 'lunch', label: 'Ebéd', state: 'done', mealId: 'lunch', mealName: 'Csirkés rizs', kcal: 640, p: 48 })
   const s2 = slot({ time: '07:40', slotKey: 'breakfast', label: 'Reggeli', state: 'done', mealId: 'breakfast', mealName: 'Zabkása', kcal: 420, p: 32 })
   const rows = doneMealRows([lunch, breakfast], [s1, s2])
   expect(rows.map(r => r.mealId)).toEqual(['breakfast', 'lunch'])
-  expect(rows[0]).toEqual({ mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420, proteinG: 32, scorePct: 70 })
-  expect(rows[1].scorePct).toBe(92)
+  // mezo-n9peo: carbs and fat travel with the protein, because the Mai row now prints all three.
+  expect(rows[0]).toEqual({
+    mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420,
+    proteinG: 32, carbsG: 50, fatG: 10, scorePct: 70,
+  })
+  expect(rows[1]).toMatchObject({ proteinG: 48, carbsG: 72, fatG: 16, scorePct: 92 })
+})
+
+// Őszinte-null a makró-hármason is: ha SE az étkezés, SE az ablak nem ad egy makrót, az `null`
+// marad — a felület gondolatjelet ír rá, nem nullát.
+test('doneMealRows keeps a macro the sources never gave as null', () => {
+  const m = { ...meal({ id: 'm1' }), c: undefined, f: undefined } as unknown as FuelMeal
+  const s = slot({ mealId: 'm1', mealName: 'Zabkása', c: undefined, f: undefined })
+  const rows = doneMealRows([m], [s])
+  expect(rows[0].carbsG).toBeNull()
+  expect(rows[0].fatG).toBeNull()
+  expect(rows[0].proteinG).toBe(32)
 })
 
 test('a done meal without a score never fabricates one — scorePct is null', () => {
