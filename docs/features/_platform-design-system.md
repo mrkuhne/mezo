@@ -697,8 +697,10 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 ## 9. Decisions, gotchas & deferred
 
 - **Startup (`mezo-qducz`):** `main.tsx` wraps the router in `StartupSplash` once per
-  document. A fullscreen theme-token canvas displays the existing Titanium artwork with
-  three 900 ms brightness pulses and a 300 ms fade (3000 ms total). The router mounts
+  document. The existing `PhoneFrame` contains the theme-token startup canvas, so desktop
+  demos show it inside the same phone bezel as the app; real mobile/PWA stays full-bleed.
+  The Titanium artwork makes one slow 3000 ms scale pulse, with three independent light
+  flashes peaking at 480, 1380 and 2340 ms. A 300 ms fade ends at 3000 ms. The router mounts
   under an inert, `aria-hidden` wrapper, so data can load without allowing early interaction.
   The timer removes the overlay even when CSS or the lazy 3D chunk cannot finish.
   Internal navigation and background/foreground transitions never replay it; a reload does.
@@ -766,7 +768,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 **App shell** (`frontend/src/app/`)
 
-- `StartupSplash.tsx` / `StartupSplash.css` — app-root 3-second fullscreen startup,
+- `StartupSplash.tsx` / `StartupSplash.css` — app-root 3-second startup inside `PhoneFrame`,
   mounted in `frontend/src/main.tsx`; reused artwork from `TitanCompanion.tsx`.
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell. `ScreenContent` owns `.screen-content`, the single app scroller, and resets it to the top on every **route** change; the reset itself is `scrollToTop()` from **`shared/lib/screenScroll.ts`** (`mezo-vad0`), which also exports the `screenScroller()` lookup so a page that swaps its whole tree WITHOUT navigating can ask for the same reset (the active workout's phase flips — see [train.md §2](train.md)). Both go through an **instant** `scrollTo` on purpose: `.screen-content` carries `scroll-behavior: smooth`, so a bare `scrollTop =` starts an animated scroll that keeps running into the next frames and overrides whatever the landing screen does (it ate the chat's scroll-to-newest, `mezo-at8x.2`).
 - `TabBar.tsx` / `AppLayout.tsx` — 5-tab nav + layout (anchor-mode wiring). The floating **`QuickLogFab`** (`app/QuickLogFab.tsx`) owns its own `open` state and conditionally mounts `QuickInputSheet`, independently of `TabBar` (Design 2.0, `mezo-d20.1.1`). `AppLayout` also mounts **`CircadianTheme`** (`mezo-d71m`) and hides `TabBar` on `/train/session`, **`/me/sleep/night`** (the night page's light would defeat the sub-30-lux point, `mezo-d71m`), **and `/ritual`** (the full-screen Napzárás flow, `mezo-ilsj` — see [ritual.md](ritual.md)) via `hideChrome` (called `hideTabBar` until `mezo-atry`); its `LiveActivityProvider` mount was deleted in `mezo-xt65` — the rest timer is Train-local now.

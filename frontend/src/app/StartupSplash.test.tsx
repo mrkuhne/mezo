@@ -33,7 +33,8 @@ test('does not replay when the routed content changes', () => {
 
 test('StrictMode still reveals once and unmount clears the pending timer', () => {
   const first = render(<StrictMode><StartupSplash>Dashboard</StartupSplash></StrictMode>)
-  expect(vi.getTimerCount()).toBe(1)
+  // The startup deadline plus PhoneFrame's existing daypart clock.
+  expect(vi.getTimerCount()).toBe(2)
   act(() => vi.advanceTimersByTime(3000))
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   first.unmount()

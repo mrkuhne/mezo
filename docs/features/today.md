@@ -294,8 +294,10 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 - **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in
   `TitanCompanion.tsx`. `TitanMark` uses per-instance SVG gradient IDs so the splash and
-  Dashboard fallback can coexist. The splash has three gentle pulses and reveals the
-  app after 3 seconds including fade; the existing `/` → `/nap` landing is unchanged.
+  Dashboard fallback can coexist. The splash has one slow scale pulse with three distinct
+  light flashes and reveals the app after 3 seconds including fade. Desktop previews
+  use the existing phone frame; real mobile fills the display. The existing `/` → `/nap`
+  landing is unchanged.
   Reduced-motion/missing-WebGL browsers get the existing SVG; an artwork chunk failure
   is contained by an error boundary. See [platform startup behavior](_platform-design-system.md#9-decisions-gotchas--deferred).
 

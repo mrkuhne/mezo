@@ -3,7 +3,7 @@ import { seedKalauzSeen } from './kalauzSeed'
 
 test.beforeEach(async ({ page }) => { await seedKalauzSeen(page) })
 
-test('Titanium startup fills the viewport, pulses three times and reveals Mai', async ({ page }) => {
+test('Titanium startup fills mobile, breathes once with distinct flashes and reveals Mai', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
@@ -16,8 +16,21 @@ test('Titanium startup fills the viewport, pulses three times and reveals Mai', 
   expect(await page.locator('.startup-splash__mark').evaluate((element) => {
     const style = getComputedStyle(element)
     return [style.animationDuration, style.animationIterationCount]
-  })).toEqual(['0.9s', '3'])
-  expect(await splash.evaluate((element) => {
+  })).toEqual(['3s', '1'])
+  expect(await page.locator('.startup-splash__light').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return [style.animationName, style.animationDuration, style.animationIterationCount]
+  })).toEqual(['startup-flashes', '3s', '1'])
+  const flashes = await page.locator('.startup-splash__light').evaluate((element) => {
+    const animation = element.getAnimations()[0]
+    animation.pause()
+    return [300, 480, 900, 1380, 1770, 2340].map((time) => {
+      animation.currentTime = time
+      return getComputedStyle(element).filter
+    })
+  })
+  expect(flashes).toEqual(['brightness(1)', 'brightness(1.9)', 'brightness(1)', 'brightness(1.65)', 'brightness(1)', 'brightness(2.1)'])
+  expect(await page.locator('.startup-stage').evaluate((element) => {
     const style = getComputedStyle(element)
     return [style.animationDuration, style.animationDelay]
   })).toEqual(['0.3s', '2.7s'])
@@ -31,15 +44,18 @@ test('Titanium startup fills the viewport, pulses three times and reveals Mai', 
   await expect(splash).toHaveCount(0)
 })
 
-test('reduced-motion startup is static, fullscreen on desktop and preserves deep links', async ({ page }) => {
+test('desktop startup stays inside the phone screen and reduced motion remains static', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.setViewportSize({ width: 1280, height: 1100 })
   await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
   await page.clock.pauseAt(new Date('2026-09-15T12:00:01+02:00'))
   await page.goto('/nap/rutin')
   const splash = page.getByRole('status', { name: 'Mezo betöltése' })
   await expect(splash).toBeVisible()
-  expect(await splash.boundingBox()).toEqual({ x: 0, y: 0, width: 1280, height: 800 })
+  const phoneScreen = page.locator('.startup-stage .phone-screen')
+  await expect(phoneScreen).toBeVisible()
+  expect(await splash.boundingBox()).toEqual(await phoneScreen.boundingBox())
+  expect((await splash.boundingBox())!.width).toBe(416)
   await expect(splash.locator('.titan-svg')).toHaveCount(1)
   await expect(splash.locator('canvas')).toHaveCount(0)
   expect(await splash.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0)
