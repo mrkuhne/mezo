@@ -74,6 +74,22 @@ function draw(){
  document.title=`mezo · ${cfg.name} / ${cfg.tabs[p]}`;$('#app-scroll').scrollTo({top:0});
 }
 function moveDay(amount){if(!dayNav.shift(amount))return;dayMotion=amount>0?'left':'right';draw();}
+let infoLayer=null;
+const infoClose=()=>{infoLayer?.remove();infoLayer=null;};
+// Every ⓘ opens the workout-style 3D glass, never the drawer (owner call 2026-09-15).
+function infoGlass(title,copy,art){
+ infoClose();closeSheet();
+ infoLayer=document.createElement('div');infoLayer.className='ld-glass-layer';
+ infoLayer.innerHTML=`<div class="wo-glass" data-glass style="--ex-color:#bca6f1"><div class="wo-glass-card" role="dialog" aria-label="${safe(title)}">
+  <header class="wo-glass-head">${icon(art)}<div><small>MEZO · RÉSZLET</small><strong>${safe(title)}</strong></div>
+  <button data-glass-close aria-label="Bezárás">×</button></header>
+  <p class="info-glass-copy">${safe(copy)}</p></div></div>`;
+ document.querySelector('.device').append(infoLayer);
+ infoLayer.addEventListener('click',e=>{if(e.target.closest('[data-glass-close]')||!e.target.closest('.wo-glass-card'))infoClose();});
+ infoLayer.querySelector('[data-glass-close]').focus();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&infoLayer)infoClose();});
+window.addEventListener('hashchange',infoClose);
 function dialog(heading,html){closeSheet();$('#sheet-label').textContent=heading;$('#sheet-body').innerHTML=html;$('#sheet').showModal();}
 function voice(){react('connect');dialog('MEZO · MŰVELETPRÓBA',`${mini}<h2 class="sheet-title">Mondd, és indulunk.</h2><p class="sheet-sub">Válassz egy mintamondatot, vagy írd át. Ez a demó nem rögzít hangot és nem hív valódi AI-t.</p><div class="voice-examples">${[['food','Logolj AI-értékeléssel egy joghurtot és egy banánt.'],['workout','Indítsuk az edzést.'],['journal','Szeretnék naplóbejegyzést írni.']].map(([id,t])=>`<button data-example="${id}">${mic}<span>${t}</span></button>`).join('')}</div><form id="voice-form"><label class="form-field">A mondatod<textarea name="command" required>Logolj AI-értékeléssel egy joghurtot és egy banánt.</textarea></label><button class="sheet-action">Mutasd, hova viszel ↗</button></form>`);}
 document.addEventListener('click',e=>{
@@ -88,7 +104,7 @@ document.addEventListener('click',e=>{
  if(el.hasAttribute('data-sport'))openSport();
  if(el.hasAttribute('data-custom'))dialog('EGYEDI EDZÉS · DEMÓ',`<h2 class="sheet-title">Terv nélkül, most.</h2><p class="sheet-sub">Egy saját edzés, ami nem a futó blokkod része. Elmentve később bármikor újraindítható.</p><form id="custom-form"><label class="form-field">Az edzés neve<input name="name" value="Szabad edzés" maxlength="40" required></label><button class="sheet-action">Indítom ▸</button></form>`);
  if(el.hasAttribute('data-weight'))dialog('SÚLY · DEMÓ',`<h2 class="sheet-title">Egy új pillanatkép.</h2><form id="weight-form"><label class="form-field">Súly (kg)<input name="weight" type="number" min="20" max="400" step=".1" value="81.4" required></label><button class="sheet-action">Rögzítem a demóban</button></form>`);
- if(el.dataset.detail)dialog('MEZO · RÉSZLET DEMÓ',`${icon(el.dataset.art||'gem')}<h2 class="sheet-title">${safe(el.dataset.detail)}</h2><p class="sheet-sub">${safe(el.dataset.copy)}</p>`);
+ if(el.dataset.detail)infoGlass(el.dataset.detail,el.dataset.copy,el.dataset.art||'gem');
 });
 document.addEventListener('change',e=>{if(!e.target.matches('[data-day-picker]'))return;const previous=dayNav.date;if(dayNav.select(e.target.value)){dayMotion=e.target.value>previous?'left':'right';draw();}});
 let swipe=null;

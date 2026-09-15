@@ -199,3 +199,6 @@
 .ld-group .ld-sport-chip { margin-left: 2px; }
 .ld-map-page .pl-row.is-quiet { width: 100%; margin-top: 18px; }
 [data-reveal].is-in .ld-map-big g[fill^="#"] { transition: opacity .8s ease .2s; }
+
+/* the ⓘ glass copy */
+.info-glass-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: #d6d2e2; }
