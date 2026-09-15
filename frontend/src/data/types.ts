@@ -1355,7 +1355,7 @@ export interface ProgressionSignal {
   targetReps: number
   rationale: string
 }
-export interface OverloadSummary { weightUp: number; repUp: number; hold: number }
+export interface OverloadSummary { weightUp: number; weightDown: number; repUp: number; hold: number }
 export interface LoggedWorkoutExercise {
   id: string
   name: string

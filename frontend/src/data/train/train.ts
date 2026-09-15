@@ -839,7 +839,7 @@ export const workout: WorkoutPlan = {
   title: 'Pull Day',
   tag: 'Week 3 · MAV',
   durationEst: 78,
-  overloadSummary: { weightUp: 2, repUp: 1, hold: 0 },
+  overloadSummary: { weightUp: 2, weightDown: 1, repUp: 1, hold: 0 },
   exercises: [
     {
       id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
