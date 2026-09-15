@@ -13848,3 +13848,59 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-mus-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
 /* ── /train mai titanium ───────────────────────────────────────────────────── */
+
+/* ── titanium glass primitive (mezo-88iwa.13, T12 Task 2) ────────────────────
+   GlassBox (shared/ui/mozaik/GlassBox.tsx): a frosted full-bleed backdrop over
+   the phone frame + a bottom-docked, tinted card with a × in the header.
+   Ported from the Titanium companion prototype's `.wo-glass`/`.wo-glass-card`
+   (docs/design_2.0/prototypes/companion-titanium/session.css) onto tokens.
+   Deliberately generic — the T6 active-workout slice reuses it unchanged for
+   its own confirm/menu surfaces, so nothing group-specific lives here.
+
+   `.gl-` prefix (not `.g-` or a bare word): the T5 `.overline` lesson —
+   Tailwind v4 ships single-word utilities that a short, undotted class name
+   can silently collide with, so every rule here carries the two-letter
+   prefix. `--gl-tint` (default: primary coral) drives the card's radial wash
+   and is the only thing a caller may need to set — GlassBox stays otherwise
+   opinion-free about content.
+
+   Entrance: `.gl-anim` is added by GlassBox.tsx only when motion is allowed
+   (mirrors motion.tsx's `.mz-play` — a JS-computed class, not a bare CSS
+   media guard) so both the backdrop fade and the card slide-up can be
+   asserted directly in tests; reduced motion renders the final state with no
+   class and thus no animation at all. */
+.gl-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(5, 7, 10, 0.72);
+  backdrop-filter: blur(18px) saturate(0.85);
+  -webkit-backdrop-filter: blur(18px) saturate(0.85);
+}
+.gl-backdrop.gl-anim { animation: gl-fade-in 0.22s ease-out; }
+.gl-card {
+  --gl-tint: var(--primary-base);
+  position: relative;
+  width: 100%; max-width: 428px; max-height: 92%; overflow-y: auto; scrollbar-width: none;
+  padding: 18px 18px calc(26px + env(safe-area-inset-bottom));
+  border: 1px solid color-mix(in srgb, var(--gl-tint) 26%, rgba(255, 255, 255, 0.1));
+  border-radius: 30px 30px 0 0;
+  background:
+    radial-gradient(120% 60% at 80% 0%, color-mix(in srgb, var(--gl-tint) 15%, transparent), transparent 60%),
+    linear-gradient(#181d26f2, #10141bf7);
+  box-shadow: 0 -20px 60px -20px #000, 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  color: #fff;
+}
+.gl-card::-webkit-scrollbar { display: none; }
+.gl-card.gl-anim { animation: gl-slide-up 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+.gl-head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.gl-head strong { flex: 1; font-size: 17px; font-weight: 500; }
+.gl-x {
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 17px; line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); color: #d6d1e4;
+}
+@keyframes gl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gl-slide-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .gl-backdrop.gl-anim, .gl-card.gl-anim { animation: none; }
+}
+/* ── /titanium glass primitive ───────────────────────────────────────────── */

@@ -211,3 +211,31 @@ describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
     }
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.13, T12 Task 2): the `GlassBox` shared 3D glass
+ * primitive's `.gl-*` section, registered the same way the `train mai titanium` block
+ * above is — open/close comment markers, both present and in order, with the class
+ * family actually inside the span.
+ */
+describe('the titanium glass primitive section is registered (mezo-88iwa.13)', () => {
+  const START_MARKER = 'titanium glass primitive'
+  const END_MARKER = '/titanium glass primitive'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the gl- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head', '.gl-x', '.gl-anim']) {
+      expect(section, `${cls} missing from the titanium glass primitive section`).toContain(cls)
+    }
+  })
+})
