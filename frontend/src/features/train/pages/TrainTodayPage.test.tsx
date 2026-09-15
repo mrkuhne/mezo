@@ -202,6 +202,14 @@ test('the Mezociklus card navigates to the overview (mezo-hi9m)', () => {
   expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
 })
 
+// Final-review fix wave (mezo-88iwa.5): the six-tile hub retirement left Sport with
+// no entry point of its own on Mai — restore reachability with a nav row.
+test('the Sport entry row navigates to /train/sport', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: /Sport naplózása és szezonod/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/sport')
+})
+
 test('morning-training card lists the late gym slots and one-tap reschedules them', async () => {
   renderView()
   // mock gym slots Kedd/Csü 18:30 vs mock wake 06:45 -> window 07:45–12:45

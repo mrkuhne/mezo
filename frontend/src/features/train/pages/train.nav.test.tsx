@@ -1,5 +1,4 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { routes } from '@/app/router'
@@ -26,37 +25,12 @@ function renderApp(path: string) {
   )
 }
 
-// Design 2.0 (mezo-d20.3.1): the Train sub-nav dropdown is gone — /train is the Edzés
-// hub and its tiles are the way into the (now full-page) sub-views. Each tile is
-// asserted from a fresh mount: tapping one leaves the hub behind.
-test('Train opens on the Edzés hub and its tiles open the sub-pages', async () => {
-  renderApp('/train')
-  // the hub hero speaks today's session, not Mai's day-view header
-  expect(await screen.findByText(/MA · 07:30 · Meso W/)).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Mai nap' })).not.toBeInTheDocument()
-  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
-
-  await userEvent.click(screen.getByRole('button', { name: 'Sport' }))
-  // Sport is re-faced (mezo-d20.11): the Mozaik hero speaks the page name; the
-  // court moved onto each slot row's meta line, so it is no longer a lone node.
-  expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
-  expect(screen.getAllByText(/BVSC csarnok/).length).toBeGreaterThan(0)
-  cleanup()
-
-  renderApp('/train')
-  await userEvent.click(await screen.findByRole('button', { name: 'Medálok' }))
-  // Medálok is re-faced (mezo-d20.3.2): the Mozaik hero speaks the page name, not an h1.
-  expect(await screen.findByText('Medálok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
-  cleanup()
-
-  renderApp('/train')
-  await userEvent.click(await screen.findByRole('button', { name: 'Mesociklus' }))
-  // The active run's hero card — its own a11y name is the hero button's aria-label
-  // (mesocycle pages v2 Task 2, mezo-d20.15); the title (shared with the template it was
-  // started from, mezo-meyc.1) is checked as text inside it, not the accessible name.
-  const hero = await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })
-  expect(hero).toHaveTextContent('Hypertrophy 04 · Tavasz')
-})
+// The six-tile Edzés hub (mezo-d20.3.1) retired in Train Titanium T4 (mezo-88iwa.5):
+// /train no longer renders a face of its own, it forwards to Mai
+// (router.trainIndexRedirect.test.tsx covers the redirect itself). The hub-tile
+// navigation test that lived here (rendering /train and tapping its Sport/Medálok/
+// Mesociklus tiles) went with it — those destinations are still reached directly by
+// their own routes below and via the four-tab bar (TabBar.test.tsx).
 
 // The Gym muscle-zone view folds into Heti in the new IA (handoff §10) — its route stays
 // reachable and keeps its own face until the F2.2 slice absorbs it.

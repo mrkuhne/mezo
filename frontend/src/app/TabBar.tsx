@@ -34,7 +34,11 @@ export function TabBar() {
 
   return (
     <>
-      <nav className="tab-bar" aria-label={`${domain.name} menü`}>
+      {/* `train-tabs` anchors the Edzés kalauz's tab-row orientation card (fix round 1,
+          mezo-88iwa.5): the négy fül itself has no page-level DOM of its own — this bar
+          IS the négy fül, on every /train/* route. Scoped to the train domain only, so
+          the other domains' bars don't spuriously satisfy the anchor lookup. */}
+      <nav className="tab-bar" aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
         <button
           type="button"
           className="tab-item domain-switch np-press"

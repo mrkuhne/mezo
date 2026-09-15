@@ -58,11 +58,13 @@ export function AppLayout() {
   // nem az oldalra. A Napnál pontosan két útvonal, semmi `startsWith`: a Nap ALOLDALAI
   // (Életjelek, Üzenetek, Napzárás…) a saját szeletükig világosak maradnak.
   //
-  // A Titán grafit bőr hatóköre: a Nap két útvonala (mezo-mhum) ÉS a teljes Fuel domén
-  // (mezo-o6uv) — a fejléc, a TabBar és a portálozott sheetek a shellé, ezért a scope a
-  // burkon ül, és a doménen belül sehol nem villanhat vissza világosra.
+  // A Titán grafit bőr hatóköre: a Nap két útvonala (mezo-mhum), a teljes Fuel domén
+  // (mezo-o6uv) ÉS a teljes Train domén (Train Titanium T4, mezo-88iwa.5) — a fejléc, a
+  // TabBar és a portálozott sheetek a shellé, ezért a scope a burkon ül, és a doménen
+  // belül sehol nem villanhat vissza világosra.
   const titanDark = ['/nap', '/nap/gyors'].includes(location.pathname)
     || location.pathname === '/fuel' || location.pathname.startsWith('/fuel/')
+    || location.pathname === '/train' || location.pathname.startsWith('/train/')
   // A sötét ALAP a ház meglévő dark témája — ugyanaz a fogás, amivel a Napzárás rituálé is
   // sötétre vált (mezo-tr5v): a perzisztált beállítást NEM írja át, és a shell összes
   // portálozott felülete (sheetek, XP-overlay) is vele vált. A `titan-dark` scope ERRE ÜL RÁ

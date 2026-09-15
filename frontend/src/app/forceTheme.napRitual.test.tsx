@@ -58,12 +58,15 @@ test('a /nap felől érkező Napzárás rituálé sötét marad világos beáll�
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
-test('a rituáléból kilépve a világos beállítás visszatér (a /train nem sötét)', async () => {
+// mezo-88iwa.5 (Train Titanium T4) óta a /train IS a titan-dark hatókörbe tartozik — a
+// kontroll-útvonal ezért a hatókörön kívüli /me lett (a lényeg változatlan: VALAMELYIK
+// nem-titan-dark útvonalon a világos beállítás visszatér).
+test('a rituáléból kilépve a világos beállítás visszatér (a /me nem sötét)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await act(async () => { await router.navigate('/ritual') })
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 
-  await act(async () => { await router.navigate('/train') })
+  await act(async () => { await router.navigate('/me') })
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 })

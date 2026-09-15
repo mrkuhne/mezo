@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
@@ -14,6 +14,33 @@ afterEach(() => vi.unstubAllEnvs())
 
 const renderView = () =>
   render(<QueryWrapper><MemoryRouter><ExercisesPage /></MemoryRouter></QueryWrapper>)
+
+// LocationProbe idiom (MesocycleLibraryPage.test.tsx): the selection is what a nav
+// row's onClick fires, so the URL is what to assert on.
+function LocationProbe() {
+  const { pathname } = useLocation()
+  return <div data-testid="loc">{pathname}</div>
+}
+const renderWithLoc = () =>
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <ExercisesPage />
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+
+// Final-review fix wave (mezo-88iwa.5): the six-tile hub retirement left Medálok
+// (owned by Gyakorlatok, navModel.ts) with no entry point of its own — restore it
+// as a nav row.
+test('the Medálok entry row navigates to /train/medals', async () => {
+  const user = userEvent.setup()
+  renderWithLoc()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  await user.click(screen.getByRole('button', { name: 'Medálok' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/medals')
+})
 
 test('own header: pghead-np over + h1', async () => {
   renderView()

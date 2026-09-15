@@ -19,6 +19,7 @@
 // has no set history -> records are empty, the catalog search still works.
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -247,6 +248,7 @@ function GhostRow({ item, delayMs, onVideo, onEdit }: {
 }
 
 export function ExercisesPage() {
+  const navigate = useNavigate()
   const { exerciseRecords, exerciseLibrary, exercisesPending } = useTrain()
   const [search, setSearch] = useState('')
   // Two-level filter: top = 'all'|'plyo'|region, sub = a muscle token within a region (or null).
@@ -324,6 +326,23 @@ export function ExercisesPage() {
           <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.authoredByMe).length}</b><small>saját</small></div>
           <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.videoUrl).length}</b><small>videóval</small></div>
         </div>
+      </div>
+
+      {/* Medálok entry row (final-review fix wave, mezo-88iwa.5): the hub retirement
+          left `Medálok` (owned by Gyakorlatok — navModel.ts) with no entry point of
+          its own once the six-tile hub disappeared. Same `.mesorow` idiom Mai uses
+          for its Mezociklus row. */}
+      <div style={{ padding: '0 24px 8px' }}>
+        <button
+          type="button"
+          className="card mesorow rise"
+          style={{ '--d': '45ms' } as CSSProperties}
+          onClick={() => navigate('/train/medals')}
+        >
+          <ClayIcon name="i-erme" size={28} />
+          <span className="mesorow-tx">Medálok</span>
+          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
+        </button>
       </div>
 
       <div style={{ padding: '0 24px 8px' }}>

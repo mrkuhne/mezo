@@ -119,6 +119,16 @@ test('the library carries NO template cards any more — only a nav row to their
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/templates')
 })
 
+// Final-review fix wave (mezo-88iwa.5): the six-tile hub retirement left Futás (owned
+// by Terv, navModel.ts) with no entry point of its own on this face — restore it as a
+// fifth mosaic tile, same idiom as the other three nav tiles.
+test('the Futóblokkok tile navigates to /train/futas', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: 'Futóblokkok' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/futas')
+})
+
 // --- Történet (was Archív) + rerun ---
 
 test('the closed-run section head reads Történet, not Archív', () => {

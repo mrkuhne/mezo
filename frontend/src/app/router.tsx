@@ -10,7 +10,6 @@ import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
-import { EdzesHubPage } from '@/features/train/pages/EdzesHubPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
@@ -218,14 +217,12 @@ function MeKnowledgeRedirect() {
   return <Navigate to={`/mezo/knowledge?view=kategoriak${kind ? `&kind=${kind}` : ''}`} replace />
 }
 
-/** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
- *  `?day={0..6}`: that deep link belongs to the full day view and is forwarded to
- *  `/train/mai` with the selection intact (Mai derives it from the URL). */
+/** `/train` has no face of its own under the four-tab IA (owner 2026-09-12) — it forwards
+ *  to Mai, keeping the legacy Heti `?day={0..6}` deep-link intact. */
 function TrainIndex() {
   const [params] = useSearchParams()
   const day = params.get('day')
-  if (day !== null && day !== '') return <Navigate to={`/train/mai?day=${day}`} replace />
-  return <EdzesHubPage />
+  return <Navigate to={`/train/mai${day !== null && day !== '' ? `?day=${day}` : ''}`} replace />
 }
 
 export const routes: RouteObject[] = [
@@ -252,12 +249,13 @@ export const routes: RouteObject[] = [
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
-      // Edzés tab — Design 2.0 shell dissolution (mezo-d20.3.1): the Train shell
-      // (AppHero + SubNavDropdown over an <Outlet>) is gone. /train is the hub Mozaik
-      // face (hero + six tiles); the former sub-tabs are FULL-PAGE SIBLINGS on their
-      // stable paths, keeping their current faces until their own F2 slices land —
-      // the idiom the Mezo (d20.5.1) and Én (d20.6.1) tabs took. Mai — previously the
-      // /train index — keeps its whole day view at /train/mai.
+      // Edzés tab — Train Titanium T4 (mezo-88iwa.5): the six-tile Mozaik hub that
+      // replaced the original AppHero/SubNavDropdown shell is ITSELF retired now.
+      // /train has no face of its own any more — TrainIndex below unconditionally
+      // redirects it to /train/mai. Four owner-approved tabs (Mai/Terv/Terhelés/
+      // Gyakorlatok, navModel.ts's `train` row) light the global TabBar; every route
+      // below is a full-page sibling reached either as a tab home or via that tab's
+      // `owns` deep-route list — see docs/features/train.md for the tab → route map.
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },

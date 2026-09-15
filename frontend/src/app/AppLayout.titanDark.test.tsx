@@ -49,7 +49,7 @@ test.each(['/nap', '/nap/gyors'])('a %s a titan-dark hatókört viseli', (path) 
   expect(container.querySelector('.phone-screen.titan-dark')).not.toBeNull()
 })
 
-test.each(['/train', '/me', '/nap/eletjel'])('a %s NEM kap titan-dark hatókört', (path) => {
+test.each(['/mezo', '/me', '/nap/eletjel'])('a %s NEM kap titan-dark hatókört', (path) => {
   const { container } = renderAt(path)
   expect(container.querySelector('.phone-screen')).not.toBeNull()
   expect(container.querySelector('.titan-dark')).toBeNull()
@@ -64,9 +64,11 @@ test('a Titán Nap a ház dark témáját kényszeríti a világos beállítás 
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
+// mezo-88iwa.5 (Train Titanium T4) óta a /train IS titan-dark hatókörben renderel —
+// a kontroll-útvonal ezért a hatókörön kívüli /me lett.
 test('világos beállítású felhasználónál más útvonal NEM lesz sötét', () => {
   localStorage.setItem('mezo-theme', 'light')
-  renderAt('/train')
+  renderAt('/me')
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 })
 
@@ -83,5 +85,30 @@ test.each(['/fuel', '/fuel/stack', '/fuel/trendek', '/fuel/konyha', '/fuel/log/u
 
 test('a Fuel-on kívüli útvonal nem kap titan-dark hatókört', () => {
   const { container } = renderAt('/me')
+  expect(container.querySelector('.phone-screen')?.className).not.toContain('titan-dark')
+})
+
+// Train Titanium T4 (mezo-88iwa.5): a Train domén EGÉSZE a grafit bőrt viseli — a hub, a
+// Mai nézet és a mesociklusok is, ugyanúgy ahogy a Fuel domén a fenti blokkban.
+test.each(['/train', '/train/mai', '/train/mesocycles', '/train/session'])(
+  '%s a titan-dark hatókörben renderel',
+  path => {
+    const { container } = renderAt(path)
+    expect(container.querySelector('.phone-screen')?.className).toContain('titan-dark')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  },
+)
+
+// A `/train/session` a hideChrome listán IS rajta van (a fejléc/TabBar eltűnik) — ez a
+// két tulajdonság egymástól független kapu, itt EGYÜTT kell teljesülnie: az aktív edzés
+// chrome nélkül fut, de a grafit bőrt viseli.
+test('a /train/session hideChrome MELLETT is titan-dark hatókört visel', () => {
+  const { container } = renderAt('/train/session')
+  expect(container.querySelector('.tab-bar')).toBeNull()
+  expect(container.querySelector('.phone-screen')?.className).toContain('titan-dark')
+})
+
+test('a Train-en kívüli útvonal nem kap titan-dark hatókört', () => {
+  const { container } = renderAt('/mezo')
   expect(container.querySelector('.phone-screen')?.className).not.toContain('titan-dark')
 })

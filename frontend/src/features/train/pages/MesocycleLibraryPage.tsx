@@ -64,6 +64,10 @@ export function MesocycleLibraryPage() {
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
   const openTemplates = () => navigate('/train/templates')
+  // Futóblokkok entry (final-review fix wave, mezo-88iwa.5): the hub retirement left
+  // `Futás` (owned by Terv — navModel.ts) with no entry point of its own once the
+  // six-tile hub disappeared. Same mosaic-tile idiom as the other three nav tiles.
+  const openFutas = () => navigate('/train/futas')
   // The hub's first tile (mesocycle pages v2 Task 2, mezo-d20.15). Its route lands in
   // Task 4 — navigating there now hits the router's no-match, same as any other
   // not-yet-built destination mid-slice.
@@ -160,6 +164,15 @@ export function MesocycleLibraryPage() {
               delayMs={160}
               onClick={openPlanner}
               aria-label="Új blokk tervezése"
+            />
+            <Tile
+              wash="sky"
+              icon="i-futas"
+              eyebrow="Futóblokkok"
+              line="Terv · napló"
+              delayMs={200}
+              onClick={openFutas}
+              aria-label="Futóblokkok"
             />
           </Mosaic>
         </div>
