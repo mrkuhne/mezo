@@ -99,7 +99,7 @@ export function WorkoutMenuGlass({
         />
         <MenuRow
           icon="i-suly" label="Szett elvétele" hint="Csak bepipálatlan utolsó szett"
-          disabled={!canRemoveTrailingSet} onClick={fire(onRemoveSet)}
+          disabled={skipped || !canRemoveTrailingSet} onClick={fire(onRemoveSet)}
         />
         <MenuRow
           icon="i-stack" label="Előrébb" hint="Egy hellyel korábban"
