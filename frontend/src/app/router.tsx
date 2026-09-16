@@ -24,6 +24,7 @@ import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
 import { MesoFutamokPage } from '@/features/train/pages/MesoFutamokPage'
 import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
+import { MesoTemplateStoryPage } from '@/features/train/pages/MesoTemplateStoryPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
@@ -290,6 +291,13 @@ export const routes: RouteObject[] = [
       // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
       // route stays reachable (the library's nav row still links here).
       { path: 'train/templates', element: <MesoTemplatesPage /> },
+      // One template, READ-FIRST (Train Titanium T10 Task 3, mezo-88iwa.11): the week
+      // spelled out, its weekly per-muscle load, the runs that came out of it, and the
+      // start/edit CTAs. Listed AFTER the plain list route (React Router ranks static
+      // over dynamic anyway); the Terv tab's `owns: ['/train/templates']` already covers
+      // it by prefix (navModel.isPrefix). NOT to be confused with
+      // `train/mesocycles/templates/:id`, which is the raw day-plan EDITOR.
+      { path: 'train/templates/:id', element: <MesoTemplateStoryPage /> },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
       { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },

@@ -1,8 +1,8 @@
 // libraryStory.test.ts
 import { describe, expect, test } from 'vitest'
-import { runStars, templateStory } from '@/features/train/logic/libraryStory'
+import { runStars, templateRuns, templateStory, templateUseLine, templateWeekSets } from '@/features/train/logic/libraryStory'
 import { starsFor } from '@/features/train/logic/cerScore'
-import type { Mesocycle } from '@/data/types'
+import type { GymExercise, MesoDay, MesoTemplate, Mesocycle } from '@/data/types'
 
 const meso = (over: Partial<Mesocycle> & Pick<Mesocycle, 'id' | 'status'>): Mesocycle => ({
   title: 'T',
@@ -109,5 +109,122 @@ describe('templateStory', () => {
     ]
     const s = templateStory('tpl-1', 'Erő blokk', mesocycles)
     expect(s.activeNow).toBe(false)
+  })
+})
+
+// --- templateRuns / templateUseLine / templateWeekSets (T10 Task 3) ---------------
+
+const gx = (over: Partial<GymExercise> & Pick<GymExercise, 'muscle' | 'workingSets'>): GymExercise => ({
+  id: `x-${over.muscle}-${over.workingSets}`,
+  name: 'Gyakorlat',
+  warmupSets: 2,
+  repMin: 8,
+  repMax: 10,
+  targetRIR: 1,
+  type: 'compound',
+  ...over,
+})
+
+const tplDay = (day: string, muscle: string, exercises: GymExercise[]): MesoDay => ({
+  day, type: muscle === '' ? 'Rest' : 'Edzés', muscle, exerciseCount: exercises.length, exercises,
+})
+
+const tpl = (over: Partial<MesoTemplate> = {}): MesoTemplate => ({
+  id: 'tpl-1',
+  title: 'Erő blokk',
+  shortTitle: null,
+  goal: null,
+  weeks: 5,
+  split: 'Upper / Lower · 4×/hét',
+  style: null,
+  phaseCurve: [],
+  notes: null,
+  volumePerMuscle: null,
+  days: [],
+  runCount: 0,
+  ...over,
+})
+
+describe('templateRuns', () => {
+  test('splits the matched runs into active / planned / closed, and ignores other templates', () => {
+    const mesocycles: Mesocycle[] = [
+      meso({ id: 'r1', status: 'active', templateId: 'tpl-1' }),
+      meso({ id: 'r2', status: 'planned', templateId: 'tpl-1' }),
+      meso({ id: 'r3', status: 'archived', templateId: 'tpl-1' }),
+      meso({ id: 'r4', status: 'archived', templateId: 'tpl-1' }),
+      meso({ id: 'r5', status: 'active', templateId: 'other' }),
+    ]
+    const runs = templateRuns('tpl-1', 'Erő blokk', mesocycles)
+    expect(runs.active?.id).toBe('r1')
+    expect(runs.planned.map((m) => m.id)).toEqual(['r2'])
+    expect(runs.closed.map((m) => m.id)).toEqual(['r3', 'r4'])
+  })
+
+  test('no match at all -> null active and two empty lists', () => {
+    expect(templateRuns('tpl-1', 'Erő blokk', [])).toEqual({ active: null, planned: [], closed: [] })
+  })
+
+  test('templateStory is the count of exactly these runs', () => {
+    const mesocycles: Mesocycle[] = [
+      meso({ id: 'r1', status: 'active', templateId: 'tpl-1' }),
+      meso({ id: 'r2', status: 'planned', templateId: 'tpl-1' }),
+      meso({ id: 'r3', status: 'archived', templateId: 'tpl-1' }),
+    ]
+    const runs = templateRuns('tpl-1', 'Erő blokk', mesocycles)
+    const story = templateStory('tpl-1', 'Erő blokk', mesocycles)
+    expect(story).toEqual({
+      activeNow: runs.active !== null,
+      plannedCount: runs.planned.length,
+      closedCount: runs.closed.length,
+    })
+  })
+})
+
+describe('templateUseLine', () => {
+  test.each([
+    [{ activeNow: true, plannedCount: 0, closedCount: 3 }, 'Ebből fut a mostani terved'],
+    [{ activeNow: true, plannedCount: 2, closedCount: 0 }, 'Ebből fut a mostani terved'],
+    [{ activeNow: false, plannedCount: 0, closedCount: 1 }, '1 lezárt futam jött ki belőle'],
+    [{ activeNow: false, plannedCount: 1, closedCount: 4 }, '4 lezárt futam jött ki belőle'],
+    // a queued run has not happened yet — it must never read as a run that did
+    [{ activeNow: false, plannedCount: 2, closedCount: 0 }, 'Még nem indítottál belőle'],
+    [{ activeNow: false, plannedCount: 0, closedCount: 0 }, 'Még nem indítottál belőle'],
+  ])('%j -> %s', (story, line) => {
+    expect(templateUseLine(story)).toBe(line)
+  })
+})
+
+describe('templateWeekSets', () => {
+  test('sums working sets per coarse group across the whole week, sorted by sets desc', () => {
+    const t = tpl({
+      days: [
+        tplDay('Hét', 'chest', [gx({ muscle: 'chest-mid', workingSets: 4 }), gx({ muscle: 'back-mid', workingSets: 3 })]),
+        tplDay('Kedd', 'quad', [gx({ muscle: 'quad', workingSets: 4 })]),
+        tplDay('Sze', '', []),
+        tplDay('Csü', 'back', [gx({ muscle: 'back-wide', workingSets: 3 }), gx({ muscle: 'chest-upper', workingSets: 2 })]),
+      ],
+    })
+    expect(templateWeekSets(t)).toEqual([
+      { group: 'back', label: 'Hát', colorMuscle: 'back-mid', sets: 6 },
+      { group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', sets: 6 },
+      { group: 'quad', label: 'Comb', colorMuscle: 'quad', sets: 4 },
+    ])
+  })
+
+  test('a template with no days (or only rest days) yields no bars', () => {
+    expect(templateWeekSets(tpl({ days: [] }))).toEqual([])
+    expect(templateWeekSets(tpl({ days: [tplDay('Sze', '', []), tplDay('Vas', '', [])] }))).toEqual([])
+  })
+
+  test('work outside the hypertrophy budget does not draw a bar', () => {
+    const t = tpl({
+      days: [
+        tplDay('Hét', 'core', [
+          gx({ muscle: 'core', workingSets: 3, countsTowardVolume: false }),
+          gx({ muscle: 'chest-mid', workingSets: 2 }),
+        ]),
+      ],
+    })
+    expect(templateWeekSets(t)).toEqual([{ group: 'chest', label: 'Mell', colorMuscle: 'chest-mid', sets: 2 }])
   })
 })
