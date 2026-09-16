@@ -45,13 +45,15 @@ test('idle: Lezárás fires onFinish', async () => {
 
 test('resting: shows the countdown share, the exercise name uppercased, mm:ss and the rest actions', () => {
   const { container } = render(
-    <WorkoutDock {...idleProps({ resting: true, remaining: 45, total: 90, exerciseName: 'Fekvőtámasz' })} />,
+    <WorkoutDock {...idleProps({ resting: true, remaining: 30, total: 120, exerciseName: 'Fekvőtámasz' })} />,
   )
   expect(container.querySelector('.wo-dock')).toHaveClass('is-resting')
   expect(screen.getByText('PIHENŐ · FEKVŐTÁMASZ')).toBeInTheDocument()
-  expect(screen.getByText('0:45')).toBeInTheDocument()
+  expect(screen.getByText('0:30')).toBeInTheDocument()
   const ring = container.querySelector('.wo-dock-ring') as HTMLElement
-  expect(ring.style.getPropertyValue('--ring')).toBe('50')
+  // 30s left of 120 → 75% ELAPSED: the ring fills as the rest passes (asymmetric on purpose,
+  // a 50/50 case cannot tell fill from drain).
+  expect(ring.style.getPropertyValue('--ring')).toBe('75')
   expect(screen.getByRole('button', { name: '+30s' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Kész' })).toBeInTheDocument()
   // Idle-only affordances are gone while resting.

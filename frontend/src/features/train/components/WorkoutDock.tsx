@@ -47,7 +47,8 @@ export function WorkoutDock({
   onExtend, onSkipRest, onFinish, finishDisabled,
 }: WorkoutDockProps) {
   const ring = resting
-    ? (total > 0 ? (remaining / total) * 100 : 0)
+    // The ring FILLS as the rest elapses (prototype session.js:493) — not a draining gauge.
+    ? (total > 0 ? 100 - (remaining / total) * 100 : 0)
     : (plannedSets > 0 ? (doneSets / plannedSets) * 100 : 0)
 
   return (
