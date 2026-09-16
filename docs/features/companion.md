@@ -1608,8 +1608,11 @@ request contract; later tasks apply its retrieval/ranking differences.
 **Shared hybrid candidate retrieval (`mezo-6dii.4`; SHADOW by default, NEW-capable):**
 
 ```text
-RetrievalInput(request, prepared query, serving embedding version, per-retriever limit)
-  ├─ dense   → query embedding → memory_vector ⟕ active memory_item
+query embedding (ONCE, before the fan-out — MemoryQueryEmbedder, own 2500 ms budget)
+       ↓
+RetrievalInput(request, prepared query, serving embedding version, per-retriever limit,
+               query embedding)
+  ├─ dense   → memory_vector ⟕ active memory_item (ranks the vector it was handed)
   ├─ lexical → folded raw query → memory_item FTS + trigram score
   ├─ facts   → pinned ∪ query-matching knowledge_fact (+ valid conflict counterpart)
   └─ graph   → deterministic seed nodes → bounded GraphTraversalService neighborhood
@@ -1628,6 +1631,23 @@ future-dated nodes, keeps the configured hop/top-K bounds, and maps each edge un
 All three new JDBC queries use the existing same-connection savepoint pattern and deliberately
 rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
 empty result cannot be mistaken for an outage.
+
+**`execution.retriever-timeout-ms` is a DATABASE budget — never put a network hop inside it
+(`mezo-iddo`).** The 200 ms is sized for one indexed query, which is all any retriever below it
+does. Dense used to embed the query itself, inside that budget; embedding is a provider call
+measured in production at p50 ~270 ms and p95 ~675 ms, so the deadline won essentially every race.
+On the live database, `dense` recorded `TIMEOUT` on **55 of 55 runs over 14 days** — semantic recall
+had never once worked in production. Two things hid it: a run only gets an `error_code` when *all
+four* retrievers fail (`successCount == 0`), and the other three kept answering, so every run
+audited clean; and the 200 ms `future.cancel(true)` interrupted the in-flight HTTP request, so the
+symptom surfaced far away as 55 `GenAiIOException` `EMBED_QUERY` rows that read like provider
+flakiness. `MemoryQueryEmbedder` now takes the hop once, before the fan-out, under
+`execution.query-embedding-timeout-ms` (2500 ms — the measured p95 plus headroom, so it bounds a
+hung provider without cutting off a normal call), carrying the actor and replay-only context
+breadcrumbs across the executor boundary the same way the retrievers do. `DenseMemoryRetriever`
+now ranks the vector it is handed, and **throws** when there is none: returning an empty list would
+count dense as a success and re-hide the outage. `MemoryPlatformPropertiesIT` pins the embedding
+budget above the retriever deadline so the two can never collapse back into one number.
 
 **Shared memory context orchestration (`mezo-6dii.5`; chat-integrated by `mezo-6dii.6`):**
 
