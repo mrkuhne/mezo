@@ -1,10 +1,13 @@
 // ============================================================
-// Mezo · MesoFutamokPage tests (Train Titanium T10 Task 2, mezo-88iwa.11).
-// The Történet section moved off the refaced library landing; these are ITS tests,
-// moved with it from MesoKonyvtarPage.test.tsx so the closed runs never lost their
-// coverage either. Task 4 refaces the page and grows this suite.
+// Mezo · MesoFutamokPage tests (Train Titanium T10 Task 4, mezo-88iwa.11).
+// The Történet section moved off the refaced library landing in Task 2; Task 4 gave
+// it the Titanium closed-list face, so these tests now cover BOTH halves: the moved
+// behaviours (compare mode, Újrafuttatás, Sablonná, tap → report) in their new
+// anatomy, and the new anatomy's own honesty rules — the hero states only totals the
+// mesocycle rows genuinely carry, and a closed row draws NO stars (completion lives
+// in the frozen report, which the list deliberately does not fetch N times).
 // ============================================================
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
@@ -24,7 +27,7 @@ function LocationProbe() {
 }
 
 function setup() {
-  render(
+  return render(
     <QueryWrapper>
       <MemoryRouter>
         <MesoFutamokPage />
@@ -39,17 +42,31 @@ test('mounted at /train/mesocycles/futamok via the router, with a back pill to t
   const user = userEvent.setup()
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/futamok'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('heading', { name: 'Lezárt futamaid' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Amit végigvittél' })).toBeInTheDocument()
+  expect(screen.getByText('Lezárt futamaid')).toBeInTheDocument() // the hero's eyebrow
   await user.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
 })
 
-test('the closed-run section head reads Történet, not Archív', () => {
-  setup()
+test('the hero states only what the closed runs themselves carry: their count and their weeks', () => {
+  const { container } = setup()
   // three closed runs since the mezo-meyc.4 fix wave: the compare pair (with reports) plus
   // a third, report-less run so selection mode has something to refuse a third pick on.
-  expect(screen.getByText(/Történet · 3/)).toBeInTheDocument()
-  expect(screen.queryByText('Archív · 3')).toBeNull() // the old section head is gone
+  expect(screen.getByText('3 lezárt futam')).toBeInTheDocument()
+  // 8 + 6 + 6 weeks — summed off the rows, no report fetched for it
+  expect(screen.getByText('20 hét összesen')).toBeInTheDocument()
+  // the prototype's session/record totals are NOT invented: neither exists on a Mesocycle
+  expect(screen.queryByText(/edzés/)).toBeNull()
+  expect(screen.queryByText(/rekord/)).toBeNull()
+  // and no star row anywhere on the LIST — completionPct lives only in the frozen report
+  expect(container.querySelector('.pl-stars')).toBeNull()
+})
+
+test('a closed row draws the run name, its window and its weeks', () => {
+  setup()
+  const card = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
+  expect(within(card).getByText('Feb 12 – Ápr 23')).toBeInTheDocument() // closedAt, not endDate
+  expect(within(card).getByText('8 hét')).toBeInTheDocument()
 })
 
 test('tapping a closed run opens its RUN REPORT, not the builder (mezo-meyc.2)', async () => {

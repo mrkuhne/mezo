@@ -17,10 +17,29 @@
 // is the top-set LOAD difference while `deltaPct` is measured on e1RM — so "same
 // weight, more reps" is 0 kg but a real percentage gain, and a weightless lift
 // has neither (only its reps moved).
+//
+// Train Titanium T10 Task 4 (mezo-88iwa.11) gave the page its two Titanium halves,
+// ported from the prototype's `planLibraryClosed`
+// (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:519-566):
+//   · the STAR HERO (`.pl-lhero.is-closed`) — the run's five clay stars over
+//     `runStars(report.adherence.completionPct)` (the ceremony's own `starsFor`
+//     scale, never a second rating rule), its one plain sentence, and the share
+//     DRAWN as a numeral + bar (the `.ld-hero-pct`/`.ld-hero-bar` idiom the weekly
+//     load hero already uses), labelled „A teljesített edzések aránya". It replaces
+//     the DS `PageHero` only for a run that HAS a report; the loading/404/error
+//     branches keep the plain hero, since there is no rating to draw yet.
+//   · „A mostani tervedhez képest" (`.pl-versus`) — the closed run's PEAK weekly
+//     sets against the ACTIVE plan's CURRENT-week target, one pair per muscle the
+//     two share. The „most" number comes from the active run's volume arc — the
+//     same source `MesoMusclePage` reads its versus rows from — so the two pages
+//     can never disagree. The block exists ONLY when there is an active run AND at
+//     least one shared muscle: no active plan, or no overlap, means no block at all
+//     (never an empty shell, never a 0 standing in for "we don't know").
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMesoReport, useMesoTemplates, useTrain } from '@/data/hooks'
+import { useMesocycleVolumeArc } from '@/data/train/mesoArcHooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -32,8 +51,12 @@ import type {
   MesocycleReportResponse,
 } from '@/data/train/trainApi'
 import type { MedalType } from '@/data/train/medalTypes'
-import type { MuscleVolumeArc } from '@/data/types'
+import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
+import { runStars } from '@/features/train/logic/libraryStory'
+import { muscleColor } from '@/features/train/logic/muscleColors'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { ClayIcon } from '@/shared/ui/clay'
 import { MuscleArcSwitch } from '@/features/train/components/MuscleArcSwitch'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
@@ -93,6 +116,64 @@ function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
       ceiling: m.mrv,
     }))
     .sort((a, b) => b.ceiling - a.ceiling)
+}
+
+// --- the star hero + then-vs-now (T10 Task 4, mezo-88iwa.11) ---
+
+/** Hungarian decimal comma for the stars' screen-reader label (the ceremony's own idiom). */
+const huStars = (stars: number): string => String(stars).replace('.', ',')
+
+/**
+ * Five clay stars, halves included — the prototype's `starRow` (plan-pages.js:330). It draws
+ * three different glyphs; the clay set has one, so a half/empty star is the SAME glyph dimmed
+ * and desaturated, exactly the way the workout ceremony draws its own row (`.cer-stars`).
+ */
+function StarRow({ stars }: { stars: number }) {
+  return (
+    <span className="pl-stars" role="img" aria-label={`${huStars(stars)} csillag az ötből`}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <i key={i} className={stars >= i + 1 ? 'is-lit' : stars >= i + 0.5 ? 'is-half' : undefined}>
+          <ClayIcon name="i-termes" size={18} className="icon" />
+        </i>
+      ))}
+    </span>
+  )
+}
+
+/** One muscle, twice: what it peaked at in the closed run, what the active plan gives it now. */
+export interface VersusPair {
+  muscle: string
+  label: string
+  /** The closed run's loudest planned week for this muscle (the frozen arc's max). */
+  then: number
+  /** The ACTIVE run's planned sets for its CURRENT week — the same number MesoMusclePage's
+   *  „Most" row is built from (arc week === arc.currentWeek). */
+  now: number
+}
+
+/**
+ * The then-vs-now pairs: muscles the closed run's frozen arc and the ACTIVE run's live arc
+ * BOTH carry. A muscle only one side trains has nothing to compare, so it is dropped rather
+ * than paired against an invented 0; with no active arc at all (no running plan, or it has
+ * not loaded) the list is empty and the caller draws no block. Sorted by the run's own peak,
+ * descending — the muscles that carried the block lead.
+ */
+export function versusPairs(closed: MuscleVolumeArc[], activeArc: MesoVolumeArc | null): VersusPair[] {
+  if (!activeArc) return []
+  const out: VersusPair[] = []
+  for (const m of closed) {
+    if (m.weeks.length === 0) continue
+    const nowMuscle = activeArc.muscles.find((a) => a.muscle === m.muscle)
+    const now = nowMuscle?.weeks.find((w) => w.week === activeArc.currentWeek)?.planned
+    if (now == null) continue
+    out.push({
+      muscle: m.muscle,
+      label: BUDGET_GROUP_LABELS[m.muscle] ?? m.muscle,
+      then: Math.max(...m.weeks.map((w) => w.planned)),
+      now,
+    })
+  }
+  return out.sort((a, b) => b.then - a.then || a.muscle.localeCompare(b.muscle))
 }
 
 // --- context block (mezo-meyc.3) — every numeric field is nullable and null NEVER renders
@@ -182,6 +263,11 @@ export function MesoReportPage() {
   const { mesocycles, workoutPending } = useTrain()
   const { report, pending, notFound, error, refetch, regenerating, regenerate } = useMesoReport(id ?? null)
   const { rerun, createTemplate } = useMesoTemplates()
+  // The plan that is running NOW — the „most" half of the then-vs-now block. Its arc is the
+  // same read MesoMusclePage's versus rows use; with no active run the hook is a no-op and
+  // the block simply does not exist.
+  const activeMeso = mesocycles.find((m) => m.status === 'active') ?? null
+  const { arc: activeArc } = useMesocycleVolumeArc(activeMeso?.id ?? null)
   // The rerun's resolved template — opens the one shared start sheet (mezo-meyc.1).
   const [startTemplate, setStartTemplate] = useState<{ id: string; title?: string } | null>(null)
 
@@ -213,25 +299,46 @@ export function MesoReportPage() {
   const heroSub = report
     ? `${report.closedAt ? `Lezárva · ${day(report.closedAt)}` : 'Futam · riport'} · ${report.weeks} hét`
     : undefined
+  // The run's rating — the ceremony's own star scale over the frozen completion share.
+  const rating = report ? runStars(report.adherence.completionPct) : null
+  const pairs = versusPairs(arcs, activeArc)
+  const versusScale = Math.max(1, ...pairs.map((p) => Math.max(p.then, p.now)))
 
   return (
     <MozaikPage tone="gold">
       <PageHead onBack={goBack} label="‹ Mezociklus" />
       <EntranceGroup>
-        <PageHero
-          icon="i-meso"
-          big={report ? `${report.adherence.completionPct}%` : undefined}
-          name={`${title} · riport`}
-          sub={heroSub}
-        />
+        {report && rating ? (
+          // The Titanium star hero. Only for a run that HAS a report: the rating, the
+          // sentence and the drawn share all come from the frozen completion share, and
+          // without one there is nothing honest to draw.
+          <header
+            className="pl-dhero pl-lhero is-closed rise"
+            style={{ '--mus-color': 'var(--tag-gym)', '--ld-accent': 'var(--tag-gym)', '--d': '40ms' } as CSSProperties}
+          >
+            <span className="pl-dhero-wash" aria-hidden="true" />
+            <span className="pl-dhero-tag tr-eyebrow">
+              {`Lezárt futam · ${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}`}
+            </span>
+            <h2>{title}</h2>
+            <div className="pl-lhero-stars"><StarRow stars={rating.stars} /></div>
+            <p className="pl-say">{rating.say}</p>
+            {/* The share is DRAWN, not merely spelled out — the weekly load hero's own
+                numeral + bar idiom (`.ld-hero-pct` / `.ld-hero-bar`). */}
+            <div className="ld-hero-pct"><b>{report.adherence.completionPct}</b><em>%</em></div>
+            <p className="ld-hero-sub">A teljesített edzések aránya</p>
+            <div className="ld-hero-bar">
+              <i style={{ '--w': `${Math.max(0, Math.min(100, report.adherence.completionPct))}%` } as CSSProperties} />
+            </div>
+            <div className="pl-poster-foot">
+              <span>{`${report.weeks} hét`}</span>
+              {report.closedAt && <span>{`Lezárva · ${day(report.closedAt)}`}</span>}
+            </div>
+          </header>
+        ) : (
+          <PageHero icon="i-meso" name={`${title} · riport`} sub={heroSub} />
+        )}
         <PageBody>
-      {report && (
-        <div className="row gap-md" style={{ padding: '0 0 4px' }}>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-            {`${day(report.startDate)}${report.endDate ? ` → ${day(report.endDate)}` : ''}`}
-          </span>
-        </div>
-      )}
       {report?.templateId && (
         <div style={{ padding: '0 0 8px' }}>
           <button
@@ -289,7 +396,9 @@ export function MesoReportPage() {
         </div>
       ) : report ? (
         <>
-          {/* Adherence — the "did the plan actually happen" glance */}
+          {/* Adherence — the "did the plan actually happen" glance. The completion SHARE is
+              not repeated here: the hero above draws it (numeral + bar), and printing the
+              same 88% twice on one screen reads as two different measurements. */}
           <div style={{ padding: '16px 0 8px' }}>
             <StatStrip
               cells={[
@@ -301,7 +410,6 @@ export function MesoReportPage() {
                   label: 'Hét',
                   value: `${report.adherence.completedWeeks}/${report.adherence.plannedWeeks}`,
                 },
-                { label: 'Teljesítés', value: fmt(report.adherence.completionPct), unit: '%' },
               ]}
             />
           </div>
@@ -544,6 +652,47 @@ export function MesoReportPage() {
                     </CtaGhost>
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* „A mostani tervedhez képest" (T10 Task 4) — the closed run's peak weekly sets
+              against what the RUNNING plan gives the same muscle this week. No active plan,
+              or no muscle in common, and the block is absent entirely. */}
+          {pairs.length > 0 && (
+            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-versus">
+              <h3 className="pl-h3" style={{ margin: '0 0 2px' }}>A mostani tervedhez képest</h3>
+              <p className="pl-foot-say" style={{ margin: 0 }}>
+                Ugyanazok az izmok — mennyit bírtak akkor a csúcson, és mennyit kapnak most.
+              </p>
+              <div className="pl-versus pl-lib-versus">
+                {pairs.map((p) => (
+                  <div
+                    key={p.muscle}
+                    className="pl-versus-pair"
+                    style={{ '--mus-color': muscleColor(p.muscle).rail } as CSSProperties}
+                    data-testid="versus-pair"
+                  >
+                    <span className="pl-versus-name">
+                      <MuscleChip token={p.muscle} size={20} />
+                      {p.label}
+                    </span>
+                    <div className="pl-versus-row">
+                      <span>akkor</span>
+                      <span className="pl-versus-bar">
+                        <i style={{ '--w': `${(p.then / versusScale) * 100}%` } as CSSProperties} />
+                      </span>
+                      <b>{fmt(p.then)}</b>
+                    </div>
+                    <div className="pl-versus-row is-now">
+                      <span>most</span>
+                      <span className="pl-versus-bar">
+                        <i style={{ '--w': `${(p.now / versusScale) * 100}%` } as CSSProperties} />
+                      </span>
+                      <b>{fmt(p.now)}</b>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

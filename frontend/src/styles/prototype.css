@@ -15200,6 +15200,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 .pl-stars { display: inline-flex; gap: 3px; }
 .pl-stars .icon { width: 18px; height: 18px; }
+/* T10 Task 4 (mezo-88iwa.11): the prototype draws three DIFFERENT star glyphs
+   (star / star-half / star-empty) that the clay set has no equivalent of — so a
+   half/empty star is drawn the way the ceremony already draws it, with ONE clay
+   glyph (`i-termes`) dimmed and desaturated (`.cer-stars` :14274). Same three
+   states, same ink, one icon. */
+.pl-stars i { display: inline-grid; place-items: center; }
+.pl-stars i .icon { opacity: .14; filter: grayscale(1); }
+.pl-stars i.is-half .icon { opacity: .45; filter: grayscale(.4); }
+.pl-stars i.is-lit .icon { opacity: 1; filter: none; }
+.pl-lhero-stars .pl-stars .icon { width: 30px; height: 30px; }
 
 @keyframes pl-spin { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }
@@ -15238,6 +15248,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .pl-lib-mus .icon { width: 21px; height: 21px; }
 .pl-lib-closed-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+/* T10 Task 4 (mezo-88iwa.11): the closed row keeps the card grammar but CANNOT be one
+   button — its footer carries „Sablonná" / „Újrafuttatás", and buttons do not nest. So
+   the card is a plain box, its BODY is the button (`.pl-lib-open`, the card's own grid)
+   and the actions sit in `.pl-lib-foot` beneath it. `.is-picked` is the „Összevetés"
+   selection state, the ArchivedMesoCard border/wash it replaces, in CSS. */
+.pl-lib-card.is-closed { cursor: default; }
+.pl-lib-open { display: grid; gap: 10px; width: 100%; text-align: left; cursor: pointer; }
+.pl-lib-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  border-top: 1px solid var(--border-subtle); padding-top: 9px;
+}
+.pl-lib-card.is-picked {
+  border-color: color-mix(in srgb, var(--coral) 45%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 62%),
+    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+}
 .pl-lib-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
 .pl-lib-meta .icon { width: 16px; height: 16px; }
 

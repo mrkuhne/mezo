@@ -306,9 +306,13 @@ export const mesocycles: Mesocycle[] = [
   // report's strength list shares only PART of rec-03's exercises (see mesoReportHyp03Mock).
   {
     id: 'meso-hyp-03',
-    // A legacy/direct run like meso-rec-03 — it predates the template split, so a rerun
-    // materializes a template for it (mezo-meyc.1) instead of resolving one.
-    templateId: null,
+    // Started from the SAME PPL template the active run came from (T10 Task 4,
+    // mezo-88iwa.11): mock mode had no closed run carrying a `templateId` at all, so the
+    // template page's „Futamok ebből a sablonból" list had no closed row to draw and its
+    // route to the frozen report went uncovered offline. Narratively it is the previous
+    // autumn's run of the same block — `meso-rec-03` stays the legacy/direct run whose
+    // rerun materializes a template (mezo-meyc.1).
+    templateId: 'a10e0000-0000-4000-8000-000000000000',
     title: 'Hypertrophy 03 · Ősz',
     shortTitle: 'Hypertrophy 03',
     status: 'archived',
@@ -746,7 +750,9 @@ const HYP03_LANDMARKS: [string, { mev: number; mav: number; mrv: number; current
 
 export const mesoReportHyp03Mock = {
   mesocycleId: 'meso-hyp-03',
-  templateId: null,
+  // Same template as the run itself carries (see the fixture above) — a frozen report's
+  // `templateId` is the run's, so the report's „Sablon megnyitása" door matches the list.
+  templateId: 'a10e0000-0000-4000-8000-000000000000',
   title: 'Hypertrophy 03 · Ősz',
   startDate: '2025-10-02',
   endDate: '2025-11-13',

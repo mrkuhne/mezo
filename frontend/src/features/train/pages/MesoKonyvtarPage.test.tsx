@@ -196,7 +196,8 @@ describe('mounted at /train/mesocycles/konyvtar via the router', () => {
     renderApp('/train/mesocycles/konyvtar')
     await screen.findByRole('heading', { name: 'A terveid' })
     await user.click(screen.getByRole('button', { name: 'Lezárt futamaid' }))
-    expect(await screen.findByRole('heading', { name: 'Lezárt futamaid' })).toBeInTheDocument()
+    // the closed list's own Titanium heading (T10 Task 4) — „Lezárt futamaid" is its eyebrow
+    expect(await screen.findByRole('heading', { name: 'Amit végigvittél' })).toBeInTheDocument()
   })
 })
 
