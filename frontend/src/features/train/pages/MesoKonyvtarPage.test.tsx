@@ -1,12 +1,26 @@
-import { render, screen, waitFor } from '@testing-library/react'
+// ============================================================
+// Mezo · MesoKonyvtarPage tests — the Titanium „Edzéstervek" landing
+// (Train Titanium T10 Task 2, mezo-88iwa.11).
+//
+// Rewritten from the DS-era suite: the mosaic tiles, the Tervezett list and the whole
+// Történet/Összevetés block are no longer this page's — the closed runs moved to
+// `MesoFutamokPage` (MesoFutamokPage.test.tsx carries their tests, moved verbatim).
+// What is asserted here is the new anatomy: the hero's four REAL counts, the four card
+// kinds (Most fut / Következnek / Új terv / the two doorways), the absent-active empty
+// state, the start affordance beside (never inside) a queued card, and the skeleton.
+// ============================================================
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -15,7 +29,6 @@ afterEach(() => vi.unstubAllEnvs())
 
 function LocationProbe() {
   const { pathname, search } = useLocation()
-  // search included since mezo-meyc.4 — the compare CTA's payload IS its query string.
   return <div data-testid="loc">{`${pathname}${search}`}</div>
 }
 
@@ -30,9 +43,127 @@ function setup() {
   )
 }
 
-// --- Route/render smoke test (Train Titanium T9 Task 2, mezo-88iwa.10) ---
-// Mounted through the REAL router at its real path, proving the route registration itself
-// (not just the bare component) — title + back button per the brief's MozaikPage scaffold.
+// --- The hero: page-naming poster copy + four REAL counts ---------------------
+// The mock fixture (data/train/train.ts) is 1 active + 2 planned + 3 archived runs and
+// 2 templates — every number below is that fixture, never a prototype-illustrative one.
+
+test('the hero names the page and says what lives here, jargon-free', () => {
+  setup()
+  expect(screen.getByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
+  expect(screen.getByText('Edzéstervek')).toBeInTheDocument()
+  expect(screen.getByText(/Itt élnek a terveid/)).toBeInTheDocument()
+})
+
+test('the facts row carries the four real counts', () => {
+  setup()
+  expect(screen.getByText('1 fut')).toBeInTheDocument()
+  expect(screen.getByText('2 következik')).toBeInTheDocument()
+  expect(screen.getByText('2 sablon')).toBeInTheDocument()
+  expect(screen.getByText('3 lezárva')).toBeInTheDocument()
+})
+
+test('the back pill is docked INSIDE the hero, not in a row above it', () => {
+  const { container } = render(
+    <QueryWrapper><MemoryRouter><MesoKonyvtarPage /></MemoryRouter></QueryWrapper>,
+  )
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveClass('mz-backbtn')
+  // The docking CSS keys on `.pl-lhero > .mz-backbtn` — a pill that drifts out of the
+  // hero would silently lose its position, so assert the PARENT, not just the class.
+  expect(back.parentElement).toBe(container.querySelector('.pl-lhero'))
+})
+
+// --- „Most fut" --------------------------------------------------------------
+
+test('the Most fut card carries the active run and opens the Terv landing', async () => {
+  const user = userEvent.setup()
+  setup()
+  const card = screen.getByRole('button', { name: 'Most fut · Hypertrophy 04 · Tavasz' })
+  expect(card).toHaveClass('pl-lib-card', 'is-now')
+  expect(card).toHaveTextContent('3. hét a 6-ból')
+  expect(card).toHaveTextContent('Pull / Push / Legs · 5×/hét')
+  await user.click(card)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles')
+})
+
+// --- „Következnek" -----------------------------------------------------------
+
+test('each planned run gets a queued card with its start, weeks and split', () => {
+  setup()
+  const card = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
+  expect(card).toHaveClass('pl-lib-card', 'is-queued')
+  expect(card).toHaveTextContent('Jún 16')
+  expect(card).toHaveTextContent('7')
+  expect(card).toHaveTextContent('Upper / Lower')
+  expect(screen.getByRole('button', { name: 'Tervezett · Pre-cut maintenance · Aug' })).toBeInTheDocument()
+})
+
+test('the queued card body opens the builder', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-str-02')
+})
+
+test('the start affordance sits BESIDE the queued card, never nested inside it', async () => {
+  const user = userEvent.setup()
+  setup()
+  const starts = screen.getAllByRole('button', { name: 'Indítás' })
+  expect(starts).toHaveLength(2) // one per planned run
+  // No nested button: a card body is itself a <button>, so the start button must not be
+  // a descendant of one (invalid HTML, and the tap would fire both).
+  for (const s of starts) expect(s.closest('.pl-lib-card')).toBeNull()
+  // The start mutation fires without navigating away (mock's activate is a no-op).
+  await user.click(starts[0])
+  expect(screen.getByTestId('loc')).toHaveTextContent('/')
+})
+
+// --- „Új terv" + the two doorways --------------------------------------------
+
+test('Új terv összeállítása opens the planner', async () => {
+  const user = userEvent.setup()
+  setup()
+  const cta = screen.getByRole('button', { name: 'Új terv összeállítása' })
+  expect(cta).toHaveClass('pl-lib-new')
+  await user.click(cta)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
+})
+
+test('the Sablonjaid doorway carries the template count and opens the templates tab', async () => {
+  const user = userEvent.setup()
+  setup()
+  const dest = screen.getByRole('button', { name: 'Sablonjaid' })
+  expect(dest).toHaveClass('pl-dest', 'is-plans')
+  expect(dest).toHaveTextContent('2 sablon, amiből indíthatsz')
+  await user.click(dest)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/templates')
+})
+
+test('the Lezárt futamaid doorway carries the closed count and opens the futamok page', async () => {
+  const user = userEvent.setup()
+  setup()
+  const dest = screen.getByRole('button', { name: 'Lezárt futamaid' })
+  expect(dest).toHaveClass('pl-dest', 'is-done')
+  expect(dest).toHaveTextContent('3 végigvitt terv története')
+  await user.click(dest)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/futamok')
+})
+
+// --- What LEFT the page ------------------------------------------------------
+
+test('the closed-run list and its Összevetés mode moved off this page', () => {
+  setup()
+  expect(screen.queryByText(/Történet/)).toBeNull()
+  expect(screen.queryByRole('button', { name: /Összevetés/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Újrafuttatás/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Sablonná/ })).toBeNull()
+  // …and the DS-era mosaic tiles went with the reface
+  expect(screen.queryByRole('button', { name: /Új blokk tervezése/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Futóblokkok' })).toBeNull()
+})
+
+// --- Route/render smoke test + the kalauz anchor ------------------------------
+
 describe('mounted at /train/mesocycles/konyvtar via the router', () => {
   beforeEach(() => seedAllKalauzSeen())
 
@@ -41,193 +172,80 @@ describe('mounted at /train/mesocycles/konyvtar via the router', () => {
     return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   }
 
-  it('renders the page with its title and every moved section', async () => {
-    renderApp('/train/mesocycles/konyvtar')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Edzéstervek' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Sablonok · 2/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Új blokk tervezése' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Futóblokkok' })).toBeInTheDocument()
-    expect(screen.getByText('Strength 02 · Nyár')).toBeInTheDocument()
-    expect(screen.getByText(/Történet · 3/)).toBeInTheDocument()
+  it('renders the Titanium landing at its real path, kalauz anchor and all', async () => {
+    const { container } = renderApp('/train/mesocycles/konyvtar')
+    expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
+    expect(container.querySelector('[data-kalauz-anchor="konyvtar-hero"]')).not.toBeNull()
   })
 
-  it('the back button returns to /train/mesocycles', async () => {
+  it('the back pill returns to /train/mesocycles', async () => {
     const user = userEvent.setup()
     renderApp('/train/mesocycles/konyvtar')
-    await screen.findByRole('heading', { level: 1, name: 'Edzéstervek' })
+    await screen.findByRole('heading', { name: 'A terveid' })
     await user.click(screen.getByRole('button', { name: 'Vissza' }))
-    // The landing re-mounts at /train/mesocycles — since T9 Task 3 that is the running
-    // block's poster (MesoTervPage), whose whole-poster button proves the navigation.
+    // The Terv landing re-mounts — its whole-poster button proves the navigation.
     expect(await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })).toBeInTheDocument()
+  })
+
+  it('the Lezárt futamaid doorway reaches a REAL route, not a 404', async () => {
+    const user = userEvent.setup()
+    renderApp('/train/mesocycles/konyvtar')
+    await screen.findByRole('heading', { name: 'A terveid' })
+    await user.click(screen.getByRole('button', { name: 'Lezárt futamaid' }))
+    expect(await screen.findByRole('heading', { name: 'Lezárt futamaid' })).toBeInTheDocument()
   })
 })
 
-// --- Runs-only library (mezo-tlwa): the templates moved to their own `Sablonok` tab ---
-// (moved from MesocycleLibraryPage.test.tsx, Task 2)
+// --- No running plan: a quiet line, never a fake card ------------------------
 
-test('the library carries NO template cards any more — only a nav row to their tab', async () => {
-  const user = userEvent.setup()
-  setup()
-  // no card-level template affordances survive here
-  expect(screen.queryByRole('button', { name: /Szerkesztés/ })).toBeNull()
-  expect(screen.queryByRole('button', { name: /^Indítás$/ })).toBeNull()
-  expect(screen.queryByText('Upper/Lower Power')).toBeNull()
-  expect(screen.queryByText('1× futtatva')).toBeNull()
-  // …and the planner's dashed CTA went with them (the header chip is the one entry)
-  expect(screen.queryByRole('button', { name: /Új mesociklus tervezése/ })).toBeNull()
+describe('no active run (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
 
-  const row = screen.getByRole('button', { name: /Sablonok · 2/ })
-  await user.click(row)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/train/templates')
+  it('says so in one line and counts 0 fut — no Most fut card is drawn', async () => {
+    server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
+    setup()
+    expect(await screen.findByText(/Most nem fut terv/)).toBeInTheDocument()
+    // 0 is the TRUTH about this library, so it renders as 0 rather than hiding the fact.
+    expect(screen.getByText('0 fut')).toBeInTheDocument()
+    expect(screen.getByText('0 következik')).toBeInTheDocument()
+    expect(screen.getByText('0 lezárva')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Most fut/ })).toBeNull()
+    // the „start something new" CTA and the doorways still stand
+    expect(screen.getByRole('button', { name: 'Új terv összeállítása' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lezárt futamaid' })).toBeInTheDocument()
+  })
 })
 
-// Final-review fix wave (mezo-88iwa.5): the six-tile hub retirement left Futás (owned
-// by Terv, navModel.ts) with no entry point of its own on this face — restore it as a
-// mosaic tile, same idiom as the other nav tiles. Moved here from the landing (Task 2).
-test('the Futóblokkok tile navigates to /train/futas', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: 'Futóblokkok' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/train/futas')
+// --- Skeleton (the missing T9-residue test) ----------------------------------
+// Real mode shows the rewritten layout-aware `MesocycleSkeleton` (role="status") while
+// the meso + template queries are unresolved; mock seeds synchronously → no skeleton.
+
+describe('MesoKonyvtarPage (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('shows the new-geometry skeleton while the queries are unresolved', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/meso-templates`, () => new Promise(() => {})),
+    )
+    setup()
+    const status = await screen.findByRole('status')
+    // Shape, not just presence (the T5 skeleton-test idiom): hero → running card →
+    // two queued cards → the loud CTA → the two doorways, in the page's own order.
+    const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
+    const order = sk
+      .map((el) => el.style.height)
+      .filter((h) => ['220px', '70px', '112px', '115px'].includes(h))
+    expect(order).toEqual(['220px', '70px', '112px', '112px', '70px', '115px', '115px'])
+  })
 })
 
-// --- Tervezett (moved from MesocycleLibraryPage.test.tsx, Task 2) ---
-
-test('renders a planned mesocycle', () => {
-  setup()
-  expect(screen.getByText('Strength 02 · Nyár')).toBeInTheDocument()
-})
-
-// --- Történet (was Archív) + rerun (moved from MesocycleLibraryPage.test.tsx, Task 2) ---
-
-test('the closed-run section head reads Történet, not Archív', () => {
-  setup()
-  // three closed runs since the mezo-meyc.4 fix wave: the compare pair (with reports) plus
-  // a third, report-less run so selection mode has something to refuse a third pick on.
-  expect(screen.getByText(/Történet · 3/)).toBeInTheDocument()
-  expect(screen.queryByText('Archív · 3')).toBeNull() // the old section head is gone
-})
-
-test('tapping a closed run opens its RUN REPORT, not the builder (mezo-meyc.2)', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-rec-03/report')
-})
-
-test('Újrafuttatás on a closed run reruns it and opens the start sheet', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getAllByRole('button', { name: /Újrafuttatás/ })[0])
-  expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
-})
-
-test('Sablonná on a closed run saves it as a template and opens the new editor (mezo-tlwa)', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getAllByRole('button', { name: /Sablonná/ })[0])
-  await waitFor(() =>
-    expect(screen.getByTestId('loc').textContent).toMatch(/^\/train\/mesocycles\/templates\/.+/),
-  )
-})
-
-// --- Összevetés selection mode (mezo-meyc.4, moved from MesocycleLibraryPage.test.tsx) ---
-
-test('a closed run advertises whether it HAS a report', () => {
-  setup()
-  // two of the three fixture runs carry one; the third (meso-cut-02) has none, and the
-  // „nincs riport" ghost rendering itself is covered in ArchivedMesoCard.test
-  expect(screen.getAllByText('riport')).toHaveLength(2)
-  expect(screen.getByText('nincs riport')).toBeInTheDocument()
-})
-
-test('Összevetés turns card taps into selection instead of navigation', async () => {
-  const user = userEvent.setup()
-  setup()
-  const toggle = screen.getByRole('button', { name: /Összevetés/ })
-  // The `.chip[aria-pressed="true"]` DS rule needs both the class AND the attribute on the
-  // same element to give the toggle its visible pressed state — assert the pairing, not
-  // just the attribute (a class regression would silently drop the styling).
-  expect(toggle).toHaveClass('chip')
-  expect(toggle).toHaveAttribute('aria-pressed', 'false')
-
-  await user.click(toggle)
-  expect(toggle).toHaveClass('chip')
-  expect(toggle).toHaveAttribute('aria-pressed', 'true')
-
-  const card = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
-  await user.click(card)
-  // selected, NOT navigated to the report
-  expect(card).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByTestId('loc').textContent).toBe('/')
-  // the card's own actions step aside while selecting
-  expect(screen.queryByRole('button', { name: /Újrafuttatás/ })).toBeNull()
-  expect(screen.queryByRole('button', { name: /Sablonná/ })).toBeNull()
-})
-
-test('a third tap in selection mode is refused — the pair from the first two taps stands', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
-  // the confirm CTA already carries a complete pair
-  expect(screen.getByRole('button', { name: /Összevetés megnyitása/ })).toBeInTheDocument()
-
-  const third = screen.getByRole('button', { name: /Cut prep · Nyár/ })
-  await user.click(third)
-
-  // the third card never entered selection…
-  expect(third).toHaveAttribute('aria-pressed', 'false')
-  // …and the first two ids are exactly what the CTA still opens
-  await user.click(screen.getByRole('button', { name: /Összevetés megnyitása/ }))
-  expect(screen.getByTestId('loc').textContent).toBe(
-    '/train/mesocycles/compare?a=meso-hyp-03&b=meso-rec-03',
-  )
-})
-
-test('two selected runs open the compare view with a= and b= in tap order', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-  // no CTA until the pair is complete
-  expect(screen.queryByRole('button', { name: /Összevetés megnyitása/ })).toBeNull()
-
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
-  await user.click(screen.getByRole('button', { name: /Összevetés megnyitása/ }))
-
-  expect(screen.getByTestId('loc').textContent).toBe(
-    '/train/mesocycles/compare?a=meso-hyp-03&b=meso-rec-03',
-  )
-})
-
-test('tapping a selected run deselects it; leaving the mode clears the selection', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-  const rec = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
-  await user.click(rec)
-  await user.click(rec)
-  expect(rec).toHaveAttribute('aria-pressed', 'false')
-
-  // select a pair, toggle the mode off and back on -> nothing is selected any more
-  await user.click(rec)
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
-  expect(screen.getByRole('button', { name: /Összevetés megnyitása/ })).toBeInTheDocument()
-
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ }))
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ }))
-  expect(screen.queryByRole('button', { name: /Összevetés megnyitása/ })).toBeNull()
-  expect(screen.getByRole('button', { name: /Recovery rebuild · Tél/ })).toHaveAttribute('aria-pressed', 'false')
-})
-
-test('outside selection mode a closed run still opens its report', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ })) // back off
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
-  expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/meso-rec-03/report')
+describe('MesoKonyvtarPage (mock mode)', () => {
+  it('renders content with no skeleton (synchronous seed)', () => {
+    setup()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

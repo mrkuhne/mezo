@@ -15169,6 +15169,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `--amber` above (:14910). */
 
 .pl-lhero { min-height: 0; }
+/* Option A back pill (T10 Task 2, mezo-88iwa.11): the „vissza" pill lives INSIDE the
+   hero, not in a row above it — the same idiom `.ld-hero .ld-back` carries (:14651).
+   The pill is the house `.mz-backbtn`; only its position differs, so the rule keys on
+   the pill being the hero's own DIRECT child (the prototype's own
+   `.pl-dhero:has(> .pl-back.is-inhero)` shape, train-pages.css :184) and leaves every
+   other `.pl-lhero` variant (the slim list heroes) untouched. */
+.pl-lhero > .mz-backbtn {
+  position: absolute; left: 14px; top: 14px; z-index: 2;
+  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.pl-lhero:has(> .mz-backbtn) { padding-top: 58px; }
 .pl-lhero .pl-poster-foot { position: relative; margin-top: 12px; }
 .pl-lhero-art { position: absolute; right: 6px; top: 14px; width: 96px; height: 96px; pointer-events: none; }
 .pl-lhero-art .icon { position: absolute; inset: 18px; width: 60px; height: 60px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4)); }

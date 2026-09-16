@@ -22,6 +22,7 @@ import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
+import { MesoFutamokPage } from '@/features/train/pages/MesoFutamokPage'
 import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
@@ -282,6 +283,10 @@ export const routes: RouteObject[] = [
       // Sablonok/Új blokk/Futóblokkok tiles + Tervezett + Történet moved here intact
       // behind the landing's `Edzéstervek` doorway.
       { path: 'train/mesocycles/konyvtar', element: <MesoKonyvtarPage /> },
+      // „Lezárt futamaid" (Train Titanium T10 Task 2, mezo-88iwa.11): the library's
+      // Történet section moved here verbatim when the landing was refaced, so the closed
+      // runs never lost their entry. Task 4 gives the page its own Titanium face.
+      { path: 'train/mesocycles/futamok', element: <MesoFutamokPage /> },
       // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
       // route stays reachable (the library's nav row still links here).
       { path: 'train/templates', element: <MesoTemplatesPage /> },
