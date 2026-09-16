@@ -728,14 +728,13 @@ test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening th
 })
 
 /** Drive every non-skipped exercise of the mock Pull Day to completion. */
-/** The explicit close (T7): the active list's finish CTA, then the level-up overlay's Tovább
- *  — what's left on screen is the closing ceremony. */
+/** The explicit close (T7): the active list's finish CTA (plus the confirm glass when sets are
+ *  pending) — and the closing ceremony IS what lands. Since mezo-e1ii9 (Train parity P1, Task 2)
+ *  the workout close raises NO level-up overlay on top of it. */
 async function closeWorkout(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /Edzés befejezése|Edzés kihagyása/ }))
   const confirm = screen.queryByRole('button', { name: /Befejezem így|Kihagyom a mai edzést/ })
   if (confirm) await user.click(confirm)
-  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
-  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
 }
 
 async function finishMockSession(user: ReturnType<typeof userEvent.setup>, names: string[]) {
@@ -776,7 +775,12 @@ test('a skipped exercise\'s card reads KIHAGYVA and hides its rows', async () =>
   expect(card(EX2)).not.toHaveClass('is-complete')
 })
 
-test('the finish CTA shows the level-up overlay, then the closing ceremony on Tovább (mock)', async () => {
+// mezo-e1ii9 (Train parity P1, Task 2) — the owner's headline complaint: closing a workout never
+// showed him the star ceremony, because the pre-Titanium `.levelup` overlay (416×932, z-index 250)
+// went up on top of it. The prototype's close (companion-titanium/session.js) has exactly ONE
+// layer, and it carries `+N szerzett XP` itself. Other domains keep the overlay — see
+// SportPage.test.tsx and RunningPage.test.tsx, which still assert the Szintlépés dialog.
+test('the finish CTA lands straight on the closing ceremony — NO level-up overlay on top (mock)', async () => {
   const user = userEvent.setup()
   setup()
   // Skip ex0, then drive the remaining 4 exercises to completion — the last debrief leaves
@@ -787,13 +791,17 @@ test('the finish CTA shows the level-up overlay, then the closing ceremony on To
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
-  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the ceremony.
-  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
-  expect(within(dialog).getByText(/KLASSZIK KONDI/)).toBeInTheDocument()
-  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
-  expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
-  // The ceremony is revealed underneath: the stars, the verdict and the way out.
+  // The ceremony IS the closing frame: the stars, the verdict and the way out.
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  // Nothing above it — no overlay node, no Szintlépés dialog, none of its pre-Titanium content.
+  expect(document.querySelector('.levelup')).toBeNull()
+  expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
+  expect(screen.queryByText(/KLASSZIK KONDI/)).not.toBeInTheDocument()
+  // The XP is not lost: the ceremony carries the finish response's REAL award (mock seed: 480).
+  const stats = document.querySelector('.cer-stats')
+  expect(stats).not.toBeNull()
+  expect(stats).toHaveTextContent('+480')
+  expect(stats).toHaveTextContent('szerzett XP')
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/csillag az ötből/)
   expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
   // The session's real records (mezo-wp6n) drive the ceremony's record strip — ex2..ex5's
@@ -829,11 +837,10 @@ test('confirming a zero-logged finish goes straight through finishAndCelebrate (
   setup()
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
-  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the closed summary.
-  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
-  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
-  // The ceremony is the close moment for the zero-logged path too (T7).
+  // The ceremony is the close moment for the zero-logged path too (T7) — and the only layer
+  // on screen (mezo-e1ii9): no level-up overlay in front of it.
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(document.querySelector('.levelup')).toBeNull()
   expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
   // Nothing was logged, so the kcal tile stays away entirely — never a 0.
   expect(screen.queryByText('kcal')).not.toBeInTheDocument()
@@ -850,9 +857,8 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   await user.click(cta)
   // Zero pending -> straight to finishAndCelebrate, no confirm glass in between.
   expect(screen.queryByText(/bepipálatlan szetted/)).not.toBeInTheDocument()
-  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
-  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(document.querySelector('.levelup')).toBeNull()
 })
 
 test('the ceremony carries the challenge outcomes, and the old WorkoutSummary report is gone (mezo-88iwa.8)', async () => {

@@ -24,7 +24,6 @@ import { useChallengeActions, useChallenges, useGoal, useTimingProfile, useTrain
 import { localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -238,7 +237,6 @@ function ActiveWorkoutSession({
   /** The finish response's real XP (mezo-88iwa.8): the ceremony's +XP tile shows it, and
    *  renders nothing when the response carried no level-up payload at all. */
   const [xpGained, setXpGained] = useState<number | null>(null)
-  const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
@@ -617,14 +615,23 @@ function ActiveWorkoutSession({
     // Mount-once: this is a page-lifetime unmount guard, not a per-render effect.
   }, [])
 
-  // Finish the workout (the ONLY completion trigger — the active list's finish CTA) and
-  // present the gamified level-up. Real mode POSTs with the instance id; mock has no
-  // instance (workoutId null → 'mock' sentinel) but the mock finish mutation still returns
-  // a seeded LevelUpResult so the prototype shows the overlay. The overlay (the global
-  // LevelUpProvider host) portals OVER the ceremony and is dismissed on its Tovább CTA,
-  // revealing it. Switch-off / no-levelUp (real `levelUp` absent) simply lands on the
-  // ceremony with no overlay. On success the server re-evaluates the challenges lazily on
-  // the next list read, so we invalidate them (real only).
+  // Finish the workout (the ONLY completion trigger — the active list's finish CTA) and land on
+  // the closing ceremony. Real mode POSTs with the instance id; mock has no instance (workoutId
+  // null → 'mock' sentinel) but the mock finish mutation still returns a seeded LevelUpResult,
+  // which is where the ceremony's XP number comes from.
+  //
+  // mezo-e1ii9 (Train parity P1, Task 2): this path deliberately does NOT call `showLevelUp`.
+  // The pre-Titanium overlay used to portal a full-frame layer OVER the ceremony, so the owner
+  // never saw the star ceremony he had just earned — his headline complaint. The prototype's
+  // close (companion-titanium/session.js) has exactly ONE layer and carries `+N szerzett XP`
+  // itself, which `setXpGained` below feeds from the very same response, so no number is lost.
+  // The skill/level breakdown has no prototype counterpart at this moment and lives on the
+  // progression surface (/me/growth/skillek). The LevelUpProvider stays app-wide and untouched:
+  // sport and run logging still raise it (SportPage, SportLogPage, RunningPage, QuickLogSurface,
+  // TrainTodayPage).
+  //
+  // On success the server re-evaluates the challenges lazily on the next list read, so we
+  // invalidate them (real only).
   //
   // T7 (mezo-88iwa.8): EVERY success path lands on 'summary' — the two-act closing
   // ceremony IS the close moment, so the zero-pending shortcut goes there too.
@@ -637,7 +644,6 @@ function ActiveWorkoutSession({
       // retry path). The ceremony's own note is saved through `saveNote` on close/blur.
       note: closingNote.trim() || null,
       onSuccess: (r) => {
-        if (r?.levelUp) showLevelUp(r.levelUp)
         // The ceremony's +XP tile is the wire's number or nothing — never a fabricated
         // count×10. `LevelUpResult.totalXp` is the session's real award (the schema has no
         // top-level XP field on the plain finish response); absent payload → no tile.
