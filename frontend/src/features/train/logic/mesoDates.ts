@@ -11,6 +11,7 @@
 //     since the hub hero (ActiveMesoCard) needed it as a standalone pure fn.
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
+import { huMonthDay } from '@/shared/lib/dates'
 
 // --- HU month helpers (meso-planner.jsx:883-902) ---
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
@@ -41,4 +42,13 @@ export function getSeason(startDate: string): string {
 /** Today's DAY_ORDER token ('Hét'..'Vas', Monday-first — JS's Sunday=0 rolled to index 6). */
 export function todayDayToken(date: Date = new Date()): (typeof DAY_ORDER)[number] {
   return DAY_ORDER[(date.getDay() + 6) % 7]
+}
+
+/** Mock fixtures carry HU display dates ('Jún 12'), the API ISO ones ('2026-06-12'). Passes
+ *  any non-ISO (already-formatted, or empty) value through unchanged — only a parseable
+ *  `YYYY-MM-DD` gets converted. Shared by MesocycleBuilderPage and MesoKonyvtarPage so both
+ *  the run page and the library card format a real-mode ISO startDate the same way. */
+export function huDate(value: string | undefined): string | null {
+  if (!value) return null
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? huMonthDay(value) : value
 }

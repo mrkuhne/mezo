@@ -7,7 +7,9 @@
 // `MesoFutamokPage` (MesoFutamokPage.test.tsx carries their tests, moved verbatim).
 // What is asserted here is the new anatomy: the hero's four REAL counts, the four card
 // kinds (Most fut / Következnek / Új terv / the two doorways), the absent-active empty
-// state, the start affordance beside (never inside) a queued card, and the skeleton.
+// state, the queued card's own-page navigation (NO one-tap activation — that silently
+// archives the running plan with no close ceremony/report) + its reassurance/hint line,
+// and the skeleton.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -88,34 +90,36 @@ test('the Most fut card carries the active run and opens the Terv landing', asyn
 
 // --- „Következnek" -----------------------------------------------------------
 
-test('each planned run gets a queued card with its start, weeks and split', () => {
+test('each planned run gets a queued card with weeks, nap/hét and split — the start date said once, in the head', () => {
   setup()
   const card = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
   expect(card).toHaveClass('pl-lib-card', 'is-queued')
-  expect(card).toHaveTextContent('Jún 16')
+  expect(card).toHaveTextContent('Jún 16-tól')
   expect(card).toHaveTextContent('7')
+  expect(card).toHaveTextContent('hét')
+  expect(card).toHaveTextContent('4×/hét')
   expect(card).toHaveTextContent('Upper / Lower')
+  // No duplicated date: the head's „Jún 16-tól" is the only place the date appears.
+  const occurrences = (card.textContent ?? '').split('Jún 16').length - 1
+  expect(occurrences).toBe(1)
   expect(screen.getByRole('button', { name: 'Tervezett · Pre-cut maintenance · Aug' })).toBeInTheDocument()
 })
 
-test('the queued card body opens the builder', async () => {
+test('the queued card body opens the plan\'s own page (the builder) — no one-tap activation', async () => {
   const user = userEvent.setup()
   setup()
+  // No activation affordance survives on the card at all — activating a plan silently
+  // archives the running one with no close ceremony/report.
+  expect(screen.queryByRole('button', { name: /Indítás|Aktiválás/ })).toBeNull()
   await user.click(screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-str-02')
 })
 
-test('the start affordance sits BESIDE the queued card, never nested inside it', async () => {
-  const user = userEvent.setup()
+test('the queued card carries the reassurance line when an active run is already queued behind', () => {
   setup()
-  const starts = screen.getAllByRole('button', { name: 'Indítás' })
-  expect(starts).toHaveLength(2) // one per planned run
-  // No nested button: a card body is itself a <button>, so the start button must not be
-  // a descendant of one (invalid HTML, and the tap would fire both).
-  for (const s of starts) expect(s.closest('.pl-lib-card')).toBeNull()
-  // The start mutation fires without navigating away (mock's activate is a no-op).
-  await user.click(starts[0])
-  expect(screen.getByTestId('loc')).toHaveTextContent('/')
+  const card = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
+  expect(card).toHaveTextContent('Akkor indul, amikor a mostani terved lezárul.')
+  expect(card).not.toHaveTextContent('Nyisd meg, és onnan indíthatod.')
 })
 
 // --- „Új terv" + the two doorways --------------------------------------------
@@ -214,6 +218,36 @@ describe('no active run (real mode)', () => {
     // the „start something new" CTA and the doorways still stand
     expect(screen.getByRole('button', { name: 'Új terv összeállítása' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Lezárt futamaid' })).toBeInTheDocument()
+  })
+
+  it('formats a real-mode ISO startDate to HU display, and shows the builder-hint line with no active run queued behind it', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([
+          {
+            id: 'real-planned-01',
+            title: 'Real Planned Run',
+            shortTitle: 'Real Planned',
+            status: 'planned',
+            goal: '',
+            startDate: '2026-06-16', // ISO — the backend's own shape, unlike the mock fixture's pre-formatted 'Jún 16'
+            endDate: '2026-08-04',
+            weeks: 7,
+            currentWeek: 0,
+            split: 'Upper / Lower · 4×/hét',
+            style: 'Linear · 7 hét',
+            phaseCurve: [],
+            musclePriorities: null,
+          },
+        ]),
+      ),
+    )
+    setup()
+    const card = await screen.findByRole('button', { name: 'Tervezett · Real Planned Run' })
+    expect(card).toHaveTextContent('Jún 16-tól')
+    // No active run behind it → the builder-pointing hint, not the „akkor indul" reassurance.
+    expect(card).toHaveTextContent('Nyisd meg, és onnan indíthatod.')
+    expect(card).not.toHaveTextContent('Akkor indul, amikor a mostani terved lezárul.')
   })
 })
 

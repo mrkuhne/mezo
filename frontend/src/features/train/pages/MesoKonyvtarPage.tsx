@@ -15,12 +15,15 @@
 //   „Most fut"    — one `.pl-lib-card.is-now` for the ACTIVE run (name, week X of
 //                   Y, split) → the Terv landing. With no active run the section
 //                   says so in one quiet line; it never draws an empty card.
-//   „Következnek" — one `.pl-lib-card.is-queued` per planned run (start date,
-//                   weeks, split). The card BODY opens the builder; the start
-//                   affordance („Aktiválás", the SAME mutation + word the builder's
-//                   own footer CTA uses — `activateMesocycle`) sits BESIDE the card,
-//                   never inside it: a button inside a button is invalid HTML and
-//                   the card body is already a button.
+//   „Következnek" — one `.pl-lib-card.is-queued` per planned run (weeks, nap/hét,
+//                   split name — the start date is said once, in the card head).
+//                   The card carries NO activation affordance: activating a plan
+//                   silently archives the running one with no close ceremony/report
+//                   (`activateMesocycle` → `TrainService.archiveActiveMesos`), so the
+//                   card BODY opens the plan's own page (the builder), whose DATED
+//                   „Aktiválás · <date>" CTA is the deliberate path. A reassurance
+//                   line says when it starts (an active run is queued behind) or
+//                   hints at the builder (no active run to wait behind).
 //   `.pl-lib-new` — the one loud CTA: „Új terv összeállítása" → the planner.
 //   `.pl-dests`   — the two doorways: „Sablonjaid" → /train/templates and „Lezárt
 //                   futamaid" → /train/mesocycles/futamok.
@@ -41,6 +44,7 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
+import { huDate } from '@/features/train/logic/mesoDates'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -48,8 +52,16 @@ const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
  *  line for it, and the „×/hét" half is already said by the weeks fact beside it. */
 const splitHead = (split: string) => split.split(' · ')[0]
 
+/** The split's „×/hét" tail („Upper / Lower · 4×/hét" → „4×/hét"), or null when the split
+ *  carries no such tail (a legacy/direct run's split may be name-only) — the nap/hét fact
+ *  box is dropped rather than drawing an empty one. */
+function splitFrequency(split: string): string | null {
+  const parts = split.split(' · ')
+  return parts.length > 1 && /×\/hét$/.test(parts[1]) ? parts[1] : null
+}
+
 export function MesoKonyvtarPage() {
-  const { mesocycles, workoutPending, activateMesocycle, mesoMutationPending } = useTrain()
+  const { mesocycles, workoutPending } = useTrain()
   const { templates, pending: templatesPending } = useMesoTemplates()
   const navigate = useNavigate()
 
@@ -122,9 +134,11 @@ export function MesoKonyvtarPage() {
           )}
 
           {planned.length > 0 && <h3 className="pl-h3">Következnek</h3>}
-          {planned.map((m, i) => (
-            <div key={m.id}>
+          {planned.map((m, i) => {
+            const freq = splitFrequency(m.split)
+            return (
               <button
+                key={m.id}
                 type="button"
                 className="pl-lib-card is-queued rise"
                 style={delay(120 + i * 30)}
@@ -133,30 +147,24 @@ export function MesoKonyvtarPage() {
               >
                 <span className="pl-lib-head">
                   <strong>{m.title}</strong>
-                  <em>{m.startDate}-tól</em>
+                  <em>{huDate(m.startDate)}-tól</em>
                   <b aria-hidden="true">›</b>
                 </span>
                 <span className="pl-day-facts">
                   <i><ClayIcon name="i-idozito" size={22} className="icon" /><b>{m.weeks}</b><small>hét</small></i>
-                  <i><ClayIcon name="i-heti" size={22} className="icon" /><b className="is-word">{m.startDate}</b></i>
+                  {freq && <i><ClayIcon name="i-heti" size={22} className="icon" /><b className="is-word">{freq}</b></i>}
                   <i><ClayIcon name="i-stack" size={22} className="icon" /><b className="is-word">{splitHead(m.split)}</b></i>
                 </span>
+                {/* No one-tap activation here — that silently archives the running plan
+                    with no close ceremony/report. The card body opens the plan's own page
+                    (the builder), whose dated „Aktiválás · <date>" CTA is the deliberate
+                    path. The reassurance/hint line below tells the reader what „opens" means. */}
+                <small className="pl-lib-note">
+                  {active ? 'Akkor indul, amikor a mostani terved lezárul.' : 'Nyisd meg, és onnan indíthatod.'}
+                </small>
               </button>
-              {/* The start affordance sits BESIDE the card body, never inside it — the body
-                  is already a <button>, and a nested button is invalid HTML. Same mutation
-                  and same word as the builder's own footer CTA (MesocycleBuilderPage). */}
-              <div className="row" style={{ justifyContent: 'flex-end', margin: '-2px 0 10px' }}>
-                <button
-                  type="button"
-                  className="chip tapchip"
-                  disabled={mesoMutationPending}
-                  onClick={() => activateMesocycle(m.id)}
-                >
-                  Indítás
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
 
           <button
             type="button"

@@ -1,12 +1,14 @@
 // Layout-aware loading skeleton for MesoTervPage (mezo-88iwa.10 Task 3, T9 fix round 1).
 // Mirrors the CURRENT poster-anatomy landing — `.pl-poster` → `.pl-days` rows → `.pl-dests`
-// tiles — so the swap to real content does not reflow. This is NOT the deleted
-// MesocycleLibraryPage's page-header/card-list shape, which `MesocycleSkeleton` still
-// carries — that skeleton stays exactly as it was, now for `MesoKonyvtarPage` (the page
-// that actually IS that shape). Built from the Skeleton primitives; sizes track the
-// `.pl-poster`/`.pl-day`/`.pl-dest` geometry (src/styles/prototype.css), browser default
-// line-height ≈ 1.2× font-size for lines without an explicit line-height (the same
-// derivation idiom TrainTodaySkeleton.tsx uses for `.tr-day`/`.tr-energy`/`.tr-mus`).
+// tiles — so the swap to real content does not reflow. This is a DIFFERENT shape from
+// `MesocycleSkeleton` (for `MesoKonyvtarPage`, the plan library landing): that one was
+// rewritten in Train Titanium T10 Task 2 (mezo-88iwa.11) to mirror the library's own
+// `.pl-lhero` hero → running/queued `.pl-lib-card` rows → `.pl-lib-new` → `.pl-dest`
+// doorways geometry — not this page's `.pl-poster`/`.pl-day`/`.pl-dest` one. Built from
+// the Skeleton primitives; sizes track the `.pl-poster`/`.pl-day`/`.pl-dest` geometry
+// (src/styles/prototype.css), browser default line-height ≈ 1.2× font-size for lines
+// without an explicit line-height (the same derivation idiom TrainTodaySkeleton.tsx uses
+// for `.tr-day`/`.tr-energy`/`.tr-mus`).
 import { Skeleton } from '@/shared/ui/Skeleton'
 
 export default function MesoTervSkeleton() {
