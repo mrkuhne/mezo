@@ -1,0 +1,283 @@
+// ============================================================
+// Mezo · WorkoutCeremony — the two-act workout-close ceremony (mezo-88iwa.8, T7 Task 3)
+//
+// Act one: the sky, five stars, the gold-stone bar and the three counters, all driven by
+// ONE rAF pass (cubic ease-out 1-(1-t)^3, 2400 ms) to `score.ratio` — per the ceremony
+// pattern doc's §Motion spec. Fills and counters are FRAME-driven (a throttled/hidden
+// webview freezes a just-started CSS transition at 0), so the pass writes `--p`, the
+// counter textContents and the star is-lit/is-half classes itself.
+// Act two (`.is-told`, revealed when the pass lands): the verdict, the honest stat tiles,
+// the records strip, the muscle rows, the kcal estimate, the closing note and the way out.
+//
+// `reducedMotion` (defaults to the media query) and `settled` (the recap read-back) paint
+// the final state on the FIRST render — no pass at all. The pass itself is guarded by a
+// ref, so a re-render can never restart it (the ceremony plays exactly once per close).
+//
+// Every number is a prop: this component computes nothing and fabricates nothing. A tile
+// whose input is unknown is not rendered — never a 0 (minutes, XP, kcal).
+// Ported from prototype session.js:292-361 (summary + detailsStep) and :420-452
+// (runCeremony), merged onto one screen per the ceremony doc's two-ACT structure.
+// ============================================================
+import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
+import { verdictFor, type CerScore, type MuscleStarRow } from '@/features/train/logic/cerScore'
+import { muscleColor } from '@/features/train/logic/muscleColors'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { ClayIcon } from '@/shared/ui/clay'
+import { Icon } from '@/shared/ui/Icon'
+
+export interface WorkoutCeremonyProps {
+  score: CerScore
+  /** The overline above the stars — 'EDZÉS LEZÁRVA'. */
+  eyebrow: string
+  /** MEASURED minutes only; null hides the tile (no fabricated estimate — see the page). */
+  minutes: number | null
+  /** The finish response's real XP; null hides the tile. */
+  xpGained: number | null
+  /** The RECORD-tier medals earned this session, already rendered to copy. */
+  records: Array<{ name: string; value: string }>
+  muscles: MuscleStarRow[]
+  /** The T5 `trainDayEnergy` estimate; null hides the tile (never a 0 kcal). */
+  kcal: { value: number; known: true } | null
+  /** The closing-note draft, owned by the page. */
+  note: string
+  onNote(v: string): void
+  /** The way out: straight to Mai. */
+  onClose(): void
+  onGoFuel(): void
+  /** Recap mode: paint the final state, no pass. */
+  settled?: boolean
+  /** Test seam; defaults to `prefers-reduced-motion: reduce`. */
+  reducedMotion?: boolean
+}
+
+const DURATION_MS = 2400
+const STAR_SLOTS = [0, 1, 2, 3, 4]
+
+/** hu-HU grouping, with the locale's thin spaces normalised (the ExerciseRecordSheet idiom). */
+function huNumber(n: number): string {
+  return Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g, ' ')
+}
+
+/** '4,5' — the Hungarian decimal comma, without depending on the runtime's ICU data. */
+function huStars(stars: number): string {
+  return String(stars).replace('.', ',')
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/** runCeremony's thresholds: star i lights at (i+1)/5, and is half inside a .1 window below. */
+function starClass(index: number, progressed: number): string {
+  const threshold = (index + 1) / 5
+  if (progressed >= threshold - 0.001) return 'is-lit'
+  if (progressed >= threshold - 0.1) return 'is-half'
+  return ''
+}
+
+export function WorkoutCeremony({
+  score, eyebrow, minutes, xpGained, records, muscles, kcal,
+  note, onNote, onClose, onGoFuel, settled = false, reducedMotion,
+}: WorkoutCeremonyProps) {
+  // The pass is skipped entirely for the recap read-back and for reduced motion — both
+  // paint the final state on the first render, so act two is told immediately.
+  const [instant] = useState(() => settled || (reducedMotion ?? prefersReducedMotion()))
+  const [told, setTold] = useState(instant)
+  const stageRef = useRef<HTMLElement>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const ranRef = useRef(false)
+
+  // The announcement is where the screen starts, for a screen reader and for the keyboard.
+  useEffect(() => { headingRef.current?.focus() }, [])
+
+  useEffect(() => {
+    // ONE pass per mount, ever: the guard survives every re-render (and a StrictMode
+    // double-invoke, which is why the frame loop stops on `isConnected` instead of a
+    // cleanup that would cancel the only scheduled pass).
+    if (ranRef.current || instant) return
+    ranRef.current = true
+    const stage = stageRef.current
+    if (!stage) return
+    const started = performance.now()
+    const paint = (progress: number) => {
+      const progressed = progress * score.ratio
+      stage.style.setProperty('--p', String(progressed))
+      const counts: Record<string, number> = {
+        sets: score.done.sets, reps: score.done.reps, volume: score.done.volume,
+      }
+      stage.querySelectorAll<HTMLElement>('[data-cer-count]').forEach((el) => {
+        const field = el.dataset.cerCount ?? ''
+        const value = (counts[field] ?? 0) * progress
+        el.textContent = field === 'volume' ? huNumber(value) : String(Math.round(value))
+      })
+      stage.querySelectorAll<HTMLElement>('[data-cer-star]').forEach((star) => {
+        const cls = starClass(Number(star.dataset.cerStar), progressed)
+        star.classList.toggle('is-lit', cls === 'is-lit')
+        star.classList.toggle('is-half', cls === 'is-half')
+      })
+    }
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - started) / DURATION_MS)
+      paint(1 - (1 - t) ** 3)
+      if (t < 1 && stage.isConnected) requestAnimationFrame(frame)
+      else if (stage.isConnected) setTold(true)
+    }
+    requestAnimationFrame(frame)
+  }, [instant, score])
+
+  // The first painted frame: zeroes while the pass is about to run, the real values when
+  // there is no pass. React never touches these nodes again — the pass owns them.
+  const progressed = instant ? score.ratio : 0
+  const counterValue = (value: number, volume = false) =>
+    instant ? (volume ? huNumber(value) : String(value)) : volume ? huNumber(0) : '0'
+
+  return (
+    <div className={`cer-screen cer-details-screen${told ? ' is-told' : ''}`}>
+      {/* — act one — */}
+      <section
+        ref={stageRef}
+        className={`cer${settled ? ' is-settled' : ''}`}
+        style={{ '--p': String(progressed) } as CSSProperties}
+      >
+        <span className="cer-sky" aria-hidden="true" />
+        <span className="cer-eyebrow">{eyebrow}</span>
+        <div className="cer-stars" aria-hidden="true">
+          {STAR_SLOTS.map((i) => (
+            <i key={i} data-cer-star={i} className={instant ? starClass(i, progressed) : undefined}>
+              <b className="cer-aura" />
+              <ClayIcon name="i-termes" size={42} className="icon" />
+            </i>
+          ))}
+        </div>
+        <div className="cer-bar" aria-hidden="true">
+          <i className="cer-fill" />
+          <span className="cer-comet" />
+          {[1, 2, 3, 4].map((i) => <u key={i} style={{ '--at': `${i * 20}%` } as CSSProperties} />)}
+        </div>
+        <div className="cer-counters">
+          <span>
+            <i><ClayIcon name="i-suly" size={22} className="icon" /></i>
+            <strong data-cer-count="sets">{counterValue(score.done.sets)}</strong>
+            <small>szett</small>
+          </span>
+          <span>
+            <i><ClayIcon name="i-edzes" size={22} className="icon" /></i>
+            <strong data-cer-count="reps">{counterValue(score.done.reps)}</strong>
+            <small>ismétlés</small>
+          </span>
+          <span>
+            <i><ClayIcon name="i-stack" size={22} className="icon" /></i>
+            <strong data-cer-count="volume">{counterValue(score.done.volume, true)}</strong>
+            <small>kg × rep</small>
+          </span>
+        </div>
+      </section>
+
+      {/* — act two: the reading — */}
+      <section className="cer-result">
+        <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
+          {huStars(score.stars)} csillag az ötből
+        </h1>
+        <p>{verdictFor(score.stars)}</p>
+        {minutes != null || xpGained != null ? (
+          <div className="cer-stats">
+            {minutes != null && (
+              <span><strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
+            )}
+            {xpGained != null && (
+              <span><strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small></span>
+            )}
+          </div>
+        ) : null}
+        {records.length > 0 && (
+          <div className="cer-record">
+            <ClayIcon name="i-erme" size={32} className="icon" />
+            <span>
+              <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
+              <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
+            </span>
+          </div>
+        )}
+      </section>
+
+      <div className="cer-foot">
+        {muscles.length > 0 && (
+          <section className="cer-muscles">
+            <div className="cer-section"><strong>Izomcsoportok fejlődése a mai edzésen</strong></div>
+            <div className="cer-mstars">
+              {muscles.map((row, i) => (
+                <div
+                  key={row.muscle}
+                  className="cer-mstar"
+                  style={{ '--ex-color': muscleColor(row.muscle).rail, '--i': i } as CSSProperties}
+                >
+                  <span className="cer-mstar-art"><MuscleChip token={row.muscle} size={34} /></span>
+                  <span className="cer-mstar-copy">
+                    <strong>{row.label}</strong>
+                    <small>{row.done} / {row.plan} szett</small>
+                  </span>
+                  <span className="cer-starrow mini" aria-hidden="true">
+                    {STAR_SLOTS.map((s) => (
+                      <i key={s} className={starClass(s, row.ratio)} style={{ '--s': s } as CSSProperties}>
+                        <ClayIcon name="i-termes" size={15} className="icon" />
+                      </i>
+                    ))}
+                  </span>
+                  {/* The fill width is an inline custom property, so the reveal is a
+                      frame-independent CSS transition on a value that is already there. */}
+                  <span className="cer-mstar-track">
+                    <i className="fill" style={{ '--w': `${row.ratio * 100}%` } as CSSProperties} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {kcal && (
+          <button type="button" className="cer-kcal" onClick={onGoFuel}>
+            <span className="cer-kcal-line">
+              <ClayIcon name="i-fuel" size={62} className="icon" />
+              <b>+</b><strong>{huNumber(kcal.value)}</strong><small>kcal</small>
+            </span>
+            <span className="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
+            <span className="cer-recap-note">Becslés, nem mérés</span>
+            <i className="cer-kcal-go">›</i>
+          </button>
+        )}
+
+        {/* The closing note (mezo-d20.8.2.2) lives here now — the draft is the page's. */}
+        <div className="wsum-note">
+          <span className="wsum-note-q">Hogy ment?</span>
+          <textarea
+            className="wsum-note-ta"
+            maxLength={1000}
+            value={note}
+            aria-label="Hogy ment?"
+            placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
+            onChange={(e) => onNote(e.target.value)}
+          />
+          <p className="wsum-note-hint">Nem kötelező — később is hozzáírhatod.</p>
+        </div>
+
+        <div className="cer-cta">
+          <button type="button" className="wo-close-cta is-done" onClick={onClose}>
+            <span className="wo-close-art"><Icon name="check" size={34} /></span>
+            <span>
+              <strong>Vissza a mai napra</strong>
+              <small>Az edzés lezárva és elmentve</small>
+            </span>
+            <u className="chip-sheen" />
+          </button>
+        </div>
+
+        <p className="cer-recap-note">
+          A csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.
+        </p>
+      </div>
+    </div>
+  )
+}

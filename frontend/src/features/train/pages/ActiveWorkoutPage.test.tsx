@@ -330,7 +330,7 @@ test('mock mode: the rest bar belongs to the SESSION — it survives logging on 
   expect(doneRowsOf(EX2)).toHaveLength(1)
 })
 
-test('mock mode: reaching the summary screen (workout end) shows no dock at all', async () => {
+test('mock mode: the closing ceremony (workout end) shows no dock at all', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -338,14 +338,10 @@ test('mock mode: reaching the summary screen (workout end) shows no dock at all'
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
-  for (const name of [EX2, EX3, 'Hammer Curl', 'Face Pull']) {
-    await completeExerciseSets(user, name)
-    const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
-    await user.click(cta)
-    await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
-  }
-  expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
-  // The active-phase-only dock unmounts entirely on the summary screen.
+  await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
+  await closeWorkout(user)
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  // The active-phase-only dock unmounts entirely on the ceremony.
   await waitFor(() => expect(document.querySelector('.wo-dock')).toBeNull())
 })
 
@@ -758,6 +754,16 @@ test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening th
 })
 
 /** Drive every non-skipped exercise of the mock Pull Day to completion. */
+/** The explicit close (T7): the active list's finish CTA, then the level-up overlay's Tovább
+ *  — what's left on screen is the closing ceremony. */
+async function closeWorkout(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Edzés befejezése|Edzés kihagyása/ }))
+  const confirm = screen.queryByRole('button', { name: /Befejezem így|Kihagyom a mai edzést/ })
+  if (confirm) await user.click(confirm)
+  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
+  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
+}
+
 async function finishMockSession(user: ReturnType<typeof userEvent.setup>, names: string[]) {
   for (const name of names) {
     await completeExerciseSets(user, name)
@@ -767,17 +773,22 @@ async function finishMockSession(user: ReturnType<typeof userEvent.setup>, names
   }
 }
 
-test('a skipped exercise is marked "kihagyva" in the recap', async () => {
+test('a skipped exercise stays missing work in the ceremony\'s muscle row', async () => {
   const user = userEvent.setup()
   setup() // mock mode, 5 exercises
   await user.click(screen.getByText(/Kezdjük el/))
-  // Skip the first exercise.
+  // Skip the first exercise (ex1: back-mid, 2 warmup + 4 working = 6 planned sets).
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
-  // Summary recap: the skipped first exercise reads "kihagyva".
-  expect(await screen.findByText('kihagyva')).toBeInTheDocument()
+  await closeWorkout(user)
+  // Hát (közép) pools the skipped ex1 with the completed ex3 — the skip is missed work, so
+  // its sets stay on the PLAN side of the row (cerScore's rule), never quietly dropped.
+  expect(await screen.findByText('Hát (közép)')).toBeInTheDocument()
+  expect(screen.getByText('4 / 9 szett')).toBeInTheDocument()
+  // Every muscle the user actually worked reads as fully done — only the skipped one carries a gap.
+  expect(screen.getByText('Váll (hátsó)').parentElement).toHaveTextContent('4 / 4 szett')
 })
 
 test('a skipped exercise\'s card reads KIHAGYVA and hides its rows', async () => {
@@ -793,33 +804,30 @@ test('a skipped exercise\'s card reads KIHAGYVA and hides its rows', async () =>
   expect(card(EX2)).not.toHaveClass('is-complete')
 })
 
-test('summary → Edzés lezárása shows the level-up overlay, then the closed summary on Tovább (mock)', async () => {
+test('the finish CTA shows the level-up overlay, then the closing ceremony on Tovább (mock)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // Skip ex0, then drive the remaining 4 exercises to completion — the last
-  // debrief lands on the closing summary (no auto-finish).
+  // Skip ex0, then drive the remaining 4 exercises to completion — the last debrief leaves
+  // the card list fully resolved (T7: no pre-finish review screen, no auto-finish).
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
-  // New flow: the last debrief lands on the summary; the explicit CTA finishes.
-  expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: /Edzés lezárása/ }))
-  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the closed summary.
+  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
+  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the ceremony.
   const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
   expect(within(dialog).getByText(/KLASSZIK KONDI/)).toBeInTheDocument()
   await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
-  // The read-only closed summary is revealed underneath.
-  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
-  // Workout identity still holds on the closed summary (was asserted via the old
-  // title-suffix framing "Pull Day · N medál" — the title itself renders standalone now).
-  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  // ex2..ex5's working sets all hit their prescribed target (and several also beat
-  // lastWeek), so the session's real medal count (mezo-wp6n) drives the redesigned
-  // Medálok section's count — replaces the old hadPrFromSignal / title-suffix framing.
-  expect(screen.getByText(/\d+ rekord · \d+ cél/)).toBeInTheDocument()
+  // The ceremony is revealed underneath: the stars, the verdict and the way out.
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/csillag az ötből/)
+  expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
+  // The session's real records (mezo-wp6n) drive the ceremony's record strip — ex2..ex5's
+  // working sets all hit their prescribed target and several beat last week.
+  expect(screen.getByText(/új rekord|Új rekord/)).toBeInTheDocument()
 })
 
 // ---- T6 Task 6: the 3-state `.wo-finish` CTA + the finish confirm glass — replaces
@@ -856,26 +864,20 @@ test('confirming a zero-logged finish goes straight through finishAndCelebrate (
   // Mock finish returns the seeded gym fixture → the level-up overlay shows over the closed summary.
   const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
   await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
-  // Never visited the pre-finish closing review — landed straight on the CLOSED summary.
-  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
-  expect(screen.queryByText('Edzés vége')).not.toBeInTheDocument()
+  // The ceremony is the close moment for the zero-logged path too (T7).
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
+  // Nothing was logged, so the kcal tile stays away entirely — never a 0.
+  expect(screen.queryByText('kcal')).not.toBeInTheDocument()
 })
 
 test('once every set is logged (full state) the finish CTA reads "Edzés befejezése" and finishes with no confirm glass', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // Drive every exercise to completion (the natural debrief flow lands on the closing
-  // 'summary' review, exactly as it does today — requirement 5) then step back into the
-  // active phase, where the session is now fully logged but nothing has been FINISHED yet.
-  for (const name of [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull']) {
-    await completeExerciseSets(user, name)
-    const advance = await screen.findByText(/Mentés · tovább|Edzés vége →/)
-    await user.click(advance)
-    await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
-  }
-  expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
-  await user.click(screen.getByText('← Vissza az edzéshez'))
+  // Drive every exercise to completion — the debrief flow leaves the user ON the card list
+  // (T7), fully logged, with nothing FINISHED yet.
+  await finishMockSession(user, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   const cta = screen.getByRole('button', { name: 'Edzés befejezése' })
   expect(cta).toHaveClass('is-full')
   await user.click(cta)
@@ -883,7 +885,7 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   expect(screen.queryByText(/bepipálatlan szetted/)).not.toBeInTheDocument()
   const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
   await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
-  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
 })
 
 // ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----
@@ -1192,13 +1194,13 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
   await user.click(await screen.findByText('Edzés vége →'))
   await waitFor(() => expect(calls).toContain('feedback:w-1'))
-  // New flow: the debrief lands on the summary; finish fires only on the explicit CTA.
-  await user.click(await screen.findByRole('button', { name: /Edzés lezárása/ }))
+  // New flow: the debrief leaves the card list up; finish fires only on the explicit CTA.
+  await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
-  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument() // closed summary
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
 })
 
-test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA (not stuck disabled)', async () => {
+test('real mode: a failed finish POST re-enables the finish CTA (not stuck disabled)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers(
@@ -1215,13 +1217,13 @@ test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA
   await user.click(await screen.findByText(/Kezdjük el/))
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
-  await user.click(await screen.findByText('Edzés vége →')) // debrief -> closing summary
-  await user.click(await screen.findByRole('button', { name: /Edzés lezárása/ }))
+  await user.click(await screen.findByText('Edzés vége →')) // debrief -> back to the list
+  await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   // The finish POST fails; the CTA must become enabled again so the user can retry
   // (regression guard for the reset living only in onSuccess — mezo-cd8s).
-  await waitFor(() => expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeEnabled())
-  // Still on the closing summary — never advanced to the read-only closed view.
-  expect(screen.getByText('Edzés vége')).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Edzés befejezése' })).toBeEnabled())
+  // Still on the card list — the ceremony only ever follows a resolved finish.
+  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
 })
 
 test('real mode: Szett hozzáadása grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {

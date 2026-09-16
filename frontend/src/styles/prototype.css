@@ -14035,24 +14035,27 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card .wo-confirm-list strong { font-size: 13px; font-weight: 500; }
 .gl-card .wo-confirm-list b { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--ex-color) 75%, #fff); }
 
-.gl-card .wo-close-cta {
+/* The ceremony's own way out (`.cer-cta`, mezo-88iwa.8 T7 Task 3) wears the SAME close
+   CTA as the glass cards — the T6 port is `.gl-card`-scoped, so the ceremony context is
+   added as a second ancestor here rather than duplicating the recipe in the cer- section. */
+.gl-card .wo-close-cta, .cer-cta .wo-close-cta {
   position: relative; display: flex; align-items: center; gap: 13px; width: 100%; overflow: hidden;
   margin: 6px 0 10px; padding: 15px 18px; text-align: left; cursor: pointer; border: 0; border-radius: 20px;
   color: #17210c;
   background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
   box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
 }
-.gl-card .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
-.gl-card .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
-.gl-card .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
-.gl-card .wo-close-art { flex: 0 0 auto; }
-.gl-card .wo-close-art .icon { width: 34px; height: 34px; }
-.gl-card .wo-close-cta .chip-sheen {
+.gl-card .wo-close-cta.is-done, .cer-cta .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
+.gl-card .wo-close-cta strong, .cer-cta .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.gl-card .wo-close-cta small, .cer-cta .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
+.gl-card .wo-close-art, .cer-cta .wo-close-art { flex: 0 0 auto; }
+.gl-card .wo-close-art .icon, .cer-cta .wo-close-art .icon { width: 34px; height: 34px; }
+.gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen {
   position: absolute; inset: 0 auto 0 -40%; width: 32%; transform: skewX(-18deg);
   background: linear-gradient(90deg, #ffffff00, #ffffff5c, #ffffff00);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .gl-card .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
+  .gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
 }
 
 .gl-card .wo-secondary {

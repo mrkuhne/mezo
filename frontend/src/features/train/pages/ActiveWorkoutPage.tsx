@@ -13,9 +13,9 @@
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
 import { useEffect, useState } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useChallengeActions, useChallenges, useProgressionProfile, useTrain, useWeekMuscleLog } from '@/data/hooks'
+import { useChallengeActions, useChallenges, useGoal, useProgressionProfile, useTimingProfile, useTrain, useWeekMuscleLog, useWorkoutNote } from '@/data/hooks'
 import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
@@ -63,6 +63,11 @@ import { Icon } from '@/shared/ui/Icon'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
+import { WorkoutCeremony } from '@/features/train/components/WorkoutCeremony'
+import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
+import { medalValueLabel } from '@/features/train/logic/medalLabels'
+import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
+import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -201,12 +206,23 @@ function ActiveWorkoutSession({
 }: SessionProps) {
   const W = workout
   const goBack = useBackNav('/train')
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const rest = useRestTimer()
   // Live weekly zone context (mezo-oyhy.7): unconditional hook call at the top —
   // the prep block below reads its result, but the hook itself must run every
   // render regardless of phase so hook order stays stable.
   const weekLog = useWeekMuscleLog()
+  // The ceremony's kcal tile mirrors Mai's energy card (T5, mezo-88iwa.6): the SAME
+  // calibrated session estimate and the SAME weight source Fuel's budget reads, so the two
+  // screens can never disagree. Both hooks are unconditional here for the same reason
+  // `weekLog` is — the summary phase below is the only reader, but hook order must not
+  // depend on the phase.
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
+  const { goal, goalResponse } = useGoal()
+  // The closing note is written AFTER the finish POST now (the ceremony is post-finish, so
+  // the note can no longer ride the finish body) — this is the review page's own write path.
+  const { saveNote } = useWorkoutNote()
   // Exiting the session (Bezárás / back / Mentés — all route through here) drops any
   // running rest; the state is page-local so unmount alone would clear it too.
   const onExit = () => {
@@ -256,6 +272,9 @@ function ActiveWorkoutSession({
   /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
    *  `active` and returning to the summary does not throw away what was already typed. */
   const [closingNote, setClosingNote] = useState('')
+  /** The finish response's real XP (mezo-88iwa.8): the ceremony's +XP tile shows it, and
+   *  renders nothing when the response carried no level-up payload at all. */
+  const [xpGained, setXpGained] = useState<number | null>(null)
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
@@ -585,22 +604,38 @@ function ActiveWorkoutSession({
     if (workoutId && feedbackEx) saveWorkoutFeedback(workoutId, [{ exerciseId: feedbackEx.id, ...vals }])
   }
 
-  // Finish the workout (the ONLY completion trigger — the summary's "Edzés lezárása ✓"
-  // CTA) and present the gamified level-up. Real mode POSTs with the instance id; mock
-  // has no instance (workoutId null → 'mock' sentinel) but the mock finish mutation
-  // still returns a seeded LevelUpResult so the prototype shows the overlay. The overlay
-  // (the global LevelUpProvider host) portals OVER the closed summary and is dismissed on
-  // its Tovább CTA, revealing it. Switch-off / no-levelUp (real `levelUp` absent) simply
-  // flips to the closed summary with no overlay. On success the server re-evaluates the
-  // challenges lazily on the next list read, so we invalidate them (real only).
+  /** The ceremony's closing note, saved on the way out (mezo-88iwa.8). It used to ride the
+   *  finish POST, but the note field now lives in the post-finish ceremony — so the write
+   *  goes through the workout-note endpoint the review page already uses. Mock mode has no
+   *  instance id (and no server), so there is nothing to persist there. */
+  const persistClosingNote = () => {
+    if (workoutId) saveNote(workoutId, closingNote)
+  }
+
+  // Finish the workout (the ONLY completion trigger — the active list's finish CTA) and
+  // present the gamified level-up. Real mode POSTs with the instance id; mock has no
+  // instance (workoutId null → 'mock' sentinel) but the mock finish mutation still returns
+  // a seeded LevelUpResult so the prototype shows the overlay. The overlay (the global
+  // LevelUpProvider host) portals OVER the ceremony and is dismissed on its Tovább CTA,
+  // revealing it. Switch-off / no-levelUp (real `levelUp` absent) simply lands on the
+  // ceremony with no overlay. On success the server re-evaluates the challenges lazily on
+  // the next list read, so we invalidate them (real only).
+  //
+  // T7 (mezo-88iwa.8): EVERY success path lands on 'summary' — the two-act closing
+  // ceremony IS the close moment, so the zero-pending shortcut goes there too.
   const finishAndCelebrate = () => {
     setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
-      // The closing note rides the finish body (mezo-d20.8.2.2). Server-side it is
-      // fill-if-empty, so the retry path above cannot erase a note a first attempt landed.
+      // The closing note is typed INSIDE the ceremony now, which renders after this POST
+      // resolves — so the body can only carry a note an earlier attempt already had (the
+      // retry path). The ceremony's own note is saved through `saveNote` on close/blur.
       note: closingNote.trim() || null,
       onSuccess: (r) => {
         if (r?.levelUp) showLevelUp(r.levelUp)
+        // The ceremony's +XP tile is the wire's number or nothing — never a fabricated
+        // count×10. `LevelUpResult.totalXp` is the session's real award (the schema has no
+        // top-level XP field on the plain finish response); absent payload → no tile.
+        setXpGained(r?.levelUp?.totalXp ?? null)
         // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
         // arrives here — the finish response carries the whole session's medals, so
         // merge with a dedupe against what's already in sessionMedals (mezo-wp6n).
@@ -613,19 +648,19 @@ function ActiveWorkoutSession({
           })
         }
         if (!isMock) qc.invalidateQueries({ queryKey: ['challenges', templateSessionId, localToday] })
-        setPhase('complete')
+        setPhase('summary')
       },
       // Reset the pending flag on BOTH success and failure — a failed finish POST must
-      // re-enable the "Edzés lezárása ✓" CTA so it can be retried (never stuck disabled).
+      // re-enable the finish CTA so it can be retried (never stuck disabled).
       onSettled: () => setFinishPending(false),
     })
   }
 
-  // The new manual-finish entry point (T6 Task 6, prototype finishCta/dock): tapping the
+  // The manual-finish entry point (T6 Task 6, prototype finishCta/dock): tapping the
   // .wo-finish CTA or the dock's "Lezárás →" with pending sets remaining asks first (the
   // confirm glass); with nothing pending it finishes right away — there is nothing to warn
-  // about. This bypasses the old pre-finish closing-review 'summary' phase entirely for the
-  // manual path (that phase still exists for the auto-advance-on-last-debrief flow, T7's).
+  // about. Since T7 this is the ONLY way a workout closes: the pre-finish closing-review
+  // screen is gone, and 'summary' is the post-finish ceremony.
   const handleFinishTap = () => {
     if (pendingSetCount(session) > 0) setFinishConfirmOpen(true)
     else finishAndCelebrate()
@@ -633,39 +668,21 @@ function ActiveWorkoutSession({
 
   // Feedback resolution (skip or save both advance). The card list has nowhere to
   // advance TO — every exercise is already on screen — so this only drops the pinned
-  // debrief target and, when that was the last unresolved exercise, lands on the summary.
+  // debrief target. Resolving the LAST exercise no longer flips the phase (T7,
+  // mezo-88iwa.8): the ceremony is a post-finish reward, so the user stays on the card
+  // list — now fully ticked, its finish CTA in its `full` state — and closes explicitly.
   const advanceAfterFeedback = () => {
     setFeedbackEx(null)
-    // All exercises resolved now? (the last set is already in `session`.)
-    const allDone = W.exercises.every(
-      (e) => session.skipped.includes(e.id) || (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id),
-    )
-    if (allDone) {
-      // Explicit finish (spec 2026-07-15): land on the summary; finishing is now the
-      // user's "Edzés lezárása ✓" tap, not an implicit side effect of the last debrief.
-      setPhase('summary')
-    }
   }
 
-  // Skip ONE exercise (NO debrief): persist the skip marker, then land on the summary
-  // when it was the last unresolved exercise. The card simply collapses in place.
+  // Skip ONE exercise (NO debrief): persist the skip marker. The card collapses in place;
+  // skipping the last unresolved exercise leaves the same explicit finish CTA as above.
   const handleSkip = (exId: string) => {
     // Abandoning the exercise must not leave the rest bar counting down
     // toward it (final-review fix, mezo-8141 — Ride-along A).
     rest.skip()
     if (workoutId) skipExercise(workoutId, exId)
-    const afterSkip = skipExerciseModel(session, exId)
-    const allDone = W.exercises.every(
-      (e) => afterSkip.skipped.includes(e.id) || (afterSkip.logged[e.id]?.length ?? 0) >= effectiveSetCount(afterSkip, e.id),
-    )
-    if (allDone) {
-      // Skipping the last unresolved exercise ends the workout — land on the summary
-      // (explicit finish); the "Edzés lezárása ✓" CTA there drives finishWorkout.
-      setSession(afterSkip)
-      setPhase('summary')
-    } else {
-      setSession(afterSkip)
-    }
+    setSession(skipExerciseModel(session, exId))
   }
 
   // ---------- PREP ("mission briefing", mezo-bxpg) ----------
@@ -858,18 +875,66 @@ function ActiveWorkoutSession({
     )
   }
 
-  // ---------- SUMMARY (closing) / COMPLETE (closed) ----------
-  // Both render the WorkoutSummary: 'summary' is the pre-finish closing screen whose
-  // "Edzés lezárása ✓" CTA drives finishWorkout; 'complete' is the same layout read-only
-  // (set lines) after the finish POST resolves. The real medals earned this session
-  // (mezo-wp6n) drive the summary now — replaces the old boolean PR-flag framing.
-  if (phase === 'summary' || phase === 'complete') {
-    const closing = phase === 'summary'
+  // ---------- SUMMARY (the closing ceremony) / COMPLETE (closed) ----------
+  // 'summary' is the post-finish two-act ceremony (T7, mezo-88iwa.8): the finish POST has
+  // already resolved when it renders, and its way out goes straight to Mai — there is no
+  // intermediate read-only screen. 'complete' still renders the old WorkoutSummary; Task 4
+  // turns it into the settled recap.
+  if (phase === 'summary') {
+    // The gym block's kcal, derived exactly the way Mai's energy card derives it (T5):
+    // the calibrated session estimate × the MET math over the goal's weight. Held back
+    // entirely when the estimate has no honest input — no weight, still-pending timing
+    // profile, or a session that logged nothing at all (a skipped workout earns no kcal).
+    const gymMinutes = timingProfilePending ? 0 : estimateSessionMinutes(W.exercises, timingProfile ?? undefined)
+    const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
+    const energy = trainDayEnergy(
+      gymMinutes > 0 ? [{ kind: 'gym' as const, minutes: gymMinutes, done: true }] : [],
+      weightKg || null,
+    )
+    const score = cerScore(session, W.exercises)
+    const kcal = energy.known && energy.earnedKcal > 0 && score.done.sets > 0
+      ? ({ value: energy.earnedKcal, known: true } as const)
+      : null
+    return (
+      <WorkoutCeremony
+        score={score}
+        eyebrow="EDZÉS LEZÁRVA"
+        // The measured counterpart (mezo-1jm8) is deliberately NOT wired here. `open`
+        // (todaySession.openWorkout) never carries it: the backend writes activeSeconds only
+        // inside WorkoutService.finishWorkout, nowhere on the start/active path, so a pre-finish
+        // instance has startedAt but never finishedAt/activeSeconds — and this page never
+        // refetches /today after finishAndCelebrate's POST resolves, so even post-finish `open`
+        // stays exactly as stale as it was pre-finish. There is no measurement this page can
+        // show without a new fetch/invalidation, which the brief rules out. The review page
+        // (WorkoutReviewPage, off the persisted WorkoutDetailResponse) is the surface that shows
+        // the measured duration — the ceremony simply omits the tile rather than fabricating one.
+        minutes={null}
+        xpGained={xpGained}
+        records={sessionMedals
+          .filter((m) => m.tier === 'RECORD')
+          .map((m) => ({ name: m.exerciseName, value: medalValueLabel(m) }))}
+        muscles={muscleStarRows(session, W.exercises)}
+        kcal={kcal}
+        note={closingNote}
+        onNote={setClosingNote}
+        onClose={() => {
+          persistClosingNote()
+          navigate('/train/mai')
+        }}
+        onGoFuel={() => {
+          persistClosingNote()
+          navigate('/fuel')
+        }}
+      />
+    )
+  }
+
+  if (phase === 'complete') {
     return (
       <WorkoutSummary
         title={W.title}
-        eyebrow={closing ? 'Edzés vége' : 'Lezárva · ma'}
-        mode={closing ? 'closing' : 'closed'}
+        eyebrow="Lezárva · ma"
+        mode="closed"
         exercises={summaryExercises}
         challenges={summaryChallenges}
         medals={sessionMedals}
@@ -886,9 +951,8 @@ function ActiveWorkoutSession({
         actualMin={null}
         // The draft lives on the page, not in the shell: the summary/complete phase flip
         // remounts nothing here, but the note must also survive a trip back to `active`.
-        note={closing ? null : closingNote.trim() || null}
+        note={closingNote.trim() || null}
         draftNote={closingNote}
-        onDraftNote={closing ? setClosingNote : undefined}
         onFinish={finishAndCelebrate}
         finishPending={finishPending}
         onBack={() => setPhase('active')}
