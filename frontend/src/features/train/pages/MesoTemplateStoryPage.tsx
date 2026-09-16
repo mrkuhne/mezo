@@ -61,6 +61,9 @@ import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
+/** Fixed one decimal: `hu1` strips a trailing ",0", which reads as a typo next to `2,7 volt`. */
+const hu1 = (n: number) => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })
+
 /** Working sets on one day — the card's own fact box (the weekly bars below do the
  *  budget-aware sum; this is just "how much work is this session"). */
 const daySets = (day: MesoDay) => day.exercises.reduce((n, e) => n + e.workingSets, 0)
@@ -240,7 +243,13 @@ export function MesoTemplateStoryPage() {
                         <MuscleChip token={e.muscle} size={24} />
                         <strong>{e.name}</strong>
                         <b>{isHold ? `${e.workingSets}× tartás` : `${e.workingSets}×${e.repMin}–${e.repMax}`}</b>
-                        <small>{e.anchorWeightKg ? `${e.anchorWeightKg} kg` : 'saját testsúly'}</small>
+                        <small>
+                          {e.anchorWeightKg === 0
+                            ? 'saját testsúly'
+                            : e.anchorWeightKg != null
+                              ? `${hu1(e.anchorWeightKg)} kg`
+                              : '—'}
+                        </small>
                       </span>
                     )
                   })}
@@ -275,7 +284,7 @@ export function MesoTemplateStoryPage() {
 
           <h3 className="pl-h3">Futamok ebből a sablonból</h3>
           {runs.active === null && runs.planned.length === 0 && runs.closed.length === 0 && (
-            <p className="pl-foot-say">— Még nem indult futam ebből.</p>
+            <p className="pl-foot-say">Még nem indult futam ebből.</p>
           )}
           {runs.active && (
             <button

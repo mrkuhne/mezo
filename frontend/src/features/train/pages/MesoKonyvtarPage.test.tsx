@@ -148,7 +148,7 @@ test('the Lezárt futamaid doorway carries the closed count and opens the futamo
   setup()
   const dest = screen.getByRole('button', { name: 'Lezárt futamaid' })
   expect(dest).toHaveClass('pl-dest', 'is-done')
-  expect(dest).toHaveTextContent('3 végigvitt terv története')
+  expect(dest).toHaveTextContent('3 lezárt terv története')
   await user.click(dest)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/futamok')
 })
@@ -197,7 +197,7 @@ describe('mounted at /train/mesocycles/konyvtar via the router', () => {
     await screen.findByRole('heading', { name: 'A terveid' })
     await user.click(screen.getByRole('button', { name: 'Lezárt futamaid' }))
     // the closed list's own Titanium heading (T10 Task 4) — „Lezárt futamaid" is its eyebrow
-    expect(await screen.findByRole('heading', { name: 'Amit végigvittél' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Amit lezártál' })).toBeInTheDocument()
   })
 })
 

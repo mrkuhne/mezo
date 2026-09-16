@@ -42,7 +42,7 @@ test('mounted at /train/mesocycles/futamok via the router, with a back pill to t
   const user = userEvent.setup()
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/futamok'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('heading', { name: 'Amit végigvittél' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Amit lezártál' })).toBeInTheDocument()
   expect(screen.getByText('Lezárt futamaid')).toBeInTheDocument() // the hero's eyebrow
   await user.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()

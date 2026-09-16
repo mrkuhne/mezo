@@ -39,6 +39,14 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.getByText('8 hét')).toBeInTheDocument()
   })
 
+  it('docks the back pill inside the star hero, neutrally labeled (fix round, mezo-88iwa.11)', () => {
+    const { container } = renderAt('meso-rec-03')
+    const hero = container.querySelector('.pl-lhero')!
+    const back = screen.getByRole('button', { name: 'Vissza' })
+    expect(back.parentElement).toBe(hero)
+    expect(back).toHaveTextContent('Vissza')
+  })
+
   it('rates the run with the ceremony star scale and says it in one plain sentence', () => {
     const { container } = renderAt('meso-rec-03')
     // completionPct 88 -> share .88 -> starsFor gives 4.5 (halves), say: „Erős futam volt."

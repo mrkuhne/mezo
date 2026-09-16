@@ -306,17 +306,21 @@ export function MesoReportPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={goBack} label="‹ Mezociklus" />
       <EntranceGroup>
         {report && rating ? (
           // The Titanium star hero. Only for a run that HAS a report: the rating, the
           // sentence and the drawn share all come from the frozen completion share, and
-          // without one there is nothing honest to draw.
+          // without one there is nothing honest to draw. The back pill is DOCKED INSIDE
+          // it — the sibling pages' own rule (MesoKonyvtarPage/MesoTemplateStoryPage) —
+          // not a separate PageHead floating above (fix round, mezo-88iwa.11).
           <header
             className="pl-dhero pl-lhero is-closed rise"
             style={{ '--mus-color': 'var(--tag-gym)', '--ld-accent': 'var(--tag-gym)', '--d': '40ms' } as CSSProperties}
           >
             <span className="pl-dhero-wash" aria-hidden="true" />
+            <button type="button" className="mz-backbtn" aria-label="Vissza" onClick={goBack}>
+              Vissza
+            </button>
             <span className="pl-dhero-tag tr-eyebrow">
               {`Lezárt futam · ${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}`}
             </span>
@@ -336,7 +340,10 @@ export function MesoReportPage() {
             </div>
           </header>
         ) : (
-          <PageHero icon="i-meso" name={`${title} · riport`} sub={heroSub} />
+          <>
+            <PageHead onBack={goBack} label="Vissza" />
+            <PageHero icon="i-meso" name={`${title} · riport`} sub={heroSub} />
+          </>
         )}
         <PageBody>
       {report?.templateId && (

@@ -111,10 +111,16 @@ export function templateRuns(
  * `templateCard` wording (plan-pages.js:393-408), jargon-free: a running plan first, then
  * how many runs ever came out of it, then the honest "none yet". A QUEUED run is not a run
  * that happened, so it never counts here (it shows up on the template's own page instead).
+ *
+ * `runCount` (the template's own server-computed field, `MesoTemplate.runCount`) guards the
+ * "none yet" branch: the name-match `story` above can miss a run (a legacy/renamed run, or
+ * a race with the mesocycle list), and a false "still nothing" would contradict the same
+ * template card's own runCount sum shown one line up (fix round, mezo-88iwa.11).
  */
-export function templateUseLine(story: TemplateStory): string {
+export function templateUseLine(story: TemplateStory, runCount: number): string {
   if (story.activeNow) return 'Ebből fut a mostani terved'
   if (story.closedCount > 0) return `${story.closedCount} lezárt futam jött ki belőle`
+  if (runCount > 0) return `${runCount} futam indult belőle`
   return 'Még nem indítottál belőle'
 }
 

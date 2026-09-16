@@ -95,8 +95,14 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     expect(monday[1]).toContain('4×6–8')
     expect(monday[2]).toContain('Overhead Press')
     expect(monday[2]).toContain('3×6–8')
-    // no anchor weight in the fixture → honest words, not a dash
-    expect(monday[0]).toContain('saját testsúly')
+    // no anchorWeightKg field at all on the fixture row → the missing-value dash, never
+    // a bodyweight guess (mezo-88iwa.11 fix round: this used to read "saját testsúly")
+    expect(monday[0]).toContain('—')
+    expect(monday[0]).not.toContain('saját testsúly')
+    // anchorWeightKg: 0 → the real bodyweight words
+    expect(monday[1]).toContain('saját testsúly')
+    // anchorWeightKg: 42.5 → the formatted kg value
+    expect(monday[2]).toContain('42,5 kg')
     // the whole week's exercises, spelled out: 3 + 3 + 3 + 3
     expect(container.querySelectorAll('.pl-tpl-ex')).toHaveLength(12)
   })
@@ -156,7 +162,7 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
   test('a template nothing ever ran from says so in one line', () => {
     setup()
     expect(screen.getByText('Futamok ebből a sablonból')).toBeInTheDocument()
-    expect(screen.getByText('— Még nem indult futam ebből.')).toBeInTheDocument()
+    expect(screen.getByText('Még nem indult futam ebből.')).toBeInTheDocument()
   })
 
   test('the running run is a row that opens the Terv landing', async () => {

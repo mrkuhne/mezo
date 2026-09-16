@@ -206,7 +206,7 @@ export function MesoKonyvtarPage() {
           >
             <span className="pl-dest-art"><ClayIcon name="i-erme" size={40} className="icon" /></span>
             <strong>Lezárt futamaid</strong>
-            <small>{archived.length} végigvitt terv története</small>
+            <small>{archived.length} lezárt terv története</small>
             <b aria-hidden="true">↗</b>
           </button>
         </div>

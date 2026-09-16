@@ -457,8 +457,11 @@ export const mesoTemplatesMock: MesoTemplate[] = [
         exerciseCount: 3,
         exercises: [
           { id: 'b20f0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' },
+          // Fix round (mezo-88iwa.11): the three anchor-weight states side by side in one
+          // fixture day — Bench (no anchorWeightKg field at all → em dash), Row (0 → the
+          // bodyweight words) and Press (a real kg) — see MesoTemplateStoryPage.test.tsx.
+          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound', anchorWeightKg: 0 },
+          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound', anchorWeightKg: 42.5 },
         ],
       },
       {

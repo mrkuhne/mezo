@@ -127,7 +127,7 @@ export function MesoTemplatesPage() {
                     ))}
                   </span>
                 )}
-                <small className="pl-lib-note">{templateUseLine(story)}</small>
+                <small className="pl-lib-note">{templateUseLine(story, t.runCount)}</small>
               </button>
             )
           })}

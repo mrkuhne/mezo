@@ -288,7 +288,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         voice: 'A terv adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'az aktív hét' },
-          { to: '/train/templates', label: 'Sablonok', icon: 'i-polc' },
+          { to: '/train/templates', label: 'Sablonjaid', icon: 'i-polc' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },
@@ -325,7 +325,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         voice: 'Sablonból pár koppintás, nulláról egy képernyő — a kész terv a Terv lapon fut tovább.',
         links: [
           { to: '/train/mesocycles', label: 'Terv', icon: 'i-meso', effect: 'itt fut a kész terv' },
-          { to: '/train/templates', label: 'Sablonok', icon: 'i-polc', effect: 'amiből indíthatsz' },
+          { to: '/train/templates', label: 'Sablonjaid', icon: 'i-polc', effect: 'amiből indíthatsz' },
         ],
       },
     ],

@@ -182,15 +182,24 @@ describe('templateRuns', () => {
 
 describe('templateUseLine', () => {
   test.each([
-    [{ activeNow: true, plannedCount: 0, closedCount: 3 }, 'Ebből fut a mostani terved'],
-    [{ activeNow: true, plannedCount: 2, closedCount: 0 }, 'Ebből fut a mostani terved'],
-    [{ activeNow: false, plannedCount: 0, closedCount: 1 }, '1 lezárt futam jött ki belőle'],
-    [{ activeNow: false, plannedCount: 1, closedCount: 4 }, '4 lezárt futam jött ki belőle'],
+    [{ activeNow: true, plannedCount: 0, closedCount: 3 }, 0, 'Ebből fut a mostani terved'],
+    [{ activeNow: true, plannedCount: 2, closedCount: 0 }, 0, 'Ebből fut a mostani terved'],
+    [{ activeNow: false, plannedCount: 0, closedCount: 1 }, 1, '1 lezárt futam jött ki belőle'],
+    [{ activeNow: false, plannedCount: 1, closedCount: 4 }, 5, '4 lezárt futam jött ki belőle'],
     // a queued run has not happened yet — it must never read as a run that did
-    [{ activeNow: false, plannedCount: 2, closedCount: 0 }, 'Még nem indítottál belőle'],
-    [{ activeNow: false, plannedCount: 0, closedCount: 0 }, 'Még nem indítottál belőle'],
-  ])('%j -> %s', (story, line) => {
-    expect(templateUseLine(story)).toBe(line)
+    [{ activeNow: false, plannedCount: 2, closedCount: 0 }, 0, 'Még nem indítottál belőle'],
+    [{ activeNow: false, plannedCount: 0, closedCount: 0 }, 0, 'Még nem indítottál belőle'],
+  ] as const)('%j runCount=%s -> %s', (story, runCount, line) => {
+    expect(templateUseLine(story, runCount)).toBe(line)
+  })
+
+  // fix round (mezo-88iwa.11): the name-match `story` can miss a run the template's own
+  // runCount already counts (a legacy/renamed run, a race with the mesocycle list) — the
+  // "none yet" branch must never fire when the template's own count says otherwise.
+  test('the negative claim is guarded by the template\'s own runCount, not just the name-match story', () => {
+    const story = { activeNow: false, plannedCount: 0, closedCount: 0 }
+    expect(templateUseLine(story, 2)).toBe('2 futam indult belőle')
+    expect(templateUseLine(story, 0)).toBe('Még nem indítottál belőle')
   })
 })
 

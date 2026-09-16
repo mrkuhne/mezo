@@ -15064,7 +15064,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-head b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
 .pl-lib-card .pl-day-facts { min-width: 0; }
 .pl-lib-card .pl-day-facts i { min-width: 0; }
-.pl-lib-card .pl-day-facts b.is-word { font-size: 11px; line-height: 1.2; white-space: nowrap; }
+.pl-lib-card .pl-day-facts b.is-word { font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-lib-note { font-size: 10.5px; color: var(--text-tertiary); }
 .pl-lib-mus { display: flex; flex-wrap: wrap; gap: 4px; }
 .pl-lib-mus i {

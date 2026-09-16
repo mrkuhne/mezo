@@ -135,7 +135,7 @@ export function MesoFutamokPage() {
             <i />
           </span>
           <span className="pl-dhero-tag tr-eyebrow">Lezárt futamaid</span>
-          <h2>Amit végigvittél</h2>
+          <h2>Amit lezártál</h2>
           <p className="pl-say">
             Minden lezárt terv itt őrzi a történetét — nyisd meg, és megnézheted, mit hozott.
           </p>
