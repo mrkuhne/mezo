@@ -35,6 +35,8 @@ export const SPORT_TITLES: Record<SportKind, string> = {
   volleyball: 'Volleyball', cross: 'Cross', trx: 'TRX',
   bike: 'Kerékpár', swim: 'Úszás', football: 'Foci', basketball: 'Kosárlabda', tennis: 'Tenisz', hike: 'Túra', other: 'Egyéb mozgás',
 }
+/** LEGACY (Mozaik-era): only weeklyLoad's Futás load tile still renders these. Titanium
+ * surfaces use clay art ids from logic/sports.ts — never add a new consumer (mezo-0bxgl). */
 export const SPORT_EMOJI: Record<SportKind, string> = {
   volleyball: '🏐', cross: '⚡', trx: '🪢',
   bike: '🚴', swim: '🏊', football: '⚽', basketball: '🏀', tennis: '🎾', hike: '🥾', other: '🏃',
