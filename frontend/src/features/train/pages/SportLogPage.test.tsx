@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { SportLogPage } from '@/features/train/pages/SportLogPage'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 
@@ -39,7 +40,9 @@ function renderPage() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/sport/log']}>
-        <SportLogPage />
+        <LevelUpProvider>
+          <SportLogPage />
+        </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -199,11 +202,44 @@ test('Egyéb mozgás carries the typed activity name into the notes', async () =
   expect(logged[0].notes).toContain('fallabda')
 })
 
-test('a successful save leaves for Mai — the seam Task 5 mounts the ceremony on', async () => {
+// ---- Task 5: the ceremony seam ----
+
+test('a successful save lands on the ceremony, not straight back to Mai', async () => {
   renderPage()
   await pick(/Tenisz/)
   await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
-  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/train/mai'))
+  expect(await screen.findByText('TENISZ · MA')).toBeInTheDocument()
+  expect(mockNavigate).not.toHaveBeenCalled()
+})
+
+test('the ceremony carries the saved minutes/rpe and the response\'s honest kcal', async () => {
+  renderPage()
+  await pick(/Kerékpár/)
+  await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
+  await screen.findByText('KERÉKPÁR · MA')
+  expect(screen.getByText('500')).toBeInTheDocument() // the mocked response's kcal
+  expect(screen.getByText('Becslés, nem mérés')).toBeInTheDocument() // req.kcalOverride == null
+})
+
+test('the ceremony\'s close CTA navigates to Mai', async () => {
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Vissza a mai napra/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/mai')
+})
+
+test('an own kcal override reaches the ceremony as "Saját értéked", not an estimate', async () => {
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Saját érték/ }))
+  const field = await screen.findByLabelText('Kalória')
+  await userEvent.clear(field)
+  await userEvent.type(field, '640')
+  await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
+  await screen.findByText('FOCI · MA')
+  expect(screen.getByText('Saját értéked')).toBeInTheDocument()
 })
 
 // ---- copy discipline ----

@@ -25,16 +25,22 @@
 // athlete's right to overrule it — and the actual figure is whatever the
 // response reports (Task 5's ceremony shows it).
 //
-// TASK 5 SEAM: `onSaved(response)` below is where the ceremony mounts. Until
-// then a successful save simply returns to Mai, which is where every other
-// train-logging surface lands today.
+// TASK 5: `onSaved(response)` below computes the sport's stars from the SAVED
+// values (duration/rpe against the sport's own minutes-field default) and
+// switches the page's own step state to the ceremony — SportCeremony.tsx,
+// mounted full-screen exactly like WorkoutCeremony closes a gym session. A
+// response `levelUp` opens the shared LevelUpProvider overlay BEFORE the
+// switch, same as every other finish path (ActiveWorkoutPage, RunningPage).
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuickLogSport } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { ClayIcon } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
+import { SportCeremony } from '@/features/train/components/SportCeremony'
+import { sportStars } from '@/features/train/logic/sportScore'
 import {
   SPORTS, sportById,
   type RunTile, type Sport, type SportField,
@@ -297,10 +303,20 @@ function SportForm({ sport, values, mode, kcalOverride, saving, onValue, onMode,
 
 // ── the page ─────────────────────────────────────────────────────────────────
 
+/** The minutes field's own default — the ceremony's stars judge the session against what
+ *  THIS sport actually asked the form to prefill, not the picker tile's rounder headline
+ *  number (`targetMinutes`), which can differ (e.g. Úszás asks 40 on the form, shows ~45
+ *  on the tile). Falls back to `targetMinutes` for the rare sport with no minutes field. */
+function minutesTarget(sport: Sport): number {
+  const field = sport.fields.find((f): f is Extract<SportField, { type: 'number' }> => f.key === 'minutes')
+  return typeof field?.value === 'number' ? field.value : sport.targetMinutes
+}
+
 export function SportLogPage() {
   const navigate = useNavigate()
   const goBack = useBackNav('/train/mai')
   const { logSportSession } = useQuickLogSport()
+  const { showLevelUp } = useLevelUp()
 
   const [chosen, setChosen] = useState<Sport | null>(null)
   const [mode, setMode] = useState<string | null>(null)
@@ -309,6 +325,16 @@ export function SportLogPage() {
   const [kcalOpen, setKcalOpen] = useState(false)
   const [kcalDraft, setKcalDraft] = useState('')
   const [saving, setSaving] = useState(false)
+  // The ceremony step (Task 5): set only on a successful save, from that save's own
+  // captured minutes/rpe/sport (not `values`/`chosen`, which the ceremony no longer needs
+  // and which a stray re-render must not be able to change under it).
+  const [ceremony, setCeremony] = useState<{
+    sport: Sport
+    minutes: number
+    rpe: number
+    kcal: { value: number; isEstimate: boolean } | null
+    xpGained: number | null
+  } | null>(null)
 
   function pick(id: string) {
     const sport = sportById(id)
@@ -323,21 +349,48 @@ export function SportLogPage() {
   }
 
   /**
-   * TASK 5 SEAM — the ceremony mounts here, on the SAVED response (its `kcal` /
-   * `kcalIsEstimate` are the honest figures this page refuses to guess). Until then the
-   * flow lands where every other train-logging surface lands.
+   * The ceremony mounts here, on the SAVED response — its `kcal`/`kcalIsEstimate` are the
+   * honest figures the form refuses to guess (see the honesty note at the top of the
+   * file). A `levelUp` payload opens the shared overlay first, exactly like every other
+   * finish path (ActiveWorkoutPage, RunningPage) — the ceremony reveals once it is
+   * dismissed.
    */
-  function onSaved(_response?: SportSessionResponse) {
-    navigate('/train/mai')
+  function onSaved(sport: Sport, savedMinutes: number, savedRpe: number, response?: SportSessionResponse) {
+    if (response?.levelUp) showLevelUp(response.levelUp)
+    setCeremony({
+      sport,
+      minutes: savedMinutes,
+      rpe: savedRpe,
+      kcal: response?.kcal != null ? { value: response.kcal, isEstimate: response.kcalIsEstimate ?? true } : null,
+      xpGained: response?.levelUp?.totalXp ?? null,
+    })
   }
 
   function save() {
     if (!chosen) return
     setSaving(true)
+    const savedMinutes = Number(values.minutes)
+    const savedRpe = Number(values.intensity)
     logSportSession(toCreateRequest(chosen, values, mode, kcalOverride), {
-      onSuccess: (r) => onSaved(r),
+      onSuccess: (r) => onSaved(chosen, savedMinutes, savedRpe, r),
       onSettled: () => setSaving(false),
     })
+  }
+
+  if (ceremony) {
+    return (
+      <SportCeremony
+        score={sportStars(ceremony.minutes, minutesTarget(ceremony.sport), ceremony.rpe)}
+        sportName={ceremony.sport.id === 'other' && values.name ? String(values.name) : ceremony.sport.name}
+        art={ceremony.sport.art}
+        color={ceremony.sport.color}
+        minutes={ceremony.minutes}
+        rpe={ceremony.rpe}
+        kcal={ceremony.kcal}
+        xpGained={ceremony.xpGained}
+        onClose={() => navigate('/train/mai')}
+      />
+    )
   }
 
   return (
