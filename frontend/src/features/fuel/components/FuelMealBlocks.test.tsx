@@ -196,3 +196,55 @@ test('terv-idő nélkül a "Terv szerint" sor elmarad', async () => {
   await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
   expect(screen.getByRole('dialog').textContent).not.toContain('Terv szerint')
 })
+
+// ── A vércukor-chip a Mai soron (mezo-ya2wp) ────────────────────────────────────────────────
+// A jóváhagyott prototípus rendje: a mini görbe a pontszám-chiptől BALRA áll, és ugyanazt a
+// dobozt nyitja, amit a részletek oldal negyedik kártyája.
+test('a vércukor-chip a pont-chip bal oldalán áll, és a sáv színét viseli', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const bottom = container.querySelector('.fmx-block.is-done .fmx-meal-bottom')!
+  const chip = bottom.querySelector('.fmx-glu-chip')!
+  expect(chip).not.toBeNull()
+  // A fixture-étkezés (48 g ch, 8 g rost, 36 g fehérje) alacsony sávot ad.
+  expect(chip.className).toContain('lvl-low')
+  expect(chip.getAttribute('aria-label')).toBe('Vércukor-válasz: alacsony')
+  // A sorrend a lényeg: gyűrűk → vércukor → pontszám.
+  const order = Array.from(bottom.children).map(el => el.className.split(' ')[0])
+  expect(order).toEqual(['fmx-mrings', 'fmx-glu-chip', 'fmx-score'])
+  // A chip a görbét hordja, nem számot — glikémiás index sehol.
+  expect(chip.querySelector('.fmx-glu-mini')).not.toBeNull()
+  expect(chip.textContent).toBe('')
+})
+
+test('a vércukor-chip ugyanazt az üvegdobozt nyitja, amit a részletek oldal', async () => {
+  render(<FuelMealBlocks {...props()} />)
+  await userEvent.click(screen.getByLabelText('Vércukor-válasz: alacsony'))
+  expect(await screen.findByText('Vércukor-válasz · várható hatás')).toBeInTheDocument()
+  // A doboz a sáv SZAVÁT mutatja nagyban — szám nincs, és „glikémiás index" sincs.
+  expect(screen.getByText('alacsony')).toBeInTheDocument()
+  expect(document.body.textContent).not.toMatch(/glikémiás index/i)
+})
+
+// Őszinte-null: szénhidrát-adat nélkül nincs sáv, tehát chip sincs — nem találgatunk.
+test('szénhidrát-adat nélkül a vércukor-chip elmarad', () => {
+  const rows = [{
+    mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
+    proteinG: 36, carbsG: null, fatG: null, fiberG: null, sugarG: null,
+    plannedTime: '07:30', scorePct: 88,
+  }]
+  const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
+  expect(container.querySelector('.fmx-glu-chip')).toBeNull()
+  // A pont-chip viszont marad a helyén.
+  expect(container.querySelector('.fmx-meal-bottom .fmx-score')).not.toBeNull()
+})
+
+// Az óra a kalória-gyűrű mellé költözött (owner 2026-09-16): a két kör egy csoport a jobb szélen.
+test('a blokk fejlécében az óra és a kcal-gyűrű egy jobbszéli csoportban áll', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const head = container.querySelector('.fmx-block.is-done .fmx-block-head')!
+  const end = head.querySelector('.fmx-block-end')!
+  expect(end.querySelector('.fmx-clock')).not.toBeNull()
+  expect(end.querySelector('.fmx-budget-ring')).not.toBeNull()
+  // A név a csoporton KÍVÜL marad, hogy szabadon terjeszkedhessen.
+  expect(end.querySelector('.fmx-block-name')).toBeNull()
+})

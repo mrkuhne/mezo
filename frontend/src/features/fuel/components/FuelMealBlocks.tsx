@@ -31,6 +31,8 @@ import { pct } from '@/shared/lib/pct'
 import { huInt, hu1 } from '@/shared/lib/huNum'
 import { toMin, toHHmm } from '@/data/fuel/fuelConfig'
 import { ClayIcon } from '@/shared/ui/clay'
+import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
+import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 import type { MealSlot } from '@/data/types'
@@ -213,7 +215,26 @@ export function FuelScoreChip({ scorePct, onOpen, size }: {
   )
 }
 
-function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore, onOpenTime }: {
+/** A sor sávja a tárolt tényekből — UGYANAZ a deriváció, amit a részletek oldal doboza kap. */
+function bandOf(row: DoneMealRow) {
+  return glycemicBand({ c: row.carbsG, sugarG: row.sugarG, fiberG: row.fiberG, p: row.proteinG, f: row.fatG })
+}
+
+/** A Mai sor vércukor-chipje: a mini görbe a sáv színében, a pontszám-chip bal oldalán. */
+function GlycemicChip({ row, onOpen }: { row: DoneMealRow; onOpen: () => void }) {
+  const band = bandOf(row)
+  // Őszinte-null: szénhidrát-adat nélkül nincs sáv, és nincs chip sem — üres helyet hagyunk,
+  // nem kitalált jelzést.
+  if (!band) return null
+  return (
+    <button type="button" className={`fmx-glu-chip lvl-${band.level}`} onClick={onOpen}
+      aria-label={`Vércukor-válasz: ${band.label}`}>
+      <GlycemicMiniCurve level={band.level} />
+    </button>
+  )
+}
+
+function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore, onOpenTime, onOpenGlycemic }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
   dayKcal: number
@@ -225,6 +246,8 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
   onOpenScore: (mealId: string) => void
   /** Az óra gomb célja (mezo-l2gp0): a logolás idejét mutató üvegdoboz nyitása. */
   onOpenTime: (mealId: string) => void
+  /** A vércukor-chip célja (mezo-ya2wp): a `GlycemicGlass` nyitása ugyanarra az étkezésre. */
+  onOpenGlycemic: (mealId: string) => void
 }) {
   const loggedKcal = rows.length
     ? rows.reduce<number | null>((sum, r) => (sum == null || r.kcal == null ? null : sum + r.kcal), 0)
@@ -236,13 +259,17 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
       <div className="fmx-block-head">
         <span className="fmx-block-art" aria-hidden="true"><ClayIcon name={tile.icon} size={38} /></span>
         <strong className="fmx-block-name">{tile.label}</strong>
-        {rows.length > 0 && (
-          <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
-            aria-label={`${tile.label} · logolás ideje`}>
-            <ClayIcon name="i-idozito" size={21} />
-          </button>
-        )}
-        <BudgetRing kcal={rows.length ? loggedKcal : tile.kcal} dayKcal={dayKcal} logged={rows.length > 0} />
+        {/* A két kör EGY csoport a jobb szélen (owner 2026-09-16): az óra korábban a név után
+            állt, így rövid néven — „Tízórai" — gazdátlanul lebegett a sor közepén. */}
+        <span className="fmx-block-end">
+          {rows.length > 0 && (
+            <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
+              aria-label={`${tile.label} · logolás ideje`}>
+              <ClayIcon name="i-idozito" size={21} />
+            </button>
+          )}
+          <BudgetRing kcal={rows.length ? loggedKcal : tile.kcal} dayKcal={dayKcal} logged={rows.length > 0} />
+        </span>
       </div>
       <WindowBar tile={tile} rows={rows} />
       {rows.map(r => (
@@ -254,6 +281,10 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
           </button>
           <div className="fmx-meal-bottom">
             <MacroRings row={r} fiberTargetG={fiberTargetG} />
+            {/* A vércukor-chip a pontszámtól BALRA (a jóváhagyott prototípus rendje,
+                fuel-dashboard.js `glucoseChip`): a mini görbe maga az ikon, a sáv színében.
+                Sáv nélküli sor (nincs szénhidrát-adat) semmit nem mutat — nem találgatunk. */}
+            <GlycemicChip row={r} onOpen={() => onOpenGlycemic(r.mealId)} />
             {/* A chip célja változatlan: az ÉRTÉKELÉS (mezo-jb84). */}
             <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} />
           </div>
@@ -286,6 +317,9 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
   onOpenScore: (mealId: string) => void
 }) {
   const [timeboxFor, setTimeboxFor] = useState<string | null>(null)
+  const [glucoseFor, setGlucoseFor] = useState<string | null>(null)
+  const glucoseRow = meals.find(m => m.mealId === glucoseFor) ?? null
+  const glucoseBand = glucoseRow ? bandOf(glucoseRow) : null
   const timeboxRow = meals.find(m => m.mealId === timeboxFor) ?? null
   const timeboxTile = timeboxFor == null ? null : lane.tiles.find(t => t.mealId === timeboxFor) ?? null
   if (lane.tiles.length === 0) {
@@ -300,12 +334,16 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
       {lane.tiles.map(tile => (
         <BlockCard key={tile.key} tile={tile} dayKcal={dayKcal} fiberTargetG={fiberTargetG}
           rows={meals.filter(m => m.mealId === tile.mealId)}
-          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenTime={setTimeboxFor} />
+          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenTime={setTimeboxFor}
+          onOpenGlycemic={setGlucoseFor} />
       ))}
       {timeboxRow && timeboxTile && (
         <TimeBox label={timeboxTile.label} row={timeboxRow} onClose={() => setTimeboxFor(null)}
           blockColor={BLOCK_COLOR[timeboxTile.slotKey]} />
       )}
+      {/* Ugyanaz a doboz, amit a részletek oldal negyedik kártyája nyit — egy komponens,
+          egy deriváció, két ajtó. */}
+      {glucoseBand && <GlycemicGlass band={glucoseBand} onClose={() => setGlucoseFor(null)} />}
     </div>
   )
 }
