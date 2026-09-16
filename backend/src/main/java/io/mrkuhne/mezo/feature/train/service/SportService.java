@@ -64,7 +64,8 @@ public class SportService {
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(createdBy); // server-side ownership — never from the client
-        s.setSport(req.getSport() != null ? req.getSport() : "volleyball"); // volleyball|cross|trx
+        // ten ids: volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other
+        s.setSport(req.getSport() != null ? req.getSport() : "volleyball");
         s.setDate(req.getDate() != null ? req.getDate() : LocalDate.now());
         s.setTime(req.getTime() != null ? req.getTime() : LocalTime.now().format(HH_MM));
         s.setDurationMin(req.getDuration());
@@ -100,9 +101,12 @@ public class SportService {
             s.setKcalIsEstimate(false);
             return;
         }
+        // The wire's felt-effort input is rpe (required, 1..10) — s.getIntensity() is a separate,
+        // never-populated column and would silently collapse every mode fold to its default MET.
+        Integer intensity = s.getRpe() != null ? s.getRpe().intValue() : null;
         athleteBodyPort.bodyAt(createdBy, s.getDate())
             .flatMap(body -> SportEnergyCalculator.estimate(
-                s.getSport(), s.getDurationMin() != null ? s.getDurationMin() : 0, s.getIntensity(),
+                s.getSport(), s.getDurationMin() != null ? s.getDurationMin() : 0, intensity,
                 body.weightKg(), body.sex(), body.age(), body.bodyFatPct()))
             .ifPresent(kcal -> {
                 s.setKcal(kcal);

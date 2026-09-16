@@ -18,7 +18,8 @@ import org.hibernate.annotations.SQLRestriction;
 /**
  * A logged sport session — one of the ten sports the owner actually meets. The {@code sport} column
  * is the modality discriminator (DB CHECK {@code volleyball|cross|trx|bike|swim|football|
- * basketball|tennis|hike|other}); it defaults to volleyball when the log omits it. Standalone (no mesocycle FK): owned only via {@code createdBy}. Volleyball-only metrics
+ * basketball|tennis|hike|other}); it defaults to volleyball when the log omits it. Standalone
+ * (no mesocycle FK): owned only via {@code createdBy}. Volleyball-only metrics
  * ({@code setsPlayed}, {@code shoulderStrain}, {@code jumpCount}) and the cross/TRX {@code rounds}
  * effort are nullable per kind; the {@code intensity} and {@code shoulderStrain} 1–10 scores carry a
  * DB CHECK on their range when present.

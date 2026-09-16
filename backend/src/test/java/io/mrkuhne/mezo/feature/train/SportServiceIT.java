@@ -258,6 +258,39 @@ class SportServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testLogSportSession_shouldFoldRpeIntoTheMet_whenIntensityDiffers() {
+        // Regression for a masked bug: applyKcal used to read the never-populated entity
+        // `intensity` column instead of the wire's `rpe`, so every session collapsed to the
+        // sport's default-intensity MET regardless of how hard the user said it was. Two
+        // otherwise-identical volleyball logs at opposite ends of the rpe scale must fold to
+        // different METs (volleyball: 4.5 MET at i5 -> 6.5 MET at i10, slope 0.4/point, and below
+        // i5 the fold extrapolates down but floors at light-1 = 3.5) and so persist different kcal.
+        UUID owner = databasePopulator.populateUser("sportrpe@test.local");
+        seedBody(owner, "80.00");
+
+        SportSessionResponse low = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("volleyball").date(LocalDate.parse("2026-06-01")).time("18:00")
+            .duration(90).rpe(new BigDecimal("3")).build());
+        SportSessionResponse high = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("volleyball").date(LocalDate.parse("2026-06-01")).time("19:30")
+            .duration(90).rpe(new BigDecimal("10")).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        // rpe 3 -> met = 4.5 + (3-5)*0.4 = 3.7 (above the 3.5 floor); * 3.5 * 80kg / 200 * 90min
+        // * personalFactor(M, 35y, 15% bf) = 1.0296 -> round(466.2 * 1.0296) = 480
+        assertThat(low.getKcal()).isEqualTo(480);
+        // rpe 10 -> met = 4.5 + (10-5)*0.4 = 6.5 (clamped at hard); round(819.0 * 1.0296) = 843
+        assertThat(high.getKcal()).isEqualTo(843);
+        assertThat(low.getKcal()).isNotEqualTo(high.getKcal());
+
+        SportSessionEntity savedLow = sportSessionRepository.findById(low.getId()).orElseThrow();
+        SportSessionEntity savedHigh = sportSessionRepository.findById(high.getId()).orElseThrow();
+        assertThat(savedLow.getKcal()).isEqualTo(480);
+        assertThat(savedHigh.getKcal()).isEqualTo(843);
+    }
+
+    @Test
     void testLogSportSession_shouldRejectTheRow_whenSportOutsideTheVocabulary() {
         UUID owner = databasePopulator.populateUser("sportbad@test.local");
         assertThatThrownBy(() -> {
