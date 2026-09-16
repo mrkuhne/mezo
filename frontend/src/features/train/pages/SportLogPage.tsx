@@ -148,7 +148,7 @@ function SportPickGrid({ onPick, onLeave }: { onPick: (id: string) => void; onLe
           >
             <span className="sp-tile-art"><ClayIcon name={sport.art} size={44} /></span>
             <strong>{sport.name}</strong>
-            <small>~{sport.targetMinutes} perc</small>
+            <small>~{('fields' in sport && sport.fields.find((f) => f.key === 'minutes')?.value) || sport.targetMinutes} perc</small>
           </button>
         ))}
       </div>

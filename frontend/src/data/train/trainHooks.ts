@@ -475,18 +475,6 @@ type TrainData = {
 }
 
 /**
- * The `logSportSession` mutation (T3 sport log), extracted so it can be mounted by BOTH
- * `useTrain` and the narrow `useQuickLogSport` (mezo-7lst) without duplicating the mock
- * cache-append + invalidation logic — the trap finding 1 of the whole-branch review flagged
- * a copy-paste of this as worse than the regression it would fix. `mock`/`qc` are threaded
- * in rather than recomputed here so both callers share one `isMockMode()`/`useQueryClient()`
- * read.
- *
- * Real persists then refetches the affected query. Mock appends the logged session to the
- * cache (mirrors running's mock log) so the Mai hero flips to its done-state and the Napló
- * reflects it without a backend.
- */
-/**
  * Mock-mode stand-in for the backend's kcal decision (mezo-88iwa.9, T8 Task 4).
  *
  * The REAL number comes from the server: a MET table folded with the athlete's own body
@@ -504,6 +492,18 @@ function mockSportKcal(req: SportSessionCreateRequest): { kcal: number; kcalIsEs
   return { kcal: Math.round((req.duration * met * 3.5 * fixtureWeightKg) / 200), kcalIsEstimate: true }
 }
 
+/**
+ * The `logSportSession` mutation (T3 sport log), extracted so it can be mounted by BOTH
+ * `useTrain` and the narrow `useQuickLogSport` (mezo-7lst) without duplicating the mock
+ * cache-append + invalidation logic — the trap finding 1 of the whole-branch review flagged
+ * a copy-paste of this as worse than the regression it would fix. `mock`/`qc` are threaded
+ * in rather than recomputed here so both callers share one `isMockMode()`/`useQueryClient()`
+ * read.
+ *
+ * Real persists then refetches the affected query. Mock appends the logged session to the
+ * cache (mirrors running's mock log) so the Mai hero flips to its done-state and the Napló
+ * reflects it without a backend.
+ */
 function useLogSportSession(
   mock: boolean,
   qc: QueryClient,
