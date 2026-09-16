@@ -12,7 +12,7 @@
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useGoal, useProgressionProfile, useTimingProfile, useTrain, useWeekMuscleLog, useWorkoutNote } from '@/data/hooks'
@@ -607,10 +607,47 @@ function ActiveWorkoutSession({
   /** The ceremony's closing note, saved on the way out (mezo-88iwa.8). It used to ride the
    *  finish POST, but the note field now lives in the post-finish ceremony — so the write
    *  goes through the workout-note endpoint the review page already uses. Mock mode has no
-   *  instance id (and no server), so there is nothing to persist there. */
+   *  instance id (and no server), so there is nothing to persist there.
+   *
+   *  Fix round 1: never PUTs an empty draft (the old unconditional call cleared the
+   *  instance's note the moment either CTA fired, even with nothing typed) and never
+   *  re-sends a draft byte-identical to the last save — `lastSavedNoteRef` is the dedupe
+   *  key both this call and the unmount save below share, so a CTA tap immediately
+   *  followed by the resulting unmount does not double-PUT. */
   const persistClosingNote = () => {
-    if (workoutId) saveNote(workoutId, closingNote)
+    const trimmed = closingNote.trim()
+    if (!workoutId || !trimmed || trimmed === lastSavedNoteRef.current) return
+    saveNote(workoutId, trimmed)
+    lastSavedNoteRef.current = trimmed
   }
+
+  // Refs mirroring the latest draft/id/phase/saveNote for the unmount-save effect below —
+  // browser-back (or any other route change) unmounts this page without going through
+  // either ceremony CTA, so the closing note would otherwise be silently dropped
+  // (mezo-88iwa.8 fix round 1). The effect's cleanup only runs once, on unmount, so it
+  // must read through refs rather than closing over stale render-time values.
+  const closingNoteRef = useRef(closingNote)
+  closingNoteRef.current = closingNote
+  const workoutIdRef = useRef(workoutId)
+  workoutIdRef.current = workoutId
+  const phaseRef = useRef(phase)
+  phaseRef.current = phase
+  const lastSavedNoteRef = useRef('')
+  const saveNoteRef = useRef(saveNote)
+  saveNoteRef.current = saveNote
+
+  useEffect(() => {
+    return () => {
+      const trimmed = closingNoteRef.current.trim()
+      const id = workoutIdRef.current
+      if (phaseRef.current === 'summary' && id && trimmed && trimmed !== lastSavedNoteRef.current) {
+        saveNoteRef.current(id, trimmed)
+        lastSavedNoteRef.current = trimmed
+      }
+    }
+    // Mount-once: this is a page-lifetime unmount guard, not a per-render effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Finish the workout (the ONLY completion trigger — the active list's finish CTA) and
   // present the gamified level-up. Real mode POSTs with the instance id; mock has no
@@ -885,13 +922,22 @@ function ActiveWorkoutSession({
     // the calibrated session estimate × the MET math over the goal's weight. Held back
     // entirely when the estimate has no honest input — no weight, still-pending timing
     // profile, or a session that logged nothing at all (a skipped workout earns no kcal).
-    const gymMinutes = timingProfilePending ? 0 : estimateSessionMinutes(W.exercises, timingProfile ?? undefined)
+    // Fix round 1 (mezo-88iwa.8): the estimate above is for the WHOLE planned session —
+    // scaled here by the done/planned set share (prototype rule, session.js:337) so 1 of
+    // 22 sets doesn't earn the same kcal as all 22. Guard target.sets===0 (no prescribed
+    // sets at all) to avoid a divide-by-zero; the existing done.sets>0 gate below still
+    // hides the tile when nothing was logged.
+    const score = cerScore(session, W.exercises)
+    const setShare = score.target.sets > 0 ? Math.min(1, score.done.sets / score.target.sets) : 0
+    const plannedGymMinutes = timingProfilePending
+      ? 0
+      : estimateSessionMinutes(W.exercises, timingProfile ?? undefined)
+    const gymMinutes = plannedGymMinutes * setShare
     const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
     const energy = trainDayEnergy(
       gymMinutes > 0 ? [{ kind: 'gym' as const, minutes: gymMinutes, done: true }] : [],
       weightKg || null,
     )
-    const score = cerScore(session, W.exercises)
     const kcal = energy.known && energy.earnedKcal > 0 && score.done.sets > 0
       ? ({ value: energy.earnedKcal, known: true } as const)
       : null

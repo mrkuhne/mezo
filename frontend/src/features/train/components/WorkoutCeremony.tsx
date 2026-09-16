@@ -120,7 +120,9 @@ export function WorkoutCeremony({
       })
     }
     const frame = (now: number) => {
-      const t = Math.min(1, (now - started) / DURATION_MS)
+      // Fix round 1 (mezo-88iwa.8): a rAF timestamp can land before `started` (observed
+      // -3 ismétlés mid-pass), so clamp both ends rather than just the top.
+      const t = Math.max(0, Math.min(1, (now - started) / DURATION_MS))
       paint(1 - (1 - t) ** 3)
       if (t < 1 && stage.isConnected) requestAnimationFrame(frame)
       else if (stage.isConnected) setTold(true)

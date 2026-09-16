@@ -1098,6 +1098,9 @@ export const handlers = [
       medals: [],
     }),
   ),
+  // The ceremony's closing note (mezo-88iwa.8, fix round 1) — the review page's write path,
+  // reused by the post-finish ceremony's own note field.
+  http.put(`${API_BASE}/api/train/workouts/:id/note`, () => new HttpResponse(null, { status: 204 })),
   // T3 sport endpoints — schedule fixture mirrors the demofixtures BVSC week.
   http.get(`${API_BASE}/api/train/sport-schedule`, () =>
     HttpResponse.json([

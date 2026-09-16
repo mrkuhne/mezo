@@ -888,6 +888,41 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
 })
 
+/** The ceremony's kcal tile numeral (`.cer-kcal-line strong`), as a plain integer —
+ *  huNumber() renders thousands with a (possibly non-breaking) space separator. */
+function readKcalValue(): number {
+  const el = document.querySelector('.cer-kcal-line strong')
+  if (!el) throw new Error('no .cer-kcal-line tile in the document')
+  return Number((el.textContent ?? '').replace(/[^\d]/g, ''))
+}
+
+test('mock mode: the kcal tile scales with the done/planned set share, not the whole plan (mezo-88iwa.8)', async () => {
+  // Full completion: every exercise, every set.
+  const userFull = userEvent.setup()
+  const full = setup()
+  await userFull.click(screen.getByText(/Kezdjük el/))
+  await finishMockSession(userFull, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
+  await closeWorkout(userFull)
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  const fullKcal = readKcalValue()
+  full.unmount()
+
+  // Partial completion: a single exercise's sets, everything else left pending.
+  const userPartial = userEvent.setup()
+  setup()
+  await userPartial.click(screen.getByText(/Kezdjük el/))
+  await completeExerciseSets(userPartial, EX1)
+  const debriefCta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+  await userPartial.click(debriefCta)
+  await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
+  await closeWorkout(userPartial)
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  const partialKcal = readKcalValue()
+
+  expect(partialKcal).toBeGreaterThan(0)
+  expect(partialKcal).toBeLessThan(fullKcal)
+})
+
 // ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----
 
 test('mock mode: no note pill on a card when the exercise has no note', async () => {
@@ -993,6 +1028,13 @@ function useRealHandlers(today: typeof REAL_TODAY, calls: string[]) {
     http.put(`${API_BASE}/api/train/exercises/:exerciseId/note`, async ({ params, request }) => {
       const body = (await request.json()) as { note?: string | null }
       calls.push(`note:${params.exerciseId}:${body.note ?? ''}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+    // The ceremony's closing note (mezo-88iwa.8, fix round 1) — distinct namespace
+    // (workoutNote:) from the per-exercise `note:` calls pushed above.
+    http.put(`${API_BASE}/api/train/workouts/:id/note`, async ({ params, request }) => {
+      const body = (await request.json()) as { note?: string | null }
+      calls.push(`workoutNote:${params.id}:${body.note ?? ''}`)
       return new HttpResponse(null, { status: 204 })
     }),
   )
@@ -1301,6 +1343,38 @@ test('real mode: editing + saving a note PUTs it for the current exercise', asyn
   await waitFor(() => expect(calls).toContain('note:e-1:Tartsd a könyököt'))
   const pill = await screen.findByLabelText('Gyakorlat-jegyzet')
   expect(pill).toHaveTextContent('Tartsd a könyököt')
+})
+
+// ---- mezo-88iwa.8 fix round 1: the closing note's end-to-end save path ----
+
+test('real mode: finishing then tapping "Vissza a mai napra" with a typed note PUTs it for the instance', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
+  await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await user.type(screen.getByLabelText('Hogy ment?'), 'Jól ment az edzés')
+  await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
+  await waitFor(() => expect(calls).toContain('workoutNote:w-1:Jól ment az edzés'))
+})
+
+test('real mode: closing with an empty note fires no note PUT', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
+  await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
+  await waitFor(() => expect(calls.some((c) => c.startsWith('finish:'))).toBe(true))
+  expect(calls.some((c) => c.startsWith('workoutNote:'))).toBe(false)
 })
 
 // ---- T6 Task 4: the per-card ⋮ menu glass (Videó · Szett elvétele · Visszavesszük) ----
