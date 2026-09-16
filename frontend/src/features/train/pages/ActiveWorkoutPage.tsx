@@ -1,10 +1,15 @@
 // ============================================================
 // Mezo · ActiveWorkoutPage — full-screen active-workout mode
-// (sibling route /train/session, NO sub-nav). Four-phase state machine:
-//   prep    → mission-briefing hero (XP/skill forecast) · niggle pre-flag ·
-//             challenges (quest cards + pending state) · warmup · muscle-sectioned
-//             exercise cards (1RM badges) · sticky start CTA (mezo-bxpg)
-//   active  → per-set logging (weight/reps/RIR), Múlt hét comparison,
+// (sibling route /train/session, NO sub-nav). Two-phase state machine:
+//   active  → THE ENTRY POINT (mezo-e1ii9): the workout opens directly in the Titanium
+//             card list — Mai's CTA lands here, exactly like the prototype's
+//             `openSession()`. The pre-Titanium PREP mosaic ("⚡ Kezdjük el", the six
+//             GYAKORLATOK/FEJLŐDÉS/HETI ZÓNA/KÜLDETÉSEK/BEMELEGÍTÉS/NIGGLE tiles) is
+//             RETIRED: the exercise/set counts ARE the list, the XP forecast is answered
+//             by the ceremony's real +XP, the weekly zone is the Terhelés tab, the warmup
+//             is the cards' amber B-rows, the niggle is the banner below the header, and
+//             the challenges moved into the header ⋯ menu's Küldetések glass.
+//             Per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
 //   summary → the post-finish two-act closing ceremony (WorkoutCeremony): stars +
 //             counters + stats + records + challenge outcomes + muscles + kcal
@@ -15,21 +20,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useChallengeActions, useChallenges, useGoal, useProgressionProfile, useTimingProfile, useTrain, useWeekMuscleLog, useWorkoutNote } from '@/data/hooks'
-import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
+import { useChallengeActions, useChallenges, useGoal, useTimingProfile, useTrain, useWorkoutNote } from '@/data/hooks'
+import { localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
-import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
-import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
-import { selectPrepRows, weekZoneRows } from '@/features/train/logic/weekZone'
+import { muscleColor } from '@/features/train/logic/muscleColors'
 import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
-import { WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
+import { WorkoutChallengesGlass, WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
@@ -69,26 +72,9 @@ import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
-import { ClayIcon } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
-import { PrepGyakorlatokPage } from '@/features/train/pages/prep/PrepGyakorlatokPage'
-import { PrepFejlodesPage } from '@/features/train/pages/prep/PrepFejlodesPage'
-import { PrepHetiZonaPage } from '@/features/train/pages/prep/PrepHetiZonaPage'
-import { PrepKuldetesekPage } from '@/features/train/pages/prep/PrepKuldetesekPage'
-import { PrepBemelegitesPage, type WarmupRow } from '@/features/train/pages/prep/PrepBemelegitesPage'
-import { PrepNigglePage } from '@/features/train/pages/prep/PrepNigglePage'
 
-type Phase = 'prep' | 'active' | 'summary'
+type Phase = 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
-/** Which prep-mosaic tile page is open (mezo-d20.3.8); null = the hub itself. */
-type PrepTile = 'gyakorlatok' | 'fejlodes' | 'zona' | 'kuldetesek' | 'bemelegites' | 'niggle'
-
-const WARMUP_ROWS: readonly WarmupRow[] = [
-  { label: 'Dinamikus stretching', time: '3 perc', minutes: 3 },
-  { label: 'Cardio-lite · evezőpad', time: '3 perc', minutes: 3 },
-  { label: 'Aktiváció · band pull-apart × 20', time: '2 perc', minutes: 2 },
-] as const
 
 // The RECORD-tier medal toast auto-hides after this long (mezo-wp6n; was PR_TOAST_MS).
 const MEDAL_TOAST_MS = 4500
@@ -101,33 +87,6 @@ const MEDAL_TOAST_MS = 4500
 // exercise per session, at finish time, so the same key still cannot collide).
 function medalKey(m: Medal): string {
   return `${m.type}:${m.exerciseName}:${m.setIndex}`
-}
-
-// Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
-// muscle-color family key, preserving PLAN order (first-appearance order of each
-// family, not the fixed REGION_ORDER used by the muscle-week card grid) — the
-// "simpler" option the plan offers over adapting muscleRegionGroups' MuscleWeekRow
-// shape. Unmapped/off-day muscle keys (custom/saját exercises, e.g. 'full') fall
-// into a single neutral catch-all so no exercise is ever silently dropped.
-interface PrepExerciseGroup { key: string; label: string; deep: string; exercises: LoggedWorkoutExercise[] }
-function groupExercisesByRegion(exercises: LoggedWorkoutExercise[]): PrepExerciseGroup[] {
-  const order: string[] = []
-  const groups = new Map<string, PrepExerciseGroup>()
-  for (const e of exercises) {
-    const region = muscleRegion(e.muscle)
-    const key = region ?? 'other'
-    if (!groups.has(key)) {
-      groups.set(key, {
-        key,
-        label: region ? REGION_LABELS[region] : 'Egyéb',
-        deep: region ? regionColor(region).deep : 'var(--text-secondary)',
-        exercises: [],
-      })
-      order.push(key)
-    }
-    groups.get(key)!.exercises.push(e)
-  }
-  return order.map((k) => groups.get(k)!)
 }
 
 // Guard wrapper: the session screen's hooks (useState×N) are initialized from
@@ -208,15 +167,10 @@ function ActiveWorkoutSession({
   const navigate = useNavigate()
   const qc = useQueryClient()
   const rest = useRestTimer()
-  // Live weekly zone context (mezo-oyhy.7): unconditional hook call at the top —
-  // the prep block below reads its result, but the hook itself must run every
-  // render regardless of phase so hook order stays stable.
-  const weekLog = useWeekMuscleLog()
   // The ceremony's kcal tile mirrors Mai's energy card (T5, mezo-88iwa.6): the SAME
   // calibrated session estimate and the SAME weight source Fuel's budget reads, so the two
-  // screens can never disagree. Both hooks are unconditional here for the same reason
-  // `weekLog` is — the summary phase below is the only reader, but hook order must not
-  // depend on the phase.
+  // screens can never disagree. Both hooks are unconditional here: the summary phase below
+  // is their only reader, but hook order must not depend on the phase.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
   const { goal, goalResponse } = useGoal()
   // The closing note is written AFTER the finish POST now (the ceremony is post-finish, so
@@ -229,11 +183,6 @@ function ActiveWorkoutSession({
     goBack()
   }
 
-  // No active meso (custom/saját template, mezo-ws2x D4) ⇒ no week/phase to show —
-  // fall back to the day title instead of dereferencing a null activeMeso.
-  const weekLabel = activeMeso
-    ? `W${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]} hét`
-    : W.title
   const niggleActive = !!W.niggleWarning
 
   const open = todaySession?.openWorkout ?? null
@@ -242,11 +191,12 @@ function ActiveWorkoutSession({
   const [initialSession] = useState<Session>(() =>
     open ? seedFromOpen(W.exercises, { sets: open.sets }) : makeSession(W.exercises),
   )
-  const initialPhase: Phase = open ? 'active' : 'prep'
-
-  const [phase, setPhase] = useState<Phase>(initialPhase)
+  // The session HAS no other entry face since mezo-e1ii9: entering the route IS starting
+  // the workout, so the card list renders on the first frame whether or not an instance
+  // was already open (the mount effect below opens one when it wasn't).
+  const [phase, setPhase] = useState<Phase>('active')
   // Mezo-kalauz (mezo-gb1s.5, D11): ez az oldal chrome-mentes (AppLayout hideChrome),
-  // a fejléc ?-e itt nem létezik — az újranyitás a prep breadcrumb mini ?-én át megy.
+  // a fejléc ?-e itt nem létezik — az újranyitás a kártyalista fejlécének mini ?-én át megy.
   const kalauz = useTutorial()
   const [session, setSession] = useState<Session>(initialSession)
   const [workoutId, setWorkoutId] = useState<string | null>(open?.id ?? null)
@@ -283,15 +233,13 @@ function ActiveWorkoutSession({
   // it overlays): once resolved, the view advances to the next exercise, so we keep
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
-  const [niggleConfirmed, setNiggleConfirmed] = useState(false)
-  // Prep mosaic (mezo-d20.3.8): which tile's own page is open, null = the hub.
-  const [prepTile, setPrepTile] = useState<PrepTile | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   // The per-card glass surface open right now (T6 Task 4/5) — null = closed. `kind`
-  // distinguishes the ⋮ menu itself, the Videó glass it can switch to, and the
-  // records glass opened straight from the card's own log button; `id` addresses
-  // the card, exactly like the old menuExId did for ExerciseActionSheet.
-  const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records'; id: string } | null>(null)
+  // distinguishes the ⋮ menu itself, the Videó glass it can switch to, the records
+  // glass opened straight from the card's own log button, and (mezo-e1ii9) the
+  // Küldetések glass that inherited the retired prep mosaic's challenge tile; `id`
+  // addresses the card, exactly like the old menuExId did for ExerciseActionSheet.
+  const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records' | 'challenges'; id: string } | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: which exercise's editor is open + a per-exercise
@@ -361,12 +309,8 @@ function ActiveWorkoutSession({
   const { decide } = useChallengeActions(templateSessionId, localToday)
   const isMock = challengeMode === 'mock'
 
-  // Mission-briefing prep data (mezo-bxpg, T4): the record engine's e1RM badges +
-  // the progression profile's skill levels for the XP/skill forecast. Both are hook
-  // calls, so — mirroring useChallenges above — they're read here unconditionally
-  // even though only the 'prep' phase below renders them.
+  // The record engine's e1RM history — the per-card Rekordok glass reads it.
   const { exerciseRecords } = useTrain()
-  const { data: progressionProfile } = useProgressionProfile()
 
   const acceptedMap: Record<string, boolean> = isMock
     ? Object.fromEntries(acceptedChallenges.map((id) => [id, true]))
@@ -401,19 +345,26 @@ function ActiveWorkoutSession({
     return { id: c.id, typeLabel: c.typeLabel, exercise: c.exercise, target: c.target, state, detail: c.outcome ?? undefined }
   })
 
-  // Mock mode has no todaySession — "Kezdjük el" keeps the Phase-1 local behavior.
-  const beginWorkout = () => {
-    if (!todaySession) {
-      setPhase('active')
-      return
-    }
+  // Starting the workout is no longer a tap — entering the route IS the start (mezo-e1ii9,
+  // the prototype's `openSession()`). BOTH old "⚡ Kezdjük el" paths survive verbatim, they
+  // just fire on mount instead of on click:
+  //   · mock mode has no `todaySession` → nothing to POST, the local session model is the
+  //     whole truth (byte-parity with the Phase-1 behaviour);
+  //   · real mode POSTs `startWorkout` and binds the returned instance id.
+  // A session resumed mid-workout (`open`) already HAS an instance — re-POSTing would
+  // start a second one — so the effect skips it. The ref makes this once-per-mount under
+  // StrictMode's double-invoke (a second POST would be a second workout instance).
+  const startedRef = useRef(false)
+  useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    if (open || !todaySession) return
     startWorkout(todaySession.templateSessionId, {
-      onSuccess: (w) => {
-        setWorkoutId(w.id)
-        setPhase('active')
-      },
+      onSuccess: (w) => setWorkoutId(w.id),
     })
-  }
+    // Mount-only on purpose (empty deps): the start is an EVENT, not a synchronisation —
+    // re-running it when `todaySession` re-fetches would POST a second instance.
+  }, [])
 
   const handleLogSet = (
     finishing: LoggedWorkoutExercise,
@@ -711,196 +662,6 @@ function ActiveWorkoutSession({
     setSession(skipExerciseModel(session, exId))
   }
 
-  // ---------- PREP ("mission briefing", mezo-bxpg) ----------
-  if (phase === 'prep') {
-    // The forecast day is ALWAYS the pseudo-day adapted from W (mezo-87d2): it carries
-    // the same recipe as the meso day PLUS the recommendation engine's target weights
-    // as an anchor fallback — so anchor-less plans (the common case) still yield
-    // e1RM/volume XP instead of collapsing to a sets-only Erő-állóképesség estimate.
-    const forecastDay = pseudoDayFromPlan(W)
-    const athletic = progressionProfile?.athletic ?? []
-    const rawForecast = prepForecast(forecastDay, athletic)
-    // Honest estimates (D2/spec): never fabricate a ring from an empty profile with
-    // no actual XP behind it (growthForecast already omits zero-xp skills, so this
-    // is effectively "no skills at all", kept explicit per the plan's wording).
-    const forecast = athletic.length === 0 && rawForecast.skills.every((s) => s.xpEst === 0) ? null : rawForecast
-    const stats = prepStats(W)
-    const oneRmMap = oneRmByIdentity(exerciseRecords)
-    const exerciseGroups = groupExercisesByRegion(W.exercises)
-    // Live weekly zone context (mezo-oyhy.7): the week's logged sets + today's
-    // plan on the optimal-zone scale, for the groups this session trains.
-    const zoneRows = activeMeso?.days && !weekLog.pending
-      ? selectPrepRows(weekZoneRows({
-          plannedDays: activeMeso.days,
-          completed: weekLog.details,
-          todayPlan: W.exercises.map((e) => ({ muscle: e.muscle, type: e.type, workingSets: e.workingSets, targetRIR: e.targetRIR })),
-        }))
-      : []
-    const zonePlanWorkouts = (activeMeso?.days ?? []).filter((d) => d.exerciseCount > 0).length
-    const zoneDoneWorkouts = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
-
-    // Tile-page dispatch (mezo-d20.3.8, Huawei pattern): a tile opens its OWN
-    // page with a compact hero + stat strip; '‹ Indítás' returns to the hub.
-    const backToHub = () => setPrepTile(null)
-    if (prepTile === 'gyakorlatok') {
-      const progressionCount = W.exercises.filter((e) => (e.progression?.deltaKg ?? 0) !== 0 || (e.progression?.deltaReps ?? 0) !== 0).length
-      return (
-        <PrepGyakorlatokPage
-          groups={exerciseGroups}
-          stats={stats}
-          progressionCount={progressionCount}
-          oneRmOf={(e) => oneRmMap.get(identityKeyOf(e)) ?? null}
-          challengeOf={(e) => {
-            const c = challenges.find((x) => x.exerciseId === e.id && acceptedMap[x.id])
-            return c ? { typeLabel: c.typeLabel, target: c.target } : null
-          }}
-          onBack={backToHub}
-        />
-      )
-    }
-    if (prepTile === 'fejlodes' && forecast) {
-      return <PrepFejlodesPage forecast={forecast} workSets={stats.workSets} overload={W.overloadSummary} onBack={backToHub} />
-    }
-    if (prepTile === 'zona') {
-      return <PrepHetiZonaPage rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} onBack={backToHub} />
-    }
-    if (prepTile === 'kuldetesek') {
-      return (
-        <PrepKuldetesekPage
-          challenges={challenges}
-          accepted={acceptedMap}
-          onToggle={toggleChallenge}
-          pending={challengesPending}
-          onBack={backToHub}
-        />
-      )
-    }
-    if (prepTile === 'bemelegites') {
-      return (
-        <PrepBemelegitesPage
-          rows={WARMUP_ROWS}
-          niggleNote={niggleActive && !niggleConfirmed && W.niggleWarning
-            ? `${W.niggleWarning.muscleLabel} — a bemelegítés blokkjai erre készítenek fel.`
-            : null}
-          onBack={backToHub}
-        />
-      )
-    }
-    if (prepTile === 'niggle' && W.niggleWarning) {
-      return (
-        <PrepNigglePage
-          muscleLabel={W.niggleWarning.muscleLabel}
-          detail={W.niggleWarning.detail}
-          confirmed={niggleConfirmed}
-          onConfirm={() => setNiggleConfirmed(true)}
-          onBack={backToHub}
-        />
-      )
-    }
-
-    // ---- hub: hero (eyebrow + name + 4 mini stat cells + CTA above the fold) + the 6-tile mosaic ----
-    const warmupTotalMin = WARMUP_ROWS.reduce((s, w) => s + w.minutes, 0)
-    const acceptedCount = challenges.filter((c) => acceptedMap[c.id]).length
-    const niggleLine = W.niggleWarning
-      ? `${W.niggleWarning.muscleLabel} · ${niggleConfirmed ? 'kezelve ✓' : 'aktív'}`
-      : null
-
-    return (
-      <div>
-        {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
-        <div className="sticky-top" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button className="row gap-sm" onClick={onExit}>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-            <span className="eyebrow">Vissza</span>
-          </button>
-          {/* Mini ? (D11): a fejléc-gomb receptje, csak a prep-fázisban — az élő logolás
-              fölé a kalauz nem nyúl. Auto-open az első belépéskor; ez az újranézés útja. */}
-          {kalauz.current && (
-            <button type="button" className="nap-roundbtn nap-q" aria-label="Kalauz ehhez az oldalhoz"
-              aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
-              <span className="nap-q-glyph" aria-hidden="true">?</span>
-            </button>
-          )}
-        </div>
-
-        <EntranceGroup>
-          <div style={{ padding: '6px 24px 0' }}>
-            <div className="mz-tile mz-w-coral tp-hero rise" data-kalauz-anchor="session-start" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <span className="mz-eyebrow" style={{ color: 'var(--coral-deep)' }}>{huWeekdayFull()} · {weekLabel}</span>
-              <span className="tp-title">{W.title}</span>
-              <StatStrip className="mt-sm">
-                <StatCell value={forecast ? `+${forecast.totalXp}` : '—'} label="várható XP" />
-                <StatCell value={stats.workSets} label="szett" />
-                <StatCell value={stats.durationEst > 0 ? `~${stats.durationEst}′` : '—'} label="idő" />
-                <StatCell value={stats.muscleCount} label="izomcsoport" />
-              </StatStrip>
-              <button type="button" className="np-cta np-press tp-cta" onClick={beginWorkout}>
-                ⚡ Kezdjük el →
-              </button>
-            </div>
-          </div>
-
-          <div style={{ padding: '11px 24px 24px' }}>
-            <Mosaic>
-              <Tile
-                wash="coral" icon="i-edzes" eyebrow="Gyakorlatok" delayMs={70}
-                line={`${W.exercises.length} gyakorlat · ${stats.workSets + stats.warmupSets} szett`}
-                onClick={() => setPrepTile('gyakorlatok')} aria-label="Gyakorlatok"
-              />
-              {forecast && (
-                <Tile
-                  wash="coral" icon="i-growth" eyebrow="Fejlődés" delayMs={100}
-                  line={`+${forecast.totalXp} XP`}
-                  onClick={() => setPrepTile('fejlodes')} aria-label="Várható fejlődés"
-                />
-              )}
-              {zoneRows.length > 0 && (
-                <Tile
-                  wash="white" icon="i-edzes" eyebrow="Heti zóna" delayMs={130}
-                  line={`kész ${zoneDoneWorkouts}/${zonePlanWorkouts} edzés`}
-                  onClick={() => setPrepTile('zona')} aria-label="Heti zóna"
-                />
-              )}
-              <button
-                type="button" className="mz-tile mz-w-gold rise" style={{ '--d': '160ms' } as React.CSSProperties}
-                onClick={() => setPrepTile('kuldetesek')} aria-label="A mai küldetések"
-              >
-                <div className="mz-tile-top"><span className="mz-eyebrow">Küldetések</span></div>
-                <div className="mz-spotwrap">
-                  <span className="tp-anchor">
-                    <ClayIcon name="i-kihivas" size={38} />
-                    {acceptedCount > 0 && <span className="tp-badge">{acceptedCount}</span>}
-                  </span>
-                </div>
-                <div className="mz-tile-line">{challengesPending ? 'készül…' : `${acceptedCount}/${challenges.length} elfogadva`}</div>
-              </button>
-              <Tile
-                wash="sky" icon="i-lang" eyebrow="Bemelegítés" delayMs={190}
-                line={`${warmupTotalMin} perc · ${WARMUP_ROWS.length} blokk`}
-                onClick={() => setPrepTile('bemelegites')} aria-label="Bemelegítés"
-              />
-              {niggleActive && W.niggleWarning && (
-                <button
-                  type="button" className="mz-tile mz-w-gold tp-niggle rise" style={{ '--d': '220ms' } as React.CSSProperties}
-                  onClick={() => setPrepTile('niggle')} aria-label="Aktív niggle"
-                >
-                  <div className="mz-tile-top"><span className="mz-eyebrow">Niggle</span></div>
-                  <div className="mz-spotwrap">
-                    <span className="tp-anchor">
-                      <ClayIcon name="i-eletjel" size={38} />
-                      {!niggleConfirmed && <span className="tp-badge">!</span>}
-                    </span>
-                  </div>
-                  <div className="mz-tile-line">{niggleLine}</div>
-                </button>
-              )}
-            </Mosaic>
-          </div>
-        </EntranceGroup>
-      </div>
-    )
-  }
-
   // ---------- SUMMARY (the closing ceremony) ----------
   // 'summary' is the post-finish two-act ceremony (T7, mezo-88iwa.8): the finish POST has
   // already resolved when it renders, and its way out goes straight to Mai — there is no
@@ -1093,6 +854,7 @@ function ActiveWorkoutSession({
         const menuOpen = glass?.kind === 'menu' && !feedbackEx
         const videoOpen = glass?.kind === 'video' && !feedbackEx
         const recordsOpen = glass?.kind === 'records' && !feedbackEx
+        const challengesOpen = glass?.kind === 'challenges' && !feedbackEx
         const position = session.order.indexOf(menuEx.id)
         const slotCount = effectiveSetCount(session, menuEx.id)
         const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
@@ -1109,8 +871,12 @@ function ActiveWorkoutSession({
               skipped={session.skipped.includes(menuEx.id)}
               hasNote={!!noteOf(menuEx)}
               canRemoveTrailingSet={canRemoveSet(session, menuEx.id) && lastSlotPending}
+              acceptedChallenges={challenges.filter((c) => acceptedMap[c.id]).length}
+              totalChallenges={challenges.length}
+              challengesPending={challengesPending}
               onClose={() => setGlass(null)}
               onVideo={() => setGlass({ kind: 'video', id: menuEx.id })}
+              onChallenges={() => setGlass({ kind: 'challenges', id: menuEx.id })}
               onEditNote={() => setNoteEditExId(menuEx.id)}
               onAddSet={() => {
                 setSession((s) => addExtraSet(s, menuEx.id))
@@ -1124,6 +890,15 @@ function ActiveWorkoutSession({
             <WorkoutVideoGlass
               open={!!videoOpen}
               exercise={videoOpen ? menuEx : null}
+              tint={tint}
+              onClose={() => setGlass(null)}
+            />
+            <WorkoutChallengesGlass
+              open={!!challengesOpen}
+              challenges={challenges}
+              accepted={acceptedMap}
+              onToggle={toggleChallenge}
+              pending={challengesPending}
               tint={tint}
               onClose={() => setGlass(null)}
             />
@@ -1221,19 +996,28 @@ function ActiveWorkoutSession({
             session title + its live set-progress line, and the ⋯ that opens the
             session/exercise actions for the exercise that is up now. Sticky by
             `.wk-top` itself (position: sticky; top: 0). */}
-        <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
+        <div className="wk-top np-anim" data-kalauz-anchor="session-start" style={{ '--i': 0 } as React.CSSProperties}>
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
           <div className="tt wkx-tt">
             <div className="t1">{W.title}</div>
             <div className="t2">{doneSets}/{totalSets} szett</div>
           </div>
+          {/* Mini ? (D11): ez az oldal chrome-mentes, a fejléc globális ?-e itt nem létezik.
+              A kalauz horgonya és újranyitása a prep breadcrumbról ide költözött (mezo-e1ii9)
+              — a kártyalista fejléce AZ indítás most. */}
+          {kalauz.current && (
+            <button type="button" className="nap-roundbtn nap-q" aria-label="Kalauz ehhez az oldalhoz"
+              aria-haspopup="dialog" style={{ marginLeft: 'auto' }} onClick={() => kalauz.open(kalauz.current!.id)}>
+              <span className="nap-q-glyph" aria-hidden="true">?</span>
+            </button>
+          )}
           <button
             type="button"
             aria-label="Gyakorlat műveletek"
             disabled={!!feedbackEx}
             onClick={() => setGlass({ kind: 'menu', id: current.id })}
             className="back np-press"
-            style={{ marginLeft: 'auto', fontSize: 15 }}
+            style={{ marginLeft: kalauz.current ? 8 : 'auto', fontSize: 15 }}
           >
             ⋯
           </button>

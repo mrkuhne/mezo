@@ -339,8 +339,8 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     cards: [
       {
         kind: 'intro', spot: 's-edzes', orb: 's-orb',
-        title: 'Ez az indítás.',
-        voice: 'A mai edzés eligazítása: mi vár, milyen súlyokkal, mennyi szett — mielőtt elindulnál.',
+        title: 'Itt már élesben vagy.',
+        voice: 'A mai edzés összes gyakorlata egy listában: mi vár, milyen súlyokkal, hány szett — és rögtön logolhatsz.',
       },
       {
         kind: 'fogalom', spot: 'i-retegek', orb: 's-orb',
@@ -350,13 +350,13 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       },
       {
         kind: 'hogyan', spot: 'i-lang', orb: 's-orb-figyel', anchor: 'session-start',
-        title: 'Egy gomb, és élesben.',
-        voice: 'A ⚡ Kezdjük el indítja az élő módot: szettről szettre logolsz, köztük pihenő-időzítő jár. Kilépni bármikor lehet — az edzés megvárja.',
+        title: 'Szettről szettre.',
+        voice: 'Minden kártya egy gyakorlat: beírod a súlyt és az ismétlést, köztük pihenő-időzítő jár. A fejléc ⋯ gombja alatt lakik a küldetés, a jegyzet és a szett-igazítás — kilépni pedig bármikor lehet.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'A terem küszöbén.',
-        voice: 'Indítás előtt egy perc eligazítás, aztán élesben. Az összegzés a végén magától jön.',
+        voice: 'Ahogy belépsz a terembe, az edzés már fut. Az összegzés a végén magától jön.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

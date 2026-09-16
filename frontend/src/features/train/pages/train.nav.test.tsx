@@ -62,7 +62,8 @@ test('the full Mai day view lives at /train/mai and /train?day= forwards to it',
 test('the active workout session is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
+  // The route opens DIRECTLY in the Titanium card list (mezo-e1ii9) — no prep screen.
+  expect(container.querySelector('.wo-list')).not.toBeNull()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
 })
 

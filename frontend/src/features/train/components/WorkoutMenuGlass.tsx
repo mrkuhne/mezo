@@ -16,10 +16,13 @@
 // YouTube/Instagram idiom already used by ExerciseRecordSheet and the exercise
 // picker) rather than inventing a second embed path.
 // ============================================================
-import type { LoggedWorkoutExercise } from '@/data/types'
+import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { videoEmbed } from '@/features/train/components/VideoDemo'
+import { ChallengeCard } from '@/features/train/components/ChallengeCard'
+import { ChallengeGenerationLoader } from '@/features/train/components/ChallengeGenerationLoader'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 export interface WorkoutMenuGlassProps {
   open: boolean
@@ -38,9 +41,17 @@ export interface WorkoutMenuGlassProps {
   hasNote: boolean
   /** Enabled only for an unchecked TRAILING slot (canRemoveSet + last slot pending). */
   canRemoveTrailingSet: boolean
+  /** How many of the day's challenges are accepted right now (the Küldetések row's hint). */
+  acceptedChallenges: number
+  /** How many the day offers at all — 0 renders the honest "ma nincs" hint. */
+  totalChallenges: number
+  /** The day's challenge list is still being generated (real mode's lazy LLM call). */
+  challengesPending: boolean
   onClose: () => void
   /** Opens the video glass — does NOT also call onClose (see file header). */
   onVideo: () => void
+  /** Opens the Küldetések glass — like onVideo, does NOT also call onClose. */
+  onChallenges: () => void
   onEditNote: () => void
   onAddSet: () => void
   onRemoveSet: () => void
@@ -75,9 +86,17 @@ export function noteHint(hasNote: boolean): string {
   return hasNote ? 'Megírt jegyzet szerkesztése' : 'Ami a következő alkalomra számít'
 }
 
+/** The Küldetések row's hint (mezo-e1ii9) — the day's quest state in one line. */
+export function challengeHint(pending: boolean, accepted: number, total: number): string {
+  if (pending) return 'A mai ajánlatok készülnek…'
+  if (total === 0) return 'Ma nincs kihívás'
+  return `${accepted}/${total} elfogadva`
+}
+
 export function WorkoutMenuGlass({
   open, exercise, tint, position, orderLength, slotCount, skipped, hasNote, canRemoveTrailingSet,
-  onClose, onVideo, onEditNote, onAddSet, onRemoveSet, onMoveEarlier, onMoveLater, onToggleSkip,
+  acceptedChallenges, totalChallenges, challengesPending,
+  onClose, onVideo, onChallenges, onEditNote, onAddSet, onRemoveSet, onMoveEarlier, onMoveLater, onToggleSkip,
 }: WorkoutMenuGlassProps) {
   // Every row but Videó runs its action then dismisses the glass (Videó switches
   // the page to the OTHER glass instead — see the file header).
@@ -92,6 +111,13 @@ export function WorkoutMenuGlass({
         {exercise.videoUrl && (
           <MenuRow icon="i-video" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />
         )}
+        {/* The day's quests (mezo-e1ii9): the home the retired prep mosaic's Küldetések
+            tile handed over to. Like Videó, it switches the page to its OWN glass. */}
+        <MenuRow
+          icon="i-kihivas" label="Küldetések"
+          hint={challengeHint(challengesPending, acceptedChallenges, totalChallenges)}
+          onClick={onChallenges}
+        />
         <MenuRow icon="i-checkin" label="Jegyzet" hint={noteHint(hasNote)} onClick={fire(onEditNote)} />
         <MenuRow
           icon="i-suly" label="Szett hozzáadása" hint={`Most ${slotCount} szett van`}
@@ -149,6 +175,59 @@ export function WorkoutVideoGlass({ open, exercise, tint, onClose }: WorkoutVide
           <span>Nincs elérhető videó</span>
         </div>
       )}
+    </GlassBox>
+  )
+}
+
+export interface WorkoutChallengesGlassProps {
+  open: boolean
+  /** The day's challenges (mock seed or the live server list — `useChallenges`). */
+  challenges: Challenge[]
+  /** id -> accepted, the same map the retired prep tile fed to `ChallengeCard`. */
+  accepted: Record<string, boolean>
+  /** Accept/dismiss — the mock local toggle or real mode's persisted `decide`. */
+  onToggle: (id: string) => void
+  /** The lazy backend generation is in flight (real mode only). */
+  pending: boolean
+  tint: string
+  onClose: () => void
+}
+
+/**
+ * The Küldetések glass (mezo-e1ii9) — accept/dismiss's home now that the pre-Titanium
+ * prep mosaic is gone. Opened from the workout header's ⋯ menu; the body is the SAME
+ * three states, the SAME `ChallengeCard`s and the SAME copy the old `PrepKuldetesekPage`
+ * carried (pending loader → honest empty line → the vertical card stack + the
+ * "passzolni ér" principle), just docked in a glass instead of a full page.
+ */
+export function WorkoutChallengesGlass({
+  open, challenges, accepted, onToggle, pending, tint, onClose,
+}: WorkoutChallengesGlassProps) {
+  const acceptedCount = challenges.filter((c) => accepted[c.id]).length
+  return (
+    <GlassBox open={open} onClose={onClose} label="Küldetések" tint={tint}>
+      <div className="col gap-md">
+        <div className="row gap-sm" style={{ alignItems: 'center' }}>
+          <ClayIcon name="i-kihivas" size={30} />
+          <span className="eyebrow">
+            {pending ? 'A mai küldetések · készül…' : `A mai küldetések · ${acceptedCount}/${challenges.length} elfogadva`}
+          </span>
+        </div>
+        {pending ? (
+          <ChallengeGenerationLoader />
+        ) : challenges.length === 0 ? (
+          <span className="text-tertiary" style={{ fontSize: 13 }}>Ma nincs kihívás</span>
+        ) : (
+          <EntranceGroup className="col gap-md">
+            {challenges.map((c) => (
+              <ChallengeCard key={c.id} challenge={c} accepted={!!accepted[c.id]} onToggle={() => onToggle(c.id)} />
+            ))}
+          </EntranceGroup>
+        )}
+        <span className="text-tertiary" style={{ fontSize: 12 }}>
+          Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.
+        </span>
+      </div>
     </GlassBox>
   )
 }

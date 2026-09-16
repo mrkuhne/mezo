@@ -1387,10 +1387,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MesoKonyvtarPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx, MesoTemplateEditorPage.tsx,
     MesoTemplateStoryPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoTervPage.tsx,
     MesoTervSkeleton.tsx, MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
-    PrepBemelegitesPage.tsx, PrepFejlodesPage.tsx, PrepGyakorlatokPage.tsx, PrepHetiZonaPage.tsx,
-    PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx,
-    SportPage.tsx, SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekMapPage.tsx,
-    TrainWeekMozgasPage.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
+    RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx, SportPage.tsx, SportSkeleton.tsx,
+    TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekMapPage.tsx, TrainWeekMozgasPage.tsx, TrainWeekPage.tsx,
+    TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
   - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx,
     FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
     SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
@@ -1411,9 +1410,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts,
     peakWeekFit.ts, prepBriefing.ts, recordFor.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
     sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts,
-    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
-    weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts,
-    workoutState.ts
+    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupProtocol.ts,
+    warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts,
+    workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 15 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
