@@ -14035,24 +14035,27 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card .wo-confirm-list strong { font-size: 13px; font-weight: 500; }
 .gl-card .wo-confirm-list b { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--ex-color) 75%, #fff); }
 
-.gl-card .wo-close-cta {
+/* The ceremony's own way out (`.cer-cta`, mezo-88iwa.8 T7 Task 3) wears the SAME close
+   CTA as the glass cards — the T6 port is `.gl-card`-scoped, so the ceremony context is
+   added as a second ancestor here rather than duplicating the recipe in the cer- section. */
+.gl-card .wo-close-cta, .cer-cta .wo-close-cta {
   position: relative; display: flex; align-items: center; gap: 13px; width: 100%; overflow: hidden;
   margin: 6px 0 10px; padding: 15px 18px; text-align: left; cursor: pointer; border: 0; border-radius: 20px;
   color: #17210c;
   background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
   box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
 }
-.gl-card .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
-.gl-card .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
-.gl-card .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
-.gl-card .wo-close-art { flex: 0 0 auto; }
-.gl-card .wo-close-art .icon { width: 34px; height: 34px; }
-.gl-card .wo-close-cta .chip-sheen {
+.gl-card .wo-close-cta.is-done, .cer-cta .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
+.gl-card .wo-close-cta strong, .cer-cta .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.gl-card .wo-close-cta small, .cer-cta .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
+.gl-card .wo-close-art, .cer-cta .wo-close-art { flex: 0 0 auto; }
+.gl-card .wo-close-art .icon, .cer-cta .wo-close-art .icon { width: 34px; height: 34px; }
+.gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen {
   position: absolute; inset: 0 auto 0 -40%; width: 32%; transform: skewX(-18deg);
   background: linear-gradient(90deg, #ffffff00, #ffffff5c, #ffffff00);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .gl-card .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
+  .gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
 }
 
 .gl-card .wo-secondary {
@@ -14148,6 +14151,251 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card .wo-rec-now:empty { display: none; }
 .gl-card .wo-rec-now b { font-size: 9px; letter-spacing: .12em; color: #f0dcae; }
 /* ── /train session titanium ─────────────────────────────────────────────── */
+
+/* ── train ceremony titanium (mezo-88iwa.8, T7 Task 2) ────────────────────────
+   The workout-close ceremony: act one's score reveal (stars, gold-stone
+   progress bar, set/rep/volume counters), the settled result (time, XP,
+   new-record chip) and its way-on foot CTA, then the details/recap screen
+   (muscle-group star rows, the kcal-won tile, the closing CTA). This is the
+   family the session-titanium section above deliberately skipped. Renders
+   inside the workout overlay PAGE itself, never inside GlassBox, so nothing
+   here is scoped under `.gl-card`/`.wo-list`/`.device`. Ported 1:1 from the
+   prototype: docs/design_2.0/prototypes/companion-titanium/session.css
+   `.cer*` (:458), `.stars*` (:450, renamed `.cer-starrow`), `.wo-mstar*`
+   (:580, renamed `.cer-mstar*`), `.wo-sum-section` (:391, renamed
+   `.cer-section`), the `.wo-recap-note` / bare-`.wo-glass-note` disclaimer
+   paragraphs (:398, :359 — both renamed `.cer-recap-note`: they are the same
+   dim note pattern read back at the foot of the details/recap screen, just
+   spelled two different ways in the prototype) and the `.wo-summary
+   cer-screen` wrapper combo (:305, folded into `.cer-screen` alone — the
+   prototype's own `.wo-summary` padding rule (:449) is already fully
+   overridden by `.cer-screen`'s later, more specific padding in the
+   prototype's own cascade, so nothing is lost by dropping `.wo-summary`).
+
+   Eyebrow: the prototype's bare `<span class="overline">` inside `.cer`
+   (:472, :308, :382) is NOT ported bare — the T5 lesson the session-titanium
+   comment above already names (a short un-prefixed class collides with a
+   Tailwind utility). It gets its own `.cer-eyebrow`, mirroring the
+   `.tr-eyebrow` idiom (:13521 above: base type ramp + a context override for
+   color/letter-spacing) with the ceremony's own gold ink.
+
+   Gold-stone bar fill: the prototype's `.cer-fill` (:495) is a flat
+   orange/gold flame gradient, not the Ritmus stone recipe — upgraded here
+   per docs/design_2.0/2026-09-15-ceremony-pattern.md §Materials: the Ritmus
+   stone `#fff0c8 → #af9371 24% → #322a29 52% → #dbc4a0`, remapped
+   horizontally as the fill itself (the glow box-shadow stays the prototype's
+   warm-flame color, which reads fine against the gold band).
+
+   Keyframes `cer-pop`/`cer-aura` are already `cer-`-prefixed in the
+   prototype and don't collide with T6's renamed `wo-finish-glow-breathe`
+   above, so they carry over unchanged.
+
+   `.is-settled` (session.js :380, the settled/recap variant of `.cer`) has
+   no CSS of its own in the prototype — it is a pure JS marker with no
+   matching rule anywhere in session.css — so there is nothing to port for
+   it beyond the class existing for components to apply.
+
+   SCOPE: only the families the brief names. `.wo-close-cta`/`.wo-secondary`/
+   `.chip-sheen` (the CTA buttons the ceremony's `.cer-foot`/`.cer-cta` wrap)
+   are already ported, scoped to `.gl-card`, by the session-titanium section
+   above (T6) — wiring their bare use in this unscoped ceremony context is
+   Task 3's concern, not this CSS task's. */
+
+.cer-screen { display: flex; flex-direction: column; min-height: 100%; padding: 0 4px; }
+.cer-screen .cer { margin-top: auto; }
+.cer-details-screen { padding: 6px 4px 8px; }
+
+/* — act one: the ceremony owns the screen — */
+.cer {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 22px; flex: 0 0 auto; padding: 8px 16px 4px; text-align: center;
+}
+.cer-sky {
+  position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; translate: -50% -50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, #ffb347 calc(var(--p) * 26%), transparent), transparent 62%);
+}
+.cer-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--text-tertiary); }
+.cer > .cer-eyebrow { position: relative; color: #d5c096; letter-spacing: .2em; }
+
+.cer-stars { position: relative; display: flex; justify-content: center; gap: 12px; }
+.cer-stars i { position: relative; width: 42px; height: 42px; display: grid; place-items: center; }
+.cer-stars i .icon { width: 42px; height: 42px; opacity: .12; filter: grayscale(1); transition: none; }
+.cer-stars i.is-half .icon { opacity: .4; filter: grayscale(.4); }
+.cer-stars i.is-lit .icon {
+  opacity: 1; filter: none;
+  animation: cer-pop .55s cubic-bezier(.2, 1.7, .35, 1);
+}
+.cer-aura {
+  position: absolute; inset: -14px; border-radius: 50%; opacity: 0; pointer-events: none;
+  background: radial-gradient(circle, #ffd98a 0%, #ff8a3c55 38%, transparent 68%);
+}
+.cer-stars i.is-lit .cer-aura { animation: cer-aura .7s ease-out; }
+@keyframes cer-pop { 0% { scale: .3; rotate: -25deg; } 60% { scale: 1.25; rotate: 6deg; } 100% { scale: 1; rotate: 0deg; } }
+@keyframes cer-aura { 0% { opacity: .95; scale: .3; } 100% { opacity: 0; scale: 1.9; } }
+
+.cer-bar {
+  position: relative; width: 100%; max-width: 320px; height: 16px; border-radius: 999px;
+  background: #ffffff10; box-shadow: 0 0 0 1px #ffffff10 inset;
+}
+.cer-bar u { position: absolute; top: 3px; bottom: 3px; left: var(--at); width: 1px; background: #ffffff26; }
+.cer-fill {
+  position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); border-radius: 999px;
+  background: linear-gradient(90deg, #fff0c8, #af9371 24%, #322a29 52%, #dbc4a0);
+  box-shadow: 0 0 18px #ff9a4a88, 0 0 42px #ff7a2f55;
+}
+.cer-comet {
+  position: absolute; top: 50%; left: calc(var(--p) * 100%); width: 46px; height: 46px; translate: -50% -50%;
+  pointer-events: none; opacity: calc(min(1, var(--p) * 14));
+  background: radial-gradient(circle, #fffdf4 0%, #ffc76a 26%, #ff7a2f66 48%, transparent 70%);
+}
+
+.cer-counters { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; width: 100%; max-width: 340px; }
+.cer-counters span {
+  position: relative; overflow: hidden; display: grid; justify-items: center; gap: 2px; padding: 13px 4px 11px;
+  border-radius: 18px; border: 1px solid color-mix(in srgb, #ffb347 calc(14% + var(--p) * 26%), #ffffff14);
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, #ffb347 calc(var(--p) * 16%), transparent), transparent 66%),
+    linear-gradient(#ffffff0a, #ffffff03);
+  box-shadow: 0 1px 0 #ffffff1a inset, 0 10px 24px -20px color-mix(in srgb, #ff9a4a calc(var(--p) * 90%), transparent);
+}
+.cer-counters span::before {
+  content: ''; position: absolute; inset: 0 20% auto; height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #ffd9a0 calc(30% + var(--p) * 70%), transparent), transparent);
+}
+.cer-counters i { display: block; width: 22px; height: 22px; opacity: calc(.35 + var(--p) * .55); }
+.cer-counters i .icon { width: 22px; height: 22px; }
+.cer-counters strong {
+  display: block; font-size: 26px; font-weight: 300; letter-spacing: -.035em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(#fff6e2, #ffca86); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.cer-counters small { display: block; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #ffffff6b; }
+
+/* Acts two and three wait for the bar to finish, but hold their space so nothing jumps. */
+.cer-screen .cer-result, .cer-screen .cer-foot { opacity: 0; translate: 0 14px; pointer-events: none; }
+.cer-screen.is-told .cer-result, .cer-screen.is-told .cer-foot {
+  opacity: 1; translate: 0 0; pointer-events: auto;
+  transition: opacity .5s ease, translate .5s cubic-bezier(.2, .8, .2, 1);
+}
+.cer-screen.is-told .cer-foot { transition-delay: .22s; }
+
+.cer-result { text-align: center; padding: 20px 12px 4px; }
+.cer-result h1 { font-size: 32px; font-weight: 300; letter-spacing: -.03em; margin: 10px 0 4px; }
+.cer-result h1:focus { outline: none; }
+.cer-result > p { margin: 0 0 16px; font-size: 13px; color: #ffffff85; }
+.cer-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.cer-stats span {
+  position: relative; overflow: hidden; padding: 14px 8px; border-radius: 18px;
+  border: 1px solid #ffffff14; background: linear-gradient(#ffffff0a, #ffffff03);
+  box-shadow: 0 1px 0 #ffffff14 inset;
+}
+.cer-stats span::before { content: ''; position: absolute; inset: 0 24% auto; height: 1px; background: linear-gradient(90deg, transparent, #ffffff40, transparent); }
+.cer-stats strong { display: block; font-size: 27px; font-weight: 300; letter-spacing: -.035em; color: #eef3e4; }
+.cer-stats strong i { font-style: normal; font-size: 18px; color: #ffffff70; }
+.cer-stats small { display: block; font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: #ffffff5e; margin-top: 5px; }
+
+.cer-record {
+  display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 11px; margin-top: 14px;
+  padding: 11px 13px; text-align: left; border: 1px solid #d9c39540; border-radius: 16px; background: #d9c39512;
+}
+.cer-record .icon { width: 32px; height: 32px; }
+.cer-record strong { display: block; font-size: 13.5px; font-weight: 500; color: #f2e4c2; }
+.cer-record small { display: block; font-size: 10.5px; color: #ffffff70; margin-top: 2px; }
+
+/* — the challenge outcomes, records-adjacent (T7 Task 4, mezo-88iwa.8) —
+   The same `.cer-record` row shape, retoned per verdict: the gold-stone band is the
+   RECORD medal's own signature, so a hit borrows the sage of a kept promise, a miss the
+   muted coral, and a skip/inconclusive stays neutral glass. */
+.cer-chals { display: grid; gap: 8px; }
+.cer-chal { grid-template-columns: 34px 1fr auto; }
+.cer-chal strong { color: #eef3e4; }
+.cer-chal .icon { opacity: .85; }
+.cer-chal-out {
+  font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ffffff6b; white-space: nowrap;
+}
+.cer-chal.is-hit { border-color: #b9d3a340; background: #b9d3a312; }
+.cer-chal.is-hit .cer-chal-out { color: #c8e0b2; }
+.cer-chal.is-miss { border-color: #e2a89440; background: #e2a89410; }
+.cer-chal.is-miss .cer-chal-out { color: #eebaa8; }
+.cer-chal.is-skip { border-color: #ffffff1f; background: #ffffff0a; }
+
+.cer-foot { margin-top: auto; padding: 4px 0 10px; }
+
+/* — details/recap: what the session did to the week, and the way out — */
+.cer-muscles { padding-bottom: 4px; }
+.cer-section { margin: 4px 0 10px; }
+.cer-section strong { display: block; font-size: 20px; font-weight: 400; letter-spacing: -.02em; outline: none; }
+
+.cer-mstars { display: grid; gap: 8px; margin-bottom: 10px; }
+.cer-mstar {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px;
+  padding: 11px 13px; border: 1px solid #ffffff0f; border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ex-color) 9%, #ffffff05), #ffffff03);
+}
+.cer-mstar-art .icon { width: 34px; height: 34px; }
+.cer-mstar-copy strong { display: block; font-size: 14px; font-weight: 500; }
+.cer-mstar-copy small { display: block; font-size: 10.5px; color: #ffffff66; margin-top: 2px; }
+.cer-mstar-track { grid-column: 1 / -1; position: relative; height: 7px; border-radius: 999px; background: #ffffff10; overflow: hidden; }
+.cer-mstar-track .zone { position: absolute; inset: 0 auto 0 var(--a); width: calc(var(--b) - var(--a)); background: #ffffff12; }
+.cer-mstar-track .fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 999px; background: var(--ex-color); }
+.cer-details-screen.is-told .cer-mstar-track .fill { width: var(--w); transition: width .9s cubic-bezier(.22, .9, .25, 1); transition-delay: calc(.5s + var(--i) * .12s); }
+
+.cer-starrow { display: inline-flex; gap: 4px; }
+.cer-starrow i { display: block; width: 26px; height: 26px; }
+.cer-starrow i .icon { width: 100%; height: 100%; opacity: .12; filter: grayscale(1); transition: none; }
+.cer-starrow i.is-half .icon { opacity: .4; filter: grayscale(.4); }
+.cer-starrow i.is-lit .icon { opacity: 1; filter: none; }
+.cer-starrow.mid i { width: 32px; height: 32px; }
+.cer-starrow.mini { gap: 2px; }
+.cer-starrow.mini i { width: 15px; height: 15px; }
+
+.cer-kcal {
+  position: relative; display: grid; justify-items: center; gap: 8px; width: 100%;
+  margin-bottom: 14px; padding: 20px 18px 18px; text-align: center; cursor: pointer; color: inherit;
+  border: 1px solid #8ed2e83d; border-radius: 24px;
+  background: radial-gradient(110% 90% at 50% 0%, #8ed2e81f, transparent 66%), linear-gradient(#ffffff0a, #ffffff03);
+}
+.cer-kcal-line { display: flex; align-items: center; justify-content: center; gap: 4px; color: #a7dcec; }
+.cer-kcal-line .icon { width: 62px; height: 62px; margin-right: 6px; filter: drop-shadow(0 6px 16px #8ed2e840); }
+.cer-kcal-line b { font-size: 30px; font-weight: 200; }
+.cer-kcal-line strong { font-size: 54px; font-weight: 200; letter-spacing: -.04em; line-height: 1; }
+.cer-kcal-line small { font-size: 15px; color: #ffffff8a; margin-left: 5px; align-self: flex-end; padding-bottom: 7px; }
+.cer-kcal-copy { font-size: 13.5px; color: #ffffffb0; }
+.cer-kcal-go { position: absolute; top: 16px; right: 18px; font-style: normal; font-size: 17px; color: #ffffff4a; }
+
+.cer-cta { padding-top: 4px; }
+.cer-recap-note { margin: 10px 0 0; font-size: 9.5px; line-height: 1.7; color: #ffffff45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cer-stars i.is-lit .icon, .cer-stars i.is-lit .cer-aura { animation: none; }
+  .cer-screen .cer-result, .cer-screen .cer-foot,
+  .cer-details-screen .cer-muscles, .cer-details-screen .cer-cta, .cer-details-screen > .cer-recap-note {
+    opacity: 1; translate: none; pointer-events: auto;
+  }
+  .cer-mstar-track .fill { width: var(--w); }
+  .cer { min-height: 0; }
+}
+
+/* Step two plays its own one-shot: bars grow, stars land, row after row. */
+@media (prefers-reduced-motion: no-preference) {
+  .cer-details-screen .cer-mstar-track .fill { width: 0; }
+  .cer-details-screen.is-told .cer-mstar-track .fill {
+    width: var(--w); transition: width 1s cubic-bezier(.22, .9, .25, 1); transition-delay: calc(.12s + var(--i) * .14s);
+  }
+  .cer-details-screen .cer-starrow i { opacity: 0; scale: .4; }
+  .cer-details-screen.is-told .cer-starrow i {
+    opacity: 1; scale: 1;
+    transition: opacity .26s ease, scale .4s cubic-bezier(.2, 1.6, .4, 1);
+    transition-delay: calc(.3s + var(--i) * .14s + var(--s) * .07s);
+  }
+  .cer-details-screen .cer-kcal, .cer-details-screen .cer-cta { opacity: 0; translate: 0 12px; }
+  .cer-details-screen.is-told .cer-kcal, .cer-details-screen.is-told .cer-cta {
+    opacity: 1; translate: 0 0; transition: opacity .45s ease, translate .45s cubic-bezier(.2, .8, .2, 1);
+  }
+  .cer-details-screen.is-told .cer-kcal { transition-delay: .78s; }
+  .cer-details-screen.is-told .cer-cta { transition-delay: .9s; }
+}
+/* ── /train ceremony titanium ────────────────────────────────────────────── */
 
 /* ── train terheles titanium (mezo-88iwa.13, T12 Task 3) ─────────────────────
    A Terhelés (TrainWeekPage) Titán arca: a heti munka RAJZOLT aránya a full-bleed

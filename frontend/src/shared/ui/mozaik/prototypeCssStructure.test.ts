@@ -365,3 +365,33 @@ describe('the train session titanium section is registered (mezo-88iwa.7)', () =
     }
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.8, T7 Task 2): the workout-close ceremony's
+ * `.cer-*` section — the score reveal, the settled result, and the details/recap
+ * screen (muscle-group star rows, the kcal-won tile), ported from the prototype's
+ * session.css, registered exactly like the blocks above.
+ */
+describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () => {
+  const START_MARKER = 'train ceremony titanium'
+  const END_MARKER = '/train ceremony titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the cer- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
+    ]) {
+      expect(section, `${cls} missing from the train ceremony titanium section`).toContain(cls)
+    }
+  })
+})
