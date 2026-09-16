@@ -25,10 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * fail-open, and the persisted flag. The fake's verdict scripting is stateless: [fake-violate]
  * violates only until the retry header shows up in the checked answer (the echo carries it).
  *
- * <p><b>Every fixture here must be data-bearing</b> (mezo-rj214.7): a {@code CHAT}-gear turn skips
- * the advisor chain entirely, so a greeting fixture would make these assertions pass while
- * covering nothing at all. The clean-answer and fail-open cases were exactly that until this was
- * fixed. {@code PromptOrderFixtureGearGuardTest} keeps them honest.
+ * <p><b>Every fixture here is data-bearing unless it says otherwise</b> (mezo-rj214.7): a
+ * {@code CHAT}-gear turn skips the LLM verdict, so a greeting fixture would make these assertions
+ * pass while covering nothing at all — the clean-answer and fail-open cases were exactly that
+ * until this was fixed. The one deliberate CHAT case is the clinical check, which must run on
+ * that branch too. {@code PromptOrderFixtureGearGuardTest} keeps the distinction honest.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
@@ -116,5 +117,21 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         // A jelölt sejtés a mezo-q71s politika szerint MEGENGEDETT — nem indít korrekciós kört.
         assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
         assertThat(response.getDegraded()).isFalse();
+    }
+
+    @Test
+    void testSendMessage_shouldShipDegraded_whenAChatTurnSuggestsADoseChange() {
+        UUID userId = databasePopulator.populateUser("advisor-chat-clinical@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        // gear-audited: CHAT on purpose — the whole point is that the deterministic clinical check
+        // still runs on the tool-free branch (mezo-rj214.7). The fake echoes the message, so the
+        // "answer" suggests the dose change; the retry echoes it again and ships degraded.
+        MessageResponse response = chatService.sendMessage(
+                userId, conversation.getId(), request("Szerinted emeljük a retatrutidot?"));
+
+        assertThat(response.getContent()).contains(FakeCompanionLlm.CHAT_GEAR_SENTINEL);
+        assertThat(response.getDegraded()).isTrue();
+        assertThat(messageRepository.findById(response.getId()).orElseThrow().isDegraded()).isTrue();
     }
 }

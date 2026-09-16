@@ -294,9 +294,17 @@ public class ChatService {
         LlmCallContext turnContext =
                 new LlmCallContext("companion_chat", "send", "conversation", conversationId);
         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-        if (gear == TurnGear.CHAT) {
-            // Tool-free and smart-tier: the ONLY shape in which a conversational turn can carry
-            // reasoning on OpenAI Chat Completions (OpenAiCompanionLlm.optionsFor).
+        if (gear == TurnGear.CHAT && chain != null) {
+            // Tool-free and smart-tier (the ONLY shape in which a conversational turn can carry
+            // reasoning on OpenAI Chat Completions — OpenAiCompanionLlm.optionsFor), but still
+            // under the deterministic clinical check: the dose-change prohibition has no branch
+            // where it does not apply, and a general question is exactly where a model volunteers
+            // dosing advice. The LLM verdict is skipped — a CHAT turn has no context to grade.
+            AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                    () -> chain.completeChat(systemPrompt, turnCtx, history, request.getContent()));
+            answer = advised.answer();
+            degraded = advised.degraded();
+        } else if (gear == TurnGear.CHAT) {
             answer = llmCallContextHolder.runWith(turnContext,
                     () -> companionLlm.completeSmart(systemPrompt, turnCtx, history, request.getContent()));
         } else if (chain != null) {

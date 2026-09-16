@@ -106,11 +106,17 @@ public class ChatStreamService {
                     // authoritative (the FE swaps it in), so a corrective retry lands silently here.
                     String finalAnswer = answer.toString();
                     boolean degraded = false;
-                    // CHAT skips the advisor review entirely — a tool-free chat answer never gets
-                    // silently swapped by a corrective round (spec 2026-09-16 §6.5).
-                    CompanionAdvisorChain chain =
-                            turn.gear() == TurnGear.CHAT ? null : advisorChain.getIfAvailable();
-                    if (chain != null) {
+                    CompanionAdvisorChain chain = advisorChain.getIfAvailable();
+                    if (chain != null && turn.gear() == TurnGear.CHAT) {
+                        // CHAT skips the LLM verdict — that check grades an answer against the
+                        // context and tool outcomes it was grounded in, and a CHAT turn has
+                        // neither. The deterministic clinical check still runs: the dose-change
+                        // prohibition must have no branch where it does not apply (mezo-rj214.7).
+                        AdvisedAnswer advised = chain.reviewChat(turn.systemPrompt(),
+                                turn.turnContext(), turn.history(), turn.userContent(), finalAnswer);
+                        finalAnswer = advised.answer();
+                        degraded = advised.degraded();
+                    } else if (chain != null) {
                         AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.turnContext(),
                                 turn.history(), turn.userContent(), finalAnswer,
                                 toolRegistry.callbacks(audit),

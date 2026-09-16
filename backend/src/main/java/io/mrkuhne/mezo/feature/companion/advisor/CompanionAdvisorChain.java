@@ -78,6 +78,54 @@ public class CompanionAdvisorChain {
         return new AdvisedAnswer(answer, degraded);
     }
 
+    /**
+     * CHAT gear, sync path: the tool-free smart round plus the clinical review below.
+     *
+     * <p>Mirrors {@link #complete} so the CHAT branch cannot drift from the others.
+     */
+    public AdvisedAnswer completeChat(String systemPrompt, String turnContext, List<Turn> history,
+            String userMessage) {
+        String answer = companionLlm.completeSmart(systemPrompt, turnContext, history, userMessage);
+        return reviewChat(systemPrompt, turnContext, history, userMessage, answer);
+    }
+
+    /**
+     * CHAT gear, review only: the deterministic clinical check with the SAME retry-once/degraded
+     * semantics every other answer gets (spec 2026-09-16 §6.5, mezo-rj214.7).
+     *
+     * <p>A CHAT turn skips the LLM verdict on purpose — that check judges an answer against the
+     * context and tool outcomes it was grounded in, and a CHAT turn deliberately has neither, so
+     * it would be paying a model call to grade nothing. {@link ClinicalOutputCheck} is a different
+     * animal: a regex over the answer text, no LLM, no context, ~0 ms. The prohibition it enforces
+     * — never suggest changing a prescription dose — is the one rule that must not have a branch
+     * where it does not apply, and "the user asked a general question" is exactly the shape in
+     * which a model is most tempted to volunteer dosing advice.
+     *
+     * <p>The corrective round stays tool-free and smart-tier, like the answer it is correcting.
+     */
+    public AdvisedAnswer reviewChat(String systemPrompt, String turnContext, List<Turn> history,
+            String userMessage, String answer) {
+        long startedAt = System.currentTimeMillis();
+        Optional<AdvisorViolation> violation = clinicalOutputCheck.check(answer);
+        int retries = 0;
+        while (violation.isPresent() && retries < properties.advisors().maxRetries()) {
+            retries++;
+            String retryContext =
+                    (turnContext == null ? "" : turnContext) + AdvisorRetry.block(List.of(violation.get()));
+            answer = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_advisor", "retry", null, null),
+                    () -> companionLlm.completeSmart(systemPrompt, retryContext, history, userMessage));
+            violation = clinicalOutputCheck.check(answer);
+        }
+        boolean degraded = violation.isPresent();
+        if (degraded) {
+            log.warn("Advisor chain degraded a CHAT answer after {} retries: {}", retries, violation.get());
+        }
+        log.info("Advisor CHAT review took {} ms (retries={}, degraded={})",
+                System.currentTimeMillis() - startedAt, retries, degraded);
+        return new AdvisedAnswer(answer, degraded);
+    }
+
     /** Clinical first; a clinical hit skips the verdict LLM call this round (the retry re-checks all). */
     private List<AdvisorViolation> runChecks(
             String systemPrompt, List<Turn> history, String userMessage, String answer, ToolCallAudit audit) {

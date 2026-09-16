@@ -17,9 +17,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * A turn whose message classifies as {@code CHAT} takes the lightened, tool-free branch: no
- * retrieval, no snapshot, no facts, no memories, no graph, and no advisor chain. A test that
- * asserts any of those things while sending a CHAT fixture does not fail — it passes while
- * covering nothing. That is the failure mode this guard exists to make impossible.
+ * retrieval, no snapshot, no facts, no memories, no graph, no tools, and no LLM verdict (only the
+ * deterministic clinical check survives). A test that asserts any of those things while sending a
+ * CHAT fixture does not fail — it passes while covering nothing. That is the failure mode this
+ * guard exists to make impossible.
  *
  * <p><b>Structural, not a hand-kept list (mezo-rj214.7).</b> The first cut of this guard named
  * eight files explicitly, and six further files with CHAT fixtures were simply never on the list —
@@ -31,8 +32,9 @@ import org.junit.jupiter.api.Test;
  * <p>A call site passes in one of two ways:
  * <ol>
  *   <li>it carries an INLINE string literal that does not classify as {@code CHAT}; or</li>
- *   <li>it carries an adjacent audit marker — {@code // gear-audited: <reason>} on the same line
- *       or on either of the two lines above it.</li>
+ *   <li>it carries an adjacent audit marker — {@code // gear-audited: <reason>} on the same line,
+ *       or anywhere in the five lines above it (room for the comment block that explains the
+ *       decision, and for a call that sits a few lines into a wrapped statement).</li>
  * </ol>
  *
  * <p>Everything else is reported. That includes the forms the old regex silently skipped and which
@@ -73,6 +75,9 @@ class PromptOrderFixtureGearGuardTest {
 
     /** The escape hatch. Must name a reason, so the next reader knows what was decided and why. */
     private static final Pattern AUDIT_MARKER = Pattern.compile("//\\s*gear-audited:\\s*\\S+");
+
+    /** How many lines above a call site the audit marker may sit. */
+    private static final int MARKER_WINDOW = 5;
 
     /** This file quotes the trigger words in its own javadoc; it sends nothing. */
     private static final String SELF = "PromptOrderFixtureGearGuardTest.java";
@@ -163,9 +168,9 @@ class PromptOrderFixtureGearGuardTest {
         }
     }
 
-    /** The marker may sit on the call's own line or on either of the two lines above it. */
+    /** The marker may sit on the call's own line or anywhere in the five lines above it. */
     private static boolean isAudited(List<String> lines, int line) {
-        for (int i = Math.max(0, line - 2); i <= line && i < lines.size(); i++) {
+        for (int i = Math.max(0, line - MARKER_WINDOW); i <= line && i < lines.size(); i++) {
             if (AUDIT_MARKER.matcher(lines.get(i)).find()) {
                 return true;
             }

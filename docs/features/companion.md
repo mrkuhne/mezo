@@ -2056,12 +2056,25 @@ half is `chatGearContext(userId, today)` instead of the full `turnContext(..)` �
 <date>\n"` + the `[Rólad tanultam]` profile block + `TONE_REMINDER`, no snapshot, no week anchor, no
 facts, no reflection, no `[Karakter]`, no `[Emlékek]`, no `[Összefüggések]` (contrast with the full
 volatile list two paragraphs below). `sendMessage`'s `CHAT` branch calls
-`companionLlm.completeSmart(systemPrompt, turnCtx, history, content)` — the tool-free SMART-tier
-entry point (§5.3) — instead of the advisor chain / tool-carrying `complete`; `ChatStreamService`
-mirrors it with `streamSmart` and additionally skips the advisor review outright on `CHAT` (a
-tool-free chat answer never gets flagged for an ungrounded claim it structurally cannot make).
+`CompanionAdvisorChain.completeChat(systemPrompt, turnCtx, history, content)`, which wraps the
+tool-free SMART-tier entry point `companionLlm.completeSmart(..)` (§5.3) instead of the
+tool-carrying `complete`; `ChatStreamService` mirrors it with `streamSmart` plus
+`chain.reviewChat(..)` on the already-streamed answer. With the advisors switch off (no chain bean)
+both paths call `completeSmart`/`streamSmart` directly, exactly as the non-CHAT branches fall back
+to the unadvised `complete`/`stream`.
 `LOOKUP` and `ANALYSIS` turns are byte-identical to pre-gear behavior in this slice — the distinction
 becomes operative once the planner/executor/replan blocks land (S9.4/S9.5).
+
+**What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
+verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
+in — a `CHAT` turn has neither, so asking it would be paying a model call to grade nothing. The
+deterministic `ClinicalOutputCheck` is a different animal: a regex over the answer text, no LLM, no
+context, ~0 ms. Its prohibition — never suggest changing a prescription dose — is the one rule that
+must not have a branch where it does not apply, and a general question ("mit gondolsz erről a
+szerről?") is exactly the shape in which a model volunteers dosing advice. So `reviewChat` gives a
+CHAT answer the SAME retry-once-then-degraded semantics every other answer gets, with the corrective
+round staying tool-free and smart-tier like the answer it is correcting. Covered on both paths by
+`CompanionAdvisorChainIT` / `ChatStreamAdvisorIT`, each with a dose-suggesting CHAT fixture.
 
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
 message, so the current turn travels as the `userMessage` param — this was true before mezo-q71s
