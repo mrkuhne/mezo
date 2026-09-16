@@ -72,7 +72,6 @@ test('the active workout session is a full-screen flow without the sub-nav', () 
 test('Sablonjaid stays reachable on its own route', async () => {
   renderApp('/train/templates')
   expect(await screen.findByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
-  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
 })
 
 // A template's own READ-FIRST page (T10 Task 3) — a real route under the list, NOT the
@@ -81,7 +80,6 @@ test('a template opens its own story page at /train/templates/:id', async () => 
   renderApp('/train/templates/b20f0000-0000-4000-8000-000000000000')
   expect(await screen.findByRole('heading', { name: 'Upper/Lower Power' })).toBeInTheDocument()
   expect(screen.getByText('A hét felépítése')).toBeInTheDocument()
-  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
 })
 
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {

@@ -15323,6 +15323,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-row.is-quiet { opacity: .68; }
 .pl-sub .pl-row { width: 100%; margin: 0 0 8px; }
 
+/* Törlés, armed (Task 3 fix round, mezo-88iwa.11): a destructive CONTROL, not a performance
+   reading — the "down never red" rule is about numbers going the wrong way, not about a
+   delete confirm, so this is the one place `--error` (already the armed-danger token at
+   `.rt-danger.is-hard.is-armed`, :9670) is the deliberate exception. `.pl-row-main`/
+   `.pl-row-cancel` let the row carry TWO taps (the confirm and its „Mégsem" escape) while
+   keeping every `.pl-row strong/small/b` rule above working through the extra nesting. */
+.pl-row.is-danger {
+  opacity: 1; border-color: color-mix(in srgb, var(--error) 55%, transparent);
+  background: color-mix(in srgb, var(--error) 10%, var(--surface-recess));
+}
+.pl-row.is-danger strong { color: var(--error); }
+.pl-row-main {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit;
+  text-align: left; cursor: pointer;
+}
+.pl-row-main:disabled { opacity: .5; cursor: default; }
+.pl-row-cancel {
+  flex: none; margin-left: 10px; padding: 7px 12px; border: 1px solid var(--border-subtle);
+  border-radius: 11px; background: transparent; color: var(--text-tertiary); font-size: 11px;
+  cursor: pointer;
+}
+
 /* T9-residue fix: MesoDayPage's per-muscle-breakdown row (`.pl-mrow`, :15006)
    renders a `.pl-mrow-art` chip wrapper (MesoDayPage.tsx) that the T9 port never
    carried a rule for — the raw MuscleChip icon (28px) sat borderless/uncentered

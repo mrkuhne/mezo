@@ -96,6 +96,25 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     expect(quiet[0]).toContain('Sze')
   })
 
+  // --- the hero's body map (fix round 1, mezo-88iwa.11) ------------------------
+
+  test('the hero carries the body map, highlighted by the template\'s own muscles', () => {
+    const { container } = setup()
+    expect(container.querySelector('.pl-lhero-map')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /érintett izmok/ })).toBeInTheDocument()
+  })
+
+  // --- the week-sets explainer (fix round 1, mezo-88iwa.11) --------------------
+
+  test('the week-sets explainer restates the rule in plain Hungarian', () => {
+    setup()
+    expect(
+      screen.getByText(
+        'Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   // --- „Heti szettek izmonként" ------------------------------------------------
 
   test('the weekly load bars carry the summed sets per muscle, biggest first', () => {
@@ -202,6 +221,32 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/train/templates'))
   })
 
+  test('the armed Törlés carries destructive tone and a Mégsem escape that disarms it', async () => {
+    const user = userEvent.setup()
+    const { container } = setup()
+    await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
+    const armedRow = container.querySelector('.pl-row.is-danger')
+    expect(armedRow).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Mégsem' }))
+    expect(container.querySelector('.pl-row.is-danger')).toBeNull()
+    expect(screen.getByText('Sablon törlése')).toBeInTheDocument()
+    // Mégsem never fires the delete — still on the template's own page.
+    expect(screen.getByTestId('loc')).toHaveTextContent(`/train/templates/${POWER}`)
+  })
+
+  test('arming Törlés then tapping anything else on the page disarms it too', async () => {
+    const user = userEvent.setup()
+    const { container } = setup()
+    await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
+    expect(container.querySelector('.pl-row.is-danger')).toBeInTheDocument()
+
+    // A tap on an unrelated, inert part of the page — not the armed row itself.
+    await user.click(screen.getByText('Heti szettek izmonként'))
+    expect(container.querySelector('.pl-row.is-danger')).toBeNull()
+    expect(screen.getByText('Sablon törlése')).toBeInTheDocument()
+  })
+
   // --- a dead link --------------------------------------------------------------
 
   test('an unknown template id is an honest not-found, not an empty page', () => {
@@ -226,5 +271,70 @@ describe('MesoTemplateStoryPage (real mode)', () => {
     server.use(http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([])))
     setup()
     expect(await screen.findByText('Ez a sablon nem található.')).toBeInTheDocument()
+  })
+
+  // --- honest empty training day (fix round 1, mezo-88iwa.11) ------------------
+
+  it('a TRAINING day with no exercises yet is its own honest row, never „Pihenő"', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([{
+          id: POWER, title: 'Upper/Lower Power', shortTitle: 'Power Block', goal: null,
+          goalPreset: null, musclePriorities: null, weeks: 5,
+          split: 'Upper / Lower · 4×/hét', style: null, phaseCurve: [], notes: null,
+          volumePerMuscle: null, runCount: 0,
+          days: [
+            {
+              day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1,
+              exercises: [{
+                id: 'p1', name: 'Chest Supported Row', muscle: 'back-mid',
+                warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound',
+              }],
+            },
+            // A training day, planned but not yet filled in — honest, not a rest day.
+            { day: 'Pén', type: 'Push', muscle: 'chest+tricep', exerciseCount: 0, exercises: [] },
+            { day: 'Vas', type: 'Rest', muscle: '', exerciseCount: 0, exercises: [] },
+          ],
+        }]),
+      ),
+    )
+    setup()
+    // the hero's edzésnap count still matches trainingDayCount — Csü + Pén, not Vas
+    expect(await screen.findByText('5 hét, hetente 2 edzésnap.')).toBeInTheDocument()
+
+    const emptyDayRow = screen.getByText('Push · még nincs gyakorlat').closest('.pl-row')!
+    expect(emptyDayRow).toHaveClass('is-quiet')
+    expect(emptyDayRow).not.toHaveTextContent('Pihenő')
+
+    const restRow = screen.getByText('Pihenő').closest('.pl-row')!
+    expect(restRow).toHaveTextContent('Vas')
+  })
+
+  // --- in-flight guards (fix round 1, mezo-88iwa.11) ----------------------------
+
+  it('Másolat and the armed Törlés both disable while their own mutation is in flight', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () =>
+        HttpResponse.json([{
+          id: POWER, title: 'Upper/Lower Power', shortTitle: 'Power Block', goal: null,
+          goalPreset: null, musclePriorities: null, weeks: 5,
+          split: 'Upper / Lower · 4×/hét', style: null, phaseCurve: [], notes: null,
+          volumePerMuscle: null, runCount: 0, days: [],
+        }]),
+      ),
+      http.post(`${API_BASE}/api/train/meso-templates`, () => new Promise(() => {})),
+      http.delete(`${API_BASE}/api/train/meso-templates/:id`, () => new Promise(() => {})),
+    )
+    setup()
+
+    const duplicateBtn = await screen.findByRole('button', { name: 'Másolat készítése' })
+    await user.click(duplicateBtn)
+    await waitFor(() => expect(duplicateBtn).toBeDisabled())
+
+    await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
+    const confirmBtn = screen.getByRole('button', { name: /Biztos\? Törlés/ })
+    await user.click(confirmBtn)
+    await waitFor(() => expect(confirmBtn).toBeDisabled())
   })
 })

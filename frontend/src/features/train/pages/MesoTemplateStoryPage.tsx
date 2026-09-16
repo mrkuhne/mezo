@@ -33,7 +33,7 @@
 // A bad/stale :id is a dead link and says so (the MesoDayPage idiom: page head + a
 // GhostState line), never an empty page pretending to be a template.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { MesoDay, MesoTemplate } from '@/data/types'
@@ -42,6 +42,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import {
@@ -83,12 +84,26 @@ function TemplateStorySkeleton() {
 export function MesoTemplateStoryPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { templates, pending, createTemplate, deleteTemplate } = useMesoTemplates()
+  const { templates, pending, createTemplate, createPending, deleteTemplate, deletePending } = useMesoTemplates()
   const { mesocycles, workoutPending } = useTrain()
   const [startOpen, setStartOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const deleteRowRef = useRef<HTMLDivElement>(null)
 
   const goBack = () => navigate('/train/templates')
+
+  // Care on Törlés (Task 3 fix round, mezo-88iwa.11): the armed confirm auto-disarms the
+  // moment the user taps anything else on the page — a capture-phase document listener
+  // (simplest reliable option) rather than threading a click handler through MozaikPage,
+  // which accepts no such prop.
+  useEffect(() => {
+    if (!confirmDelete) return
+    const onDocClick = (e: MouseEvent) => {
+      if (!deleteRowRef.current?.contains(e.target as Node)) setConfirmDelete(false)
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [confirmDelete])
 
   // Real mode: the lists are still in flight — wait, do not accuse the link.
   if (pending || workoutPending) return <TemplateStorySkeleton />
@@ -114,6 +129,9 @@ export function MesoTemplateStoryPage() {
   const topSets = Math.max(1, ...muscles.map((m) => m.sets))
   const minutes = templateSessionMinutes(template)
   const runs = templateRuns(template.id, template.title, mesocycles)
+  // Highlighted = trained by this template — a flat 'in' level (the MesoDayPage idiom for
+  // "this muscle is in the plan", not a graded weekly load like TrainWeekPage's map).
+  const heat: BodyHeat[] = muscles.map((m) => ({ token: m.colorMuscle, level: 'in' }))
 
   const openEditor = (templateId: string) => navigate(`/train/mesocycles/templates/${templateId}`)
   // Failed mutations are toasted globally (§7a) — the handlers have nothing richer to add.
@@ -150,6 +168,11 @@ export function MesoTemplateStoryPage() {
           <button type="button" className="mz-backbtn" aria-label="Vissza" onClick={goBack}>
             ‹ Sablonjaid
           </button>
+          {muscles.length > 0 && (
+            <span className="pl-lhero-map">
+              <BodyMap heat={heat} views="auto" className="pl-lhero-body" ariaLabel={`${template.title} — érintett izmok`} />
+            </span>
+          )}
           <span className="pl-dhero-tag tr-eyebrow">{split ? `Sablon · ${split}` : 'Sablon'}</span>
           <h2>{template.title}</h2>
           <p className="pl-say">
@@ -174,11 +197,20 @@ export function MesoTemplateStoryPage() {
           <h3 className="pl-h3">A hét felépítése</h3>
           {days.length === 0 && <p className="pl-foot-say">Ennek a sablonnak még nincs heti beosztása.</p>}
           {days.map((day, i) =>
-            isOffDay(day) || day.exercises.length === 0 ? (
+            isOffDay(day) ? (
               <div key={day.day} className="pl-row is-quiet rise" style={delay(70 + i * 25)}>
                 <span>
                   <strong>{day.day}</strong>
                   <small>{day.muscle === 'sport' ? day.type : 'Pihenő'}</small>
+                </span>
+              </div>
+            ) : day.exercises.length === 0 ? (
+              // A TRAINING day with no exercises yet is not a rest day — say so honestly
+              // instead of misreading it as „Pihenő" (Task 3 fix round, mezo-88iwa.11).
+              <div key={day.day} className="pl-row is-quiet rise" style={delay(70 + i * 25)}>
+                <span>
+                  <strong>{day.day}</strong>
+                  <small>{day.type} · még nincs gyakorlat</small>
                 </span>
               </div>
             ) : (
@@ -216,6 +248,10 @@ export function MesoTemplateStoryPage() {
           {muscles.length > 0 && (
             <>
               <h3 className="pl-h3">Heti szettek izmonként</h3>
+              <p className="pl-foot-say">
+                Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam
+                első hete indul ennyivel — onnan hétről hétre emelkedhet.
+              </p>
               <div className="pl-wload pl-tpl-load rise" style={delay(160)}>
                 {muscles.map((m) => (
                   <span
@@ -320,6 +356,7 @@ export function MesoTemplateStoryPage() {
             className="pl-row is-quiet rise"
             style={delay(320)}
             aria-label="Másolat készítése"
+            disabled={createPending}
             onClick={() => duplicate(template)}
           >
             <span>
@@ -328,18 +365,29 @@ export function MesoTemplateStoryPage() {
             </span>
             <b aria-hidden="true">›</b>
           </button>
-          <button
-            type="button"
-            className="pl-row is-quiet rise"
+          <div
+            ref={deleteRowRef}
+            className={confirmDelete ? 'pl-row is-quiet is-danger rise' : 'pl-row is-quiet rise'}
             style={delay(340)}
-            onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
           >
-            <span>
-              <strong>{confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}</strong>
-              <small>A már elindult futamok és a riportjaik megmaradnak</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
+            <button
+              type="button"
+              className="pl-row-main"
+              disabled={deletePending}
+              onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
+            >
+              <span>
+                <strong>{confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}</strong>
+                <small>A már elindult futamok és a riportjaik megmaradnak</small>
+              </span>
+              <b aria-hidden="true">›</b>
+            </button>
+            {confirmDelete && (
+              <button type="button" className="pl-row-cancel" onClick={() => setConfirmDelete(false)}>
+                Mégsem
+              </button>
+            )}
+          </div>
         </PageBody>
       </EntranceGroup>
 
