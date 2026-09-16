@@ -13988,6 +13988,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-card.is-skipped { opacity: .62; border-style: dashed; }
 .wo-card-head { display: flex; align-items: center; gap: 11px; }
 .wo-card-art, .gl-card .wo-glass-head .wo-card-art {
+  flex: 0 0 auto;
   width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px;
   background: color-mix(in srgb, var(--ex-color) 13%, #ffffff06);
   border: 1px solid color-mix(in srgb, var(--ex-color) 22%, transparent);
