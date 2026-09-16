@@ -42,8 +42,14 @@ public class TurnGearAnalyzer {
         "tegyek", "erdemes", "osszefugges", "trend", "okozza", "magyarazza");
 
     /** Explicit user override — always the top gear, no classifier call (spec §2 G3). */
-    static final Set<String> DEEPER_LOOK_PHRASES = Set.of("alaposabban", "jobban", "reszletesen", "atgondolva", "at");
+    static final Set<String> DEEPER_LOOK_PHRASES = Set.of("alaposabban", "jobban", "reszletesen", "atgondolva");
     static final Set<String> DEEPER_LOOK_VERBS = Set.of("nezd", "nezzuk", "gondold", "gondoljuk", "vizsgald");
+
+    /**
+     * Modal and auxiliary verbs that, when they follow "at", indicate that "at" is NOT part
+     * of a phrasal verb but instead a preposition in a grammatical construction.
+     */
+    static final Set<String> NON_PHRASAL_POST_AT_VERBS = Set.of("kell", "lehet", "szabad", "kene");
 
     private static final Pattern ISO_DATE = Pattern.compile("(?<!\\d)\\d{4}-\\d{2}-\\d{2}(?!\\d)");
     private static final Pattern WORD_SEPARATOR =
@@ -80,7 +86,27 @@ public class TurnGearAnalyzer {
     }
 
     private static boolean isDeeperLookRequest(List<String> words) {
-        return words.stream().anyMatch(DEEPER_LOOK_VERBS::contains)
+        // Check for verb + "at" adjacency (bigram like "gondold at")
+        // but exclude cases where a non-phrasal verb follows (e.g., "nezd, at kell..." where
+        // "kell" indicates "at" is a preposition, not part of a phrasal verb)
+        boolean hasVerbAtBigram = false;
+        for (int i = 0; i < words.size() - 1; i++) {
+            if (DEEPER_LOOK_VERBS.contains(words.get(i)) && "at".equals(words.get(i + 1))) {
+                // Check if the word after "at" is a non-phrasal verb that would indicate
+                // "at" is not part of a phrasal verb construction
+                if (i + 2 < words.size() && NON_PHRASAL_POST_AT_VERBS.contains(words.get(i + 2))) {
+                    // This is not a phrasal verb (e.g., "nézd, at kell mennem...")
+                    continue;
+                }
+                hasVerbAtBigram = true;
+                break;
+            }
+        }
+
+        // Check for multi-word phrases (existing logic: verb + separate phrase)
+        boolean hasVerbAndPhrase = words.stream().anyMatch(DEEPER_LOOK_VERBS::contains)
             && words.stream().anyMatch(DEEPER_LOOK_PHRASES::contains);
+
+        return hasVerbAtBigram || hasVerbAndPhrase;
     }
 }

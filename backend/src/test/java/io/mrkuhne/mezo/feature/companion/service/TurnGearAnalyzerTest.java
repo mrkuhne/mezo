@@ -62,4 +62,9 @@ class TurnGearAnalyzerTest {
         assertThat(analyzer.analyze(null)).contains(CHAT);
         assertThat(analyzer.analyze("   ")).contains(CHAT);
     }
+
+    @Test
+    void testAnalyze_shouldNotTreatDetachedAtAsDeeperLook_whenAtIsUnrelated() {
+        assertThat(analyzer.analyze("Nézd, át kell mennem a boltba")).contains(CHAT);
+    }
 }
