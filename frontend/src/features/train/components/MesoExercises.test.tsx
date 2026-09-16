@@ -33,7 +33,9 @@ function renderDay(mesoId: string, day = 'Csü') {
 
 async function renderExercisesView() {
   renderDay(activeMeso.id)
-  await screen.findByText('Chest Supported Row')
+  // The day page (T9 Task 4) now shows this same exercise TWICE — a read-only `.pl-ex`
+  // view cell above, this editor below — so an exact single-match query would throw.
+  await screen.findAllByText('Chest Supported Row')
 }
 
 test('the day editor shows the hero, the weekly band card and that day\'s exercises', async () => {
@@ -43,7 +45,7 @@ test('the day editor shows the hero, the weekly band card and that day\'s exerci
   // The week-scope card is still week-scope on a one-day page (weekDays), never a
   // single Thursday pretending to be the week.
   expect(screen.getByText('Heti szetek · izmonként')).toBeInTheDocument()
-  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(screen.getAllByText('Chest Supported Row').length).toBeGreaterThan(0)
 })
 
 test('another day is a different page — its exercises are not in this one', async () => {
@@ -68,8 +70,10 @@ test('picking an exercise appends it to the open day', async () => {
   await userEvent.click(within(dialog).getByRole('button', { name: /^Kész/ }))
   // The Sheet dismisses with a slide-down animation, so it unmounts async.
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
-  // The new exercise now appears in the day list.
-  expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
+  // The new exercise now appears in the day list — mock mode's `saveDayExercises` writes
+  // straight back to the `['train','mesocycles']` cache, so the read-only view cell above
+  // picks it up too (same "shows twice" situation as `renderExercisesView`'s own guard).
+  expect(screen.getAllByText('Hip Thrust').length).toBeGreaterThan(0)
 })
 
 test('adding an exercise persists the day list in real mode (PUT with day id)', async () => {

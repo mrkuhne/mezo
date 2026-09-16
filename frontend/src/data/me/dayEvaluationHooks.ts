@@ -20,13 +20,17 @@
 // `initialData` argument and fails the build if it is not `undefined` or a `<mock-flag> ? seed
 // : undefined` ternary that degrades to `undefined` — the same invariant `useDualQuery` bakes
 // in, enforced here by hand and checked deliberately, not inherited by accident.
-import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { dayEvaluationApi } from '@/data/me/dayEvaluationApi'
 import { mockDayEvaluation, type DayEvaluationResponse } from '@/data/me/dayEvaluation'
 
 export type { DayEvaluationResponse }
+
+/** One place owns the cache identity — the hook below and the prefetch must not drift apart. */
+const dayEvaluationKey = (dateIso: string) => ['dayEvaluation', dateIso] as const
 
 export interface DayEvaluationQuery {
   data: DayEvaluationResponse | undefined
@@ -39,7 +43,7 @@ export interface DayEvaluationQuery {
 export function useDayEvaluation(dateIso: string): DayEvaluationQuery {
   const mock = isMockMode()
   const q = useQuery({
-    queryKey: ['dayEvaluation', dateIso],
+    queryKey: dayEvaluationKey(dateIso),
     queryFn: mock ? async () => mockDayEvaluation(dateIso) : () => dayEvaluationApi.get(dateIso),
     initialData: mock ? mockDayEvaluation(dateIso) : undefined,
     staleTime: mock ? Infinity : DEFAULT_QUERY_STALE_TIME_MS,
@@ -50,4 +54,30 @@ export function useDayEvaluation(dateIso: string): DayEvaluationQuery {
     error: q.error,
     refetch: () => { void q.refetch() },
   }
+}
+
+/**
+ * Warms the cache for the days NEXT TO the one being viewed (mezo-ahf5b). Stepping a day back is
+ * the single most likely next action on this page, and in real mode a closed day's first read
+ * costs a synchronous LLM roundtrip — prefetching it while the user reads the current day turns
+ * that wait into nothing. Mock mode is skipped deliberately: `initialData` already resolves every
+ * date synchronously there, so a prefetch would be pure noise.
+ *
+ * `prefetchQuery` is a no-op for a date already in the cache and fresh, so re-renders cost nothing.
+ */
+export function usePrefetchDayEvaluations(dateIsos: readonly string[]): void {
+  const mock = isMockMode()
+  const queryClient = useQueryClient()
+  // The array identity changes every render; its CONTENT is what the effect depends on.
+  const dates = dateIsos.join('|')
+  useEffect(() => {
+    if (mock || !dates) return
+    for (const dateIso of dates.split('|')) {
+      void queryClient.prefetchQuery({
+        queryKey: dayEvaluationKey(dateIso),
+        queryFn: () => dayEvaluationApi.get(dateIso),
+        staleTime: DEFAULT_QUERY_STALE_TIME_MS,
+      })
+    }
+  }, [queryClient, mock, dates])
 }

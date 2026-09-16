@@ -214,7 +214,7 @@ describe('real mode', () => {
 
     await user.click(screen.getByRole('button', { name: 'Mentés sablonként' }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles/konyvtar'))
     expect(startCalls).toBe(0)
   })
 
