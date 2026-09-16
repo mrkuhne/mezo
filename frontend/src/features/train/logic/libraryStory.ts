@@ -129,7 +129,7 @@ export function trainingDayCount(template: MesoTemplate): number {
 /**
  * The split's head („Upper / Lower · 4×/hét" → „Upper / Lower") — the „×/hét" tail is
  * already said by the nap-hetente fact beside it. A template with no split text falls back
- * to the band-model label its training-day count implies (the `MesoTemplateCard` rule);
+ * to the band-model label its training-day count implies (the old template card's rule);
  * one with no training day at all has nothing to say here, so: null.
  */
 export function splitLabel(template: MesoTemplate): string | null {

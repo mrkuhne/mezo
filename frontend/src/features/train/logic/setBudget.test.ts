@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { GymExercise, MesoDay } from '@/data/types'
 import {
-  GROUP_LANDMARKS, budgetGroup, budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets,
+  GROUP_LANDMARKS, SESSION_BAR_MAX_SETS, SESSION_CAP_PIN_PCT, SESSION_MUSCLE_CAP, budgetGroup,
+  budgetOf, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionBarPct,
   sessionCapWarnings, setStyle,
 } from '@/features/train/logic/setBudget'
 
@@ -257,5 +258,22 @@ describe('optimal zone (mezo-oyhy.1; recomputed against landmark MEV/MAV mezo-3m
     expect(bi.suggestedDay).toBe('Csü')
     const inZone = muscleBudgets(days).find((r) => r.group === 'chest')!
     expect(inZone.suggestedDay).toBeNull()
+  })
+})
+
+describe('the day page\'s per-muscle bar scale', () => {
+  it('derives its track from SESSION_MUSCLE_CAP instead of a hardcoded 10/80%', () => {
+    // The two numbers MesoDayPage used to carry inline: a 10-set track with the cap pinned
+    // at 80%. Both must fall out of the cap, so raising it moves the whole bar with it.
+    expect(SESSION_BAR_MAX_SETS).toBe(10)
+    expect(SESSION_CAP_PIN_PCT).toBe(80)
+    expect(sessionBarPct(SESSION_MUSCLE_CAP)).toBe(SESSION_CAP_PIN_PCT)
+  })
+
+  it('draws a share of the track and clamps a blown-out day to full', () => {
+    expect(sessionBarPct(0)).toBe(0)
+    expect(sessionBarPct(5)).toBe(50)
+    expect(sessionBarPct(10)).toBe(100)
+    expect(sessionBarPct(14)).toBe(100)
   })
 })

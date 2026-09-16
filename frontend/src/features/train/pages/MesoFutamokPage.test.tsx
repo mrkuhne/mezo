@@ -99,7 +99,7 @@ test('Sablonná on a closed run saves it as a template and opens the new editor 
 test('a closed run advertises whether it HAS a report', () => {
   setup()
   // two of the three fixture runs carry one; the third (meso-cut-02) has none, and the
-  // „nincs riport" ghost rendering itself is covered in ArchivedMesoCard.test
+  // („nincs riport") — the row renders the ghost label inline, asserted right below.
   expect(screen.getAllByText('riport')).toHaveLength(2)
   expect(screen.getByText('nincs riport')).toBeInTheDocument()
 })

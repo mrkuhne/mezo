@@ -2,7 +2,7 @@
 // Mezo · MesoTemplatesPage — „Sablonjaid" at /train/templates.
 //
 // Train Titanium T10 Task 3 (mezo-88iwa.11): THE REFACE. Was the DS-era page-header +
-// `MesoTemplateCard` poster list (mezo-tlwa/mezo-3a9a); this is the Titanium list,
+// template poster-card list (mezo-tlwa/mezo-3a9a, since removed); this is the Titanium list,
 // ported from the prototype's `planLibraryTemplates` + `templateCard`
 // (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:393-434):
 //   `.pl-lhero.is-slim` — a slim poster hero with the back pill DOCKED INSIDE it (the

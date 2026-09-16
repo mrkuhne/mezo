@@ -3,7 +3,7 @@
 //
 // Train Titanium T10 Task 4 (mezo-88iwa.11): THE REFACE. Task 2 parked the
 // library landing's whole Történet section here verbatim (DS-era
-// `ArchivedMesoCard` rows) so nothing became unreachable; this is the Titanium
+// archived-run card rows, since removed) so nothing became unreachable; this is the Titanium
 // closed list, ported from the prototype's `planLibraryClosedList` + `closedCard`
 // (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:410-452):
 //   `.pl-lhero.is-slim` — the slim poster hero with the back pill DOCKED INSIDE

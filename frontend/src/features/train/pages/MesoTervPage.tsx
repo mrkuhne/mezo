@@ -10,7 +10,7 @@
 //   `.pl-poster`  — the week numeral + „. hét / {weeks}", the progress ring, the
 //                   phase pill, the block's name, ONE plain sentence, the week arc.
 //                   The WHOLE poster is the builder's door (/train/mesocycles/:id),
-//                   the same whole-card idiom `ActiveMesoCard` carried on the old hub.
+//                   the same whole-card idiom the old hub hero carried.
 //   „A heted"     — one `.pl-day` card per TRAINING day (full weekday name, `MA`
 //                   chip on today, boxed szett/perc/gyakorlat facts, per-muscle
 //                   mini bars) → the day's own page; rest/sport days are slim rows.
@@ -170,7 +170,7 @@ export function MesoTervPage() {
     <>
       <EntranceGroup>
         {/* The poster. One button, one accessible name — the same whole-card idiom
-            `ActiveMesoCard` carried, so the builder deep-link keeps its door. */}
+            the old hub hero carried, so the builder deep-link keeps its door. */}
         <div className="rise" style={delay(40)}>
           <button
             type="button"

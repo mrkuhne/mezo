@@ -8,7 +8,7 @@
 //     token, matching the same (getDay()+6)%7 Monday-first math already inlined
 //     at deriveGymSchedule (data/train/trainHooks.ts) and todayIdx
 //     (data/train/runningAgenda.ts) — pulled out here as a tiny reusable helper
-//     since the hub hero (ActiveMesoCard) needed it as a standalone pure fn.
+//     since the plan landing's hero needed it as a standalone pure fn.
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
 import { huMonthDay } from '@/shared/lib/dates'

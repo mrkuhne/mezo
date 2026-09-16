@@ -3,7 +3,7 @@
 // (Train Titanium T10 Task 3, mezo-88iwa.11).
 //
 // Rewritten from the DS-era suite: the page-header + „+ Új" chip, the shelf StatStrip and
-// the whole `MesoTemplateCard` poster (its arc/spine/chips, the ⋯ lifecycle menu with
+// the whole removed template poster card (its arc/spine/chips, the ⋯ lifecycle menu with
 // Duplikálás + the two-tap Törlés, and the card-foot „Indítás") are no longer this page's
 // — a card is now one `.pl-lib-card` that OPENS the template's own page, and the start
 // sheet + lifecycle pair live there (MesoTemplateStoryPage.test.tsx carries their tests).

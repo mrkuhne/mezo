@@ -1,8 +1,8 @@
 // ============================================================
 // Mezo · MesoEditorHero — top hero card of the unified meso day editor
 // (mezo-7rdg, spec 2026-08-01-set-budget-unified-editor, composite-v2
-// mockup). Wash→surface gradient + radial glow precedent from
-// ActiveMesoCard; flips to the amber wash + error status line when the
+// mockup). Wash→surface gradient + radial glow precedent from the
+// Mozaik poster cards; flips to the amber wash + error status line when the
 // day carries set-budget warnings (warningCount > 0).
 // ============================================================
 import { Eyebrow } from '@/shared/ui/Eyebrow'
