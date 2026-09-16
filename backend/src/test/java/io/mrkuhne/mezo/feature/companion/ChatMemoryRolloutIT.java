@@ -106,8 +106,11 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
         MemoryItemEntity memory = memory(owner, "Boglárka segített a költözésben.");
 
+        // mezo-rj214.7: "ma" (time word) keeps this off the lightened CHAT gear, which would skip
+        // chatMemoryContextAdapter.resolve(..) entirely and make the dense-failure audit vacuous.
+        // Built via concatenation, so the fixture guard's literal regex cannot see this collision.
         MessageResponse response = chatService.sendMessage(owner, conversation.getId(),
-                request("Boglárka " + FakeEmbeddingAdapter.FAIL_EMBED));
+                request("Boglárka ma " + FakeEmbeddingAdapter.FAIL_EMBED));
 
         assertUnifiedPrompt(response.getContent(), memory.getContent());
         RecalledMemory disclosed = response.getRecalled().stream()

@@ -110,5 +110,10 @@ public class ChatMemoryContextAdapter {
             String graphBlock,
             List<RefsEnvelope.Ref> refs,
             RecalledMemoriesEnvelope recalled) {
+
+        /** Nothing was resolved — the turn deliberately skipped retrieval (spec 2026-09-16 §6.5). */
+        public static ChatMemoryPayload empty() {
+            return new ChatMemoryPayload("", "", "", List.of(), null);
+        }
     }
 }

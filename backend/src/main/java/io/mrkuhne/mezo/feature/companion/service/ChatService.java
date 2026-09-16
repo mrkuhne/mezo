@@ -194,6 +194,8 @@ public class ChatService {
     private final ApplicationEventPublisher eventPublisher;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
+    /** spec 2026-09-16 — decides how much thinking a turn earns before any context is assembled. */
+    private final TurnGearRouter turnGearRouter;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
@@ -258,12 +260,19 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
-        ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
-                userId, conversationId, request.getContent(), history, today);
+        TurnGear gear = turnGearRouter.route(request.getContent());
+        // A CHAT turn skips retrieval entirely — chatMemoryContextAdapter.resolve(..) triggers an
+        // embedding call and a graph traversal that a tool-free, data-free turn has no use for.
+        ChatMemoryPayload memory = gear == TurnGear.CHAT
+                ? ChatMemoryPayload.empty()
+                : chatMemoryContextAdapter.resolve(
+                        userId, conversationId, request.getContent(), history, today);
         String systemPrompt = stableSystemPrompt(userId);
-        String turnCtx = turnContext(userId, today, memory.factsBlock(),
-                memory.memoriesBlock(), memory.graphBlock(),
-                conversation.getContextKind(), conversation.getContextDate());
+        String turnCtx = gear == TurnGear.CHAT
+                ? chatGearContext(userId, today)
+                : turnContext(userId, today, memory.factsBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(),
+                        conversation.getContextKind(), conversation.getContextDate());
 
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
@@ -277,7 +286,12 @@ public class ChatService {
         LlmCallContext turnContext =
                 new LlmCallContext("companion_chat", "send", "conversation", conversationId);
         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-        if (chain != null) {
+        if (gear == TurnGear.CHAT) {
+            // Tool-free and smart-tier: the ONLY shape in which a conversational turn can carry
+            // reasoning on OpenAI Chat Completions (OpenAiCompanionLlm.optionsFor).
+            answer = llmCallContextHolder.runWith(turnContext,
+                    () -> companionLlm.completeSmart(systemPrompt, turnCtx, history, request.getContent()));
+        } else if (chain != null) {
             // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
             AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                     () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
@@ -392,6 +406,17 @@ public class ChatService {
                 + profileBlock(userId)
                 + memoriesBlock
                 + graphBlock
+                + TONE_REMINDER);
+    }
+
+    /**
+     * The volatile half for a CHAT-gear turn (spec 2026-09-16 §6.5): the voice's companion pieces
+     * only. No snapshot digest, no week, no facts, no reflection, no character, no memories, no
+     * graph — a turn that needs none of the user's data should not pay to carry all of it.
+     */
+    private String chatGearContext(UUID userId, LocalDate today) {
+        return promptPersona.render(userId, "\n\nMa: " + today + "\n"
+                + profileBlock(userId)
                 + TONE_REMINDER);
     }
 

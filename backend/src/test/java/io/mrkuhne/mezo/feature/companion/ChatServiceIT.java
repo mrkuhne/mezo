@@ -147,7 +147,12 @@ class ChatServiceIT extends AbstractIntegrationTest {
     void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
         UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        String overCapCalls = "[fake-tool:get_goal]".repeat(16);
+        // mezo-rj214.7: "hány célom van" (domain + lookup words) keeps this off the lightened CHAT
+        // gear — a CHAT-classified fixture here would skip tool registration entirely and make the
+        // cap assertion vacuous. The sentinel repetition itself carries no domain/time word, so
+        // without this prefix the fixture guard's regex (it only sees inline string literals, not
+        // this variable) cannot catch the collision.
+        String overCapCalls = "hány célom van? " + "[fake-tool:get_goal]".repeat(16);
 
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(overCapCalls));
 
