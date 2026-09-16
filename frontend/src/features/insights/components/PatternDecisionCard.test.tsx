@@ -100,6 +100,20 @@ test('a live pair still shows the finding sentence, not the verdict', () => {
   expect(screen.getByText(/Eddig ebbe az irányba mutatnak a napjaid:/)).toBeInTheDocument()
 })
 
+// mezo-5543y: a részlet-oldal CSAK teszt-tervet hordozó sort tud kiszolgálni — terv nélkülire a
+// `GET /api/companion/pattern/pair/{pairKey}` 404-et ad (katalógus-kulcsként ismeretlen, és a
+// `hypothesis_key`-ág is kizárja a terv nélküli sort). A hideg indítás „tartó sora" ilyen, és a
+// terv nélküli `ai_hypothesis` sor is az volt eddig — a link mindkettőn zsákutcába vitt.
+test('a row without a test plan renders no detail link — that page would 404', () => {
+  const planless = { ...statistical, kind: 'reflection' as const, pairKey: 'note-abc', testPlan: undefined }
+  render(
+    <MemoryRouter>
+      <PatternDecisionCard pattern={planless} pair={null} onDecide={() => {}} />
+    </MemoryRouter>,
+  )
+  expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+})
+
 test('showDetailLink={false} suppresses the self-referential detail link (mezo-tk88.5 review fix)', () => {
   render(
     <MemoryRouter>

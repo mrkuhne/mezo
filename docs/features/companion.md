@@ -1349,12 +1349,18 @@ failure:
   the better of the original and its revision, so a lower bar never costs a revise pass; it is read
   ONCE per round, so a row persisted early cannot raise the bar on its own siblings mid-round; and it
   is boot-validated to sit between the revise and keep bands (`@AssertTrue` on `Hypotheses`).
-- **Two user-visible consequences.** A holding row appears on the **Minták** screen like any other
-  `proposed` reflection row, carrying the notice's first sentence as its title and no statistics. And
-  a `watch` chip on a card with no test plan must not promise what nothing will deliver: `ObservationCard`
-  branches its acknowledgement on `minN != null` — „Rendben, megjegyeztem. Ha összeáll belőle egy
-  minta, szólok." instead of „Nyolc napnál újra szólok." The reply is not wasted either way; it lands
-  in the row's event stream and the nightly prompt reads it back as the user's own words.
+- **Three user-visible consequences.** (1) A holding row appears on the **Minták** screen like any
+  other `proposed` reflection row, carrying the notice's first sentence as its title and no
+  statistics. (2) It gets **no "Részletek és előzmények" link**: `GET /api/companion/pattern/pair/{pairKey}`
+  resolves the key against the CATALOG first and then as a `hypothesis_key` carrying a test plan, and
+  a holding row satisfies neither (`note-<uuid>`, no key), so the link would 404. `PatternDecisionCard`
+  suppresses it for a **plan-less `reflection` row specifically** — deliberately narrow, because
+  "no `testPlan`" alone proves nothing about the key: a `statistical` row has no plan either and its
+  detail page works fine, its `pairKey` being a catalog key. (3) A `watch` chip on a card with no
+  test plan must not promise what nothing will deliver: `ObservationCard` branches its acknowledgement
+  on `minN != null` — „Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok." instead of
+  „Nyolc napnál újra szólok." The reply is not wasted either way; it lands in the row's event stream
+  and the nightly prompt reads it back as the user's own words.
 - **Observability, because the absence of logs was the whole problem.** The pre-screen's "not salient"
   exit and the notice's drop (with its REASON: settled / no row and no plan / over budget) are INFO
   now, as is the proposal round's `N proposal(s), M persisted, keep floor F`.
