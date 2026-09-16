@@ -54,6 +54,10 @@ export interface FuelSlot {
   slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
   state: 'done' | 'now' | 'pending' | 'missed'
   mealName?: string
+  /** A tervezett ablak HH:mm-je egy DONE meal-sloton (mezo-l2gp0): a `time` done állapotban a
+   *  logolás ideje, a terv ideje pedig elveszne — az óra-doboz "Terv szerint" sora innen olvas.
+   *  Ablak nélküli extra logon nincs (őszinte-null). */
+  plannedTime?: string
   mezoNote?: string
   windowTip?: string
   kcal?: number; p?: number; c?: number; f?: number

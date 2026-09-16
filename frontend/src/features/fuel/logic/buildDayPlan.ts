@@ -401,6 +401,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         state: 'done',
         mealId: logged.id,
         mealName: mealDisplayName(logged),
+        plannedTime: toHHmm(w.time),
         kcal: logged.kcal,
         p: logged.p,
         c: logged.c,
