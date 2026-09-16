@@ -27,10 +27,11 @@ import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/feature
 import { selectPrepRows, weekZoneRows } from '@/features/train/logic/weekZone'
 import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
-import { RestTimerBar } from '@/features/train/components/RestTimerBar'
+import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
 import { WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
+import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
 import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
@@ -47,6 +48,8 @@ import {
   makeSession,
   mergePlan,
   nextSetIdx,
+  pendingByExercise,
+  pendingSetCount,
   prescribedAt,
   removeSet,
   seedFromOpen,
@@ -56,6 +59,7 @@ import {
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
@@ -238,8 +242,17 @@ function ActiveWorkoutSession({
   const [sessionMedals, setSessionMedals] = useState<Medal[]>([])
   const [medalsBySet, setMedalsBySet] = useState<Record<string, Medal[]>>({})
   const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
-  // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
+  // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA
+  // AND (T6 Task 6) the new .wo-finish / dock-Lezárás CTA + the confirm glass's own primary.
   const [finishPending, setFinishPending] = useState(false)
+  // Which exercise the CURRENT rest belongs to (T6 Task 6's dock needs a name to show,
+  // "PIHENŐ · <EXERCISE>" — useRestTimer itself is exercise-agnostic). Set alongside the
+  // one `rest.start` call site in handleLogSet; stale once idle is harmless (the dock only
+  // reads it while `rest.status !== 'idle'`).
+  const [restExerciseId, setRestExerciseId] = useState<string | null>(null)
+  // The finish confirm glass (T6 Task 6, prototype confirmGlass): opened by the .wo-finish
+  // CTA or the dock's "Lezárás →" whenever pending sets remain — see handleFinishTap below.
+  const [finishConfirmOpen, setFinishConfirmOpen] = useState(false)
   /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
    *  `active` and returning to the summary does not throw away what was already typed. */
   const [closingNote, setClosingNote] = useState('')
@@ -479,6 +492,7 @@ function ActiveWorkoutSession({
       setGlass(null)
     } else {
       rest.start(restSecondsFor(finishing.type))
+      setRestExerciseId(finishing.id)
     }
   }
 
@@ -605,6 +619,16 @@ function ActiveWorkoutSession({
       // re-enable the "Edzés lezárása ✓" CTA so it can be retried (never stuck disabled).
       onSettled: () => setFinishPending(false),
     })
+  }
+
+  // The new manual-finish entry point (T6 Task 6, prototype finishCta/dock): tapping the
+  // .wo-finish CTA or the dock's "Lezárás →" with pending sets remaining asks first (the
+  // confirm glass); with nothing pending it finishes right away — there is nothing to warn
+  // about. This bypasses the old pre-finish closing-review 'summary' phase entirely for the
+  // manual path (that phase still exists for the auto-advance-on-last-debrief flow, T7's).
+  const handleFinishTap = () => {
+    if (pendingSetCount(session) > 0) setFinishConfirmOpen(true)
+    else finishAndCelebrate()
   }
 
   // Feedback resolution (skip or save both advance). The card list has nowhere to
@@ -886,6 +910,15 @@ function ActiveWorkoutSession({
     currentIdx,
     (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
   )
+
+  // The finish CTA / confirm glass's data (T6 Task 6): pending sets across the whole
+  // session, per-exercise for the confirm list, and the resulting three-state CTA look.
+  const pendingTotal = pendingSetCount(session)
+  const pendingRows = pendingByExercise(session).map(({ id, left }) => {
+    const e = exerciseById(id)
+    return { id, left, name: e?.name ?? '', muscle: e?.muscle ?? '' }
+  })
+  const finishState: 'skip' | 'partial' | 'full' = doneSets === 0 ? 'skip' : pendingTotal === 0 ? 'full' : 'partial'
 
   // The glass's target: the card whose ⋮/Videó was tapped, else (the header's ⋯) the
   // session cursor exercise. A debrief unmounts the glass, so `current` is safe here.
@@ -1171,33 +1204,48 @@ function ActiveWorkoutSession({
               />
             )
           })}
-        </div>
 
-        {/* TEMPORARY (T6 Task 4): the old ExerciseActionSheet's "Edzés befejezése…" row
-            was the only route from the active phase to the closing summary — retiring it
-            with the sheet would strand that flow entirely. A plain button keeps it whole
-            until Task 6 refaces this into the prototype's 3-state `.wo-finish` dock CTA. */}
-        <div style={{ padding: '0 16px 24px' }}>
-          <button type="button" className="cta-ghost" style={{ width: '100%', padding: 14, fontSize: 14 }} onClick={() => setPhase('summary')}>
-            Edzés befejezése
+          {/* The one way out of the list, in three honest states (T6 Task 6, prototype
+              finishCta): `skip` when nothing is logged, `partial` (gold) while sets remain
+              unticked, `full` (green) once every non-skipped exercise is done. Replaces
+              Task 4's temporary plain button. */}
+          <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap}>
+            <span className="wo-finish-glow" aria-hidden="true" />
+            <span className="wo-finish-art">
+              <Icon name={finishState === 'skip' ? 'x' : finishState === 'full' ? 'check' : 'sparkle'} size={finishState === 'skip' ? 30 : 34} />
+            </span>
+            <strong>{finishState === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése'}</strong>
+            <u className="chip-sheen" />
           </button>
         </div>
-
-        {/* The rest countdown — unchanged wiring (T6 Task 6 refaces it into the dock);
-            it belongs to the SESSION now, not to one card, so it sits under the list. */}
-        {rest.status !== 'idle' && (
-          <div style={{ padding: '0 16px 24px' }}>
-            <RestTimerBar
-              remaining={rest.remaining}
-              total={rest.total}
-              paused={rest.status === 'paused'}
-              onPause={rest.pause}
-              onResume={rest.resume}
-              onSkip={rest.skip}
-            />
-          </div>
-        )}
       </div>
+
+      {/* The fixed session dock (T6 Task 6, prototype dock): replaces the old RestTimerBar
+          render in this phase — same `useRestTimer()` instance, same start sites/durations,
+          only the rendering moved. Constant height, always present in the active phase, so
+          the list above it never jumps between its idle and resting looks. */}
+      <WorkoutDock
+        resting={rest.status !== 'idle'}
+        remaining={rest.remaining}
+        total={rest.total}
+        exerciseName={exerciseById(restExerciseId)?.name ?? null}
+        doneSets={doneSets}
+        plannedSets={totalSets}
+        onExtend={() => rest.extend(30)}
+        onSkipRest={rest.skip}
+        onFinish={handleFinishTap}
+        finishDisabled={doneSets === 0}
+      />
+
+      <FinishConfirmGlass
+        open={finishConfirmOpen}
+        onClose={() => setFinishConfirmOpen(false)}
+        loggedCount={doneSets}
+        pending={pendingRows}
+        pendingTotal={pendingTotal}
+        finishPending={finishPending}
+        onConfirm={finishAndCelebrate}
+      />
     </>
   )
 }

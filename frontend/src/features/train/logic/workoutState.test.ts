@@ -15,6 +15,8 @@ import {
   removeSet,
   updateLoggedSet,
   attachSetId,
+  pendingSetCount,
+  pendingByExercise,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -292,5 +294,93 @@ describe('set edit + slot removal (mezo-l3on)', () => {
     const after = removeSet(s, 'a', 0) // delete B1 — W1 shifts down to logged idx 1
     expect(after.prescribed.a[1].kind).toBe('working')
     expect(after.logged.a[1]).toMatchObject({ weight: 100, reps: 8, rir: 0 })
+  })
+
+  // ---- T6 Task 6: pendingSetCount / pendingByExercise (the finish CTA + confirm glass) ----
+  describe('pendingSetCount / pendingByExercise', () => {
+    test('a fresh session: every planned set of every exercise is pending', () => {
+      const s = makeSession(EX) // a:2, b:3, c:2 = 7 planned
+      expect(pendingSetCount(s)).toBe(7)
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'a', left: 2 },
+        { id: 'b', left: 3 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('a logged set reduces its own exercise\'s pending count only', () => {
+      let s = makeSession(EX)
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      expect(pendingSetCount(s)).toBe(6)
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'a', left: 1 },
+        { id: 'b', left: 3 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('a fully-logged exercise drops out of pendingByExercise and contributes 0', () => {
+      let s = makeSession(EX)
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      expect(pendingSetCount(s)).toBe(5)
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'b', left: 3 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('a SKIPPED exercise is excluded even though it has unlogged slots', () => {
+      let s = makeSession(EX)
+      s = skipExercise(s, 'b')
+      expect(pendingSetCount(s)).toBe(4) // a:2 + c:2, b excluded entirely
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'a', left: 2 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('everything logged or skipped: zero pending, empty list', () => {
+      let s = makeSession(EX)
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'b', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'b', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'b', { weight: 100, reps: 8, rir: 2 })
+      s = skipExercise(s, 'c')
+      expect(pendingSetCount(s)).toBe(0)
+      expect(pendingByExercise(s)).toEqual([])
+    })
+
+    test('an EXTRA set (Szett hozzáadása) grows the pending count for that exercise', () => {
+      let s = makeSession(EX)
+      s = addExtraSet(s, 'a') // a: 2 -> 3 effective, still 0 logged
+      expect(pendingSetCount(s)).toBe(8)
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'a', left: 3 },
+        { id: 'b', left: 3 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('a REMOVED slot (Szett elvétele) shrinks the pending count for that exercise, floored at 0', () => {
+      let s = makeSession(EX)
+      s = removeSet(s, 'a', 0) // a: 2 -> 1 effective (one pending slot left, canRemoveSet floor)
+      expect(pendingSetCount(s)).toBe(6)
+      expect(pendingByExercise(s)).toEqual([
+        { id: 'a', left: 1 },
+        { id: 'b', left: 3 },
+        { id: 'c', left: 2 },
+      ])
+    })
+
+    test('logging beyond the effective count (a stray extra log) never goes negative for that exercise', () => {
+      let s = makeSession(EX)
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 })
+      s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 2 }) // 3 logged, only 2 planned
+      expect(pendingByExercise(s).find((r) => r.id === 'a')).toBeUndefined()
+      expect(pendingSetCount(s)).toBe(5) // b:3 + c:2, a contributes 0 (not -1)
+    })
   })
 })
