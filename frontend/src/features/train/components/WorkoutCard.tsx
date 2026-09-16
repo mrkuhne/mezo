@@ -45,6 +45,16 @@ export function prefill(e: LoggedWorkoutExercise): LastWeekSet {
   return e.lastWeek ?? { weight: 0, reps: e.repMin || 10, rir: e.targetRIR }
 }
 
+/** The verdict cell is ICON-ONLY (prototype `verdictCell`, session.js:64): one compact
+ *  glyph in a 22×22 box, with the sentence carried by title + aria-label. Pouring the
+ *  words into the cell itself overflowed it (fix wave I2). */
+const VERDICT_GLYPH = { ok: '✓', below: '▼', above: '▲' } as const
+const VERDICT_LABEL = {
+  ok: 'A javasolt rep-sávban',
+  below: 'Cél alatt — a javasolt rep-sáv alatt',
+  above: 'Cél felett — a javasolt rep-sáv felett',
+} as const
+
 /** The human label of one set slot — shared by the row, its aria-label and the edit sheet. */
 export function setSlotLabel(index: number, warmup: boolean, warmupCount: number): string {
   return warmup ? `B${index + 1} bemelegítő szett` : `${index - warmupCount + 1}. working szett`
@@ -224,12 +234,21 @@ export function WorkoutCard({
                     <span className="wo-field num">{actual.weight.toLocaleString('hu-HU')}</span>
                     <span className="wo-field num">{actual.reps}</span>
                     <span className="wo-field small num">{warm ? '—' : actual.rir}</span>
-                    <span className="wo-check" aria-hidden="true">✓</span>
-                    <span className="wo-verdict">
-                      {status === 'ok'
-                        ? <span className="wkx-stat-ok">✓</span>
-                        : <span className="wkx-stat-dev">{status === 'below' ? '▼ cél alatt' : '▲ cél felett'}</span>}
-                      {medals.map((m, mi) => <MedalChip key={mi} medal={m} />)}
+                    <span className="wo-check is-checked" aria-hidden="true">✓</span>
+                    {/* Icon-only: the medal wins the 22px cell when there is one, otherwise
+                        the rep-range glyph. Either way the words live on the title. */}
+                    <span className={`wo-verdict is-${status}`} title={VERDICT_LABEL[status]}>
+                      {medals.length > 0
+                        ? medals.map((m, mi) => <MedalChip key={mi} medal={m} />)
+                        : (
+                          <span
+                            className={status === 'ok' ? 'wkx-stat-ok' : 'wkx-stat-dev'}
+                            role="img"
+                            aria-label={VERDICT_LABEL[status]}
+                          >
+                            {VERDICT_GLYPH[status]}
+                          </span>
+                        )}
                     </span>
                   </button>
                 )
@@ -272,7 +291,10 @@ export function WorkoutCard({
 
                     {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
                     {!warm && (
-                      <span className="wo-pick" style={{ gridColumn: '1 / -1', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      // `.wo-pick` owns its own layout in the wo- CSS section now (fix wave
+                      // I1): flex-sharing pills, so all six RIR values stay on ONE row at 320px
+                      // instead of wrapping off the fixed 38px `.wo-check` width.
+                      <span className="wo-pick">
                         {RIR_VALUES.map((n) => (
                           <button
                             key={n} type="button" className="wo-check"
@@ -285,7 +307,9 @@ export function WorkoutCard({
                       </span>
                     )}
                     {exercise.type === 'isolation' && (
-                      <span className="wo-pick" style={{ gridColumn: '1 / -1', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <span className="wo-pick">
+                        {/* The eyebrow caption the segment lost — says WHAT the L/B/R picks. */}
+                        <small className="wo-pick-key">OLDAL</small>
                         {(['L', 'B', 'R'] as const).map((s) => (
                           <button
                             key={s} type="button" className="wo-check"

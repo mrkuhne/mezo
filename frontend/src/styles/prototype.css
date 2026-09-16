@@ -13799,7 +13799,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    in the prototype (session.css:160, reused by the ceremony's own aura at
    :488) — renamed here to `wo-finish-glow-breathe` so this section does not
    pre-claim a keyframe name T7's ceremony section will also want to define. */
-.wo-list { display: flex; flex-direction: column; }
+/* The bottom padding RESERVES the dock's constant 88px + its 1px border + breathing room
+   (fix wave C1): the dock is portalled to the phone frame and floats over this list, so
+   without the reservation the last card and the finish CTA sat under it at max scroll. */
+.wo-list { display: flex; flex-direction: column; padding: 10px 16px 112px; }
 .wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
 
 /* — one card per exercise — */
@@ -13873,13 +13876,31 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   width: 38px; height: 38px; border-radius: 12px; cursor: pointer; font-size: 16px;
   border: 1px solid #ffffff1c; background: #ffffff06; color: #ffffff3d;
 }
-.wo-check[aria-pressed="true"] {
+/* A DONE row's tick is a plain span (never a pressable control), so it can't carry
+   `aria-pressed` — `.is-checked` gives it the identical filled look (fix wave I5). */
+.wo-check[aria-pressed="true"], .wo-check.is-checked {
   border-color: transparent; color: #141a0c;
   background: color-mix(in srgb, var(--ex-color) 88%, #fff);
   box-shadow: 0 0 14px color-mix(in srgb, var(--ex-color) 40%, transparent);
 }
-.wo-verdict { width: 22px; height: 22px; display: grid; place-items: center; }
+/* The full-width picker rows under the cursor row (RIR 0–5, side L/B/R). The six RIR
+   pills must share ONE row down to 320px, so they flex-share the width instead of
+   keeping `.wo-check`'s fixed 38px and wrapping — the `.rirrow button { flex: 1 }`
+   idiom (fix wave I1). */
+.wo-pick { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.wo-pick > .wo-check { flex: 1; min-width: 0; width: auto; padding: 0; }
+.wo-pick .wo-pick-key {
+  flex: 0 0 auto; font-size: 8px; letter-spacing: .14em; color: #6f7d77; margin-right: 2px;
+}
+.wo-verdict { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .wo-verdict .icon { width: 20px; height: 20px; }
+/* Icon-only cell (fix wave I2): one compact glyph sized to the 22px box — the sentence
+   ("cél alatt" …) lives in the cell's title/aria-label, never as overflowing text. */
+.wo-verdict .wkx-stat-ok, .wo-verdict .wkx-stat-dev { font-size: 12px; line-height: 1; }
+/* A set can earn more than one RECORD medal (weight + e1RM on the same row). Two 18px
+   discs don't fit a 22px cell side by side, so they STACK with an overlap — the cell
+   stays exactly 22px wide and never scrolls. */
+.wo-verdict > [role="img"] + [role="img"] { margin-left: -14px; }
 
 /* The one way out of the list — three states, nothing but a mark and a centred label. */
 .wo-finish {
@@ -13930,9 +13951,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @keyframes wo-finish-glow-breathe { 0%, 100% { opacity: .7; scale: 1; } 50% { opacity: 1; scale: 1.12; } }
 @keyframes wo-sheen { 0%, 62% { left: -40%; } 100% { left: 120%; } }
 
-/* — the dock: fixed height, always present, so nothing below it shifts — */
+/* — the dock: fixed height, always present, so nothing below it shifts —
+   Geometry mirrors `.gl-card` (the GlassBox primitive): the dock is PORTALLED into
+   `.phone-screen` (WorkoutDock.tsx, fix wave C1) and takes its `absolute; left/right/
+   bottom: 0` anchor from the frame itself, NOT from the scrolling `.screen-content` it
+   used to live in — where it scrolled away with the card list. z-index sits at the
+   bottom-chrome tier (40, the same as `.tab-bar`, which /train/session hides) so the dock
+   floats over the list but still stays under Sheet (200/201) and GlassBox (220/221). */
 .wo-dock {
-  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 40;
+  width: 100%; max-width: 428px; margin: 0 auto;
   display: flex; align-items: center; gap: 12px; height: 88px;
   padding: 0 16px calc(6px + env(safe-area-inset-bottom));
   border-top: 1px solid #ffffff12;

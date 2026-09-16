@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 
+/** The dock portals out of the render container — always query the document. */
+function dock(): HTMLElement {
+  return document.querySelector('.wo-dock') as HTMLElement
+}
+
 function idleProps(overrides: Partial<Parameters<typeof WorkoutDock>[0]> = {}) {
   return {
     resting: false as const,
@@ -20,11 +25,11 @@ function idleProps(overrides: Partial<Parameters<typeof WorkoutDock>[0]> = {}) {
 }
 
 test('idle: shows the progress ring share, the done/planned copy and an enabled Lezárás', () => {
-  const { container } = render(<WorkoutDock {...idleProps()} />)
-  expect(container.querySelector('.wo-dock')).not.toHaveClass('is-resting')
+  render(<WorkoutDock {...idleProps()} />)
+  expect(dock()).not.toHaveClass('is-resting')
   expect(screen.getByText('ELVÉGZETT MUNKA')).toBeInTheDocument()
   expect(screen.getByText('3 / 10 szett')).toBeInTheDocument()
-  const ring = container.querySelector('.wo-dock-ring') as HTMLElement
+  const ring = document.querySelector('.wo-dock-ring') as HTMLElement
   expect(ring.style.getPropertyValue('--ring')).toBe('30')
   const finish = screen.getByRole('button', { name: 'Lezárás →' })
   expect(finish).toBeEnabled()
@@ -44,13 +49,13 @@ test('idle: Lezárás fires onFinish', async () => {
 })
 
 test('resting: shows the countdown share, the exercise name uppercased, mm:ss and the rest actions', () => {
-  const { container } = render(
+  render(
     <WorkoutDock {...idleProps({ resting: true, remaining: 30, total: 120, exerciseName: 'Fekvőtámasz' })} />,
   )
-  expect(container.querySelector('.wo-dock')).toHaveClass('is-resting')
+  expect(dock()).toHaveClass('is-resting')
   expect(screen.getByText('PIHENŐ · FEKVŐTÁMASZ')).toBeInTheDocument()
   expect(screen.getByText('0:30')).toBeInTheDocument()
-  const ring = container.querySelector('.wo-dock-ring') as HTMLElement
+  const ring = document.querySelector('.wo-dock-ring') as HTMLElement
   // 30s left of 120 → 75% ELAPSED: the ring fills as the rest passes (asymmetric on purpose,
   // a 50/50 case cannot tell fill from drain).
   expect(ring.style.getPropertyValue('--ring')).toBe('75')
@@ -75,9 +80,39 @@ test('resting: +30s fires onExtend, Kész fires onSkipRest', async () => {
   expect(onSkipRest).toHaveBeenCalledTimes(1)
 })
 
-test('role="status" aria-live="polite" — an ambient status, not an alert', () => {
+// M2: the mm:ss `strong` re-renders every SECOND. With aria-live on the dock root a
+// screen reader read the whole dock out on every tick for the length of the rest. The
+// region stays a `role="status"`, but only the NON-ticking label span is live — it
+// changes exactly when the dock changes state, which is the announcement worth making.
+test('role="status" on the dock, aria-live on the non-ticking label only', () => {
+  render(<WorkoutDock {...idleProps()} />)
+  expect(dock()).toHaveAttribute('role', 'status')
+  expect(dock()).not.toHaveAttribute('aria-live')
+  expect(screen.getByText('ELVÉGZETT MUNKA')).toHaveAttribute('aria-live', 'polite')
+})
+
+test('the ticking mm:ss is NOT inside a live region while resting', () => {
+  render(<WorkoutDock {...idleProps({ resting: true, remaining: 30, total: 120, exerciseName: 'Fekvőtámasz' })} />)
+  const clock = screen.getByText('0:30')
+  expect(clock).not.toHaveAttribute('aria-live')
+  expect(clock.closest('[aria-live]')).toBeNull()
+})
+
+// C1: the dock is portalled to the phone frame so `bottom: 0` anchors to the FRAME, not
+// to the scrolling content it used to sit inside (where it scrolled away with the list).
+test('portals into .phone-screen when present (GlassBox.tsx idiom)', () => {
+  document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
   const { container } = render(<WorkoutDock {...idleProps()} />)
-  const dock = container.querySelector('.wo-dock') as HTMLElement
-  expect(dock).toHaveAttribute('role', 'status')
-  expect(dock).toHaveAttribute('aria-live', 'polite')
+  expect(container).toBeEmptyDOMElement()
+  expect(document.querySelector('.wo-dock')?.closest('.phone-screen')).toBeTruthy()
+  document.querySelector('.phone-screen')!.remove()
+})
+
+test('unmounting removes the portalled dock from the frame', () => {
+  document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
+  const { unmount } = render(<WorkoutDock {...idleProps()} />)
+  expect(document.querySelector('.wo-dock')).toBeTruthy()
+  unmount()
+  expect(document.querySelector('.wo-dock')).toBeNull()
+  document.querySelector('.phone-screen')!.remove()
 })

@@ -30,8 +30,16 @@ export interface GlassBoxProps {
   onClose: () => void
   /** Dialog label (aria-label + the header title). */
   label: string
-  /** Accent for the card's radial wash + `--gl-tint` readers — defaults to primary coral in CSS. */
+  /** Accent for the card's radial wash + `--gl-tint` readers — defaults to primary coral in CSS.
+   *  Also published as `--ex-color` on the card (mezo-88iwa.7 fix wave I4): the ported
+   *  `.gl-card .wo-…` rules read `var(--ex-color)`, which the CARD sets in the active-workout
+   *  list — but the glass PORTALS out of that subtree, so inside it the variable would
+   *  otherwise be empty and every tinted surface rendered white. */
   tint?: string
+  /** Optional `.gl-card` modifier — the prototype's two glass-content shapes
+   *  (`.gl-card.is-menu` / `.gl-card.is-confirm`, prototype.css). Omitted = no class,
+   *  which is what every pre-existing caller (TrainWeekPage) wants. */
+  variant?: 'menu' | 'confirm'
   children: ReactNode
 }
 
@@ -40,7 +48,7 @@ function prefersReducedMotion(): boolean {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function GlassBox({ open, onClose, label, tint, children }: GlassBoxProps) {
+export function GlassBox({ open, onClose, label, tint, variant, children }: GlassBoxProps) {
   // Hooks must run on every render regardless of `open` (React's rule), but the
   // PORTAL TARGET itself is resolved below, in the open branch, on every open render —
   // never cached via useState at mount. GlassBox commonly stays mounted with open=false
@@ -64,12 +72,14 @@ export function GlassBox({ open, onClose, label, tint, children }: GlassBoxProps
 
   const target = document.querySelector('.phone-screen') ?? document.body
   const anim = !prefersReducedMotion()
-  const style = tint ? ({ '--gl-tint': tint } as CSSProperties) : undefined
+  // Both names carry the SAME value on purpose — `--gl-tint` is this primitive's own
+  // token, `--ex-color` is what the ported prototype rules inside the glass read (I4).
+  const style = tint ? ({ '--gl-tint': tint, '--ex-color': tint } as CSSProperties) : undefined
 
   return createPortal(
     <>
       <div className={cn('gl-backdrop', anim && 'gl-anim')} onClick={onClose} aria-hidden="true" />
-      <div className={cn('gl-card', anim && 'gl-anim')} style={style} role="dialog" aria-modal="true" aria-label={label}>
+      <div className={cn('gl-card', variant && `is-${variant}`, anim && 'gl-anim')} style={style} role="dialog" aria-modal="true" aria-label={label}>
         <div className="gl-head">
           <strong>{label}</strong>
           <button type="button" className="gl-x" aria-label="Bezárás" onClick={onClose}>✕</button>

@@ -101,6 +101,25 @@ test('a today set that exceeds the best set flips it to MA MEGDÖNTVE', () => {
   expect(screen.getAllByText('MA MEGDÖNTVE').length).toBeGreaterThan(0)
 })
 
+// Fix wave M1: "MA MEGDÖNTVE" must name a record that actually EXISTS and is comparable.
+test.each([
+  {
+    desc: 'no record row at all (first-ever logging): a fat set today beats nothing',
+    record: undefined,
+    exercise: EX,
+  },
+  {
+    desc: 'a BODYWEIGHT best set has no weight → no comparable e1RM for today to clear',
+    record: BODYWEIGHT_RECORD,
+    exercise: { ...EX, name: 'Face Pull', muscle: 'shoulder-rear' } as LoggedWorkoutExercise,
+  },
+])('$desc', ({ record, exercise }) => {
+  render(
+    <WorkoutRecordsGlass {...baseProps()} exercise={exercise} record={record} todaySets={[{ weight: 120, reps: 5 }]} />,
+  )
+  expect(screen.queryByText('MA MEGDÖNTVE')).not.toBeInTheDocument()
+})
+
 test('nothing logged today shows the empty-state copy and no MEGDÖNTVE anywhere', () => {
   render(<WorkoutRecordsGlass {...baseProps()} todaySets={[]} />)
   expect(screen.getByText('Ma még nem logoltál ehhez szettet — a sávok üresen állnak.')).toBeInTheDocument()

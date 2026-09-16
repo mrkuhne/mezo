@@ -87,7 +87,7 @@ export function WorkoutMenuGlass({
   }
 
   return (
-    <GlassBox open={open} onClose={onClose} label={exercise.name} tint={tint}>
+    <GlassBox open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu">
       <div className="wo-menu">
         {exercise.videoUrl && (
           <MenuRow icon="i-video" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />

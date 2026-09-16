@@ -79,6 +79,34 @@ test('no tint prop leaves --gl-tint unset on the card (CSS default takes over)',
   expect(card.style.getPropertyValue('--gl-tint')).toBe('')
 })
 
+// mezo-88iwa.7 fix wave I4: the glass PORTALS out of the `.wo-card` subtree that sets
+// `--ex-color`, so every ported `.gl-card .wo-…` rule reading it rendered untinted
+// (measured white) inside the glass. The tint is published under BOTH names.
+test('tint also lands as --ex-color so the ported wo- rules inside the glass stay tinted', () => {
+  render(<GlassBox open onClose={() => {}} label="Kar" tint="#ff6b4a">tartalom</GlassBox>)
+  const card = document.querySelector<HTMLElement>('.gl-card')!
+  expect(card.style.getPropertyValue('--ex-color')).toBe('#ff6b4a')
+})
+
+test('no tint prop leaves --ex-color unset too', () => {
+  render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)
+  const card = document.querySelector<HTMLElement>('.gl-card')!
+  expect(card.style.getPropertyValue('--ex-color')).toBe('')
+})
+
+// mezo-88iwa.7 fix wave I3: prototype.css ships `.gl-card.is-menu` / `.gl-card.is-confirm`
+// rules that never applied, because GlassBox emitted no modifier class at all.
+test.each(['menu', 'confirm'] as const)('variant="%s" appends is-%s to the card', (variant) => {
+  render(<GlassBox open onClose={() => {}} label="Kar" variant={variant}>tartalom</GlassBox>)
+  expect(document.querySelector('.gl-card')).toHaveClass(`is-${variant}`)
+})
+
+test('no variant prop leaves the card unmodified (TrainWeekPage’s usage)', () => {
+  render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)
+  const card = document.querySelector('.gl-card')!
+  expect(card.className).not.toMatch(/\bis-(menu|confirm)\b/)
+})
+
 test('animates in by default — the backdrop and card carry the gl-anim class', () => {
   stubReducedMotion(false)
   render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)

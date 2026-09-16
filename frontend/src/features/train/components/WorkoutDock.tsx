@@ -12,10 +12,25 @@
 // Purely presentational: it is driven by the page's ALREADY-EXISTING `useRestTimer()`
 // instance via props (remaining/total/exerciseName) — this component owns no timer of
 // its own, only the two callbacks (`onExtend`/`onSkipRest`) the resting actions fire.
-// `role="status" aria-live="polite"` matches the prototype: the countdown update is an
-// ambient status, not an alert.
+// `role="status"` matches the prototype: the dock is an ambient status region, not an
+// alert. `aria-live` sits on the non-ticking LABEL span only (fix wave M2): the mm:ss
+// strong re-renders once a SECOND, and with aria-live on the dock root a screen reader
+// announced the whole dock on every tick for the entire rest. The label ("PIHENŐ · X" ↔
+// "ELVÉGZETT MUNKA") changes only when the dock changes state, which is exactly the
+// transition worth announcing.
+//
+// PORTALLED (fix wave C1): `.wo-dock` is `position: absolute; bottom: 0`, so rendered in
+// place it anchored to the nearest positioned ancestor INSIDE the scrolling
+// `.screen-content` and scrolled away with the card list (measured top −1630px at max
+// scroll). It now portals into `.phone-screen` — the phone frame itself, `position:
+// relative` — exactly the way GlassBox.tsx does, so `bottom: 0` means the frame's bottom.
+// Same fallback (`document.body`), and the target is re-queried on every render rather
+// than cached, for the same reason GlassBox re-queries: `.phone-screen` may not exist yet
+// when this component first mounts. The dock is rendered only by the active phase, so the
+// portal unmounts with it.
 // ============================================================
 import type { CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { fmtMMSS } from '@/features/train/logic/restTimer'
 import { cn } from '@/shared/lib/cn'
 
@@ -51,8 +66,10 @@ export function WorkoutDock({
     ? (total > 0 ? 100 - (remaining / total) * 100 : 0)
     : (plannedSets > 0 ? (doneSets / plannedSets) * 100 : 0)
 
-  return (
-    <div className={cn('wo-dock', resting && 'is-resting')} role="status" aria-live="polite">
+  const target = document.querySelector('.phone-screen') ?? document.body
+
+  return createPortal(
+    <div className={cn('wo-dock', resting && 'is-resting')} role="status">
       <span className="wo-dock-ring" style={{ '--ring': ring } as CSSProperties}>
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle className="track" cx={22} cy={22} r={18} pathLength={100} />
@@ -61,7 +78,7 @@ export function WorkoutDock({
         <b>{resting ? '' : doneSets}</b>
       </span>
       <span className="wo-dock-copy">
-        <small>{resting ? `PIHENŐ · ${(exerciseName ?? '').toUpperCase()}` : 'ELVÉGZETT MUNKA'}</small>
+        <small aria-live="polite">{resting ? `PIHENŐ · ${(exerciseName ?? '').toUpperCase()}` : 'ELVÉGZETT MUNKA'}</small>
         <strong>{resting ? fmtMMSS(remaining) : `${doneSets} / ${plannedSets} szett`}</strong>
       </span>
       {resting ? (
@@ -74,6 +91,7 @@ export function WorkoutDock({
           Lezárás →
         </button>
       )}
-    </div>
+    </div>,
+    target,
   )
 }

@@ -84,11 +84,20 @@ export interface BarProgress {
   beaten: boolean
 }
 
-/** Fill share + beaten state for one record bar — `target` of 0 (no record yet, or a
- *  record whose comparable metric is unknown) means any positive `now` already beats it. */
+/**
+ * Fill share + beaten state for one record bar.
+ *
+ * "MA MEGDÖNTVE" is claimed ONLY against a real, comparable target (fix wave M1): a
+ * `target` of 0 means there is nothing to beat — either the exercise has no record row at
+ * all (first-ever logging), or the record exists but carries no comparable number on this
+ * metric (the LEGJOBB SZETT bar against a BODYWEIGHT record: `bestSet.weightKg` is null,
+ * so its e1RM is unknowable and today's weighted e1RM cannot be ranked against it). The
+ * old `now > target` shape turned both of those into a triumphant record-broken banner on
+ * the very first logged set of a brand-new exercise, which is a lie either way.
+ */
 export function barProgress(now: number, target: number): BarProgress {
   return {
     share: target > 0 ? Math.min(100, (now / target) * 100) : 0,
-    beaten: now > target,
+    beaten: target > 0 && now > target,
   }
 }

@@ -53,9 +53,16 @@ describe('todayBest', () => {
 })
 
 describe('barProgress', () => {
-  test('no record yet (target 0): any positive now already beats it, share stays 0', () => {
-    expect(barProgress(50, 0)).toEqual({ share: 0, beaten: true })
-    expect(barProgress(0, 0)).toEqual({ share: 0, beaten: false })
+  // Fix wave M1: an ABSENT or incomparable record is not something today can "beat".
+  test.each([
+    { desc: 'no record row at all (first-ever logging) — a big number today beats nothing', now: 50, target: 0 },
+    { desc: 'nothing logged today either', now: 0, target: 0 },
+    {
+      desc: 'LEGJOBB SZETT against a BODYWEIGHT record (no weightKg → e1RM target 0) vs a weighted set today',
+      now: 137.5, target: 0,
+    },
+  ])('never beaten when there is no comparable target: $desc', ({ now, target }) => {
+    expect(barProgress(now, target)).toEqual({ share: 0, beaten: false })
   })
 
   test('share is capped at 100 even when now exceeds target', () => {

@@ -267,13 +267,13 @@ test('completing a set marks the row done and advances the header counter', asyn
 
 test('mock mode: logging a mid-exercise set starts the rest countdown', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(container.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
   // ex1 (Chest Supported Row, compound): 2 warmup + 3 working = 5 planned sets.
   // Logging the first (a warmup) leaves 4 sets remaining -> the exercise continues.
   await user.click(submitOf(EX1))
-  expect(container.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
   expect(screen.getByText(/PIHENŐ · CHEST SUPPORTED ROW/)).toBeInTheDocument()
   // The card list never hides the next row behind the rest — the cursor simply moved.
   expect(doneRowsOf(EX1)).toHaveLength(1)
@@ -281,11 +281,11 @@ test('mock mode: logging a mid-exercise set starts the rest countdown', async ()
 
 test('mock mode: skipping the rest (dock\'s Kész) clears the resting dock', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(submitOf(EX1))
   await user.click(screen.getByRole('button', { name: 'Kész' }))
-  expect(container.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
   expect(submitOf(EX1)).toBeInTheDocument()
 })
 
@@ -308,31 +308,31 @@ test('mock mode: the dock\'s +30s extends the rest countdown', async () => {
 
 test('mock mode: logging an exercise\'s final set (opens the feedback modal) starts no rest', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // Drive through ex1's 4 non-final sets, skipping each rest.
   for (let i = 0; i < 4; i++) await logSet(user)
   // The 5th (last) set completes the exercise -> feedback modal opens, no rest.
   await user.click(submitOf(EX1))
   expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
-  expect(container.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
 })
 
 test('mock mode: the rest bar belongs to the SESSION — it survives logging on another card', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(submitOf(EX1)) // rest starts on ex1
-  expect(container.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
   // The rest is the user's, not one card's — working another card keeps it running.
   await user.click(submitOf(EX2))
-  expect(container.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
   expect(doneRowsOf(EX2)).toHaveLength(1)
 })
 
 test('mock mode: reaching the summary screen (workout end) shows no dock at all', async () => {
   const user = userEvent.setup()
-  const { container } = setup()
+  setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // Skip ex0 (no rest on skip), then drive the remaining 4 exercises to completion.
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
@@ -346,7 +346,7 @@ test('mock mode: reaching the summary screen (workout end) shows no dock at all'
   }
   expect(await screen.findByText('Edzés vége')).toBeInTheDocument()
   // The active-phase-only dock unmounts entirely on the summary screen.
-  await waitFor(() => expect(container.querySelector('.wo-dock')).toBeNull())
+  await waitFor(() => expect(document.querySelector('.wo-dock')).toBeNull())
 })
 
 test('mock mode: the editable row pre-fills from the slot\'s prescribed target', async () => {
@@ -412,7 +412,11 @@ test('mock mode: only the cursor slot is editable; later slots render their pres
   expect(rows[2]).toHaveTextContent('8–10')
 })
 
-test('mock mode: a logged working set below the prescribed rep range shows "▼ cél alatt"', async () => {
+// Fix wave I2: the verdict cell is 22×22 and ICON-ONLY (prototype `verdictCell`) — the
+// sentence rides on its title/aria-label, and a RECORD medal takes the cell over
+// entirely when the set earned one. So the assertions below read the title, which is
+// present in every case, rather than overflowing text that only existed medal-less.
+test('mock mode: a logged working set below the prescribed rep range is marked "cél alatt"', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -422,10 +426,12 @@ test('mock mode: a logged working set below the prescribed rep range shows "▼ 
   await typeInto(user, repsInput(EX1), 5)
   await user.click(submitOf(EX1))
   const workingRow = within(card(EX1)).getAllByRole('button', { name: /working szett szerkesztése/ })[0]
-  expect(workingRow.querySelector('.wo-verdict')).toHaveTextContent('▼ cél alatt')
+  const cell = workingRow.querySelector('.wo-verdict')!
+  expect(cell).toHaveClass('is-below')
+  expect(cell.getAttribute('title')).toMatch(/Cél alatt/)
 })
 
-test('mock mode: a logged working set above the prescribed rep range shows "▲ cél felett"', async () => {
+test('mock mode: a logged working set above the prescribed rep range is marked "cél felett"', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -435,7 +441,9 @@ test('mock mode: a logged working set above the prescribed rep range shows "▲ 
   await typeInto(user, repsInput(EX1), 11)
   await user.click(submitOf(EX1))
   const workingRow = within(card(EX1)).getAllByRole('button', { name: /working szett szerkesztése/ })[0]
-  expect(workingRow.querySelector('.wo-verdict')).toHaveTextContent('▲ cél felett')
+  const cell = workingRow.querySelector('.wo-verdict')!
+  expect(cell).toHaveClass('is-above')
+  expect(cell.getAttribute('title')).toMatch(/Cél felett/)
 })
 
 // ---- warmup vs working distinction on the logging card (mezo-eerq) ----
@@ -625,13 +633,15 @@ test('mock mode: a set that hits its target gets a sage ✓ status and a chip pe
   const workingRow = firstWorkingRow()
   expect(within(workingRow).getByRole('img', { name: 'Súly-rekord' })).toBeInTheDocument()
   expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // 10 reps is within ex1's prescribed [8,10] range -> the sage ✓ verdict.
-  expect(workingRow.querySelector('.wo-verdict')).toHaveTextContent('✓')
+  // 10 reps is within ex1's prescribed [8,10] range -> the in-range verdict. The two
+  // medals OWN the 22px cell (I2), so the verdict itself is carried by the title.
+  expect(workingRow.querySelector('.wo-verdict')).toHaveClass('is-ok')
+  expect(workingRow.querySelector('.wo-verdict')!.getAttribute('title')).toMatch(/javasolt rep-sávban/)
 
   // The warmup arm: a done warmup row earns no medals (the mock evaluator never
-  // scores warmup-kind sets), but still shows its own ✓ verdict.
+  // scores warmup-kind sets), so its cell shows the in-range ✓ glyph instead.
   const warmupRow = within(card(EX1)).getAllByRole('button', { name: /bemelegítő szett szerkesztése/ })[0]
-  expect(within(warmupRow).queryAllByRole('img')).toHaveLength(0)
+  expect(within(warmupRow).queryAllByRole('img', { name: /rekord/i })).toHaveLength(0)
   expect(warmupRow.querySelector('.wo-verdict')).toHaveTextContent('✓')
 })
 
@@ -650,9 +660,9 @@ test('mock mode: a set that sets records still shows its chips even when the log
   const workingRow = firstWorkingRow()
   expect(within(workingRow).getByRole('img', { name: 'Rep-rekord' })).toBeInTheDocument()
   expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // The weight miss doesn't affect reps (still 10, within [8,10]) -> still ✓;
-  // the verdict cell is rep-range-only, unlike the old TARGET_HIT tick.
-  expect(workingRow.querySelector('.wo-verdict')).toHaveTextContent('✓')
+  // The weight miss doesn't affect reps (still 10, within [8,10]) -> still in-range;
+  // the verdict is rep-range-only, unlike the old TARGET_HIT tick.
+  expect(workingRow.querySelector('.wo-verdict')).toHaveClass('is-ok')
 })
 
 // The card list has no "next exercise" to hand over to — a reorder now literally
@@ -729,13 +739,13 @@ test('Szett hozzáadása adds an extra set: the card grows 5→6 rows', async ()
 
 test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening the debrief', async () => {
   const user = userEvent.setup()
-  const { container } = setup() // mock mode, cursor = Chest Supported Row (ex1)
+  setup() // mock mode, cursor = Chest Supported Row (ex1)
   await user.click(screen.getByText(/Kezdjük el/))
   // Start a mid-exercise rest before skipping — skip must clear it (final-review
   // fix, mezo-8141 — Ride-along A), not leave the bar counting toward an
   // abandoned exercise.
   await user.click(submitOf(EX1))
-  expect(container.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   // The card collapses in place — no FeedbackModal / debrief CTA.
@@ -744,7 +754,7 @@ test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening th
   expect(rowsOf(EX1)).toHaveLength(0)
   expect(screen.queryByText('Mentés · tovább')).not.toBeInTheDocument()
   expect(screen.queryByText('Edzés vége →')).not.toBeInTheDocument()
-  expect(container.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
 })
 
 /** Drive every non-skipped exercise of the mock Pull Day to completion. */
@@ -1891,4 +1901,36 @@ test('a fully logged exercise reads as complete and offers no editable row', asy
   await waitFor(() => expect(card(EX1)).toHaveClass('is-complete'))
   expect(querySubmitOf(EX1)).toBeNull()
   expect(doneRowsOf(EX1)).toHaveLength(5)
+})
+
+// Fix wave I5: a logged row's ✓ is a plain span (it is not a pressable control, so it
+// cannot carry `aria-pressed`) — it therefore never picked up the filled "pressed" look
+// and a done row read as un-done. `.is-checked` is the span's half of that CSS rule.
+test('a done row\'s ✓ carries is-checked so it reads as filled, like a pressed tick', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await logSet(user)
+  const tick = doneRowsOf(EX1)[0].querySelector('.wo-check') as HTMLElement
+  expect(tick).toHaveClass('is-checked')
+  // The cursor row's ✓ is the pressable submit and stays unchecked.
+  expect(submitOf(EX1)).not.toHaveClass('is-checked')
+})
+
+// Fix wave M3: the dock's "n / m szett" ran over ALL exercises while the finish CTA's
+// state came from pendingSetCount, which SKIPS excluded exercises — so a session with a
+// skipped exercise showed unfinished-looking numbers beside a "nothing left" CTA.
+test('the dock\'s denominator drops when an exercise is skipped (same count as the finish CTA)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Mock Pull Day: 5 exercises, 21 planned sets in total; ex1 alone plans 5.
+  const denominator = () => document.querySelector('.wo-dock-copy strong')!.textContent
+  const before = denominator()!
+  const beforeTotal = Number(before.split(' / ')[1].replace(' szett', ''))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
+  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  const afterTotal = Number(denominator()!.split(' / ')[1].replace(' szett', ''))
+  expect(afterTotal).toBe(beforeTotal - 5)
 })

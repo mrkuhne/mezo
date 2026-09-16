@@ -41,7 +41,7 @@ export function FinishConfirmGlass({
 }: FinishConfirmGlassProps) {
   const zero = loggedCount === 0
   return (
-    <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395">
+    <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395" variant="confirm">
       <span className="wo-confirm-art">
         <Icon name="x" size={54} />
       </span>

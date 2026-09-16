@@ -920,6 +920,14 @@ function ActiveWorkoutSession({
   })
   const finishState: 'skip' | 'partial' | 'full' = doneSets === 0 ? 'skip' : pendingTotal === 0 ? 'full' : 'partial'
 
+  // The dock's "n / m szett" must agree with the finish CTA it sits next to (fix wave M3):
+  // the CTA's `full` state is driven by pendingSetCount, which SKIPS excluded exercises,
+  // while the dock counted every exercise — so a session with one skipped exercise showed
+  // e.g. "9 / 12 szett" beside a green "everything is done" CTA. Same exclusion here.
+  const activeIds = session.order.filter((id) => !session.skipped.includes(id))
+  const dockPlanned = activeIds.reduce((a, id) => a + effectiveSetCount(session, id), 0)
+  const dockDone = activeIds.reduce((a, id) => a + (session.logged[id]?.length ?? 0), 0)
+
   // The glass's target: the card whose ⋮/Videó was tapped, else (the header's ⋯) the
   // session cursor exercise. A debrief unmounts the glass, so `current` is safe here.
   const menuEx = exerciseById(glass?.id) ?? current
@@ -1179,7 +1187,9 @@ function ActiveWorkoutSession({
         )}
 
         {/* THE list — one card per exercise, in session order. */}
-        <div className="wo-list" style={{ padding: '10px 16px 24px' }}>
+        {/* Padding (including the bottom room the portalled dock floats over) lives in
+            `.wo-list`'s own CSS rule now — see prototype.css, fix wave C1. */}
+        <div className="wo-list">
           {session.order.map((id) => {
             const e = W.exercises.find((x) => x.id === id)
             if (!e) return null
@@ -1229,8 +1239,8 @@ function ActiveWorkoutSession({
         remaining={rest.remaining}
         total={rest.total}
         exerciseName={exerciseById(restExerciseId)?.name ?? null}
-        doneSets={doneSets}
-        plannedSets={totalSets}
+        doneSets={dockDone}
+        plannedSets={dockPlanned}
         onExtend={() => rest.extend(30)}
         onSkipRest={rest.skip}
         onFinish={handleFinishTap}
