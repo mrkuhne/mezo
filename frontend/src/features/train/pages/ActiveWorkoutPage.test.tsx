@@ -888,6 +888,22 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
 })
 
+test('the ceremony carries the challenge outcomes, and the old WorkoutSummary report is gone (mezo-88iwa.8)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await finishMockSession(user, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
+  await closeWorkout(user)
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  // The seed challenge was never accepted → it closed as skipped, and the ceremony says so.
+  const rows = document.querySelectorAll('.cer-chals .cer-chal')
+  expect(rows.length).toBeGreaterThan(0)
+  expect(screen.getAllByText('skippelted').length).toBe(rows.length)
+  // The pre-Titanium summary shell no longer renders anywhere on this page.
+  expect(document.querySelector('.wr-root')).toBeNull()
+  expect(document.querySelector('.wsum-chal')).toBeNull()
+})
+
 /** The ceremony's kcal tile numeral (`.cer-kcal-line strong`), as a plain integer —
  *  huNumber() renders thousands with a (possibly non-breaking) space separator. */
 function readKcalValue(): number {

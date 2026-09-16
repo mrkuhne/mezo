@@ -227,3 +227,59 @@ test('the honesty line says where the stars come from', () => {
   // The prototype's sample-workout prefix is gone — this is real.
   expect(screen.queryByText(/Mintaedzés/)).not.toBeInTheDocument()
 })
+
+// ---- the challenge strip (T7 Task 4) ----
+
+const CHALLENGES = [
+  { id: 'c1', typeLabel: 'Súlyemelés', exercise: 'Chest Supported Row', target: '80 kg × 8', state: 'hit' as const, detail: '80 kg × 9 — cél igazolva' },
+  { id: 'c2', typeLabel: 'Ismétlésszám', exercise: 'Lat Pulldown', target: '12 ismétlés', state: 'miss' as const },
+  { id: 'c3', typeLabel: 'Tempó', target: '3 mp excentrikus', state: 'skipped' as const },
+]
+
+test('no challenges means no strip at all', () => {
+  const { container } = render(<WorkoutCeremony {...props()} />)
+  expect(container.querySelector('.cer-chals')).toBeNull()
+})
+
+test('the challenge strip carries the real outcome of every challenge, records-adjacent', () => {
+  const { container } = render(<WorkoutCeremony {...props({ challenges: CHALLENGES })} />)
+  const strip = container.querySelector('.cer-chals')
+  expect(strip).not.toBeNull()
+  // Act two owns the strip — it sits in `.cer-result`, next to the records row.
+  expect(container.querySelector('.cer-result .cer-chals')).not.toBeNull()
+  const rows = strip!.querySelectorAll('.cer-chal')
+  expect(rows).toHaveLength(3)
+  // Every row is a `.cer-record`-shaped row, toned by its outcome.
+  expect(rows[0]).toHaveClass('cer-record')
+  expect(rows[0]).toHaveClass('is-hit')
+  expect(rows[1]).toHaveClass('is-miss')
+  expect(rows[2]).toHaveClass('is-skip')
+  // Title = type · exercise; the detail beats the target when the server sent one.
+  expect(screen.getByText('Súlyemelés · Chest Supported Row')).toBeInTheDocument()
+  expect(screen.getByText(/80 kg × 9 — cél igazolva/)).toBeInTheDocument()
+  expect(screen.getByText(/12 ismétlés/)).toBeInTheDocument()
+  expect(screen.getByText('Tempó')).toBeInTheDocument()
+  // The verdict words are the summary's own, not restyled away.
+  expect(screen.getByText('megcsináltad')).toBeInTheDocument()
+  expect(screen.getByText('nem jött össze')).toBeInTheDocument()
+  expect(screen.getByText('skippelted')).toBeInTheDocument()
+})
+
+test('an inconclusive challenge reads as unevaluable', () => {
+  render(<WorkoutCeremony {...props({ challenges: [
+    { id: 'c9', typeLabel: 'Tempó', target: '3 mp', state: 'inconclusive' as const },
+  ] })} />)
+  expect(screen.getByText('nem értékelhető')).toBeInTheDocument()
+})
+
+// ---- the settled recap (T7 Task 4) ----
+
+test('the settled recap notes how many sets closed pending', () => {
+  render(<WorkoutCeremony {...props({ settled: true, pendingSets: 4 })} />)
+  expect(screen.getByText('4 szett kihagyott státusszal zárult.')).toBeInTheDocument()
+})
+
+test('nothing pending means no pending note', () => {
+  const { container } = render(<WorkoutCeremony {...props({ settled: true, pendingSets: 0 })} />)
+  expect(container.textContent).not.toMatch(/kihagyott státusszal/)
+})

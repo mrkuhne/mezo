@@ -26,6 +26,26 @@ import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { ClayIcon } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 
+/** One challenge's closing outcome, as the page maps it (T7 Task 4). Structurally the
+ *  legacy `SummaryChallenge`, but declared here so the ceremony does not depend on the
+ *  pre-Titanium summary shell (which now only serves the review page). */
+export interface CeremonyChallenge {
+  id: string
+  typeLabel: string
+  exercise?: string
+  target: string
+  state: 'hit' | 'miss' | 'skipped' | 'inconclusive'
+  detail?: string
+}
+
+/** The verdict words are the summary's own — the outcomes are carried over, not restyled away. */
+const CHALLENGE_COPY: Record<CeremonyChallenge['state'], { label: string; cls: string }> = {
+  hit: { label: 'megcsináltad', cls: 'is-hit' },
+  miss: { label: 'nem jött össze', cls: 'is-miss' },
+  skipped: { label: 'skippelted', cls: 'is-skip' },
+  inconclusive: { label: 'nem értékelhető', cls: 'is-skip' },
+}
+
 export interface WorkoutCeremonyProps {
   score: CerScore
   /** The overline above the stars — 'EDZÉS LEZÁRVA'. */
@@ -36,6 +56,8 @@ export interface WorkoutCeremonyProps {
   xpGained: number | null
   /** The RECORD-tier medals earned this session, already rendered to copy. */
   records: Array<{ name: string; value: string }>
+  /** The session's challenge outcomes; an empty list renders no strip at all. */
+  challenges?: CeremonyChallenge[]
   muscles: MuscleStarRow[]
   /** The T5 `trainDayEnergy` estimate; null hides the tile (never a 0 kcal). */
   kcal: { value: number; known: true } | null
@@ -47,6 +69,8 @@ export interface WorkoutCeremonyProps {
   onGoFuel(): void
   /** Recap mode: paint the final state, no pass. */
   settled?: boolean
+  /** How many sets the close left pending; >0 adds the recap's honest note. */
+  pendingSets?: number
   /** Test seam; defaults to `prefers-reduced-motion: reduce`. */
   reducedMotion?: boolean
 }
@@ -79,8 +103,8 @@ function starClass(index: number, progressed: number): string {
 }
 
 export function WorkoutCeremony({
-  score, eyebrow, minutes, xpGained, records, muscles, kcal,
-  note, onNote, onClose, onGoFuel, settled = false, reducedMotion,
+  score, eyebrow, minutes, xpGained, records, challenges = [], muscles, kcal,
+  note, onNote, onClose, onGoFuel, settled = false, pendingSets = 0, reducedMotion,
 }: WorkoutCeremonyProps) {
   // The pass is skipped entirely for the recap read-back and for reduced motion — both
   // paint the final state on the first render, so act two is told immediately.
@@ -202,6 +226,31 @@ export function WorkoutCeremony({
               <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
             </span>
           </div>
+        )}
+        {/* The challenge outcomes (ported from the old summary's `.wsum-chal` strip,
+            mezo-88iwa.8 T7 Task 4): records-adjacent, one `.cer-record`-shaped row each,
+            toned by the verdict. Real outcomes — the detail the server resolved beats the
+            target text whenever it exists. */}
+        {challenges.length > 0 && (
+          <div className="cer-chals">
+            {challenges.map((c) => {
+              const copy = CHALLENGE_COPY[c.state]
+              return (
+                <div key={c.id} className={`cer-record cer-chal ${copy.cls}`}>
+                  <ClayIcon name="i-kihivas" size={32} className="icon" />
+                  <span>
+                    <strong>{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</strong>
+                    <small>{c.detail ?? c.target}</small>
+                  </span>
+                  <em className="cer-chal-out">{copy.label}</em>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {/* The recap's honest tail: the close did not tick everything (prototype recap()). */}
+        {pendingSets > 0 && (
+          <p className="cer-recap-note">{pendingSets} szett kihagyott státusszal zárult.</p>
         )}
       </section>
 

@@ -14301,6 +14301,24 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-record strong { display: block; font-size: 13.5px; font-weight: 500; color: #f2e4c2; }
 .cer-record small { display: block; font-size: 10.5px; color: #ffffff70; margin-top: 2px; }
 
+/* — the challenge outcomes, records-adjacent (T7 Task 4, mezo-88iwa.8) —
+   The same `.cer-record` row shape, retoned per verdict: the gold-stone band is the
+   RECORD medal's own signature, so a hit borrows the sage of a kept promise, a miss the
+   muted coral, and a skip/inconclusive stays neutral glass. */
+.cer-chals { display: grid; gap: 8px; }
+.cer-chal { grid-template-columns: 34px 1fr auto; }
+.cer-chal strong { color: #eef3e4; }
+.cer-chal .icon { opacity: .85; }
+.cer-chal-out {
+  font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ffffff6b; white-space: nowrap;
+}
+.cer-chal.is-hit { border-color: #b9d3a340; background: #b9d3a312; }
+.cer-chal.is-hit .cer-chal-out { color: #c8e0b2; }
+.cer-chal.is-miss { border-color: #e2a89440; background: #e2a89410; }
+.cer-chal.is-miss .cer-chal-out { color: #eebaa8; }
+.cer-chal.is-skip { border-color: #ffffff1f; background: #ffffff0a; }
+
 .cer-foot { margin-top: auto; padding: 4px 0 10px; }
 
 /* — details/recap: what the session did to the week, and the way out — */
