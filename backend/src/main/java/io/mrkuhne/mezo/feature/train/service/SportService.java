@@ -34,7 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * T3 sport slice service: SportLogSheet writes ({@code logSportSession} — date/time default to
- * "now" server-side, the sheet has no date picker) and the recurring weekly schedule
+ * "now" server-side, the sheet has no date picker — it also owns the session's kcal: the user's
+ * override verbatim, else the personalised MET estimate) and the recurring weekly schedule
  * ({@code getSchedule} / {@code replaceSchedule} full-replace). Reads of the session log stay in
  * {@link TrainService#listSportSessions}. Ownership is stamped from the principal on every row;
  * per house rule only the write methods carry method-level {@code @Transactional}.
@@ -55,6 +56,9 @@ public class SportService {
     private final ObjectProvider<ProgressionGate> progressionGate;
     private final GoalRecomputePort goalRecomputePort;
     private final ApplicationEventPublisher eventPublisher;
+    // The kcal estimate's body inputs come through train's own port — biometrics provides the
+    // adapter, so the train slice never imports biometrics (ADR 0012, no new slice cycle).
+    private final AthleteBodyPort athleteBodyPort;
 
     @Transactional
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
@@ -69,6 +73,7 @@ public class SportService {
         s.setRpe(req.getRpe());
         s.setShoulderStrain(req.getShoulderStrain());
         s.setNotes(req.getNotes());
+        applyKcal(createdBy, s, req.getKcalOverride());
 
         // Award progression XP + attach the level-up when the engine is switched on (mirrors
         // RunningService.logSession): same @Transactional, idempotent on the saved session id.
@@ -81,6 +86,28 @@ public class SportService {
         // és nyeli a saját hibáit, tehát ez a válasz sem lassulni, sem bukni nem tud tőle.
         eventPublisher.publishEvent(new SportSessionLoggedEvent(createdBy, s.getDate()));
         return base;
+    }
+
+    /**
+     * The session's burnt energy: the user's own number wins verbatim ({@code kcalIsEstimate=false}),
+     * otherwise the personalised MET estimate ({@link SportEnergyCalculator}) marked as an estimate.
+     * Both stay NULL when the athlete's body is unknown — a missing estimate is never stored as 0,
+     * so no surface can present it as a measurement.
+     */
+    private void applyKcal(UUID createdBy, SportSessionEntity s, Integer kcalOverride) {
+        if (kcalOverride != null) {
+            s.setKcal(kcalOverride);
+            s.setKcalIsEstimate(false);
+            return;
+        }
+        athleteBodyPort.bodyAt(createdBy, s.getDate())
+            .flatMap(body -> SportEnergyCalculator.estimate(
+                s.getSport(), s.getDurationMin() != null ? s.getDurationMin() : 0, s.getIntensity(),
+                body.weightKg(), body.sex(), body.age(), body.bodyFatPct()))
+            .ifPresent(kcal -> {
+                s.setKcal(kcal);
+                s.setKcalIsEstimate(true);
+            });
     }
 
     public List<SportScheduleSlotResponse> getSchedule(UUID createdBy) {

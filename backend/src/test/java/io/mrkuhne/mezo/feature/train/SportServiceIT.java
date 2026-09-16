@@ -15,7 +15,9 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
@@ -38,6 +40,8 @@ class SportServiceIT extends AbstractIntegrationTest {
     @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private SportService sportService;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private BiometricProfilePopulator biometricProfilePopulator;
+    @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
     /** JPA-managed shared EntityManager — the one allowed exception to constructor injection. */
@@ -160,6 +164,107 @@ class SportServiceIT extends AbstractIntegrationTest {
         assertThat(res.getRounds()).isEqualTo(8);
         assertThat(res.getSetsPlayed()).isNull();
         assertThat(res.getLevelUp()).isNotNull();
+    }
+
+    // ---- kcal: the personalised MET estimate + the user's override (mezo-88iwa.9) -------------
+
+    /** The prototype-default profile (M, born 1991-03-01, 15% body fat) plus one weigh-in. */
+    private void seedBody(UUID owner, String weightKg) {
+        biometricProfilePopulator.create(owner);
+        weightLogPopulator.createWeightLog(owner, LocalDate.parse("2026-05-30"), new BigDecimal(weightKg));
+    }
+
+    @Test
+    void testLogSportSession_shouldPersistTheEstimateFlagged_whenBodyKnown() {
+        UUID owner = databasePopulator.populateUser("sportkcal@test.local");
+        seedBody(owner, "80.00");
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("volleyball").date(LocalDate.parse("2026-06-01")).time("18:00")
+            .duration(90).setsPlayed(4).rpe(new BigDecimal("7")).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        // 5.3 MET (volleyball at the default intensity 7) * 3.5 * 80 kg / 200 * 90 min
+        // * (1 male * 0.99 for 35 years * 1.04 for 15% body fat)
+        assertThat(res.getKcal()).isEqualTo(688);
+        assertThat(res.getKcalIsEstimate()).isTrue();
+        SportSessionEntity saved = sportSessionRepository.findById(res.getId()).orElseThrow();
+        assertThat(saved.getKcal()).isEqualTo(688);
+        assertThat(saved.getKcalIsEstimate()).isTrue();
+    }
+
+    @Test
+    void testLogSportSession_shouldStoreTheOverrideVerbatim_whenUserGaveOne() {
+        UUID owner = databasePopulator.populateUser("sportoverride@test.local");
+        seedBody(owner, "80.00");
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("volleyball").date(LocalDate.parse("2026-06-01"))
+            .duration(90).rpe(new BigDecimal("7")).kcalOverride(540).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(res.getKcal()).isEqualTo(540);
+        assertThat(res.getKcalIsEstimate()).isFalse();
+        SportSessionEntity saved = sportSessionRepository.findById(res.getId()).orElseThrow();
+        assertThat(saved.getKcal()).isEqualTo(540);
+        assertThat(saved.getKcalIsEstimate()).isFalse();
+    }
+
+    @Test
+    void testLogSportSession_shouldLeaveKcalNull_whenNoWeighInYet() {
+        UUID owner = databasePopulator.populateUser("sportnoweight@test.local");
+        biometricProfilePopulator.create(owner); // profile but no weigh-in
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("cross").duration(45).rounds(6).rpe(new BigDecimal("8")).build());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(res.getKcal()).isNull(); // never 0 — a missing estimate stays missing
+        assertThat(res.getKcalIsEstimate()).isNull();
+        assertThat(sportSessionRepository.findById(res.getId()).orElseThrow().getKcal()).isNull();
+    }
+
+    @Test
+    void testLogSportSession_shouldLeaveKcalNull_whenNoBiometricProfile() {
+        UUID owner = databasePopulator.populateUser("sportnoprofile@test.local");
+        weightLogPopulator.createWeightLog(owner, LocalDate.parse("2026-05-30"), new BigDecimal("80.00"));
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .duration(90).rpe(new BigDecimal("7")).build());
+
+        assertThat(res.getKcal()).isNull();
+        assertThat(res.getKcalIsEstimate()).isNull();
+    }
+
+    @Test
+    void testLogSportSession_shouldAcceptTheWidenedVocabulary_whenNewSportId() {
+        UUID owner = databasePopulator.populateUser("sportbike@test.local");
+        seedBody(owner, "80.00");
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("bike").date(LocalDate.parse("2026-06-01")).duration(60)
+            .rpe(new BigDecimal("6")).build());
+        entityManager.flush(); // the widened ck_sport_session_sport must accept the row
+        entityManager.clear();
+
+        SportSessionEntity saved = sportSessionRepository.findById(res.getId()).orElseThrow();
+        assertThat(saved.getSport()).isEqualTo("bike");
+        assertThat(res.getSport()).isEqualTo("bike");
+        assertThat(res.getKcal()).isEqualTo(960); // 11.1 MET (25 km/h flat) for an hour
+        assertThat(res.getKcalIsEstimate()).isTrue();
+    }
+
+    @Test
+    void testLogSportSession_shouldRejectTheRow_whenSportOutsideTheVocabulary() {
+        UUID owner = databasePopulator.populateUser("sportbad@test.local");
+        assertThatThrownBy(() -> {
+            sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+                .sport("kajak").duration(60).rpe(new BigDecimal("6")).build());
+            entityManager.flush();
+        }).hasMessageContaining("ck_sport_session_sport");
     }
 
     // ---- SportService schedule get/replace (Task 4) -------------------------------------------
