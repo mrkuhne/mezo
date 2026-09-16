@@ -34,6 +34,7 @@ import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
 import { WorkoutChallengesGlass, WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
+import { WorkoutOverloadLine } from '@/features/train/components/WorkoutOverloadLine'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
 import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
@@ -111,7 +112,8 @@ export function ActiveWorkoutPage() {
   // active meso, so `activeMeso` is legitimately null here — it must NOT gate the redirect.
   if (!workout || workout.exercises.length === 0) return <Navigate to="/train" replace />
   // Completed today + nothing open → the session is over; review instead of restart
-  // (spec 2026-07-15 gating — the prep screen must be unreachable, challenges included).
+  // (spec 2026-07-15 gating — a finished day must not be re-enterable as a live session;
+  // the prep screen the original wording named no longer exists at all since mezo-e1ii9).
   // Mock mode has no completedTodayWorkout (always null), so this never fires there.
   if (completedTodayWorkout && !todaySession?.openWorkout) {
     return <Navigate to={`/train/review/${completedTodayWorkout.id}`} replace />
@@ -139,7 +141,7 @@ interface SessionProps {
   // Nullable (mezo-ws2x D4): a custom (saját) template session runs with no active meso.
   activeMeso: Mesocycle | null
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
-  startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
+  startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void; onError?: (err: unknown) => void }) => void
   logSet: (
     workoutId: string,
     set: SetLogRequest,
@@ -200,6 +202,14 @@ function ActiveWorkoutSession({
   const kalauz = useTutorial()
   const [session, setSession] = useState<Session>(initialSession)
   const [workoutId, setWorkoutId] = useState<string | null>(open?.id ?? null)
+  // The start POST failed (mezo-e1ii9 fix round 1). Without this the failure was SILENT:
+  // `workoutId` stayed null for the whole session while the card list looked perfectly
+  // functional, and every `logSet(workoutId ?? 'mock', …)` then POSTed against a bogus
+  // instance id. `startFailed` both surfaces the failure (the retry strip below the
+  // header) and BLOCKS logging until a retry binds a real id — a set the server cannot
+  // store must not look stored.
+  const [startFailed, setStartFailed] = useState(false)
+  const [startRetrying, setStartRetrying] = useState(false)
   // Medal collection (mezo-wp6n): every medal earned this session (set-log + finish),
   // the set-row lookup (keyed `${exerciseId}:${setIndex}`) driving the chips + the
   // tick colour, and the currently-shown RECORD-tier celebration toast (+ how many
@@ -355,21 +365,41 @@ function ActiveWorkoutSession({
   // start a second one — so the effect skips it. The ref makes this once-per-mount under
   // StrictMode's double-invoke (a second POST would be a second workout instance).
   const startedRef = useRef(false)
+  const runStart = (retry: boolean) => {
+    if (!todaySession) return
+    if (retry) setStartRetrying(true)
+    startWorkout(todaySession.templateSessionId, {
+      onSuccess: (w) => {
+        setWorkoutId(w.id)
+        setStartFailed(false)
+        setStartRetrying(false)
+      },
+      onError: () => {
+        setStartFailed(true)
+        setStartRetrying(false)
+      },
+    })
+  }
   useEffect(() => {
     if (startedRef.current) return
     startedRef.current = true
     if (open || !todaySession) return
-    startWorkout(todaySession.templateSessionId, {
-      onSuccess: (w) => setWorkoutId(w.id),
-    })
+    runStart(false)
     // Mount-only on purpose (empty deps): the start is an EVENT, not a synchronisation —
     // re-running it when `todaySession` re-fetches would POST a second instance.
   }, [])
+  // Logging is blocked exactly while a start we ATTEMPTED has left us without an instance
+  // id. Mock mode has no `todaySession` and never starts anything, so it never blocks.
+  const logBlocked = startFailed && !workoutId
 
   const handleLogSet = (
     finishing: LoggedWorkoutExercise,
     input: { weight: number; reps: number; rir: number | null; side: Side | null },
   ) => {
+    // Belt and braces (mezo-e1ii9 fix round 1): the cards already disable their ✓ while
+    // the session has no instance id, but the handler refuses too — a set with nowhere
+    // to go must never reach the local model either, or the UI would show it as saved.
+    if (logBlocked) return
     const { weight, reps, side } = input
     // Warmup rows carry no RIR at all (mezo-eerq) — the card hands over null there;
     // the local model still needs a number, so it stores 0 and the payload omits it.
@@ -585,7 +615,6 @@ function ActiveWorkoutSession({
       }
     }
     // Mount-once: this is a page-lifetime unmount guard, not a per-render effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Finish the workout (the ONLY completion trigger — the active list's finish CTA) and
@@ -1041,8 +1070,13 @@ function ActiveWorkoutSession({
         {/* Niggle banner if active */}
         {niggleActive && (
           <div style={{ padding: '8px 24px' }}>
+            {/* The real `detail` prose (mezo-e1ii9 fix round 1): the backend ships a
+                per-niggle sentence and it had no reader once the prep mosaic's niggle
+                tile retired — the banner printed only the muscle + a hardcoded line.
+                The generic line stays as the fallback for a warning with no detail. */}
             <div className="warmstrip">
-              ⚠ {W.niggleWarning?.muscleLabel ?? 'Jobb váll'} aktív · óvatos, először warm-up
+              ⚠ {W.niggleWarning?.muscleLabel ?? 'Jobb váll'} aktív ·{' '}
+              {W.niggleWarning?.detail || 'óvatos, először warm-up'}
             </div>
           </div>
         )}
@@ -1051,6 +1085,27 @@ function ActiveWorkoutSession({
         {/* Padding (including the bottom room the portalled dock floats over) lives in
             `.wo-list`'s own CSS rule now — see prototype.css, fix wave C1. */}
         <div className="wo-list">
+          {/* A failed start is LOUD (mezo-e1ii9 fix round 1): the sets have nowhere to go,
+              so the list says so and offers the retry instead of quietly eating them. */}
+          {logBlocked && (
+            <div className="wo-overload" role="alert">
+              <span className="wo-overload-title">Nem sikerült elindítani az edzést</span>
+              <span className="wo-overload-why">
+                A szerver nem vette fel a mai edzést, ezért most nem tudunk szettet menteni. Próbáld újra.
+              </span>
+              <button
+                type="button"
+                className="wo-overload-retry"
+                disabled={startRetrying}
+                onClick={() => runStart(true)}
+              >
+                {startRetrying ? 'Újrapróbálás…' : 'Újra'}
+              </button>
+            </div>
+          )}
+          {/* The day-level overload tally (mezo-88iwa.4) — its only surface since the prep
+              mosaic retired. Honest-empty: nothing to say, nothing rendered. */}
+          <WorkoutOverloadLine overload={W.overloadSummary} />
           {session.order.map((id) => {
             const e = W.exercises.find((x) => x.id === id)
             if (!e) return null
@@ -1063,6 +1118,7 @@ function ActiveWorkoutSession({
                 note={noteOf(e)}
                 medalsBySetIdx={medalsOf(id)}
                 failedLocalIds={failedSetLocalIds}
+                logBlocked={logBlocked}
                 challenge={(() => {
                   const c = challenges.find((x) => x.exerciseId === id && acceptedMap[x.id])
                   return c ? { label: c.typeLabel, target: c.target } : null

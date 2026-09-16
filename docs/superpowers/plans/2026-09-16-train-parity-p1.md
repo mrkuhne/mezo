@@ -105,6 +105,47 @@ niggle is the banner the card list already renders.
   `/train/mai` CTA → card list; the first frame after the tap must match.
 - [ ] **Step 6:** Commit `feat(train): the workout opens in the card list — the prep mosaic retires (mezo-e1ii9)`.
 
+**Fix round 1.** The review found four capabilities the retirement left without a home, plus
+four minors. All fixed against the binding rule (*no feature dies silently*):
+
+1. **The overload tally got a home.** `OverloadSummary` (mezo-88iwa.4 — the weight-up /
+   weight-down tally that exists precisely so a load DROP is never reported as `+súly`) was
+   rendered ONLY by the deleted `PrepFejlodesPage`, so it lost its last surface app-wide.
+   New `components/WorkoutOverloadLine.tsx` renders it as a quiet strip at the head of
+   `.wo-list`, above the first `.wo-card`, carrying the shipped honest copy verbatim:
+   drops-only reads `Visszavett súlyok` + *"A visszavett súly is a terv része — innen indul
+   a következő emelkedés."*, never folded into an up-count. Honest-empty: no summary, or a
+   day that moves nothing, renders nothing. The deleted page's **two honesty tests are
+   restored** against the new surface (`WorkoutOverloadLine.test.tsx`), plus an empty case.
+2. **The niggle `detail` prose is reachable again.** The banner printed only the muscle
+   label + a hardcoded `óvatos, először warm-up`, leaving `W.niggleWarning.detail` with zero
+   consumers. It now renders the real `detail` when present, with the generic line as the
+   fallback. **The prep screen's "Értem · jó így" acknowledgement does NOT return** — it was
+   a *prep* affordance (confirm the flag before you start) and there is nothing to confirm
+   once the workout opens straight in the list; recorded as a deliberate death in
+   `docs/features/train.md`, not a silent one.
+3. **The Küldetések glass's three-state guard is tested.** `WorkoutChallengesGlass`'s
+   pending and resolved-empty branches were untested after `PrepKuldetesekPage.test.tsx`
+   went; all three states (pending loader wins over the empty line — the mezo-hbwi
+   silent-gap fix — · resolved-empty honest line · loaded cards) now have tests in
+   `WorkoutMenuGlass.test.tsx`.
+4. **A failed start no longer strands the session.** `startMutation` had no `onError`: the
+   start POST could fail, `workoutId` stayed null for the whole session, the card list
+   looked fully functional and every `logSet(workoutId ?? 'mock', …)` POSTed against a bogus
+   id. `startWorkout` gained an `onError` hook; the page shows a Hungarian alert strip
+   (*"Nem sikerült elindítani az edzést"*) with an **Újra** retry, and blocks set logging
+   while there is no instance id — `WorkoutCard` gained a `logBlocked` prop that disables
+   the cursor row's ✓, and `handleLogSet` refuses too. Tested end to end: failing start →
+   message + disabled ✓ + no `set:` POST + no done row, successful retry → list unblocked.
+
+Minors: `logic/warmupProtocol.ts` deleted (grep-verified: zero consumers, zero surface — a
+dead module is worse than a documented death); the stale
+`ActiveWorkoutPage.tsx` guard comment naming an unreachable "prep screen" rewritten; the
+resume test gained the `expect(calls).not.toContain('start:d-1')` its comment already
+claimed; the `docs/features/train.md` prep paragraph repaired (the ungrammatical
+*"Before that: It composed, top to bottom:"* seam and the present-tense tail now read as
+history, and the paragraph names where each retired subject lives today).
+
 ### Task 2: The ceremony is the only thing on screen at the close
 
 **Files:**

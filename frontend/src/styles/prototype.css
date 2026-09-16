@@ -13703,6 +13703,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-list { display: flex; flex-direction: column; padding: 10px 16px 112px; }
 .wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
 
+/* — the day-level overload tally, at the head of the list (mezo-e1ii9 fix round 1) —
+   Quiet by design: it is a caption for the stack below it, not a card competing with
+   the cards. Amber only because every progression signal in the session screen is
+   amber (the warmup B-rows, `.warmstrip`); a drops-only day reads in the same amber,
+   because a back-off is a planned move, not a failure. */
+.wo-overload {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 0 2px 12px; padding: 9px 12px;
+  border: 1px solid #ffffff0e; border-left: 2px solid var(--amber, #e8c07d);
+  border-radius: 12px; background: #ffffff05;
+}
+.wo-overload-title { font-size: 12px; font-weight: 700; color: #e6ead9; }
+.wo-overload-why { font-size: 10.5px; line-height: 1.4; color: #ffffff6b; }
+/* The same strip carries the failed-start alert + its retry (mezo-e1ii9 fix round 1). */
+.wo-overload[role="alert"] { border-left-color: #e08a7d; }
+.wo-overload-retry {
+  align-self: flex-start; margin-top: 6px; cursor: pointer;
+  padding: 5px 13px; border-radius: 999px;
+  border: 1px solid #ffffff1f; background: #ffffff0c;
+  color: #e6ead9; font-size: 11px; font-weight: 700;
+}
+.wo-overload-retry:disabled { opacity: .55; cursor: default; }
+
 /* — one card per exercise — */
 .wo-card {
   border: 1px solid #ffffff10; border-radius: 22px; margin-bottom: 14px; padding: 14px 14px 10px;

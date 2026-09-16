@@ -135,14 +135,20 @@ test('none of the retired prep surfaces survive: no start CTA, no XP forecast, n
 
 // The niggle's home is the banner the card list already renders (the retired Niggle tile
 // and its confirm page carried this before).
-test('an active niggle surfaces as the card list\'s own banner', () => {
+test('an active niggle surfaces as the card list\'s own banner, carrying the real detail prose', () => {
   setup()
   expect(screen.getByText(/Jobb váll/)).toBeInTheDocument()
-  expect(document.querySelector('.warmstrip')).not.toBeNull()
+  const strip = document.querySelector('.warmstrip')
+  expect(strip).not.toBeNull()
+  // mezo-e1ii9 fix round 1: the banner renders `niggleWarning.detail` — the backend's own
+  // sentence — not just the muscle label plus a hardcoded "óvatos, először warm-up".
+  expect(strip?.textContent).toContain('a Cable Pull-Around-ot előrébb hozzuk')
+  expect(strip?.textContent).not.toContain('óvatos, először warm-up')
 })
 
 // The warmup's home is the amber B-rows inside each card (the retired Bemelegítés tile
-// showed the session-level protocol; `logic/warmupProtocol.ts` keeps that data).
+// showed the session-level protocol; its `WarmupRow`/`WARMUP_ROWS` data module went with
+// it in fix round 1 — a dead module is worse than a documented death).
 test('the warmup is present as the card\'s B-prefixed rows', () => {
   setup()
   const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
@@ -1136,6 +1142,44 @@ test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deletin
   expect(doneRowsOf(EX1)[0].getAttribute('aria-label')).toContain('105')
 })
 
+// mezo-e1ii9 fix round 1: a FAILED start used to strand the session silently — `workoutId`
+// stayed null, the list looked fully functional, and every set POSTed against 'mock'.
+test('real mode: a failed start blocks logging, says so, and a successful retry unblocks the list', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  let startShouldFail = true
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts`, async ({ request }) => {
+      const body = (await request.json()) as { templateSessionId: string }
+      calls.push(`start:${body.templateSessionId}`)
+      if (startShouldFail) return new HttpResponse(null, { status: 500 })
+      return HttpResponse.json(
+        { id: 'w-1', templateSessionId: body.templateSessionId, date: '2026-06-12', status: 'active', sets: [] },
+        { status: 201 },
+      )
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  // The failure is LOUD and the ✓ is dead.
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toContain('Nem sikerült elindítani az edzést')
+  expect(submitOf(EX1)).toBeDisabled()
+  // Nothing may be POSTed while there is no instance id — not even against 'mock'.
+  await user.click(submitOf(EX1))
+  expect(calls.some((c) => c.startsWith('set:'))).toBe(false)
+  expect(doneRowsOf(EX1)).toHaveLength(0)
+
+  // The retry binds a real id and the list comes back to life.
+  startShouldFail = false
+  await user.click(screen.getByRole('button', { name: 'Újra' }))
+  await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:0'))).toBe(true))
+})
+
 test('real mode: an open instance resumes mid-workout with seeded sets', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
@@ -1153,6 +1197,7 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   setup()
   // a resumed instance seeds straight to set 2 (and re-POSTs no start)
   await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  expect(calls).not.toContain('start:d-1')
   expect(rowsOf(EX1)).toHaveLength(2)
   expect(doneRowsOf(EX1)).toHaveLength(1) // the persisted set is a done row
   await user.click(submitOf(EX1))
