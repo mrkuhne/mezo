@@ -458,7 +458,7 @@ type TrainData = {
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: FinishOpts) => void
-  logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: SportLogOpts) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   /** All one-off (non-recurring) sport events, date+time ascending (mezo-e1sp) — the Sport tab's upcoming list. */
   sportEvents: SportEventResponse[]
@@ -473,6 +473,14 @@ type TrainData = {
   deleteCatalogExercise: (id: string, opts?: MutateOpts) => void
   setExerciseVideo: (id: string, videoUrl: string | null, opts?: MutateOpts) => void
   mesoMutationPending: boolean
+}
+
+/** The sport-log mutation's caller callbacks — one home so `useTrain`, `useQuickLogSport`
+ *  and the mutation itself can never drift apart. */
+type SportLogOpts = {
+  onSuccess?: (r?: SportSessionResponse) => void
+  onError?: (err: unknown) => void
+  onSettled?: () => void
 }
 
 /**
@@ -508,10 +516,7 @@ function mockSportKcal(req: SportSessionCreateRequest): { kcal: number; kcalIsEs
 function useLogSportSession(
   mock: boolean,
   qc: QueryClient,
-): (
-  req: SportSessionCreateRequest,
-  opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
-) => void {
+): (req: SportSessionCreateRequest, opts?: SportLogOpts) => void {
   const invalidateProgression = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['progressionProfile'] })
   }
@@ -555,8 +560,17 @@ function useLogSportSession(
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
   })
   return useCallback(
-    (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) =>
-      logSportMutation.mutate(req, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
+    (req: SportSessionCreateRequest, opts?: SportLogOpts) =>
+      logSportMutation.mutate(req, {
+        onSuccess: (r) => opts?.onSuccess?.(r),
+        // `onError` is the surfaced-failure channel the full-screen sport flow needs
+        // (T8 Task 4 final review): a contract rejection (`@Min(1)/@Max(5000)` on
+        // `kcalOverride`, and every other 400) used to die silently in the mutation and
+        // leave the CTA stuck disabled. Same shape as the sheets' own onError idiom
+        // (VideoUrlSheet, CatalogExerciseSheet).
+        onError: (err) => opts?.onError?.(err),
+        onSettled: () => opts?.onSettled?.(),
+      }),
     [logSportMutation],
   )
 }
@@ -1107,10 +1121,7 @@ export function useOpenWorkout(): {
  */
 export function useQuickLogSport(): {
   sessions: SportSession[]
-  logSportSession: (
-    req: SportSessionCreateRequest,
-    opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
-  ) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: SportLogOpts) => void
 } {
   const mock = isMockMode()
   const qc = useQueryClient()

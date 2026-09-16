@@ -48,6 +48,12 @@ let emptySportFixture = false
 // `vb-2026-05-20`; a `vb-today` entry may also be in scope, dated off the real system
 // clock, so matching by id rather than array position keeps this deterministic).
 let stripOneSessionKcal = false
+// T8 Task 6 final review: the RUN mock carried no kcal at all, so a logged run permanently
+// blanked this page's sum in mock mode (`movementWeek` is all-or-null) while real mode —
+// where the run service runs the same MET estimator — would have shown it. The mock's own
+// run rows are dated outside this suite's frozen test week, so this override re-dates them
+// INTO it without touching their (now present) kcal.
+let runsInTestWeek = false
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -76,7 +82,11 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     },
     useRunning: (...args: Parameters<typeof actual.useRunning>) => {
       const real = actual.useRunning(...args)
-      return emptySportFixture ? { ...real, runSessions: [] } : real
+      if (emptySportFixture) return { ...real, runSessions: [] }
+      if (runsInTestWeek) {
+        return { ...real, runSessions: real.runSessions.map((r, i) => ({ ...r, date: i === 0 ? '2026-05-22' : '2026-05-23' })) }
+      }
+      return real
     },
   }
 })
@@ -97,6 +107,7 @@ afterEach(() => {
   sportLoadOverride = null
   emptySportFixture = false
   stripOneSessionKcal = false
+  runsInTestWeek = false
 })
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><TrainWeekMozgasPage /></MemoryRouter></QueryWrapper>)
@@ -153,6 +164,19 @@ test('the sport box shows the summed kcal once every logged session this week ca
   const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
   expect(within(sportBox).getByText(/1490 kcal/)).toBeInTheDocument()
   expect(within(sportBox).getByText('naplóztad')).toBeInTheDocument()
+})
+
+// T8 Task 6 final review: a mock-mode RUN in the week must NOT blank the sum. Before the
+// fix the run fixtures (and the mock log response) carried no kcal, so `movementWeek`'s
+// all-or-null gate hid the whole number the moment a run landed in the week — a mock-only
+// darkening real mode would never show. 1490 (the two volleyball sessions) + 275 + 312
+// (the two run fixtures' own estimates) = 2077.
+test('a logged run in the week keeps the sum visible — the mock run carries kcal too', async () => {
+  runsInTestWeek = true
+  const { container } = renderPage()
+  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
+  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
+  expect(within(sportBox).getByText(/2077 kcal/)).toBeInTheDocument()
 })
 
 // movementWeek's all-or-null gate (loadWeek.ts): ONE session in the week missing kcal

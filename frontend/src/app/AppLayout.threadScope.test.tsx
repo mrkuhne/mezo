@@ -3,8 +3,8 @@
 //
 // Két strukturális állítás, amit eddig semmi nem őrzött:
 //
-// 1. A `MezoThreadProvider` a `hideChrome` kapun BELÜL van. A három szándékosan
-//    chrome-mentes útvonalon (/train/session, /me/sleep/night, /ritual) nincs fejléc és
+// 1. A `MezoThreadProvider` a `hideChrome` kapun BELÜL van. A szándékosan chrome-mentes
+//    útvonalakon (/train/session, /train/sport/log, /me/sleep/night, /ritual) nincs fejléc és
 //    nincs TabBar, tehát a szálnak sincs fogyasztója — a provider ~15 `useNeeds`-olvasása
 //    ott tiszta pazarlás volt.
 // 2. A szál-hookok dobása NEM szalad ki az AppLayout-ból az app-szintű main.tsx
@@ -55,7 +55,7 @@ function renderAt(path: string) {
   )
 }
 
-test.each(['/train/session', '/me/sleep/night', '/ritual'])(
+test.each(['/train/session', '/train/sport/log', '/me/sleep/night', '/ritual'])(
   'a chrome-mentes %s útvonalon NEM mountol a szál-provider',
   (path) => {
     renderAt(path)

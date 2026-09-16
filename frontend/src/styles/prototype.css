@@ -15211,6 +15211,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sp-kcal-copy small { display: block; font-size: 9.5px; color: #ffffff5e; margin-top: 2px; line-height: 1.45; }
 .sp-kcal > b { grid-area: 1 / 3 / 3 / 4; color: #ffffff4a; font-size: 14px; text-align: right; }
 .sp-note { margin: 8px 2px 0; font-size: 10.5px; color: color-mix(in srgb, var(--sp-color) 60%, #fff); }
+/* The failure variant (T8 Task 4 final review): the same quiet note line, in the house's
+   warning hue, for a refused override or a save the wire rejected. */
+.sp-note.is-error { color: #ffb4a8; }
 /* The override must be as easy to take back as it was to give (T8 Task 4) — a quiet text
    action under the note, not a second loud button competing with Naplózom. */
 .sp-note-clear {

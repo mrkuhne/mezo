@@ -16,15 +16,21 @@ vi.mock('react-router-dom', async () => {
 // The page's only wire contact. Capturing the request is the point of most of these
 // tests — what the form folds into it is the contract with the backend.
 const logged: SportSessionCreateRequest[] = []
+/** Flipped by the failure test so the mutation takes its onError branch (a real-mode 400). */
+const wire = { fails: false }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useQuickLogSport: () => ({
       sessions: [],
-      logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: unknown) => void; onSettled?: () => void }) => {
+      logSportSession: (
+        req: SportSessionCreateRequest,
+        opts?: { onSuccess?: (r?: unknown) => void; onError?: (err: unknown) => void; onSettled?: () => void },
+      ) => {
         logged.push(req)
-        opts?.onSuccess?.({ id: 'ss-1', kcal: 500, kcalIsEstimate: req.kcalOverride == null })
+        if (wire.fails) opts?.onError?.(new Error('400'))
+        else opts?.onSuccess?.({ id: 'ss-1', kcal: 500, kcalIsEstimate: req.kcalOverride == null })
         opts?.onSettled?.()
       },
     }),
@@ -34,6 +40,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 beforeEach(() => {
   mockNavigate.mockClear()
   logged.length = 0
+  wire.fails = false
 })
 
 function renderPage() {
@@ -158,6 +165,42 @@ test('the override is clearable — the request then carries no kcalOverride', a
   await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
   await waitFor(() => expect(logged).toHaveLength(1))
   expect(logged[0].kcalOverride).toBeUndefined()
+})
+
+// The contract's own bounds (@Min(1) @Max(5000) on kcalOverride). Before the T8 final-review
+// fix the dialog accepted both, and the request died as a silent 400 — in mock, where nothing
+// rejects it, a 0 even reached the ceremony and celebrated "+0 kcal".
+test.each(['0', '9999'])('the override dialog refuses %s — it never reaches the request', async (bad) => {
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Saját érték/ }))
+  const field = await screen.findByLabelText('Kalória')
+  await userEvent.clear(field)
+  await userEvent.type(field, bad)
+  await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
+  // The dialog stays open with an inline refusal, and no override is taken.
+  expect(await screen.findByText('Adj meg egy értéket 1 és 5000 kcal között.')).toBeInTheDocument()
+  expect(screen.queryByText('Saját értéket adtál meg — ezt mentjük, nem a becslést.')).not.toBeInTheDocument()
+})
+
+test('the Kalória input carries the contract\'s own min of 1, not 0', async () => {
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Saját érték/ }))
+  const field = await screen.findByLabelText('Kalória')
+  expect(field).toHaveAttribute('min', '1')
+  expect(field).toHaveAttribute('max', '5000')
+})
+
+test('a failed save surfaces a Hungarian line and re-enables the CTA', async () => {
+  wire.fails = true
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
+  expect(await screen.findByText('Nem sikerült elmenteni a mozgást. Nézd meg a kapcsolatot, és próbáld újra.'))
+    .toBeInTheDocument()
+  // No ceremony — the form is still there, and the CTA can be pressed again.
+  expect(screen.getByRole('button', { name: /Naplózom/ })).toBeEnabled()
 })
 
 // ---- the save: which field lands where on the wire ----

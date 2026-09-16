@@ -36,7 +36,11 @@ export function AppLayout() {
   // Full-screen surfaces where the app chrome is dead weight: the active workout session,
   // the extra-dark night page (its light would defeat the <30 lux point), and the
   // Napzárás ritual flow (mezo-ilsj). No header, no tab bar, no FAB.
-  const hideChrome = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
+  // mezo-88iwa.9 (T8 Task 4): `/train/sport/log` is the same kind of surface — a
+  // full-screen picker → form → CEREMONY flow with its own back affordance. Measured at
+  // 320px the tab bar plus the coral FAB sat on top of the ceremony's close CTA and its
+  // honesty line, exactly the situation `/train/session` is on this list for.
+  const hideChrome = ['/train/session', '/train/sport/log', '/me/sleep/night', '/ritual'].includes(location.pathname)
   // mezo-vdf4: the chat's composer owns the thumb zone — the coral FAB overlapped the
   // send disc there. Chat keeps the rest of the chrome (header, tab bar).
   // mezo-bq2t: /fuel/log/uj is the same situation — its sticky save bar owns the thumb zone

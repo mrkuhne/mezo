@@ -49,6 +49,12 @@ import type { SportSessionCreateRequest, SportSessionResponse } from '@/data/tra
 
 const isRunTile = (s: Sport | RunTile): s is RunTile => s.id === 'run'
 
+/** The wire's own override bounds — `SportSessionCreateRequest.kcalOverride` is
+ *  `@Min(1) @Max(5000)`, so anything outside this range is a 400 the athlete would only
+ *  ever see as a save that silently did nothing. The dialog refuses it instead. */
+const KCAL_MIN = 1
+const KCAL_MAX = 5000
+
 /** One captured answer per field key. Text fields hold a string, everything else a number. */
 type FormValues = Record<string, number | string>
 
@@ -232,12 +238,13 @@ function FieldRow({ spec, value, onChange }: {
   )
 }
 
-function SportForm({ sport, values, mode, kcalOverride, saving, onValue, onMode, onAskKcal, onClearKcal, onBack, onSave }: {
+function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onValue, onMode, onAskKcal, onClearKcal, onBack, onSave }: {
   sport: Sport
   values: FormValues
   mode: string | null
   kcalOverride: number | null
   saving: boolean
+  saveError: string | null
   onValue: (key: string, next: number | string) => void
   onMode: (next: string) => void
   onAskKcal: () => void
@@ -290,6 +297,14 @@ function SportForm({ sport, values, mode, kcalOverride, saving, onValue, onMode,
         </>
       )}
 
+      {/* Surfaced failure (T8 Task 4 final review): a rejected save — the contract's
+          `kcalOverride` bounds, an offline real mode — used to vanish silently and leave
+          the CTA disabled forever. The line sits directly above the CTA, which `onError`
+          re-enables, so a retry is one tap away. */}
+      {saveError && (
+        <p className="sp-note is-error" role="alert">{saveError}</p>
+      )}
+
       <div className="sp-foot">
         <button type="button" className="wo-close-cta" disabled={saving} onClick={onSave}>
           <span className="wo-close-art"><ClayIcon name="i-sport" size={26} /></span>
@@ -324,7 +339,11 @@ export function SportLogPage() {
   const [kcalOverride, setKcalOverride] = useState<number | null>(null)
   const [kcalOpen, setKcalOpen] = useState(false)
   const [kcalDraft, setKcalDraft] = useState('')
+  const [kcalDraftError, setKcalDraftError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // The save's own failure line (T8 Task 4 final review). Cleared on every new attempt
+  // and on a sport switch, so it can never outlive the request it describes.
+  const [saveError, setSaveError] = useState<string | null>(null)
   // The ceremony step (Task 5): set only on a successful save, from that save's own
   // captured minutes/rpe/sport (not `values`/`chosen`, which the ceremony no longer needs
   // and which a stray re-render must not be able to change under it).
@@ -346,6 +365,7 @@ export function SportLogPage() {
     setMode(defaultMode(sport))
     setValues(defaultValues(sport))
     setKcalOverride(null)
+    setSaveError(null)
   }
 
   /**
@@ -369,10 +389,12 @@ export function SportLogPage() {
   function save() {
     if (!chosen) return
     setSaving(true)
+    setSaveError(null)
     const savedMinutes = Number(values.minutes)
     const savedRpe = Number(values.intensity)
     logSportSession(toCreateRequest(chosen, values, mode, kcalOverride), {
       onSuccess: (r) => onSaved(chosen, savedMinutes, savedRpe, r),
+      onError: () => setSaveError('Nem sikerült elmenteni a mozgást. Nézd meg a kapcsolatot, és próbáld újra.'),
       onSettled: () => setSaving(false),
     })
   }
@@ -404,16 +426,17 @@ export function SportLogPage() {
           mode={mode}
           kcalOverride={kcalOverride}
           saving={saving}
+          saveError={saveError}
           onValue={(key, next) => setValues((prev) => ({ ...prev, [key]: next }))}
           onMode={setMode}
-          onAskKcal={() => { setKcalDraft(kcalOverride !== null ? String(kcalOverride) : ''); setKcalOpen(true) }}
+          onAskKcal={() => { setKcalDraft(kcalOverride !== null ? String(kcalOverride) : ''); setKcalDraftError(null); setKcalOpen(true) }}
           onClearKcal={() => setKcalOverride(null)}
           onBack={() => setChosen(null)}
           onSave={save}
         />
       )}
 
-      <GlassBox open={kcalOpen} onClose={() => setKcalOpen(false)} label="Saját kalóriaérték" tint={chosen?.color}>
+      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Saját kalóriaérték" tint={chosen?.color}>
         <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
           A becslés a te súlyodból, korodból és a mozgás fajtájából jön. Ha tudod, hogy máshogy volt,
           írd felül — akkor ezt mentjük, nem a becslést.
@@ -421,15 +444,27 @@ export function SportLogPage() {
         <label className="sp-field" style={{ display: 'block', marginTop: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Kalória</span>
           <input
-            className="sp-text" type="number" min={0} max={5000} step={10} aria-label="Kalória"
-            value={kcalDraft} onChange={(e) => setKcalDraft(e.target.value)}
+            className="sp-text" type="number" min={KCAL_MIN} max={KCAL_MAX} step={10} aria-label="Kalória"
+            value={kcalDraft} onChange={(e) => { setKcalDraft(e.target.value); setKcalDraftError(null) }}
           />
         </label>
+        {kcalDraftError && <p className="sp-note is-error" role="alert">{kcalDraftError}</p>}
         <button
           type="button" className="wo-close-cta" style={{ marginTop: 14 }}
           onClick={() => {
-            const next = Number(kcalDraft)
-            if (kcalDraft.trim() !== '' && Number.isFinite(next) && next >= 0) setKcalOverride(Math.round(next))
+            // The wire's own bounds (`SportSessionCreateRequest.kcalOverride`, @Min(1)
+            // @Max(5000)). Before this, a 0 sailed through to a silent 400 — and in mock,
+            // where nothing rejects it, the ceremony cheerfully celebrated "+0 kcal".
+            // An empty box means "no override" (the existing clear affordance); anything
+            // outside 1..5000 is refused HERE, inline, and never becomes a request.
+            if (kcalDraft.trim() === '') { setKcalOverride(null); setKcalDraftError(null); setKcalOpen(false); return }
+            const next = Math.round(Number(kcalDraft))
+            if (!Number.isFinite(next) || next < KCAL_MIN || next > KCAL_MAX) {
+              setKcalDraftError(`Adj meg egy értéket ${KCAL_MIN} és ${KCAL_MAX} kcal között.`)
+              return
+            }
+            setKcalOverride(next)
+            setKcalDraftError(null)
             setKcalOpen(false)
           }}
         >
