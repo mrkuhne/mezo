@@ -191,6 +191,7 @@ export function FuelMaiPage() {
             lane={lane}
             meals={doneRows}
             dayKcal={budget.kcal}
+            fiberTargetG={dietSettings.fiberG}
             onLogInto={(tile) => {
               const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)
               // A13: a logolás a MEGTEKINTETT naphoz kapcsolódik — a nap megy a `?d=`-ben.
