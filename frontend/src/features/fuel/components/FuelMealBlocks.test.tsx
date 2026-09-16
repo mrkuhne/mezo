@@ -20,7 +20,7 @@ const BUDGET: DayBudget = {
 
 const meal = (over: Partial<FuelMeal> = {}): FuelMeal => ({
   id: 'meal-1', slot: 'breakfast', title: 'Skyr-bowl zabbal', score: 0.88,
-  kcal: 420, p: 36, c: 48, f: 9,
+  kcal: 420, p: 36, c: 48, f: 9, fiberG: 8,
   mealItems: [], items: [], tags: [],
   loggedAt: '2026-09-12T07:40:00', mealDate: '2026-09-12',
   breakdown: { confidence: 0.8, summary: null, tagline: null, dimensions: [], improve: [], tools: [] },
@@ -36,7 +36,7 @@ const slot = (over: Partial<FuelSlot> = {}): FuelSlot => ({
 /** A nap négy tervezett blokkja: a reggeli be van logolva, a többi nyitott/jövő. */
 function fixture({ missed = false }: { missed?: boolean } = {}) {
   const slots: FuelSlot[] = [
-    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Skyr-bowl zabbal', kcal: 420 }),
+    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Skyr-bowl zabbal', kcal: 420, plannedTime: '07:30' }),
     slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: missed ? 'missed' : 'now' }),
     slot({ time: '16:30', label: 'Uzsonna', slotKey: 'snack', state: 'pending' }),
     slot({ time: '19:30', label: 'Vacsora', slotKey: 'dinner', state: 'pending' }),
@@ -51,6 +51,7 @@ function fixture({ missed = false }: { missed?: boolean } = {}) {
 
 const props = (over: Record<string, unknown> = {}) => ({
   ...fixture(over as { missed?: boolean }),
+  fiberTargetG: 30,
   onLogInto: vi.fn(),
   onOpenMeal: vi.fn(),
   onOpenScore: vi.fn(),
@@ -97,33 +98,51 @@ test('a pont-chip az AI értékelésre visz, a sor pedig a részletekre', async 
   expect(onOpenMeal).not.toHaveBeenCalled()
 })
 
-// Owner-kérés (mezo-n9peo): a logolt étkezés sorának ALSÓ sora a három makró, színes kis
-// számokkal és ikonnal — a makró NEVE nélkül, mert a színről felismerhető. Korábban egyetlen
-// makró volt itt, szövegesen („36 g fehérje").
-test('a logolt étkezés sora mindhárom makrót viszi, grammban, a makró neve nélkül', () => {
+// mezo-l2gp0: a grammsor helyén négy mini gyűrű — P/Ch/Zs az étkezés energia-arányát teli
+// (36/48/9 g → 144/192/81 kcal → 35/46/19%), a rost a napi adag részét (8/30 → 27%).
+// A gramm marad a szám a gyűrűben; felirat továbbra sincs, a hue + clay ikon az azonosság.
+test('a makró-gyűrűk az étkezés energia-arányát telítik, a rost a napi adagot', () => {
   const { container } = render(<FuelMealBlocks {...props()} />)
-  const strip = container.querySelector('.fmx-block.is-done .fmx-meal-macros')!
-  const chips = Array.from(strip.querySelectorAll('.fmx-mm'))
-  expect(chips.map(c => c.textContent)).toEqual(['36 g', '48 g', '9 g'])
-  // A hue viszi az azonosságot, nem felirat — se rövidítés, se szó nincs a csíkon.
-  expect(strip.textContent).not.toMatch(/fehérje|szénhidrát|zsír|prot|carb|fat/i)
-  // …a képernyőolvasó viszont szavakat kap, nem három puszta számot.
-  expect(strip.getAttribute('aria-label')).toBe('fehérje 36 g, szénhidrát 48 g, zsír 9 g')
-  // Mindhárom csíp visz saját clay szimbólumot.
-  expect(strip.querySelectorAll('.fmx-mm svg')).toHaveLength(3)
+  const rings = container.querySelector('.fmx-block.is-done .fmx-mrings')!
+  const cells = Array.from(rings.querySelectorAll('.fmx-mring'))
+  expect(cells.map(c => c.querySelector('b')!.textContent)).toEqual(['36g', '48g', '9g', '8g'])
+  const arcs = cells.map(c => (c.querySelector('.fl') as SVGCircleElement | null)?.style.getPropertyValue('--p') ?? null)
+  expect(arcs).toEqual(['35', '46', '19', '27'])
+  expect(rings.getAttribute('aria-label')).toBe(
+    'fehérje 36 g, az étkezés energiájának 35%-a; '
+    + 'szénhidrát 48 g, az étkezés energiájának 46%-a; '
+    + 'zsír 9 g, az étkezés energiájának 19%-a; '
+    + 'rost 8 g, a napi adag 27%-a',
+  )
+  // Felirat nincs a képernyőn — a szavak csak a felolvasónak szólnak.
+  expect(rings.textContent).not.toMatch(/fehérje|szénhidrát|zsír|rost/i)
+  expect(rings.querySelectorAll('.fmx-mcell > svg, .fmx-mcell .clay')).not.toHaveLength(0)
 })
 
-// Őszinte-null a csíkon: amit a forrás nem adott meg, gondolatjel — nem nulla gramm.
-test('a hiányzó makró gondolatjel a csíkon, nem nulla', () => {
+// Őszinte-null: hiányzó makró → "—" és nincs ív; csonka összetételre arány sem számolódik.
+test('a hiányzó makró gondolatjel a gyűrűben, és ilyenkor egyik íve sincs aránynak', () => {
   const rows = [{
     mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
-    proteinG: 36, carbsG: null, fatG: null, scorePct: 88,
-    fiberG: null, plannedTime: null,
+    proteinG: 36, carbsG: null, fatG: null, fiberG: null, plannedTime: '07:30', scorePct: 88,
   }]
   const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
-  const strip = container.querySelector('.fmx-block.is-done .fmx-meal-macros')!
-  expect(Array.from(strip.querySelectorAll('.fmx-mm')).map(c => c.textContent)).toEqual(['36 g', '—', '—'])
-  expect(strip.getAttribute('aria-label')).toBe('fehérje 36 g, szénhidrát nincs adat, zsír nincs adat')
+  const rings = container.querySelector('.fmx-block.is-done .fmx-mrings')!
+  const cells = Array.from(rings.querySelectorAll('.fmx-mring'))
+  expect(cells.map(c => c.querySelector('b')!.textContent)).toEqual(['36g', '—', '—', '—'])
+  expect(rings.querySelectorAll('.fl')).toHaveLength(0)
+  expect(rings.getAttribute('aria-label')).toBe(
+    'fehérje 36 g; szénhidrát nincs adat; zsír nincs adat; rost nincs adat',
+  )
+})
+
+// A név teljes szélességben él, az AI pont az alsó sorban a gyűrűk mellett (owner, v2).
+test('az étkezés-sor: név felül, alul a gyűrűk és a pont-chip egy sorban', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const row = container.querySelector('.fmx-block.is-done .fmx-meal-row')!
+  const bottom = row.querySelector('.fmx-meal-bottom')!
+  expect(bottom.querySelector('.fmx-mrings')).not.toBeNull()
+  expect(bottom.querySelector('.fmx-score')).not.toBeNull()
+  expect(row.textContent).not.toMatch(/kcal/)
 })
 
 // Őszinte-null + szégyenmentesség: kihagyott ablak nem hibaállapot.
