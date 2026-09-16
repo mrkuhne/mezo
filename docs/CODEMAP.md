@@ -305,7 +305,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-09-07, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-16, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-06, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
@@ -340,30 +340,32 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `FactMemoryRetriever`, `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`,
     `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
     `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`,
-    `FlagVerdict`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`, `GraphMaintenanceJob`,
-    `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`, `GraphPromotionListener`,
-    `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`,
-    `HypothesisEvaluationService`, `HypothesisLifecycle`, `HypothesisPipelineService`, `KnowledgeFactChangedEvent`,
-    `KnowledgeFactPromotedEvent`, `KnowledgeFactService`, `LexicalMemoryRetriever`, `LifeEventCandidateService`,
-    `LifeEventExtractionService`, `LifeEventSuggestion`, `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`,
-    `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`, `MemoryContextBlock`, `MemoryContextRenderer`,
-    `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`, `MemoryObservatoryService`,
-    `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionService`, `MemoryProjectionWriter`,
-    `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`,
-    `MemoryReembeddingService`, `MemoryReranker`, `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`,
-    `MemoryRetriever`, `MemoryShadowRunner`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
-    `MessageFeedbackRecordedEvent`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
-    `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`, `ObservationFeedService`, `ObservationSourceIcon`,
-    `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternEventAppender`, `PatternGate`,
-    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
-    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
+    `FlagVerdict`, `GearClassifier`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`,
+    `GraphMaintenanceJob`, `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`,
+    `GraphPromotionListener`, `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`,
+    `GraphTraversalService`, `HypothesisEvaluationService`, `HypothesisLifecycle`, `HypothesisPipelineService`,
+    `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`, `KnowledgeFactService`, `LexicalMemoryRetriever`,
+    `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`, `LifeGoalSnapshotBlock`,
+    `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`, `MemoryContextBlock`,
+    `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`,
+    `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionService`,
+    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`,
+    `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
+    `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`, `MemoryRetriever`, `MemoryShadowRunner`,
+    `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`,
+    `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`,
+    `ObservationBudget`, `ObservationFeedService`, `ObservationSourceIcon`, `PatternConfirmedEvent`,
+    `PatternDetectionJob`, `PatternDetectionService`, `PatternEventAppender`, `PatternGate`, `PatternImpactSource`,
+    `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`,
+    `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
     `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
     `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
     `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
     `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
     `SeasonSuggestion`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
-    `TextSignalSeriesService`, `TextSignalService`, `TraceDisposition`, `TranscriptionService`, `UnavailableReason`,
-    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
+    `TextSignalSeriesService`, `TextSignalService`, `TraceDisposition`, `TranscriptionService`, `TurnGear`,
+    `TurnGearAnalyzer`, `TurnGearRouter`, `UnavailableReason`, `WeekContextRenderer`, `WeeklyScoreService`,
+    `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`, `CompanionStreamController`,
@@ -424,21 +426,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 211 IT + 61 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 214 IT + 68 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
-    `ChatSeedReplyIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
-    `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`, `ChatStreamServiceIT`,
-    `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`,
-    `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
-    `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
-    `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
-    `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
-    `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`, `CompanionObservationApiIT`, `CompanionPatternApiIT`,
-    `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`,
-    `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`,
-    `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `ConsolidationJobIT`,
+    `ChatSeedReplyIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGearIT`, `ChatServiceGraphBlockFailureIT`,
+    `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`,
+    `ChatStreamServiceGearIT`, `ChatStreamServiceIT`, `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`,
+    `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionFactApiIT`, `CompanionFactCandidateApiIT`,
+    `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`, `CompanionFlagLogPersistenceIT`,
+    `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`, `CompanionFlagTraceReadQueriesIT`,
+    `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`,
+    `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`,
+    `CompanionMemorySwitchOffIT`, `CompanionObservationApiIT`, `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`,
+    `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`,
+    `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`, `CompanionToolRegistryIT`,
+    `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `CompanionTurnPropertiesIT`, `ConsolidationJobIT`,
     `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
     `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
@@ -675,7 +678,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-16, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-08, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -807,7 +810,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-09, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-09, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-16, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
