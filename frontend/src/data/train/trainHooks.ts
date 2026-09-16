@@ -486,6 +486,24 @@ type TrainData = {
  * cache (mirrors running's mock log) so the Mai hero flips to its done-state and the Napló
  * reflects it without a backend.
  */
+/**
+ * Mock-mode stand-in for the backend's kcal decision (mezo-88iwa.9, T8 Task 4).
+ *
+ * The REAL number comes from the server: a MET table folded with the athlete's own body
+ * (weight/age/sex/body-fat), which the frontend has no access to and must never reproduce —
+ * a second formula here would drift from the wire's and quietly lie. So this is a FIXTURE
+ * shaped like a plausible session burn (a MET-ish curve over the captured RPE at a fixture
+ * 78 kg body), NOT the published model: mock mode only has to make the ceremony show a
+ * believable number and, above all, honour `kcalOverride` the way the wire promises
+ * (stored verbatim, `kcalIsEstimate: false`).
+ */
+function mockSportKcal(req: SportSessionCreateRequest): { kcal: number; kcalIsEstimate: boolean } {
+  if (req.kcalOverride != null) return { kcal: req.kcalOverride, kcalIsEstimate: false }
+  const fixtureWeightKg = 78
+  const met = 3 + req.rpe * 0.6
+  return { kcal: Math.round((req.duration * met * 3.5 * fixtureWeightKg) / 200), kcalIsEstimate: true }
+}
+
 function useLogSportSession(
   mock: boolean,
   qc: QueryClient,
@@ -528,6 +546,7 @@ function useLogSportSession(
             id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: iso, time: hhmm,
             duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
             rounds: req.rounds, levelUp: sportLevelUpMock,
+            ...mockSportKcal(req),
           } as SportSessionResponse
         }
       : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),

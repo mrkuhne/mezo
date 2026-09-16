@@ -56,6 +56,8 @@ export const DOMAINS: NavDomain[] = [
       // Owner-approved four tabs (2026-09-12): sport/running are not a tab — logging
       // lives on Mai, plans on Terv, history beside the volume on Terhelés.
       { label: 'Mai', route: '/train/mai', icon: 'i-edzes',
+        // `/train/sport` covers the full-screen sport-logging flow at `/train/sport/log`
+        // too — `isPrefix` matches everything under the owned route (T8 Task 4).
         owns: ['/train/session', '/train/review', '/train/sport', '/train/custom'] },
       { label: 'Terv', route: '/train/mesocycles', icon: 'i-retegek',
         owns: ['/train/templates', '/train/futas'] },

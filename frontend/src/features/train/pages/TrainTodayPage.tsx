@@ -693,7 +693,11 @@ export function TrainTodayPage() {
               <ClayIcon name="i-edzes" size={22} />
               <span><small>Gyors indítás</small><strong>Egyedi edzés</strong></span>
             </button>
-            <button type="button" onClick={() => setSportLogSport('volleyball')}>
+            {/* The Sport door opens the full-screen sport flow (mezo-88iwa.9, T8 Task 4):
+                pick a sport, then only the fields that sport actually asks. The day-card
+                CTAs below still open the sheet — they log against a PAST day (Pótold), a
+                date the new flow does not take yet. */}
+            <button type="button" onClick={() => navigate('/train/sport/log')}>
               <ClayIcon name="i-sport" size={22} />
               <span><small>Gyors indítás</small><strong>Sport naplózása</strong></span>
             </button>

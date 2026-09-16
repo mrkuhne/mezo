@@ -16,6 +16,7 @@ import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
 import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
+import { SportLogPage } from '@/features/train/pages/SportLogPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
@@ -269,6 +270,10 @@ export const routes: RouteObject[] = [
       { path: 'train/week/mozgas', element: <TrainWeekMozgasPage /> },
       { path: 'train/gym', element: <GymPage /> },
       { path: 'train/sport', element: <SportPage /> },
+      // The full-screen sport-logging flow (mezo-88iwa.9, T8): pick a sport, then only the
+      // fields that sport actually asks. Sits UNDER /train/sport, so the Mai tab's own
+      // `/train/sport` ownership already lights it (navModel.ts `isPrefix`).
+      { path: 'train/sport/log', element: <SportLogPage /> },
       { path: 'train/futas', element: <RunningPage /> },
       { path: 'train/exercises', element: <ExercisesPage /> },
       { path: 'train/medals', element: <MedalsPage /> },

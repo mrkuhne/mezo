@@ -103,7 +103,7 @@ const minutesField = (value: number): SportNumberField =>
   ({ key: 'minutes', label: 'Időtartam', unit: 'perc', type: 'number', min: 1, max: 600, step: 5, value })
 
 const intensityField = (value: number): SportRangeField =>
-  ({ key: 'intensity', label: 'Megélt terhelés', unit: '/ 10', type: 'range', min: 1, max: 10, value })
+  ({ key: 'intensity', label: 'Megélt terhelés (RPE)', unit: '/ 10', type: 'range', min: 1, max: 10, value })
 
 const trainingMatch = (value: 'training' | 'match' = 'training'): SportModesField => ({
   key: 'mode', label: 'Típus', type: 'modes', value,
@@ -189,6 +189,12 @@ export const SPORTS: (Sport | RunTile)[] = [
       { key: 'distance', label: 'Táv', unit: 'km', type: 'number', min: 1, max: 60, step: 0.5, value: 9 },
       minutesField(150),
       { key: 'climb', label: 'Szintemelkedés', unit: 'm', type: 'number', min: 0, max: 4000, step: 50, value: 300 },
+      // The prototype's túra has no felt-effort slider (its MET came from the climb alone),
+      // but OUR wire makes `rpe` REQUIRED on every sport session
+      // (`SportSessionCreateRequest.rpe`, api/feature/train/train.yml). Deriving it from the
+      // climb, or posting a silent default, would be a number the athlete never said — so the
+      // túra form asks the same question every other sport asks (mezo-88iwa.9, T8 Task 4).
+      intensityField(5),
     ],
   },
   {
