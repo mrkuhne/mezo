@@ -146,7 +146,7 @@ class SportContractIT extends ApiIntegrationTest {
     @Test
     void testLogSportSession_shouldReturn400InvalidValue_whenSportNotAllowed() {
         String body = postForBody("/api/train/sport-sessions",
-            sessionReq().sport("tennis").build(),
+            sessionReq().sport("kajak").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "sport", "VALIDATION_INVALID_VALUE");
     }
