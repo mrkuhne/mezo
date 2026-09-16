@@ -584,8 +584,11 @@ endpoint's `events[]` — see below.
   **critique** per hypothesis (4-factor 0..1 + prose reasoning) → **score**
   (`0.35·stat + 0.25·conf + 0.20·l3align + 0.20·act`, arch §4.7 — weights are code) → route:
   keep ≥ `keep-threshold` (0.75) · revise ONCE ≥ `revise-threshold` (0.50) then re-critique ·
+  **then, on a COLD account only, keep ≥ `cold-start-keep-threshold` (0.55, `mezo-5543y`)** ·
   else discard. Every stage pure-compute or pure-LLM (NFR-M-4); defensive JSON parsing all the
-  way down (broken answer = zero survivors).
+  way down (broken answer = zero survivors). The round logs its own arithmetic at INFO
+  (`N proposal(s), M persisted, keep floor F`) — the prod diagnosis behind `mezo-5543y` had only the
+  survivor count, which cannot tell "the model proposed nothing" from "everything was critiqued away".
 - **Survivors join the V3.1 Inbox** as `kind=ai_hypothesis` rows: `confidence` = the weighted
   score, critique jsonb attached (+`reasoning`), `r/n/p` null. Identity =
   `"hyp-" + hash(normalized title)` — an existing row in ANY status is never re-proposed
@@ -1245,9 +1248,17 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   branch had no status filter at first) and its lookup now takes only `proposed`/`monitoring` +
   `isReflectionOwned()` rows. A settled match resolves to **nothing** rather than to a new row:
   `uq_pattern_created_by_hypothesis_key` (partial unique index on `(created_by, hypothesis_key)`)
-  forbids a second live row with that key, so the notice falls through to the touched-row step and
-  is dropped if there is none. `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
+  forbids a second live row with that key, so the notice falls through to the touched-row step.
+  `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
   is a fact the code knows, not something to leave to the model.
+- **The touched-row step is no longer the end of the road (`mezo-5543y`).** `resolveTarget` returns a
+  `Resolution` — the row, plus WHY there is none — because the two misses are not the same thing.
+  `settledGround` means the model's own claim resolved onto a row somebody already judged (by naming
+  its key, or by proposing the plan that derives it); re-raising that on ANY row would quietly reopen
+  a verdict nobody revisited, so the notice is still dropped. A miss with no settled ground is the
+  opposite situation — nothing in the account speaks to this observation at all — and it now lands on
+  a plan-less **holding row** (`origin=quick_notice`, `kind=reflection`, `hypothesis_key=null`,
+  `test_plan=null`, `pair_key=note-<uuid>`). See §Cold start below for why that row has to exist.
 - **The notification is the surfaced half.** `surfaced = observationBudget.allows(userId, now)` is
   recorded ON the event; only a surfaced one emits `AppNotificationKind.OBSERVATION_NEW`
   (`observation_new` · family `pattern` · `/nap/uzenetek?tab=eszrevetelek`), deduped on
@@ -1307,6 +1318,53 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   `ReflectionReplyRecorder`'s `REQUIRES_NEW`): the only caller is the controller, so there is no
   caller transaction to poison, and the reply, the status move and the seeded conversation must
   commit or fail as ONE act — a refuted row with no reply behind it is worse than an error.
+**Cold start — how the Észrevételek tab deadlocked in production, and the two doors out
+(`mezo-5543y`, fixed 2026-09-16).** The tab shipped with S5 and stayed empty for its whole first
+week on the live instance. Nothing was broken: `GET /api/companion/observation` answered `200 []`
+every time, because **no observation had ever been produced**. The three producers were in a circle,
+and each one needed one of the others to have gone first:
+
+| Producer | Needed | Reality on a fresh account |
+|---|---|---|
+| `fresh` card (`QuickNoticeService`) | an open row to hang on, or a model-supplied plan | no rows at all ⇒ `TOUCHES_OPEN` cannot fire; without a plan the notice was dropped |
+| `watching` card (`ReflectionReplyService`) | the user answering a `fresh` card | there were none to answer |
+| open rows (`HypothesisPipelineService`) | critique score ≥ 0.75 | `CRITIQUE_PROMPT` orders a LOW `statistical` score without a concrete r/n, and that factor weighs most (0.35) — a FIRST hypothesis cannot structurally clear the bar |
+
+VictoriaLogs showed the nightly pass logging `Reflection propose … : 0` every night from the
+feature's first run; every quick-notice exit was `log.debug`, so the same-day half left no trace at
+all. Both halves are fixed, deliberately in two independent places so neither is a single point of
+failure:
+
+- **The holding row** (same-day). A notice that resolved to nothing — no named key, no valid plan, no
+  touched row, **and no settled ground** — now creates a plan-less `reflection` row to carry the
+  observation. Plan-less is the honest shape and an already-supported one: the nightly evaluation
+  skips `test_plan = null` rows, `ObservationFeedService` keeps them out of `watching`,
+  `QuickNoticePreScreen.touchesOpen` ignores them, and `ObservationSourceIcon` already renders a
+  plan-less row as Mezo's own voice. `hypothesis_key` stays **null** so the row is un-addressable (a
+  model may not name it for revision) and several may coexist under the partial unique index. It is
+  created **only when the notice will actually be surfaced** — a row per invisible card would litter
+  the Minták screen for ever (`QuickNoticeBudgetOffIT`).
+- **The cold-start keep floor** (nightly). While the account has NO open reflection-owned row,
+  `keepFloor` returns `cold-start-keep-threshold` (0.55) instead of 0.75. It is consulted **last**, on
+  the better of the original and its revision, so a lower bar never costs a revise pass; it is read
+  ONCE per round, so a row persisted early cannot raise the bar on its own siblings mid-round; and it
+  is boot-validated to sit between the revise and keep bands (`@AssertTrue` on `Hypotheses`).
+- **Three user-visible consequences.** (1) A holding row appears on the **Minták** screen like any
+  other `proposed` reflection row, carrying the notice's first sentence as its title and no
+  statistics. (2) It gets **no "Részletek és előzmények" link**: `GET /api/companion/pattern/pair/{pairKey}`
+  resolves the key against the CATALOG first and then as a `hypothesis_key` carrying a test plan, and
+  a holding row satisfies neither (`note-<uuid>`, no key), so the link would 404. `PatternDecisionCard`
+  suppresses it for a **plan-less `reflection` row specifically** — deliberately narrow, because
+  "no `testPlan`" alone proves nothing about the key: a `statistical` row has no plan either and its
+  detail page works fine, its `pairKey` being a catalog key. (3) A `watch` chip on a card with no
+  test plan must not promise what nothing will deliver: `ObservationCard` branches its acknowledgement
+  on `minN != null` — „Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok." instead of
+  „Nyolc napnál újra szólok." The reply is not wasted either way; it lands in the row's event stream
+  and the nightly prompt reads it back as the user's own words.
+- **Observability, because the absence of logs was the whole problem.** The pre-screen's "not salient"
+  exit and the notice's drop (with its REASON: settled / no row and no plan / over budget) are INFO
+  now, as is the proposal round's `N proposal(s), M persisted, keep floor F`.
+
 - **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
   renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
   NAME its row, the quote because the user's words are the most informative thing the nightly pass
