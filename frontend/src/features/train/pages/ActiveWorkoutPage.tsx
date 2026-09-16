@@ -22,6 +22,7 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
+import { RIR_VALUES } from '@/features/train/logic/rir'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
@@ -1433,7 +1434,7 @@ function ActiveWorkoutSession({
                 {!isWarmupSet && (
                   <div className="rirrow">
                     <span className="rk">RIR</span>
-                    {[0, 1, 2, 3].map((n) => (
+                    {RIR_VALUES.map((n) => (
                       <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
                         {n}
                       </button>

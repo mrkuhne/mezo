@@ -197,6 +197,32 @@ test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and t
   expect(await screen.findByText('🌿 hagyj 2 rep tartalékot')).toBeInTheDocument()
 })
 
+test('real mode: the RIR picker shows all 6 buttons (0-5) and the initial value is pressed', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], warmupSets: 0, workingSets: 1, lastWeek: { weightKg: 102.5, reps: 9, rir: 4 } }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  // Verify all six RIR buttons render
+  for (let i = 0; i <= 5; i++) {
+    expect(screen.getByRole('button', { name: `RIR ${i}` })).toBeInTheDocument()
+  }
+  // Verify the button matching the initial rir is pressed
+  const pressedButton = screen.getByRole('button', { name: 'RIR 4' })
+  expect(pressedButton).toHaveAttribute('aria-pressed', 'true')
+  // Verify the others are not pressed
+  for (let i = 0; i <= 5; i++) {
+    if (i !== 4) {
+      const btn = screen.getByRole('button', { name: `RIR ${i}` })
+      expect(btn).toHaveAttribute('aria-pressed', 'false')
+    }
+  }
+})
+
 test('mock mode: the session progress bar renders one segment per exercise', async () => {
   const user = userEvent.setup()
   const { container } = setup()
