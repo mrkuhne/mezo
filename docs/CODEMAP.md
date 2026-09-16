@@ -566,9 +566,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
     formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, glycemicBand.ts,
     heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts,
-    mealDisplayName.ts, mealQualityTruth.ts, mealShare.ts, pantryProvenance.ts, projectStackDay.ts, recipeRole.ts,
-    recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts, useStackIntakeToggle.ts,
-    usualMeals.ts, validateSlotPlan.ts
+    mealDisplayName.ts, mealNutrients.ts, mealQualityTruth.ts, mealShare.ts, pantryProvenance.ts, projectStackDay.ts,
+    recipeRole.ts, recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts,
+    useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
