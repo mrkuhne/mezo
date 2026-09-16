@@ -40,4 +40,5 @@ cat src/sablonok-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/sablonok-
 cat src/ntf-dropdown-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/ntf-dropdown-body.html > ertesites-dropdown.html
 cat src/admin-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-body.html > admin-hub.html
 cat src/admin-memory-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-memory-body.html > admin-memory.html
-echo "OK — 35 prototype files assembled."
+cat src/fuel-kartya-ido-head.html "$A/clay-icons.svg" src/fuel-kartya-ido-body.html > fuel-kartya-ido.html
+echo "OK — 36 prototype files assembled."

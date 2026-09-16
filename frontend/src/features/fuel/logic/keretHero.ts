@@ -149,6 +149,12 @@ export interface DoneMealRow {
    *  independently nullable — a source that gave no value gets an em dash, never a fabricated 0. */
   proteinG: number | null; carbsG: number | null; fatG: number | null
   scorePct: number | null
+  /** Rost grammban (mezo-l2gp0) — a kártya rost-gyűrűjének számlálója; a wire-ról hiányzó
+   *  rost null marad (őszinte-null), sosem 0. */
+  fiberG: number | null
+  /** A tervezett ablak-idő (mezo-l2gp0) — az óra-doboz "Terv szerint" sora; ablak nélküli
+   *  extra logon null. */
+  plannedTime: string | null
 }
 
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join
@@ -170,6 +176,8 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
         carbsG: meal?.c ?? s.c ?? null,
         fatG: meal?.f ?? s.f ?? null,
         scorePct: meal?.score != null ? Math.round(meal.score * 100) : null,
+        fiberG: meal?.fiberG ?? null,
+        plannedTime: s.plannedTime ?? null,
       }
     })
 }
