@@ -221,13 +221,6 @@ describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
 describe('the titanium glass primitive section is registered (mezo-88iwa.13)', () => {
   const START_MARKER = 'titanium glass primitive'
   const END_MARKER = '/titanium glass primitive'
- * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
- * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
- * and the muscle detail's gauge, ported from the prototype's `plan.css`.
- */
-describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
-  const START_MARKER = 'terv titanium'
-  const END_MARKER = '/terv titanium'
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -292,7 +285,6 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
   })
 
   test('the section actually carries the ld- class family, not just the markers', () => {
-  test('the section actually carries the pl- class family, not just the markers', () => {
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
     const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
@@ -312,6 +304,30 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
     expect(rawCss).toContain('.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i')
     expect(rawCss).toMatch(/@keyframes ld-fill \{ from \{ transform: scaleX\(0\); \}/)
   })
+})
+
+/**
+ * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
+ * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
+ * and the muscle detail's gauge, ported from the prototype's `plan.css`.
+ */
+describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
+  const START_MARKER = 'terv titanium'
+  const END_MARKER = '/terv titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the pl- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
       '.pl-poster', '.pl-ring', '.pl-arc', '.pl-day', '.pl-dest', '.pl-dhero',
       '.pl-ex', '.pl-item', '.pl-scale-bar', '.pl-versus',
     ]) {

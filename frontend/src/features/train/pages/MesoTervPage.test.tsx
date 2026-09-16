@@ -141,11 +141,17 @@ test('the whole-poster tap opens the builder deep-link (the ActiveMesoCard contr
 // --- „A heted" day cards ---
 
 test('every training day is a card with its FULL weekday name and its type', () => {
-  setup()
-  // meso-hyp-04 trains Hét/Kedd/Sze/Csü/Pén; Szo is volleyball, Vas is rest.
-  expect(screen.getByRole('button', { name: 'Hétfő · Push' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Szerda · Legs' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Péntek · Push · light' })).toBeInTheDocument()
+  // Pinned clock (napszak test-bomb rule): a Saturday, so no fixture training day is 'ma'
+  // and the accessible names stay stable every real weekday.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-18T12:00:00'))
+  try {
+    setup()
+    // meso-hyp-04 trains Hét/Kedd/Sze/Csü/Pén; Szo is volleyball, Vas is rest.
+    expect(screen.getByRole('button', { name: 'Hétfő · Push' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Szerda · Legs' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Péntek · Push · light' })).toBeInTheDocument()
+  } finally { vi.useRealTimers() }
 })
 
 test('a day card carries its boxed facts (szett / perc / gyakorlat) from dayTileData', () => {
@@ -165,10 +171,16 @@ test('rest and sport days are slim rows, not cards', () => {
 })
 
 test('a day card opens that day\'s own page', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: 'Szerda · Legs' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-hyp-04/days/Sze')
+  // Pinned clock (napszak test-bomb rule): a Saturday, so no fixture training day is 'ma'
+  // and the accessible names stay stable every real weekday.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-18T12:00:00'))
+  try {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: 'Szerda · Legs' }))
+    expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-hyp-04/days/Sze')
+  } finally { vi.useRealTimers() }
 })
 
 // --- The MA chip (todayDayToken, mesoDates.ts) ---
