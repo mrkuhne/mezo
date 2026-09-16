@@ -41,7 +41,12 @@ import org.springframework.test.context.TestPropertySource;
 class ChatMemoryRolloutIT extends AbstractIntegrationTest {
 
     private static final String VERSION = "gemini-embedding-001-768-v1";
-    private static final String QUERY = "Mit tudunk Boglárkáról? [fake-embed:1]";
+    // mezo-rj214.7: data-bearing ("ma" is a time word). These are prompt-order ITs
+    // (assertUnifiedPrompt slices system=[...]), so a CHAT gear would make them vacuous. Every
+    // call site below that passes this constant carries a `gear-audited` marker, because a
+    // constant reference
+    // is exactly the form PromptOrderFixtureGearGuardTest cannot classify on its own.
+    private static final String QUERY = "Mit tudunk Boglárkáról ma? [fake-embed:1]";
 
     @Autowired private ChatService chatService;
     @Autowired private ChatStreamService chatStreamService;
@@ -57,6 +62,7 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
         MemoryItemEntity memory = memory(owner, "Boglárka után jobban aludtam. [fake-embed:1]");
 
+        // gear-audited: QUERY carries the time word "ma" — see its declaration above.
         MessageResponse response = chatService.sendMessage(owner, conversation.getId(), request(QUERY));
 
         assertUnifiedPrompt(response.getContent(), memory.getContent());
@@ -70,6 +76,7 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
         MemoryItemEntity memory = memory(owner, "Boglárka után jobban aludtam. [fake-embed:1]");
 
         List<ServerSentEvent<Object>> events = chatStreamService
+                // gear-audited: QUERY carries the time word "ma" — see its declaration above.
                 .streamMessage(owner, conversation.getId(), request(QUERY))
                 .collectList().block();
 
@@ -89,6 +96,7 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
         memory(ownerA, "A-TITKOS-Boglárka [fake-embed:1]");
         AiConversationEntity conversationB = conversationPopulator.conversation(ownerB);
 
+        // gear-audited: QUERY carries the time word "ma" — see its declaration above.
         MessageResponse response = chatService.sendMessage(ownerB, conversationB.getId(), request(QUERY));
 
         assertThat(response.getContent()).doesNotContain("A-TITKOS-Boglárka");
@@ -103,8 +111,11 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
         MemoryItemEntity memory = memory(owner, "Boglárka segített a költözésben.");
 
+        // mezo-rj214.7: "ma" (time word) keeps this off the lightened CHAT gear, which would skip
+        // chatMemoryContextAdapter.resolve(..) entirely and make the dense-failure audit vacuous.
+        // Built via concatenation, so the fixture guard's literal regex cannot see this collision.
         MessageResponse response = chatService.sendMessage(owner, conversation.getId(),
-                request("Boglárka " + FakeEmbeddingAdapter.FAIL_EMBED));
+                request("Boglárka ma " + FakeEmbeddingAdapter.FAIL_EMBED));
 
         assertUnifiedPrompt(response.getContent(), memory.getContent());
         RecalledMemory disclosed = response.getRecalled().stream()
@@ -126,6 +137,7 @@ class ChatMemoryRolloutIT extends AbstractIntegrationTest {
     }
 
     private static SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 

@@ -119,6 +119,8 @@ class TestPlanValidatorTest {
         return new CompanionProperties(null, null, null, null, null, null, null, null, null, null,
                 null,
                 new CompanionProperties.Patterns("0 40 2 * * *", 60, 8, 3, 7, 100, List.of()),
-                null, null, null, null, null, null, List.of());
+                null, null, null, null, null, null, List.of(),
+                new CompanionProperties.Turn(new CompanionProperties.Turn.Gear(true),
+                        new CompanionProperties.Turn.Answerer("high")));
     }
 }

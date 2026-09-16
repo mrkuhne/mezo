@@ -54,6 +54,7 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
     @Test
     void testStreamMessage_shouldReturn401_whenNoToken() {
         postForBody(streamUri(UUID.randomUUID()),
+                // gear-audited: an auth/routing rejection — the request never reaches a gear.
                 SendMessageRequest.builder().content("x").build(),
                 null, HttpStatus.UNAUTHORIZED, Void.class);
     }
@@ -61,6 +62,7 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
     @Test
     void testStreamMessage_shouldReturn404Json_whenUnknownConversation() {
         String body = postForBody(streamUri(UUID.randomUUID()),
+                // gear-audited: an auth/routing rejection — the request never reaches a gear.
                 SendMessageRequest.builder().content("x").build(),
                 sseHeaders(), HttpStatus.NOT_FOUND, String.class);
 
@@ -73,6 +75,7 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
                 CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
 
         String body = postForBody(streamUri(conversation.getId()),
+                // gear-audited: rejected by bean validation — no gear, no model, no prompt.
                 SendMessageRequest.builder().content("").build(),
                 sseHeaders(), HttpStatus.BAD_REQUEST, String.class);
 
@@ -173,7 +176,7 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
                 CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
 
         String sse = postForBody(streamUri(conversation.getId()),
-                SendMessageRequest.builder().content("szállj el " + FakeCompanionLlm.FAIL_STREAM).build(),
+                SendMessageRequest.builder().content("aludtam jól, szállj el " + FakeCompanionLlm.FAIL_STREAM).build(),
                 sseHeaders(), HttpStatus.OK, String.class);
 
         assertThat(sse).contains("event:error").contains("COMPANION_STREAM_FAILED");

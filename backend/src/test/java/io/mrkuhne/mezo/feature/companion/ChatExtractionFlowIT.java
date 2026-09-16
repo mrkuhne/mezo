@@ -42,7 +42,7 @@ class ChatExtractionFlowIT extends ApiIntegrationTest {
         MessageResponse answer = postForBody(
                 "/api/companion/conversation/" + conversation.getId() + "/message",
                 SendMessageRequest.builder()
-                        .content("mesélek: [fake-facts:[{\"fact\":\"Laktózérzékeny\",\"category\":\"health\"}]]")
+                        .content("ma mesélek: [fake-facts:[{\"fact\":\"Laktózérzékeny\",\"category\":\"health\"}]]")
                         .build(),
                 ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
         assertThat(answer.getRole()).isEqualTo("assistant");

@@ -13,10 +13,13 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
+import io.mrkuhne.mezo.feature.companion.service.GearClassifier;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
+import io.mrkuhne.mezo.feature.companion.service.TurnGear;
+import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,6 +50,13 @@ import reactor.core.publisher.Flux;
 public class FakeCompanionLlm implements CompanionLlm {
 
     public static final String PREFIX = "FAKE-LLM";
+
+    /** Proves a turn took the tool-free smart branch — asserted by the gear ITs (mezo-rj214.7). */
+    public static final String CHAT_GEAR_SENTINEL = "FAKE-CHAT-GEAR";
+
+    /** Mirrors the real router's deterministic pre-classifier so scripted questions classify the
+     *  same way a reader expects, without paying for a fake model round-trip. */
+    private static final TurnGearAnalyzer GEAR_ANALYZER = new TurnGearAnalyzer();
 
     /** Content markers that force a deterministic failure — lets ITs exercise error paths. */
     public static final String FAIL_COMPLETE = "[fake-fail]";
@@ -951,6 +961,11 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (workshop.find()) {
             return workshop.group(1);
         }
+        if (systemPrompt.startsWith(GearClassifier.PROMPT)) {
+            // Mirror the deterministic analyzer so fixture questions classify the way a reader
+            // expects; anything it cannot settle becomes ANALYSIS, exactly like the router.
+            return GEAR_ANALYZER.analyze(userMessage).orElse(TurnGear.ANALYSIS).name();
+        }
         return PREFIX + " system=[" + systemPrompt + "]"
                 + " history=[" + ChatHistory.render(history) + "]"
                 + " user=[" + userMessage + "]"
@@ -1140,6 +1155,50 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /**
+     * The tool-free smart-tier entry point (mezo-rj214.7): overridden — rather than left on the
+     * interface default — so a CHAT-gear turn is provably distinguishable from the ordinary
+     * {@link #complete(String, List, String, List, Map)} echo. The shape otherwise matches that
+     * echo character-for-character so the existing prompt-order ITs stay unaffected.
+     *
+     * <p>It honours the same failure sentinels as the tool-carrying twins: a provider outage and a
+     * text-free candidate are provider behaviours, not gear behaviours, so a CHAT turn must be
+     * scriptable into them exactly like every other turn.
+     */
+    @Override
+    public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                String userMessage) {
+        if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
+            throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return "";
+        }
+        return CHAT_GEAR_SENTINEL + " " + PREFIX
+            + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
+            + " history=[" + ChatHistory.render(history) + "]"
+            + " user=[" + userMessage + "]";
+    }
+
+    /**
+     * Streamed twin of {@link #completeSmart(String, String, List, String)} — including the
+     * streamed failure shapes: {@link #FAIL_STREAM} errors mid-stream after one chunk, and
+     * {@link #EMPTY_ANSWER} completes with no text at all (mezo-8z79).
+     */
+    @Override
+    public Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                    String userMessage) {
+        if (userMessage.contains(FAIL_STREAM)) {
+            return Flux.concat(
+                Flux.just(PREFIX),
+                Flux.error(new IllegalStateException("FAKE-LLM forced stream failure")));
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return Flux.empty();
+        }
+        return Flux.just(completeSmart(systemPrompt, turnContext, history, userMessage));
     }
 
     /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}

@@ -41,7 +41,8 @@ public record CompanionProperties(
     @NotNull @Valid Transcription transcription,
     @NotNull @Valid AmbientRecall ambientRecall,
     @NotNull @Valid Graph graph,
-    @NotNull List<@Valid Intervention> interventions
+    @NotNull List<@Valid Intervention> interventions,
+    @NotNull @Valid Turn turn
 ) {
     /**
      * Provider selection and model tiers (ADR 0008 + mezo-ozri spec §M1/§A1; swap = YAML edit, no
@@ -466,4 +467,19 @@ public record CompanionProperties(
         /** Max refs persisted per turn (deduped, insertion-ordered). */
         @Min(1) @Max(30) int maxRefsPerTurn
     ) {}
+
+    /**
+     * How one chat turn is shaped (spec 2026-09-16). Only the gear and the CHAT-branch effort live
+     * here for now; the planner, executor and replan blocks arrive with slices S9.4/S9.5.
+     */
+    public record Turn(
+        @NotNull @Valid Gear gear,
+        @NotNull @Valid Answerer answerer
+    ) {
+        /** Whether an UNSURE turn may spend one cheap call on a classifier, or falls straight to ANALYSIS. */
+        public record Gear(boolean classifierEnabled) {}
+
+        /** Reasoning effort per gear. Only the CHAT branch exists in this slice. */
+        public record Answerer(@NotBlank String chatEffort) {}
+    }
 }

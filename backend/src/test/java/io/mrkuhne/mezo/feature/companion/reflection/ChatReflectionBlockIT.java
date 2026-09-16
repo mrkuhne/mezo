@@ -49,7 +49,7 @@ class ChatReflectionBlockIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
 
         MessageResponse answer = chatService.sendMessage(owner, conversation.getId(),
-                SendMessageRequest.builder().content("szia mezo").build());
+                SendMessageRequest.builder().content("Hogy aludtam az éjjel?").build());
 
         assertThat(answer.getContent()).contains("[Észrevételek — amit Mezo most figyel]");
         assertThat(answer.getContent())
@@ -66,7 +66,7 @@ class ChatReflectionBlockIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
 
         MessageResponse answer = chatService.sendMessage(owner, conversation.getId(),
-                SendMessageRequest.builder().content("szia mezo").build());
+                SendMessageRequest.builder().content("Hogy aludtam az éjjel?").build());
 
         assertThat(answer.getContent()).doesNotContain("[Észrevételek");
     }
