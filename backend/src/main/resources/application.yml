@@ -925,7 +925,15 @@ mezo:
         recency-max-boost: 0.003
       execution:
         # Independent deadline for each parallel retriever; one timeout never cancels its peers.
+        # This is a DATABASE budget — every retriever below it does one indexed query and nothing
+        # else. Do NOT put a network hop inside it (mezo-iddo: the query embedding used to live
+        # here, and at p50 ~270 ms it lost the race on 55 of 55 live runs, silently disabling
+        # semantic recall while every run still audited clean).
         retriever-timeout-ms: 200
+        # The one query-embedding hop, taken ONCE before the fan-out. Sized off measured provider
+        # latency (p50 ~270 ms, p95 ~675 ms, slowest observed success 1430 ms) with headroom, so it
+        # bounds a hung provider without ever cutting off a normal call.
+        query-embedding-timeout-ms: 2500
       reranker:
         # Off by default: normal chat never requires an LLM reranker.
         enabled: false
