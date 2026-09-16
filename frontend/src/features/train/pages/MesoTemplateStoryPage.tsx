@@ -43,6 +43,7 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
+import { huKg } from '@/features/train/logic/mesoDates'
 import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
@@ -62,7 +63,6 @@ import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
 /** Fixed one decimal: `hu1` strips a trailing ",0", which reads as a typo next to `2,7 volt`. */
-const hu1 = (n: number) => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })
 
 /** Working sets on one day — the card's own fact box (the weekly bars below do the
  *  budget-aware sum; this is just "how much work is this session"). */
@@ -247,7 +247,7 @@ export function MesoTemplateStoryPage() {
                           {e.anchorWeightKg === 0
                             ? 'saját testsúly'
                             : e.anchorWeightKg != null
-                              ? `${hu1(e.anchorWeightKg)} kg`
+                              ? `${huKg(e.anchorWeightKg)} kg`
                               : '—'}
                         </small>
                       </span>

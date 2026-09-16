@@ -52,3 +52,10 @@ export function huDate(value: string | undefined): string | null {
   if (!value) return null
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? huMonthDay(value) : value
 }
+
+/** Kilogram figure in Hungarian, at most one decimal (42.5 → „42,5", 60 → „60").
+ *  One home for what MesoDayPage and MesoTemplateStoryPage each kept a private copy of
+ *  (mezo-88iwa.11). Deliberately `toLocaleString`, not `shared/lib/huNum`'s `toFixed`
+ *  variant: a weight of a thousand kilos should group, and these two pages already
+ *  shipped that behaviour. */
+export const huKg = (n: number): string => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })

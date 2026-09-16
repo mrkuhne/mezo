@@ -37,6 +37,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MesoExercises } from '@/features/train/components/MesoExercises'
+import { huKg } from '@/features/train/logic/mesoDates'
 import type { DayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
@@ -52,7 +53,6 @@ const DAY_ACCENT: Record<DayTone, string> = {
   coral: 'var(--coral)', sage: 'var(--sage)', rose: 'var(--rose)', gold: 'var(--amber)',
 }
 
-const hu1 = (n: number) => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })
 
 /** Same shape as the sibling week/muscle pages' skeletons — real mode has no block until the
  *  list query lands, and a ghost („nincs a blokkban") shown in that window would call every
@@ -195,7 +195,7 @@ export function MesoDayPage() {
                         </span>
                         <span><b>{e.targetRIR}</b><i>RIR</i></span>
                         <span>
-                          <b>{bodyweight ? 'saját testsúly' : e.anchorWeightKg != null ? hu1(e.anchorWeightKg) : '—'}</b>
+                          <b>{bodyweight ? 'saját testsúly' : e.anchorWeightKg != null ? huKg(e.anchorWeightKg) : '—'}</b>
                           <i>kg induló</i>
                         </span>
                         <span><b>{e.warmupSets || '—'}</b><i>bemelegítő</i></span>
