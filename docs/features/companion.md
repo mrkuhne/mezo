@@ -2018,8 +2018,9 @@ turn earns — `TurnGear.{CHAT, LOOKUP, ANALYSIS}` (`service/TurnGear.java`). Th
 WHO plans, only the reasoning effort and (in later slices) whether a replan lap is allowed.
 Deterministic rules run first: `TurnGearAnalyzer.analyze` (`service/TurnGearAnalyzer.java`, the same
 shape as `MemoryQueryAnalyzer`) folds the message (`ToolText.fold`) and classifies on word sets —
-`DOMAIN_WORDS`/`TIME_WORDS` (does it refer to the user's own data at all?) crossed with
-`LOOKUP_WORDS` ("mennyit"/"mikor"/…) vs `ANALYSIS_WORDS` ("miert"/"trend"/…) — plus an explicit
+`DOMAIN_WORDS`+`DOMAIN_STEMS`/`TIME_WORDS`+`TIME_STEMS` (does it refer to the user's own data at
+all?) crossed with `LOOKUP_WORDS`/`LOOKUP_STEMS` ("mennyit"/"mikor"/…) vs
+`ANALYSIS_WORDS`/`ANALYSIS_STEMS` ("miert"/"trend"/…) — plus an explicit
 "look deeper" override (`DEEPER_LOOK_PHRASES`/`DEEPER_LOOK_VERBS`, always ANALYSIS, no classifier
 call, spec §2 G3): a verb immediately followed by "at" counts as the phrasal-verb bigram UNLESS the
 word after "at" is a modal/auxiliary (`NON_PHRASAL_POST_AT_VERBS` — "at kell", "at lehet", …), which
@@ -2031,8 +2032,21 @@ when `mezo.companion.turn.gear.classifier-enabled` is true (§4); the classifier
 exception or unparseable answer ⇒ `Optional.empty()`), and an UNSURE turn the classifier could not
 settle — or that never got a classifier call — falls to `TurnGear.ANALYSIS`, the router's TOP-gear
 fallback: guessing too high costs latency, guessing too low costs the user a worse answer.
-`ToolSelectionEvalIT`'s 42 cases are all data-bearing, so none should flip to `CHAT` under this
-router; a flip there is a finding about the analyzer, not the eval.
+
+**Why the word sets come in two halves.** Hungarian is agglutinative, so an exact-match set is a
+sieve: "súly" arrives as `sulyt`/`sulyom`/`sulyommal`, "ismétlés" as `ismetlesre`. The first cut of
+the analyzer matched exactly and **19 of `ToolSelectionEvalIT`'s 42 data-bearing questions
+classified as `CHAT`** — which would have stripped their tools and had the model answer from
+nothing. Each set is therefore now a pair: an exact `*_WORDS` set for words too short to be safe
+prefixes (`pr`, `ma`, `viz` — which would swallow `vizsgald` — `cel`, `szint` — which would swallow
+`szinte`), and a `*_STEMS` set matched with `startsWith`. Over-matching is the deliberate direction
+of error: a word that merely starts like a domain stem buys a heavier gear, it never removes one.
+**Supplement, medicine and exercise NAMES are banned from the stems** — "Mit gondolsz a
+kreatinról?" is a general-knowledge question, not a question about the user's log, and must stay
+`CHAT`. `TurnGearAnalyzerEvalCorpusTest` (`service/`) runs the analyzer over the whole 42-case
+corpus and fails on any `CHAT`; `UNSURE` is fine there (the classifier or the ANALYSIS fallback
+still hands the turn its tools), and `TurnGearAnalyzerTest` binds the other direction. The two
+suites together are what a new stem must satisfy.
 
 `ChatService.sendMessage` and `prepareTurn` (`service/ChatService.java:222,271`) both call
 `turnGearRouter.route` first and branch identically (a comment on each site says so, to keep the two
