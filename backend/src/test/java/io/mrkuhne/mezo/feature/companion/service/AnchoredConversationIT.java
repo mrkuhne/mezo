@@ -78,7 +78,7 @@ class AnchoredConversationIT extends AbstractIntegrationTest {
         ConversationResponse conversation = conversationService.create(userId, weekRequest(wednesday));
 
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
-                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("milyen volt a hetem?").build());
+                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("milyen volt a héten?").build());
 
         assertThat(answer.getContent()).contains("[Heti adatok]");
         assertThat(answer.getContent()).contains("- " + monday);
@@ -129,7 +129,7 @@ class AnchoredConversationIT extends AbstractIntegrationTest {
         assertThat(messages(conversation.getId(), userId)).isEmpty();
 
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
-                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("szia").build());
+                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("szia, mi volt ma?").build());
 
         assertThat(answer.getContent()).doesNotContain("[Heti adatok]");
     }

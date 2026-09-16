@@ -120,7 +120,7 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
         GraphNodeEntity b = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Rossz alvás");
         graphPopulator.createEdge(userId, a.getId(), b.getId(), GraphEdgeEntity.KIND_TRIGGERS, "0.800");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a mai terv?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a terv ma?"));
 
         assertThat(systemBlock(answer)).doesNotContain("[Összefüggések]");
         assertThat(systemBlock(answer)).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-none@test.local"));

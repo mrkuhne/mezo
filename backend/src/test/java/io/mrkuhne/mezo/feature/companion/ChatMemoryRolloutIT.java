@@ -41,7 +41,10 @@ import org.springframework.test.context.TestPropertySource;
 class ChatMemoryRolloutIT extends AbstractIntegrationTest {
 
     private static final String VERSION = "gemini-embedding-001-768-v1";
-    private static final String QUERY = "Mit tudunk Boglárkáról? [fake-embed:1]";
+    // mezo-rj214.7: data-bearing ("ma" is a time word) — used as request(QUERY), a constant
+    // reference the guard's request(/setContent(/content( literal regex cannot see; caught by
+    // manual inspection. These are prompt-order ITs (assertUnifiedPrompt slices system=[...]).
+    private static final String QUERY = "Mit tudunk Boglárkáról ma? [fake-embed:1]";
 
     @Autowired private ChatService chatService;
     @Autowired private ChatStreamService chatStreamService;
