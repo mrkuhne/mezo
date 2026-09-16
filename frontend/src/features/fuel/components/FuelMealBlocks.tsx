@@ -238,7 +238,7 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
         <strong className="fmx-block-name">{tile.label}</strong>
         {rows.length > 0 && (
           <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
-            aria-label="Logolás ideje">
+            aria-label={`${tile.label} · logolás ideje`}>
             <ClayIcon name="i-idozito" size={21} />
           </button>
         )}

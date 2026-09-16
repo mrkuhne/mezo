@@ -166,7 +166,7 @@ test('az ablak-csík a blokk saját idejét viszi, a logolt étkezés jelölőj�
 // mezo-l2gp0: az óra gomb — az idő nem szöveg a kártyán, hanem koppintásra nyíló üvegdoboz.
 test('az óra gomb csak logolt blokkon él, és a doboz a logolás idejét mutatja', async () => {
   render(<FuelMealBlocks {...props()} />)
-  const clocks = screen.getAllByRole('button', { name: 'Logolás ideje' })
+  const clocks = screen.getAllByRole('button', { name: /logolás ideje/i })
   expect(clocks).toHaveLength(1) // 4 blokkból 1 logolt
   await userEvent.click(clocks[0])
   const dialog = screen.getByRole('dialog')
@@ -178,10 +178,10 @@ test('az óra gomb csak logolt blokkon él, és a doboz a logolás idejét mutat
 
 test('az óra-doboz zárható Rendbennel és Escape-pel is', async () => {
   render(<FuelMealBlocks {...props()} />)
-  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
   await userEvent.click(screen.getByRole('button', { name: 'Rendben' }))
   expect(screen.queryByRole('dialog')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
   await userEvent.keyboard('{Escape}')
   expect(screen.queryByRole('dialog')).toBeNull()
 })
@@ -193,6 +193,6 @@ test('terv-idő nélkül a "Terv szerint" sor elmarad', async () => {
     proteinG: 36, carbsG: 48, fatG: 9, fiberG: 8, plannedTime: null, scorePct: 88,
   }]
   render(<FuelMealBlocks {...props({ meals: rows })} />)
-  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
   expect(screen.getByRole('dialog').textContent).not.toContain('Terv szerint')
 })
