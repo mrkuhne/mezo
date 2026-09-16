@@ -43,6 +43,7 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
+import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import {
@@ -190,6 +191,9 @@ export function MesoTemplateStoryPage() {
           <div className="pl-poster-foot">
             {minutes > 0 && <span>~{minutes} perc egy edzés</span>}
             <span>{muscles.length} izomcsoport</span>
+            {/* The legacy signal the retired MesoTemplateCard used to carry (mezo-88iwa.11):
+                a plan built on the old model still starts, but its tiers are display-only. */}
+            {isLegacyPlan(template) && <span data-testid="template-legacy">régi modell</span>}
           </div>
         </header>
 

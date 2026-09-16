@@ -55,6 +55,20 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Vissza' }).parentElement).toBe(hero)
   })
 
+  test('the old-model mark follows isLegacyPlan, not a guess', () => {
+    // POWER carries `goalPreset: 'strength'` — a preset that is present and not hypertrophy,
+    // which is exactly what isLegacyPlan calls the old model; the retired MesoTemplateCard
+    // marked this same template, so the signal survives its deletion.
+    setup(POWER)
+    expect(screen.getByTestId('template-legacy')).toHaveTextContent('régi modell')
+  })
+
+  test('a current-model sablon carries no old-model mark', () => {
+    // HYP is hypertrophy-preset with a Deload-closed curve — nothing to flag, nothing shown.
+    setup(HYP)
+    expect(screen.queryByTestId('template-legacy')).toBeNull()
+  })
+
   test('the back pill returns to Sablonjaid', async () => {
     const user = userEvent.setup()
     setup()
