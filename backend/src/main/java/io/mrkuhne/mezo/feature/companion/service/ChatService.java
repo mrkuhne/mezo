@@ -219,25 +219,14 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
-        TurnGear gear = turnGearRouter.route(request.getContent());
-        // Same branch as sendMessage (mezo-rj214.7): a CHAT turn skips retrieval entirely — copy
-        // this shape exactly so the two paths cannot drift.
-        ChatMemoryPayload memory = gear == TurnGear.CHAT
-                ? ChatMemoryPayload.empty()
-                : chatMemoryContextAdapter.resolve(
-                        userId, conversationId, request.getContent(), history, today);
-        String systemPrompt = stableSystemPrompt(userId);
-        String turnCtx = gear == TurnGear.CHAT
-                ? chatGearContext(userId, today)
-                : turnContext(userId, today, memory.factsBlock(),
-                        memory.memoriesBlock(), memory.graphBlock(),
-                        conversation.getContextKind(), conversation.getContextDate());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, turnCtx, history,
-                request.getContent(), memory.refs(), memory.recalled(), gear);
+        return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
+                routed.turnContext(), history, request.getContent(),
+                routed.memory().refs(), routed.memory().recalled(), routed.gear());
     }
 
     /**
@@ -268,19 +257,11 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
-        TurnGear gear = turnGearRouter.route(request.getContent());
-        // A CHAT turn skips retrieval entirely — chatMemoryContextAdapter.resolve(..) triggers an
-        // embedding call and a graph traversal that a tool-free, data-free turn has no use for.
-        ChatMemoryPayload memory = gear == TurnGear.CHAT
-                ? ChatMemoryPayload.empty()
-                : chatMemoryContextAdapter.resolve(
-                        userId, conversationId, request.getContent(), history, today);
-        String systemPrompt = stableSystemPrompt(userId);
-        String turnCtx = gear == TurnGear.CHAT
-                ? chatGearContext(userId, today)
-                : turnContext(userId, today, memory.factsBlock(),
-                        memory.memoriesBlock(), memory.graphBlock(),
-                        conversation.getContextKind(), conversation.getContextDate());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
+        TurnGear gear = routed.gear();
+        ChatMemoryPayload memory = routed.memory();
+        String systemPrompt = routed.systemPrompt();
+        String turnCtx = routed.turnContext();
 
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
@@ -397,6 +378,43 @@ public class ChatService {
      */
     private String stableSystemPrompt(UUID userId) {
         return promptPersona.render(userId, SYSTEM_PROMPT);
+    }
+
+    /**
+     * Everything one turn's gear decides, decided once: the gear itself, whatever retrieval it
+     * earned, and the two prompt halves that follow from both.
+     *
+     * @param memory {@link ChatMemoryPayload#empty()} on a CHAT turn — nothing was resolved
+     * @param turnContext the VOLATILE half: lightened on CHAT, the full snapshot otherwise
+     */
+    private record RoutedContext(TurnGear gear, ChatMemoryPayload memory, String systemPrompt,
+                                 String turnContext) {}
+
+    /**
+     * Route the turn, then assemble exactly the context that gear earns (spec 2026-09-16 §6.5).
+     *
+     * <p>The single place both turn paths share (mezo-rj214.7). {@code sendMessage} and
+     * {@code prepareTurn} carried a byte-identical copy of this branch, held together only by a
+     * comment on each site asking the next reader not to let them drift — which is not a mechanism.
+     * A drift here is invisible in testing: the two paths would simply answer the same question
+     * with different context, and both would still pass.
+     *
+     * <p>A CHAT turn skips {@code chatMemoryContextAdapter.resolve(..)} entirely: it triggers an
+     * embedding call and a graph traversal that a tool-free, data-free turn has no use for.
+     */
+    private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
+            String userContent, List<Turn> history, LocalDate today) {
+        TurnGear gear = turnGearRouter.route(userContent);
+        ChatMemoryPayload memory = gear == TurnGear.CHAT
+                ? ChatMemoryPayload.empty()
+                : chatMemoryContextAdapter.resolve(
+                        userId, conversation.getId(), userContent, history, today);
+        String turnContext = gear == TurnGear.CHAT
+                ? chatGearContext(userId, today)
+                : turnContext(userId, today, memory.factsBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(),
+                        conversation.getContextKind(), conversation.getContextDate());
+        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
     }
 
     /**

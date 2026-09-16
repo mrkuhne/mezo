@@ -2048,9 +2048,13 @@ corpus and fails on any `CHAT`; `UNSURE` is fine there (the classifier or the AN
 still hands the turn its tools), and `TurnGearAnalyzerTest` binds the other direction. The two
 suites together are what a new stem must satisfy.
 
-`ChatService.sendMessage` and `prepareTurn` (`service/ChatService.java:222,271`) both call
-`turnGearRouter.route` first and branch identically (a comment on each site says so, to keep the two
-paths from drifting): a `CHAT` turn skips `chatMemoryContextAdapter.resolve` entirely (no embedding
+`ChatService.sendMessage` and `prepareTurn` both call **one** private helper,
+`routeAndAssemble(userId, conversation, userContent, history, today) -> RoutedContext(gear, memory,
+systemPrompt, turnContext)` — the single place a turn's gear is decided and the context it earns is
+assembled. The two paths used to carry a byte-identical copy of that branch held together only by a
+comment asking the next reader not to let them drift, which is not a mechanism: a drift there would
+have been invisible in testing, since both paths would still answer, just with different context.
+Inside it: a `CHAT` turn skips `chatMemoryContextAdapter.resolve` entirely (no embedding
 call, no graph traversal — a tool-free, data-free turn has no use for either) and its volatile prompt
 half is `chatGearContext(userId, today)` instead of the full `turnContext(..)` — just `"\n\nMa:
 <date>\n"` + the `[Rólad tanultam]` profile block + `TONE_REMINDER`, no snapshot, no week anchor, no
