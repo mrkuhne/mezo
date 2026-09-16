@@ -1424,6 +1424,13 @@ export interface SportSession {
   time: string; duration: number
   setsPlayed: number | null; rounds: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
+  // BE-owned energy estimate (T8 Task 4/6): the user's own value when they gave one via
+  // the log form's override dialog, otherwise the backend's MET estimate. Null when the
+  // athlete's weight is unknown on the server — never a fabricated 0.
+  kcal: number | null
+  // True when `kcal` is the backend's estimate, false when the user overrode it, null
+  // when `kcal` itself is null (nothing to qualify).
+  kcalIsEstimate: boolean | null
 }
 export interface SportWeek {
   label: string; sessions: number; hoursPlayed: number

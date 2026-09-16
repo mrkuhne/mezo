@@ -543,9 +543,13 @@ export function TrainTodayPage() {
               logged={Boolean(logged)}
               loggedSummary={
                 logged
-                  ? k === 'volleyball'
-                    ? `RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
-                    : `RPE ${logged.rpe} · ${logged.duration}p`
+                  ? // Em dash rule: kcal is absent from the summary entirely when the wire
+                    // carries none (an old session, or an unknown athlete weight) — never a
+                    // fabricated 0 (T8 Task 6, mirrors movementWeek's own honesty guard).
+                    (k === 'volleyball'
+                      ? `RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
+                      : `RPE ${logged.rpe} · ${logged.duration}p`) +
+                    (logged.kcal != null ? ` · ${logged.kcal} kcal` : '')
                   : undefined
               }
               loggedDetail={logged?.time ? `${logged.time}-kor logolva` : null}

@@ -739,6 +739,31 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
+// T8 Task 6: the per-event sport summary appends ' · N kcal' when the wire carries one —
+// SportSessionResponse.kcal, the BE-owned estimate/override. Em dash rule: no wire kcal
+// means no suffix at all (never a fabricated 0), which the test above already covers.
+test('real mode: the logged-summary appends the kcal the wire carries', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: todayIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ]),
+    ),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'ss-today', sport: 'volleyball', date: localDateString(), time: '18:15', duration: 90, setsPlayed: 5, intensity: 7, rpe: 7, shoulderStrain: 6, jumpCount: null, notes: null, kcal: 540, kcalIsEstimate: true },
+      ]),
+    ),
+  )
+  renderView()
+  await findTodayCard('Volleyball')
+  expect(screen.getByText(/RPE 7 · 90p · váll 6 · 540 kcal/)).toBeInTheDocument()
+})
+
 // Review fix (mezo-9bbc): today's logged session must not leak onto another day's
 // card once that day is selected — a mixed-scheduling bug would have shown another
 // day's volleyball card as already done (and hidden its CTA) just because TODAY's

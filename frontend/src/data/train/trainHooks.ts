@@ -155,6 +155,7 @@ function toSportSession(r: SportSessionResponse): SportSession {
     duration: r.duration, setsPlayed: r.setsPlayed ?? null, rounds: r.rounds ?? null, intensity: r.intensity ?? null,
     rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
+    kcal: r.kcal ?? null, kcalIsEstimate: r.kcalIsEstimate ?? null,
   }
 }
 
@@ -535,6 +536,7 @@ function useLogSportSession(
                 date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, rounds: req.rounds ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: req.notes ?? null,
+                ...mockSportKcal(req),
               }
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
