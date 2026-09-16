@@ -46,6 +46,7 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
 
     private static SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 

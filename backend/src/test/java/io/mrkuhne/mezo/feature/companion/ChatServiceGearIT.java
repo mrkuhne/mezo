@@ -31,6 +31,7 @@ class ChatServiceGearIT extends AbstractIntegrationTest {
         AppUserEntity user = userPopulator.createUser("gear-" + UUID.randomUUID() + "@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(user.getId());
         return chatService.sendMessage(user.getId(), conversation.getId(),
+        // gear-audited: this IT's whole subject is the gear; each caller states the gear it wants.
             SendMessageRequest.builder().content(content).build()).getContent();
     }
 

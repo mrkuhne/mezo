@@ -35,6 +35,7 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
+    // gear-audited: forwards whatever its callers pass; every call site below is the audited one.
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
     }
@@ -59,7 +60,7 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
 
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("kérdés " + FakeCompanionLlm.VIOLATE_ONCE))
+                        request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ONCE))
                 .collectList().block();
 
         // attempt-1 streamed as-is: no retry marker in the deltas
@@ -77,7 +78,7 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
 
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS))
+                        request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS))
                 .collectList().block();
 
         MessageResponse done = doneOf(events);

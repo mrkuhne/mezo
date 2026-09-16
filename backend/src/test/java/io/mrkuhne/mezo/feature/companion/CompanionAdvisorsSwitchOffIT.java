@@ -44,7 +44,7 @@ class CompanionAdvisorsSwitchOffIT extends AbstractIntegrationTest {
 
         MessageResponse response = chatService.sendMessage(userId, conversation.getId(),
                 SendMessageRequest.builder()
-                        .content("kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS)
+                        .content("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS)
                         .build());
 
         assertThat(response.getDegraded()).isFalse();

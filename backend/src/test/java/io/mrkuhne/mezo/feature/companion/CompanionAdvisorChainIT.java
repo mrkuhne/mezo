@@ -24,6 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The V1.3 advisor chain through ChatService.sendMessage — retry-once, degraded-on-2nd-failure,
  * fail-open, and the persisted flag. The fake's verdict scripting is stateless: [fake-violate]
  * violates only until the retry header shows up in the checked answer (the echo carries it).
+ *
+ * <p><b>Every fixture here must be data-bearing</b> (mezo-rj214.7): a {@code CHAT}-gear turn skips
+ * the advisor chain entirely, so a greeting fixture would make these assertions pass while
+ * covering nothing at all. The clean-answer and fail-open cases were exactly that until this was
+ * fixed. {@code PromptOrderFixtureGearGuardTest} keeps them honest.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
@@ -34,6 +39,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
+    // gear-audited: forwards whatever its callers pass; every call site below is the audited one.
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
     }
@@ -43,7 +49,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("advisor-clean@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse response = chatService.sendMessage(userId, conversation.getId(), request("szia mezo"));
+        MessageResponse response = chatService.sendMessage(userId, conversation.getId(), request("Hogy aludtam az éjjel?"));
 
         assertThat(response.getDegraded()).isFalse();
         assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
@@ -55,7 +61,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("kérdés " + FakeCompanionLlm.VIOLATE_ONCE));
+                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ONCE));
 
         // the retry echo carries the corrective block -> proves the second LLM round happened
         assertThat(response.getContent()).contains(AdvisorRetry.RETRY_MARKER);
@@ -68,7 +74,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS));
+                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS));
 
         assertThat(response.getDegraded()).isTrue();
         AiMessageEntity row = messageRepository.findById(response.getId()).orElseThrow();
@@ -93,7 +99,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("kérdés " + FakeCompanionLlm.VERDICT_BROKEN));
+                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VERDICT_BROKEN));
 
         assertThat(response.getDegraded()).isFalse();
         assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
@@ -105,7 +111,7 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse response = chatService.sendMessage(userId, conversation.getId(),
-                request("kérdés " + FakeCompanionLlm.MARKED_SPECULATION));
+                request("aludtam jól, kérdés " + FakeCompanionLlm.MARKED_SPECULATION));
 
         // A jelölt sejtés a mezo-q71s politika szerint MEGENGEDETT — nem indít korrekciós kört.
         assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);

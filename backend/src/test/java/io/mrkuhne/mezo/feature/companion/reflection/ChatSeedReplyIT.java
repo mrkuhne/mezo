@@ -49,6 +49,7 @@ class ChatSeedReplyIT extends AbstractIntegrationTest {
         assertThat(conversation.getSeedPatternId()).isEqualTo(pattern.getId());
         assertThat(conversation.getTitle()).isEqualTo(pattern.getTitle());
 
+        // gear-audited: CHAT is right — this captures the user's free-text reply, asserted verbatim.
         chatService.sendMessage(owner, conversation.getId(), SendMessageRequest.builder()
                 .content("nem Anna miatt, hanem mert szabadnapos voltam").build());
 
@@ -74,6 +75,7 @@ class ChatSeedReplyIT extends AbstractIntegrationTest {
         ConversationResponse conversation = conversationService.create(owner, null);
 
         chatService.sendMessage(owner, conversation.getId(),
+                // gear-audited: CHAT is right — this asserts that NO reply event is recorded.
                 SendMessageRequest.builder().content("szia").build());
 
         assertThat(conversation.getSeedPatternId()).isNull();

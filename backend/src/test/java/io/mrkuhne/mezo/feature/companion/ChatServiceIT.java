@@ -50,6 +50,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
 
     private SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 
@@ -154,6 +155,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // this variable) cannot catch the collision.
         String overCapCalls = "hány célom van? " + "[fake-tool:get_goal]".repeat(16);
 
+        // gear-audited: LOOKUP — overCapCalls starts with "hány célom van?" (see above).
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(overCapCalls));
 
         assertThat(resp.getTools()).hasSize(15); // mezo.companion.tools.max-calls-per-turn (raised 6→15, mezo-xixu)
@@ -359,6 +361,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         String longContent = "x".repeat(200);
 
+        // gear-audited: CHAT on purpose — this asserts title truncation, never the prompt.
         chatService.sendMessage(userId, conversation.getId(), request(longContent));
 
         AiConversationEntity touched = conversationRepository.findById(conversation.getId()).orElseThrow();

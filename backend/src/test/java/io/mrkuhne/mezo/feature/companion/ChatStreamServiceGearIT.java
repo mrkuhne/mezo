@@ -34,6 +34,7 @@ class ChatStreamServiceGearIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("gear-stream-" + UUID.randomUUID() + "@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         return chatStreamService.streamMessage(userId, conversation.getId(),
+        // gear-audited: this IT's whole subject is the gear; each caller states the gear it wants.
                 SendMessageRequest.builder().content(content).build())
             .collectList().block();
     }

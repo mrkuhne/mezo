@@ -65,6 +65,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
 
     private SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 
@@ -353,6 +354,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
      *  filtered by event type instead of by index so a scripted 'tool' event never sneaks in. */
     private String collectDeltas(UUID userId, UUID conversationId, String content) {
         List<ServerSentEvent<Object>> events = chatStreamService
+                // gear-audited: forwards collectDeltas' argument; its callers are the audited sites.
                 .streamMessage(userId, conversationId, request(content))
                 .collectList().block();
         return events.stream()
