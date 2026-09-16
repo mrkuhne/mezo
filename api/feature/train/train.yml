@@ -3481,7 +3481,7 @@ components:
       properties:
         sport:
           type: string
-          pattern: '^(volleyball|cross|trx)$'
+          pattern: '^(volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other)$'
           description: Modality discriminator; defaults to volleyball server-side when omitted.
         date:
           type: string
@@ -3516,6 +3516,14 @@ components:
         notes:
           type: string
           maxLength: 500
+        kcalOverride:
+          type: integer
+          minimum: 1
+          maximum: 5000
+          description: >-
+            The user's own kcal value for this session. When present it is stored verbatim and the
+            response reports kcalIsEstimate=false; otherwise the backend estimates from the MET
+            table and the athlete's body.
     SportScheduleSlotInput:
       type: object
       required:
@@ -3708,7 +3716,9 @@ components:
           format: uuid
         sport:
           type: string
-          description: Modality discriminator (volleyball|cross|trx).
+          description: >-
+            Modality discriminator
+            (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other).
         date:
           type: string
           format: date
@@ -3736,6 +3746,16 @@ components:
           type: integer
         notes:
           type: string
+        kcal:
+          type: integer
+          nullable: true
+          description: >-
+            Energy burnt in kcal — the user's own value when they gave one, otherwise the backend's
+            MET estimate. Null when the athlete's weight is unknown; never 0 as a stand-in.
+        kcalIsEstimate:
+          type: boolean
+          nullable: true
+          description: True when kcal is the backend's estimate, false when the user overrode it.
         levelUp:
           $ref: '#/components/schemas/LevelUpResult'
     RunSegment:
@@ -3824,6 +3844,17 @@ components:
         sprintLandmark: { type: string, nullable: true }
         durationMin: { type: integer, nullable: true }
         notes: { type: string, nullable: true }
+        kcal:
+          type: integer
+          nullable: true
+          description: >-
+            Energy burnt in kcal — the backend's MET estimate for the run; assumes ~9 km/h when
+            the log carries no pace. Null when the athlete's weight is unknown; never 0 as a
+            stand-in.
+        kcalIsEstimate:
+          type: boolean
+          nullable: true
+          description: Always true when kcal is present — the run wire has no override field.
         levelUp:
           $ref: '#/components/schemas/LevelUpResult'
     RunSessionLogRequest:

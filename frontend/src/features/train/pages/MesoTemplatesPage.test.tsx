@@ -1,4 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react'
+// ============================================================
+// Mezo · MesoTemplatesPage tests — the Titanium „Sablonjaid" list
+// (Train Titanium T10 Task 3, mezo-88iwa.11).
+//
+// Rewritten from the DS-era suite: the page-header + „+ Új" chip, the shelf StatStrip and
+// the whole removed template poster card (its arc/spine/chips, the ⋯ lifecycle menu with
+// Duplikálás + the two-tap Törlés, and the card-foot „Indítás") are no longer this page's
+// — a card is now one `.pl-lib-card` that OPENS the template's own page, and the start
+// sheet + lifecycle pair live there (MesoTemplateStoryPage.test.tsx carries their tests).
+// What is asserted here: the hero's real counts, the card's facts/muscles/story line, the
+// card tap's destination, the create CTA, the empty state and the skeleton.
+// ============================================================
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
@@ -14,7 +26,7 @@ function LocationProbe() {
 }
 
 function setup() {
-  render(
+  return render(
     <QueryWrapper>
       <MemoryRouter>
         <MesoTemplatesPage />
@@ -28,130 +40,82 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('own DS head + the counted section over the fixture templates', () => {
+  test('the hero names the page, says what a sablon is, and counts the real shelf', () => {
     setup()
-    expect(screen.getByText('Edzés · Sablonok')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Sablonok' })).toBeInTheDocument()
-    // The counted eyebrow became the poster shelf strip (mezo-3a9a).
-    expect(screen.getByText('Sablon')).toBeInTheDocument()
-    expect(screen.getByText('Futam')).toBeInTheDocument()
-    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('2')
-    expect(screen.getByTestId('shelf-runs')).toHaveTextContent('1')
-    expect(screen.getByText('Upper/Lower Power')).toBeInTheDocument()
-    expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
-    expect(screen.getByText('1× futtatva')).toBeInTheDocument()
-    expect(screen.getByText('0× futtatva')).toBeInTheDocument()
+    expect(screen.getByText('Sablonjaid')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
+    expect(screen.getByText(/Egy sablon a recept/)).toBeInTheDocument()
+    // The fixture shelf: 2 templates, 1 run ever started out of them.
+    expect(screen.getByText('2 sablon')).toBeInTheDocument()
+    // 2 + 0: the PPL template's runCount covers both the active meso-hyp-04 and the closed
+    // meso-hyp-03 that carries its templateId — the same 2 the story page derives.
+    expect(screen.getByText('2 futam indult belőlük')).toBeInTheDocument()
   })
 
-  test('the header + Új chip opens the planner', async () => {
+  test('the back pill is docked INSIDE the hero and leads to the library landing', async () => {
+    const user = userEvent.setup()
+    const { container } = setup()
+    const back = screen.getByRole('button', { name: 'Vissza' })
+    expect(back).toHaveClass('mz-backbtn')
+    // The docking CSS keys on `.pl-lhero > .mz-backbtn` — assert the PARENT, not the class.
+    expect(back.parentElement).toBe(container.querySelector('.pl-lhero'))
+    await user.click(back)
+    expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/konyvtar')
+  })
+
+  test('each template is one card: name, split, the facts, the muscles and one story line', () => {
+    setup()
+    const card = screen.getByRole('button', { name: /Sablon · Upper\/Lower Power/ })
+    // name + split head (the „×/hét" tail is already said by the nap-hetente fact)
+    expect(card).toHaveTextContent('Upper/Lower Power')
+    expect(card).toHaveTextContent('Upper / Lower')
+    // 5 weeks, 4 training days (Sze/Szo/Vas are rest), a calibrated minutes fact
+    expect(card.querySelector('.pl-day-facts')).toHaveTextContent('5hét')
+    expect(card.querySelector('.pl-day-facts')).toHaveTextContent('4nap hetente')
+    expect(card.querySelector('.pl-day-facts')?.textContent).toMatch(/~\d+perc/)
+    // the muscles as anatomy chips, one per worked group (never emoji)
+    expect(card.querySelectorAll('.pl-lib-mus i').length).toBeGreaterThan(3)
+    expect(card.querySelector('.pl-lib-note')).toHaveTextContent('Még nem indítottál belőle')
+  })
+
+  test('the story line reads the RUNS, not the template: the active run names its own recipe', () => {
+    setup()
+    // meso-hyp-04 (active) carries templateId a10e… → that template is the one running now.
+    const card = screen.getByRole('button', { name: /Sablon · Hypertrophy 04 · Tavasz/ })
+    expect(card.querySelector('.pl-lib-note')).toHaveTextContent('Ebből fut a mostani terved')
+  })
+
+  test('a card tap opens that template\'s own page, not the raw editor', async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(screen.getByRole('button', { name: 'Új' }))
+    await user.click(screen.getByRole('button', { name: /Sablon · Hypertrophy 04 · Tavasz/ }))
+    expect(screen.getByTestId('loc')).toHaveTextContent(
+      '/train/templates/a10e0000-0000-4000-8000-000000000000',
+    )
+  })
+
+  test('the one loud CTA is the create door — the planner', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: 'Új terv összeállítása' }))
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
 
-  test('the fixture templates carry the band-vocabulary chips (mezo-d20.15 Task 5)', () => {
+  test('no destructive action lives on the list any more', () => {
     setup()
-    // b20f0000 (Upper/Lower Power) carries a PRESENT, wrong goalPreset ('strength') — legacy.
-    // a10e0000 (Hypertrophy 04) has no goalPreset at all (ABSENT) but its curve closes on
-    // Deload — an absent preset alone is not legacy, so it must NOT get the chip/note.
-    expect(screen.getAllByText('régi modell')).toHaveLength(1)
-    expect(screen.getAllByText('indításkor az új modellre konvertálódik')).toHaveLength(1)
-    // Upper/Lower Power (b20f0000): 4 training days, Emphasize on back
-    expect(screen.getByText('4 nap · Upper / Lower')).toBeInTheDocument()
-    expect(screen.getByText('★ Hát')).toBeInTheDocument()
-    expect(screen.getByText('4 + 1 deload')).toBeInTheDocument()
-    // Hypertrophy 04 · Tavasz (a10e0000): 5 training days, no priorities set, current model
-    expect(screen.getByText('5 nap · Upper / Lower / Push / Pull / Legs')).toBeInTheDocument()
-    expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
-  })
-
-  test('Indítás is the only action on the face — the lifecycle pair hides behind ⋯', () => {
-    setup()
-    expect(screen.getAllByRole('button', { name: /Indítás/ })).toHaveLength(2)
-    expect(screen.getAllByRole('button', { name: 'További műveletek' })).toHaveLength(2)
-    expect(screen.queryByRole('button', { name: /Duplikálás/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Törlés/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'További műveletek' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Indítás/ })).toBeNull()
   })
 
-  test('⋯ opens that card\'s lifecycle menu, and Escape closes it', async () => {
-    const user = userEvent.setup()
+  test('the list staggers inside an armed entrance group', () => {
     setup()
-    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[0])
-    expect(screen.getByRole('button', { name: /Duplikálás/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Törlés/ })).toBeInTheDocument()
-
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('button', { name: /Duplikálás/ })).toBeNull()
-  })
-
-  test('the poster itself opens that template in the editor', async () => {
-    const user = userEvent.setup()
-    setup()
-    await user.click(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }))
-    expect(screen.getByTestId('loc')).toHaveTextContent(
-      '/train/mesocycles/templates/a10e0000-0000-4000-8000-000000000000',
-    )
-  })
-
-  test('the block is drawn: a bar per phase-curve week and the seven-day spine', () => {
-    setup()
-    const poster = screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }).closest('.tpl-poster')!
-    // 'MEV','MEV','MAV','MAV','MRV','Deload' — six bars, the last one the deload step-down
-    expect(poster.querySelectorAll('.tpl-arc i')).toHaveLength(6)
-    expect(poster.querySelectorAll('.tpl-arc i.tpl-arc-deload')).toHaveLength(1)
-    // Hét Push · Kedd Legs A · Sze Legs · Csü Pull · Pén Push · Szo sport · Vas rest
-    const spine = [...poster.querySelectorAll('.tpl-spine i')].map(i => i.textContent)
-    expect(spine).toEqual(['P', 'L', 'L', 'P', 'P', '', ''])
-  })
-
-  // Coral (an emphasised muscle on a current plan) has no fixture — templatePoster.test.ts
-  // covers that arm; here the two shipped shapes are pinned.
-  test('the wash carries the block: legacy sage, current-without-emphasis gold', () => {
-    setup()
-    const legacy = screen.getByRole('button', { name: /Upper\/Lower Power/ }).closest('.tpl-poster')!
-    const current = screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }).closest('.tpl-poster')!
-    expect(legacy.className).toContain('mz-w-sage')
-    expect(current.className).toContain('mz-w-gold')
-  })
-
-  test('Indítás opens the shared start sheet', async () => {
-    const user = userEvent.setup()
-    setup()
-    await user.click(screen.getAllByRole('button', { name: /Indítás/ })[0])
-    expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
-  })
-
-  test('Duplikálás copies the template under a (másolat) title and opens the copy', async () => {
-    const user = userEvent.setup()
-    setup()
-    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[1])
-    await user.click(screen.getByRole('button', { name: /Duplikálás/ }))
-
-    expect(await screen.findByText('Upper/Lower Power (másolat)')).toBeInTheDocument()
-    // a copy has never been run
-    expect(screen.getAllByText('0× futtatva')).toHaveLength(2)
-    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('3')
-    // …and we land in its editor
-    await waitFor(() =>
-      expect(screen.getByTestId('loc').textContent).toMatch(/^\/train\/mesocycles\/templates\/.+/),
-    )
-    expect(screen.getByTestId('loc').textContent).not.toContain('b20f0000-0000-4000-8000-000000000000')
-  })
-
-  test('Törlés is a two-tap confirm — the first tap only arms it', async () => {
-    const user = userEvent.setup()
-    setup()
-    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[1])
-    await user.click(screen.getByRole('button', { name: /^Törlés/ }))
-
-    // armed, nothing deleted yet
-    expect(screen.getByRole('button', { name: /Biztos\? Törlés/ })).toBeInTheDocument()
-    expect(screen.getByText('Upper/Lower Power')).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: /Biztos\? Törlés/ }))
-    await waitFor(() => expect(screen.queryByText('Upper/Lower Power')).toBeNull())
-    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('1')
+    const play = document.body.querySelector('.mz-play')
+    expect(play).not.toBeNull()
+    const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]
+    expect(risen.length).toBeGreaterThan(1)
+    expect(risen[0].style.getPropertyValue('--d')).toBe('40ms')
+    expect(risen[1].style.getPropertyValue('--d')).toBe('90ms')
   })
 })
 
@@ -165,26 +129,13 @@ describe('MesoTemplatesPage (real mode)', () => {
     expect(await screen.findByRole('status')).toBeInTheDocument()
   })
 
-  it('offers the dashed planner CTA when there is no template at all', async () => {
+  it('says so plainly when there is no template at all, and still offers the planner', async () => {
     server.use(http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([])))
     const user = userEvent.setup()
     setup()
     expect(await screen.findByText(/Még nincs sablonod/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /Új sablon tervezése/ }))
+    expect(screen.getByText('0 sablon')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Új terv összeállítása' }))
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
-})
-
-// Motion (mezo-d20.11): the page had NO entrance choreography at all — no
-// EntranceGroup, no `.rise`. The face stays as-is (the prototype draws no
-// standalone Sablonok page), but the list now staggers like every other one.
-test('the template list staggers inside an armed entrance group', async () => {
-  setup()
-  await screen.findByTestId('shelf-templates')
-  const play = document.body.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]
-  expect(risen.length).toBeGreaterThan(1)
-  expect(risen[0].style.getPropertyValue('--d')).toBe('30ms')
-  expect(risen[1].style.getPropertyValue('--d')).toBe('60ms')
 })

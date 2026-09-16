@@ -31,7 +31,7 @@ import { GlassBox } from '@/features/fuel/components/GlassBox'
 import type { GlycemicBand, GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
 
 /** A prototípus három görbéje, 1:1 (food.js `glucoseCurve`, :62). */
-const CURVE: Record<GlycemicLevel, { path: string; peak: [number, number]; note: string }> = {
+export const CURVE: Record<GlycemicLevel, { path: string; peak: [number, number]; note: string }> = {
   high: {
     path: 'M8 78C46 76 62 14 90 12 112 11 122 52 142 82 160 106 208 90 232 84',
     peak: [90, 12],
@@ -57,6 +57,23 @@ const HEADLINE: Record<GlycemicLevel, string> = {
 }
 
 const AXIS: [number, string][] = [[8, 'evés'], [82, '+1 ó'], [157, '+2 ó'], [218, '+3 ó']]
+
+/**
+ * A görbe ikon-méretben (mezo-ya2wp) — a Mai sor chipje ezt hordja a pontszámtól balra.
+ * UGYANAZOK a path-ok, mint a dobozé: a chip a doboz kicsinyített előképe, nem külön rajz.
+ * Feliratok és tengely nélkül — ekkora méretben a FORMA a jel, a szöveget a doboz hozza.
+ */
+export function GlycemicMiniCurve({ level }: { level: GlycemicLevel }) {
+  const curve = CURVE[level]
+  return (
+    <svg className="fmx-glu-mini" viewBox="0 0 240 108" aria-hidden="true">
+      <line x1="8" y1="78" x2="232" y2="78" strokeDasharray="3 5" className="fmx-glu-base" />
+      <path d={`${curve.path} L232 108 8 108Z`} className="fmx-glu-fill" />
+      <path d={curve.path} className="fmx-glu-line" />
+      <circle cx={curve.peak[0]} cy={curve.peak[1]} r="5" className="fmx-glu-dot" />
+    </svg>
+  )
+}
 
 export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: () => void }) {
   const titleId = useId()

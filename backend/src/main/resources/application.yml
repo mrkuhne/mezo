@@ -640,10 +640,21 @@ mezo:
     # off too, and the service says so once at WARN.
     budget:
       enabled: true
-      # The ceiling for one account per cycle. $5, not the research's $4: the standard COGS is
-      # $2.13-3.11, so $4 is scarcity rather than headroom; $5 leaves ~1.6-2.3x until the beta
-      # produces a real p95.
-      hard-cap-usd: 5.00
+      # The ceiling for one account per cycle, in USD (the providers bill in USD and `pricing`
+      # below is USD — there is no EUR path).
+      #
+      # RAISED 5.00 -> 30.00 on 2026-09-16 by an explicit owner decision (mezo-m9dhz). History: $5
+      # was chosen over the research's $4 because the standard COGS is $2.13-3.11, leaving only
+      # ~1.6-2.3x of headroom "until the beta produces a real p95". The beta produced one, and it
+      # was too tight: the owner's account sat at 75.4% ($3.77) and was therefore PERMANENTLY
+      # degraded, so every call — including the nominally smart-tier nightly hypothesis loop —
+      # routed to the cheap tier. That was one of the conditions keeping the Észrevételek pipeline
+      # from producing anything (mezo-5543y), and at 90% its nightly half would have stopped
+      # outright. At $30 the same spend is 12.6% and the steps move to $21 / $27 / $30.
+      #
+      # The cap is a RUNAWAY GUARD as much as a budget, and this trade is deliberate: a pathological
+      # loop can now burn 6x more before the stop line refuses calls.
+      hard-cap-usd: 30.00
       # ROLLING window ending now, in days — deliberately not a calendar month.
       cycle-days: 30
       # The three graded steps as a percentage of hard-cap-usd. Must ascend (validated at boot).
@@ -924,7 +935,15 @@ mezo:
         recency-max-boost: 0.003
       execution:
         # Independent deadline for each parallel retriever; one timeout never cancels its peers.
+        # This is a DATABASE budget — every retriever below it does one indexed query and nothing
+        # else. Do NOT put a network hop inside it (mezo-iddo: the query embedding used to live
+        # here, and at p50 ~270 ms it lost the race on 55 of 55 live runs, silently disabling
+        # semantic recall while every run still audited clean).
         retriever-timeout-ms: 200
+        # The one query-embedding hop, taken ONCE before the fan-out. Sized off measured provider
+        # latency (p50 ~270 ms, p95 ~675 ms, slowest observed success 1430 ms) with headroom, so it
+        # bounds a hung provider without ever cutting off a normal call.
+        query-embedding-timeout-ms: 2500
       reranker:
         # Off by default: normal chat never requires an LLM reranker.
         enabled: false
@@ -1120,6 +1139,15 @@ mezo:
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)
       revise-threshold: 0.50
+      # mezo-5543y — the COLD-START floor: the keep bar while the account has NO open
+      # reflection-owned row. The critique prompt tells the model to score `statistical` low
+      # without a concrete r/n, and that factor weighs most (0.35), so a FIRST hypothesis cannot
+      # structurally reach 0.75: production logged "Reflection propose: 0" every night from the
+      # feature's first run, no row was ever created, and with no row the quick notice had nothing
+      # to hang an observation on either — the Észrevételek tab stayed empty for ever. Applied only
+      # AFTER the revise pass has had its chance, so it never costs a revision. Validated at boot
+      # to sit between revise-threshold and keep-threshold.
+      cold-start-keep-threshold: 0.55
     feedback-learning:
       # W4.2 (mezo-b3pp.16, spec §8.2): nightly rollup-only pass over message_feedback — per-surface
       # effectiveness + style (down-reason) histograms. 03:10, a free dawn slot (02:20/02:40/03:00

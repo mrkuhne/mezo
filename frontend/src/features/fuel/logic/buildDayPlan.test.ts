@@ -788,3 +788,25 @@ test('activityKcal sums every scheduled block (gym + sport + run all count)', ()
   ]
   expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4 + blockKcal('run', 40, 78.6), 0) // ≈2384
 })
+
+// ── plannedTime on done slots (mezo-l2gp0) ──────────────────────────────────
+test('a done slot megőrzi a tervezett ablak-idejét (plannedTime)', () => {
+  const logged = meal({ slot: 'breakfast', loggedAt: '2026-07-02T07:55:00' })
+  const withMeal = buildDayPlan(baseInput({ meals: [logged] }))
+  const done = withMeal.slots.find(s => s.state === 'done')!
+  const planned = buildDayPlan(baseInput({ meals: [] })).slots
+    .find(s => s.slotKey === 'breakfast')!
+  expect(done.time).toBe('07:55')
+  expect(done.plannedTime).toBe(planned.time)
+})
+
+test('ablak nélküli extra logon nincs plannedTime — őszinte-null', () => {
+  const b1 = meal({ id: 'b1', slot: 'breakfast', loggedAt: '2026-07-02T07:10:00' })
+  const b2 = meal({ id: 'b2', slot: 'breakfast', loggedAt: '2026-07-02T09:40:00' })
+  const plan = buildDayPlan(baseInput({ meals: [b1, b2] }))
+  const dones = plan.slots.filter(s => s.state === 'done')
+  expect(dones.length).toBeGreaterThanOrEqual(2)
+  // a második reggeli nem kapott tervezett ablakot → nincs terv-idő
+  expect(dones.some(s => s.plannedTime == null)).toBe(true)
+  expect(dones.some(s => s.plannedTime != null)).toBe(true)
+})

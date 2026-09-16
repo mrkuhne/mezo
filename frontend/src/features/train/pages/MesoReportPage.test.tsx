@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
+import { MesoReportPage, versusPairs } from '@/features/train/pages/MesoReportPage'
+import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -29,18 +30,48 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
+  // --- the Titanium star hero (T10 Task 4, mezo-88iwa.11) ---
+
   it('heads the page with the run title and its frozen window', () => {
     renderAt('meso-rec-03')
-    expect(screen.getByText('Recovery rebuild · Tél · riport')).toBeInTheDocument()
-    expect(screen.getByText('Feb 12 → Ápr 23')).toBeInTheDocument()
-    expect(screen.getByText(/8 hét/, { selector: '.mz-hero-sb' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Recovery rebuild · Tél' })).toBeInTheDocument()
+    expect(screen.getByText('Lezárt futam · Feb 12 – Ápr 23')).toBeInTheDocument()
+    expect(screen.getByText('8 hét')).toBeInTheDocument()
   })
 
-  it('renders the adherence stat strip', () => {
+  it('docks the back pill inside the star hero, neutrally labeled (fix round, mezo-88iwa.11)', () => {
+    const { container } = renderAt('meso-rec-03')
+    const hero = container.querySelector('.pl-lhero')!
+    const back = screen.getByRole('button', { name: 'Vissza' })
+    expect(back.parentElement).toBe(hero)
+    expect(back).toHaveTextContent('Vissza')
+  })
+
+  it('rates the run with the ceremony star scale and says it in one plain sentence', () => {
+    const { container } = renderAt('meso-rec-03')
+    // completionPct 88 -> share .88 -> starsFor gives 4.5 (halves), say: „Erős futam volt."
+    expect(screen.getByRole('img', { name: '4,5 csillag az ötből' })).toBeInTheDocument()
+    expect(container.querySelectorAll('.pl-stars i.is-lit')).toHaveLength(4)
+    expect(container.querySelectorAll('.pl-stars i.is-half')).toHaveLength(1)
+    expect(screen.getByText('Erős futam volt.')).toBeInTheDocument()
+  })
+
+  it('draws the completed share instead of merely printing it', () => {
+    const { container } = renderAt('meso-rec-03')
+    expect((container.querySelector('.ld-hero-pct b') as HTMLElement).textContent).toBe('88')
+    expect((container.querySelector('.ld-hero-pct em') as HTMLElement).textContent).toBe('%')
+    expect(screen.getByText('A teljesített edzések aránya')).toBeInTheDocument()
+    const bar = container.querySelector('.ld-hero-bar i') as HTMLElement
+    expect(bar.style.getPropertyValue('--w')).toBe('88%')
+  })
+
+  it('renders the adherence stat strip — without repeating the hero\'s share', () => {
     renderAt('meso-rec-03')
     expect(screen.getByText('21/24')).toBeInTheDocument()
     expect(screen.getByText('8/8')).toBeInTheDocument()
-    expect(screen.getByText('88')).toBeInTheDocument()
+    // the 88% lives in the hero now; the strip must not state it a second time
+    expect(screen.queryByText('Teljesítés')).toBeNull()
+    expect(screen.getAllByText('88')).toHaveLength(1)
   })
 
   it('renders the frozen volume arc behind a muscle switch', async () => {
@@ -69,6 +100,30 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     // Hát (back): mev 8 -> mav/mrv 20, so W1 8, peak reaches the 20 ceiling exactly
     expect(within(rows[0]).getByText('Hát')).toBeInTheDocument()
     expect(within(rows[0]).getByText('8 → 20 / 20')).toBeInTheDocument()
+  })
+
+  // --- „A mostani tervedhez képest" (T10 Task 4, mezo-88iwa.11) ---
+
+  it('pairs the closed run\'s peak weekly sets against the active plan\'s current week', () => {
+    renderAt('meso-rec-03')
+    const versus = screen.getByTestId('meso-report-versus')
+    const pairs = within(versus).getAllByTestId('versus-pair')
+    // the two fixtures share all six of rec-03's muscles (the active hyp-04 adds triceps +
+    // glute, which have no „akkor" side and so are not pairs); loudest run peak first
+    expect(pairs).toHaveLength(6)
+    expect(within(pairs[0]).getByText('Hát')).toBeInTheDocument() // peak 20
+
+    // Hand-computed, Mell: rec-03's frozen arc is mev 6 → ceiling (mav) 16 in +2 steps over
+    // 8 weeks, so its peak week is 16. The ACTIVE hyp-04 run is in week 3 of mev 8 → mav 14,
+    // i.e. 8 → 10 → 12, so this week gives 12.
+    const chest = pairs.find((p) => within(p).queryByText('Mell')) as HTMLElement
+    const then = within(chest).getByText('akkor').parentElement as HTMLElement
+    const now = within(chest).getByText('most').parentElement as HTMLElement
+    expect(within(then).getByText('16')).toBeInTheDocument()
+    expect(within(now).getByText('12')).toBeInTheDocument()
+    // one ruler for both bars: 16/16 and 12/16 of the pair set's widest value (back's 20)
+    expect((then.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('80%')
+    expect((now.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('60%')
   })
 
   it('renders the lifestyle context block — totals pills, weekly rows, "–" for missing data', () => {
@@ -226,6 +281,8 @@ describe('MesoReportPage (real mode · no report yet)', () => {
     // this fixture carries neither — both blocks must be ABSENT, not empty
     expect(screen.queryByTestId('meso-report-context')).toBeNull()
     expect(screen.queryByTestId('meso-report-ai')).toBeNull()
+    // …and no plan is running in this fixture, so the then-vs-now block is absent too
+    expect(screen.queryByTestId('meso-report-versus')).toBeNull()
   })
 
   it('renders the "Ezt akartad" quote when the run carries the wizard\'s goal notes (mezo-d20.15 Task 5)', async () => {
@@ -360,5 +417,34 @@ describe('MesoReportPage (real mode · AI states)', () => {
 
     await screen.findByText('14/16') // wait for the report itself to render
     expect(screen.queryByTestId('meso-report-ai')).toBeNull()
+  })
+})
+
+// The then-vs-now derivation itself (T10 Task 4): the two absence rules stated on the pure
+// function, where "no active plan" and "no shared muscle" can be posed exactly.
+describe('versusPairs', () => {
+  const muscle = (name: string, planned: number[]): MuscleVolumeArc => ({
+    muscle: name, region: 'coral', mrv: 20,
+    weeks: planned.map((p, i) => ({ week: i + 1, phase: 'MAV', planned: p, actual: null, isCurrent: false })),
+  })
+  const arc = (muscles: MuscleVolumeArc[], currentWeek: number): MesoVolumeArc => ({
+    mesocycleId: 'm', title: 'Most', currentWeek, weeks: muscles[0]?.weeks.length ?? 0,
+    startDate: '2026-01-01', endDate: '2026-02-12', status: 'active', phaseCurve: ['MAV'], muscles,
+  })
+
+  it('has nothing to say without an active plan', () => {
+    expect(versusPairs([muscle('chest', [8, 10, 12])], null)).toEqual([])
+  })
+
+  it('drops muscles only one side trains — never pairs them against an invented 0', () => {
+    const closed = [muscle('chest', [8, 10, 16]), muscle('ham', [6, 8, 10])]
+    const active = arc([muscle('chest', [9, 11, 13]), muscle('triceps', [6, 8, 10])], 2)
+    expect(versusPairs(closed, active).map((p) => p.muscle)).toEqual(['chest'])
+  })
+
+  it('reads the run\'s PEAK week against the active plan\'s CURRENT week', () => {
+    const closed = [muscle('chest', [8, 16, 9])] // peak 16, not the last week's 9
+    const active = arc([muscle('chest', [9, 11, 13])], 2) // week 2 -> 11, not the peak 13
+    expect(versusPairs(closed, active)).toEqual([{ muscle: 'chest', label: 'Mell', then: 16, now: 11 }])
   })
 })

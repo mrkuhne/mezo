@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { SetStepper } from '@/features/train/components/SetStepper'
+import { RIR_VALUES } from '@/features/train/logic/rir'
 import type { SetSide } from '@/features/train/logic/workoutState'
 
 export interface SetEditValues {
@@ -67,7 +68,7 @@ export function SetEditSheet({
           {kind !== 'warmup' && (
             <div className="rirrow">
               <span className="rk">RIR</span>
-              {[0, 1, 2, 3].map((n) => (
+              {RIR_VALUES.map((n) => (
                 <button key={n} type="button" disabled={readOnly} aria-pressed={rir === n}
                   aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
                   {n}

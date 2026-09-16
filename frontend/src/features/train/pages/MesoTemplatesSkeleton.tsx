@@ -1,34 +1,31 @@
-// Layout-aware loading skeleton for MesoTemplatesPage (mezo-tlwa). Mirrors the real shape —
-// page-header → the shelf stat strip → ~2 poster placeholders (head + disc, week arc, day
-// spine, chip row, foot) — so the swap to real content does not reflow. Sizes track the DS
-// re-skin (36px h1, 44px header action) like MesocycleSkeleton, and the poster anatomy of
-// MesoTemplateCard since mezo-3a9a.
+// Layout-aware loading skeleton for MesoTemplatesPage. Rewritten for the Titanium list
+// (T10 Task 3, mezo-88iwa.11): slim poster hero → ~2 `.pl-lib-card` placeholders (head,
+// the three fact boxes, the muscle mini-row, the story line) → the loud create button —
+// the same geometry the real page draws, so the swap does not reflow.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function MesoTemplatesSkeleton() {
   return (
     <div role="status" aria-label="Betöltés…">
-      <div className="page-header">
-        <div className="col gap-xs"><Skeleton width={130} height={12} /><Skeleton width={150} height={36} /></div>
-        <Skeleton width={64} height={44} radius={999} />
-      </div>
-      <div style={{ padding: '8px 24px 24px' }}>
-        <Skeleton height={62} radius={18} />
-        <div className="col gap-sm" style={{ marginTop: 12 }}>
-          {Array.from({ length: 2 }, (_, i) => (
-            <SkeletonCard key={i} style={{ padding: 16 }}>
-              <div className="col gap-sm" style={{ marginTop: 12 }}>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Skeleton width={56} height={12} /><Skeleton width={72} height={12} />
-                </div>
-                <Skeleton width="60%" height={18} />
-                <Skeleton width="90%" height={12} />
-                <div className="row gap-sm mt-sm"><Skeleton width={64} height={24} radius={999} /><Skeleton width={88} height={24} radius={999} /></div>
-                <div className="row gap-sm mt-sm"><Skeleton width="48%" height={44} radius={12} /><Skeleton width="48%" height={44} radius={12} /></div>
+      <Skeleton height={190} radius={0} />
+      <div className="col gap-sm" style={{ padding: '14px 17px 19px' }}>
+        {Array.from({ length: 2 }, (_, i) => (
+          <SkeletonCard key={i} style={{ padding: '13px 14px', borderRadius: 20 }}>
+            <div className="col gap-sm">
+              <Skeleton width="62%" height={16} />
+              <div className="row gap-sm">
+                <Skeleton width="31%" height={44} radius={14} />
+                <Skeleton width="31%" height={44} radius={14} />
+                <Skeleton width="31%" height={44} radius={14} />
               </div>
-            </SkeletonCard>
-          ))}
-        </div>
+              <div className="row gap-xs">
+                {Array.from({ length: 4 }, (_, k) => <Skeleton key={k} width={30} height={30} radius={10} />)}
+              </div>
+              <Skeleton width="45%" height={11} />
+            </div>
+          </SkeletonCard>
+        ))}
+        <Skeleton height={72} radius={22} />
       </div>
     </div>
   )

@@ -211,3 +211,233 @@ describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
     }
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.13, T12 Task 2): the `GlassBox` shared 3D glass
+ * primitive's `.gl-*` section, registered the same way the `train mai titanium` block
+ * above is — open/close comment markers, both present and in order, with the class
+ * family actually inside the span.
+ */
+describe('the titanium glass primitive section is registered (mezo-88iwa.13)', () => {
+  const START_MARKER = 'titanium glass primitive'
+  const END_MARKER = '/titanium glass primitive'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the gl- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head', '.gl-x', '.gl-anim']) {
+      expect(section, `${cls} missing from the titanium glass primitive section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Fix round 1 (mezo-88iwa.13, T12 Task 2 review): GlassBox is a Sheet-SIBLING
+ * dialog — pages that host a <Sheet> may also open a GlassBox on top of it — so
+ * two things a CSS-parsing test can actually pin down without a real browser
+ * layout pass: it must sit above the Sheet's 200/201 pair (not the shared
+ * page-takeover tier, 60), and the background-scroll lock must know about it.
+ */
+describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () => {
+  test('the background-scroll-lock :has() selector includes .gl-backdrop', () => {
+    expect(rawCss).toContain(
+      '.phone-screen:has(.sheet-backdrop, .dd-backdrop, .gl-backdrop) .screen-content',
+    )
+  })
+
+  test('.gl-backdrop / .gl-card sit above the Sheet pair (200/201), not at the page-takeover tier (60)', () => {
+    const backdropMatch = rawCss.match(/\.gl-backdrop\s*\{[^}]*z-index:\s*(\d+)/)
+    const cardMatch = rawCss.match(/\.gl-card\s*\{[^}]*z-index:\s*(\d+)/)
+    expect(backdropMatch, '.gl-backdrop has no z-index in its own rule').not.toBeNull()
+    expect(cardMatch, '.gl-card has no z-index in its own rule').not.toBeNull()
+    const backdropZ = Number(backdropMatch![1])
+    const cardZ = Number(cardMatch![1])
+    expect(backdropZ).toBeGreaterThan(201) // above the Sheet backdrop/panel pair
+    expect(cardZ).toBeGreaterThan(backdropZ) // the card rides above its own backdrop
+    expect(cardZ).toBeLessThan(300) // stays below the toast stack
+  })
+})
+
+/**
+ * Section registration (mezo-88iwa.13, T12 Task 3): the Terhelés (TrainWeekPage) face's
+ * `.ld-*` section — the full-bleed hero, the two doorway cards, the group cards and the
+ * group-glass body — registered exactly like the two blocks above.
+ */
+describe('the train terheles titanium section is registered (mezo-88iwa.13)', () => {
+  const START_MARKER = 'train terheles titanium'
+  const END_MARKER = '/train terheles titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the ld- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.ld-hero', '.ld-hero-bar', '.ld-hero-pct', '.ld-eyebrow', '.ld-map-card',
+      '.ld-move-card', '.ld-groups', '.ld-group-bar', '.ld-group-note', '.ld-sport', '.ld-glass-rows',
+    ]) {
+      expect(section, `${cls} missing from the train terheles titanium section`).toContain(cls)
+    }
+  })
+
+  // The bars are drawn-on-reveal: the FINAL width is the base rule (so the portaled
+  // group glass and a settled 'pop' arrival both show a full bar), and only the armed
+  // `.mz-play` subtree animates the growth — the `.gr-tbar` idiom. A future edit that
+  // flips this (base scaleX(0)) silently blanks every bar outside an entrance group.
+  test('the ld- bars default to their final width and only grow inside .mz-play', () => {
+    expect(rawCss).toContain('.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i')
+    expect(rawCss).toMatch(/@keyframes ld-fill \{ from \{ transform: scaleX\(0\); \}/)
+  })
+})
+
+/**
+ * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
+ * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
+ * and the muscle detail's gauge, ported from the prototype's `plan.css`.
+ */
+describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
+  const START_MARKER = 'terv titanium'
+  const END_MARKER = '/terv titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the pl- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.pl-poster', '.pl-ring', '.pl-arc', '.pl-day', '.pl-dest', '.pl-dhero',
+      '.pl-ex', '.pl-item', '.pl-scale-bar', '.pl-versus',
+    ]) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
+
+  // T10 Task 1: the plan library families the T9 port stopped short of — the library
+  // hero/cards, the star rating, the template-detail exercise rows, the wizard's load
+  // bars (ported renamed to .pl-wload/.pl-wload-row) and the small quiet-row idiom.
+  test('the T10 library sub-block carries its own class family', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.pl-lib-card', '.pl-lhero', '.pl-stars', '.pl-tpl-ex', '.pl-wload', '.pl-row',
+    ]) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Section registration (mezo-88iwa.7, T6 Task 2): the active-workout list phase's
+ * `.wo-*` section — per-exercise cards, set rows, the rest dock, the finish CTA and
+ * the glass-card interiors (menu, confirm, close, history/records), ported from the
+ * prototype's `session.css`, registered exactly like the blocks above.
+ */
+describe('the train session titanium section is registered (mezo-88iwa.7)', () => {
+  const START_MARKER = 'train session titanium'
+  const END_MARKER = '/train session titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the wo- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.wo-card', '.wo-row', '.wo-dock', '.wo-finish', '.wo-menu-row', '.wo-rec',
+    ]) {
+      expect(section, `${cls} missing from the train session titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Section registration (mezo-88iwa.8, T7 Task 2): the workout-close ceremony's
+ * `.cer-*` section — the score reveal, the settled result, and the details/recap
+ * screen (muscle-group star rows, the kcal-won tile), ported from the prototype's
+ * session.css, registered exactly like the blocks above.
+ */
+describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () => {
+  const START_MARKER = 'train ceremony titanium'
+  const END_MARKER = '/train ceremony titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the cer- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
+    ]) {
+      expect(section, `${cls} missing from the train ceremony titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Section registration (mezo-88iwa.9, T8 Task 3): the sport-logging flow's own `.sp-*`
+ * section — the sport picker grid/tiles, the per-sport form (mode toggle, numeric
+ * stepper, chip picker, free text, range, the kcal estimate tile), ported from the
+ * prototype's sport.css, registered exactly like the blocks above. The ceremony
+ * families (`.sp-cer`, `.sp-keep`, `.sp-details`) are NOT re-ported here — T7's
+ * `.cer-*` section already serves the shared close ceremony.
+ */
+describe('the train sport titanium section is registered (mezo-88iwa.9)', () => {
+  const START_MARKER = 'train sport titanium'
+  const END_MARKER = '/train sport titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the sp- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.sp-grid', '.sp-tile', '.sp-field', '.sp-chips', '.sp-kcal', '.sp-note',
+    ]) {
+      expect(section, `${cls} missing from the train sport titanium section`).toContain(cls)
+    }
+  })
+})

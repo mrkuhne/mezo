@@ -54,6 +54,10 @@ export interface FuelSlot {
   slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
   state: 'done' | 'now' | 'pending' | 'missed'
   mealName?: string
+  /** A tervezett ablak HH:mm-je egy DONE meal-sloton (mezo-l2gp0): a `time` done állapotban a
+   *  logolás ideje, a terv ideje pedig elveszne — az óra-doboz "Terv szerint" sora innen olvas.
+   *  Ablak nélküli extra logon nincs (őszinte-null). */
+  plannedTime?: string
   mezoNote?: string
   windowTip?: string
   kcal?: number; p?: number; c?: number; f?: number
@@ -1424,6 +1428,13 @@ export interface SportSession {
   time: string; duration: number
   setsPlayed: number | null; rounds: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
+  // BE-owned energy estimate (T8 Task 4/6): the user's own value when they gave one via
+  // the log form's override dialog, otherwise the backend's MET estimate. Null when the
+  // athlete's weight is unknown on the server — never a fabricated 0.
+  kcal: number | null
+  // True when `kcal` is the backend's estimate, false when the user overrode it, null
+  // when `kcal` itself is null (nothing to qualify).
+  kcalIsEstimate: boolean | null
 }
 export interface SportWeek {
   label: string; sessions: number; hoursPlayed: number

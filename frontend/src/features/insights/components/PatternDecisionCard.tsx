@@ -156,7 +156,15 @@ export function PatternDecisionCard({
         </button>
       </div>
 
-      {showDetailLink && (
+      {/* A hideg indítás „tartó sorának" NINCS részlet-oldala (mezo-5543y), ezért linket sem kap.
+          A részlet-oldal a kulcsot előbb a KATALÓGUSBAN keresi, utána `hypothesis_key`-ként — a
+          tartó sor egyiket sem teljesíti (kulcsa `note-<uuid>`, `hypothesisKey`-e pedig nincs),
+          tehát a link biztosan 404-re vinne. A feltétel szándékosan szűk: egy statisztikai sornak
+          sincs teszt-terve, de annak a kulcsa katalógus-kulcs, tehát az oldala MŰKÖDIK — a
+          `testPlan` önmagában nem mond semmit arról, feloldható-e a kulcs. Terv nélküli
+          `reflection` sor viszont csak a tartó sor lehet: minden más reflexiós sor érvényesített
+          tervvel jön létre. */}
+      {showDetailLink && !(pattern.kind === 'reflection' && pattern.testPlan == null) && (
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
           {/* Direct to the sibling leaf — `/insights/…` only reached it via LegacyPathRedirect. */}
           <Link to={`/mezo/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>

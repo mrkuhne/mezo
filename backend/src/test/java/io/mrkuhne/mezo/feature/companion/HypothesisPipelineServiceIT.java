@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
     @Autowired private PatternRepository patternRepository;
     @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
+    @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
 
     private void seedContext(UUID owner, String hypothesesJson) {
@@ -101,6 +104,57 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
         List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
         assertThat(rows).hasSize(1);
         assertThat(rows.getFirst().getTitle()).isEqualTo("Szukitett hipotezis");
+    }
+
+    /**
+     * mezo-5543y — the COLD START floor. On an account with no open reflection-owned row the
+     * critique has nothing to score against: {@code CRITIQUE_PROMPT} tells the model to rate
+     * {@code statistical} LOW when it cannot cite a concrete r/n, and {@code statistical} carries
+     * the heaviest weight (0.35), so a first hypothesis structurally cannot reach 0.75 — the loop
+     * returned 0 survivors every night in production and no row ever existed to raise the next
+     * night's score. The floor is the way out of that circle: BELOW the normal keep threshold,
+     * still above the revise band.
+     *
+     * <p>0.6 each ⇒ score 0.6: under {@code keep-threshold} (0.75), over
+     * {@code cold-start-keep-threshold} (0.55). No {@code [fake-revise:…]} sentinel, so the
+     * revision comes back as {@code {}} and is rejected — the floor is what persists this, and the
+     * row it persists is the ORIGINAL hypothesis.
+     */
+    @Test
+    void testRun_shouldPersistOnTheColdStartFloor_whenTheAccountHasNoOpenRow() {
+        UUID owner = userPopulator.createUser().getId();
+        seedContext(owner, """
+                [{"title":"Első sejtés [fake-critique:{\\"statistical\\":0.6,\\"confounders\\":0.6,\\"l3align\\":0.6,\\"actionability\\":0.6,\\"reasoning\\":\\"meg nincs eleg adat\\"}]",\
+                "mechanism":"M","category":"trigger"}]""");
+
+        int persisted = pipeline.run(owner, null);
+
+        assertThat(persisted).isEqualTo(1);
+        List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getTitle()).startsWith("Első sejtés");
+        assertThat(rows.getFirst().getConfidence().doubleValue()).isCloseTo(0.6, within(1e-9));
+    }
+
+    /**
+     * mezo-5543y, the floor's other half: it is a COLD-START concession, not a permanent
+     * loosening. One open reflection-owned row is enough evidence that the engine is running, and
+     * the normal 0.75 bar comes back — the same borderline hypothesis that the test above persists
+     * is discarded here.
+     */
+    @Test
+    void testRun_shouldNotApplyTheColdStartFloor_whenAnOpenRowAlreadyExists() {
+        UUID owner = userPopulator.createUser().getId();
+        patternPopulator.reflection(owner, new TestPlanEnvelope("people:anna", "sleep-duration-h", 1,
+                TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60), PatternEntity.STATUS_PROPOSED);
+        seedContext(owner, """
+                [{"title":"Második sejtés [fake-critique:{\\"statistical\\":0.6,\\"confounders\\":0.6,\\"l3align\\":0.6,\\"actionability\\":0.6,\\"reasoning\\":\\"meg nincs eleg adat\\"}]",\
+                "mechanism":"M","category":"trigger"}]""");
+
+        assertThat(pipeline.run(owner, null)).isZero();
+        // only the seeded open row remains — the borderline proposal was discarded
+        assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner))
+                .hasSize(1);
     }
 
     @Test

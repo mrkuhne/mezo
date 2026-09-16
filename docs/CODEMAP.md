@@ -205,8 +205,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `WeightLogRepository`
   - **services:** `BiometricProfileService`, `CheckInSavedEvent`, `CheckInService`, `GoalSleepAdequacyAdapter`,
     `SleepAnchorPort`, `SleepAnchorResolver`, `SleepGoalService`, `SleepLogSavedEvent`, `SleepLogService`,
-    `SleepShotDraftValidator`, `SleepShotLlm`, `SleepShotService`, `SleepTargetPort`, `WeightLogSavedEvent`,
-    `WeightLogService`, `WeightTrendService`
+    `SleepShotDraftValidator`, `SleepShotLlm`, `SleepShotService`, `SleepTargetPort`, `TrainAthleteBodyAdapter`,
+    `WeightLogSavedEvent`, `WeightLogService`, `WeightTrendService`
   - **controllers→contract:** `BiometricProfileController`→`BiometricProfileApi`, `CheckInController`→`CheckInApi`,
     `SleepGoalController`→`SleepGoalApi`, `SleepLogController`→`SleepApi`, `SleepShotController`→`SleepShotApi`,
     `WeightLogController`→`WeightApi`
@@ -349,8 +349,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`, `MemoryContextBlock`,
     `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`,
     `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionService`,
-    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`,
-    `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
+    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryEmbedder`, `MemoryQueryPreparer`,
+    `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
     `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`, `MemoryRetriever`, `MemoryShadowRunner`,
     `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`,
     `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`,
@@ -569,9 +569,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
     formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts, fuelWeekView.ts, glycemicBand.ts,
     heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts,
-    mealDisplayName.ts, mealQualityTruth.ts, mealShare.ts, pantryProvenance.ts, projectStackDay.ts, recipeRole.ts,
-    recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts, useStackIntakeToggle.ts,
-    usualMeals.ts, validateSlotPlan.ts
+    mealDisplayName.ts, mealNutrients.ts, mealQualityTruth.ts, mealShare.ts, pantryProvenance.ts, projectStackDay.ts,
+    recipeRole.ts, recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, scoreTone.ts, stackBands.ts,
+    useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -1312,7 +1312,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-12, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-06, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-15, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-09-16, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1330,15 +1330,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MesocycleRepository`, `MuscleGroupVolumeLogRepository`, `RunSessionLogRepository`, `RunningBlockRepository`,
     `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`, `SportSlotSkipRepository`,
     `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`, `WorkoutTimingProfileRepository`
-  - **services:** `CatalogMediaResolver`, `ClosingBlockService`, `EwmaEstimator`, `ExerciseCatalogService`,
-    `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`, `MedalEvaluator`,
-    `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
-    `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
-    `Prescription`, `PriorityTier`, `ProgressionDecider`, `RunningService`, `SessionTimingCalculator`,
-    `SetRecommendationService`, `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
-    `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`,
-    `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WorkoutAutoCloseService`,
-    `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+  - **services:** `AthleteBodyPort`, `CatalogMediaResolver`, `ClosingBlockService`, `EwmaEstimator`,
+    `ExerciseCatalogService`, `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`,
+    `GymScheduleService`, `MedalEvaluator`, `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`,
+    `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`,
+    `MesocycleReportService`, `MuscleGroup`, `OneRepMax`, `Prescription`, `PriorityTier`, `ProgressionDecider`,
+    `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`, `SportEnergyCalculator`, `SportService`,
+    `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`,
+    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`,
+    `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WorkoutAutoCloseService`, `WorkoutFinishedEvent`,
+    `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `TimingProperties`,
@@ -1385,38 +1386,39 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExercisesPage.tsx, ExercisesSkeleton.tsx,
-    GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx,
-    MesoTemplateEditorPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoWeekPage.tsx,
-    MesocycleBuilderPage.tsx, MesocycleLibraryPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
+    GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayPage.tsx, MesoFutamokPage.tsx, MesoFutamokSkeleton.tsx,
+    MesoKonyvtarPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx, MesoTemplateEditorPage.tsx,
+    MesoTemplateStoryPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoTervPage.tsx,
+    MesoTervSkeleton.tsx, MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
     PrepBemelegitesPage.tsx, PrepFejlodesPage.tsx, PrepGyakorlatokPage.tsx, PrepHetiZonaPage.tsx,
-    PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,
-    SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx,
-    WorkoutReviewPage.tsx
-  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExerciseActionSheet.tsx, ExerciseOverviewSheet.tsx,
-    ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx, FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx,
-    MesoStartSheet.tsx, MuscleWeekSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx, SportEventSheet.tsx, SportLogSheet.tsx,
-    SportScheduleSheet.tsx, VideoUrlSheet.tsx
-  - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, BodyMap.tsx, ChallengeCard.tsx,
-    ChallengeGenerationLoader.tsx, CompactStepper.tsx, CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx,
-    DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx, DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx,
-    ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx, LoadTile.tsx, LoadTiles.tsx, MedalChip.tsx,
-    MedalToast.tsx, MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoTemplateCard.tsx,
-    MesoWeekEditor.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MuscleChip.tsx,
-    MusclePriorityPicker.tsx, PeakFitCard.tsx, PlannedMesoCard.tsx, PrepExerciseTile.tsx, ProgressionBanner.tsx,
-    RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx,
-    SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
-    VolumeArcChart.tsx, VolumeBand.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx,
-    WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
-  - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, challengeOutcome.ts, dayImpact.ts,
-    dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts,
-    mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, morningWindow.ts,
-    muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, prepBriefing.ts,
-    restTimer.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts,
-    structureLint.ts, summaryStats.ts, templatePoster.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts,
-    warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts,
-    workoutComparison.ts, workoutState.ts
+    PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx,
+    SportPage.tsx, SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekMapPage.tsx,
+    TrainWeekMozgasPage.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
+  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx,
+    FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
+    SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
+  - **components:** BodyMap.tsx, ChallengeCard.tsx, ChallengeGenerationLoader.tsx, CompactStepper.tsx,
+    CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx,
+    DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx,
+    ExerciseReview.tsx, FinishConfirmGlass.tsx, LoadTile.tsx, MedalChip.tsx, MedalToast.tsx, MesoDayEditor.tsx,
+    MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekEditor.tsx, MiniBar.tsx, MiniStat.tsx,
+    MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
+    PrepExerciseTile.tsx, ProgressionBanner.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
+    RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx,
+    TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx,
+    WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx,
+    WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
+  - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, cerScore.ts, challengeOutcome.ts,
+    dayImpact.ts, dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, libraryStory.ts,
+    loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts,
+    mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts,
+    peakWeekFit.ts, prepBriefing.ts, recordFor.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
+    sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts,
+    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
+    weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts,
+    workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 14 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 15 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1485,8 +1487,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   ItemRow.tsx, NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx,
   Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx,
   Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx,
-  sectionLabel.ts
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
+  mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

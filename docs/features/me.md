@@ -173,8 +173,24 @@ mosaic rather than crashing on a `Date NaN`.
   `empty`, server-mirrored — [companion.md §3](companion.md)) is the one place that knows a day is
   still OPEN — a dashed "este zárom" ring, never a part-way number — which the week-level
   `dayState` (four states, `features/me/logic/weekDay.ts`) cannot express. When the evaluation
-  hasn't resolved (or errored) in real mode, the page falls back to `dayState` + the week's own
-  score rather than rendering nothing.
+  ERRORS in real mode, the page falls back to `dayState` + the week's own score rather than
+  rendering nothing.
+- **Loading is its own state, not the degradation (`mezo-ahf5b`).** Pending and failed both leave
+  `evaluation` null, and the page used to render the degradation surface above for both — no
+  dimension tiles, the standalone Fuel card, the week's fallback score on the hero ring, and zero
+  loading affordance. A closed day costs a **synchronous LLM roundtrip on its first read**
+  ([companion.md §3](companion.md) — prose is generated lazily on GET), so for those seconds a day
+  full of collected signals read as a day that had collected nothing; the reported symptom was
+  "stepping one day back shows nothing at first". `evalLoading` (`evalQuery.isPending && state !==
+  'future'` — a future day is known from the calendar alone, with nothing to wait for) now renders
+  `DayEvaluationSkeleton` (`components/week/WeekLoadStates.tsx`, `role="status"`, „Az értékelés
+  készül…") plus the week-level `DayCells`, which stay put instead of popping in with the rest, and
+  the hero shows a dashed „számolom" ring with **no number** rather than flashing the week's score
+  before the day's. **`usePrefetchDayEvaluations`** (`data/me/dayEvaluationHooks.ts`) warms the two
+  days the nav tiles point at (skipping future ones) while the current day is being read, so
+  stepping a day back usually lands on an already-resolved evaluation and never sees the skeleton.
+  Mock mode is deliberately excluded from the prefetch: `initialData` already resolves every date
+  synchronously there.
 - **`DayDimensionTile`/`DayDimRing`** (`components/week/DayDimensionTile.tsx`) render each of the
   six `DAY_DIMENSIONS` (`weekDay.ts` — nutrition/quality/training/sleep/logging/rhythm, config-weight
   order, each with its own `is-<key>` bar class scoped to this page so it never collides with the
@@ -628,7 +644,7 @@ Obligations that apply to every change here: **contract-first** for any boundary
 
 **Daily evaluation (`mezo-jcpt.4`) — frontend:**
 - `data/me/dayEvaluationHooks.test.tsx` / `data/me/dayEvaluation.test.ts` — dual-mode: mock re-dates the 4 named fixtures per requested day; real mode asserts `data` stays `undefined` until the fetch resolves (no fabricated fallback) and the MSW round-trip.
-- `features/me/pages/WeekDayPage.test.tsx` — the 6-dimension evaluation rendering per state (`scored`/`in_progress`/`thin`/`empty`/`future`), the `DayDimensionTile` set reading off `dimensions[]`, the `DayReviewCard` narrative/highlights/adjustment rendering and its absence when the day has no prose, the `?start=`-vs-`:date` week derivation and the malformed-`:date` redirect to the days mosaic, and the goal-bar (`GoalRow`) render-only-when-targeted guard.
+- `features/me/pages/WeekDayPage.test.tsx` — the 6-dimension evaluation rendering per state (`scored`/`in_progress`/`thin`/`empty`/`future`), the `DayDimensionTile` set reading off `dimensions[]`, the `DayReviewCard` narrative/highlights/adjustment rendering and its absence when the day has no prose, the `?start=`-vs-`:date` week derivation and the malformed-`:date` redirect to the days mosaic, and the goal-bar (`GoalRow`) render-only-when-targeted guard Real mode additionally pins the `mezo-ahf5b` pair: a delayed response must render the „Az értékelés készül…" skeleton and a „számolom" ring (never the Fuel-card degradation, never the week's 65 flashing first), and viewing a day must fire the evaluation fetch for BOTH neighbour days.
 
 **Commands:**
 ```bash

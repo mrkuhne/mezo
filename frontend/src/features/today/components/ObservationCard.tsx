@@ -28,17 +28,26 @@ const STATE_PILL: Record<ObservationCardKind, string> = {
   confirmed: 'BEÉPÜLT',
 }
 
-/** A nyugtázó sor a prototípus `data-ack` szövegeiből, emoji nélkül (házszabály). */
-function ackLine(card: ObservationCardKind, choice: ObservationChoice): string {
+/**
+ * A nyugtázó sor a prototípus `data-ack` szövegeiből, emoji nélkül (házszabály).
+ *
+ * `measurable` (mezo-5543y): van-e a kártya mögött MÉRHETŐ teszt. A hideg indítás „tartó sora"
+ * teszt-terv nélkül születik (a szerver ilyenkor `minN` nélkül küldi a kártyát), az éjszakai
+ * kiértékelés pedig a terv nélküli sorokat átugorja — ott a „Nyolc napnál újra szólok" olyan
+ * ígéret lenne, amit semmi nem tart be. A válasz ettől még nem vész el: bekerül a sor
+ * történetébe, és az éjszakai kör a saját szavaidként olvassa vissza.
+ */
+function ackLine(card: ObservationCardKind, choice: ObservationChoice, measurable: boolean): string {
   if (choice === 'talk') return 'Megnyitom a chatet ezzel a szállal.'
   if (card === 'return') {
     return choice === 'watch'
       ? 'Beírtam a bizonyítékok közé.'
       : 'Rendben, kivételként jegyzem, nem számít bele.'
   }
-  return choice === 'watch'
+  if (choice !== 'watch') return 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
+  return measurable
     ? 'Rendben, figyelem. Nyolc napnál újra szólok.'
-    : 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
+    : 'Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok.'
 }
 
 /** A `fresh` kártya három, a `return` kettő chipet ad; a sor-kártyákon nincs mit megválaszolni. */
@@ -162,7 +171,9 @@ export function ObservationCard({ item, onReply, pending = false }: {
       {failed && !answered && (
         <div className="nap-obs-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
       )}
-      {answered && <div className="nap-obs-ack">{ackLine(item.card, answered)}</div>}
+      {answered && (
+        <div className="nap-obs-ack">{ackLine(item.card, answered, item.minN != null)}</div>
+      )}
     </article>
   )
 }

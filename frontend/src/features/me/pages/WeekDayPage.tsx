@@ -20,9 +20,18 @@
 // The evaluation's `state` drives everything honest about the page: it is the
 // one place that knows the day is still OPEN (`in_progress` — a dashed „este
 // zárom" ring, never a part-way number), which `dayState`'s four week-level
-// states cannot express. When the evaluation has not resolved (or errored) in
-// real mode the page falls back to `dayState` + the week's own score, so a
-// failed evaluation degrades to the pre-jcpt page rather than to nothing.
+// states cannot express. When the evaluation ERRORS in real mode the page falls
+// back to `dayState` + the week's own score, so a failed evaluation degrades to
+// the pre-jcpt page rather than to nothing.
+//
+// mezo-ahf5b — that degradation is for a SETTLED failure only. While the
+// evaluation is still in flight the page shows a loading state of its own
+// (`DayEvaluationSkeleton`, a „számolom" ring, no number): pending and failed
+// both leave `evaluation` null, and rendering the degraded surface for the
+// first made a slow day — a closed one costs a synchronous LLM roundtrip on its
+// first read — look like a day that had collected nothing. The two days the nav
+// tiles point at are prefetched (`usePrefetchDayEvaluations`), so stepping a day
+// back normally lands on an already-resolved evaluation.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -34,7 +43,7 @@ import { cn } from '@/shared/lib/cn'
 import { huMonthDay, localDateString } from '@/shared/lib/dates'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/hooks'
-import { useDayEvaluation } from '@/data/me/dayEvaluationHooks'
+import { useDayEvaluation, usePrefetchDayEvaluations } from '@/data/me/dayEvaluationHooks'
 import { normalizeDayEvaluation, type NormalizedDayEvaluation } from '@/data/me/dayEvaluation'
 import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { resolveWeekStart } from '@/features/me/logic/weekNav'
@@ -46,7 +55,7 @@ import { WeekScoreRing } from '@/features/me/components/week/WeekScoreRing'
 import { DayNavTiles } from '@/features/me/components/week/DayNavTiles'
 import { DayDimensionTile, DayDimRing } from '@/features/me/components/week/DayDimensionTile'
 import { DayReviewCard } from '@/features/me/components/week/DayReviewCard'
-import { WeekPageSkeleton, WeekPageError } from '@/features/me/components/week/WeekLoadStates'
+import { WeekPageSkeleton, WeekPageError, DayEvaluationSkeleton } from '@/features/me/components/week/WeekLoadStates'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
 /** A goal bar — rendered ONLY when both the value and its target are on the wire. */
@@ -124,6 +133,27 @@ function DayChips({ day }: { day: MeWeekDay }) {
   )
 }
 
+/** The day's raw week-level signals. Extracted (mezo-ahf5b) because they are the ONE part of the
+ *  body that does not come from the evaluation: they stay on screen while it loads, instead of
+ *  popping in with everything else. */
+function DayCells({ day }: { day: MeWeekDay }) {
+  return (
+    <MCells
+      className="rise wkd-cells"
+      cells={[
+        {
+          label: `alvás${day.sleepQuality != null ? ` · Q${day.sleepQuality}` : ''}`,
+          tone: 'lav',
+          value: day.sleepMin != null ? fmtSleep(day.sleepMin) : '—',
+        },
+        { label: 'edzés', tone: 'coral', value: `${day.workoutCount}×` },
+        { label: 'súly · kg', tone: 'sky', value: day.weightKg != null ? hu1(day.weightKg) : '—' },
+        { label: 'xp', tone: 'amber', value: day.xp ?? '—' },
+      ]}
+    />
+  )
+}
+
 /** The six dimensions in their config-weight order, EXCEPT that what is already final floats
  *  up — the prototype's „ami véglegesedett, felúszik" rule for an open day. On a closed day
  *  every dimension is DONE, so the order is exactly `DAY_DIMENSIONS`'. */
@@ -142,8 +172,12 @@ function heroSubtitle(
   day: MeWeekDay | null,
   days: readonly MeWeekDay[],
   today: string,
+  pending: boolean,
 ): string {
   if (state === 'future') return 'még előtted'
+  // Pending outranks every verdict below it: they all read the day's signals, and while the
+  // evaluation is unresolved the page does not yet know what the day is worth.
+  if (pending) return 'az értékelés készül'
   if (state === 'empty') return 'ezen a napon nem logoltál'
   if (state === 'thin') return 'kevés adat a pontszámhoz'
   if (state === 'in_progress' && evaluation) {
@@ -172,21 +206,42 @@ export function WeekDayPage() {
   const chat = useChatHandoff()
   const today = localDateString()
 
-  // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
-  if (!valid) return <Navigate to="/me/week/napok" replace />
-
   const days = week?.days ?? []
   const idx = days.findIndex((d) => d.date === date)
   const day = idx >= 0 ? days[idx] : null
+
+  // The two days the nav tiles point at (mezo-ahf5b) — warmed while this one is being read, so
+  // stepping back a day lands on a resolved evaluation instead of on the loading state below.
+  // A FUTURE neighbour is skipped: it has nothing to evaluate, so the call would buy nothing.
+  usePrefetchDayEvaluations(
+    [idx > 0 ? days[idx - 1] : null, idx >= 0 && idx < days.length - 1 ? days[idx + 1] : null]
+      .filter((d): d is MeWeekDay => d != null)
+      .map((d) => d.date)
+      .filter((d) => d <= today),
+  )
+
+  // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
+  if (!valid) return <Navigate to="/me/week/napok" replace />
   const evaluation = evalQuery.data ? normalizeDayEvaluation(evalQuery.data) : null
   // The evaluation owns the state; without it the page degrades to the week-level four.
   const state = evaluation?.state ?? (day ? dayState(day, today) : 'empty')
   const open = state === 'in_progress'
   const scored = state === 'scored'
-  const heroScore = evaluation ? evaluation.score : (scored ? day?.score ?? null : null)
-  const ringWords = open
-    ? { label: 'este zárom', caption: 'folyamatban' }
-    : ringLearningLabels(state)
+  // STILL LOADING is not the same thing as NOT AVAILABLE (mezo-ahf5b). Both leave `evaluation`
+  // null, but the degradation surface below — no dimension tiles, the standalone Fuel card, the
+  // week's own score on the ring — is an honest answer only once the fetch has SETTLED. Until
+  // then the page renders a skeleton and no number: a closed day's first read costs a synchronous
+  // LLM roundtrip, and for those seconds the degraded page read as „a nap semmit nem gyűjtött".
+  // A future day is exempt: `dayState` knows it from the calendar alone, with nothing to wait for.
+  const evalLoading = evalQuery.isPending && state !== 'future'
+  const heroScore = evalLoading
+    ? null
+    : (evaluation ? evaluation.score : (scored ? day?.score ?? null : null))
+  const ringWords = evalLoading
+    ? { label: 'számolom', caption: 'egy pillanat' }
+    : open
+      ? { label: 'este zárom', caption: 'folyamatban' }
+      : ringLearningLabels(state)
 
   const backToDays = () => navigate(`/me/week/napok?start=${start}`)
 
@@ -216,7 +271,7 @@ export function WeekDayPage() {
           <>
             <div className="wkd-herorow">
               <WeekScoreRing
-                className={cn('is-day', open && 'dayev-ringdash')}
+                className={cn('is-day', (open || evalLoading) && 'dayev-ringdash')}
                 score={heroScore}
                 learningLabel={ringWords.label}
                 learningCaption={ringWords.caption}
@@ -234,7 +289,9 @@ export function WeekDayPage() {
                 )}
               </div>
             )}
-            <div className="mz-hero-sb">{heroSubtitle(state, evaluation, day, days, today)}</div>
+            <div className="mz-hero-sb">
+              {heroSubtitle(state, evaluation, day, days, today, evalLoading)}
+            </div>
           </>
         )}
       </div>
@@ -252,6 +309,11 @@ export function WeekDayPage() {
               <div className="wkd-ghost rise" style={{ '--d': '0ms' } as CSSProperties}>
                 <p>{DAY_COPY.futurePage}</p>
               </div>
+            ) : evalLoading ? (
+              <>
+                <DayEvaluationSkeleton />
+                <DayCells day={day} />
+              </>
             ) : (
               <>
                 {evaluation && scored && (
@@ -318,19 +380,7 @@ export function WeekDayPage() {
                   </section>
                 )}
 
-                <MCells
-                  className="rise wkd-cells"
-                  cells={[
-                    {
-                      label: `alvás${day.sleepQuality != null ? ` · Q${day.sleepQuality}` : ''}`,
-                      tone: 'lav',
-                      value: day.sleepMin != null ? fmtSleep(day.sleepMin) : '—',
-                    },
-                    { label: 'edzés', tone: 'coral', value: `${day.workoutCount}×` },
-                    { label: 'súly · kg', tone: 'sky', value: day.weightKg != null ? hu1(day.weightKg) : '—' },
-                    { label: 'xp', tone: 'amber', value: day.xp ?? '—' },
-                  ]}
-                />
+                <DayCells day={day} />
 
                 {!evaluation && scored && chatButton}
               </>

@@ -25,6 +25,7 @@ always the same **two-act structure**:
 | Surface | Trigger | Never on |
 | --- | --- | --- |
 | Train — workout close | Closing the session (complete or confirmed-partial) | mid-workout |
+| Train — sport session | Saving a sport session from the full-screen `/train/sport/log` flow | editing an existing session |
 | Fuel — meal logging | Saving a meal from the pontosítás screen | editing an existing meal |
 | Fuel — supplements | The tick that completes a WHOLE block (Reggel/Délben/Este); a one-item block completes on its single tick | partial ticks (quiet toast), un-ticks |
 
@@ -40,7 +41,8 @@ Partial progress gets the quiet toast/react pair. Undo never triggers or replays
 - **Gold-stone bar** — the fill is cut from the Ritmus swatch material (see Materials), with a
   comet head at the fill edge. Meal: fills to `score/10`. Completion ceremonies: fills to 1.
 - **Counters** — up to three warm tiles whose numbers count up with the same pass
-  (meal: kcal / fehérje / szénhidrát; supplements: block items / taken today of total).
+  (meal: kcal / fehérje / szénhidrát; supplements: block items / taken today of total;
+  sport: perc / RPE / kcal-ha-ismert).
 - **Verdict** — one short sentence (see Copy), then context line (meal name · time, item names).
 - **Score card** (meal only) — the product's own AI-score mark + flat gold numeral `x,y / 10`.
   The owner explicitly rejected a stone box here: the AI score keeps its existing logo.
@@ -53,6 +55,12 @@ House score is 0–10 with one decimal. Stars are whole, 1–5, **rounded up**:
 `stars = clamp(1, 5, ceil(score / 2))` — 8,3 → 5 csillag, 7,4 → 4, 5,2 → 3.
 A missing score never fabricates stars: the scoreless fallback screen shows no ceremony
 (honest-null, same rule as the `folyamatban` chip).
+
+**Star source (sport):** unlike the meal's 0–10 score, a sport session's stars come from
+its own ratio — `sportStars` (`features/train/logic/sportScore.ts`) weighs time against the
+sport's own usual duration at 0.7 and felt effort (RPE/10) at 0.3, then runs through the
+SAME halves math as the gym ceremony (`starsFor`, `cerScore.ts`) — so a short, brutal
+session is not written off just because it ran shorter than usual.
 
 ## Motion spec
 

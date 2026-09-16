@@ -4,6 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
+import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
@@ -305,9 +306,13 @@ export const mesocycles: Mesocycle[] = [
   // report's strength list shares only PART of rec-03's exercises (see mesoReportHyp03Mock).
   {
     id: 'meso-hyp-03',
-    // A legacy/direct run like meso-rec-03 — it predates the template split, so a rerun
-    // materializes a template for it (mezo-meyc.1) instead of resolving one.
-    templateId: null,
+    // Started from the SAME PPL template the active run came from (T10 Task 4,
+    // mezo-88iwa.11): mock mode had no closed run carrying a `templateId` at all, so the
+    // template page's „Futamok ebből a sablonból" list had no closed row to draw and its
+    // route to the frozen report went uncovered offline. Narratively it is the previous
+    // autumn's run of the same block — `meso-rec-03` stays the legacy/direct run whose
+    // rerun materializes a template (mezo-meyc.1).
+    templateId: 'a10e0000-0000-4000-8000-000000000000',
     title: 'Hypertrophy 03 · Ősz',
     shortTitle: 'Hypertrophy 03',
     status: 'archived',
@@ -367,7 +372,9 @@ export const mesoTemplatesMock: MesoTemplate[] = [
     phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
     notes: null,
     volumePerMuscle: null,
-    runCount: 1,
+    // Two runs come from this template in the fixture set: the active meso-hyp-04 and the
+    // closed meso-hyp-03 (which carries this templateId) — the story page derives the same 2.
+    runCount: 2,
     days: [
       {
         day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
@@ -450,8 +457,11 @@ export const mesoTemplatesMock: MesoTemplate[] = [
         exerciseCount: 3,
         exercises: [
           { id: 'b20f0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' },
+          // Fix round (mezo-88iwa.11): the three anchor-weight states side by side in one
+          // fixture day — Bench (no anchorWeightKg field at all → em dash), Row (0 → the
+          // bodyweight words) and Press (a real kg) — see MesoTemplateStoryPage.test.tsx.
+          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound', anchorWeightKg: 0 },
+          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound', anchorWeightKg: 42.5 },
         ],
       },
       {
@@ -745,7 +755,9 @@ const HYP03_LANDMARKS: [string, { mev: number; mav: number; mrv: number; current
 
 export const mesoReportHyp03Mock = {
   mesocycleId: 'meso-hyp-03',
-  templateId: null,
+  // Same template as the run itself carries (see the fixture above) — a frozen report's
+  // `templateId` is the run's, so the report's „Sablon megnyitása" door matches the list.
+  templateId: 'a10e0000-0000-4000-8000-000000000000',
   title: 'Hypertrophy 03 · Ősz',
   startDate: '2025-10-02',
   endDate: '2025-11-13',
@@ -998,6 +1010,82 @@ export const workout: WorkoutPlan = {
   ],
 }
 
+// Per-exercise records (mezo-88iwa.7, T6 Task 5) — the WorkoutRecordsGlass demo data.
+// Matched by NAME (mock's LoggedWorkoutExercise carries no catalogId, so `recordFor`
+// always falls to its name-match branch here) against `workout.exercises` above: one row
+// per Pull Day exercise, so the demo shows real-looking records for every card's ⌗
+// button. Face Pull is deliberately rendered bodyweight-style (no weightKg anywhere —
+// reps-only sets, no bestE1rm/bestSessionVolume, totalVolume 0) to exercise that render
+// path; the other four carry full weighted data, Chest Supported Row's bestE1rm included
+// per the Task 5 brief.
+export const exerciseRecordsMock: ExerciseRecordResponse[] = [
+  {
+    name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+    bestSet: { weightKg: 107.5, reps: 8, date: '2026-08-12' },
+    bestE1rm: { value: 140, set: { weightKg: 105, reps: 10, date: '2026-08-26' } },
+    bestSessionVolume: { volumeKg: 3150, date: '2026-08-26' },
+    totalVolume: 42000, totalSets: 130, totalReps: 1150, sessionCount: 26,
+    repRecords: [
+      { weightKg: 107.5, reps: 8, date: '2026-08-12' },
+      { weightKg: 105, reps: 10, date: '2026-08-26' },
+      { weightKg: 100, reps: 12, date: '2026-07-01' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
+    bestSet: { weightKg: 77.5, reps: 12, date: '2026-08-05' },
+    bestE1rm: { value: 100.8, set: { weightKg: 77.5, reps: 12, date: '2026-08-05' } },
+    bestSessionVolume: { volumeKg: 2790, date: '2026-08-05' },
+    totalVolume: 38000, totalSets: 128, totalReps: 1400, sessionCount: 25,
+    repRecords: [
+      { weightKg: 77.5, reps: 12, date: '2026-08-05' },
+      { weightKg: 74.5, reps: 12, date: '2026-08-19' },
+      { weightKg: 70, reps: 14, date: '2026-06-24' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation',
+    bestSet: { weightKg: 24, reps: 15, date: '2026-08-19' },
+    bestE1rm: { value: 34.4, set: { weightKg: 24, reps: 13, date: '2026-08-19' } },
+    bestSessionVolume: { volumeKg: 1080, date: '2026-08-19' },
+    totalVolume: 18000, totalSets: 110, totalReps: 1400, sessionCount: 24,
+    repRecords: [
+      { weightKg: 24, reps: 13, date: '2026-08-19' },
+      { weightKg: 22, reps: 15, date: '2026-07-22' },
+      { weightKg: 20, reps: 18, date: '2026-06-10' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
+    bestSet: { weightKg: 20, reps: 10, date: '2026-07-29' },
+    bestE1rm: { value: 26.7, set: { weightKg: 20, reps: 10, date: '2026-07-29' } },
+    bestSessionVolume: { volumeKg: 600, date: '2026-07-29' },
+    totalVolume: 9000, totalSets: 95, totalReps: 1050, sessionCount: 22,
+    repRecords: [
+      { weightKg: 20, reps: 10, date: '2026-07-29' },
+      { weightKg: 18, reps: 12, date: '2026-08-26' },
+      { weightKg: 16, reps: 14, date: '2026-06-15' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    // Bodyweight-style demo row (mezo-88iwa.7 Task 5): no weightKg anywhere — reps-only
+    // sets, no e1RM/session-volume estimate, 0 all-time volume.
+    name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation',
+    bestSet: { reps: 22, date: '2026-08-12' },
+    totalVolume: 0, totalSets: 90, totalReps: 1600, sessionCount: 20,
+    repRecords: [
+      { reps: 22, date: '2026-08-12' },
+      { reps: 20, date: '2026-07-15' },
+      { reps: 18, date: '2026-06-01' },
+    ],
+    recentTopSets: [],
+  },
+]
+
 // --- weekly gym schedule (data.js:324-334) ---
 export const gymSchedule: GymSchedule = {
   weeklyTimes: [
@@ -1031,12 +1119,16 @@ export const customWorkoutsMock: CustomWorkout[] = [
   },
 ]
 
+// kcal/kcalIsEstimate (T8 Task 6): plausible BE-estimate stand-ins so the Mozgás page's
+// movementWeek sum and Mai's per-event kcal suffix both have real wire data to exercise —
+// every fixed session carries one (kcalIsEstimate: true, no override in this static data),
+// consistent with `mockSportKcal`'s own MET-ish curve for NEW logs.
 const sportSessionsFixed: Sport['sessions'] = [
-  { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
-  { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
-  { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
-  { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
-  { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
+  { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután', kcal: 620, kcalIsEstimate: true },
+  { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána', kcal: 870, kcalIsEstimate: true },
+  { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null, kcal: 590, kcalIsEstimate: true },
+  { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null, kcal: 630, kcalIsEstimate: true },
+  { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem', kcal: 910, kcalIsEstimate: true },
 ]
 
 // mezo-idz2: dátum-relatív mai session — a DayOrb sport-jele mock módban is jelen van.
@@ -1050,7 +1142,7 @@ const todayIsoSport = localDateString()
 const sportSessions: Sport['sessions'] = (
   sportSessionsFixed.some((s) => s.isoDate === todayIsoSport)
     ? [...sportSessionsFixed]
-    : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null }]
+    : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null, kcal: 600, kcalIsEstimate: true }]
 ).sort((a, b) => b.isoDate.localeCompare(a.isoDate))
 
 // --- sport (data.js:250-322) — ADD jumpCount to each session (port fix) ---

@@ -73,18 +73,25 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-week',
     route: '/train/week',
     tier: 'T2',
-    version: 1,
-    label: 'Heti edzések',
+    // v2 (final-review fix wave, mezo-88iwa.13 T12): a napsáv-horgony kártya a HŐSre
+    // költözött (lásd a `hogyan` kártya kommentjét lentebb) — ugyanaz a szabály, ami a
+    // train-mai fejlécét is version-bumpre kötelezte (lásd ott a v4 komment): az élő oldalt
+    // rosszul leíró/elavult horgonyú kártyát azok is újra kell hogy lássák, akik a régit már
+    // látták.
+    version: 2,
+    label: 'Terhelés',
     cards: [
       {
         kind: 'intro', spot: 'i-heti', orb: 's-orb',
-        title: 'Ez a Heti.',
-        voice: 'A hét minden napja egy sorban: mi volt, mi lesz, mi ment le — egy pillantásra.',
+        title: 'Ez a Terhelés.',
+        voice: 'A heti munkád egy képben: mennyi van meg belőle, és melyik izomcsoport hol tart.',
       },
       {
-        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-napok',
-        title: 'A napsorok visznek tovább.',
-        voice: 'A mai gym a sorából indul, a lezárt edzés visszanézhető. Lent az izom-zónák mutatják, hova gyűlik a heti terhelés.',
+        // T12 (mezo-88iwa.13): a napsáv elhagyta a lapot — a horgony a HŐSRE költözött, és
+        // vele a kártya szövege is. A napokra való lépés Mai saját napsávjában él tovább.
+        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-terheles',
+        title: 'A nagy szám a heti munkád.',
+        voice: 'A sáv azt mutatja, mennyi van meg abból, amit a hét kér. Lentebb a test térképe és az izomcsoportok — egy csoportra koppintva látod a részleteit.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
@@ -96,7 +103,9 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         title: 'A hét a blokkból jön.',
         voice: 'A napok kiosztását a mezociklus adja, a lezárt alkalmakból pedig medál is születhet.',
         links: [
-          { to: '/train/mesocycles', label: 'Mesociklusok', icon: 'i-meso', effect: 'a terv forrása' },
+          // T10 Task 2 (mezo-88iwa.11): a lap neve ma „Terv" (navModel.ts), nem
+          // „Mesociklusok" — a chip a fül SAJÁT nevét viseli, ahogy minden más chip.
+          { to: '/train/mesocycles', label: 'Terv', icon: 'i-meso', effect: 'a heti napok forrása' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
           { to: '/train/medals', label: 'Medálok', icon: 'i-erme' },
         ],
@@ -197,7 +206,10 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         title: 'A katalógus a hozzávaló.',
         voice: 'A blokk-tervező innen válogat, a rekordokat pedig az élő edzés szettjei írják.',
         links: [
-          { to: '/train/mesocycles', label: 'Mesociklusok', icon: 'i-meso', effect: 'innen válogat a terv' },
+          // T10 Task 2 (mezo-88iwa.11): a gyakorlat-válogatás nem a Terv lapon, hanem az
+          // Edzéstervek mögötti új-terv-összeállításban történik — a chip oda mutat, és a
+          // lap mai nevét viseli.
+          { to: '/train/mesocycles/konyvtar', label: 'Edzéstervek', icon: 'i-polc', effect: 'innen válogat az új terv' },
           { to: '/train/session', label: 'Indítás', icon: 'i-lang', effect: 'a szettek ide íródnak' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
@@ -247,10 +259,14 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     cards: [
       {
         kind: 'intro', spot: 'i-meso', orb: 's-orb',
-        title: 'Ez a Mesociklusok.',
-        voice: 'A többhetes blokkjaid könyvtára: az aktív futam felül, alatta a történet.',
+        title: 'Ez a futó terved.',
+        voice: 'Nem lista: maga a terv, ami most megy — hányadik héten jársz, és mi vár rád a hét minden napján.',
       },
       {
+        // NOTE (T9 fix round 1, mezo banned-word sweep): this `fogalom` card predates
+        // this task's copy — its „A blokk a motor." title/voice is left as-is, OUT of
+        // scope per the review finding. Every other card in this section is this task's
+        // OWN new copy and has been swept for „blokk"/„rámpa" below.
         kind: 'fogalom', spot: 's-hegycel', orb: 's-orb',
         title: 'A blokk a motor.',
         voice: 'A heti edzéseidet az aktív blokk osztja ki — itt látod, hol tart, és itt születik a következő.',
@@ -258,22 +274,58 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       },
       {
         kind: 'hogyan', spot: 'i-naplo', orb: 's-orb-figyel', anchor: 'mesociklus-mosaic',
-        title: 'Négy csempe, négy irány.',
-        voice: 'A **Heti vizsgálat** az aktív hétbe visz, a **Történet** a lezárt futamokhoz, a **Sablonok** a terveidhez, az **Új blokk** a tervezőbe.',
+        title: 'Két ajtó a terv alatt.',
+        voice: 'A **Melyik izmod hol tart** az aktív hétbe visz, az **Edzéstervek** pedig a terveidhez, a történetedhez és az új terv indításához.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
-        title: 'Blokk-váltáskor.',
-        voice: 'Blokk végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
+        title: 'Tervváltáskor.',
+        voice: 'Terv végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'Innen indul minden hét.',
-        voice: 'A blokk adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
+        voice: 'A terv adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'az aktív hét' },
-          { to: '/train/templates', label: 'Sablonok', icon: 'i-polc' },
+          { to: '/train/templates', label: 'Sablonjaid', icon: 'i-polc' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
+        ],
+      },
+    ],
+  },
+  // ── T3 aloldal: az Edzéstervek könyvtár (mezo-88iwa.11, T10 Task 2) ─────────
+  // T3, nem T2: ez nem a spec §10 fő-aloldal listájának tagja, hanem egy koppintással
+  // elért aloldal a Terv mögött — auto-open helyett a fejléc ?-e nyitja.
+  {
+    id: 'train-konyvtar',
+    route: '/train/mesocycles/konyvtar',
+    tier: 'T3',
+    version: 1,
+    label: 'Edzéstervek',
+    cards: [
+      {
+        kind: 'intro', spot: 'i-polc', orb: 's-orb',
+        title: 'Ez az Edzéstervek.',
+        voice: 'Egy helyen a terveid: ami most fut, ami utána jön, és ami már mögötted van.',
+      },
+      {
+        kind: 'hogyan', spot: 'i-stack', orb: 's-orb-figyel', anchor: 'konyvtar-hero',
+        title: 'A fejléc négy száma.',
+        voice: 'Fent egy sorban látod, mennyi fut, mennyi vár, hány sablonod van és hány futamot zártál le. Lentebb ezek nyílnak meg egyesével.',
+      },
+      {
+        kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
+        title: 'Tervváltáskor.',
+        voice: 'Amikor a mostani terved a végéhez ér, vagy valami újat szeretnél kipróbálni.',
+      },
+      {
+        kind: 'kapcsolat', orb: 's-orb-unnepel',
+        title: 'Innen indul az új terv.',
+        voice: 'Sablonból pár koppintás, nulláról egy képernyő — a kész terv a Terv lapon fut tovább.',
+        links: [
+          { to: '/train/mesocycles', label: 'Terv', icon: 'i-meso', effect: 'itt fut a kész terv' },
+          { to: '/train/templates', label: 'Sablonjaid', icon: 'i-polc', effect: 'amiből indíthatsz' },
         ],
       },
     ],

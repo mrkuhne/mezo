@@ -36,6 +36,7 @@ import {
   gymScheduleMock,
   sport,
   exerciseLibrary,
+  exerciseRecordsMock,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
@@ -154,6 +155,7 @@ function toSportSession(r: SportSessionResponse): SportSession {
     duration: r.duration, setsPlayed: r.setsPlayed ?? null, rounds: r.rounds ?? null, intensity: r.intensity ?? null,
     rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
+    kcal: r.kcal ?? null, kcalIsEstimate: r.kcalIsEstimate ?? null,
   }
 }
 
@@ -359,9 +361,19 @@ function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void 
     aiEvalStatus: 'pending',
     aiEvalGeneratedAt: null,
     aiEvalEnabled: false,
-    adherence: {
-      plannedSessions: 0, completedSessions: 0, plannedWeeks: weeks, completedWeeks: weeks, completionPct: 0,
-    },
+    // FIXTURE ASSUMPTION (mock only): the demo has no session log for the weeks behind us, so
+    // a freshly closed run is seeded as fully delivered from its own plan geometry (training
+    // days × weeks). Zeroes here would make the report's star hero say „Ez a futam nem indult
+    // el." about a run the user just finished (mezo-88iwa.11). Real mode reads the frozen
+    // backend report and never comes through here.
+    adherence: (() => {
+      const perWeek = meso?.days?.filter((d) => d.type !== 'Pihenő' && d.type !== 'Sport').length ?? 0
+      const planned = perWeek * weeks
+      return {
+        plannedSessions: planned, completedSessions: planned, plannedWeeks: weeks,
+        completedWeeks: weeks, completionPct: planned > 0 ? 100 : 0,
+      }
+    })(),
     volume: null,
     strength: [],
     records: { medalCount: 0, top: [] },
@@ -456,7 +468,7 @@ type TrainData = {
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: FinishOpts) => void
-  logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: SportLogOpts) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   /** All one-off (non-recurring) sport events, date+time ascending (mezo-e1sp) — the Sport tab's upcoming list. */
   sportEvents: SportEventResponse[]
@@ -471,6 +483,32 @@ type TrainData = {
   deleteCatalogExercise: (id: string, opts?: MutateOpts) => void
   setExerciseVideo: (id: string, videoUrl: string | null, opts?: MutateOpts) => void
   mesoMutationPending: boolean
+}
+
+/** The sport-log mutation's caller callbacks — one home so `useTrain`, `useQuickLogSport`
+ *  and the mutation itself can never drift apart. */
+type SportLogOpts = {
+  onSuccess?: (r?: SportSessionResponse) => void
+  onError?: (err: unknown) => void
+  onSettled?: () => void
+}
+
+/**
+ * Mock-mode stand-in for the backend's kcal decision (mezo-88iwa.9, T8 Task 4).
+ *
+ * The REAL number comes from the server: a MET table folded with the athlete's own body
+ * (weight/age/sex/body-fat), which the frontend has no access to and must never reproduce —
+ * a second formula here would drift from the wire's and quietly lie. So this is a FIXTURE
+ * shaped like a plausible session burn (a MET-ish curve over the captured RPE at a fixture
+ * 78 kg body), NOT the published model: mock mode only has to make the ceremony show a
+ * believable number and, above all, honour `kcalOverride` the way the wire promises
+ * (stored verbatim, `kcalIsEstimate: false`).
+ */
+function mockSportKcal(req: SportSessionCreateRequest): { kcal: number; kcalIsEstimate: boolean } {
+  if (req.kcalOverride != null) return { kcal: req.kcalOverride, kcalIsEstimate: false }
+  const fixtureWeightKg = 78
+  const met = 3 + req.rpe * 0.6
+  return { kcal: Math.round((req.duration * met * 3.5 * fixtureWeightKg) / 200), kcalIsEstimate: true }
 }
 
 /**
@@ -488,10 +526,7 @@ type TrainData = {
 function useLogSportSession(
   mock: boolean,
   qc: QueryClient,
-): (
-  req: SportSessionCreateRequest,
-  opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
-) => void {
+): (req: SportSessionCreateRequest, opts?: SportLogOpts) => void {
   const invalidateProgression = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['progressionProfile'] })
   }
@@ -516,6 +551,7 @@ function useLogSportSession(
                 date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, rounds: req.rounds ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: req.notes ?? null,
+                ...mockSportKcal(req),
               }
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
@@ -527,14 +563,24 @@ function useLogSportSession(
             id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: iso, time: hhmm,
             duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
             rounds: req.rounds, levelUp: sportLevelUpMock,
+            ...mockSportKcal(req),
           } as SportSessionResponse
         }
       : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
   })
   return useCallback(
-    (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) =>
-      logSportMutation.mutate(req, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
+    (req: SportSessionCreateRequest, opts?: SportLogOpts) =>
+      logSportMutation.mutate(req, {
+        onSuccess: (r) => opts?.onSuccess?.(r),
+        // `onError` is the surfaced-failure channel the full-screen sport flow needs
+        // (T8 Task 4 final review): a contract rejection (`@Min(1)/@Max(5000)` on
+        // `kcalOverride`, and every other 400) used to die silently in the mutation and
+        // leave the CTA stuck disabled. Same shape as the sheets' own onError idiom
+        // (VideoUrlSheet, CatalogExerciseSheet).
+        onError: (err) => opts?.onError?.(err),
+        onSettled: () => opts?.onSettled?.(),
+      }),
     [logSportMutation],
   )
 }
@@ -622,12 +668,13 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     initialData: mock ? exerciseLibrary : undefined,
     staleTime: 60 * 60 * 1000,
   })
-  // Per-exercise records — computed server-side from logged sets; mock mode has no
-  // set history (Phase 1), so it serves an empty list and the view ghost-guards.
+  // Per-exercise records — computed server-side from logged sets; real mode fetches them,
+  // mock mode serves a static fixture matching the Pull Day plan's own exercises (T6 Task 5,
+  // mezo-88iwa.7) so the records glass has real-looking demo data instead of ghost-guarding.
   const { data: recordsData, isPending: recordsPending } = useQuery({
     queryKey: ['train', 'exerciseRecords'],
-    queryFn: mock ? async () => [] as ExerciseRecordResponse[] : () => trainApi.exerciseRecords(),
-    initialData: mock ? [] : undefined,
+    queryFn: mock ? async () => exerciseRecordsMock : () => trainApi.exerciseRecords(),
+    initialData: mock ? exerciseRecordsMock : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   // The day param joins the key so a pinned-day session and the plain today context
@@ -1084,10 +1131,7 @@ export function useOpenWorkout(): {
  */
 export function useQuickLogSport(): {
   sessions: SportSession[]
-  logSportSession: (
-    req: SportSessionCreateRequest,
-    opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
-  ) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: SportLogOpts) => void
 } {
   const mock = isMockMode()
   const qc = useQueryClient()

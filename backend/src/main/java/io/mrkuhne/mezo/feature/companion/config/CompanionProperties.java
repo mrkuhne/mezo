@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -342,8 +343,26 @@ public record CompanionProperties(
         /** Weighted-critique score at/above which a hypothesis persists (arch §4.7: 0.75). */
         @DecimalMin("0.0") @DecimalMax("1.0") double keepThreshold,
         /** Score at/above which a borderline hypothesis gets ONE revise+re-critique pass (§4.7: 0.50). */
-        @DecimalMin("0.0") @DecimalMax("1.0") double reviseThreshold
-    ) {}
+        @DecimalMin("0.0") @DecimalMax("1.0") double reviseThreshold,
+        /**
+         * mezo-5543y — the COLD-START floor: the keep bar that applies while the account has no
+         * open reflection-owned row at all. The critique prompt tells the model to score
+         * {@code statistical} low when it cannot cite a concrete r/n, and that factor carries the
+         * heaviest weight (0.35), so a FIRST hypothesis structurally cannot clear 0.75 — the loop
+         * yielded nothing every night and no row ever existed to raise the next night's score.
+         * Applied only after the revise pass has had its chance, so it lowers the bar without
+         * costing quality.
+         */
+        @DecimalMin("0.0") @DecimalMax("1.0") double coldStartKeepThreshold
+    ) {
+        /** Cross-field: a floor ABOVE the normal bar would raise it on cold accounts — the exact
+         *  inverse of what it is for — and one below the revise band would keep hypotheses the
+         *  pipeline never even tries to improve. Jakarta cannot say either per field. */
+        @AssertTrue(message = "revise-threshold <= cold-start-keep-threshold <= keep-threshold required")
+        public boolean isColdStartFloorBetweenTheBands() {
+            return coldStartKeepThreshold >= reviseThreshold && coldStartKeepThreshold <= keepThreshold;
+        }
+    }
 
     /** AI habit suggester (mezo-n5e9.3, ADR 0019) — smart-model propose-only chain-fill suggestions. */
     public record HabitSuggest(

@@ -123,7 +123,13 @@ public record MemoryPlatformProperties(
 
     public record Execution(
             /** Independent timeout applied to each retriever future. */
-            @Min(1) @Max(10000) int retrieverTimeoutMs) {
+            @Min(1) @Max(10000) int retrieverTimeoutMs,
+            /**
+             * Separate budget for the ONE query-embedding hop, which happens before the fan-out
+             * (mezo-iddo). It must stay well above the provider's real latency: this is a network
+             * call, while {@link #retrieverTimeoutMs} is sized for a database query.
+             */
+            @Min(200) @Max(30000) int queryEmbeddingTimeoutMs) {
     }
 
     public record Reranker(

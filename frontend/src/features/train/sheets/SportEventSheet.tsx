@@ -15,14 +15,20 @@ import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { localDateString } from '@/shared/lib/dates'
 import type { SportEventCreateRequest } from '@/data/train/trainApi'
 import { NumberStep } from '@/features/train/sheets/SportLogSheet'
-import { SPORT_KINDS, SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_LABELS } from '@/features/train/logic/sportKinds'
+
+// The event's OWN 3-id vocabulary — `ck_sport_event_sport` stayed unchanged when the
+// sport-session wire widened to ten ids (mezo-88iwa.9), so this sheet keeps offering
+// only what the event's own CHECK still accepts.
+const EVENT_SPORT_KINDS = ['volleyball', 'cross', 'trx'] as const
+type EventSportKind = (typeof EVENT_SPORT_KINDS)[number]
 
 export function SportEventSheet({ onSave, onClose }: {
   onSave?: (req: SportEventCreateRequest, done: () => void) => void
   onClose: () => void
 }) {
   const [date, setDate] = useState(localDateString())
-  const [sport, setSport] = useState<SportKind>('volleyball')
+  const [sport, setSport] = useState<EventSportKind>('volleyball')
   // A one-off volleyball event is typically a match — that's the default; the
   // schedule convention holds here too: cross/TRX always save kind 'training'.
   const [kind, setKind] = useState<'training' | 'match'>('match')
@@ -70,7 +76,7 @@ export function SportEventSheet({ onSave, onClose }: {
             <div className="col gap-sm">
               {/* Sport selector */}
               <div className="row gap-xs" role="group" aria-label="Esemény sportja">
-                {SPORT_KINDS.map((k) => (
+                {EVENT_SPORT_KINDS.map((k) => (
                   <button
                     key={k}
                     type="button"

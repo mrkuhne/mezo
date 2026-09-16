@@ -45,7 +45,7 @@ test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend'
   // …and it no longer promises a „Heti terv” section: that list moved to the Heti
   // tab with the rest of the weekly agenda (mezo-9bbc final review, I5).
   expect(screen.queryByRole('heading', { name: 'Heti terv' })).not.toBeInTheDocument()
-  expect(screen.queryByText(/A heti rended itt jelenik majd meg/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/A heti terhelésed itt jelenik majd meg/i)).not.toBeInTheDocument()
   // the Saját edzés escape hatch stays
   expect(screen.getByRole('button', { name: /Saját edzés/i })).toBeInTheDocument()
 })
@@ -53,9 +53,9 @@ test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend'
 // GymPage folded into Heti (mezo-d20.3.2): /train/gym now renders the same
 // page, so the same ghost message shows on either path — no more distinct
 // "Nincs aktív mesociklus" copy.
-test('GymPage (folded into Heti) shows the Heti ghost when there is no active meso', async () => {
+test('GymPage (folded into Terhelés) shows the same ghost when there is no active meso', async () => {
   renderApp('/train/gym')
-  await waitFor(() => expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText(/A heti terhelésed itt jelenik majd meg/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
 })
 
@@ -82,7 +82,45 @@ test('SportPage ghosts the weekly plan and shows an empty log message', async ()
   expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
 })
 
-test('MesocycleLibraryPage shows the empty hint when there are no mesocycles', async () => {
+// MesocycleLibraryPage was the inversion's starting point — /train/mesocycles now renders
+// MesoTervPage (Train Titanium T9 Task 3, mezo-88iwa.10); the LIBRARY itself moved to
+// MesoKonyvtarPage behind the „Edzéstervek” dest tile. This test's NAME still said the old
+// page (T9 fix round 1, review finding 5 — a stale name, not stale behavior: the assertion
+// itself already exercised the current page).
+test('MesoTervPage shows the empty hint when there are no mesocycles', async () => {
   renderApp('/train/mesocycles')
   await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
+})
+
+// The OTHER no-active-meso branch (T9 fix round 1, review finding 5): at least one
+// mesocycle exists — just none of them is `active` — so the page says so with the
+// honest "Most nem fut terv" line, never falling back to the "Még nincs mesociklusod"
+// first-run copy above.
+test('MesoTervPage shows the honest "no running plan" line when a mesocycle exists but none is active', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () =>
+      HttpResponse.json([
+        {
+          id: 'meso-planned-01',
+          title: 'Következő blokk',
+          shortTitle: 'Következő',
+          status: 'planned',
+          goal: 'Felsőtest hypertrophy',
+          startDate: '2026-07-01',
+          endDate: '2026-08-12',
+          weeks: 6,
+          currentWeek: 1,
+          split: 'Pull / Push / Legs · 5×/hét',
+          style: 'RP · 6 hét',
+          phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+          musclePriorities: {},
+          volumePerMuscle: {},
+          days: [],
+        },
+      ]),
+    ),
+  )
+  renderApp('/train/mesocycles')
+  await waitFor(() => expect(screen.getByText(/Most nem fut terv/i)).toBeInTheDocument())
+  expect(screen.getByRole('button', { name: 'Edzéstervek' })).toBeInTheDocument()
 })

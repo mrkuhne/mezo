@@ -400,6 +400,36 @@ test('real mode renders the today card and agenda from the active meso + /today'
   expect(await screen.findByText('~23 perc')).toBeInTheDocument()
 })
 
+// The Task 3 (Terhelés reface) test-migration table cited this page's Kész-hero test (:805,
+// TODAY's own completed instance) as the review-routing home for the retired Heti test "a
+// weekly gym row completed this week on ANOTHER date routes to its review, not a restart" —
+// but that is a DIFFERENT code path (`completedTodayWorkout`, not `gymDayTarget`). The actual
+// pulled-forward-to-another-date routing decision only ever had unit coverage
+// (`gymDayTarget.test.ts` :16 — "a template day completed this week... routes to its review,
+// even pulled forward to another date"); nothing at the PAGE level proved the non-today
+// card's CTA actually fires it. Restored here (fix round 1, migration accounting).
+test('real mode: a non-today gym day completed this week (pulled forward) routes to its review', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const otherDayLabel = DAY_ORDER[(todayIdx + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/workouts`, () =>
+      HttpResponse.json([
+        { id: 'w-pulled', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
+      ]),
+    ),
+  )
+  renderView()
+  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) }))
+  fireEvent.click(await screen.findByRole('button', { name: /Kezdjük el/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
+})
+
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
@@ -707,6 +737,31 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
   expect(screen.getByText(/RPE 7 · 90p/)).toBeInTheDocument()
   expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
+})
+
+// T8 Task 6: the per-event sport summary appends ' · N kcal' when the wire carries one —
+// SportSessionResponse.kcal, the BE-owned estimate/override. Em dash rule: no wire kcal
+// means no suffix at all (never a fabricated 0), which the test above already covers.
+test('real mode: the logged-summary appends the kcal the wire carries', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: todayIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ]),
+    ),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'ss-today', sport: 'volleyball', date: localDateString(), time: '18:15', duration: 90, setsPlayed: 5, intensity: 7, rpe: 7, shoulderStrain: 6, jumpCount: null, notes: null, kcal: 540, kcalIsEstimate: true },
+      ]),
+    ),
+  )
+  renderView()
+  await findTodayCard('Volleyball')
+  expect(screen.getByText(/RPE 7 · 90p · váll 6 · 540 kcal/)).toBeInTheDocument()
 })
 
 // Review fix (mezo-9bbc): today's logged session must not leak onto another day's
@@ -1211,6 +1266,53 @@ const withFrozenThursday = (run: () => void) => {
     vi.useRealTimers()
   }
 }
+
+// T8 Task 4 final review (mezo-88iwa.9): the ten-sport flow can log a Kerékpár/Úszás/Túra
+// session on a day whose (still three-id) schedule has no matching slot. Mai builds its
+// heroes from SLOTS only, so that session used to appear NOWHERE — the athlete did the work
+// and the day looked empty.
+const addUnscheduledBikeToday = (real: ReturnType<typeof import('@/data/hooks').useTrain>) => {
+  const iso = csuDateIso()
+  return {
+    sport: {
+      ...real.sport,
+      sessions: [
+        ...real.sport.sessions,
+        {
+          id: 'ss-bike', sport: 'bike', date: huMonthDayDow(iso), isoDate: iso, time: '07:20', duration: 55,
+          setsPlayed: null, rounds: null, intensity: null, rpe: 6, shoulderStrain: null, jumpCount: null,
+          notes: null, kcal: 430, kcalIsEstimate: true,
+        },
+      ],
+    },
+  }
+}
+
+test('a logged sport with no schedule slot still renders on Mai, with its kcal', () => {
+  trainOverride = (real) => ({ ...inactivateGym(real), ...addUnscheduledBikeToday(real) })
+  withFrozenThursday(() => {
+    renderView()
+    expect(screen.getByText('Kerékpár')).toBeInTheDocument()
+    expect(screen.getByText(/RPE 6 · 55p · 430 kcal/)).toBeInTheDocument()
+    expect(screen.getByText('07:20-kor logolva')).toBeInTheDocument()
+  })
+})
+
+test('the slot-driven volleyball hero is unchanged by the unscheduled-sport row', () => {
+  trainOverride = (real) => {
+    // Both helpers rewrite `sport`, so they must be COMPOSED, not spread side by side.
+    const withSlot = { ...real, ...addTodaySportSlot(real, false) } as typeof real
+    return { ...inactivateGym(real), ...addUnscheduledBikeToday(withSlot) }
+  }
+  withFrozenThursday(() => {
+    renderView()
+    // The slot still renders its own hero with its planned CTA (not a done-state row)...
+    expect(screen.getByText('Volleyball')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Logold a session-t/ })).toBeInTheDocument()
+    // ...and the unscheduled bike sits beside it, once.
+    expect(screen.getAllByText('Kerékpár')).toHaveLength(1)
+  })
+})
 
 test('energy card: a planned+done mix splits honestly into earned vs. still-planned', () => {
   trainOverride = (real) => addTodaySportSlot(real, true) // gym still planned (not completed), sport already logged

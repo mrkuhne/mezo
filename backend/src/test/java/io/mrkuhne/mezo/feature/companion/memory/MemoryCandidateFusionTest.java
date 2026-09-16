@@ -113,7 +113,7 @@ class MemoryCandidateFusionTest {
                 new MemoryPlatformProperties.Fusion(
                         60, Map.of("dense", 1.0, "lexical", 1.0, "facts", 1.0, "graph", 1.0),
                         0.005, 0.004, 0.004, 0.002, 0.003),
-                new MemoryPlatformProperties.Execution(200),
+                new MemoryPlatformProperties.Execution(200, 2500),
                 new MemoryPlatformProperties.Reranker(false, 0.002, 20, 600, 200),
                 new MemoryPlatformProperties.Indicators(365),
                 new MemoryPlatformProperties.Policies(

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
@@ -337,5 +337,44 @@ describe('WeekDayPage (real mode)', () => {
     // still an ordinary page, not the retryable error state
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Beszélgess a napról ›' })).toBeInTheDocument()
+  })
+
+  /**
+   * mezo-ahf5b — the reported bug: "egy napot visszalépve a gyűjtött dolgok nem jelennek meg
+   * egyből". An evaluation still in flight rendered EXACTLY the degradation branch above
+   * (0 tiles, the standalone Fuel card, the week's fallback score on the hero ring) with no
+   * loading affordance at all, so a slow day — a closed one costs a synchronous LLM call on its
+   * first read — looked like a day that had collected nothing. Loading is now its own state.
+   */
+  test('an evaluation still IN FLIGHT is a loading state, not the degraded day', async () => {
+    server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`, async () => {
+      await delay(80)
+      return HttpResponse.json(evaluationFixture('2026-05-11'))
+    }))
+    const { container } = renderDay('2026-05-11', '2026-05-11')
+
+    expect(await screen.findByRole('status', { name: 'Az értékelés készül…' })).toBeInTheDocument()
+    // nothing from the degradation branch may show while we simply do not know yet
+    expect(screen.queryByText('Fuel · a cél ellenében')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.dayev-dim')).toHaveLength(0)
+    // …and no half-true number on the hero: the week's 65 must not flash before the day's 70
+    expect(screen.queryByRole('img', { name: 'Pontszám: 65 / 100' })).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Pontszám: számolom' })).toBeInTheDocument()
+
+    // …and when it lands, the real page replaces the skeleton
+    expect(await screen.findByText('Miből jött össze')).toBeInTheDocument()
+    expect(container.querySelectorAll('.dayev-dim')).toHaveLength(6)
+    expect(screen.queryByRole('status', { name: 'Az értékelés készül…' })).not.toBeInTheDocument()
+  })
+
+  test('the NEIGHBOUR days are prefetched, so stepping one day back is already resolved', async () => {
+    const asked: string[] = []
+    server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`, ({ params }) => {
+      asked.push(String(params.date))
+      return HttpResponse.json(evaluationFixture(String(params.date)))
+    }))
+    renderDay('2026-05-13', '2026-05-11')
+    expect(await screen.findByText('Miből jött össze')).toBeInTheDocument()
+    await waitFor(() => expect([...asked].sort()).toEqual(['2026-05-12', '2026-05-13', '2026-05-14']))
   })
 })

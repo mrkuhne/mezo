@@ -71,6 +71,25 @@ class ProgressionSportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testApplySport_shouldGrantNeutralAthleticismUnderItsOwnLabel_whenNewSportId() {
+        // Regression for the id switch defaulting every unmatched kind to volleyball: bike (one
+        // of the seven new ids) must NOT collapse into "Röplabda"/vertical_jump/agility — it gets
+        // the sport's own Hungarian label and the neutral duration+rpe grant.
+        // bike min=60,rpe=6 → aerobic_capacity 60*4=240; explosiveness 6*6=36
+        UUID user = databasePopulator.populateUser("bike@test.local");
+        SportSignal signal = new SportSignal(UUID.randomUUID(), "bike", 60, null, null, 6);
+
+        LevelUpResult result = progressionService.applySport(user, signal);
+
+        assertThat(result.workoutLabel()).isEqualTo("Kerékpár");
+        assertSkill(user, "aerobic_capacity", 240L);
+        assertSkill(user, "explosiveness", 36L);
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(user, "vertical_jump")).isEmpty();
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(user, "agility")).isEmpty();
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(user, "coordination")).isEmpty();
+    }
+
+    @Test
     void testApplySport_shouldBeIdempotent_whenSameSessionAppliedTwice() {
         UUID user = databasePopulator.populateUser("sportidem@test.local");
         UUID sessionId = UUID.randomUUID();

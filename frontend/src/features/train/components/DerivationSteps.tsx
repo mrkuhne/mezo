@@ -12,8 +12,7 @@
 // ============================================================
 import type { MuscleTier, VolumeProfile } from '@/data/types'
 import { Icon, type IconName } from '@/shared/ui/Icon'
-
-const TIER_LABEL: Record<MuscleTier, string> = { emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' }
+import { tierLabel } from '@/features/train/logic/tierLabel'
 
 function adjustmentIcon(kind: string): IconName {
   switch (kind) {
@@ -66,7 +65,7 @@ export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, 
         <div className="mz-dstep">
           <span className="mz-dnum" style={{ background: 'var(--coral)' }} aria-hidden="true">2</span>
           <div className="mz-grow">
-            <div className="mz-dt">Fókusz-sáv · {TIER_LABEL[tier]}</div>
+            <div className="mz-dt">Fókusz-sáv · {tierLabel(tier)}</div>
             {tier === 'maintain' ? (
               <div className="mz-dcells">
                 <div className="mz-dcell"><b>{profile.mev}</b><small>tart</small></div>

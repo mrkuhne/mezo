@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { currentWeekOf } from '@/shared/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/data/train/runningApi'
-import { runningBlocksMock, runSessionsMock } from '@/data/train/running'
+import { runningBlocksMock, runSessionsMock, mockRunKcal } from '@/data/train/running'
 import { runLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 
@@ -80,11 +80,18 @@ export function useRunning(): RunningData {
 
   // Mock log carries a seeded LevelUpResult (the no-op log can't compute one) so
   // the prototype shows the level-up overlay after logging a run.
-  const logMock = (body: RunSessionLogRequest): RunSessionLogResponse =>
-    ({ id: `rs-${Math.round(performance.now())}`, ...body,
+  // kcal (T8 Task 6 final review): the mock log now carries one too. Without it, logging a
+  // run in mock mode permanently blanked the Mozgás week sum (`movementWeek` is all-or-null)
+  // — a state real mode, where the run service runs the same MET estimator the sport service
+  // does, would never reach. `kcalIsEstimate` is always true: the run wire has no override.
+  const logMock = (body: RunSessionLogRequest): RunSessionLogResponse => {
+    const kcal = mockRunKcal(body.durationMin, body.rpeActual)
+    return { id: `rs-${Math.round(performance.now())}`, ...body,
        completedRounds: body.completedRounds ?? null, rpeActual: body.rpeActual ?? null,
        hrRecoverySec: body.hrRecoverySec ?? null, sprintLandmark: body.sprintLandmark ?? null,
-       durationMin: body.durationMin ?? null, notes: body.notes ?? null, levelUp: runLevelUpMock })
+       durationMin: body.durationMin ?? null, notes: body.notes ?? null,
+       kcal, kcalIsEstimate: kcal !== null ? true : null, levelUp: runLevelUpMock }
+  }
   const logMutation = useMutation({
     // Forward the full response (carries levelUp). Mock appends the logged
     // session to the cache (Mai done-state flip) AND returns it.

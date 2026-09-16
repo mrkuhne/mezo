@@ -191,6 +191,51 @@ export function skipExercise(s: Session, id: string): Session {
 }
 
 /**
+ * Reverse a skip (T6 Task 4, "Visszavesszük") — the mirror of skipExercise, idempotent.
+ * Client-local only, same as the skip marker itself: there is no server-side "unskip"
+ * endpoint (the skip POST is a one-way audit signal), so this simply drops the id from
+ * `session.skipped` and lets the exercise's card render its rows again.
+ */
+export function unskipExercise(s: Session, id: string): Session {
+  if (!s.skipped.includes(id)) return s
+  return { ...s, skipped: s.skipped.filter((x) => x !== id) }
+}
+
+/**
+ * Total pending (not-yet-logged) sets across the session (T6 Task 6, the finish CTA's
+ * gold/green state and the dock's Lezárás gate): sum over every NON-skipped exercise of
+ * `effectiveSetCount − logged.length`, floored at 0 per exercise (never negative — an
+ * exercise logged BEYOND its effective count, e.g. right after a trailing-slot removal,
+ * must not offset another exercise's pending count). Skipped exercises contribute nothing
+ * — they are an honest, separate outcome, not "pending".
+ */
+export function pendingSetCount(s: Session): number {
+  let total = 0
+  for (const id of s.order) {
+    if (s.skipped.includes(id)) continue
+    const left = effectiveSetCount(s, id) - (s.logged[id]?.length ?? 0)
+    if (left > 0) total += left
+  }
+  return total
+}
+
+/**
+ * Per-exercise pending breakdown, in session order (T6 Task 6's FinishConfirmGlass list):
+ * every NON-skipped exercise that still has slots left, with how many. Fully-logged and
+ * skipped exercises are omitted entirely — the list is exactly what the confirm glass
+ * needs to name.
+ */
+export function pendingByExercise(s: Session): Array<{ id: string; left: number }> {
+  const out: Array<{ id: string; left: number }> = []
+  for (const id of s.order) {
+    if (s.skipped.includes(id)) continue
+    const left = effectiveSetCount(s, id) - (s.logged[id]?.length ?? 0)
+    if (left > 0) out.push({ id, left })
+  }
+  return out
+}
+
+/**
  * Reconcile the session with a plan that GREW after the session was seeded — the
  * server can append template exercises mid-workout (the closing block, mezo-z2ul),
  * and a refetch then surfaces them while the session is already in flight. Unknown

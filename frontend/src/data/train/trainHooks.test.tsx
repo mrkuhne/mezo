@@ -62,10 +62,14 @@ test('useTrain (real mode) serves exercise records from the endpoint', async () 
   expect(result.current.exerciseRecords[1].bestSet).toBeUndefined() // bodyweight record
 })
 
-test('useTrain (mock mode) serves no exercise records (Phase-1 has no set history)', () => {
+test('useTrain (mock mode) serves the static exercise-records fixture (T6 Task 5 demo data)', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
-  expect(result.current.exerciseRecords).toEqual([])
+  expect(result.current.exerciseRecords.length).toBe(5)
+  const row = result.current.exerciseRecords.find((r) => r.name === 'Chest Supported Row')
+  expect(row?.bestE1rm?.value).toBe(140)
+  const faceP = result.current.exerciseRecords.find((r) => r.name === 'Face Pull')
+  expect(faceP?.bestSet?.weightKg).toBeUndefined() // bodyweight-style demo record
 })
 
 test('useTrain (mock mode) keeps the static Phase-1 exerciseLibrary', () => {

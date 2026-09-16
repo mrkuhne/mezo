@@ -4,7 +4,8 @@
 // (completed workout instances, meso + custom), TODAY's session plan,
 // and the weekly meso plan onto the shared budget scale (budgetOf
 // units, GROUP_MEV zone floors from setBudget). Pure derivations —
-// consumed by WeekZoneCard (prep screen) and ZoneMiniGrid (GymPage).
+// consumed by WeekZoneCard (PrepHetiZonaPage forecast) and by TrainWeekPage's
+// group cards/glass (mezo-88iwa.13 T12 Titanium face).
 // Logged sets price by their own RIR (fallback: exercise targetRIR);
 // skip-marker and warmup rows are excluded, plyo exercises never count.
 // GD5 (mezo-3m5m) reframed muscleBudgets' own row.budget/level to be

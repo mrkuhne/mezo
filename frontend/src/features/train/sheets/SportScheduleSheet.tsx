@@ -16,10 +16,16 @@ import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import type { SportScheduleSlotInput } from '@/data/train/trainApi'
 import type { VolleyballSession } from '@/data/types'
 import { NumberStep } from '@/features/train/sheets/SportLogSheet'
-import { SPORT_KINDS, SPORT_LABELS, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_LABELS, sportOf } from '@/features/train/logic/sportKinds'
+
+// The schedule slot's OWN 3-id vocabulary — `ck_sport_schedule_slot_sport` stayed
+// unchanged when the sport-session wire widened to ten ids (mezo-88iwa.9), so this
+// sheet keeps offering only what the schedule's own CHECK still accepts.
+const SCHEDULE_SPORT_KINDS = ['volleyball', 'cross', 'trx'] as const
+type ScheduleSportKind = (typeof SCHEDULE_SPORT_KINDS)[number]
 
 interface SlotDraft {
-  sport: SportKind
+  sport: ScheduleSportKind
   time: string
   durationMin: number
   kind: 'training' | 'match'
@@ -103,7 +109,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                     return (
                       <div key={si} className="card" style={{ padding: 10, background: 'var(--surface-2)' }}>
                         <div className="row gap-xs" role="group" aria-label={`${slotName} sport`}>
-                          {SPORT_KINDS.map((k) => (
+                          {SCHEDULE_SPORT_KINDS.map((k) => (
                             <button
                               key={k}
                               type="button"

@@ -21,12 +21,16 @@ afterEach(() => vi.unstubAllEnvs())
 //
 // The behavioral coverage that used to live here now lives on
 // TrainWeekPage.test.tsx (schedule sheet save/override, Mezociklus áttekintő
-// chip, live zone grid + over-budget styling, direct-start day navigation).
-test('renders the same content as Heti (mezo-d20.3.2)', () => {
+// chip, the live group cards + the over-planned flag, the group glass).
+//
+// The parity anchor is the Titanium hero's own eyebrow (mezo-88iwa.13, T12 Task 3) —
+// the „Heti edzések" h1 retired with the old Mozaik page head, so the anchor moved
+// with the face rather than the test being dropped.
+test('renders the same content as Terhelés (mezo-d20.3.2)', () => {
   const a = render(<QueryWrapper><MemoryRouter><GymPage /></MemoryRouter></QueryWrapper>)
-  expect(screen.getByText('Heti edzések')).toBeInTheDocument()
+  expect(screen.getByText(/Terhelés · \d+\. hét/)).toBeInTheDocument()
   a.unmount()
   const b = render(<QueryWrapper><MemoryRouter><TrainWeekPage /></MemoryRouter></QueryWrapper>)
-  expect(screen.getByText('Heti edzések')).toBeInTheDocument()
+  expect(screen.getByText(/Terhelés · \d+\. hét/)).toBeInTheDocument()
   b.unmount()
 })

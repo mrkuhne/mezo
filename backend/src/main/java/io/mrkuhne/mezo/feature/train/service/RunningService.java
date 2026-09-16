@@ -35,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RunningService {
 
+    /** The pace a logged run is assumed to have held — see {@code applyKcal}. */
+    private static final double ASSUMED_RUN_KMH = 9.0;
+
     private final RunningBlockRepository blockRepository;
     private final RunSessionLogRepository logRepository;
     private final RunningMapper mapper;
@@ -46,6 +49,8 @@ public class RunningService {
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
     private final GoalRecomputePort goalRecomputePort;
+    // Body inputs for the kcal estimate, through train's own port (ADR 0012 — no new slice cycle).
+    private final AthleteBodyPort athleteBodyPort;
 
     public List<RunningBlockResponse> listBlocks(UUID userId) {
         return blockRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(userId)
@@ -130,6 +135,7 @@ public class RunningService {
         e.setSprintLandmark(req.getSprintLandmark());
         e.setDurationMin(req.getDurationMin());
         e.setNotes(req.getNotes());
+        applyKcal(userId, e);
         RunSessionLogResponse base = mapper.toResponse(logRepository.save(e));
         // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
         // logSession — never via the GET list path. Atomic with the save (same @Transactional);
@@ -139,6 +145,28 @@ public class RunningService {
             base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyRun(userId, signal)));
         }
         return base;
+    }
+
+    /**
+     * The run's burnt energy — the personalised MET estimate ({@link SportEnergyCalculator}),
+     * flagged as an estimate. A run log carries no distance, so the MET comes from
+     * {@link SportEnergyCalculator#runMet} at {@value #ASSUMED_RUN_KMH} km/h, the steady jog the
+     * blocks are written around; when the contract later carries the distance, the real pace
+     * replaces the assumption here and nothing else changes. NULL (never 0) when the duration or
+     * the athlete's body is unknown.
+     */
+    private void applyKcal(UUID userId, RunSessionLogEntity e) {
+        if (e.getDurationMin() == null || e.getDurationMin() <= 0) {
+            return;
+        }
+        athleteBodyPort.bodyAt(userId, e.getDate())
+            .flatMap(body -> SportEnergyCalculator.estimateWithMet(
+                SportEnergyCalculator.runMet(ASSUMED_RUN_KMH), e.getDurationMin(),
+                body.weightKg(), body.sex(), body.age(), body.bodyFatPct()))
+            .ifPresent(kcal -> {
+                e.setKcal(kcal);
+                e.setKcalIsEstimate(true);
+            });
     }
 
     private void applyUpsert(RunningBlockEntity e, RunningBlockUpsertRequest req) {

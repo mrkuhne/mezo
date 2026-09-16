@@ -182,6 +182,7 @@ test('doneMealRows lists the done windows chronologically, carrying name/time/kc
   expect(rows[0]).toEqual({
     mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420,
     proteinG: 32, carbsG: 50, fatG: 10, scorePct: 70,
+    fiberG: null, sugarG: null, plannedTime: null,
   })
   expect(rows[1]).toMatchObject({ proteinG: 48, carbsG: 72, fatG: 16, scorePct: 92 })
 })
@@ -212,6 +213,23 @@ test('doneMealRows excludes pending/now/missed windows and non-meal slots', () =
   const rows = doneMealRows([m], [done, now, workout])
   expect(rows).toHaveLength(1)
   expect(rows[0].mealId).toBe('m1')
+})
+
+// mezo-l2gp0: a Mai kártya rost-gyűrűje és óra-doboza — a sor viszi a rostot és a terv-időt.
+test('doneMealRows viszi a rost grammot és a tervezett időt', () => {
+  const m = meal({ id: 'm-fiber', title: 'Skyr-bowl zabbal', score: 0.88, kcal: 420, p: 36, c: 48, f: 9, fiberG: 8 })
+  const s = slot({ mealId: 'm-fiber', mealName: 'Skyr-bowl zabbal', plannedTime: '07:30' })
+  const rows = doneMealRows([m], [s])
+  expect(rows[0].fiberG).toBe(8)
+  expect(rows[0].plannedTime).toBe('07:30')
+})
+
+test('doneMealRows őszinte-null: nincs rost-adat / nincs terv-idő', () => {
+  const m = meal({ id: 'm-plain', title: 'Kefir', score: null, kcal: 110, p: 8, c: 9, f: 4 })
+  const s = slot({ mealId: 'm-plain', mealName: 'Kefir' })
+  const rows = doneMealRows([m], [s])
+  expect(rows[0].fiberG).toBeNull()
+  expect(rows[0].plannedTime).toBeNull()
 })
 
 // ── aiAverage ────────────────────────────────────────────────────────────────
@@ -294,4 +312,16 @@ describe('heroEquationLines', () => {
     const lines = heroEquationLines(build({ staticEnergy: true }))
     expect(lines.find(l => l.key === 'activity')!.value).toBeNull()
   })
+})
+
+// mezo-ya2wp: a Mai sor vércukor-chipje a tárolt tényekből él, és ugyanazt a két számot kapja,
+// amit a részletek oldal doboza — a feloldás közös (`mealNutrients`), ezért a `nutrients`
+// envelope-ban érkező rost is előjön, nem csak a régi lapos mező.
+test('doneMealRows carries sugar and resolves fibre from the nutrients envelope', () => {
+  const m = meal({ id: 'm1', title: 'Zabkása', kcal: 420, p: 32, c: 50, f: 10 })
+  const withFacts = { ...m, nutrients: { fiberG: 7, sugarG: 12, saltG: null, saturatedFatG: null } }
+  const s = slot({ time: '07:40', slotKey: 'breakfast', label: 'Reggeli', state: 'done', mealId: 'm1' })
+  expect(doneMealRows([withFacts], [s])[0]).toMatchObject({ fiberG: 7, sugarG: 12 })
+  // Őszinte-null: amit a forrás nem adott, az null marad — a sáv ilyenkor becsül, és kimondja.
+  expect(doneMealRows([m], [s])[0]).toMatchObject({ sugarG: null })
 })

@@ -20,6 +20,7 @@ const renderAt = (query: string) =>
         <Routes>
           <Route path="train/mesocycles/compare" element={<MesoComparePage />} />
           <Route path="train/mesocycles" element={<div>Mesociklusok</div>} />
+          <Route path="train/mesocycles/futamok" element={<div>Futamok</div>} />
           <Route path="train/mesocycles/:id/report" element={<div>Riport</div>} />
         </Routes>
         <LocationProbe />
@@ -129,9 +130,9 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     expect(screen.getByText(/Válassz két lezárt futamot/)).toBeInTheDocument()
     expect(screen.queryByTestId('meso-compare-header')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /Történet megnyitása/ }))
-    // exact, not toHaveTextContent: the compare path CONTAINS the library path
-    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles')
+    await user.click(screen.getByRole('button', { name: /Lezárt futamaid megnyitása/ }))
+    // exact, not toHaveTextContent: the compare path CONTAINS the futamok path
+    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/futamok')
   })
 
   it('rejects a self-comparison (a === b)', () => {
@@ -153,11 +154,11 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/meso-maint-01/report')
   })
 
-  it('walks back to the library from the breadcrumb', async () => {
+  it('walks back to the closed-runs page from the breadcrumb', async () => {
     const user = userEvent.setup()
     renderAt(BOTH)
     await user.click(screen.getByRole('button', { name: /Vissza/ }))
-    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles')
+    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/futamok')
   })
 })
 

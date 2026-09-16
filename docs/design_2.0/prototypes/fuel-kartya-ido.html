@@ -1,0 +1,570 @@
+<meta charset="utf-8">
+<title>Fuel kártya · óra-doboz és makró gyűrűk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  /* ── Ház-tokenek (prototype.css DS dark = a képernyőfotó témája). A világos téma itt
+     szándékosan nincs kihangosítva: ez vizuális referencia a sötét Mai lapról. ── */
+  :root {
+    --surface-page: #191614; --surface-card: #221E1B; --surface-elevated: #2A2521;
+    --surface-recess: rgba(245, 239, 230, 0.05); --surface-glass: rgba(245, 239, 230, 0.05);
+    --ink: #F5EFE6; --sub: #B7A899; --faint: #5E5348;
+    --divider: rgba(245, 239, 230, 0.07); --border-subtle: rgba(245, 239, 230, 0.07);
+    --amber: #FFBE60; --sage: #8FB49A; --lav: #AB9FD2; --sky: #7FB2DE; --coral: #FF7E5C;
+    --macro-protein: #E26B67; --macro-carbs: #D49245; --macro-fat: #C4A020; --macro-fiber: #6BA24A;
+    --ff-display: 'Geist', system-ui, sans-serif;
+    --page-bg: #100D0B;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--page-bg); color: var(--ink);
+    font-family: 'Geist', -apple-system, system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+    padding: 48px 24px 64px; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; border-radius: 12px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--sky); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--sub); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--sub); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 14.5px;
+    color: var(--sub); border-left: 2px solid var(--sky); padding-left: 14px; }
+
+  /* ── Telefon-keret ── */
+  .phone { position: relative; width: 393px; max-width: 100%; height: 852px; flex: none;
+    border-radius: 44px; background: var(--surface-page); overflow: hidden; isolation: isolate;
+    box-shadow: 0 0 0 10px #0A0908, 0 0 0 12px #2E2A26, 0 30px 70px rgba(0, 0, 0, 0.5); }
+  .phone-scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: none; padding: 20px 14px 40px; }
+  .phone-scroll::-webkit-scrollbar { display: none; }
+  .sb { display: flex; justify-content: space-between; padding: 2px 10px 14px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
+
+  /* ══ A Mai nap-blokk (a produkciós `fmx-` kalibráció, VÁLTOZATLAN geometria) ══ */
+  .fmx-blocks { display: grid; gap: 16px; }
+  .fmx-block { padding: 13px 13px 6px; border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--block-color) 22%, transparent);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--block-color) 11%, transparent),
+      color-mix(in srgb, var(--block-color) 3%, transparent) 55%, var(--surface-card));
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16), 0 0 22px color-mix(in srgb, var(--block-color) 7%, transparent); }
+  .fmx-block.is-future { opacity: 0.88; }
+  .fmx-block-head { display: flex; align-items: center; gap: 10px; padding: 0 0 8px; }
+  .fmx-block-art { width: 38px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; }
+  .fmx-block-art svg { width: 38px; height: 38px;
+    filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.34)) drop-shadow(0 0 9px color-mix(in srgb, var(--block-color) 30%, transparent)); }
+  .fmx-block-name { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; color: var(--ink); flex: 1; min-width: 0; }
+
+  /* ── ÚJ: az óra gomb — a cím sorában, a kcal-gyűrű előtt. Csendes üveg-korong,
+     a clay időzítő ikonnal; csak LOGOLT blokkon jelenik meg. ── */
+  .fmx-clock { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+    border-radius: 50%; border: 1px solid var(--border-subtle);
+    background: var(--surface-glass); backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    transition: transform 0.12s; }
+  .fmx-clock:active { transform: scale(0.92); }
+  .fmx-clock svg { width: 21px; height: 21px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); }
+
+  /* Blokk-gyűrű (kcal) — változatlan. */
+  .fmx-budget-ring { position: relative; margin-left: 0; width: 44px; height: 44px; flex: 0 0 auto;
+    display: grid; place-items: center; }
+  .fmx-budget-ring svg { position: absolute; inset: 0; width: 100%; height: 100%;
+    transform: rotate(-90deg); overflow: visible; }
+  .fmx-budget-ring circle { fill: none; stroke-width: 4; }
+  .fmx-br-track { stroke: var(--surface-recess); }
+  .fmx-br-fill { stroke: var(--block-color); stroke-linecap: round; stroke-dasharray: 0 100;
+    transition: stroke-dasharray 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--block-color) 40%, transparent)); }
+  .fmx-budget-ring b { position: relative; font-size: 10px; font-weight: 600; color: var(--ink); }
+
+  /* Ablak-csík — visszajött, a produkciós kalibráció (a sáv a tervezett idő, a pötty a log). */
+  .fmx-window { display: flex; align-items: center; gap: 8px; padding: 0 0 11px; }
+  .fmx-window > span { flex: 0 0 auto; font-size: 9px; color: var(--faint); }
+  .fmx-window i { position: relative; flex: 1; height: 12px; border-radius: 7px; background: var(--surface-recess); }
+  .fmx-window em { position: absolute; top: 0; bottom: 0; left: var(--from); width: calc(var(--to) - var(--from));
+    border-radius: 7px; border: 1px solid color-mix(in srgb, var(--block-color) 24%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--block-color) 14%, transparent),
+      color-mix(in srgb, var(--block-color) 26%, transparent), color-mix(in srgb, var(--block-color) 14%, transparent)); }
+  .fmx-window b { position: absolute; top: 50%; left: var(--at); width: 15px; height: 15px;
+    transform: translate(-50%, -50%); border-radius: 50%; background: var(--block-color);
+    border: 2px solid var(--surface-card);
+    box-shadow: 0 0 9px color-mix(in srgb, var(--block-color) 40%, transparent); }
+
+  /* Étkezés-sor: a NÉV felül teljes szélességben (két sorig törhet), alatta egy sorban a
+     négy gyűrű + jobbra az AI pont-chip. */
+  .fmx-meal-row { padding: 12px 0 13px; border-top: 1px solid var(--divider); }
+  .fmx-meal-main { display: block; width: 100%; text-align: left; }
+  .fmx-meal-main strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; font-size: 16px; font-weight: 500; line-height: 1.3; color: var(--ink); }
+  .fmx-meal-bottom { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  .fmx-meal-bottom .fmx-score { margin-left: auto; }
+  .fmx-score { display: flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    padding: 7px 11px 7px 7px; border-radius: 22px;
+    border: 1px solid color-mix(in srgb, var(--lav) 42%, transparent);
+    background: color-mix(in srgb, var(--lav) 12%, transparent);
+    color: color-mix(in srgb, var(--lav) 70%, var(--ink)); }
+  .fmx-score svg { width: 28px; height: 28px; }
+  .fmx-score b { font-size: 15px; font-weight: 600; }
+
+  /* ── ÚJ: makró mini-gyűrűk a grammsor helyén. Négyes cella-sor; az azonosság a
+     megszokott hue + clay ikon (felirat nélkül). A P/Ch/Zs gyűrű az ÉTKEZÉS energia-
+     arányát teli (mint a részletlap arány-gyűrűi), a rost a napi adag részesedését.
+     Geometria = a ház `.fmx-ring` receptje (pathLength 100), kicsiben. ── */
+  .fmx-mrings { display: flex; gap: 14px; }
+  .fmx-mcell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .fmx-mcell > svg:first-child { width: 15px; height: 15px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.26)); }
+  .fmx-mring { position: relative; width: 40px; height: 40px; display: grid; place-items: center; }
+  .fmx-mring > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--macro-color) 30%, transparent)); }
+  .fmx-mring circle { fill: none; stroke-width: 4; }
+  .fmx-mring .tr { stroke: var(--surface-recess); }
+  .fmx-mring .fl { stroke: var(--macro-color); stroke-linecap: round; stroke-dasharray: 0 100;
+    transition: stroke-dasharray 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .fmx-mring b { position: relative; display: flex; align-items: baseline; font-size: 12.5px;
+    font-weight: 600; font-variant-numeric: tabular-nums; color: var(--macro-color); }
+  .fmx-mring b i { font-style: normal; font-size: 7.5px; font-weight: 500; margin-left: 1px; color: var(--sub); }
+  .fmx-mring.is-null b { color: var(--faint); font-weight: 400; }
+
+  /* Üres blokk: egy nagy koppintható felület — változatlan. */
+  .fmx-block-log { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 0 12px;
+    border-top: 1px solid var(--divider); text-align: left; color: var(--ink); }
+  .fmx-block-log > span:first-child { width: 34px; height: 34px; flex: 0 0 auto; display: grid;
+    place-items: center; border-radius: 50%; font-size: 16px;
+    border: 1px dashed color-mix(in srgb, var(--block-color) 48%, transparent);
+    color: color-mix(in srgb, var(--block-color) 70%, var(--ink)); }
+  .fmx-block-log strong { display: block; font-size: 14px; font-weight: 500; }
+  .fmx-block-log small { display: block; margin-top: 3px; font-size: 9px; color: var(--sub); }
+
+  /* ══ ÚJ: az idő-doboz — kis 3D üvegdoboz, az óra gombra nyílik ══ */
+  .fmx-glass-layer { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; }
+  .fmx-glass-layer[hidden] { display: none; }
+  .fmx-glass-backdrop { position: absolute; inset: 0; width: 100%; height: 100%;
+    background: rgba(5, 7, 12, 0.62); backdrop-filter: blur(15px); cursor: pointer;
+    opacity: 0; transition: opacity 0.28s; }
+  .fmx-timebox { position: relative; width: min(78%, 280px); padding: 22px 22px 18px;
+    border-radius: 24px; border: 1px solid var(--border-subtle);
+    background: var(--surface-elevated); backdrop-filter: blur(22px) saturate(1.25);
+    box-shadow: 0 34px 70px rgba(0, 0, 0, 0.5),
+      0 0 34px color-mix(in srgb, var(--block-color) 16%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    text-align: center; color: var(--ink);
+    opacity: 0; transform: perspective(700px) rotateX(14deg) scale(0.86) translateY(16px);
+    transition: opacity 0.3s, transform 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.18); }
+  .fmx-glass-layer.is-open .fmx-glass-backdrop { opacity: 1; }
+  .fmx-glass-layer.is-open .fmx-timebox { opacity: 1; transform: none; }
+  .fmx-timebox-art { width: 54px; height: 54px; margin: -46px auto 2px; display: grid; place-items: center; }
+  .fmx-timebox-art svg { width: 54px; height: 54px;
+    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 12px color-mix(in srgb, var(--block-color) 34%, transparent)); }
+  .fmx-timebox-eyebrow { font-size: 8px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: var(--sub); }
+  .fmx-timebox-time { margin-top: 2px; font-family: var(--ff-display); font-size: 54px;
+    font-weight: 200; letter-spacing: -0.04em; line-height: 1.1; font-variant-numeric: tabular-nums;
+    color: var(--ink); text-shadow: 0 0 26px color-mix(in srgb, var(--block-color) 30%, transparent); }
+  .fmx-timebox-sub { margin-top: 2px; font-size: 11px; color: var(--sub); }
+  .fmx-timebox-items { margin: 14px 0 0; padding: 10px 2px 0; border-top: 1px solid var(--divider);
+    display: grid; gap: 7px; }
+  .fmx-timebox-items div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    font-size: 12px; color: var(--sub); }
+  .fmx-timebox-items div span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fmx-timebox-items div b { font-weight: 600; font-variant-numeric: tabular-nums;
+    color: color-mix(in srgb, var(--block-color) 70%, var(--ink)); }
+  .fmx-timebox-close { display: block; width: 100%; margin-top: 16px; padding: 10px 0;
+    border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-recess);
+    color: var(--ink); font-size: 13px; font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fmx-mring .fl, .fmx-br-fill { transition: none; }
+    .fmx-glass-backdrop, .fmx-timebox { transition: none; }
+    .fmx-timebox { transform: none; }
+    .fmx-clock, .fmx-clock:active { transition: none; transform: none; }
+  }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<!-- Titanium icon family (mezo-titanium-icons). Material = brushed-titanium base gradient
+     (ig-titanium) + ONE domain accent (ig-blue/gold/purple/lime/rose) + thin bright highlight
+     strokes + a soft drop shadow. viewBox 0 0 64 64. Gradient/filter ids are ig-* namespaced. -->
+<linearGradient id="ig-titanium" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#e9e4f6"/><stop offset=".18" stop-color="#8e8a9e"/><stop offset=".43" stop-color="#282b39"/><stop offset=".66" stop-color="#62697d"/><stop offset=".85" stop-color="#c9c7d8"/><stop offset="1" stop-color="#393647"/></linearGradient>
+<linearGradient id="ig-blue" x2=".5" y2="1"><stop stop-color="#d1faff"/><stop offset=".4" stop-color="#78cfe7"/><stop offset="1" stop-color="#38617a"/></linearGradient>
+<linearGradient id="ig-gold" x2=".8" y2="1"><stop stop-color="#ffebbe"/><stop offset=".45" stop-color="#b89757"/><stop offset="1" stop-color="#604831"/></linearGradient>
+<linearGradient id="ig-purple" x2=".7" y2="1"><stop stop-color="#eee0ff"/><stop offset=".4" stop-color="#b3a0ed"/><stop offset="1" stop-color="#504373"/></linearGradient>
+<linearGradient id="ig-lime" x2=".8" y2="1"><stop stop-color="#eeffb9"/><stop offset=".5" stop-color="#b8d777"/><stop offset="1" stop-color="#52663e"/></linearGradient>
+<linearGradient id="ig-rose" x2=".7" y2="1"><stop stop-color="#ffe0ec"/><stop offset=".45" stop-color="#e79db7"/><stop offset="1" stop-color="#6f4353"/></linearGradient>
+<filter id="ig-shadow" x="-60%" y="-60%" width="220%" height="240%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".5"/></filter>
+
+<!-- ============ NAV / CORE ============ -->
+<symbol id="i-nap" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 5V12M32 52V59M5 32H12M52 32H59M12 12L17 17M47 47L52 52M12 52L17 47M47 17L52 12" stroke="url(#ig-gold)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="15" fill="url(#ig-gold)"/><path d="M22 30A11 11 0 0 1 35 21" stroke="#fff4d2" stroke-width="2" fill="none" opacity=".8"/></g></symbol>
+<symbol id="i-edzes" viewBox="0 0 64 64"><g transform="rotate(-30 32 32)" filter="url(#ig-shadow)"><rect x="19" y="28" width="28" height="8" rx="3" fill="url(#ig-titanium)"/><rect x="10" y="15" width="12" height="34" rx="5" fill="url(#ig-titanium)"/><rect x="42" y="15" width="12" height="34" rx="5" fill="url(#ig-titanium)"/><rect x="6" y="22" width="7" height="20" rx="3" fill="url(#ig-lime)"/><rect x="51" y="22" width="7" height="20" rx="3" fill="url(#ig-lime)"/><path d="M16 19V44M48 19V44" stroke="#d0e8aa" stroke-width="1.5"/></g></symbol>
+<symbol id="i-fuel" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="28" rx="25" ry="10" fill="url(#ig-titanium)"/><path d="M8 29C9 49 18 53 32 53S56 46 57 29Z" fill="url(#ig-titanium)"/><ellipse cx="32" cy="28" rx="22" ry="7" fill="url(#ig-lime)"/><path d="M19 26C25 14 32 15 34 23C41 13 48 20 47 27" fill="#bfd79a" stroke="#eaf2bf" stroke-width="1.5"/><path d="M17 36C18 43 23 47 29 48" fill="none" stroke="#c4c7d6" stroke-width="2"/></g></symbol>
+<symbol id="i-mezo" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="32" rx="26" ry="12" transform="rotate(-28 32 32)" fill="none" stroke="url(#ig-purple)" stroke-width="3"/><ellipse cx="32" cy="32" rx="26" ry="11" transform="rotate(34 32 32)" fill="none" stroke="url(#ig-blue)" stroke-width="2" opacity=".65"/><circle cx="32" cy="32" r="13" fill="url(#ig-titanium)"/><circle cx="32" cy="32" r="6" fill="url(#ig-gold)"/><circle cx="54" cy="20" r="3" fill="url(#ig-purple)"/></g></symbol>
+<symbol id="i-emberek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="44" cy="22" r="8" fill="url(#ig-titanium)" opacity=".8"/><path d="M32 50C32 36 56 36 56 50Z" fill="url(#ig-titanium)" opacity=".8"/><circle cx="24" cy="20" r="10" fill="url(#ig-titanium)"/><path d="M8 52C8 33 40 33 40 52Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/></g></symbol>
+
+<!-- ============ DAY / TIME ============ -->
+<symbol id="i-viz" viewBox="0 0 64 64"><path d="M32 7C25 18 13 30 13 41A19 19 0 0 0 51 41C51 30 40 18 32 7Z" fill="url(#ig-blue)" stroke="#aeedff" stroke-width=".8" filter="url(#ig-shadow)"/><path d="M26 25C21 32 19 36 20 41" fill="none" stroke="#dcfaff" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M24 50C31 54 42 50 44 44" fill="none" stroke="#286887" stroke-width="2" opacity=".5"/></symbol>
+<symbol id="i-alvas" viewBox="0 0 64 64"><path d="M42 9C18 2 3 28 17 47C29 64 54 53 57 37C36 45 23 24 42 9Z" fill="url(#ig-purple)" stroke="#e7d7ff" stroke-width=".8" filter="url(#ig-shadow)"/><path d="M46 9L48 16 55 18 48 20 46 27 44 20 37 18 44 16Z" fill="url(#ig-gold)"/></symbol>
+<symbol id="i-hold" viewBox="0 0 64 64"><path d="M42 9C18 2 3 28 17 47C29 64 54 53 57 37C36 45 23 24 42 9Z" fill="url(#ig-purple)" stroke="#e7d7ff" stroke-width=".8" filter="url(#ig-shadow)"/></symbol>
+<symbol id="i-hajnal" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 18a15 15 0 0 1 15 15H17a15 15 0 0 1 15-15Z" fill="url(#ig-gold)"/><path d="M32 8V13M12 22L15 25M52 22L49 25M6 33H12M52 33H58" stroke="url(#ig-gold)" stroke-width="3.5" stroke-linecap="round"/><path d="M6 42H58M14 50H50" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-idozito" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M26 6h12M32 12V8" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="36" r="22" fill="url(#ig-titanium)"/><circle cx="32" cy="36" r="15" fill="#23212e"/><path d="M32 36V25" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="36" r="2.5" fill="#ffe6b0"/></g></symbol>
+<symbol id="i-heti" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="12" width="46" height="42" rx="7" fill="url(#ig-titanium)" stroke="#aca7c4"/><rect x="9" y="12" width="46" height="12" rx="7" fill="url(#ig-blue)"/><path d="M20 8V16M44 8V16" stroke="#d1faff" stroke-width="3" stroke-linecap="round"/><path d="M17 33h6M29 33h6M41 33h6M17 43h6M29 43h6" stroke="#c9c7d8" stroke-width="3" stroke-linecap="round"/></g></symbol>
+
+<!-- ============ HEALTH / BODY ============ -->
+<symbol id="i-eletjel" viewBox="0 0 64 64"><path d="M32 54C20 44 7 35 9 22C11 8 27 8 32 20C40 5 56 12 56 25C56 37 42 48 32 54Z" fill="url(#ig-rose)" stroke="#f0c9d9" filter="url(#ig-shadow)"/><path d="M13 32H23L28 24 35 41 40 31H53" fill="none" stroke="#fff0f6" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+<symbol id="i-checkin" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="23" fill="url(#ig-rose)"/><circle cx="32" cy="32" r="23" fill="none" stroke="#f6d3e1" stroke-width="1"/><path d="M21 33l7 8 15-18" fill="none" stroke="#fff2f7" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-suly" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="13" width="46" height="42" rx="11" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M18 34a14 14 0 0 1 28 0" fill="none" stroke="#2a2d3b" stroke-width="3.5"/><path d="M32 34 L40 25" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="34" r="3" fill="#e9e4f6"/></g></symbol>
+<symbol id="i-sport" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="24" fill="url(#ig-titanium)" stroke="#c9c7d8"/><path d="M32 8C24 20 24 44 32 56M32 8C40 20 40 44 32 56M9 26C22 34 42 34 55 26M9 40C22 32 42 32 55 40" fill="none" stroke="url(#ig-lime)" stroke-width="2.4" opacity=".9"/></g></symbol>
+<symbol id="i-futas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M8 44C14 40 20 42 26 38C31 35 33 28 40 30C46 32 47 40 55 41C58 41.5 58 48 54 48H12C8 48 6 45 8 44Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M40 30C42 26 46 25 50 27" fill="none" stroke="#c9c7d8" stroke-width="3" stroke-linecap="round"/><path d="M12 48H54" stroke="url(#ig-lime)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-injekcio" viewBox="0 0 64 64"><g transform="rotate(-45 32 32)" filter="url(#ig-shadow)"><rect x="18" y="26" width="26" height="12" rx="2" fill="url(#ig-titanium)"/><path d="M20 26v12M26 26v12M32 26v12" stroke="#c9c7d8" stroke-width="1.4"/><rect x="14" y="28" width="6" height="8" rx="2" fill="url(#ig-titanium)"/><rect x="44" y="30" width="7" height="4" fill="url(#ig-blue)"/><path d="M51 32H60" stroke="#8e8a9e" stroke-width="2" stroke-linecap="round"/><rect x="28" y="28" width="14" height="8" rx="1" fill="url(#ig-blue)" opacity=".8"/></g></symbol>
+<symbol id="i-lang" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 6C41 18 50 25 50 38A18 18 0 0 1 14 38C14 30 20 28 23 22C26 28 28 20 26 14C31 16 34 12 32 6Z" fill="url(#ig-gold)" stroke="#ffe6b0" stroke-width=".8"/><path d="M32 30c6 4 8 9 6 14a8 8 0 0 1-14-3c0-4 4-5 5-9 1 2 2 1 3-2Z" fill="url(#ig-lime)"/></g></symbol>
+<symbol id="i-growth" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 56V28" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M32 34C22 34 14 26 15 15C26 14 34 22 33 33Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/><path d="M32 42C40 42 49 36 49 26C40 25 32 31 32 41Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/></g></symbol>
+
+<!-- ============ MEZO / KNOWLEDGE ============ -->
+<symbol id="i-naplo" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M13 12L44 7 53 15 53 54 22 59 13 51Z" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M21 19L53 15 53 54 22 59Z" fill="url(#ig-purple)"/><path d="M13 12L21 19V59M29 29L45 27M29 36L42 34" fill="none" stroke="#e9dcff" stroke-width="1.5"/><path d="M43 42L45 47 50 49 45 50 43 55 42 50 37 49 42 47Z" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-memoar" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 15C25 9 13 9 8 12V53C13 50 25 50 32 55C39 50 51 50 56 53V12C51 9 39 9 32 15Z" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M32 15V55" stroke="#8e8a9e" stroke-width="2"/><path d="M14 22C19 20 26 20 29 23M35 23C38 20 45 20 50 22M14 31C19 29 26 29 29 32M35 32C38 29 45 29 50 31" fill="none" stroke="url(#ig-purple)" stroke-width="1.6" opacity=".85"/></g></symbol>
+<symbol id="i-tudas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="14" y="9" width="36" height="46" rx="7" fill="url(#ig-titanium)" stroke="#aca7c4"/><path d="M32 18L45 26 41 41 23 41 19 26Z" fill="url(#ig-purple)" stroke="#ddd1ff" stroke-width=".8"/><path d="M32 18 L27 31 41 31Z" fill="#f0e7ff" opacity=".7"/><path d="M23 48h18" stroke="#d0cbe0" stroke-width="2.4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-kristaly" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 5L54 19 50 46 32 59 10 44 11 18Z" fill="url(#ig-purple)" stroke="#ddd1ff"/><path d="M32 5L26 27 11 18M26 27L10 44M26 27L32 59M26 27L54 19M26 27L50 46" fill="none" stroke="#f0e7ff" stroke-opacity=".55"/><path d="M37 22L32 32 39 32 29 44 31 35 25 35Z" fill="#f3e9ff"/></g></symbol>
+<symbol id="i-minta" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M14 16L44 26M14 16L26 48M44 26L26 48M44 26L52 46M26 48L52 46" stroke="url(#ig-blue)" stroke-width="2" opacity=".7"/><circle cx="14" cy="16" r="5" fill="url(#ig-blue)"/><circle cx="44" cy="26" r="6" fill="url(#ig-titanium)"/><circle cx="26" cy="48" r="5" fill="url(#ig-blue)"/><circle cx="52" cy="46" r="4" fill="url(#ig-purple)"/></g></symbol>
+<symbol id="i-retegek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M10 39L32 28 54 39 32 50Z" fill="url(#ig-titanium)"/><path d="M10 29L32 18 54 29 32 40Z" fill="url(#ig-blue)"/><path d="M10 19L32 8 54 19 32 30Z" fill="url(#ig-titanium)"/><path d="M32 8L54 19 32 30" fill="none" stroke="#c3e5f0" stroke-width="1.6"/></g></symbol>
+<symbol id="i-stack" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="17" y="8" width="30" height="48" rx="12" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M17 32h30" stroke="#8e8a9e" stroke-width="2"/><path d="M17 32a15 15 0 0 1 30 0V20a15 15 0 0 0-30 0Z" fill="url(#ig-blue)" opacity=".85"/></g></symbol>
+<symbol id="i-rend" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="21" fill="none" stroke="url(#ig-titanium)" stroke-width="11"/><path d="M32 11A21 21 0 1 1 12 38" fill="none" stroke="url(#ig-purple)" stroke-width="8" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-meso" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="9" y="36" width="8" height="16" rx="2" fill="url(#ig-titanium)"/><rect x="21" y="28" width="8" height="24" rx="2" fill="url(#ig-titanium)"/><rect x="33" y="20" width="8" height="32" rx="2" fill="url(#ig-gold)"/><rect x="45" y="34" width="8" height="18" rx="2" fill="url(#ig-titanium)"/><path d="M13 34C20 22 34 14 49 18" fill="none" stroke="url(#ig-lime)" stroke-width="2.4" stroke-linecap="round"/></g></symbol>
+
+<!-- ============ GROWTH / GAME ============ -->
+<symbol id="i-cel" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="29" cy="35" r="22" fill="url(#ig-titanium)"/><circle cx="29" cy="35" r="15" fill="#23212e"/><circle cx="29" cy="35" r="8" fill="url(#ig-gold)"/><circle cx="29" cy="35" r="3" fill="#23212e"/><path d="M55 9 L33 31 M41 9 L55 9 L55 23" fill="none" stroke="url(#ig-lime)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-erme" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="32" rx="23" ry="23" fill="url(#ig-gold)"/><ellipse cx="32" cy="32" rx="23" ry="23" fill="none" stroke="#fff4d2" stroke-width="1.5" opacity=".6"/><ellipse cx="32" cy="32" rx="15" ry="15" fill="none" stroke="#7a5f34" stroke-width="2"/><path d="M32 24v16M27 28l5-4 5 4" fill="none" stroke="#5a4527" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-termes" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 10L38 24 53 25 42 35 45 50 32 42 19 50 22 35 11 25 26 24Z" fill="url(#ig-gold)" stroke="#fff4d2" stroke-width=".8"/><path d="M32 10L28 24 42 35" fill="none" stroke="#7a5f34" stroke-opacity=".5"/></g></symbol>
+<symbol id="i-kihivas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M14 8V58" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M16 10C26 4 34 16 46 10L50 27C38 33 30 21 18 27Z" fill="url(#ig-gold)" stroke="#ffe6b0" stroke-width=".8"/><path d="M16 10v17" stroke="#7a5f34" stroke-opacity=".4"/></g></symbol>
+<symbol id="i-muhely" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="38" rx="24" ry="10" fill="url(#ig-titanium)"/><ellipse cx="32" cy="35" rx="18" ry="6.5" fill="url(#ig-lime)" opacity=".7"/><path d="M20 15L22 21 28 23 22 25 20 31 18 25 12 23 18 21Z" fill="url(#ig-gold)"/><path d="M46 12L47 16 51 17 47 18 46 22 45 18 41 17 45 16Z" fill="url(#ig-gold)"/><circle cx="38" cy="16" r="2" fill="#ffe6b0"/></g></symbol>
+
+<!-- ============ FOOD / KITCHEN ============ -->
+<symbol id="i-reggeli" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="41" rx="26" ry="9" fill="url(#ig-titanium)"/><ellipse cx="32" cy="38" rx="20" ry="6.4" fill="#c9c6d6"/><path d="M19 34c-3-8 6-13 11-8 5-5 13 0 11 7 4 3 1 9-5 8-3 4-12 4-14-1-5 1-7-4-3-6z" fill="#fdfaf0" stroke="#cfc9dc" stroke-width=".8"/><circle cx="30.5" cy="33" r="5.5" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-ebed" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><ellipse cx="32" cy="30" rx="24" ry="9" fill="url(#ig-titanium)"/><path d="M10 31C11 48 19 52 32 52S53 45 54 31Z" fill="url(#ig-titanium)"/><ellipse cx="32" cy="30" rx="20" ry="6.5" fill="url(#ig-lime)"/><circle cx="25" cy="29" r="4" fill="#c86b52"/><circle cx="36" cy="30" r="3.5" fill="#e6b45a"/><path d="M15 36C17 44 23 48 30 49" fill="none" stroke="#c4c7d6" stroke-width="2"/></g></symbol>
+<symbol id="i-snack" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 16C30 8 24 6 20 9C33 9 30 18 32 20C34 16 44 12 48 20C54 32 46 52 34 54C33 54 31 54 30 54C18 52 10 32 16 20C20 12 30 14 32 16Z" fill="url(#ig-rose)" stroke="#f6d3e1" stroke-width=".8"/><path d="M32 20C30 14 34 8 40 8" fill="none" stroke="#8f5a3a" stroke-width="2.4" stroke-linecap="round"/><path d="M22 26c1 8 4 14 9 17" fill="none" stroke="#fff2f7" stroke-width="2" opacity=".6"/></g></symbol>
+<symbol id="i-vacsora" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="34" cy="34" r="22" fill="url(#ig-titanium)"/><circle cx="34" cy="34" r="15" fill="url(#ig-purple)" opacity=".55"/><path d="M9 12V28C9 31 11 32 13 32V54M13 12V24M17 12V24M17 24C17 27 15 28 13 28" fill="none" stroke="url(#ig-titanium)" stroke-width="3" stroke-linecap="round"/></g></symbol>
+<symbol id="i-kamra" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="16" y="18" width="32" height="40" rx="8" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M22 12h20a4 4 0 0 1 4 4v4H18v-4a4 4 0 0 1 4-4Z" fill="url(#ig-titanium)"/><rect x="22" y="30" width="20" height="20" rx="4" fill="url(#ig-lime)" opacity=".8"/><path d="M22 40h20" stroke="#eaf2bf" stroke-width="1.6" opacity=".7"/></g></symbol>
+<symbol id="i-polc" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="14" width="48" height="6" rx="2" fill="url(#ig-titanium)"/><rect x="8" y="44" width="48" height="6" rx="2" fill="url(#ig-titanium)"/><rect x="15" y="22" width="8" height="20" rx="2" fill="url(#ig-lime)"/><rect x="27" y="26" width="8" height="16" rx="2" fill="url(#ig-blue)"/><rect x="39" y="22" width="9" height="20" rx="4" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-recept" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="12" y="10" width="40" height="46" rx="6" fill="url(#ig-titanium)" stroke="#aca7c4"/><rect x="12" y="10" width="8" height="46" fill="url(#ig-lime)" opacity=".6"/><path d="M27 22h18M27 30h18M27 38h12" stroke="#c9c7d8" stroke-width="2.6" stroke-linecap="round"/><circle cx="23" cy="22" r="1.6" fill="#b8d777"/><circle cx="23" cy="30" r="1.6" fill="#b8d777"/></g></symbol>
+<symbol id="i-lombik" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M26 8h12M28 10V26L15 48C13 52 16 56 20 56H44C48 56 51 52 49 48L36 26V10" fill="url(#ig-titanium)" stroke="#b6b0c5" stroke-width="1.2" stroke-linejoin="round"/><path d="M20 40C24 37 40 37 44 40L49 48C51 52 48 56 44 56H20C16 56 13 52 15 48Z" fill="url(#ig-blue)" opacity=".85"/><circle cx="27" cy="46" r="2" fill="#d1faff"/><circle cx="36" cy="50" r="1.6" fill="#d1faff"/></g></symbol>
+
+<!-- ============ SYSTEM / CHROME ============ -->
+<symbol id="i-ertesites" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 8C22 8 18 16 18 26C18 38 12 42 12 46H52C52 42 46 38 46 26C46 16 42 8 32 8Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M26 46a6 6 0 0 0 12 0Z" fill="url(#ig-titanium)"/><circle cx="46" cy="16" r="7" fill="url(#ig-gold)"/></g></symbol>
+<symbol id="i-level" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="14" width="48" height="36" rx="6" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M10 17L32 35 54 17" fill="none" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-video" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="16" width="34" height="32" rx="7" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M44 28L56 20V44L44 36Z" fill="url(#ig-blue)"/><path d="M20 26l12 6-12 6Z" fill="#d1faff"/></g></symbol>
+<symbol id="i-mikrofon" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="24" y="8" width="16" height="30" rx="8" fill="url(#ig-purple)"/><path d="M16 30v3a16 16 0 0 0 32 0v-3" fill="none" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M32 49v7M24 56h16" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/></g></symbol>
+<symbol id="i-beallitas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 6l5 6 8-2 1 8 7 4-4 7 4 7-7 4-1 8-8-2-5 6-5-6-8 2-1-8-7-4 4-7-4-7 7-4 1-8 8 2Z" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="10" fill="#23212e"/><circle cx="32" cy="32" r="4.5" fill="url(#ig-gold)"/></g></symbol>
+
+<!-- ============ LIFE-SKILLS (sub-family: titanium chip + domain glyph) ============ -->
+<symbol id="i-life-tudatossag" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M16 32C22 24 42 24 48 32C42 40 22 40 16 32Z" fill="#23212e"/><circle cx="32" cy="32" r="7" fill="url(#ig-purple)"/><circle cx="32" cy="32" r="2.5" fill="#fff"/></g></symbol>
+<symbol id="i-life-szemlelet" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="16" fill="#23212e"/><path d="M32 20l4 12-12 4Z" fill="url(#ig-blue)"/><path d="M32 44l-4-12 12-4Z" fill="#5b6b86"/></g></symbol>
+<symbol id="i-life-konyha" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M22 30C18 30 16 24 20 21C22 15 30 15 32 20C34 15 42 15 44 21C48 24 46 30 42 30Z" fill="url(#ig-lime)"/><path d="M23 30h18v10a4 4 0 0 1-4 4H27a4 4 0 0 1-4-4Z" fill="url(#ig-lime)"/></g></symbol>
+<symbol id="i-life-penzugyek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><circle cx="32" cy="32" r="14" fill="url(#ig-gold)"/><path d="M32 23v18M27 27l5-4 5 4" fill="none" stroke="#5a4527" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-life-produktivitas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M34 14L18 36 30 37 28 50 46 26 34 26Z" fill="url(#ig-lime)" stroke="#dbf6aa" stroke-width=".8"/></g></symbol>
+<symbol id="i-life-tanulas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M32 18L52 27 32 36 12 27Z" fill="url(#ig-blue)"/><path d="M22 31v9c0 4 20 4 20 0v-9" fill="none" stroke="#5b6b86" stroke-width="3"/></g></symbol>
+<symbol id="i-life-kapcsolatok" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M32 46C24 40 15 34 17 25C18 17 28 17 32 25C36 17 46 17 47 25C49 34 40 40 32 46Z" fill="url(#ig-rose)"/></g></symbol>
+<symbol id="i-life-regeneracio" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="8" y="8" width="48" height="48" rx="15" fill="url(#ig-titanium)" stroke="#b6b0c5"/><path d="M40 18C24 14 14 28 22 40C28 49 42 44 44 33C33 38 26 27 40 18Z" fill="url(#ig-purple)"/></g></symbol>
+<!-- ============ FUEL TABS (mezo-o6uv) ============ -->
+<symbol id="i-tanyer" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M6 8V19M11 8V19M16 8V19" stroke="url(#ig-titanium)" stroke-width="3" stroke-linecap="round"/><path d="M6 19h10a0 0 0 0 1 0 0c0 4-2 5-4 6v31" stroke="url(#ig-titanium)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M53 8c4.5 3 5.5 9 4 15-.8 3.2-2.3 4.6-4 4.6Z" fill="url(#ig-titanium)" stroke="#c9c7d8" stroke-width=".7"/><path d="M53 27V56" stroke="url(#ig-titanium)" stroke-width="3.4" stroke-linecap="round"/><ellipse cx="32" cy="33" rx="19" ry="18" fill="url(#ig-titanium)" stroke="#c9c7d8" stroke-width=".8"/><ellipse cx="32" cy="32.5" rx="13" ry="12" fill="#1b1e28"/><ellipse cx="32" cy="32" rx="9.5" ry="8.5" fill="url(#ig-lime)"/><circle cx="36.5" cy="29" r="2.7" fill="url(#ig-gold)"/><path d="M22 26A15 14 0 0 1 30 19" fill="none" stroke="#ffffff" stroke-opacity=".38" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-kiegeszito" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="17" y="6" width="30" height="10" rx="3.5" fill="#d7dde6" stroke="#aab3c2" stroke-width=".8"/><rect x="13" y="16" width="38" height="42" rx="9" fill="url(#ig-titanium)" stroke="#c9c2dc" stroke-width=".8"/><rect x="19" y="25" width="26" height="24" rx="6" fill="#151822"/><g transform="rotate(-35 32 37)"><rect x="21" y="32" width="22" height="11" rx="5.5" fill="url(#ig-purple)" stroke="#e4d8ff" stroke-width=".7"/><path d="M32 32v11" stroke="#2a2533" stroke-width="1.2"/></g><circle cx="46" cy="12" r="3" fill="url(#ig-gold)"/><path d="M17 22H24" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-trend" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><rect x="6" y="9" width="52" height="46" rx="12" fill="url(#ig-titanium)" stroke="#c3bdd6" stroke-width=".8"/><rect x="11" y="14" width="42" height="36" rx="8" fill="#161a23"/><path d="M15 42L26 32L34 37L49 20" fill="none" stroke="url(#ig-blue)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 46L26 41L34 44L49 34" fill="none" stroke="url(#ig-purple)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 5"/><circle cx="49" cy="20" r="4" fill="url(#ig-gold)"/><path d="M13 18A9 9 0 0 1 20 14" fill="none" stroke="#ffffff" stroke-opacity=".3" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-fazek" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M25 4C22.5 8.5 27 10.5 25.5 15M33 2C30.5 7.5 35.5 9.5 33.5 15M41 5C38.5 9.5 43 11.5 41.5 16" fill="none" stroke="#cfe0ea" stroke-width="2.4" stroke-linecap="round" opacity=".7"/><rect x="9" y="21" width="46" height="7" rx="3.5" fill="url(#ig-titanium)" stroke="#c9c7d8" stroke-width=".7"/><rect x="28" y="16" width="8" height="6" rx="3" fill="url(#ig-titanium)" stroke="#c9c7d8" stroke-width=".7"/><path d="M6 33h7a3 3 0 0 1 0 6H6a3 3 0 0 1 0-6Z" fill="url(#ig-titanium)"/><path d="M51 33h7a3 3 0 0 1 0 6h-7a3 3 0 0 1 0-6Z" fill="url(#ig-titanium)"/><path d="M13 30h38l-3 22a5 5 0 0 1-5 4H21a5 5 0 0 1-5-4Z" fill="url(#ig-titanium)" stroke="#c9c7d8" stroke-width=".8"/><path d="M14.6 41h34.8l-1.5 11a5 5 0 0 1-5 4H21.1a5 5 0 0 1-5-4Z" fill="url(#ig-lime)" opacity=".75"/><path d="M20 33Q22 45 25 52" fill="none" stroke="#ffffff" stroke-opacity=".3" stroke-width="2.4" stroke-linecap="round"/></g></symbol>
+<!-- ============ FUEL MACRO IDENTITY (mezo-33k6) ============
+     Az owner rögzített makró-identitása a Mai Titán hero gyűrűsorához: fehérje = hús (rose),
+     szénhidrát = gabona (gold), zsír = avokádó (gold), rost = növény (lime). A forma a
+     companion-titanium prototípus i-meat/i-carb/i-fat/i-fiber rajzából jön, a gradiensek az
+     ig-* zárt palettára vannak visszakötve — új gradiens NEM született. -->
+<symbol id="i-hus" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M14 41a5 5 0 1 1 4-8 5 5 0 1 1 6 6l-3 3a5 5 0 1 1-6 6 5 5 0 1 1-4-8Z" fill="url(#ig-titanium)" stroke="#dcd8e8" stroke-width=".7"/><path d="M24 21c12-7 28-4 32 6 4 10-4 22-16 25-11 3-20-2-22-11-2-8 1-16 6-20Z" fill="url(#ig-rose)" stroke="#ffd7e2" stroke-width=".8"/><path d="M30 27c9-5 19-3 22 4 3 7-3 15-11 17-8 2-14-1-15-7-1-6 1-11 4-14Z" fill="#a2414f" opacity=".55"/><path d="M34 33c4-2 8-1 10 2M33 40c4-2 9-1 11 2" fill="none" stroke="#ffe3ea" stroke-width="1.7" stroke-linecap="round" opacity=".8"/><path d="M28 25a20 18 0 0 1 9-4" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-gabona" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 58V20" stroke="url(#ig-titanium)" stroke-width="4" stroke-linecap="round"/><path d="M32 14C36 8 42 7 46 10C45 16 39 19 32 18C25 19 19 16 18 10C22 7 28 8 32 14Z" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".6"/><path d="M32 30C38 24 46 24 49 28C46 34 38 36 32 32C26 36 18 34 15 28C18 24 26 24 32 30Z" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".6"/><path d="M32 44C38 38 46 38 49 42C46 48 38 50 32 46C26 50 18 48 15 42C18 38 26 38 32 44Z" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".6"/><path d="M24 27A10 8 0 0 1 30 25" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-avokado" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 4c9.5 0 17.5 9.5 17.5 22C49.5 41 41 60 32 60S14.5 41 14.5 26C14.5 13.5 22.5 4 32 4Z" fill="#4a6140" stroke="#9cbb80" stroke-width=".8"/><path d="M32 7.5c8 0 15 8.4 15 18.7C47 40 39.3 56.5 32 56.5S17 40 17 26.2C17 15.9 24 7.5 32 7.5Z" fill="url(#ig-gold)"/><ellipse cx="32" cy="33" rx="10" ry="11.5" fill="#6b4a2e"/><ellipse cx="32" cy="33" rx="10" ry="11.5" fill="url(#ig-titanium)" opacity=".55"/><path d="M27 29a8 9 0 0 1 6-3.5" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.7" stroke-linecap="round"/><path d="M24 16a13 14 0 0 1 6-5" fill="none" stroke="#fff5d8" stroke-opacity=".8" stroke-width="2.2" stroke-linecap="round"/></g></symbol>
+<symbol id="i-noveny" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 58V40" stroke="url(#ig-titanium)" stroke-width="3.4" stroke-linecap="round"/><path d="M50 10C28 10 12 24 12 44C12 50 14 54 16 56C18 40 28 28 42 22C30 32 22 42 20 55C24 57 30 57 35 55C50 49 56 32 50 10Z" fill="url(#ig-lime)" stroke="#e4f6c2" stroke-width=".8"/><path d="M20 55C22 42 30 32 42 22" fill="none" stroke="#f0fadb" stroke-width="2.2" stroke-linecap="round" opacity=".85"/></g></symbol>
+<symbol id="i-makro" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><circle cx="32" cy="32" r="24" fill="url(#ig-titanium)" stroke="#dcd8e8" stroke-width=".8"/><path d="M32 32 32 12A20 20 0 0 1 49.3 42Z" fill="url(#ig-rose)" stroke="#ffd7e2" stroke-width=".6"/><path d="M32 32 49.3 42A20 20 0 0 1 14.7 42Z" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".6"/><path d="M32 32 14.7 42A20 20 0 0 1 32 12Z" fill="url(#ig-lime)" stroke="#e4f6c2" stroke-width=".6"/><circle cx="32" cy="32" r="6.5" fill="url(#ig-titanium)" stroke="#dcd8e8" stroke-width=".7"/><path d="M19 21a18 18 0 0 1 9-6" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-mikro" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M32 30 16 16M32 30 50 18M32 30 34 52" fill="none" stroke="url(#ig-titanium)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="30" r="11" fill="url(#ig-titanium)" stroke="#dcd8e8" stroke-width=".8"/><circle cx="16" cy="16" r="7" fill="url(#ig-purple)" stroke="#efe3ff" stroke-width=".7"/><circle cx="50" cy="18" r="6" fill="url(#ig-purple)" stroke="#efe3ff" stroke-width=".7"/><circle cx="34" cy="52" r="6.5" fill="url(#ig-purple)" stroke="#efe3ff" stroke-width=".7"/><path d="M27 26a9 9 0 0 1 5-3" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.7" stroke-linecap="round"/></g></symbol>
+<symbol id="i-feldolgozas" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M11 13h42L38 34v17a6 6 0 0 1-12 0V34Z" fill="url(#ig-titanium)" stroke="#dcd8e8" stroke-width=".8"/><path d="M17 18h30l-11 15v18a4 4 0 0 1-8 0V33Z" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".6" opacity=".92"/><circle cx="24" cy="23" r="3.2" fill="url(#ig-lime)" stroke="#e4f6c2" stroke-width=".5"/><circle cx="34" cy="21" r="2.6" fill="url(#ig-lime)" stroke="#e4f6c2" stroke-width=".5"/><circle cx="40" cy="26" r="2.2" fill="url(#ig-lime)" stroke="#e4f6c2" stroke-width=".5"/><path d="M32 54v5" fill="none" stroke="url(#ig-gold)" stroke-width="3" stroke-linecap="round"/><path d="M15 16h12" fill="none" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<!-- Fuel Titanium · vércukor-válasz (mezo-6mi43): a prototípus SAJÁT metaforája a „domb" —
+     „minél laposabb a domb, annál egyenletesebb az energiád". Ezért az ikon maga a görbe: egy
+     titánium alapszint-léc, rajta a kék emelkedő domb és a csúcson egy arany kavics. A sziluett
+     szándékosan NEM a lekerekített képernyő-forma (i-trend), hogy 15 px-en is elváljon tőle.
+     Titánium alap + EGY-EGY zárt palettás akcentus (ig-blue, ig-gold), új gradiens nem született. -->
+<symbol id="i-vercukor" viewBox="0 0 64 64"><g filter="url(#ig-shadow)"><path d="M12 48C20 47 20 12 31 12 44 12 43 42 59 47L59 54 12 54Z" fill="url(#ig-blue)" stroke="#aeedff" stroke-opacity=".35" stroke-width=".6" opacity=".66"/><path d="M12 48C20 47 20 12 31 12 44 12 43 42 59 47" fill="none" stroke="url(#ig-blue)" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="31" cy="12" r="5" fill="url(#ig-gold)" stroke="#ffe9b8" stroke-width=".7"/><path d="M7 4V54H60" fill="none" stroke="url(#ig-titanium)" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 48h47" fill="none" stroke="#f1eefb" stroke-opacity=".65" stroke-width="1.7" stroke-dasharray="3 4" stroke-linecap="round"/><path d="M9 10v10" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+</defs></svg>
+<div class="wrap">
+  <div class="eyebrow">Fuel · Mai · nap-blokkok</div>
+  <h1>Óra-doboz és makró gyűrűk</h1>
+  <p class="lede">Az idősáv marad; mellé egy <strong>óra gomb</strong> került, ami kis 3D
+    üvegdobozban dobja fel, mikor logoltál. A grammsor helyén <strong>négy mini gyűrű</strong>:
+    a fehérje–szénhidrát–zsír az étkezés <strong>saját energia-arányát</strong> teli, a rost a
+    napi adagból fedezett részt.</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="phone-scroll">
+        <div class="sb"><span>Kedd · szep 15</span><span>Mai</span></div>
+
+        <div class="fmx-blocks">
+
+          <!-- REGGELI · logolt -->
+          <section class="fmx-block" style="--block-color: var(--amber)" aria-label="Reggeli">
+            <div class="fmx-block-head">
+              <span class="fmx-block-art" aria-hidden="true"><svg><use href="#i-reggeli"/></svg></span>
+              <strong class="fmx-block-name">Reggeli</strong>
+              <button type="button" class="fmx-clock" data-box="reggeli" aria-label="Logolás ideje">
+                <svg aria-hidden="true"><use href="#i-idozito"/></svg>
+              </button>
+              <span class="fmx-budget-ring" role="img" aria-label="Logolva: 576 kcal · a napi keret 26%-a">
+                <svg viewBox="0 0 44 44" aria-hidden="true">
+                  <circle class="fmx-br-track" cx="22" cy="22" r="18" pathLength="100"/>
+                  <circle class="fmx-br-fill" cx="22" cy="22" r="18" pathLength="100" data-p="26"/>
+                </svg>
+                <b>576</b>
+              </span>
+            </div>
+            <div class="fmx-window" role="img" aria-label="Reggeli-ablak 8:12 körül · 8:12-kor ettél">
+              <span>5:42</span>
+              <i><em style="--from: 40%; --to: 60%"></em><b style="--at: 50%"></b></i>
+              <span>10:42</span>
+            </div>
+            <div class="fmx-meal-row">
+              <button type="button" class="fmx-meal-main">
+                <strong>Tojásrántotta, avokádós pirítós, koktélparadicsom</strong>
+              </button>
+              <div class="fmx-meal-bottom">
+                <div class="fmx-mrings" role="img"
+                  aria-label="Az étkezés energiájából fehérje 29% (42 g), szénhidrát 17% (24 g), zsír 50% (32 g); rost 6 g, a napi adag 20%-a">
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-protein)">
+                    <svg aria-hidden="true"><use href="#i-hus"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="29"/></svg><b>42<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-carbs)">
+                    <svg aria-hidden="true"><use href="#i-gabona"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="17"/></svg><b>24<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fat)">
+                    <svg aria-hidden="true"><use href="#i-avokado"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="50"/></svg><b>32<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fiber)">
+                    <svg aria-hidden="true"><use href="#i-noveny"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="20"/></svg><b>6<i>g</i></b></span>
+                  </span>
+                </div>
+                <button type="button" class="fmx-score" aria-label="AI értékelés: 8,8">
+                  <svg aria-hidden="true"><use href="#i-kristaly"/></svg><b>8,8</b>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- VACSORA · logolt (a képernyőfotó kártyája) -->
+          <section class="fmx-block" style="--block-color: var(--sky)" aria-label="Vacsora">
+            <div class="fmx-block-head">
+              <span class="fmx-block-art" aria-hidden="true"><svg><use href="#i-vacsora"/></svg></span>
+              <strong class="fmx-block-name">Vacsora</strong>
+              <button type="button" class="fmx-clock" data-box="vacsora1" aria-label="Logolás ideje">
+                <svg aria-hidden="true"><use href="#i-idozito"/></svg>
+              </button>
+              <span class="fmx-budget-ring" role="img" aria-label="Logolva: 423 kcal · a napi keret 19%-a">
+                <svg viewBox="0 0 44 44" aria-hidden="true">
+                  <circle class="fmx-br-track" cx="22" cy="22" r="18" pathLength="100"/>
+                  <circle class="fmx-br-fill" cx="22" cy="22" r="18" pathLength="100" data-p="19"/>
+                </svg>
+                <b>423</b>
+              </span>
+            </div>
+            <div class="fmx-window" role="img" aria-label="Vacsora-ablak 17:50 körül · 17:50-kor ettél">
+              <span>15:20</span>
+              <i><em style="--from: 40%; --to: 60%"></em><b style="--at: 50%"></b></i>
+              <span>20:20</span>
+            </div>
+            <div class="fmx-meal-row">
+              <button type="button" class="fmx-meal-main">
+                <strong>Gullon Cukormentes Keksz, Méz</strong>
+              </button>
+              <div class="fmx-meal-bottom">
+                <div class="fmx-mrings" role="img"
+                  aria-label="Az étkezés energiájából fehérje 5% (5 g), szénhidrát 66% (71 g), zsír 29% (14 g); rost 1 g, a napi adag 3%-a">
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-protein)">
+                    <svg aria-hidden="true"><use href="#i-hus"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="5"/></svg><b>5<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-carbs)">
+                    <svg aria-hidden="true"><use href="#i-gabona"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="66"/></svg><b>71<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fat)">
+                    <svg aria-hidden="true"><use href="#i-avokado"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="29"/></svg><b>14<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fiber)">
+                    <svg aria-hidden="true"><use href="#i-noveny"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="3"/></svg><b>1<i>g</i></b></span>
+                  </span>
+                </div>
+                <button type="button" class="fmx-score" aria-label="AI értékelés: 7,5">
+                  <svg aria-hidden="true"><use href="#i-kristaly"/></svg><b>7,5</b>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- VACSORA · logolt (második vacsora-blokk, mint a fotón) -->
+          <section class="fmx-block" style="--block-color: var(--sky)" aria-label="Vacsora">
+            <div class="fmx-block-head">
+              <span class="fmx-block-art" aria-hidden="true"><svg><use href="#i-vacsora"/></svg></span>
+              <strong class="fmx-block-name">Vacsora</strong>
+              <button type="button" class="fmx-clock" data-box="vacsora2" aria-label="Logolás ideje">
+                <svg aria-hidden="true"><use href="#i-idozito"/></svg>
+              </button>
+              <span class="fmx-budget-ring" role="img" aria-label="Logolva: 89 kcal · a napi keret 4%-a">
+                <svg viewBox="0 0 44 44" aria-hidden="true">
+                  <circle class="fmx-br-track" cx="22" cy="22" r="18" pathLength="100"/>
+                  <circle class="fmx-br-fill" cx="22" cy="22" r="18" pathLength="100" data-p="4"/>
+                </svg>
+                <b>89</b>
+              </span>
+            </div>
+            <div class="fmx-window" role="img" aria-label="Vacsora-ablak 17:55 körül · 17:55-kor ettél">
+              <span>15:25</span>
+              <i><em style="--from: 40%; --to: 60%"></em><b style="--at: 50%"></b></i>
+              <span>20:25</span>
+            </div>
+            <div class="fmx-meal-row">
+              <button type="button" class="fmx-meal-main">
+                <strong>Banán</strong>
+              </button>
+              <div class="fmx-meal-bottom">
+                <div class="fmx-mrings" role="img"
+                  aria-label="Az étkezés energiájából fehérje 4% (1 g), szénhidrát 96% (23 g), zsír 0% (0 g); rost 3 g, a napi adag 10%-a">
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-protein)">
+                    <svg aria-hidden="true"><use href="#i-hus"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="4"/></svg><b>1<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-carbs)">
+                    <svg aria-hidden="true"><use href="#i-gabona"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="96"/></svg><b>23<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fat)">
+                    <svg aria-hidden="true"><use href="#i-avokado"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="0"/></svg><b>0<i>g</i></b></span>
+                  </span>
+                  <span class="fmx-mcell" style="--macro-color: var(--macro-fiber)">
+                    <svg aria-hidden="true"><use href="#i-noveny"/></svg>
+                    <span class="fmx-mring"><svg viewBox="0 0 40 40"><circle class="tr" cx="20" cy="20" r="16" pathLength="100"/><circle class="fl" cx="20" cy="20" r="16" pathLength="100" data-p="10"/></svg><b>3<i>g</i></b></span>
+                  </span>
+                </div>
+                <button type="button" class="fmx-score" aria-label="AI értékelés: 7,9">
+                  <svg aria-hidden="true"><use href="#i-kristaly"/></svg><b>7,9</b>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- UZSONNA · üres, jövőbeli — óra gomb NINCS, amíg nincs log -->
+          <section class="fmx-block is-future" style="--block-color: var(--lav)" aria-label="Uzsonna">
+            <div class="fmx-block-head">
+              <span class="fmx-block-art" aria-hidden="true"><svg><use href="#i-snack"/></svg></span>
+              <strong class="fmx-block-name">Uzsonna</strong>
+              <span class="fmx-budget-ring" role="img" aria-label="Keret: 250 kcal">
+                <svg viewBox="0 0 44 44" aria-hidden="true">
+                  <circle class="fmx-br-track" cx="22" cy="22" r="18" pathLength="100"/>
+                </svg>
+                <b>250</b>
+              </span>
+            </div>
+            <div class="fmx-window" role="img" aria-label="Uzsonna-ablak 19:30 körül">
+              <span>17:00</span>
+              <i><em style="--from: 40%; --to: 60%"></em></i>
+              <span>22:00</span>
+            </div>
+            <button type="button" class="fmx-block-log" aria-label="Uzsonna · logolás ide">
+              <span aria-hidden="true">＋</span>
+              <span><strong>Logolás ide</strong><small>19:30 körül</small></span>
+            </button>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- Az idő-doboz rétege (egy közös, a gomb tölti fel) -->
+      <div class="fmx-glass-layer" id="timebox-layer" hidden>
+        <button type="button" class="fmx-glass-backdrop" aria-label="Bezárás" data-close></button>
+        <div class="fmx-timebox" role="dialog" aria-modal="true" aria-labelledby="timebox-title">
+          <span class="fmx-timebox-art" aria-hidden="true"><svg><use href="#i-idozito"/></svg></span>
+          <div class="fmx-timebox-eyebrow" id="timebox-title">Logolva</div>
+          <div class="fmx-timebox-time" id="timebox-time">17:50</div>
+          <div class="fmx-timebox-sub" id="timebox-sub">Vacsora</div>
+          <div class="fmx-timebox-items">
+            <div><span>Terv szerint</span><b id="timebox-plan">~19:30</b></div>
+          </div>
+          <button type="button" class="fmx-timebox-close" data-close>Rendben</button>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mi változott</h2>
+        <ul>
+          <li>Az <strong>idősáv maradt</strong> — mellé, a cím sorába került az
+            <strong>óra gomb</strong>: kis 3D üvegdobozban dobja fel, mikor logoltál.
+            Csak logolt kártyán jelenik meg.</li>
+          <li>A <strong>P·Ch·Zs gyűrűk</strong> már nem a napi célhoz mérnek (ott alig
+            látszott az ív) — azt telik, <strong>miből áll maga az étkezés</strong>: az étel
+            energiájának hány százaléka jön az adott makróból. A banán szénhidrát-gyűrűje
+            így majdnem teli, a keksznél kétharmad.</li>
+          <li>Negyedikként kint a <strong>rost</strong> (zöld): annak nincs energia-aránya,
+            ezért az a <strong>napi rost-adagból</strong> fedezett részt teli.</li>
+          <li>A név <strong>teljes szélességben</strong> fut felül (két sorig törhet), az
+            <strong>AI pont lekerült</strong> az alsó sorba a gyűrűk mellé — nincs többé üres
+            tér jobb oldalt.</li>
+        </ul>
+      </div>
+      <p class="note">Koppints az óra gombra bármelyik logolt kártyán — a doboz a logolás
+        idejét és halkan a tervezett időt mutatja.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+  // Egy-lövéses belépő: a gyűrű-ívek rAF-fal kapják meg a végértéket (a transition rajzolja ki;
+  // csökkentett mozgásnál a transition nincs, az érték azonnal áll be).
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('[data-p]').forEach(c => {
+      c.style.strokeDasharray = c.dataset.p + ' 100'
+    })
+  }))
+
+  // Az idő-doboz tartalma kártyánként.
+  const BOXES = {
+    reggeli:  { time: '8:12',  sub: 'Reggeli · Tojásrántotta, avokádós pirítós', plan: '~8:00',  color: 'var(--amber)' },
+    vacsora1: { time: '17:50', sub: 'Vacsora · Gullon Cukormentes Keksz, Méz',   plan: '~19:30', color: 'var(--sky)' },
+    vacsora2: { time: '17:55', sub: 'Vacsora · Banán',                            plan: '~19:30', color: 'var(--sky)' },
+  }
+  const layer = document.getElementById('timebox-layer')
+  let lastFocus = null
+  function openBox (key, trigger) {
+    const d = BOXES[key]
+    if (!d) return
+    document.getElementById('timebox-time').textContent = d.time
+    document.getElementById('timebox-sub').textContent = d.sub
+    document.getElementById('timebox-plan').textContent = d.plan
+    layer.style.setProperty('--block-color', d.color)
+    lastFocus = trigger
+    layer.hidden = false
+    requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add('is-open')))
+    layer.querySelector('.fmx-timebox-close').focus()
+  }
+  function closeBox () {
+    layer.classList.remove('is-open')
+    const done = () => { layer.hidden = true; if (lastFocus) lastFocus.focus() }
+    matchMedia('(prefers-reduced-motion: reduce)').matches ? done() : setTimeout(done, 300)
+  }
+  document.querySelectorAll('.fmx-clock').forEach(b =>
+    b.addEventListener('click', () => openBox(b.dataset.box, b)))
+  layer.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeBox))
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !layer.hidden) closeBox()
+  })
+</script>

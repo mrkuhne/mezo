@@ -145,7 +145,7 @@ function ColumnHead({
 export function MesoComparePage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const goBack = useBackNav('/train/mesocycles')
+  const goBack = useBackNav('/train/mesocycles/futamok')
   const aId = params.get('a')
   const bId = params.get('b')
   // A run compared with itself is a no-op, so it counts as an invalid link, not a state.
@@ -177,9 +177,9 @@ export function MesoComparePage() {
         <div style={{ padding: '16px 0' }}>
           <GhostState
             lines={2}
-            message={'Válassz két lezárt futamot az összevetéshez — a Történet szekció „Összevetés" módjában.'}
-            ctaLabel="Történet megnyitása"
-            onCta={() => navigate('/train/mesocycles')}
+            message={'Válassz két lezárt futamot az összevetéshez — a Lezárt futamaid oldal „Összevetés" módjában.'}
+            ctaLabel="Lezárt futamaid megnyitása"
+            onCta={() => navigate('/train/mesocycles/futamok')}
           />
         </div>
       ) : (
