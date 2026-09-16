@@ -191,6 +191,17 @@ export function skipExercise(s: Session, id: string): Session {
 }
 
 /**
+ * Reverse a skip (T6 Task 4, "Visszavesszük") — the mirror of skipExercise, idempotent.
+ * Client-local only, same as the skip marker itself: there is no server-side "unskip"
+ * endpoint (the skip POST is a one-way audit signal), so this simply drops the id from
+ * `session.skipped` and lets the exercise's card render its rows again.
+ */
+export function unskipExercise(s: Session, id: string): Session {
+  if (!s.skipped.includes(id)) return s
+  return { ...s, skipped: s.skipped.filter((x) => x !== id) }
+}
+
+/**
  * Reconcile the session with a plan that GREW after the session was seeded — the
  * server can append template exercises mid-workout (the closing block, mezo-z2ul),
  * and a refetch then surfaces them while the session is already in flight. Unknown

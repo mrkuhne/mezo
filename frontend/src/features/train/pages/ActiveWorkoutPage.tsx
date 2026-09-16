@@ -29,6 +29,7 @@ import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
+import { WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
 import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
@@ -48,6 +49,7 @@ import {
   removeSet,
   seedFromOpen,
   skipExercise as skipExerciseModel,
+  unskipExercise as unskipExerciseModel,
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
@@ -56,7 +58,6 @@ import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
-import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { ClayIcon } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -249,10 +250,10 @@ function ActiveWorkoutSession({
   // Prep mosaic (mezo-d20.3.8): which tile's own page is open, null = the hub.
   const [prepTile, setPrepTile] = useState<PrepTile | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
-  // The exercise whose ⋮ menu (ExerciseActionSheet) is open — null = closed. The card
-  // list has one menu PER card (T6 Task 3), so the sheet needs an explicit target
-  // instead of the old single on-screen exercise.
-  const [menuExId, setMenuExId] = useState<string | null>(null)
+  // The per-card glass surface open right now (T6 Task 4) — null = closed. `kind`
+  // distinguishes the ⋮ menu itself from the Videó glass it can switch to; `id`
+  // addresses the card, exactly like the old menuExId did for ExerciseActionSheet.
+  const [glass, setGlass] = useState<{ kind: 'menu' | 'video'; id: string } | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: which exercise's editor is open + a per-exercise
@@ -467,12 +468,12 @@ function ActiveWorkoutSession({
     // rest starts (mezo-xt65).
     if (wasSetIdx + 1 >= effectiveSetCount(session, finishing.id)) {
       setFeedbackEx(finishing)
-      // The debrief takeover unmounts a possibly mid-close ExerciseActionSheet
-      // (mount condition: menuExId && !feedbackEx) without its onClose ever
-      // firing — reset the target here or the sheet re-opens once the debrief
+      // The debrief takeover unmounts a possibly mid-close menu glass (mount
+      // condition: glass?.kind === 'menu' && !feedbackEx) without its onClose ever
+      // firing — reset the target here or the glass re-opens once the debrief
       // resolves. Pre-mezo-91rw the Sheet's leaked exit timer masked this by
       // firing the parent setState after the unmount.
-      setMenuExId(null)
+      setGlass(null)
     } else {
       rest.start(restSecondsFor(finishing.type))
     }
@@ -558,7 +559,7 @@ function ActiveWorkoutSession({
       // must not survive into the debrief either.
       rest.skip()
       setFeedbackEx(ex)
-      setMenuExId(null)
+      setGlass(null)
     }
   }
 
@@ -883,9 +884,9 @@ function ActiveWorkoutSession({
     (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
   )
 
-  // The ⋮ menu's target: the card whose menu was tapped, else (the header's ⋯) the
-  // session cursor exercise. A debrief unmounts the sheet, so `current` is safe here.
-  const menuEx = exerciseById(menuExId) ?? current
+  // The glass's target: the card whose ⋮/Videó was tapped, else (the header's ⋯) the
+  // session cursor exercise. A debrief unmounts the glass, so `current` is safe here.
+  const menuEx = exerciseById(glass?.id) ?? current
   const editingEx = exerciseById(editingSet?.exerciseId)
   const noteEditEx = exerciseById(noteEditExId)
   // A log/edit write is in flight for an exercise while one of its logged entries has
@@ -902,24 +903,31 @@ function ActiveWorkoutSession({
     return out
   }
 
-  // Reorderable segment for the ⋮ menu: the menu's exercise ITSELF plus everything
-  // after it in session.order (mezo-vad0 — the busy-machine case is exactly "push the
-  // one I'm on back"); only the exercises BEFORE it stay fixed. Reorder is client-only
-  // / ephemeral — it just replaces session.order, never persists. With every exercise
-  // on screen at once the reorder no longer moves any "view": it only restacks cards.
-  const reorderable = (() => {
-    const ci = session.order.indexOf(menuEx.id)
-    return session.order.slice(ci).map((id) => {
-      const e = W.exercises.find((x) => x.id === id)!
-      return { id, label: e.name, ...(id === menuEx.id ? { current: true } : {}) }
-    })
-  })()
-  const handleReorder = (newSegment: string[]) => {
+  // The ⋮ menu's Előrébb/Hátrébb (T6 Task 4): swap the addressed exercise with its
+  // immediate neighbour in `session.order` — replaces the old ExerciseActionSheet's
+  // SortableList sub-view with a single tap per hop. Reorder is client-only /
+  // ephemeral — it just replaces `session.order`, never persists. A no-op at either
+  // end (the menu already disables the row there, this is the defensive mirror).
+  const movePosition = (id: string, dir: -1 | 1) => {
     setSession((s) => {
-      const ci = s.order.indexOf(menuEx.id)
-      const fixed = s.order.slice(0, ci)
-      return { ...s, order: [...fixed, ...newSegment] }
+      const i = s.order.indexOf(id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= s.order.length) return s
+      const order = [...s.order]
+      ;[order[i], order[j]] = [order[j], order[i]]
+      return { ...s, order }
     })
+  }
+
+  // Un-skip (T6 Task 4 "Visszavesszük"): purely local, the mirror of handleSkip's
+  // model half — there is no server-side unskip endpoint (skip is a one-way audit
+  // signal), so reversing it never touches the network.
+  const handleToggleSkip = (exId: string) => {
+    if (session.skipped.includes(exId)) {
+      setSession((s) => unskipExerciseModel(s, exId))
+    } else {
+      handleSkip(exId)
+    }
   }
 
   // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
@@ -960,22 +968,46 @@ function ActiveWorkoutSession({
           onSave={saveFeedback}
         />
       )}
-      {menuExId !== null && !feedbackEx && (
-        <ExerciseActionSheet
-          exerciseName={menuEx.name}
-          reorderable={reorderable}
-          onReorder={handleReorder}
-          onSkip={() => handleSkip(menuEx.id)}
-          onAddSet={() => {
-            setSession((s) => addExtraSet(s, menuEx.id))
-            setAddSetPrompt({ exerciseId: menuEx.id })
-          }}
-          onEditNote={() => setNoteEditExId(menuEx.id)}
-          onFinishWorkout={() => setPhase('summary')}
-          hasNote={!!noteOf(menuEx)}
-          onClose={() => setMenuExId(null)}
-        />
-      )}
+      {(() => {
+        const menuOpen = glass?.kind === 'menu' && !feedbackEx
+        const videoOpen = glass?.kind === 'video' && !feedbackEx
+        const position = session.order.indexOf(menuEx.id)
+        const slotCount = effectiveSetCount(session, menuEx.id)
+        const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
+        const tint = muscleColor(menuEx.muscle).rail
+        return (
+          <>
+            <WorkoutMenuGlass
+              open={!!menuOpen}
+              exercise={menuEx}
+              tint={tint}
+              position={position}
+              orderLength={session.order.length}
+              slotCount={slotCount}
+              skipped={session.skipped.includes(menuEx.id)}
+              hasNote={!!noteOf(menuEx)}
+              canRemoveTrailingSet={canRemoveSet(session, menuEx.id) && lastSlotPending}
+              onClose={() => setGlass(null)}
+              onVideo={() => setGlass({ kind: 'video', id: menuEx.id })}
+              onEditNote={() => setNoteEditExId(menuEx.id)}
+              onAddSet={() => {
+                setSession((s) => addExtraSet(s, menuEx.id))
+                setAddSetPrompt({ exerciseId: menuEx.id })
+              }}
+              onRemoveSet={() => handleSetDelete(menuEx, slotCount - 1)}
+              onMoveEarlier={() => movePosition(menuEx.id, -1)}
+              onMoveLater={() => movePosition(menuEx.id, 1)}
+              onToggleSkip={() => handleToggleSkip(menuEx.id)}
+            />
+            <WorkoutVideoGlass
+              open={!!videoOpen}
+              exercise={videoOpen ? menuEx : null}
+              tint={tint}
+              onClose={() => setGlass(null)}
+            />
+          </>
+        )
+      })()}
       {editingSet && editingEx && !feedbackEx && (() => {
         const ex = editingEx
         const idx = editingSet.idx
@@ -1069,7 +1101,7 @@ function ActiveWorkoutSession({
             type="button"
             aria-label="Gyakorlat műveletek"
             disabled={!!feedbackEx}
-            onClick={() => setMenuExId(current.id)}
+            onClick={() => setGlass({ kind: 'menu', id: current.id })}
             className="back np-press"
             style={{ marginLeft: 'auto', fontSize: 15 }}
           >
@@ -1122,11 +1154,21 @@ function ActiveWorkoutSession({
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
                 onOpenRecords={() => { /* Task 5: the history + records glass */ }}
-                onOpenMenu={() => setMenuExId(id)}
+                onOpenMenu={() => setGlass({ kind: 'menu', id })}
                 onEditNote={() => setNoteEditExId(id)}
               />
             )
           })}
+        </div>
+
+        {/* TEMPORARY (T6 Task 4): the old ExerciseActionSheet's "Edzés befejezése…" row
+            was the only route from the active phase to the closing summary — retiring it
+            with the sheet would strand that flow entirely. A plain button keeps it whole
+            until Task 6 refaces this into the prototype's 3-state `.wo-finish` dock CTA. */}
+        <div style={{ padding: '0 16px 24px' }}>
+          <button type="button" className="cta-ghost" style={{ width: '100%', padding: 14, fontSize: 14 }} onClick={() => setPhase('summary')}>
+            Edzés befejezése
+          </button>
         </div>
 
         {/* The rest countdown — unchanged wiring (T6 Task 6 refaces it into the dock);

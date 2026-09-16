@@ -327,7 +327,7 @@ test('mock mode: reaching the summary screen (workout end) shows no rest bar', a
   await user.click(screen.getByText(/Kezdjük el/))
   // Skip ex0 (no rest on skip), then drive the remaining 4 exercises to completion.
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   for (const name of [EX2, EX3, 'Hammer Curl', 'Face Pull']) {
     await completeExerciseSets(user, name)
@@ -655,10 +655,10 @@ test('reordering remaining exercises restacks the cards', async () => {
   setup() // mock mode (file pins VITE_USE_MOCK=true)
   await user.click(screen.getByText(/Kezdjük el/))
   expect(cardOrder().slice(0, 3)).toEqual([EX1, EX2, EX3])
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' })) // open ⋯
-  await user.click(screen.getByText('Áthelyezés')) // reorder sub-view
-  await user.click(screen.getByRole('button', { name: 'Cable Pull-Around feljebb' })) // ex3 over ex2
-  await user.keyboard('{Escape}') // close the sheet
+  // Előrébb/Hátrébb (T6 Task 4) address the CARD whose own ⋮ opened the menu —
+  // pull ex3 up over ex2 via ex3's own menu, one hop.
+  await user.click(within(card(EX3)).getByRole('button', { name: `${EX3} · további műveletek` }))
+  await user.click(screen.getByText('Előrébb'))
   await waitFor(() => expect(cardOrder().slice(0, 3)).toEqual([EX1, EX3, EX2]))
 })
 
@@ -669,9 +669,7 @@ test('the menu\'s own exercise can be moved back', async () => {
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Áthelyezés'))
-  await user.click(screen.getByRole('button', { name: 'Chest Supported Row lejjebb' }))
-  await user.keyboard('{Escape}')
+  await user.click(screen.getByText('Hátrébb'))
   await waitFor(() => expect(cardOrder().slice(0, 2)).toEqual([EX2, EX1]))
 })
 
@@ -680,7 +678,7 @@ test('a card\'s own ⋮ menu targets THAT exercise, not the session cursor', asy
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(within(card(EX2)).getByRole('button', { name: `${EX2} · további műveletek` }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   // The SECOND card is the one that got skipped — the first is untouched.
   await waitFor(() => expect(card(EX2)).toHaveClass('is-skipped'))
   expect(card(EX1)).not.toHaveClass('is-skipped')
@@ -706,20 +704,20 @@ test('starting the workout jumps the app scroller back to the top', async () => 
   }
 })
 
-test('＋ Szett adds an extra set: the card grows 5→6 rows', async () => {
+test('Szett hozzáadása adds an extra set: the card grows 5→6 rows', async () => {
   const user = userEvent.setup()
   setup()                                                   // active: Chest Supported Row has 5 planned slots (2 warmup + 3 working)
   await user.click(screen.getByText(/Kezdjük el/))
   expect(rowsOf(EX1)).toHaveLength(5)
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
+  await user.click(screen.getByText('Szett hozzáadása'))             // adds one extra set; sheet closes
   expect(rowsOf(EX1)).toHaveLength(6)
   // The extra slot is a WORKING one — the warmup labels are unchanged.
   const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
   expect(idx).toEqual(['B1', 'B2', '1', '2', '3', '4'])
 })
 
-test('⋯ Kihagyás collapses the exercise\'s card without opening the debrief', async () => {
+test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening the debrief', async () => {
   const user = userEvent.setup()
   const { container } = setup() // mock mode, cursor = Chest Supported Row (ex1)
   await user.click(screen.getByText(/Kezdjük el/))
@@ -729,7 +727,7 @@ test('⋯ Kihagyás collapses the exercise\'s card without opening the debrief',
   await user.click(submitOf(EX1))
   expect(container.querySelector('.restbar')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   // The card collapses in place — no FeedbackModal / debrief CTA.
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   expect(within(card(EX1)).getByText('KIHAGYVA')).toBeInTheDocument()
@@ -755,7 +753,7 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   await user.click(screen.getByText(/Kezdjük el/))
   // Skip the first exercise.
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   // Summary recap: the skipped first exercise reads "kihagyva".
@@ -767,7 +765,7 @@ test('a skipped exercise\'s card reads KIHAGYVA and hides its rows', async () =>
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   expect(within(card(EX1)).getByText('KIHAGYVA')).toBeInTheDocument()
   // The other cards are untouched — a skip is not a completion.
@@ -782,7 +780,7 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
   // Skip ex0, then drive the remaining 4 exercises to completion — the last
   // debrief lands on the closing summary (no auto-finish).
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   // New flow: the last debrief lands on the summary; the explicit CTA finishes.
@@ -804,12 +802,14 @@ test('summary → Edzés lezárása shows the level-up overlay, then the closed 
   expect(screen.getByText(/\d+ rekord · \d+ cél/)).toBeInTheDocument()
 })
 
-test('the ⋯ menu offers early finish and it lands on the summary screen', async () => {
+// T6 Task 4: early finish moved off the retired ExerciseActionSheet onto a plain
+// button at the end of the card list (temporary — Task 6 refaces it into the
+// prototype's 3-state `.wo-finish` dock CTA).
+test('the temporary "Edzés befejezése" button offers early finish and it lands on the summary screen', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Edzés befejezése…'))
+  await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
   expect(screen.getByText('Edzés vége')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeInTheDocument()
 })
@@ -818,8 +818,7 @@ test('leaving the summary via Vissza az edzéshez resumes the active phase witho
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Edzés befejezése…'))
+  await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
   await user.click(screen.getByText('← Vissza az edzéshez'))
   expect(submitOf(EX1)).toBeInTheDocument()
 })
@@ -858,9 +857,9 @@ test('mock mode: clearing the note via the editor removes the pill', async () =>
   await user.type(textarea, 'Lassú excentrikus')
   await user.click(screen.getByText('Mentés'))
   expect(await screen.findByLabelText('Gyakorlat-jegyzet')).toHaveTextContent('Lassú excentrikus')
-  // 2. reopen the editor (row label now reads "Jegyzet szerkesztése"), empty it, save.
+  // 2. reopen the editor (the row's hint now reads "Megírt jegyzet szerkesztése"), empty it, save.
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Jegyzet szerkesztése'))
+  await user.click(screen.getByText('Megírt jegyzet szerkesztése'))
   const reopened = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
   await user.clear(reopened)
   await user.click(screen.getByText('Mentés'))
@@ -1162,7 +1161,7 @@ test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA
   expect(screen.getByText('Edzés vége')).toBeInTheDocument()
 })
 
-test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
+test('real mode: Szett hozzáadása grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers(
@@ -1175,7 +1174,7 @@ test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts w
   await waitFor(() => expect(calls).toContain('start:d-1'))
   expect(rowsOf(EX1)).toHaveLength(1)
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('＋ Szett')) // 1 planned set -> 2 effective
+  await user.click(screen.getByText('Szett hozzáadása')) // 1 planned set -> 2 effective
   expect(rowsOf(EX1)).toHaveLength(2) // the extra set grew the count to 2
   await user.click(submitOf(EX1)) // set 1 (setIndex 0)
   expect(doneRowsOf(EX1)).toHaveLength(1) // still mid-exercise, not overflowed
@@ -1184,7 +1183,7 @@ test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts w
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:1'))).toBe(true))
 })
 
-test('real mode: ⋯ Kihagyás POSTs the skip for the current exercise', async () => {
+test('real mode: ⋯ Gyakorlat kihagyása POSTs the skip for the current exercise', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   // Two exercises so the skip advances (not finishes) and the POST is isolated.
@@ -1203,7 +1202,7 @@ test('real mode: ⋯ Kihagyás POSTs the skip for the current exercise', async (
   await user.click(await screen.findByText(/Kezdjük el/))
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Kihagyás'))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(calls).toContain('skip:w-1:e-1'))
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
 })
@@ -1237,6 +1236,99 @@ test('real mode: editing + saving a note PUTs it for the current exercise', asyn
   await waitFor(() => expect(calls).toContain('note:e-1:Tartsd a könyököt'))
   const pill = await screen.findByLabelText('Gyakorlat-jegyzet')
   expect(pill).toHaveTextContent('Tartsd a könyököt')
+})
+
+// ---- T6 Task 4: the per-card ⋮ menu glass (Videó · Szett elvétele · Visszavesszük) ----
+
+test('real mode: no videoUrl -> no Videó row', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  expect(screen.queryByText('Videó')).not.toBeInTheDocument()
+})
+
+test('real mode: a videoUrl -> Videó opens the embed glass', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers({ ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], videoUrl: 'https://youtu.be/GZTvxN5fPBc' }] }, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Videó'))
+  const frame = document.querySelector('.wo-video-frame') as HTMLElement
+  expect(frame).not.toBeNull()
+  expect(within(frame).getByTitle('Demo videó')).toBeInTheDocument()
+  // The menu itself is gone — the Videó action switched the glass, it never fired onClose.
+  expect(screen.queryByText('Jegyzet')).not.toBeInTheDocument()
+})
+
+test('real mode: Szett elvétele removes the trailing pending slot and, once nothing pending remains, opens the debrief (I2 revived)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], warmupSets: 0, workingSets: 2 }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  expect(rowsOf(EX1)).toHaveLength(2)
+  await user.click(submitOf(EX1)) // log the first working set -> 1 logged, 1 trailing pending
+  await user.click(await screen.findByRole('button', { name: 'Pihenő kihagyása' }))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Szett elvétele'))
+  // The trailing pending slot is gone and the exercise now reads fully logged —
+  // no editable row left, and the debrief takes over (the dead I2 branch, revived).
+  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
+  expect(rowsOf(EX1)).toHaveLength(1)
+})
+
+test('real mode: Szett elvétele is disabled at the one-slot floor', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], warmupSets: 0, workingSets: 1 }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  expect(screen.getByText('Szett elvétele').closest('button')).toBeDisabled()
+})
+
+test('real mode: Visszavesszük restores a skipped card\'s rows', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        REAL_TODAY.exercises[0],
+        { id: 'e-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', warmupSets: 0, workingSets: 2, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', lastWeek: { weightKg: 72, reps: 11, rir: 2 } },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
+  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  expect(rowsOf(EX1)).toHaveLength(0)
+  await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · további műveletek` }))
+  expect(screen.getByText('Visszavesszük')).toBeInTheDocument()
+  await user.click(screen.getByText('Visszavesszük'))
+  await waitFor(() => expect(card(EX1)).not.toHaveClass('is-skipped'))
+  expect(rowsOf(EX1)).toHaveLength(2)
 })
 
 test('real mode: the logging panel pre-fills from the prescribed target (not lastWeek)', async () => {
@@ -1383,7 +1475,7 @@ test('real mode: add-set "Minden hétre" PUTs the day with the current exercise 
   setup()
   await user.click(await screen.findByText(/Kezdjük el/))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('＋ Szett'))
+  await user.click(screen.getByText('Szett hozzáadása'))
   await user.click(await screen.findByText('Minden hétre'))
   await waitFor(() => expect(puts).toHaveLength(1))
   expect(puts[0].url).toBe(`${TEMPLATE_MESO_ID}/${TEMPLATE_DAY_ID}`)
@@ -1398,7 +1490,7 @@ test('real mode: add-set "Csak ma" fires no template PUT', async () => {
   setup()
   await user.click(await screen.findByText(/Kezdjük el/))
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('＋ Szett'))
+  await user.click(screen.getByText('Szett hozzáadása'))
   await user.click(await screen.findByText('Csak ma'))
   await new Promise((r) => setTimeout(r, 0))
   expect(puts).toHaveLength(0)

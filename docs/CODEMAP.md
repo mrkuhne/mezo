@@ -1389,10 +1389,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,
     SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekMapPage.tsx, TrainWeekMozgasPage.tsx,
     TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
-  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExerciseActionSheet.tsx, ExerciseOverviewSheet.tsx,
-    ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx, FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx,
-    MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx, SportEventSheet.tsx, SportLogSheet.tsx,
-    SportScheduleSheet.tsx, VideoUrlSheet.tsx
+  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExerciseOverviewSheet.tsx, ExercisePickerSheet.tsx,
+    ExerciseRecordSheet.tsx, FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx,
+    RunLogSheet.tsx, SetEditSheet.tsx, SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx,
+    VideoUrlSheet.tsx
   - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, BodyMap.tsx, ChallengeCard.tsx,
     ChallengeGenerationLoader.tsx, CompactStepper.tsx, CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx,
     DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx, DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx,
@@ -1403,7 +1403,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx,
     SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
     VolumeArcChart.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx,
-    WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
+    WorkoutMenuGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, challengeOutcome.ts, dayImpact.ts,
     dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, loadWeek.ts, medalLabels.ts,
     mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, morningWindow.ts,
