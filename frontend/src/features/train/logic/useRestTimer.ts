@@ -19,6 +19,10 @@ export type RestTimer = {
   pause: () => void
   resume: () => void
   skip: () => void
+  /** Extend the CURRENT rest by `seconds` more (the dock's +30s, T6 Task 6) — a no-op
+   *  while idle. `total` grows in lock-step so the dock's countdown-share ring stays
+   *  meaningful (never exceeds 100%). */
+  extend: (seconds: number) => void
 }
 
 export function useRestTimer(): RestTimer {
@@ -60,6 +64,13 @@ export function useRestTimer(): RestTimer {
     )
   }, [])
   const skip = useCallback(() => setState({ status: 'idle' }), [])
+  const extend = useCallback((seconds: number) => {
+    setState((s) => {
+      if (s.status === 'running') return { ...s, endsAt: s.endsAt + seconds * 1000, total: s.total + seconds }
+      if (s.status === 'paused') return { ...s, pausedRemaining: s.pausedRemaining + seconds, total: s.total + seconds }
+      return s
+    })
+  }, [])
   return {
     status: state.status,
     remaining,
@@ -68,5 +79,6 @@ export function useRestTimer(): RestTimer {
     pause,
     resume,
     skip,
+    extend,
   }
 }

@@ -335,3 +335,33 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
     }
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.7, T6 Task 2): the active-workout list phase's
+ * `.wo-*` section — per-exercise cards, set rows, the rest dock, the finish CTA and
+ * the glass-card interiors (menu, confirm, close, history/records), ported from the
+ * prototype's `session.css`, registered exactly like the blocks above.
+ */
+describe('the train session titanium section is registered (mezo-88iwa.7)', () => {
+  const START_MARKER = 'train session titanium'
+  const END_MARKER = '/train session titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the wo- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.wo-card', '.wo-row', '.wo-dock', '.wo-finish', '.wo-menu-row', '.wo-rec',
+    ]) {
+      expect(section, `${cls} missing from the train session titanium section`).toContain(cls)
+    }
+  })
+})
