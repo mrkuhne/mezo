@@ -118,6 +118,7 @@ test('a hiányzó makró gondolatjel a csíkon, nem nulla', () => {
   const rows = [{
     mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
     proteinG: 36, carbsG: null, fatG: null, scorePct: 88,
+    fiberG: null, plannedTime: null,
   }]
   const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
   const strip = container.querySelector('.fmx-block.is-done .fmx-meal-macros')!
