@@ -1389,10 +1389,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PrepKuldetesekPage.tsx, PrepNigglePage.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportPage.tsx,
     SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekMapPage.tsx, TrainWeekMozgasPage.tsx,
     TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
-  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExerciseOverviewSheet.tsx, ExercisePickerSheet.tsx,
-    ExerciseRecordSheet.tsx, FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx,
-    RunLogSheet.tsx, SetEditSheet.tsx, SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx,
-    VideoUrlSheet.tsx
+  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx,
+    FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
+    SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
   - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, BodyMap.tsx, ChallengeCard.tsx,
     ChallengeGenerationLoader.tsx, CompactStepper.tsx, CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx,
     DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx, DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx,
@@ -1400,7 +1399,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MedalToast.tsx, MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoTemplateCard.tsx,
     MesoWeekEditor.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MuscleChip.tsx,
     MusclePriorityPicker.tsx, PeakFitCard.tsx, PlannedMesoCard.tsx, PrepExerciseTile.tsx, ProgressionBanner.tsx,
-    RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx,
+    RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx,
     SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
     VolumeArcChart.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx,
     WorkoutDock.tsx, WorkoutMenuGlass.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
