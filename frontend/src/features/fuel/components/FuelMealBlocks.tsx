@@ -26,11 +26,13 @@
 // Őszinte-null + szégyenmentesség: ismeretlen kcal „—", kihagyott ablak semleges hangon
 // „még pótolható" — soha nem hiba- vagy szégyen-állapot.
 // ============================================================
+import { useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt, hu1 } from '@/shared/lib/huNum'
 import { toMin, toHHmm } from '@/data/fuel/fuelConfig'
 import { ClayIcon } from '@/shared/ui/clay'
 import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
+import { GlassBox } from '@/features/fuel/components/GlassBox'
 import type { MealSlot } from '@/data/types'
 import type { WindowLaneVM, WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DoneMealRow } from '@/features/fuel/logic/keretHero'
@@ -162,6 +164,31 @@ function BudgetRing({ kcal, dayKcal, logged }: { kcal: number | null; dayKcal: n
   )
 }
 
+/**
+ * Az óra-doboz (mezo-l2gp0): kis üvegdoboz a logolás idejével — a kártyán az idő az
+ * ablak-csíkon ÉL, szövegesen innen kérhető le. View-only (owner-döntés); a "Terv szerint"
+ * sor csak akkor áll, ha a done slot hozott tervezett időt (őszinte-null).
+ */
+function TimeBox({ label, blockColor, row, onClose }: {
+  label: string; blockColor: string; row: DoneMealRow; onClose: () => void
+}) {
+  return (
+    <GlassBox onClose={onClose} labelledBy="fmx-timebox-title" className="fmx-timebox"
+      style={{ '--block-color': blockColor } as React.CSSProperties}>
+      <span className="fmx-timebox-art" aria-hidden="true"><ClayIcon name="i-idozito" size={54} /></span>
+      <div className="fmx-timebox-eyebrow" id="fmx-timebox-title">Logolva</div>
+      <div className="fmx-timebox-time">{row.time}</div>
+      <div className="fmx-timebox-sub">{row.name ? `${label} · ${row.name}` : label}</div>
+      {row.plannedTime != null && (
+        <div className="fmx-timebox-items">
+          <div><span>Terv szerint</span><b>~{row.plannedTime}</b></div>
+        </div>
+      )}
+      <button type="button" className="fmx-timebox-close" onClick={onClose}>Rendben</button>
+    </GlassBox>
+  )
+}
+
 /** A pont-chip: az értékelés kapuja. Pontszám nélküli (friss) logra „folyamatban" — passzív. */
 export function FuelScoreChip({ scorePct, onOpen, size }: {
   scorePct: number | null
@@ -186,7 +213,7 @@ export function FuelScoreChip({ scorePct, onOpen, size }: {
   )
 }
 
-function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore }: {
+function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore, onOpenTime }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
   dayKcal: number
@@ -196,6 +223,8 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
   onOpenMeal: (mealId: string) => void
   /** A pont-chip SAJÁT célja: az AI értékelés, nem az étkezés részletei (mezo-jb84). */
   onOpenScore: (mealId: string) => void
+  /** Az óra gomb célja (mezo-l2gp0): a logolás idejét mutató üvegdoboz nyitása. */
+  onOpenTime: (mealId: string) => void
 }) {
   const loggedKcal = rows.length
     ? rows.reduce<number | null>((sum, r) => (sum == null || r.kcal == null ? null : sum + r.kcal), 0)
@@ -207,6 +236,12 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
       <div className="fmx-block-head">
         <span className="fmx-block-art" aria-hidden="true"><ClayIcon name={tile.icon} size={38} /></span>
         <strong className="fmx-block-name">{tile.label}</strong>
+        {rows.length > 0 && (
+          <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
+            aria-label="Logolás ideje">
+            <ClayIcon name="i-idozito" size={21} />
+          </button>
+        )}
         <BudgetRing kcal={rows.length ? loggedKcal : tile.kcal} dayKcal={dayKcal} logged={rows.length > 0} />
       </div>
       <WindowBar tile={tile} rows={rows} />
@@ -250,6 +285,9 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
   onOpenMeal: (mealId: string) => void
   onOpenScore: (mealId: string) => void
 }) {
+  const [timeboxFor, setTimeboxFor] = useState<string | null>(null)
+  const timeboxRow = meals.find(m => m.mealId === timeboxFor) ?? null
+  const timeboxTile = timeboxFor == null ? null : lane.tiles.find(t => t.mealId === timeboxFor) ?? null
   if (lane.tiles.length === 0) {
     return (
       <div className="fmx-blocks">
@@ -262,8 +300,12 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
       {lane.tiles.map(tile => (
         <BlockCard key={tile.key} tile={tile} dayKcal={dayKcal} fiberTargetG={fiberTargetG}
           rows={meals.filter(m => m.mealId === tile.mealId)}
-          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} />
+          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenTime={setTimeboxFor} />
       ))}
+      {timeboxRow && timeboxTile && (
+        <TimeBox label={timeboxTile.label} row={timeboxRow} onClose={() => setTimeboxFor(null)}
+          blockColor={BLOCK_COLOR[timeboxTile.slotKey]} />
+      )}
     </div>
   )
 }

@@ -162,3 +162,37 @@ test('az ablak-csík a blokk saját idejét viszi, a logolt étkezés jelölőj�
   expect(bar.getAttribute('aria-label')).toContain('07:40')
   expect(bar.querySelectorAll('.fmx-window-at')).toHaveLength(1)
 })
+
+// mezo-l2gp0: az óra gomb — az idő nem szöveg a kártyán, hanem koppintásra nyíló üvegdoboz.
+test('az óra gomb csak logolt blokkon él, és a doboz a logolás idejét mutatja', async () => {
+  render(<FuelMealBlocks {...props()} />)
+  const clocks = screen.getAllByRole('button', { name: 'Logolás ideje' })
+  expect(clocks).toHaveLength(1) // 4 blokkból 1 logolt
+  await userEvent.click(clocks[0])
+  const dialog = screen.getByRole('dialog')
+  expect(dialog.querySelector('.fmx-timebox-time')!.textContent).toBe('07:40')
+  expect(dialog.querySelector('.fmx-timebox-sub')!.textContent).toBe('Reggeli · Skyr-bowl zabbal')
+  expect(dialog.textContent).toContain('Terv szerint')
+  expect(dialog.textContent).toContain('~07:30')
+})
+
+test('az óra-doboz zárható Rendbennel és Escape-pel is', async () => {
+  render(<FuelMealBlocks {...props()} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Rendben' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  await userEvent.keyboard('{Escape}')
+  expect(screen.queryByRole('dialog')).toBeNull()
+})
+
+// Őszinte-null: ablak nélküli extra logon nincs terv-idő → a sor elmarad, nem becslünk.
+test('terv-idő nélkül a "Terv szerint" sor elmarad', async () => {
+  const rows = [{
+    mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
+    proteinG: 36, carbsG: 48, fatG: 9, fiberG: 8, plannedTime: null, scorePct: 88,
+  }]
+  render(<FuelMealBlocks {...props({ meals: rows })} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás ideje' }))
+  expect(screen.getByRole('dialog').textContent).not.toContain('Terv szerint')
+})

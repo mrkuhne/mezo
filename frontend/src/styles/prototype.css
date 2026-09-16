@@ -11772,6 +11772,39 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-recess);
   color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; }
 
+/* Az óra-doboz (mezo-l2gp0): kompakt, középre zárt üvegdoboz, kilógó clay stopperrel.
+   A belépő 3D-billenés csak no-preference alatt fut; reduced alatt a doboz azonnal áll. */
+.fmx-glass.fmx-timebox { width: min(78%, 280px); padding: 22px 22px 18px; overflow: visible;
+  text-align: center;
+  box-shadow: 0 34px 70px rgba(0, 0, 0, 0.5),
+    0 0 34px color-mix(in srgb, var(--block-color) 16%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+@media (prefers-reduced-motion: no-preference) {
+  .fmx-glass.fmx-timebox { animation: fmx-timebox-in 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.18) both; }
+  @keyframes fmx-timebox-in {
+    from { opacity: 0; transform: perspective(700px) rotateX(14deg) scale(0.86) translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+.fmx-timebox-art { width: 54px; height: 54px; margin: -46px auto 2px; display: grid; place-items: center; }
+.fmx-timebox-art svg { width: 54px; height: 54px;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 12px color-mix(in srgb, var(--block-color) 34%, transparent)); }
+.fmx-timebox-eyebrow { font-size: 8px; font-weight: 700; letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--sub); }
+.fmx-timebox-time { margin-top: 2px; font-family: var(--ff-display); font-size: 54px;
+  font-weight: 200; letter-spacing: -0.04em; line-height: 1.1; font-variant-numeric: tabular-nums;
+  color: var(--ink); text-shadow: 0 0 26px color-mix(in srgb, var(--block-color) 30%, transparent); }
+.fmx-timebox-sub { margin-top: 2px; font-size: 11px; color: var(--sub); }
+.fmx-timebox-items { margin: 14px 0 0; padding: 10px 2px 0; border-top: 1px solid var(--divider);
+  display: grid; gap: 7px; }
+.fmx-timebox-items div { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; font-size: 12px; color: var(--sub); }
+.fmx-timebox-items div b { font-weight: 600; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--block-color) 70%, var(--ink)); }
+.fmx-timebox-close { display: block; width: 100%; margin-top: 16px; padding: 10px 0;
+  border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--surface-recess);
+  color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; }
+
 /* ── Nap-blokkok a Main (S1b, mezo-33k6 — A10 · A14) ──────────────────────
    Prototípus: fuel-pages.css `Meal blocks on Mai` (:53) + a jóváhagyott kalibráció,
    `Variant A — colored wash + block-level clay icon` (:63) és
@@ -11806,6 +11839,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-budget-ring b { position: relative; font-size: 10px; font-weight: 600; color: var(--ink); }
 .fmx-budget-ring.is-empty .fmx-br-fill { display: none; }
 .fmx-budget-ring.is-empty b { font-weight: 400; color: var(--sub); }
+
+/* Az óra gomb (mezo-l2gp0): csendes üveg-korong a cím sorában — csak logolt blokkon. */
+.fmx-clock { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid var(--border-subtle);
+  background: var(--surface-glass); backdrop-filter: blur(6px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  font-family: inherit; }
+.fmx-clock svg { width: 21px; height: 21px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); }
+.fmx-clock:active { transform: scale(0.92); transition: transform 0.12s; }
 
 /* Ablak-csík: a blokk ideje a cím ALATT (A14) — nem külön idővonal-sáv. */
 .fmx-window { display: flex; align-items: center; gap: 8px; padding: 0 0 11px; }
