@@ -1115,6 +1115,10 @@ function ActiveWorkoutSession({
                 note={noteOf(e)}
                 medalsBySetIdx={medalsOf(id)}
                 failedLocalIds={failedSetLocalIds}
+                challenge={(() => {
+                  const c = challenges.find((x) => x.exerciseId === id && acceptedMap[x.id])
+                  return c ? { label: c.typeLabel, target: c.target } : null
+                })()}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
                 onOpenRecords={() => { /* Task 5: the history + records glass */ }}

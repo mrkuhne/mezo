@@ -89,6 +89,16 @@ test('the rationale renders as the .wo-cue sentence (the plan\'s own words)', ()
   expect(container.querySelector('.wo-cue p')).toHaveTextContent('A múlt heti RIR alapján tartjuk a súlyt.')
 })
 
+test('an accepted challenge on this exercise renders its target as a chip (mezo-88iwa.7)', () => {
+  const { container } = renderCard({ challenge: { label: 'PR kísérlet', target: '85 kg × 8' } })
+  expect(container.querySelector('.wo-note')).toHaveTextContent('85 kg × 8')
+})
+
+test('with no accepted challenge, no challenge chip renders', () => {
+  const { container } = renderCard()
+  expect(container.querySelector('[aria-label^="Elfogadott kihívás"]')).toBeNull()
+})
+
 test('only the NEXT pending row has enabled inputs — later slots are inert', () => {
   const { container } = renderCard()
   // The one editable row is a form; later pending rows are plain divs.

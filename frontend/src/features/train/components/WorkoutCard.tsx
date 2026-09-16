@@ -70,11 +70,14 @@ export interface WorkoutCardProps {
   medalsBySetIdx?: Record<number, Medal[]>
   /** localIds of this exercise's logged sets whose POST failed (mezo-l3on F1). */
   failedLocalIds?: ReadonlySet<string>
+  /** The accepted challenge (mezo-88iwa quest) targeting THIS exercise, if any —
+   *  restored per-card after fd58c790c removed the single-exercise metaline chip. */
+  challenge?: { label: string; target: string } | null
 }
 
 export function WorkoutCard({
   exercise, session, busy, onLogSet, onTapDoneRow, onOpenRecords, onOpenMenu, onEditNote,
-  note = '', medalsBySetIdx = {}, failedLocalIds,
+  note = '', medalsBySetIdx = {}, failedLocalIds, challenge,
 }: WorkoutCardProps) {
   const id = exercise.id
   const logged = session.logged[id] ?? []
@@ -151,6 +154,13 @@ export function WorkoutCard({
         </button>
       </header>
 
+      {challenge && (
+        <div className="wo-note" title={challenge.label} aria-label={`Elfogadott kihívás — ${challenge.label}`}>
+          <ClayIcon name="i-kihivas" size={18} />
+          <span className="ntext">{challenge.target}</span>
+        </div>
+      )}
+
       {note && (
         <button type="button" className="wo-note exercise-note-pill" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>
           <ClayIcon name="i-checkin" size={18} />
@@ -213,7 +223,7 @@ export function WorkoutCard({
                     {idxCell}
                     <span className="wo-field num">{actual.weight.toLocaleString('hu-HU')}</span>
                     <span className="wo-field num">{actual.reps}</span>
-                    <span className="wo-field small num">{warm ? '–' : actual.rir}</span>
+                    <span className="wo-field small num">{warm ? '—' : actual.rir}</span>
                     <span className="wo-check" aria-hidden="true">✓</span>
                     <span className="wo-verdict">
                       {status === 'ok'
@@ -297,7 +307,7 @@ export function WorkoutCard({
                   {idxCell}
                   <span className="wo-field num">{t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
                   <span className="wo-field num">{warm ? (t?.targetReps ?? '—') : `${exercise.repMin}–${exercise.repMax}`}</span>
-                  <span className="wo-field small num">{warm ? '–' : (t?.targetRIR ?? exercise.targetRIR)}</span>
+                  <span className="wo-field small num">{warm ? '—' : (t?.targetRIR ?? exercise.targetRIR)}</span>
                   <span className="wo-check" aria-hidden="true" />
                   <span className="wo-verdict" />
                 </div>
