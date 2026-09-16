@@ -334,6 +334,20 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
       expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
     }
   })
+
+  // T10 Task 1: the plan library families the T9 port stopped short of — the library
+  // hero/cards, the star rating, the template-detail exercise rows, the wizard's load
+  // bars (ported renamed to .pl-wload/.pl-wload-row) and the small quiet-row idiom.
+  test('the T10 library sub-block carries its own class family', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.pl-lib-card', '.pl-lhero', '.pl-stars', '.pl-tpl-ex', '.pl-wload', '.pl-row',
+    ]) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
 })
 
 /**
