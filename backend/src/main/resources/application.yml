@@ -806,6 +806,16 @@ mezo:
       # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
       # block ("ezt megtanultam rólad"); 0 = off
       pattern-ack-days: 3
+    # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
+    # The gear never decides WHICH MODEL plans — the smart tier always does.
+    turn:
+      gear:
+        # false => an UNSURE turn goes straight to ANALYSIS instead of spending a cheap call.
+        classifier-enabled: true
+      answerer:
+        # The CHAT branch carries no tools, so this effort actually reaches the provider
+        # (OpenAiCompanionLlm.optionsFor pins effort to `none` only when a request carries tools).
+        chat-effort: high
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)
