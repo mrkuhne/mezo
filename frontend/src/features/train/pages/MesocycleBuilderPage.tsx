@@ -25,9 +25,8 @@ import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MozaikPage, Mosaic, PageBody, PageHead, PageHero, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { huMonthDay } from '@/shared/lib/dates'
 import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDotClass, weekDots } from '@/features/train/logic/mesoBands'
-import { todayDayToken } from '@/features/train/logic/mesoDates'
+import { huDate, todayDayToken } from '@/features/train/logic/mesoDates'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { SESSION_MUSCLE_CAP } from '@/features/train/logic/setBudget'
@@ -42,12 +41,6 @@ const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
  *  bar of a block whose loudest muscle tops out at 12). */
 function barCeiling(bands: { ceiling: number }[]): number {
   return Math.max(...bands.map((b) => b.ceiling), 1)
-}
-
-/** Mock fixtures carry HU display dates ('Jún 12'), the API ISO ones ('2026-06-12'). */
-function huDate(value: string | undefined): string | null {
-  if (!value) return null
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? huMonthDay(value) : value
 }
 
 /** „W1 · W2 · **W3 · most** · W4 · W5 csúcs · deload" — the arc in one line. */

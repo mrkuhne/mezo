@@ -361,9 +361,19 @@ function mockClose(qc: QueryClient, id: string, selfEval?: string | null): void 
     aiEvalStatus: 'pending',
     aiEvalGeneratedAt: null,
     aiEvalEnabled: false,
-    adherence: {
-      plannedSessions: 0, completedSessions: 0, plannedWeeks: weeks, completedWeeks: weeks, completionPct: 0,
-    },
+    // FIXTURE ASSUMPTION (mock only): the demo has no session log for the weeks behind us, so
+    // a freshly closed run is seeded as fully delivered from its own plan geometry (training
+    // days × weeks). Zeroes here would make the report's star hero say „Ez a futam nem indult
+    // el." about a run the user just finished (mezo-88iwa.11). Real mode reads the frozen
+    // backend report and never comes through here.
+    adherence: (() => {
+      const perWeek = meso?.days?.filter((d) => d.type !== 'Pihenő' && d.type !== 'Sport').length ?? 0
+      const planned = perWeek * weeks
+      return {
+        plannedSessions: planned, completedSessions: planned, plannedWeeks: weeks,
+        completedWeeks: weeks, completionPct: planned > 0 ? 100 : 0,
+      }
+    })(),
     volume: null,
     strength: [],
     records: { medalCount: 0, top: [] },

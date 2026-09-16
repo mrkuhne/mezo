@@ -168,10 +168,6 @@
   --mz-wash-lav:   linear-gradient(150deg, #EBE6F8, #F9F6FE);
   --mz-wash-rose:  linear-gradient(150deg, #FAE3ED, #FEF8FB);
   --mz-wash-white: #FFFFFF;
-  /* Sablon-poszter (mezo-3a9a) — the week arc / day spine ink per wash. */
-  --tpl-ink-coral: #A84A26;
-  --tpl-ink-gold:  #A8801F;
-  --tpl-ink-sage:  #55703F;
   --mz-shadow:      0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --mz-shadow-sage: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --mz-shadow-sky:  0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -545,9 +541,6 @@
   --mz-wash-lav:   linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-lav) 6%, var(--surface-page)));
   --mz-wash-rose:  linear-gradient(150deg, color-mix(in srgb, var(--dv-rose) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-rose) 5%, var(--surface-page)));
   --mz-wash-white: var(--surface-card);
-  --tpl-ink-coral: #FF9B7A;
-  --tpl-ink-gold:  #E3BE63;
-  --tpl-ink-sage:  #A8C596;
   --mz-shadow:      0 17px 31px -17px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --mz-shadow-sage: var(--mz-shadow);
   --mz-shadow-sky:  var(--mz-shadow);
@@ -4743,7 +4736,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-colstrip.open .mz-chev { transform: rotate(180deg); }
 .mz-colbody { padding: 0 14px 13px; }
 
-/* ===== ActiveMesoCard hub hero (mesocycle pages v2 Task 2, mezo-d20.15) —
+/* ===== Active-run hero chrome (mesocycle pages v2 Task 2, mezo-d20.15) —
    status-first: phase chip + week-dots strip + current->ceiling band chips.
    Ported from meso-body.html's "AKTÍV FUTAM HERO" (.phchip / .wdots / .tplchip)
    ×1.18. Reuses existing --mz-* tokens rather than declaring new ones: the
@@ -8873,38 +8866,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .mz-wmini b, .mz-play .mz-wmini b { transform: scaleY(1); animation: none; }
 }
 
-/* ---- Heti vizsgálat + izom-részlet (#page-week / #page-muscle, mezo-d20.15 Task 4) ----
-   The week mosaic tile (`.mz-wtile`), its week-spark (`.mz-wspark`) and the muscle page's
-   4-layer derivation timeline (`.mz-dsteps`/`.mz-dstep`/`.mz-dnum`/`.mz-dcells`). The
-   MEV/MAV/MRV band itself stays inline-style (VolumeBar.tsx's own idiom —
-   percentages of the 0→MRV span don't tokenize cleanly), so only the tile chrome, the
-   spark bars and the derivation timeline get classes here. VolumeBand.tsx, the old
-   per-tile band component this mosaic used, was removed once T9 refaced this page and
-   the muscle page (its only consumers) — see mesoWeek.ts's `muscleTiles` for the math. */
-.mz-wtile { border-radius: 16px; padding: 10px 11px; text-align: left; font-family: inherit;
-  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow);
-  background: var(--mz-wash, var(--mz-wash-white)); display: flex; flex-direction: column;
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); width: 100%; }
-button.mz-wtile { cursor: pointer; }
-button.mz-wtile:active { transform: scale(0.96); }
-/* prototype .wnums: 20px / weight 200 — the hairline numeral is the tile's whole voice
-   (20 × 1.18 ≈ 24). */
-.mz-wnums { margin-top: 6px; font-size: 24px; font-weight: 200; font-variant-numeric: tabular-nums;
-  display: flex; align-items: baseline; gap: 2px; white-space: nowrap; }
-.mz-wnums small { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--mz-ink-mut); margin-left: 3px; }
-.mz-arr { font-size: 13px; opacity: 0.55; margin: 0 2px; }
-.mz-wspark { display: flex; gap: 2px; align-items: flex-end; height: 26px; margin-top: 8px; }
-.mz-wspark b { flex: 1; border-radius: 2px 2px 1px 1px; min-height: 4px; transform: scaleY(0); transform-origin: bottom; }
-.mz-play .mz-wspark b { animation: mz-growy 0.45s ease-out forwards; animation-delay: var(--d, 0ms); }
-.mz-wspark b.mz-wspark-fut { opacity: 0.32; }
-.mz-wspark b.mz-wspark-dl { background: var(--mz-deload-stripe) !important; }
-.mz-wstat { font-size: 9.5px; font-weight: 700; margin-top: 6px; }
-/* per-week label row under the muscle page's block-arc spark (#page-muscle .arclbl) */
-.mz-arclbl { display: flex; gap: 4px; margin-top: 4px; }
-.mz-arclbl span { flex: 1; text-align: center; font-size: 7.5px; font-weight: 700; color: var(--mz-ink-mut); }
-@media (prefers-reduced-motion: reduce) { .mz-wspark b, .mz-play .mz-wspark b { transform: none; animation: none; } }
-
 /* live-rollover banner (week page) */
 .mz-livebanner { display: flex; gap: 8px; align-items: center; border-radius: 14px; padding: 9px 11px;
   background: var(--mz-cell-sage-bg); }
@@ -10676,121 +10637,6 @@ button.mz-wtile:active { transform: scale(0.96); }
   font-family: inherit; font-size: 16px; font-weight: 700; color: inherit; }
 .mz-wbname:focus { outline: none; border-bottom: 1.5px solid var(--coral); }
 .mz-wbmeta { margin-top: 2px; font-size: 9.5px; color: var(--mz-ink-soft); }
-/* ===== Sablonok · poszter-kártya (mezo-3a9a) ==============================
-   The `/train/templates` shelf, redressed from a flat list into Mozaik 2.0 posters
-   (prototype docs/design_2.0/prototypes/sablonok.html). The card SHOWS the block —
-   a ramp of weekly bars and the week's seven day-slots — instead of listing it in
-   chips, and keeps exactly one action on the face (Indítás); the lifecycle pair
-   lives in the ⋯ popover. Washes ride the shared .mz-w-* classes. */
-.tpl-shelf { margin-bottom: 4px; }
-
-.tpl-poster {
-  position: relative;
-  border-radius: 22px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash, var(--mz-wash-white));
-  box-shadow: var(--mz-shadow);
-  --tpl-ink: var(--tpl-ink-coral);
-}
-.tpl-poster.mz-w-coral { box-shadow: var(--mz-shadow-coral); --tpl-ink: var(--tpl-ink-coral); }
-.tpl-poster.mz-w-gold { --tpl-ink: var(--tpl-ink-gold); }
-.tpl-poster.mz-w-sage { --tpl-ink: var(--tpl-ink-sage); }
-
-/* The face is the button — a template's own page is its editor. */
-.tpl-face {
-  display: block; width: 100%; text-align: left; border: none; background: none;
-  font-family: inherit; color: var(--text-primary); cursor: pointer;
-  padding: 13px 14px 4px;
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
-}
-.tpl-face:active { transform: scale(0.985); }
-.tpl-face:focus-visible { outline: 2px solid var(--coral); outline-offset: -3px; border-radius: 22px; }
-
-.tpl-head { display: flex; align-items: flex-start; gap: 10px; }
-.tpl-head-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.tpl-title {
-  font-family: var(--ff-display); font-size: 18px; font-weight: 600; line-height: 1.15;
-  margin-top: 3px; color: var(--text-primary);
-}
-.tpl-goal { font-size: 13px; line-height: 1.35; color: var(--text-secondary); margin-top: 3px; }
-.tpl-disc {
-  width: 44px; height: 44px; border-radius: 50%; flex: none;
-  display: grid; place-items: center; background: var(--mz-cellbg);
-  box-shadow: 0 8px 16px -8px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* The block's weeks as a ramp; the deload is a short hatched step-down. */
-.tpl-arcrow { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
-.tpl-arc { display: flex; align-items: flex-end; gap: 4px; height: 30px; flex: none; }
-.tpl-arc i {
-  width: 8px; border-radius: 4px 4px 2px 2px; height: var(--h);
-  background: var(--tpl-ink); opacity: 0.85;
-  transform: scaleY(0); transform-origin: bottom;
-}
-.mz-play .tpl-arc i { animation: tpl-arcgrow 0.45s cubic-bezier(0.25, 0.9, 0.35, 1.2) forwards; animation-delay: var(--d); }
-@keyframes tpl-arcgrow { to { transform: scaleY(1); } }
-.tpl-arc i.tpl-arc-deload {
-  opacity: 0.5;
-  background: repeating-linear-gradient(135deg, var(--tpl-ink) 0 2px, transparent 2px 4px);
-}
-.tpl-arclab { font-size: 11px; line-height: 1.3; color: var(--text-secondary); padding-bottom: 2px; }
-.tpl-arclab b {
-  display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--tpl-ink);
-}
-
-/* The split, readable: seven slots, the training days lettered by their type. */
-.tpl-spine { display: flex; gap: 5px; margin-top: 11px; }
-.tpl-spine i {
-  flex: 1; height: 24px; border-radius: 8px; display: grid; place-items: center;
-  font-size: 10px; font-weight: 700; font-style: normal; letter-spacing: 0.04em;
-  background: color-mix(in srgb, var(--mz-cellbg) 45%, transparent);
-  color: var(--text-tertiary); border: 0.5px solid rgba(43, 33, 24, 0.05);
-}
-.tpl-spine i.tpl-spine-on {
-  background: var(--mz-cellbg); color: var(--tpl-ink);
-  box-shadow: 0 5px 10px -6px rgba(43, 33, 24, 0.35);
-}
-
-.tpl-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: 11px; }
-.tpl-legacy-note { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
-
-/* One action on the face; the lifecycle pair hides behind ⋯. */
-.tpl-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px 13px; }
-.tpl-runs { flex: 1; min-width: 0; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tpl-start { flex: none; width: auto; padding: 13px 22px; font-size: 15px; }
-
-.tpl-menuwrap { position: relative; flex: none; }
-.tpl-more {
-  width: 44px; height: 44px; border-radius: 50%; padding: 0; cursor: pointer;
-  border: 0.5px solid rgba(43, 33, 24, 0.08); background: var(--mz-cellbg);
-  font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1;
-  color: var(--text-secondary);
-  box-shadow: 0 6px 12px -8px rgba(43, 33, 24, 0.35);
-}
-.tpl-more:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
-.tpl-menu {
-  position: absolute; right: 0; bottom: 50px; z-index: 5; width: 176px; padding: 5px;
-  background: var(--surface-card); border: 0.5px solid var(--border-subtle);
-  border-radius: 16px; box-shadow: 0 18px 34px -12px rgba(43, 33, 24, 0.42);
-  animation: tpl-pop 0.18s cubic-bezier(0.3, 0.9, 0.4, 1.2);
-  transform-origin: bottom right;
-}
-@keyframes tpl-pop { from { opacity: 0; transform: translateY(6px) scale(0.94); } }
-.tpl-menu button {
-  width: 100%; display: flex; align-items: center; gap: 8px; padding: 11px 10px;
-  border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600;
-  color: var(--text-primary); cursor: pointer; border-radius: 12px; text-align: left;
-}
-.tpl-menu button + button { border-top: 0.5px solid var(--border-subtle); }
-.tpl-menu button:focus-visible { outline: 2px solid var(--coral); outline-offset: -2px; }
-.tpl-menu .tpl-menu-warn { color: var(--warning); }
-
-@media (prefers-reduced-motion: reduce) {
-  .tpl-arc i, .mz-play .tpl-arc i { transform: none; animation: none; }
-  .tpl-face { transition: none; }
-  .tpl-menu { animation: none; }
-}
 
 /* ============================================================
    §Admin hub shell (mezo-d5iy.9) — desktop-only, no PhoneFrame/TabBar.
@@ -14980,13 +14826,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
   border: 1px solid var(--border-subtle); background: var(--surface-card);
 }
-.pl-dhero-constel { position: relative; display: flex; gap: 8px; margin-top: 14px; }
-.pl-dhero-constel i {
-  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, var(--border-subtle));
-  background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-recess));
-}
-.pl-dhero-constel .icon { width: 26px; height: 26px; }
 
 /* — the body-map slot the day/muscle heroes carry — */
 .pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 40%, transparent)); }
@@ -15054,16 +14893,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex-grid .is-main { border-color: transparent; background: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 80%, var(--surface-card)); }
 .pl-ex-grid .is-main b { color: var(--text-inverse); font-weight: 700; }
 .pl-ex-grid .is-main i { color: color-mix(in srgb, var(--text-inverse) 55%, transparent); }
-.pl-ex-move { display: flex; gap: 5px; }
-.pl-ex-move button {
-  width: 26px; height: 26px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); border-radius: 9px; background: var(--surface-recess);
-}
-.pl-ex-move button:disabled { opacity: .3; cursor: default; }
-.pl-add {
-  display: block; width: 100%; margin-top: 12px; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
-}
 .pl-ex.is-link { grid-template-columns: 34px 34px 1fr auto; cursor: pointer; }
 .pl-ex-sets { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 78%, var(--text-primary)); white-space: nowrap; }
 .pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
@@ -15155,6 +14984,249 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-weekvals { display: flex; gap: 6px; margin: 4px 0 0; }
 .pl-weekvals i { flex: 1; text-align: center; font-style: normal; font-size: 11px; color: var(--text-tertiary); }
 .pl-weekvals i.is-now { color: var(--mus-color, var(--tag-gym)); font-weight: 600; }
+
+/* ── T10 · terv library (mezo-88iwa.11) ────────────────────────────────────
+   The library families the T9 port stopped short of — the library hero's ring/
+   art/stars, one card grammar shared by the running/queued/template/closed
+   rows, the loud "start something new" CTA, muscle mini-rows, a template's
+   spelled-out week and the closed page's then-vs-now pairs — ported from the
+   prototype: docs/design_2.0/prototypes/companion-titanium/plan.css
+   `.pl-lhero*`/`.pl-stars` (:457), `.pl-lib-card`+`.pl-lib-head`/`.pl-lib-note`/
+   `.pl-lib-mus*`/`.pl-lib-closed-row`/`.pl-lib-meta` (:479), `.pl-lib-new*`
+   (:519), `.pl-lib-muslist`/`.pl-lib-musrow*` (:530), `.pl-lib-versus`/
+   `.pl-versus-pair`/`.pl-versus-name` (:544), `.pl-lib-dests` (:552),
+   `.pl-lib-card.is-blank`/`.pl-lib-new.is-stamp` (:653), `.pl-tpl-exs`/
+   `.pl-tpl-ex`/`.pl-tpl-load` (:673) and the small quiet `.pl-row` (:140) —
+   plus the wizard's per-muscle load bars, ported RENAMED `.wz-load`→
+   `.pl-wload` / `.wz-load-row`→`.pl-wload-row` (:616) since this task doesn't
+   port the rest of the wizard (a later slice's job — only the template
+   detail reuses the load-bar grammar here).
+
+   Same token convention as the T9 preamble above: `var(--domain-color)` →
+   the section's existing `var(--tag-gym)` (used directly, not via `--tr-
+   accent`, since library cards live outside `.pl-poster`'s scope where that
+   custom property is set), the prototype's dark #ffffffXX inks/surfaces →
+   the house `--text-*`/`--surface-*`/`--border-subtle` tokens, `var(--mus-
+   color)` kept as the existing inline custom property. The "start something
+   new" CTA's lavender/sky wash uses the house `--lav`/`--sky` tokens (the
+   same pair `--mz-goal-hero-segment` already mixes, :572); its "from a
+   closed run" stamp variant uses `--sage`, mirroring `.pl-dest.is-done`'s
+   `--amber` above (:14910). */
+
+.pl-lhero { min-height: 0; }
+/* Option A back pill (T10 Task 2, mezo-88iwa.11): the „vissza" pill lives INSIDE the
+   hero, not in a row above it — the same idiom `.ld-hero .ld-back` carries (:14651).
+   The pill is the house `.mz-backbtn`; only its position differs, so the rule keys on
+   the pill being the hero's own DIRECT child (the prototype's own
+   `.pl-dhero:has(> .pl-back.is-inhero)` shape, train-pages.css :184) and leaves every
+   other `.pl-lhero` variant (the slim list heroes) untouched. */
+.pl-lhero > .mz-backbtn {
+  position: absolute; left: 14px; top: 14px; z-index: 2;
+  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.pl-lhero:has(> .mz-backbtn) { padding-top: 58px; }
+.pl-lhero .pl-poster-foot { position: relative; margin-top: 12px; }
+.pl-lhero-art { position: absolute; right: 6px; top: 14px; width: 96px; height: 96px; pointer-events: none; }
+.pl-lhero-art .icon { position: absolute; inset: 18px; width: 60px; height: 60px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4)); }
+.pl-lhero-art i {
+  position: absolute; inset: 0; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--mus-color) 38%, transparent);
+  animation: pl-spin 26s linear infinite;
+}
+.pl-lhero-art i:nth-of-type(2) { inset: 9px; rotate: 58deg; opacity: .55; animation-duration: 19s; animation-direction: reverse; }
+.pl-lhero-map { position: absolute; right: 2px; top: 10px; pointer-events: none; }
+.pl-lhero-body { width: 104px; height: 104px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4)); }
+.pl-lhero-stars { position: relative; margin: 4px 0 10px; }
+.pl-lhero-stars .icon { width: 30px; height: 30px; }
+.pl-lhero.is-closed h2 { margin-bottom: 2px; }
+.pl-lhero.is-slim { padding-bottom: 20px; }
+.pl-lhero.is-slim h2 { font-size: 25px; }
+.pl-lhero.is-slim .pl-say { margin-bottom: 4px; }
+
+.pl-stars { display: inline-flex; gap: 3px; }
+.pl-stars .icon { width: 18px; height: 18px; }
+/* T10 Task 4 (mezo-88iwa.11): the prototype draws three DIFFERENT star glyphs
+   (star / star-half / star-empty) that the clay set has no equivalent of — so a
+   half/empty star is drawn the way the ceremony already draws it, with ONE clay
+   glyph (`i-termes`) dimmed and desaturated (`.cer-stars` :14274). Same three
+   states, same ink, one icon. */
+.pl-stars i { display: inline-grid; place-items: center; }
+.pl-stars i .icon { opacity: .14; filter: grayscale(1); }
+.pl-stars i.is-half .icon { opacity: .45; filter: grayscale(.4); }
+.pl-stars i.is-lit .icon { opacity: 1; filter: none; }
+
+@keyframes pl-spin { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }
+
+
+/* one card grammar for the running, queued, template and closed rows */
+.pl-lib-card {
+  display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
+  border: 1px solid var(--border-subtle); border-radius: 20px;
+  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+}
+.pl-lib-card.is-now {
+  border-color: color-mix(in srgb, var(--tag-gym) 34%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
+    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+}
+.pl-lib-card.is-now .pl-arc { height: 44px; margin: 0 0 14px; }
+.pl-lib-card.is-open { cursor: default; }
+.pl-lib-card.is-blank { border-style: dashed; border-color: var(--border-subtle); }
+.pl-lib-head { display: flex; align-items: baseline; gap: 9px; }
+.pl-lib-head strong { font-size: 15.5px; font-weight: 500; color: var(--text-primary); }
+.pl-lib-head em { font-style: normal; font-size: 11px; color: var(--text-tertiary); }
+.pl-lib-head b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-lib-card .pl-day-facts { min-width: 0; }
+.pl-lib-card .pl-day-facts i { min-width: 0; }
+.pl-lib-card .pl-day-facts b.is-word { font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-lib-note { font-size: 10.5px; color: var(--text-tertiary); }
+.pl-lib-mus { display: flex; flex-wrap: wrap; gap: 4px; }
+.pl-lib-mus i {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px;
+  background: color-mix(in srgb, var(--mus-color) 12%, transparent);
+}
+.pl-lib-mus .icon { width: 21px; height: 21px; }
+.pl-lib-closed-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+/* T10 Task 4 (mezo-88iwa.11): the closed row keeps the card grammar but CANNOT be one
+   button — its footer carries „Sablonná" / „Újrafuttatás", and buttons do not nest. So
+   the card is a plain box, its BODY is the button (`.pl-lib-open`, the card's own grid)
+   and the actions sit in `.pl-lib-foot` beneath it. `.is-picked` is the „Összevetés"
+   selection state — the border/wash the removed archived-run card carried — in CSS. */
+.pl-lib-card.is-closed { cursor: default; }
+.pl-lib-open { display: grid; gap: 10px; width: 100%; text-align: left; cursor: pointer; }
+.pl-lib-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  border-top: 1px solid var(--border-subtle); padding-top: 9px;
+}
+.pl-lib-card.is-picked {
+  border-color: color-mix(in srgb, var(--coral) 45%, transparent);
+  background:
+    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 62%),
+    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+}
+.pl-lib-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+.pl-lib-meta .icon { width: 16px; height: 16px; }
+
+/* the one loud button: making something new */
+.pl-lib-new {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 18px 0 4px; padding: 14px 16px; cursor: pointer;
+  text-align: left; border: 1px solid color-mix(in srgb, var(--lav) 24%, transparent); border-radius: 22px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--lav) 13%, transparent), color-mix(in srgb, var(--lav) 4%, transparent) 55%, color-mix(in srgb, var(--sky) 7%, transparent));
+  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--lav) 67%, transparent);
+}
+/* The library pages (`.pl-lib`) run the CTA tighter under the list; the `.is-start`
+   modifier below must still win over it, so it sits BEFORE the modifiers. */
+.pl-lib .pl-lib-new { margin-top: 14px; }
+.pl-lib-new-art { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: color-mix(in srgb, var(--lav) 12%, transparent); flex: 0 0 auto; }
+.pl-lib-new-art .icon { width: 30px; height: 30px; }
+.pl-lib-new strong { display: block; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.pl-lib-new small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
+.pl-lib-new b { margin-left: auto; font-size: 19px; color: var(--lav-deep); }
+.pl-lib-new.is-start { margin-top: 22px; }
+.pl-lib-new.is-stamp {
+  border-color: color-mix(in srgb, var(--sage) 33%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--sage) 15%, transparent), color-mix(in srgb, var(--sage) 5%, transparent) 55%, color-mix(in srgb, var(--sky) 7%, transparent));
+  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--sage) 67%, transparent);
+}
+.pl-lib-new.is-stamp .pl-lib-new-art { background: color-mix(in srgb, var(--sage) 12%, transparent); }
+
+/* muscle rows: plain on the template page, with a journey bar on the closed one */
+.pl-lib-muslist { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pl-lib-muslist.is-bars { grid-template-columns: 1fr; }
+.pl-lib-musrow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+}
+.pl-lib-musrow > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
+.pl-lib-musrow strong { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.pl-lib-mustext { display: grid; gap: 1px; min-width: 108px; }
+.pl-lib-mustext small { font-size: 10px; color: var(--text-tertiary); }
+.pl-lib-musbar { position: relative; flex: 1; height: 10px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
+.pl-lib-musbar i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 34%, transparent) var(--a), var(--mus-color));
+}
+.pl-lib-musrow b { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+[data-reveal] .pl-lib-musbar i { width: 0; }
+[data-reveal].is-in .pl-lib-musbar i { width: var(--w); transition: width .9s cubic-bezier(.22, .9, .25, 1) .12s; }
+
+/* the then-vs-now pairs on the closed page */
+.pl-lib-versus { gap: 14px; }
+.pl-versus-pair { display: grid; gap: 6px; }
+.pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+.pl-versus-name .icon { width: 20px; height: 20px; }
+
+/* — the library's two doorways and its slim list heroes — */
+.pl-lib-dests { padding: 22px 0 4px; }
+
+/* — a template's week, spelled out — */
+.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }
+.pl-tpl-ex { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 9px; }
+.pl-tpl-ex .icon { width: 24px; height: 24px; }
+.pl-tpl-ex strong { font-size: 12.5px; font-weight: 500; min-width: 0; line-height: 1.3; color: var(--text-primary); }
+.pl-tpl-ex b { font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--mus-color) 75%, var(--text-primary)); white-space: nowrap; }
+.pl-tpl-ex small { font-size: 10.5px; color: var(--text-tertiary); white-space: nowrap; min-width: 74px; text-align: right; }
+.pl-tpl-load { margin-bottom: 4px; }
+
+/* the template's per-muscle load bars, ported from the wizard's own `.wz-load*`
+   (plan.css :616) — renamed `.pl-wload`/`.pl-wload-row` since this port doesn't
+   bring the rest of the wizard along. */
+.pl-wload { display: grid; gap: 7px; }
+.pl-wload-row { display: grid; grid-template-columns: 22px 92px 1fr auto; align-items: center; gap: 9px; }
+.pl-wload-row .icon { width: 22px; height: 22px; }
+.pl-wload-row small { font-size: 10.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-wload-row i { position: relative; height: 9px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
+.pl-wload-row i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; background: var(--mus-color); }
+.pl-wload-row b { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+
+/* — quiet rows instead of decorated cards (plan.css :140) — */
+.pl-row {
+  display: flex; align-items: center; gap: 12px; width: calc(100% - 40px); margin: 0 20px 8px;
+  padding: 14px 16px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+}
+.pl-row strong { display: block; font-size: 14.5px; font-weight: 500; color: var(--text-primary); }
+.pl-row small { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.pl-row b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; }
+.pl-row.is-quiet { opacity: .68; }
+.pl-sub .pl-row { width: 100%; margin: 0 0 8px; }
+
+/* Törlés, armed (Task 3 fix round, mezo-88iwa.11): a destructive CONTROL, not a performance
+   reading — the "down never red" rule is about numbers going the wrong way, not about a
+   delete confirm, so this is the one place `--error` (already the armed-danger token at
+   `.rt-danger.is-hard.is-armed`, :9670) is the deliberate exception. `.pl-row-main`/
+   `.pl-row-cancel` let the row carry TWO taps (the confirm and its „Mégsem" escape) while
+   keeping every `.pl-row strong/small/b` rule above working through the extra nesting. */
+.pl-row.is-danger {
+  opacity: 1; border-color: color-mix(in srgb, var(--error) 55%, transparent);
+  background: color-mix(in srgb, var(--error) 10%, var(--surface-recess));
+}
+.pl-row.is-danger strong { color: var(--error); }
+.pl-row-main {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit;
+  text-align: left; cursor: pointer;
+}
+.pl-row-main:disabled { opacity: .5; cursor: default; }
+.pl-row-cancel {
+  flex: none; margin-left: 10px; padding: 7px 12px; border: 1px solid var(--border-subtle);
+  border-radius: 11px; background: transparent; color: var(--text-tertiary); font-size: 11px;
+  cursor: pointer;
+}
+
+/* T9-residue fix: MesoDayPage's per-muscle-breakdown row (`.pl-mrow`, :15006)
+   renders a `.pl-mrow-art` chip wrapper (MesoDayPage.tsx) that the T9 port never
+   carried a rule for — the raw MuscleChip icon (28px) sat borderless/uncentered
+   in the row's 34px art column. Mirrors `.wo-card-art`'s chip-container grammar
+   (:13868), sized down to `.pl-mrow`'s own 34px first grid column instead of
+   `.wo-card`'s 46px, and spans both of the row's implicit rows (name + bar) the
+   way `.pl-item > b` already spans its row via `grid-row: 1 / -1` (:15069). */
+.pl-mrow-art {
+  grid-row: 1 / -1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
+  background: color-mix(in srgb, var(--mus-color) 13%, var(--surface-recess));
+}
 /* ── /terv titanium ────────────────────────────────────────────────────── */
 
 /* ── train sport titanium (mezo-88iwa.9, T8 Task 3) ────────────────────────

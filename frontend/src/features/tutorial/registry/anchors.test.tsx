@@ -75,6 +75,8 @@ test.each([
   ['/train/exercises', 'exercises-kereso'],
   ['/train/medals', 'medals-hero'],
   ['/train/mesocycles', 'mesociklus-mosaic'],
+  // T10 Task 2 (mezo-88iwa.11): az Edzéstervek könyvtár saját hőse.
+  ['/train/mesocycles/konyvtar', 'konyvtar-hero'],
   ['/train/session', 'session-start'],
 ])('%s — a(z) %s anchor jelen van', async (path, name) => {
   renderAt(path)
@@ -131,7 +133,8 @@ test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
 // minden /train/*-on) fedi le a TRAIN_KALAUZ MINDEN „hogyan" horgonyát.
 test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
   const covered = new Set(['train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs',
-    'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start'])
+    'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start',
+    'konyvtar-hero'])
   const anchors = TRAIN_KALAUZ.flatMap(e => e.cards.flatMap(c =>
     c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
   expect(anchors.filter(a => !covered.has(a))).toEqual([])
