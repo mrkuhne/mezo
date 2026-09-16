@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * The cheap tie-breaker for turns {@code TurnGearAnalyzer} could not classify. One tool-less,
@@ -13,8 +15,15 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
  *
  * <p>Deliberately NOT given the conversation history or any context block: its whole job is to
  * look at one sentence, and anything more would cost what the gear exists to save.
+ *
+ * <p><b>Gated on the companion switch</b> (mezo-rj214.7): the Spring constructor needs a
+ * {@code CompanionLlm}, and every {@code CompanionLlm} bean is itself gated on that switch
+ * ({@code GeminiCompanionLlm}, {@code OpenAiCompanionLlm}). Without this condition the whole
+ * context fails to load with the companion off — an {@code UnsatisfiedDependencyException} on
+ * {@code gearClassifier} that cascades through {@code TurnGearRouter}.
  */
 @Component
+@ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class GearClassifier {
 
     /** Public so {@code FakeCompanionLlm} can dispatch on it — the fake keys on the prompt prefix. */
