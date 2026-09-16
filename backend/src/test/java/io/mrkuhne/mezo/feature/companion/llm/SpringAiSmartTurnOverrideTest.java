@@ -24,8 +24,15 @@ class SpringAiSmartTurnOverrideTest {
             .getDeclaredMethod("streamSmart", String.class, String.class, List.class, String.class)
             .getDeclaringClass())
             .isEqualTo(SpringAiCompanionLlm.class);
+        // Both halves of the premise: the port's own entry points ARE defaults, which is exactly
+        // why an adapter that forgets to override one drops to the cheap tier in silence. Asserting
+        // it for completeSmart alone would leave streamSmart's guard resting on an unchecked claim.
         assertThat(CompanionLlm.class
             .getDeclaredMethod("completeSmart", String.class, String.class, List.class, String.class)
+            .isDefault())
+            .isTrue();
+        assertThat(CompanionLlm.class
+            .getDeclaredMethod("streamSmart", String.class, String.class, List.class, String.class)
             .isDefault())
             .isTrue();
     }

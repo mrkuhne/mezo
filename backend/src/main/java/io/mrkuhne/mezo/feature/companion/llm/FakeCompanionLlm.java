@@ -1162,20 +1162,42 @@ public class FakeCompanionLlm implements CompanionLlm {
      * interface default — so a CHAT-gear turn is provably distinguishable from the ordinary
      * {@link #complete(String, List, String, List, Map)} echo. The shape otherwise matches that
      * echo character-for-character so the existing prompt-order ITs stay unaffected.
+     *
+     * <p>It honours the same failure sentinels as the tool-carrying twins: a provider outage and a
+     * text-free candidate are provider behaviours, not gear behaviours, so a CHAT turn must be
+     * scriptable into them exactly like every other turn.
      */
     @Override
     public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
                                 String userMessage) {
+        if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
+            throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return "";
+        }
         return CHAT_GEAR_SENTINEL + " " + PREFIX
             + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
             + " history=[" + ChatHistory.render(history) + "]"
             + " user=[" + userMessage + "]";
     }
 
-    /** Streamed twin of {@link #completeSmart(String, String, List, String)}. */
+    /**
+     * Streamed twin of {@link #completeSmart(String, String, List, String)} — including the
+     * streamed failure shapes: {@link #FAIL_STREAM} errors mid-stream after one chunk, and
+     * {@link #EMPTY_ANSWER} completes with no text at all (mezo-8z79).
+     */
     @Override
     public Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
                                     String userMessage) {
+        if (userMessage.contains(FAIL_STREAM)) {
+            return Flux.concat(
+                Flux.just(PREFIX),
+                Flux.error(new IllegalStateException("FAKE-LLM forced stream failure")));
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return Flux.empty();
+        }
         return Flux.just(completeSmart(systemPrompt, turnContext, history, userMessage));
     }
 
