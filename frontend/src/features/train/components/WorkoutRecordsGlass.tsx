@@ -28,6 +28,7 @@ import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { huMonthDay } from '@/shared/lib/dates'
 import { barProgress, todayBest, type TodaySetLike } from '@/features/train/logic/recordFor'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 
@@ -102,8 +103,16 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
   return (
     <GlassBox open={open} onClose={onClose} label={`${exercise.name} előzményei és rekordjai`} tint={tint}>
       <header className="wo-glass-head">
-        <small>{(MUSCLE_LABELS[exercise.muscle] ?? exercise.muscle).toLocaleUpperCase('hu-HU')} · {record?.sessionCount ?? 0} ALKALOM</small>
-        <strong>{exercise.name}</strong>
+        <span className="wo-card-art">
+          <MuscleChip token={exercise.muscle} size={40} />
+        </span>
+        <span>
+          <small>
+            {(MUSCLE_LABELS[exercise.muscle] ?? exercise.muscle).toLocaleUpperCase('hu-HU')}
+            {record ? ` · ${record.sessionCount} ALKALOM` : ''}
+          </small>
+          <strong>{exercise.name}</strong>
+        </span>
       </header>
 
       <h3 className="wo-glass-title">
