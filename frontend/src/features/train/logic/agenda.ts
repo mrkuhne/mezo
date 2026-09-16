@@ -3,12 +3,27 @@
 // Flattens a WeeklyAgendaDay's gym/sport/running/custom into typed
 // AgendaItems carrying a `timeOfDay`, sorted ascending; untimed
 // (null/'') sort last, then stable by original modality order.
-// Consumed by WeeklyDayRow (weekly rows) and TrainTodayPage (heroes)
-// so both surfaces order identically.
+// Consumed by TrainTodayPage (Mai's DayStrip + heroes), and the
+// WeeklyAgendaDay type below by weeklyLoad/weekAgenda/dayStripItems
+// (the week-summary logic; the old WeeklyDayRow strip that used to sit
+// here retired with TrainWeekPage's Titanium face, mezo-88iwa.13 T12 —
+// this module kept the type since it was always the real logic home).
 // ============================================================
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
+
+export interface WeeklyAgendaDay {
+  day: string
+  /** ISO date of this row's day in the current week — used by the parent to derive done-state. */
+  date?: string
+  gym: GymScheduleDay | null
+  /** This day's recurring sport slots (volleyball/cross/trx) — a day can hold several. */
+  sport: VolleyballSession[]
+  running: RunPrescribedSession[]
+  isToday: boolean
+  /** Completed custom (saját) workout instances on this date — extra done rows (mezo-ws2x). */
+  custom?: { id: string; title: string }[]
+}
 
 export type AgendaItem =
   | { kind: 'gym'; timeOfDay: string | null; gym: GymScheduleDay }

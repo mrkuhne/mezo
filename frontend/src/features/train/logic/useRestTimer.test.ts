@@ -59,3 +59,33 @@ test('pause after the deadline (before the tick lands) ends the rest', () => {
   act(() => result.current.pause())
   expect(result.current.status).toBe('idle')
 })
+
+// ---- T6 Task 6: the dock's +30s ----
+
+test('extend adds seconds to a RUNNING rest — remaining and total both grow', () => {
+  const { result } = renderHook(() => useRestTimer())
+  act(() => result.current.start(90))
+  act(() => vi.advanceTimersByTime(10_000)) // remaining: 80
+  act(() => result.current.extend(30))
+  expect(result.current.status).toBe('running')
+  expect(result.current.remaining).toBe(110)
+  expect(result.current.total).toBe(120)
+})
+
+test('extend adds seconds to a PAUSED rest too', () => {
+  const { result } = renderHook(() => useRestTimer())
+  act(() => result.current.start(90))
+  act(() => result.current.pause())
+  act(() => result.current.extend(30))
+  expect(result.current.status).toBe('paused')
+  expect(result.current.remaining).toBe(120)
+  expect(result.current.total).toBe(120)
+})
+
+test('extend is a no-op while idle', () => {
+  const { result } = renderHook(() => useRestTimer())
+  act(() => result.current.extend(30))
+  expect(result.current.status).toBe('idle')
+  expect(result.current.remaining).toBe(0)
+  expect(result.current.total).toBe(0)
+})

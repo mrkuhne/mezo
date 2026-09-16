@@ -69,7 +69,7 @@ test.each([
   ['/nap/eletjel', 'eletjel-gyuru'],
   ['/train/mai', 'train-tabs'],
   ['/train/mai', 'mai-napsav'],
-  ['/train/week', 'heti-napok'],
+  ['/train/week', 'heti-terheles'],
   ['/train/sport', 'sport-tabs'],
   ['/train/futas', 'futas-tabs'],
   ['/train/exercises', 'exercises-kereso'],
@@ -130,7 +130,7 @@ test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
 // review fix wave): a fenti S3a-kör (a `/train/*` sorok) + a `train-tabs` (TabBar.tsx,
 // minden /train/*-on) fedi le a TRAIN_KALAUZ MINDEN „hogyan" horgonyát.
 test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
-  const covered = new Set(['train-tabs', 'mai-napsav', 'heti-napok', 'sport-tabs',
+  const covered = new Set(['train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs',
     'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start'])
   const anchors = TRAIN_KALAUZ.flatMap(e => e.cards.flatMap(c =>
     c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))

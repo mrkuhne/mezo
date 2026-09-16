@@ -36,6 +36,7 @@ import {
   gymScheduleMock,
   sport,
   exerciseLibrary,
+  exerciseRecordsMock,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
@@ -622,12 +623,13 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     initialData: mock ? exerciseLibrary : undefined,
     staleTime: 60 * 60 * 1000,
   })
-  // Per-exercise records — computed server-side from logged sets; mock mode has no
-  // set history (Phase 1), so it serves an empty list and the view ghost-guards.
+  // Per-exercise records — computed server-side from logged sets; real mode fetches them,
+  // mock mode serves a static fixture matching the Pull Day plan's own exercises (T6 Task 5,
+  // mezo-88iwa.7) so the records glass has real-looking demo data instead of ghost-guarding.
   const { data: recordsData, isPending: recordsPending } = useQuery({
     queryKey: ['train', 'exerciseRecords'],
-    queryFn: mock ? async () => [] as ExerciseRecordResponse[] : () => trainApi.exerciseRecords(),
-    initialData: mock ? [] : undefined,
+    queryFn: mock ? async () => exerciseRecordsMock : () => trainApi.exerciseRecords(),
+    initialData: mock ? exerciseRecordsMock : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   // The day param joins the key so a pinned-day session and the plain today context

@@ -30,6 +30,23 @@ test('a logged working set offers save + delete and the RIR row', () => {
   expect(screen.queryByRole('button', { name: 'L' })).not.toBeInTheDocument()
 })
 
+test('the RIR row shows all 6 buttons (0-5) and the correct one is pressed', () => {
+  const initial = { weight: 82.5, reps: 9, rir: 5, side: null, note: '' } satisfies SetEditValues
+  render(<SetEditSheet {...base} initial={initial} />)
+  // Verify all six RIR buttons render
+  for (let i = 0; i <= 5; i++) {
+    expect(screen.getByLabelText(`RIR ${i}`)).toBeInTheDocument()
+  }
+  // Verify the button matching rir is pressed
+  const pressedButton = screen.getByLabelText('RIR 5')
+  expect(pressedButton).toHaveAttribute('aria-pressed', 'true')
+  // Verify the others are not pressed
+  for (let i = 0; i <= 4; i++) {
+    const btn = screen.getByLabelText(`RIR ${i}`)
+    expect(btn).toHaveAttribute('aria-pressed', 'false')
+  }
+})
+
 test('save reports the full current state, including untouched side and note', async () => {
   const onSave = vi.fn()
   const initial: SetEditValues = { weight: 82.5, reps: 9, rir: 2, side: 'L', note: 'nyújtás után' }

@@ -12,12 +12,15 @@ import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
+import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
+import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
-import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
+import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
+import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
 import { MesoTemplatesPage } from '@/features/train/pages/MesoTemplatesPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
@@ -259,12 +262,21 @@ export const routes: RouteObject[] = [
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },
+      // Terhelés subpages (Train Titanium T12 Task 4): both sit UNDER /train/week,
+      // so navModel's own prefix rule lights the Terhelés tab for them — no `owns`
+      // entry needed (navModel.ts's `isPrefix`).
+      { path: 'train/week/terkep', element: <TrainWeekMapPage /> },
+      { path: 'train/week/mozgas', element: <TrainWeekMozgasPage /> },
       { path: 'train/gym', element: <GymPage /> },
       { path: 'train/sport', element: <SportPage /> },
       { path: 'train/futas', element: <RunningPage /> },
       { path: 'train/exercises', element: <ExercisesPage /> },
       { path: 'train/medals', element: <MedalsPage /> },
-      { path: 'train/mesocycles', element: <MesocycleLibraryPage /> },
+      { path: 'train/mesocycles', element: <MesoTervPage /> },
+      // The plan library (Train Titanium T9 Task 2, mezo-88iwa.10): the landing's
+      // Sablonok/Új blokk/Futóblokkok tiles + Tervezett + Történet moved here intact
+      // behind the landing's `Edzéstervek` doorway.
+      { path: 'train/mesocycles/konyvtar', element: <MesoKonyvtarPage /> },
       // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
       // route stays reachable (the library's nav row still links here).
       { path: 'train/templates', element: <MesoTemplatesPage /> },

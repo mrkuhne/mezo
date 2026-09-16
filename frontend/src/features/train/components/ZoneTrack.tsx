@@ -4,8 +4,9 @@
 // ordered value segments. Kinds: solid (full rail color), today
 // (55% + dashed-look inset ring in the deep shade), ghost (22%),
 // overflow (coral→error gradient). Single source of the bar language —
-// used by WeekZoneCard and ZoneMiniGrid (formerly also SetBudgetCard,
-// retired for WeeklyBandsCard, mezo-d20.14).
+// used by WeekZoneCard (formerly also ZoneMiniGrid and SetBudgetCard,
+// both retired — ZoneMiniGrid for TrainWeekPage's Titanium face, mezo-88iwa.13
+// T12; SetBudgetCard for WeeklyBandsCard, mezo-d20.14).
 // ============================================================
 import type { CSSProperties } from 'react'
 import type { ZoneSegment } from '@/features/train/logic/weekZone'

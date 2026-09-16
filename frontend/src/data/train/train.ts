@@ -4,6 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
+import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
@@ -997,6 +998,82 @@ export const workout: WorkoutPlan = {
     },
   ],
 }
+
+// Per-exercise records (mezo-88iwa.7, T6 Task 5) — the WorkoutRecordsGlass demo data.
+// Matched by NAME (mock's LoggedWorkoutExercise carries no catalogId, so `recordFor`
+// always falls to its name-match branch here) against `workout.exercises` above: one row
+// per Pull Day exercise, so the demo shows real-looking records for every card's ⌗
+// button. Face Pull is deliberately rendered bodyweight-style (no weightKg anywhere —
+// reps-only sets, no bestE1rm/bestSessionVolume, totalVolume 0) to exercise that render
+// path; the other four carry full weighted data, Chest Supported Row's bestE1rm included
+// per the Task 5 brief.
+export const exerciseRecordsMock: ExerciseRecordResponse[] = [
+  {
+    name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+    bestSet: { weightKg: 107.5, reps: 8, date: '2026-08-12' },
+    bestE1rm: { value: 140, set: { weightKg: 105, reps: 10, date: '2026-08-26' } },
+    bestSessionVolume: { volumeKg: 3150, date: '2026-08-26' },
+    totalVolume: 42000, totalSets: 130, totalReps: 1150, sessionCount: 26,
+    repRecords: [
+      { weightKg: 107.5, reps: 8, date: '2026-08-12' },
+      { weightKg: 105, reps: 10, date: '2026-08-26' },
+      { weightKg: 100, reps: 12, date: '2026-07-01' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
+    bestSet: { weightKg: 77.5, reps: 12, date: '2026-08-05' },
+    bestE1rm: { value: 100.8, set: { weightKg: 77.5, reps: 12, date: '2026-08-05' } },
+    bestSessionVolume: { volumeKg: 2790, date: '2026-08-05' },
+    totalVolume: 38000, totalSets: 128, totalReps: 1400, sessionCount: 25,
+    repRecords: [
+      { weightKg: 77.5, reps: 12, date: '2026-08-05' },
+      { weightKg: 74.5, reps: 12, date: '2026-08-19' },
+      { weightKg: 70, reps: 14, date: '2026-06-24' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation',
+    bestSet: { weightKg: 24, reps: 15, date: '2026-08-19' },
+    bestE1rm: { value: 34.4, set: { weightKg: 24, reps: 13, date: '2026-08-19' } },
+    bestSessionVolume: { volumeKg: 1080, date: '2026-08-19' },
+    totalVolume: 18000, totalSets: 110, totalReps: 1400, sessionCount: 24,
+    repRecords: [
+      { weightKg: 24, reps: 13, date: '2026-08-19' },
+      { weightKg: 22, reps: 15, date: '2026-07-22' },
+      { weightKg: 20, reps: 18, date: '2026-06-10' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
+    bestSet: { weightKg: 20, reps: 10, date: '2026-07-29' },
+    bestE1rm: { value: 26.7, set: { weightKg: 20, reps: 10, date: '2026-07-29' } },
+    bestSessionVolume: { volumeKg: 600, date: '2026-07-29' },
+    totalVolume: 9000, totalSets: 95, totalReps: 1050, sessionCount: 22,
+    repRecords: [
+      { weightKg: 20, reps: 10, date: '2026-07-29' },
+      { weightKg: 18, reps: 12, date: '2026-08-26' },
+      { weightKg: 16, reps: 14, date: '2026-06-15' },
+    ],
+    recentTopSets: [],
+  },
+  {
+    // Bodyweight-style demo row (mezo-88iwa.7 Task 5): no weightKg anywhere — reps-only
+    // sets, no e1RM/session-volume estimate, 0 all-time volume.
+    name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation',
+    bestSet: { reps: 22, date: '2026-08-12' },
+    totalVolume: 0, totalSets: 90, totalReps: 1600, sessionCount: 20,
+    repRecords: [
+      { reps: 22, date: '2026-08-12' },
+      { reps: 20, date: '2026-07-15' },
+      { reps: 18, date: '2026-06-01' },
+    ],
+    recentTopSets: [],
+  },
+]
 
 // --- weekly gym schedule (data.js:324-334) ---
 export const gymSchedule: GymSchedule = {

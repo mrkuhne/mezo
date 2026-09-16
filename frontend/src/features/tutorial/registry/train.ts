@@ -73,18 +73,25 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-week',
     route: '/train/week',
     tier: 'T2',
-    version: 1,
-    label: 'Heti edzések',
+    // v2 (final-review fix wave, mezo-88iwa.13 T12): a napsáv-horgony kártya a HŐSre
+    // költözött (lásd a `hogyan` kártya kommentjét lentebb) — ugyanaz a szabály, ami a
+    // train-mai fejlécét is version-bumpre kötelezte (lásd ott a v4 komment): az élő oldalt
+    // rosszul leíró/elavult horgonyú kártyát azok is újra kell hogy lássák, akik a régit már
+    // látták.
+    version: 2,
+    label: 'Terhelés',
     cards: [
       {
         kind: 'intro', spot: 'i-heti', orb: 's-orb',
-        title: 'Ez a Heti.',
-        voice: 'A hét minden napja egy sorban: mi volt, mi lesz, mi ment le — egy pillantásra.',
+        title: 'Ez a Terhelés.',
+        voice: 'A heti munkád egy képben: mennyi van meg belőle, és melyik izomcsoport hol tart.',
       },
       {
-        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-napok',
-        title: 'A napsorok visznek tovább.',
-        voice: 'A mai gym a sorából indul, a lezárt edzés visszanézhető. Lent az izom-zónák mutatják, hova gyűlik a heti terhelés.',
+        // T12 (mezo-88iwa.13): a napsáv elhagyta a lapot — a horgony a HŐSRE költözött, és
+        // vele a kártya szövege is. A napokra való lépés Mai saját napsávjában él tovább.
+        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-terheles',
+        title: 'A nagy szám a heti munkád.',
+        voice: 'A sáv azt mutatja, mennyi van meg abból, amit a hét kér. Lentebb a test térképe és az izomcsoportok — egy csoportra koppintva látod a részleteit.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
@@ -247,10 +254,14 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     cards: [
       {
         kind: 'intro', spot: 'i-meso', orb: 's-orb',
-        title: 'Ez a Mesociklusok.',
-        voice: 'A többhetes blokkjaid könyvtára: az aktív futam felül, alatta a történet.',
+        title: 'Ez a futó terved.',
+        voice: 'Nem lista: maga a terv, ami most megy — hányadik héten jársz, és mi vár rád a hét minden napján.',
       },
       {
+        // NOTE (T9 fix round 1, mezo banned-word sweep): this `fogalom` card predates
+        // this task's copy — its „A blokk a motor." title/voice is left as-is, OUT of
+        // scope per the review finding. Every other card in this section is this task's
+        // OWN new copy and has been swept for „blokk"/„rámpa" below.
         kind: 'fogalom', spot: 's-hegycel', orb: 's-orb',
         title: 'A blokk a motor.',
         voice: 'A heti edzéseidet az aktív blokk osztja ki — itt látod, hol tart, és itt születik a következő.',
@@ -258,18 +269,18 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       },
       {
         kind: 'hogyan', spot: 'i-naplo', orb: 's-orb-figyel', anchor: 'mesociklus-mosaic',
-        title: 'Négy csempe, négy irány.',
-        voice: 'A **Heti vizsgálat** az aktív hétbe visz, a **Történet** a lezárt futamokhoz, a **Sablonok** a terveidhez, az **Új blokk** a tervezőbe.',
+        title: 'Két ajtó a terv alatt.',
+        voice: 'A **Melyik izmod hol tart** az aktív hétbe visz, az **Edzéstervek** pedig a terveidhez, a történetedhez és az új terv indításához.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
-        title: 'Blokk-váltáskor.',
-        voice: 'Blokk végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
+        title: 'Tervváltáskor.',
+        voice: 'Terv végén és új indításakor — hét közben elég a Heti. Két lezárt futam össze is vethető.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'Innen indul minden hét.',
-        voice: 'A blokk adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
+        voice: 'A terv adja a heti napokat, a napok a mai edzésed — a lánc itt kezdődik.',
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'az aktív hét' },
           { to: '/train/templates', label: 'Sablonok', icon: 'i-polc' },
