@@ -5901,9 +5901,9 @@ export interface components {
             sprintLandmark?: string | null;
             durationMin?: number | null;
             notes?: string | null;
-            /** @description Energy burnt in kcal — the backend's MET estimate for the run. Null when the athlete's weight is unknown; never 0 as a stand-in. */
+            /** @description Energy burnt in kcal — the backend's MET estimate for the run; assumes ~9 km/h when the log carries no pace. Null when the athlete's weight is unknown; never 0 as a stand-in. */
             kcal?: number | null;
-            /** @description True when kcal is the backend's estimate, false when the user overrode it. */
+            /** @description Always true when kcal is present — the run wire has no override field. */
             kcalIsEstimate?: boolean | null;
             levelUp?: components["schemas"]["LevelUpResult"];
         };
