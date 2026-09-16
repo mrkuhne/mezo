@@ -264,7 +264,7 @@ export function WorkoutCard({
                         onChange={(e) => setReps(Number(e.target.value))}
                       />
                     </label>
-                    <span className="wo-field small num">{warm ? '–' : rir}</span>
+                    <span className="wo-field small num">{warm ? '—' : rir}</span>
                     <button type="submit" className="wo-check" aria-pressed={false} aria-label={`${setSlotLabel(i, warm, warmupCount)} mentése`}>
                       ✓
                     </button>
