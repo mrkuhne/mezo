@@ -13930,6 +13930,373 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /titanium glass primitive ───────────────────────────────────────────── */
 
+/* ── train session titanium (mezo-88iwa.7, T6 Task 2) ────────────────────────
+   The active-workout LIST phase (ActiveWorkoutPage): a card per exercise, its
+   set rows, the rest dock that never moves the page, the finish CTA, and the
+   glass-card interiors (per-exercise menu, close confirmation, history +
+   personal-record surfaces). Ported 1:1 from the prototype:
+   docs/design_2.0/prototypes/companion-titanium/session.css `.wo-card*` (:33),
+   `.wo-rows*`/`.wo-row`/`.wo-field`/`.wo-check`/`.wo-verdict` (:71), `.wo-finish*`
+   (:115), `.wo-dock*` (:163), `.wo-menu*` (:301), the close ceremony's
+   `.wo-confirm*`/`.wo-close-*`/`.wo-secondary` (:314), `.wo-video-frame` (:267)
+   and the glass-card reading surfaces `.wo-glass-title/-head/-more/-chart/
+   -medals/-note`, `.last*` and `.rec*` (:632).
+
+   SCOPE — only the list-phase families this slice actually renders. Left out
+   on purpose (T7's close ceremony, not this task): `.cer*`, `.wo-summary`,
+   `.stars`, `.wo-mstar*`, `.wo-sum-*`, `.wo-energy-row`. Also left out as
+   superseded-by-the-menu dead code already retired in the prototype's own
+   comments (session.css:291 "one menu per card instead of a row of exposed
+   buttons"): `.wo-card-tools`/`.wo-tool-gap`/`.wo-card-foot` and the count
+   badge they framed (`.wo-card-count`). And left out as unused by this slice's
+   glass content: `.wo-glass-hero`, `-main`, `-delta`, `-tiles`, `-next` (and
+   its children), `-section`, `-sets`, `-today` — none of them are in the
+   brief's named family list.
+
+   `.wo-glass`/`.wo-glass-card` themselves are SKIPPED — the shipped
+   `.gl-backdrop`/`.gl-card` (GlassBox, T12 Task 2, "titanium glass primitive"
+   above) already carry that overlay role; every class the prototype nested
+   under `.wo-glass-card` mounts INSIDE `<GlassBox>` instead, so it is scoped
+   here as a `.gl-card` descendant (`.gl-card .wo-menu-row`, …) and the two
+   `.wo-glass-card.is-*` modifier rules become `.gl-card.is-*`.
+
+   No `.wo` root either: the header/clock/scroll chrome (`.wo-head`, `.wo-
+   scroll`, `.wo-clock`) is not in the brief's family list — the page already
+   gets that chrome from the house `AppLayout`/`PageHead` — so the only new
+   root is `.wo-list`, a plain flex column for the card stack (no absolute
+   overlay geometry; it renders in normal flow inside `.screen-content`) that
+   also carries the focus-visible ring the prototype hung off `.wo`.
+
+   Prefix: un-prefixed prototype names (`.last*`, `.rec*`) get `wo-` (`.wo-
+   last*`, `.wo-rec*`) so every selector in this section starts with either
+   `wo-` or is a `.gl-card` descendant — the T5 `.overline` lesson about bare
+   short names colliding with a Tailwind utility.
+
+   The two shared "glow breathes" keyframes were both named `wo-cer-breathe`
+   in the prototype (session.css:160, reused by the ceremony's own aura at
+   :488) — renamed here to `wo-finish-glow-breathe` so this section does not
+   pre-claim a keyframe name T7's ceremony section will also want to define. */
+.wo-list { display: flex; flex-direction: column; }
+.wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
+
+/* — one card per exercise — */
+.wo-card {
+  border: 1px solid #ffffff10; border-radius: 22px; margin-bottom: 14px; padding: 14px 14px 10px;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--ex-color) 7%, #ffffff07), #ffffff03);
+}
+.wo-card.is-complete { border-color: color-mix(in srgb, var(--ex-color) 34%, transparent); }
+.wo-card.is-skipped { opacity: .62; border-style: dashed; }
+.wo-card-head { display: flex; align-items: center; gap: 11px; }
+.wo-card-art, .gl-card .wo-glass-head .wo-card-art {
+  width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px;
+  background: color-mix(in srgb, var(--ex-color) 13%, #ffffff06);
+  border: 1px solid color-mix(in srgb, var(--ex-color) 22%, transparent);
+}
+.wo-card-art .icon { width: 40px; height: 40px; }
+.wo-card-copy { display: grid; gap: 2px; min-width: 0; }
+.wo-card-copy strong { font-size: 17px; font-weight: 500; }
+.wo-card-copy small { font-size: 9px; letter-spacing: .16em; color: #ffffff5c; margin-top: 3px; }
+.wo-card-menu {
+  flex: 0 0 auto; width: 32px; height: 32px; cursor: pointer;
+  border: 1px solid #ffffff14; border-radius: 11px; background: #ffffff06;
+  color: #cdd4c2; font-size: 17px; line-height: 1;
+}
+.wo-card-log {
+  margin-left: auto; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--ex-color) 26%, #ffffff14); border-radius: 12px;
+  background: color-mix(in srgb, var(--ex-color) 9%, #ffffff05);
+}
+.wo-card-log .icon { width: 24px; height: 24px; }
+
+.wo-note {
+  display: flex; gap: 8px; align-items: flex-start; width: 100%; margin: 8px 0 0; padding: 10px 12px;
+  text-align: left; cursor: pointer; color: #ded8c6; font-size: 12px; line-height: 1.5;
+  border: 1px dashed #ffffff20; border-radius: 14px; background: #ffffff05;
+}
+.wo-note .icon { width: 18px; height: 18px; flex: 0 0 auto; }
+
+.wo-cue {
+  display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 12px; padding: 11px 12px;
+  border: 1px solid #bca6f125; border-radius: 14px; background: linear-gradient(115deg, #bca6f110, #bca6f103);
+}
+.wo-cue .icon { width: 20px; height: 20px; flex: 0 0 auto; }
+.wo-cue p { margin: 0; font-size: 11.5px; line-height: 1.6; color: #bbb1c9; }
+
+/* — set rows — */
+.wo-rows-head, .wo-row {
+  display: grid; grid-template-columns: 24px 1fr 1fr 46px 38px 22px;
+  gap: 7px; align-items: center;
+}
+.wo-rows-head { padding: 4px 2px 6px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; text-align: center; }
+.wo-rows-head span:first-child { text-align: left; }
+.wo-row {
+  padding: 6px 2px; margin: 4px 0; border-radius: 12px;
+  border: 1px solid transparent; background: #ffffff03;
+}
+.wo-row.is-done { background: color-mix(in srgb, var(--ex-color) 9%, transparent); border-color: color-mix(in srgb, var(--ex-color) 26%, transparent); }
+.wo-idx { font-size: 12px; color: #8d9686; text-align: center; }
+
+.wo-field { display: block; }
+.wo-field input {
+  width: 100%; min-width: 0; appearance: textfield; text-align: center; padding: 9px 2px;
+  border: 1px solid #ffffff12; border-radius: 10px; background: #090e1366;
+  color: #edf6dc; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.wo-field.small input { font-size: 13px; color: #c6cfba; }
+.wo-field input::-webkit-inner-spin-button { appearance: none; }
+.wo-row.is-done .wo-field input { color: #cad7b8; border-color: transparent; background: #ffffff05; }
+.wo-check {
+  width: 38px; height: 38px; border-radius: 12px; cursor: pointer; font-size: 16px;
+  border: 1px solid #ffffff1c; background: #ffffff06; color: #ffffff3d;
+}
+.wo-check[aria-pressed="true"] {
+  border-color: transparent; color: #141a0c;
+  background: color-mix(in srgb, var(--ex-color) 88%, #fff);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ex-color) 40%, transparent);
+}
+.wo-verdict { width: 22px; height: 22px; display: grid; place-items: center; }
+.wo-verdict .icon { width: 20px; height: 20px; }
+
+/* The one way out of the list — three states, nothing but a mark and a centred label. */
+.wo-finish {
+  position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  gap: 12px; width: 100%; margin: 10px 0 4px; padding: 16px 18px; cursor: pointer;
+  border-radius: 22px; border: 1px solid transparent; text-align: center;
+}
+.wo-finish strong { position: relative; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.wo-finish-art { position: relative; display: grid; place-items: center; }
+.wo-finish-art .icon { width: 34px; height: 34px; }
+.wo-finish-glow {
+  position: absolute; right: -30px; top: -46px; width: 150px; height: 150px; border-radius: 50%;
+  pointer-events: none; background: radial-gradient(circle, #ffffff1f, transparent 66%);
+}
+.wo-finish .chip-sheen {
+  position: absolute; inset: 0 auto 0 -40%; width: 34%; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #ffffff00, #ffffff4d, #ffffff00);
+}
+
+/* Nothing logged — this is a skip, and it looks like one. */
+.wo-finish.is-skip {
+  color: #b9b4c4; border-color: #ffffff1a; background: linear-gradient(135deg, #24262e, #191a21);
+}
+.wo-finish.is-skip .wo-finish-art .icon { width: 30px; height: 30px; opacity: .8; }
+.wo-finish.is-skip .chip-sheen, .wo-finish.is-skip .wo-finish-glow { display: none; }
+
+/* Partial — the gold road to the rating. */
+.wo-finish.is-partial {
+  color: #f6ecd4; border-color: #d9c39555;
+  background: radial-gradient(120% 160% at 88% 0%, #ffb34728, transparent 58%), linear-gradient(135deg, #2a2519, #1a1a22 62%, #16181f);
+  box-shadow: 0 14px 32px -20px #ff9a4a66, 0 1px 0 #ffffff1f inset;
+}
+.wo-finish.is-partial .wo-finish-art .icon { filter: drop-shadow(0 0 12px #ffbb5a66); }
+.wo-finish.is-partial .wo-finish-glow { background: radial-gradient(circle, #ffc76a3d, transparent 66%); }
+
+/* Everything ticked — green, and it earned it. */
+.wo-finish.is-full {
+  color: #17210c; border-color: transparent;
+  background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
+  box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
+}
+.wo-finish.is-full .wo-finish-glow { background: radial-gradient(circle, #ffffff59, transparent 66%); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wo-finish.is-partial .chip-sheen, .wo-finish.is-full .chip-sheen { animation: wo-sheen 4.2s ease-in-out 1.6s infinite; }
+  .wo-finish.is-partial .wo-finish-glow, .wo-finish.is-full .wo-finish-glow { animation: wo-finish-glow-breathe 5s ease-in-out infinite; }
+}
+@keyframes wo-finish-glow-breathe { 0%, 100% { opacity: .7; scale: 1; } 50% { opacity: 1; scale: 1.12; } }
+@keyframes wo-sheen { 0%, 62% { left: -40%; } 100% { left: 120%; } }
+
+/* — the dock: fixed height, always present, so nothing below it shifts — */
+.wo-dock {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  display: flex; align-items: center; gap: 12px; height: 88px;
+  padding: 0 16px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid #ffffff12;
+  background: linear-gradient(#0c1014cc, #0c1014f5 40%, #0c1014);
+  backdrop-filter: blur(14px);
+}
+.wo-dock.is-resting { border-top-color: #8ed2e83d; }
+.wo-dock-ring { position: relative; width: 44px; height: 44px; flex: 0 0 auto; }
+.wo-dock-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+.wo-dock-ring circle { fill: none; stroke-width: 4; }
+.wo-dock-ring .track { stroke: #ffffff14; }
+.wo-dock-ring .fill {
+  stroke: #c8e895; stroke-linecap: round;
+  stroke-dasharray: var(--ring) 100; transition: stroke-dasharray .3s linear;
+}
+.wo-dock.is-resting .wo-dock-ring .fill { stroke: #8ed2e8; }
+.wo-dock-ring b {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 13px; font-weight: 500; color: #d6e2c4;
+}
+.wo-dock-copy { display: grid; gap: 2px; min-width: 0; }
+.wo-dock-copy small { font-size: 8px; letter-spacing: .14em; color: #8c9a86; }
+.wo-dock.is-resting .wo-dock-copy small { color: #8fbecd; }
+.wo-dock-copy strong { font-size: 21px; font-weight: 400; font-variant-numeric: tabular-nums; color: #e4ecd8; }
+.wo-dock.is-resting .wo-dock-copy strong { color: #d6f0f8; }
+.wo-dock-acts { margin-left: auto; display: flex; gap: 7px; }
+.wo-dock-acts button {
+  padding: 10px 12px; font-size: 12px; cursor: pointer; color: #cfeaf3;
+  border: 1px solid #8ed2e840; border-radius: 999px; background: #8ed2e810;
+}
+.wo-dock-finish {
+  margin-left: auto; padding: 12px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #27351b;
+  border: 0; border-radius: 999px; background: linear-gradient(135deg, #e1f8b5, #b6d881);
+}
+.wo-dock-finish:disabled { opacity: .35; }
+
+@media (max-width: 360px) {
+  .wo-rows-head, .wo-row { grid-template-columns: 22px 1fr 1fr 42px 34px 20px; gap: 6px; }
+  .wo-field input { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wo-dock-ring .fill { transition: none; }
+}
+
+/* — one menu per card instead of a row of exposed buttons — */
+.gl-card.is-menu, .gl-card.is-confirm { max-height: 84%; }
+.gl-card .wo-menu { display: grid; gap: 7px; }
+.gl-card .wo-menu-row {
+  display: grid; grid-template-columns: 30px 1fr 14px; align-items: center; gap: 12px;
+  width: 100%; padding: 12px 14px; text-align: left; cursor: pointer; color: inherit;
+  border: 1px solid #ffffff10; border-radius: 16px; background: #ffffff05;
+}
+.gl-card .wo-menu-row:disabled { opacity: .34; cursor: default; }
+.gl-card .wo-menu-row .icon { width: 28px; height: 28px; }
+.gl-card .wo-menu-row strong { display: block; font-size: 14px; font-weight: 500; }
+.gl-card .wo-menu-row small { display: block; font-size: 10.5px; color: #ffffff66; margin-top: 2px; }
+.gl-card .wo-menu-row b { color: #ffffff4a; font-size: 15px; text-align: right; }
+
+/* — closing: a real move, and never a silent one — */
+.gl-card.is-confirm { text-align: center; }
+.gl-card .wo-confirm-art { display: block; margin: 4px auto 12px; }
+.gl-card .wo-confirm-art .icon { width: 54px; height: 54px; }
+.gl-card.is-confirm h2 { font-size: 23px; font-weight: 400; letter-spacing: -.02em; margin: 0 0 10px; }
+.gl-card.is-confirm p { margin: 0 0 16px; font-size: 12.5px; line-height: 1.65; color: #ffffff8c; }
+.gl-card.is-confirm p strong { color: #e3d3a8; font-weight: 600; }
+.gl-card .wo-confirm-list { display: grid; gap: 7px; margin-bottom: 18px; text-align: left; }
+.gl-card .wo-confirm-list span {
+  display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px;
+  padding: 10px 12px; border: 1px solid #ffffff0f; border-radius: 14px; background: #ffffff04;
+}
+.gl-card .wo-confirm-list .icon { width: 24px; height: 24px; }
+.gl-card .wo-confirm-list strong { font-size: 13px; font-weight: 500; }
+.gl-card .wo-confirm-list b { font-size: 11px; font-weight: 500; color: color-mix(in srgb, var(--ex-color) 75%, #fff); }
+
+.gl-card .wo-close-cta {
+  position: relative; display: flex; align-items: center; gap: 13px; width: 100%; overflow: hidden;
+  margin: 6px 0 10px; padding: 15px 18px; text-align: left; cursor: pointer; border: 0; border-radius: 20px;
+  color: #17210c;
+  background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
+  box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
+}
+.gl-card .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
+.gl-card .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.gl-card .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
+.gl-card .wo-close-art { flex: 0 0 auto; }
+.gl-card .wo-close-art .icon { width: 34px; height: 34px; }
+.gl-card .wo-close-cta .chip-sheen {
+  position: absolute; inset: 0 auto 0 -40%; width: 32%; transform: skewX(-18deg);
+  background: linear-gradient(90deg, #ffffff00, #ffffff5c, #ffffff00);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gl-card .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
+}
+
+.gl-card .wo-secondary {
+  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 12.5px; color: #bcb2c8;
+  border: 1px solid #ffffff16; border-radius: 18px; background: #ffffff04;
+}
+
+.gl-card .wo-video-frame {
+  position: relative; display: grid; place-items: center; gap: 10px; aspect-ratio: 16 / 9;
+  border: 1px solid #ffffff14; border-radius: 20px; overflow: hidden;
+  background: repeating-linear-gradient(118deg, #141a22 0 14px, #10151d 14px 28px);
+}
+.gl-card .wo-video-frame .icon { width: 62px; height: 62px; }
+.gl-card .wo-video-frame span { font-size: 11px; color: #ffffff7a; }
+.gl-card .wo-video-frame i { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--ex-color) 22%, #ffffff14 22%); }
+
+/* The beatable records: tight rows, and a bar that says how close today already is. */
+.gl-card .wo-glass-title { font-size: 17px; font-weight: 500; letter-spacing: -.01em; margin: 20px 0 10px; }
+.gl-card .wo-glass-title span { display: block; font-size: 10px; font-weight: 400; letter-spacing: .02em; color: #ffffff5e; margin-top: 3px; }
+.gl-card .wo-glass-head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+.gl-card .wo-glass-head small { display: block; font-size: 8px; letter-spacing: .14em; color: #ffffff6e; }
+.gl-card .wo-glass-head strong { font-size: 19px; font-weight: 500; }
+.gl-card .wo-glass-head button {
+  margin-left: auto; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 19px;
+  border: 1px solid #ffffff18; background: #ffffff08; color: #d6d1e4;
+}
+.gl-card .wo-glass-head + .wo-glass-title { margin-top: 4px; }
+.gl-card .wo-glass-note { margin: 14px 0 0; font-size: 9.5px; line-height: 1.7; color: #ffffff45; }
+.gl-card .wo-glass-chart figcaption { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 6px; }
+.gl-card .wo-glass-chart figcaption span { font-size: 8px; letter-spacing: .14em; color: #ffffff7a; }
+.gl-card .wo-glass-chart figcaption small { font-size: 9px; color: #ffffff4d; }
+.gl-card .wo-glass-chart svg { width: 100%; height: auto; display: block; }
+.gl-card .wo-glass-chart p { margin: 8px 0 0; font-size: 11px; line-height: 1.6; color: #ffffff70; }
+.gl-card .wo-glass-medals { display: grid; gap: 8px; }
+.gl-card .wo-glass-medals span {
+  display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid #ffffff0f; border-radius: 16px; background: #ffffff05;
+}
+.gl-card .wo-glass-medals .icon { width: 30px; height: 30px; grid-row: span 2; }
+.gl-card .wo-glass-medals strong { font-size: 14px; font-weight: 500; }
+.gl-card .wo-glass-medals small { font-size: 10px; color: #ffffff5e; }
+
+.gl-card .wo-glass-more { margin-top: 18px; }
+.gl-card .wo-glass-more summary {
+  display: grid; grid-template-columns: 32px 1fr 14px; align-items: center; gap: 11px; cursor: pointer;
+  padding: 12px 13px; border: 1px solid #ffffff12; border-radius: 16px; background: #ffffff05;
+  list-style: none; color: #d3cfe0;
+}
+.gl-card .wo-glass-more summary::-webkit-details-marker { display: none; }
+.gl-card .wo-glass-more-art .icon { width: 30px; height: 30px; }
+.gl-card .wo-glass-more summary strong { display: block; font-size: 13.5px; font-weight: 500; }
+.gl-card .wo-glass-more summary small { display: block; font-size: 10px; color: #ffffff5e; margin-top: 2px; }
+.gl-card .wo-glass-more summary b { color: #ffffff4a; text-align: right; transition: rotate .2s ease; }
+.gl-card .wo-glass-more[open] summary b { rotate: 180deg; }
+.gl-card .wo-glass-more[open] summary { margin-bottom: 12px; }
+
+/* The last session speaks the same table as the live rows — index, kg, rep, rir. */
+.gl-card .wo-last { border: 1px solid #ffffff10; border-radius: 16px; padding: 4px 12px 8px; background: #ffffff04; }
+.gl-card .wo-last-head, .gl-card .wo-last-row { display: grid; grid-template-columns: 22px 1fr 1fr 46px; gap: 7px; align-items: center; text-align: center; }
+.gl-card .wo-last-head { padding: 7px 0 5px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; }
+.gl-card .wo-last-head span:first-child { text-align: left; }
+.gl-card .wo-last-row { padding: 8px 0; border-top: 1px solid #ffffff0a; }
+.gl-card .wo-last-row > span:first-child { font-size: 11px; color: #8d9686; text-align: left; }
+.gl-card .wo-last-row strong { font-size: 15px; font-weight: 500; color: #dbe4cd; font-variant-numeric: tabular-nums; }
+.gl-card .wo-last-row > span:last-child { font-size: 12px; color: #ffffff70; }
+
+.gl-card .wo-rec-empty { margin: -4px 0 10px; font-size: 11.5px; color: #ffffff6b; }
+.gl-card .wo-recs { display: grid; gap: 8px; }
+.gl-card .wo-rec {
+  display: grid; grid-template-columns: 34px 1fr auto; grid-template-rows: auto auto auto;
+  align-items: center; column-gap: 11px; row-gap: 5px; padding: 11px 13px;
+  border: 1px solid #ffffff12; border-radius: 16px; background: linear-gradient(150deg, #ffffff08, #ffffff03);
+}
+.gl-card .wo-rec.is-beaten {
+  border-color: #d9c39566;
+  background: radial-gradient(110% 90% at 88% 0%, #d9c3952b, transparent 64%), linear-gradient(150deg, #ffffff09, #ffffff03);
+}
+.gl-card .wo-rec-art { grid-row: 1 / span 2; }
+.gl-card .wo-rec-art .icon { width: 34px; height: 34px; }
+.gl-card .wo-rec-head small { display: block; font-size: 8px; letter-spacing: .14em; color: #ffffff5e; }
+.gl-card .wo-rec-head strong { display: block; font-size: 18px; font-weight: 400; letter-spacing: -.02em; margin-top: 1px; }
+.gl-card .wo-rec-since { font-size: 9.5px; color: #ffffff4a; text-align: right; align-self: start; padding-top: 3px; }
+.gl-card .wo-rec-track {
+  grid-column: 2 / -1; position: relative; height: 5px; border-radius: 999px;
+  background: #ffffff12; overflow: hidden;
+}
+.gl-card .wo-rec-track i {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, #b89757, #ffe9b5);
+}
+.gl-card .wo-rec.is-beaten .wo-rec-track i { background: linear-gradient(90deg, #ffd98a, #fff6e0); box-shadow: 0 0 10px #ffd98a70; }
+.gl-card .wo-rec-now { grid-column: 2 / -1; font-size: 10px; color: #ffffff66; }
+.gl-card .wo-rec-now:empty { display: none; }
+.gl-card .wo-rec-now b { font-size: 9px; letter-spacing: .12em; color: #f0dcae; }
+/* ── /train session titanium ─────────────────────────────────────────────── */
+
 /* ── train terheles titanium (mezo-88iwa.13, T12 Task 3) ─────────────────────
    A Terhelés (TrainWeekPage) Titán arca: a heti munka RAJZOLT aránya a full-bleed
    hősben, a test-térkép ajtaja, az izomcsoport-kártyák növő sávval, a sport-kártya
