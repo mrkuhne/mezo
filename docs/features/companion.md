@@ -3308,7 +3308,7 @@ percentages must ascend or the context fails to boot):
 | Key | Shipped | Meaning |
 |---|---|---|
 | `enabled` | `true` | master switch for the cap itself |
-| `hard-cap-usd` | `5.00` | the ceiling for one account per cycle |
+| `hard-cap-usd` | `30.00` | the ceiling for one account per cycle, USD. Raised from `5.00` on 2026-09-16 (owner decision, `mezo-m9dhz`): at $5 the owner's account sat permanently at 75.4%, so every call — the smart-tier nightly loop included — was routed to the cheap tier, one of the conditions behind `mezo-5543y`. Steps now fall at $21 / $27 / $30. |
 | `cycle-days` | `30` | ROLLING window ending now — deliberately not a calendar month |
 | `degrade-at-percent` | `70` | cheap-tier routing |
 | `throttle-cron-at-percent` | `90` | suspend `throttled-features` |
