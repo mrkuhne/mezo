@@ -30,6 +30,8 @@ import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
 import { WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
+import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
+import { recordFor } from '@/features/train/logic/recordFor'
 import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
@@ -250,10 +252,11 @@ function ActiveWorkoutSession({
   // Prep mosaic (mezo-d20.3.8): which tile's own page is open, null = the hub.
   const [prepTile, setPrepTile] = useState<PrepTile | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
-  // The per-card glass surface open right now (T6 Task 4) — null = closed. `kind`
-  // distinguishes the ⋮ menu itself from the Videó glass it can switch to; `id`
-  // addresses the card, exactly like the old menuExId did for ExerciseActionSheet.
-  const [glass, setGlass] = useState<{ kind: 'menu' | 'video'; id: string } | null>(null)
+  // The per-card glass surface open right now (T6 Task 4/5) — null = closed. `kind`
+  // distinguishes the ⋮ menu itself, the Videó glass it can switch to, and the
+  // records glass opened straight from the card's own log button; `id` addresses
+  // the card, exactly like the old menuExId did for ExerciseActionSheet.
+  const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records'; id: string } | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: which exercise's editor is open + a per-exercise
@@ -971,6 +974,7 @@ function ActiveWorkoutSession({
       {(() => {
         const menuOpen = glass?.kind === 'menu' && !feedbackEx
         const videoOpen = glass?.kind === 'video' && !feedbackEx
+        const recordsOpen = glass?.kind === 'records' && !feedbackEx
         const position = session.order.indexOf(menuEx.id)
         const slotCount = effectiveSetCount(session, menuEx.id)
         const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
@@ -1002,6 +1006,14 @@ function ActiveWorkoutSession({
             <WorkoutVideoGlass
               open={!!videoOpen}
               exercise={videoOpen ? menuEx : null}
+              tint={tint}
+              onClose={() => setGlass(null)}
+            />
+            <WorkoutRecordsGlass
+              open={!!recordsOpen}
+              exercise={menuEx}
+              record={recordFor(exerciseRecords, menuEx)}
+              todaySets={session.logged[menuEx.id] ?? []}
               tint={tint}
               onClose={() => setGlass(null)}
             />
@@ -1153,7 +1165,7 @@ function ActiveWorkoutSession({
                 })()}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
-                onOpenRecords={() => { /* Task 5: the history + records glass */ }}
+                onOpenRecords={() => setGlass({ kind: 'records', id })}
                 onOpenMenu={() => setGlass({ kind: 'menu', id })}
                 onEditNote={() => setNoteEditExId(id)}
               />

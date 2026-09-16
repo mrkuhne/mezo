@@ -124,12 +124,14 @@ test('mock mode: the Gyakorlatok tile opens the muscle-sectioned exercise-tile p
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
 })
 
-test('mock mode: the 1RM medal is omitted on the Gyakorlatok tile page (mock exerciseRecords is always empty — never fabricated)', async () => {
+test('mock mode: the 1RM medal shows for an exercise the exercise-records fixture covers (T6 Task 5 demo data)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
-  expect(screen.queryByText('1RM')).not.toBeInTheDocument()
-  expect(screen.queryByText(/🏆/)).not.toBeInTheDocument()
+  // Chest Supported Row's fixture bestE1rm is 140 kg (train.ts exerciseRecordsMock) —
+  // no longer omitted now that mock mode serves real-looking records (was: always []).
+  expect(screen.getByText('🏆 140 kg')).toBeInTheDocument()
+  expect(screen.getAllByText('1RM').length).toBeGreaterThan(0)
 })
 
 // Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
@@ -1683,6 +1685,43 @@ test('a logged working set shows its RIR in the row\'s own RIR cell', async () =
   await user.click(submitOf(EX1))
   const workingRow = within(card(EX1)).getAllByRole('button', { name: /working szett szerkesztése/ })[0]
   expect(workingRow.getAttribute('aria-label')).toContain('RIR 1')
+})
+
+// ---- T6 Task 5: the per-card records glass (előzmények és rekordok) ----
+
+test('mock mode: the records button opens the records glass for THAT card, matched by name', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · előzmények és rekordok` }))
+  const dialog = screen.getByRole('dialog', { name: `${EX1} előzményei és rekordjai` })
+  // Chest Supported Row's mock fixture (train.ts exerciseRecordsMock) carries a real bestE1rm.
+  expect(within(dialog).getByText('140 kg')).toBeInTheDocument()
+  expect(within(dialog).getByText('BECSÜLT 1RM')).toBeInTheDocument()
+})
+
+test('mock mode: Bezárás closes the records glass', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · előzmények és rekordok` }))
+  expect(document.querySelector('.gl-card')).not.toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+  expect(document.querySelector('.gl-card')).toBeNull()
+})
+
+test('real mode: no matching record (never logged before) shows em dashes, not zeros', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(http.get(`${API_BASE}/api/train/exercise-records`, () => HttpResponse.json([])))
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · előzmények és rekordok` }))
+  const dialog = screen.getByRole('dialog', { name: `${EX1} előzményei és rekordjai` })
+  expect(within(dialog).getAllByText('—').length).toBeGreaterThanOrEqual(2)
+  expect(within(dialog).queryByText(/0 kg/)).not.toBeInTheDocument()
 })
 
 // ---- set edit + slot delete (mezo-l3on) ----
