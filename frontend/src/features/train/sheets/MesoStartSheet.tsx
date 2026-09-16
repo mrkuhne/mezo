@@ -1,8 +1,10 @@
 // ============================================================
 // Mezo · MesoStartSheet (mezo-meyc.1) — stamps a RUN from a template.
-// The single start surface: the Sablonok cards' „Indítás" and a closed run's
-// „Újrafuttatás" (which reruns first, then opens this sheet on the returned
-// templateId) both land here. Picks a start date (today by default) and
+// The single start surface: a template's own story page „Futam indítása ebből" (T10 Task 3,
+// mezo-88iwa.11 — the Sablonok list card lost its own „Indítás" chip when the reface routed
+// it to the story page instead) and a closed run's „Újrafuttatás" (which reruns first, then
+// opens this sheet on the returned templateId) both land here. Picks a start date (today by
+// default) and
 // active|planned, then fires the one shared POST .../start.
 // Active starts jump straight into the gym week; a planned start just closes
 // (the new run appears in the library's Tervezett section).

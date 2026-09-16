@@ -8,9 +8,10 @@
 //     token, matching the same (getDay()+6)%7 Monday-first math already inlined
 //     at deriveGymSchedule (data/train/trainHooks.ts) and todayIdx
 //     (data/train/runningAgenda.ts) — pulled out here as a tiny reusable helper
-//     since the hub hero (ActiveMesoCard) needed it as a standalone pure fn.
+//     since the plan landing's hero needed it as a standalone pure fn.
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
+import { huMonthDay } from '@/shared/lib/dates'
 
 // --- HU month helpers (meso-planner.jsx:883-902) ---
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
@@ -42,3 +43,19 @@ export function getSeason(startDate: string): string {
 export function todayDayToken(date: Date = new Date()): (typeof DAY_ORDER)[number] {
   return DAY_ORDER[(date.getDay() + 6) % 7]
 }
+
+/** Mock fixtures carry HU display dates ('Jún 12'), the API ISO ones ('2026-06-12'). Passes
+ *  any non-ISO (already-formatted, or empty) value through unchanged — only a parseable
+ *  `YYYY-MM-DD` gets converted. Shared by MesocycleBuilderPage and MesoKonyvtarPage so both
+ *  the run page and the library card format a real-mode ISO startDate the same way. */
+export function huDate(value: string | undefined): string | null {
+  if (!value) return null
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? huMonthDay(value) : value
+}
+
+/** Kilogram figure in Hungarian, at most one decimal (42.5 → „42,5", 60 → „60").
+ *  One home for what MesoDayPage and MesoTemplateStoryPage each kept a private copy of
+ *  (mezo-88iwa.11). Deliberately `toLocaleString`, not `shared/lib/huNum`'s `toFixed`
+ *  variant: a weight of a thousand kilos should group, and these two pages already
+ *  shipped that behaviour. */
+export const huKg = (n: number): string => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })

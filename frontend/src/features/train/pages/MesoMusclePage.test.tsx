@@ -8,7 +8,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { labelsMerge, nudgeFor } from './MesoMusclePage'
+import { CAPTION_MIN_GAP, labelsMerge, nudgeFor, spreadCaptions } from './MesoMusclePage'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -110,6 +110,23 @@ test('the merge threshold and the --nudge clamp are the prototype rules', () => 
   expect(nudgeFor(50)).toBe('-50%')
   expect(nudgeFor(86.1)).toBe('-84%')
   expect(nudgeFor(100)).toBe('-84%')
+})
+
+test('captions whose geometry merges but whose numbers differ are pushed apart, not stacked', () => {
+  // Far enough apart already — untouched, to the decimal.
+  expect(spreadCaptions(45.4, 72.7)).toEqual([45.4, 72.7])
+  // Exactly the minimum gap still counts as far enough.
+  expect(spreadCaptions(40, 40 + CAPTION_MIN_GAP)).toEqual([40, 40 + CAPTION_MIN_GAP])
+  // Mid-scale collision (nudgeFor does nothing here): the pair opens to the minimum gap
+  // around its own midpoint, so each caption moves by at most half of it.
+  expect(spreadCaptions(50, 50)).toEqual([46.5, 53.5])
+  expect(spreadCaptions(48, 52)).toEqual([46.5, 53.5])
+  // Near the ends the pair slides back INSIDE the track rather than hanging off it —
+  // the existing edge clamp then takes over on the anchors it returns.
+  expect(spreadCaptions(0, 0)).toEqual([0, CAPTION_MIN_GAP])
+  expect(spreadCaptions(100, 100)).toEqual([100 - CAPTION_MIN_GAP, 100])
+  expect(nudgeFor(spreadCaptions(0, 0)[0])).toBe('-16%')
+  expect(nudgeFor(spreadCaptions(100, 100)[1])).toBe('-84%')
 })
 
 test('the plan ramp draws one bar per week, this week lit and the pihenőhét hatched', () => {

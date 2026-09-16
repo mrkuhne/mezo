@@ -131,7 +131,7 @@ test('the poster carries ONE plain sentence: where you are, what it weighs, when
   expect(poster).toHaveTextContent('A 6 hétből a 3. héten jársz: 96 szett, 5 edzésnapra osztva — 3 hét múlva jön a pihenőhét.')
 })
 
-test('the whole-poster tap opens the builder deep-link (the ActiveMesoCard contract)', async () => {
+test('the whole-poster tap opens the builder deep-link (the whole-card contract)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' }))

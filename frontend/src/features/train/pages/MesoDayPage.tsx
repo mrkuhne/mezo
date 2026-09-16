@@ -9,7 +9,7 @@
 // the art slot, the day's working-set count as the one dominant numeral, and pills
 // (calibrated minutes, exercise count, the week-share drawn as a mini bar + words —
 // never a bare percent). Below the poster: `.pl-mrows`, one line per muscle worked
-// (icon, name, a bar to the shared 8-set marker, the set count) — this page's own
+// (icon, name, a bar to the shared session-cap marker, the set count) — this page's own
 // answer to the old `StatStrip`/`StatCell` pair, now graphic instead of numeric tiles.
 // Then `.pl-exs`, the exercise VIEW cells — index + `MuscleChip` + name + the 4-cell
 // labelled prescription grid (szett×ismétlés tinted by muscle color, RIR, kg induló,
@@ -37,10 +37,11 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MesoExercises } from '@/features/train/components/MesoExercises'
+import { huKg } from '@/features/train/logic/mesoDates'
 import type { DayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
-import { daySessionBreakdown } from '@/features/train/logic/setBudget'
+import { SESSION_CAP_PIN_PCT, daySessionBreakdown, sessionBarPct } from '@/features/train/logic/setBudget'
 import { dayTileData } from '@/features/train/wizard/dayTiles'
 
 const TONE: Record<string, PageTone> = { coral: 'coral', sage: 'sage', rose: 'rose', gold: 'gold' }
@@ -52,7 +53,6 @@ const DAY_ACCENT: Record<DayTone, string> = {
   coral: 'var(--coral)', sage: 'var(--sage)', rose: 'var(--rose)', gold: 'var(--amber)',
 }
 
-const hu1 = (n: number) => n.toLocaleString('hu-HU', { maximumFractionDigits: 1 })
 
 /** Same shape as the sibling week/muscle pages' skeletons — real mode has no block until the
  *  list query lands, and a ghost („nincs a blokkban") shown in that window would call every
@@ -141,7 +141,9 @@ export function MesoDayPage() {
         </section>
 
         <PageBody>
-          {/* The per-muscle breakdown: icon, name, a bar to the shared 8-set marker, count. */}
+          {/* The per-muscle breakdown: icon, name, a bar to the shared session-cap marker,
+              count. Both the track's scale and the marker's position come from
+              SESSION_MUSCLE_CAP (setBudget.ts) — neither number is written here. */}
           {muscleRows.length > 0 && (
             <>
               <h3 className="pl-h3 rise">Mit terhel ez a nap</h3>
@@ -155,8 +157,8 @@ export function MesoDayPage() {
                     <span className="pl-mrow-art"><MuscleChip token={r.colorMuscle} size={28} /></span>
                     <span className="pl-mrow-name">{r.label}</span>
                     <span className="pl-mrow-bar">
-                      <i style={{ '--w': `${Math.min(100, (r.sets / 10) * 100)}%` } as CSSProperties} />
-                      <u style={{ '--at': '80%' } as CSSProperties} />
+                      <i style={{ '--w': `${sessionBarPct(r.sets)}%` } as CSSProperties} />
+                      <u style={{ '--at': `${SESSION_CAP_PIN_PCT}%` } as CSSProperties} />
                     </span>
                     <span className="pl-mrow-count">{r.sets}<i>szett</i></span>
                   </div>
@@ -193,7 +195,7 @@ export function MesoDayPage() {
                         </span>
                         <span><b>{e.targetRIR}</b><i>RIR</i></span>
                         <span>
-                          <b>{bodyweight ? 'saját testsúly' : e.anchorWeightKg != null ? hu1(e.anchorWeightKg) : '—'}</b>
+                          <b>{bodyweight ? 'saját testsúly' : e.anchorWeightKg != null ? huKg(e.anchorWeightKg) : '—'}</b>
                           <i>kg induló</i>
                         </span>
                         <span><b>{e.warmupSets || '—'}</b><i>bemelegítő</i></span>

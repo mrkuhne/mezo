@@ -306,9 +306,13 @@ export const mesocycles: Mesocycle[] = [
   // report's strength list shares only PART of rec-03's exercises (see mesoReportHyp03Mock).
   {
     id: 'meso-hyp-03',
-    // A legacy/direct run like meso-rec-03 — it predates the template split, so a rerun
-    // materializes a template for it (mezo-meyc.1) instead of resolving one.
-    templateId: null,
+    // Started from the SAME PPL template the active run came from (T10 Task 4,
+    // mezo-88iwa.11): mock mode had no closed run carrying a `templateId` at all, so the
+    // template page's „Futamok ebből a sablonból" list had no closed row to draw and its
+    // route to the frozen report went uncovered offline. Narratively it is the previous
+    // autumn's run of the same block — `meso-rec-03` stays the legacy/direct run whose
+    // rerun materializes a template (mezo-meyc.1).
+    templateId: 'a10e0000-0000-4000-8000-000000000000',
     title: 'Hypertrophy 03 · Ősz',
     shortTitle: 'Hypertrophy 03',
     status: 'archived',
@@ -368,7 +372,9 @@ export const mesoTemplatesMock: MesoTemplate[] = [
     phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
     notes: null,
     volumePerMuscle: null,
-    runCount: 1,
+    // Two runs come from this template in the fixture set: the active meso-hyp-04 and the
+    // closed meso-hyp-03 (which carries this templateId) — the story page derives the same 2.
+    runCount: 2,
     days: [
       {
         day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
@@ -451,8 +457,11 @@ export const mesoTemplatesMock: MesoTemplate[] = [
         exerciseCount: 3,
         exercises: [
           { id: 'b20f0000-0000-4000-8000-000000000001', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 5, repMax: 7, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
-          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound' },
+          // Fix round (mezo-88iwa.11): the three anchor-weight states side by side in one
+          // fixture day — Bench (no anchorWeightKg field at all → em dash), Row (0 → the
+          // bodyweight words) and Press (a real kg) — see MesoTemplateStoryPage.test.tsx.
+          { id: 'b20f0000-0000-4000-8000-000000000002', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound', anchorWeightKg: 0 },
+          { id: 'b20f0000-0000-4000-8000-000000000003', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 2, type: 'compound', anchorWeightKg: 42.5 },
         ],
       },
       {
@@ -746,7 +755,9 @@ const HYP03_LANDMARKS: [string, { mev: number; mav: number; mrv: number; current
 
 export const mesoReportHyp03Mock = {
   mesocycleId: 'meso-hyp-03',
-  templateId: null,
+  // Same template as the run itself carries (see the fixture above) — a frozen report's
+  // `templateId` is the run's, so the report's „Sablon megnyitása" door matches the list.
+  templateId: 'a10e0000-0000-4000-8000-000000000000',
   title: 'Hypertrophy 03 · Ősz',
   startDate: '2025-10-02',
   endDate: '2025-11-13',

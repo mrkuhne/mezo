@@ -1,147 +1,155 @@
 // ============================================================
-// Mezo · MesoTemplatesPage (mezo-tlwa) — the dedicated `Sablonok` Train tab at
-// /train/templates. The template half of the mezo-meyc.1 template/run split now
-// lives HERE instead of on top of the run library (which became runs-only and
-// keeps a Mosaic tile pointing at this page): a blueprint list is a
-// different job from "how are my blocks going", and templates gained enough
-// actions to need the room. A Train page (a full-page sibling of the Edzés hub, mezo-d20.3.6
-// hub slice) — it keeps the Train sub-nav around it, NOT a full-screen sibling
-// (train.nav.test.tsx pins this), so it stays on the plain DS page-header shell
-// rather than the MozaikPage/PageHero scaffold its full-screen siblings
-// (MesoOverviewPage/MesoReportPage/MesoComparePage) use.
+// Mezo · MesoTemplatesPage — „Sablonjaid" at /train/templates.
 //
-// Layout (redesigned into Mozaik 2.0 posters in mezo-3a9a — prototype
-// `docs/design_2.0/prototypes/sablonok.html`): DS page head (`Edzés · Sablonok` +
-// `+ Új` → the planner) → the SHELF STRIP (how many recipes · how many runs came
-// out of them — the bare "Sablonok · N" eyebrow said less and drew nothing) → the
-// `MesoTemplateCard` posters → the shared dashed "plan one more" CTA. The card's
-// face opens the editor, its foot keeps one action (Indítás → the one shared
-// MesoStartSheet) and hides Duplikálás + Törlés behind ⋯.
+// Train Titanium T10 Task 3 (mezo-88iwa.11): THE REFACE. Was the DS-era page-header +
+// template poster-card list (mezo-tlwa/mezo-3a9a, since removed); this is the Titanium list,
+// ported from the prototype's `planLibraryTemplates` + `templateCard`
+// (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:393-434):
+//   `.pl-lhero.is-slim` — a slim poster hero with the back pill DOCKED INSIDE it (the
+//                   Task 2 idiom, `.pl-lhero > .mz-backbtn`) pointing back at the
+//                   „Edzéstervek" landing, one plain sentence, and a REAL count fact
+//                   („N sablon · N futam indult belőlük").
+//   `.pl-lib-card`  — one card per template: name + split, the three fact boxes (hét,
+//                   nap hetente, ~perc when the week actually carries sessions), the
+//                   muscles as `MuscleChip` minis, and ONE plain line about where the
+//                   template stands (`templateUseLine` over `templateStory`).
+//   `.pl-lib-new`   — the create affordance the DS page carried twice (the head's „+ Új"
+//                   chip and the dashed footer CTA), kept as the one loud button → the
+//                   planner. Nothing else was lost: a card tap now opens the template's
+//                   own READ-FIRST page (`/train/templates/:id`), from which the editor,
+//                   the start sheet and the lifecycle pair (Duplikálás / Törlés) hang —
+//                   the list itself carries no destructive action any more.
 //
-// Duplikálás re-sends the template's OWN document as a fresh create (days via the
-// shared `toDayInputs`, volume baselines passed through) under a `(másolat)`
-// title, then lands in the copy's editor — a duplicate exists to be changed, so
-// the editor is where the flow wants to end. Törlés is a soft delete: past runs
-// and their frozen reports are untouched (the confirm lives in the card).
+// Language: plain Hungarian, no jargon. Clay icons + anatomy chips, never emoji.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMesoTemplates } from '@/data/hooks'
+import { useTrain, useMesoTemplates } from '@/data/hooks'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import type { MesoTemplate } from '@/data/types'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { StatCell, StatStrip } from '@/shared/ui/mozaik'
-import { PageTitle } from '@/shared/ui/PageTitle'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Icon } from '@/shared/ui/Icon'
-import { MesoTemplateCard } from '@/features/train/components/MesoTemplateCard'
-import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
-import { toDayInputs } from '@/features/train/logic/mesoDays'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import {
+  splitLabel,
+  templateSessionMinutes,
+  templateStory,
+  templateUseLine,
+  templateWeekSets,
+  trainingDayCount,
+} from '@/features/train/logic/libraryStory'
+import { muscleColor } from '@/features/train/logic/muscleColors'
 import MesoTemplatesSkeleton from '@/features/train/pages/MesoTemplatesSkeleton'
 
+const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
+
 export function MesoTemplatesPage() {
-  const { templates, pending, createTemplate, deleteTemplate } = useMesoTemplates()
+  const { templates, pending } = useMesoTemplates()
+  const { mesocycles, workoutPending } = useTrain()
   const navigate = useNavigate()
-  // The template the start sheet is open on (null = closed) — same wiring the library
-  // uses for a rerun, one start surface for every entry (mezo-meyc.1).
-  const [startTemplate, setStartTemplate] = useState<{ id: string; title?: string } | null>(null)
 
-  // Real-mode loading: the list query is the whole page, so wait it out behind the
-  // layout-matched skeleton. Mock seeds synchronously → never shows. After all hooks.
-  if (pending) return <MesoTemplatesSkeleton />
+  // Real-mode loading: both queries feed the cards (the story line is a read across the
+  // runs), so wait them both out behind the layout-matched skeleton. Mock seeds
+  // synchronously → never shows. After all hooks.
+  if (pending || workoutPending) return <MesoTemplatesSkeleton />
 
-  const openPlanner = () => navigate('/train/mesocycles/new')
-  const openEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
-  // Failed mutations are toasted globally (§7a) — the handlers have nothing richer to
-  // add, so they swallow the rejection and leave the list as it was.
-  const duplicate = (t: MesoTemplate) => {
-    createTemplate({
-      title: `${t.title} (másolat)`,
-      shortTitle: t.shortTitle,
-      goal: t.goal,
-      goalPreset: t.goalPreset,
-      musclePriorities: t.musclePriorities,
-      weeks: t.weeks,
-      split: t.split,
-      style: t.style,
-      phaseCurve: t.phaseCurve,
-      notes: t.notes,
-      volumePerMuscle: t.volumePerMuscle,
-      days: toDayInputs(t.days),
-    })
-      .then((created) => openEditor(created.id))
-      .catch(() => {})
-  }
-  const remove = (id: string) => {
-    deleteTemplate(id).catch(() => {})
-  }
+  const runsOut = templates.reduce((n, t) => n + t.runCount, 0)
 
   return (
-    <>
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <Eyebrow brand>Edzés · Sablonok</Eyebrow>
-          <PageTitle style={{ marginTop: 4 }}>Sablonok</PageTitle>
-        </div>
-        <button type="button" onClick={openPlanner} className="pgact">
-          <Icon name="plus" size={14} /> Új
-        </button>
-      </div>
-
-      {/* One-shot entrance choreography (mezo-d20.11): the page had none. The list
-          speaks the same staggered `.rise` cadence as every other Edzés list, and since
-          mezo-3a9a the shelf strip opens it in place of the bare counted eyebrow. */}
+    <MozaikPage tone="gold">
       <EntranceGroup>
-      <div style={{ padding: '8px 24px 24px' }}>
-        {/* The shelf, in numbers: how many recipes, and how much they have actually run.
-            Both come off the list itself — a template carries no date to count from. */}
-        <div className="rise" style={{ '--d': '30ms' } as CSSProperties}>
-          <StatStrip className="tpl-shelf">
-            <StatCell value={<span data-testid="shelf-templates">{templates.length}</span>} label="Sablon" />
-            <StatCell
-              value={<span data-testid="shelf-runs">{templates.reduce((n, t) => n + t.runCount, 0)}</span>}
-              label="Futam"
-            />
-          </StatStrip>
-        </div>
-        {templates.length === 0 && (
-          <div className="rise" style={{ marginTop: 12, '--d': '60ms' } as CSSProperties}>
-            <GhostState lines={2} message="Még nincs sablonod." />
-          </div>
-        )}
-        <div className="col gap-sm" style={{ marginTop: 12 }}>
-          {templates.map((t, i) => (
-            <div key={t.id} className="rise" style={{ '--d': `${60 + i * 45}ms` } as CSSProperties}>
-              <MesoTemplateCard
-                template={t}
-                onEdit={() => openEditor(t.id)}
-                onStart={() => setStartTemplate({ id: t.id, title: t.title })}
-                onDuplicate={() => duplicate(t)}
-                onDelete={() => remove(t.id)}
-              />
-            </div>
-          ))}
-          {/* The shared dashed "add one more" CTA every DS list closes with. */}
+        <header
+          className="pl-dhero pl-lhero is-slim rise"
+          style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
+        >
+          <span className="pl-dhero-wash" aria-hidden="true" />
           <button
             type="button"
-            onClick={openPlanner}
-            className="card dashedcta rise"
-            style={{ '--d': `${60 + templates.length * 45}ms` } as CSSProperties}
+            className="mz-backbtn"
+            aria-label="Vissza"
+            onClick={() => navigate('/train/mesocycles/konyvtar')}
           >
-            + Új sablon tervezése
+            ‹ Edzéstervek
           </button>
-        </div>
-      </div>
-      </EntranceGroup>
+          <span className="pl-lhero-art" aria-hidden="true">
+            <ClayIcon name="i-polc" size={60} className="icon" />
+            <i />
+            <i />
+          </span>
+          <span className="pl-dhero-tag tr-eyebrow">Sablonjaid</span>
+          <h2>Amiből indíthatsz</h2>
+          <p className="pl-say">Egy sablon a recept — futamot indítasz belőle, és az már a te terved.</p>
+          <div className="pl-poster-foot">
+            <span>{templates.length} sablon</span>
+            <span>{runsOut} futam indult belőlük</span>
+          </div>
+        </header>
 
-      {startTemplate && (
-        <MesoStartSheet
-          templateId={startTemplate.id}
-          title={startTemplate.title}
-          onClose={() => setStartTemplate(null)}
-        />
-      )}
-    </>
+        <PageBody className="pl-lib pl-sub">
+          {templates.length === 0 && (
+            <p className="pl-foot-say rise" style={delay(90)}>
+              Még nincs sablonod — az elsőt alább állíthatod össze.
+            </p>
+          )}
+
+          {templates.map((t, i) => {
+            const days = trainingDayCount(t)
+            const minutes = templateSessionMinutes(t)
+            const muscles = templateWeekSets(t)
+            const split = splitLabel(t)
+            const story = templateStory(t.id, t.title, mesocycles)
+            return (
+              <button
+                key={t.id}
+                type="button"
+                className="pl-lib-card rise"
+                style={delay(90 + i * 30)}
+                aria-label={`Sablon · ${t.title}`}
+                onClick={() => navigate(`/train/templates/${t.id}`)}
+              >
+                <span className="pl-lib-head">
+                  <strong>{t.title}</strong>
+                  {split && <em>{split}</em>}
+                  <b aria-hidden="true">›</b>
+                </span>
+                <span className="pl-day-facts">
+                  <i><ClayIcon name="i-idozito" size={22} className="icon" /><b>{t.weeks}</b><small>hét</small></i>
+                  <i><ClayIcon name="i-edzes" size={22} className="icon" /><b>{days}</b><small>nap hetente</small></i>
+                  {minutes > 0 && (
+                    <i><ClayIcon name="i-heti" size={22} className="icon" /><b>~{minutes}</b><small>perc</small></i>
+                  )}
+                </span>
+                {muscles.length > 0 && (
+                  <span className="pl-lib-mus">
+                    {muscles.map((m) => (
+                      <i key={m.group} style={{ '--mus-color': muscleColor(m.colorMuscle).rail } as CSSProperties}>
+                        <MuscleChip token={m.colorMuscle} size={21} />
+                      </i>
+                    ))}
+                  </span>
+                )}
+                <small className="pl-lib-note">{templateUseLine(story, t.runCount)}</small>
+              </button>
+            )
+          })}
+
+          {/* The create affordance, kept from the DS page (its „+ Új" chip and dashed
+              footer CTA were the same door) — one loud button now. */}
+          <button
+            type="button"
+            className="pl-lib-new rise"
+            style={delay(120 + templates.length * 30)}
+            aria-label="Új terv összeállítása"
+            onClick={() => navigate('/train/mesocycles/new')}
+          >
+            <span className="pl-lib-new-art"><ClayIcon name="i-stack" size={30} className="icon" /></span>
+            <span>
+              <strong>Új terv összeállítása</strong>
+              <small>Sablonból indulsz, vagy nulláról építed</small>
+            </span>
+            <b aria-hidden="true">＋</b>
+          </button>
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }
