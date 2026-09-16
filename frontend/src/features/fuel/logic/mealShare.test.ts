@@ -1,30 +1,35 @@
 // ============================================================
-// Mezo · mealShare tests (Fuel Titanium S1b, mezo-33k6) — az étkezés SAJÁT összetétele.
-// Owner-döntés: a részletező oldal gyűrűi nem a napi célhoz mérnek, hanem azt mondják el,
-// miből áll a tányér. Ezért a három szám 100%-ra jön ki — és ha bármelyik makró ismeretlen,
-// EGYIK sem kap százalékot (egy ismeretlen egészből nem lehet részt számolni).
+// Mezo · mealShare tests (mezo-l2gp0) — a Mai kártya arány-gyűrűinek tiszta matekja.
+// P/Ch/Zs: az étkezés SAJÁT (Atwater 4/4/9) energiájának részesedése; rost: napi adag része.
 // ============================================================
 import { expect, test } from 'vitest'
-import { mealMacroShare } from '@/features/fuel/logic/mealShare'
+import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
 
-test('a három makró energiából számolt aránya pontosan 100%', () => {
-  const rows = mealMacroShare({ p: 30, c: 40, f: 12 })
-  expect(rows.map(r => r.key)).toEqual(['p', 'c', 'f'])
-  expect(rows.map(r => r.label)).toEqual(['Fehérje', 'Szénhidrát', 'Zsír'])
-  expect(rows.reduce((s, r) => s + (r.pct ?? 0), 0)).toBe(100)
-  // 120 / 160 / 108 kcal (4·4·9) → 31 / 41 / 28
-  expect(rows.map(r => r.pct)).toEqual([31, 41, 28])
-  expect(rows.map(r => r.grams)).toEqual([30, 40, 12])
+test('a makró-arányok az étkezés energiájából számolódnak (4/4/9)', () => {
+  // 36 g P (144 kcal) + 48 g C (192) + 9 g F (81) = 417 kcal
+  expect(macroEnergyShares({ proteinG: 36, carbsG: 48, fatG: 9 })).toEqual({ p: 35, c: 46, f: 19 })
 })
 
-test('ismeretlen makró esetén egyetlen százalék sem születik, a grammok maradnak', () => {
-  const rows = mealMacroShare({ p: 30, c: 40, f: null })
-  expect(rows.map(r => r.pct)).toEqual([null, null, null])
-  expect(rows.map(r => r.grams)).toEqual([30, 40, null])
+test('a 0 g valódi nulla: 0%-os arány, nem null', () => {
+  // banán: 1 g P (4) + 23 g C (92) + 0 g F (0) = 96 kcal
+  expect(macroEnergyShares({ proteinG: 1, carbsG: 23, fatG: 0 })).toEqual({ p: 4, c: 96, f: 0 })
 })
 
-test('makró-energia nélküli étkezés nem hazudik 0/0/0-t', () => {
-  const rows = mealMacroShare({ p: 0, c: 0, f: 0 })
-  expect(rows.map(r => r.pct)).toEqual([null, null, null])
-  expect(rows.map(r => r.grams)).toEqual([0, 0, 0])
+test('hiányzó makró mellett NINCS arány — csonka összetételre nem számolunk', () => {
+  expect(macroEnergyShares({ proteinG: 36, carbsG: null, fatG: 9 })).toEqual({ p: null, c: null, f: null })
+})
+
+test('csupa nulla grammból nincs arány (0/0)', () => {
+  expect(macroEnergyShares({ proteinG: 0, carbsG: 0, fatG: 0 })).toEqual({ p: null, c: null, f: null })
+})
+
+test('a rost a napi adag része, 100-ra vágva', () => {
+  expect(fiberSharePct(8, 30)).toBe(27)
+  expect(fiberSharePct(45, 30)).toBe(100)
+  expect(fiberSharePct(0, 30)).toBe(0)
+})
+
+test('rost őszinte-null: hiányzó gramm vagy értelmetlen cél → null', () => {
+  expect(fiberSharePct(null, 30)).toBeNull()
+  expect(fiberSharePct(8, 0)).toBeNull()
 })
