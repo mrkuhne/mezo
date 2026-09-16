@@ -129,7 +129,10 @@ public class QuickNoticeService {
         List<PatternEntity> open = openRows(userId);
         Optional<Trigger> screened = preScreen.screen(signal, open, lastSevenDays(userId, signal));
         if (screened.isEmpty()) {
-            log.debug("Signal {} of user {} is not salient enough for a quick notice", signalId, userId);
+            // INFO, not DEBUG (mezo-5543y): this is the pipeline's most common exit and it was
+            // invisible in production, where the whole diagnosis had to be reconstructed from the
+            // ABSENCE of log lines. It fires at most once per journal/gratitude entry.
+            log.info("Signal {} of user {} is not salient enough for a quick notice", signalId, userId);
             return;
         }
         Trigger trigger = screened.get();
@@ -139,12 +142,21 @@ public class QuickNoticeService {
             return;
         }
         List<String> evidenceRefs = evidenceRefs(signal, answer);
-        PatternEntity target = resolveTarget(userId, answer, trigger, open, evidenceRefs);
+        // Asked BEFORE the target is resolved because the holding-row fallback below depends on the
+        // answer: a row exists to carry a card the user can SEE, so an over-budget notice must not
+        // create one. Moving the read earlier is safe — it is a pure count of today's surfaced
+        // events, and nothing between here and the append writes one.
+        boolean surfaced = observationBudget.allows(userId, Instant.now());
+        Resolution resolved = resolveTarget(userId, answer, trigger, open, evidenceRefs);
+        PatternEntity target = resolved.row() != null
+                ? resolved.row()
+                : holdingRow(userId, answer, evidenceRefs, resolved, surfaced);
         if (target == null) {
-            log.debug("Quick notice for user {} had no row to hang on — dropped", userId);
+            log.info("Quick notice for user {} had no row to hang on — dropped ({})", userId,
+                    resolved.settledGround() ? "the claim is already settled"
+                            : surfaced ? "no row and no test plan" : "over budget");
             return;
         }
-        boolean surfaced = observationBudget.allows(userId, Instant.now());
         PatternEventEntity event = patternEventAppender.append(userId, target.getId(),
                 PatternEventEntity.KIND_OBSERVATION,
                 PatternEventPayloadEnvelope.observation(observationText(answer), evidenceRefs, surfaced));
@@ -310,9 +322,34 @@ public class QuickNoticeService {
                 : answer.text() + "\n" + answer.question();
     }
 
+    /**
+     * Where a notice may hang, and — when nowhere — WHY, because the two misses are not the same
+     * thing (mezo-5543y).
+     *
+     * <p>{@code settledGround} means the model's own claim resolved onto a row somebody already
+     * judged ({@code refuted}/{@code rejected}/{@code confirmed}/{@code dormant}), by naming its
+     * key or by proposing the test plan that derives it. Re-raising it — on that row OR on a fresh
+     * one — would quietly reopen a verdict nobody revisited, so such a notice is dropped outright.
+     * A miss with {@code settledGround == false} is the opposite situation: nothing in the account
+     * speaks to this observation at all, which is exactly the cold start the holding row exists for.
+     */
+    private record Resolution(PatternEntity row, boolean settledGround) {
+
+        static Resolution on(PatternEntity row) {
+            return new Resolution(row, false);
+        }
+
+        static final Resolution SETTLED = new Resolution(null, true);
+        static final Resolution NOTHING = new Resolution(null, false);
+    }
+
     /** Named open row → new validated-plan row → the first touched row → nothing. */
-    private PatternEntity resolveTarget(UUID userId, NoticeAnswer answer, Trigger trigger,
-                                        List<PatternEntity> open, List<String> evidenceRefs) {
+    private Resolution resolveTarget(UUID userId, NoticeAnswer answer, Trigger trigger,
+                                     List<PatternEntity> open, List<String> evidenceRefs) {
+        // Set by either branch below when the model's claim landed on a row somebody already
+        // judged. It never short-circuits: a real open target still wins, and the flag is only
+        // consulted when the whole chain came up empty (see Resolution).
+        boolean settledGround = false;
         if (answer.hypothesisKey() != null && !answer.hypothesisKey().isBlank()) {
             // Restricted to the user's OPEN rows (the same `open` set the pre-screen already
             // loaded: proposed|monitoring, non-statistical) — NOT intersected with
@@ -324,20 +361,69 @@ public class QuickNoticeService {
                     .filter(row -> key.equals(row.getHypothesisKey()))
                     .findFirst();
             if (named.isPresent()) {
-                return named.get();
+                return Resolution.on(named.get());
             }
+            // Not open, but the key EXISTS ⇒ the model pointed at a settled judgement.
+            settledGround = patternRepository
+                    .findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, key).isPresent();
         }
         if (answer.newTestPlan() != null) {
             Optional<TestPlanEnvelope> plan = testPlanValidator.validate(userId, answer.newTestPlan());
             if (plan.isPresent()) {
                 PatternEntity planned = existingOrNewRow(userId, plan.get(), answer, evidenceRefs);
                 if (planned != null) {
-                    return planned;
+                    return Resolution.on(planned);
                 }
+                // `existingOrNewRow` returns null for exactly one reason: the plan's own key is
+                // held by a settled (or foreign-kind) row — the same verdict, re-proposed.
+                settledGround = true;
             }
         }
         return open.stream().filter(row -> trigger.patternIds().contains(row.getId())).findFirst()
-                .orElse(null);
+                .map(Resolution::on)
+                .orElse(settledGround ? Resolution.SETTLED : Resolution.NOTHING);
+    }
+
+    /**
+     * mezo-5543y — the cold start's way out. A brand-new account has no rows at all, so
+     * {@code TOUCHES_OPEN} cannot fire and there is nothing to hang a notice on; if the model also
+     * proposes no test plan, every observation used to be dropped and the Észrevételek tab stayed
+     * empty for ever. This row is what carries such an observation instead.
+     *
+     * <p><b>It deliberately carries no test plan and no {@code hypothesisKey}.</b> Mezo noticed
+     * something it cannot measure, and the row says exactly that: the nightly evaluation skips
+     * plan-less rows, {@code ObservationFeedService} keeps them out of the {@code watching} group,
+     * the pre-screen's {@code TOUCHES_OPEN} ignores them, and {@code ObservationSourceIcon} already
+     * renders a plan-less row as Mezo's own voice. A null key is what keeps it un-addressable — a
+     * model may not name it for revision, and (the partial unique index on
+     * {@code (created_by, hypothesis_key)} ignoring nulls) several may coexist.
+     *
+     * <p>Returns {@code null} when the notice will not be SURFACED: a row exists to carry a card
+     * the user can see, and one per invisible card would litter the Minták screen for ever.
+     */
+    private PatternEntity holdingRow(UUID userId, NoticeAnswer answer, List<String> evidenceRefs,
+                                     Resolution resolved, boolean surfaced) {
+        if (resolved.settledGround() || !surfaced) {
+            return null;
+        }
+        PatternEntity row = new PatternEntity();
+        row.setCreatedBy(userId);
+        row.setKind(PatternEntity.KIND_REFLECTION);
+        // `pair_key` is NOT NULL and is only an upsert identity for catalog rows; a holding row has
+        // no pair, so its own id stands in — unique by construction, and it matches nothing.
+        row.setPairKey("note-" + UUID.randomUUID());
+        row.setHypothesisKey(null);
+        row.setTestPlan(null);
+        row.setOrigin(PatternEntity.ORIGIN_QUICK_NOTICE);
+        row.setStatus(PatternEntity.STATUS_PROPOSED);
+        row.setCategory(CATEGORY);
+        row.setCategoryLabel(CATEGORY_LABEL);
+        row.setTitle(firstSentence(answer.text()));
+        row.setMechanism(answer.text());
+        row.setEvidence(new PatternEvidenceEnvelope(new ArrayList<>(evidenceRefs)));
+        // timestamptz stores micros and ROUNDS nanos — truncate so the re-read row equals this one
+        row.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return patternRepository.saveAndFlush(row);
     }
 
     /**

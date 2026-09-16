@@ -150,6 +150,56 @@ class QuickNoticeServiceIT extends AbstractIntegrationTest {
     }
 
     /**
+     * mezo-5543y — the COLD START. A brand-new account has no pattern rows at all, so
+     * {@code TOUCHES_OPEN} cannot fire and there is no open row to hang a notice on; if the model
+     * also proposes no test plan, every observation used to be dropped ("no row to hang on"), and
+     * the Észrevételek tab stayed empty forever — the deadlock this IT pins open. The notice now
+     * lands on a plan-less HOLDING row: Mezo's own voice, carrying no falsifiable test and
+     * therefore no promise the nightly pass cannot keep.
+     *
+     * <p>EXTREME_MOOD is the trigger because it is the one pre-screen rule that needs neither an
+     * open row nor a multi-day history — exactly the state a first-week account is in.
+     */
+    @Test
+    void testOnSignal_shouldHangNoticeOnAPlanlessHoldingRow_whenTheAccountHasNoRowsAtAll() {
+        UUID owner = userPopulator.createUser().getId();
+        String scripted = "[[NOTICE:{\"text\":\"Ma padlón volt a hangulatod, pedig aludtál eleget.\","
+                + "\"question\":\"Történt valami?\",\"hypothesisKey\":null,"
+                + "\"newTestPlan\":null,\"evidenceRefs\":[]}]]";
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
+                "Ma minden szörnyű volt. " + scripted, "quickinput");
+        // mood=1, sure => EXTREME_MOOD; no people, no topics, no prior days — a cold account
+        TextSignalEntity signal = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL,
+                entry.getId(), TODAY, 1, 2, 5, List.of(), List.of());
+
+        quickNoticeService.onSignal(owner, signal.getId());
+
+        List<PatternEntity> rows = patternRepository
+                .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
+        assertThat(rows).hasSize(1);
+        PatternEntity holding = rows.getFirst();
+        assertThat(holding.getKind()).isEqualTo(PatternEntity.KIND_REFLECTION);
+        assertThat(holding.getOrigin()).isEqualTo(PatternEntity.ORIGIN_QUICK_NOTICE);
+        assertThat(holding.getStatus()).isEqualTo(PatternEntity.STATUS_PROPOSED);
+        // the row carries NO test: nothing to evaluate, so nothing may be promised about it
+        assertThat(holding.getTestPlan()).isNull();
+        assertThat(holding.getHypothesisKey()).isNull();
+        assertThat(holding.getBelief()).isNull();
+        assertThat(holding.getTitle()).contains("Ma padlón volt a hangulatod");
+
+        List<PatternEventEntity> events = patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, holding.getId());
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().getKind()).isEqualTo(PatternEventEntity.KIND_OBSERVATION);
+        assertThat(events.getFirst().getPayload().surfaced()).isTrue();
+        assertThat(events.getFirst().getPayload().text())
+                .contains("Ma padlón volt a hangulatod, pedig aludtál eleget.")
+                .contains("Történt valami?");
+        assertThat(events.getFirst().getPayload().evidenceRefs())
+                .contains(TextSignalEntity.SOURCE_JOURNAL + ":" + entry.getId());
+    }
+
+    /**
      * Fix round finding 1: a genuinely NULL answer (the real {@code CompanionLlm} contract for an
      * empty/absent generation, mirrored here by {@link FakeCompanionLlm#NOTICE_NULL_ANSWER}) must
      * never throw out of {@code onSignal} — the constraint the sibling

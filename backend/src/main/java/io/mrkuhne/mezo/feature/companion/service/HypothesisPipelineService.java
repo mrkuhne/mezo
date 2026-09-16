@@ -183,40 +183,77 @@ public class HypothesisPipelineService {
                 .filter(h -> h.category() != null && CATEGORIES.contains(h.category()))
                 .limit(max)
                 .toList();
+        double floor = keepFloor(userId);
         int persisted = 0;
         for (Hypothesis hypothesis : proposals) {
             try {
-                if (judgeAndPersist(userId, context, hypothesis)) {
+                if (judgeAndPersist(userId, context, hypothesis, floor)) {
                     persisted++;
                 }
             } catch (Exception e) {
                 log.warn("Hypothesis round failed for '{}' of user {}", hypothesis.title(), userId, e);
             }
         }
+        // Prod diagnosis (mezo-5543y) had nothing but the caller's survivor count to go on, and
+        // "0" cannot tell "the model proposed nothing" from "everything was critiqued away".
+        log.info("Hypothesis round for user {}: {} proposal(s), {} persisted, keep floor {}",
+                userId, proposals.size(), persisted, floor);
         return persisted;
     }
 
-    /** Critique → score → keep / revise-once / discard (arch §4.7 thresholds). */
-    private boolean judgeAndPersist(UUID userId, String context, Hypothesis hypothesis) {
+    /**
+     * The keep bar for tonight's round — normally {@code keepThreshold}, and the lower
+     * {@code coldStartKeepThreshold} while the account has NO open reflection-owned row
+     * (mezo-5543y). Read ONCE per round rather than per hypothesis: a row persisted earlier in
+     * this same round must not raise the bar for its siblings half-way through, or the cap's
+     * second proposal would be judged more harshly than the first for no reason the user could
+     * ever see.
+     */
+    private double keepFloor(UUID userId) {
+        CompanionProperties.Hypotheses config = properties.hypotheses();
+        boolean coldStart = patternRepository
+                .findByCreatedByAndStatusInAndDeletedFalse(userId,
+                        Set.of(PatternEntity.STATUS_PROPOSED, PatternEntity.STATUS_MONITORING))
+                .stream()
+                .noneMatch(PatternEntity::isReflectionOwned);
+        return coldStart ? config.coldStartKeepThreshold() : config.keepThreshold();
+    }
+
+    /**
+     * Critique → score → keep / revise-once / discard (arch §4.7 thresholds).
+     *
+     * <p>{@code floor} is the cold-start concession (mezo-5543y) and equals {@code keepThreshold}
+     * on any account that already has an open reflection-owned row. It is consulted LAST, on the
+     * better of the original and its revision, so relaxing the bar can never cost a revise pass:
+     * a borderline hypothesis is still improved first, and only then held against the lower bar.
+     */
+    private boolean judgeAndPersist(UUID userId, String context, Hypothesis hypothesis, double floor) {
         CompanionProperties.Hypotheses config = properties.hypotheses();
         Critique critique = critique(context, hypothesis);
         double score = score(critique);
         if (score >= config.keepThreshold()) {
             return persist(userId, hypothesis, critique, score);
         }
+        Hypothesis best = hypothesis;
+        Critique bestCritique = critique;
+        double bestScore = score;
         if (score >= config.reviseThreshold()) {
             Hypothesis revised = revise(context, hypothesis, critique);
-            if (revised == null || revised.title() == null || revised.title().isBlank()
-                    || revised.category() == null || !CATEGORIES.contains(revised.category())) {
-                return false;
-            }
-            Critique reCritique = critique(context, revised);
-            double reScore = score(reCritique);
-            if (reScore >= config.keepThreshold()) {
-                return persist(userId, revised, reCritique, reScore);
+            if (revised != null && revised.title() != null && !revised.title().isBlank()
+                    && revised.category() != null && CATEGORIES.contains(revised.category())) {
+                Critique reCritique = critique(context, revised);
+                double reScore = score(reCritique);
+                if (reScore > bestScore) {
+                    best = revised;
+                    bestCritique = reCritique;
+                    bestScore = reScore;
+                }
             }
         }
-        return false;
+        // `floor` is keepThreshold itself on a warm account (and boot-validated never to exceed it),
+        // so this stays the pre-mezo-5543y keep rule exactly — a revision that clears 0.75 — with
+        // the cold-start last chance added underneath.
+        return bestScore >= floor && persist(userId, best, bestCritique, bestScore);
     }
 
     /**

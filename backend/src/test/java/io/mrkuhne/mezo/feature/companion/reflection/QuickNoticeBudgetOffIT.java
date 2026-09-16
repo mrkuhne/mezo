@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
@@ -47,6 +48,7 @@ class QuickNoticeBudgetOffIT extends AbstractIntegrationTest {
 
     @Autowired private QuickNoticeService quickNoticeService;
     @Autowired private PatternEventRepository patternEventRepository;
+    @Autowired private PatternRepository patternRepository;
     @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private TextSignalPopulator textSignalPopulator;
@@ -73,5 +75,30 @@ class QuickNoticeBudgetOffIT extends AbstractIntegrationTest {
 
         assertThat(appNotificationRepository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(
                 owner, PageRequest.of(0, 10))).isEmpty();
+    }
+
+    /**
+     * mezo-5543y, the holding row's budget guard. The cold-start fallback (see
+     * {@code QuickNoticeServiceIT}) creates a plan-less row so an observation that resolved to
+     * NOTHING can still be seen — so when the budget says it will NOT be seen, that row has no
+     * reason to exist. Creating one anyway would litter the Minták screen with rows carrying an
+     * invisible card, one per journal entry, for ever.
+     */
+    @Test
+    void testOnSignal_shouldCreateNoHoldingRow_whenTheNoticeCannotBeSurfaced() {
+        UUID owner = userPopulator.createUser().getId();
+        String scripted = "[[NOTICE:{\"text\":\"Ma padlón volt a hangulatod.\","
+                + "\"question\":\"Történt valami?\",\"hypothesisKey\":null,"
+                + "\"newTestPlan\":null,\"evidenceRefs\":[]}]]";
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
+                "Ma minden szörnyű volt. " + scripted, "quickinput");
+        // mood=1, sure => EXTREME_MOOD: salient, but with no row anywhere to hang it on
+        TextSignalEntity signal = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL,
+                entry.getId(), TODAY, 1, 2, 5, List.of(), List.of());
+
+        quickNoticeService.onSignal(owner, signal.getId());
+
+        assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner))
+                .isEmpty();
     }
 }

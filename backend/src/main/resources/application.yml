@@ -1110,6 +1110,15 @@ mezo:
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)
       revise-threshold: 0.50
+      # mezo-5543y — the COLD-START floor: the keep bar while the account has NO open
+      # reflection-owned row. The critique prompt tells the model to score `statistical` low
+      # without a concrete r/n, and that factor weighs most (0.35), so a FIRST hypothesis cannot
+      # structurally reach 0.75: production logged "Reflection propose: 0" every night from the
+      # feature's first run, no row was ever created, and with no row the quick notice had nothing
+      # to hang an observation on either — the Észrevételek tab stayed empty for ever. Applied only
+      # AFTER the revise pass has had its chance, so it never costs a revision. Validated at boot
+      # to sit between revise-threshold and keep-threshold.
+      cold-start-keep-threshold: 0.55
     feedback-learning:
       # W4.2 (mezo-b3pp.16, spec §8.2): nightly rollup-only pass over message_feedback — per-surface
       # effectiveness + style (down-reason) histograms. 03:10, a free dawn slot (02:20/02:40/03:00

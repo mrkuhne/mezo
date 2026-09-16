@@ -90,6 +90,19 @@ test('tapping „Igen, figyeld" replies watch and flips the card to its acknowle
     .toBe('Rendben, figyelem. Nyolc napnál újra szólok.')
 })
 
+// mezo-5543y: a hideg indítás „tartó sora" NEM hordoz teszt-tervet — a szerver ilyenkor `minN`
+// nélkül küldi a kártyát, mert nincs mit mérni rajta. A rendes nyugtázás nyolc napot ígér; egy
+// mérhetetlen észrevételnél ez olyan ígéret lenne, amit semmi nem tud betartani (az éjszakai
+// kiértékelés a terv nélküli sorokat átugorja, tehát soha nem szólna újra).
+test('a measurable-less fresh card acknowledges without promising a day count', async () => {
+  const onReply = renderCard({ ...fresh, minN: undefined })
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, figyeld' }))
+
+  expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
+  expect(document.querySelector('.nap-obs-ack')?.textContent)
+    .toBe('Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok.')
+})
+
 test('a card the server already knows the answer to opens acknowledged, without chips', () => {
   renderCard({ ...fresh, repliedChoice: 'reject' })
   expect(document.querySelector('.nap-obs-chips')).toBeNull()
