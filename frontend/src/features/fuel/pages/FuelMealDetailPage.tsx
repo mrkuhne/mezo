@@ -38,7 +38,7 @@ import { useFuelDay } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
-import type { FuelMeal, MealItemLine, MealSlot, Nutrients } from '@/data/types'
+import type { MealItemLine, MealSlot } from '@/data/types'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
@@ -50,6 +50,7 @@ import {
 } from '@/features/fuel/components/FuelQualityBlocks'
 import { mealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
+import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
 
 /** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
@@ -76,17 +77,6 @@ function gramsOf(line: MealItemLine): number | null {
 /** A megosztott minőség-lapkák bemenete EGY logolt sorból. */
 function qualityLineOf(line: MealItemLine): FuelQualityLine {
   return { grams: gramsOf(line), kcal: line.contribution.kcal, nova: line.nova ?? null }
-}
-
-/** Az étkezés NÉGY tárolt ténye — a rost a régi lapos `meal.fiberG`-ből is feloldható. */
-function mealNutrients(meal: FuelMeal): Nutrients {
-  const n: Nutrients | undefined = meal.nutrients
-  return {
-    fiberG: n?.fiberG ?? meal.fiberG ?? null,
-    sugarG: n?.sugarG ?? null,
-    saltG: n?.saltG ?? null,
-    saturatedFatG: n?.saturatedFatG ?? null,
-  }
 }
 
 export function FuelMealDetailPage() {

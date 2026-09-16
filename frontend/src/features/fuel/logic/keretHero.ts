@@ -12,6 +12,7 @@ import { pct } from '@/shared/lib/pct'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
 
@@ -152,6 +153,11 @@ export interface DoneMealRow {
   /** Rost grammban (mezo-l2gp0) — a kártya rost-gyűrűjének számlálója; a wire-ról hiányzó
    *  rost null marad (őszinte-null), sosem 0. */
   fiberG: number | null
+  /** Cukor grammban (mezo-ya2wp) — a sor vércukor-chipjének bemenete a rost/szénhidrát mellé.
+   *  Null, ha a forrás nem adta meg: a sáv ilyenkor becsül, és ezt ki is mondja. A feloldás
+   *  ugyanaz a `mealNutrients`, amit a részletek oldal használ — a chip és a doboz sosem
+   *  mondhat mást ugyanarról az étkezésről. */
+  sugarG: number | null
   /** A tervezett ablak-idő (mezo-l2gp0) — az óra-doboz "Terv szerint" sora; ablak nélküli
    *  extra logon null. */
   plannedTime: string | null
@@ -167,6 +173,9 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
     .sort((a, z) => toMin(a.time) - toMin(z.time))
     .map((s): DoneMealRow => {
       const meal = byId.get(s.mealId)
+      // A négy tárolt tény egyszer oldódik fel; a rost így a `nutrients` envelope-ból is
+      // előjön, nem csak a régi lapos mezőből.
+      const facts = meal ? mealNutrients(meal) : null
       return {
         mealId: s.mealId,
         name: s.mealName ?? (meal ? mealDisplayName(meal) : undefined) ?? '',
@@ -176,7 +185,8 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
         carbsG: meal?.c ?? s.c ?? null,
         fatG: meal?.f ?? s.f ?? null,
         scorePct: meal?.score != null ? Math.round(meal.score * 100) : null,
-        fiberG: meal?.fiberG ?? null,
+        fiberG: facts?.fiberG ?? null,
+        sugarG: facts?.sugarG ?? null,
         plannedTime: s.plannedTime ?? null,
       }
     })

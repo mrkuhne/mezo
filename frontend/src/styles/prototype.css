@@ -11828,7 +11828,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-block-name { font-size: 17px; font-weight: 600; letter-spacing: 0.2px; color: var(--ink); }
 
 /* Blokk-gyűrű (3-as opció): a blokk EGYETLEN kcal-száma. */
-.fmx-budget-ring { position: relative; margin-left: auto; width: 44px; height: 44px;
+.fmx-budget-ring { position: relative; width: 44px; height: 44px;
   display: grid; place-items: center; }
 .fmx-budget-ring svg { position: absolute; inset: 0; width: 100%; height: 100%;
   transform: rotate(-90deg); overflow: visible; }
@@ -11841,6 +11841,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-budget-ring.is-empty b { font-weight: 400; color: var(--sub); }
 
 /* Az óra gomb (mezo-l2gp0): csendes üveg-korong a cím sorában — csak logolt blokkon. */
+.fmx-block-end { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .fmx-clock { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
   border-radius: 50%; border: 1px solid var(--border-subtle);
   background: var(--surface-glass); backdrop-filter: blur(6px);
@@ -11869,12 +11870,27 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-align: left; color: var(--ink); font-family: inherit; }
 .fmx-meal-main strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; font-size: 16px; font-weight: 500; line-height: 1.3; }
-.fmx-meal-bottom { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.fmx-meal-bottom { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .fmx-meal-bottom .fmx-score { margin-left: auto; }
+/* A vércukor-chip (mezo-ya2wp): a mini görbe MAGA az ikon, a sáv színében — a pontszám-chip
+   BAL oldalán, ahogy a jóváhagyott prototípus rendelte. Ekkor a chip viszi a jobbra-tolást,
+   a pontszám pedig mellé simul, hogy a két chip egy csoportként olvasson. */
+.fmx-meal-bottom .fmx-glu-chip { margin-left: auto; }
+.fmx-meal-bottom .fmx-glu-chip + .fmx-score { margin-left: 0; }
+.fmx-glu-chip { --glu-color: var(--sky); display: grid; place-items: center; flex: 0 0 auto;
+  width: 40px; height: 34px; padding: 0 5px; border-radius: 17px; color: var(--glu-color);
+  border: 1px solid color-mix(in srgb, var(--glu-color) 40%, transparent);
+  background: color-mix(in srgb, var(--glu-color) 11%, transparent); }
+.fmx-glu-chip.lvl-low { --glu-color: var(--sage); }
+.fmx-glu-chip.lvl-mid { --glu-color: var(--amber); }
+.fmx-glu-chip.lvl-high { --glu-color: var(--lav); }
+.fmx-glu-chip:active { transform: scale(0.94); transition: transform 0.12s; }
+.fmx-glu-mini { display: block; width: 100%; height: auto; }
 
 /* Makró mini-gyűrűk: 15px clay ikon a 40px gyűrű fölött, a gyűrűben a GRAMM makró-színnel.
    Ugyanaz a pathLength=100 ív-mechanika, mint a ház többi fmx gyűrűjén. */
-.fmx-mrings { display: flex; gap: 14px; }
+.fmx-mrings { display: flex; gap: clamp(6px, 2.6vw, 14px); flex: 1 1 auto; min-width: 0;
+  justify-content: space-between; }
 .fmx-mcell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .fmx-mcell > svg:first-child { width: 15px; height: 15px;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.26)); }
