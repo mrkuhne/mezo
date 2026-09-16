@@ -317,13 +317,47 @@ public class ProgressionService {
                 addAthletic(deltas, kinds, "anaerobic_capacity", (long) rpe * sp.rpeXpPerPoint());
                 addAthletic(deltas, kinds, "mobility", (long) min * sp.xpPerMin());
             }
-            default -> { // volleyball
+            case "volleyball" -> {
                 label = "Röplabda";
                 addAthletic(deltas, kinds, "vertical_jump", (long) sets * sp.xpPerSet());
                 addAthletic(deltas, kinds, "agility", (long) sets * sp.xpPerSet());
                 addAthletic(deltas, kinds, "coordination", (long) sets * sp.xpPerSet());
                 addAthletic(deltas, kinds, "explosiveness", (long) rpe * sp.rpeXpPerPoint());
                 addAthletic(deltas, kinds, "aerobic_capacity", (long) min * sp.xpPerMin());
+            }
+            // The remaining seven ids only ever carry duration + rpe (no sets/rounds — those are
+            // volleyball/cross/TRX-only per the wire), so there is no per-sport metric to hang a
+            // bespoke mapping on. They all get the same neutral general-athleticism grant — the
+            // two skills already doing duration/effort duty for an existing sport above
+            // (aerobic_capacity from minutes, explosiveness from rpe) — under the sport's own
+            // Hungarian label instead of collapsing into "Röplabda".
+            case "bike" -> {
+                label = "Kerékpár";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            case "swim" -> {
+                label = "Úszás";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            case "football" -> {
+                label = "Foci";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            case "basketball" -> {
+                label = "Kosárlabda";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            case "tennis" -> {
+                label = "Tenisz";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            case "hike" -> {
+                label = "Túra";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
+            }
+            default -> { // "other" and any unrecognised id
+                label = "Egyéb mozgás";
+                addGeneralAthleticism(deltas, kinds, min, rpe, sp);
             }
         }
 
@@ -424,6 +458,17 @@ public class ProgressionService {
             deltas.merge(key, xp, Long::sum);
             kinds.put(key, "ATHLETIC");
         }
+    }
+
+    /**
+     * Neutral fallback XP for a sport with no per-modality metric on the wire (no sets/rounds —
+     * only duration and rpe): the same two skills volleyball and cross already grant for those
+     * two generic inputs, aerobic_capacity from minutes and explosiveness from rpe.
+     */
+    private void addGeneralAthleticism(Map<String, Long> deltas, Map<String, String> kinds,
+        int min, int rpe, ProgressionProperties.Sport sp) {
+        addAthletic(deltas, kinds, "aerobic_capacity", (long) min * sp.xpPerMin());
+        addAthletic(deltas, kinds, "explosiveness", (long) rpe * sp.rpeXpPerPoint());
     }
 
     /**

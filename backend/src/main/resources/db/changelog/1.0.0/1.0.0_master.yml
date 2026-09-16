@@ -1274,3 +1274,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609141900_mezo-jb84_protein_tier_low.sql
+  - changeSet:
+      id: "1.0.0:202609161200_mezo-88iwa.9_sport_session_kcal"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609161200_mezo-88iwa.9_sport_session_kcal.sql

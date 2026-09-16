@@ -54,7 +54,7 @@ import { dayStripItems } from '@/features/train/logic/dayStripItems'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
-import { SPORT_TONE, sportOf, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_KINDS, SPORT_TONE, sportOf, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 
@@ -245,10 +245,6 @@ export function TrainTodayPage() {
   // (mezo-9bbc review fix). Falls back to todayIso when the shown day carries no
   // date (defensive only; every real agenda day has one).
   const shownIso = shownDay?.date ?? todayIso
-  // Rest-day card gate — shared with the Saját edzés footer below so exactly one
-  // of the two carries the CTA and it is never duplicated (mezo-eahv).
-  const restDayCard =
-    !shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout)
   // The today-gym poster's own render condition, hoisted: the `.tr-alt` quick pair follows
   // the energy and muscle-impact cards in render order, and the dashed „Saját edzés”
   // footer stands down while the pair is there so exactly ONE one-off-workout entry exists
@@ -260,6 +256,29 @@ export function TrainTodayPage() {
     sport.sessions.find((s) => s.sport === k && s.date === huMonthDayDow(iso)) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
+  // Logged sports the shown day's SCHEDULE never knew about (T8 Task 4 final review,
+  // mezo-88iwa.9). `orderedToday` is built purely from agenda SLOTS, and the schedule's own
+  // CHECK is still three ids wide — so a Kerékpár / Úszás / Túra session logged from the
+  // full-screen ten-sport flow (`/train/sport/log`) appeared NOWHERE on Mai: the athlete did
+  // the work and the day still looked empty. These render below the slot-driven heroes as
+  // their own compact done-state rows (there is no CTA — they are done by construction,
+  // exactly like the `custom` branch's completed saját workout).
+  const slotSportKinds = new Set<SportKind>(
+    orderedToday.filter((it) => it.kind === 'sport').map((it) => sportOf(it.sport) as SportKind),
+  )
+  // `SportSession.sport` is a plain string off the wire — a row carrying an id this build
+  // has no label for is dropped rather than rendered as `undefined`.
+  const unscheduledLoggedSports = sport.sessions
+    .filter((s) => s.date === huMonthDayDow(shownIso))
+    .map((s) => ({ session: s, kind: (s.sport ?? 'volleyball') as SportKind }))
+    .filter(({ kind }) => SPORT_KINDS.includes(kind) && !slotSportKinds.has(kind))
+  // Rest-day card gate — shared with the Saját edzés footer below so exactly one
+  // of the two carries the CTA and it is never duplicated (mezo-eahv). An unscheduled
+  // logged sport also stands the card down: „nincs mai mozgás” directly above a done-state
+  // row saying otherwise is the exact dishonesty this fix wave removed.
+  const restDayCard =
+    !shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0
+    && unscheduledLoggedSports.length === 0 && !(isTodayShown && todaySession?.openWorkout)
   const runLoggedFor = (key: string) =>
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
@@ -543,9 +562,13 @@ export function TrainTodayPage() {
               logged={Boolean(logged)}
               loggedSummary={
                 logged
-                  ? k === 'volleyball'
-                    ? `RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
-                    : `RPE ${logged.rpe} · ${logged.duration}p`
+                  ? // Em dash rule: kcal is absent from the summary entirely when the wire
+                    // carries none (an old session, or an unknown athlete weight) — never a
+                    // fabricated 0 (T8 Task 6, mirrors movementWeek's own honesty guard).
+                    (k === 'volleyball'
+                      ? `RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
+                      : `RPE ${logged.rpe} · ${logged.duration}p`) +
+                    (logged.kcal != null ? ` · ${logged.kcal} kcal` : '')
                   : undefined
               }
               loggedDetail={logged?.time ? `${logged.time}-kor logolva` : null}
@@ -616,6 +639,35 @@ export function TrainTodayPage() {
         })()}
         </div>
       ))}
+
+      {/* Sports logged OUTSIDE the schedule (T8 Task 4 final review, mezo-88iwa.9) — the
+          ten-sport flow can log a Kerékpár/Úszás/Túra session on a day whose 3-id schedule
+          has no matching slot, and until now Mai simply never showed it. Done by
+          construction, so no state chip and no CTA (the `custom` branch's rule), and each
+          row rides the same `.rise` stagger, continuing the heroes' own delay ladder. */}
+      {unscheduledLoggedSports.map(({ session: ls, kind: k }, i) => {
+        return (
+          <div
+            key={`hero-logged-${ls.id}`}
+            className="rise"
+            style={{ '--d': `${120 + (orderedToday.length + i) * 45}ms` } as CSSProperties}
+          >
+            <TodaySessionCard
+              tone={SPORT_TONE[k]}
+              emoji={<ClayIcon name="i-sport" size={26} />}
+              tag={SPORT_TAGS[k]}
+              time={ls.time}
+              title={SPORT_TITLES[k]}
+              facts={[`${ls.duration} perc`]}
+              logged
+              // Same em-dash honesty rule as the slot-driven hero above: kcal is absent
+              // from the summary entirely when the wire carries none, never a fake 0.
+              loggedSummary={`RPE ${ls.rpe} · ${ls.duration}p` + (ls.kcal != null ? ` · ${ls.kcal} kcal` : '')}
+              loggedDetail={ls.time ? `${ls.time}-kor logolva` : null}
+            />
+          </div>
+        )
+      })}
 
       {/* Energy card (Task 5, mezo-88iwa.6): today's movement kcal, split honestly into
           already-earned vs. still-in-the-plan. Absent whenever today carries no
@@ -693,7 +745,11 @@ export function TrainTodayPage() {
               <ClayIcon name="i-edzes" size={22} />
               <span><small>Gyors indítás</small><strong>Egyedi edzés</strong></span>
             </button>
-            <button type="button" onClick={() => setSportLogSport('volleyball')}>
+            {/* The Sport door opens the full-screen sport flow (mezo-88iwa.9, T8 Task 4):
+                pick a sport, then only the fields that sport actually asks. The day-card
+                CTAs below still open the sheet — they log against a PAST day (Pótold), a
+                date the new flow does not take yet. */}
+            <button type="button" onClick={() => navigate('/train/sport/log')}>
               <ClayIcon name="i-sport" size={22} />
               <span><small>Gyors indítás</small><strong>Sport naplózása</strong></span>
             </button>

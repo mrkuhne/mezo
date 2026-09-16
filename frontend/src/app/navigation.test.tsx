@@ -266,6 +266,13 @@ test('the tab bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', 
   const { container } = renderApp('/ritual')
   expect(container.querySelector('.tab-bar')).toBeNull()
 })
+// T8 Task 4 final review (mezo-88iwa.9): the sport flow is full-screen too — measured at
+// 320px the tab bar and the coral FAB covered the ceremony's close CTA and honesty line.
+test('the tab bar and the FAB hide on the full-screen sport log flow (mezo-88iwa.9)', () => {
+  const { container } = renderApp('/train/sport/log')
+  expect(container.querySelector('.tab-bar')).toBeNull()
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+})
 
 
 test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {

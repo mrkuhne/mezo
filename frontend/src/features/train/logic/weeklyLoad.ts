@@ -4,7 +4,15 @@ import { SPORT_KINDS, SPORT_EMOJI, sportOf, type SportKind } from '@/features/tr
 /** Weekly load summary tiles (spec §4.3 — "GYM 5×·75p / RÖPLABDA 4×·6,5h / FUTÁS 2×"). */
 export type LoadTile = { kind: 'gym' | 'sport' | 'run'; label: string; icon: string; value: string }
 
-const SPORT_TILE_LABELS: Record<SportKind, string> = { volleyball: 'Röplabda', cross: 'Cross', trx: 'TRX' }
+// Full titles for the tile row — mirrors sportKinds' SPORT_TITLES (kept local
+// since this tile wants "Röplabda" over SPORT_TITLES' shorter "Volleyball").
+// The loop below only ever finds slots for schedule-vocabulary kinds
+// (agenda.sport is still the 3-id schedule CHECK), so the other seven never
+// render a tile in practice — but SportKind widened, so this map must too.
+const SPORT_TILE_LABELS: Record<SportKind, string> = {
+  volleyball: 'Röplabda', cross: 'Cross', trx: 'TRX',
+  bike: 'Kerékpár', swim: 'Úszás', football: 'Foci', basketball: 'Kosárlabda', tennis: 'Tenisz', hike: 'Túra', other: 'Egyéb mozgás',
+}
 
 /** 390 → "6,5h" (hu decimal comma), 120 → "2h". */
 function hoursHu(mins: number): string {

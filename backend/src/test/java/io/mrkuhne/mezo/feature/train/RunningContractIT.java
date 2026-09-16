@@ -12,10 +12,14 @@ import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockStructureDto;
 import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
@@ -24,6 +28,9 @@ class RunningContractIT extends ApiIntegrationTest {
 
     private static final String BLOCKS = "/api/train/running-blocks";
     private static final String SESSIONS = "/api/train/run-sessions";
+
+    @Autowired private BiometricProfilePopulator biometricProfilePopulator;
+    @Autowired private WeightLogPopulator weightLogPopulator;
 
     // ---- helpers ----------------------------------------------------------------
 
@@ -245,6 +252,36 @@ class RunningContractIT extends ApiIntegrationTest {
         List<RunSessionLogResponse> sessions =
             getForList(SESSIONS, auth, HttpStatus.OK, RunSessionLogResponse.class);
         assertThat(sessions).extracting(RunSessionLogResponse::getId).containsExactly(logged.getId());
+    }
+
+    @Test
+    void testLogRunSession_shouldCarryTheKcalEstimate_whenBodyKnown() {
+        RegisteredUser runner = registerUser("Futo kcal");
+        biometricProfilePopulator.create(runner.id()); // M, born 1991-03-01, 15% body fat
+        weightLogPopulator.createWeightLog(
+            runner.id(), LocalDate.parse("2026-06-29"), new BigDecimal("80.00"));
+        RunningBlockResponse block = postForBody(BLOCKS, sampleUpsert("Futás kcal"),
+            runner.headers(), HttpStatus.CREATED, RunningBlockResponse.class);
+
+        RunSessionLogResponse logged = postForBody(SESSIONS, sampleLog(block.getId()),
+            runner.headers(), HttpStatus.CREATED, RunSessionLogResponse.class);
+
+        // 9.48 MET (a 9 km/h jog) * 3.5 * 80 kg / 200 * 35 min * (0.99 age * 1.04 lean)
+        assertThat(logged.getKcal()).isEqualTo(478);
+        assertThat(logged.getKcalIsEstimate()).isTrue();
+    }
+
+    @Test
+    void testLogRunSession_shouldLeaveKcalNull_whenBodyUnknown() {
+        RegisteredUser runner = registerUser("Futo kcal nelkul");
+        RunningBlockResponse block = postForBody(BLOCKS, sampleUpsert("Futás kcal nélkül"),
+            runner.headers(), HttpStatus.CREATED, RunningBlockResponse.class);
+
+        RunSessionLogResponse logged = postForBody(SESSIONS, sampleLog(block.getId()),
+            runner.headers(), HttpStatus.CREATED, RunSessionLogResponse.class);
+
+        assertThat(logged.getKcal()).isNull(); // never 0 as a stand-in
+        assertThat(logged.getKcalIsEstimate()).isNull();
     }
 
     // ---- 401 --------------------------------------------------------------------

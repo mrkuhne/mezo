@@ -9,8 +9,13 @@
 // ESTIMATE (minutes from `estimateSessionMinutes`, kcal from trainDayEnergy's
 // MET math — both need a weight on file) over DONE days only, the sport side
 // is what was actually LOGGED this week (volleyball sessions + run logs, real
-// minutes) with a kcal the app has no source for yet — so it stays honestly
-// unknown rather than borrowing the gym side's MET formula.
+// minutes). The sport side's kcal now comes off the wire (T8 Task 6):
+// SportSessionResponse/RunSessionLogResponse both carry a BE-owned estimate
+// (or the athlete's own override, sport only) — the FE never re-derives it.
+// `movementWeek`'s all-or-null gate still stays honest: the sum only shows
+// once EVERY sport/run entry logged this week carries a kcal; a single old
+// session without one (logged before this wiring, or a weight-less athlete)
+// hides the whole sum rather than under-reporting it.
 // `known:false` on either side renders the honest sentence, never a
 // fabricated number (the same rule trainDayEnergy's own callers follow).
 //
@@ -129,16 +134,20 @@ export function TrainWeekMozgasPage() {
     .filter((d) => d.exercises.length > 0 && doneDayLabels.has(d.day))
     .map((d) => ({ kind: 'gym', minutes: estimateSessionMinutes(d.exercises, timingProfile ?? undefined), done: true }))
 
-  // Sport side: what was actually LOGGED this Mon–Sun week — real minutes, no kcal
-  // source yet (neither volleyball nor a run log carries one), so it stays honestly
-  // unknown rather than borrowing the gym side's MET formula.
+  // Sport side: what was actually LOGGED this Mon–Sun week — real minutes, and now a
+  // kcal the wire actually carries (T8 Task 6): SportSessionResponse's kcal is the
+  // BE-owned estimate/override, RunSessionLogResponse's kcal is the same estimator via
+  // the run service. movementWeek's all-or-null gate (loadWeek.ts) is the display guard
+  // that still stays honest — old sessions logged before this wiring carry NULL, so the
+  // sum only lights up once EVERY session in the week has a kcal, self-healing as weeks
+  // roll (never a partial/fabricated total).
   const weekStart = weekDateIso(0)
   const weekEnd = weekDateIso(6)
   const loggedSport = sport.sessions.filter((s) => s.isoDate >= weekStart && s.isoDate <= weekEnd)
   const loggedRuns = loggedRunSessions.filter((r) => r.date >= weekStart && r.date <= weekEnd)
   const sportEntries = [
-    ...loggedSport.map((s) => ({ minutes: s.duration, kcal: null as number | null })),
-    ...loggedRuns.map((r) => ({ minutes: r.durationMin ?? 0, kcal: null as number | null })),
+    ...loggedSport.map((s) => ({ minutes: s.duration, kcal: s.kcal ?? null })),
+    ...loggedRuns.map((r) => ({ minutes: r.durationMin ?? 0, kcal: r.kcal ?? null })),
   ]
 
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0

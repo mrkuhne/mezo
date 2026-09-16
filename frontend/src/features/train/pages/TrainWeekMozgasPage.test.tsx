@@ -42,6 +42,18 @@ let timingPendingOverride = false
 // logged volleyball sessions and the logged run sessions to empty so the empty-side path is
 // actually hit.
 let emptySportFixture = false
+// T8 Task 6: the all-or-null kcal gate needs a week where one logged session is missing
+// its kcal while the rest carry one — strips it off `vb-2026-05-18`, one of the two
+// sessions the mock fixture's own test week (2026-05-18..24) carries (the other is
+// `vb-2026-05-20`; a `vb-today` entry may also be in scope, dated off the real system
+// clock, so matching by id rather than array position keeps this deterministic).
+let stripOneSessionKcal = false
+// T8 Task 6 final review: the RUN mock carried no kcal at all, so a logged run permanently
+// blanked this page's sum in mock mode (`movementWeek` is all-or-null) while real mode —
+// where the run service runs the same MET estimator — would have shown it. The mock's own
+// run rows are dated outside this suite's frozen test week, so this override re-dates them
+// INTO it without touching their (now present) kcal.
+let runsInTestWeek = false
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -62,11 +74,19 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     },
     useTrain: (...args: Parameters<typeof actual.useTrain>) => {
       const real = actual.useTrain(...args)
-      return emptySportFixture ? { ...real, sport: { ...real.sport, sessions: [] } } : real
+      if (emptySportFixture) return { ...real, sport: { ...real.sport, sessions: [] } }
+      if (stripOneSessionKcal) {
+        return { ...real, sport: { ...real.sport, sessions: real.sport.sessions.map((s) => (s.id === 'vb-2026-05-18' ? { ...s, kcal: null } : s)) } }
+      }
+      return real
     },
     useRunning: (...args: Parameters<typeof actual.useRunning>) => {
       const real = actual.useRunning(...args)
-      return emptySportFixture ? { ...real, runSessions: [] } : real
+      if (emptySportFixture) return { ...real, runSessions: [] }
+      if (runsInTestWeek) {
+        return { ...real, runSessions: real.runSessions.map((r, i) => ({ ...r, date: i === 0 ? '2026-05-22' : '2026-05-23' })) }
+      }
+      return real
     },
   }
 })
@@ -86,6 +106,8 @@ afterEach(() => {
   timingPendingOverride = false
   sportLoadOverride = null
   emptySportFixture = false
+  stripOneSessionKcal = false
+  runsInTestWeek = false
 })
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><TrainWeekMozgasPage /></MemoryRouter></QueryWrapper>)
@@ -133,13 +155,40 @@ test('movementWeek known:false renders the honest sentence, never a fabricated k
   expect(within(gymBox).getByText(/nincs elég adat/)).toBeInTheDocument()
 })
 
-// Sport kcal has no data source at all (yet) — it must ALWAYS render the honest sentence,
-// weight or no weight, never borrow the gym side's MET estimate.
-test('the sport box never claims a kcal number it has no source for', async () => {
+// Sport kcal now comes off the wire (T8 Task 6, SportSessionResponse.kcal /
+// RunSessionLogResponse.kcal) — the mock week's two logged sessions (05-18, 05-20) both
+// carry one, so the box sums them rather than falling back to the honest-absence copy.
+test('the sport box shows the summed kcal once every logged session this week carries one', async () => {
+  const { container } = renderPage()
+  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
+  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
+  expect(within(sportBox).getByText(/1490 kcal/)).toBeInTheDocument()
+  expect(within(sportBox).getByText('naplóztad')).toBeInTheDocument()
+})
+
+// T8 Task 6 final review: a mock-mode RUN in the week must NOT blank the sum. Before the
+// fix the run fixtures (and the mock log response) carried no kcal, so `movementWeek`'s
+// all-or-null gate hid the whole number the moment a run landed in the week — a mock-only
+// darkening real mode would never show. 1490 (the two volleyball sessions) + 275 + 312
+// (the two run fixtures' own estimates) = 2077.
+test('a logged run in the week keeps the sum visible — the mock run carries kcal too', async () => {
+  runsInTestWeek = true
+  const { container } = renderPage()
+  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
+  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
+  expect(within(sportBox).getByText(/2077 kcal/)).toBeInTheDocument()
+})
+
+// movementWeek's all-or-null gate (loadWeek.ts): ONE session in the week missing kcal
+// (an old log written before this wiring, or a weight-less athlete at estimate time)
+// hides the WHOLE sum rather than under-reporting it — never a partial/fabricated total.
+test('the sport box hides the kcal sum when one logged session this week is missing it', async () => {
+  stripOneSessionKcal = true
   const { container } = renderPage()
   await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
   const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
   expect(within(sportBox).queryByText(/kcal/)).toBeNull()
+  expect(within(sportBox).getByText(/a kalóriáját még nem tudjuk becsülni/)).toBeInTheDocument()
 })
 
 // Fix round 2 (mezo-88iwa.13 review): the test above was vacuous for the EMPTY-side bug —

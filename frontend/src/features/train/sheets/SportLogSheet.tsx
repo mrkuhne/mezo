@@ -12,7 +12,17 @@ import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
-import { SPORT_KINDS, SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
+
+// This LEGACY sheet's own 3-id vocabulary — the same pin the sibling sheets carry
+// (SportScheduleSheet, SportEventSheet). The sport-session WIRE widened to ten ids
+// (mezo-88iwa.9), but this sheet's fields are volleyball-shaped (setsPlayed /
+// shoulderStrain / rounds and nothing else), so offering Túra here would post a
+// `{sport:'hike', rounds}` that describes nothing the athlete actually did. The ten-sport
+// vocabulary lives in the full-screen flow (`/train/sport/log`, SportLogPage +
+// logic/sports.ts), which asks each sport its own questions; this sheet is scheduled for
+// retirement under **mezo-ltqdh** and stays at its original three ids until then.
+const LOG_SHEET_SPORT_KINDS = ['volleyball', 'cross', 'trx'] as const
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
 // min/max clamp the stepped value to the API contract bounds so the sheets can
@@ -177,9 +187,11 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
             </button>
           </div>
 
-          {/* Kind selector — volleyball | cross | trx */}
+          {/* Kind selector — the sheet's own pinned three ids (see LOG_SHEET_SPORT_KINDS
+              above, mezo-ltqdh): the fields below are volleyball-shaped, so the seven
+              newer wire ids belong to the full-screen flow, not here. */}
           <div className="row gap-xs" role="group" aria-label="Sport típus" style={{ marginBottom: 14 }}>
-            {SPORT_KINDS.map((k) => {
+            {LOG_SHEET_SPORT_KINDS.map((k) => {
               const active = kind === k
               return (
                 <button

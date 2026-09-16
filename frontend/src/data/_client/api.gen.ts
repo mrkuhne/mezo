@@ -5713,6 +5713,8 @@ export interface components {
             /** @description Shoulder load 1–10 (volleyball; null for cross/TRX). */
             shoulderStrain?: number;
             notes?: string;
+            /** @description The user's own kcal value for this session. When present it is stored verbatim and the response reports kcalIsEstimate=false; otherwise the backend estimates from the MET table and the athlete's body. */
+            kcalOverride?: number;
         };
         SportScheduleSlotInput: {
             /** @description 0=Hét .. 6=Vas */
@@ -5793,7 +5795,7 @@ export interface components {
         SportSessionResponse: {
             /** Format: uuid */
             id: string;
-            /** @description Modality discriminator (volleyball|cross|trx). */
+            /** @description Modality discriminator (volleyball|cross|trx|bike|swim|football|basketball|tennis|hike|other). */
             sport: string;
             /** Format: date */
             date: string;
@@ -5814,6 +5816,10 @@ export interface components {
             shoulderStrain?: number;
             jumpCount?: number;
             notes?: string;
+            /** @description Energy burnt in kcal — the user's own value when they gave one, otherwise the backend's MET estimate. Null when the athlete's weight is unknown; never 0 as a stand-in. */
+            kcal?: number | null;
+            /** @description True when kcal is the backend's estimate, false when the user overrode it. */
+            kcalIsEstimate?: boolean | null;
             levelUp?: components["schemas"]["LevelUpResult"];
         };
         RunSegment: {
@@ -5895,6 +5901,10 @@ export interface components {
             sprintLandmark?: string | null;
             durationMin?: number | null;
             notes?: string | null;
+            /** @description Energy burnt in kcal — the backend's MET estimate for the run; assumes ~9 km/h when the log carries no pace. Null when the athlete's weight is unknown; never 0 as a stand-in. */
+            kcal?: number | null;
+            /** @description Always true when kcal is present — the run wire has no override field. */
+            kcalIsEstimate?: boolean | null;
             levelUp?: components["schemas"]["LevelUpResult"];
         };
         RunSessionLogRequest: {
