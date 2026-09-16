@@ -177,7 +177,9 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
             </button>
           </div>
 
-          {/* Kind selector — volleyball | cross | trx */}
+          {/* Kind selector — all ten wire sport ids (SPORT_KINDS, mezo-88iwa.9); the fields
+              below stay volleyball-shaped for now (Task 4 replaces this sheet with the
+              full-screen per-sport flow over logic/sports.ts). */}
           <div className="row gap-xs" role="group" aria-label="Sport típus" style={{ marginBottom: 14 }}>
             {SPORT_KINDS.map((k) => {
               const active = kind === k
