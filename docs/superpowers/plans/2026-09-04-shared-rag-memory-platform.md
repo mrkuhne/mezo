@@ -1174,7 +1174,10 @@ git commit -m "test(memory): add synthetic Hungarian retrieval eval (mezo-6dii.8
 - Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/MemoryEvalReport.java`
 - Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/MemoryEvalGate.java`
 - Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/MemoryEvalGateTest.java`
-- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryRetrievalAuditWriter.java`
+- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryContextService.java`
+- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PromptMemoryAssembler.java`
+- Modify: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryContextServiceIT.java`
+- Modify: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/PromptMemoryAssemblerIT.java`
 - Modify: `docs/features/companion.md`
 - Modify: `docs/infrastructure/local-dev-testing.md`
 
@@ -1184,7 +1187,7 @@ git commit -m "test(memory): add synthetic Hungarian retrieval eval (mezo-6dii.8
 - Produces: opt-in JSON report at `backend/target/memory-eval/memory-v1-report.json`; it never flips
   serving mode or enables another consumer.
 
-- [ ] **Step 1: Write the pure release-gate test**
+- [x] **Step 1: Write the pure release-gate test**
 
 ```java
 EvalMetrics passing = new EvalMetrics(.85, .71, .76, .68, .04, 0);
@@ -1197,7 +1200,7 @@ assertThat(MemoryEvalGate.evaluate(passing, baseline, Duration.ofMillis(240), bu
 Add one failing case per threshold, including exactly 84.99% recall, +9.99 percentage-point
 precision, one ownership leak and 251 ms p95.
 
-- [ ] **Step 2: Run the gate test and confirm the evaluator is absent**
+- [x] **Step 2: Run the gate test and confirm the evaluator is absent**
 
 ```bash
 cd backend
@@ -1206,7 +1209,7 @@ cd backend
 
 Expected: FAIL at compilation.
 
-- [ ] **Step 3: Implement report and gate types**
+- [x] **Step 3: Implement report and gate types**
 
 The JSON report includes corpus version/hash, timestamp, git commit, provider/model/embedding
 version, baseline and candidate metrics, deltas, per-persona and per-family metrics, p50/p95/p99,
@@ -1215,13 +1218,17 @@ hard gate. `MemoryEvalGate` owns the nested
 `EvalBudget(BigDecimal maxEmbeddingUsd, BigDecimal maxRerankingUsd)` record used by the test above.
 Cost budgets come from command-line properties and are printed, never hardcoded.
 
-- [ ] **Step 4: Add the opt-in real-provider evaluation IT**
+- [x] **Step 4: Add the opt-in real-provider evaluation IT**
 
 Annotate it `@Tag("eval")`; require `-Dmezo.memory.eval.real=true` and the real Gemini profile. Load
 the approved holdout, embed its canonical items into a dedicated serving version
 `gemini-embedding-001-memory-v1`, warm one query, then measure every query from before query embedding
-until `MemoryContext` completion. Run OLD and NEW on identical data, disable rewrite/reranker for the
-250 ms path, calculate metrics and write the report. The test fails when any hard gate fails.
+until `MemoryContext` completion. Run OLD and NEW quality on identical data and score both at final
+prompt selection; pass corpus history to NEW so follow-ups exercise conditional rewrite. Measure a
+second, explicitly no-rewrite/no-rerank pass for the 250 ms latency gate. Calculate metrics and write
+the report. Correlate every audit query by the unique eval/entity IDs propagated through the async
+retriever executor; classify conditional rewrites by their real `CHAT` call kind and record the
+served rewrite model. The test fails when any hard gate fails.
 
 - [ ] **Step 5: Run the documented release command**
 
@@ -1231,6 +1238,7 @@ test -n "$GEMINI_API_KEY"
 ./mvnw clean test \
   -Dtest=MemoryRetrievalGeminiEvalIT \
   -Dgroups=eval \
+  -Dmezo.excludedTestGroups= \
   -Dmezo.memory.eval.real=true \
   -Dmezo.memory.eval.max-embedding-usd=5.00 \
   -Dmezo.memory.eval.max-reranking-usd=0.00 \
