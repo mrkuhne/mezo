@@ -204,7 +204,8 @@ public class ChatService {
      *  the turn recalled nothing. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
                                String turnContext, List<Turn> history, String userContent,
-                               List<RefsEnvelope.Ref> recalledRefs, RecalledMemoriesEnvelope recalled) {}
+                               List<RefsEnvelope.Ref> recalledRefs, RecalledMemoriesEnvelope recalled,
+                               TurnGear gear) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -218,18 +219,25 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
-        ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
-                userId, conversationId, request.getContent(), history, today);
+        TurnGear gear = turnGearRouter.route(request.getContent());
+        // Same branch as sendMessage (mezo-rj214.7): a CHAT turn skips retrieval entirely — copy
+        // this shape exactly so the two paths cannot drift.
+        ChatMemoryPayload memory = gear == TurnGear.CHAT
+                ? ChatMemoryPayload.empty()
+                : chatMemoryContextAdapter.resolve(
+                        userId, conversationId, request.getContent(), history, today);
         String systemPrompt = stableSystemPrompt(userId);
-        String turnCtx = turnContext(userId, today, memory.factsBlock(),
-                memory.memoriesBlock(), memory.graphBlock(),
-                conversation.getContextKind(), conversation.getContextDate());
+        String turnCtx = gear == TurnGear.CHAT
+                ? chatGearContext(userId, today)
+                : turnContext(userId, today, memory.factsBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(),
+                        conversation.getContextKind(), conversation.getContextDate());
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, turnCtx, history,
-                request.getContent(), memory.refs(), memory.recalled());
+                request.getContent(), memory.refs(), memory.recalled(), gear);
     }
 
     /**

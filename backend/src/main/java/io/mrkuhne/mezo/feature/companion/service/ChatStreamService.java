@@ -79,11 +79,19 @@ public class ChatStreamService {
 
         // mezo-2zyu: the adapter reads the holder EAGERLY (before the Flux is returned), so tagging
         // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
-        Flux<ServerSentEvent<Object>> deltas = llmCallContextHolder.runWith(
-                        new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
+        LlmCallContext streamContext =
+                new LlmCallContext("companion_chat", "stream", "conversation", conversationId);
+        // mezo-rj214.7: a CHAT turn is tool-free and smart-tier — the streamed twin of sendMessage's
+        // completeSmart branch. No tool callbacks are registered, so the audit stays empty.
+        Flux<String> rawDeltas = turn.gear() == TurnGear.CHAT
+                ? llmCallContextHolder.runWith(streamContext,
+                        () -> companionLlm.streamSmart(turn.systemPrompt(), turn.turnContext(),
+                                turn.history(), turn.userContent()))
+                : llmCallContextHolder.runWith(streamContext,
                         () -> companionLlm.stream(turn.systemPrompt(), turn.turnContext(), turn.history(),
                                 turn.userContent(),
-                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)))
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+        Flux<ServerSentEvent<Object>> deltas = rawDeltas
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
@@ -98,7 +106,10 @@ public class ChatStreamService {
                     // authoritative (the FE swaps it in), so a corrective retry lands silently here.
                     String finalAnswer = answer.toString();
                     boolean degraded = false;
-                    CompanionAdvisorChain chain = advisorChain.getIfAvailable();
+                    // CHAT skips the advisor review entirely — a tool-free chat answer never gets
+                    // silently swapped by a corrective round (spec 2026-09-16 §6.5).
+                    CompanionAdvisorChain chain =
+                            turn.gear() == TurnGear.CHAT ? null : advisorChain.getIfAvailable();
                     if (chain != null) {
                         AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.turnContext(),
                                 turn.history(), turn.userContent(), finalAnswer,

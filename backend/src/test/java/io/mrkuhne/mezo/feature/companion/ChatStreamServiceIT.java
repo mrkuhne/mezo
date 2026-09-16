@@ -134,9 +134,12 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("stream-error@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
+        // mezo-rj214.7: "aludtam" is a data word so this stays on the tool-registered (non-CHAT)
+        // branch — a gearless "szállj el" would now route to the tool-free CHAT branch, which the
+        // fake's streamSmart(..) does not wire FAIL_STREAM into, making the scripted failure inert.
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("szállj el " + FakeCompanionLlm.FAIL_STREAM))
+                        request("aludtam jól, szállj el " + FakeCompanionLlm.FAIL_STREAM))
                 .collectList().block();
 
         ServerSentEvent<Object> last = events.getLast();
