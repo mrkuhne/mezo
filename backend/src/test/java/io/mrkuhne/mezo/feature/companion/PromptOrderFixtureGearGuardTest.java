@@ -18,6 +18,12 @@ import org.junit.jupiter.api.Test;
  * Prompt-order ITs assert the FULL volatile context. A fixture message that classifies as CHAT
  * would take the lightened branch and make those assertions vacuous, so every quoted fixture
  * message in those files must be a data-bearing one.
+ *
+ * <p><strong>Known limitations:</strong> The regex sees only inline string literals in
+ * {@code request(...)}/{@code setContent(...)}/{@code content(...)} calls. Fixture messages
+ * referenced via a CONSTANT (e.g. {@code request(QUERY)}) or forwarded through a HELPER METHOD
+ * (e.g. {@code collectDeltas(..., "msg")}) are invisible to it and must be audited manually when
+ * added — two such call sites were fixed by hand when this guard was introduced.
  */
 class PromptOrderFixtureGearGuardTest {
 
