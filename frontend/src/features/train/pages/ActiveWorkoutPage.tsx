@@ -64,7 +64,7 @@ import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, type CeremonyChallenge } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
-import { medalValueLabel } from '@/features/train/logic/medalLabels'
+import { medalValueLabel, MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
@@ -79,7 +79,7 @@ import { PrepKuldetesekPage } from '@/features/train/pages/prep/PrepKuldetesekPa
 import { PrepBemelegitesPage, type WarmupRow } from '@/features/train/pages/prep/PrepBemelegitesPage'
 import { PrepNigglePage } from '@/features/train/pages/prep/PrepNigglePage'
 
-type Phase = 'prep' | 'active' | 'summary' | 'complete'
+type Phase = 'prep' | 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
 /** Which prep-mosaic tile page is open (mezo-d20.3.8); null = the hub itself. */
 type PrepTile = 'gyakorlatok' | 'fejlodes' | 'zona' | 'kuldetesek' | 'bemelegites' | 'niggle'
@@ -329,7 +329,7 @@ function ActiveWorkoutSession({
   // A rest must not survive into the summary/recap phase. (No unmount cleanup
   // needed anymore — the timer state is page-local and dies with the page.)
   useEffect(() => {
-    if (phase === 'complete' || phase === 'summary') rest.skip()
+    if (phase === 'summary') rest.skip()
   }, [phase, rest.skip])
 
   // Plan growth mid-session (mezo-ohvm): the server-side closing block can append
@@ -627,7 +627,7 @@ function ActiveWorkoutSession({
     return () => {
       const trimmed = closingNoteRef.current.trim()
       const id = workoutIdRef.current
-      const onCeremony = phaseRef.current === 'summary' || phaseRef.current === 'complete'
+      const onCeremony = phaseRef.current === 'summary'
       if (onCeremony && id && trimmed && trimmed !== lastSavedNoteRef.current) {
         saveNoteRef.current(id, trimmed)
         lastSavedNoteRef.current = trimmed
@@ -901,14 +901,15 @@ function ActiveWorkoutSession({
     )
   }
 
-  // ---------- SUMMARY (the closing ceremony) / COMPLETE (the settled recap) ----------
+  // ---------- SUMMARY (the closing ceremony) ----------
   // 'summary' is the post-finish two-act ceremony (T7, mezo-88iwa.8): the finish POST has
   // already resolved when it renders, and its way out goes straight to Mai — there is no
-  // intermediate read-only screen. 'complete' is the SAME screen read back (`settled`):
-  // no rAF pass, the final state on the first paint, plus the pending-sets note. Both are
-  // one branch because the recap is the ceremony at rest, not a second design (Task 4).
-  if (phase === 'summary' || phase === 'complete') {
-    const settled = phase === 'complete'
+  // intermediate read-only screen. The dead 'complete' phase (a settled read-back this page
+  // never actually reached — `settled`/pendingSets were gated on a phase `setPhase` never
+  // set) is retired here (T7 final fix wave, mezo-88iwa.8): the honest pending-sets line now
+  // renders on THIS live ceremony instead, unconditionally. `WorkoutCeremony`'s own `settled`
+  // prop and its tests stay — a future slice (T13, the review-page reface) reuses it there.
+  if (phase === 'summary') {
     // The gym block's kcal, derived exactly the way Mai's energy card derives it (T5):
     // the calibrated session estimate × the MET math over the goal's weight. Held back
     // entirely when the estimate has no honest input — no weight, still-pending timing
@@ -949,16 +950,16 @@ function ActiveWorkoutSession({
         xpGained={xpGained}
         records={sessionMedals
           .filter((m) => m.tier === 'RECORD')
-          .map((m) => ({ name: m.exerciseName, value: medalValueLabel(m) }))}
+          .map((m) => ({ name: `${MEDAL_TYPE_LABEL[m.type]} · ${m.exerciseName}`, value: medalValueLabel(m) }))}
         // The challenge outcomes survive the shell's retirement: the same mapping the old
         // summary strip read, rendered as act two's `.cer-record`-shaped rows.
         challenges={summaryChallenges}
         muscles={muscleStarRows(session, W.exercises)}
         kcal={kcal}
-        settled={settled}
-        // The note belongs to the recap read-back only — the live ceremony is the close
-        // itself, where the count is still the confirm glass's own business.
-        pendingSets={settled ? pendingAtClose : 0}
+        // The honest pending-sets line now lives on the live ceremony itself: `pendingAtClose`
+        // is frozen in `finishAndCelebrate` for every finish path, so this is always the real
+        // count — 0 hides the line inside `WorkoutCeremony` (it only renders `pendingSets > 0`).
+        pendingSets={pendingAtClose}
         note={closingNote}
         onNote={setClosingNote}
         onClose={() => {

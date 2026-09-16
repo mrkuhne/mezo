@@ -183,6 +183,16 @@ test('the muscle rows carry the label, done/plan and a fill width from the ratio
   expect(rows[0].querySelectorAll('.cer-starrow.mini i')).toHaveLength(5)
 })
 
+test('a 0-ratio muscle row lights no stars — the CSS default must stay dim, not gold', () => {
+  const untouched: MuscleStarRow[] = [
+    { muscle: 'back-mid', label: 'Hát · közép', done: 0, plan: 4, ratio: 0, stars: 0 },
+  ]
+  const { container } = render(<WorkoutCeremony {...props({ muscles: untouched })} />)
+  const row = container.querySelector('.cer-mstar') as HTMLElement
+  expect(row.querySelectorAll('.cer-starrow.mini i.is-lit')).toHaveLength(0)
+  expect(row.querySelectorAll('.cer-starrow.mini i.is-half')).toHaveLength(0)
+})
+
 test('the kcal tile is hidden when unknown — no 0 kcal anywhere', () => {
   const { container } = render(<WorkoutCeremony {...props()} />)
   expect(container.querySelector('.cer-kcal')).toBeNull()

@@ -14342,7 +14342,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 .cer-starrow { display: inline-flex; gap: 4px; }
 .cer-starrow i { display: block; width: 26px; height: 26px; }
-.cer-starrow i .icon { width: 100%; height: 100%; }
+.cer-starrow i .icon { width: 100%; height: 100%; opacity: .12; filter: grayscale(1); transition: none; }
+.cer-starrow i.is-half .icon { opacity: .4; filter: grayscale(.4); }
+.cer-starrow i.is-lit .icon { opacity: 1; filter: none; }
 .cer-starrow.mid i { width: 32px; height: 32px; }
 .cer-starrow.mini { gap: 2px; }
 .cer-starrow.mini i { width: 15px; height: 15px; }
