@@ -15209,7 +15209,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-stars i .icon { opacity: .14; filter: grayscale(1); }
 .pl-stars i.is-half .icon { opacity: .45; filter: grayscale(.4); }
 .pl-stars i.is-lit .icon { opacity: 1; filter: none; }
-.pl-lhero-stars .pl-stars .icon { width: 30px; height: 30px; }
 
 @keyframes pl-spin { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }

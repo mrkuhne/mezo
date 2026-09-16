@@ -55,9 +55,11 @@ test('the hero states only what the closed runs themselves carry: their count an
   expect(screen.getByText('3 lezárt futam')).toBeInTheDocument()
   // 8 + 6 + 6 weeks — summed off the rows, no report fetched for it
   expect(screen.getByText('20 hét összesen')).toBeInTheDocument()
-  // the prototype's session/record totals are NOT invented: neither exists on a Mesocycle
-  expect(screen.queryByText(/edzés/)).toBeNull()
-  expect(screen.queryByText(/rekord/)).toBeNull()
+  // The prototype's session/record totals are NOT invented: neither exists on a Mesocycle.
+  // Pinned against the shapes those facts would take ("N edzés a M-ből", "N rekord"), not
+  // against the bare words — "Edzéstervek" on the back pill would satisfy a loose /edzés/.
+  expect(screen.queryByText(/\d+\s*edzés/)).toBeNull()
+  expect(screen.queryByText(/\d+\s*rekord/)).toBeNull()
   // and no star row anywhere on the LIST — completionPct lives only in the frozen report
   expect(container.querySelector('.pl-stars')).toBeNull()
 })

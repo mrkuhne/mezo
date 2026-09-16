@@ -47,7 +47,9 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByText(/Egy sablon a recept/)).toBeInTheDocument()
     // The fixture shelf: 2 templates, 1 run ever started out of them.
     expect(screen.getByText('2 sablon')).toBeInTheDocument()
-    expect(screen.getByText('1 futam indult belőlük')).toBeInTheDocument()
+    // 2 + 0: the PPL template's runCount covers both the active meso-hyp-04 and the closed
+    // meso-hyp-03 that carries its templateId — the same 2 the story page derives.
+    expect(screen.getByText('2 futam indult belőlük')).toBeInTheDocument()
   })
 
   test('the back pill is docked INSIDE the hero and leads to the library landing', async () => {

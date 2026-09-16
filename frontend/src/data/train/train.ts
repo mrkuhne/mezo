@@ -372,7 +372,9 @@ export const mesoTemplatesMock: MesoTemplate[] = [
     phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
     notes: null,
     volumePerMuscle: null,
-    runCount: 1,
+    // Two runs come from this template in the fixture set: the active meso-hyp-04 and the
+    // closed meso-hyp-03 (which carries this templateId) — the story page derives the same 2.
+    runCount: 2,
     days: [
       {
         day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
