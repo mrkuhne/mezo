@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { dayStripItems } from '@/features/train/logic/dayStripItems'
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import type { WeeklyAgendaDay } from '@/features/train/logic/agenda'
 
 const day = (over: Partial<WeeklyAgendaDay>): WeeklyAgendaDay => ({
   day: 'Kedd', date: '2026-05-19', gym: null, sport: [], running: [], isToday: false, ...over,

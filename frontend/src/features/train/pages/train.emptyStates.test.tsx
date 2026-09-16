@@ -45,7 +45,7 @@ test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend'
   // …and it no longer promises a „Heti terv” section: that list moved to the Heti
   // tab with the rest of the weekly agenda (mezo-9bbc final review, I5).
   expect(screen.queryByRole('heading', { name: 'Heti terv' })).not.toBeInTheDocument()
-  expect(screen.queryByText(/A heti rended itt jelenik majd meg/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/A heti terhelésed itt jelenik majd meg/i)).not.toBeInTheDocument()
   // the Saját edzés escape hatch stays
   expect(screen.getByRole('button', { name: /Saját edzés/i })).toBeInTheDocument()
 })
@@ -53,9 +53,9 @@ test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend'
 // GymPage folded into Heti (mezo-d20.3.2): /train/gym now renders the same
 // page, so the same ghost message shows on either path — no more distinct
 // "Nincs aktív mesociklus" copy.
-test('GymPage (folded into Heti) shows the Heti ghost when there is no active meso', async () => {
+test('GymPage (folded into Terhelés) shows the same ghost when there is no active meso', async () => {
   renderApp('/train/gym')
-  await waitFor(() => expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText(/A heti terhelésed itt jelenik majd meg/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
 })
 

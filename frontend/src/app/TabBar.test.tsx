@@ -132,6 +132,10 @@ test.each([
   ['/train/mesocycles/konyvtar', 'Terv'],
   ['/train/futas/123', 'Terv'],
   ['/train/gym', 'Terhelés'],
+  // T12 Task 4: the two Terhelés subscreens sit UNDER /train/week — the plain prefix rule
+  // lights the tab with no `owns` entry needed.
+  ['/train/week/terkep', 'Terhelés'],
+  ['/train/week/mozgas', 'Terhelés'],
   ['/train/medals', 'Gyakorlatok'],
 ])('%s a(z) %s fület gyújtja ki', (path, tab) => {
   renderAt(path, <TabBar />)

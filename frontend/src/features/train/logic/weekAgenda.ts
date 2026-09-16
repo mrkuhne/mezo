@@ -4,7 +4,7 @@
 // schedule, the recurring sport slots, the prescribed runs and this
 // week's completed custom instances into one WeeklyAgendaDay per weekday.
 // ============================================================
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import type { WeeklyAgendaDay } from '@/features/train/logic/agenda'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
 import { DAY_ORDER } from '@/data/train/train'

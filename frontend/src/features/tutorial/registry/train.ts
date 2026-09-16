@@ -73,18 +73,25 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-week',
     route: '/train/week',
     tier: 'T2',
-    version: 1,
-    label: 'Heti edzések',
+    // v2 (final-review fix wave, mezo-88iwa.13 T12): a napsáv-horgony kártya a HŐSre
+    // költözött (lásd a `hogyan` kártya kommentjét lentebb) — ugyanaz a szabály, ami a
+    // train-mai fejlécét is version-bumpre kötelezte (lásd ott a v4 komment): az élő oldalt
+    // rosszul leíró/elavult horgonyú kártyát azok is újra kell hogy lássák, akik a régit már
+    // látták.
+    version: 2,
+    label: 'Terhelés',
     cards: [
       {
         kind: 'intro', spot: 'i-heti', orb: 's-orb',
-        title: 'Ez a Heti.',
-        voice: 'A hét minden napja egy sorban: mi volt, mi lesz, mi ment le — egy pillantásra.',
+        title: 'Ez a Terhelés.',
+        voice: 'A heti munkád egy képben: mennyi van meg belőle, és melyik izomcsoport hol tart.',
       },
       {
-        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-napok',
-        title: 'A napsorok visznek tovább.',
-        voice: 'A mai gym a sorából indul, a lezárt edzés visszanézhető. Lent az izom-zónák mutatják, hova gyűlik a heti terhelés.',
+        // T12 (mezo-88iwa.13): a napsáv elhagyta a lapot — a horgony a HŐSRE költözött, és
+        // vele a kártya szövege is. A napokra való lépés Mai saját napsávjában él tovább.
+        kind: 'hogyan', spot: 'i-edzes', orb: 's-orb-figyel', anchor: 'heti-terheles',
+        title: 'A nagy szám a heti munkád.',
+        voice: 'A sáv azt mutatja, mennyi van meg abból, amit a hét kér. Lentebb a test térképe és az izomcsoportok — egy csoportra koppintva látod a részleteit.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',

@@ -3,8 +3,7 @@
 // agenda (mezo-9bbc). Keeps DayStrip presentational: it receives dots and
 // counts, never predicates or domain types.
 // ============================================================
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
-import { daySessions, type AgendaItem } from '@/features/train/logic/agenda'
+import { daySessions, type AgendaItem, type WeeklyAgendaDay } from '@/features/train/logic/agenda'
 import { SPORT_TONE, sportOf, type SessionTone } from '@/features/train/logic/sportKinds'
 
 export interface DayStripItem {

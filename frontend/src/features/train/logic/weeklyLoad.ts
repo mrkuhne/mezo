@@ -1,4 +1,4 @@
-import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import type { WeeklyAgendaDay } from '@/features/train/logic/agenda'
 import { SPORT_KINDS, SPORT_EMOJI, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
 
 /** Weekly load summary tiles (spec §4.3 — "GYM 5×·75p / RÖPLABDA 4×·6,5h / FUTÁS 2×"). */
