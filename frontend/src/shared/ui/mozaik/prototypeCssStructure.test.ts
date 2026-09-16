@@ -395,3 +395,35 @@ describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () 
     }
   })
 })
+
+/**
+ * Section registration (mezo-88iwa.9, T8 Task 3): the sport-logging flow's own `.sp-*`
+ * section — the sport picker grid/tiles, the per-sport form (mode toggle, numeric
+ * stepper, chip picker, free text, range, the kcal estimate tile), ported from the
+ * prototype's sport.css, registered exactly like the blocks above. The ceremony
+ * families (`.sp-cer`, `.sp-keep`, `.sp-details`) are NOT re-ported here — T7's
+ * `.cer-*` section already serves the shared close ceremony.
+ */
+describe('the train sport titanium section is registered (mezo-88iwa.9)', () => {
+  const START_MARKER = 'train sport titanium'
+  const END_MARKER = '/train sport titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the sp- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.sp-grid', '.sp-tile', '.sp-field', '.sp-chips', '.sp-kcal', '.sp-note',
+    ]) {
+      expect(section, `${cls} missing from the train sport titanium section`).toContain(cls)
+    }
+  })
+})
