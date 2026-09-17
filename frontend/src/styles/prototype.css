@@ -14906,6 +14906,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex-sets { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 78%, var(--text-primary)); white-space: nowrap; }
 .pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
 
+/* — the day page's tail (Train parity P1 Task 4, mezo-e1ii9): the prototype's dashed
+     `.pl-add` (plan.css:362) end-of-screen CTA, plus the quiet link to the day's own
+     editor route — the day page itself no longer carries an editor. — */
+.pl-dayfoot { display: grid; gap: 8px; margin-top: 12px; }
+.pl-add {
+  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
+}
+.pl-editlink {
+  display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary);
+  border: 0; background: none; text-align: center;
+}
+
 /* — the ranked list: name, number, bar, verdict — */
 .pl-list { display: grid; gap: 7px; }
 .pl-item {

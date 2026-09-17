@@ -59,7 +59,7 @@ test('per-muscle rows break the day down, each with its own bar to the shared 8-
   expect(document.querySelectorAll('.pl-mrow-bar u').length).toBeGreaterThan(0)
 })
 
-test('the exercise view cells summarize each row read-only, above the editor', () => {
+test('the exercise view cells summarize each row read-only', () => {
   setup()
   const cells = document.querySelectorAll('.pl-ex')
   expect(cells.length).toBe(5) // Csü · Pull has 5 exercises in the mock fixture
@@ -70,12 +70,53 @@ test('the exercise view cells summarize each row read-only, above the editor', (
   expect(first.textContent).toContain('bemelegítő')
 })
 
-test('the editor edits ONE day — this day\'s exercises, not another day\'s', () => {
+test('the page shows ONE day — this day\'s exercises, not another day\'s', () => {
   setup()
-  expect(screen.getAllByText('Chest Supported Row').length).toBeGreaterThan(0) // Csü — view cell + editor row
+  expect(screen.getAllByText('Chest Supported Row').length).toBe(1) // Csü, ONE cell — no duplicate editor list
   expect(screen.queryByText('Barbell Bench Press')).not.toBeInTheDocument() // Hét
   // A single day means no tab strip to switch with.
   expect(screen.queryByRole('button', { name: /^Hét · Push$/ })).not.toBeInTheDocument()
+})
+
+// ── The welded pre-Titanium editor is GONE (Train parity P1 Task 4, mezo-e1ii9) ──────
+// The matrix (docs/design_2.0/2026-09-16-train-parity-matrix.md §3) measured an ENTIRE
+// second, pre-Titanium screen scrolling below the Titanium day page. These pin its
+// absence marker by marker — if any of them comes back, the page grew a second screen
+// again.
+test('none of the pre-Titanium editor markers survive anywhere on the page', () => {
+  setup()
+  const text = document.body.textContent ?? ''
+  for (const marker of ['⠿', '🔥', '🌿', 'Grow', 'Maintain', 'Emphasize', 'Heti szetek', 'jelzés', 'Csúcshét', 'időbecslés', 'Struktúra']) {
+    expect(text).not.toContain(marker)
+  }
+})
+
+test('the page ends at the exercise cells — no duplicate list, no editor chrome below them', () => {
+  setup()
+  // The read-only cells are the ONLY exercise list: the editor's accordion rows are gone.
+  expect(document.querySelectorAll('.pl-ex').length).toBe(5)
+  expect(document.querySelector('.mz-editor, .ex-accordion, .ex-card')).toBeNull()
+  // …and the last thing on the page is the day's own tail, not an editor.
+  const body = document.querySelector('.pl-dayfoot')!
+  expect(body).toBeInTheDocument()
+  expect(body.nextElementSibling).toBeNull()
+})
+
+test('the day\'s editing lives one route down — the tail carries the only add-CTA and a quiet edit link', async () => {
+  const router = setup()
+  // ONE add-CTA (the prototype\'s end-of-screen `.pl-add`), not the old duplicate pair.
+  const add = screen.getAllByRole('button', { name: /Gyakorlat hozzáadása/ })
+  expect(add.length).toBe(1)
+  await userEvent.click(add[0])
+  expect(router.state.location.pathname).toBe(`/train/mesocycles/${MESO_ID}/days/Cs%C3%BC/edit`)
+  expect(router.state.location.search).toBe('?add=1')
+})
+
+test('„A nap szerkesztése" opens the day\'s editor route', async () => {
+  const router = setup()
+  await userEvent.click(screen.getByRole('button', { name: 'A nap szerkesztése' }))
+  expect(router.state.location.pathname).toBe(`/train/mesocycles/${MESO_ID}/days/Cs%C3%BC/edit`)
+  expect(router.state.location.search).toBe('')
 })
 
 test('back lands on the run page', async () => {
@@ -106,7 +147,7 @@ describe('MesoDayPage (real mode)', () => {
     expect(screen.queryByText('Ez a mesociklus nem található.')).not.toBeInTheDocument()
 
     expect(await screen.findByText('Pull nap')).toBeInTheDocument()
-    expect(screen.getAllByText('Chest Supported Row').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Chest Supported Row').length).toBe(1)
     expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
   })
 
@@ -125,8 +166,8 @@ describe('MesoDayPage (real mode)', () => {
   // work), not a placeholder dash, and a plank-style hold (repMin AND repMax both 0) reads
   // as a hold, not a nonsense "0–0" rep range. Neither exercise exists in the shared mock
   // fixture, so this fixture is local to this test (mirrors MesoExercises.test.tsx's own
-  // real-mode PUT fixture pattern) — the editor below stays mounted and untouched by it.
-  test('a bodyweight exercise reads "saját testsúly" and a hold reads "tartás" — the editor below stays mounted', async () => {
+  // real-mode PUT fixture pattern).
+  test('a bodyweight exercise reads "saját testsúly" and a hold reads "tartás"', async () => {
     const CUSTOM_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000cc'
     const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000dd'
     server.use(
@@ -157,7 +198,8 @@ describe('MesoDayPage (real mode)', () => {
     expect(await screen.findByText('saját testsúly')).toBeInTheDocument()
     const holdCell = document.querySelectorAll('.pl-ex')[1]
     expect(holdCell.textContent).toContain('3 × tartás')
-    // The editor's own affordance is still there, below the read-only cells.
+    // The day's tail is the page's last word — the editor no longer scrolls below it.
     expect(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('Heti szetek')
   })
 })
