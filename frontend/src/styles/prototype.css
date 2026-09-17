@@ -15283,6 +15283,31 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   grid-row: 1 / -1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
   background: color-mix(in srgb, var(--mus-color) 13%, var(--surface-recess));
 }
+/* — the ⓘ explain layer (mezo-b516k, Task 1) —
+   One small icon-only button beside a heading, opening the workout-style 3D glass
+   (GlassBox) with a short plain-language explanation. `.pl-info` is VERBATIM from the
+   prototype's plan.css:313-314 — 22px, borderless, no background, .75 opacity — with
+   one production-only addition: a `::after` HIT BOX that lifts the tap target to the
+   house 44px rule WITHOUT growing the 22px glyph (the prototype never had to satisfy
+   it). The copy paragraph ports load.css:179's `.info-glass-copy`, renamed to the
+   house `pl-` prefix. `.pl-info-head` carries the prototype's `.wo-glass-head`
+   icon + „MEZO · RÉSZLET" eyebrow pair, which GlassBox's own header has no slot for,
+   so the shared component renders it as the glass's first child instead. */
+.pl-info {
+  position: relative; width: 22px; height: 22px; padding: 0; border: 0; background: none;
+  cursor: pointer; line-height: 0; opacity: .75; flex: none;
+}
+.pl-info .icon, .pl-info svg { width: 22px; height: 22px; display: block; }
+.pl-info::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 44px; height: 44px; transform: translate(-50%, -50%);
+}
+.pl-info-head { display: flex; align-items: center; gap: 10px; margin: 2px 4px 8px; }
+.pl-info-head small {
+  font-size: 9.5px; letter-spacing: .14em; color: var(--text-tertiary);
+}
+.pl-info-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: #d6d2e2; }
+
 /* ── /terv titanium ────────────────────────────────────────────────────── */
 
 /* ── train sport titanium (mezo-88iwa.9, T8 Task 3) ────────────────────────
