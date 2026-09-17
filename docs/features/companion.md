@@ -1736,7 +1736,7 @@ ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fe
 POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
   → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
-  → ChatStreamService.streamMessage            service/ChatStreamService.java:63
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:94
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
          prompt = voice + snapshot + facts + pattern-ack + [Rólad tanultam] (W4.3) + [Emlékek]
          (W3.1) + [Összefüggések] (W2.4) + TONE_REMINDER
@@ -2281,7 +2281,7 @@ marker is spent, never offered a second time. The marker must never reach the cl
 the no-replan exit, the lap-2 exit, and the "marker on a gear that never offered it" corner (model
 noise, treated as a pipeline failure so the legacy fallback answers fully instead) — and
 `ChatStreamService` runs the same guard a second time on a `STREAM_ANSWER`'s already-streamed text
-before persisting the done row (`ChatStreamService.java:180-182`): the streamed deltas themselves
+before persisting the done row (`ChatStreamService.java:263-265`): the streamed deltas themselves
 are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
 only protects what re-enters history on the next turn.
 
