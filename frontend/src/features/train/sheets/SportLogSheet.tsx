@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
@@ -119,7 +119,7 @@ export function ScaleRow({
           </span>
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3 }}>
+      <div className="capture-rating-scale" style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3 }}>
         {SCALE.map((n) => (
           <button
             key={n}
@@ -169,23 +169,11 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
   const isVolleyball = kind === 'volleyball'
 
   return (
-    <Sheet onClose={onClose} labelledBy="sport-log-title">
+    <Sheet onClose={onClose} labelledBy="sport-log-title" className="capture-sheet capture-tone-sport">
       {(close) => (
         <>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--rose)' }}>
-                Sport log · {SPORT_LABELS[kind]}
-              </span>
-              <div id="sport-log-title" style={{ marginTop: 4 }}>
-                <Display size="md">Hogy ment?</Display>
-              </div>
-            </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+          <CaptureHeader id="sport-log-title" title="Hogy ment?" eyebrow={`Sport log · ${SPORT_LABELS[kind]}`}
+            subtitle="Az idő, a terhelés és a saját élményed." kind="sport" onClose={close} />
 
           {/* Kind selector — the sheet's own pinned three ids (see LOG_SHEET_SPORT_KINDS
               above, mezo-ltqdh): the fields below are volleyball-shaped, so the seven
@@ -257,21 +245,6 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
               />
             </div>
           </div>
-
-          {/* Mezo observation (volleyball-specific copy) */}
-          {isVolleyball && (
-            <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
-              <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--coral)" />
-                <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
-                  {shoulder >= 7 && 'Váll terhelés magas — Overhead Press helyett Cable variánssal a következő Push Day-en. '}
-                  {rpe >= 7.5 && 'Magas RPE · ma 21:30 előtt vacsorát zárjuk az alvás-impact miatt. '}
-                  {rpe >= 8 && 'Kemény session — holnap a Pull Day intenzitását RIR 2-re lazítsuk. '}
-                  {shoulder < 7 && rpe < 7.5 && 'Beírtam · ez egy átlagos session a heti ritmusodhoz képest. Jó volt.'}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
