@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.StreamToolCall;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
 import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
@@ -25,6 +26,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -59,6 +64,11 @@ public class ChatStreamService {
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
     private final CompanionToolRegistry toolRegistry;
     private final LlmCallContextHolder llmCallContextHolder;
+    /** mezo-rj214.7 Task 6 — the LIVE pipeline, live on this streamed path too. */
+    private final CompanionProperties properties;
+    private final TurnPlanner turnPlanner;
+    private final PlanExecutor planExecutor;
+    private final TurnAnswerer turnAnswerer;
 
     public Flux<ServerSentEvent<Object>> streamMessage(
             UUID userId, UUID conversationId, SendMessageRequest request) {
@@ -83,14 +93,36 @@ public class ChatStreamService {
                 new LlmCallContext("companion_chat", "stream", "conversation", conversationId);
         // mezo-rj214.7: a CHAT turn is tool-free and smart-tier — the streamed twin of sendMessage's
         // completeSmart branch. No tool callbacks are registered, so the audit stays empty.
+
+        // Task 6 — PIPELINE (LOOKUP/ANALYSIS): plan+execute run HERE, before the Flux assembles.
+        // The unicast toolSink and the audit.onCall listener are already registered above, so any
+        // tool call this pre-stream execution makes is buffered and reaches the client ahead of
+        // the first delta (S9.6's phase events will narrate the gap explicitly; for now the
+        // ordering itself is the guarantee — ChatStreamPipelineIT pins it). LEGACY covers a CHAT
+        // turn (which never reaches this branch), the switch being off, and a planner that
+        // produced nothing usable — the byte-identical existing companionLlm.stream(...) call.
+        PipelineResult pipe = (turn.gear() != TurnGear.CHAT && properties.turn().pipelineEnabled())
+                ? llmCallContextHolder.runWith(streamContext, () -> runPipelinePreStream(turn, userId, audit))
+                : PipelineResult.legacy();
+
         Flux<String> rawDeltas = turn.gear() == TurnGear.CHAT
                 ? llmCallContextHolder.runWith(streamContext,
                         () -> companionLlm.streamSmart(turn.systemPrompt(), turn.turnContext(),
                                 turn.history(), turn.userContent()))
-                : llmCallContextHolder.runWith(streamContext,
-                        () -> companionLlm.stream(turn.systemPrompt(), turn.turnContext(), turn.history(),
-                                turn.userContent(),
-                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+                : switch (pipe.mode()) {
+                    // LOOKUP: the answerer streams NATIVELY off the volatile half the pre-stream
+                    // execution already built — no replan, LOOKUP never offers the marker at all.
+                    case STREAM_ANSWER -> llmCallContextHolder.runWith(streamContext,
+                            () -> turnAnswerer.answerStream(turn.systemPrompt(), pipe.volatileHalf(),
+                                    turn.history(), turn.userContent()));
+                    // ANALYSIS: the full sync lap (replan included) already ran pre-stream; the
+                    // client sees the resolved answer as ONE delta, not a second round-trip.
+                    case SYNC_ANSWER -> Flux.just(pipe.syncAnswer());
+                    case LEGACY -> llmCallContextHolder.runWith(streamContext,
+                            () -> companionLlm.stream(turn.systemPrompt(), turn.turnContext(), turn.history(),
+                                    turn.userContent(),
+                                    toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+                };
         Flux<ServerSentEvent<Object>> deltas = rawDeltas
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
@@ -107,7 +139,12 @@ public class ChatStreamService {
                     String finalAnswer = answer.toString();
                     boolean degraded = false;
                     CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-                    if (chain != null && turn.gear() == TurnGear.CHAT) {
+                    // mezo-rj214.7 Task 6: a pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only,
+                    // exactly like CHAT — the same branch sendMessage's own pipelined arm takes
+                    // (ChatService#sendMessage). Skipped here is the same LLM verdict pay-twice the
+                    // CHAT comment below describes: pipelineAnswer's own answering call already
+                    // graded the answer against the tool digest it was grounded in.
+                    if (chain != null && (turn.gear() == TurnGear.CHAT || pipe.mode() != PipelineResult.Mode.LEGACY)) {
                         // CHAT skips the LLM verdict — that check grades an answer against the
                         // context and tool outcomes it was grounded in, and a CHAT turn has
                         // neither. The deterministic clinical check still runs: the dose-change
@@ -150,6 +187,63 @@ public class ChatStreamService {
                     log.warn("Companion stream failed for conversation {}", conversationId, e);
                     return Mono.just(errorEvent(STREAM_FAILED_CODE));
                 });
+    }
+
+    /**
+     * The pre-stream LIVE pipeline lap (mezo-rj214.7 Task 6): decides, BEFORE the Flux is built,
+     * whether this turn's gear earns a plan+execute round and — for ANALYSIS — resolves the whole
+     * turn synchronously (replan lap included) so the client never sees a mid-stream round-trip.
+     *
+     * <p>ANALYSIS calls the FULL sync {@link ChatService#pipelineAnswer} verbatim: the server
+     * resolves a data-gap replan itself, and a {@code null} result (planner failure) falls back
+     * to {@link PipelineResult#legacy()} exactly like the sync path (spec §8).
+     *
+     * <p>LOOKUP runs only the plan -> cap-to-budget -> execute mechanics — the same budget-capping
+     * + honest-drop pattern {@link ChatService#pipelineAnswer}'s own first lap runs, reused here
+     * through the package-private {@link ChatService#capToRemainingBudget} so the two call sites
+     * cannot drift — then builds the volatile half for the caller to stream natively. LOOKUP never
+     * offers the {@link TurnAnswerer#DATA_GAP_MARKER} escape hatch at all ({@link
+     * TurnAnswerer#buildVolatile} appends the [Adathiány] offer only for ANALYSIS), so a LOOKUP
+     * answer cannot physically contain it — the streamed deltas below need no marker gate; the
+     * ANALYSIS branch above still runs {@code guardAgainstMarker} inside {@code pipelineAnswer}.
+     *
+     * @return {@link PipelineResult#legacy()} when the planner produced nothing usable
+     */
+    private PipelineResult runPipelinePreStream(ChatService.PreparedTurn turn, UUID userId, ToolCallAudit audit) {
+        LocalDate today = LocalDate.now();
+        if (turn.gear() == TurnGear.ANALYSIS) {
+            String synced = chatService.pipelineAnswer(userId, turn.conversationId(), turn.gear(),
+                    turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(), today, audit);
+            return synced == null
+                    ? PipelineResult.legacy()
+                    : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced, null);
+        }
+        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan", "conversation", turn.conversationId()),
+                () -> turnPlanner.plan(turn.history(), turn.userContent(), today));
+        if (planned.isEmpty()) {
+            return PipelineResult.legacy();
+        }
+        var capped = chatService.capToRemainingBudget(planned.get(), audit);
+        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
+                planExecutor.execute(capped.plan(), userId, audit));
+        outcomes.addAll(capped.dropped());
+        String volatileHalf = turnAnswerer.buildVolatile(turn.turnContext(), outcomes, turn.gear(), false);
+        return new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, volatileHalf);
+    }
+
+    /**
+     * What {@link #runPipelinePreStream} decided, for the {@code rawDeltas} switch and the
+     * trailing Mono's review branch to read. {@code syncAnswer}/{@code volatileHalf} are mutually
+     * exclusive with each other and with {@link Mode#LEGACY} — only the field the mode names is
+     * ever non-null.
+     */
+    private record PipelineResult(Mode mode, String syncAnswer, String volatileHalf) {
+        private enum Mode { LEGACY, STREAM_ANSWER, SYNC_ANSWER }
+
+        private static PipelineResult legacy() {
+            return new PipelineResult(Mode.LEGACY, null, null);
+        }
     }
 
     private static boolean isEmptyAnswer(Throwable failure) {

@@ -523,13 +523,21 @@ public class ChatService {
      * {@link #pipelineAnswer} appends {@code dropped} AFTER the executed outcomes, in plan order,
      * so the answerer's digest shows the drop instead of silently answering with fewer facts than
      * the plan asked for.
+     *
+     * <p>Package-private, not {@code private} (Task 6): a {@code private} nested type stays
+     * inaccessible to a same-package caller even through {@code var} — the member itself is not
+     * accessible once the declaring type is not, regardless of the member's own modifier (JLS
+     * 6.6.1) — so {@link ChatStreamService}'s pre-stream LOOKUP execution could read
+     * {@code capToRemainingBudget}'s return value but never call {@code plan()}/{@code dropped()}
+     * on it while this stayed {@code private}.
      */
-    private record CappedPlan(ValidatedPlan plan, List<ToolCallAudit.ToolOutcome> dropped) {}
+    record CappedPlan(ValidatedPlan plan, List<ToolCallAudit.ToolOutcome> dropped) {}
 
     /**
      * Package-private for the same reason as {@link #pipelineAnswer} (Task 6 reuse): a caller in
      * {@code ChatStreamService} can invoke this and read {@code plan()}/{@code dropped()} off the
-     * result via {@code var} without ever needing to name {@link CappedPlan} itself.
+     * result via {@code var} — {@link CappedPlan} itself is package-private too, so the type never
+     * needs to be spelled out at the call site.
      */
     CappedPlan capToRemainingBudget(ValidatedPlan plan, ToolCallAudit audit) {
         int remaining = Math.max(0, properties.tools().maxCallsPerTurn() - audit.callCount());
