@@ -47,11 +47,11 @@ public class ConversationContextTools {
     private final CompanionProperties companionProperties;
     private final LlmCallContextHolder callContext;
 
-    @Tool(name = "get_personal_context", description = "Személyes háttér egy kiválasztott része. "
+    @Tool(name = "get_personal_context", description = "Személyes háttér rövid, korlátozott összefoglalója; nem a teljes adattár. "
             + "scope=facts (alapértelmezés): megerősített tények; people: ismert emberek és kapcsolatuk; "
             + "character: tárolt karakterleírás; reflections: nyitott észrevételek; today: aktuális "
             + "egészség/nap állapotösszesítő. Használd, amikor a kérdéshez ez a személyes háttér kell. "
-            + "Nem teljes napló és nem automatikus téma: a részletes mérésekhez a megfelelő domain eszköz kell.")
+            + "Teljes tények/emberek/részletek: read_personal_records(source=knowledge_fact|person|mention|character_dimension). A többi forrás: list_personal_sources.")
     public String personalContext(@ToolParam(required = false, description =
             "facts (alapértelmezés), people, character, reflections vagy today") String scope, ToolContext ctx) {
         UUID user = ToolContexts.userId(ctx);
@@ -69,7 +69,7 @@ public class ConversationContextTools {
     @Tool(name = "search_personal_memory", description = "Témához kapcsolódó hosszú távú emlékek, "
             + "tények és kapcsolatok keresése. query: önállóan érthető keresőkérdés, kötelező. "
             + "Használd, amikor korábbi élmény, beszélgetés, ember vagy személyes háttér felidézése segít. "
-            + "Releváns kivonatokat ad; nem teljes adatbázis és nem friss mérés.")
+            + "Releváns kivonatokat és forrásazonosítókat ad; nem teljes adatbázis és nem friss mérés. A teljes eredetihez read_personal_records(source,id), szükség esetén contentOffset folytatással.")
     @SuppressWarnings("unchecked")
     public String searchMemory(@ToolParam(description = "Önálló témaleírás az előzmények alapján") String query,
             ToolContext ctx) {

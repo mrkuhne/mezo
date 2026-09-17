@@ -36,11 +36,12 @@ public class CompanionToolRegistry {
     private final LifeGoalTools lifeGoalTools;
     private final CompanionProperties properties;
     private final ConversationContextTools conversationContextTools;
+    private final PersonalRecordTools personalRecordTools;
 
     /** Full catalogue available on EVERY conversation-first turn, independent of topic. */
     public List<ToolCallback> conversationCallbacks(ToolCallAudit audit) {
         var all = new java.util.ArrayList<>(callbacks(audit));
-        Arrays.stream(ToolCallbacks.from(conversationContextTools))
+        Arrays.stream(ToolCallbacks.from(conversationContextTools, personalRecordTools))
                 .map(cb -> new RecordingToolCallback(cb, audit)).forEach(all::add);
         return List.copyOf(all);
     }

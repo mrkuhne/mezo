@@ -1,0 +1,118 @@
+package io.mrkuhne.mezo.feature.companion.repository;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+/** Reviewed personal-domain projections. New database columns are never exposed automatically. */
+public record PersonalRecordSource(String name, String domain, String columns, String dateColumn,
+        String parentColumn, String parentSource) {
+    private static PersonalRecordSource s(String name, String domain, String columns, String date,
+            String parentColumn, String parentSource) {
+        return new PersonalRecordSource(name, domain, columns, date, parentColumn, parentSource);
+    }
+    public static final List<PersonalRecordSource> ALL = List.of(
+        s("activity_log", "activity", "id,occurred_on,text,skill_key,confidence,xp_awarded,xp_suggested,extracted,categorized_by,created_at", "occurred_on", "", ""),
+        s("check_in", "biometrics", "id,date,slot_time,state,energy,stress,body,mental,note,saved_at,created_at", "date", "", ""),
+        s("biometric_profile", "biometrics", "id,sex,height_cm,birth_date,body_fat_pct,activity_level,created_at", "created_at", "", ""),
+        s("sleep_goal", "biometrics", "id,target_minutes,anchor,anchor_time,regularity_band_min,created_at", "created_at", "", ""),
+        s("sleep_log", "biometrics", "id,date,bedtime,wakeup,duration_h,quality,awakenings,notes,in_bed_min,awake_min,light_min,rem_min,deep_min,source_quality_pct,source,hypnogram,created_at", "date", "", ""),
+        s("weight_log", "biometrics", "id,date,weight_kg,note,created_at", "date", "", ""),
+        s("character_claim", "character", "id,dimension_id,text,confidence,status,origin_conference_id,proposed_by,evidence,sensitive,user_feedback,confidence_history,updated_at,created_at", "created_at", "dimension_id", "character_dimension"),
+        s("character_conference", "character", "id,kind,week_start,transcript,outcome,deliberation,generated_at,created_at", "week_start", "", ""),
+        s("character_dimension", "character", "id,key,title,kind,expert_key,portrait,maturity,version,updated_at,created_at", "created_at", "", ""),
+        s("character_observation", "character", "id,expert_key,dimension_keys,day,text,salience,signals,consumed_by_conference_id,created_at", "day", "", ""),
+        s("character_portrait_revision", "character", "id,dimension_id,version,portrait,conference_id,created_at", "created_at", "dimension_id", "character_dimension"),
+        s("ai_conversation", "companion", "id,title,last_message_at,context_kind,context_date,seed_pattern_id,created_at", "created_at", "", ""),
+        s("ai_message", "companion", "id,conversation_id,role,content,tool_calls,refs,recalled_memories,degraded,created_at", "created_at", "conversation_id", "ai_conversation"),
+        s("daily_summary", "companion", "id,summary_date,narrative,created_at", "summary_date", "", ""),
+        s("day_review", "companion", "id,date,envelope,inputs_hash,computed_at,created_at", "date", "", ""),
+        s("knowledge_fact", "companion", "id,fact_text,category,source,reinforcement_count,include_in_prompt,last_reinforced_at,pinned,valid_from,valid_to,superseded_by,conflicts_with,provenance,created_at", "created_at", "", ""),
+        s("learned_fact", "companion", "id,candidate_text,category,source,week_start,evidence,derived_from_message_id,user_decision,refined_text,promoted_fact_id,created_at", "week_start", "", ""),
+        s("pattern", "companion", "id,kind,pair_key,category,category_label,title,mechanism,evidence,r,n,p,confidence,critique,status,hypothesis_key,test_plan,belief,evidence_hits,evidence_misses,origin,promoted_fact_id,last_detected_at,created_at", "created_at", "", ""),
+        s("pattern_event", "companion", "id,pattern_id,kind,occurred_at,payload,created_at", "created_at", "pattern_id", "pattern"),
+        s("period_summary", "companion", "id,granularity,period_start,summary_text,created_at", "period_start", "", ""),
+        s("weekly_score", "companion", "id,week_start,score,sleep_avg,fuel_avg,checkin_avg,activity_avg,computed_at,created_at", "week_start", "", ""),
+        s("message_feedback", "companion", "id,updated_at,artifact_kind,artifact_id,verdict,reason,created_at", "created_at", "", ""),
+        s("companion_flag_log", "companion", "id,flag_key,source,payload,created_at", "created_at", "", ""),
+        s("knowledge_edge", "companion", "id,from_node_id,to_node_id,kind,weight,evidence,last_reinforced_at,created_at", "created_at", "", ""),
+        s("knowledge_node", "companion", "id,updated_at,kind,title,summary,status,source_kind,source_id,occurred_on,user_archived_at,meta,created_at", "occurred_on", "", ""),
+        s("memory_item", "companion", "id,source_kind,source_id,chunk_index,title,content,occurred_on,schema_version,topics,people,salience,valid_from,valid_to,state,superseded_by,provenance,updated_at,created_at", "occurred_on", "", ""),
+        s("text_signal", "companion", "id,source_kind,source_id,occurred_on,version,mood,energy,stress,confidence,people,topics,keywords,provenance,created_at", "occurred_on", "", ""),
+        s("fuel_settings", "fuel", "id,meals_per_day,caffeine_cutoff,created_at", "created_at", "", ""),
+        s("meal_slot_template", "fuel", "id,day_type,slots,updated_at,created_at", "created_at", "", ""),
+        s("protocol", "fuel", "id,version,built_at,status,confidence,last_replan_reason,created_at", "created_at", "", ""),
+        s("protocol_item", "fuel", "id,protocol_id,pantry_item_id,item_order,slot_key,dose,pinned,placement_source,placement_reason,rest_day_fallback,created_at", "created_at", "protocol_id", "protocol"),
+        s("supplement_intake", "fuel", "id,pantry_item_id,taken_at,taken_date,slot_key,dose,note,created_at", "taken_date", "", ""),
+        s("coin_event", "gamification", "id,reason,amount,source_ref_id,occurred_on,created_at", "occurred_on", "", ""),
+        s("gamification_profile", "gamification", "id,coins,streak_days,streak_savers,equipped_title_key,last_streak_date,account_level,created_at", "created_at", "", ""),
+        s("owned_title", "gamification", "id,title_key,acquired_at,created_at", "created_at", "", ""),
+        s("goal", "goal", "id,title,trajectory,guards,status,start_date,target_date,start_weight_kg,target_weight_kg,rate_target_pct_per_week,identity_frame,meals_per_day,wake_time,bed_time,tdee_bootstrap,prescription,segment_overrides,balance_adjustment_kcal,created_at", "start_date", "", ""),
+        s("goal_plan_link", "goal", "id,goal_id,plan_type,plan_id,start_week,end_week,created_at", "created_at", "goal_id", "goal"),
+        s("goal_suggestion", "goal", "id,goal_id,kind,status,dedup_key,payload,decided_at,created_at", "created_at", "goal_id", "goal"),
+        s("habit_chain", "habit", "id,chain_key,title,daypart,position,is_active,created_at", "created_at", "", ""),
+        s("habit_day", "habit", "id,habit_date,habit_key,status,done_at,xp_awarded,source,created_at", "habit_date", "", ""),
+        s("habit_def", "habit", "id,habit_key,chain_id,position,title,why,anchor_copy,mode,metric,skill_key,skill_kind,xp,link_url,framework,anchor_habit_key,cue,craving,reward,celebration,identity,is_active,created_at", "created_at", "chain_id", "habit_chain"),
+        s("daily_intention", "intention", "id,intention_date,reflection,created_at", "intention_date", "", ""),
+        s("intention_creed", "intention", "id,text,created_at", "created_at", "", ""),
+        s("intention_focus", "intention", "id,focus_date,text,created_at", "focus_date", "", ""),
+        s("decision_entry", "journal", "id,decided_on,decision_text,context_snapshot,review_due,reviewed_at,outcome_rating,outcome_text,created_at", "decided_on", "", ""),
+        s("gratitude_entry", "journal", "id,occurred_on,text,life_area,created_at", "occurred_on", "", ""),
+        s("journal_entry", "journal", "id,occurred_on,text,source,created_at", "occurred_on", "", ""),
+        s("life_goal", "lifegoal", "id,title,why_text,frame,dimension,secondary_dimension,status,start_date,target_date,activated_at,closed_at,obstacle_text,if_then_plans,created_at", "start_date", "", ""),
+        s("life_goal_pillar_day", "lifegoal", "id,pillar_id,day,value,target,baseline,status,computed_at,created_at", "day", "pillar_id", "life_goal_pillar"),
+        s("life_goal_pillar", "lifegoal", "id,goal_id,label,skill_key,kind,weight,position,is_active,source,rule,created_at", "created_at", "goal_id", "life_goal"),
+        s("meal", "meal", "id,updated_at,logged_at,meal_date,slot,title,score,breakdown,provenance,created_at", "meal_date", "", ""),
+        s("meal_item", "meal", "id,meal_id,line_order,source,recipe_id,pantry_item_id,amount,unit,snapshot_name,snapshot_per,snapshot_basis_unit,snapshot_kcal,snapshot_protein_g,snapshot_carbs_g,snapshot_fat_g,snapshot_fiber_g,snapshot_sugar_g,snapshot_salt_g,snapshot_saturated_fat_g,snapshot_nova,recipe_overrides,created_at", "meal.meal_date", "meal_id", "meal"),
+        s("water_log", "meal", "id,log_date,amount_ml,created_at", "log_date", "", ""),
+        s("medication_dose", "medication", "id,updated_at,medication_id,administered_at,administered_date,dose,note,created_at", "administered_date", "medication_id", "medication"),
+        s("medication", "medication", "id,updated_at,name,active_ingredient,route,cadence,default_dose,dose_unit,cycle,is_active,created_at", "created_at", "", ""),
+        s("needs_day", "needs", "id,needs_date,energia,hidratacio,pihenes,mozgas,lelek,rend,green_count,all_green,xp_awarded,streak_days,created_at", "needs_date", "", ""),
+        s("diet_settings", "nutrition", "id,split_preset,protein_pct_x10,carbs_pct_x10,fat_pct_x10,protein_tier,water_ml,fiber_g,day_type_shift_kcal,created_at", "created_at", "", ""),
+        s("pantry_catalog", "pantry", "id,created_at,updated_at,kind,name,brand,source,status,category,serving_amount,serving_unit,kcal,protein_g,carbs_g,fat_g,fiber_g,sugar_g,salt_g,saturated_fat_g,package_label,micros,nova,form,caffeine", "created_at", "", ""),
+        s("pantry_import", "pantry", "id,source,item_name,item_count,status,barcode,source_url,pantry_item_id,imported_at,created_at", "created_at", "", ""),
+        s("pantry_item", "pantry", "id,updated_at,catalog_id,notes,price_huf,price_unit,stock_qty,stock_unit,stock_expires,dose,protocol,timing,taken,created_at", "created_at", "", ""),
+        s("mention", "people", "id,person_id,ts,source,duration_s,excerpt,tone,tied_to_kind,tied_to_label,flagged,intensity,context_label,source_ref_kind,source_ref_id,created_at", "ts", "person_id", "person"),
+        s("person", "people", "id,name,initial,relationship,relationship_hu,affect_baseline,contact_cadence_label,notes,known_facts,ties,affect_trend,aliases,status,source_kind,created_at", "created_at", "", ""),
+        s("challenge", "proactive", "id,template_session_id,workout_date,exercise_id,exercise_name,type,status,risk,title,why,glory,target_weight_kg,target_reps,target_sets,target_rir,confidence,refs,outcome,outcome_good,generated_at,source_pattern_id,created_at", "created_at", "", ""),
+        s("companion_message", "proactive", "id,message_date,kind,content,generated_at,created_at", "created_at", "", ""),
+        s("diagnosis", "proactive", "id,phenomenon,window_days,verdict,confidence,evidence,suspects,generated_at,created_at", "created_at", "", ""),
+        s("experiment", "proactive", "id,title,hypothesis,status,metric_key,expected_direction,start_date,total_days,outcome,outcome_good,generated_at,source_pattern_id,source,source_diagnosis_id,created_at", "start_date", "", ""),
+        s("memoir", "proactive", "id,week_start,title,body,anchors,generated_at,created_at", "week_start", "", ""),
+        s("prediction", "proactive", "id,week_start,title,basis,confidence,metric_key,expected_direction,valid_from,valid_to,status,actual,generated_at,source_pattern_id,created_at", "week_start", "", ""),
+        s("weekly_review", "proactive", "id,week_start,summary,day_notes,highlights,generated_at,created_at", "week_start", "", ""),
+        s("weekly_suggestion", "proactive", "id,week_start,prose,generated_at,created_at", "week_start", "", ""),
+        s("level_up_event", "progression", "id,source_type,source_ref_id,occurred_at,occurred_on,total_xp,payload,created_at", "occurred_on", "", ""),
+        s("perk_unlock", "progression", "id,skill_key,perk_key,milestone_level,unlocked_at,created_at", "created_at", "", ""),
+        s("skill_progress", "progression", "id,skill_key,skill_kind,cumulative_xp,current_level,updated_at,created_at", "created_at", "", ""),
+        s("daily_quest", "quest", "id,quest_date,slot,catalog_key,skill_key,skill_kind,title,why,completion_mode,target,xp,coins,status,completed_at,source_activity_id,generated_at,created_at", "quest_date", "", ""),
+        s("recipe", "recipe", "id,updated_at,name,slot,category,servings,prep_mins,cook_mins,tags,starred,role,nova_dominant,fit_score,fits_for,breakdown,created_at", "created_at", "", ""),
+        s("recipe_ingredient", "recipe", "id,recipe_id,pantry_item_id,amount,unit,note,line_order,snapshot_name,snapshot_per,snapshot_basis_unit,snapshot_kcal,snapshot_protein_g,snapshot_carbs_g,snapshot_fat_g,snapshot_fiber_g,snapshot_sugar_g,snapshot_salt_g,snapshot_saturated_fat_g,created_at", "created_at", "recipe_id", "recipe"),
+        s("ritual_day", "ritual", "id,ritual_date,closed_at,reflection_text,created_at", "ritual_date", "", ""),
+        s("exercise_catalog", "train", "id,slug,name,muscle,type,stim,fatigue,video_url,image_start_url,image_end_url", "", "", ""),
+        s("exercise", "train", "id,workout_session_id,name,muscle,warmup_sets,working_sets,rep_min,rep_max,target_rir,anchor_weight_kg,type,warning,note,catalog_id,counts_toward_volume,order_index,created_at", "workout_session.date", "workout_session_id", "workout_session"),
+        s("exercise_feedback", "train", "id,workout_session_id,exercise_id,pump,joint_pain,workload,created_at", "workout_session.date", "workout_session_id", "workout_session"),
+        s("exercise_set", "train", "id,exercise_id,workout_session_id,set_index,weight_kg,reps,rir,side,note,skipped,kind,done_at,target_weight_kg,target_reps,created_at", "workout_session.date", "workout_session_id", "workout_session"),
+        s("gym_schedule_slot", "train", "id,day_of_week,time,created_at", "created_at", "", ""),
+        s("meso_template", "train", "id,title,short_title,goal,goal_preset,muscle_priorities,weeks,split,style,phase_curve,notes,days,volume_per_muscle,created_at", "created_at", "", ""),
+        s("mesocycle", "train", "id,title,short_title,status,goal,goal_preset,muscle_priorities,start_date,end_date,weeks,current_week,split,style,phase_curve,notes,summary,volume_recompute,template_id,closed_at,created_at", "start_date", "", ""),
+        s("mesocycle_report", "train", "id,mesocycle_id,report,context,self_eval,ai_eval,ai_eval_status,ai_eval_generated_at,created_at", "created_at", "mesocycle_id", "mesocycle"),
+        s("muscle_group_volume_log", "train", "id,mesocycle_id,muscle,mev,mav,mrv,current_sets,source,computed_at,created_at", "created_at", "mesocycle_id", "mesocycle"),
+        s("run_session_log", "train", "id,block_id,week_number,session_key,date,completed_rounds,rpe_actual,hr_recovery_sec,sprint_landmark,duration_min,notes,kcal,kcal_is_estimate,created_at", "date", "", ""),
+        s("running_block", "train", "id,title,goal,kind,status,start_date,end_date,weeks,current_week,summary,structure,created_at", "start_date", "", ""),
+        s("sport_event", "train", "id,date,time,duration_min,kind,sport,location,intensity_label,created_at", "date", "", ""),
+        s("sport_schedule_slot", "train", "id,day_of_week,time,duration_min,kind,sport,location,intensity_label,created_at", "created_at", "", ""),
+        s("sport_session", "train", "id,sport,date,time,duration_min,sets_played,intensity,rpe,shoulder_strain,jump_count,rounds,notes,kcal,kcal_is_estimate,created_at", "date", "", ""),
+        s("sport_slot_skip", "train", "id,day_of_week,time,date,created_at", "date", "", ""),
+        s("workout_day_adjustment", "train", "id,date,set_delta,created_at", "date", "", ""),
+        s("workout_session", "train", "id,mesocycle_id,template_session_id,day_label,type,muscle,muscle_accent,note,closing_note,date,status,duration_est,started_at,finished_at,active_seconds,order_index,origin,created_at", "date", "", ""),
+        s("workout_timing_profile", "train", "id,component,value_num,deviation_num,samples,updated_at,created_at", "created_at", "", "")
+    );
+    private static final Map<String, PersonalRecordSource> BY_NAME = ALL.stream()
+            .collect(Collectors.toUnmodifiableMap(PersonalRecordSource::name, Function.identity()));
+    public static PersonalRecordSource named(String name) { return BY_NAME.get(name); }
+    public List<String> fields() { return Arrays.asList(columns.split(",")); }
+    public boolean shared() { return name.equals("pantry_catalog") || name.equals("exercise_catalog"); }
+}

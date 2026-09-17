@@ -148,7 +148,7 @@ public class ChatService {
             - számszerű cél: súlycél, kalóriacél, heti ütem → get_goal
             - életcél, életterület (PERMAH), pillér, ha–akkor terv → get_life_goals
             - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
-            - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
+            - minták, „mit vettél észre rólam" → get_insights (megerősített minták; predikció/kísérlet külön részletes forrásolvasást igényel)
             - hasonló korábbi nap → find_similar_past_days
             - két időszak összevetése (negyedév/hónap) → compare_periods""";
 
@@ -208,6 +208,7 @@ public class ChatService {
     private final ConversationTurnService conversationTurnService;
     private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
     private final ConversationHistory conversationHistory;
+    private final PersonalBaselineContext personalBaselineContext;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -386,8 +387,7 @@ public class ChatService {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
             String systemPrompt = stableSystemPrompt(userId);
             String turnCtx = conversationProperties.enabled()
-                    ? "\n\n[Beszélgetés]\nMa: " + LocalDate.now() + "\n" + profileBlock(userId)
-                        + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate())
+                    ? conversationContext(userId, conversation, LocalDate.now())
                     : turnContext(userId, LocalDate.now(),
                     knowledgeFactService.renderPromptBlock(userId), "", "",
                     conversation.getContextKind(), conversation.getContextDate());
@@ -459,12 +459,8 @@ public class ChatService {
     private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
             String userContent, List<Turn> history, LocalDate today) {
         if (conversationProperties.enabled()) {
-            String context = "\n\n[Beszélgetés]\nMa: " + today + "\n"
-                    + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
-                    + profileBlock(userId)
-                    + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate());
             return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
-                    promptPersona.render(userId, context));
+                    conversationContext(userId, conversation, today));
         }
         TurnGear gear = turnGearRouter.route(userContent);
         ChatMemoryPayload memory = gear == TurnGear.CHAT
@@ -477,6 +473,14 @@ public class ChatService {
                         memory.memoriesBlock(), memory.graphBlock(),
                         conversation.getContextKind(), conversation.getContextDate());
         return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+    }
+
+    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today) {
+        return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
+                + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
+                + personalBaselineContext.render(userId, today)
+                + profileBlock(userId)
+                + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()));
     }
 
     /**
