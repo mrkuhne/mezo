@@ -35,8 +35,8 @@ const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: Z
  * public return keeps the full FuelDay shape verbatim. Mock cache is client-owned (useMealActions
  * mutates via setQueryData) → never background-refetch in mock.
  */
-export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; isPending: boolean } {
-  const { data, isPending } = useDualQuery({
+export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; isPending: boolean; isError: boolean; refetch: () => void } {
+  const { data, isPending, isError, refetch } = useDualQuery({
     queryKey: fuelDayKey(date),
     mockData: seedDayData,
     realFetch: () => mealApi.getDay(date),
@@ -51,7 +51,7 @@ export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; i
     micronutrients: fuelDay.micronutrients,
     supplements: fuelDay.supplements,
   }
-  return { fuel, isPending }
+  return { fuel, isPending, isError, refetch }
 }
 
 /** log/update/delete on the ['fuelDay', date] cache. Real writes invalidate fuelDay + recipes +

@@ -43,6 +43,18 @@ function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+// Train Titanium (mezo-e1ii9, parity matrix §21 sor 8): a kalauz a Train tartomány EGYIK
+// route-ján se ugorhat fel magától — a prototípusnak nincs ilyen overlaya egyetlen /train/*
+// oldalon sem. A tartalom marad elérhető (a fejléc „?"-je bármikor nyit, lásd `open`), csak az
+// AUTO-nyitás van kikapcsolva erre a tartományra — ugyanaz a minta, mint az AppLayout
+// hideChrome-listájának `/train`/`/train/*` gate-je. Nem a registry `tier`-jén (T3) megy: a T2
+// jelentése ("van saját fő-aloldal kalauza", S3a/registry.test.ts) más tengely, mint az, hogy
+// AUTO felugorhat-e — a Train minden T2 aloldala megmarad T2-nek, csak route-alapon lép közbe
+// ez a kapu, mielőtt az auto-open timer egyáltalán elindulna.
+function isTrainRoute(pathname: string): boolean {
+  return pathname === '/train' || pathname.startsWith('/train/')
+}
+
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -273,7 +285,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       openIdRef.current = null
       setOpenId(null)
     }
-    if (!current || current.tier === 'T3') return
+    if (!current || current.tier === 'T3' || isTrainRoute(pathname)) return
     if (autoShown.current.has(current.id) || !isUnseenRef.current(current.id)) return
     // Semmi nem ugorhat fel MÁS nyitott felület alá/fölé. A `navPendingCloseRef`-ág (kapcsolat-chip)
     // szándékosan nyitva hagyja a kalauzt a kilépő animáció végéig — reduced-motion alatt az

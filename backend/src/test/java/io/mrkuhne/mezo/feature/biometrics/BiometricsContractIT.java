@@ -154,4 +154,20 @@ class BiometricsContractIT extends ApiIntegrationTest {
         assertThat(day).hasSize(1);
         assertThat(day.get(0).getState()).isEqualTo("skipped");
     }
+    @Test
+    void testSaveCheckIn_shouldRoundTripLongNote_whenBeyondFormerLimits() {
+        HttpHeaders headers = ownerAuthHeaders();
+        String note = "Hosszabb gondolat a mai napról. ".repeat(1000);
+        CheckInResponse saved = postForBody("/api/biometrics/checkin",
+            SaveCheckInRequest.builder()
+                .date(LocalDate.parse("2026-06-11")).slotTime("09:00").state("done")
+                .note(note).build(),
+            headers, HttpStatus.OK, CheckInResponse.class);
+        assertThat(saved.getNote()).isEqualTo(note);
+
+        List<CheckInResponse> day = getForList("/api/biometrics/checkin?date=2026-06-11",
+            headers, HttpStatus.OK, CheckInResponse.class);
+        assertThat(day).singleElement().extracting(CheckInResponse::getNote).isEqualTo(note);
+    }
+
 }

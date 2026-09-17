@@ -178,8 +178,14 @@ export function betterSide(r: CompareStrengthRow): 'a' | 'b' | null {
  * buckets): a per-week context table for two runs of different lengths would be a grid of
  * holes, while the averages are the thing that actually answers "which block did I live
  * better through".
+ *
+ * Exported (fix round, mezo-e1ii9) — `MesoReportPage`'s single-run context block reuses the
+ * same six fields/labels/pick functions rather than re-declaring which totals exist. A
+ * closed run only reaches THIS list of metrics through `contextDiff` on the compare page,
+ * which needs a second closed run to even open — so a lone run's report also folds a plain
+ * version of the same six rows into its own collapsed section.
  */
-const CONTEXT_METRICS: { label: string; unit: string; pick: (t: MesoContextTotals) => number | null }[] = [
+export const CONTEXT_METRICS: { label: string; unit: string; pick: (t: MesoContextTotals) => number | null }[] = [
   { label: 'Alvás', unit: 'h', pick: (t) => t.sleepAvgH ?? null },
   { label: 'Kcal', unit: 'kcal', pick: (t) => t.kcalAvg ?? null },
   { label: 'Energia', unit: '', pick: (t) => t.energyAvg ?? null },

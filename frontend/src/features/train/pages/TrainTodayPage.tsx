@@ -73,7 +73,7 @@ export function TrainTodayPage() {
   const [customOpen, setCustomOpen] = useState(false)
   const { goal: sleepGoal } = useSleepGoal()
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
-  // structureLint/peakWeekFit/programFit/prepBriefing deliberately stay on the static estimate.
+  // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
   // Same weight source `deriveDailyBudget` reads for Fuel's calorie budget
   // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — Mai's energy card must never
