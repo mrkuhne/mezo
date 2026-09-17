@@ -16,7 +16,7 @@ reference, mined once into a "style bible".
 
 **Tech Stack:** React + Vite PWA (`frontend/`), single `frontend/src/styles/prototype.css`
 style monolith with marker-delimited sections, mozaik/clay UI kits, bd (beads) tracker,
-self-PR CI gate.
+"no-wait, net stays" merge flow (AGENTS.md §Git Workflow).
 
 **Spec:** `docs/superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md` — read it first
 in every session.
@@ -33,8 +33,9 @@ in every session.
   same commit.
 - FE tests run in BOTH modes (`VITE_USE_MOCK` unset = mock; set `VITE_USE_MOCK=false` for real;
   `CI=true` required for scoping) + affected `frontend/tests/layout` specs.
-- Every task: own `feat/<topic>` branch in a worktree → self-PR → CI green →
-  `gh workflow run premerge.yml -f pr=<n>` → `--no-ff` local merge → push main → delete branch.
+- Every task: own `feat/<topic>` branch in a worktree; merge per the "no-wait, net stays"
+  flow (AGENTS.md §Git Workflow, 2026-09-18): local gates → `--no-ff` merge to main → push;
+  no PR/CI wait. A red main at session start is fixed before any new work.
 - After file moves/deletes: `node scripts/gen-codemap.mjs` and commit CODEMAP; regenerate after
   every merge. Session close: `node scripts/check-beads-backup.mjs --fix` + `bd dolt push`.
 - Re-dress tasks close by pasting the reverse parity checklist result into the bd issue.
@@ -64,7 +65,7 @@ in every session.
 - [ ] Banner + title fix in `_platform-design-system.md`
 - [ ] `bd memories` audit; update with `bd remember --key <k>`; record the reversal itself as a new memory
 - [ ] Verify: fresh-eyes read — could a new session still conclude "Titanium is mandatory"? Fix until no.
-- [ ] Commit, PR, gates, merge
+- [ ] Commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 1: Old-world style bible (bead: phase 1, model:strong, ~1–2 sessions)
 
@@ -86,7 +87,7 @@ in every session.
 - [ ] Mine the Mozaik-era design docs (marked living again by Task 0) for material/motion rules; distill, don't duplicate — link
 - [ ] Write the "new components, old world" section (GlassBox, BodyMap, in-workout list, TabBar) — this is the design-judgment heart of the task
 - [ ] Self-review against spec kill-list: every Titanium visual has a defined replacement recipe
-- [ ] Commit, PR, gates, merge
+- [ ] Commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 2: Shell strip (bead: phase 2, model:strong, ~2 sessions, blocked by 1)
 
@@ -105,7 +106,7 @@ in every session.
 - [ ] Icon merge: start from `clay-icons-pre-titanium.svg`, redraw the 8 Titanium-only glyphs in old clay material (style bible §icon recipe); verify every symbol id referenced in code still exists: `grep -rhoE 'clay-icons\.svg#[a-z-]+' frontend/src | sort -u` vs `grep -oE 'id="[a-z-]+"' clay-icons.svg`
 - [ ] Tests both modes + `frontend/tests/layout/startup.spec.ts` + navigation.spec.ts
 - [ ] `verify`-skill runtime pass: shell reads as old world on /nap, /fuel, /train
-- [ ] Commit(s), PR, gates, merge
+- [ ] Commit(s), local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 3: Nav orphans + nav re-skin (bead: phase 3, model:fast, ~1–2 sessions, blocked by 2)
 
@@ -130,7 +131,7 @@ The 5th tab lists the *destinations users lost a menu path to*, not the dead URL
 - [ ] Re-skin TabBar/DomainSwitcher; geometry changes only in `.tab-bar[data-domain]`
 - [ ] Tutorial anchor check: `grep -n "train-tabs\|tab-bar" frontend/src/features/tutorial/registry*`
 - [ ] Tests both modes + navigation.spec.ts; `verify` runtime pass
-- [ ] Commit, PR, gates, merge
+- [ ] Commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 4: GlassBox re-skin (bead: phase 4, model:strong, ~1 session, blocked by 2)
 
@@ -142,7 +143,7 @@ The 5th tab lists the *destinations users lost a menu path to*, not the dead URL
 - [ ] Implement the style bible §"GlassBox, old world" treatment on the component + `.gl-*` section (keep API/props identical — 21 consumers must not change)
 - [ ] `grep -rln "GlassBox" frontend/src | wc -l` before/after — consumer files untouched
 - [ ] Spot-check 3 consumers in `verify` runtime (one fuel modal, one train workout menu, finish-confirm)
-- [ ] Tests both modes; commit, PR, gates, merge
+- [ ] Tests both modes; commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 5: Fuel re-dress (beads: phase 5a–5d, first strong then fast, ~4–5 sessions, blocked by 4; 5b–5d also by 5a)
 
@@ -158,7 +159,7 @@ and data (`frontend/src/data/fuel`) are OFF-LIMITS.
 - [ ] Re-dress markup classes + CSS section (rename Titanium section to restored equivalent; structure test updated same commit)
 - [ ] Reverse parity checklist from `docs/design_2.0/2026-09-11-fuel-coverage.md` + `TITANIUM_FEATURE_COVERAGE_REGISTER.md` fuel rows: demonstrate each listed feature live in `verify` mock run; paste result into the bd issue
 - [ ] Tutorial anchors grep for the touched pages
-- [ ] Tests both modes; commit, PR, gates, merge
+- [ ] Tests both modes; commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 6: Nap/Mai re-dress (bead: phase 6, model:strong, ~1–2 sessions, blocked by 2)
 
@@ -169,7 +170,7 @@ and data (`frontend/src/data/fuel`) are OFF-LIMITS.
 - [ ] Design pass per style bible; keep the new layout structure, swap skin
 - [ ] Center: Clay Mezo icon (restored art) — placeholder position for the Task 8 avatar (same slot, so 8 swaps the asset, not the layout)
 - [ ] Parity from `docs/design_2.0/2026-09-10-nap-mai-coverage.md`; paste into bd issue
-- [ ] Tests both modes + affected layout specs; `verify` pass; commit, PR, gates, merge
+- [ ] Tests both modes + affected layout specs; `verify` pass; commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 7: Train re-dress (beads: phase 7a–7c, first strong then fast, ~3–4 sessions, blocked by 4; 7b–7c also by 7a)
 
@@ -197,7 +198,7 @@ bottom-left corner of the shell, and as the 5 domain glyphs in TabBar/DomainSwit
 **Steps (8b):**
 - [ ] Wire the SVG assets; blink loop honors `prefers-reduced-motion`
 - [ ] TabBar swap: domain glyphs → Boop variants; navigation.spec.ts still green
-- [ ] Tests both modes; `verify` pass across all 5 domains; commit, PR, gates, merge
+- [ ] Tests both modes; `verify` pass across all 5 domains; commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 9: Close-out (bead: phase 9, model:fast, ~1 session, blocked by 5*, 6, 7*, 8*)
 
@@ -206,7 +207,7 @@ bottom-left corner of the shell, and as the 5 domain glyphs in TabBar/DomainSwit
 - [ ] Delete any now-dead Titanium prototype.css sections + structure-test entries missed by area tasks; `grep -n "titan" frontend/src/styles/prototype.css` should return only intentional survivors (none expected)
 - [ ] Close `TITANIUM_FEATURE_COVERAGE_REGISTER.md`: add reversal outcome note; docs lint via knowledge-base skill
 - [ ] CODEMAP regen; final epic close: `bd close` children check, `node scripts/check-beads-backup.mjs --fix`, `bd dolt push`, git push
-- [ ] Commit, PR, gates, merge; close epic
+- [ ] Commit, local gates, --no-ff merge to main (no-wait flow); close epic
 
 ---
 
