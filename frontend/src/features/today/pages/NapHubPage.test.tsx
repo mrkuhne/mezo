@@ -31,7 +31,7 @@ function setup() {
 }
 it('opens the next check-in directly and saves to that slot', async () => {
   setup()
-  await userEvent.click(screen.getByRole('button', { name: 'Check-in', exact: true  }))
+  await userEvent.click(screen.getByRole('button', { name: 'Check-in'  }))
   expect(screen.getByRole('dialog')).toHaveTextContent('slot:1')
   await userEvent.click(screen.getByText('Mentés'))
   expect(store.save).toHaveBeenCalledWith(1, expect.objectContaining({ state: 'done', note: 'Megérkeztem' }))
@@ -47,17 +47,17 @@ it.each([['Gyors logolás', '/nap/gyors'], ['Chat', '/mezo/chat'], ['Életjelek'
 })
 it('keeps completed check-ins reachable without overwriting one', async () => {
   const prev = store.slots; store.slots = prev.map(s => ({ ...s, state: 'done' }))
-  setup(); await userEvent.click(screen.getByRole('button', { name: 'Check-in', exact: true  }))
+  setup(); await userEvent.click(screen.getByRole('button', { name: 'Check-in'  }))
   expect(screen.getByText('destination:/nap/checkin')).toBeInTheDocument(); store.slots = prev
 })
 
 it('waits for persisted slots before offering capture and exposes retry on read failure', async () => {
   store.pending = true
   const view = setup()
-  expect(screen.getByRole('button', { name: 'Check-in', exact: true  })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Check-in'  })).toBeDisabled()
   view.unmount(); store.pending = false; store.error = true
   setup()
-  expect(screen.getByRole('button', { name: 'Check-in', exact: true  })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Check-in'  })).toBeDisabled()
   await userEvent.click(screen.getByRole('button', { name: 'Check-in újratöltése' }))
   expect(store.retry).toHaveBeenCalled(); store.error = false
 })
