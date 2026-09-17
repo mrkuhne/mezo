@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-16
+updated: 2026-09-17
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1848,8 +1848,12 @@ into an honest error result (one broken read never kills a streamed turn). **Sin
 `onCall(Consumer<ToolCall>)`, invoked from `recordCall` inside a try/catch so a broken listener can
 never fail a turn. `ChatStreamService` registers one to turn each recorded call into the live
 `tool` SSE event described above; the sync `ChatService.sendMessage` path registers none, so it is
-unaffected. Spring AI executes a turn's tool calls sequentially, so the listener needs no extra
-synchronization on top of the audit's own. Tools receive the
+unaffected. Spring AI still executes a LIVE turn's tool calls sequentially on one thread, but
+**since S9.4** every state-touching `ToolCallAudit` method is `synchronized`: the dark-shipped
+`PlanExecutor` (see "The planner/executor pipeline" below) calls the SAME `RecordingToolCallback`-
+wrapped callbacks from multiple `applicationTaskExecutor` pool threads at once, and the listener
+itself now runs under the audit's lock, so a slow/broken listener would stall every concurrent
+`recordCall`/`recordResult`/`addRef` — cheap listeners only. Tools receive the
 Spring AI `ToolContext` carrying `userId` (ownership scoping is structural — model args are never
 trusted for identity, `tools/ToolContexts.java`) and the audit (for `addRef(kind, id)` — deduped,
 capped at `max-refs-per-turn`). Results are compact deterministic Hungarian text with `nincs adat`
@@ -2146,6 +2150,45 @@ both paths call `completeSmart`/`streamSmart` directly, exactly as the non-CHAT 
 to the unadvised `complete`/`stream`.
 `LOOKUP` and `ANALYSIS` turns are byte-identical to pre-gear behavior in this slice — the distinction
 becomes operative once the planner/executor/replan blocks land (S9.4/S9.5).
+
+**The planner/executor pipeline (S9.4, `mezo-rj214.7`, spec §6.2-§6.4) — landed DARK.** Nothing on
+the live turn calls any of this yet: `ChatService`/`ChatStreamService` still run the pre-existing
+Spring AI tool-loop path end to end, unchanged. The pipeline exists, is fully wired, and is proved
+end to end by `TurnPipelineIT` (`service/TurnPipelineIT.java`) — it becomes operative only when S9.5
+wires a call site to it. Shape: `TurnPlanner.plan(history, userMessage, today)`
+(`service/TurnPlanner.java`) makes ONE tool-free SMART-tier call (`completeSmart`, §5.3 — no tool
+schemas travel, so the model reasons in prose, never by calling a tool) against a prompt carrying the
+LIVE-rendered tool catalogue (`ToolCatalogue.render()`, the same registry `CompanionToolRegistry`
+assembles — no hand-maintained tool list anywhere in this slice) and parses the JSON answer
+(`TurnPlanParser`) into a `TurnPlan` (`needsData`, `steps[]{tool,args,why}`). `PlanValidator.validate`
+(`service/PlanValidator.java`) then checks every step against the SAME live registry's tool schemas —
+unknown tool names and unknown parameters are dropped with a recorded Hungarian rejection reason,
+never executed blind — and caps accepted steps at `mezo.companion.tools.max-calls-per-turn`. An
+unparseable or fully-rejected plan earns up to `mezo.companion.turn.planner.repair-attempts` repair
+laps (`TurnPlanner.REPAIR_PREFIX`/`REPAIR_SUFFIX`, a `[JAVÍTÁS]`-prefixed re-ask naming what was
+wrong) before the planner gives up with `Optional.empty()` — the S9.5 call site's contract is to fall
+back to the legacy tool-loop path on that empty result. The resulting `ValidatedPlan` (accepted
+steps + rejections, for provenance) runs through `PlanExecutor.execute(plan, userId, audit)`
+(`service/PlanExecutor.java`) with PURE JAVA — no model in this loop, so nothing can misread or skip
+a step. Independent steps fan out in PARALLEL over `applicationTaskExecutor`
+(`mezo.companion.turn.executor.parallelism` permits, a `Semaphore`) through the SAME
+`RecordingToolCallback`-wrapped callbacks the live loop uses, so the audit, the ref budget and the
+`companion_tools_are_internal_sphere_only` ArchUnit guarantee all hold unchanged; outcomes return in
+PLAN ORDER regardless of completion order. `LlmActorContext.capture()` runs ONCE on the submitting
+thread before the fan-out and every pool task re-binds that SAME actor via
+`LlmActorContext.runAsCaptured` (mirroring `MemoryShadowRunner`/`MemoryQueryEmbedder`), because a
+step's tool may itself make a provider embedding call (e.g. `find_similar_past_days`) whose
+`llm_log` row would otherwise book against nobody. One ABSOLUTE deadline
+(`mezo.companion.turn.executor.step-timeout-ms`) is computed once before collection and shared
+across every step, so total wall time for a plan stays bounded near its SLOWEST step rather than the
+sum of every step's timeout; a step that never gets a permit or never completes in time reports the
+honest `PlanExecutor.STEP_TIMEOUT`/`STEP_FAILED` text (ADR 0010 — shown to the model, never
+fabricated data), it is never thrown into the turn. `TurnPipelineIT` is deliberately NOT
+`@Transactional`: its assertions depend on a `PlanExecutor` pool thread's own DB connection seeing
+rows the test just inserted on the JUnit thread, which a wrapping test transaction's uncommitted,
+thread-bound connection would hide (the same reason `MemoryContextServiceIT` and its memory-platform
+siblings skip it) — the populated rows commit immediately and `ResetDatabase` truncates between
+tests instead.
 
 **What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
 verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
@@ -5441,12 +5484,24 @@ since S2.
   `mezo-rj214.7`, §3 "The turn gear") own switch: whether an UNSURE `TurnGearAnalyzer` result may
   spend one cheap `GearClassifier` call, or falls straight to `TurnGear.ANALYSIS` (the router's
   top-gear fallback either way). `false` never disables the gear itself, only the tie-break call.
+- `mezo.companion.turn.planner.repair-attempts` = **1** (`@Min(0) @Max(3)`) — S9.4 (`mezo-rj214.7`,
+  §3 "The planner/executor pipeline"): how many `[JAVÍTÁS]` repair laps `TurnPlanner.plan` spends on
+  an unparseable-or-fully-rejected plan before it gives up (`Optional.empty()`). Bound and covered by
+  `TurnPipelineIT`, but the pipeline is dark — see below.
+- `mezo.companion.turn.executor.parallelism` = **4** (`@Min(1) @Max(16)`) — S9.4: the `Semaphore`
+  width `PlanExecutor` fans validated steps out over `applicationTaskExecutor` with.
+- `mezo.companion.turn.executor.step-timeout-ms` = **15000** (`@Min(100) @Max(60_000)`) — S9.4: the
+  per-step wait budget `PlanExecutor` shares as ONE absolute deadline across every step in a plan
+  (§3), past which an unfinished step reports `PlanExecutor.STEP_TIMEOUT` rather than blocking the
+  turn indefinitely.
 - `mezo.companion.turn.answerer.chat-effort` = **`high`** (`@NotBlank`) — bound and validated
   (`CompanionTurnPropertiesIT`) but **not yet read by any call site**: the CHAT branch's actual
   reasoning effort still comes from the SMART tier's existing `mezo.companion.llm.{gemini,openai}.*`
   config, same as any other smart-tier call (`OpenAiCompanionLlm.optionsFor`) — it reaches the
   provider at all only because a CHAT-gear call carries no tools (§5.3). This key is scaffolding for
-  the per-gear answerer S9.4/S9.5 lands; only the gear itself is operative in this slice.
+  the per-gear answerer S9.4/S9.5 lands; the LOOKUP/ANALYSIS per-gear effort keys are deliberately
+  **deferred to S9.5** — no per-call effort override exists on the LLM seam yet, so only `chat-effort`
+  exists today and only the gear itself (not the effort) is operative in this slice.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)
