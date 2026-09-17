@@ -308,9 +308,8 @@ public class ChatService {
             // produced nothing usable, and the turn falls straight to the UNCHANGED legacy branches
             // below (spec §8: degraded, but an answer) — the fallback the whole migration leans on.
             String pipelined = properties.turn().pipelineEnabled()
-                    ? llmCallContextHolder.runWith(turnContext,
-                            () -> pipelineAnswer(userId, conversationId, gear, systemPrompt, turnCtx,
-                                    history, request.getContent(), today, audit))
+                    ? pipelineAnswerGuarded(userId, conversationId, gear, systemPrompt, turnCtx,
+                            history, request.getContent(), today, audit, turnContext)
                     : null;
             if (pipelined != null) {
                 answer = pipelined;
@@ -452,6 +451,28 @@ public class ChatService {
     }
 
     /**
+     * Sync-path twin of {@link ChatStreamService#runPipelinePreStream}: {@link #pipelineAnswer}
+     * itself never throws by construction ({@link PlanExecutor} always turns a per-step failure
+     * into an honest {@link ToolCallAudit.ToolOutcome} and never propagates it) — but the planner
+     * and answerer calls it makes (via {@link TurnPlanner} / {@link TurnAnswerer}) hit an LLM
+     * provider directly, and a provider failure (timeout, 5xx, malformed response) must not sink
+     * the whole turn. Mirrors the streamed path's guard exactly: an answer via the caller's legacy
+     * tool-loop fallback beats an error (spec §8's philosophy applies here too).
+     */
+    private String pipelineAnswerGuarded(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+            String turnCtx, List<Turn> history, String content, LocalDate today, ToolCallAudit audit,
+            LlmCallContext turnContext) {
+        try {
+            return llmCallContextHolder.runWith(turnContext,
+                    () -> pipelineAnswer(userId, conversationId, gear, systemPrompt, turnCtx,
+                            history, content, today, audit));
+        } catch (RuntimeException e) {
+            log.warn("Turn pipeline failed on the sync path — falling back to the legacy tool loop", e);
+            return null;
+        }
+    }
+
+    /**
      * The live plan→execute→answer path (spec §5). Returns null when the planner produced no
      * usable plan — the caller falls back to the legacy tool-loop (spec §8: degraded, but an
      * answer). One turn = one audit: the plan is capped to the REMAINING budget (companion.md,
@@ -485,7 +506,7 @@ public class ChatService {
         if (gap.isEmpty() || !replanAllowed) {
             // A marker on a gear that never offered it is model noise; guardAgainstMarker strips
             // it defensively so it can never persist as an assistant message either way.
-            return guardAgainstMarker(answer);
+            return guardAgainstMarkerLogged(answer);
         }
         String hint = content + "\n\n[KIEGÉSZÍTÉS] Az előző körből hiányzó adat: " + gap.get();
         Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
@@ -501,7 +522,7 @@ public class ChatService {
         String lapTwoAnswer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
                 () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
-        return guardAgainstMarker(lapTwoAnswer);
+        return guardAgainstMarkerLogged(lapTwoAnswer);
     }
 
     /**
@@ -553,6 +574,20 @@ public class ChatService {
      */
     static String guardAgainstMarker(String answer) {
         return TurnAnswerer.dataGapReason(answer).isPresent() ? null : answer;
+    }
+
+    /**
+     * {@link #pipelineAnswer}'s own wrapper around {@link #guardAgainstMarker} (minor finding 3):
+     * the guard itself stays {@code static}+pure — {@link ChatServiceMarkerGuardTest} exercises it
+     * without a Spring context — so the log line lives here instead, at the instance-level call
+     * sites, logged exactly once per discarded leak instead of duplicated at both return statements.
+     */
+    private String guardAgainstMarkerLogged(String answer) {
+        String guarded = guardAgainstMarker(answer);
+        if (guarded == null && answer != null) {
+            log.warn("Answer discarded — data-gap marker leaked outside the replan contract");
+        }
+        return guarded;
     }
 
     /**

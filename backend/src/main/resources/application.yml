@@ -841,6 +841,9 @@ mezo:
         outcome-max-chars-per-result: 8000
         outcome-max-chars-total: 40000
       replan:
+        # Data-gap laps an ANALYSIS answer may request (spec A2). 1 is the implemented ceiling —
+        # ChatService#pipelineAnswer only runs a SINGLE replan lap today; a future multi-lap loop
+        # widens this alongside the implementation.
         max-laps: 1
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;

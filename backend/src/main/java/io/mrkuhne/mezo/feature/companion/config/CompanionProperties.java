@@ -501,7 +501,13 @@ public record CompanionProperties(
                                @Min(500) @Max(60_000) int outcomeMaxCharsPerResult,
                                @Min(2_000) @Max(200_000) int outcomeMaxCharsTotal) {}
 
-        /** Data-gap laps an ANALYSIS answer may request (spec A2). 0 disables replan entirely. */
-        public record Replan(@Min(0) @Max(2) int maxLaps) {}
+        /**
+         * Data-gap laps an ANALYSIS answer may request (spec A2). 0 disables replan entirely; 1 is
+         * the current ceiling because {@code io.mrkuhne.mezo.feature.companion.service.ChatService
+         * #pipelineAnswer} only implements a SINGLE replan lap — a value above 1 would validate but
+         * do nothing beyond the first lap. A future multi-lap loop widens this cap alongside the
+         * implementation.
+         */
+        public record Replan(@Min(0) @Max(1) int maxLaps) {}
     }
 }
