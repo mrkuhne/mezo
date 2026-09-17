@@ -737,6 +737,13 @@ async function closeWorkout(user: ReturnType<typeof userEvent.setup>) {
   if (confirm) await user.click(confirm)
 }
 
+/** The ceremony is TWO steps since mezo-e1ii9 Task 3 (prototype `summary()` →
+ *  `detailsStep()`): the muscle rows, the kcal tile, the note field and the close CTA all
+ *  live one `Részletek` tap away. */
+async function openCeremonyDetails(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /Részletek/ }))
+}
+
 async function finishMockSession(user: ReturnType<typeof userEvent.setup>, names: string[]) {
   for (const name of names) {
     await completeExerciseSets(user, name)
@@ -755,6 +762,7 @@ test('a skipped exercise stays missing work in the ceremony\'s muscle row', asyn
   await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(user)
+  await openCeremonyDetails(user)
   // Hát (közép) pools the skipped ex1 with the completed ex3 — the skip is missed work, so
   // its sets stay on the PLAN side of the row (cerScore's rule), never quietly dropped.
   expect(await screen.findByText('Hát (közép)')).toBeInTheDocument()
@@ -803,10 +811,14 @@ test('the finish CTA lands straight on the closing ceremony — NO level-up over
   expect(stats).toHaveTextContent('+480')
   expect(stats).toHaveTextContent('szerzett XP')
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/csillag az ötből/)
-  expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
+  // Step ONE has exactly one way on (mezo-e1ii9 Task 3): the close CTA is on step two.
+  expect(screen.queryByRole('button', { name: /Vissza a mai napra/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Részletek/ })).toBeInTheDocument()
   // The session's real records (mezo-wp6n) drive the ceremony's record strip — ex2..ex5's
   // working sets all hit their prescribed target and several beat last week.
   expect(screen.getByText(/új rekord|Új rekord/)).toBeInTheDocument()
+  await openCeremonyDetails(user)
+  expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
 })
 
 // ---- T6 Task 6: the 3-state `.wo-finish` CTA + the finish confirm glass — replaces
@@ -841,6 +853,7 @@ test('confirming a zero-logged finish goes straight through finishAndCelebrate (
   // on screen (mezo-e1ii9): no level-up overlay in front of it.
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
   expect(document.querySelector('.levelup')).toBeNull()
+  await openCeremonyDetails(user)
   expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
   // Nothing was logged, so the kcal tile stays away entirely — never a 0.
   expect(screen.queryByText('kcal')).not.toBeInTheDocument()
@@ -861,16 +874,21 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   expect(document.querySelector('.levelup')).toBeNull()
 })
 
-test('the ceremony carries the challenge outcomes, and the old WorkoutSummary report is gone (mezo-88iwa.8)', async () => {
+// mezo-e1ii9 Task 3: the küldetés rows T7 put in the ceremony have no prototype counterpart
+// on either step, so they are gone from the close. The outcomes keep their other home — the
+// review page (WorkoutReviewPage → WorkoutSummary's own `Kihívások` strip), which is covered
+// in WorkoutReviewPage.test.tsx.
+test('neither ceremony step carries a küldetés row — and the old WorkoutSummary report is still gone', async () => {
   const user = userEvent.setup()
   setup()
   await finishMockSession(user, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(user)
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
-  // The seed challenge was never accepted → it closed as skipped, and the ceremony says so.
-  const rows = document.querySelectorAll('.cer-chals .cer-chal')
-  expect(rows.length).toBeGreaterThan(0)
-  expect(screen.getAllByText('skippelted').length).toBe(rows.length)
+  expect(document.querySelector('.cer-chals')).toBeNull()
+  expect(screen.queryByText('skippelted')).not.toBeInTheDocument()
+  await openCeremonyDetails(user)
+  expect(document.querySelector('.cer-chals')).toBeNull()
+  expect(screen.queryByText('skippelted')).not.toBeInTheDocument()
   // The pre-Titanium summary shell no longer renders anywhere on this page.
   expect(document.querySelector('.wr-root')).toBeNull()
   expect(document.querySelector('.wsum-chal')).toBeNull()
@@ -891,6 +909,7 @@ test('mock mode: the kcal tile scales with the done/planned set share, not the w
   await finishMockSession(userFull, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(userFull)
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await openCeremonyDetails(userFull)
   const fullKcal = readKcalValue()
   full.unmount()
 
@@ -903,6 +922,7 @@ test('mock mode: the kcal tile scales with the done/planned set share, not the w
   await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
   await closeWorkout(userPartial)
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await openCeremonyDetails(userPartial)
   const partialKcal = readKcalValue()
 
   expect(partialKcal).toBeGreaterThan(0)
@@ -1380,6 +1400,7 @@ test('real mode: finishing then tapping "Vissza a mai napra" with a typed note P
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await openCeremonyDetails(user)
   await user.type(screen.getByLabelText('Hogy ment?'), 'Jól ment az edzés')
   await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
   await waitFor(() => expect(calls).toContain('workoutNote:w-1:Jól ment az edzés'))
@@ -1395,6 +1416,7 @@ test('real mode: closing with an empty note fires no note PUT', async () => {
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  await openCeremonyDetails(user)
   await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
   await waitFor(() => expect(calls.some((c) => c.startsWith('finish:'))).toBe(true))
   expect(calls.some((c) => c.startsWith('workoutNote:'))).toBe(false)

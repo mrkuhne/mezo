@@ -20,11 +20,19 @@ always the same **two-act structure**:
    single CTA pinned near the thumb. Optionally a second step ("Részletek") opens a deeper
    panel (e.g. the glucose insight) before returning to the day.
 
+**Two acts are not two screens.** The acts are the choreography inside one screen; the
+"Részletek" second STEP is a separate screen that replaces it. The workout close uses both:
+act one and act two play on step one, and `Részletek` opens a second screen. Correction
+(`mezo-e1ii9`, 2026-09-17): an earlier reading of this section merged the workout's second
+step into act two and shipped the close as ONE screen. The owner's directive for Train is
+1:1 with the prototype, and the prototype's `session.js` is unambiguous — `summary()` and
+`detailsStep()` are two screens. What ships now is two screens; see the row below.
+
 ## Where it fires (trigger rules)
 
 | Surface | Trigger | Never on |
 | --- | --- | --- |
-| Train — workout close | Closing the session (complete or confirmed-partial) | mid-workout |
+| Train — workout close | Closing the session (complete or confirmed-partial) — **two screens**: step one is the ignition + reading ending in `Részletek`, step two is the muscle rows + kcal + the way out + `Vissza az értékeléshez` | mid-workout |
 | Train — sport session | Saving a sport session from the full-screen `/train/sport/log` flow | editing an existing session |
 | Fuel — meal logging | Saving a meal from the pontosítás screen | editing an existing meal |
 | Fuel — supplements | The tick that completes a WHOLE block (Reggel/Délben/Este); a one-item block completes on its single tick | partial ticks (quiet toast), un-ticks |
@@ -46,8 +54,9 @@ Partial progress gets the quiet toast/react pair. Undo never triggers or replays
 - **Verdict** — one short sentence (see Copy), then context line (meal name · time, item names).
 - **Score card** (meal only) — the product's own AI-score mark + flat gold numeral `x,y / 10`.
   The owner explicitly rejected a stone box here: the AI score keeps its existing logo.
-- **CTA** — one primary button; meal: "Részletek" into the glucose step, supplements/train:
-  the way back to the day.
+- **CTA** — one primary button; meal and **train**: "Részletek" into the second step (the
+  glucose insight / the muscle rows + kcal), supplements: the way back to the day. Train's
+  way back to the day sits on step two, beside `Vissza az értékeléshez`.
 
 ## Star mapping (meal)
 

@@ -828,7 +828,9 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // can't compute one) so the gym complete flow shows the level-up overlay.
     mutationFn: mock
       ? async (_v: { id: string; note?: string | null }) => {
-          awardGamificationEvent(qc, { type: 'GYM' })
+          // `silent`: the closing ceremony IS the reward surface (mezo-e1ii9) and owns the
+          // screen alone — the streak / level-up toasts would float over it as a second layer.
+          awardGamificationEvent(qc, { type: 'GYM', silent: true })
           return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
         }
       : (v: { id: string; note?: string | null }) => trainApi.finishWorkout(v.id, v.note),

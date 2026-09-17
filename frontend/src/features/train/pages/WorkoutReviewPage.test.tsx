@@ -59,6 +59,16 @@ test('the closing note is editable in place, and an empty one offers ＋ Jegyzet
   expect(await screen.findByRole('button', { name: /Jegyzet ehhez az edzéshez/ })).toBeInTheDocument()
 })
 
+// mezo-e1ii9 Task 3: the closing ceremony no longer carries the küldetés rows (the prototype
+// has none on either of its two steps). This page is their ONE remaining home, so it is
+// pinned here — removing the strip from the ceremony must never leave the outcomes homeless.
+test('the challenge outcomes live here — the review page is their remaining home', () => {
+  setup()
+  const rows = document.querySelectorAll('.wsum-chal')
+  expect(rows.length).toBeGreaterThan(0)
+  expect(screen.getByText('Kihívások')).toBeInTheDocument()
+})
+
 test('renders the Medálok section with the seeded medal in mock mode', () => {
   setup()
   const section = screen.getByText('Medálok').closest('.wsum-sec') as HTMLElement

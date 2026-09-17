@@ -65,12 +65,12 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
-import { WorkoutCeremony, type CeremonyChallenge } from '@/features/train/components/WorkoutCeremony'
+import { WorkoutCeremony } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
 import { medalValueLabel, MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
-import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
+import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 
 type Phase = 'active' | 'summary'
@@ -237,6 +237,18 @@ function ActiveWorkoutSession({
   /** The finish response's real XP (mezo-88iwa.8): the ceremony's +XP tile shows it, and
    *  renders nothing when the response carried no level-up payload at all. */
   const [xpGained, setXpGained] = useState<number | null>(null)
+  /** The MEASURED duration of this session (mezo-e1ii9, Task 3). `WorkoutInstanceResponse`
+   *  — the finish POST's OWN response — carries `startedAt` / `finishedAt` / `activeSeconds`
+   *  (WorkoutService.finishWorkout derives activeSeconds and returns them via
+   *  `toInstanceResponse`), so the ceremony's `a pulton töltött idő` tile needs no extra
+   *  round trip: it reads the very response that closed the workout. `actualMinutes` returns
+   *  null when nothing usable was measured — then the tile simply stays away. */
+  const [finishTiming, setFinishTiming] = useState<SessionTiming | null>(null)
+  /** Fallback clock for mock mode, where the finish mutation is a no-op with no wire
+   *  response at all. This is still a MEASUREMENT, not an estimate: the route IS the
+   *  session (entering it starts the workout, mezo-e1ii9 Task 1), so the wall clock from
+   *  mount to the finish tap is exactly the time spent at the bench in this mode. */
+  const enteredAtRef = useRef(Date.now())
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
@@ -338,20 +350,10 @@ function ActiveWorkoutSession({
     }
   }
 
-  // Challenge rows — the ceremony's act-two strip since T7 Task 4 (the per-exercise
-  // `summaryExercises` inventory died with the pre-Titanium summary shell, which now only
-  // serves the review page). Dismissed/undecided -> skippelted; accepted -> the live server
-  // outcome when resolved, else the FE preview over the session's logged sets (pre-finish).
-  const summaryChallenges: CeremonyChallenge[] = challenges.map((c) => {
-    const accepted = acceptedMap[c.id]
-    const resolved = c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive'
-    const state = !accepted && !resolved
-      ? 'skipped' as const
-      : resolved
-        ? (c.status as 'hit' | 'miss' | 'inconclusive')
-        : evaluateChallenge(c, session.logged[c.exerciseId] ?? [])
-    return { id: c.id, typeLabel: c.typeLabel, exercise: c.exercise, target: c.target, state, detail: c.outcome ?? undefined }
-  })
+  // The küldetés rows T7 Task 4 carried into the ceremony are GONE (mezo-e1ii9, Task 3):
+  // the prototype's close has no challenge strip on either of its two steps. The outcomes
+  // keep their other home — the review page (WorkoutReviewPage → WorkoutSummary's own
+  // challenge strip, fed by the same `useChallenges` list).
 
   // Starting the workout is no longer a tap — entering the route IS the start (mezo-e1ii9,
   // the prototype's `openSession()`). BOTH old "⚡ Kezdjük el" paths survive verbatim, they
@@ -648,6 +650,10 @@ function ActiveWorkoutSession({
         // count×10. `LevelUpResult.totalXp` is the session's real award (the schema has no
         // top-level XP field on the plain finish response); absent payload → no tile.
         setXpGained(r?.levelUp?.totalXp ?? null)
+        // The measured clock, straight off the finish response (see `finishTiming`).
+        setFinishTiming(r?.startedAt
+          ? { startedAt: r.startedAt, finishedAt: r.finishedAt, activeSeconds: r.activeSeconds }
+          : { startedAt: new Date(enteredAtRef.current).toISOString(), finishedAt: new Date().toISOString() })
         // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
         // arrives here — the finish response carries the whole session's medals, so
         // merge with a dedupe against what's already in sessionMedals (mezo-wp6n).
@@ -733,23 +739,17 @@ function ActiveWorkoutSession({
       <WorkoutCeremony
         score={score}
         eyebrow="EDZÉS LEZÁRVA"
-        // The measured counterpart (mezo-1jm8) is deliberately NOT wired here. `open`
-        // (todaySession.openWorkout) never carries it: the backend writes activeSeconds only
-        // inside WorkoutService.finishWorkout, nowhere on the start/active path, so a pre-finish
-        // instance has startedAt but never finishedAt/activeSeconds — and this page never
-        // refetches /today after finishAndCelebrate's POST resolves, so even post-finish `open`
-        // stays exactly as stale as it was pre-finish. There is no measurement this page can
-        // show without a new fetch/invalidation, which the brief rules out. The review page
-        // (WorkoutReviewPage, off the persisted WorkoutDetailResponse) is the surface that shows
-        // the measured duration — the ceremony simply omits the tile rather than fabricating one.
-        minutes={null}
+        // The MEASURED duration (mezo-1jm8), now really wired (mezo-e1ii9, Task 3). T7 read it
+        // off `todaySession.openWorkout`, which is indeed always stale — but the finish POST's
+        // own response is not: `WorkoutInstanceResponse` carries startedAt/finishedAt/
+        // activeSeconds, and WorkoutService.finishWorkout fills all three before returning.
+        // So this is the real clock, with no extra fetch. Still null → still no tile: an
+        // estimate is never printed as if it were a measurement.
+        minutes={finishTiming ? actualMinutes(finishTiming) : null}
         xpGained={xpGained}
         records={sessionMedals
           .filter((m) => m.tier === 'RECORD')
           .map((m) => ({ name: `${MEDAL_TYPE_LABEL[m.type]} · ${m.exerciseName}`, value: medalValueLabel(m) }))}
-        // The challenge outcomes survive the shell's retirement: the same mapping the old
-        // summary strip read, rendered as act two's `.cer-record`-shaped rows.
-        challenges={summaryChallenges}
         muscles={muscleStarRows(session, W.exercises)}
         kcal={kcal}
         // The honest pending-sets line now lives on the live ceremony itself: `pendingAtClose`
