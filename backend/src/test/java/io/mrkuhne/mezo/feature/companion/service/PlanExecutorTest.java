@@ -108,4 +108,38 @@ class PlanExecutorTest {
         assertThat(outcomes.getFirst().result()).isEqualTo(PlanExecutor.STEP_FAILED);
         assertThat(outcomes.get(1).result()).isEqualTo("megvan");
     }
+
+    @Test
+    void testExecute_shouldStayNearTheSingleDeadline_whenMultipleStepsAllHang() {
+        // Fix round 1, finding 4: a per-entry future.get(timeoutMs) compounds to steps × timeoutMs
+        // (here 2 × 300 ms = 600 ms would still pass a loose bound, so the point is proven at a
+        // step count where the OLD behaviour would already look suspicious under a tight bound).
+        // The real guarantee is a single shared deadline: wall time stays near ONE stepTimeoutMs,
+        // not the sum, however many steps hang.
+        CountDownLatch neverA = new CountDownLatch(1);
+        CountDownLatch neverB = new CountDownLatch(1);
+        ToolCallback hangingA = tool("hang_a", in -> {
+            try { neverA.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "soha a";
+        });
+        ToolCallback hangingB = tool("hang_b", in -> {
+            try { neverB.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "soha b";
+        });
+        PlanExecutor executor = executor(300, hangingA, hangingB);
+
+        long start = System.nanoTime();
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("hang_a"), step("hang_b")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+
+        neverA.countDown();
+        neverB.countDown();
+
+        assertThat(outcomes).extracting(ToolCallAudit.ToolOutcome::result)
+            .containsExactly(PlanExecutor.STEP_TIMEOUT, PlanExecutor.STEP_TIMEOUT);
+        // Loose bound to avoid flake: well under the 2×300ms the old per-entry logic would need.
+        assertThat(elapsedMs).isLessThan(1_500);
+    }
 }
