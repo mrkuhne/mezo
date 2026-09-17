@@ -27,9 +27,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -64,10 +61,12 @@ public class ChatStreamService {
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
     private final CompanionToolRegistry toolRegistry;
     private final LlmCallContextHolder llmCallContextHolder;
-    /** mezo-rj214.7 Task 6 — the LIVE pipeline, live on this streamed path too. */
+    /** mezo-rj214.7 Task 6 — the LIVE pipeline, live on this streamed path too. Planning and
+     *  execution (fix round 1 finding I2) now run entirely inside {@link ChatService} — via
+     *  {@link ChatService#pipelineAnswer} for ANALYSIS and {@link
+     *  ChatService#planAndExecuteVolatile} for LOOKUP — so this class no longer needs its own
+     *  {@code TurnPlanner}/{@code PlanExecutor} references. */
     private final CompanionProperties properties;
-    private final TurnPlanner turnPlanner;
-    private final PlanExecutor planExecutor;
     private final TurnAnswerer turnAnswerer;
 
     public Flux<ServerSentEvent<Object>> streamMessage(
@@ -112,9 +111,16 @@ public class ChatStreamService {
                 : switch (pipe.mode()) {
                     // LOOKUP: the answerer streams NATIVELY off the volatile half the pre-stream
                     // execution already built — no replan, LOOKUP never offers the marker at all.
+                    // fix round 1 finding M1: the nested runWith tags the actual answering call
+                    // as "answer" — like pipelineAnswer's own turnAnswerer.answer call — instead
+                    // of leaving it under the generic "stream" tag; the outer streamContext still
+                    // covers everything else this branch does (and every OTHER branch keeps it).
                     case STREAM_ANSWER -> llmCallContextHolder.runWith(streamContext,
-                            () -> turnAnswerer.answerStream(turn.systemPrompt(), pipe.volatileHalf(),
-                                    turn.history(), turn.userContent()));
+                            () -> llmCallContextHolder.runWith(
+                                    new LlmCallContext("companion_chat", "answer", "conversation",
+                                            turn.conversationId()),
+                                    () -> turnAnswerer.answerStream(turn.systemPrompt(), pipe.volatileHalf(),
+                                            turn.history(), turn.userContent())));
                     // ANALYSIS: the full sync lap (replan included) already ran pre-stream; the
                     // client sees the resolved answer as ONE delta, not a second round-trip.
                     case SYNC_ANSWER -> Flux.just(pipe.syncAnswer());
@@ -161,11 +167,25 @@ public class ChatStreamService {
                         finalAnswer = advised.answer();
                         degraded = advised.degraded();
                     }
+                    // fix round 1 finding I1: pipelineAnswer's own guard already strips a stray
+                    // DATA_GAP_MARKER from a SYNC_ANSWER's finalAnswer before it ever reaches this
+                    // method (ChatService#pipelineAnswer returns guardAgainstMarker(answer) itself)
+                    // — but a STREAM_ANSWER's deltas already streamed to the client BEFORE this
+                    // Mono runs, so this second pass only protects the PERSISTED half of the
+                    // corner: a spontaneous marker in a LOOKUP answer (buildVolatile never offers
+                    // the [Adathiány] escape hatch to LOOKUP, so this would be pure model noise,
+                    // not a legitimate reply) still must not become the row that re-enters history
+                    // on the next turn. The STREAMED half of the corner is unrecoverable by
+                    // design — there is no SSE mechanism to retract a delta already sent.
+                    if (pipe.mode() != PipelineResult.Mode.LEGACY) {
+                        finalAnswer = ChatService.guardAgainstMarker(finalAnswer);
+                    }
                     // mezo-8z79: a blank final answer is a FAILED turn, not an empty message. Gemini
                     // can return a candidate with no text parts at all (thinking-only rounds that hit
                     // the output cap, an empty candidate), the deltas then carry nothing and the
                     // advisor happily passes "" — the 2026-08-23 incident. Persisting it produced a
-                    // blank card AND an empty AssistantMessage in the next turn's history.
+                    // blank card AND an empty AssistantMessage in the next turn's history. A
+                    // guardAgainstMarker null (above) collapses into this same handling.
                     if (finalAnswer == null || finalAnswer.isBlank()) {
                         throw new SystemRuntimeErrorException(SystemMessage.error(EMPTY_ANSWER_CODE).build());
                     }
@@ -198,19 +218,45 @@ public class ChatStreamService {
      * resolves a data-gap replan itself, and a {@code null} result (planner failure) falls back
      * to {@link PipelineResult#legacy()} exactly like the sync path (spec §8).
      *
-     * <p>LOOKUP runs only the plan -> cap-to-budget -> execute mechanics — the same budget-capping
-     * + honest-drop pattern {@link ChatService#pipelineAnswer}'s own first lap runs, reused here
-     * through the package-private {@link ChatService#capToRemainingBudget} so the two call sites
-     * cannot drift — then builds the volatile half for the caller to stream natively. LOOKUP never
-     * offers the {@link TurnAnswerer#DATA_GAP_MARKER} escape hatch at all ({@link
-     * TurnAnswerer#buildVolatile} appends the [Adathiány] offer only for ANALYSIS), so a LOOKUP
-     * answer cannot physically contain it — the streamed deltas below need no marker gate; the
-     * ANALYSIS branch above still runs {@code guardAgainstMarker} inside {@code pipelineAnswer}.
+     * <p>LOOKUP runs the plan -> cap-to-budget -> execute -> build-the-volatile-half mechanics
+     * through the package-private {@link ChatService#planAndExecuteVolatile} (fix round 1
+     * finding I2) — the SAME method {@link ChatService#pipelineAnswer}'s own first lap calls, so
+     * the two call sites cannot drift. LOOKUP never offers the {@link
+     * TurnAnswerer#DATA_GAP_MARKER} escape hatch at all ({@link TurnAnswerer#buildVolatile}
+     * appends the [Adathiány] offer only for ANALYSIS), so a LOOKUP answer cannot physically
+     * contain it — the streamed deltas below need no marker gate; the
+     * ANALYSIS branch above still runs {@code guardAgainstMarker} inside {@code pipelineAnswer}
+     * (and the trailing Mono in {@link #streamMessage} runs it a second time for the STREAM_ANSWER
+     * corner — fix round 1 finding I1).
      *
-     * @return {@link PipelineResult#legacy()} when the planner produced nothing usable
+     * <p>fix round 1 finding I3: wrapped (below) in a try/catch so a planner/answerer provider
+     * failure degrades to the legacy stream instead of surfacing as a plain exception BEFORE the
+     * Flux even exists to carry an SSE 'error' event — {@link PlanExecutor} already turns a
+     * per-step failure into an honest {@link ToolCallAudit.ToolOutcome} and never throws, so the
+     * catch only needs to guard the planner's own call and, for ANALYSIS, the answering round
+     * inside {@link ChatService#pipelineAnswer}.
+     *
+     * @return {@link PipelineResult#legacy()} when the planner produced nothing usable, or when
+     *         the pre-stream lap itself failed
      */
     private PipelineResult runPipelinePreStream(ChatService.PreparedTurn turn, UUID userId, ToolCallAudit audit) {
-        LocalDate today = LocalDate.now();
+        try {
+            return runPipelinePreStreamUnguarded(turn, userId, audit);
+        } catch (RuntimeException e) {
+            // spec §8's philosophy applies here too: an answer (via the legacy tool loop the
+            // caller falls back to) beats an error.
+            log.warn("Pre-stream pipeline lap failed for conversation {} — falling back to the legacy stream",
+                    turn.conversationId(), e);
+            return PipelineResult.legacy();
+        }
+    }
+
+    private PipelineResult runPipelinePreStreamUnguarded(ChatService.PreparedTurn turn, UUID userId, ToolCallAudit audit) {
+        // fix round 1 finding M2: turn.today() is the SAME LocalDate.now() prepareTurn already
+        // resolved for this turn's context assembly, not a second, independent call — a turn
+        // straddling exact midnight between the two calls could otherwise see a one-day skew
+        // between the plan's "Ma:" context and the persisted turn's assembled context.
+        LocalDate today = turn.today();
         if (turn.gear() == TurnGear.ANALYSIS) {
             String synced = chatService.pipelineAnswer(userId, turn.conversationId(), turn.gear(),
                     turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(), today, audit);
@@ -218,18 +264,15 @@ public class ChatStreamService {
                     ? PipelineResult.legacy()
                     : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced, null);
         }
-        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_chat", "plan", "conversation", turn.conversationId()),
-                () -> turnPlanner.plan(turn.history(), turn.userContent(), today));
-        if (planned.isEmpty()) {
-            return PipelineResult.legacy();
-        }
-        var capped = chatService.capToRemainingBudget(planned.get(), audit);
-        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
-                planExecutor.execute(capped.plan(), userId, audit));
-        outcomes.addAll(capped.dropped());
-        String volatileHalf = turnAnswerer.buildVolatile(turn.turnContext(), outcomes, turn.gear(), false);
-        return new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, volatileHalf);
+        // fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile half —
+        // used to be a verbatim copy of ChatService#pipelineAnswer's own lap 1. It now lives ONCE,
+        // in ChatService#planAndExecuteVolatile, which both call sites share. LOOKUP never
+        // replans, so replanAllowed is always false here.
+        var lap = chatService.planAndExecuteVolatile(userId, turn.conversationId(), turn.gear(),
+                turn.turnContext(), turn.history(), turn.userContent(), today, audit, false);
+        return lap == null
+                ? PipelineResult.legacy()
+                : new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, lap.volatileHalf());
     }
 
     /**

@@ -211,11 +211,15 @@ public class ChatService {
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
      *  refs the stream path adds to its audit;
      *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
-     *  the turn recalled nothing. */
+     *  the turn recalled nothing;
+     *  {@code today} (Task 6 fix round 1 finding M2) is the SAME {@link LocalDate#now()} this
+     *  transaction already resolved for context assembly — {@link ChatStreamService}'s pre-stream
+     *  pipeline lap reads it instead of calling {@code LocalDate.now()} a second time, milliseconds
+     *  later, which could skew the plan's "Ma:" context by a day across an exact-midnight turn. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
                                String turnContext, List<Turn> history, String userContent,
                                List<RefsEnvelope.Ref> recalledRefs, RecalledMemoriesEnvelope recalled,
-                               TurnGear gear) {}
+                               TurnGear gear, LocalDate today) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -236,7 +240,7 @@ public class ChatService {
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
                 routed.turnContext(), history, request.getContent(),
-                routed.memory().refs(), routed.memory().recalled(), routed.gear());
+                routed.memory().refs(), routed.memory().recalled(), routed.gear(), today);
     }
 
     /**
@@ -463,22 +467,19 @@ public class ChatService {
     String pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
                           String turnContext, List<Turn> history, String content, LocalDate today,
                           ToolCallAudit audit) {
-        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
-                () -> turnPlanner.plan(history, content, today));
-        if (planned.isEmpty()) {
-            return null;
-        }
-        CappedPlan capped = capToRemainingBudget(planned.get(), audit);
-        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
-                planExecutor.execute(capped.plan(), userId, audit));
-        outcomes.addAll(capped.dropped());
         boolean replanAllowed = gear == TurnGear.ANALYSIS
                 && properties.turn().replan().maxLaps() > 0;
-        String volatileHalf = turnAnswerer.buildVolatile(turnContext, outcomes, gear, replanAllowed);
+        // Task 6 fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile
+        // half — used to be duplicated verbatim in ChatStreamService's LOOKUP branch. It now
+        // lives ONCE, in planAndExecuteVolatile below, and both call sites share it.
+        PlanLapResult lap1 = planAndExecuteVolatile(userId, conversationId, gear, turnContext,
+                history, content, today, audit, replanAllowed);
+        if (lap1 == null) {
+            return null;
+        }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer", "conversation", conversationId),
-                () -> turnAnswerer.answer(systemPrompt, volatileHalf, history, content));
+                () -> turnAnswerer.answer(systemPrompt, lap1.volatileHalf(), history, content));
 
         Optional<String> gap = TurnAnswerer.dataGapReason(answer);
         if (gap.isEmpty() || !replanAllowed) {
@@ -490,7 +491,7 @@ public class ChatService {
         Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "plan_replan", "conversation", conversationId),
                 () -> turnPlanner.plan(history, hint, today));
-        List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(outcomes);
+        List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(lap1.outcomes());
         if (replanned.isPresent()) {
             CappedPlan secondCapped = capToRemainingBudget(replanned.get(), audit);
             merged.addAll(planExecutor.execute(secondCapped.plan(), userId, audit));
@@ -502,6 +503,43 @@ public class ChatService {
                 () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
         return guardAgainstMarker(lapTwoAnswer);
     }
+
+    /**
+     * Lap 1 shared by {@link #pipelineAnswer} and the streamed LOOKUP path (Task 6 fix round 1
+     * finding I2): plan -> cap to remaining budget -> execute -> build the volatile half. Package
+     * private, like {@link #capToRemainingBudget}, so {@link ChatStreamService} can call it
+     * directly instead of keeping its own copy of this mechanics. Returns {@code null} when the
+     * planner produced no usable plan — the same "caller falls back to legacy" contract {@link
+     * #pipelineAnswer} already has.
+     *
+     * <p>Returns the executed {@code outcomes} alongside the built volatile half — not a bare
+     * {@code String} — because {@link #pipelineAnswer}'s replan lap needs lap 1's outcomes to
+     * build the MERGED digest for its second answering call, and they cannot be re-derived from
+     * {@code audit} afterwards: {@link #capToRemainingBudget}'s synthetic "budget exhausted"
+     * outcomes for a dropped step never go through {@code audit.recordCall}, so {@code
+     * audit.toolOutcomes()} would silently lose them.
+     */
+    PlanLapResult planAndExecuteVolatile(UUID userId, UUID conversationId, TurnGear gear,
+            String turnContext, List<Turn> history, String content, LocalDate today,
+            ToolCallAudit audit, boolean replanAllowed) {
+        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
+                () -> turnPlanner.plan(history, content, today));
+        if (planned.isEmpty()) {
+            return null;
+        }
+        CappedPlan capped = capToRemainingBudget(planned.get(), audit);
+        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
+                planExecutor.execute(capped.plan(), userId, audit));
+        outcomes.addAll(capped.dropped());
+        String volatileHalf = turnAnswerer.buildVolatile(turnContext, outcomes, gear, replanAllowed);
+        return new PlanLapResult(volatileHalf, outcomes);
+    }
+
+    /** What {@link #planAndExecuteVolatile} built for its caller: the volatile half ready to
+     *  answer against, plus the outcomes that produced it (needed only by {@link #pipelineAnswer}'s
+     *  replan lap — the streamed LOOKUP path reads {@code volatileHalf} alone). */
+    record PlanLapResult(String volatileHalf, List<ToolCallAudit.ToolOutcome> outcomes) {}
 
     /**
      * Defensive backstop (fix round 1 finding 1): {@link TurnAnswerer#DATA_GAP_MARKER} must never
