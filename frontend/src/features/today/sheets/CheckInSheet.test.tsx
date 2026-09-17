@@ -48,3 +48,10 @@ test('keeps the note and allows retry when persistence fails', async () => {
   expect(onSave).toHaveBeenCalledTimes(2)
   expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ note: note.trim() }))
 })
+
+
+test('summary does not fabricate past observations or changed training targets', async () => {
+  render(<CheckInSheet slot={{ ...initialCheckins[2], values: { energy: 8, stress: 4, body: 7, mental: 8 } }} slotIdx={2} onClose={vi.fn()} onSave={vi.fn()} />)
+  for (let i = 0; i < 4; i++) await userEvent.click(screen.getByRole('button', { name: /Kihagy/ }))
+  expect(screen.queryByText(/107.5kg|múlt kedden|3. nap a héten/)).not.toBeInTheDocument()
+})
