@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { initialCheckins } from '@/data/today/checkins'
@@ -15,4 +15,19 @@ test('advances through dims and saves values', async () => {
   await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
   expect(onSave).toHaveBeenCalled()
   expect(onSave.mock.calls[0][0].state).toBe('done')
+})
+
+
+test('saves a long check-in note without truncating it', async () => {
+  const onSave = vi.fn()
+  render(<CheckInSheet slot={initialCheckins[2]} slotIdx={2} onClose={vi.fn()} onSave={onSave} />)
+  for (let i = 0; i < 4; i++) {
+    await userEvent.click(screen.getByRole('button', { name: /Kihagy/ }))
+  }
+  const note = 'Hosszabb gondolat a mai napról. '.repeat(100)
+  const input = screen.getByRole('textbox')
+  fireEvent.change(input, { target: { value: note } })
+  expect(input).toHaveValue(note)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ note: note.trim() }))
 })

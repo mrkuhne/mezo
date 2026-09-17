@@ -1281,3 +1281,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609161200_mezo-88iwa.9_sport_session_kcal.sql
+  - changeSet:
+      id: "1.0.0:202609171040_mezo-26fw0_checkin_note_text"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609171040_mezo-26fw0_checkin_note_text.sql

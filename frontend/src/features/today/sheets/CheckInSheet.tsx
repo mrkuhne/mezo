@@ -256,8 +256,7 @@ export function CheckInSheet({
           {/* Optional free note */}
           <div className="col gap-sm">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <label htmlFor="checkin-note" className="label-mono">Egy mondat · opcionális</label>
-              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{note.length}/200</span>
+              <label htmlFor="checkin-note" className="label-mono">Gondolatok · opcionális</label>
             </div>
             {/* the decorative mic chip is gone (mezo-setx.5.5) — a control that does
                 nothing is the ItemRow doctrine's dead button, not a form affordance */}
@@ -265,10 +264,10 @@ export function CheckInSheet({
               <textarea
                 id="checkin-note"
                 value={note}
-                onChange={e => setNote(e.target.value.slice(0, 200))}
+                onChange={e => setNote(e.target.value)}
                 placeholder='pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"'
                 style={{
-                  flex: 1, minHeight: 50, resize: 'none',
+                  flex: 1, minHeight: 120, resize: 'vertical',
                   fontSize: 16, color: 'var(--text-primary)',
                   lineHeight: 1.45,
                 }}
