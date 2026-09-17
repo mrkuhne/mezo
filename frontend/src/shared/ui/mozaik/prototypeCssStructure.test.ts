@@ -338,6 +338,36 @@ describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => 
  * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
  * and the muscle detail's gauge, ported from the prototype's `plan.css`.
  */
+/**
+ * Section registration (mezo-lf3cv, P2 Task 3): the Gyakorlatok tab's own `.gy-*`
+ * section — the catalogue rows, the detail hero, the record stat cards, the `.gy-
+ * next` nudge, the strength-curve graphic and the medal rows — ported from the
+ * prototype's `gyak.css`, registered exactly like the blocks above.
+ */
+describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', () => {
+  const START_MARKER = 'train gyakorlatok titanium'
+  const END_MARKER = '/train gyakorlatok titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the gy- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.gy-card', '.gy-rec', '.gy-curve', '.gy-medal', '.gy-next', '.gy-hero',
+    ]) {
+      expect(section, `${cls} missing from the train gyakorlatok titanium section`).toContain(cls)
+    }
+  })
+})
+
 describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
   const START_MARKER = 'terv titanium'
   const END_MARKER = '/terv titanium'

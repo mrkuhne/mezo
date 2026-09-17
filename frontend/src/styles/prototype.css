@@ -14600,6 +14600,129 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 70%, var(--text-primary)); }
 /* ── /train izomjel titanium ───────────────────────────────────────────────── */
 
+/* ── train gyakorlatok titanium (mezo-lf3cv, P2 Task 3) ────────────────────
+   The Gyakorlatok tab: the exercise catalogue rows, an exercise's own story
+   hero, its record stat cards, the "next" nudge, the strength-curve graphic
+   and the medal rows. Ported 1:1 from the prototype:
+   docs/design_2.0/prototypes/companion-titanium/gyak.css `.gy-list`/`.gy-
+   card*` (:3), the detail hero `.gy-hero*` (:22), the records `.gy-recs`/
+   `.gy-rec*`/`.gy-next` (:31), the story curve `.gy-curve*` (:51) and the
+   medal rows `.gy-medal*` (:70).
+
+   AMIT ÁTVESZÜNK 1:1: a geometria — rádiuszok, rács-oszlopok, betűméretek,
+   a kártya-anatómia és a `--w` szélesség-mechanika a sávokon.
+   AMIT NEM: a prototípus beégetett fehér-alfáit (`#ffffffXX`) és a `var(--
+   domain-color)`-t — a ház MEGLÉVŐ tokenjeit visszük: `--text-tertiary`/
+   `--text-quaternary`/`--border-subtle`/`--surface-card` a szöveg/keret/
+   háttér felére, `--mus-color` (fallback `--tag-gym`, ugyanaz mint a `.pl-*`/
+   `.mm-*` szekciókban) az izom-specifikus tónusokra, `--amber`/`--amber-deep`
+   a rekord-arany jelzésekre (`.gy-medal*`, `.gy-next`) — így a lapok a
+   világos ÉS a sötét témában is olvashatók maradnak.
+
+   Nincs `.gy` gyökér: a prototípus `.gy .gy-search`/`.gy .pl-row` szabályait
+   a house nem viszi át — a termelésben nincs oldal-gyökér (`.screen-content`
+   alatt render), a keresőmező sora `.gy-search`-ként class-only, a `.pl-row`
+   felülbírálás pedig már megvan a terv titanium szekció `.pl-sub .pl-row`
+   szabályában (azonos érték), így duplázás nélkül elég az a MEGLÉVŐ sor.
+   Az eyebrow a MEGLÉVŐ `.tr-eyebrow` osztályt viseli (nem egy saját `.gy-
+   eyebrow`) — a T5 lecke (`.overline` ütközne a Tailwind v4 egyszavas
+   utility-jével) miatt a prototípus `.overline`-ja itt is prefixelt/megosztott
+   osztályra vált, ugyanúgy, ahogy `.mm-head` is a MEGLÉVŐ `.ld-eyebrow`-t
+   viseli.
+
+   Renames (un-prefixed prototype names → `.gy-` family): none needed beyond
+   the ancestor-drop above — every prototype class already carried the `gy-`
+   prefix; only the `.overline` reference became the existing `.tr-eyebrow`.
+   The strength-curve "now" dot follows the `.rt-curve-dot` idiom (fill:
+   `--surface-card`, stroke: the domain tone) instead of a literal `#fff`. */
+.gy-search { display: block; margin-bottom: 10px; }
+.gy-list { display: grid; gap: 8px; }
+.gy-card {
+  display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; cursor: pointer; text-align: left;
+  border: 1px solid var(--border-subtle); border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+}
+.gy-card > .icon { width: 34px; height: 34px; flex: 0 0 auto; }
+.gy-card-name { flex: 1; min-width: 0; }
+.gy-card-name strong { display: block; font-size: 13.5px; font-weight: 500; line-height: 1.3; }
+.gy-card-name small { font-size: 10.5px; color: var(--text-tertiary); }
+.gy-card-best { display: grid; justify-items: end; gap: 2px; }
+.gy-card-best b { font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 78%, var(--text-primary)); }
+.gy-card-best small { font-size: 9px; color: var(--text-tertiary); }
+.gy-medals { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: var(--amber-deep); }
+.gy-medals .icon { width: 15px; height: 15px; }
+.gy-card-empty { font-size: 10px; color: var(--text-quaternary); }
+.gy-card-go { color: var(--text-tertiary); font-size: 15px; }
+
+/* — the detail hero — */
+.gy-hero { min-height: 0; }
+.gy-hero-art { position: absolute; right: 10px; top: 16px; width: 92px; height: 92px; pointer-events: none; }
+.gy-hero-art .icon { position: absolute; inset: 12px; width: 68px; height: 68px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .4)); }
+.gy-hero-art i {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--mus-color, var(--tag-gym)) 42%, transparent);
+  animation: ld-spin 26s linear infinite;
+}
+.gy-hero-art i:nth-of-type(2) { inset: 8px; rotate: 58deg; opacity: .5; animation-duration: 19s; animation-direction: reverse; }
+
+/* — records — */
+.gy-recs { display: grid; gap: 8px; }
+.gy-rec {
+  display: grid; gap: 6px; padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, var(--border-subtle)); border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card));
+}
+.gy-rec .tr-eyebrow { color: var(--text-tertiary); letter-spacing: .14em; }
+.gy-rec strong { font-size: 21px; font-weight: 500; letter-spacing: -.02em; }
+.gy-rec strong small { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+.gy-rec-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
+.gy-rec-bar b {
+  display: block; height: 100%; width: var(--w); border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 50%, transparent), var(--mus-color, var(--tag-gym)));
+}
+.gy-rec > small { font-size: 10.5px; color: var(--text-tertiary); }
+[data-reveal] .gy-rec-bar b { width: 0; }
+[data-reveal].is-in .gy-rec-bar b { width: var(--w); transition: width .85s cubic-bezier(.22, .9, .25, 1) .15s; }
+.gy-next {
+  display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 12px 13px;
+  font-size: 12px; line-height: 1.55; color: var(--amber-deep);
+  border: 1px solid color-mix(in srgb, var(--amber) 28%, transparent); border-radius: 15px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--amber) 14%, transparent), color-mix(in srgb, var(--amber) 4%, transparent));
+}
+.gy-next .icon { width: 20px; height: 20px; flex: 0 0 auto; }
+.gy-next b { font-weight: 600; }
+
+/* — the strength curve — */
+.gy-curve-box {
+  position: relative; padding: 14px 14px 10px; border: 1px solid var(--border-subtle); border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+}
+.gy-curve-val { position: absolute; right: 14px; top: 12px; text-align: right; }
+.gy-curve-val b { font-size: 22px; font-weight: 500; }
+.gy-curve-val small { display: block; font-size: 9.5px; color: var(--text-tertiary); }
+.gy-curve { width: 100%; height: auto; }
+.gy-curve-was { fill: none; stroke: var(--mus-color, var(--tag-gym)); stroke-width: 3; stroke-linecap: round; }
+.gy-curve-will { fill: none; stroke: color-mix(in srgb, var(--text-primary) 30%, transparent); stroke-width: 2.5; stroke-dasharray: 5 6; stroke-linecap: round; }
+.gy-curve-now { fill: var(--surface-card); stroke: var(--mus-color, var(--tag-gym)); stroke-width: 3; }
+[data-reveal] .gy-curve-was { stroke-dasharray: 600; stroke-dashoffset: 600; }
+[data-reveal].is-in .gy-curve-was { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s cubic-bezier(.3, .7, .3, 1) .15s; }
+.gy-curve-cap { display: flex; justify-content: space-between; margin-top: 4px; }
+.gy-curve-cap i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); }
+.gy-curve-cap .is-will { color: var(--text-secondary); }
+
+/* — medals — */
+.gy-medal-rows { display: grid; gap: 7px; }
+.gy-medal {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--amber) 24%, transparent); border-radius: 15px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--amber) 10%, transparent), color-mix(in srgb, var(--amber) 4%, transparent));
+}
+.gy-medal > .icon { width: 24px; height: 24px; }
+.gy-medal strong { display: block; font-size: 12.5px; font-weight: 500; }
+.gy-medal small { font-size: 10.5px; color: var(--text-tertiary); }
+.gy-medal-date { margin-left: auto; }
+/* ── /train gyakorlatok titanium ───────────────────────────────────────────── */
+
 /* ── terv titanium (mezo-88iwa.10, T9) ─────────────────────────────────────
    The Terv tab's core pages (mesocycle landing poster, day-by-day week list,
    a day's own hero + exercise cells, and the muscle detail's "where you
