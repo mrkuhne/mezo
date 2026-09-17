@@ -166,16 +166,15 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .matches("(?s).*Heti trendpontok: .*\\d+,\\d kg.*");
     }
 
-    /** Gram precision is what actually shipped, so it is what the test seeds: 85.437 must reach the
-     *  model as "85,4", the same figure the snapshot shows for the same weigh-in. */
+    /** Exact source precision remains available alongside the compact display weight. */
     @Test
-    void testGetWeightLog_shouldRoundToWeightPrecision_whenGramPrecisionLogged() {
+    void testGetWeightLog_shouldPreserveExactMeasurementAlongsideDisplay_whenGramPrecisionLogged() {
         UUID owner = userPopulator.createUser().getId();
         weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.437"));
 
         String out = biometricsTools.getWeightLog(7, ctx(owner));
 
-        assertThat(out).contains(": 85,4 kg").doesNotContain("85.437").doesNotContain("85,437");
+        assertThat(out).contains(": 85,4 kg").contains("pontos mérés: 85,437 kg");
     }
 
     @Test
@@ -259,7 +258,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetRecovery_shouldRenderWellbeingReadingsAcrossWindow_whenScopeCheckins() {
         UUID owner = userPopulator.createUser().getId();
         // CheckInPopulator#createCheckIn hardcodes body=3, mental=3.
-        checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, null);
+        checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, "Délután fejfájás");
         checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(40), "08:00", 9, 1, null);
 
         String out = biometricsTools.getRecovery("checkins", null, null, null, null, ctx(owner));
@@ -267,6 +266,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):")
                 .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi 3/10, mentális 3/10")
+                .contains("Délután fejfájás")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("CheckIn", LocalDate.now().minusDays(1).toString()));
@@ -294,7 +294,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = trainTools.getTrainingLog("gym", 7, ctx(owner));
 
         assertThat(out).startsWith("Gym-edzések (utolsó 7 nap):")
-                .contains(LocalDate.now().minusDays(2) + ": Pull A (pull) — 2 sorozat, volumen 1120 kg");
+                .contains(LocalDate.now().minusDays(2) + ": Pull A (pull) — 2 sorozat, volumen 1120 kg")
+                .contains("Húzódzkodás", "80 kg × 8", "RIR 2", "80 kg × 6", "RIR 1");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("Workout", LocalDate.now().minusDays(2).toString()));
     }
@@ -726,6 +727,28 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetFuelLog_shouldKeepEachDaysWaterAndTargets_whenWindowCrossesGoalSegments() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+                List.of(new GoalPrescriptionJson.Segment(1, 1, "első", 2100, 160, 230, 60,
+                                null, null, null, null, null, null, null),
+                        new GoalPrescriptionJson.Segment(2, 6, "második", 2400, 180, 270, 70,
+                                null, null, null, null, null, null, null)), null, null);
+        goalPopulator.createGoalFull(owner, today.minusDays(7), today.plusWeeks(5),
+                prescription, 4, "06:30", "22:30");
+        waterLogPopulator.createWaterLog(owner, today.minusDays(1), 900);
+        waterLogPopulator.createWaterLog(owner, today, 1800);
+
+        String out = fuelTools.getFuelLog("day", today.toString(), 2, ctx(owner));
+
+        assertThat(out).contains(today.minusDays(1) + ": 0/2100 kcal, F 0/160 g; 0 étkezés; CH 0/230 g, ZS 0/60 g")
+                .contains(today + ": 0/2400 kcal, F 0/180 g; 0 étkezés; CH 0/270 g, ZS 0/70 g")
+                .contains("Víz (" + today.minusDays(1) + "): 900/4000 ml")
+                .contains("Víz (" + today + "): 1800/4000 ml");
+    }
+
+    @Test
     void testGetFuelLog_shouldRenderDayRollupsWithTitlesAndWater_whenRangeDay() {
         UUID owner = userPopulator.createUser().getId();
         PantryItemEntity item = pantryItemPopulator.createFood(owner, "Csirkemell", LocalDate.now().plusDays(5));
@@ -737,6 +760,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(out).startsWith("Napi étkezés-összesítők (utolsó 3 nap):")
                 .contains(LocalDate.now().minusDays(1) + ": ")
                 .contains("kcal").contains("1 étkezés (Reggeli)")
+                .contains("Csirkemell", "150 g", "CH ", "ZS ", "idő:", "NOVA 1")
                 .contains(LocalDate.now() + ": ").contains("0 étkezés")
                 .contains("Víz (" + LocalDate.now() + "): 1800/4000 ml");
         assertThat(audit.toRefsEnvelope().refs()).containsExactly(
@@ -1195,7 +1219,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = medicationTools.getMedication("all", ctx(owner));
 
-        assertThat(out).isEqualTo("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg");
+        assertThat(out).startsWith("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg");
     }
 
     @Test
@@ -1383,7 +1407,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = fuelTools.getPantry("food", ctx(owner));
 
         // real stock content (PantryItemPopulator#createFood: stockQty=400, stockUnit=g), not just the name.
-        assertThat(out).isEqualTo("Kamra:\nCsirkemell: 400 g, lejár " + expires);
+        assertThat(out).startsWith("Kamra:\nCsirkemell: 400 g, lejár " + expires);
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Pantry", "Csirkemell"));
     }
@@ -1417,7 +1441,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // filter — the supplement row (same pantry.getStash() list) must be excluded, not just
         // "some item is present" but the REAL matching row's rendered stock, with the other type's
         // name absent.
-        assertThat(out).isEqualTo("Kamra:\nKoffein: 86 adag").doesNotContain("Kreatin");
+        assertThat(out).startsWith("Kamra:\nKoffein: 86 adag").doesNotContain("Kreatin");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Pantry", "Koffein"));
     }
@@ -1550,7 +1574,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = practiceTools.getDailyPractice(null, ctx(owner));
 
-        assertThat(out).isEqualTo("Napi gyakorlat (" + today + "):"
+        assertThat(out).startsWith("Napi gyakorlat (" + today + "):"
                 + "\nKüldetések: nincs adat"
                 + "\nSzokások (ma állapot szerint): reggeli 0, esti 0 tökéletes nap (30 nap)"
                 + "\nSzándék: hitvallás — nincs adat; mai fókusz: nincs adat"
@@ -1628,7 +1652,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetInsights_shouldRenderHonestDeferral_whenScopePredictionsOrExperiments() {
+    void testGetInsights_shouldRouteToCompleteSource_whenScopePredictionsOrExperiments() {
         UUID owner = userPopulator.createUser().getId();
 
         // scope=predictions/experiments are deliberately DEFERRED (proactive's read paths lazily
@@ -1636,9 +1660,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // package cycle); an honest "még nem elérhető", never fabricated data or a "nincs adat"
         // that would look like a real per-user absence.
         assertThat(insightsTools.getInsights("predictions", ctx(owner)))
-                .isEqualTo("Előrejelzések: még nem elérhető");
+                .contains("read_personal_records(source=prediction)");
         assertThat(insightsTools.getInsights("experiments", ctx(owner)))
-                .isEqualTo("Kísérletek: még nem elérhető");
+                .contains("read_personal_records(source=experiment)");
         assertThat(audit.toRefsEnvelope()).isNull();
     }
 
@@ -1650,7 +1674,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = lifeGoalTools.getLifeGoals(ctx(owner));
 
-        assertThat(out).contains("Kockahas").contains("Egészség").contains("Alvás");
+        assertThat(out).contains("Kockahas").contains("Egészség").contains("Alvás").contains("keret:");
     }
 
     @Test
@@ -1658,4 +1682,27 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         assertThat(lifeGoalTools.getLifeGoals(ctx(owner))).isEqualTo("Életcél: nincs aktív életcél");
     }
+    @Test
+    void testGetDailyPractice_shouldReturnReflection_whenOpenRitualHasText() {
+        UUID owner = userPopulator.createUser().getId();
+        ritualPopulator.openDay(owner, LocalDate.now(), "Ma fontos volt a pihenés.");
+        assertThat(practiceTools.getDailyPractice(null, ctx(owner)))
+                .contains("Ma fontos volt a pihenés.", "read_personal_records", "daily_quest", "habit_day");
+    }
+
+    @Test
+    void testGetFuelLog_shouldFrontloadDailyTotals_whenMealDetailsExceedEvidenceBudget() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner,
+                "Long ingredient " + "detailed ".repeat(15), today.plusDays(5));
+        for (int i = 0; i < 30; i++) {
+            mealPopulator.createPantryMeal(owner, item, today.minusDays(1));
+        }
+        waterLogPopulator.createWaterLog(owner, today, 1800);
+        String out = fuelTools.getFuelLog("day", today.toString(), 2, ctx(owner));
+        assertThat(out.length()).isGreaterThan(8000);
+        assertThat(out.substring(0, 8000)).contains(today + ": ", "1800/4000 ml");
+    }
+
 }

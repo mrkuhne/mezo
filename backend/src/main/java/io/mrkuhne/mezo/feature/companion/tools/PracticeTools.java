@@ -90,9 +90,6 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class PracticeTools {
 
-    /** Activities rendered/audited per call — token budget by construction (the TrainTools/FuelTools precedent). */
-    private static final int ACTIVITY_LIMIT = 5;
-
     private final ObjectProvider<TodayQuestSource> todayQuestSource;
     private final ObjectProvider<HabitService> habitService;
     private final ObjectProvider<IntentionService> intentionService;
@@ -102,7 +99,8 @@ public class PracticeTools {
     @Tool(name = "get_daily_practice", description = "Egy nap 'fegyelme': küldetések, szokások, "
             + "napi szándék (vezérelv + fókuszok + esti reflexió), nap lezárva-e, tevékenységek. "
             + "Használd, amikor a user a napi rutinjáról, küldetéseiről, szokásairól, szándékáról "
-            + "vagy a nap lezárásáról kérdez.")
+            + "vagy a nap lezárásáról kérdez."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=daily_quest|habit_day|ritual_day|activity_log, id/from/to/parentId/offset/contentOffset).")
     public String getDailyPractice(
             @ToolParam(required = false, description = "ISO dátum (ÉÉÉÉ-HH-NN) — alapértelmezés: ma.")
             String date,
@@ -116,7 +114,7 @@ public class PracticeTools {
         b.append("\nNapzárás: ").append(renderRitual(userId, d));
         b.append("\nTevékenységek: ").append(renderActivities(userId, d));
         ToolContexts.audit(toolContext).addRef("Practice", d.toString());
-        return b.toString();
+        return b + ToolText.detailHint("daily_quest|habit_day|habit_def|ritual_day|activity_log");
     }
 
     /** An unparsable/missing date param falls back to today rather than failing the whole call (the
@@ -209,11 +207,13 @@ public class PracticeTools {
             return ToolText.NO_DATA;
         }
         RitualDayResponse ritual = service.getDay(userId, date);
-        return Boolean.TRUE.equals(ritual.getClosed()) ? "zárva" : "nyitva";
+        String state = Boolean.TRUE.equals(ritual.getClosed()) ? "zárva" : "nyitva";
+        return ritual.getReflectionText() == null || ritual.getReflectionText().isBlank()
+                ? state : state + "; reflexió: " + ritual.getReflectionText();
     }
 
     /** The resolved date's logged activities (text + awarded XP) via the read-only
-     *  {@link TodayActivitySource} port, capped at {@link #ACTIVITY_LIMIT}. */
+     *  {@link TodayActivitySource} port, without dropping entries. */
     private String renderActivities(UUID userId, LocalDate date) {
         TodayActivitySource source = todayActivitySource.getIfAvailable();
         List<TodayActivitySource.ActivityLine> activities =
@@ -221,7 +221,7 @@ public class PracticeTools {
         if (activities.isEmpty()) {
             return ToolText.NO_DATA;
         }
-        return activities.stream().limit(ACTIVITY_LIMIT)
+        return activities.stream()
                 .map(a -> a.text() + " (" + a.xpAwarded() + " XP)")
                 .collect(Collectors.joining(", "));
     }

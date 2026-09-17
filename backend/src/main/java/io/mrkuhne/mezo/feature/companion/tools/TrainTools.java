@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
@@ -40,6 +41,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -67,6 +69,7 @@ public class TrainTools {
     // RunningService.listBlocks for the active block's prescribed runs.
     private final WorkoutService workoutService;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final TrainService trainService;
     private final RunningService runningService;
     // mezo-ajp: the recurring weekly sport schedule is the ONLY forward-planned sport in the model
@@ -85,10 +88,11 @@ public class TrainTools {
     private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
-            + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen kg-ban); scope=sport — "
+            + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen, gyakorlatonként súly/ismétlés/RIR/jegyzet és visszajelzés); scope=sport — "
             + "sportalkalmak (röplabda/cross/TRX: időtartam, intenzitás, RPE, szettek); scope=run — futások "
             + "(hét, session, kör, RPE, időtartam). Használd, amikor a user MÚLTBELI edzésekről/sportról/"
-            + "futásról kérdez. scope: gym (alapértelmezés), sport, run.")
+            + "futásról kérdez. scope: gym (alapértelmezés), sport, run. A korábbi napok és teljes "
+            + "adatok: read_personal_records(source=workout_session|exercise_set|exercise_feedback|sport_session|run_session_log).")
     public String getTrainingLog(
             @ToolParam(required = false, description = "gym|sport|run (alapértelmezés: gym).") String scope,
             @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
@@ -121,10 +125,14 @@ public class TrainTools {
             return header + " " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder(header);
+        Map<UUID, String> exerciseNames = exerciseRepository.findIdentityRowsIncludingDeleted(userId).stream()
+                .collect(Collectors.toMap(ExerciseRepository.ExerciseIdentityRow::getId,
+                        ExerciseRepository.ExerciseIdentityRow::getName));
         for (WorkoutSessionEntity w : instances) {
-            List<ExerciseSetEntity> sets = exerciseSetRepository
-                    .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(userId, w.getId())
-                    .stream().filter(s -> !s.isSkipped() && s.getReps() != null).toList();
+            List<ExerciseSetEntity> allSets = exerciseSetRepository
+                    .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(userId, w.getId());
+            List<ExerciseSetEntity> sets = allSets.stream()
+                    .filter(s -> !s.isSkipped() && s.getReps() != null).toList();
             BigDecimal volume = sets.stream()
                     .filter(s -> s.getWeightKg() != null)
                     .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
@@ -135,6 +143,25 @@ public class TrainTools {
             }
             b.append(" — ").append(sets.size()).append(" sorozat, volumen ")
                     .append(ToolText.num(volume)).append(" kg");
+            b.append("; id=").append(w.getId());
+            if (w.getActiveSeconds() != null) b.append("; aktív másodperc: ").append(w.getActiveSeconds());
+            for (ExerciseSetEntity set : allSets) {
+                b.append("\n  ").append(exerciseNames.getOrDefault(set.getExerciseId(), set.getExerciseId().toString()))
+                        .append(" #").append(set.getSetIndex()).append(" [").append(set.getKind()).append("]: ")
+                        .append(set.isSkipped() ? "kihagyva" : ToolText.num(set.getWeightKg()) + " kg × "
+                                + (set.getReps() == null ? "?" : set.getReps()));
+                if (set.getRir() != null) b.append(", RIR ").append(set.getRir());
+                if (set.getSide() != null) b.append(", oldal ").append(set.getSide());
+                if (set.getTargetWeightKg() != null) b.append(", célsúly ").append(ToolText.num(set.getTargetWeightKg()));
+                if (set.getTargetReps() != null) b.append(", célismétlés ").append(set.getTargetReps());
+                if (set.getNote() != null && !set.getNote().isBlank()) b.append("; megjegyzés: ").append(set.getNote());
+            }
+            for (var feedback : exerciseFeedbackRepository.findByCreatedByAndWorkoutSessionId(userId, w.getId())) {
+                b.append("\n  visszajelzés: ")
+                        .append(exerciseNames.getOrDefault(feedback.getExerciseId(), feedback.getExerciseId().toString()))
+                        .append("; pump ").append(feedback.getPump()).append("/4; ízületi fájdalom ")
+                        .append(feedback.getJointPain()).append("/3; terhelés ").append(feedback.getWorkload()).append("/3");
+            }
             // The closing note in FULL here (mezo-d20.13). The context snapshot carries a clipped
             // copy on every turn; this tool is the just-in-time layer the "hogy ment kedden?"
             // question lands on, so it is the one place the whole sentence belongs. Blank renders
@@ -175,6 +202,12 @@ public class TrainTools {
             if (s.getSetsPlayed() != null) {
                 b.append(", ").append(s.getSetsPlayed()).append(" szett");
             }
+            if (s.getTime() != null) b.append("; idő: ").append(s.getTime());
+            if (s.getShoulderStrain() != null) b.append("; vállterhelés ").append(s.getShoulderStrain()).append("/10");
+            if (s.getJumpCount() != null) b.append("; ugrások ").append(s.getJumpCount());
+            if (s.getRounds() != null) b.append("; körök ").append(s.getRounds());
+            if (s.getNotes() != null) b.append("; jegyzet: ").append(s.getNotes());
+            if (s.getKcal() != null) b.append("; energia ").append(s.getKcal()).append(" kcal, becslés: ").append(s.getKcalIsEstimate());
         }
         sport.stream().limit(3).forEach(s ->
                 ToolContexts.audit(toolContext).addRef("Sport", s.getDate().toString()));
@@ -205,6 +238,10 @@ public class TrainTools {
             if (r.getDurationMin() != null) {
                 b.append(", ").append(r.getDurationMin()).append(" perc");
             }
+            if (r.getHrRecoverySec() != null) b.append("; pulzusvisszaállás ").append(r.getHrRecoverySec()).append(" mp");
+            if (r.getSprintLandmark() != null) b.append("; sprintpont: ").append(r.getSprintLandmark());
+            if (r.getNotes() != null) b.append("; jegyzet: ").append(r.getNotes());
+            if (r.getKcal() != null) b.append("; energia ").append(r.getKcal()).append(" kcal, becslés: ").append(r.getKcalIsEstimate());
         }
         runs.stream().limit(3).forEach(r ->
                 ToolContexts.audit(toolContext).addRef("Run", r.getDate().toString()));
@@ -214,7 +251,8 @@ public class TrainTools {
     @Tool(name = "get_training_plan", description = "Az ELŐRE ütemezett edzésterv adott ablakra: gym-nap + "
             + "gyakorlatok, sport, futás; scope=meso a teljes aktív ciklus. Használd, amikor a user a "
             + "MAI/HOLNAPI/heti/jövőbeli edzésről vagy a mezociklus tervéről kérdez. scope: today "
-            + "(alapértelmezés), tomorrow, week, meso, date.")
+            + "(alapértelmezés), tomorrow, week, meso, date."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=mesocycle|workout_session|exercise|running_block|sport_schedule_slot, id/from/to/parentId/offset/contentOffset).")
     public String getTrainingPlan(
             @ToolParam(required = false, description = "today|tomorrow|week|meso|date (alapértelmezés: today).")
             String scope,
@@ -421,7 +459,8 @@ public class TrainTools {
 
     @Tool(name = "get_exercise_records", description = "Egyéni csúcsok (PR) és becsült 1RM (e1RM, Epley) "
             + "gyakorlatonként: legjobb szett, rep-rekordok, utóbbi top-szettek. Használd, amikor a user "
-            + "PR-ról, rekordról, 'meg tudom-e dönteni', vagy egy gyakorlat legjobbjairól kérdez.")
+            + "PR-ról, rekordról, 'meg tudom-e dönteni', vagy egy gyakorlat legjobbjairól kérdez."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=exercise|exercise_set, id/from/to/parentId/offset/contentOffset).")
     public String getExerciseRecords(
             @ToolParam(required = false, description = "Gyakorlat neve (részleges egyezés is jó) — "
                     + "üresen a legjobb e1RM-ek toplistáját adja.") String exercise,
@@ -437,7 +476,6 @@ public class TrainTools {
         String needle = exercise.trim().toLowerCase();
         List<ExerciseRecordResponse> matches = records.stream()
                 .filter(r -> r.getName() != null && r.getName().toLowerCase().contains(needle))
-                .limit(5)
                 .toList();
         if (matches.isEmpty()) {
             return "Egyéni csúcsok (PR) — \"" + exercise + "\": " + ToolText.NO_DATA;
@@ -450,7 +488,6 @@ public class TrainTools {
         List<ExerciseRecordResponse> top = records.stream()
                 .filter(r -> r.getBestE1rm() != null)
                 .sorted(Comparator.comparing((ExerciseRecordResponse r) -> r.getBestE1rm().getValue()).reversed())
-                .limit(5)
                 .toList();
         if (top.isEmpty()) {
             return "Egyéni csúcsok (PR): " + ToolText.NO_DATA;

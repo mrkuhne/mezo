@@ -69,7 +69,8 @@ public class BiometricsTools {
 
     @Tool(name = "get_weight_trend", description = "Súlytrend az elmúlt hetekre: EWMA trendsúly, "
             + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Használd, amikor a user a súlyáról, "
-            + "súlyváltozásáról, fogyásról vagy annak üteméről kérdez.")
+            + "súlyváltozásáról, fogyásról vagy annak üteméről kérdez."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=weight_log, id/from/to/parentId/offset/contentOffset).")
     public String getWeightTrend(
             @ToolParam(required = false, description = "Hány hétre visszamenőleg (alapértelmezés 4).") Integer weeks,
             ToolContext toolContext) {
@@ -115,7 +116,8 @@ public class BiometricsTools {
     @Tool(name = "get_weight_log", description = "Napi NYERS súlymérések egy időablakban: dátum, "
             + "mért kg, és az előző méréshez képesti változás. Ezt használd, amikor a user a napi "
             + "súlyokról, a mérések INGADOZÁSÁRÓL, kilengéséről vagy egy-egy konkrét nap súlyáról "
-            + "kérdez — a get_weight_trend simított trendsúlyt ad, amiből a napi kilengés nem látszik.")
+            + "kérdez — a get_weight_trend simított trendsúlyt ad, amiből a napi kilengés nem látszik."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=weight_log, id/from/to/parentId/offset/contentOffset).")
     public String getWeightLog(
             @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
             ToolContext toolContext) {
@@ -132,7 +134,9 @@ public class BiometricsTools {
         for (int i = 0; i < rows.size(); i++) {
             WeightLogEntity row = rows.get(i);
             b.append('\n').append(row.getDate()).append(": ")
-                    .append(ToolText.huWeight(row.getWeightKg())).append(" kg");
+                    .append(ToolText.huWeight(row.getWeightKg())).append(" kg")
+                    .append(" (pontos mérés: ").append(ToolText.num(row.getWeightKg()).replace('.', ','))
+                    .append(" kg)");
             // Day-over-day delta against the NEXT row (the list is newest-first), i.e. the previous
             // weigh-in — this is the fluctuation the trend tool smooths away. The oldest row in the
             // window has no predecessor here, so it gets no delta rather than a fabricated zero.
@@ -162,7 +166,8 @@ public class BiometricsTools {
             + "állapot (1-10) minden rögzített időpontra. Használd, amikor a user alvásról, alvás-céljáról/"
             + "ritmusáról, vagy közérzetéről (energia/stressz) kérdez — vagy amikor a user konkrét nap "
             + "alvási adatait / fázisait kérdezi (akkor a date vagy from/to paraméterrel). "
-            + "scope: sleep (alapértelmezés), sleep-goal, checkins.")
+            + "scope: sleep (alapértelmezés), sleep-goal, checkins. Régebbi és teljes adatok: "
+            + "read_personal_records(source=sleep_log|sleep_goal|check_in, from, to).")
     public String getRecovery(
             @ToolParam(required = false, description = "sleep|sleep-goal|checkins (alapértelmezés: sleep).")
             String scope,
@@ -271,7 +276,8 @@ public class BiometricsTools {
         }
 
         String header = "Alvás — részletes nézet"
-                + (clamped ? ", visszavágva " + days.size() + " napra" : "") + ":";
+                + (clamped ? ", visszavágva " + days.size() + " napra" : "") + ":"
+                + (clamped ? ToolText.detailHint("sleep_log") : "");
         if (days.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
@@ -440,6 +446,9 @@ public class BiometricsTools {
             addRating(parts, "testi", c.getBody());
             addRating(parts, "mentális", c.getMental());
             b.append(parts.isEmpty() ? ToolText.NO_DATA : String.join(", ", parts));
+            if (c.getNote() != null && !c.getNote().isBlank()) {
+                b.append("; jegyzet: ").append(c.getNote());
+            }
         }
         rows.stream().limit(5).forEach(c ->
                 ToolContexts.audit(toolContext).addRef("CheckIn", c.getDate().toString()));
