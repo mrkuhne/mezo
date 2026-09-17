@@ -21,8 +21,11 @@ export interface ChatConversations {
   mode: 'mock' | 'live'
 }
 
-/** One in-flight turn — the optimistic overlay ChatPage renders under the history. */
-export interface ChatTurn { userText: string; draft: string; thinking: boolean; tools: Tool[] }
+/** One in-flight turn — the optimistic overlay ChatPage renders under the history.
+ * `phase` narrates the turn's stage ('planning' | 'retrieving' | 'answering') while no draft
+ * text exists yet; a tool chip arriving does NOT clear it (chips + phase coexist), but the
+ * first delta does — the draft replaces the narration. */
+export interface ChatTurn { userText: string; draft: string; thinking: boolean; tools: Tool[]; phase?: string }
 
 /**
  * Which conversation a chat surface is reading (mezo-at8x.3):
@@ -242,34 +245,49 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
     }))
   }
 
+  /**
+   * mezo-rj214.7: mock parity with the real SSE choreography — planning → retrieving → the
+   * (mock) tool chips land → answering → a delta reveals the draft, in the same ~1.2s total
+   * the Phase-1 demo has always taken. The `phase` narrates each stage exactly like the wire
+   * events do; the tool chips arrive without clearing it, the delta does.
+   */
   const sendMock = (text: string) => {
-    setTurn({ userText: text, draft: '', thinking: true, tools: [] })
+    setTurn({ userText: text, draft: '', thinking: true, tools: [], phase: 'planning' })
     const isNew = selection === NEW_CHAT
     const conversationId = isNew ? crypto.randomUUID() : MOCK_CONVERSATION_ID
     if (isNew) {
       seedMockConversation(conversationId, text)
       onConversationCreated?.(conversationId)
     }
+    const tools: Tool[] = [
+      { type: 'read', name: 'get_recovery(days=3, scope=checkin)' },
+      { type: 'compute', name: `find_similar_past_days(theme='${text.slice(0, 20)}')` },
+    ]
     setTimeout(() => {
-      append(conversationId, [
-        { role: 'user', ts: 'now', text },
-        {
-          // A mock answer is "persisted" the moment it lands in the cache — give it an id so it
-          // is votable exactly like a live one (mezo-b3pp.15).
-          id: crypto.randomUUID(),
-          role: 'assistant', ts: 'now', text: cannedReply(text),
-          tools: [
-            { type: 'read', name: 'get_recovery(days=3, scope=checkin)' },
-            { type: 'compute', name: `find_similar_past_days(theme='${text.slice(0, 20)}')` },
-          ],
-          refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
-          recalled: [
-            { occurredOn: '2026-05-19', kind: 'chat_turn', label: 'korábbi beszélgetés', gist: 'Daniel: fáradt vagyok ma', similarity: 0.66 },
-          ],
-        },
-      ])
-      setTurn(null)
-    }, 1200)
+      setTurn((t) => (t ? { ...t, phase: 'retrieving', tools } : t))
+      setTimeout(() => {
+        setTurn((t) => (t ? { ...t, phase: 'answering' } : t))
+        setTimeout(() => {
+          const reply = cannedReply(text)
+          setTurn((t) => (t ? { ...t, draft: reply, thinking: false, phase: undefined } : t))
+          append(conversationId, [
+            { role: 'user', ts: 'now', text },
+            {
+              // A mock answer is "persisted" the moment it lands in the cache — give it an id so it
+              // is votable exactly like a live one (mezo-b3pp.15).
+              id: crypto.randomUUID(),
+              role: 'assistant', ts: 'now', text: reply,
+              tools,
+              refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
+              recalled: [
+                { occurredOn: '2026-05-19', kind: 'chat_turn', label: 'korábbi beszélgetés', gist: 'Daniel: fáradt vagyok ma', similarity: 0.66 },
+              ],
+            },
+          ])
+          setTurn(null)
+        }, 400)
+      }, 400)
+    }, 400)
   }
 
   const sendReal = (text: string) => {
@@ -284,8 +302,9 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
         const done = await chatApi.streamMessage(
           conversationId,
           text,
-          (delta) => setTurn((t) => (t ? { ...t, draft: t.draft + delta, thinking: false } : t)),
+          (delta) => setTurn((t) => (t ? { ...t, draft: t.draft + delta, thinking: false, phase: undefined } : t)),
           (tool) => setTurn((t) => (t ? { ...t, tools: [...t.tools, tool], thinking: false } : t)),
+          (phase) => setTurn((t) => (t ? { ...t, phase } : t)),
         )
         append(conversationId, [{ role: 'user', ts: nowTs(), text }, toChatMessage(done)])
         refreshConversations()
