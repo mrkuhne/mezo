@@ -1083,36 +1083,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .domain-switch-name b { font-size: 9px; opacity: 0.6; line-height: 1; }
 
-/* Domain-switcher dialog (mezo-jkh4) — "Egy társ. Öt világ." over the Sheet primitive. */
-.domain-switcher-body { padding: 4px 20px 28px; }
-.domain-switcher-eyebrow {
-  margin: 0 0 4px; font-family: var(--ff-body);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
-  color: var(--text-secondary); text-transform: uppercase;
-}
-.domain-switcher .sheet-title {
-  margin: 0 0 18px; font-family: var(--ff-display, var(--ff-body));
-  font-size: 24px; font-weight: 700; color: var(--text-primary);
-}
-.domain-list { display: flex; flex-direction: column; gap: 10px; }
-.domain-row {
-  display: flex; align-items: center; gap: 14px;
-  width: 100%; padding: 14px 16px; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: var(--surface, var(--canvas)); cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-out),
-              background var(--duration-fast) var(--ease-out);
-}
-.domain-row.current { border-color: var(--primary-deep); }
-.domain-row-mark { display: grid; place-items: center; flex: none; }
-.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.domain-row-text strong {
-  font-family: var(--ff-body); font-size: 15px; font-weight: 700; color: var(--text-primary);
-}
-.domain-row-text small { font-size: 12px; color: var(--text-secondary); }
-.domain-row-end { flex: none; font-size: 15px; color: var(--text-secondary); }
-.domain-row.current .domain-row-end { color: var(--primary-deep); }
-
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
    NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas):
@@ -13260,7 +13230,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.todaycard-gym` ma is visel, lásd :2539),
    a sikeres/figyelmeztető állapotokhoz pedig a ház `--sage`/`--sage-deep` és
    `--amber`/`--amber-deep` szemantikus tokenjeit — így a lap a világos ÉS a sötét
-   témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül.
+   témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot lejjebb (:14281) — a `.tr-pills span` és rokonai
+   ott a prototípus saját literáljára mennek vissza.
 
    A `.tr-start` a prototípus EGY stílusát HÁROM állapotra bontja (owner-döntés,
    task-3 brief): `.is-go` (zöld, friss indítás), `.is-resume` (borostyán,
@@ -13281,28 +13253,39 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    mintáját követve (:12570). */
 .tr-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--text-tertiary); }
 
-/* — a nap posztere: van-e ma edzés, és mi az — */
+/* — a nap posztere: van-e ma edzés, és mi az —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.1 + §20.2): the prototype's poster is a
+   FLOATING ROUNDED CARD (train-pages.css:79) — `border: 1px solid #ffffff14`,
+   `border-radius: 26px`, no shadow, a translucent `#ffffff0f → #ffffff05` body over the
+   dark ground. The port turned it into a full-bleed header band (radius 0, a
+   `border-bottom` rule, `var(--shadow-sm)`, an opaque `--surface-card` body). Restored.
+   The inset: the poster is no longer full-bleed, so it needs a real side margin. The
+   prototype's own `margin: 4px 20px 14px` is measured against a container that ALSO pays
+   20px (`.demo-pages`), which the house has no counterpart for; what matters here is that
+   the poster lands on the SAME rail as every other Mai section, and that rail is
+   `--screen-gutter + 6px` (the `0 6px` wrappers `.tr-energy`/`.tr-mus`/`.tr-alt` sit in).
+   Hence the 6px — measured, not guessed: the poster and the sections below it now share
+   one edge. See the Task 3 report for the prototype's own 40px reading. */
 .tr-day {
   position: relative;
+  display: block;
   overflow: hidden;
   margin: 4px 0 14px;
-  margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 18px;
+  margin-inline: 6px;
+  padding: 20px 20px 18px;
   --tr-accent: var(--tag-gym);
-  --tr-wash: var(--wash-gym);
+  border: 1px solid #ffffff14;
+  border-radius: 26px;
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--tr-accent) 18%, transparent);
-  box-shadow: var(--shadow-sm);
+    linear-gradient(155deg, #ffffff0f, #ffffff05);
 }
+/* The live state is a BORDER RING in the prototype, not an inset shadow on a band. */
 .tr-day.is-live {
-  box-shadow: var(--shadow-sm), inset 0 0 0 1px color-mix(in srgb, var(--tr-accent) 42%, transparent);
+  border-color: color-mix(in srgb, var(--tr-accent) 40%, transparent);
 }
 .tr-day.is-done {
-  background:
-    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 15%, transparent), transparent 62%),
-    linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 18%, transparent), var(--surface-card) 68%);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 16%, transparent), #ffffff05);
 }
 .tr-day .tr-eyebrow { color: var(--text-secondary); letter-spacing: .16em; }
 .tr-day h2 {
@@ -13311,7 +13294,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-day p { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 70%; }
 .tr-day-status {
-  position: absolute; top: 16px; right: calc(var(--screen-gutter) + 6px);
+  position: absolute; top: 16px; right: 16px;
   font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
   padding: 4px 9px; border-radius: 999px; color: var(--text-inverse);
   background: color-mix(in srgb, var(--tr-accent) 85%, var(--surface-card));
@@ -13320,46 +13303,72 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    nem egy nagy ikon, hanem egy sor apró, mert a poszter a NAPOT mutatja, nem egy gyakorlatot. */
 .tr-day-constellation { position: relative; display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
 .tr-day .tr-pills { position: relative; margin-top: 16px; }
+/* Inside the poster the first pill is QUIET again — the prototype cancels the domain fill
+   there (train-pages.css:99) because the poster already carries the domain wash; a filled
+   chip on top of it would read as a second, louder badge. The port kept only the loud
+   `:first-child` rule, so production's poster pill stayed domain-filled
+   (mezo-fsz2r Task 3 finding, adjudicated and ported in the Task 4 sweep). */
+.tr-day .tr-pills span:first-child { color: var(--text-secondary); border-color: #ffffff17; background: #ffffff08; }
 
-/* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip). */
+/* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip).
+   Translucent in the prototype (`#ffffff08` fill, `#ffffff17` border, train-pages.css:72):
+   the chips are quiet washes ON the poster, not opaque cards floating over it
+   (mezo-fsz2r Task 3, audit §20.1). */
 .tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .tr-pills span {
   font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
-  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-card);
+  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
 }
 .tr-pills span:first-child {
   color: var(--text-inverse); border-color: transparent;
   background: color-mix(in srgb, var(--tr-accent) 82%, var(--surface-card));
 }
 
-/* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében — */
+/* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): the prototype's CTA is `border-radius:
+   22px` and carries its own domain-gradient body plus a TWO-layer shadow — the domain-tinted
+   lift AND `0 2px 0 #ffffff40 inset`, the top inner highlight that makes the chip read as a
+   pressed metal key (train-pages.css:10). The port dropped the highlight and rounded to 20px.
+   The base background is the prototype's own declaration back (every rendered instance
+   carries `.is-go`/`.is-resume`/`.is-review`, so it is the default, not the painted layer). */
 .tr-start {
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 20px;
+  width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 22px;
   font: inherit; text-align: center; cursor: pointer;
+  color: var(--text-inverse);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tr-accent, var(--sage)) 92%, var(--text-primary)), color-mix(in srgb, var(--tr-accent, var(--sage)) 70%, var(--sage-deep)));
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--tr-accent, var(--sage)) 80%, transparent), 0 2px 0 #ffffff40 inset;
   transition: transform var(--duration-fast, .15s) var(--ease-out, ease);
 }
 .tr-start:active { transform: scale(0.98); }
 .tr-start-art { width: 26px; height: 26px; display: grid; place-items: center; flex: 0 0 auto; }
 .tr-start-art .icon, .tr-start-art svg { width: 26px; height: 26px; }
 .tr-start strong { display: block; font-size: 16px; font-weight: 700; }
-.tr-start small { display: block; margin-top: 2px; font-size: 12px; opacity: .82; }
+.tr-start small { display: block; margin-top: 2px; font-size: 12px; opacity: .72; }
 
+/* The three tokenised states keep their own hues, but each regains the prototype's inner
+   top highlight as its second shadow layer (mezo-fsz2r Task 3). */
 .tr-start.is-go {
   color: var(--text-inverse);
   background: linear-gradient(135deg, color-mix(in srgb, var(--sage) 88%, var(--surface-card)), var(--sage-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--sage) 70%, transparent), var(--shadow-sm);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--sage) 80%, transparent), 0 2px 0 #ffffff40 inset;
 }
 .tr-start.is-resume {
   color: var(--text-inverse);
   background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 88%, var(--surface-card)), var(--amber-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 70%, transparent), var(--shadow-sm);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 80%, transparent), 0 2px 0 #ffffff40 inset;
 }
+/* The reviewed state is the prototype's `.tr-start.is-done` (train-pages.css:16): a quiet
+   graphite key with a BLACK lift and a fainter inner top highlight — `0 12px 26px -18px #000,
+   0 1px 0 #ffffff14 inset`. The port left it on `var(--shadow-sm)`, which made it the one
+   state without the highlight once `.is-go`/`.is-resume` got theirs back (mezo-fsz2r Task 3
+   finding, adjudicated in the Task 4 sweep). The house border stays: production's own quiet
+   key needs an edge where the prototype's darker `#1a1b26` body supplied one. */
 .tr-start.is-review {
   color: var(--text-primary);
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -13380,10 +13389,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-alt button strong { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; }
 
-/* — a mai kerethez: a nap mozgásának kcal-hozzájárulása, becslésként kimondva — */
+/* — a mai kerethez: a nap mozgásának kcal-hozzájárulása, becslésként kimondva —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): `.tr-energy` has NO box in the
+   prototype (train-pages.css:112 is layout only) — the box belonged to `.tr-card`, the
+   wrapper this port never rendered, and the port moved its fill/border/radius/shadow onto
+   the section itself, turning two transparent stretches of the page into two filled cards.
+   They go back to transparent; giving the sections a real `.tr-card` parent is CONTENT
+   work (mezo-edg42), not a surface fix. */
 .tr-energy {
-  margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
+  margin: 0 0 14px;
 }
 .tr-energy .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-energy h3 { margin: 4px 0 12px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
@@ -13402,10 +13416,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tr-energy-empty { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
 .tr-energy-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
 
-/* — hatás az izomzatra: a nap terhelése régiónként, szavakban — */
+/* — hatás az izomzatra: a nap terhelése régiónként, szavakban —
+   Same as `.tr-energy` above: no box in the prototype (train-pages.css:125). */
 .tr-mus {
-  margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
+  margin: 0 0 14px;
 }
 .tr-mus .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-mus h3 { margin: 4px 0 14px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
@@ -13697,7 +13711,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-pick .wo-pick-key {
   flex: 0 0 auto; font-size: 8px; letter-spacing: .14em; color: #6f7d77; margin-right: 2px;
 }
-.wo-verdict { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* `display: grid; place-items: center` is the prototype's own (session.css:103) — restored
+   (mezo-fsz2r Task 3, audit §20.2). The one case the prototype never has is TWO medals in
+   the cell: grid would stack them in two rows and `overflow: hidden` would clip the second,
+   so that production-only case keeps the flex row the overlap rule below needs. */
+.wo-verdict { width: 22px; height: 22px; display: grid; place-items: center; overflow: hidden; }
+.wo-verdict:has(> [role="img"] + [role="img"]) {
+  display: flex; align-items: center; justify-content: center;
+}
 .wo-verdict .icon { width: 20px; height: 20px; }
 /* Icon-only cell (fix wave I2): one compact glyph sized to the 22px box — the sentence
    ("cél alatt" …) lives in the cell's title/aria-label, never as overflowing text. */
@@ -14156,7 +14177,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-kcal-copy { font-size: 13.5px; color: #ffffffb0; }
 .cer-kcal-go { position: absolute; top: 16px; right: 18px; font-style: normal; font-size: 17px; color: #ffffff4a; }
 
-.cer-cta { padding-top: 4px; display: grid; gap: 8px; }
+/* `padding-top: 4px` and nothing else, exactly as the prototype leaves it (session.css:578,
+   mezo-fsz2r Task 3, audit §20.2): the CTAs stack on their OWN `margin: 6px 0 10px`
+   (`.cer-cta .wo-close-cta`, :13846), so the added `display: grid` + `gap: 8px` was adding
+   8px on top of that margin the prototype never adds. */
+.cer-cta { padding-top: 4px; }
 .cer-recap-note { margin: 10px 0 0; font-size: 9.5px; line-height: 1.7; color: #ffffff45; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14225,15 +14250,55 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `.mz-play` fán KÍVÜL portálozódik) és a visszatérő „pop" érkezés is kész sávot
    mutat, sosem 0-t. Csökkentett mozgás mellett minden animáció kivezetve. */
 
+/* THE HAIRLINE RULING (mezo-fsz2r Task 4 sweep) — amends the „AMIT NEM" paragraph above
+   for BORDERS ONLY. The ports replaced every near-transparent hairline literal with
+   `var(--border-subtle)` (and raised the domain-tinted ones to a flat 24%). Measured over
+   the canvas `rgb(11,13,18)`, most of those land within ΔE76 1.4–2.7 — at or just above the
+   ~2.3 just-noticeable threshold on a 1px line, i.e. invisible in practice. But ONE member
+   is not noise:
+   `.ld-sport`/`.ld-move-card` went `#78cfe72b` (α .17) → 24%, which measures **ΔE76 5.90**
+   — a visible thickening of the sport card's outline. Since the group cannot be called
+   uniformly-invisible, it is adjudicated as ONE decision the other way: every hairline in
+   the audit's §20.1 border list goes back to the prototype's own literal/alpha
+   (`#ffffff0d/0f/10/12/14/17/20`, and 17% / 22% for the tinted ones). Safe because every
+   one of these families is Train-scoped and therefore always renders inside `titanDark`
+   (the plan's safety insight) — the surrounding fills are already prototype literals after
+   Tasks 1–3, so the borders now match their own fills' provenance.
+   Applies to: `.ld-group` `.ld-map-card` `.ld-move-card` `.ld-sport` `.ld-move-box`
+   `.ld-wait-row` `.gy-card` `.gy-curve-box` `.mm-cell` `.pl-item` `.pl-row` `.pl-day`
+   `.pl-day-tag` `.pl-day-facts i` `.pl-ex-grid span` `.pl-add` `.pl-mstats span`
+   `.pl-lib-card` `.pl-lib-musrow` `.pl-tpl-exs` `.tr-pills span` `.pl-poster-foot span`
+   `.pl-dhero-pills span` + the `.pl-ex`/`.pl-dest` color-mix targets. */
+
+/* THE HERO-BODY RULING (mezo-fsz2r Task 4 sweep; Tasks 1+2 carried it here). The prototype's
+   hero body is an OPAQUE ramp whose first stop mixes the domain colour INTO the graphite card
+   (`color-mix(--domain-color 12%, #1b2029)`, load.css:7 / plan.css:10 / plan.css:261) — the
+   ground never shows through it. `.ld-hero` and `.pl-poster` instead started the ramp on a
+   TRANSLUCENT `--wash-*` token over the page, which (a) measures ΔE76 **11.29** against the
+   prototype's stop at the same hue — far above the visible threshold, on the largest surface
+   in the domain — and (b) is internally inconsistent: `--wash-gym` is a hotter orange than the
+   `--tag-gym` the same hero's radial uses, so the hero carried two oranges. `.pl-dhero` already
+   shipped the prototype's recipe, so the ruling follows the sibling that was already right:
+   all three heroes take `color-mix(<accent> N%, var(--surface-card))` as stop 0, on the
+   prototype's own N (12 / 11 / 13).
+   BOUNDARY: only stop 0 moves. The ramp's later stops and angle stay the ported house ones
+   (`--surface-card` then `--canvas`) — measured ΔE76 2.5 / 2.3 against the prototype's
+   `#14181f`/`#0f1218`, i.e. the house canvas IS the prototype's canvas to within noise, and
+   both apps' heroes fade into their own page ground. Recorded as an accepted house deviation
+   in the matrix rather than pinned to untokenised literals. This is why this ruling and THE
+   HAIRLINE RULING above are consistent, not in tension: the later stops' tokens already
+   resolve to the prototype's own values within noise (ΔE76 2.5 / 2.3), so "accept" here means
+   there is nothing left to restore — not a drift being tolerated the way a border's alpha
+   might be. */
+
 /* — a hős: milyen mélyen vagy a hétben — */
 .ld-hero {
   position: relative; overflow: hidden;
-  padding: 18px calc(var(--screen-gutter) + 6px) 20px;
+  padding: 24px 20px 26px;
   --ld-accent: var(--tag-gym);
   background:
     radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--ld-accent) 22%, transparent), transparent 64%),
-    linear-gradient(168deg, var(--wash-gym), var(--surface-card) 62%, var(--canvas) 100%);
-  border-bottom: 1px solid color-mix(in srgb, var(--ld-accent) 18%, transparent);
+    linear-gradient(168deg, color-mix(in srgb, var(--ld-accent) 12%, var(--surface-card)), var(--surface-card) 62%, var(--canvas) 100%);
 }
 .ld-hero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%;
@@ -14291,13 +14356,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-map-card, .ld-move-card {
   display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 14px; cursor: pointer;
   text-align: left; font: inherit; color: var(--text-primary);
-  border: 1px solid var(--border-subtle); border-radius: 20px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 9%, var(--surface-card)), var(--surface-card) 70%);
+  border: 1px solid #ffffff12; border-radius: 20px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 8%, transparent), #ffffff03);
 }
 .ld-move-card {
   margin-top: 16px;
-  border-color: color-mix(in srgb, var(--tag-sport) 24%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 9%, var(--surface-card)), var(--surface-card) 70%);
+  border-color: color-mix(in srgb, var(--tag-sport) 17%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 7%, transparent), color-mix(in srgb, var(--tag-sport) 1.6%, transparent));
 }
 .ld-map-mini { width: 96px; height: 78px; flex: 0 0 auto; overflow: hidden; }
 .ld-map-copy { flex: 1; min-width: 0; }
@@ -14310,8 +14375,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-group {
   display: grid; gap: 9px; width: 100%; padding: 12px 13px; cursor: pointer; text-align: left;
   font: inherit; color: var(--text-primary);
-  border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+  border: 1px solid #ffffff10; border-radius: 18px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 7%, transparent), #ffffff03);
 }
 .ld-group-head { display: flex; align-items: center; gap: 9px; }
 .ld-group-head strong { font-size: 14px; font-weight: 600; }
@@ -14347,8 +14412,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — a sport-kártya — */
 .ld-sport {
   display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--tag-sport) 24%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 10%, var(--surface-card)), var(--surface-card) 72%);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 8%, transparent), color-mix(in srgb, var(--tag-sport) 2%, transparent));
 }
 .ld-sport-art {
   display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; flex: 0 0 auto;
@@ -14356,7 +14421,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .ld-sport-copy { flex: 1; min-width: 0; }
 .ld-sport-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
-.ld-sport-copy small { display: block; font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+.ld-sport-copy small { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
 .ld-sport-copy em { display: block; margin-top: 3px; font-style: normal; font-size: 10px; color: var(--text-quaternary); }
 
 /* — a záró jegyzet: honnan jön a két ütemterv — */
@@ -14375,7 +14440,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-glass-rows { display: grid; gap: 8px; }
 .ld-glass-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; }
 .ld-glass-name strong { display: block; font-size: 12.5px; font-weight: 600; color: #fff; }
-.ld-glass-name small { display: block; font-size: 10.5px; color: #ffffff8c; }
+.ld-glass-name small { font-size: 10.5px; color: #ffffff8c; }
 .ld-glass-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .ld-glass-chips span {
   font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
@@ -14403,8 +14468,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-modes { margin: 4px 0 14px; }
 
 /* — a nagy test-térkép + jelmagyarázat (Izomtérkép) — */
-.ld-map-stage { padding: 4px 0 0; }
-.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: block; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
+.ld-map-stage { padding: 6px 4px 0; }
+.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
 .ld-map-sides { display: flex; justify-content: space-around; margin: 6px 0 12px; }
 .ld-map-sides span { font-size: 9.5px; letter-spacing: .12em; color: var(--text-quaternary); text-transform: uppercase; }
 .ld-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 0 0 6px; }
@@ -14419,24 +14484,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — „még munkára vár" lista (Izomtérkép) — */
 .ld-wait { display: grid; gap: 7px; margin-top: 4px; }
 .ld-wait-row {
-  display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 14px;
-  border: 1px solid var(--border-subtle);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card) 72%);
+  display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 15px;
+  border: 1px solid #ffffff10;
+  background: #ffffff04;
 }
 .ld-wait-row strong { font-size: 13px; font-weight: 600; }
 .ld-wait-row small { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
 .ld-wait-done { margin: 4px 2px 0; font-size: 12px; color: var(--text-tertiary); }
 
 /* — a sport-érintés jegyzet a térkép-oldalon — */
-.ld-sport-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary); }
+.ld-sport-note {
+  display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; padding: 12px 13px;
+  font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent); border-radius: 15px;
+  background: color-mix(in srgb, var(--tag-sport) 5%, transparent);
+}
 .ld-sport-note em { font-style: normal; display: block; color: var(--text-quaternary); }
 
 /* — Minden mozgásod: gym/sport két doboz, SOSEM összemosva — */
 .ld-move-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
 .ld-move-box {
-  display: grid; gap: 4px; padding: 14px 13px; border-radius: 18px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+  display: grid; gap: 4px; padding: 13px 14px; border-radius: 18px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 22%, transparent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, transparent), #ffffff03);
 }
 .ld-move-box strong { font-size: 17px; font-weight: 700; }
 .ld-move-box small { font-size: 10.5px; color: var(--text-tertiary); }
@@ -14446,7 +14516,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-group.is-flat { cursor: default; }
 .ld-sport-chip {
   display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
-  padding: 3px 8px; border-radius: 999px; color: var(--tag-sport); background: var(--wash-sport);
+  padding: 4px 10px 4px 6px; border-radius: 999px; color: var(--tag-sport);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 20%, transparent);
+  background: color-mix(in srgb, var(--tag-sport) 7%, transparent);
 }
 
 /* — a heti sport/futás események listája: mozgás-oldal, clay-only kártyák — */
@@ -14498,7 +14570,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 1px solid color-mix(in srgb, var(--mm-color, var(--tag-gym)) 24%, transparent);
   background:
     radial-gradient(110% 80% at 90% 0%, color-mix(in srgb, var(--mm-color, var(--tag-gym)) 12%, transparent), transparent 65%),
-    var(--surface-card);
+    #ffffff04;
 }
 .mm-region-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .mm-region-head strong { font-size: 15px; font-weight: 500; color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 72%, var(--text-primary)); }
@@ -14506,7 +14578,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mm-cell {
   display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px;
-  border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--surface-recess);
+  border: 1px solid #ffffff0d; border-radius: 15px; background: var(--surface-recess);
 }
 .mm-cell.is-live {
   border-color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 55%, transparent);
@@ -14534,7 +14606,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    háttér felére, `--mus-color` (fallback `--tag-gym`, ugyanaz mint a `.pl-*`/
    `.mm-*` szekciókban) az izom-specifikus tónusokra, `--amber`/`--amber-deep`
    a rekord-arany jelzésekre (`.gy-medal*`, `.gy-next`) — így a lapok a
-   világos ÉS a sötét témában is olvashatók maradnak.
+   világos ÉS a sötét témában is olvashatók maradnak. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot lejjebb (:14281) — a `.gy-card`/
+   `.gy-curve-box` és rokonai ott a prototípus saját literáljára mennek vissza.
 
    Nincs `.gy` gyökér: a prototípus `.gy .gy-search`/`.gy .pl-row` szabályait
    a house nem viszi át — a termelésben nincs oldal-gyökér (`.screen-content`
@@ -14556,8 +14630,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-list { display: grid; gap: 8px; }
 .gy-card {
   display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; cursor: pointer; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+  border: 1px solid #ffffff10; border-radius: 18px;
+  /* Translucent in the prototype (gyak.css:5): a 6% muscle tint over NOTHING, so the list
+     reads as washes on the dark ground, not as a stack of opaque cards (mezo-fsz2r Task 3,
+     audit §20.1). Every `.gy-card` carries its own inline `--mus-color`. */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, transparent), #ffffff03);
 }
 .gy-card > .icon { width: 34px; height: 34px; flex: 0 0 auto; }
 .gy-card-name { flex: 1; min-width: 0; }
@@ -14584,10 +14661,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — records — */
 .gy-recs { display: grid; gap: 8px; }
+/* THE RENDERED-RESULT RULE (mezo-fsz2r, audit §0.2). The prototype asks for a tinted,
+   bordered card here (gyak.css:35) — but `--mus-color` is set on `.gy-hero` only, never on
+   `.gy-rec`, so both `color-mix()` calls are INVALID AT COMPUTED-VALUE TIME and the whole
+   `border` and `background` shorthands fall back to their initial values. What the owner
+   actually sees, and compares against, is a FLAT record card: no border, no fill, just the
+   numerals and the bar on the page ground. The port added a `var(--mus-color, …)` fallback,
+   which validated the declarations and made them paint an opaque bordered box.
+   We ship the RENDERED result with clean CSS — never the invalid declarations. If a
+   `--mus-color` is ever put on `.gy-rec` deliberately, that is a design decision to make
+   then, not a bug to inherit now. */
 .gy-rec {
   display: grid; gap: 6px; padding: 12px 13px;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, var(--border-subtle)); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card));
+  border: 0; border-radius: 18px;
+  background: none;
 }
 .gy-rec .tr-eyebrow { color: var(--text-tertiary); letter-spacing: .14em; }
 .gy-rec strong { font-size: 21px; font-weight: 500; letter-spacing: -.02em; }
@@ -14595,6 +14682,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-rec-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .gy-rec-bar b {
   display: block; height: 100%; width: var(--w); border-radius: 999px;
+  /* NOT the rendered-result rule here (owner ruling, mezo-fsz2r Surfaces final wave). The
+     prototype's OWN fill is invalid at computed-value time for the `.gy-rec` reason above
+     (`--mus-color` unset on this subtree) — that is the prototype's latent bug, not a
+     deliberate empty track. Production's `--mus-color` IS inherited here, so the fallback
+     below paints a real fill; the record-progress bar is otherwise always-empty chrome
+     with no information in it, which the owner does not want. We keep the DATA visible and
+     deliberately part ways with the prototype's rendered result. Whether this should instead
+     match the prototype (and how) is an OPEN OWNER QUESTION — see the matrix's Surfaces
+     section. */
   background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 50%, transparent), var(--mus-color, var(--tag-gym)));
 }
 .gy-rec > small { font-size: 10.5px; color: var(--text-tertiary); }
@@ -14611,8 +14707,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — the strength curve — */
 .gy-curve-box {
-  position: relative; padding: 14px 14px 10px; border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+  position: relative; padding: 14px 14px 10px; border: 1px solid #ffffff10; border-radius: 18px;
+  /* Translucent in the prototype (gyak.css:60) — and here the prototype's own literal
+     fallback keeps the declaration VALID where `--mus-color` is unset, so unlike `.gy-rec`
+     above this box really does paint its 6% wash (mezo-fsz2r Task 3, audit §20.1). */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, transparent), #ffffff03);
 }
 .gy-curve-val { position: absolute; right: 14px; top: 12px; text-align: right; }
 .gy-curve-val b { font-size: 22px; font-weight: 500; }
@@ -14657,7 +14756,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `--amber`/`--amber-deep` szemantikus tokenjeit, az izom-specifikus
    színekhez pedig a meglévő `--mus-color` inline custom property-t
    (muscleColors.ts, ugyanaz, amit a `.tr-mus-track` is visel) — így a lapok
-   a világos ÉS a sötét témában is olvashatók maradnak.
+   a világos ÉS a sötét témában is olvashatók maradnak. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot fentebb (:14281) — a `.pl-item`/
+   `.pl-row`/`.pl-day`* és rokonai ott a prototípus saját literáljára mennek vissza.
 
    Az eyebrow-sorok a MEGLÉVŐ `.tr-eyebrow` osztályt viselik (nem egy saját
    `.pl-eyebrow`-t) — a T5 lecke (`.overline` ütközne a Tailwind v4
@@ -14675,18 +14776,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    hurkolt animáció — nem belépő-effekt —, a `.fmx-chip-sheen` mintáját
    követve (:11814) `prefers-reduced-motion: no-preference` mögé zárva. */
 
-/* — the block poster: week numeral, progress ring, sheen, week arc — */
+/* — the block poster: week numeral, progress ring, sheen, week arc —
+   Surfaces parity (mezo-fsz2r Task 2): the prototype's poster carries NO shadow and NO
+   border-bottom (plan.css:5) — it fades into the page through its own `::after` scrim, and
+   a rule + a lift under it read as a toolbar band instead. Padding is the prototype's own
+   `22px 20px 26px`: the hero is full-bleed (`margin-inline: -gutter`), so a LITERAL 20px
+   puts its content exactly 20px from the screen edge, the way the prototype renders it —
+   the ported `calc(var(--screen-gutter) + 6px)` measured 18px against the house's 12px
+   gutter, so the two are NOT equivalent here. */
 .pl-poster {
   position: relative; overflow: hidden;
   margin: 4px 0 16px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  padding: 22px 20px 26px;
   border: 0; border-radius: 0;
-  --tr-accent: var(--tag-gym); --tr-wash: var(--wash-gym);
+  --tr-accent: var(--tag-gym);
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--tr-accent) 18%, transparent);
-  box-shadow: var(--shadow-sm);
+    linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 11%, var(--surface-card)), var(--surface-card) 68%);
 }
 .pl-poster-glow {
   position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
@@ -14710,16 +14816,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
 .pl-poster-foot { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+/* The foot pills are near-transparent in the prototype (`#ffffff08`, plan.css:32) — on the
+   poster's own dark ground an opaque `--surface-card` fill turned them into chips that
+   compete with the numeral (mezo-fsz2r Task 2, audit §20.1). Train renders inside
+   `titanDark`, so the literal is safe here. */
 .pl-poster-foot span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 1px solid #ffffff17; background: #ffffff08;
 }
 /* A foot fact that is also a doorway (the Gyakorlatok poster's medal count → the medal
    vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>` so it can carry its
    own click handler and accessible name without disturbing the plain-text siblings. */
 .pl-poster-foot-link {
   font: inherit; font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
-  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-card);
+  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
 }
 
 /* — the week numeral + progress ring, sharing the poster's top row — */
@@ -14771,12 +14881,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @keyframes pl-breathe { 0%, 100% { opacity: .75; scale: 1; } 50% { opacity: 1; scale: 1.1; } }
 
 /* — one day per row: full name, MA chip, boxed facts, muscle bars — */
-.pl-days { display: grid; gap: 8px; padding: 0 var(--screen-gutter); }
+/* The prototype's day list pays its own 20px gutter inside a container that has none
+   (plan.css:176); the house `.screen-content` already pays 12px, so the port's
+   `var(--screen-gutter)` stacked to 24px and a literal 20px would stack to 32px. The
+   `margin-inline` cancel — the same trick `.pl-poster`/`.pl-dhero` already use here — lets
+   the list keep the prototype's OWN declaration and land its cards exactly 20px from the
+   screen edge, which is what the prototype renders (mezo-fsz2r Task 2). */
+.pl-days { display: grid; gap: 8px; padding: 0 20px; margin-inline: calc(-1 * var(--screen-gutter)); }
+/* Translucent in the prototype (`#ffffff08`→`#ffffff03`, plan.css:177) and unshadowed: the
+   day rows are quiet washes on the dark ground, not lifted cards (audit §20.1/§20.2). */
 .pl-day {
   display: grid; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
-  box-shadow: var(--shadow-sm);
+  border: 1px solid #ffffff10; border-radius: 18px;
+  background: linear-gradient(150deg, #ffffff08, #ffffff03);
 }
 .pl-day-head { display: flex; align-items: center; gap: 9px; }
 .pl-day-head strong { font-size: 16px; font-weight: 500; color: var(--text-primary); }
@@ -14788,7 +14905,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .pl-day-facts i {
   display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-style: normal; min-width: 0;
-  border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+  border: 1px solid #ffffff0d; border-radius: 12px; background: var(--surface-recess);
 }
 .pl-day-facts .icon { width: 22px; height: 22px; flex: 0 0 auto; }
 .pl-day-facts b { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
@@ -14797,28 +14914,35 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-color: color-mix(in srgb, var(--tag-gym) 46%, transparent);
   background:
     radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
-    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+    linear-gradient(150deg, #ffffff0a, #ffffff03);
 }
 .pl-day-tag {
   display: inline-grid; place-items: center; height: 28px; padding: 0 11px; border-radius: 10px;
-  font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-recess);
+  font-size: 11px; color: var(--text-secondary); border: 1px solid #ffffff14; background: var(--surface-recess);
 }
 .pl-day.is-now .pl-day-tag { color: var(--text-primary); border-color: color-mix(in srgb, var(--tag-gym) 40%, transparent); }
 .pl-day-bars { display: flex; gap: 4px; }
 .pl-day-bars i { height: 5px; width: calc(var(--w) * .34); min-width: 12px; border-radius: 999px; background: var(--mus-color); }
-.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .55; cursor: default; padding: 11px 14px; }
+.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .45; cursor: default; padding: 11px 14px; }
 .pl-day-rest { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--text-secondary); }
 .pl-day-rest .icon { width: 22px; height: 22px; }
 
 /* — the two destination tiles (muscle-detail / plans doorways) — */
-.pl-dests { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 18px var(--screen-gutter) 4px; }
+/* Same gutter story as `.pl-days` above: the prototype's own `22px 20px 10px`, plus the
+   full-bleed cancel so 20px stays 20px inside the house's 12px screen gutter. */
+.pl-dests {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  padding: 22px 20px 10px; margin-inline: calc(-1 * var(--screen-gutter));
+}
+/* A tile, not a card: the prototype paints a domain wash over a 4%→1% white film
+   (plan.css:217), and the port's opaque `--surface-card` body boxed it (audit §20.1). */
 .pl-dest {
   position: relative; overflow: hidden; display: grid; justify-items: start; gap: 3px;
   padding: 16px 14px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, var(--border-subtle)); border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, #ffffff10); border-radius: 22px;
   background:
-    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 18%, transparent), transparent 64%),
-    var(--surface-card);
+    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 22%, transparent), transparent 64%),
+    linear-gradient(155deg, #ffffff0a, #ffffff03);
 }
 .pl-dest.is-muscle { --wash: var(--sky); }
 .pl-dest.is-plans { --wash: var(--lav); }
@@ -14833,17 +14957,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: color-mix(in srgb, var(--wash, var(--tag-gym)) 80%, var(--surface-card));
 }
 
-/* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral — */
+/* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral —
+   Like `.pl-poster`: no shadow, no border-bottom, and the prototype's own
+   `22px 20px 26px` (plan.css:256) — see the gutter note there (mezo-fsz2r Task 2). The
+   `.pl-lhero:has(> .mz-backbtn)` 58px padding-top override still applies on top of it,
+   mirroring the prototype's own `:has(> .pl-back.is-inhero)` rule. */
 .pl-dhero {
   position: relative; overflow: hidden; min-height: 220px;
   margin: 4px 0 14px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  padding: 22px 20px 26px;
   border: 0; border-radius: 0;
   background:
     radial-gradient(120% 90% at 85% 6%, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent), transparent 64%),
-    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 18%, transparent);
-  box-shadow: var(--shadow-sm);
+    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 13%, var(--surface-card)), var(--surface-card) 68%);
 }
 .pl-dhero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
@@ -14869,15 +14995,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   letter-spacing: -.03em; margin: 9px 0 2px; max-width: 58%; color: var(--text-primary);
 }
 .pl-dhero-number { position: relative; display: flex; align-items: baseline; gap: 7px; margin: 10px 0 14px; }
+/* The numeral is a GRADIENT-CLIPPED headline in the prototype (plan.css:293): white at the
+   cap, the day's muscle colour at the baseline. The port flattened it to one solid
+   colour-mix (audit §20.2); the gradient is back, with the house `--text-primary` standing
+   in for the prototype's `#fff` (mezo-fsz2r Task 2). */
 .pl-dhero-number strong {
   font-family: var(--ff-display); font-size: 58px; font-weight: 200; letter-spacing: -.05em; line-height: 1;
-  color: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary));
+  background: linear-gradient(var(--text-primary), color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary)));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .pl-dhero-number small { font-size: 13px; color: var(--text-secondary); }
 .pl-dhero-pills { position: relative; display: flex; flex-wrap: wrap; gap: 6px; }
+/* Same near-transparent pill as `.pl-poster-foot span` (plan.css:300). */
 .pl-dhero-pills span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 1px solid #ffffff17; background: #ffffff08;
 }
 
 /* — the body-map slot the day/muscle heroes carry — */
@@ -14911,9 +15043,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — the per-muscle breakdown: icon, name, a bar to the shared 8-set marker, count — */
 .pl-mrows { display: grid; gap: 6px; }
+/* The muscle row is a CHIP in the prototype (plan.css:318) — a tinted card with its own
+   border and radius. The port dropped all four declarations and it became a bare row, the
+   only surface that drifted in this direction (audit §20.2); restored here (mezo-fsz2r
+   Task 2). The 3-column grid stays production's: `.pl-mrow-art` is a real chip wrapper
+   here (see the T9-residue rule below), not the prototype's 28px+78px pair. */
 .pl-mrow {
   display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 10px; row-gap: 4px;
-  padding: 6px 2px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, #ffffff0c); border-radius: 14px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, #ffffff05), #ffffff03);
 }
 .pl-mrow-name { font-size: 12.5px; color: var(--text-secondary); }
 .pl-mrow-bar { grid-column: 2; position: relative; height: 5px; border-radius: 999px; background: var(--surface-recess); }
@@ -14927,10 +15066,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex {
   position: relative; overflow: hidden; display: grid; grid-template-columns: 22px 38px 1fr auto;
   align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, var(--border-subtle)); border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, #ffffff0c); border-radius: 16px;
   background:
-    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 12%, transparent), transparent 58%),
-    var(--surface-card);
+    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 13%, transparent), transparent 58%),
+    linear-gradient(155deg, #ffffff08, #ffffff03);
 }
 .pl-ex-index { font-size: 11px; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 65%, var(--text-primary)); }
 .pl-ex-art .icon { width: 38px; height: 38px; }
@@ -14939,7 +15078,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex-copy small { display: block; font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; }
 .pl-ex-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 6px; }
 .pl-ex-grid span {
-  padding: 9px 6px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+  padding: 9px 6px; text-align: center; border: 1px solid #ffffff0f; border-radius: 12px; background: var(--surface-recess);
 }
 .pl-ex-grid b { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
 .pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: var(--text-tertiary); margin-top: 4px; }
@@ -14956,7 +15095,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-dayfoot { display: grid; gap: 8px; margin-top: 12px; }
 .pl-add {
   display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
+  border: 1px dashed #ffffff20; border-radius: 18px; background: var(--surface-recess);
 }
 .pl-editlink {
   display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary);
@@ -14968,7 +15107,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-item {
   display: grid; grid-template-columns: 32px 1fr auto 14px; align-items: center; column-gap: 11px; row-gap: 6px;
   width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-card);
+  border: 1px solid #ffffff0f; border-radius: 16px; background: #ffffff05;
 }
 .pl-item-art .icon { width: 32px; height: 32px; }
 .pl-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
@@ -15037,7 +15176,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — the muscle page's three plain facts (plan.css :402-405) — */
 .pl-mstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
 .pl-mstats span {
-  padding: 12px 4px; text-align: center; border: 1px solid var(--border-subtle);
+  padding: 12px 4px; text-align: center; border: 1px solid #ffffff0f;
   border-radius: 15px; background: var(--surface-recess);
 }
 .pl-mstats strong {
@@ -15128,14 +15267,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* one card grammar for the running, queued, template and closed rows */
 .pl-lib-card {
   display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 20px;
-  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  border: 1px solid #ffffff12; border-radius: 20px;
+  background: linear-gradient(150deg, #ffffff09, #ffffff03);
 }
+/* The running run is a DOMAIN WASH over the same film, one layer, no radial — the port
+   added a radial and an opaque body (plan.css:484, audit §20.1; mezo-fsz2r Task 2). */
 .pl-lib-card.is-now {
   border-color: color-mix(in srgb, var(--tag-gym) 34%, transparent);
-  background:
-    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
-    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 13%, transparent), #ffffff03);
 }
 .pl-lib-card.is-now .pl-arc { height: 44px; margin: 0 0 14px; }
 .pl-lib-card.is-open { cursor: default; }
@@ -15203,7 +15342,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-muslist.is-bars { grid-template-columns: 1fr; }
 .pl-lib-musrow {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
 }
 .pl-lib-musrow > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
 .pl-lib-musrow strong { font-size: 13px; font-weight: 500; color: var(--text-primary); }
@@ -15224,11 +15363,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
 .pl-versus-name .icon { width: 20px; height: 20px; }
 
-/* — the library's two doorways and its slim list heroes — */
-.pl-lib-dests { padding: 22px 0 4px; }
+/* — the library's two doorways and its slim list heroes —
+   The prototype's `.pl-lib-dests` zeroes the horizontal padding (plan.css:552) because its
+   `.pl-lib` parent already pays the 20px page gutter; production renders this row inside
+   `.mz-page`, which has ALREADY cancelled the house screen gutter, so the row has to pay
+   the 20px itself and must NOT take `.pl-dests`' full-bleed cancel (mezo-fsz2r Task 2 —
+   measured: without this the tiles sat flush to the screen edge). */
+.pl-lib-dests { padding: 22px 20px 4px; margin-inline: 0; }
 
 /* — a template's week, spelled out — */
-.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }
+.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
 .pl-tpl-ex { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 9px; }
 .pl-tpl-ex .icon { width: 24px; height: 24px; }
 .pl-tpl-ex strong { font-size: 12.5px; font-weight: 500; min-width: 0; line-height: 1.3; color: var(--text-primary); }
@@ -15251,7 +15395,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-row {
   display: flex; align-items: center; gap: 12px; width: calc(100% - 40px); margin: 0 20px 8px;
   padding: 14px 16px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
 }
 .pl-row strong { display: block; font-size: 14.5px; font-weight: 500; color: var(--text-primary); }
 .pl-row small { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
@@ -15463,3 +15607,110 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .sp-number { grid-template-columns: 42px 1fr auto 42px; }
 }
 /* ── /train sport titanium ───────────────────────────────────────────────── */
+
+/* Approved dark Titanium navigation (mezo-0i5y6). These chrome tokens deliberately
+   stay dark on legacy light pages; the page's theme preference is not changed. */
+:root, :root[data-theme="dark"] {
+  --nav-surface: #111319;
+  --nav-surface-top: #181920;
+  --nav-card: #181923;
+  --nav-ink: #eae8ee;
+  --nav-muted: #b9b2c5;
+  --nav-idle: #8e879b;
+  --nav-line: #c4afd726;
+  --nav-backdrop: #090b125c;
+  --nav-shadow: #0000001a;
+  --nav-highlight: #ffffff08;
+  --nav-nap: #d9c395;
+  --nav-train: #c8e895;
+  --nav-fuel: #8ed2e8;
+  --nav-mezo: #bca6f1;
+  --nav-me: #d7a7bc;
+}
+[data-domain="nap"] { --nav-accent: var(--nav-nap); }
+[data-domain="train"] { --nav-accent: var(--nav-train); }
+[data-domain="fuel"] { --nav-accent: var(--nav-fuel); }
+[data-domain="mezo"] { --nav-accent: var(--nav-mezo); }
+[data-domain="me"] { --nav-accent: var(--nav-me); }
+.tab-bar[data-domain] {
+  left: 0; right: 0; bottom: 0; height: 88px;
+  border-radius: 0; border-top: 1px solid var(--nav-line);
+  padding: 12px 8px 24px; gap: 3px;
+  background: linear-gradient(180deg, var(--nav-surface-top), var(--nav-surface) 80%);
+  box-shadow: none; align-items: stretch;
+}
+.tab-bar[data-domain] .tab-item {
+  min-width: 0; min-height: 44px; gap: 3px;
+  font-size: 10px; font-weight: 500; color: var(--nav-idle);
+}
+.tab-bar[data-domain] .tab-item > span { white-space: nowrap; }
+.tab-bar[data-domain] .tab-item.active { color: var(--nav-accent); }
+.tab-bar[data-domain] .tab-item.active .tab-ico svg {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-accent) 32%, transparent));
+}
+.tab-bar[data-domain] .domain-switch {
+  flex: 0 0 56px; border-right: 1px solid var(--nav-line); padding-right: 5px;
+}
+.tab-bar[data-domain] .domain-switch-name { font-size: 10px; font-weight: 500; color: var(--nav-accent); }
+.phone-screen:has(.tab-bar[data-domain]) > .home-indicator { background: var(--nav-ink); }
+.tab-bar[data-domain] .tab-item:focus-visible {
+  outline: 2px solid var(--nav-ink); outline-offset: -2px; border-radius: 8px;
+}
+.domain-row:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 3px; }
+/* Whole-screen overlay owns blur/scroll; its dialog has no enclosing surface. */
+.domain-switcher-overlay {
+  position: absolute; inset: 0; z-index: 250;
+  display: flex; align-items: safe center; justify-content: center;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: var(--nav-backdrop);
+  backdrop-filter: blur(22px) saturate(.65);
+  -webkit-backdrop-filter: blur(22px) saturate(.65);
+}
+.domain-switcher { width: 100%; max-width: 372px; flex: none; color: var(--nav-ink); }
+.domain-list { display: flex; flex-direction: column; gap: 12px; }
+.domain-row {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; min-height: 80px; padding: 16px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--nav-accent) 21%, transparent);
+  border-radius: 17px; cursor: pointer;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 12%, var(--nav-card)), color-mix(in srgb, var(--nav-surface) 80%, transparent));
+  box-shadow: 0 8px 28px var(--nav-shadow), inset 0 1px 0 var(--nav-highlight);
+}
+.domain-row.current {
+  border-color: var(--nav-accent);
+  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 19%, var(--nav-card)), var(--nav-card));
+}
+.domain-row-mark { display: grid; place-items: center; flex: none; }
+.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.domain-row-text strong { font: 500 16px var(--ff-body); color: var(--nav-accent); }
+.domain-row-text small { font: 400 10px/1.6 var(--ff-body); color: var(--nav-muted); overflow-wrap: anywhere; }
+.domain-row-end { flex: none; font-size: 16px; font-weight: 400; color: var(--nav-accent); }
+.phone-screen:has(.domain-switcher-overlay) .screen-content { overflow: hidden; }
+@supports not (backdrop-filter: blur(1px)) {
+  .domain-switcher-overlay { background: color-mix(in srgb, var(--nav-surface) 96%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .domain-row { animation: domain-menu-rise 260ms cubic-bezier(.2,.7,.3,1) both; }
+  .domain-row:nth-child(2) { animation-delay: 25ms; }
+  .domain-row:nth-child(3) { animation-delay: 50ms; }
+  .domain-row:nth-child(4) { animation-delay: 75ms; }
+  .domain-row:nth-child(5) { animation-delay: 100ms; }
+}
+@keyframes domain-menu-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .tab-bar[data-domain] { height: calc(76px + env(safe-area-inset-bottom)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .tab-bar[data-domain] .tab-item, .tab-bar[data-domain] .domain-switch-name { font-size: 9px; }
+  .tab-bar[data-domain] .domain-switch { flex-basis: 48px; }
+  .domain-switcher-overlay { padding-left: 16px; padding-right: 16px; }
+  .domain-row { gap: 10px; padding: 14px 12px; }
+}
+@media (max-height: 560px) {
+  .domain-list { gap: 8px; }
+  .domain-row { min-height: 64px; padding: 10px 14px; }
+}

@@ -15,18 +15,18 @@ export default function MesoTervSkeleton() {
   return (
     <div role="status" aria-label="Betöltés…">
       {/* The poster (`.pl-poster`, prototype.css:13890) —
-            padding-top 20
+            padding-top 22
           + top row (week numeral + phase pill + ring; align-items:center, tallest
             child the 68×68 `.pl-ring`)                                        68
           + h2 (margin 14/0/6, 29px @ ~1.2 default line-height ≈ 35)     14+35+6 = 55
           + the one sentence (`.pl-poster p`, margin-bottom 16, 12.5px
             @ explicit line-height 1.6 ≈ 20)                                20+16 = 36
           + the week arc (`.pl-arc`, height 60 + margin-bottom 18)          60+18 = 78
-          + padding-bottom                                                          24
+          + padding-bottom                                                          26
           ────────────────────────────────────────────────────────────────────────────
-                                                                        total ≈ 281px */}
+                                                                        total ≈ 285px */}
       <div style={{ padding: '0 6px 14px' }}>
-        <Skeleton width="100%" height={281} radius={0} />
+        <Skeleton width="100%" height={285} radius={0} />
       </div>
       {/* „A HETED" eyebrow + one row per training day (`.pl-day`, prototype.css:13977) —
             padding-top 14
@@ -41,10 +41,12 @@ export default function MesoTervSkeleton() {
           5 rows — the typical training-day count (meso-hyp-04: Hét/Kedd/Sze/Csü/Pén),
           matching the poster's own reserved-space approach (TrainTodaySkeleton's 4-chip
           constellation placeholder). */}
-      <div style={{ padding: '2px var(--screen-gutter) 8px' }}>
+      <div style={{ padding: '2px 20px 8px', marginInline: 'calc(-1 * var(--screen-gutter))' }}>
         <Skeleton width={80} height={10} />
       </div>
-      <div style={{ display: 'grid', gap: 8, padding: '0 var(--screen-gutter)' }}>
+      <div
+        style={{ display: 'grid', gap: 8, padding: '0 20px', marginInline: 'calc(-1 * var(--screen-gutter))' }}
+      >
         {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} width="100%" height={126} radius={18} />
         ))}
@@ -60,7 +62,7 @@ export default function MesoTervSkeleton() {
       <div
         style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
-          padding: '18px var(--screen-gutter) 4px',
+          padding: '22px 20px 10px', marginInline: 'calc(-1 * var(--screen-gutter))',
         }}
       >
         <Skeleton width="100%" height={115} radius={22} />

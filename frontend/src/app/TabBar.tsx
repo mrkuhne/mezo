@@ -38,11 +38,12 @@ export function TabBar() {
           mezo-88iwa.5): the négy fül itself has no page-level DOM of its own — this bar
           IS the négy fül, on every /train/* route. Scoped to the train domain only, so
           the other domains' bars don't spuriously satisfy the anchor lookup. */}
-      <nav className="tab-bar" aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
+      <nav className="tab-bar" data-domain={domain.id} aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
         <button
           type="button"
           className="tab-item domain-switch np-press"
           aria-haspopup="dialog"
+          aria-expanded={switcherOpen}
           aria-label={`Területváltó: ${domain.name}`}
           onClick={() => setSwitcherOpen(true)}
         >
