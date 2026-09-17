@@ -84,6 +84,27 @@ test('a logged exercise shows its estimated 1RM and its medal count', async () =
   expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
 })
 
+test('a logged exercise with an e1RM but no medals shows no medal segment at all — never a bare 0 (parity P2)', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/medals`, () => HttpResponse.json({ medals: [] })),
+  )
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  const best = row.querySelector('.gy-card-best')!
+  expect(within(best as HTMLElement).getByText('133,3 kg')).toBeInTheDocument()
+  expect(row.querySelector('.gy-medals')).toBeNull()
+  expect(within(row).queryByText('0')).toBeNull()
+})
+
+test('a logged exercise with an e1RM and a medal shows the medal segment (parity P2)', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  expect(row.querySelector('.gy-medals')).not.toBeNull()
+  expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
+})
+
 test('a logged exercise with no trustworthy estimate shows an em dash, never a zero', async () => {
   renderPage()
   await screen.findByText('A mozdulataid')

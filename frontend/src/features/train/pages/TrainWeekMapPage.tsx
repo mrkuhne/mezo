@@ -167,12 +167,23 @@ export function TrainWeekMapPage() {
             </p>
           )}
 
+          {reach.length > 0 && (
+            <p className="ld-sport-note rise" style={{ '--d': '150ms' } as CSSProperties}>
+              <ClayIcon name="i-sport" size={20} />
+              <span>
+                A sport ezeket is dolgoztatta: {reach.join(', ')}.
+                <em>Becslés, nem mérés — a szettszámokba nem számít bele.</em>
+              </span>
+            </p>
+          )}
+
           {/* The doorway to „Minden izomjel" — the prototype's own quiet row at the foot of
-              `mapScreen()` (load-pages.js:140), copy verbatim (parity P2 Task 1, matrix §13). */}
+              `mapScreen()` (load-pages.js:140-141), BELOW the sport footnote (line 139 runs
+              first). Copy verbatim (parity P2 Task 1, matrix §13). */}
           <button
             type="button"
             className="pl-row is-quiet rise"
-            style={{ '--d': '150ms' } as CSSProperties}
+            style={{ '--d': '160ms' } as CSSProperties}
             onClick={() => navigate('/train/week/jelek')}
           >
             <span>
@@ -181,16 +192,6 @@ export function TrainWeekMapPage() {
             </span>
             <b aria-hidden="true">›</b>
           </button>
-
-          {reach.length > 0 && (
-            <p className="ld-sport-note rise" style={{ '--d': '160ms' } as CSSProperties}>
-              <ClayIcon name="i-sport" size={20} />
-              <span>
-                A sport ezeket is dolgoztatta: {reach.join(', ')}.
-                <em>Becslés, nem mérés — a szettszámokba nem számít bele.</em>
-              </span>
-            </p>
-          )}
         </PageBody>
       </EntranceGroup>
     </MozaikPage>

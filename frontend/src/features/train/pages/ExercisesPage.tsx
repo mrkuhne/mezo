@@ -170,10 +170,14 @@ export function ExercisesPage() {
                         history, every set above the rep cap) → an em dash, never a 0. */}
                     <b>{row.bestE1rm != null ? `${hu1(row.bestE1rm)} kg` : '—'}</b>
                     <small>becsült 1RM</small>
-                    <span className="gy-medals">
-                      <ClayIcon name="i-erme" size={15} className="icon" />
-                      {row.medalCount}
-                    </span>
+                    {/* A zero medal count means "none" — absent, never printed as `0`
+                        (house honesty rule; matches gyRows() in the prototype). */}
+                    {row.medalCount > 0 && (
+                      <span className="gy-medals">
+                        <ClayIcon name="i-erme" size={15} className="icon" />
+                        {row.medalCount}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="gy-card-empty">még nincs naplózva</span>

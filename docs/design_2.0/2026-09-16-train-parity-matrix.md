@@ -263,7 +263,7 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 | Toggle `Eddig megvolt / A heti terv`, `ELÖLRŐL / HÁTULRÓL`, legend `még vár · elkezdted · jó úton · megvan` | **identical** |
 | `Még munkára vár` list | present (9 rows vs 6) |
 | Footer note `A röplabda ezeken is dolgozott: … Becslés, nem mérés — a szettszámokba nem számít bele.` | present, `A röplabda` → `A sport` |
-| **`Minden izomjel / A 21 izom, saját jellel, régiónként ›`** | ✅ **CLOSED (P2 Task 1)** — the quiet `.pl-row.is-quiet` doorway is back at the foot of the screen, copy verbatim, routing to `/train/week/jelek` (§15). *Was:* „absent — the doorway to `train/2/jelek` is gone" |
+| **`Minden izomjel / A 21 izom, saját jellel, régiónként ›`** | ✅ **CLOSED (P2 Task 1)** — the quiet `.pl-row.is-quiet` doorway is back at the foot of the screen, copy verbatim, routing to `/train/week/jelek` (§15), and now sits BELOW the `A sport ezeket is dolgoztatta: …` footnote, matching `mapScreen()`'s render order (`load-pages.js:139` footnote, then `:140-141` doorway). *Was:* „absent — the doorway to `train/2/jelek` is gone", then briefly present but ABOVE the footnote (parity-walk fix). |
 
 **Severity: MAJOR** (the entry point to §15 is now present; what stays open on this screen is the 9-vs-6 wait list and the „röplabda"→„sport" wording above)
 
