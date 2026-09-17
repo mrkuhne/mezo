@@ -135,6 +135,8 @@ class OpenAiCompanionLlmOptionsTest {
             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
             null, null, null,
             new CompanionProperties.Turn(new CompanionProperties.Turn.Gear(true),
+                new CompanionProperties.Turn.Planner(1),
+                new CompanionProperties.Turn.Executor(4, 15_000L),
                 new CompanionProperties.Turn.Answerer("high")));
         LlmActorResolver actorResolver = new LlmActorResolver() {
             @Override

@@ -215,6 +215,8 @@ class GeminiEmbeddingAdapterRecordingTest {
         return new CompanionProperties(null, null, null, null, null, null, null,
             new CompanionProperties.Embedding(EMBED_MODEL, false, 2_000, true, 80, 200), null, null, null, null, null, null, null, null, null, null, null,
             new CompanionProperties.Turn(new CompanionProperties.Turn.Gear(true),
+                new CompanionProperties.Turn.Planner(1),
+                new CompanionProperties.Turn.Executor(4, 15_000L),
                 new CompanionProperties.Turn.Answerer("high")));
     }
 

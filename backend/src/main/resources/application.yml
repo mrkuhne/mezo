@@ -823,6 +823,15 @@ mezo:
       gear:
         # false => an UNSURE turn goes straight to ANALYSIS instead of spending a cheap call.
         classifier-enabled: true
+      planner:
+        # One repair lap: an unparseable or fully-rejected plan gets a single corrected retry
+        # before the caller falls back to the legacy tool-loop path (spec §8).
+        repair-attempts: 1
+      executor:
+        # Independent reads fan out in parallel; a step that misses the deadline becomes an
+        # honest "időtúllépés" outcome instead of stalling the turn (spec §6.4).
+        parallelism: 4
+        step-timeout-ms: 15000
       answerer:
         # The CHAT branch carries no tools, so this effort actually reaches the provider
         # (OpenAiCompanionLlm.optionsFor pins effort to `none` only when a request carries tools).

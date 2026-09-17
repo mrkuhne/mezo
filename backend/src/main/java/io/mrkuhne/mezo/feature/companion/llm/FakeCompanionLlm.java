@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.TurnGear;
 import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
+import io.mrkuhne.mezo.feature.companion.service.TurnPlanner;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -53,6 +54,10 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     /** Proves a turn took the tool-free smart branch — asserted by the gear ITs (mezo-rj214.7). */
     public static final String CHAT_GEAR_SENTINEL = "FAKE-CHAT-GEAR";
+
+    /** Scripts the planner's reply: [fake-plan:{...json...}] anywhere in the user message. */
+    private static final Pattern FAKE_PLAN =
+            Pattern.compile("\\[fake-plan:(\\{.*})]", Pattern.DOTALL);
 
     /** Mirrors the real router's deterministic pre-classifier so scripted questions classify the
      *  same way a reader expects, without paying for a fake model round-trip. */
@@ -1175,6 +1180,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (userMessage.contains(EMPTY_ANSWER)) {
             return "";
+        }
+        if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
+            Matcher plan = FAKE_PLAN.matcher(userMessage);
+            return plan.find() ? plan.group(1) : "{\"needsData\":false,\"steps\":[]}";
         }
         return CHAT_GEAR_SENTINEL + " " + PREFIX
             + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
