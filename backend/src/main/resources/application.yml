@@ -820,6 +820,8 @@ mezo:
     # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
     # The gear never decides WHICH MODEL plans — the smart tier always does.
     turn:
+      # Kill switch: false sends every LOOKUP/ANALYSIS turn down the legacy tool-loop unchanged.
+      pipeline-enabled: true
       gear:
         # false => an UNSURE turn goes straight to ANALYSIS instead of spending a cheap call.
         classifier-enabled: true
@@ -836,6 +838,10 @@ mezo:
         # The CHAT branch carries no tools, so this effort actually reaches the provider
         # (OpenAiCompanionLlm.optionsFor pins effort to `none` only when a request carries tools).
         chat-effort: high
+        outcome-max-chars-per-result: 8000
+        outcome-max-chars-total: 40000
+      replan:
+        max-laps: 1
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)
