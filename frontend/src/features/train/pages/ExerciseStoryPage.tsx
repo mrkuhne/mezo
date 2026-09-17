@@ -62,6 +62,7 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { StrengthCurve } from '@/features/train/components/StrengthCurve'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
 import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
@@ -225,7 +226,13 @@ export function ExerciseStoryPage() {
         <PageBody className="pl-sub">
           {record && (
             <>
-              <h3 className="pl-h3">Rekordjaid</h3>
+              <h3 className="pl-h3">
+                Rekordjaid
+                <InfoButton
+                  title="Mi számít rekordnak?"
+                  copy="A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya."
+                />
+              </h3>
               <div className="gy-recs rise" style={{ ...accent, ...delay(70) }}>
                 <div className="gy-rec">
                   <span className="tr-eyebrow">Becsült 1RM</span>
@@ -291,7 +298,13 @@ export function ExerciseStoryPage() {
                 </p>
               )}
 
-              <h3 className="pl-h3">Az erőd íve</h3>
+              <h3 className="pl-h3">
+                Az erőd íve
+                <InfoButton
+                  title="Mit mutat a vonal?"
+                  copy="A becsült egyismétléses maximumod alakulása alkalomról alkalomra. A szaggatott rész a terv várakozása a következő hetekre — becslés, nem ígéret."
+                />
+              </h3>
               <div className="rise" style={{ ...accent, ...delay(130) }}>
                 <StrengthCurve points={series} />
               </div>

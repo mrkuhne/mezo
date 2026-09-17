@@ -52,6 +52,7 @@ import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozai
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { muscleTiles, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
 import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { tierLabel } from '@/features/train/logic/tierLabel'
@@ -246,7 +247,15 @@ export function MesoMusclePage() {
           </div>
 
           {/* — the gauge: fill + landmarks + labelled pin, this page only — */}
-          <h3 className="pl-h3 rise">Hol tartasz</h3>
+          <h3 className="pl-h3 rise">
+            Hol tartasz
+            {/* The prototype interpolates the muscle's own MEV into this copy
+                (plan-pages.js:268, `${muscle.mev}`) — never a literal number. */}
+            <InfoButton
+              title="Mit jelentenek a jelölések?"
+              copy={`A ${tile.mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`}
+            />
+          </h3>
           <div className="pl-scale-wrap rise" style={accent}>
             <span className="pl-scale-bar">
               <i className="fill" style={{ '--w': `${nowPct}%` } as CSSProperties} />
@@ -273,10 +282,6 @@ export function MesoMusclePage() {
               )}
             </span>
           </div>
-          <p className="pl-foot-say">
-            {tile.mev} szett alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az,
-            ameddig ebben a tervben elmész — ezt a fókuszod szabja meg.
-          </p>
 
           {/* — the plan's ramp, week by week — */}
           <h3 className="pl-h3 rise">A {arc.weeks} hét</h3>

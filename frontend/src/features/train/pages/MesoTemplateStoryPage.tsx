@@ -46,6 +46,7 @@ import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { huKg } from '@/features/train/logic/mesoDates'
 import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import {
   splitLabel,
@@ -260,11 +261,16 @@ export function MesoTemplateStoryPage() {
 
           {muscles.length > 0 && (
             <>
-              <h3 className="pl-h3">Heti szettek izmonként</h3>
-              <p className="pl-foot-say">
-                Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam
-                első hete indul ennyivel — onnan hétről hétre emelkedhet.
-              </p>
+              {/* The explanation lives BEHIND the ⓘ, as the prototype keeps it
+                  (plan-pages.js:489) — the static paragraph that used to print it here
+                  went with the button, so the sentence is not said twice (mezo-b516k). */}
+              <h3 className="pl-h3">
+                Heti szettek izmonként
+                <InfoButton
+                  title="Mit jelent a szám?"
+                  copy="Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet."
+                />
+              </h3>
               <div className="pl-wload pl-tpl-load rise" style={delay(160)}>
                 {muscles.map((m) => (
                   <span

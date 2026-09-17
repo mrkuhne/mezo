@@ -680,22 +680,29 @@ Measured delta ≈ 2–3 % alpha. **MINOR, one finding for the whole set.**
 | 4 | Mai `/train/mai` | `button.fuel-secondary` — „A heti terhelésed ↗" (inside the accordion) | BLOCKER |
 | 5 | Mai `/train/mai` | `button.fuel-secondary` — „A futó terved ↗" (inside the accordion) | BLOCKER |
 | 6 | Mai `/train/mai` | `button.fuel-secondary` — third accordion row | BLOCKER |
-| 7 | Plan day `/train/mesocycles/:id/days/:day` | ⓘ `pl-info` — „Miért nyolcnál a jelölés?" | BLOCKER |
-| 8 | Plan day `/train/mesocycles/:id/days/:day` | ⓘ `pl-info` — „Mikortól él a változtatás?" | BLOCKER |
+| 7 | Plan day `/train/mesocycles/:id/days/:day` | ⓘ `pl-info` — „Miért nyolcnál a jelölés?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 8 | Plan day `/train/mesocycles/:id/days/:day` | ⓘ `pl-info` — „Mikortól él a változtatás?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
 | 9 | Plan day `/train/mesocycles/:id/days/:day` | `.pl-ex-move` — „Előrébb" ↑ (one per exercise, 3–6 buttons) | BLOCKER |
 | 10 | Plan day `/train/mesocycles/:id/days/:day` | `.pl-ex-move` — „Hátrébb" ↓ (one per exercise, 3–6 buttons) | BLOCKER |
-| 11 | Muscle `/train/mesocycles/:id/week/:muscle` | ⓘ `pl-info` — „Mit jelentenek a jelölések?" | BLOCKER |
-| 12 | Template `/train/templates/:id` | ⓘ `pl-info` — „Mit jelent a szám?" | BLOCKER |
-| 13 | Closed run `/train/mesocycles/:id/report` | ⓘ `pl-info` — „Mit mutat a sáv?" | BLOCKER |
-| 14 | Terhelés `/train/week` | ⓘ `pl-info` — „Miből áll össze a szám?" | BLOCKER |
-| 15 | Terhelés `/train/week` | ⓘ `pl-info` — „Mit mutat a sáv?" | BLOCKER |
-| 16 | Terhelés `/train/week` | ⓘ `pl-info` — „A sport és a szettek" | BLOCKER |
-| 17 | Izomtérkép `/train/week/terkep` | ⓘ `pl-info` — „Miből rajzoljuk?" | BLOCKER |
-| 18 | Minden mozgásod `/train/week/mozgas` | ⓘ `pl-info` — „Miért becslés?" | BLOCKER |
-| 19 | Minden mozgásod `/train/week/mozgas` | ⓘ `pl-info` — „Hogyan olvasd?" | BLOCKER |
-| 20 | Exercise story `/train/exercises/:key` | ⓘ `pl-info` — „Mi számít rekordnak?" | BLOCKER |
-| 21 | Exercise story `/train/exercises/:key` | ⓘ `pl-info` — „Mit mutat a vonal?" | BLOCKER |
+| 11 | Muscle `/train/mesocycles/:id/week/:muscle` | ⓘ `pl-info` — „Mit jelentenek a jelölések?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 12 | Template `/train/templates/:id` | ⓘ `pl-info` — „Mit jelent a szám?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 13 | Closed run `/train/mesocycles/:id/report` | ⓘ `pl-info` — „Mit mutat a sáv?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 14 | Terhelés `/train/week` | ⓘ `pl-info` — „Miből áll össze a szám?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 15 | Terhelés `/train/week` | ⓘ `pl-info` — „Mit mutat a sáv?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 16 | Terhelés `/train/week` | ⓘ `pl-info` — „A sport és a szettek" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 17 | Izomtérkép `/train/week/terkep` | ⓘ `pl-info` — „Miből rajzoljuk?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 18 | Minden mozgásod `/train/week/mozgas` | ⓘ `pl-info` — „Miért becslés?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 19 | Minden mozgásod `/train/week/mozgas` | ⓘ `pl-info` — „Hogyan olvasd?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 20 | Exercise story `/train/exercises/:key` | ⓘ `pl-info` — „Mi számít rekordnak?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
+| 21 | Exercise story `/train/exercises/:key` | ⓘ `pl-info` — „Mit mutat a vonal?" | ✅ **CLOSED** (`mezo-b516k`, 2026-09-17) |
 | 22 | Wizard `/train/mesocycles/new` | the whole 6-step flow: source pick, step bar, per-day editor step, review/start-date step | BLOCKER |
+
+> **The 13 ⓘ rows (7, 8, 11–21) closed together** in the explain-layer slice (`mezo-b516k`,
+> 2026-09-17): one shared `InfoButton` primitive, thirteen placements, the copy word for word.
+> ONE deliberate, TEMPORARY divergence — **row 13's title reads „Hogyan olvasd?", not the
+> prototype's „Mit mutat a sáv?"** — production renders that section as text rows and not as
+> bars; it flips back when the surfaces slice (`mezo-fsz2r`) returns them. Tracked in
+> `2026-09-16-train-parity-matrix.md` §22.
 
 Screens with **no** missing control: `train/1` Terv, `train/1/week`, `train/1/library`,
 `train/1/library/templates`, `train/1/library/closed`, `train/2/jelek`, `train/3`, the

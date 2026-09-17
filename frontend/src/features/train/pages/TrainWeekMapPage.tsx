@@ -26,6 +26,7 @@ import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import { mapHeat, mapWeekHeat, sportReach, untouchedMuscles } from '@/features/train/logic/loadWeek'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
@@ -117,7 +118,11 @@ export function TrainWeekMapPage() {
             Hol tart a tested?
           </p>
           <p className="ld-hero-say">
-            Amit már megmozgattál, erősebben világít — ami még vár, az csak körvonal.
+            Amit már megmozgattál, erősebben világít — ami még vár, az csak körvonal.{' '}
+            <InfoButton
+              title="Miből rajzoljuk?"
+              copy="A futó terved e heti szettjeiből: minden izom annyira fénylik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott az erősebb szín többet kérő izmot jelent."
+            />
           </p>
         </header>
 

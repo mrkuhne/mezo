@@ -337,3 +337,33 @@ test('an unknown key is a ghost, not a blank screen', async () => {
   renderStory('nincs-ilyen')
   expect(await screen.findByText('Ez a gyakorlat nincs a tárban.')).toBeInTheDocument()
 })
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ beside „Rekordjaid" explains what counts as a record, word for word', async () => {
+  const user = userEvent.setup()
+  renderStory(ROW)
+  const btn = await screen.findByRole('button', { name: 'Mi számít rekordnak? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Rekordjaid')
+  await user.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Mi számít rekordnak?' })).getByText(
+      'A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya.',
+    ),
+  ).toBeInTheDocument()
+})
+
+test('ⓘ beside „Az erőd íve" explains the strength curve, word for word', async () => {
+  const user = userEvent.setup()
+  renderStory(ROW)
+  const btn = await screen.findByRole('button', { name: 'Mit mutat a vonal? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Az erőd íve')
+  await user.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Mit mutat a vonal?' })).getByText(
+      'A becsült egyismétléses maximumod alakulása alkalomról alkalomra. A szaggatott rész a terv várakozása a következő hetekre — becslés, nem ígéret.',
+    ),
+  ).toBeInTheDocument()
+})

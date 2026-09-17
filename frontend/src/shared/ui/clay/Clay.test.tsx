@@ -8,9 +8,9 @@ import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 // accent — replacing the earlier warm-clay ramps. The existing NAMES are unchanged so every
 // call site and mapping table keeps compiling; the set only ever GROWS (66 i-* + 24 s-*).
 
-test('ClaySprites mounts all 66 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 67 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(66)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(67)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
 })
 

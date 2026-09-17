@@ -123,7 +123,7 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 |---|---|
 | `‹ Vissza` + `Hát` + prose + `Hétfőn 2 szettel többet kapsz.` | present; adds eyebrow `3. HÉT · ÉPÍTÉS` and a hero numeral `14 szett hetente` |
 | 3 stats `edzés hetente / szett az 1. héten / a legtöbb lesz` | present |
-| `Hol tartasz` gauge (`10 ennyitől fejlődik · 20 eddig mész el`) | present, **plus** an explanatory paragraph `10 szett alatt nincs elég inger…` |
+| `Hol tartasz` gauge (`10 ennyitől fejlődik · 20 eddig mész el`) | present — **and since P3 (`mezo-b516k`) 1:1**: the explanatory paragraph `10 szett alatt nincs elég inger…` that used to print under the gauge is **deleted**; the sentence is said once, behind the heading's new ⓘ (§22 row 11), exactly as the prototype keeps it |
 | `A hat hét` bar chart + deload note | present (`A 6 hét`) |
 | `Hol edzed` day rows | present |
 | `Az előző tervhez képest` (`Akkor 10 → 16 / Most 12 → 20`) | present (empty-state copy when there is no prior plan) |
@@ -505,6 +505,64 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 | 24 | **NEW (P2 Task 4) — the Plyo filter has no catalogue-level home.** The retired page's chip row was `all \| plyo \| <region>` (`muscleFilters.ts`'s `TOP_FILTERS`); the prototype's catalogue filters by REGION only, and that is what shipped (`libraryRegions`). So „Plyo" as a way to browse the catalogue is gone. It survives where it was actually used for work — the plan-builder's `ExercisePickerSheet`, still `muscleFilters.ts`'s only production consumer — so the module stays and only the catalogue axis died | `/train/exercises` chip row | MINOR (deliberate) |
 | 25 | **NEW (P2 Task 6) — what the rebuild orphaned, swept.** An import-specifier scan of the final tree (not a word grep — the P1 lesson) found exactly ONE module that lost its last production consumer across Tasks 1–5: **`shared/ui/PageTitle.tsx`**, deleted with its case in `shared/ui/text.test.tsx`. The pre-Titanium `ExercisesPage` head was the app's last caller — every other page had already moved to a Titanium poster — so the primitive and its `.page-title` rule are gone. CSS: the whole **`.excat*`** catalogue family went too, **except `.excat-tag`**, which the Futás session card and the running page still stamp descriptors with. Pre-existing orphans (`MESOCYCLE_PHASE_COLORS`, `phaseBarHeight`, `workoutDetail*Mock`, `MiniStat`, `SportStat`, …) were left alone: already orphaned on `main`, tracked by `mezo-3iuoe`, not this branch's to judge. **What that scan CANNOT see, by construction:** it matches import specifiers — MODULES that lost their last importer. A WIRE FIELD has no import specifier of its own (it arrives inside an already-imported response type), so a field whose last renderer was deleted is invisible to it and stays invisible however thorough the sweep is. Row 26 is exactly that class of loss, and it was found by reading the retired sheet against the new page, not by this scan | `shared/ui`, `styles/prototype.css` | ✅ **CLOSED** (P2 Task 6) |
 | 26 | **RECORDED DEATHS (P2 fix wave) — two wire fields whose last renderer went with `ExerciseRecordSheet`.** The retired REKORDOK sheet drew (a) the **`recentTopSets` sparkline** („Utolsó N alkalom · top szett", the top set of the last five sessions) and (b) the **`totalSets` half of its „Szett · rep ALL-TIME" pair**. `ExerciseStoryPage` ports neither: the prototype's story has no section for either — the strength curve is what it says about recent sessions, and the hero foot states VOLUME, not a set tally — so these are refusals, not oversights, and the page is a far richer story but **not** the "strict superset" `train.md` §9 first claimed (corrected there in the same wave). `totalReps` survives, in the bodyweight hero foot where volume would be a fake 0; `recentTopSets` survives only as dates inside `firstSeenDate`, never as a graphic. **The wire still carries both on every record** (`ExerciseRecordResponse`), so a later slice can surface them with no server work. Written down so they are rediscovered by reading — row 25's import-specifier scan cannot see a wire field, ever | `/train/exercises/:key` (data) | MINOR (deliberate, deferred) |
+
+---
+
+## 22. The ⓘ explain layer — all 13 controls, CLOSED (P3 wave, `mezo-b516k`, 2026-09-17)
+
+The prototype's smallest control: one 22px icon-only button beside a heading (or inlined at
+the end of a hero sentence), opening the workout-style 3D glass with a short plain-language
+explanation. Production had **no info idiom at all** — rows 7, 8, 11–21 of the deep audit's
+closing table (`2026-09-17-train-deep-parity-audit.md` §22) were thirteen BLOCKER-severity
+missing controls across eight screens. All thirteen are now **✅ CLOSED**: one shared
+primitive (`features/train/components/InfoButton.tsx`, built on `GlassBox`) placed thirteen
+times, with the owner-iterated copy shipped **word for word**.
+
+| Audit row | Screen | Title (the `aria-label` is `„<title> — mit jelent?"`) | Anchor in production | State |
+|---|---|---|---|---|
+| 7 | §3 plan day | Miért nyolcnál a jelölés? | `h3` „Mit terhel ez a nap" | ✅ CLOSED |
+| 8 | §3 plan day | Mikortól él a változtatás? | `h3` „A nap gyakorlatai" | ✅ CLOSED |
+| 11 | §5 muscle | Mit jelentenek a jelölések? | `h3` „Hol tartasz" | ✅ CLOSED — the copy interpolates the muscle's REAL MEV, never a literal |
+| 12 | §8 template story | Mit jelent a szám? | `h3` „Heti szettek izmonként" | ✅ CLOSED — the static paragraph that used to print this sentence on the page was **deleted** in the same change, so it is said once, behind the button, as the prototype keeps it |
+| 13 | §10 closed run | **Hogyan olvasd?** | the `Eyebrow` „Izmonként · indulás → elért csúcs / plafon" | ✅ CLOSED — **⚠ TEMPORARY TITLE SWAP** (see below) |
+| 14 | §12 Terhelés | Miből áll össze a szám? | the `.ld-hero-say` hero sentence | ✅ CLOSED |
+| 15 | §12 Terhelés | Mit mutat a sáv? | `h3` „Izomcsoportok ezen a héten" | ✅ CLOSED |
+| 16 | §12 Terhelés | A sport és a szettek | inside the `.ld-sport` card | ✅ CLOSED — the prototype's `volley` art override has no clay equivalent; the card's own `i-sport` glyph stands in |
+| 17 | §13 Izomtérkép | Miből rajzoljuk? | the `.ld-hero-say` sentence | ✅ CLOSED |
+| 18 | §14 Mozgás | Miért becslés? | the `.ld-hero-say` sentence | ✅ CLOSED |
+| 19 | §14 Mozgás | Hogyan olvasd? | `h3` „Izomcsoportok, sporttal együtt" | ✅ CLOSED |
+| 20 | §17 exercise story | Mi számít rekordnak? | `h3` „Rekordjaid" | ✅ CLOSED |
+| 21 | §17 exercise story | Mit mutat a vonal? | `h3` „Az erőd íve" | ✅ CLOSED |
+
+**The glass anatomy is 1:1 — CLOSED, verified live (whole-screen walk, 2026-09-17).** Both
+apps were driven side by side (production `:5183` mock · prototype `:5190/nap.html?r=122`, both
+at 393×852) and every overlay compared by `getComputedStyle`, not by eye. The header is the
+prototype's **ONE ROW** — leading clay icon `@0`, the `MEZO · RÉSZLET`-over-title column `@45`,
+the close button hard right — identical offsets on both sides (`GlassBox`'s own `art`/`eyebrow`
+props; the first cut stacked a second header block next to it and produced a two-row head, which
+is gone). Identical too: the fixed `--ex-color: #bca6f1` on all thirteen, the `MEZO · RÉSZLET`
+eyebrow, `role="dialog"` named by the title, the copy paragraph's computed type
+(`13px / 22.1px / rgb(214,210,226) / margin 2px 4px 6px`), and the card's whole computed surface —
+background image (the `120% 60% at 80% 0%` tint wash over the `#181d26→#10141b` gradient), the
+`1px` top border, the `0 -20px 60px -20px` shadow plus the inset hairline, and `18px 18px 26px`
+padding. The trigger measures 22×22 at `opacity .75` on both sides and is the LAST child of its
+row everywhere. **All 13 copy blocks are byte-identical**; the ONLY text difference in the whole
+walk is row 13's adjudicated title swap, below.
+
+**Two card traits are GlassBox's, shared by every glass in the app — not this layer's debt.**
+The close glyph is `✕` (U+2715) where the prototype writes `×` (U+00D7), and the card's bottom
+corners are square where the prototype rounds them `43px` to meet its device bezel (production's
+`.gl-card` spans the full `.phone-screen` and docks flush to the bottom edge). Both predate
+`mezo-b516k` — they arrived with the shipped `GlassBox` port (T12) and would have to change for
+every glass at once, so they are recorded here rather than fixed inside an explain-layer slice.
+
+**⚠ The one temporary divergence — audit row 13, §10 closed run.** The prototype's title
+there is **„Mit mutat a sáv?"**. Production's muscle-journey section renders TEXT ROWS, not
+the prototype's bars (a documented P1 decision, `mezo-e1ii9`), so that title would point at a
+bar that is not on the screen. The **copy is verbatim** (it describes the journey, not the
+bar); only the TITLE reads **„Hogyan olvasd?"**, and it **flips back to the prototype's
+„Mit mutat a sáv?" when the surfaces slice (`mezo-fsz2r`) returns the bars**. This row is the
+reason the matrix carries this table at all — do not close `mezo-fsz2r` without flipping it.
 
 ---
 

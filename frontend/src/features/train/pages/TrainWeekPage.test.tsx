@@ -405,3 +405,46 @@ test('the week log resolving renders the real hero, not the skeleton', async () 
   await screen.findByText(/szett a \d+-ből/)
   expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull()
 })
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ in the hero sentence explains what the weekly number is made of, word for word', async () => {
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Miből áll össze a szám? — mit jelent?' })
+  expect(btn.closest('.ld-hero-say')).not.toBeNull()
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Miből áll össze a szám?' })).getByText(
+      'A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké.',
+    ),
+  ).toBeInTheDocument()
+})
+
+test('ⓘ beside „Izomcsoportok ezen a héten" explains the bar, word for word', async () => {
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Mit mutat a sáv? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Izomcsoportok ezen a héten')
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Mit mutat a sáv?' })).getByText(
+      'A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott, és melyik napokon.',
+    ),
+  ).toBeInTheDocument()
+})
+
+// The prototype puts this one INSIDE the sport card (load-pages.js:95), not beside the
+// heading above it. Its art override there is `volley`, which has no clay equivalent —
+// `i-sport`, the card's own glyph, is the honest neighbour.
+test('ⓘ inside the sport card explains how sport relates to the sets, word for word', async () => {
+  const { container } = renderPage()
+  const btn = await screen.findByRole('button', { name: 'A sport és a szettek — mit jelent?' })
+  expect(btn.closest('.ld-sport')).toBe(container.querySelector('.ld-sport'))
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'A sport és a szettek' })).getByText(
+      'A sportod a heti mozgásod és a pihenésed része — a szettszámokba nem számít bele, mert ott a terved emelkedését követjük. A regenerációnál viszont figyelembe vesszük.',
+    ),
+  ).toBeInTheDocument()
+})

@@ -405,6 +405,34 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
       expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
     }
   })
+
+  // mezo-b516k Task 1: the ⓘ explain layer's own sub-block — the 22px icon-only
+  // button (ported from plan.css:313-314) and the glass copy paragraph (ported from
+  // load.css:179's `.info-glass-copy`, renamed with the house `pl-` prefix).
+  test('the explain-layer sub-block carries .pl-info and .pl-info-copy', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.pl-info', '.pl-info-copy']) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
+
+  // The prototype's glyph is 22px; the house tap-target rule is 44px. The button must
+  // grow its HIT AREA, not the glyph — a `::after` hit box, so a future edit that
+  // "simplifies" it back to a bare 22px control fails here instead of shipping a
+  // 22px touch target.
+  test('.pl-info keeps the 22px glyph but carries a 44px hit box', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    const ruleMatch = /(?:^|\n)\.pl-info \{([^}]*)\}/.exec(section)
+    expect(ruleMatch, '.pl-info standalone rule not found in the terv titanium section').not.toBeNull()
+    expect(ruleMatch![1]).toContain('width: 22px')
+    const hit = /(?:^|\n)\.pl-info::after \{([^}]*)\}/.exec(section)
+    expect(hit, '.pl-info::after hit box not found — the 44px tap target is gone').not.toBeNull()
+    expect(hit![1]).toContain('44px')
+  })
 })
 
 /**

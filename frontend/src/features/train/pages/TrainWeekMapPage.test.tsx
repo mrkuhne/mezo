@@ -141,3 +141,21 @@ test('the quiet doorway to „Minden izomjel" carries the prototype copy and rou
   fireEvent.click(row)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week/jelek')
 })
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ in the hero sentence explains what the map is drawn from, word for word', async () => {
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Miből rajzoljuk? — mit jelent?' })
+  expect(btn.closest('.ld-hero-say')?.textContent).toContain(
+    'Amit már megmozgattál, erősebben világít — ami még vár, az csak körvonal.',
+  )
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Miből rajzoljuk?' })).getByText(
+      'A futó terved e heti szettjeiből: minden izom annyira fénylik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott az erősebb szín többet kérő izmot jelent.',
+    ),
+  ).toBeInTheDocument()
+})

@@ -37,6 +37,7 @@ import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
 import { loadGroups, movementWeek } from '@/features/train/logic/loadWeek'
@@ -162,7 +163,11 @@ export function TrainWeekMozgasPage() {
           <span className="ld-eyebrow">Minden mozgásod eddig a héten</span>
           <div className="ld-hero-pct"><b>{move.totalMin}</b><em>perc</em></div>
           <p className="ld-hero-say">
-            Gym és sport együtt, eddig a héten — a kettő máshogy számít, ezért külön is mutatjuk.
+            Gym és sport együtt, eddig a héten — a kettő máshogy számít, ezért külön is mutatjuk.{' '}
+            <InfoButton
+              title="Miért becslés?"
+              copy="A gym percei a szettjeidből becsültek, a röplabdát te naplóztad. A kalória mindkettőnél becslés a mozgás jellegéből — nem mérés."
+            />
           </p>
         </header>
 
@@ -190,7 +195,13 @@ export function TrainWeekMozgasPage() {
             </div>
           </div>
 
-          <h3 className="ld-h3">Izomcsoportok, sporttal együtt</h3>
+          <h3 className="ld-h3">
+            Izomcsoportok, sporttal együtt
+            <InfoButton
+              title="Hogyan olvasd?"
+              copy="A sáv a gym szettjeidet mutatja a heti tervhez képest. A kék jel azt jelzi, hogy a sport is dolgoztatta a csoportot — ez becslés, és nem adódik hozzá a szettekhez."
+            />
+          </h3>
           <div className="ld-groups">
             {groups.map((g, i) => (
               <div

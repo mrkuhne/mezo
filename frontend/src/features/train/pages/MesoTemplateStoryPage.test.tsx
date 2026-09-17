@@ -6,7 +6,7 @@
 // (Sze/Szo/Vas rest), never run; a10e… „Hypertrophy 04 · Tavasz" — the active run
 // meso-hyp-04 carries its templateId, so its runs list has a live row.
 // ============================================================
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
@@ -124,10 +124,14 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     expect(screen.getByRole('img', { name: /érintett izmok/ })).toBeInTheDocument()
   })
 
-  // --- the week-sets explainer (fix round 1, mezo-88iwa.11) --------------------
+  // --- the week-sets explainer (fix round 1, mezo-88iwa.11; moved behind the ⓘ in
+  //     mezo-b516k Task 2 — the prototype keeps it there, and printing it here as well
+  //     would say the same sentence twice on one screen) --------------------------
 
-  test('the week-sets explainer restates the rule in plain Hungarian', () => {
+  test('the week-sets explainer restates the rule in plain Hungarian, behind the ⓘ', async () => {
+    const user = userEvent.setup()
     setup()
+    await user.click(screen.getByRole('button', { name: 'Mit jelent a szám? — mit jelent?' }))
     expect(
       screen.getByText(
         'Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet.',
@@ -356,5 +360,35 @@ describe('MesoTemplateStoryPage (real mode)', () => {
     const confirmBtn = screen.getByRole('button', { name: /Biztos\? Törlés/ })
     await user.click(confirmBtn)
     await waitFor(() => expect(confirmBtn).toBeDisabled())
+  })
+})
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+describe('MesoTemplateStoryPage · the ⓘ explain layer', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('ⓘ beside „Heti szettek izmonként" explains the number, word for word', async () => {
+    const user = userEvent.setup()
+    setup()
+    const btn = await screen.findByRole('button', { name: 'Mit jelent a szám? — mit jelent?' })
+    expect(btn.closest('h3')?.textContent).toBe('Heti szettek izmonként')
+    await user.click(btn)
+    expect(
+      within(screen.getByRole('dialog', { name: 'Mit jelent a szám?' })).getByText(
+        'Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  // The explanation moved BEHIND the button (the prototype keeps it there) — the static
+  // paragraph that used to print it went with it, so the sentence is said exactly once.
+  test('the explanation no longer prints as a static paragraph on the page', async () => {
+    const { container } = setup()
+    await screen.findByRole('button', { name: 'Mit jelent a szám? — mit jelent?' })
+    expect(container.textContent).not.toContain('Ennyi munkaszettet kap az izom egy héten')
   })
 })
