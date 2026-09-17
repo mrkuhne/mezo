@@ -6,13 +6,14 @@
 > `companion_tools_are_internal_sphere_only` guards that every tool only reads our own features.
 > This doc codifies the `@Tool(description = …)` house rule every one of those already follows;
 > read it before adding or editing a `@Tool`. The system prompt's `[Eszköz-útmutató]` routing hint
-> (`ChatService.SYSTEM_PROMPT`) is the model-facing mirror of this rule — keep both in sync when a
-> tool is added, renamed, or gets a new `scope`.
+> (`ChatService.SYSTEM_PROMPT`) is retained for rollback. The normal conversation-first path
+> generates its catalogue directly from registered descriptions (`ToolCatalogue`), including
+> `ConversationContextTools`; it has no second hand-maintained routing table.
 
 ## Why this matters
 
-With ~15 tools registered on every turn, tool SELECTION is the bottleneck, not tool
-implementation — a vague or overlapping description makes the model guess wrong (call nothing,
+With 18 domain tools plus 3 conversation-context tools available, clear tool SELECTION matters.
+A vague or overlapping description makes the model guess wrong (call nothing,
 call the wrong tool, or call the right tool with a made-up scope). The description is the ONLY
 signal the model has; it must do the routing work a docstring usually doesn't have to.
 
@@ -96,7 +97,7 @@ What's wrong, line by line:
 - `@ToolParam(required = false, description = …)` on every optional parameter needs the same
   enumerated-values treatment as the top-level description (see `scope`/`kind`/`range` params
   above).
-- After adding or changing a tool, add or update its line in the `[Eszköz-útmutató]` block in
-  `ChatService.SYSTEM_PROMPT` — that block is the terse, model-facing summary of exactly the same
-  routing decision this doc governs at the description level. Keep the two consistent; a tool
-  documented here but missing from the routing hint is half-shipped.
+- Domain tools shared with rollback also update the `[Eszköz-útmutató]` block in
+  `ChatService.SYSTEM_PROMPT`. Conversation-only tools register via
+  `CompanionToolRegistry.conversationCallbacks()`; their catalogue is generated automatically.
+  Identity/conversation/history are server-owned ToolContext values, never model parameters.

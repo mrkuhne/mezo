@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -17,24 +17,12 @@ related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-
 
 # Companion (AI chat brain) — Feature Documentation
 
-> One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
-> `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** (now forward-resolving today+tomorrow's training, dated) + the **top-N confirmed
-> knowledge facts** in every system prompt, **18 read-only hub-tools** (scope-enumerated,
-> `mezo.companion.tools.max-calls-per-turn` = 15) for history/aggregate + forward-plan +
-> browse questions (audited into the message envelopes, rendered as real FE chips), a
-> system-prompt **`[Eszköz-útmutató]`** tool-routing hint, answered **sync JSON or streamed
-> SSE**, and consumed by the **real dual-mode ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
-> confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
-> V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
-> pgvector/EmbeddingPort infra + narrative-memory pipeline + episodic recall tool); FE ✅ V1.3
-> (ChatPage + KnowledgeListPage real + degraded badge)
-> — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**. The shared hybrid
-> memory platform now shadows every chat turn by default and can serve it behind one
-> `OLD`/`SHADOW`/`NEW` switch (`mezo-6dii.6`).**
-> Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
-> ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5). Nem-technikai
-> működés-magyarázó: [`docs/guides/companion-hogyan-mukodik.md`](../guides/companion-hogyan-mukodik.md).
+> Open-ended Hungarian conversation with owner-scoped data access when relevant. The default
+> path uses a smart retrieval loop and natively streamed answers; context and memory are fetched
+> on demand. 18 domain reads plus 3 conversation-context reads share the audited 15-call budget.
+> The previous keyword-gear pipeline remains available only as a configuration rollback.
+> Surfaces: Insights ChatPage + KnowledgeListPage ([insights](insights.md)).
+> User guide: [how the companion works](../guides/companion-hogyan-mukodik.md).
 
 ## 1. Summary
 
@@ -1562,6 +1550,42 @@ companion surface since V0.4, dual-mode:
 
 ## 3. Architecture & data flow
 
+### Default interactive conversation path (`mezo-rj214.9`)
+
+`mezo.companion.conversation.enabled=true` selects the conversation-first path in BOTH
+`ChatService.sendMessage` and `ChatStreamService.streamMessage`. The gear classifier is bypassed.
+Preparation supplies the date, learned communication preferences, explicit day/week anchor, and
+up to 80 recent messages under a 100,000-character cap (12,000 per message). There is no automatic
+health snapshot, character assessment, memory search or newly-learned announcement.
+
+`ConversationTurnService.prepare` gives the smart planner the full 21-tool catalogue, history
+and accumulated tool results. `needsData=false` stops retrieval; otherwise validated reads run
+through `PlanExecutor` and the existing audit. Each subsequent decision sees the results and can
+request dependent reads. Caps: three batches and 15 total reads; repeated identical reads do not
+run again. Failed planning/budget exhaustion is explicit context and marks the answer degraded;
+account/billing refusal still propagates. The final `completeSmart`/`streamSmart` writes ordinary
+prose, never the legacy data-gap marker. All topics, including analysis, use native streaming.
+The clinical guard remains; the LLM verdict/rewrite is not used on this path.
+
+The three extra reads are `get_personal_context(scope=facts|people|character|reflections|today)`,
+`search_personal_memory(query)` and `get_conversation_history(page,messageOffset)`. All use the
+server-supplied owner; history also uses the current conversation only. Memory goes through the
+existing OLD/SHADOW/NEW adapter and carries retrieval disclosure and refs into the final message.
+A context tool is not arbitrary database access: domain-specific gaps retain their existing scope.
+
+The internal `tool_calls.calls[].result` stores bounded evidence (8,000 characters per result,
+40,000 per assistant row). REST tool chips remain `{type,name}`. Legacy JSON without result still
+loads. The recent transcript labels restored evidence with its timestamp and as historical data;
+older-history pages expose 20 messages with continuation offsets when a body is clipped. Refresh
+changing measurements through their source tools rather than treating old output as current.
+
+`ConversationProperties` owns these knobs under `mezo.companion.conversation`. Setting `enabled`
+to false restores the previous 20-message gear/pipeline behavior described in the rollback
+sections below. Existing historical integration fixtures explicitly exercise rollback; the
+`ConversationFirstIT` suite opts into the shipped path. The tradeoff is an extra smart preparation
+call even for general chat. [ADR 0043](../decisions/0043-conversation-first-companion.md) records why.
+
+
 **Shared-memory dual-write (`mezo-6dii.2`; OLD still serves):**
 
 ```text
@@ -1710,7 +1734,7 @@ rejected instead of silently leaving a contradictory suppressed item. No learnin
 rank-weight mutation is emitted in this slice: `.8` owns using the accumulated labels for
 evaluation/tuning.
 
-**The streamed turn (V0.4 + V0.5 tools + S9.6 phase narration — what the FE uses).** Since S9.6
+**Shared SSE transport and rollback pipeline (V0.4 + V0.5 + S9.6).** The default conversation-first branch is described above. The following gear-specific branches apply only with conversation-first disabled. Since S9.6
 (`mezo-rj214.7` Task 3) everything from the audit/`toolSink` setup down runs inside a
 `Flux.defer(() -> …).subscribeOn(Schedulers.boundedElastic())` (`ChatStreamService.java:148-291`).
 Before that restructure the whole pre-stream lap (plan → cap → execute → answer) ran
@@ -2147,7 +2171,7 @@ callers hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors o
 V1.2 behavior byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!"
 decision).
 
-**The turn gear (spec 2026-09-16 §5-§6, `mezo-rj214.7`).** Before any context is assembled,
+**Rollback-only turn gear (conversation.enabled=false; spec 2026-09-16, `mezo-rj214.7`).** Before any context is assembled,
 `TurnGearRouter.route(userMessage)` (`service/TurnGearRouter.java`) decides how much thinking the
 turn earns — `TurnGear.{CHAT, LOOKUP, ANALYSIS}` (`service/TurnGear.java`). The gear does NOT decide
 WHO plans, only the reasoning effort and (in later slices) whether a replan lap is allowed.
@@ -2205,7 +2229,7 @@ to the unadvised `complete`/`stream`.
 replan blocks live (below) — with the pipeline switched off, or on a planner failure, both still
 fall back to the byte-identical pre-gear tool-loop.
 
-**The planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
+**Rollback-only planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
 and `ANALYSIS` turns now run plan → execute → answer on both the sync path
 (`ChatService.sendMessage`/`prepareTurn` → `pipelineAnswer`, `ChatService.java:306-336,467-505`) and
 the streamed path (`ChatStreamService.streamMessage` → `runPipelinePreStream`,
@@ -2285,14 +2309,13 @@ before persisting the done row (`ChatStreamService.java:269-271`): the streamed 
 are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
 only protects what re-enters history on the next turn.
 
-**Streamed modes still differ by gear post-S9.6 — a native ANALYSIS streamer remains future
-work.** `LOOKUP` runs plan → cap → execute pre-stream (inside the S9.6 deferred lap, §3 "The
+**Rollback streaming differs by gear. The default conversation-first path streams every final answer natively.** `LOOKUP` runs plan → cap → execute pre-stream (inside the S9.6 deferred lap, §3 "The
 streamed turn"), then the answerer streams NATIVELY off the built volatile half
 (`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:180-187`) — real per-token deltas, no
 replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included) pre-stream
 and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`, `ChatStreamService.java:192`) — a
 synchronous round-trip disguised as a stream; that LOOKUP/ANALYSIS asymmetry is UNCHANGED by
-S9.6 — a native ANALYSIS streamer remains future work. What S9.6 actually shipped is explicit
+S9.6 on the rollback path; conversation-first does not use this buffered branch. What S9.6 actually shipped is explicit
 `phase` events (`PLANNING`/`RETRIEVING`/`ANSWERING`) narrating that pre-answer wait for BOTH
 gears — the client now sees why it is waiting instead of staring at a blank draft bubble; the
 wait itself is exactly as long as before. Both modes still stream real tool-call chips AHEAD of the
@@ -6628,6 +6651,17 @@ execution checklist"). The house recipe, **contract-first**:
 
 ## 8. Testing
 
+**Conversation-first:** `ConversationFirstIT` covers general-topic context, pronoun follow-ups,
+dependent reads, stored evidence, long history and owner isolation through real repositories and
+audited tools. The deterministic fake proves orchestration, not subjective naturalness.
+`ConversationQualityEvalIT` is an opt-in real-model three-arm comparison: minimal prompt, rollback
+prompt (both prompt-only controls with identical synthetic facts), and the new full flow. Corpus:
+`backend/src/test/resources/companion/conversation-quality-cases.json`. Run with
+`./mvnw clean test -Dtest=ConversationQualityEvalIT -Dmezo.excludedTestGroups= -Dmezo.eval.model=gpt-5.6-terra -Dmezo.test.use-testcontainers=true`.
+Report: `backend/target/eval/conversation-quality-<model>.json`; only synthetic users/data are sent.
+The test checks completed answers; quality scoring is a separate review, not a fake pass claim.
+
+
 Backend integration-first (compose Postgres up: `cd backend && docker compose up -d`), run with
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
@@ -8299,6 +8333,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
 
 ## 10. Key files
+
+**Conversation-first path (`mezo-rj214.9`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationTurnService.java` — broad voice and iterative retrieval preparation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationHistory.java` — bounded evidence persistence and transcript restoration.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/ConversationContextTools.java` — owner-scoped context, memory and older-history reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ConversationProperties.java` — rollback and all continuity/retrieval bounds.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/service/ConversationFirstIT.java` — default flow regressions; sibling `ConversationQualityEvalIT.java` captures real-model comparisons.
+
 
 **API contract**
 - `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;

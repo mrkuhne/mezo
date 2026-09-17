@@ -1,0 +1,6 @@
+[
+  {"id":"fiction","turns":["Milyen regényt olvassak este, ha egy furcsa, de emberi történetre vágyom?","Mi foghatna meg benne? Ne listázz, csak mesélj róla."],"rubric":"No health diversion or personal-data lookup merely because of este. Natural follow-up referring to the recommended book."},
+  {"id":"general-knowledge","turns":["Miért fontos az alvás? Most általánosságban érdekel, nem a saját adataim.","És miért nem lehet egyszerűen hétvégén bepótolni?"],"rubric":"General knowledge without personal lookup or mandatory uncertainty. Follow-up retains the topic."},
+  {"id":"emotional","turns":["Elegem van abból, hogy mindent optimalizálnom kell. Most csak beszélgetni szeretnék.","Igen, azt érzem, hogy már a pihenést is feladatként kezelem."],"rubric":"No unsolicited health dashboard, action plan or compulsory question; thoughtful response respecting the user's intent."},
+  {"id":"personal-followup","turns":["Megnéznéd, mennyit aludtam tegnap?","És ez szerinted kevés?","Most írj inkább egy kétsoros abszurd verset egy álmos villamosról."],"rubric":"Retrieve the synthetic 6.5-hour sleep record, preserve evidence on pronoun-only follow-up, then follow the creative topic switch without unnecessary retrieval."}
+]
