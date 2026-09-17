@@ -61,24 +61,22 @@ public class ToolCallAudit {
      * recorded call into a live SSE 'tool' event; the sync path registers none. Kept to a single
      * listener — this is a progress hook, not an event bus — and deliberately fail-safe: the audit
      * is the authoritative record of the turn and must survive a broken listener.
+     *
+     * <p>Consumers must be cheap — they run under the audit's lock and block all concurrent
+     * {@code recordCall}/{@code recordResult}/{@code addRef} operations.
      */
-    // volatile: registered on the subscribing (request) thread via onCall, but invoked from
-    // whatever thread Reactor executes the tool call on (mezo-280) — a plain field is not
-    // guaranteed to be visible across that handoff.
-    private volatile Consumer<ToolCallsEnvelope.ToolCall> listener;
+    private Consumer<ToolCallsEnvelope.ToolCall> listener;
 
     public synchronized void onCall(Consumer<ToolCallsEnvelope.ToolCall> listener) {
         this.listener = listener;
     }
 
     /**
-     * @return the call's index, the handle {@link #recordResult(int, String)} attaches its output to.
+     * <p>The listener is invoked while holding the audit's lock. Consumers run under the lock
+     * and must be cheap to avoid stalling other threads' {@code recordCall}/{@code recordResult}/
+     * {@code addRef} operations.
      *
-     * <p>The listener is invoked OUTSIDE the lock, once {@code call}/{@code index} are captured
-     * locally: it is arbitrary caller code (the SSE tool-event emitter today), and calling it
-     * while holding the audit's monitor would let a slow or blocked consumer stall every other
-     * thread's {@code recordCall}/{@code recordResult}/{@code addRef}. Consumers must still be
-     * cheap and non-reentrant into this audit.
+     * @return the call's index, the handle {@link #recordResult(int, String)} attaches its output to.
      */
     public int recordCall(String name, String args) {
         ToolCallsEnvelope.ToolCall call = new ToolCallsEnvelope.ToolCall(TYPE_READ, name, args);
@@ -87,13 +85,13 @@ public class ToolCallAudit {
             calls.add(call);
             results.add(null);
             index = calls.size() - 1;
-        }
-        Consumer<ToolCallsEnvelope.ToolCall> currentListener = listener;
-        if (currentListener != null) {
-            try {
-                currentListener.accept(call);
-            } catch (RuntimeException e) {
-                log.warn("Companion tool-call listener failed for {}", name, e);
+            Consumer<ToolCallsEnvelope.ToolCall> currentListener = listener;
+            if (currentListener != null) {
+                try {
+                    currentListener.accept(call);
+                } catch (RuntimeException e) {
+                    log.warn("Companion tool-call listener failed for {}", name, e);
+                }
             }
         }
         return index;
