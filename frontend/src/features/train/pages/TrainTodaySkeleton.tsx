@@ -18,9 +18,10 @@ export default function TrainTodaySkeleton() {
           <Skeleton key={i} width={62} height={66} radius={20} style={{ flex: 'none' }} />
         ))}
       </div>
-      {/* Today's poster */}
+      {/* Today's poster — a rounded 26px card that pays its own 20px padding since the
+          surfaces-parity pass restored the prototype's poster (mezo-fsz2r Task 3). */}
       <div style={{ padding: '0 6px 14px' }}>
-        <SkeletonCard style={{ padding: 18 }}>
+        <SkeletonCard style={{ padding: 20, borderRadius: 26 }}>
           <Skeleton width="40%" height={12} />
           <div style={{ marginTop: 10 }}><Skeleton width="62%" height={27} /></div>
           <div style={{ marginTop: 8 }}><Skeleton width="50%" height={13} /></div>
@@ -37,7 +38,7 @@ export default function TrainTodaySkeleton() {
           </div>
           {/* the in-poster CTA (`.tr-start`) — padding 15px 18px + strong (16px/1.5 =
               24px) + small (12px/1.5 = 18px, +2px margin-top) = 30 + 24 + 2 + 18 = 74px. */}
-          <Skeleton className="mt-md" width="100%" height={74} radius={20} />
+          <Skeleton className="mt-md" width="100%" height={74} radius={22} />
         </SkeletonCard>
       </div>
       {/* The energy card (`.tr-energy`) — final render order (Task 5, mezo-88iwa.6) is
@@ -45,9 +46,10 @@ export default function TrainTodaySkeleton() {
           directly-under-poster any more, so the skeleton must reserve the SAME two cards'
           worth of space in between or the real content swap reflows.
           Height derived from `.tr-energy`'s own CSS (prototype.css, browser default
-          line-height ≈ 1.2× font-size for these single-line labels):
-            padding 16 + 16                                         = 32
-          + `.tr-eyebrow` (10px)                    ≈ 10*1.2         = 12
+          line-height ≈ 1.2× font-size for these single-line labels). The card LOST its box
+          (padding/border/fill) in the surfaces-parity pass — the prototype gives the section
+          none (mezo-fsz2r Task 3) — so the 32px of padding that used to head this sum is gone:
+            `.tr-eyebrow` (10px)                    ≈ 10*1.2         = 12
           + `h3` (margin 4/0/12, 15px)               4 + 15*1.2 + 12 = 34
           + `.tr-energy-main` (36px display strong, the tallest baseline sibling)
                                                           36*1.2      = 43
@@ -55,24 +57,24 @@ export default function TrainTodaySkeleton() {
                                                      10 + 12*1.2*2 + 4 = 43
           + `.tr-energy-note` (margin-top 12, 11px)  12 + 11*1.2     = 25
           ────────────────────────────────────────────────────────────
-                                                                 total ≈ 189px */}
+                                                                 total ≈ 157px */}
       <div style={{ padding: '0 6px 14px' }}>
-        <Skeleton width="100%" height={189} radius={22} />
+        <Skeleton width="100%" height={157} radius={22} />
       </div>
       {/* The muscle-impact card (`.tr-mus`) — same derivation approach. `dayImpact`
           always surfaces the four BIG_FAMILIES rows at minimum (`muscleColors.ts`), so
           4 rows is the typical/reserved count (matches the poster's own 4-chip
           constellation placeholder above).
-            padding 16 + 16                                          = 32
-          + `.tr-eyebrow` (10px)                     ≈ 10*1.2         = 12
+          Boxless too, same as `.tr-energy` above — no padding in the sum:
+            `.tr-eyebrow` (10px)                     ≈ 10*1.2         = 12
           + `h3` (margin 4/0/14, 15px)                4 + 15*1.2 + 14 = 36
           + 4× `.tr-mus-row` (30px `.tr-mus-art`, the tallest cell; margin-top 10 on
             every row but the first)                  30 + 3*(10+30) = 150
           + `.tr-mus-note` (margin-top 12, 11px)      12 + 11*1.2     = 25
           ────────────────────────────────────────────────────────────
-                                                                 total ≈ 255px */}
+                                                                 total ≈ 223px */}
       <div style={{ padding: '0 6px 14px' }}>
-        <Skeleton width="100%" height={255} radius={22} />
+        <Skeleton width="100%" height={223} radius={22} />
       </div>
       {/* the „Vagy inkább" pair (`.tr-alt`) — min-height 44px + margin-bottom 16px. */}
       <div style={{ padding: '0 6px' }}>
