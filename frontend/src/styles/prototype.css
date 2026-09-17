@@ -14228,12 +14228,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — a hős: milyen mélyen vagy a hétben — */
 .ld-hero {
   position: relative; overflow: hidden;
-  padding: 18px calc(var(--screen-gutter) + 6px) 20px;
+  padding: 24px 20px 26px;
   --ld-accent: var(--tag-gym);
   background:
     radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--ld-accent) 22%, transparent), transparent 64%),
     linear-gradient(168deg, var(--wash-gym), var(--surface-card) 62%, var(--canvas) 100%);
-  border-bottom: 1px solid color-mix(in srgb, var(--ld-accent) 18%, transparent);
 }
 .ld-hero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%;
@@ -14292,12 +14291,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 14px; cursor: pointer;
   text-align: left; font: inherit; color: var(--text-primary);
   border: 1px solid var(--border-subtle); border-radius: 20px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 9%, var(--surface-card)), var(--surface-card) 70%);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 8%, transparent), #ffffff03);
 }
 .ld-move-card {
   margin-top: 16px;
   border-color: color-mix(in srgb, var(--tag-sport) 24%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 9%, var(--surface-card)), var(--surface-card) 70%);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 7%, transparent), color-mix(in srgb, var(--tag-sport) 1.6%, transparent));
 }
 .ld-map-mini { width: 96px; height: 78px; flex: 0 0 auto; overflow: hidden; }
 .ld-map-copy { flex: 1; min-width: 0; }
@@ -14311,7 +14310,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: grid; gap: 9px; width: 100%; padding: 12px 13px; cursor: pointer; text-align: left;
   font: inherit; color: var(--text-primary);
   border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 7%, transparent), #ffffff03);
 }
 .ld-group-head { display: flex; align-items: center; gap: 9px; }
 .ld-group-head strong { font-size: 14px; font-weight: 600; }
@@ -14348,7 +14347,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-sport {
   display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--tag-sport) 24%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 10%, var(--surface-card)), var(--surface-card) 72%);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 8%, transparent), color-mix(in srgb, var(--tag-sport) 2%, transparent));
 }
 .ld-sport-art {
   display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; flex: 0 0 auto;
@@ -14356,7 +14355,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .ld-sport-copy { flex: 1; min-width: 0; }
 .ld-sport-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
-.ld-sport-copy small { display: block; font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
+.ld-sport-copy small { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
 .ld-sport-copy em { display: block; margin-top: 3px; font-style: normal; font-size: 10px; color: var(--text-quaternary); }
 
 /* — a záró jegyzet: honnan jön a két ütemterv — */
@@ -14375,7 +14374,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-glass-rows { display: grid; gap: 8px; }
 .ld-glass-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; }
 .ld-glass-name strong { display: block; font-size: 12.5px; font-weight: 600; color: #fff; }
-.ld-glass-name small { display: block; font-size: 10.5px; color: #ffffff8c; }
+.ld-glass-name small { font-size: 10.5px; color: #ffffff8c; }
 .ld-glass-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .ld-glass-chips span {
   font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
@@ -14403,8 +14402,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-modes { margin: 4px 0 14px; }
 
 /* — a nagy test-térkép + jelmagyarázat (Izomtérkép) — */
-.ld-map-stage { padding: 4px 0 0; }
-.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: block; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
+.ld-map-stage { padding: 6px 4px 0; }
+.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
 .ld-map-sides { display: flex; justify-content: space-around; margin: 6px 0 12px; }
 .ld-map-sides span { font-size: 9.5px; letter-spacing: .12em; color: var(--text-quaternary); text-transform: uppercase; }
 .ld-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 0 0 6px; }
@@ -14419,24 +14418,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — „még munkára vár" lista (Izomtérkép) — */
 .ld-wait { display: grid; gap: 7px; margin-top: 4px; }
 .ld-wait-row {
-  display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: 14px;
+  display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 15px;
   border: 1px solid var(--border-subtle);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card) 72%);
+  background: #ffffff04;
 }
 .ld-wait-row strong { font-size: 13px; font-weight: 600; }
 .ld-wait-row small { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
 .ld-wait-done { margin: 4px 2px 0; font-size: 12px; color: var(--text-tertiary); }
 
 /* — a sport-érintés jegyzet a térkép-oldalon — */
-.ld-sport-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary); }
+.ld-sport-note {
+  display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; padding: 12px 13px;
+  font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent); border-radius: 15px;
+  background: color-mix(in srgb, var(--tag-sport) 5%, transparent);
+}
 .ld-sport-note em { font-style: normal; display: block; color: var(--text-quaternary); }
 
 /* — Minden mozgásod: gym/sport két doboz, SOSEM összemosva — */
 .ld-move-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
 .ld-move-box {
-  display: grid; gap: 4px; padding: 14px 13px; border-radius: 18px; text-align: left;
+  display: grid; gap: 4px; padding: 13px 14px; border-radius: 18px; text-align: left;
   border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 72%);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, transparent), #ffffff03);
 }
 .ld-move-box strong { font-size: 17px; font-weight: 700; }
 .ld-move-box small { font-size: 10.5px; color: var(--text-tertiary); }
@@ -14446,7 +14450,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-group.is-flat { cursor: default; }
 .ld-sport-chip {
   display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
-  padding: 3px 8px; border-radius: 999px; color: var(--tag-sport); background: var(--wash-sport);
+  padding: 4px 10px 4px 6px; border-radius: 999px; color: var(--tag-sport);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 20%, transparent);
+  background: color-mix(in srgb, var(--tag-sport) 7%, transparent);
 }
 
 /* — a heti sport/futás események listája: mozgás-oldal, clay-only kártyák — */
@@ -14498,7 +14504,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 1px solid color-mix(in srgb, var(--mm-color, var(--tag-gym)) 24%, transparent);
   background:
     radial-gradient(110% 80% at 90% 0%, color-mix(in srgb, var(--mm-color, var(--tag-gym)) 12%, transparent), transparent 65%),
-    var(--surface-card);
+    #ffffff04;
 }
 .mm-region-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .mm-region-head strong { font-size: 15px; font-weight: 500; color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 72%, var(--text-primary)); }
