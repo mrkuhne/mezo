@@ -142,11 +142,11 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 
 // ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
-test('tiles carry clay icons via sprite use refs — no emojis', () => {
+test('category sculptures are decorative and do not replace the named tile buttons', () => {
   renderSheet()
-  // the Sheet renders through a portal — query the document, not the container
-  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack', 'i-viz', 'i-sport']) {
-    expect(document.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
+  for (const label of ['Súly', 'Alvás', 'Napló', 'Étkezés', 'Edzés', 'Stack', 'Víz', 'Sport', 'Check-in']) {
+    const button = screen.getByRole('button', { name: new RegExp(`^${label}`) })
+    expect(button.querySelector('.capture-sculpture')).toHaveAttribute('aria-hidden', 'true')
   }
 })
 
