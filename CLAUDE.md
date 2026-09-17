@@ -29,11 +29,12 @@ bd close <id>         # Complete work
 
 ## Git Workflow
 
-- One bd issue + one `feat/<topic>` branch per change. Flow: `git push` the branch → open a **self-PR** → wait for **CI green** → merge **locally with `--no-ff`** → `git push` main (the PR auto-closes when its commits land on main) → delete the branch. Single dev, but the PR exists purely as the **CI trigger + pre-merge green light**, not for review.
-- **Why the self-PR (the CI gate):** the 16 GB dev machine can't run the heavy backend integration suite locally (SpringBoot + Testcontainers OOM-dies under swap thrash). CI (`ci.yml`: full backend IT suite + FE both modes + lint + contract-drift, on a clean `ubuntu-latest`) is the **authoritative full-suite gate**; locally run only the **focused** tests for what you changed. Details + local recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
+**"No-wait, net stays"** (owner decision 2026-09-18) — canonical rules in [`AGENTS.md`](AGENTS.md) §Git Workflow:
+
+- One bd issue + one `feat/<topic>` branch per change. Run the **local gates** for what you changed (FE tests both modes; backend focused tests — the 128 GB machine can run the full suite with `-Dmezo.test.use-testcontainers=true` when warranted) → `git pull --rebase` main → merge **locally with `--no-ff`** → `git push` main → delete the branch. **No self-PR, no waiting for CI before merge.** From a worktree: `git checkout --detach origin/main && git merge --no-ff <branch> && git push origin HEAD:main`.
+- **The safety net:** `ci.yml` still runs on every push to main. Don't wait for it — but **a red main outranks everything**: fix it before any new work. Check `gh run list --branch main --limit 1` at session start.
+- **Optional pre-merge cloud check** for risky changes (migrations, API contract, cross-cutting refactors): the old self-PR + `gh workflow run premerge.yml -f pr=<n>` flow remains available.
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
-- **Before merging, re-check the merge result against the CURRENT main:** `gh workflow run premerge.yml -f pr=<number>` (~7 min). The PR's own green tick can predate the base it will actually merge into — GitHub recomputes `refs/pull/<n>/merge` when main moves but does **not** re-run the workflow, so a green PR can land red on main and block every other open PR (mezo-mxrc, mezo-l4am). `premerge.yml` re-runs only what a merge can actually break — the convention/generator gates, contract-drift and the visual goldens — instead of the full ~21.5-minute `ci.yml`. It also fails loudly in the two other states that LOOK like "nothing failed": when the PR conflicts with main (GitHub then silently runs **no** checks at all), and when the head simply has no successful run for every `ci.yml` job — zero checks, a job that never started, or one still in progress (`require-checks.sh`, mezo-x57b).
-- `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging.
 
 ## Session Completion
 
@@ -86,19 +87,38 @@ result:**
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
-Every UI design, mockup, and prototype MUST follow the **design 2.0 "Titanium"** visual
-language — the living, breathing, tactile direction that evolved from Mozaik 2.0. Orient via
-the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)** (current vs superseded
-docs); key canon: the production rebuild handoff, the **ceremony (reward screen) pattern**
-(`docs/design_2.0/2026-09-15-ceremony-pattern.md`), and the living prototypes in
-`docs/design_2.0/prototypes/companion-titanium/`. That means: dark liquid-metal ground with
-domain-color washes, poster-anatomy cards (eyebrow + spot graphic + one big numeral), data
-drawn as graphics (rings, gauges, sparklines, story-curves), clay 3D SVG icons (NEVER emojis),
-polished-stone (gold "Ritmus") materials for celebratory surfaces, one-shot rAF-driven
-choreography with a reduced-motion branch, tile → full-page slide-in pattern. Do NOT produce
-flat/minimal/list-style designs, and do NOT start from the Mozaik-era docs marked superseded
-in the index. In-app work reuses the shared `mozaik`/`clay` UI kit
-(`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`) rather than inventing a look.
+> **Direction reversal, 2026-09-17 (owner decision, epic `mezo-ju4j6`):** the design 2.0
+> **"Titanium"** skin (dark liquid metal, ~2026-09-09 → 2026-09-17) is **REJECTED**. The living
+> visual direction is the **restored pre-Titanium design 2.0 world — Mozaik 2.0 / Clay**.
+> Titanium docs and prototypes are **history and parity sources only**: cite them to check that
+> no *feature* is lost, never to copy a *look*. Functionality shipped during the Titanium period
+> is kept in full; only the skin is rolled back (forward-fix, never revert).
+
+Every UI design, mockup, and prototype MUST follow the **restored Mozaik 2.0 / Clay** visual
+language. Orient via the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)**
+(living vs superseded docs). Canon, in order:
+
+1. **`docs/design_2.0/2026-09-17-restored-world-style-bible.md`** — the single styling reference
+   for all re-dress and new UI work. *(Produced by epic task `mezo-ju4j6.2`; until it lands, use
+   the Mozaik-era handoffs listed as living in the index.)*
+2. The **ceremony (reward screen) pattern** (`docs/design_2.0/2026-09-15-ceremony-pattern.md`) —
+   the *pattern* (triggers, anatomy, motion, copy rules) stays canon; its Titanium skin does not,
+   celebratory surfaces return to polished-stone/gold material.
+3. The Mozaik-era prototypes in `docs/design_2.0/prototypes/` (the `*-tab.html`, `*-mely.html`
+   and flow pages) — **not** `prototypes/companion-titanium/`.
+
+That means: Mozaik tile language — washed two-column tiles with domain-color washes, poster-style
+card anatomy (eyebrow + spot graphic + one big numeral), data drawn as graphics (rings, gauges,
+sparklines, story-curves), **clay 3D SVG icons** (NEVER emojis), polished-stone (gold "Ritmus")
+materials for celebratory surfaces, one-shot rAF-driven choreography with a reduced-motion branch,
+tile → full-page slide-in pattern. Do NOT produce flat/minimal/list-style designs, and do **NOT**
+start new visual work from the Titanium docs/prototypes marked superseded in the index. In-app work
+reuses the shared `mozaik`/`clay` UI kit (`frontend/src/shared/ui/mozaik`,
+`frontend/src/shared/ui/clay`) rather than inventing a look.
+
+While the rollback epic `mezo-ju4j6` is in flight the app is deliberately mixed-look: some screens
+still wear Titanium. That is **not** a licence to add more of it — re-dress what you touch per the
+style bible, and run re-dress work through `/visszaoltoztetes`.
 
 ## Claude-specific notes
 

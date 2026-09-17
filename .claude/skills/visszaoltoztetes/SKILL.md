@@ -34,8 +34,9 @@ shipped during the Titanium period. Forward-fix only — never revert functional
    `=false` = real, `CI=true`), affected `frontend/tests/layout` specs, `verify`-skill runtime
    pass, reverse parity checklist pasted into the bd issue (re-dress tasks), CSS section +
    `prototypeCssStructure.test.ts` moved in the same commit, CODEMAP regen after moves and
-   after every merge. Self-PR → CI green → `gh workflow run premerge.yml -f pr=<n>` →
-   `--no-ff` local merge → push main → delete branch.
+   after every merge. Then merge per the **"no-wait, net stays"** flow (AGENTS.md §Git
+   Workflow): local gates → `--no-ff` merge to main → push; no PR, no CI wait. CI runs on
+   main as the safety net — if main is red at session start, fixing it comes first.
 6. Close the bead with a result summary. Session close: `node scripts/check-beads-backup.mjs --fix`,
    `bd dolt push`, `git push`, `git status` up to date.
 7. Report to the owner IN HUNGARIAN, business language (CLAUDE.md §Communication): what got
