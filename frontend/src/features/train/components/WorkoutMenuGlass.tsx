@@ -13,8 +13,9 @@
 //
 // A second, minimal glass — WorkoutVideoGlass — embeds the exercise's demo video
 // inside `.wo-video-frame`, reusing VideoDemo's `videoEmbed` resolver (the same
-// YouTube/Instagram idiom already used by ExerciseRecordSheet and the exercise
-// picker) rather than inventing a second embed path.
+// YouTube/Instagram idiom the exercise picker also uses — the third user, the
+// pre-Titanium `ExerciseRecordSheet`, was deleted in mezo-lf3cv) rather than
+// inventing a second embed path.
 // ============================================================
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { videoEmbed } from '@/features/train/components/VideoDemo'

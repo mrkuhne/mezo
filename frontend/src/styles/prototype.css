@@ -1288,16 +1288,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    retrofitting them is not this bead's job. */
 .text-meta-sm { font: italic 500 14px/1.45 var(--ff-serif); }
 
-.page-title {
-  /* DS text-h1 role: 36 / 700 / -0.03em — one per screen */
-  font-family: var(--ff-display);
-  font-size: 36px; font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  color: var(--text-primary);
-  text-wrap: balance;
-}
-
 .page-header {
   padding: 14px 24px 18px;
   display: flex; justify-content: space-between; align-items: flex-end;
@@ -3903,56 +3893,11 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   font: 600 15px/1 var(--ff-display);
 }
 
-/* ── Gyakorlatok · catalog card + filter row (mezo-setx.6.7) ─────────────────
-   The DS re-expression of the mezo-kaui variant-A card. Three zones stay
-   (head → tag row → stat strip) but every value now comes from the DS scales:
-   ListItem padding sp-4, h3 title, Tag stamps, eyebrow stat labels. The muscle
-   rail is the leading edge (colour injected inline from muscleColors), matching
-   `.exdemo`. Actions moved OUT of an absolute overlay into a trailing column so
-   they can carry real 48dp targets without stealing the title's line. */
-.excat {
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;                   /* clips the rail square against the card radius */
-  /* Mozaik tile pass (mezo-d20.3.3): the muscle wash sits ON the card (handoff §10
-     "domain wash ON the tile" relaxation) — --ex-wash comes in inline from
-     muscleColor(...).wash per row, same token the Tag stamp already uses. */
-  background: var(--ex-wash, var(--surface-1));
-  border: 1px solid var(--card-border);
-  border-radius: var(--r-2xl);
-  filter: var(--card-elevation);
-}
-.excat.ghost {
-  background: transparent;
-  border-style: dashed;
-  filter: none;
-}
-/* The muscle rail is an element, not a thick border: a 5px border under a 22px
-   radius curves into a leaf at the corners, which reads as a bug on the dashed
-   ghost card. Colour comes in inline from muscleColor.rail. */
-.excat-rail { flex: none; width: 5px; }
-.excat.ghost .excat-rail { opacity: .45; }
-.excat-open {
-  flex: 1;
-  min-width: 0;
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: var(--sp-4, 16px);
-  background: none;
-  border: 0;
-  font: inherit;
-  color: inherit;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-.excat-open:active { background: var(--surface-recess); }   /* Rule 21: visible press feedback */
-.excat-name {
-  font-family: var(--ff-display);
-  font-size: 18px; font-weight: 600; line-height: 1.25;
-  color: var(--text-primary);
-}
-.excat.ghost .excat-name { color: var(--text-secondary); }
-/* DS Tag stamp: 9.5 / 800 / 0.10em uppercase / r-sm / 2×7 — a descriptor, not a chip. */
+/* ── .excat-tag — the DS Tag stamp (mezo-setx.6.7 → mezo-lf3cv P2) ───────────
+   The Gyakorlatok catalogue that owned this block was replaced by the Titanium
+   `.gy-*` section (P2 Task 4), so every `.excat*` rule except this one lost its
+   last consumer and went with it. The stamp itself survives: the Futás session
+   card and the running page still stamp their descriptors with it. */
 .excat-tag {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 7px;
@@ -3962,57 +3907,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   text-transform: uppercase;
   white-space: nowrap;
 }
-.excat-stats {
-  display: flex;
-  margin-top: var(--sp-3, 12px);
-  padding-top: var(--sp-3, 12px);
-  border-top: 1px solid var(--divider);
-}
-.excat-stats > div { flex: 1; min-width: 0; }
-.excat-stats > div + div {
-  border-left: 1px solid var(--divider);
-  padding-left: var(--sp-3, 12px);
-}
-/* The DS eyebrow is nowrap by default; in a 3-column strip a 12px/0.22em label
-   ("LEGJOBB SZETT") is wider than its cell and collides with its neighbour. Let
-   it wrap and reserve two lines so all three values stay on one baseline. */
-.excat-stats .eyebrow {
-  white-space: normal;
-  line-height: 1.35;
-  min-height: 2.7em;
-}
-.excat-statv {
-  font: 600 18px/1.2 var(--ff-display);
-  margin-top: 3px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-/* Trailing action column — 48dp targets around a 32px visual (MOBILE_UX §3 Rule 4). */
-.excat-acts {
-  flex: none;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 4px 4px 4px 0;
-}
-.excat-act {
-  width: 48px; height: 48px;
-  display: grid; place-items: center;
-  background: none; border: 0; font: inherit; color: inherit;
-}
-.excat-act > span {
-  width: 32px; height: 32px;
-  border-radius: var(--r-full);
-  display: grid; place-items: center;
-  font-size: 12px; font-weight: 700; line-height: 1;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-.excat-act:active > span { transform: scale(0.92); }
 @media (prefers-reduced-motion: reduce) {
-  .excat-act > span, .pgact { transition: none; }
-  .excat-act:active > span, .pgact:active { transform: none; }
+  .pgact { transition: none; }
+  .pgact:active { transform: none; }
 }
-/* Stim meter on the no-record ghost rows. */
-.excat-stim { display: flex; gap: 3px; margin-top: 4px; }
-.excat-stim i { width: 5px; height: 10px; border-radius: 1px; background: var(--surface-3); }
 
 /* Search field — the DS SearchInput: icon + borderless 16px input in field chrome. */
 .searchfield {
@@ -14702,13 +14600,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-curve-val small { display: block; font-size: 9.5px; color: var(--text-tertiary); }
 .gy-curve { width: 100%; height: auto; }
 .gy-curve-was { fill: none; stroke: var(--mus-color, var(--tag-gym)); stroke-width: 3; stroke-linecap: round; }
-.gy-curve-will { fill: none; stroke: color-mix(in srgb, var(--text-primary) 30%, transparent); stroke-width: 2.5; stroke-dasharray: 5 6; stroke-linecap: round; }
 .gy-curve-now { fill: var(--surface-card); stroke: var(--mus-color, var(--tag-gym)); stroke-width: 3; }
 [data-reveal] .gy-curve-was { stroke-dasharray: 600; stroke-dashoffset: 600; }
 [data-reveal].is-in .gy-curve-was { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s cubic-bezier(.3, .7, .3, 1) .15s; }
 .gy-curve-cap { display: flex; justify-content: space-between; margin-top: 4px; }
 .gy-curve-cap i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); }
-.gy-curve-cap .is-will { color: var(--text-secondary); }
 
 /* — medals — */
 .gy-medal-rows { display: grid; gap: 7px; }

@@ -14,7 +14,9 @@ import type { KalauzEntry } from '@/features/tutorial/registry/types'
 
 export const TRAIN_KALAUZ: KalauzEntry[] = [
   // ── T2 aloldalak (mezo-gb1s.5 → mezo-88iwa.5) ────────────────────────────────
-  // Címke = az oldal saját megjelenített neve, szó szerint (PageTitle / mz-hero-nm).
+  // Címke = az oldal saját megjelenített neve, szó szerint (mz-hero-nm / a Titanium
+  // poszterek saját címe). A korábban idézett PageTitle primitív megszűnt: utolsó
+  // fogyasztója a pre-Titanium Gyakorlatok héj volt (mezo-lf3cv P2).
   // A /train/review a T2-lista egyetlen paraméteres route-ja — az átfedés-lint
   // (registry.test.ts) őrzi, hogy egy jövőbeli literál testvér ne rang-holtversenyezzen.
   // A /train/session chrome-mentes oldal (AppLayout hideChrome): a fejléc ?-e ott nem
