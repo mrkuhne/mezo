@@ -87,19 +87,38 @@ result:**
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
-Every UI design, mockup, and prototype MUST follow the **design 2.0 "Titanium"** visual
-language — the living, breathing, tactile direction that evolved from Mozaik 2.0. Orient via
-the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)** (current vs superseded
-docs); key canon: the production rebuild handoff, the **ceremony (reward screen) pattern**
-(`docs/design_2.0/2026-09-15-ceremony-pattern.md`), and the living prototypes in
-`docs/design_2.0/prototypes/companion-titanium/`. That means: dark liquid-metal ground with
-domain-color washes, poster-anatomy cards (eyebrow + spot graphic + one big numeral), data
-drawn as graphics (rings, gauges, sparklines, story-curves), clay 3D SVG icons (NEVER emojis),
-polished-stone (gold "Ritmus") materials for celebratory surfaces, one-shot rAF-driven
-choreography with a reduced-motion branch, tile → full-page slide-in pattern. Do NOT produce
-flat/minimal/list-style designs, and do NOT start from the Mozaik-era docs marked superseded
-in the index. In-app work reuses the shared `mozaik`/`clay` UI kit
-(`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`) rather than inventing a look.
+> **Direction reversal, 2026-09-17 (owner decision, epic `mezo-ju4j6`):** the design 2.0
+> **"Titanium"** skin (dark liquid metal, ~2026-09-09 → 2026-09-17) is **REJECTED**. The living
+> visual direction is the **restored pre-Titanium design 2.0 world — Mozaik 2.0 / Clay**.
+> Titanium docs and prototypes are **history and parity sources only**: cite them to check that
+> no *feature* is lost, never to copy a *look*. Functionality shipped during the Titanium period
+> is kept in full; only the skin is rolled back (forward-fix, never revert).
+
+Every UI design, mockup, and prototype MUST follow the **restored Mozaik 2.0 / Clay** visual
+language. Orient via the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)**
+(living vs superseded docs). Canon, in order:
+
+1. **`docs/design_2.0/2026-09-17-restored-world-style-bible.md`** — the single styling reference
+   for all re-dress and new UI work. *(Produced by epic task `mezo-ju4j6.2`; until it lands, use
+   the Mozaik-era handoffs listed as living in the index.)*
+2. The **ceremony (reward screen) pattern** (`docs/design_2.0/2026-09-15-ceremony-pattern.md`) —
+   the *pattern* (triggers, anatomy, motion, copy rules) stays canon; its Titanium skin does not,
+   celebratory surfaces return to polished-stone/gold material.
+3. The Mozaik-era prototypes in `docs/design_2.0/prototypes/` (the `*-tab.html`, `*-mely.html`
+   and flow pages) — **not** `prototypes/companion-titanium/`.
+
+That means: Mozaik tile language — washed two-column tiles with domain-color washes, poster-style
+card anatomy (eyebrow + spot graphic + one big numeral), data drawn as graphics (rings, gauges,
+sparklines, story-curves), **clay 3D SVG icons** (NEVER emojis), polished-stone (gold "Ritmus")
+materials for celebratory surfaces, one-shot rAF-driven choreography with a reduced-motion branch,
+tile → full-page slide-in pattern. Do NOT produce flat/minimal/list-style designs, and do **NOT**
+start new visual work from the Titanium docs/prototypes marked superseded in the index. In-app work
+reuses the shared `mozaik`/`clay` UI kit (`frontend/src/shared/ui/mozaik`,
+`frontend/src/shared/ui/clay`) rather than inventing a look.
+
+While the rollback epic `mezo-ju4j6` is in flight the app is deliberately mixed-look: some screens
+still wear Titanium. That is **not** a licence to add more of it — re-dress what you touch per the
+style bible, and run re-dress work through `/visszaoltoztetes`.
 
 ## Claude-specific notes
 
