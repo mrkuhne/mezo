@@ -230,7 +230,14 @@ export function MesoTervPage() {
 
         {/* „A heted" — every weekday, in order: a card for the training days, a slim
             row for the rest/sport ones. The MA chip marks today wherever it lands. */}
-        <div className="tr-eyebrow rise" style={{ padding: '2px var(--screen-gutter) 8px', ...delay(90) }}>
+        {/* The heading rides the SAME 20px gutter as the `.pl-days` list under it (the
+            prototype's `.pl-h3` and `.pl-days` share one inset, plan.css:175-176) — the
+            surfaces slice moved the list back to the prototype's own gutter, so the
+            heading follows it or the page reads misaligned (mezo-fsz2r Task 2). */}
+        <div
+          className="tr-eyebrow rise"
+          style={{ padding: '2px 20px 8px', marginInline: 'calc(-1 * var(--screen-gutter))', ...delay(90) }}
+        >
           A HETED
         </div>
         <div className="pl-days">

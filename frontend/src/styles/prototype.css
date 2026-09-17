@@ -14681,18 +14681,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    hurkolt animáció — nem belépő-effekt —, a `.fmx-chip-sheen` mintáját
    követve (:11814) `prefers-reduced-motion: no-preference` mögé zárva. */
 
-/* — the block poster: week numeral, progress ring, sheen, week arc — */
+/* — the block poster: week numeral, progress ring, sheen, week arc —
+   Surfaces parity (mezo-fsz2r Task 2): the prototype's poster carries NO shadow and NO
+   border-bottom (plan.css:5) — it fades into the page through its own `::after` scrim, and
+   a rule + a lift under it read as a toolbar band instead. Padding is the prototype's own
+   `22px 20px 26px`: the hero is full-bleed (`margin-inline: -gutter`), so a LITERAL 20px
+   puts its content exactly 20px from the screen edge, the way the prototype renders it —
+   the ported `calc(var(--screen-gutter) + 6px)` measured 18px against the house's 12px
+   gutter, so the two are NOT equivalent here. */
 .pl-poster {
   position: relative; overflow: hidden;
   margin: 4px 0 16px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  padding: 22px 20px 26px;
   border: 0; border-radius: 0;
   --tr-accent: var(--tag-gym); --tr-wash: var(--wash-gym);
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
     linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--tr-accent) 18%, transparent);
-  box-shadow: var(--shadow-sm);
 }
 .pl-poster-glow {
   position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
@@ -14716,16 +14721,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
 .pl-poster-foot { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+/* The foot pills are near-transparent in the prototype (`#ffffff08`, plan.css:32) — on the
+   poster's own dark ground an opaque `--surface-card` fill turned them into chips that
+   compete with the numeral (mezo-fsz2r Task 2, audit §20.1). Train renders inside
+   `titanDark`, so the literal is safe here. */
 .pl-poster-foot span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 1px solid var(--border-subtle); background: #ffffff08;
 }
 /* A foot fact that is also a doorway (the Gyakorlatok poster's medal count → the medal
    vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>` so it can carry its
    own click handler and accessible name without disturbing the plain-text siblings. */
 .pl-poster-foot-link {
   font: inherit; font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
-  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-card);
+  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: #ffffff08;
 }
 
 /* — the week numeral + progress ring, sharing the poster's top row — */
@@ -14777,12 +14786,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @keyframes pl-breathe { 0%, 100% { opacity: .75; scale: 1; } 50% { opacity: 1; scale: 1.1; } }
 
 /* — one day per row: full name, MA chip, boxed facts, muscle bars — */
-.pl-days { display: grid; gap: 8px; padding: 0 var(--screen-gutter); }
+/* The prototype's day list pays its own 20px gutter inside a container that has none
+   (plan.css:176); the house `.screen-content` already pays 12px, so the port's
+   `var(--screen-gutter)` stacked to 24px and a literal 20px would stack to 32px. The
+   `margin-inline` cancel — the same trick `.pl-poster`/`.pl-dhero` already use here — lets
+   the list keep the prototype's OWN declaration and land its cards exactly 20px from the
+   screen edge, which is what the prototype renders (mezo-fsz2r Task 2). */
+.pl-days { display: grid; gap: 8px; padding: 0 20px; margin-inline: calc(-1 * var(--screen-gutter)); }
+/* Translucent in the prototype (`#ffffff08`→`#ffffff03`, plan.css:177) and unshadowed: the
+   day rows are quiet washes on the dark ground, not lifted cards (audit §20.1/§20.2). */
 .pl-day {
   display: grid; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer; color: inherit;
   border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(150deg, #ffffff08, #ffffff03);
 }
 .pl-day-head { display: flex; align-items: center; gap: 9px; }
 .pl-day-head strong { font-size: 16px; font-weight: 500; color: var(--text-primary); }
@@ -14803,7 +14819,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-color: color-mix(in srgb, var(--tag-gym) 46%, transparent);
   background:
     radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
-    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+    linear-gradient(150deg, #ffffff0a, #ffffff03);
 }
 .pl-day-tag {
   display: inline-grid; place-items: center; height: 28px; padding: 0 11px; border-radius: 10px;
@@ -14812,19 +14828,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-day.is-now .pl-day-tag { color: var(--text-primary); border-color: color-mix(in srgb, var(--tag-gym) 40%, transparent); }
 .pl-day-bars { display: flex; gap: 4px; }
 .pl-day-bars i { height: 5px; width: calc(var(--w) * .34); min-width: 12px; border-radius: 999px; background: var(--mus-color); }
-.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .55; cursor: default; padding: 11px 14px; }
+.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .45; cursor: default; padding: 11px 14px; }
 .pl-day-rest { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--text-secondary); }
 .pl-day-rest .icon { width: 22px; height: 22px; }
 
 /* — the two destination tiles (muscle-detail / plans doorways) — */
-.pl-dests { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 18px var(--screen-gutter) 4px; }
+/* Same gutter story as `.pl-days` above: the prototype's own `22px 20px 10px`, plus the
+   full-bleed cancel so 20px stays 20px inside the house's 12px screen gutter. */
+.pl-dests {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  padding: 22px 20px 10px; margin-inline: calc(-1 * var(--screen-gutter));
+}
+/* A tile, not a card: the prototype paints a domain wash over a 4%→1% white film
+   (plan.css:217), and the port's opaque `--surface-card` body boxed it (audit §20.1). */
 .pl-dest {
   position: relative; overflow: hidden; display: grid; justify-items: start; gap: 3px;
   padding: 16px 14px 14px; text-align: left; cursor: pointer; color: inherit;
   border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, var(--border-subtle)); border-radius: 22px;
   background:
-    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 18%, transparent), transparent 64%),
-    var(--surface-card);
+    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 22%, transparent), transparent 64%),
+    linear-gradient(155deg, #ffffff0a, #ffffff03);
 }
 .pl-dest.is-muscle { --wash: var(--sky); }
 .pl-dest.is-plans { --wash: var(--lav); }
@@ -14839,17 +14862,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: color-mix(in srgb, var(--wash, var(--tag-gym)) 80%, var(--surface-card));
 }
 
-/* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral — */
+/* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral —
+   Like `.pl-poster`: no shadow, no border-bottom, and the prototype's own
+   `22px 20px 26px` (plan.css:256) — see the gutter note there (mezo-fsz2r Task 2). The
+   `.pl-lhero:has(> .mz-backbtn)` 58px padding-top override still applies on top of it,
+   mirroring the prototype's own `:has(> .pl-back.is-inhero)` rule. */
 .pl-dhero {
   position: relative; overflow: hidden; min-height: 220px;
   margin: 4px 0 14px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 24px;
+  padding: 22px 20px 26px;
   border: 0; border-radius: 0;
   background:
     radial-gradient(120% 90% at 85% 6%, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent), transparent 64%),
     linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 18%, transparent);
-  box-shadow: var(--shadow-sm);
 }
 .pl-dhero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
@@ -14875,15 +14900,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   letter-spacing: -.03em; margin: 9px 0 2px; max-width: 58%; color: var(--text-primary);
 }
 .pl-dhero-number { position: relative; display: flex; align-items: baseline; gap: 7px; margin: 10px 0 14px; }
+/* The numeral is a GRADIENT-CLIPPED headline in the prototype (plan.css:293): white at the
+   cap, the day's muscle colour at the baseline. The port flattened it to one solid
+   colour-mix (audit §20.2); the gradient is back, with the house `--text-primary` standing
+   in for the prototype's `#fff` (mezo-fsz2r Task 2). */
 .pl-dhero-number strong {
   font-family: var(--ff-display); font-size: 58px; font-weight: 200; letter-spacing: -.05em; line-height: 1;
-  color: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary));
+  background: linear-gradient(var(--text-primary), color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary)));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .pl-dhero-number small { font-size: 13px; color: var(--text-secondary); }
 .pl-dhero-pills { position: relative; display: flex; flex-wrap: wrap; gap: 6px; }
+/* Same near-transparent pill as `.pl-poster-foot span` (plan.css:300). */
 .pl-dhero-pills span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 1px solid var(--border-subtle); background: #ffffff08;
 }
 
 /* — the body-map slot the day/muscle heroes carry — */
@@ -14917,9 +14948,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — the per-muscle breakdown: icon, name, a bar to the shared 8-set marker, count — */
 .pl-mrows { display: grid; gap: 6px; }
+/* The muscle row is a CHIP in the prototype (plan.css:318) — a tinted card with its own
+   border and radius. The port dropped all four declarations and it became a bare row, the
+   only surface that drifted in this direction (audit §20.2); restored here (mezo-fsz2r
+   Task 2). The 3-column grid stays production's: `.pl-mrow-art` is a real chip wrapper
+   here (see the T9-residue rule below), not the prototype's 28px+78px pair. */
 .pl-mrow {
   display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 10px; row-gap: 4px;
-  padding: 6px 2px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, #ffffff0c); border-radius: 14px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, #ffffff05), #ffffff03);
 }
 .pl-mrow-name { font-size: 12.5px; color: var(--text-secondary); }
 .pl-mrow-bar { grid-column: 2; position: relative; height: 5px; border-radius: 999px; background: var(--surface-recess); }
@@ -14935,8 +14973,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
   border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, var(--border-subtle)); border-radius: 16px;
   background:
-    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 12%, transparent), transparent 58%),
-    var(--surface-card);
+    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 13%, transparent), transparent 58%),
+    linear-gradient(155deg, #ffffff08, #ffffff03);
 }
 .pl-ex-index { font-size: 11px; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 65%, var(--text-primary)); }
 .pl-ex-art .icon { width: 38px; height: 38px; }
@@ -14974,7 +15012,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-item {
   display: grid; grid-template-columns: 32px 1fr auto 14px; align-items: center; column-gap: 11px; row-gap: 6px;
   width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-card);
+  border: 1px solid var(--border-subtle); border-radius: 16px; background: #ffffff05;
 }
 .pl-item-art .icon { width: 32px; height: 32px; }
 .pl-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
@@ -15135,13 +15173,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-card {
   display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
   border: 1px solid var(--border-subtle); border-radius: 20px;
-  background: linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  background: linear-gradient(150deg, #ffffff09, #ffffff03);
 }
+/* The running run is a DOMAIN WASH over the same film, one layer, no radial — the port
+   added a radial and an opaque body (plan.css:484, audit §20.1; mezo-fsz2r Task 2). */
 .pl-lib-card.is-now {
   border-color: color-mix(in srgb, var(--tag-gym) 34%, transparent);
-  background:
-    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
-    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 13%, transparent), #ffffff03);
 }
 .pl-lib-card.is-now .pl-arc { height: 44px; margin: 0 0 14px; }
 .pl-lib-card.is-open { cursor: default; }
@@ -15230,8 +15268,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
 .pl-versus-name .icon { width: 20px; height: 20px; }
 
-/* — the library's two doorways and its slim list heroes — */
-.pl-lib-dests { padding: 22px 0 4px; }
+/* — the library's two doorways and its slim list heroes —
+   The prototype's `.pl-lib-dests` zeroes the horizontal padding (plan.css:552) because its
+   `.pl-lib` parent already pays the 20px page gutter; production renders this row inside
+   `.mz-page`, which has ALREADY cancelled the house screen gutter, so the row has to pay
+   the 20px itself and must NOT take `.pl-dests`' full-bleed cancel (mezo-fsz2r Task 2 —
+   measured: without this the tiles sat flush to the screen edge). */
+.pl-lib-dests { padding: 22px 20px 4px; margin-inline: 0; }
 
 /* — a template's week, spelled out — */
 .pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }

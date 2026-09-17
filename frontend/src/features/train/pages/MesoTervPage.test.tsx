@@ -280,9 +280,10 @@ describe('MesoTervPage (real mode, pending)', () => {
     // and check the SHAPE, not just presence — the poster block, the day-card rows, and
     // the dest tiles, in the real page's own document order.
     const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
-    // the poster (`.pl-poster`) — one full-width 281px placeholder, derived in
-    // MesoTervSkeleton.tsx next to the real `.pl-poster` CSS it mirrors.
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '281px')).toHaveLength(1)
+    // the poster (`.pl-poster`) — one full-width 285px placeholder, derived in
+    // MesoTervSkeleton.tsx next to the real `.pl-poster` CSS it mirrors (285 since the
+    // surfaces slice restored the prototype's own `22px 20px 26px` padding, mezo-fsz2r).
+    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '285px')).toHaveLength(1)
     // the day-card rows (`.pl-day`) — 5 reserved 126px placeholders.
     expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '126px')).toHaveLength(5)
     // the two dest tiles (`.pl-dests`/`.pl-dest`) — 115px each.
@@ -290,8 +291,8 @@ describe('MesoTervPage (real mode, pending)', () => {
     // Order matters — poster → day rows → dest tiles, matching the real document order.
     const order = sk
       .map((el) => el.style.height)
-      .filter((h) => ['281px', '126px', '115px'].includes(h))
-    expect(order).toEqual(['281px', '126px', '126px', '126px', '126px', '126px', '115px', '115px'])
+      .filter((h) => ['285px', '126px', '115px'].includes(h))
+    expect(order).toEqual(['285px', '126px', '126px', '126px', '126px', '126px', '115px', '115px'])
   })
 })
 
