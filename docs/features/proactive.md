@@ -239,12 +239,18 @@ this redesign and remain as shipped.
   **PRIOR** week (`weekStart.minusWeeks(1)`), so the plan prose can reflect the week's growth. See [`growth.md` §5](growth.md).
   **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
   block right after the facts block, via `MemoryContextBlock.render(userId,
-  ConsumerPolicy.WEEKLY_MEMOIR, query, weekStart.plusDays(6), true, "proactive_feed",
-  "weekly_suggestion", null)`, reached through an `ObjectProvider<MemoryContextBlock>` (same idiom
-  as the S7 companion-feed kinds). Query = the prior week's daily-summary narratives joined, first
-  800 chars, + `"\na hét: " + weekStart`. This generator has **no candidate/anchor list at all**, so
-  unlike the other two Task-8 surfaces it contributes no ref candidates — only the rendered block
-  text. Fail-open, deep query: [`companion.md`](companion.md) §1 "Memória mindenhol S8".
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekStart.plusDays(6), true, "proactive_weekly",
+  "generate", null)`, reached through an `ObjectProvider<MemoryContextBlock>` (same idiom
+  as the S7 companion-feed kinds) — **unlike Task 7's shared `"proactive_feed"` label, this surface
+  bills its OWN feature (`proactive_weekly`, held in a `MEMORY_FEATURE` constant beside the
+  generator's own `LlmCallContext`)**, purely so "what did the weekly suggestion cost" can be
+  answered by grouping on feature; `proactive_weekly` itself is NOT on
+  `mezo.llm-log.budget.throttled-features` (its siblings below, `proactive_memoir` and
+  `proactive_weekly_review`, are — see those sections for the load-bearing version of this
+  argument). Query = the prior week's daily-summary narratives joined, first 800 chars, +
+  `"\na hét: " + weekStart`. This generator has **no candidate/anchor list at all**, so unlike the
+  other two Task-8 surfaces it contributes no ref candidates — only the rendered block text.
+  Fail-open, deep query: [`companion.md`](companion.md) §1 "Memória mindenhol S8".
 - **A Monday-dawn cron** — `WeeklySuggestionJob` `@Scheduled` on `mezo.proactive.weekly.cron`
   (**`0 0 6 * * MON`** — Monday 06:00 server zone) pre-generates the **CURRENT** week's suggestion
   per user (gathered from the just-finished previous week — §9 decision j). Gated on a THIRD switch
@@ -334,9 +340,14 @@ this redesign and remain as shipped.
   lives in `toolDomains.ts` / `chatRefs.ts` (`Edzés-jegyzet`).
   **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
   block right after the `NÖVEKEDÉS` block, via `MemoryContextBlock.render(userId,
-  ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_feed", "memoir", null)`, reached
-  through an `ObjectProvider<MemoryContextBlock>` (same idiom as the S7 companion-feed kinds and the
-  `characterPromptSource` dossier already on this class). Query = the week's OWN daily-summary
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_memoir", "generate", null)`,
+  reached through an `ObjectProvider<MemoryContextBlock>` (same idiom as the S7 companion-feed
+  kinds and the `characterPromptSource` dossier already on this class) — **its OWN feature
+  (`proactive_memoir`, a `MEMORY_FEATURE` constant beside this generator's own `LlmCallContext`),
+  not Task 7's shared `"proactive_feed"`**, because `proactive_memoir` sits on
+  `mezo.llm-log.budget.throttled-features` in `application.yml`: a mislabeled block would let this
+  surface's memory retrieval render straight through the budget-throttle safety valve that
+  suspends the surface itself. Query = the week's OWN daily-summary
   narratives joined, first 800 chars, + `"\na hét: " + weekStart`; `asOf = weekEnd` (the week's
   Sunday) — a **deep** query (`WEEKLY_MEMOIR` is configured `deep: true`, no latency gate). The
   returned `refs` are mapped onto this class' own two-component `MemoirAnchorsEnvelope.Anchor` — kind
@@ -602,7 +613,13 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   row** (honest absence); existing row ⇒ returned untouched (idempotent, no second LLM call).
   **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
   block right after the wider `WeeklyReviewContextSources` context, via the same `WEEKLY_MEMOIR`/
-  `deep=true` contract `MemoirGenerator` uses (`operation = "weekly_review"`). This class had **no**
+  `deep=true` contract `MemoirGenerator` uses, `MemoryContextBlock.render(userId,
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_weekly_review", "generate", null)`
+  — **its OWN feature (`proactive_weekly_review`, a `MEMORY_FEATURE` constant beside this
+  generator's own `LlmCallContext`), not Task 7's shared `"proactive_feed"`**, because
+  `proactive_weekly_review` sits on `mezo.llm-log.budget.throttled-features` in
+  `application.yml`: a mislabeled block would let this surface's memory retrieval render straight
+  through the budget-throttle safety valve that suspends the surface itself. This class had **no**
   `DailySummaryRepository` dependency before this slice — it is now injected purely to build the
   memory query from the week's OWN daily-summary narratives, joined and first-800-chars-clipped,
   `+ "\na hét: " + weekStart`; `asOf = weekEnd`. The returned `refs` are mapped onto this class'

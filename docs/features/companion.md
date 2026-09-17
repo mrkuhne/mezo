@@ -1478,9 +1478,19 @@ field is the same lazy idiom, not a new one.
   30 candidates / 1200 tokens / rerank / **deep** — but, before this slice, unused by any caller),
   with `deep = true` on every call: nobody is waiting synchronously on a weekly generation, so the
   deeper offline-shaped retrieval variant is the right default here, unlike the four
-  `MORNING_BRIEFING` callers. Only the LLM billing `operation` label differs per surface
-  (`memoir`/`weekly_review`/`weekly_suggestion`), same as the four proactive-feed kinds share one
-  operation-labelled call under `MORNING_BRIEFING`.
+  `MORNING_BRIEFING` callers. **Unlike the four proactive-feed kinds, which share one `"proactive_feed"`
+  feature and differ only by `operation` under `MORNING_BRIEFING`, each of these three surfaces
+  bills the memory retrieval under its OWN feature** — `proactive_memoir`, `proactive_weekly_review`,
+  `proactive_weekly` (each held in a `MEMORY_FEATURE` constant beside the generator's own
+  `LlmCallContext`), all three with `operation = "generate"`. This is load-bearing, not cosmetic:
+  `proactive_memoir` and `proactive_weekly_review` sit on
+  `mezo.llm-log.budget.throttled-features` in `application.yml`, so a throttled account has each
+  surface's OWN memory retrieval suspended along with the surface itself — the shared
+  `"proactive_feed"` label a first cut used here would have let retrieval render straight through
+  that safety valve. `MemoirGeneratorMemoryIT` seeds an account past the 90% throttle line and
+  asserts both the surface's own `LLM_BUDGET_THROTTLED` refusal AND that no `memory_retrieval_run`
+  row was written — the discriminating check a correct `proactive_feed` label would fail (a run row
+  would exist, because that feature is not on the throttled list).
 - **One query shape, reused three times.** Each surface's memory query is **the week's OWN
   daily-summary narratives, joined and clipped to the first 800 chars, plus `"\na hét: " +
   weekStart"`** — `MemoirGenerator` and `WeeklyReviewGenerator` build it from `[weekStart,

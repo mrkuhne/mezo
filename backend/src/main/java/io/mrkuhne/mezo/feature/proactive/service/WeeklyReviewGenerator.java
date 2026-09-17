@@ -125,11 +125,16 @@ public class WeeklyReviewGenerator {
      *  see {@code MemoirGenerator#memoryContextBlock}'s javadoc for the rationale. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
-    /** mezo-eq85.8 fix round 1: this generator's own LLM-call feature (the
-     *  {@code LlmCallContext} in {@link #generate}) — the memory-retrieval audit row MUST bill
-     *  under this same feature, or "what did the weekly review cost" can't be answered by
-     *  grouping on feature. */
-    private static final String MEMORY_FEATURE = "proactive_weekly_review";
+    /** mezo-eq85.8 fix round 2: this generator's own LLM-call feature/operation, used BOTH for the
+     *  top-level {@code completeSmart} call in {@link #generate} AND (via {@link
+     *  LlmCallContext#feature()}) for the memory-retrieval audit row in {@link #memoryBlock} — ONE
+     *  constant, so the two labels cannot drift apart the way they did in fix round 1.
+     *  {@code proactive_weekly_review} sits on {@code mezo.llm-log.budget.throttled-features} in
+     *  {@code application.yml}, so a throttled account has this surface's retrieval suspended
+     *  along with the surface itself — see {@code MemoirGenerator#CONTEXT}'s javadoc and
+     *  {@code MemoirGeneratorMemoryIT} for the end-to-end proof of the sibling surface. */
+    private static final LlmCallContext CONTEXT =
+            new LlmCallContext("proactive_weekly_review", "generate", null, null);
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -156,9 +161,9 @@ public class WeeklyReviewGenerator {
             log.debug("No logged data in week {} for {} — no weekly review", weekStart, userId);
             return null;
         }
-        // mezo-eq85.8 fix round 1: MEMORY_FEATURE below MUST equal this literal — see its javadoc.
-        String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_weekly_review", "generate", null, null),
+        // mezo-eq85.8 fix round 2: CONTEXT is also the memory-retrieval feature in memoryBlock —
+        // see its javadoc.
+        String answer = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedReview parsed = parse(answer);
         if (parsed == null || parsed.summary() == null || parsed.summary().isBlank()) {
@@ -305,7 +310,7 @@ public class WeeklyReviewGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                MEMORY_FEATURE, operation, entityId);
+                CONTEXT.feature(), operation, entityId);
     }
 
     /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' three-component {@link

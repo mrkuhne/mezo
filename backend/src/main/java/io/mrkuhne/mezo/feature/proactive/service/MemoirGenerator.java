@@ -123,10 +123,17 @@ public class MemoirGenerator {
     private static final DateTimeFormatter MEMORY_DAY_FORMAT =
             DateTimeFormatter.ofPattern("MMM d., EEEE", Locale.of("hu", "HU"));
 
-    /** mezo-eq85.8 fix round 1: the memoir's own LLM-call feature (the {@code LlmCallContext}
-     *  above in {@link #generate}) — the memory-retrieval audit row MUST bill under this same
-     *  feature, or "what did the memoir cost" can't be answered by grouping on feature. */
-    private static final String MEMORY_FEATURE = "proactive_memoir";
+    /** mezo-eq85.8 fix round 2: the memoir's own LLM-call feature/operation, used BOTH for the
+     *  top-level {@code completeSmart} call in {@link #generate} AND (via {@link
+     *  LlmCallContext#feature()}) for the memory-retrieval audit row in {@link #memoryBlock} —
+     *  ONE constant, so the two labels cannot drift apart the way they did in fix round 1.
+     *  {@code proactive_memoir} sits on {@code mezo.llm-log.budget.throttled-features} in
+     *  {@code application.yml}, so a throttled account has this surface's retrieval suspended
+     *  along with the surface itself — proven end-to-end by {@code MemoirGeneratorMemoryIT
+     *  #testGenerate_shouldThrowAndSkipRetrieval_whenTheAccountIsThrottled} (seeds the account
+     *  past the 90% line, asserts the {@code LLM_BUDGET_THROTTLED} refusal AND that no {@code
+     *  memory_retrieval_run} row was written for that user). */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("proactive_memoir", "generate", null, null);
 
     private final MemoirRepository memoirRepository;
     private final DailySummaryRepository dailySummaryRepository;
@@ -178,19 +185,13 @@ public class MemoirGenerator {
             log.debug("No summaries in week {} for {} — no memoir", weekStart, userId);
             return null;
         }
-        // mezo-eq85.8: MEMORY_FEATURE MUST equal this literal, and the reason is load-bearing
-        // rather than cosmetic. "proactive_memoir" is on mezo.llm-log.budget.throttled-features
-        // (application.yml), so a throttled account has this surface's retrieval suspended along
-        // with the surface itself. Passing Task 7's "proactive_feed" here — which is NOT on that
-        // list — would let the memory block render straight through that safety valve. The grouping
-        // argument ("what did the memoir cost") is the weaker, secondary reason.
-        //
-        // Not covered by a test, deliberately: the effect cannot be observed end-to-end, because
-        // throttling this feature also refuses the call below, two lines later, so generate() never
-        // returns a memoir to inspect. A test that appears to prove it would be proving something
-        // else.
-        String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_memoir", "generate", null, null),
+        // mezo-eq85.8 fix round 2: CONTEXT is also the memory-retrieval feature in memoryBlock —
+        // ONE constant, so the two labels cannot drift apart. See CONTEXT's javadoc for why the
+        // match matters (the throttled-features safety valve) and for the test that proves it:
+        // throttling this feature also refuses this very call, so generate() throws before
+        // returning a memoir — the observable effect is the exception plus the absent
+        // memory_retrieval_run row, not the memoir's content.
+        String answer = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedMemoir parsed = parse(answer);
         if (parsed == null || parsed.title() == null || parsed.title().isBlank()
@@ -326,7 +327,7 @@ public class MemoirGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                MEMORY_FEATURE, operation, entityId);
+                CONTEXT.feature(), operation, entityId);
     }
 
     /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' two-component {@link

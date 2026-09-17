@@ -70,11 +70,14 @@ public class WeeklySuggestionGenerator {
      *  rendered block text. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
-    /** mezo-eq85.8 fix round 1: this generator's own LLM-call feature (the {@code
-     *  LlmCallContext} in {@link #generate}) — the memory-retrieval audit row MUST bill under
-     *  this same feature, or "what did the weekly suggestion cost" can't be answered by grouping
-     *  on feature. */
-    private static final String MEMORY_FEATURE = "proactive_weekly";
+    /** mezo-eq85.8 fix round 2: this generator's own LLM-call feature/operation, used BOTH for
+     *  the top-level {@code completeSmart} call in {@link #generate} AND (via {@link
+     *  LlmCallContext#feature()}) for the memory-retrieval audit row in {@link #memoryBlock} —
+     *  ONE constant, so the two labels cannot drift apart the way they did in fix round 1. Unlike
+     *  its two siblings, {@code proactive_weekly} is NOT on
+     *  {@code mezo.llm-log.budget.throttled-features}; the shared constant is still worth it
+     *  purely so "what did the weekly suggestion cost" can be answered by grouping on feature. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("proactive_weekly", "generate", null, null);
 
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
     @Transactional
@@ -89,9 +92,9 @@ public class WeeklySuggestionGenerator {
             log.debug("No prior-week summaries for {} before {} — no suggestion", userId, weekStart);
             return null;
         }
-        // mezo-eq85.8 fix round 1: MEMORY_FEATURE above MUST equal this literal — see its javadoc.
-        String prose = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_weekly", "generate", null, null),
+        // mezo-eq85.8 fix round 2: CONTEXT is also the memory-retrieval feature in memoryBlock —
+        // see its javadoc.
+        String prose = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Blank weekly-suggestion answer for {} week {} — no row", userId, weekStart);
@@ -157,7 +160,7 @@ public class WeeklySuggestionGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                MEMORY_FEATURE, operation, entityId);
+                CONTEXT.feature(), operation, entityId);
     }
 
     /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string
