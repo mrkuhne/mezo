@@ -656,7 +656,7 @@ public class ChatService {
         List<ToolCallAudit.ToolOutcome> dropped = plan.steps().stream()
                 .skip(remaining)
                 .map(step -> new ToolCallAudit.ToolOutcome(
-                        step.tool(), argsJson(step), RecordingToolCallback.BUDGET_EXHAUSTED))
+                        step.tool(), argsJson(step), RecordingToolCallback.BUDGET_EXHAUSTED, step.why()))
                 .toList();
         ValidatedPlan cappedPlan = new ValidatedPlan(
                 List.copyOf(plan.steps().subList(0, remaining)), plan.rejections());

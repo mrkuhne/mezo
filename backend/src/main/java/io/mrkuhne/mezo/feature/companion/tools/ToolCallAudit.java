@@ -36,8 +36,14 @@ public class ToolCallAudit {
     }
 
     /** One executed tool call as the verdict judge sees it (mezo-indo). {@code result} is the raw
-     *  tool output — the digest that renders it into the judge payload owns truncation. */
-    public record ToolOutcome(String name, String args, String result) {
+     *  tool output — the digest that renders it into the judge payload owns truncation.
+     *  {@code why} is the planner's half-sentence for a PLANNED read (S9.7 provenance); the
+     *  ran-truth list from {@link #toolOutcomes()} has none. */
+    public record ToolOutcome(String name, String args, String result, String why) {
+
+        public ToolOutcome(String name, String args, String result) {
+            this(name, args, result, null);
+        }
     }
 
     private final int maxCalls;

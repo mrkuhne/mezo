@@ -57,6 +57,10 @@ class PlanExecutorTest {
         return new TurnPlan.PlanStep(tool, Map.of(), "teszt");
     }
 
+    private static TurnPlan.PlanStep step(String tool, String why) {
+        return new TurnPlan.PlanStep(tool, Map.of(), why);
+    }
+
     @Test
     void testExecute_shouldReturnOutcomesInPlanOrder_whenStepsFinishOutOfOrder() throws Exception {
         CountDownLatch releaseSlow = new CountDownLatch(1);
@@ -141,5 +145,29 @@ class PlanExecutorTest {
             .containsExactly(PlanExecutor.STEP_TIMEOUT, PlanExecutor.STEP_TIMEOUT);
         // Loose bound to avoid flake: well under the 2×300ms the old per-entry logic would need.
         assertThat(elapsedMs).isLessThan(1_500);
+    }
+
+    @Test
+    void testExecute_shouldCarryThePlannersWhy_whenStepProvidesOne() {
+        PlanExecutor executor = executor(1_000, tool("ok_tool", in -> "rendben"));
+
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("ok_tool", "hogy lássam a mai étkezést")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+
+        assertThat(outcomes.getFirst().why()).isEqualTo("hogy lássam a mai étkezést");
+    }
+
+    @Test
+    void testExecute_shouldDefaultWhyToEmptyString_whenStepWhyIsBlank() {
+        // The parser's default for an omitted `why` is "" (never null) — the executor must not
+        // translate that into null on the way into the outcome record.
+        PlanExecutor executor = executor(1_000, tool("ok_tool", in -> "rendben"));
+
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("ok_tool", "")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+
+        assertThat(outcomes.getFirst().why()).isEqualTo("");
     }
 }

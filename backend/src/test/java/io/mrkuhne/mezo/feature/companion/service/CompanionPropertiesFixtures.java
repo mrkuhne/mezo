@@ -26,6 +26,14 @@ final class CompanionPropertiesFixtures {
             null, null, null, null, null, null, null, null, java.util.List.of(), turn);
     }
 
+    /** Only {@code tools().maxCallsPerTurn()} is meaningful — for {@code ChatService.capToRemainingBudget}
+     *  unit coverage, which reads nothing else off {@link CompanionProperties}. */
+    static CompanionProperties withMaxCallsPerTurn(int maxCallsPerTurn) {
+        CompanionProperties.Tools tools = new CompanionProperties.Tools(maxCallsPerTurn, 30, 26, 10);
+        return new CompanionProperties(null, null, null, tools, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, java.util.List.of(), null);
+    }
+
     static CompanionProperties withExecutor(int parallelism, long stepTimeoutMs) {
         CompanionProperties.Turn turn = new CompanionProperties.Turn(true,
             new CompanionProperties.Turn.Gear(true),
