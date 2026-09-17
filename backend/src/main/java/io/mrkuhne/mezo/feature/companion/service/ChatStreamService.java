@@ -361,12 +361,15 @@ public class ChatStreamService {
         // between the plan's "Ma:" context and the persisted turn's assembled context.
         LocalDate today = turn.today();
         if (turn.gear() == TurnGear.ANALYSIS) {
-            String synced = chatService.pipelineAnswer(userId, turn.conversationId(), turn.gear(),
-                    turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(), today,
-                    audit, onPhase);
+            // S9.7 Task 4: pipelineAnswer now also returns the outcome list that produced the
+            // answer (for the sync path's provenance persistence) — the streamed path reads only
+            // the answer text today; its own tool_outcomes wiring is a later task.
+            ChatService.PipelineAnswer synced = chatService.pipelineAnswer(userId, turn.conversationId(),
+                    turn.gear(), turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(),
+                    today, audit, onPhase);
             return synced == null
                     ? PipelineResult.legacy()
-                    : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced, null);
+                    : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced.answer(), null);
         }
         // fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile half —
         // used to be a verbatim copy of ChatService#pipelineAnswer's own lap 1. It now lives ONCE,

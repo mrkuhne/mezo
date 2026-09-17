@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter.ChatMemoryPayload;
@@ -235,8 +236,8 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
-        AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
+        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
@@ -254,8 +255,11 @@ public class ChatService {
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
             String answer, ToolCallAudit audit, boolean degraded, RecalledMemoriesEnvelope recalled) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
+        // mezo-rj214.7 S9.7 Task 4: the SYNC path (sendMessage) wires provenance below; the
+        // streamed path's tool_outcomes wiring is a later task — null here keeps completeTurn's
+        // persisted shape unchanged until that task lands.
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded, recalled);
+                answer, audit.toToolCallsEnvelope(), null, audit.toRefsEnvelope(), degraded, recalled);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
@@ -278,13 +282,18 @@ public class ChatService {
         String systemPrompt = routed.systemPrompt();
         String turnCtx = routed.turnContext();
 
-        AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
+        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null);
         recordSeedReply(userId, conversation, request.getContent());
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer;
         boolean degraded = false;
+        // S9.7 Task 4: non-null only on the PIPELINE branch below — the plan-truth outcome list
+        // (lap 1, or lap1+replan merged) that produced `answer`. Stays null on every other branch
+        // (CHAT, and the legacy tool-loop fallback), where provenance is built from the audit's
+        // ran-truth list instead — see the persistMessage call at the bottom of this method.
+        List<ToolCallAudit.ToolOutcome> pipelineOutcomes = null;
         // mezo-2zyu: the whole turn runs under the chat context — the advisor chain's own calls
         // rebind their own (companion_advisor) context, so only the primary round is billed here.
         LlmCallContext turnContext =
@@ -308,16 +317,18 @@ public class ChatService {
             // lap for ANALYSIS turns that hit a data gap. A null pipelined answer means the planner
             // produced nothing usable, and the turn falls straight to the UNCHANGED legacy branches
             // below (spec §8: degraded, but an answer) — the fallback the whole migration leans on.
-            String pipelined = properties.turn().pipelineEnabled()
+            PipelineAnswer pipelined = properties.turn().pipelineEnabled()
                     ? pipelineAnswerGuarded(userId, conversationId, gear, systemPrompt, turnCtx,
                             history, request.getContent(), today, audit, turnContext)
                     : null;
             if (pipelined != null) {
-                answer = pipelined;
+                answer = pipelined.answer();
+                pipelineOutcomes = pipelined.outcomes();
                 if (chain != null) {
+                    String pipelinedAnswer = pipelined.answer();
                     AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                             () -> chain.reviewChat(routed.systemPrompt(), routed.turnContext(), history,
-                                    request.getContent(), pipelined));
+                                    request.getContent(), pipelinedAnswer));
                     answer = advised.answer();
                     degraded = advised.degraded();
                 }
@@ -344,9 +355,19 @@ public class ChatService {
         // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
         // refs are the answer's own provenance and win the per-turn ref cap.
         memory.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
+        // S9.7 Task 4: ONE choke point for both provenance halves, never mixing the two truths in
+        // one row — the PIPELINE branch's plan-truth outcomes (lap 1, or lap1+replan merged) when
+        // present, otherwise the LEGACY tool-loop's ran-truth list. This REPLACES the previous bare
+        // audit.toToolCallsEnvelope() argument; TurnProvenance reproduces the same ask shape for a
+        // legacy turn (type "read", same name, same compact args, why null — pinned in
+        // ChatServiceIT's scripted-tool test) and additionally now persists tool_outcomes, which a
+        // legacy turn never wrote before this task.
+        TurnProvenance.Built provenance = TurnProvenance.build(
+                pipelineOutcomes != null ? pipelineOutcomes : audit.toolOutcomes(),
+                properties.turn().provenance());
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
+                answer, provenance.ask(), provenance.result(), audit.toRefsEnvelope(), degraded,
                 memory.recalled());
 
         touchConversation(conversation, request.getContent());
@@ -387,7 +408,8 @@ public class ChatService {
                         conversationId);
                 return;
             }
-            persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT, answer, null, null, false, null);
+            persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
+                    answer, null, null, null, false, null);
             conversation.setLastMessageAt(Instant.now());
             conversationRepository.save(conversation);
         } catch (RuntimeException e) {
@@ -460,7 +482,7 @@ public class ChatService {
      * the whole turn. Mirrors the streamed path's guard exactly: an answer via the caller's legacy
      * tool-loop fallback beats an error (spec §8's philosophy applies here too).
      */
-    private String pipelineAnswerGuarded(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+    private PipelineAnswer pipelineAnswerGuarded(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
             String turnCtx, List<Turn> history, String content, LocalDate today, ToolCallAudit audit,
             LlmCallContext turnContext) {
         try {
@@ -494,7 +516,7 @@ public class ChatService {
      *                — never {@link TurnPhase#PLANNING}, which belongs to the caller at attempt
      *                start (see the class javadoc).
      */
-    String pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+    PipelineAnswer pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
                           String turnContext, List<Turn> history, String content, LocalDate today,
                           ToolCallAudit audit, Consumer<TurnPhase> onPhase) {
         boolean replanAllowed = gear == TurnGear.ANALYSIS
@@ -516,7 +538,7 @@ public class ChatService {
         if (gap.isEmpty() || !replanAllowed) {
             // A marker on a gear that never offered it is model noise; guardAgainstMarker strips
             // it defensively so it can never persist as an assistant message either way.
-            return guardAgainstMarkerLogged(answer);
+            return toPipelineAnswer(guardAgainstMarkerLogged(answer), lap1.outcomes());
         }
         String hint = content + "\n\n[KIEGÉSZÍTÉS] Az előző körből hiányzó adat: " + gap.get();
         Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
@@ -538,8 +560,27 @@ public class ChatService {
         String lapTwoAnswer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
                 () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
-        return guardAgainstMarkerLogged(lapTwoAnswer);
+        // S9.7 Task 4: `merged` — lap 1 AND the replan lap, in that order — is the FINAL plan-truth
+        // list a replanned turn persists. Threaded out via PipelineAnswer rather than an
+        // out-parameter (task 4 brief) since it used to die right here once this method returned.
+        return toPipelineAnswer(guardAgainstMarkerLogged(lapTwoAnswer), merged);
     }
+
+    /** Null-propagating wrapper (fix round 1's marker guard can still veto the whole turn here,
+     *  same as before PipelineAnswer existed): a null answer means "no pipeline answer at all",
+     *  never a {@link PipelineAnswer} with a null {@code answer()}. */
+    private static PipelineAnswer toPipelineAnswer(String answer, List<ToolCallAudit.ToolOutcome> outcomes) {
+        return answer == null ? null : new PipelineAnswer(answer, outcomes);
+    }
+
+    /**
+     * {@link #pipelineAnswer}'s result: the answer text AND the plan-truth outcome list that
+     * produced it (S9.7 Task 4) — lap 1's list on the no-replan exit, the lap1+replan {@code
+     * merged} list on the replan exit. {@code sendMessage}'s pipeline branch persists {@code
+     * outcomes()} via {@link TurnProvenance#build}; {@link ChatStreamService} (the streamed twin)
+     * reads only {@code answer()} today.
+     */
+    record PipelineAnswer(String answer, List<ToolCallAudit.ToolOutcome> outcomes) {}
 
     /**
      * Null-guard helper for the phase-seam callback (mezo-rj214.7 S9.6 Task 2): the sync path
@@ -786,14 +827,15 @@ public class ChatService {
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
-            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded,
-            RecalledMemoriesEnvelope recalled) {
+            String content, ToolCallsEnvelope toolCalls, ToolOutcomesEnvelope toolOutcomes, RefsEnvelope refs,
+            boolean degraded, RecalledMemoriesEnvelope recalled) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
         message.setRole(role);
         message.setContent(content);
         message.setToolCalls(toolCalls);
+        message.setToolOutcomes(toolOutcomes);
         message.setRefs(refs);
         message.setRecalledMemories(recalled);
         message.setDegraded(degraded);

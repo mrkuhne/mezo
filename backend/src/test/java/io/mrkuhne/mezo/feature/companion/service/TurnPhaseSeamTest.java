@@ -34,7 +34,7 @@ class TurnPhaseSeamTest extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("phase-seam@test.local");
         List<TurnPhase> phases = new ArrayList<>();
 
-        String answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
+        ChatService.PipelineAnswer answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
             "HANG", "\n\nMa: " + LocalDate.now() + "\n", List.of(),
             "Mi van a kamrában?" + PLAN_PANTRY, LocalDate.now(),
             toolRegistry.newTurnAudit(), phases::add);
@@ -61,7 +61,7 @@ class TurnPhaseSeamTest extends AbstractIntegrationTest {
     void testPipelineAnswer_shouldTolerateNullConsumer_whenSyncPathCalls() {
         UUID userId = databasePopulator.populateUser("phase-null@test.local");
 
-        String answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
+        ChatService.PipelineAnswer answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
             "HANG", "\n\nMa: " + LocalDate.now() + "\n", List.of(),
             "Mi van a kamrában?" + PLAN_PANTRY, LocalDate.now(),
             toolRegistry.newTurnAudit(), null);
@@ -75,7 +75,7 @@ class TurnPhaseSeamTest extends AbstractIntegrationTest {
         List<TurnPhase> phases = new ArrayList<>();
         String emptyPlan = " [fake-plan:{\"needsData\":false,\"steps\":[]}]";
 
-        String answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
+        ChatService.PipelineAnswer answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
             "HANG", "\n\nMa: " + LocalDate.now() + "\n", List.of(),
             "Mi van a kamrában?" + emptyPlan, LocalDate.now(),
             toolRegistry.newTurnAudit(), phases::add);
