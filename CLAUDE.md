@@ -98,9 +98,10 @@ Every UI design, mockup, and prototype MUST follow the **restored Mozaik 2.0 / C
 language. Orient via the index **[`docs/design_2.0/README.md`](docs/design_2.0/README.md)**
 (living vs superseded docs). Canon, in order:
 
-1. **`docs/design_2.0/2026-09-17-restored-world-style-bible.md`** — the single styling reference
-   for all re-dress and new UI work. *(Produced by epic task `mezo-ju4j6.2`; until it lands, use
-   the Mozaik-era handoffs listed as living in the index.)*
+1. **[`docs/design_2.0/2026-09-17-restored-world-style-bible.md`](docs/design_2.0/2026-09-17-restored-world-style-bible.md)**
+   — the single styling reference for all re-dress and new UI work: ground tokens, palette &
+   materials per domain, card anatomy, data-as-graphics, ceremony material, the clay icon recipe,
+   and the old-world treatment of GlassBox / BodyMap / the in-workout list / the docked TabBar.
 2. The **ceremony (reward screen) pattern** (`docs/design_2.0/2026-09-15-ceremony-pattern.md`) —
    the *pattern* (triggers, anatomy, motion, copy rules) stays canon; its Titanium skin does not,
    celebratory surfaces return to polished-stone/gold material.
