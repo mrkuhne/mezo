@@ -8,6 +8,7 @@ import { WELCOME_VERSION } from '@/features/tutorial/registry/welcome'
 // A `fuel` kalauz verziója a REGISTRYBŐL jön, nem beégetve: S5 (mezo-qt5q) bumpolta, amikor a
 // Mai-lap kártyái átírták a T1 kört, és egy beégetett `1` ilyenkor hamisan pirosodik.
 import { versionOf } from '@/features/tutorial/registry'
+import { TRAIN_KALAUZ } from '@/features/tutorial/registry/train'
 import { readLocalProgress, writeLocalProgress } from '@/shared/lib/tutorialSeen'
 import { API_BASE } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
@@ -41,6 +42,10 @@ function Probe() {
       <span data-testid="current">{t.current?.id ?? '-'}</span>
       <span data-testid="unseen">{String(t.isUnseen('fuel'))}</span>
       <button onClick={() => t.open('fuel')}>nyisd</button>
+      {/* Ugyanaz a hívás, mint az AppHeader „?" gombjáé (kalauz.open(kalauz.current.id)) —
+          a Train-sweep teszt ezzel bizonyítja, hogy a tartalom a fejléc gombjától FÜGGETLENÜL,
+          deliberát nyitásra elérhető marad, csak az AUTO-open van a tartományra kikapcsolva. */}
+      <button onClick={() => { if (t.current) t.open(t.current.id) }}>nyisd-current</button>
       {/* /train maga sosem kalauzos (a hat-csempés hub retirált, Train Titanium T4,
           mezo-88iwa.5): a router azonnal /train/mai-re irányít, tehát a kalauz-lint
           szemével is a landolt route számít — a próba egyenesen oda navigál. */}
@@ -138,6 +143,25 @@ test('kalauz nélküli route-on nincs felugrás és current null', () => {
   expect(screen.queryByRole('dialog')).toBeNull()
 })
 
+// ── Train tartomány: a Kalauz sosem ugrik fel magától (mezo-e1ii9, parity matrix §21 sor 8) ──
+// A prototípusnak egyetlen /train/* oldalon sincs auto-nyíló overlaya. A tartalom viszont NEM
+// tűnt el: `t.open(id)` — ugyanaz a hívás, mint az AppHeader „?" gombjáé — a Train minden
+// T2 aloldalán is nyit. A `:workoutId` paraméteres train-review konkrét útvonalat kap, mint
+// minden más útvonal-alapú teszt ebben a fájlban. A `train-konyvtar` (T3) itt is szerepel —
+// nem mert a fixe eddig is auto-open lett volna (a T3-kapu már elnyomta), hanem mert a teljes
+// tartomány-söprés (a task-brief "cover the whole Train domain" kérése) e nélkül hiányos lenne.
+const TRAIN_ROUTES = TRAIN_KALAUZ.map((e) => [e.id, e.route.replace(':workoutId', 'w1')] as const)
+
+test.each(TRAIN_ROUTES)('Train — %s (%s): nincs auto-felugrás, de a "?" (open) nyit', async (id, path) => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt(path)
+  expect(screen.getByTestId('current')).toHaveTextContent(id)
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 200) })
+  expect(screen.queryByRole('dialog')).toBeNull() // nincs auto-open
+  await user.click(screen.getByRole('button', { name: 'nyisd-current' })) // == a fejléc "?" gombja
+  expect(screen.getByRole('dialog', { name: `Kalauz · ${TRAIN_KALAUZ.find((e) => e.id === id)!.label}` })).toBeInTheDocument()
+})
+
 test('a kapcsolat-chip navigál, a kalauz completedAt-tal zár', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   renderAt('/fuel')
@@ -161,15 +185,18 @@ test('a kapcsolat-chip navigál, a kalauz completedAt-tal zár', async () => {
 test('reduced motion + kalauzos route-ra mutató chip: a cél-kalauz nem záródik némán, a forrás kapja a completedAt-ot', async () => {
   stubReducedMotion()
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/fuel')
+  // /train NEM jó cél többé erre a regresszióra (mezo-e1ii9: a Train tartomány kalauza
+  // sosem ugrik fel magától) — a Kamra chip a /fuel/stack-ről ugyanígy egy MÁSIK kalauzos
+  // route-ra mutat, tehát a race ugyanúgy reprodukálható marad.
+  renderAt('/fuel/stack')
   flush()
-  await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })
+  await screen.findByRole('dialog', { name: 'Kalauz · Kiegészítők' })
   await user.click(screen.getByRole('button', { name: '5. kártya' }))
-  await user.click(screen.getByRole('button', { name: /^Edzés/ })) // → /train, aminek VAN kalauza
+  await user.click(screen.getByRole('button', { name: /^Kamra/ })) // → /fuel/kamra, aminek VAN kalauza
   await act(async () => { vi.advanceTimersByTime(400) })
   const p = readLocalProgress()
-  expect(p.train?.completedAt ?? null).toBeNull() // sosem jelent meg → nem lehet „végigolvasva"
-  expect(p.fuel?.completedAt).not.toBeNull() // a forrás kalauz kapja a done-t
+  expect(p['fuel-kamra']?.completedAt ?? null).toBeNull() // sosem jelent meg → nem lehet „végigolvasva"
+  expect(p['fuel-stack']?.completedAt).not.toBeNull() // a forrás kalauz kapja a done-t
 })
 
 test('route-váltás nyitott, érintetlen kalauzon dismissedAtStep: 0-t ír', async () => {
@@ -306,7 +333,9 @@ test('látott welcome mellett a /nap kalauza normálisan felugrik', async () => 
 })
 
 test('a függő welcome MÁS route kalauzát nem nyomja el', async () => {
-  renderAt('/train/mai')
+  // /train/mai NEM jó fixture többé erre (mezo-e1ii9: a Train tartomány kalauza sosem
+  // ugrik fel magától) — a /fuel ugyanúgy „más route", aminek van T2 kalauza.
+  renderAt('/fuel')
   await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
   expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
 })
