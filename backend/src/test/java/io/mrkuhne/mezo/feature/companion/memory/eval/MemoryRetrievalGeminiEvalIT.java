@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.llm.GeminiEmbeddingAdapter;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
@@ -153,7 +154,7 @@ class MemoryRetrievalGeminiEvalIT extends AbstractIntegrationTest {
                 && usage.rerankerCalls() == 0
                 && companionProperties.embedding().model().equals(usage.embeddingModel())
                 && (expectedRewriteCalls == 0
-                        || companionProperties.llm().chatModel().equals(usage.rewriteModel()));
+                        || activeChatModel(companionProperties).equals(usage.rewriteModel()));
 
         EvalMetrics baseline = MemoryEvalMetrics.evaluate(corpus.queries(), quality.baselineOutcomes());
         EvalMetrics candidate = MemoryEvalMetrics.evaluate(corpus.queries(), quality.candidateOutcomes());
@@ -631,5 +632,17 @@ class MemoryRetrievalGeminiEvalIT extends AbstractIntegrationTest {
             int rerankerCalls,
             long rerankerTokens,
             BigDecimal rerankerCostUsd) {
+    }
+
+    /**
+     * mezo-ozri.4 moved the model table under the provider ({@code llm().gemini()} /
+     * {@code llm().openai()}), so there is no provider-neutral {@code llm().chatModel()} any more.
+     * The query rewrite rides whichever provider is ACTIVE, so that is the tier to compare against.
+     */
+    private static String activeChatModel(CompanionProperties properties) {
+        CompanionProperties.Llm llm = properties.llm();
+        return llm.provider() == LlmProvider.OPENAI
+                ? llm.openai().chatModel()
+                : llm.gemini().chatModel();
     }
 }

@@ -1,0 +1,407 @@
+{
+  "corpusVersion" : "memory-hu-v1",
+  "corpusSha256" : "45c20d293edc3918765c9ba35468057d68997788f91e4ef31c2264a39738206b",
+  "generatedAt" : "2026-09-17T19:18:51.599240Z",
+  "gitCommit" : "500bf6bfc86ed01fb197ebcaaeace1c30ffc7ab5",
+  "provider" : {
+    "provider" : "google",
+    "model" : "gemini-embedding-001",
+    "embeddingVersion" : "gemini-embedding-001-memory-v1"
+  },
+  "overall" : {
+    "baseline" : {
+      "recallAt5" : 0.1545138888888889,
+      "ndcgAt5" : 0.12983442442481888,
+      "mrr" : 0.11979166666666662,
+      "contextPrecision" : 0.07407407407407404,
+      "emptyFalsePositiveRate" : 0.8333333333333334,
+      "ownershipLeaks" : 0
+    },
+    "candidate" : {
+      "recallAt5" : 0.8368055555555556,
+      "ndcgAt5" : 0.7093185702229202,
+      "mrr" : 0.6586948352573352,
+      "contextPrecision" : 0.053170656115443554,
+      "emptyFalsePositiveRate" : 0.0,
+      "ownershipLeaks" : 0
+    },
+    "delta" : {
+      "recallAt5" : 0.6822916666666667,
+      "ndcgAt5" : 0.5794841457981014,
+      "mrr" : 0.5389031685906686,
+      "contextPrecision" : -0.020903417958630488,
+      "emptyFalsePositiveRate" : -0.8333333333333334,
+      "ownershipLeaks" : 0
+    }
+  },
+  "byPersona" : {
+    "changing" : {
+      "baseline" : {
+        "recallAt5" : 0.23958333333333334,
+        "ndcgAt5" : 0.2157904413930579,
+        "mrr" : 0.203125,
+        "contextPrecision" : 0.12500000000000003,
+        "emptyFalsePositiveRate" : 1.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.7864583333333334,
+        "ndcgAt5" : 0.6927479874316269,
+        "mrr" : 0.6455030212842715,
+        "contextPrecision" : 0.061344483483376226,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.546875,
+        "ndcgAt5" : 0.476957546038569,
+        "mrr" : 0.4423780212842715,
+        "contextPrecision" : -0.0636555165166238,
+        "emptyFalsePositiveRate" : -1.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "rich" : {
+      "baseline" : {
+        "recallAt5" : 0.026041666666666668,
+        "ndcgAt5" : 0.01857453683080453,
+        "mrr" : 0.015625,
+        "contextPrecision" : 0.010416666666666666,
+        "emptyFalsePositiveRate" : 0.8333333333333334,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.8125,
+        "ndcgAt5" : 0.6976670841530916,
+        "mrr" : 0.6426260371572873,
+        "contextPrecision" : 0.05965190504710175,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.7864583333333334,
+        "ndcgAt5" : 0.6790925473222871,
+        "mrr" : 0.6270010371572873,
+        "contextPrecision" : 0.04923523838043509,
+        "emptyFalsePositiveRate" : -0.8333333333333334,
+        "ownershipLeaks" : 0
+      }
+    },
+    "sparse" : {
+      "baseline" : {
+        "recallAt5" : 0.19791666666666666,
+        "ndcgAt5" : 0.1551382950505943,
+        "mrr" : 0.140625,
+        "contextPrecision" : 0.08680555555555552,
+        "emptyFalsePositiveRate" : 0.6666666666666666,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.9114583333333334,
+        "ndcgAt5" : 0.7375406390840414,
+        "mrr" : 0.6879554473304474,
+        "contextPrecision" : 0.038515579815852706,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.7135416666666667,
+        "ndcgAt5" : 0.5824023440334472,
+        "mrr" : 0.5473304473304474,
+        "contextPrecision" : -0.04828997573970282,
+        "emptyFalsePositiveRate" : -0.6666666666666666,
+        "ownershipLeaks" : 0
+      }
+    }
+  },
+  "byFamily" : {
+    "empty" : {
+      "baseline" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.8333333333333334,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : -0.8333333333333334,
+        "ownershipLeaks" : 0
+      }
+    },
+    "exact_value" : {
+      "baseline" : {
+        "recallAt5" : 0.5,
+        "ndcgAt5" : 0.30437244285475984,
+        "mrr" : 0.22222222222222213,
+        "contextPrecision" : 0.22222222222222213,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.7222222222222222,
+        "ndcgAt5" : 0.5623520070777377,
+        "mrr" : 0.46522667147667146,
+        "contextPrecision" : 0.05143529898926008,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.2222222222222222,
+        "ndcgAt5" : 0.25797956422297785,
+        "mrr" : 0.24300444925444933,
+        "contextPrecision" : -0.17078692323296205,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "follow_up" : {
+      "baseline" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 1.0,
+        "ndcgAt5" : 0.9399611752379828,
+        "mrr" : 0.9097222222222222,
+        "contextPrecision" : 0.0570893773186444,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 1.0,
+        "ndcgAt5" : 0.9399611752379828,
+        "mrr" : 0.9097222222222222,
+        "contextPrecision" : 0.0570893773186444,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "near_negative" : {
+      "baseline" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.9166666666666666,
+        "ndcgAt5" : 0.9353981646350056,
+        "mrr" : 0.9305555555555556,
+        "contextPrecision" : 0.05020138526994137,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.9166666666666666,
+        "ndcgAt5" : 0.9353981646350056,
+        "mrr" : 0.9305555555555556,
+        "contextPrecision" : 0.05020138526994137,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "negation" : {
+      "baseline" : {
+        "recallAt5" : 0.05555555555555555,
+        "ndcgAt5" : 0.05792178095714667,
+        "mrr" : 0.05555555555555555,
+        "contextPrecision" : 0.037037037037037035,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.9722222222222222,
+        "ndcgAt5" : 0.936644253473779,
+        "mrr" : 0.9074074074074073,
+        "contextPrecision" : 0.0553815322682737,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.9166666666666666,
+        "ndcgAt5" : 0.8787224725166324,
+        "mrr" : 0.8518518518518517,
+        "contextPrecision" : 0.018344495231236664,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "old_salient" : {
+      "baseline" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.6944444444444444,
+        "ndcgAt5" : 0.5207054769122289,
+        "mrr" : 0.4897156084656084,
+        "contextPrecision" : 0.05677195194594929,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.6944444444444444,
+        "ndcgAt5" : 0.5207054769122289,
+        "mrr" : 0.4897156084656084,
+        "contextPrecision" : 0.05677195194594929,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "ownership" : {
+      "baseline" : {
+        "recallAt5" : 0.3194444444444444,
+        "ndcgAt5" : 0.4485454272413961,
+        "mrr" : 0.5,
+        "contextPrecision" : 0.21296296296296288,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.5694444444444444,
+        "ndcgAt5" : 0.5557407410503395,
+        "mrr" : 0.5652777777777778,
+        "contextPrecision" : 0.06550439257227664,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.25,
+        "ndcgAt5" : 0.10719531380894343,
+        "mrr" : 0.06527777777777777,
+        "contextPrecision" : -0.14745857039068624,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "paraphrase" : {
+      "baseline" : {
+        "recallAt5" : 0.0,
+        "ndcgAt5" : 0.0,
+        "mrr" : 0.0,
+        "contextPrecision" : 0.0,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 0.8194444444444444,
+        "ndcgAt5" : 0.5905193885140632,
+        "mrr" : 0.4877645502645502,
+        "contextPrecision" : 0.056373022496415764,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.8194444444444444,
+        "ndcgAt5" : 0.5905193885140632,
+        "mrr" : 0.4877645502645502,
+        "contextPrecision" : 0.056373022496415764,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    },
+    "superseded" : {
+      "baseline" : {
+        "recallAt5" : 0.3611111111111111,
+        "ndcgAt5" : 0.22783574434524853,
+        "mrr" : 0.18055555555555555,
+        "contextPrecision" : 0.12037037037037036,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "candidate" : {
+        "recallAt5" : 1.0,
+        "ndcgAt5" : 0.6332273548822239,
+        "mrr" : 0.5138888888888888,
+        "contextPrecision" : 0.032608288062787254,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      },
+      "delta" : {
+        "recallAt5" : 0.6388888888888888,
+        "ndcgAt5" : 0.40539161053697537,
+        "mrr" : 0.33333333333333326,
+        "contextPrecision" : -0.08776208230758312,
+        "emptyFalsePositiveRate" : 0.0,
+        "ownershipLeaks" : 0
+      }
+    }
+  },
+  "noRewriteNoRerankLatency" : {
+    "baseline" : {
+      "samples" : 324,
+      "p50Ms" : 289,
+      "p95Ms" : 367,
+      "p99Ms" : 505
+    },
+    "candidate" : {
+      "samples" : 324,
+      "p50Ms" : 303,
+      "p95Ms" : 375,
+      "p99Ms" : 506
+    }
+  },
+  "usage" : {
+    "embedding" : {
+      "calls" : 655,
+      "billableCharacters" : 0,
+      "unpricedCalls" : 655,
+      "costUsd" : null
+    },
+    "rewrite" : {
+      "model" : null,
+      "calls" : 0,
+      "tokens" : 0,
+      "unpricedCalls" : 0,
+      "costUsd" : null
+    },
+    "reranker" : {
+      "calls" : 0,
+      "tokens" : 0,
+      "costUsd" : 0
+    }
+  },
+  "budget" : {
+    "maxEmbeddingUsd" : 5.00,
+    "maxRerankingUsd" : 0.00
+  },
+  "failedQueryIds" : [ ],
+  "hardGates" : {
+    "recallAt5" : false,
+    "ndcgAt5" : true,
+    "mrr" : true,
+    "contextPrecision" : false,
+    "ownershipIsolation" : true,
+    "emptyFalsePositiveRate" : true,
+    "latencyP95" : false,
+    "embeddingBudget" : true,
+    "rerankingBudget" : true,
+    "queryExecution" : true,
+    "usageAudit" : false,
+    "passed" : false
+  },
+  "passed" : false
+}
