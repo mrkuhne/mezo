@@ -148,7 +148,7 @@ public class ToolCallAudit {
      * (mezo-indo). The v1 payload listed names only, which made every tool-derived number
      * structurally unsupported to the judge (measured: 0% pass at every reasoning-effort level,
      * mezo-9yqq class 1). {@code result} is null when no output was ever recorded for the call.
-     * NOT persisted — the tool_calls jsonb envelope deliberately keeps only {type,name,args}.
+     * Persisted as the ran-truth provenance on both sync and streamed paths (S9.7 Task 5).
      */
     public synchronized List<ToolOutcome> toolOutcomes() {
         return IntStream.range(0, calls.size())

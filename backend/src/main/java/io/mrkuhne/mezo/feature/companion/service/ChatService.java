@@ -583,7 +583,7 @@ public class ChatService {
      * produced it (S9.7 Task 4) — lap 1's list on the no-replan exit, the lap1+replan {@code
      * merged} list on the replan exit. {@code sendMessage}'s pipeline branch persists {@code
      * outcomes()} via {@link TurnProvenance#build}; {@link ChatStreamService} (the streamed twin)
-     * reads only {@code answer()} today.
+     * also threads {@code outcomes()} through to persisted provenance.
      */
     record PipelineAnswer(String answer, List<ToolCallAudit.ToolOutcome> outcomes) {}
 
@@ -640,8 +640,8 @@ public class ChatService {
     }
 
     /** What {@link #planAndExecuteVolatile} built for its caller: the volatile half ready to
-     *  answer against, plus the outcomes that produced it (needed only by {@link #pipelineAnswer}'s
-     *  replan lap — the streamed LOOKUP path reads {@code volatileHalf} alone). */
+     *  answer against, plus the outcomes that produced it — used by {@link #pipelineAnswer}'s replan
+     *  lap and threaded through the streamed path to persisted provenance. */
     record PlanLapResult(String volatileHalf, List<ToolCallAudit.ToolOutcome> outcomes) {}
 
     /**

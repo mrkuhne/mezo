@@ -63,9 +63,11 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
      *  provenance lands on the persisted row, not on the wire {@code MessageResponse} (which never
      *  carried {@code why}/outcome text at all), so these assertions must re-query it. */
     private AiMessageEntity lastAssistantRow(UUID conversationId, UUID userId) {
-        return messageRepository
-            .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId)
-            .getLast();
+        List<AiMessageEntity> messages = messageRepository
+            .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId);
+        AiMessageEntity last = messages.getLast();
+        assertThat(last.getRole()).isEqualTo(AiMessageEntity.ROLE_ASSISTANT);
+        return last;
     }
 
     @Test
@@ -250,6 +252,8 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
         assertThat(assistant.getToolCalls().calls()).hasSize(2);
         assertThat(assistant.getToolCalls().calls()).allSatisfy(
                 call -> assertThat(call.name()).isEqualTo("get_recovery"));
+        assertThat(assistant.getToolCalls().calls()).allSatisfy(
+                call -> assertThat(call.why()).isEqualTo("alvás"));
         assertThat(assistant.getToolOutcomes().outcomes()).hasSize(2);
         assertThat(assistant.getToolOutcomes().outcomes()).allSatisfy(
                 outcome -> assertThat(outcome.name()).isEqualTo("get_recovery"));

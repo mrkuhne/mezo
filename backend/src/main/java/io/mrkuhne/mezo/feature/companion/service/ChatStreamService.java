@@ -372,8 +372,8 @@ public class ChatStreamService {
         LocalDate today = turn.today();
         if (turn.gear() == TurnGear.ANALYSIS) {
             // S9.7 Task 4: pipelineAnswer now also returns the outcome list that produced the
-            // answer (for the sync path's provenance persistence) — the streamed path reads only
-            // the answer text today; its own tool_outcomes wiring is a later task.
+            // answer (for the sync path's provenance persistence) — the streamed path threads the
+            // outcome list through to persisted provenance on the row.
             ChatService.PipelineAnswer synced = chatService.pipelineAnswer(userId, turn.conversationId(),
                     turn.gear(), turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(),
                     today, audit, onPhase);
