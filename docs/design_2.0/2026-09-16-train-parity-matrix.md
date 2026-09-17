@@ -301,17 +301,28 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 
 ## 16. `train/3` — Gyakorlatok
 
-**Production: `/train/exercises` (`ExercisesPage`)** — present as a route, but it is an **entirely different, pre-Titanium page**.
+**Production: ✅ CLOSED (P2 Task 4)** — `/train/exercises` (`ExercisesPage`) was replaced wholesale: the
+pre-Titanium page (DS header + `Új gyakorlat` + the ranked top-5 + dashed ghost rows + the ⋯/▶ sheets)
+is gone, and the screen is now the prototype's catalogue — poster, search, region chips, one `.gy-card`
+per catalogue exercise. The joins live in `features/train/logic/exerciseLibrary.ts` (catalogue × records
+× medals, identity via the shared `recordFor` rule).
 
 | Prototype | Production |
 |---|---|
-| Poster `GYAKORLATOK / A mozdulataid` + lead `Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.` | **absent** — replaced by `EDZÉS · GYAKORLATOK / Gyakorlatok / Új gyakorlat` |
-| Stat strip `19 gyakorlat · 3 rekorddal · 6 medál` | present-but-different: `21 / 5 rekord / 0 saját / 1 videóval` + a separate `Medálok` button |
-| Filter chips `Mind · Mell · Hát · Váll · Kar · Láb · Core` | present as `Összes · Plyo · Mell · Hát · Váll · Kar · Láb · Core` |
-| Search field `#gy-search` | **absent** |
-| **Full catalogue** — 19 rows, each `név / izom / becsült 1RM / medálszám ›` | **absent** — production shows only `TOP GYAKORLATOK · REKORDJAID · 5 PR`, a ranked top-5 (`#1 … #5`) with letter-avatar circles, **English tags `COMPOUND` / `ISOLATION`**, and `LEGJOBB SZETT / E1RM / ÖSSZVOLUMEN`. The whole page is 718 characters of text — there is no list to scroll |
+| Poster `GYAKORLATOK / A mozdulataid` + lead `Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.` | **identical copy** on the house `.pl-dhero.pl-lhero` poster; the hero art is the clay `i-polc` (the set has no book) |
+| Stat strip `19 gyakorlat · 3 rekorddal · 6 medál` | **identical shape, real counts** — `21 gyakorlat · 5 rekorddal · 8 medál` in mock; all three derived (`libraryCounts`) and honest at zero |
+| Search field `#gy-search`, placeholder `Keresés névre vagy izomra…` | present, placeholder verbatim; matches the NAME or the MUSCLE label, **accent-blind** (`foldAccents` — „hat" finds `Hát (közép)`). The house `.searchfield` chrome (48px target + a leading magnifier) wears the prototype's `.gy-search` row: the prototype's own `.wz-pick-search` input styling belongs to the wizard CSS and was not ported |
+| Filter chips `Mind · Mell · Hát · Váll · Kar · Láb · Core` | `Mind` + one chip per region the catalogue ACTUALLY has rows in (mock: no Core exercise ⇒ no Core chip — a chip that filters to nothing is a lie). Drawn with the house DS chip (44px tap height), one scrolling row instead of the prototype's wrapping pills |
+| **Full catalogue** — 19 rows, each `név / izom / becsült 1RM / medálszám ›` | **present** — 21 rows, same anatomy: `MuscleChip` art, name, muscle label, and either the best e1RM + `becsült 1RM` + the medal count, or `még nincs naplózva`. A logged exercise with no trustworthy estimate (bodyweight, every set above the rep cap) shows an em dash, never a 0 |
+| Tap → the exercise's story | routes to `/train/exercises/:key` (§17, P2 Task 5) |
 
-**Severity: BLOCKER**
+**Deliberate losses (capabilities the prototype's catalogue has no home for — recorded, not silent):**
+`Új gyakorlat` authoring + the ⋯ edit/delete sheet (`CatalogExerciseSheet`), the ▶ demo-video sheet
+(`VideoUrlSheet`), the `REKORDOK` modal (`ExerciseRecordSheet` — §17's story page replaces it), and the
+`Medálok` nav row, which was `/train/medals`'s only entry point. The ranked top-5 and the dashed ghost
+rows are NOT losses — they are presentation the catalogue replaces.
+
+**Severity: ✅ CLOSED (P2 Task 4)** — was BLOCKER.
 
 ---
 
@@ -431,8 +442,8 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 | Severity | Count | Screens |
 |---|---|---|
 | **✅ CLOSED by P1** (`mezo-e1ii9`) | 4 | §3 day page, §10 closed run, §19 ceremony, and §18's prep phase (the screen itself drops to MAJOR) |
-| **✅ CLOSED by P2** (`mezo-lf3cv`) | 1 | §15 jelek (Task 1 — the screen AND its §13 doorway) |
-| **BLOCKER** (open → P2) | 3 | §11 wizard (all steps), §16 Gyakorlatok, §17 exercise story |
+| **✅ CLOSED by P2** (`mezo-lf3cv`) | 2 | §15 jelek (Task 1 — the screen AND its §13 doorway), §16 Gyakorlatok (Task 4 — the catalogue) |
+| **BLOCKER** (open → P2) | 2 | §11 wizard (all steps), §17 exercise story |
 | **MAJOR** (open → P2/P3) | 8 screens + the shell | §1 Mai, §3b day EDIT route (new in P1), §5 muscle detail, §9 closed list, §12 Terhelés, §13 Izomtérkép, §14 Mozgás, §18 active workout (in-card differences) (+ §0 global shell — **out of scope, owner decision A**) |
 | **MINOR** (open → P3) | 5 | §2 Terv, §4 week, §6 library, §7 templates, §8 template story |
 

@@ -183,23 +183,25 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-exercises',
     route: '/train/exercises',
     tier: 'T2',
-    version: 1,
+    // v2 (parity P2 Task 4, mezo-lf3cv): a lap a teljes katalógus lett — a top-ötös
+    // sorrend, a ▶ videógomb és az „Új gyakorlat" felvétel eltűnt róla, a szöveg követi.
+    version: 2,
     label: 'Gyakorlatok',
     cards: [
       {
         kind: 'intro', spot: 'i-polc', orb: 's-orb',
         title: 'Ez a Gyakorlatok.',
-        voice: 'A teljes katalógus és a saját rekordjaid: a top gyakorlataid elöl, minden más egy keresésre.',
+        voice: 'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',
       },
       {
         kind: 'hogyan', spot: 'i-video', orb: 's-orb-figyel', anchor: 'exercises-kereso',
         title: 'Keress vagy szűrj.',
-        voice: 'Írj a keresőbe vagy szűrj izomcsoportra — a találat sora a rekordjaidat nyitja, a ▶ a technika-videót. Sajátot az Új gyakorlat gombbal veszel fel.',
+        voice: 'Írj a keresőbe névre vagy izomra, vagy szűrj izomcsoportra a gombokkal — egy sorra koppintva megnyílik a gyakorlat egész története.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Edzés közben, tervezéskor.',
-        voice: 'Edzés közben egy videóért, tervezéskor egy új gyakorlatért. A rekordok maguktól frissülnek a szettjeidből.',
+        voice: 'Edzés közben egy mozdulat utánanézéséért, tervezéskor a válogatásért. A rekordok maguktól frissülnek a szettjeidből.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

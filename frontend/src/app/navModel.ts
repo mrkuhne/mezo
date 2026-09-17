@@ -67,7 +67,10 @@ export const DOMAINS: NavDomain[] = [
         // field exists for.
         owns: ['/train/gym', '/train/week/jelek'] },
       { label: 'Gyakorlatok', route: '/train/exercises', icon: 'i-naplo',
-        owns: ['/train/medals'] },
+        // `/train/exercises/:key` (one exercise's story, parity P2) sits UNDER the tab
+        // route, so the prefix rule would already light it — it is listed so the subpage
+        // SAYS where it belongs, the same statement `/train/week/jelek` makes.
+        owns: ['/train/medals', '/train/exercises'] },
     ],
   },
   {
