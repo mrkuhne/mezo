@@ -114,6 +114,29 @@ spec:
             # docs/research/comparisons/companion-chat-model-rebaseline-2026-09.md.
             - name: MEZO_COMPANION_LLM_PROVIDER
               value: "openai"
+            # mezo-i7x5v: PRODUCTION chat now retrieves memory from the unified platform instead of
+            # the legacy pgvector path. Same explicit-env precedent as the provider above —
+            # application.yml keeps its SHADOW default, so local dev, CI and every test are
+            # untouched and the rollback is one deleted env entry. ChatMemoryContextAdapter also
+            # falls back to the legacy path on its own for any runtime failure, so the switch
+            # cannot take chat down.
+            #
+            # Chosen on measured evidence (mezo-6dii.9, 324 human-approved holdout queries, both
+            # engines on identical data): recall@5 0.155 -> 0.837, nDCG@5 0.130 -> 0.709, MRR
+            # 0.120 -> 0.659, and — the decisive one — the rate at which the engine invents
+            # "memories" for questions that deserve none fell from 0.833 to 0.000. p95 is 8 ms
+            # slower (367 -> 375 ms). The run's aggregate verdict was FAIL and the product owner
+            # deliberately overrode it: of the four failing gates, the 250 ms p95 target is
+            # unreachable for BOTH engines (each makes a ~300 ms embedding call — the same
+            # database-budget-around-a-network-hop error as mezo-iddo), the context-precision gate
+            # demands +0.10 over a baseline that is itself near-noise, recall misses 0.85 by 0.013,
+            # and the usage gate failed only because no pricing row exists for the embedding model.
+            # docs/research/raw/measurements/2026-09-17-memory-retrieval-gemini-eval.md.
+            #
+            # This was not decidable before mezo-iddo: until that fix the platform's dense retriever
+            # timed out on 55 of 55 production runs, so its semantic half had never actually run.
+            - name: MEZO_MEMORY_SERVING_MODE
+              value: "NEW"
             - name: MEZO_FEATURE_COMPANION_ENABLED
               value: "true"
             # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning
