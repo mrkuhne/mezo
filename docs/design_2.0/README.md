@@ -24,11 +24,10 @@ is visually superseded — so nobody has to reconstruct the state of the directi
 
 **Start here for any new design work:**
 
-1. **`2026-09-17-restored-world-style-bible.md`** — the single
+1. [2026-09-17 restored-world style bible](2026-09-17-restored-world-style-bible.md) — the single
    styling reference for all re-dress and new UI work: palette & materials per domain, card
    anatomy, ring/gauge/sparkline treatments, icon material recipe, and the old-world treatment of
    the components that never existed pre-Titanium (GlassBox, BodyMap, in-workout list, TabBar).
-   *(Produced by epic task `mezo-ju4j6.2`; until it lands, use the living docs in the next table.)*
 2. [Ceremony (reward screen) pattern](2026-09-15-ceremony-pattern.md) — the reusable celebration
    screen: triggers, anatomy, motion spec, glucose step, copy rules. **The pattern stays canon;
    its Titanium skin does not** — celebratory surfaces wear polished-stone/gold material.
@@ -39,8 +38,9 @@ is visually superseded — so nobody has to reconstruct the state of the directi
 
 | Doc | What it holds |
 | --- | --- |
-| `2026-09-17-restored-world-style-bible.md` | **The** styling reference for the restored world — **not written yet**, lands with `mezo-ju4j6.2`; link it here then |
+| [2026-09-17 restored-world style bible](2026-09-17-restored-world-style-bible.md) | **The** styling reference for the restored world: ground tokens, palette & materials, card anatomy, data graphics, ceremony material, clay icon recipe, the four new-components treatments, and the mined old-world recipes |
 | [2026-09-15 ceremony pattern](2026-09-15-ceremony-pattern.md) | Reward screens: meal log, supplement blocks, workout close (pattern only — old-world material) |
+| [assets/restored-world/](assets/restored-world/) | Verbatim pre-Titanium `clay-icons.svg` + `clay-spots.svg`, extracted at `8c18f331d` — the icon material reference |
 | [2026-08-26 UI/IA redesign handoff](2026-08-26-ui-ia-redesign-handoff.md) | The Mozaik 2.0 tile language and the IA it paints on |
 | [2026-08-27 fuel design iterations](2026-08-27-fuel-design-iterations.md) | Fuel screens in the Mozaik language |
 | [2026-08-27 mezo/én design iterations](2026-08-27-mezo-en-design-iterations.md) | Mezo + Én screens in the Mozaik language |

@@ -21,8 +21,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 >
 > The **Titanium** skin (dark liquid metal, ~2026-09-09 → 2026-09-17) was **rejected**. The living
 > visual language is again **Mozaik 2.0 / Clay** — see
-> [`docs/design_2.0/README.md`](../design_2.0/README.md) and the restored-world style bible it
-> points at (`docs/design_2.0/2026-09-17-restored-world-style-bible.md`, landing with `mezo-ju4j6.2`).
+> [`docs/design_2.0/README.md`](../design_2.0/README.md) and the
+> [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md) it points at.
 > **Functionality shipped during the Titanium period is kept in full**; only the skin is rolled
 > back, forward-fix, one area per bead. **This ledger is therefore mid-rollback:** sections
 > describing Titanium classes, tokens, icon art and the `.titan-dark` shell scope record what is
