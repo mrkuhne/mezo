@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useDualQuery } from '@/data/useDualQuery'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
 import { checkinApi, type CheckInResponse } from '@/data/me/biometricsApi'
@@ -40,49 +41,50 @@ export function buildDaySlots(rows: CheckInResponse[], now: Date = new Date()): 
   })
 }
 
-// The Heartbeat strip's data: mock mode keeps the Phase-1 seed; real mode READS today's
-// persisted rows (GET /api/biometrics/checkin?date=…, the previously-unconsumed listForDay)
-// and overlays them onto the 4 canonical slots. A local optimistic layer keeps a just-saved
-// slot flipped immediately in both modes; the real save invalidates the day query so the
-// strip reconciles with the server (the response is no longer discarded fire-and-forget).
+// Real slots reflect persisted server rows only. Mock edits belong to one local date.
 export function useCheckins() {
   const mock = isMockMode()
   const qc = useQueryClient()
   const date = localDateString()
-  const [local, setLocal] = useState<Record<number, Partial<CheckinSlot>>>({})
-  const { data: rows } = useQuery({
+  const [local, setLocal] = useState<{ date: string; slots: Record<number, Partial<CheckinSlot>> }>({ date, slots: {} })
+  const { data: rows, isPending, isError, refetch } = useDualQuery<CheckInResponse[]>({
     queryKey: ['checkins', date],
-    queryFn: () => checkinApi.listForDay(date),
-    enabled: !mock,
+    realFetch: () => checkinApi.listForDay(date),
+    mockData: [],
+    realEmpty: [],
   })
   const mutation = useMutation({
     mutationFn: checkinApi.save,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['checkins', date] })
+    onSuccess: (_response, saved) => {
+      qc.invalidateQueries({ queryKey: ['checkins', saved.date] })
       // Quest evaluation is read-triggered: the 4th saved slot can complete a checkin_full
       // quest, so nudge the day's quest read for same-screen feedback.
-      qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+      qc.invalidateQueries({ queryKey: ['dailyQuests', saved.date] })
     },
     onError: (err) => console.error('Check-in sync failed', err),
   })
   const base = mock ? initialCheckins : buildDaySlots(rows ?? [])
-  const checkins = base.map((c, i) => (local[i] ? { ...c, ...local[i] } : c))
+  const edits = mock && local.date === date ? local.slots : {}
+  const checkins = base.map((c, i) => (edits[i] ? { ...c, ...edits[i] } : c))
   const saveCheckIn = useCallback(
-    (idx: number, data: Partial<CheckinSlot>) => {
-      setLocal((prev) => ({ ...prev, [idx]: { ...prev[idx], ...data } }))
+    async (idx: number, data: Partial<CheckinSlot>) => {
       if (!mock) {
-        const slot = { ...base[idx], ...local[idx], ...data }
+        const slot = { ...base[idx], ...data }
         const v = slot.values
-        mutation.mutate({
+        await mutation.mutateAsync({
           date, slotTime: slot.time, state: slot.state ?? 'done',
           energy: v?.energy, stress: v?.stress, body: v?.body, mental: v?.mental,
           note: slot.note ?? undefined,
         })
       } else {
+        setLocal(prev => {
+          const slots = prev.date === date ? prev.slots : {}
+          return { date, slots: { ...slots, [idx]: { ...slots[idx], ...data } } }
+        })
         awardGamificationEvent(qc, { type: 'CHECKIN' })
       }
     },
-    [mock, base, local, mutation, date, qc],
+    [mock, base, mutation, date, qc],
   )
-  return { checkins, saveCheckIn }
+  return { checkins, saveCheckIn, isPending, isError, refetch }
 }

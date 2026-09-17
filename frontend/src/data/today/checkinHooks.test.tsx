@@ -12,6 +12,8 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 test('buildDaySlots derives wall-clock states for empty slots', () => {
@@ -51,12 +53,14 @@ test('useCheckins (real mode) hydrates the strip from the day read', async () =>
   expect(result.current.checkins[0].values?.energy).toBe(8)
 })
 
-test('useCheckins (real mode) updates the slot locally AND POSTs exactly once with the slot body', async () => {
+test('useCheckins (real mode) shows the persisted slot after POST and day refetch', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
 
   let postCount = 0
   let lastBody: Record<string, unknown> | null = null
   server.use(
+    http.get(`${API_BASE}/api/biometrics/checkin`, () =>
+      HttpResponse.json(lastBody ? [{ id: 'c1', ...lastBody, savedAt: '2026-06-01T09:00:00Z' }] : [])),
     http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
       postCount += 1
       lastBody = (await request.json()) as Record<string, unknown>
@@ -75,8 +79,8 @@ test('useCheckins (real mode) updates the slot locally AND POSTs exactly once wi
     })
   })
 
-  // Local optimistic update is synchronous.
-  expect(result.current.checkins[2].state).toBe('done')
+  expect(result.current.checkins[2].state).not.toBe('done')
+  await waitFor(() => expect(result.current.checkins[2].state).toBe('done'))
   expect(result.current.checkins[2].values?.energy).toBe(8)
 
   await waitFor(() => expect(postCount).toBe(1))
@@ -136,4 +140,49 @@ test('useCheckins (mock mode) updates the slot locally and never fetches', async
   // Give any stray async POST a chance to fire, then assert none did.
   await new Promise(r => setTimeout(r, 20))
   expect(postCount).toBe(0)
+})
+
+
+test('a rejected real save never appears as a recorded check-in', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/biometrics/checkin`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
+  let save: Promise<void>
+  act(() => { save = result.current.saveCheckIn(2, { state: 'done', note: 'unsaved' }) })
+  expect(result.current.checkins[2].state).not.toBe('done')
+  await act(async () => { await expect(save!).rejects.toThrow() })
+  expect(errors).toHaveBeenCalled()
+  expect(result.current.checkins[2].note).not.toBe('unsaved')
+})
+
+test('mock saves belong only to their local calendar day', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 17, 23, 59))
+  const { result, rerender } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
+  await act(async () => { await result.current.saveCheckIn(3, { state: 'done', note: 'yesterday' }) })
+  expect(result.current.checkins[3].note).toBe('yesterday')
+  vi.setSystemTime(new Date(2026, 8, 18, 0, 1))
+  rerender()
+  expect(result.current.checkins[3].note).toBeNull()
+  expect(result.current.checkins[3].state).toBe('pending')
+  expect(result.current.isPending).toBe(false)
+  expect(result.current.isError).toBe(false)
+})
+
+test('exposes a failed day read and supports retry without claiming empty success', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/biometrics/checkin`, () => new HttpResponse(null, { status: 500 })))
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
+  expect(result.current.isPending).toBe(true)
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(result.current.isPending).toBe(false)
+  server.use(http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])))
+  act(() => result.current.refetch())
+  await waitFor(() => expect(result.current.isError).toBe(false))
+  expect(result.current.isPending).toBe(false)
 })

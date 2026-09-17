@@ -62,12 +62,14 @@ export function CheckInSheet({
   slot: CheckinSlot
   slotIdx: number
   onClose: () => void
-  onSave: (data: Partial<CheckinSlot>) => void
+  onSave: (data: Partial<CheckinSlot>) => void | Promise<void>
 }) {
   const [values, setValues] = useState<CheckinValues>(
     () => slot.values ?? { energy: 7, stress: 4, body: 7, mental: 7 },
   )
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(slot.note ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [step, setStep] = useState(0) // 0..3 = dim, 4 = note
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -92,14 +94,23 @@ export function CheckInSheet({
     [],
   )
 
-  const save = (close: () => void) => {
-    onSave({
-      state: 'done',
-      values,
-      note: note.trim() || null,
-      savedAt: new Date().toISOString(),
-    })
-    close()
+  const save = async (close: () => void) => {
+    if (saving) return
+    setSaving(true)
+    setSaveError(false)
+    try {
+      await onSave({
+        state: 'done',
+        values,
+        note: note.trim() || null,
+        savedAt: new Date().toISOString(),
+      })
+      close()
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -256,8 +267,7 @@ export function CheckInSheet({
           {/* Optional free note */}
           <div className="col gap-sm">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <label htmlFor="checkin-note" className="label-mono">Egy mondat · opcionális</label>
-              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{note.length}/200</span>
+              <label htmlFor="checkin-note" className="label-mono">Gondolatok · opcionális</label>
             </div>
             {/* the decorative mic chip is gone (mezo-setx.5.5) — a control that does
                 nothing is the ItemRow doctrine's dead button, not a form affordance */}
@@ -265,10 +275,10 @@ export function CheckInSheet({
               <textarea
                 id="checkin-note"
                 value={note}
-                onChange={e => setNote(e.target.value.slice(0, 200))}
+                onChange={e => setNote(e.target.value)}
                 placeholder='pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"'
                 style={{
-                  flex: 1, minHeight: 50, resize: 'none',
+                  flex: 1, minHeight: 120, resize: 'vertical',
                   fontSize: 16, color: 'var(--text-primary)',
                   lineHeight: 1.45,
                 }}
@@ -280,9 +290,10 @@ export function CheckInSheet({
           <CheckInObservation values={values} slot={slot} />
 
           {/* Save */}
-          <button className="cta-primary" onClick={() => save(close)}>
+          {saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
+          <button className="cta-primary" disabled={saving} onClick={() => { void save(close) }}>
             <Icon name="check" size={16} />
-            <span>Mentés · {slot.time}</span>
+            <span>{saving ? 'Mentés…' : `Mentés · ${slot.time}`}</span>
           </button>
         </div>
       )}

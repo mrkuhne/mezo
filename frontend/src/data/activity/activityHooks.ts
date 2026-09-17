@@ -8,7 +8,7 @@ import type { ActivityEntry, LifeSkillKey } from '@/data/types'
 
 const key = (d: string) => ['activities', d]
 
-export function useActivities(date: string): { data: ActivityEntry[]; isPending: boolean } {
+export function useActivities(date: string): { data: ActivityEntry[]; isPending: boolean; isError: boolean; refetch: () => void } {
   return useDualQuery<ActivityEntry[]>({
     queryKey: key(date),
     mockData: mockActivities,

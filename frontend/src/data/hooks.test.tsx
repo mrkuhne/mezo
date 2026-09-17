@@ -80,9 +80,10 @@ test('useTodayScenario (real mode): ?medCycleDay= override still wins over the d
   await new Promise(r => setTimeout(r, 0))
   expect(result.current.medCycleDay).toBe(5)
 })
-test('useCheckins.saveCheckIn marks a slot done with values', () => {
+test('useCheckins.saveCheckIn exports working mock capture through the barrel', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
   const { result } = renderHook(() => useCheckins(), { wrapper: QueryWrapper })
-  act(() => result.current.saveCheckIn(2, { state: 'done', values: { energy: 8, stress: 3, body: 7, mental: 8 }, note: null }))
+  await act(() => result.current.saveCheckIn(2, { state: 'done', values: { energy: 8, stress: 3, body: 7, mental: 8 }, note: null }))
   expect(result.current.checkins[2].state).toBe('done')
   expect(result.current.checkins[2].values?.energy).toBe(8)
 })
