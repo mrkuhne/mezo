@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.service.ChatStreamService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.codec.ServerSentEvent;
@@ -18,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +36,7 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
     @Autowired private AiMessageRepository messageRepository;
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private FakeCompanionLlm fakeCompanionLlm;
 
     // gear-audited: forwards whatever its callers pass; every call site below is the audited one.
     private SendMessageRequest request(String content) {
@@ -58,10 +61,17 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("stream-advisor-retry@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        List<ServerSentEvent<Object>> events = chatStreamService
+        // mezo-rj214.7 final fix wave: streamMessage is called directly here (no HTTP layer, no
+        // JWT), so LlmActorContext.runAs stands in for the request principal — the ONE thing
+        // ChatStreamService's eager LlmActorContext.capture() (on the calling thread, before the
+        // Flux is even built) has to read. Without it "the actor propagated correctly" and "there
+        // never was an actor to propagate" would look identical below.
+        AtomicReference<List<ServerSentEvent<Object>>> seen = new AtomicReference<>();
+        LlmActorContext.runAs(userId, () -> seen.set(chatStreamService
                 .streamMessage(userId, conversation.getId(),
                         request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ONCE))
-                .collectList().block();
+                .collectList().block()));
+        List<ServerSentEvent<Object>> events = seen.get();
 
         // attempt-1 streamed as-is: no retry marker in the deltas
         assertThat(joinDeltas(events)).doesNotContain(AdvisorRetry.RETRY_MARKER);
@@ -69,6 +79,17 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
         // done = the retried answer (echo carries the corrective block), clean
         assertThat(done.getContent()).contains(AdvisorRetry.RETRY_MARKER);
         assertThat(done.getDegraded()).isFalse();
+
+        // mezo-rj214.7 final fix wave: the regression this pins — ChatStreamService's
+        // Flux.defer(...) wraps ONLY the deferred lap's SYNCHRONOUS assembly in
+        // LlmActorContext.runAsCaptured(actor, ...); it unwinds via its own finally before Reactor
+        // ever actually subscribes to trailingDoneMono, so by the time the advisor's corrective
+        // retry runs — on the boundedElastic worker, well after assembly — the actor binding was
+        // already gone. LlmActorResolver (and so llm_log_history.created_by) reads exactly this
+        // same LlmActorContext.capture() call to attribute an LLM call; companion-fake never writes
+        // that row (see FakeCompanionLlm's "Call counter" javadoc), so this asserts the identical
+        // resolution one level up, at its source, via the advisor's own verdict-check call.
+        assertThat(fakeCompanionLlm.lastVerdictCheckActor()).isEqualTo(userId);
     }
 
     @Test

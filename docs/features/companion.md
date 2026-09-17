@@ -1712,7 +1712,7 @@ evaluation/tuning.
 
 **The streamed turn (V0.4 + V0.5 tools + S9.6 phase narration — what the FE uses).** Since S9.6
 (`mezo-rj214.7` Task 3) everything from the audit/`toolSink` setup down runs inside a
-`Flux.defer(() -> …).subscribeOn(Schedulers.boundedElastic())` (`ChatStreamService.java:148-285`).
+`Flux.defer(() -> …).subscribeOn(Schedulers.boundedElastic())` (`ChatStreamService.java:148-291`).
 Before that restructure the whole pre-stream lap (plan → cap → execute → answer) ran
 **synchronously on the request thread**, before this method even returned its `Flux` — Spring MVC
 only starts writing the SSE response once it subscribes, so anything pushed into `toolSink`
@@ -2281,7 +2281,7 @@ marker is spent, never offered a second time. The marker must never reach the cl
 the no-replan exit, the lap-2 exit, and the "marker on a gear that never offered it" corner (model
 noise, treated as a pipeline failure so the legacy fallback answers fully instead) — and
 `ChatStreamService` runs the same guard a second time on a `STREAM_ANSWER`'s already-streamed text
-before persisting the done row (`ChatStreamService.java:263-265`): the streamed deltas themselves
+before persisting the done row (`ChatStreamService.java:269-271`): the streamed deltas themselves
 are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
 only protects what re-enters history on the next turn.
 
@@ -2308,7 +2308,7 @@ buffered-chip ordering alone never addressed.
 **Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
 either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
 `CHAT` answer gets — never the full `chain.complete`/`chain.review` tool-loop advisor
-(`ChatService.java:317-323`, `ChatStreamService.java:148-161`). The LLM verdict
+(`ChatService.java:317-323`, `ChatStreamService.java:235-258`). The LLM verdict
 (`TurnVerdictCheck`) is skipped on purpose: `pipelineAnswer`'s own answering call already graded the
 answer against the tool-outcome digest it was grounded in, so a second verdict call would pay twice
 to grade the same thing. The deterministic `ClinicalOutputCheck` still runs — its dose-change
@@ -2320,7 +2320,7 @@ as before S9.5.
 books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap 1's
 `TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan lap —
 `plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed LOOKUP
-path tags its native answer stream `answer` too, `ChatStreamService.java:118-123`). Each is its own
+path tags its native answer stream `answer` too, `ChatStreamService.java:180-187`). Each is its own
 `llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds, not one
 row hiding a retry inside it.
 

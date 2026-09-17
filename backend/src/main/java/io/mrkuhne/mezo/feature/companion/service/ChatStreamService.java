@@ -210,7 +210,13 @@ public class ChatStreamService {
                             // trailingDoneMono's callable below for the deterministic close.
                             .doFinally(signal -> toolSink.tryEmitComplete());
 
-                    Mono<ServerSentEvent<Object>> trailingDoneMono = Mono.fromCallable(() -> {
+                    Mono<ServerSentEvent<Object>> trailingDoneMono = Mono.fromCallable(() -> LlmActorContext.runAsCaptured(actor, () -> {
+                        // final fix wave (mezo-rj214.7): the OUTER runAsCaptured (Flux.defer, above)
+                        // only covers the SYNCHRONOUS assembly of this Flux graph — it unwinds via its
+                        // own finally before Reactor ever actually subscribes to this Mono, so without
+                        // re-binding the actor a second time HERE the advisor's corrective-retry LLM
+                        // call runs with no actor bound at all: llm_log_history.created_by books
+                        // against nobody instead of the request's user.
                         // fix round 1 finding I2: close the sink HERE, first, deterministically —
                         // not in deltasMapped's doFinally (see its comment above). This must run
                         // BEFORE the advisor review below, which — on a corrective retry — makes
@@ -278,7 +284,7 @@ public class ChatStreamService {
                                         chatService.completeTurn(userId, conversationId, turn.userMessageId(),
                                                 turn.userContent(), finalAnswer, audit, degraded, turn.recalled()))
                                 .event(EVENT_DONE).build();
-                    });
+                    }));
 
                     return deltasMapped.concatWith(trailingDoneMono);
                 })))
