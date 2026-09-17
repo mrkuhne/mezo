@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.companion.advisor;
+package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit.ToolOutcome;
 import org.junit.jupiter.api.Test;

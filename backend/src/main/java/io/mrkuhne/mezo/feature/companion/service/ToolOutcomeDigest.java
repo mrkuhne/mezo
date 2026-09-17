@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.companion.advisor;
+package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit.ToolOutcome;
 
@@ -23,22 +23,25 @@ import java.util.List;
  * a silently dropped call would read as a tool that returned nothing. Both mislead in the exact
  * direction this ticket exists to remove — so truncation says so, an omitted output keeps its call
  * line, and the judge prompt tells the judge what the markers mean.
+ *
+ * <p>Moved from advisor/ in S9.5: the digest is now primarily the ANSWERER's data block; the verdict
+ * judge is its secondary consumer.
  */
-final class ToolOutcomeDigest {
+public final class ToolOutcomeDigest {
 
     /** No tool ran this turn — the honest empty case (a fabricated number here IS the v1 catch). */
-    static final String NONE = "ESZKÖZHÍVÁSOK: nincs";
+    public static final String NONE = "ESZKÖZHÍVÁSOK: nincs";
 
-    static final String HEADER = "ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:";
+    public static final String HEADER = "ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:";
 
     /** Appended to an output cut at the per-result cap. */
-    static final String TRUNCATED = " […a kimenet innen levágva]";
+    public static final String TRUNCATED = " […a kimenet innen levágva]";
 
     /** Stands in for an output that did not fit the total budget — the CALL is still listed. */
-    static final String OMITTED = "[a kimenet helyhiány miatt kimaradt]";
+    public static final String OMITTED = "[a kimenet helyhiány miatt kimaradt]";
 
     /** Stands in for a call whose output was never recorded (no result reached the audit). */
-    static final String UNKNOWN = "[a kimenet nem ismert]";
+    public static final String UNKNOWN = "[a kimenet nem ismert]";
 
     private ToolOutcomeDigest() {
     }
@@ -47,7 +50,7 @@ final class ToolOutcomeDigest {
      * @param maxCharsPerResult per-output cap; a longer output is cut here and marked
      * @param maxCharsTotal budget across all outputs; past it calls keep their line, outputs drop
      */
-    static String render(List<ToolOutcome> outcomes, int maxCharsPerResult, int maxCharsTotal) {
+    public static String render(List<ToolOutcome> outcomes, int maxCharsPerResult, int maxCharsTotal) {
         if (outcomes.isEmpty()) {
             return NONE;
         }

@@ -13,11 +13,12 @@ final class CompanionPropertiesFixtures {
     }
 
     static CompanionProperties withGearClassifier(boolean enabled) {
-        CompanionProperties.Turn turn = new CompanionProperties.Turn(
+        CompanionProperties.Turn turn = new CompanionProperties.Turn(true,
             new CompanionProperties.Turn.Gear(enabled),
             new CompanionProperties.Turn.Planner(1),
             new CompanionProperties.Turn.Executor(4, 15_000L),
-            new CompanionProperties.Turn.Answerer("high"));
+            new CompanionProperties.Turn.Answerer("high", 8000, 40000),
+            new CompanionProperties.Turn.Replan(1));
         // tools (4th component) mirrors application.yml's companion.tools block; the remaining
         // 17 nulls + interventions + turn make up the 20 components of CompanionProperties.
         CompanionProperties.Tools tools = new CompanionProperties.Tools(15, 30, 26, 10);
@@ -26,11 +27,12 @@ final class CompanionPropertiesFixtures {
     }
 
     static CompanionProperties withExecutor(int parallelism, long stepTimeoutMs) {
-        CompanionProperties.Turn turn = new CompanionProperties.Turn(
+        CompanionProperties.Turn turn = new CompanionProperties.Turn(true,
             new CompanionProperties.Turn.Gear(true),
             new CompanionProperties.Turn.Planner(1),
             new CompanionProperties.Turn.Executor(parallelism, stepTimeoutMs),
-            new CompanionProperties.Turn.Answerer("high"));
+            new CompanionProperties.Turn.Answerer("high", 8000, 40000),
+            new CompanionProperties.Turn.Replan(1));
         return new CompanionProperties(null, null, null, new CompanionProperties.Tools(15, 30, 26, 10),
             null, null, null, null, null, null,
             null, null, null, null, null, null, null, null, java.util.List.of(), turn);

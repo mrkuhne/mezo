@@ -364,9 +364,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ReflectionJob`, `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`,
     `ReflectionReplyService`, `SeasonSuggestion`, `TestPlanValidator`, `TextSignalCatchUpService`,
     `TextSignalExtractor`, `TextSignalListener`, `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`,
-    `TraceDisposition`, `TranscriptionService`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPlan`,
-    `TurnPlanParser`, `TurnPlanner`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`, `WeeklyScoreService`,
-    `WeightByDateSupport`
+    `ToolOutcomeDigest`, `TraceDisposition`, `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`,
+    `TurnGearRouter`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `UnavailableReason`, `ValidatedPlan`,
+    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`, `CompanionStreamController`,
@@ -400,8 +400,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`,
     `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`, `TestPlanEnvelope`,
     `TextSignalProvenanceEnvelope`, `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`,
-    `ToolContexts`, `ToolOutcomeDigest`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
-    `WeekReviewSource`
+    `ToolContexts`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -427,12 +426,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 216 IT + 75 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 220 IT + 78 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
     `ChatSeedReplyIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGearIT`, `ChatServiceGraphBlockFailureIT`,
-    `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`,
+    `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatServicePipelineIT`,
+    `ChatServicePipelineSwitchOffIT`, `ChatStreamAdvisorIT`, `ChatStreamPipelineIT`, `ChatStreamPipelineSwitchOffIT`,
     `ChatStreamServiceGearIT`, `ChatStreamServiceIT`, `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`,
     `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionFactApiIT`, `CompanionFactCandidateApiIT`,
     `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`, `CompanionFlagLogPersistenceIT`,

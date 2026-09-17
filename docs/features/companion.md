@@ -2148,14 +2148,21 @@ tool-carrying `complete`; `ChatStreamService` mirrors it with `streamSmart` plus
 `chain.reviewChat(..)` on the already-streamed answer. With the advisors switch off (no chain bean)
 both paths call `completeSmart`/`streamSmart` directly, exactly as the non-CHAT branches fall back
 to the unadvised `complete`/`stream`.
-`LOOKUP` and `ANALYSIS` turns are byte-identical to pre-gear behavior in this slice — the distinction
-becomes operative once the planner/executor/replan blocks land (S9.4/S9.5).
+`LOOKUP` and `ANALYSIS` turns diverge from pre-gear behavior since S9.5 landed the planner/executor/
+replan blocks live (below) — with the pipeline switched off, or on a planner failure, both still
+fall back to the byte-identical pre-gear tool-loop.
 
-**The planner/executor pipeline (S9.4, `mezo-rj214.7`, spec §6.2-§6.4) — landed DARK.** Nothing on
-the live turn calls any of this yet: `ChatService`/`ChatStreamService` still run the pre-existing
-Spring AI tool-loop path end to end, unchanged. The pipeline exists, is fully wired, and is proved
-end to end by `TurnPipelineIT` (`service/TurnPipelineIT.java`) — it becomes operative only when S9.5
-wires a call site to it. Shape: `TurnPlanner.plan(history, userMessage, today)`
+**The planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
+and `ANALYSIS` turns now run plan → execute → answer on both the sync path
+(`ChatService.sendMessage`/`prepareTurn` → `pipelineAnswer`, `ChatService.java:306-336,467-505`) and
+the streamed path (`ChatStreamService.streamMessage` → `runPipelinePreStream`,
+`ChatStreamService.java:96-131,242-276`), gated by the kill switch
+`mezo.companion.turn.pipeline-enabled` (§4, default **true**) — `false` sends every LOOKUP/ANALYSIS
+turn down the legacy tool-loop unchanged, byte-identical to the pre-S9.5 shape
+(`ChatServicePipelineSwitchOffIT`/`ChatStreamPipelineSwitchOffIT`). A `CHAT` turn never reaches the
+pipeline at all (§3 "The turn gear" above). Proved end to end by `TurnPipelineIT`
+(`service/TurnPipelineIT.java`, the pipeline's own unit-of-work test) plus the call-site ITs below.
+Shape: `TurnPlanner.plan(history, userMessage, today)`
 (`service/TurnPlanner.java`) makes ONE tool-free SMART-tier call (`completeSmart`, §5.3 — no tool
 schemas travel, so the model reasons in prose, never by calling a tool) against a prompt carrying the
 LIVE-rendered tool catalogue (`ToolCatalogue.render()`, the same registry `CompanionToolRegistry`
@@ -2166,7 +2173,7 @@ unknown tool names and unknown parameters are dropped with a recorded Hungarian 
 never executed blind — and caps accepted steps at `mezo.companion.tools.max-calls-per-turn`. An
 unparseable or fully-rejected plan earns up to `mezo.companion.turn.planner.repair-attempts` repair
 laps (`TurnPlanner.REPAIR_PREFIX`/`REPAIR_SUFFIX`, a `[JAVÍTÁS]`-prefixed re-ask naming what was
-wrong) before the planner gives up with `Optional.empty()` — the S9.5 call site's contract is to fall
+wrong) before the planner gives up with `Optional.empty()` — the call sites' contract (below) is to fall
 back to the legacy tool-loop path on that empty result. The resulting `ValidatedPlan` (accepted
 steps + rejections, for provenance) runs through `PlanExecutor.execute(plan, userId, audit)`
 (`service/PlanExecutor.java`) with PURE JAVA — no model in this loop, so nothing can misread or skip
@@ -2190,15 +2197,99 @@ thread-bound connection would hide (the same reason `MemoryContextServiceIT` and
 siblings skip it) — the populated rows commit immediately and `ResetDatabase` truncates between
 tests instead.
 
-**Three seams the S9.5 wiring and beyond must not paper over.** First, a budget double-cap:
-`PlanValidator` caps accepted steps at the FULL `mezo.companion.tools.max-calls-per-turn`, with no
-knowledge of any calls an already-used `ToolCallAudit` has recorded, and `RecordingToolCallback`'s
-budget-check-then-record pair is non-atomic — so once a call site hands `PlanExecutor` an audit that
-already has calls on it (S9.5's shape) AND runs steps in parallel, which steps land
-`BUDGET_EXHAUSTED` becomes scheduling-nondeterministic and the turn's total calls can overshoot the
-configured cap by up to `parallelism − 1`. The call site must either hand `PlanExecutor` a FRESH
-audit for the plan, or cap the plan itself at `budget − audit.callCount()` before validating. Second,
-the wall-time bound above ("near its SLOWEST step") only strictly holds when the number of steps is
+**Fallback: silent by design.** Both call sites share ONE contract — a planner failure
+(`TurnPlanner.plan` returns `Optional.empty()`, its repair laps exhausted) OR ANY exception the
+pre-stream pipeline lap throws falls straight to the legacy tool-loop path, unchanged.
+`ChatService.pipelineAnswer`/`planAndExecuteVolatile` return `null` on planner failure
+(`ChatService.java:467-505,522-536`) and `sendMessage` takes the legacy `chain.complete`/
+`companionLlm.complete` branch on `null` (`ChatService.java:315,324-335`) with no flag recording that
+the pipeline was even attempted. `ChatStreamService.runPipelinePreStream`
+(`ChatStreamService.java:242-252`) wraps the whole pre-stream lap in a try/catch and returns
+`PipelineResult.legacy()` on ANY `RuntimeException` — a planner outage degrades to the
+byte-identical legacy stream instead of surfacing as an SSE `error` event. The fallback never sets
+`degraded` on the persisted row: `degraded` means "the advisor's retry-once-then-degraded semantics
+kicked in", and a legacy tool-loop answer is a FULL answer by the pre-S9.5 contract, not a lesser
+one — the two concepts stay orthogonal on purpose (spec §8).
+
+**The replan contract (ANALYSIS only, spec §A2).** An `ANALYSIS` turn with `replan.max-laps > 0`
+(§4) gets ONE escape hatch: `TurnAnswerer` appends `DATA_GAP_OFFER` to lap 1's volatile half
+(`TurnAnswerer.java:41-46`), inviting the model to answer with EXACTLY the single line
+`[TOVÁBBI-ADAT: mi hiányzik]` (`TurnAnswerer.DATA_GAP_MARKER`, `TurnAnswerer.java:33`) instead of
+guessing past insufficient tool results. `LOOKUP` never offers it — `buildVolatile` appends the
+offer only when `gear == ANALYSIS` (`TurnAnswerer.java:68-73`) — so a LOOKUP answer cannot
+legitimately contain the marker. When lap 1's answer starts with the marker
+(`TurnAnswerer.dataGapReason`, `TurnAnswerer.java:103-115`), `ChatService.pipelineAnswer`
+(`ChatService.java:484-504`) re-plans ONCE against a `[KIEGÉSZÍTÉS]`-prefixed hint naming the gap
+(`ChatService.java:490`), merges lap 2's executed outcomes onto lap 1's (plan order preserved,
+budget-dropped steps included), and answers again off a volatile half carrying the
+`[PÓTLÁS]`-prefixed `REPLAN_DONE_BLOCK` (`TurnAnswerer.java:53-57`) instead of the offer — the
+marker is spent, never offered a second time. The marker must never reach the client as text:
+`ChatService.guardAgainstMarker` (`ChatService.java:554-556`) strips it at EVERY persisted exit —
+the no-replan exit, the lap-2 exit, and the "marker on a gear that never offered it" corner (model
+noise, treated as a pipeline failure so the legacy fallback answers fully instead) — and
+`ChatStreamService` runs the same guard a second time on a `STREAM_ANSWER`'s already-streamed text
+before persisting the done row (`ChatStreamService.java:180-182`): the streamed deltas themselves
+are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
+only protects what re-enters history on the next turn.
+
+**Streamed modes differ by gear (until S9.6).** `LOOKUP` runs plan → cap → execute BEFORE the SSE
+`Flux` is assembled, then the answerer streams NATIVELY off the built volatile half
+(`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:112-123,267-275`) — real per-token
+deltas, no replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included)
+pre-stream and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`,
+`ChatStreamService.java:124-126,260-265`) — a synchronous round-trip disguised as a stream, until
+S9.6 gives ANALYSIS its own native streaming answerer. Both modes still stream real tool-call chips
+AHEAD of the answer: the `ToolCallAudit` listener that turns each executed call into an SSE `tool`
+event is registered before the pre-stream pipeline lap runs, so the pre-stream execution's calls
+are BUFFERED into the unicast `toolSink` the moment they run (`ChatStreamService.java:85-105`,
+`ChatStreamPipelineIT`). The buffer only FLUSHES once the SSE response begins, after the pre-stream
+lap has already finished — so ordering ahead of the answer is guaranteed, but earliness is not; the
+client's wait through the pre-answer gap itself is unchanged. S9.6's explicit phase events are the
+real cure for that.
+
+**Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
+either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
+`CHAT` answer gets — never the full `chain.complete`/`chain.review` tool-loop advisor
+(`ChatService.java:317-323`, `ChatStreamService.java:148-161`). The LLM verdict
+(`TurnVerdictCheck`) is skipped on purpose: `pipelineAnswer`'s own answering call already graded the
+answer against the tool-outcome digest it was grounded in, so a second verdict call would pay twice
+to grade the same thing. The deterministic `ClinicalOutputCheck` still runs — its dose-change
+prohibition has no branch where it does not apply. Legacy tool-loop answers (fallback, or the
+switch off) are untouched: they still take the full `chain.complete`/`chain.review` advisor exactly
+as before S9.5.
+
+**Provenance in `llm_log` (audit trail only, not yet a consumer contract — S9.7).** A pipeline turn
+books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap 1's
+`TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan lap —
+`plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed LOOKUP
+path tags its native answer stream `answer` too, `ChatStreamService.java:118-123`). Each is its own
+`llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds, not one
+row hiding a retry inside it.
+
+**`PreparedTurn` carries `today` (midnight-skew fix, Task 6 fix round 1 finding M2).**
+`ChatService.prepareTurn` resolves `LocalDate.now()` ONCE (`ChatService.java:234`) and the streamed
+path's pre-stream pipeline lap reads that SAME value off `PreparedTurn.today`
+(`ChatService.java:219-222,259`) instead of calling `LocalDate.now()` a second time milliseconds
+later — without this, a turn straddling exact midnight could see the plan's `"Ma:"` context land on
+a different calendar day than the persisted turn's own assembled context.
+
+**Three seams the S9.5 wiring and beyond must not paper over — the first is now RESOLVED.**
+`ChatService.capToRemainingBudget` (`ChatService.java:580-593`) caps each plan lap to
+`max-calls-per-turn − audit.callCount()` BEFORE `PlanExecutor` ever sees it — cap-at-the-call-site,
+not a `PlanExecutor`-side fix — so a call site that hands `PlanExecutor` an audit already carrying
+calls (S9.5's actual shape) cannot overshoot the configured cap even with parallel step execution. A
+step that does not fit the remaining budget never runs at all: it gets a synthetic, honest
+`RecordingToolCallback.BUDGET_EXHAUSTED` outcome instead (`TurnAnswerer`'s digest renders it like
+any other outcome), never a race against `RecordingToolCallback`'s non-atomic check-then-record
+pair. `PlanValidator` itself is UNCHANGED and still caps at the FULL configured budget, ignorant of
+any calls already on the audit — every caller (both call sites, and any future one) must apply
+`capToRemainingBudget` before executing; the seam is resolved by discipline at the two current call
+sites, not by a change inside `PlanValidator`/`PlanExecutor` itself (before this, the hazard was:
+`PlanExecutor` given an audit that already had calls on it, running steps in parallel, could let
+`BUDGET_EXHAUSTED` land scheduling-nondeterministically and overshoot the configured cap by up to
+`parallelism − 1` — see `ChatServicePipelineIT`/`ChatStreamPipelineIT` for the coverage).
+
+Second, the wall-time bound above ("near its SLOWEST step") only strictly holds when the number of steps is
 `<=` the executor's parallelism; once steps outnumber permits, later steps queue for a permit behind
 earlier ones and the waits compound, so total wall time can exceed one step's timeout by more than a
 rounding error. Third, provenance (S9.7) must pick exactly one source per consumer rather than
@@ -5499,14 +5590,19 @@ since S2.
 - Feature switch `mezo.feature.intervention.enabled`
   (`FeaturesConfiguration.INTERVENTION_SWITCH`) — W5.2's own switch, `@ConditionalOnProperty`-gated
   ALONGSIDE `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH` (§4 above).
+- `mezo.companion.turn.pipeline-enabled` = **true** — S9.5 (`mezo-rj214.7`, §3 "The planner/executor
+  pipeline"): the pipeline's OWN kill switch. `false` sends every LOOKUP/ANALYSIS turn down the
+  legacy tool-loop unchanged, byte-identical to the pre-S9.5 shape — a `CHAT` turn never reads this
+  key at all (it never reaches the pipeline). Covered by `ChatServicePipelineSwitchOffIT`/
+  `ChatStreamPipelineSwitchOffIT`.
 - `mezo.companion.turn.gear.classifier-enabled` = **true** — the turn gear's (spec 2026-09-16 §5-§6,
   `mezo-rj214.7`, §3 "The turn gear") own switch: whether an UNSURE `TurnGearAnalyzer` result may
   spend one cheap `GearClassifier` call, or falls straight to `TurnGear.ANALYSIS` (the router's
   top-gear fallback either way). `false` never disables the gear itself, only the tie-break call.
 - `mezo.companion.turn.planner.repair-attempts` = **1** (`@Min(0) @Max(3)`) — S9.4 (`mezo-rj214.7`,
   §3 "The planner/executor pipeline"): how many `[JAVÍTÁS]` repair laps `TurnPlanner.plan` spends on
-  an unparseable-or-fully-rejected plan before it gives up (`Optional.empty()`). Bound and covered by
-  `TurnPipelineIT`, but the pipeline is dark — see below.
+  an unparseable-or-fully-rejected plan before it gives up (`Optional.empty()`, and the pipeline
+  call site falls back to the legacy tool-loop). Covered by `TurnPipelineIT`; live since S9.5.
 - `mezo.companion.turn.executor.parallelism` = **4** (`@Min(1) @Max(16)`) — S9.4: the `Semaphore`
   width `PlanExecutor` fans validated steps out over `applicationTaskExecutor` with.
 - `mezo.companion.turn.executor.step-timeout-ms` = **15000** (`@Min(100) @Max(60_000)`) — S9.4: the
@@ -5518,9 +5614,21 @@ since S2.
   reasoning effort still comes from the SMART tier's existing `mezo.companion.llm.{gemini,openai}.*`
   config, same as any other smart-tier call (`OpenAiCompanionLlm.optionsFor`) — it reaches the
   provider at all only because a CHAT-gear call carries no tools (§5.3). This key is scaffolding for
-  the per-gear answerer S9.4/S9.5 lands; the LOOKUP/ANALYSIS per-gear effort keys are deliberately
-  **deferred to S9.5** — no per-call effort override exists on the LLM seam yet, so only `chat-effort`
-  exists today and only the gear itself (not the effort) is operative in this slice.
+  a per-gear answerer effort; the LOOKUP/ANALYSIS per-gear effort keys are deliberately **still
+  deferred** — no per-call effort override exists on the LLM seam yet, so only `chat-effort` exists
+  today and only the gear itself (not the effort) is operative.
+- `mezo.companion.turn.answerer.outcome-max-chars-per-result` = **8000** (`@Min(500) @Max(60_000)`)
+  — S9.5 (spec §6.5): per-tool-outcome clamp `ToolOutcomeDigest.render` applies before the digest
+  becomes the answerer's volatile half — NOT the advisor's separate 700/3000 clamps; here the digest
+  IS the answer's whole basis. A cut output is marked `[…a kimenet innen levágva]` — the same three
+  honest-loss markers `ToolOutcomeDigest` already used for the advisor's own tool digest (§3).
+- `mezo.companion.turn.answerer.outcome-max-chars-total` = **40000** (`@Min(2_000) @Max(200_000)`) —
+  S9.5: the whole digest's total budget across every outcome; an output past it becomes `[a kimenet
+  helyhiány miatt kimaradt]` while its CALL keeps its line.
+- `mezo.companion.turn.replan.max-laps` = **1** (`@Min(0) @Max(2)`) — S9.5 (spec §A2, §3 "The replan
+  contract"): data-gap laps an ANALYSIS answer may request via the `[TOVÁBBI-ADAT:` marker before the
+  offer stops being made. `0` disables replan entirely (an ANALYSIS turn then behaves like LOOKUP:
+  one lap, no data-gap offer). `LOOKUP` never reads this key — it never replans regardless of value.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)

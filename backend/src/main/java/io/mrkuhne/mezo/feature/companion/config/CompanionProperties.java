@@ -475,10 +475,12 @@ public record CompanionProperties(
      * the LLM seam yet; see the S9.4 plan's scope decisions).
      */
     public record Turn(
+        boolean pipelineEnabled,
         @NotNull @Valid Gear gear,
         @NotNull @Valid Planner planner,
         @NotNull @Valid Executor executor,
-        @NotNull @Valid Answerer answerer
+        @NotNull @Valid Answerer answerer,
+        @NotNull @Valid Replan replan
     ) {
         /** Whether an UNSURE turn may spend one cheap call on a classifier, or falls straight to ANALYSIS. */
         public record Gear(boolean classifierEnabled) {}
@@ -490,7 +492,22 @@ public record CompanionProperties(
         public record Executor(@Min(1) @Max(16) int parallelism,
                                @Min(100) @Max(60_000) long stepTimeoutMs) {}
 
-        /** Reasoning effort per gear. Only the CHAT branch exists in this slice. */
-        public record Answerer(@NotBlank String chatEffort) {}
+        /**
+         * The answerer's outcome-digest budgets (spec §6.5) — NOT the advisor's 700/3000: here the
+         * digest is the answer's whole basis. chatEffort stays scaffolding (per-gear effort keys
+         * deferred until the seam carries a per-call override; third deferral, deliberate).
+         */
+        public record Answerer(@NotBlank String chatEffort,
+                               @Min(500) @Max(60_000) int outcomeMaxCharsPerResult,
+                               @Min(2_000) @Max(200_000) int outcomeMaxCharsTotal) {}
+
+        /**
+         * Data-gap laps an ANALYSIS answer may request (spec A2). 0 disables replan entirely; 1 is
+         * the current ceiling because {@code io.mrkuhne.mezo.feature.companion.service.ChatService
+         * #pipelineAnswer} only implements a SINGLE replan lap — a value above 1 would validate but
+         * do nothing beyond the first lap. A future multi-lap loop widens this cap alongside the
+         * implementation.
+         */
+        public record Replan(@Min(0) @Max(1) int maxLaps) {}
     }
 }
