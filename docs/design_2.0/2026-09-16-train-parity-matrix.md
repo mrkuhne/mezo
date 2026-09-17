@@ -79,7 +79,8 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 | Eyebrow `MA · A TERV 3. HETE` + `Felsőtest A` + stat row `9 szett · 45 perc · 3 gyakorlat · a heted 13%-a` | present (`SZE · A TERV 3. HETE`, `Legs nap`, `19 szett · 96 perc · 6 gyakorlat · a heted 25%-a`) |
 | `Mit terhel ez a nap` — muscle chips | present |
 | `A nap gyakorlatai` — numbered `01…` cards with `szett × ismétlés / RIR / kg induló / bemelegítő` | present |
-| `＋ Gyakorlat hozzáadása` — **end of screen** | present |
+| `＋ Gyakorlat hozzáadása` — **end of screen** | present, plus a quiet `A nap szerkesztése` link into §3b (production-only, deliberate) |
+| Exercise cells carry `↑ ↓` reorder arrows | **absent** — reordering lives on the edit route (§3b). *Found in the P1 parity walk, 2026-09-17; open, P3* |
 | — | ✅ **CLOSED (P1 Task 4)** — the welded editor is gone; the page ends on `＋ Gyakorlat hozzáadása` + a quiet `A nap szerkesztése` link, exactly like the prototype's end-of-screen `.pl-add`. *Was:* **production-only, appended BELOW the Titanium page — an entire pre-Titanium editor**: `LEGS / 6 GYAKORLAT · ~96 PERC / 19 szett ma / Heti terhelés: 75 szett · 5 edzésnap / ⚠ 1 jelzés`, `MA · IZMONKÉNT / MAX 8 SZETT/IZOM`, `HETI SZETEK · IZMONKÉNT` (typo, and English `Grow` / `Maintain` / `Emphasize` labels), `CSÚCSHÉT · IDŐBECSLÉS ▾`, `STRUKTÚRA · 7 észrevétel ▾`, and a drag-handle exercise list `⠿ Barbell Squat · COMB · 🔥 4×6–8 ▾`, closing with `GYAKORLAT HOZZÁADÁSA` |
 
 **Severity: ✅ CLOSED (P1 Task 4)** — was BLOCKER (a complete pre-Titanium screen welded onto the bottom of the Titanium one: emoji `🔥`, `⠿` handles, English jargon, a duplicate exercise list and a duplicate add-CTA). The editing was **relocated, not deleted** — the run's day plan had no other editor route.
@@ -343,6 +344,8 @@ Prototype content that has no production home: `‹ Izomtérkép` back link, `IZ
 
 **NEW in P1 — two header affordances the prototype's session header does not have** (Task 1, deliberate, not a regression): the mini **`?`** (the kalauz entry — this route is chrome-less, so the global header's `?` does not exist here; it moved off the retired prep breadcrumb) and the **`⋯` `Gyakorlat műveletek`** chip, which also hosts the `Küldetések` glass. Both are real capabilities with no prototype counterpart. Also new at the head of the list: the day-level **overload tally** (`WorkoutOverloadLine`, honest-empty) and a **failed-start strip** that surfaces a rejected start POST and BLOCKS logging until a retry binds a real instance id.
 
+**Also open (found in the P1 parity walk, 2026-09-17):** the prototype's session header carries a **live elapsed timer** (`0:01` … `4:44`) next to `n / m szett`; production's `.wk-top` has none.
+
 **Severity: MAJOR (open, P3)** — was BLOCKER; the prep phase is gone, and what remains is §21 row 11, the in-card differences (per-card `⚡ PROGRESSZIÓ` block, `B1/B2` warm-up rows, the `OLDAL L B R` selector, the confirm sheet's title bar) plus the two header affordances above.
 
 ---
@@ -363,6 +366,11 @@ Prototype content that has no production home: `‹ Izomtérkép` back link, `IZ
    Differences from the prototype: the **two-step structure is collapsed** (no `Részletek` CTA, no `Vissza az értékeléshez`), and the **`a pulton töltött idő` stat is absent**.
 2. **On top of it — the pre-Titanium `.levelup` overlay**, measured live: `position: absolute`, **`z-index: 250`**, **416 × 932 px** (the entire phone frame). Content: `🏋️ KLASSZIK KONDI · 58' / ERŐS NAP VOLT. / +480 XP · ÖSSZESEN / Összesen 480 XP / SZINTLÉPÉS · 2 / 6 💪 MELL LEVEL UP · Lv5 → 6 / 7 🏋️ MAXIMÁLIS ERŐ LEVEL UP · Lv6 → 7 / ★ Vas-törzs II — push-volumen tűrés +6% / MÉG FEJLŐDÖTT · 3 / 🔁 Erő-állóképesség +70 / 💪 Váll +90 / 💪 Tricep +50 / 🛡️ Robusztusság · 5. egymást követő héten edzel +25 / Tovább ›`.
    **It also survives route changes** — after closing the workout it was still painted over `/train/mesocycles/new` and `/train/gym` until a full page reload.
+
+**Still open on this screen (found in the P1 parity walk, 2026-09-17, all P3):**
+- The prototype keeps the **session header** (`‹ · FELSŐTEST A · 3. HÉT / 6 · 1 / 9 szett · timer`) painted above BOTH ceremony steps; production's ceremony replaces the whole frame and shows no header.
+- Step two adds a production-only page title **`Az edzés részletei`** and the **`HOGY MENT?`** closing-note field (a real feature — the workout-level note, `mezo-d20.8.2.2`), and its way-out CTA reads `Vissza a mai napra / Az edzés lezárva és elmentve` rather than the prototype's `Edzés lezárása / 1 elvégzett · 8 még bepipálatlan` — production's ceremony is POST-finish by design (T7), so there is nothing left to close there.
+- The `a pulton töltött idő` tile is honest-null: a session under 60 seconds (easy to hit in mock) renders no tile, where the prototype always prints one.
 
 **Severity: ✅ CLOSED (P1 Tasks 2 + 3)** — was BLOCKER (an old screen covering a new one, exactly the owner's complaint).
 
