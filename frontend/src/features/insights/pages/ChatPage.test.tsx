@@ -79,6 +79,26 @@ describe('ChatPage (mock mode)', () => {
     vi.useRealTimers()
   })
 
+  test('the thinking bubble narrates each phase in mock mode (mezo-rj214.7)', async () => {
+    // sendMock choreographs planning → retrieving → answering with 400ms beats (mezo-rj214.7) —
+    // same fireEvent + fake-timer idiom as the send test above.
+    vi.useFakeTimers()
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByText('átgondolom…')).toBeInTheDocument()
+    await act(async () => { vi.advanceTimersByTime(400) })
+    expect(screen.getByText('megnézem az adataidat…')).toBeInTheDocument()
+    await act(async () => { vi.advanceTimersByTime(400) })
+    expect(screen.getByText('fogalmazok…')).toBeInTheDocument()
+    // the first delta clears the phase — the label leaves with the thinking bubble, not stuck
+    // beside the finished answer.
+    await act(async () => { vi.advanceTimersByTime(400) })
+    expect(screen.queryByText('fogalmazok…')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   test('auto-sends the message handed off from the /nap composer (mezo-7flr)', async () => {
     // The companion-first landing navigates here with the text in router state; ChatPage sends
     // it through its OWN engine (one thread, the reply streams here) exactly once. Fake timers
