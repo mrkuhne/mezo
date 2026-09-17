@@ -57,6 +57,7 @@ import {
   pendingSetCount,
   prescribedAt,
   removeSet,
+  slotIndex,
   seedFromOpen,
   skipExercise as skipExerciseModel,
   unskipExercise as unskipExerciseModel,
@@ -408,7 +409,10 @@ function ActiveWorkoutSession({
     const rir = input.rir ?? 0
     const weightless = finishing.type === 'plyo'
     const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the medal ctx + persisted setIndex)
-    const target = prescribedAt(session, finishing.id, wasSetIdx)
+    // The cursor counts VISIBLE (working) slots; the prescription array still holds the
+    // warm-up ramp in front of them, so the target is addressed through `slotIndex`
+    // (mezo-i8ahy). Nothing warm-up-kinded is loggable any more — `kind` is always working.
+    const target = prescribedAt(session, finishing.id, slotIndex(session, finishing.id, wasSetIdx))
     const kind = target?.kind ?? 'working'
     // A client-side identity (mezo-l3on fix-round-2, N1), assigned NOW so the async logSet
     // response (success OR failure) can address THIS exact entry later — never by array
@@ -512,7 +516,7 @@ function ActiveWorkoutSession({
     const setId = session.logged[ex.id]?.[idx]?.id
     setSession(updateLoggedSet(session, ex.id, idx, { weight: v.weight, reps: v.reps, rir: v.rir, side: v.side, note: v.note }))
     clearExerciseMedals(ex)
-    const isWarmup = prescribedAt(session, ex.id, idx)?.kind === 'warmup'
+    const isWarmup = prescribedAt(session, ex.id, slotIndex(session, ex.id, idx))?.kind === 'warmup'
     if (setId) {
       updateSet(workoutId ?? 'mock', setId, {
         weightKg: ex.type === 'plyo' ? 0 : v.weight,
@@ -969,16 +973,14 @@ function ActiveWorkoutSession({
       {editingSet && editingEx && !feedbackEx && (() => {
         const ex = editingEx
         const idx = editingSet.idx
-        const t = prescribedAt(session, ex.id, idx)
-        const warm = t?.kind === 'warmup'
+        const t = prescribedAt(session, ex.id, slotIndex(session, ex.id, idx))
         const actual = session.logged[ex.id]?.[idx]
-        const warmupCount = (session.prescribed[ex.id] ?? []).filter((p) => p.kind === 'warmup').length
         return (
           <SetEditSheet
             exerciseName={ex.name}
-            setLabel={setSlotLabel(idx, warm, warmupCount)}
+            setLabel={setSlotLabel(idx)}
             mode={actual ? 'logged' : 'pending'}
-            kind={warm ? 'warmup' : 'working'}
+            kind="working"
             exerciseType={ex.type}
             initial={{
               weight: actual?.weight ?? t?.targetWeightKg ?? prefill(ex).weight,

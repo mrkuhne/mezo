@@ -61,7 +61,10 @@ describe('cerScore', () => {
     expect(score.stars).toBe(5)
   })
 
-  test('warmup and working slots both count toward the target', () => {
+  // Warm-up slots are prescribed but never shown or logged (mezo-i8ahy), so the target
+  // is the WORKING plan only — otherwise the warm-up rungs would sit in the denominator
+  // with nothing that can ever fill them.
+  test('the warm-up ramp counts for nothing — target and done are working-only', () => {
     const s: Session = makeSession([
       {
         id: 'a',
@@ -73,11 +76,10 @@ describe('cerScore', () => {
         ],
       },
     ])
-    let sess = completeSet(s, 'a', loggedSet(20, 12))
-    sess = completeSet(sess, 'a', loggedSet(100, 10))
+    const sess = completeSet(s, 'a', loggedSet(100, 10))
     const score = cerScore(sess, [exercise('a', 'chest')])
-    expect(score.target).toEqual({ sets: 2, reps: 22, volume: 20 * 12 + 100 * 10 })
-    expect(score.done).toEqual({ sets: 2, reps: 22, volume: 20 * 12 + 100 * 10 })
+    expect(score.target).toEqual({ sets: 1, reps: 10, volume: 100 * 10 })
+    expect(score.done).toEqual({ sets: 1, reps: 10, volume: 100 * 10 })
     expect(score.ratio).toBe(1)
   })
 

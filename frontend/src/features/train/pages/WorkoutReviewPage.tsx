@@ -29,7 +29,12 @@ function toSummaryExercises(detail: WorkoutDetailResponse): SummaryExercise[] {
     id: e.exerciseId,
     name: e.name,
     muscle: e.muscle,
-    plannedSets: e.warmupSets + e.workingSets,
+    // The PLAN is the working sets only (mezo-i8ahy): warm-up slots are prescribed but
+    // never shown and never logged any more, so counting them here would mark every
+    // finished workout "partial" with the warm-up ramp as its missing sets. The logged
+    // rows below are left exactly as recorded — a workout from before that ruling really
+    // did have its warm-ups logged, and its report should keep saying so.
+    plannedSets: e.workingSets,
     // rir is honestly nullable (Finding 1): the API contract gives `rir: null` on every
     // warmup set — mapping it to 0 fabricated a fake worst-case RIR that dragged the Ø RIR
     // average toward zero and disagreed with the same workout's in-memory `complete`-phase

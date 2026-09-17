@@ -17,6 +17,9 @@ import {
   attachSetId,
   pendingSetCount,
   pendingByExercise,
+  warmupSlotCount,
+  slotIndex,
+  prescribedAt,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -279,21 +282,32 @@ describe('set edit + slot removal (mezo-l3on)', () => {
     ],
   }]
 
-  test('C1(a): removeSet on a PENDING warmup slot drops that warmup from the prescription, not a working slot', () => {
+  // Warm-up slots are prescribed but never shown or logged (mezo-i8ahy): `removeSet`
+  // addresses a VISIBLE (working) slot, so the ramp at the head of the prescription is
+  // never the thing that gets dropped.
+  test('C1(a): removeSet on a PENDING slot drops a WORKING prescription, never the warm-up ramp', () => {
     const s = makeSession(withPrescription)
     const after = removeSet(s, 'a', 0)
-    expect(after.prescribed.a.map((p) => p.kind)).toEqual(['warmup', 'working', 'working', 'working'])
-    expect(effectiveSetCount(after, 'a')).toBe(4)
+    expect(after.prescribed.a.map((p) => p.kind)).toEqual(['warmup', 'warmup', 'working', 'working'])
+    // 5 planned − 1 removed − 2 warm-up slots = 2 visible slots.
+    expect(effectiveSetCount(after, 'a')).toBe(2)
   })
 
-  test('C1(b): removeSet on an already-LOGGED warmup slot re-pairs the later logged working set with a working prescription', () => {
+  test('C1(b): removeSet on an already-LOGGED slot keeps the later logged set on a working prescription', () => {
     let s = makeSession(withPrescription)
-    s = completeSet(s, 'a', { weight: 40, reps: 12, rir: 0 }) // B1 (logged idx 0)
-    s = completeSet(s, 'a', { weight: 60, reps: 10, rir: 0 }) // B2 (logged idx 1)
-    s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 0 }) // W1 (logged idx 2)
-    const after = removeSet(s, 'a', 0) // delete B1 — W1 shifts down to logged idx 1
-    expect(after.prescribed.a[1].kind).toBe('working')
-    expect(after.logged.a[1]).toMatchObject({ weight: 100, reps: 8, rir: 0 })
+    s = completeSet(s, 'a', { weight: 100, reps: 8, rir: 0 }) // W1 (logged idx 0)
+    s = completeSet(s, 'a', { weight: 100, reps: 7, rir: 1 }) // W2 (logged idx 1)
+    const after = removeSet(s, 'a', 0) // delete W1 — W2 shifts down to logged idx 0
+    expect(after.prescribed.a.map((p) => p.kind)).toEqual(['warmup', 'warmup', 'working', 'working'])
+    expect(after.logged.a[0]).toMatchObject({ weight: 100, reps: 7, rir: 1 })
+  })
+
+  test('the visible slot count and the visible→model mapping skip the warm-up ramp', () => {
+    const s = makeSession(withPrescription)
+    expect(warmupSlotCount(s, 'a')).toBe(2)
+    expect(effectiveSetCount(s, 'a')).toBe(3)
+    expect(prescribedAt(s, 'a', slotIndex(s, 'a', 0))?.kind).toBe('working')
+    expect(prescribedAt(s, 'a', slotIndex(s, 'a', 0))?.targetWeightKg).toBe(100)
   })
 
   // ---- T6 Task 6: pendingSetCount / pendingByExercise (the finish CTA + confirm glass) ----
