@@ -1083,36 +1083,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .domain-switch-name b { font-size: 9px; opacity: 0.6; line-height: 1; }
 
-/* Domain-switcher dialog (mezo-jkh4) — "Egy társ. Öt világ." over the Sheet primitive. */
-.domain-switcher-body { padding: 4px 20px 28px; }
-.domain-switcher-eyebrow {
-  margin: 0 0 4px; font-family: var(--ff-body);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
-  color: var(--text-secondary); text-transform: uppercase;
-}
-.domain-switcher .sheet-title {
-  margin: 0 0 18px; font-family: var(--ff-display, var(--ff-body));
-  font-size: 24px; font-weight: 700; color: var(--text-primary);
-}
-.domain-list { display: flex; flex-direction: column; gap: 10px; }
-.domain-row {
-  display: flex; align-items: center; gap: 14px;
-  width: 100%; padding: 14px 16px; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: var(--surface, var(--canvas)); cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-out),
-              background var(--duration-fast) var(--ease-out);
-}
-.domain-row.current { border-color: var(--primary-deep); }
-.domain-row-mark { display: grid; place-items: center; flex: none; }
-.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.domain-row-text strong {
-  font-family: var(--ff-body); font-size: 15px; font-weight: 700; color: var(--text-primary);
-}
-.domain-row-text small { font-size: 12px; color: var(--text-secondary); }
-.domain-row-end { flex: none; font-size: 15px; color: var(--text-secondary); }
-.domain-row.current .domain-row-end { color: var(--primary-deep); }
-
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
    NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas):
@@ -15463,3 +15433,110 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .sp-number { grid-template-columns: 42px 1fr auto 42px; }
 }
 /* ── /train sport titanium ───────────────────────────────────────────────── */
+
+/* Approved dark Titanium navigation (mezo-0i5y6). These chrome tokens deliberately
+   stay dark on legacy light pages; the page's theme preference is not changed. */
+:root, :root[data-theme="dark"] {
+  --nav-surface: #111319;
+  --nav-surface-top: #181920;
+  --nav-card: #181923;
+  --nav-ink: #eae8ee;
+  --nav-muted: #b9b2c5;
+  --nav-idle: #8e879b;
+  --nav-line: #c4afd726;
+  --nav-backdrop: #090b125c;
+  --nav-shadow: #0000001a;
+  --nav-highlight: #ffffff08;
+  --nav-nap: #d9c395;
+  --nav-train: #c8e895;
+  --nav-fuel: #8ed2e8;
+  --nav-mezo: #bca6f1;
+  --nav-me: #d7a7bc;
+}
+[data-domain="nap"] { --nav-accent: var(--nav-nap); }
+[data-domain="train"] { --nav-accent: var(--nav-train); }
+[data-domain="fuel"] { --nav-accent: var(--nav-fuel); }
+[data-domain="mezo"] { --nav-accent: var(--nav-mezo); }
+[data-domain="me"] { --nav-accent: var(--nav-me); }
+.tab-bar[data-domain] {
+  left: 0; right: 0; bottom: 0; height: 88px;
+  border-radius: 0; border-top: 1px solid var(--nav-line);
+  padding: 12px 8px 24px; gap: 3px;
+  background: linear-gradient(180deg, var(--nav-surface-top), var(--nav-surface) 80%);
+  box-shadow: none; align-items: stretch;
+}
+.tab-bar[data-domain] .tab-item {
+  min-width: 0; min-height: 44px; gap: 3px;
+  font-size: 10px; font-weight: 500; color: var(--nav-idle);
+}
+.tab-bar[data-domain] .tab-item > span { white-space: nowrap; }
+.tab-bar[data-domain] .tab-item.active { color: var(--nav-accent); }
+.tab-bar[data-domain] .tab-item.active .tab-ico svg {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-accent) 32%, transparent));
+}
+.tab-bar[data-domain] .domain-switch {
+  flex: 0 0 56px; border-right: 1px solid var(--nav-line); padding-right: 5px;
+}
+.tab-bar[data-domain] .domain-switch-name { font-size: 10px; font-weight: 500; color: var(--nav-accent); }
+.phone-screen:has(.tab-bar[data-domain]) > .home-indicator { background: var(--nav-ink); }
+.tab-bar[data-domain] .tab-item:focus-visible {
+  outline: 2px solid var(--nav-ink); outline-offset: -2px; border-radius: 8px;
+}
+.domain-row:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 3px; }
+/* Whole-screen overlay owns blur/scroll; its dialog has no enclosing surface. */
+.domain-switcher-overlay {
+  position: absolute; inset: 0; z-index: 250;
+  display: flex; align-items: safe center; justify-content: center;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: var(--nav-backdrop);
+  backdrop-filter: blur(22px) saturate(.65);
+  -webkit-backdrop-filter: blur(22px) saturate(.65);
+}
+.domain-switcher { width: 100%; max-width: 372px; flex: none; color: var(--nav-ink); }
+.domain-list { display: flex; flex-direction: column; gap: 12px; }
+.domain-row {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; min-height: 80px; padding: 16px; text-align: left;
+  border: 1px solid color-mix(in srgb, var(--nav-accent) 21%, transparent);
+  border-radius: 17px; cursor: pointer;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 12%, var(--nav-card)), color-mix(in srgb, var(--nav-surface) 80%, transparent));
+  box-shadow: 0 8px 28px var(--nav-shadow), inset 0 1px 0 var(--nav-highlight);
+}
+.domain-row.current {
+  border-color: var(--nav-accent);
+  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 19%, var(--nav-card)), var(--nav-card));
+}
+.domain-row-mark { display: grid; place-items: center; flex: none; }
+.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.domain-row-text strong { font: 500 16px var(--ff-body); color: var(--nav-accent); }
+.domain-row-text small { font: 400 10px/1.6 var(--ff-body); color: var(--nav-muted); overflow-wrap: anywhere; }
+.domain-row-end { flex: none; font-size: 16px; font-weight: 400; color: var(--nav-accent); }
+.phone-screen:has(.domain-switcher-overlay) .screen-content { overflow: hidden; }
+@supports not (backdrop-filter: blur(1px)) {
+  .domain-switcher-overlay { background: color-mix(in srgb, var(--nav-surface) 96%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .domain-row { animation: domain-menu-rise 260ms cubic-bezier(.2,.7,.3,1) both; }
+  .domain-row:nth-child(2) { animation-delay: 25ms; }
+  .domain-row:nth-child(3) { animation-delay: 50ms; }
+  .domain-row:nth-child(4) { animation-delay: 75ms; }
+  .domain-row:nth-child(5) { animation-delay: 100ms; }
+}
+@keyframes domain-menu-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .tab-bar[data-domain] { height: calc(76px + env(safe-area-inset-bottom)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+  .tab-bar[data-domain] .tab-item, .tab-bar[data-domain] .domain-switch-name { font-size: 9px; }
+  .tab-bar[data-domain] .domain-switch { flex-basis: 48px; }
+  .domain-switcher-overlay { padding-left: 16px; padding-right: 16px; }
+  .domain-row { gap: 10px; padding: 14px 12px; }
+}
+@media (max-height: 560px) {
+  .domain-list { gap: 8px; }
+  .domain-row { min-height: 64px; padding: 10px 14px; }
+}

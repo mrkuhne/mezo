@@ -159,14 +159,59 @@ test('activeTabRoute /train-en null-t ad vissza (pre-redirect szerződés)', () 
 test('the switch mark opens the domain-switcher dialog listing the five domains', async () => {
   renderAt('/nap', <TabBar />)
   await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Nap' }))
-  const dialog = screen.getByRole('dialog')
-  expect(within(dialog).getByText('Egy társ. Öt világ.')).toBeInTheDocument()
+  const dialog = screen.getByRole('dialog', { name: 'Területváltó' })
+  expect(within(dialog).queryByRole('heading')).not.toBeInTheDocument()
+  expect(within(dialog).getAllByRole('button')).toHaveLength(5)
+  expect(dialog.closest('.sheet')).toBeNull()
   for (const name of ['Nap', 'Edzés', 'Fuel', 'Mezo', 'Én']) {
     expect(within(dialog).getByText(name)).toBeInTheDocument()
   }
   // Each domain lists its four tab labels joined by " · ".
   expect(within(dialog).getByText('Mai · Beszélgetés · Rutin · Napzárás')).toBeInTheDocument()
   expect(within(dialog).getByText('Felfedezések · Előrejelzések · Karakter · Tudástár')).toBeInTheDocument()
+})
+
+test('switcher focuses the current card, contains keyboard focus and restores the opener', async () => {
+  const user = userEvent.setup()
+  renderAt('/me', <TabBar />)
+  const opener = screen.getByRole('button', { name: 'Területváltó: Én' })
+  await user.click(opener)
+  const dialog = screen.getByRole('dialog', { name: 'Területváltó' })
+  const cards = within(dialog).getAllByRole('button')
+  expect(cards[4]).toHaveFocus()
+  await user.tab()
+  expect(cards[0]).toHaveFocus()
+  await user.tab({ shift: true })
+  expect(cards[4]).toHaveFocus()
+  await user.keyboard('{Escape}')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(opener).toHaveFocus()
+})
+
+test('background is inert while choosing and tapping outside dismisses without navigating', async () => {
+  const user = userEvent.setup()
+  renderAt('/nap', <><TabBar /><LocationProbe /></>)
+  const background = screen.getByTestId('loc').closest('.phone-screen') ?? screen.getByTestId('loc').parentElement!
+  await user.click(screen.getByRole('button', { name: 'Területváltó: Nap' }))
+  expect(background).toHaveAttribute('inert')
+  const overlay = screen.getByRole('dialog').parentElement!
+  await user.click(overlay)
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(background).not.toHaveAttribute('inert')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/nap')
+})
+
+test('switching domains keeps the remembered contextual tab and closes the overlay', async () => {
+  const user = userEvent.setup()
+  renderAt('/fuel/stack', <><TabBar /><LocationProbe /></>)
+  await user.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Én / }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Területváltó: Én' }))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Fuel / }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack')
+  expect(screen.getByRole('link', { name: 'Kiegészítők' })).toHaveAttribute('aria-current', 'page')
 })
 
 // --- The floating FAB (unchanged by the Titanium rebuild — kept from mezo-mhum) ---

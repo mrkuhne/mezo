@@ -1,63 +1,82 @@
-// ============================================================
-// Mezo · Domain switcher dialog (mezo-jkh4)
-// "Egy társ. Öt világ." — lists the five domains, each with its name + its four tab
-// labels joined by " · "; the current domain is marked. Selecting a domain navigates
-// to its last-visited tab (navMemory), else its first tab. A thin wrapper over the
-// house `Sheet` primitive (the QuickInputSheet idiom).
-// ============================================================
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { Sheet } from '@/shared/ui/Sheet'
 import { ClayIcon } from '@/shared/ui/clay'
 import { DOMAINS, routeForDomain } from '@/app/navModel'
 
-export function DomainSwitcher({
-  currentDomainId,
-  onClose,
-}: {
+/** Five independent cards over blur; deliberately no Sheet or drawer chrome. */
+export function DomainSwitcher({ currentDomainId, onClose }: {
   currentDomainId: string | null
   onClose: () => void
 }) {
   const navigate = useNavigate()
-  return (
-    <Sheet onClose={onClose} className="domain-switcher" labelledBy="domain-switcher-title">
-      {(close) => (
-        <div className="domain-switcher-body">
-          <p className="domain-switcher-eyebrow">MERRE MENJÜNK?</p>
-          <h2 id="domain-switcher-title" className="sheet-title">
-            Egy társ. Öt világ.
-          </h2>
-          <div className="domain-list">
-            {DOMAINS.map((d) => {
-              const current = d.id === currentDomainId
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  className={cn('domain-row', current && 'current')}
-                  aria-current={current ? 'true' : undefined}
-                  onClick={() => {
-                    const to = routeForDomain(d.id)
-                    close()
-                    navigate(to)
-                  }}
-                >
-                  <span className="domain-row-mark">
-                    <ClayIcon name={d.tabs[0].icon} size={30} />
-                  </span>
-                  <span className="domain-row-text">
-                    <strong>{d.name}</strong>
-                    <small>{d.tabs.map((t) => t.label).join(' · ')}</small>
-                  </span>
-                  <b className="domain-row-end" aria-hidden="true">
-                    {current ? '✓' : '↗'}
-                  </b>
-                </button>
-              )
-            })}
-          </div>
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const [target] = useState(() => document.querySelector('.phone-screen') ?? document.body)
+
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = dialogRef.current!
+    // Restore each previous value, including already-inert background overlays.
+    const siblings = Array.from(target.children).filter(el => el !== overlayRef.current)
+    const previous = siblings.map(el => [el, el.hasAttribute('inert')] as const)
+    siblings.forEach(el => el.setAttribute('inert', ''))
+    const buttons = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button'))
+    const initialFocus = buttons.find(button => button.getAttribute('aria-current') === 'true') ?? buttons[0]
+    initialFocus?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        onClose()
+      }
+      if (event.key === 'Tab') {
+        const index = buttons.indexOf(document.activeElement as HTMLButtonElement)
+        if (event.shiftKey && index <= 0) {
+          event.preventDefault()
+          buttons.at(-1)?.focus()
+        } else if (!event.shiftKey && (index === buttons.length - 1 || index < 0)) {
+          event.preventDefault()
+          buttons[0]?.focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('keydown', onKey, true)
+      previous.forEach(([el, wasInert]) => { if (!wasInert) el.removeAttribute('inert') })
+      if (opener?.isConnected) opener.focus()
+    }
+  }, [onClose, target])
+
+  return createPortal(
+    <div ref={overlayRef} className="domain-switcher-overlay" onClick={event => {
+      if (event.target === event.currentTarget) onClose()
+    }}>
+      <div ref={dialogRef} className="domain-switcher" role="dialog" aria-modal="true" aria-label="Területváltó">
+        <div className="domain-list">
+          {DOMAINS.map(domain => {
+            const current = domain.id === currentDomainId
+            const summary = domain.tabs.map(tab => tab.label).join(' · ')
+            return (
+              <button key={domain.id} type="button"
+                className={cn('domain-row', current && 'current')}
+                data-domain={domain.id}
+                aria-label={`${domain.name} — ${summary}`}
+                aria-current={current ? 'true' : undefined}
+                onClick={() => {
+                  onClose()
+                  navigate(routeForDomain(domain.id))
+                }}>
+                <span className="domain-row-mark"><ClayIcon name={domain.tabs[0].icon} size={40} /></span>
+                <span className="domain-row-text"><strong>{domain.name}</strong><small>{summary}</small></span>
+                <b className="domain-row-end" aria-hidden="true">{current ? '✓' : '↗'}</b>
+              </button>
+            )
+          })}
         </div>
-      )}
-    </Sheet>
+      </div>
+    </div>, target,
   )
 }
