@@ -13260,7 +13260,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.todaycard-gym` ma is visel, lásd :2539),
    a sikeres/figyelmeztető állapotokhoz pedig a ház `--sage`/`--sage-deep` és
    `--amber`/`--amber-deep` szemantikus tokenjeit — így a lap a világos ÉS a sötét
-   témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül.
+   témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot lejjebb (:14281) — a `.tr-pills span` és rokonai
+   ott a prototípus saját literáljára mennek vissza.
 
    A `.tr-start` a prototípus EGY stílusát HÁROM állapotra bontja (owner-döntés,
    task-3 brief): `.is-go` (zöld, friss indítás), `.is-resume` (borostyán,
@@ -14281,8 +14283,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* THE HAIRLINE RULING (mezo-fsz2r Task 4 sweep) — amends the „AMIT NEM" paragraph above
    for BORDERS ONLY. The ports replaced every near-transparent hairline literal with
    `var(--border-subtle)` (and raised the domain-tinted ones to a flat 24%). Measured over
-   the canvas `rgb(11,13,18)`, most of those land within ΔE76 1.4–2.7 — below the ~2.3
-   just-noticeable threshold on a 1px line, i.e. noise. But ONE member is not noise:
+   the canvas `rgb(11,13,18)`, most of those land within ΔE76 1.4–2.7 — at or just above the
+   ~2.3 just-noticeable threshold on a 1px line, i.e. invisible in practice. But ONE member
+   is not noise:
    `.ld-sport`/`.ld-move-card` went `#78cfe72b` (α .17) → 24%, which measures **ΔE76 5.90**
    — a visible thickening of the sport card's outline. Since the group cannot be called
    uniformly-invisible, it is adjudicated as ONE decision the other way: every hairline in
@@ -14312,7 +14315,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    (`--surface-card` then `--canvas`) — measured ΔE76 2.5 / 2.3 against the prototype's
    `#14181f`/`#0f1218`, i.e. the house canvas IS the prototype's canvas to within noise, and
    both apps' heroes fade into their own page ground. Recorded as an accepted house deviation
-   in the matrix rather than pinned to untokenised literals. */
+   in the matrix rather than pinned to untokenised literals. This is why this ruling and THE
+   HAIRLINE RULING above are consistent, not in tension: the later stops' tokens already
+   resolve to the prototype's own values within noise (ΔE76 2.5 / 2.3), so "accept" here means
+   there is nothing left to restore — not a drift being tolerated the way a border's alpha
+   might be. */
 
 /* — a hős: milyen mélyen vagy a hétben — */
 .ld-hero {
@@ -14629,7 +14636,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    háttér felére, `--mus-color` (fallback `--tag-gym`, ugyanaz mint a `.pl-*`/
    `.mm-*` szekciókban) az izom-specifikus tónusokra, `--amber`/`--amber-deep`
    a rekord-arany jelzésekre (`.gy-medal*`, `.gy-next`) — így a lapok a
-   világos ÉS a sötét témában is olvashatók maradnak.
+   világos ÉS a sötét témában is olvashatók maradnak. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot lejjebb (:14281) — a `.gy-card`/
+   `.gy-curve-box` és rokonai ott a prototípus saját literáljára mennek vissza.
 
    Nincs `.gy` gyökér: a prototípus `.gy .gy-search`/`.gy .pl-row` szabályait
    a house nem viszi át — a termelésben nincs oldal-gyökér (`.screen-content`
@@ -14703,15 +14712,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-rec-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .gy-rec-bar b {
   display: block; height: 100%; width: var(--w); border-radius: 999px;
-  /* THE RENDERED-RESULT RULE again (mezo-fsz2r Task 4 sweep). Same mechanism as `.gy-rec`
-     above: the prototype's fill is `color-mix(in srgb, var(--mus-color) 50%, transparent)`
-     with `--mus-color` unset on this subtree, so the declaration is invalid at
-     computed-value time and the prototype paints NO fill — the record bar renders as an
-     empty track. Production's `--mus-color` IS inherited here, so the ported fallback made
-     the bar paint. We ship what the owner sees: the empty track. The width mechanics
-     (`--w`, the reveal transition below) stay, so restoring the fill is one declaration
-     if the bar is ever made real. */
-  background: none;
+  /* NOT the rendered-result rule here (owner ruling, mezo-fsz2r Surfaces final wave). The
+     prototype's OWN fill is invalid at computed-value time for the `.gy-rec` reason above
+     (`--mus-color` unset on this subtree) — that is the prototype's latent bug, not a
+     deliberate empty track. Production's `--mus-color` IS inherited here, so the fallback
+     below paints a real fill; the record-progress bar is otherwise always-empty chrome
+     with no information in it, which the owner does not want. We keep the DATA visible and
+     deliberately part ways with the prototype's rendered result. Whether this should instead
+     match the prototype (and how) is an OPEN OWNER QUESTION — see the matrix's Surfaces
+     section. */
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 50%, transparent), var(--mus-color, var(--tag-gym)));
 }
 .gy-rec > small { font-size: 10.5px; color: var(--text-tertiary); }
 [data-reveal] .gy-rec-bar b { width: 0; }
@@ -14776,7 +14786,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `--amber`/`--amber-deep` szemantikus tokenjeit, az izom-specifikus
    színekhez pedig a meglévő `--mus-color` inline custom property-t
    (muscleColors.ts, ugyanaz, amit a `.tr-mus-track` is visel) — így a lapok
-   a világos ÉS a sötét témában is olvashatók maradnak.
+   a világos ÉS a sötét témában is olvashatók maradnak. KIVÉTEL a hajszálvékony
+   kereteknél: lásd THE HAIRLINE RULING-ot fentebb (:14281) — a `.pl-item`/
+   `.pl-row`/`.pl-day`* és rokonai ott a prototípus saját literáljára mennek vissza.
 
    Az eyebrow-sorok a MEGLÉVŐ `.tr-eyebrow` osztályt viselik (nem egy saját
    `.pl-eyebrow`-t) — a T5 lecke (`.overline` ütközne a Tailwind v4
@@ -14807,7 +14819,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 4px 0 16px; margin-inline: calc(-1 * var(--screen-gutter));
   padding: 22px 20px 26px;
   border: 0; border-radius: 0;
-  --tr-accent: var(--tag-gym); --tr-wash: var(--wash-gym);
+  --tr-accent: var(--tag-gym);
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
     linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 11%, var(--surface-card)), var(--surface-card) 68%);
@@ -14847,7 +14859,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    own click handler and accessible name without disturbing the plain-text siblings. */
 .pl-poster-foot-link {
   font: inherit; font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
-  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: #ffffff08;
+  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
 }
 
 /* — the week numeral + progress ring, sharing the poster's top row — */

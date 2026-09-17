@@ -590,7 +590,7 @@ Seven rows were adjudicated rather than simply ported. In plain terms:
 | The two big page-top posters started their colour wash over the page instead of over the card behind it | Put the wash back on the card, like the third poster already did. Measured, this was the most visible difference left in the domain — and the hero was carrying two different oranges at once. |
 | Mai's poster sits closer to the screen edge than the prototype's | Kept as is. The prototype's whole page is inset further; ours is inset less — and everything on our page shares one edge, which is what the audit actually measures. Changing it would move every screen in the app. |
 | The first fact-pill on Mai's poster was loud where the prototype quiets it | Ported the prototype's quiet version. |
-| A record bar paints a coloured fill that the prototype never actually paints | Ships empty, like the prototype — the same „match what he sees" rule the record cards got. |
+| A record bar paints a coloured fill that the prototype never actually paints | **Reopened as an OPEN OWNER QUESTION.** Kept painting the fill for now — a bar with real information in it beats matching the prototype's own rendering bug — but this is not a closed decision; see below. |
 | The „Eredmény" button was the only one of the three states without its inner highlight | Gave it the prototype's own recipe. |
 | The Terv landing poster runs edge-to-edge where the prototype's sits inset | **Not a missed row** — „full-bleed heroes" is an owner rule for the whole Train rebuild (`2026-09-15-train-titanium-slices.md` §Global Constraints). The poster cancels the page gutter and pays the prototype's 20 px itself, so the CONTENT lands where the prototype puts it. Mai's poster is the deliberate exception: the audit demanded its rounded card back, and a rounded card cannot be full-bleed. |
 
@@ -598,6 +598,20 @@ Two house deviations are accepted on the record rather than fixed: the heroes' r
 house `--surface-card` → `--canvas` tail below stop 0 (measured within noise of the
 prototype's own literals), and Mai's 21 px rail stays. Everything else in §20.1/§20.2 is the
 prototype's own value.
+
+**Owner-visible open items from this slice:**
+
+- **A record bar's coloured fill — still open, waiting on you.** The prototype has a bug: on
+  the record cards, a setting it needs is missing, so the coloured fill inside the bar never
+  actually paints — you'd only ever see an empty track there. We chose to keep painting the
+  fill in our own app, because a bar with no information in it felt worse than not matching
+  the prototype's mistake. That is a judgment call, not a final decision — it is open until
+  you say which you prefer: the informative bar, or matching the prototype exactly (empty).
+- **Mai's page still looks intentionally different, on purpose.** A few things on Mai's page
+  — sections without boxes around them, a quieter first pill, a darker "Reviewed" button —
+  are not oversights from this slice; they are exactly what this slice was scoped to leave
+  alone. The follow-up slice that finishes Mai's look end-to-end is tracked separately
+  (`mezo-edg42`).
 
 ---
 

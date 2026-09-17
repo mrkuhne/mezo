@@ -605,7 +605,10 @@ Borders that took the same treatment but stayed translucent — `#ffffff10` → 
 `.pl-mstats span`, `.pl-lib-card`, `.pl-lib-musrow`, `.pl-tpl-exs`, `.tr-pills span`,
 `.pl-poster-foot span`, `.pl-dhero-pills span` — and the mix-target swaps
 `color-mix(… , #ffffff10)` → `color-mix(… , var(--border-subtle))` on `.gy-rec`, `.pl-ex`, `.pl-dest`.
-Measured delta ≈ 2–3 % alpha. **MINOR, one finding for the whole set.**
+Measured delta ≈ 2–3 % alpha. **RESTORED, family-wide — see §23.1**: one member of this set
+(`.ld-sport`/`.ld-move-card`) measures **ΔE76 5.90**, a visibly thicker outline, so the set is
+no longer treated as one minor finding — the whole group was put back to the prototype's own
+literal/alpha on the strength of that outlier.
 
 ### 20.2 Discrete meaning-changes (declaration added, dropped, or flipped)
 
