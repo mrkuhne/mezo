@@ -143,4 +143,61 @@ describe('useChatActions (real mode)', () => {
     releaseRest()
     await waitFor(() => expect(actions.result.current.turn).toBeNull())
   })
+
+  // mezo-rj214.7: the live 'phase' SSE event narrates the turn's stage ahead of the draft —
+  // planning/retrieving before the tool call, answering before the first delta. Two gates (one
+  // before the delta, one before the terminal done) isolate the two moments the test needs to
+  // observe: 'answering' while the draft is still empty, then cleared once the delta lands — the
+  // module handler's frames otherwise land within the same microtask flush, too fast for a plain
+  // waitFor to catch mid-stream (same trap as the tools test above).
+  it('exposes the streamed phase on the in-flight turn and clears it on the first delta', async () => {
+    let releaseDelta: () => void = () => {}
+    const untilDelta = new Promise<void>((resolve) => { releaseDelta = resolve })
+    let releaseDone: () => void = () => {}
+    const untilDone = new Promise<void>((resolve) => { releaseDone = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(frame('phase', { phase: 'planning' })))
+          controller.enqueue(encoder.encode(frame('phase', { phase: 'retrieving' })))
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
+          controller.enqueue(encoder.encode(frame('phase', { phase: 'answering' })))
+          await untilDelta
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          await untilDone
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z',
+            tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
+            refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+            recalled: [],
+            degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    const wrapper = makeHookWrapper()
+    const chat = renderHook(() => useChat(), { wrapper })
+    await waitFor(() => expect(chat.result.current.data.conversationId).toBe('c-1'))
+
+    const actions = renderHook(() => useChatActions(), { wrapper })
+    act(() => actions.result.current.send('Fáradt vagyok'))
+
+    await waitFor(() => expect(actions.result.current.turn?.phase).toBe('answering'))
+    expect(actions.result.current.turn?.draft).toBe('')
+
+    releaseDelta()
+    await waitFor(() => expect(actions.result.current.turn?.phase).toBeUndefined())
+    expect(actions.result.current.turn?.draft).not.toBe('')
+
+    releaseDone()
+    await waitFor(() => expect(actions.result.current.turn).toBeNull())
+  })
 })

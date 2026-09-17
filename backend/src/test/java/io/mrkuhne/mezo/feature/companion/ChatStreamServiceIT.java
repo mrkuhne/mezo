@@ -104,12 +104,22 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
                 .collectList().block();
 
         assertThat(events).isNotEmpty();
-        assertThat(events.subList(0, events.size() - 1))
+        // mezo-rj214.7 S9.6 Task 3 (sanctioned edit): "mi a terv ma?" is a pipeline-attempted (gear
+        // != CHAT) turn whose planner never scripted a plan, so it now legitimately falls back to
+        // the legacy stream AFTER a leading 'phase' planning frame — the stream restructure's whole
+        // point is that this frame reaches the client live, ahead of the deltas. Filter phase
+        // frames out and assert the REMAINDER before the last event are all deltas, preserving the
+        // test's original intent (no stray non-delta events on a tool-less turn).
+        List<ServerSentEvent<Object>> beforeLast = events.subList(0, events.size() - 1).stream()
+                .filter(e -> !"phase".equals(e.event()))
+                .toList();
+        assertThat(beforeLast)
                 .allSatisfy(e -> {
                     assertThat(e.event()).isEqualTo("delta");
                     assertThat(e.data()).isInstanceOf(StreamDelta.class);
                 });
         String joined = events.stream().limit(events.size() - 1)
+                .filter(e -> "delta".equals(e.event()))
                 .map(e -> ((StreamDelta) e.data()).getText()).reduce("", String::concat);
         assertThat(joined).startsWith(FakeCompanionLlm.PREFIX).contains("user=[mi a terv ma?]");
 

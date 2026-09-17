@@ -170,6 +170,28 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
                 .contains("\"gist\":\"futás után jobban aludtam\"");
     }
 
+    /**
+     * mezo-rj214.7 S9.6 Task 3: the SSE writer really puts the 'phase' event name on the wire for
+     * a pipeline-attempted turn — {@code ChatStreamPipelineIT} proves the frame order/payload
+     * over the Flux, this proves it survives the actual HTTP response encoding (the same gap
+     * {@code testStreamMessage_shouldEmitLiveToolEvent_whenScriptedToolRuns} closed for 'tool').
+     */
+    @Test
+    void testStreamMessage_shouldCarryPhaseEventInRawBody_whenScriptedPipelineRuns() {
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        String sse = postForBody(streamUri(conversation.getId()),
+                SendMessageRequest.builder()
+                        .content("Mennyit aludtam mostanában? [fake-plan:{\"needsData\":true,\"steps\":"
+                                + "[{\"tool\":\"get_recovery\",\"args\":{\"scope\":\"sleep\",\"days\":3},"
+                                + "\"why\":\"alvás\"}]}]")
+                        .build(),
+                sseHeaders(), HttpStatus.OK, String.class);
+
+        assertThat(sse).contains("event:phase");
+    }
+
     @Test
     void testStreamMessage_shouldEmitErrorEventWithoutAssistantRow_whenLlmStreamFails() {
         ConversationResponse conversation = postForBody(
