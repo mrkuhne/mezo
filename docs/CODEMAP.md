@@ -1398,12 +1398,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx,
     ExerciseReview.tsx, FinishConfirmGlass.tsx, LoadTile.tsx, MedalChip.tsx, MedalToast.tsx, MesoDayEditor.tsx,
     MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekEditor.tsx, MiniBar.tsx, MiniStat.tsx,
-    MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
-    PrepExerciseTile.tsx, ProgressionBanner.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
-    RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx,
-    TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx,
-    WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx,
-    WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
+    MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx, PrepExerciseTile.tsx,
+    ProgressionBanner.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx,
+    SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx,
+    TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx,
+    WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx,
+    WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx, ZoneTrack.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, cerScore.ts, dayImpact.ts,
     dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts, gymDayTarget.ts, libraryStory.ts, loadWeek.ts,
     medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts,

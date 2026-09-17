@@ -74,14 +74,26 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.getAllByText('88')).toHaveLength(1)
   })
 
-  it('renders the frozen volume arc behind a muscle switch', async () => {
-    const user = userEvent.setup()
+  // --- the pre-Titanium tail is gone (T-P1 Task 5, mezo-e1ii9) ---
+
+  it('no longer stacks the week-by-week arc chart and its MEV/MAV/MRV legend onto the story', () => {
     renderAt('meso-rec-03')
-    expect(screen.getByTestId('volume-arc-chart')).toBeInTheDocument()
-    // chest is first (mrv 16); switching to Hát re-renders the chart for mrv 20
-    expect(screen.getByText('MRV 16')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Hát' }))
-    expect(screen.getByText('MRV 20')).toBeInTheDocument()
+    expect(screen.queryByTestId('volume-arc-chart')).toBeNull()
+    expect(screen.queryByText('Heti szettek · a blokk íve')).toBeNull()
+    // the legend jargon the chart carried — none of it survives anywhere on the page
+    expect(screen.queryByText(/MRV \d+/)).toBeNull()
+    expect(screen.queryByText('Deload')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/\bMEV\b|\bMAV\b/)
+  })
+
+  it('no longer carries the lifestyle emoji row or its W1–W8 spreadsheet', () => {
+    renderAt('meso-rec-03')
+    expect(screen.queryByTestId('meso-report-context')).toBeNull()
+    expect(screen.queryByText('Életmód-kontextus')).toBeNull()
+    expect(screen.queryAllByTestId('context-week-row')).toHaveLength(0)
+    // the emoji pills themselves, and the table that followed them
+    expect(document.body.textContent).not.toMatch(/[\u{1F634}\u{1F37D}\u{26A1}\u{1F630}\u{2696}\u{1F3D0}\u{1F3C3}]/u)
+    expect(document.querySelector('table')).toBeNull()
   })
 
   it('does not render the "Ezt akartad" quote when the run has no notes (mezo-d20.15 Task 5)', () => {
@@ -124,25 +136,6 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     // one ruler for both bars: 16/16 and 12/16 of the pair set's widest value (back's 20)
     expect((then.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('80%')
     expect((now.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('60%')
-  })
-
-  it('renders the lifestyle context block — totals pills, weekly rows, "–" for missing data', () => {
-    renderAt('meso-rec-03')
-    const ctx = screen.getByTestId('meso-report-context')
-    expect(within(ctx).getByText('Életmód-kontextus')).toBeInTheDocument()
-    // totals pills — one per present metric, no invented zeros
-    expect(within(ctx).getByText('😴 7,4 h alvás')).toBeInTheDocument()
-    expect(within(ctx).getByText('🍽 2429 kcal / 2486 cél')).toBeInTheDocument()
-    expect(within(ctx).getByText('⚖️ -1,1 kg')).toBeInTheDocument()
-    expect(within(ctx).getByText('🏐 760 perc · 15×')).toBeInTheDocument()
-    expect(within(ctx).getByText('🏃 9× futás')).toBeInTheDocument()
-    // 8 weekly rows, one per week of the run
-    const rows = within(ctx).getAllByTestId('context-week-row')
-    expect(rows).toHaveLength(8)
-    // The fixture's deliberate null holes — never a fabricated 0 in these cells
-    expect(within(rows[2]).getByText('–')).toBeInTheDocument() // W3: no sleep data
-    expect(within(rows[4]).getByText('–')).toBeInTheDocument() // W5: fuel logging lapsed
-    expect(within(rows[7]).getByText('–')).toBeInTheDocument() // W8: deload, no runs
   })
 
   it('labels the top-set LOAD move and the e1RM percentage distinctly', () => {
@@ -196,15 +189,34 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
   })
 
-  it('renders the AI ready state — prose paragraphs, generatedAt caption, Újragenerálás', () => {
+  // The AI evaluation is a REAL backend feature the prototype has no counterpart for, so it
+  // was kept — but demoted to a closed disclosure at the foot, honest about what it is.
+  it('keeps the machine evaluation, collapsed at the foot and labelled as an estimate', () => {
     renderAt('meso-rec-03')
     const ai = screen.getByTestId('meso-report-ai')
-    expect(within(ai).getByText('AI értékelés')).toBeInTheDocument()
-    // Split on the blank-line separators (no markdown lib) — the fixture's aiEval has 4.
-    expect(ai.querySelectorAll('p')).toHaveLength(4)
+    expect(ai.tagName).toBe('DETAILS')
+    expect(ai).not.toHaveAttribute('open') // closed until the reader opens it
+    expect(within(ai).getByText('Mit olvas ki ebből a gép?')).toBeInTheDocument()
+    expect(within(ai).getByText(/vélemény és becslés, nem mérés/)).toBeInTheDocument()
+    // the old loud eyebrow is gone
+    expect(screen.queryByText('AI értékelés')).toBeNull()
+    // …and the prose itself is still there, all four paragraphs of it
     expect(within(ai).getByText(/Recovery rebuild blokk összességében/)).toBeInTheDocument()
     expect(within(ai).getByText(/Generálva · Ápr 23/)).toBeInTheDocument()
     expect(within(ai).getByRole('button', { name: 'Újragenerálás' })).toBeInTheDocument()
+  })
+
+  it('ends the page where the prototype\'s closed-run story ends', () => {
+    const { container } = renderAt('meso-rec-03')
+    // the Titanium halves are untouched…
+    expect(container.querySelector('.pl-lhero.is-closed')).toBeTruthy()
+    expect(container.querySelector('.ld-hero-bar i')).toBeTruthy()
+    expect(screen.getByTestId('meso-report-bands')).toBeInTheDocument()
+    const versus = screen.getByTestId('meso-report-versus')
+    // …and the then-vs-now block is the LAST story block: only the collapsed machine
+    // evaluation and the run's live actions may follow it.
+    const ai = screen.getByTestId('meso-report-ai')
+    expect(versus.compareDocumentPosition(ai) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('says the report is not written yet for a run that is still going', () => {
@@ -388,7 +400,7 @@ describe('MesoReportPage (real mode · AI states)', () => {
     renderAt(ID)
 
     const ai = await screen.findByTestId('meso-report-ai')
-    expect(within(ai).getByText('Nem sikerült az AI-kiértékelés.')).toBeInTheDocument()
+    expect(within(ai).getByText('Nem sikerült az értékelés.')).toBeInTheDocument()
 
     await user.click(within(ai).getByRole('button', { name: 'Újrapróbálás' }))
     await waitFor(() => expect(posted).toBe(1))
@@ -403,7 +415,7 @@ describe('MesoReportPage (real mode · AI states)', () => {
     renderAt(ID)
 
     const ai = await screen.findByTestId('meso-report-ai')
-    expect(within(ai).getByText('Nem sikerült az AI-kiértékelés.')).toBeInTheDocument()
+    expect(within(ai).getByText('Nem sikerült az értékelés.')).toBeInTheDocument()
     expect(within(ai).getByRole('button', { name: 'Újrapróbálás' })).toBeInTheDocument()
   })
 

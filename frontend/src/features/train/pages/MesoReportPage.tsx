@@ -8,10 +8,9 @@
 //
 // Everything on the page is a SNAPSHOT taken at close time, not a live read —
 // the only live things are the two actions (regenerate, rerun). Blocks render
-// strictly from what the report carries: no volume ⇒ no arc block, null
-// selfEval ⇒ no note block, `aiEvalEnabled: false` ⇒ the AI block does not
-// exist at all, null `context` (async lifestyle aggregation not done yet, or
-// the run predates it) ⇒ the context block does not exist either (mezo-meyc.3).
+// strictly from what the report carries: no volume ⇒ no muscle-journey block,
+// null selfEval ⇒ no note block, `aiEvalEnabled: false` ⇒ the machine-evaluation
+// disclosure does not exist at all.
 //
 // Strength labelling is deliberately two-headed, mirroring the backend: `deltaKg`
 // is the top-set LOAD difference while `deltaPct` is measured on e1RM — so "same
@@ -35,6 +34,18 @@
 //     can never disagree. The block exists ONLY when there is an active run AND at
 //     least one shared muscle: no active plan, or no overlap, means no block at all
 //     (never an empty shell, never a 0 standing in for "we don't know").
+//
+// Train parity P1 Task 5 (mezo-e1ii9) ended the page where the prototype's
+// closed-run story ends. Three pre-Titanium leftovers went, each of them a SECOND
+// surface for data that already has a first one: the `HETI SZETTEK · A BLOKK ÍVE`
+// chart with its MEV/MAV/MRV/Deload legend (the muscle-journey card below states
+// the same arc in plain words — start → peak / ceiling), the `ÉLETMÓD-KONTEXTUS`
+// emoji totals row and its W1–W8 spreadsheet (every metric in it has its own home:
+// the run-window averages on MesoComparePage via `contextDiff`, the daily readings
+// on the Me/Fuel surfaces). The AI evaluation is NOT a leftover — it is a real
+// backend feature with no prototype counterpart — so it kept its place as a quiet,
+// collapsed `details` at the foot of the story, labelled for what it is: an
+// estimate written by the program, not a measurement.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -44,12 +55,7 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
-import type {
-  MesoContext,
-  MesoContextWeek,
-  MesoStrengthDelta,
-  MesocycleReportResponse,
-} from '@/data/train/trainApi'
+import type { MesoStrengthDelta, MesocycleReportResponse } from '@/data/train/trainApi'
 import type { MedalType } from '@/data/train/medalTypes'
 import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
@@ -57,7 +63,6 @@ import { runStars } from '@/features/train/logic/libraryStory'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { ClayIcon } from '@/shared/ui/clay'
-import { MuscleArcSwitch } from '@/features/train/components/MuscleArcSwitch'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
 import { StatStrip } from '@/shared/ui/StatStrip'
@@ -65,7 +70,6 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaGhost } from '@/shared/ui/Cta'
-import { Chip } from '@/shared/ui/Chip'
 import { Spinner } from '@/shared/ui/Spinner'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -176,85 +180,8 @@ export function versusPairs(closed: MuscleVolumeArc[], activeArc: MesoVolumeArc 
   return out.sort((a, b) => b.then - a.then || a.muscle.localeCompare(b.muscle))
 }
 
-// --- context block (mezo-meyc.3) — every numeric field is nullable and null NEVER renders
-// as 0 (that would invent a measurement); a missing metric is simply absent ("–" in the
-// table, dropped entirely from the totals pill line).
-
-/** '–' for a missing per-week metric — the table's null-cell convention. */
+/** '–' for a missing per-muscle start value — never a fabricated 0. */
 const dash = (n: number | null | undefined, suffix = ''): string => (n == null ? '–' : `${fmt(n)}${suffix}`)
-
-/**
- * Mean of the present per-week kcal targets. `MesoContextTotals` carries no target field of
- * its own (only `MesoContextWeek.kcalTargetAvg` does), so the totals pill's "vs cél" derives
- * it here from whichever weeks logged one.
- */
-function avgKcalTarget(weeks: MesoContextWeek[]): number | null {
-  const vals = weeks.map((w) => w.kcalTargetAvg).filter((v): v is number => v != null)
-  return vals.length === 0 ? null : vals.reduce((a, b) => a + b, 0) / vals.length
-}
-
-/** A week's kcal cell: the average alone, or "avg / target" when that week logged one. */
-function kcalCell(w: MesoContextWeek): string {
-  if (w.kcalAvg == null) return '–'
-  const target = w.kcalTargetAvg != null ? ` / ${fmt(Math.round(w.kcalTargetAvg))}` : ''
-  return `${fmt(Math.round(w.kcalAvg))}${target}`
-}
-
-/**
- * A week's sport cell: minutes/sessions on the main line, an RPE sub-line when present.
- * `gymRpeAvg` is mislabeled by name — it is actually the sport+running RPE average, not a
- * gym-only figure, so it must read "Sport/futás RPE" wherever it is shown.
- */
-function sportCell(w: MesoContextWeek): { main: string; rpe: string | null } {
-  const parts: string[] = []
-  if (w.sportMinutes != null) parts.push(`${fmt(w.sportMinutes)}p`)
-  if (w.sportSessions != null) parts.push(`${w.sportSessions}×`)
-  return {
-    main: parts.length > 0 ? parts.join(' · ') : '–',
-    rpe: w.gymRpeAvg != null ? `Sport/futás RPE ${fmt(w.gymRpeAvg)}` : null,
-  }
-}
-
-/**
- * The totals line's compact pills — one per metric, entirely omitted (not "0") when that
- * metric has no data across the window. `weightChangeKg` is the SUM of the measured,
- * consecutive-day deltas inside the run, not a start-vs-end snapshot — the caption under the
- * table spells that out since the pill alone could read as a net before/after number.
- */
-function contextPills(context: MesoContext): string[] {
-  const { totals, weeks } = context
-  const avgTarget = avgKcalTarget(weeks)
-  const pills: string[] = []
-  if (totals.sleepAvgH != null) pills.push(`😴 ${fmt(totals.sleepAvgH)} h alvás`)
-  if (totals.kcalAvg != null) {
-    const target = avgTarget != null ? ` / ${fmt(Math.round(avgTarget))} cél` : ''
-    pills.push(`🍽 ${fmt(Math.round(totals.kcalAvg))} kcal${target}`)
-  }
-  if (totals.energyAvg != null) pills.push(`⚡ ${fmt(totals.energyAvg)} energia`)
-  if (totals.stressAvg != null) pills.push(`😰 ${fmt(totals.stressAvg)} stressz`)
-  if (totals.weightChangeKg != null) pills.push(`⚖️ ${signed(totals.weightChangeKg)} kg`)
-  if (totals.sportMinutes != null || totals.sportSessions != null) {
-    const parts: string[] = []
-    if (totals.sportMinutes != null) parts.push(`${fmt(totals.sportMinutes)} perc`)
-    if (totals.sportSessions != null) parts.push(`${totals.sportSessions}×`)
-    pills.push(`🏐 ${parts.join(' · ')}`)
-  }
-  if (totals.runSessions != null) pills.push(`🏃 ${totals.runSessions}× futás`)
-  return pills
-}
-
-const CONTEXT_TABLE_CELL: CSSProperties = {
-  padding: '6px 8px',
-  textAlign: 'right',
-  color: 'var(--text-secondary)',
-  borderBottom: '1px solid var(--border-subtle)',
-  whiteSpace: 'nowrap',
-}
-const CONTEXT_TABLE_HEAD: CSSProperties = {
-  ...CONTEXT_TABLE_CELL,
-  color: 'var(--text-tertiary)',
-  fontWeight: 600,
-}
 
 export function MesoReportPage() {
   const { id } = useParams<{ id: string }>()
@@ -437,15 +364,12 @@ export function MesoReportPage() {
             </div>
           )}
 
-          {/* Frozen volume arc — MuscleArcSwitch, which since v2 lives ONLY here: the live
-              overview page it was shared with was retired (the running block's arc now reads
-              per muscle on MesoMusclePage). */}
+          {/* The muscle journeys — the prototype's „Izmaid ebben a futamban" in production
+              words: where each muscle started, the loudest week it reached, and its ceiling.
+              The week-by-week chart that used to sit above this said the same thing in
+              MEV/MAV/MRV/Deload legend jargon, so it went (T-P1 Task 5, mezo-e1ii9). */}
           {arcs.length > 0 && (
             <>
-              <div style={{ padding: '12px 0 0' }}>
-                <Eyebrow>Heti szettek · a blokk íve</Eyebrow>
-              </div>
-              <MuscleArcSwitch muscles={arcs} />
               <div style={{ padding: '12px 0 0' }}>
                 <Eyebrow>Izmonként · indulás → elért csúcs / plafon</Eyebrow>
               </div>
@@ -552,113 +476,12 @@ export function MesoReportPage() {
             )}
           </div>
 
-          {/* Lifestyle context — S3 territory (mezo-meyc.3). Absent until the backend's async
-              aggregation runs, so the whole block is gone (not empty) while `context` is null. */}
-          {report.context && (
-            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-context">
-              <Eyebrow>Életmód-kontextus</Eyebrow>
-              <div className="row gap-xs" style={{ flexWrap: 'wrap' }}>
-                {contextPills(report.context).map((p) => (
-                  <Chip key={p}>{p}</Chip>
-                ))}
-              </div>
-              <div className="card" style={{ padding: '10px 4px 6px' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ minWidth: 480, width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-                    <thead>
-                      <tr>
-                        {['Hét', 'Alvás', 'Kcal', 'Energia', 'Stressz', 'Súly Δ', 'Sport', 'Futás'].map((h) => (
-                          <th key={h} style={{ ...CONTEXT_TABLE_HEAD, textAlign: h === 'Hét' ? 'left' : 'right' }}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.context.weeks.map((w) => {
-                        const sport = sportCell(w)
-                        return (
-                          <tr key={w.week} data-testid="context-week-row">
-                            <td style={{ ...CONTEXT_TABLE_CELL, textAlign: 'left' }}>{`W${w.week}`}</td>
-                            <td style={CONTEXT_TABLE_CELL}>{dash(w.sleepAvgH, 'h')}</td>
-                            <td style={CONTEXT_TABLE_CELL}>{kcalCell(w)}</td>
-                            <td style={CONTEXT_TABLE_CELL}>{dash(w.energyAvg)}</td>
-                            <td style={CONTEXT_TABLE_CELL}>{dash(w.stressAvg)}</td>
-                            <td style={CONTEXT_TABLE_CELL}>
-                              {w.weightDeltaKg == null ? '–' : `${signed(w.weightDeltaKg)} kg`}
-                            </td>
-                            <td style={CONTEXT_TABLE_CELL}>
-                              <div>{sport.main}</div>
-                              {sport.rpe && (
-                                <div style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{sport.rpe}</div>
-                              )}
-                            </td>
-                            <td style={CONTEXT_TABLE_CELL}>{w.runSessions == null ? '–' : `${w.runSessions}×`}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', padding: '0 2px' }}>
-                Súlyváltozás (mért napok) — a mért, egymást követő napok deltáinak összege, nem a blokk eleje-vége nettó különbsége.
-              </span>
-            </div>
-          )}
-
           {/* The owner's own verdict, captured by MesoCloseSheet — read-only here */}
           {report.selfEval && (
             <div className="col gap-sm" style={{ padding: '12px 0' }}>
               <Eyebrow>Saját értékelés</Eyebrow>
               <div className="card" style={{ padding: 'var(--sp-4)' }}>
                 <p className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{report.selfEval}</p>
-              </div>
-            </div>
-          )}
-
-          {/* AI narrative — S3 territory. While the feature is off the block does not exist.
-              `ready` with a null `aiEval` (should not happen server-side) deliberately falls
-              through to the `failed` branch below — a defensive guard, not a fourth state. */}
-          {report.aiEvalEnabled && (
-            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-ai">
-              <Eyebrow brand>AI értékelés</Eyebrow>
-              <div className="card col gap-sm" style={{ padding: 'var(--sp-4)' }}>
-                {report.aiEvalStatus === 'ready' && report.aiEval ? (
-                  <>
-                    {report.aiEval.split(/\n\n+/).map((para, i) => (
-                      <p key={i} className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{para}</p>
-                    ))}
-                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                      {report.aiEvalGeneratedAt ? (
-                        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                          {`Generálva · ${day(report.aiEvalGeneratedAt)}`}
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      <CtaGhost onClick={fireRegenerate} disabled={regenerating} style={{ padding: '8px 14px' }}>
-                        {regenerating ? 'Riport készül…' : 'Újragenerálás'}
-                      </CtaGhost>
-                    </div>
-                  </>
-                ) : report.aiEvalStatus === 'pending' ? (
-                  <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                    <Spinner size="sm" />
-                    <span className="text-secondary" style={{ fontSize: 13 }}>Az értékelés készül…</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült az AI-kiértékelés.</span>
-                    <CtaGhost
-                      onClick={fireRegenerate}
-                      disabled={regenerating}
-                      style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
-                    >
-                      {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
-                    </CtaGhost>
-                  </>
-                )}
               </div>
             </div>
           )}
@@ -702,6 +525,66 @@ export function MesoReportPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* The machine's own read of the run — a REAL backend feature the prototype's
+              closed-run story has no counterpart for, so it is not a design leftover to
+              delete (T-P1 Task 5, mezo-e1ii9). It keeps its data and its three live states,
+              but it no longer competes with the story: a closed `details` at the foot,
+              opened only by a reader who wants it, and captioned for what it is — a guess
+              the program wrote from the numbers above, not a measurement of its own.
+              `ready` with a null `aiEval` (should not happen server-side) deliberately falls
+              through to the `failed` branch below — a defensive guard, not a fourth state. */}
+          {report.aiEvalEnabled && (
+            <details
+              className="card"
+              data-testid="meso-report-ai"
+              style={{ padding: '12px var(--sp-4)', margin: '4px 0 0' }}
+            >
+              <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Mit olvas ki ebből a gép?
+              </summary>
+              <div className="col gap-sm" style={{ paddingTop: 10 }}>
+                <p className="text-secondary" style={{ fontSize: 11.5, lineHeight: 1.5, margin: 0, color: 'var(--text-tertiary)' }}>
+                  A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.
+                </p>
+                {report.aiEvalStatus === 'ready' && report.aiEval ? (
+                  <>
+                    {report.aiEval.split(/\n\n+/).map((para, i) => (
+                      <p key={i} className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{para}</p>
+                    ))}
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                      {report.aiEvalGeneratedAt ? (
+                        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                          {`Generálva · ${day(report.aiEvalGeneratedAt)}`}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <CtaGhost onClick={fireRegenerate} disabled={regenerating} style={{ padding: '8px 14px' }}>
+                        {regenerating ? 'Riport készül…' : 'Újragenerálás'}
+                      </CtaGhost>
+                    </div>
+                  </>
+                ) : report.aiEvalStatus === 'pending' ? (
+                  <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                    <Spinner size="sm" />
+                    <span className="text-secondary" style={{ fontSize: 13 }}>Az értékelés készül…</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült az értékelés.</span>
+                    <CtaGhost
+                      onClick={fireRegenerate}
+                      disabled={regenerating}
+                      style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
+                    >
+                      {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
+                    </CtaGhost>
+                  </>
+                )}
+              </div>
+            </details>
           )}
 
           {/* Actions — a closed run's only live affordances */}
