@@ -21,11 +21,13 @@ class FakeCompanionLlmPlanTest {
     }
 
     @Test
-    void testCompleteSmart_shouldReturnNoDataPlan_whenNoSentinelIsScripted() {
+    void testCompleteSmart_shouldReturnUnparseableDefault_whenNoSentinelIsScripted() {
+        // unscripted data turns must fall back to the legacy path — a parseable default would
+        // silently reroute every existing IT through the pipeline.
         String answer = fake.completeSmart(TurnPlanner.PROMPT_MARKER + " katalógus...", "",
             List.of(), "Szia!");
 
-        assertThat(answer).isEqualTo("{\"needsData\":false,\"steps\":[]}");
+        assertThat(answer).isEqualTo(FakeCompanionLlm.PLANNER_NO_SCRIPT);
     }
 
     @Test

@@ -59,6 +59,30 @@ public class FakeCompanionLlm implements CompanionLlm {
     private static final Pattern FAKE_PLAN =
             Pattern.compile("\\[fake-plan:(\\{.*})]", Pattern.DOTALL);
 
+    /** The planner branch's UNSCRIPTED default (mezo-rj214.7): deliberately UNPARSEABLE (no
+     *  '{') so {@code TurnPlanner.plan(...)} returns {@code Optional.empty()} and the pipeline
+     *  wiring falls back to the legacy path. A parseable default (the old {@code
+     *  {"needsData":false,"steps":[]}}) would silently reroute every existing IT that never
+     *  scripts a plan through the new pipeline the moment it goes live. */
+    public static final String PLANNER_NO_SCRIPT = "FAKE-PLANNER: nincs szkriptelt terv";
+
+    /** Proves a turn took the answerer branch (mezo-rj214.7): the volatile half carries an
+     *  {@code ESZKÖZHÍVÁSOK} digest (present on every answerer call — {@code
+     *  ToolOutcomeDigest.NONE}/{@code HEADER} both start with it — and never on a CHAT-gear
+     *  call). Echoes exactly like the CHAT-gear branch so prompt-order ITs read the same way. */
+    public static final String ANSWER_SENTINEL = "FAKE-ANSWER";
+
+    /** Mirror of {@code ToolOutcomeDigest}'s {@code NONE}/{@code HEADER} shared prefix — LITERAL,
+     *  not an import: this fake reads the digest by CONTENT the way a real model would, it does
+     *  not need the producing class. Routes the answerer branch. */
+    private static final String ANSWERER_DIGEST_PREFIX = "ESZKÖZHÍVÁSOK";
+
+    /** Scripts a lap-1 data-gap reply from the answerer: [fake-datagap:<reason>] in the user
+     *  message. Fires ONLY when the volatile half ALSO carries the DATA-GAP OFFER block ({@code
+     *  "[Adathiány]"} — present only on ANALYSIS lap 1, Task 4's literal) — the honest
+     *  simulation of a real model that can only use the marker when the offer was made. */
+    private static final Pattern FAKE_DATAGAP = Pattern.compile("\\[fake-datagap:([^\\]]+)]");
+
     /** Mirrors the real router's deterministic pre-classifier so scripted questions classify the
      *  same way a reader expects, without paying for a fake model round-trip. */
     private static final TurnGearAnalyzer GEAR_ANALYZER = new TurnGearAnalyzer();
@@ -1183,7 +1207,19 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
             Matcher plan = FAKE_PLAN.matcher(userMessage);
-            return plan.find() ? plan.group(1) : "{\"needsData\":false,\"steps\":[]}";
+            return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
+        }
+        if (turnContext.contains(ANSWERER_DIGEST_PREFIX)) {
+            if (turnContext.contains("[Adathiány]")) {
+                Matcher datagap = FAKE_DATAGAP.matcher(userMessage);
+                if (datagap.find()) {
+                    return "[TOVÁBBI-ADAT: " + datagap.group(1) + "]";
+                }
+            }
+            return ANSWER_SENTINEL + " " + PREFIX
+                + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]";
         }
         return CHAT_GEAR_SENTINEL + " " + PREFIX
             + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
