@@ -1286,6 +1286,63 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
 })
 
+// Fix round 1 (mezo-e1ii9 Task 3): the ceremony's "a pulton töltött idő" tile must come
+// from the wire response's own startedAt/finishedAt/activeSeconds, never a client clock, in
+// real mode — the default `useRealHandlers` finish handler above returns none of the three,
+// which silently exercised the (mock-only) client-clock fallback in every other real-mode
+// test. These two cases pin the documented contract directly (docs/features/train.md).
+test('real mode: a finish response carrying startedAt/finishedAt/activeSeconds renders the measured tile', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
+    calls,
+  )
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) => {
+      calls.push(`finish:${params.id}`)
+      return HttpResponse.json({
+        id: String(params.id), templateSessionId: 'd-1', date: '2026-06-12', status: 'completed', sets: [],
+        startedAt: '2026-06-12T10:00:00Z', finishedAt: '2026-06-12T10:41:00Z', activeSeconds: 2460,
+      })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(submitOf(EX1)) // only set -> FeedbackModal
+  await user.click(await screen.findByText('Edzés vége →'))
+  await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
+  await waitFor(() => expect(calls).toContain('finish:w-1'))
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
+  // finishedAt − startedAt = 41 minutes, straight off the wire — not a mount-to-finish clock.
+  expect(await screen.findByText('a pulton töltött idő')).toBeInTheDocument()
+  expect(screen.getByText('41')).toBeInTheDocument()
+})
+
+test('real mode: a finish response with no startedAt renders NO measured-time tile', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
+    calls,
+  )
+  // The default useRealHandlers finish handler already omits startedAt/finishedAt/
+  // activeSeconds (a pre-mezo-1jm8 row or a resumed legacy instance) — no override needed.
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(submitOf(EX1)) // only set -> FeedbackModal
+  await user.click(await screen.findByText('Edzés vége →'))
+  await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
+  await waitFor(() => expect(calls).toContain('finish:w-1'))
+  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
+  // Never a mount-to-finish client clock standing in for a real measurement in real mode.
+  expect(screen.queryByText('a pulton töltött idő')).not.toBeInTheDocument()
+})
+
 test('real mode: a failed finish POST re-enables the finish CTA (not stuck disabled)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

@@ -297,6 +297,17 @@ test('Részletek opens step two: the muscle rows, the kcal tile, the close CTA a
   expect(container.querySelector('.cer-stars')).toBeNull()
 })
 
+// Fix round 1 (mezo-e1ii9 Task 3): step two's focus target used to live inside the
+// `muscles.length > 0` block — a session with no muscle rows left focus on <body>.
+test('step two takes focus even when the session has no muscle rows', async () => {
+  const user = userEvent.setup()
+  render(<WorkoutCeremony {...props({ muscles: [] })} />)
+  await goToDetails(user)
+  const heading = screen.getByRole('heading', { level: 2 })
+  expect(heading).toHaveFocus()
+  expect(screen.queryByText('Izomcsoportok fejlődése a mai edzésen')).not.toBeInTheDocument()
+})
+
 test('Vissza az értékeléshez returns to step one — and never replays the ceremony', async () => {
   const user = userEvent.setup()
   const raf = vi.spyOn(window, 'requestAnimationFrame')

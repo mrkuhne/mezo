@@ -651,9 +651,20 @@ function ActiveWorkoutSession({
         // top-level XP field on the plain finish response); absent payload → no tile.
         setXpGained(r?.levelUp?.totalXp ?? null)
         // The measured clock, straight off the finish response (see `finishTiming`).
-        setFinishTiming(r?.startedAt
-          ? { startedAt: r.startedAt, finishedAt: r.finishedAt, activeSeconds: r.activeSeconds }
-          : { startedAt: new Date(enteredAtRef.current).toISOString(), finishedAt: new Date().toISOString() })
+        // Real mode: the wire response is the ONLY source of truth — a response without
+        // `startedAt` (pre-mezo-1jm8 row, or a resumed legacy instance) means unmeasurable,
+        // and `actualMinutes` must return null so no tile renders (docs/features/train.md).
+        // Mock mode has no wire response at all (the finish mutation is a local no-op), so
+        // — and only here — the mount-to-finish client clock stands in: since Task 1,
+        // entering the route genuinely IS the start of the session in mock, so this really
+        // is a measurement, not a fabricated estimate.
+        if (r?.startedAt) {
+          setFinishTiming({ startedAt: r.startedAt, finishedAt: r.finishedAt, activeSeconds: r.activeSeconds })
+        } else if (isMock) {
+          setFinishTiming({ startedAt: new Date(enteredAtRef.current).toISOString(), finishedAt: new Date().toISOString() })
+        } else {
+          setFinishTiming(null)
+        }
         // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
         // arrives here — the finish response carries the whole session's medals, so
         // merge with a dedupe against what's already in sessionMedals (mezo-wp6n).

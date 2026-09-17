@@ -102,7 +102,7 @@ export function WorkoutCeremony({
   const [detailsTold, setDetailsTold] = useState(false)
   const stageRef = useRef<HTMLElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const detailsHeadingRef = useRef<HTMLElement>(null)
+  const detailsHeadingRef = useRef<HTMLHeadingElement>(null)
   const ranRef = useRef(false)
   const mountedRef = useRef(false)
 
@@ -180,10 +180,15 @@ export function WorkoutCeremony({
       // React would otherwise REUSE step one's DOM nodes (the ceremony stage included) for
       // step two's — leaving the still-running rAF pass writing into the details screen.
       <div key="details" className={`cer-details-screen${detailsTold ? ' is-told' : ''}`}>
+        {/* Step two's focus target, unconditionally — a session with no muscle rows must
+            still land focus here on entry, not on <body> (mezo-e1ii9 Task 3, fix round 1). */}
+        <h2 className="sr-only" tabIndex={-1} ref={detailsHeadingRef}>
+          Az edzés részletei
+        </h2>
         {muscles.length > 0 && (
           <section className="cer-muscles">
             <div className="cer-section">
-              <strong tabIndex={-1} ref={detailsHeadingRef}>Izomcsoportok fejlődése a mai edzésen</strong>
+              <strong>Izomcsoportok fejlődése a mai edzésen</strong>
             </div>
             <div className="cer-mstars">
               {muscles.map((row, i) => (
