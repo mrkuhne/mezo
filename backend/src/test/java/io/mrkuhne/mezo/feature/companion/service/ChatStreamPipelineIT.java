@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
+import io.mrkuhne.mezo.api.dto.StreamPhase;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -117,5 +118,75 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
         MessageResponse done = (MessageResponse) events.getLast().data();
         assertThat(done.getContent()).startsWith(FakeCompanionLlm.PREFIX);
         assertThat(done.getContent()).doesNotContain(FakeCompanionLlm.ANSWER_SENTINEL);
+    }
+
+    /**
+     * mezo-rj214.7 S9.6 Task 3: the stream restructure's whole point is that these frames reach
+     * the client LIVE — PLANNING ahead of the pre-stream lap, RETRIEVING once the plan executes
+     * (the seam through {@code ChatService#planAndExecuteVolatile}), ANSWERING right before the
+     * answerer's own Flux is returned (the streamed LOOKUP path's own emission point, since the
+     * seam only covers sync answer calls).
+     */
+    @Test
+    void testStreamMessage_shouldNarratePhases_whenLookupPipelineRuns() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-phases-lookup@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.5"), 2);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(), request("Mennyit aludtam mostanában?" + PLAN_SLEEP))
+                .collectList().block();
+
+        List<String> names = events.stream().map(ServerSentEvent::event).toList();
+        int planning = names.indexOf("phase");
+        int firstTool = names.indexOf("tool");
+        int firstDelta = names.indexOf("delta");
+        assertThat(planning).isNotNegative().isLessThan(firstTool);
+        assertThat(firstTool).isLessThan(firstDelta);
+
+        List<String> phases = events.stream().filter(e -> "phase".equals(e.event()))
+                .map(e -> ((StreamPhase) e.data()).getPhase()).toList();
+        assertThat(phases).containsExactly("planning", "retrieving", "answering");
+    }
+
+    /**
+     * The replan lap's own RETRIEVING/ANSWERING repeat (pinned in isolation by {@code
+     * TurnPhaseSeamTest}) reaches the client through this exact streamed path too — PLANNING still
+     * fires only once, at pipeline-attempt start.
+     */
+    @Test
+    void testStreamMessage_shouldRepeatPhases_whenAnalysisReplans() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-phases-replan@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("6.0"), 4);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("Miért alszom rosszul mostanában? [fake-datagap:alvásnapló]" + PLAN_SLEEP))
+                .collectList().block();
+
+        List<String> phases = events.stream().filter(e -> "phase".equals(e.event()))
+                .map(e -> ((StreamPhase) e.data()).getPhase()).toList();
+        assertThat(phases).containsExactly("planning", "retrieving", "answering", "retrieving", "answering");
+    }
+
+    /**
+     * A planner that never scripted a usable plan still opens with PLANNING — the caller commits
+     * to the attempt before it knows the planner will fail — but never reaches RETRIEVING/ANSWERING
+     * since the pre-stream lap falls back to the legacy stream before either seam point.
+     */
+    @Test
+    void testStreamMessage_shouldEmitOnlyPlanning_whenPlannerFallsBackToLegacy() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-phases-fallback@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(), request("Mennyit aludtam kedden?"))
+                .collectList().block();
+
+        List<String> phases = events.stream().filter(e -> "phase".equals(e.event()))
+                .map(e -> ((StreamPhase) e.data()).getPhase()).toList();
+        assertThat(phases).containsExactly("planning");
+        assertThat(events.getLast().event()).isEqualTo("done");
     }
 }

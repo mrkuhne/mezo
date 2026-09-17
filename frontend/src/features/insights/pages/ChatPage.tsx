@@ -19,13 +19,23 @@ const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as cons
 // egy hosszú üzenet sem eszi meg az egész beszélgetést (mezo-a837).
 const COMPOSER_MAX_HEIGHT = 104
 
+// mezo-rj214.7: the Hungarian narration for each SSE/mock phase — the thinking bubble's only
+// window into what the companion is doing before any draft text exists. An unknown phase value
+// (future wire addition) renders nothing rather than a raw key — forward-compatible by silence.
+const PHASE_COPY: Record<string, string> = {
+  planning: 'átgondolom…',
+  retrieving: 'megnézem az adataidat…',
+  answering: 'fogalmazok…',
+}
+
 // `bare`: when ThinkingDots sits inside a caller-owned `.mzc-msg-a` wrapper (the tools-only
 // streaming block below), it must not lay down a second `.mzc-msg-a` of its own — that widths
 // compound (85% of 92%). Standalone callers leave it unset and get the bubble sizing as before.
-function ThinkingDots({ bare }: { bare?: boolean } = {}) {
+function ThinkingDots({ bare, phase }: { bare?: boolean; phase?: string } = {}) {
   // Prototype typing bubble: orb-led meta row + three pulsing lavender dots in a
   // 4/16-radius bubble (mezo-d20.5.2). The .np-pulse animation stays the page's
   // reduced-motion-guarded pulse (prototype.css).
+  const phaseLabel = phase ? PHASE_COPY[phase] : undefined
   return (
     <div className={bare ? 'col gap-sm' : 'mzc-msg-a col gap-sm'} style={bare ? undefined : { maxWidth: '85%' }}>
       <div className="mzc-meta">
@@ -47,6 +57,9 @@ function ThinkingDots({ bare }: { bare?: boolean } = {}) {
           />
         ))}
       </div>
+      {/* mezo-rj214.7: `.text-tertiary` is the file's own established muted-caption reuse
+          (see the voice-error line below) — no new CSS class or animation. */}
+      {phaseLabel && <span className="text-tertiary" style={{ fontSize: 11 }}>{phaseLabel}</span>}
     </div>
   )
 }
@@ -296,7 +309,7 @@ export function ChatPage() {
         {turn && !turn.draft && (
           <div className="mzc-msg-a col gap-sm">
             {turn.tools.length > 0 && <ToolWorkStrip tools={turn.tools} live />}
-            <ThinkingDots bare />
+            <ThinkingDots bare phase={turn.phase} />
           </div>
         )}
         {turn && !turn.thinking && turn.draft && (

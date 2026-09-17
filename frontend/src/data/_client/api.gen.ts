@@ -2121,7 +2121,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a user message and stream the assistant's answer as Server-Sent Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON) interleaved with 0..n 'tool' (data = StreamToolCall JSON — emitted as each tool actually executes, mezo-280), then exactly one terminal event — 'done' (data = the persisted assistant MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant turn is NOT persisted, the user message is). A 'tool' event is progress only: the authoritative tool list is the done row's `tools`, which also covers any advisor-retry calls made after the stream ended. Every data line is JSON. Clients should send "Accept: text/event-stream, application/json" so pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON. */
+        /** Send a user message and stream the assistant's answer as Server-Sent Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON) interleaved with 0..n 'tool' (data = StreamToolCall JSON — emitted as each tool actually executes, mezo-280) — and 0..n 'phase' (data = StreamPhase JSON) narrating the turn's stage on pipeline turns ('planning' | 'retrieving' | 'answering'; a replan lap repeats retrieving/answering); phase frames are progress only and never terminal, then exactly one terminal event — 'done' (data = the persisted assistant MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant turn is NOT persisted, the user message is). A 'tool' event is progress only: the authoritative tool list is the done row's `tools`, which also covers any advisor-retry calls made after the stream ended. Every data line is JSON. Clients should send "Accept: text/event-stream, application/json" so pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON. */
         post: operations["streamMessage"];
         delete?: never;
         options?: never;
@@ -7484,6 +7484,11 @@ export interface components {
         StreamError: {
             /** @description Stream failure code — 'COMPANION_STREAM_FAILED'. */
             code: string;
+        };
+        /** @description One turn-stage marker, streamed as the pipeline crosses it (S9.6, mezo-rj214.7) so the UI can narrate the pre-answer work instead of showing dead air. Values: 'planning' (the model is deciding what to fetch), 'retrieving' (tools executing), 'answering' (the answer is being written). Pipeline turns only; a replan lap repeats retrieving/answering. Progress only — never terminal. */
+        StreamPhase: {
+            /** @description 'planning' | 'retrieving' | 'answering' */
+            phase: string;
         };
         PatternResponse: {
             /** Format: uuid */
@@ -17292,13 +17297,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description SSE frames — see the per-event data schemas (StreamDelta / StreamToolCall / MessageResponse / StreamError) */
+            /** @description SSE frames — see the per-event data schemas (StreamDelta / StreamToolCall / StreamPhase / MessageResponse / StreamError) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": components["schemas"]["StreamDelta"] | components["schemas"]["StreamToolCall"] | components["schemas"]["MessageResponse"] | components["schemas"]["StreamError"];
+                    "text/event-stream": components["schemas"]["StreamDelta"] | components["schemas"]["StreamToolCall"] | components["schemas"]["StreamPhase"] | components["schemas"]["MessageResponse"] | components["schemas"]["StreamError"];
                 };
             };
             /** @description Validation error (emitted before the stream starts) */

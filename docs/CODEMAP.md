@@ -365,7 +365,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ReflectionReplyService`, `SeasonSuggestion`, `TestPlanValidator`, `TextSignalCatchUpService`,
     `TextSignalExtractor`, `TextSignalListener`, `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`,
     `ToolOutcomeDigest`, `TraceDisposition`, `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`,
-    `TurnGearRouter`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `UnavailableReason`, `ValidatedPlan`,
+    `TurnGearRouter`, `TurnPhase`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `UnavailableReason`, `ValidatedPlan`,
     `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
@@ -426,24 +426,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 220 IT + 78 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 221 IT + 79 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
     `ChatSeedReplyIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGearIT`, `ChatServiceGraphBlockFailureIT`,
     `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatServicePipelineIT`,
-    `ChatServicePipelineSwitchOffIT`, `ChatStreamAdvisorIT`, `ChatStreamPipelineIT`, `ChatStreamPipelineSwitchOffIT`,
-    `ChatStreamServiceGearIT`, `ChatStreamServiceIT`, `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`,
-    `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionFactApiIT`, `CompanionFactCandidateApiIT`,
-    `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`, `CompanionFlagLogPersistenceIT`,
-    `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`, `CompanionFlagTraceReadQueriesIT`,
-    `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`,
-    `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`,
-    `CompanionMemorySwitchOffIT`, `CompanionObservationApiIT`, `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`,
-    `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`,
-    `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`, `CompanionToolRegistryIT`,
-    `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `CompanionTurnPropertiesIT`, `ConsolidationJobIT`,
-    `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
+    `ChatServicePipelineSwitchOffIT`, `ChatStreamAdvisorIT`, `ChatStreamBudgetIT`, `ChatStreamPipelineIT`,
+    `ChatStreamPipelineSwitchOffIT`, `ChatStreamServiceGearIT`, `ChatStreamServiceIT`, `CompanionAdvisorChainIT`,
+    `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionFactApiIT`,
+    `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
+    `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
+    `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
+    `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
+    `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`, `CompanionObservationApiIT`, `CompanionPatternApiIT`,
+    `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`,
+    `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`,
+    `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `CompanionTurnPropertiesIT`,
+    `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
     `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
     `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
@@ -503,7 +503,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-08, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-17, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -680,7 +680,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-17, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-08, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-17, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,

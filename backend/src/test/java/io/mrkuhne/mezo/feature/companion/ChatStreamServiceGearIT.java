@@ -66,4 +66,17 @@ class ChatStreamServiceGearIT extends AbstractIntegrationTest {
         assertThat(doneContent(stream("Mennyit aludtam kedden?")))
             .doesNotContain(FakeCompanionLlm.CHAT_GEAR_SENTINEL);
     }
+
+    /**
+     * fix round 1 finding M4: PLANNING is gated on {@code turn.gear() != TurnGear.CHAT} in
+     * {@link ChatStreamService#streamMessage} — a CHAT turn never enters the pre-stream pipeline
+     * lap at all, so it must carry ZERO 'phase' frames end to end, unlike every LOOKUP/ANALYSIS
+     * case {@code ChatStreamPipelineIT} pins.
+     */
+    @Test
+    void testStreamMessage_shouldEmitNoPhaseFrames_whenTheChatGearRuns() {
+        List<ServerSentEvent<Object>> events = stream("Mit gondolsz a kreatinról?");
+
+        assertThat(events).noneMatch(e -> "phase".equals(e.event()));
+    }
 }

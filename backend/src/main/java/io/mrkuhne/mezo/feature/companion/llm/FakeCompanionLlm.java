@@ -22,10 +22,12 @@ import io.mrkuhne.mezo.feature.companion.service.TurnGear;
 import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
 import io.mrkuhne.mezo.feature.companion.service.TurnPlanner;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.ai.chat.model.ToolContext;
@@ -627,6 +629,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  {@link #lastUserMessage}, which the next call overwrites. Same channel, same intent: no
      *  per-detail sentinel. */
     private final List<String> userMessages = new java.util.concurrent.CopyOnWriteArrayList<>();
+    /** mezo-rj214.7 final fix wave: the {@link io.mrkuhne.mezo.techcore.security.LlmActorContext}
+     *  actor visible on the CALLING thread at the advisor's verdict-check call — {@code
+     *  llm_log_history.created_by} is not observable under this profile (see the "Call counter"
+     *  javadoc above), so this is the substitute oracle for "was the acting user actually re-bound
+     *  before the deferred advisor round ran". Overwritten by every verdict-check call in a turn
+     *  (initial + post-retry); they all run inside the same actor-binding scope, so any one of them
+     *  proves the point. */
+    private volatile UUID lastVerdictCheckActor;
 
     public int completeCallCount() {
         return completeCallCount.get();
@@ -638,6 +648,10 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     public String lastUserMessage() {
         return lastUserMessage;
+    }
+
+    public UUID lastVerdictCheckActor() {
+        return lastVerdictCheckActor;
     }
 
     public List<String> userMessages() {
@@ -720,6 +734,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
+            // mezo-rj214.7 final fix wave: read on the SAME thread TurnVerdictCheck#check calls in
+            // on — see lastVerdictCheckActor's own javadoc for why this stands in for the
+            // llm_log_history.created_by row this profile never writes.
+            lastVerdictCheckActor = LlmActorContext.capture();
             return verdictAnswer(userMessage);
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
