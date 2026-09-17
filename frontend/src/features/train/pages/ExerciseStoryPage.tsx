@@ -13,8 +13,12 @@
 //   `.pl-dhero.gy-hero`  the poster: muscle eyebrow, the name, the AUTHORSHIP stamp
 //                        (`Saját` / `Közös · {név}` — see below), and for a logged
 //                        exercise the three foot facts `N alkalom · <dátum> óta ·
-//                        N t összsúly`. A never-logged exercise gets the prototype's
-//                        own empty-state sentence instead.
+//                        N t összsúly`. The middle fact is only an absolute date when
+//                        the series covers the whole history; a wire-capped series says
+//                        „ebből az utolsó N látszik" instead (`sinceFact`), and every
+//                        date old enough to be misread carries its year (`huMonthDayAged`).
+//                        A never-logged exercise gets the prototype's own empty-state
+//                        sentence instead.
 //   `Rekordjaid`         the three `.gy-rec` stat cards. Every absent figure is an
 //                        EM DASH — a record you do not have is never a 0.
 //   `Következő cél`      `.gy-next`, derived from the real best set (`nextTarget`).
@@ -49,7 +53,7 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMedals, useMesoTemplates, useTrain } from '@/data/hooks'
-import { huMonthDay } from '@/shared/lib/dates'
+import { huMonthDay, huMonthDayAged } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -62,7 +66,7 @@ import { StrengthCurve } from '@/features/train/components/StrengthCurve'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
 import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import {
-  buildLibraryRows, exerciseKey, firstSeenDate, medalsForExercise, nextTarget, whereUsed,
+  buildLibraryRows, exerciseKey, medalsForExercise, nextTarget, sinceFact, whereUsed,
 } from '@/features/train/logic/exerciseLibrary'
 import { MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
 import { muscleColor, muscleRegion, REGION_TONE } from '@/features/train/logic/muscleColors'
@@ -123,7 +127,7 @@ export function ExerciseStoryPage() {
   const tone: PageTone = region ? REGION_TONE[region] : 'gold'
   const accent = { '--mus-color': muscleColor(row.muscle).rail } as CSSProperties
   const record = row.record
-  const since = record ? firstSeenDate(record) : null
+  const since = record ? sinceFact(record) : null
   const target = record ? nextTarget(record) : null
   const series = record?.e1rmSeries ?? []
   const myMedals = medalsForExercise(medals, row)
@@ -143,9 +147,14 @@ export function ExerciseStoryPage() {
   // The bar: where the LATEST estimate sits against the best one — the only share on
   // this card that is a real ratio of two real numbers.
   const latestE1rm = series.length ? series[series.length - 1].e1rm : null
-  const e1rmShare = bestE1rm != null && bestE1rm > 0 && latestE1rm != null
-    ? Math.min(100, (latestE1rm / bestE1rm) * 100)
-    : 100
+  // …and it is NULL when there is nothing to compare: no best estimate (the card is an em
+  // dash — a bar under a missing number would be painting a figure that is not there), or a
+  // best with an empty series, where a full bar would silently claim „you are at your peak
+  // right now". An unfilled rail says the true thing: this comparison cannot be made.
+  const hasE1rm = bestE1rm != null && bestE1rm > 0
+  const e1rmShare = hasE1rm && latestE1rm != null
+    ? Math.min(100, (latestE1rm / bestE1rm!) * 100)
+    : null
 
   const authorStamp = item?.authoredByMe
     ? 'Saját'
@@ -171,7 +180,15 @@ export function ExerciseStoryPage() {
           {record ? (
             <div className="pl-poster-foot">
               <span>{record.sessionCount} alkalom</span>
-              {since && <span>{huMonthDay(since)} óta</span>}
+              {/* An absolute „óta" only when the series covers the whole history; a bounded
+                  one says so (see `sinceFact`) rather than passing a window start off as a start. */}
+              {since && (
+                <span>
+                  {since.kind === 'since'
+                    ? `${huMonthDayAged(since.date)} óta`
+                    : `ebből az utolsó ${since.sessions} látszik`}
+                </span>
+              )}
               {/* A bodyweight exercise really has moved 0 kg — that is not a missing
                   figure to em-dash, it is a different fact, so it says the true one. */}
               {record.totalVolume > 0
@@ -192,10 +209,16 @@ export function ExerciseStoryPage() {
               <div className="gy-recs rise" style={{ ...accent, ...delay(70) }}>
                 <div className="gy-rec">
                   <span className="tr-eyebrow">Becsült 1RM</span>
-                  <strong>{bestE1rm != null && bestE1rm > 0 ? <>{hu1(bestE1rm)} <small>kg</small></> : '—'}</strong>
-                  <i className="gy-rec-bar"><b style={{ '--w': `${e1rmShare}%` } as CSSProperties} /></i>
+                  <strong>{hasE1rm ? <>{hu1(bestE1rm!)} <small>kg</small></> : '—'}</strong>
+                  {hasE1rm && (
+                    <i className="gy-rec-bar">
+                      {e1rmShare != null && <b style={{ '--w': `${e1rmShare}%` } as CSSProperties} />}
+                    </i>
+                  )}
                   {e1rmDelta != null && <small>+{hu1(e1rmDelta)} kg a korábbi csúcsod óta</small>}
-                  <small>Becslés, nem mérés</small>
+                  {/* The caption belongs to the FIGURE — under an em dash it would caption
+                      a number that is not there. */}
+                  {hasE1rm && <small>Becslés, nem mérés</small>}
                 </div>
                 <div className="gy-rec">
                   <span className="tr-eyebrow">Legjobb szett</span>
@@ -207,7 +230,7 @@ export function ExerciseStoryPage() {
                       : '—'}
                   </strong>
                   <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
-                  <small>{record.bestSet ? huMonthDay(record.bestSet.date) : '—'}</small>
+                  <small>{record.bestSet ? huMonthDayAged(record.bestSet.date) : '—'}</small>
                 </div>
                 <div className="gy-rec">
                   <span className="tr-eyebrow">Legtöbb volumen</span>
@@ -219,7 +242,7 @@ export function ExerciseStoryPage() {
                   <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
                   <small>
                     {record.bestSessionVolume
-                      ? `${huMonthDay(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`
+                      ? `${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`
                       : '—'}
                   </small>
                 </div>

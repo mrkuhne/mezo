@@ -1,7 +1,7 @@
 import { describe, expect, it, test } from 'vitest'
 import {
   buildLibraryRows, exerciseKey, filterLibraryRows, firstSeenDate, foldAccents, libraryCounts,
-  libraryRegions, medalsForExercise, nextTarget, whereUsed,
+  libraryRegions, medalsForExercise, nextTarget, sinceFact, whereUsed,
 } from './exerciseLibrary'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
@@ -190,6 +190,30 @@ describe('firstSeenDate', () => {
 
   it('is null when the row dates nothing at all', () => {
     expect(firstSeenDate(record({ name: 'X' }))).toBeNull()
+  })
+})
+
+describe('sinceFact', () => {
+  // The series is capped on the wire (52 points), so an absolute „óta" is only honest when
+  // the series covers the whole history — `sessionCount` is the tell.
+  const series = (n: number) => Array.from({ length: n }, (_, i) => ({ date: `2026-0${1 + (i % 9)}-0${1 + (i % 9)}`, e1rm: 100 + i }))
+  const cases: Array<[string, ExerciseRecordResponse, ReturnType<typeof sinceFact>]> = [
+    ['series covers every session → the absolute date',
+      record({ name: 'X', sessionCount: 3, e1rmSeries: [{ date: '2025-09-03', e1rm: 90 }, { date: '2026-01-02', e1rm: 95 }, { date: '2026-06-02', e1rm: 100 }] }),
+      { kind: 'since', date: '2025-09-03' }],
+    ['more sessions than points → the window, named by its point count',
+      record({ name: 'X', sessionCount: 26, e1rmSeries: series(6) }),
+      { kind: 'window', sessions: 6 }],
+    ['one session more than points is already a window',
+      record({ name: 'X', sessionCount: 4, e1rmSeries: series(3) }),
+      { kind: 'window', sessions: 3 }],
+    ['no series at all (a bodyweight row) keeps the dated-ref fallback',
+      record({ name: 'X', sessionCount: 6, bestSet: { weightKg: 0, reps: 10, date: '2026-05-26' } }),
+      { kind: 'since', date: '2026-05-26' }],
+    ['nothing dated at all → null', record({ name: 'X', sessionCount: 0 }), null],
+  ]
+  it.each(cases)('%s', (_label, rec, expected) => {
+    expect(sinceFact(rec)).toEqual(expected)
   })
 })
 

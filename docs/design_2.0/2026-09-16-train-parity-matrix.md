@@ -362,7 +362,7 @@ this page was its last consumer. The joins stay in `features/train/logic/exercis
 | Prototype section | Production |
 |---|---|
 | `‹ Gyakorlatok` + eyebrow `MELL (KÖZÉP)` + `Fekvenyomás` + cue prose `Talpak lent. Stabil lapockák…` | present, on the house `PageHead` + `.pl-dhero.gy-hero`. **The cue prose is OMITTED** — no production field carries per-exercise cue text and none was invented (see the deliberate omissions below) |
-| Facts `12 alkalom / jún. 3. óta / 18,2 t összsúly` | **identical shape, real figures** — `26 alkalom · Szep 3 óta · 42 t összsúly` in mock. „óta" is the oldest date the record row can actually SHOW (`firstSeenDate`: the first e1RM point, else the oldest dated set ref), never a guess; a BODYWEIGHT row says `N ismétlés` instead of „0 t összsúly", which is a different true fact rather than a missing one |
+| Facts `12 alkalom / jún. 3. óta / 18,2 t összsúly` | **identical shape, real figures** — `26 alkalom · 2025. Szep 3 óta · 42 t összsúly` in mock. The middle fact is the one the wire makes hardest to say honestly, and it is now said two ways (fix round 1): an ABSOLUTE date only when the series covers the whole history, carrying its YEAR once it is old enough to be misread as recent (`huMonthDayAged` — „Szep 3 óta" on a September screen reads as a fortnight when the truth is a year); otherwise — `sessionCount` greater than the number of points the capped series carries — **„ebből az utolsó N látszik"**, because the oldest date the row holds is then the WINDOW's start, not a beginning (`sinceFact`). A BODYWEIGHT row says `N ismétlés` instead of „0 t összsúly", which is a different true fact rather than a missing one |
 | `Rekordjaid` — `BECSÜLT 1RM 76,5 kg (+2,5 kg a múltkori óta)`, `LEGJOBB SZETT`, `LEGTÖBB VOLUMEN` | **present, the three `.gy-rec` cards.** Every absent figure is an EM DASH, never a 0 (Face Pull: `— / 22 ismétlés / —`). The 1RM delta is measured against the best estimate that stood BEFORE the session which set the record (`+2,1 kg a korábbi csúcsod óta`) rather than the prototype's „a múltkori óta" — the headline is the all-time best, so its delta has to be about the same quantity — and the card carries the „Becslés, nem mérés" caveat as its own line |
 | `Következő cél: 62,5 kg × 9 — egy ismétléssel a legjobb szetted fölé.` | **present**, `.gy-next`, DERIVED from the real best set (`nextTarget`): the same load, one rep more, worded as the prototype's own note („ugyanaz a súly, egy ismétléssel több"). A TARGET, never a prediction; no best set ⇒ no line at all |
 | **`Az erőd íve`** story-curve graphic (`0 kg most · eddig · a terv várakozása`) | **present** — the SOLID line only, over Task 2's `e1rmSeries`. The DASHED „a terv várakozása" branch is **NOT drawn**: nothing in production forecasts an e1RM, so the caption reads `ami eddig megtörtént · <dátum> óta` / `becslés, nem mérés`. Two further honesty rules: the x axis is TIME (not index), and an interval out of character for the series' own cadence BREAKS the stroke, so a wire gap reads as a gap. Under two points there is a sentence instead of a line — never a flat line through one measurement |
@@ -390,7 +390,21 @@ carries no flags at all), so the page never offers an affordance that would come
   workout card glass, the plan picker), so the story page keeps only the AUTHORING half as the one
   quiet row above — a player would have been a new section, not a ported one.
 
-**Severity: ✅ CLOSED (P2 Task 5)** — was BLOCKER.
+**Severity: ✅ CLOSED (P2 Task 5)** — was BLOCKER. **Fix round 1 (mezo-lf3cv):** the hero's „…óta" fact
+was wrong twice over and is honest in both directions now — it carries the YEAR on an old date
+(`huMonthDayAged`, added beside `huMonthDay` rather than changing it app-wide: most of its callers state
+inherently recent dates) and it says „ebből az utolsó N látszik" when the wire's 52-point cap means the
+date is a window start rather than a beginning (`sinceFact`, table-tested both branches); the same
+year-aware date now runs on the record cards. The 1RM card no longer paints a FULL bar under an em dash
+(no figure ⇒ no bar, and no „Becslés, nem mérés" caption under a number that is not there), and a best
+with an empty series gets an unfilled rail instead of silently claiming „you are at your peak right
+now". `StrengthCurve`'s header now records where the median gap rule is weak (on three points a hole
+must be ~7× the normal step before the stroke breaks — under-breaking is the safer direction). The mock
+catalogue seeds the authorship stamps (one `Saját`, one `Közös · {név}`) so the display-only half of the
+rescued trio is walkable offline — deliberately NOT `editable`/`mediaEditable`, since mock write
+mutations are no-ops and an authoring row whose Save does nothing is a worse lie than an absent one. And
+[`docs/features/train.md`](../features/train.md) §2 `Gyakorlatok` was rewritten to what ships (the
+Titanium catalogue + this story page), with `ExerciseRecordSheet`'s retirement recorded among the deaths.
 
 ---
 

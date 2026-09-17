@@ -29,6 +29,15 @@
 //    segment left with a single point still gets a dot, so no measurement ever
 //    disappears just because both its neighbours are far away.
 //
+//    WHERE THE MEDIAN RULE IS WEAK: on a very short series the median is pulled
+//    up by the gap itself. With three points the median of TWO intervals is their
+//    mean, so the hole is half of its own yardstick and has to be roughly 7× the
+//    normal step before the stroke breaks (measured: `[7d, 49d]` still draws
+//    continuous, `[7d, 60d]` breaks). Under-breaking is the safer direction —
+//    an unbroken line over a hole understates a story the reader can still read
+//    off the time axis (the flat stretch is there either way), while breaking too
+//    eagerly on three points would invent a hole out of an ordinary cadence.
+//
 // Under two points there is no line to draw and none is faked: the component
 // says so in one sentence (0 points and 1 point say different, true things).
 // ============================================================

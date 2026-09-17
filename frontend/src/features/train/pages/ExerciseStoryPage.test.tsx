@@ -49,8 +49,9 @@ test('the hero carries the muscle eyebrow, the name and the three real foot fact
   await screen.findByText('Chest Supported Row')
   const hero = container.querySelector('.pl-dhero.gy-hero') as HTMLElement
   expect(within(hero).getByText('Hát (közép)')).toBeInTheDocument()
-  // 21 sessions · the oldest e1RM point (2026-04-21) · 182 450 kg → tonnes
-  expect(hero.querySelector('.pl-poster-foot')!.textContent).toBe('21 alkalomÁpr 21 óta182,4 t összsúly')
+  // 21 sessions · only 6 of them are IN the series, so the middle fact is the bounded one
+  // (an „Ápr 21 óta" here would tell a 21-session lifter he started in April) · 182 450 kg → tonnes
+  expect(hero.querySelector('.pl-poster-foot')!.textContent).toBe('21 alkalomebből az utolsó 6 látszik182,4 t összsúly')
 })
 
 test('the hero shows the authorship stamp — the first renderer in the app for it', async () => {
@@ -76,6 +77,27 @@ test('a bodyweight row says ISMÉTLÉS instead of faking 0 t of volume', async (
   const { container } = renderStory(PLYO)
   await screen.findByText('Box Jump')
   expect(container.querySelector('.pl-poster-foot')!.textContent).toBe('6 alkalomMáj 26 óta186 ismétlés')
+})
+
+test('a series that covers every session keeps the absolute „óta" date — with its YEAR', async () => {
+  // sessionCount === the point count, so the oldest point really is the first session; and
+  // that point is a year old, which „Szep 3" alone would read as a fortnight ago.
+  server.use(
+    http.get(`${API_BASE}/api/train/exercise-records`, () =>
+      HttpResponse.json([{
+        catalogId: ROW, name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+        totalVolume: 12000, totalSets: 9, totalReps: 90, sessionCount: 3,
+        repRecords: [], recentTopSets: [],
+        e1rmSeries: [
+          { date: '2025-09-03', e1rm: 100 },
+          { date: '2026-03-03', e1rm: 110 },
+          { date: '2026-09-01', e1rm: 120 },
+        ],
+      }])),
+  )
+  const { container } = renderStory(ROW)
+  await screen.findByText('Chest Supported Row')
+  expect(container.querySelector('.pl-poster-foot')!.textContent).toContain('2025. Szep 3 óta')
 })
 
 // ── Rekordjaid ────────────────────────────────────────────────────────────────────────
@@ -125,6 +147,34 @@ test('a live-backend bodyweight record (weightKg 0) is an em dash on the 1RM car
   const cards = Array.from(container.querySelectorAll('.gy-rec strong'))
   expect(cards[0].textContent).toBe('—')
   expect(cards[1].textContent).toBe('35 ismétlés')
+})
+
+test('the em-dashed 1RM card paints NO bar and no „Becslés" caption', async () => {
+  // Box Jump has no bestE1rm at all — a full bar under an em dash would paint a figure
+  // that is not there, and the caption would be captioning nothing.
+  const { container } = renderStory(PLYO)
+  await screen.findByText('Box Jump')
+  const card = container.querySelectorAll('.gy-rec')[0]
+  expect(card.textContent).not.toContain('Becslés, nem mérés')
+  expect(card.querySelector('.gy-rec-bar')).toBeNull()
+})
+
+test('a best with an EMPTY series gets an unfilled rail, not a 100% „you are at your peak"', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/exercise-records`, () =>
+      HttpResponse.json([{
+        catalogId: ROW, name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+        bestE1rm: { value: 133.3, set: { weightKg: 102.5, reps: 9, date: '2026-06-02' } },
+        totalVolume: 4000, totalSets: 8, totalReps: 60, sessionCount: 2,
+        repRecords: [], recentTopSets: [],
+      }])),
+  )
+  const { container } = renderStory(ROW)
+  await screen.findByText('Chest Supported Row')
+  const card = container.querySelectorAll('.gy-rec')[0]
+  expect(card.textContent).toContain('133,3')
+  expect(card.querySelector('.gy-rec-bar')).not.toBeNull()   // the figure is there…
+  expect(card.querySelector('.gy-rec-bar b')).toBeNull()      // …the comparison is not
 })
 
 // ── Következő cél ─────────────────────────────────────────────────────────────────────

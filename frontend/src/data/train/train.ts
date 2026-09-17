@@ -1249,6 +1249,11 @@ export const sport: Sport = {
 }
 
 // --- exercise library (data.js:538-560) — all 21 items verbatim ---
+// Two rows carry AUTHORSHIP (mezo-lf3cv): Barbell Bench Press is the demo user's own
+// („Saját"), Lateral Raise is someone else's („Közös · Anna") — the exercise story's hero
+// stamp is display-only, and without a seed it would be unreachable in a walkthrough.
+// Deliberately NO `editable`/`mediaEditable` here: mock-mode catalogue writes are no-ops,
+// and an authoring row whose Save does nothing is a worse lie than an absent affordance.
 export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false },
   { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound', stim: 0.84, fatigue: 0.4, imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg', imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg' },
@@ -1259,11 +1264,11 @@ export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-7', name: 'Incline DB Curl', muscle: 'biceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
   { id: 'exl-8', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation', stim: 0.7, fatigue: 0.18 },
   { id: 'exl-9', name: 'Reverse Pec Deck', muscle: 'shoulder-rear', type: 'isolation', stim: 0.66, fatigue: 0.18 },
-  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest-mid', type: 'compound', stim: 0.94, fatigue: 0.7 },
+  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest-mid', type: 'compound', stim: 0.94, fatigue: 0.7, authoredByMe: true },
   { id: 'exl-11', name: 'Incline DB Press', muscle: 'chest-upper', type: 'compound', stim: 0.86, fatigue: 0.5 },
   { id: 'exl-12', name: 'Cable Fly', muscle: 'chest-mid', type: 'isolation', stim: 0.74, fatigue: 0.25 },
   { id: 'exl-13', name: 'Overhead Press', muscle: 'shoulder-front', type: 'compound', stim: 0.86, fatigue: 0.55 },
-  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2 },
+  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2, authorName: 'Anna' },
   { id: 'exl-15', name: 'Tricep Pushdown', muscle: 'triceps-medial', type: 'isolation', stim: 0.7, fatigue: 0.2 },
   { id: 'exl-16', name: 'Overhead Tricep Ext', muscle: 'triceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
   { id: 'exl-17', name: 'Barbell Squat', muscle: 'quad', type: 'compound', stim: 0.94, fatigue: 0.85 },

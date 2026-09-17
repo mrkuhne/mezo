@@ -210,6 +210,31 @@ export function firstSeenDate(record: ExerciseRecordResponse): string | null {
   return dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null
 }
 
+/**
+ * What the hero's middle foot fact may HONESTLY say about how far back this exercise goes.
+ *
+ * `firstSeenDate` above is the oldest date the row CARRIES, and the wire's e1RM series keeps
+ * only the newest 52 points (`E1rmSeries.MAX_POINTS`). For a long-running exercise that oldest
+ * date is therefore the WINDOW's start, not the first session — „26 alkalom · Ápr 21 óta" tells
+ * a two-year lifter he started this April. The row's own `sessionCount` is the tell: when it
+ * exceeds the number of points the series actually carries, the series is bounded and the copy
+ * must say the bounded thing („the last N sessions") instead of an absolute start date.
+ *
+ * With NO series at all (a bodyweight row: nothing is ever e1RM-eligible) there is no point
+ * count to compare against and no „last N" to name, so the dated refs the row carries are used
+ * as before — that date is the oldest thing the row knows, and it is stated as such.
+ */
+export type SinceFact =
+  | { kind: 'since'; date: string }
+  | { kind: 'window'; sessions: number }
+
+export function sinceFact(record: ExerciseRecordResponse): SinceFact | null {
+  const points = record.e1rmSeries?.length ?? 0
+  if (points > 0 && record.sessionCount > points) return { kind: 'window', sessions: points }
+  const date = firstSeenDate(record)
+  return date ? { kind: 'since', date } : null
+}
+
 export interface NextTarget {
   /** Load to aim at, kg — null for a bodyweight best set (no load to repeat). */
   kg: number | null
