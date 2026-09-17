@@ -1593,7 +1593,12 @@ export const handlers = [
     const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
+        // mezo-rj214.7: phase frames narrate the turn's stage — planning/retrieving ahead of
+        // the tool call, answering ahead of the deltas — progress only, never terminal.
+        controller.enqueue(encoder.encode(frame('phase', { phase: 'planning' })))
+        controller.enqueue(encoder.encode(frame('phase', { phase: 'retrieving' })))
         controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
+        controller.enqueue(encoder.encode(frame('phase', { phase: 'answering' })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes

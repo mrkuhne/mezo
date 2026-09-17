@@ -1724,14 +1724,33 @@ rejected instead of silently leaving a contradictory suppressed item. No learnin
 rank-weight mutation is emitted in this slice: `.8` owns using the accumulated labels for
 evaluation/tuning.
 
-**The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
+**The streamed turn (V0.4 + V0.5 tools + S9.6 phase narration — what the FE uses).** Since S9.6
+(`mezo-rj214.7` Task 3) everything from the audit/`toolSink` setup down runs inside a
+`Flux.defer(() -> …).subscribeOn(Schedulers.boundedElastic())` (`ChatStreamService.java:148-291`).
+Before that restructure the whole pre-stream lap (plan → cap → execute → answer) ran
+**synchronously on the request thread**, before this method even returned its `Flux` — Spring MVC
+only starts writing the SSE response once it subscribes, so anything pushed into `toolSink`
+during the lap was buffered and flushed only after the wait, narrating nothing. Deferring the lap
+onto a `boundedElastic` worker lets the HTTP response **open immediately**; the lap's `phase`
+frames (below) then reach the client live, during the wait, which is the entire point of S9.6.
+Two guarantees stay **eager** — evaluated on the request thread, BEFORE `Flux.defer` even builds
+the deferred lap, so they still surface as plain HTTP responses rather than SSE `error` frames:
+`chatService.prepareTurn` (ownership → 404) and, new in S9.6, a preflight
+`llmCallContextHolder.runWith(streamContext, () -> null)` call (`ChatStreamService.java:139`) that
+lets the LLM budget gate throw its `LLM_BUDGET_EXHAUSTED`/`THROTTLED` `SystemRuntimeErrorException`
+(429) before any SSE frame is written — without it, an exhausted budget used to surface AFTER
+Spring MVC had already committed the 200 SSE response, as a terminal `error` event instead of a
+normal HTTP 429. fix round 1 finding M1: because the deferred lap is NOT cancellation-aware, a
+client disconnect mid-lap does not interrupt it — it runs to completion (and is billed) on its
+boundedElastic worker regardless, which is still strictly better than the pre-S9.6 behaviour of
+pinning that same uninterruptible work to the request thread.
 
 ```
 ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fetch + ReadableStream)
 POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
   → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
-  → ChatStreamService.streamMessage            service/ChatStreamService.java:59
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:94
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
          prompt = voice + snapshot + facts + pattern-ack + [Rólad tanultam] (W4.3) + [Emlékek]
          (W3.1) + [Összefüggések] (W2.4) + TONE_REMINDER
@@ -1745,26 +1764,60 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          so anything TX #2 must persist has to travel on the PreparedTurn
       2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
          toolSink = Sinks.many().unicast().onBackpressureBuffer(); audit.onCall(call ->
-         toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 3, because
+         toolSink.tryEmitNext(toolEvent(call)))       ── mezo-280: registered BEFORE step 2b, because
          some CompanionLlm implementations run the tool loop while the Flux is being ASSEMBLED —
          i.e. before anything subscribes; the buffering sink replays those pre-subscription calls
-         once merged in
-      3. companionLlm.stream(prompt, history, content, ── NO TX: Spring AI runs the tool loop
-             toolRegistry.callbacks(audit),                internally — each RecordingToolCallback
-             toolRegistry.toolContext(userId, audit))       records {name,args} + tools add refs,
-                                                              firing audit's onCall listener → toolSink
-         each text chunk → event:delta, data: StreamDelta{text} (JSON); Flux.merge(toolSink.asFlux(),
-         deltas) interleaves 0..n event:tool, data: StreamToolCall{type,name} (JSON — the SAME
-         pre-baked "name(args)" label as the done row's chip, bare name when args are blank) with the
-         0..n deltas — progress only, the done row's tools[] stays authoritative. doFinally (NOT
-         doOnComplete) completes toolSink when the delta Flux terminates, so a client disconnect
-         can't leave the merge waiting on an orphaned sink; any LATER call (an advisor corrective
-         round, step 4) emits into an already-completed sink and is silently dropped from the live
-         stream — it still lands in the done row
-      4. advisorChain.review(prompt, content, answer, …)   ── V1.3 (NO TX, bean present only when
+         once merged in. onPhase = phase -> toolSink.tryEmitNext(phaseEvent(phase)) is wired the
+         SAME way — a phase frame is just another thing this sink carries
+      2b. THE PIPELINE ATTEMPT (mezo-rj214.7 S9.6 Task 6, inside the deferred lap) ── a CHAT turn
+         (tool-free, smart-tier) skips this block entirely — ZERO phase frames, streams via the
+         tool-free smart branch. Only the pipeline-switch-off case lands in step 3's LEGACY branch
+         (the full tool loop). Otherwise (LOOKUP/ANALYSIS):
+         toolSink.tryEmitNext(phaseEvent(PLANNING)) fires UNCONDITIONALLY at attempt start
+         (ChatStreamService.java:157-161), before the planner is even called. ANALYSIS then runs
+         the FULL sync ChatService.pipelineAnswer (replan lap included) right here, pre-stream;
+         LOOKUP runs ChatService.planAndExecuteVolatile, whose built volatile half the native
+         answerer streams off in step 3. Both share ONE gate for RETRIEVING: it fires ONLY when
+         the budget-capped plan is non-empty (ChatService.java:530-532,586-588 — "empty plans must
+         not narrate retrieval"), so a plan that cap-to-budget reduces to nothing skips straight to
+         ANSWERING. A planner failure (Optional.empty()) or any RuntimeException from this block
+         degrades to PipelineResult.legacy() (runPipelinePreStream's try/catch) — the client has
+         already seen PLANNING and nothing else, so **a fallback turn's phase trail is exactly one
+         frame: planning**, then the LEGACY tool loop runs silently underneath it (spec §8: an
+         answer beats an error, and the degrade is invisible to the phase channel by design)
+      3. rawDeltas, by turn.gear()/pipe.mode() ── NO TX for any branch: CHAT streams
+             companionLlm.streamSmart(...) tool-free (no phase frames at all, matching step 2b);
+         LOOKUP's STREAM_ANSWER emits phaseEvent(ANSWERING) THEN streams turnAnswerer.answerStream
+             off the volatile half step 2b already built — real per-token deltas, no replan, no
+             second RETRIEVING (LOOKUP never replans);
+         ANALYSIS's SYNC_ANSWER emits the fully-resolved answer from step 2b as ONE delta — its
+             RETRIEVING/ANSWERING (repeated once per replan lap) were already narrated live from
+             INSIDE pipelineAnswer during step 2b, so nothing further fires here;
+         LEGACY (pipeline not attempted, or it fell back) is the byte-identical pre-S9.5
+             companionLlm.stream(prompt, history, content, toolRegistry.callbacks(audit),
+             toolRegistry.toolContext(userId, audit)) tool loop — Spring AI runs it internally,
+             each RecordingToolCallback records {name,args} + tools add refs, firing audit's
+             onCall listener → toolSink.
+         Every branch's chunks: event:delta, data: StreamDelta{text} (JSON); Flux.merge(
+         toolSink.asFlux(), deltas) interleaves 0..n event:tool, data: StreamToolCall{type,name}
+         (JSON — the SAME pre-baked "name(args)" label as the done row's chip, bare name when args
+         are blank) and 0..n event:phase, data: StreamPhase{phase} with the 0..n deltas — both
+         progress only, the done row's tools[] stays authoritative and phase frames are NEVER
+         terminal. doFinally (NOT doOnComplete) completes toolSink when the delta Flux terminates —
+         the error/cancel BACKSTOP, since a rawDeltas failure or client disconnect never reaches
+         step 4/5's concatWith at all
+      4. trailingDoneMono's FIRST statement is toolSink.tryEmitComplete() (idempotent with the
+         doFinally backstop above) — deterministic, BEFORE advisorChain.review runs, because a
+         corrective retry (below) makes live tool calls through the SAME audit.onCall listener that
+         feeds toolSink: closing the sink first makes those retry emissions hit an
+         already-terminated sink and drop silently from the LIVE stream — they still land in the
+         done row's tools[], never as a live 'tool' frame the client could see twice
+      4a. advisorChain.review(prompt, content, answer, …)   ── V1.3 (NO TX, bean present only when
          mezo.companion.advisors.enabled): clinical regex → LLM verdict; violation → ONE
          corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
          still violating ⇒ degraded=true. The done row carries the FINAL (possibly retried) text.
+         A pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only (reviewChat), exactly like CHAT —
+         never the full tool-loop chain that LEGACY still takes (mezo-rj214.7 Task 6).
       4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
          audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
          refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
@@ -2242,29 +2295,34 @@ marker is spent, never offered a second time. The marker must never reach the cl
 the no-replan exit, the lap-2 exit, and the "marker on a gear that never offered it" corner (model
 noise, treated as a pipeline failure so the legacy fallback answers fully instead) — and
 `ChatStreamService` runs the same guard a second time on a `STREAM_ANSWER`'s already-streamed text
-before persisting the done row (`ChatStreamService.java:180-182`): the streamed deltas themselves
+before persisting the done row (`ChatStreamService.java:269-271`): the streamed deltas themselves
 are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
 only protects what re-enters history on the next turn.
 
-**Streamed modes differ by gear (until S9.6).** `LOOKUP` runs plan → cap → execute BEFORE the SSE
-`Flux` is assembled, then the answerer streams NATIVELY off the built volatile half
-(`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:112-123,267-275`) — real per-token
-deltas, no replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included)
-pre-stream and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`,
-`ChatStreamService.java:124-126,260-265`) — a synchronous round-trip disguised as a stream, until
-S9.6 gives ANALYSIS its own native streaming answerer. Both modes still stream real tool-call chips
-AHEAD of the answer: the `ToolCallAudit` listener that turns each executed call into an SSE `tool`
-event is registered before the pre-stream pipeline lap runs, so the pre-stream execution's calls
-are BUFFERED into the unicast `toolSink` the moment they run (`ChatStreamService.java:85-105`,
-`ChatStreamPipelineIT`). The buffer only FLUSHES once the SSE response begins, after the pre-stream
-lap has already finished — so ordering ahead of the answer is guaranteed, but earliness is not; the
-client's wait through the pre-answer gap itself is unchanged. S9.6's explicit phase events are the
-real cure for that.
+**Streamed modes still differ by gear post-S9.6 — a native ANALYSIS streamer remains future
+work.** `LOOKUP` runs plan → cap → execute pre-stream (inside the S9.6 deferred lap, §3 "The
+streamed turn"), then the answerer streams NATIVELY off the built volatile half
+(`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:180-187`) — real per-token deltas, no
+replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included) pre-stream
+and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`, `ChatStreamService.java:192`) — a
+synchronous round-trip disguised as a stream; that LOOKUP/ANALYSIS asymmetry is UNCHANGED by
+S9.6 — a native ANALYSIS streamer remains future work. What S9.6 actually shipped is explicit
+`phase` events (`PLANNING`/`RETRIEVING`/`ANSWERING`) narrating that pre-answer wait for BOTH
+gears — the client now sees why it is waiting instead of staring at a blank draft bubble; the
+wait itself is exactly as long as before. Both modes still stream real tool-call chips AHEAD of the
+answer: the `ToolCallAudit` listener that turns each executed call into an SSE `tool` event is
+registered before the pre-stream pipeline lap runs, so the pre-stream execution's calls are
+BUFFERED into the unicast `toolSink` the moment they run (`ChatStreamService.java:99-109`,
+`ChatStreamPipelineIT`). The buffer only FLUSHES once the SSE response begins — since S9.6 that is
+IMMEDIATELY (the response opens before the deferred lap even starts, §3 "The streamed turn"), not
+after the pre-stream lap has already finished as it did pre-S9.6 — so both ordering ahead of the
+answer AND earliness now hold; the `phase` frames are what actually fill the pre-answer gap the
+buffered-chip ordering alone never addressed.
 
 **Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
 either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
 `CHAT` answer gets — never the full `chain.complete`/`chain.review` tool-loop advisor
-(`ChatService.java:317-323`, `ChatStreamService.java:148-161`). The LLM verdict
+(`ChatService.java:317-323`, `ChatStreamService.java:235-258`). The LLM verdict
 (`TurnVerdictCheck`) is skipped on purpose: `pipelineAnswer`'s own answering call already graded the
 answer against the tool-outcome digest it was grounded in, so a second verdict call would pay twice
 to grade the same thing. The deterministic `ClinicalOutputCheck` still runs — its dose-change
@@ -2276,7 +2334,7 @@ as before S9.5.
 books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap 1's
 `TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan lap —
 `plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed LOOKUP
-path tags its native answer stream `answer` too, `ChatStreamService.java:118-123`). Each is its own
+path tags its native answer stream `answer` too, `ChatStreamService.java:180-187`). Each is its own
 `llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds, not one
 row hiding a retry inside it.
 
@@ -5065,7 +5123,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/conversation` | `ConversationResponse` | 201 · 401 | New empty conversation (`title` null; `startedAt` = `created_at`). `saveAndFlush` so `@CreationTimestamp` is populated before mapping. **`mezo-p2tr`:** an optional body `{context: {kind: week\|day, date}}` anchors it (`context_kind`/`context_date` persisted) and triggers `ChatService.openingTurn` — a server-generated, assistant-only first turn (§3 "Weekly review data layer + anchored conversations"). Absent/omitted `context` = unchanged plain-conversation behaviour. |
 | `GET /api/companion/conversation/{id}/messages` | `MessageResponse[]` | 200 · 401 · 404 | Full history, oldest-first. 404 for missing **or foreign** (`getOwned`, no existence leak). |
 | `POST /api/companion/conversation/{id}/message` | `MessageResponse` | 200 · 400 · 401 · 404 | The **sync** chat turn (V0.2, single transaction — LLM failure still rolls the whole turn back). |
-| `POST /api/companion/conversation/{id}/message/stream` | SSE `(delta\|tool)*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11); `tool` events interleave live since mezo-280 (progress only — the `done` row's `tools[]` stays authoritative). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
+| `POST /api/companion/conversation/{id}/message/stream` | SSE `(delta\|tool\|phase)*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11); `tool` events interleave live since mezo-280 (progress only — the `done` row's `tools[]` stays authoritative). **Since S9.6 (`mezo-rj214.7`):** 0..n `phase` events (`planning`\|`retrieving`\|`answering`, a replan lap repeats `retrieving`/`answering`) narrate a LOOKUP/ANALYSIS pipeline turn's pre-answer wait — progress only, never terminal, and the SSE response now OPENS before the pipeline lap runs (§3 "The streamed turn") so the frames arrive DURING the wait; a fallback turn emits only `planning`, a `CHAT` turn emits none. Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 | `GET /api/companion/fact` | `KnowledgeFactResponse[]` | 200 · 401 | V1.1 — owner's facts, `reinforcement_count desc, created_at desc`. |
 | `POST /api/companion/fact` | `KnowledgeFactResponse` | 201 · 400 · 401 | V1.1 manual add — `CreateFactRequest {factText 1..500, category pattern}`; `source=manual`, `include_in_prompt=true`, `reinforcement_count=0`. |
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
@@ -5110,9 +5168,13 @@ name it had when the turn ran). Every other kind, and every row persisted before
 existed, carries `label: null`/absent; the FE (`chatRefDisplay`) falls back to its existing
 id-derived label for those, using `||` so an empty/whitespace label degrades the same way),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
-`StreamDelta {text}` + `StreamError {code}` + `StreamToolCall {type, name}` (V0.4 + mezo-280 — the
-SSE per-event `data:` payloads; every data line is JSON; `StreamToolCall.name` carries the SAME
-pre-baked `"name(args)"` label as `MessageTool.name`, `type` always `read` in V0.5),
+`StreamDelta {text}` + `StreamError {code}` + `StreamToolCall {type, name}` + `StreamPhase {phase}`
+(V0.4 + mezo-280 + S9.6 `mezo-rj214.7` — the SSE per-event `data:` payloads; every data line is
+JSON; `StreamToolCall.name` carries the SAME pre-baked `"name(args)"` label as `MessageTool.name`,
+`type` always `read` in V0.5; `StreamPhase.phase` is a plain string — `'planning' | 'retrieving' |
+'answering'`, deliberately NOT enum-constrained in the schema, §3 "The streamed turn" — with no
+persisted counterpart: unlike `tool`/`delta`, a `phase` frame has no row on the `done` event, it
+narrates the wait and then is gone),
 `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
 includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
