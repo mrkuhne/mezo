@@ -524,8 +524,12 @@ public class ChatService {
                 () -> turnPlanner.plan(history, hint, today));
         List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(lap1.outcomes());
         if (replanned.isPresent()) {
-            notify(onPhase, TurnPhase.RETRIEVING);
             CappedPlan secondCapped = capToRemainingBudget(replanned.get(), audit);
+            // mirrors the other RETRIEVING gate in planAndExecuteVolatile — keep both in sync
+            // (empty plans must not narrate retrieval)
+            if (!secondCapped.plan().isEmpty()) {
+                notify(onPhase, TurnPhase.RETRIEVING);
+            }
             merged.addAll(planExecutor.execute(secondCapped.plan(), userId, audit));
             merged.addAll(secondCapped.dropped());
         }
@@ -576,8 +580,12 @@ public class ChatService {
         if (planned.isEmpty()) {
             return null;
         }
-        notify(onPhase, TurnPhase.RETRIEVING);
         CappedPlan capped = capToRemainingBudget(planned.get(), audit);
+        // mirrors the RETRIEVING gate in the replan lap — keep both in sync (empty plans must
+        // not narrate retrieval)
+        if (!capped.plan().isEmpty()) {
+            notify(onPhase, TurnPhase.RETRIEVING);
+        }
         List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
                 planExecutor.execute(capped.plan(), userId, audit));
         outcomes.addAll(capped.dropped());

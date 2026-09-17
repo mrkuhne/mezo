@@ -68,4 +68,19 @@ class TurnPhaseSeamTest extends AbstractIntegrationTest {
 
         assertThat(answer).isNotNull();
     }
+
+    @Test
+    void testPipelineAnswer_shouldNotEmitRetrieving_whenPlanNeedsNoData() {
+        UUID userId = databasePopulator.populateUser("phase-empty@test.local");
+        List<TurnPhase> phases = new ArrayList<>();
+        String emptyPlan = " [fake-plan:{\"needsData\":false,\"steps\":[]}]";
+
+        String answer = chatService.pipelineAnswer(userId, UUID.randomUUID(), TurnGear.LOOKUP,
+            "HANG", "\n\nMa: " + LocalDate.now() + "\n", List.of(),
+            "Mi van a kamrában?" + emptyPlan, LocalDate.now(),
+            toolRegistry.newTurnAudit(), phases::add);
+
+        assertThat(answer).isNotNull();
+        assertThat(phases).containsExactly(TurnPhase.ANSWERING);
+    }
 }
