@@ -1736,7 +1736,7 @@ ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fe
 POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
   → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
-  → ChatStreamService.streamMessage            service/ChatStreamService.java:59
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:63
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
          prompt = voice + snapshot + facts + pattern-ack + [Rólad tanultam] (W4.3) + [Emlékek]
          (W3.1) + [Összefüggések] (W2.4) + TONE_REMINDER
@@ -1756,8 +1756,9 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          once merged in. onPhase = phase -> toolSink.tryEmitNext(phaseEvent(phase)) is wired the
          SAME way — a phase frame is just another thing this sink carries
       2b. THE PIPELINE ATTEMPT (mezo-rj214.7 S9.6 Task 6, inside the deferred lap) ── a CHAT turn
-         (tool-free, smart-tier) or the pipeline switch being off skips this block entirely: ZERO
-         phase frames, straight to step 3's LEGACY branch. Otherwise (LOOKUP/ANALYSIS):
+         (tool-free, smart-tier) skips this block entirely — ZERO phase frames, streams via the
+         tool-free smart branch. Only the pipeline-switch-off case lands in step 3's LEGACY branch
+         (the full tool loop). Otherwise (LOOKUP/ANALYSIS):
          toolSink.tryEmitNext(phaseEvent(PLANNING)) fires UNCONDITIONALLY at attempt start
          (ChatStreamService.java:157-161), before the planner is even called. ANALYSIS then runs
          the FULL sync ChatService.pipelineAnswer (replan lap included) right here, pre-stream;
@@ -1802,7 +1803,7 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
          still violating ⇒ degraded=true. The done row carries the FINAL (possibly retried) text.
          A pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only (reviewChat), exactly like CHAT —
-         never the full tool-loop chain.review LEGACY still takes (mezo-rj214.7 Task 6).
+         never the full tool-loop chain that LEGACY still takes (mezo-rj214.7 Task 6).
       4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
          audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
          refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
