@@ -13,6 +13,7 @@ import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
+import { TrainWeekJelekPage } from '@/features/train/pages/TrainWeekJelekPage'
 import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
@@ -266,11 +267,12 @@ export const routes: RouteObject[] = [
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },
-      // Terhelés subpages (Train Titanium T12 Task 4): both sit UNDER /train/week,
-      // so navModel's own prefix rule lights the Terhelés tab for them — no `owns`
-      // entry needed (navModel.ts's `isPrefix`).
+      // Terhelés subpages (Train Titanium T12 Task 4, + `jelek` from parity P2 Task 1):
+      // all three sit UNDER /train/week, and the Terhelés tab also OWNS the path
+      // explicitly (navModel.ts) so the lit tab is a statement, not a prefix guess.
       { path: 'train/week/terkep', element: <TrainWeekMapPage /> },
       { path: 'train/week/mozgas', element: <TrainWeekMozgasPage /> },
+      { path: 'train/week/jelek', element: <TrainWeekJelekPage /> },
       { path: 'train/gym', element: <GymPage /> },
       { path: 'train/sport', element: <SportPage /> },
       // The full-screen sport-logging flow (mezo-88iwa.9, T8): pick a sport, then only the

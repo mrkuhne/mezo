@@ -307,6 +307,33 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
 })
 
 /**
+ * Section registration (mezo-lf3cv, P2 Task 1): the „Minden izomjel" subpage's `.mm-*`
+ * section — the head, the six region boxes, their 3-wide grid and the muscle cells,
+ * ported from the prototype's `train-pages.css` `.mm-*` family.
+ */
+describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => {
+  const START_MARKER = 'train izomjel titanium'
+  const END_MARKER = '/train izomjel titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the mm- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.mm-head', '.mm-region', '.mm-grid', '.mm-cell']) {
+      expect(section, `${cls} missing from the train izomjel titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
  * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
  * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
  * and the muscle detail's gauge, ported from the prototype's `plan.css`.

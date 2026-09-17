@@ -121,7 +121,9 @@ export function TrainWeekMapPage() {
           </p>
         </header>
 
-        <PageBody>
+        {/* `.pl-sub` only re-widths the quiet `.pl-row` doorway below (prototype.css:15215)
+            — the prototype's own subpage container carries it for exactly that reason. */}
+        <PageBody className="pl-sub">
           <div className="segtabs ld-modes" role="group" aria-label="Nézet">
             <button type="button" className="segtab" aria-pressed={mode === 'done'} onClick={() => setMode('done')}>
               Eddig megvolt
@@ -164,6 +166,21 @@ export function TrainWeekMapPage() {
               Minden izomcsoportod sorra került ezen a héten.
             </p>
           )}
+
+          {/* The doorway to „Minden izomjel" — the prototype's own quiet row at the foot of
+              `mapScreen()` (load-pages.js:140), copy verbatim (parity P2 Task 1, matrix §13). */}
+          <button
+            type="button"
+            className="pl-row is-quiet rise"
+            style={{ '--d': '150ms' } as CSSProperties}
+            onClick={() => navigate('/train/week/jelek')}
+          >
+            <span>
+              <strong>Minden izomjel</strong>
+              <small>A 21 izom, saját jellel, régiónként</small>
+            </span>
+            <b aria-hidden="true">›</b>
+          </button>
 
           {reach.length > 0 && (
             <p className="ld-sport-note rise" style={{ '--d': '160ms' } as CSSProperties}>

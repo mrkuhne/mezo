@@ -263,9 +263,9 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 | Toggle `Eddig megvolt / A heti terv`, `ELÖLRŐL / HÁTULRÓL`, legend `még vár · elkezdted · jó úton · megvan` | **identical** |
 | `Még munkára vár` list | present (9 rows vs 6) |
 | Footer note `A röplabda ezeken is dolgozott: … Becslés, nem mérés — a szettszámokba nem számít bele.` | present, `A röplabda` → `A sport` |
-| **`Minden izomjel / A 21 izom, saját jellel, régiónként ›`** | **absent** — the doorway to `train/2/jelek` is gone |
+| **`Minden izomjel / A 21 izom, saját jellel, régiónként ›`** | ✅ **CLOSED (P2 Task 1)** — the quiet `.pl-row.is-quiet` doorway is back at the foot of the screen, copy verbatim, routing to `/train/week/jelek` (§15). *Was:* „absent — the doorway to `train/2/jelek` is gone" |
 
-**Severity: MAJOR** (the entry point to §15 is missing)
+**Severity: MAJOR** (the entry point to §15 is now present; what stays open on this screen is the 9-vs-6 wait list and the „röplabda"→„sport" wording above)
 
 ---
 
@@ -286,11 +286,16 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 
 ## 15. `train/2/jelek` — „Minden izomjel"
 
-**Production: MISSING — no such screen.** There is no `/train/week/jelek` (or any equivalent) in `router.tsx`; `/me/jelek` (`JelekPage`) is the unrelated life-signals page.
+**Production: ✅ CLOSED (P2 Task 1)** — the screen exists at `/train/week/jelek` (`TrainWeekJelekPage`), and so does its doorway (§13). The head carries the prototype copy verbatim (`IZOMTÉRKÉP / Minden izomcsoport, saját jellel` + `Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó.`), the back pill reads `‹ Izomtérkép`, and all six region blocks are there with the prototype own counts — `Mell 3 izom`, `Hát 4 izom`, `Váll 3 izom`, `Kar 6 izom`, `Láb 4 izom`, `Core 1 izom` — each cell drawn by the shipped `MuscleChip` silhouette path (T3), never a second geometry path and never an emoji. *Was:* „MISSING — no such screen… There is no `/train/week/jelek`".
 
-Prototype content that has no production home: `‹ Izomtérkép` back link, `IZOMTÉRKÉP / Minden izomcsoport, saját jellel`, lead `Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó.`, and the 6 region groups covering all 21 muscles (`Mell 3 izom`, `Hát 4 izom`, `Váll 3 izom`, `Kar 6 izom`, `Láb 4 izom`, `Core 1 izom`) each with its own clay silhouette.
+| Prototype | Production |
+|---|---|
+| `‹ Izomtérkép`, `IZOMTÉRKÉP`, `Minden izomcsoport, saját jellel`, lead | **identical copy**; the back pill and the head are docked INSIDE the slim `.ld-hero`, the idiom §13/§14 already carry, rather than floating above plain body text |
+| 6 region blocks · 21 clay silhouettes · `N izom` counters · 3-wide grid | **identical** (`REGION_MUSCLES`, the same source the picker/filter surfaces read) |
+| A lit cell = the muscle worked this week | present, but read off the REAL week log (`useWeekMuscleLog().details` → `workedMusclesThisWeek`) — the prototype lights a scripted fixture set. In mock mode no workout instance is persisted at all, so **nothing is lit and nothing is guessed lit** |
+| — | production-only: one honest closing line („…még egy izmod sincs naplózva — amint egy edzés lezárul, a jele kigyullad.") so an all-dark screen reads as an empty week rather than a broken one |
 
-**Severity: BLOCKER**
+**Severity: ✅ CLOSED (P2 Task 1)** — was BLOCKER.
 
 ---
 
@@ -426,7 +431,8 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 | Severity | Count | Screens |
 |---|---|---|
 | **✅ CLOSED by P1** (`mezo-e1ii9`) | 4 | §3 day page, §10 closed run, §19 ceremony, and §18's prep phase (the screen itself drops to MAJOR) |
-| **BLOCKER** (open → P2) | 4 | §11 wizard (all steps), §15 jelek, §16 Gyakorlatok, §17 exercise story |
+| **✅ CLOSED by P2** (`mezo-lf3cv`) | 1 | §15 jelek (Task 1 — the screen AND its §13 doorway) |
+| **BLOCKER** (open → P2) | 3 | §11 wizard (all steps), §16 Gyakorlatok, §17 exercise story |
 | **MAJOR** (open → P2/P3) | 8 screens + the shell | §1 Mai, §3b day EDIT route (new in P1), §5 muscle detail, §9 closed list, §12 Terhelés, §13 Izomtérkép, §14 Mozgás, §18 active workout (in-card differences) (+ §0 global shell — **out of scope, owner decision A**) |
 | **MINOR** (open → P3) | 5 | §2 Terv, §4 week, §6 library, §7 templates, §8 template story |
 

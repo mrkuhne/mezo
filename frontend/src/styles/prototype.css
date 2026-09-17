@@ -14556,6 +14556,50 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i { animation: none; transform: none; }
 }
 /* ── /train terheles titanium ─────────────────────────────────────────────── */
+
+/* ── train izomjel titanium (mezo-lf3cv, P2 Task 1) ─────────────────────────
+   A „Minden izomjel" aloldal (`TrainWeekJelekPage`) — a 21 izom régiónként,
+   mindegyik a SAJÁT clay sziluettjével. Jóváhagyott vizuális referencia:
+   docs/design_2.0/prototypes/companion-titanium/train-pages.css `.mm-*` (:154)
+   + muscles.js `muscleMapHtml` (:9).
+
+   AMIT ÁTVESZÜNK 1:1: a fej anatómiája (szemöldök · vastag sor · vezérmondat),
+   a régió-doboz (címke + `N izom` számláló a jobb szélen), a 3-oszlopos rács, a
+   cella anatómiája (40px sziluett fölött apró címke) és a `--mm-color` régiószín
+   mechanikája, amivel az AKTÍV (a héten már megdolgoztatott) cella kigyúl.
+   AMIT NEM: a prototípus beégetett fehér-alfáit — a `.ld-` szekció fenti szabálya
+   itt is áll, tehát `--surface-card`/`--text-*`/`--border-subtle` tokeneken ülünk,
+   a régiószínt pedig a lap adja be (`muscleColors` `regionColor().rail`), így a
+   világos téma sem törik el. */
+.mm { display: block; }
+.mm-head { margin-bottom: 16px; }
+.mm-head .ld-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
+.mm-head strong { display: block; font-size: 20px; font-weight: 400; margin: 5px 0 4px; color: var(--text-primary); }
+.mm-head small { display: block; font-size: 11.5px; line-height: 1.6; color: var(--text-tertiary); }
+.mm-region {
+  margin-bottom: 10px; padding: 13px 14px; border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--mm-color, var(--tag-gym)) 24%, transparent);
+  background:
+    radial-gradient(110% 80% at 90% 0%, color-mix(in srgb, var(--mm-color, var(--tag-gym)) 12%, transparent), transparent 65%),
+    var(--surface-card);
+}
+.mm-region-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mm-region-head strong { font-size: 15px; font-weight: 500; color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 72%, var(--text-primary)); }
+.mm-region-head span { font-size: 9px; letter-spacing: .12em; color: var(--text-quaternary); }
+.mm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mm-cell {
+  display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px;
+  border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--surface-recess);
+}
+.mm-cell.is-live {
+  border-color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 55%, transparent);
+  background: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 10%, var(--surface-card));
+}
+.mm-cell .muscle-chip { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5)); }
+.mm-cell small { font-size: 9px; line-height: 1.3; text-align: center; color: var(--text-tertiary); }
+.mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 70%, var(--text-primary)); }
+/* ── /train izomjel titanium ───────────────────────────────────────────────── */
+
 /* ── terv titanium (mezo-88iwa.10, T9) ─────────────────────────────────────
    The Terv tab's core pages (mesocycle landing poster, day-by-day week list,
    a day's own hero + exercise cells, and the muscle detail's "where you
