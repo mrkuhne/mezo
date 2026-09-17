@@ -1288,3 +1288,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609171040_mezo-26fw0_checkin_note_text.sql
+  - changeSet:
+      id: "1.0.0:202609180900_mezo-rj214.7_ai_message_tool_outcomes"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609180900_mezo-rj214.7_ai_message_tool_outcomes.sql

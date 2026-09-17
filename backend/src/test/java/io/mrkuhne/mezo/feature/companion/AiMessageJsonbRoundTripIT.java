@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -178,5 +179,108 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
             assertThat(item.memoryItemId()).isNull();
             assertThat(item.indicator()).isNull();
         });
+    }
+
+    /**
+     * S9.7 (mezo-rj214.7): tool_outcomes is the RESULT half of a turn's provenance, positionally
+     * parallel to tool_calls (the ask). It must round-trip independently of tool_calls because the
+     * 90-day retention scrub NULLs only this column.
+     */
+    @Test
+    void testPersist_shouldRoundTripToolOutcomes_whenReadsReturned() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-outcomes@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz kimenetekkel");
+        message.setToolOutcomes(ToolOutcomesEnvelope.ofOrNull(List.of(
+                new ToolOutcomesEnvelope.Outcome("get_recovery", "Kedd óta 7,2 óra átlag.", false),
+                new ToolOutcomesEnvelope.Outcome("get_meals", "A lekérés nem sikerült.", true))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolOutcomes().outcomes()).hasSize(2);
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).name()).isEqualTo("get_recovery");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).text()).isEqualTo("Kedd óta 7,2 óra átlag.");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).failed()).isFalse();
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).name()).isEqualTo("get_meals");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).text()).isEqualTo("A lekérés nem sikerült.");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).failed()).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+                "select jsonb_typeof(tool_outcomes) from ai_message where id = ?", String.class, id))
+                .isEqualTo("object");
+    }
+
+    @Test
+    void testPersist_shouldKeepToolOutcomesNull_whenOfOrNullGivenEmptyOrNullList() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-outcomes-empty@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        assertThat(ToolOutcomesEnvelope.ofOrNull(List.of())).isNull();
+        assertThat(ToolOutcomesEnvelope.ofOrNull(null)).isNull();
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz kimenet nélkül");
+        message.setToolOutcomes(ToolOutcomesEnvelope.ofOrNull(List.of()));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolOutcomes()).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "select tool_outcomes is null from ai_message where id = ?", Boolean.class, id))
+                .isTrue();
+    }
+
+    /**
+     * S9.7 (mezo-rj214.7): {@code why} exists only on a planned (pipeline) turn, where the planner
+     * said why it wanted this read. The 3-arg constructor is kept for the legacy shape and the
+     * ran-truth audit path — it must keep reloading with {@code why == null}.
+     */
+    @Test
+    void testPersist_shouldRoundTripToolCallWhy_whenPlannedTurnGivesAReason() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-why@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz indoklással");
+        message.setToolCalls(new ToolCallsEnvelope(List.of(
+                new ToolCallsEnvelope.ToolCall("read", "get_recovery", "days=7",
+                        "a felhasználó az alvásáról kérdezett"))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls().getFirst().why())
+                .isEqualTo("a felhasználó az alvásáról kérdezett");
+    }
+
+    @Test
+    void testPersist_shouldRoundTripToolCallWhyAsNull_whenWrittenThroughLegacyThreeArgConstructor() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-why-legacy@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz indoklás nélkül");
+        message.setToolCalls(new ToolCallsEnvelope(List.of(
+                new ToolCallsEnvelope.ToolCall("read", "get_weight_trend", "weeks=2"))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls().getFirst().why()).isNull();
     }
 }

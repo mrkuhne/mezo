@@ -67,6 +67,12 @@ public class AiMessageEntity extends OwnedEntity {
     @Column(name = "recalled_memories", columnDefinition = "jsonb")
     private RecalledMemoriesEnvelope recalledMemories;
 
+    /** S9.7: what each planned read returned — NULLed by the retention scrub after 90 days,
+     *  while {@link #toolCalls} (the ask) is kept forever. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tool_outcomes", columnDefinition = "jsonb")
+    private ToolOutcomesEnvelope toolOutcomes;
+
     /** V1.3: true when the advisor chain rejected the answer even after the corrective retry. */
     @Column(nullable = false)
     private boolean degraded;

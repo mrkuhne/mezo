@@ -10,6 +10,12 @@ import java.util.List;
  */
 public record ToolCallsEnvelope(List<ToolCall> calls) {
 
-    public record ToolCall(String type, String name, String args) {
+    public record ToolCall(String type, String name, String args, String why) {
+
+        /** Legacy JSON and the ran-truth audit path keep the pre-S9.7 shape; {@code why} exists
+         *  only on a planned (pipeline) turn, where the planner said why it wanted this read. */
+        public ToolCall(String type, String name, String args) {
+            this(type, name, args, null);
+        }
     }
 }
