@@ -11,7 +11,8 @@ survives from Titanium; everything functional does.
 
 Re-dress the current codebase (forward-fix), never revert it. The pre-Titanium tree is a
 *reference* for the old look, not a restore target. Execution is stepwise: one feature area
-per bd issue/branch through the normal self-PR CI gate, so the app is shippable after every
+per bd issue/branch through the house merge flow ("no-wait, net stays", AGENTS.md §Git
+Workflow), so the app is shippable after every
 step; a temporarily mixed look is accepted by the owner.
 
 ### Keep-list (functional, must survive untouched in behavior)
@@ -107,8 +108,8 @@ independent after their deps — parallelizable across sessions if desired.
 A project skill (slash command) `visszaoltoztetes` under `.claude/skills/`, created in the
 writing-plans step. On invocation it: reads this spec + the style bible, runs `bd ready`
 scoped to the epic, claims the next unblocked child, loads that bead's stored instructions,
-executes through the standard gates (worktree, focused tests both FE modes, self-PR, premerge,
-`--no-ff` merge, CODEMAP regen, beads backup), closes the bead, and reports what is next.
+executes through the standard gates (worktree, focused tests both FE modes, `--no-ff` merge
+to main per the no-wait flow, CODEMAP regen, beads backup), closes the bead, and reports what is next.
 Every bead's description must be self-contained (paths, checklist pointer, style-bible
 pointer) so a fresh session needs no prior context.
 
@@ -130,8 +131,8 @@ pointer) so a fresh session needs no prior context.
 ## Testing
 
 Per task: focused FE tests both modes + affected layout specs (`frontend/tests/layout`) +
-`verify`-skill runtime pass + reverse parity checklist. CI (self-PR) is the authoritative
-full gate; `premerge.yml` re-check before every merge.
+`verify`-skill runtime pass + reverse parity checklist. CI on main-push is the post-merge safety net ("no-wait, net stays"); a red main is fixed
+before any new work.
 
 ## Prior art
 
