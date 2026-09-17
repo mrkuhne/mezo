@@ -4,7 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
-import type { ExerciseRecordResponse } from '@/data/train/trainApi'
+import type { E1rmPoint, ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
@@ -1018,6 +1018,39 @@ export const workout: WorkoutPlan = {
 // reps-only sets, no bestE1rm/bestSessionVolume, totalVolume 0) to exercise that render
 // path; the other four carry full weighted data, Chest Supported Row's bestE1rm included
 // per the Task 5 brief.
+//
+// `e1rmSeries` (mezo-lf3cv) is the story curve's solid line. Chest Supported Row carries a
+// FULL 52-point series — the wire's cap — so the curve is exercised at maximum length; Lat
+// Pulldown carries gaps (skipped weeks) so the "no data ≠ zero" branch has something to draw;
+// Face Pull carries none at all (bodyweight: nothing is ever e1RM-eligible).
+/**
+ * A plausible weekly e1RM progression for the record fixtures (mezo-lf3cv): `weeks` slots ending
+ * on `endIso`, ONE POINT PER SESSION, oldest first, drifting up from `start` by `gainPerWeek`
+ * with a small wobble. Week indices listed in `gaps` are OMITTED entirely — a session where
+ * nothing was e1RM-eligible is a gap on the wire, never a zero, and the curve must be fed the
+ * real thing. Hand-built like the rest of this fixture: nothing derives it from the mock sets.
+ */
+const weeklyE1rm = (
+  weeks: number,
+  endIso: string,
+  start: number,
+  gainPerWeek: number,
+  gaps: number[] = [],
+): E1rmPoint[] => {
+  const wobble = [0, 0.8, -0.6, 1.2, -0.3]
+  const points: E1rmPoint[] = []
+  for (let i = 0; i < weeks; i++) {
+    if (gaps.includes(i)) continue
+    const d = new Date(`${endIso}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() - (weeks - 1 - i) * 7)
+    points.push({
+      date: d.toISOString().slice(0, 10),
+      e1rm: Math.round((start + i * gainPerWeek + wobble[i % wobble.length]) * 10) / 10,
+    })
+  }
+  return points
+}
+
 export const exerciseRecordsMock: ExerciseRecordResponse[] = [
   {
     name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -1031,6 +1064,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 100, reps: 12, date: '2026-07-01' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(52, '2026-08-26', 117, 0.43), // the 52-point cap, no gaps
   },
   {
     name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
@@ -1044,6 +1078,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 70, reps: 14, date: '2026-06-24' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(20, '2026-08-05', 87.5, 0.65, [6, 13]), // two sessions are gaps
   },
   {
     name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation',
@@ -1057,6 +1092,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 20, reps: 18, date: '2026-06-10' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(9, '2026-08-19', 27.5, 0.7),
   },
   {
     name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
@@ -1070,6 +1106,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 16, reps: 14, date: '2026-06-15' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(12, '2026-07-29', 20.8, 0.45),
   },
   {
     // Bodyweight-style demo row (mezo-88iwa.7 Task 5): no weightKg anywhere — reps-only
