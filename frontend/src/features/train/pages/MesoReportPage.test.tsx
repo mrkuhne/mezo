@@ -106,7 +106,8 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     const ctx = within(ai).getByTestId('meso-report-context')
     expect(ctx).toBeInTheDocument()
     const rows = within(ctx).getAllByTestId('context-row')
-    expect(rows).toHaveLength(6)
+    // Six shared CONTEXT_METRICS + the two report-local counts the fix wave rehomed.
+    expect(rows).toHaveLength(8)
     // meso-rec-03's fixture totals: sleepAvgH 7.4, kcalAvg 2429, energyAvg 6.5,
     // stressAvg 4.8, weightChangeKg -1.1, sportMinutes 760 — all six measured.
     expect(within(ctx).getByText(/Átlagos alvásidő/)).toBeInTheDocument()
@@ -121,6 +122,14 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(within(ctx).getByText('-1,1 kg')).toBeInTheDocument()
     expect(within(ctx).getByText(/Sportra fordított idő/)).toBeInTheDocument()
     expect(within(ctx).getByText('760 perc')).toBeInTheDocument()
+    // Fix wave (mezo-e1ii9): sportSessions/runSessions had NO renderer app-wide while the
+    // backend kept shipping them — they are two more rows in this same block now.
+    expect(within(ctx).getByText(/Sportalkalmak száma/)).toBeInTheDocument()
+    expect(within(ctx).getByText('15 alkalom')).toBeInTheDocument()
+    expect(within(ctx).getByText(/Futások száma/)).toBeInTheDocument()
+    expect(within(ctx).getByText('9 futás')).toBeInTheDocument()
+    // …and kcalTargetAvg finally gives the kcal average something to sit against.
+    expect(within(ctx).getByTestId('context-row-note').textContent).toMatch(/A cél .* kcal volt — .* a célhoz képest\./)
     // no emoji pills, no table, no MEV/MAV/MRV jargon — those stay retired
     expect(document.body.textContent).not.toMatch(/[\u{1F634}\u{1F37D}\u{26A1}\u{1F630}\u{2696}\u{1F3D0}\u{1F3C3}]/u)
     expect(document.querySelector('table')).toBeNull()
@@ -500,7 +509,7 @@ describe('MesoReportPage (real mode · run-window context fold-in, fix round 1)'
     const ai = await screen.findByTestId('meso-report-ai')
     const ctx = within(ai).getByTestId('meso-report-context')
     const rows = within(ctx).getAllByTestId('context-row')
-    expect(rows).toHaveLength(6)
+    expect(rows).toHaveLength(8)
 
     const energyRow = rows.find((r) => within(r).queryByText(/Energiaszint/))!
     expect(within(energyRow).getByText('–')).toBeInTheDocument()
@@ -511,6 +520,46 @@ describe('MesoReportPage (real mode · run-window context fold-in, fix round 1)'
     expect(within(ctx).getByText('5,2')).toBeInTheDocument()
     expect(within(ctx).getByText('-0,8 kg')).toBeInTheDocument()
     expect(within(ctx).getByText('340 perc')).toBeInTheDocument()
+    expect(within(ctx).getByText('6 alkalom')).toBeInTheDocument()
+    expect(within(ctx).getByText('3 futás')).toBeInTheDocument()
+    // This fixture's `weeks` is empty, so there is NO target to compare the kcal average
+    // against — and the comparison line must simply not exist rather than invent one.
+    expect(within(ctx).queryByTestId('context-row-note')).toBeNull()
+  })
+
+  it('the two rehomed counts show an em dash when the run never had them, and the kcal target rides the weeks', async () => {
+    const base = baseReport()
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () =>
+        HttpResponse.json({
+          ...base,
+          context: {
+            // Two weeks WITH a target (2400/2600 ⇒ mean 2500, i.e. exactly the intake) and one
+            // without — the mean must ignore the week that has none rather than count it as 0.
+            weeks: [
+              { week: 1, kcalTargetAvg: 2400 },
+              { week: 2, kcalTargetAvg: 2600 },
+              { week: 3, kcalTargetAvg: null },
+            ],
+            totals: { ...base.context!.totals, sportSessions: null, runSessions: null },
+          },
+        }),
+      ),
+    )
+    renderAt(ID)
+
+    const ai = await screen.findByTestId('meso-report-ai')
+    const ctx = within(ai).getByTestId('meso-report-context')
+    const rows = within(ctx).getAllByTestId('context-row')
+    const sportRow = rows.find((r) => within(r).queryByText(/Sportalkalmak száma/))!
+    const runRow = rows.find((r) => within(r).queryByText(/Futások száma/))!
+    expect(within(sportRow).getByText('–')).toBeInTheDocument()
+    expect(within(runRow).getByText('–')).toBeInTheDocument()
+    expect(within(sportRow).queryByText('0')).toBeNull()
+    expect(within(runRow).queryByText('0')).toBeNull()
+    // 2500 kcal intake against a 2500 kcal mean target — the honest wording for a dead heat.
+    expect(within(ctx).getByTestId('context-row-note').textContent)
+      .toBe('A cél 2500 kcal volt — pont annyi, a célhoz képest.')
   })
 
   it('still folds the context rows in when the AI evaluation itself is off — no feature dies silently', async () => {

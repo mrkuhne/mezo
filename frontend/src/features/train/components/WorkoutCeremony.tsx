@@ -11,7 +11,9 @@
 //     the sr-only star heading, the verdict, the honest stat tiles (percs + XP), the records
 //     strip, the pending-sets line, and exactly ONE way on: `Részletek`.
 //   Step 2 `.cer-details-screen` — `Izomcsoportok fejlődése a mai edzésen` (the per-muscle
-//     rows with mini-stars and the zone track), the kcal tile, the closing note, the close
+//     rows, each with its mini-stars and its OWN done/plan fill bar — `ZoneTrack` and the
+//     weekly zone it drew are gone from the app entirely, this bar is the row's completion
+//     share and nothing else), the kcal tile, the closing note, the close
 //     CTA, `Vissza az értékeléshez` back to step 1, and the star footnote.
 //
 // Fills and counters are FRAME-driven (a throttled/hidden webview freezes a just-started CSS

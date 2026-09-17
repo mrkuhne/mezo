@@ -13665,6 +13665,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-radius: 12px; background: #ffffff05;
 }
 .wo-overload-title { font-size: 12px; font-weight: 700; color: #e6ead9; }
+/* The clay growth glyph that replaced the ⚡ emoji (mezo-e1ii9 fix wave) — inline with the
+   words, baseline-nudged so it reads as part of the sentence, not as an icon slot. */
+.wo-overload-icon { vertical-align: -2px; margin-right: 5px; }
 .wo-overload-why { font-size: 10.5px; line-height: 1.4; color: #ffffff6b; }
 /* The same strip carries the failed-start alert + its retry (mezo-e1ii9 fix round 1). */
 .wo-overload[role="alert"] { border-left-color: #e08a7d; }

@@ -1198,6 +1198,16 @@ test('real mode: a failed start blocks logging, says so, and a successful retry 
   expect(calls.some((c) => c.startsWith('set:'))).toBe(false)
   expect(doneRowsOf(EX1)).toHaveLength(0)
 
+  // …and neither may the CLOSE (fix wave, mezo-e1ii9): `finishWorkout(workoutId ?? 'mock')`
+  // used to POST /api/train/workouts/mock/finish in real mode and raise the ceremony over a
+  // session the server never had. The CTA is dead, the alert says so, no finish is POSTed.
+  expect(alert.textContent).toContain('lezárni sem tudjuk')
+  const finishCta = document.querySelector('.wo-finish') as HTMLButtonElement
+  expect(finishCta).toBeDisabled()
+  await user.click(finishCta)
+  expect(calls.some((c) => c.startsWith('finish:'))).toBe(false)
+  expect(document.querySelector('.cer-screen')).toBeNull()
+
   // The retry binds a real id and the list comes back to life.
   startShouldFail = false
   await user.click(screen.getByRole('button', { name: 'Újra' }))

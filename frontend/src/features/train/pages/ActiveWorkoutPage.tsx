@@ -11,8 +11,10 @@
 //             the challenges moved into the header ⋯ menu's Küldetések glass.
 //             Per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
-//   summary → the post-finish two-act closing ceremony (WorkoutCeremony): stars +
-//             counters + stats + records + challenge outcomes + muscles + kcal
+//   summary → the post-finish two-step closing ceremony (WorkoutCeremony): stars +
+//             counters + stats + records, then muscles + kcal. NO challenge outcomes —
+//             the küldetés rows left the ceremony in T-P1 Task 3 (their home is the
+//             review page's `Kihívások` strip and the header ⋯ menu's Küldetések glass).
 //   complete→ the SAME ceremony read back settled (no pass) + the pending-sets note
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
@@ -638,6 +640,11 @@ function ActiveWorkoutSession({
   // T7 (mezo-88iwa.8): EVERY success path lands on 'summary' — the two-act closing
   // ceremony IS the close moment, so the zero-pending shortcut goes there too.
   const finishAndCelebrate = () => {
+    // The same block the log path takes (fix wave, mezo-e1ii9). Without it a failed start
+    // still closed the workout: `finishWorkout(workoutId ?? 'mock')` POSTed
+    // /api/train/workouts/mock/finish in REAL mode, and the ceremony celebrated a session
+    // the server never had. A close with nowhere to go must not look closed.
+    if (logBlocked) return
     setFinishPending(true)
     setPendingAtClose(pendingSetCount(session))
     finishWorkout(workoutId ?? 'mock', {
@@ -1108,7 +1115,8 @@ function ActiveWorkoutSession({
             <div className="wo-overload" role="alert">
               <span className="wo-overload-title">Nem sikerült elindítani az edzést</span>
               <span className="wo-overload-why">
-                A szerver nem vette fel a mai edzést, ezért most nem tudunk szettet menteni. Próbáld újra.
+                A szerver nem vette fel a mai edzést, ezért most nem tudunk szettet menteni, és
+                lezárni sem tudjuk. Próbáld újra.
               </span>
               <button
                 type="button"
@@ -1153,7 +1161,7 @@ function ActiveWorkoutSession({
               finishCta): `skip` when nothing is logged, `partial` (gold) while sets remain
               unticked, `full` (green) once every non-skipped exercise is done. Replaces
               Task 4's temporary plain button. */}
-          <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap}>
+          <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap} disabled={logBlocked}>
             <span className="wo-finish-glow" aria-hidden="true" />
             <span className="wo-finish-art">
               <Icon name={finishState === 'skip' ? 'x' : finishState === 'full' ? 'check' : 'sparkle'} size={finishState === 'skip' ? 30 : 34} />
@@ -1178,7 +1186,7 @@ function ActiveWorkoutSession({
         onExtend={() => rest.extend(30)}
         onSkipRest={rest.skip}
         onFinish={handleFinishTap}
-        finishDisabled={doneSets === 0}
+        finishDisabled={doneSets === 0 || logBlocked}
       />
 
       <FinishConfirmGlass

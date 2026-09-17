@@ -40,9 +40,15 @@
 // surface for data that already has a first one: the `HETI SZETTEK · A BLOKK ÍVE`
 // chart with its MEV/MAV/MRV/Deload legend (the muscle-journey card below states
 // the same arc in plain words — start → peak / ceiling), the `ÉLETMÓD-KONTEXTUS`
-// emoji totals row and its W1–W8 spreadsheet (every metric in it has its own home:
-// the run-window averages on MesoComparePage via `contextDiff`, the daily readings
-// on the Me/Fuel surfaces). The AI evaluation is NOT a leftover — it is a real
+// emoji totals row and its W1–W8 spreadsheet. NOT every metric in them was rehomed,
+// and saying otherwise was the fix wave's own finding: the run-window TOTALS live on
+// (in the collapsed block below, and on MesoComparePage via `contextDiff`), the daily
+// readings live on the Me/Fuel surfaces — but the PER-WEEK granularity (`context.weeks[]`)
+// and `gymRpeAvg` have no renderer anywhere in the app any more. Both are deliberate
+// deaths, not oversights: the prototype's closed-run story has no week-by-week view.
+// The backend still computes and ships them, so a later slice can surface them without
+// touching the server — recorded in docs/features/train.md §9 and in the parity matrix.
+// The AI evaluation is NOT a leftover — it is a real
 // backend feature with no prototype counterpart — so it kept its place as a quiet,
 // collapsed `details` at the foot of the story, labelled for what it is: an
 // estimate written by the program, not a measurement.
@@ -57,6 +63,15 @@
 // the MEV/MAV/MRV block stays retired. A metric the run never measured renders '–', never
 // a fabricated 0, and an averaged/summed figure says so in words rather than posing as a
 // single measurement.
+//
+// Fix wave (mezo-e1ii9): the block grew the three totals the shared six left stranded.
+// `sportSessions` + `runSessions` are plain run-window counts exactly like the six, so they
+// render as two more rows (`REPORT_ONLY_ROWS`, report-local — `CONTEXT_METRICS` is the
+// compare page's contract and widening it would silently add two columns there). And the
+// Kcal row finally has something to sit against: `kcalTargetMean` averages the weeks' own
+// `kcalTargetAvg` (the totals carry no target) and `kcalTargetNote` turns it into one
+// sentence — rendered ONLY when both the measured average AND a real target exist, because
+// a fabricated target would read as a verdict about the owner's eating.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -204,6 +219,9 @@ export interface ContextRow {
   descriptor: string
   /** '–' when this run never measured the metric — the honesty rule, never a fabricated 0. */
   value: string
+  /** An optional second line under the descriptor — today only the kcal row's
+   *  target comparison. Absent unless BOTH numbers it compares actually exist. */
+  note?: string
 }
 
 /**
@@ -212,6 +230,11 @@ export interface ContextRow {
  * exist. Each row spells out in words whether the number is an average over the run's days
  * or a total across it — `contextDiff` only ever shows two runs side by side, so it never
  * had to say this out loud; a lone run's row does.
+ *
+ * A metric NOT listed here is SKIPPED, not crashed on (fix wave, mezo-e1ii9): `CONTEXT_METRICS`
+ * is the compare page's list, and a seventh field added there for THAT surface must never take
+ * this one down — a report is a frozen artefact, and a blank screen is the worst possible way
+ * to learn a new metric exists.
  */
 const CONTEXT_ROW_COPY: Record<string, { descriptor: string; render: (n: number) => string }> = {
   Alvás: { descriptor: 'Átlagos alvásidő éjszakánként', render: (n) => `${fmt(n)} óra` },
@@ -222,13 +245,73 @@ const CONTEXT_ROW_COPY: Record<string, { descriptor: string; render: (n: number)
   Sport: { descriptor: 'Sportra fordított idő összesen a futam alatt', render: (n) => `${fmt(n)} perc` },
 }
 
+/**
+ * The two run-window COUNTS the compare page's six metrics leave out (fix wave, mezo-e1ii9).
+ * `sportSessions`/`runSessions` sit on `MesoContextTotals` exactly like the six above — plain
+ * totals over the same window — and until this round they had no renderer anywhere in the app
+ * while the backend kept shipping them. They live HERE rather than in the shared
+ * `CONTEXT_METRICS` because that list is the compare page's contract; widening it would add two
+ * columns to a surface nobody asked to change.
+ */
+const REPORT_ONLY_ROWS: { key: string; descriptor: string; pick: (t: MesoContextTotals) => number | null; render: (n: number) => string }[] = [
+  {
+    key: 'Sportalkalom',
+    descriptor: 'Sportalkalmak száma összesen a futam alatt',
+    pick: (t) => t.sportSessions ?? null,
+    render: (n) => `${fmt(n)} alkalom`,
+  },
+  {
+    key: 'Futás',
+    descriptor: 'Futások száma összesen a futam alatt',
+    pick: (t) => t.runSessions ?? null,
+    render: (n) => `${fmt(n)} futás`,
+  },
+]
+
+/**
+ * The run's average kcal TARGET — the number the average intake above has to sit against.
+ * `MesoContextTotals` carries no target of its own, so the only honest source is the mean of
+ * the weeks' own `kcalTargetAvg` over the weeks that actually HAD one. No such week ⇒ null,
+ * and the comparison line simply does not render: a fabricated target would turn a missing
+ * plan into a verdict about the owner's eating.
+ */
+export function kcalTargetMean(weeks: { kcalTargetAvg?: number | null }[]): number | null {
+  const vals = weeks.map((w) => w.kcalTargetAvg).filter((v): v is number => v != null)
+  return vals.length === 0 ? null : vals.reduce((a, b) => a + b, 0) / vals.length
+}
+
+/**
+ * The kcal row's comparison sentence, or null. Needs BOTH the measured average AND a target;
+ * either one missing means there is nothing to compare, and the row stays a bare average.
+ */
+export function kcalTargetNote(kcalAvg: number | null, target: number | null): string | null {
+  if (kcalAvg == null || target == null) return null
+  const diff = Math.round(kcalAvg) - Math.round(target)
+  const tail = diff === 0 ? 'pont annyi, a célhoz képest' : `${signed(diff)} kcal a célhoz képest`
+  return `A cél ${fmt(Math.round(target))} kcal volt — ${tail}.`
+}
+
 /** The plain-language context rows for a closed run's OWN report — absent metrics stay '–'. */
-function contextRows(totals: MesoContextTotals): ContextRow[] {
-  return CONTEXT_METRICS.map((m) => {
+function contextRows(totals: MesoContextTotals, weeks: { kcalTargetAvg?: number | null }[]): ContextRow[] {
+  const target = kcalTargetMean(weeks)
+  const shared = CONTEXT_METRICS.flatMap((m) => {
     const copy = CONTEXT_ROW_COPY[m.label]
+    // An unknown metric is skipped, never crashed on — see CONTEXT_ROW_COPY's note.
+    if (!copy) return []
     const raw = m.pick(totals)
-    return { key: m.label, descriptor: copy.descriptor, value: raw == null ? '–' : copy.render(raw) }
+    const note = m.label === 'Kcal' ? kcalTargetNote(raw, target) : null
+    return [{
+      key: m.label,
+      descriptor: copy.descriptor,
+      value: raw == null ? '–' : copy.render(raw),
+      ...(note ? { note } : {}),
+    }]
   })
+  const extras = REPORT_ONLY_ROWS.map((r) => {
+    const raw = r.pick(totals)
+    return { key: r.key, descriptor: r.descriptor, value: raw == null ? '–' : r.render(raw) }
+  })
+  return [...shared, ...extras]
 }
 
 export function MesoReportPage() {
@@ -280,7 +363,7 @@ export function MesoReportPage() {
   const versusScale = Math.max(1, ...pairs.map((p) => Math.max(p.then, p.now)))
   // The run-window lifestyle rows (fix round, mezo-e1ii9) — absent only when the report
   // itself carries no context at all (async aggregation never ran, or the run predates it).
-  const ctxRows = report?.context ? contextRows(report.context.totals) : []
+  const ctxRows = report?.context ? contextRows(report.context.totals, report.context.weeks ?? []) : []
 
   return (
     <MozaikPage tone="gold">
@@ -618,7 +701,16 @@ export function MesoReportPage() {
                         style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}
                         data-testid="context-row"
                       >
-                        <span className="text-secondary" style={{ fontSize: 12.5, lineHeight: 1.4 }}>{r.descriptor}</span>
+                        <span className="col" style={{ gap: 1, minWidth: 0 }}>
+                          <span className="text-secondary" style={{ fontSize: 12.5, lineHeight: 1.4 }}>{r.descriptor}</span>
+                          {/* The kcal row's target comparison — present ONLY when the run had
+                              both a measured average and a real target (fix wave, mezo-e1ii9). */}
+                          {r.note && (
+                            <span style={{ fontSize: 11, lineHeight: 1.4, color: 'var(--text-tertiary)' }} data-testid="context-row-note">
+                              {r.note}
+                            </span>
+                          )}
+                        </span>
                         <span className="label-mono" style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
                           {r.value}
                         </span>
