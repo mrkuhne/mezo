@@ -7,11 +7,15 @@ import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
+import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -34,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -106,6 +111,7 @@ public class WeeklyReviewGenerator {
     private final GraphNodeRepository graphNodeRepository;
     private final MemoirRepository memoirRepository;
     private final PredictionRepository predictionRepository;
+    private final DailySummaryRepository dailySummaryRepository;
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
@@ -115,6 +121,9 @@ public class WeeklyReviewGenerator {
     /** mezo-1gim.11 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S8 (mezo-eq85.8): same lazy idiom as {@link #characterPromptSource} —
+     *  see {@code MemoirGenerator#memoryContextBlock}'s javadoc for the rationale. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -247,6 +256,21 @@ public class WeeklyReviewGenerator {
         // anchor candidates — see the section below and WeeklyReviewContextSources' javadoc.
         payload.append(contextSources.render(userId, weekStart, weekEnd, since, until));
 
+        // Memória mindenhol S8 (mezo-eq85.8): the week's own narratives ARE the query — same
+        // idiom as MemoirGenerator's memory query, over this generator's own daily-summary read
+        // (this class had no DailySummaryRepository dependency before this).
+        List<DailySummaryEntity> weekSummaries = dailySummaryRepository
+                .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(userId, weekStart)
+                .stream()
+                .filter(s -> !s.getSummaryDate().isAfter(weekEnd))
+                .toList();
+        String memoryQuery = firstChars(weekSummaries.stream()
+                .map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
+                + "\na hét: " + weekStart;
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, weekEnd, memoryQuery, "weekly_review", null);
+        payload.append(mem.block());
+        candidates.addAll(memoryHighlightCandidates(mem));
+
         payload.append("\nHORGONY-JELÖLTEK (az anchorIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             payload.append(i).append(": [").append(candidates.get(i).kind()).append("] ")
@@ -260,6 +284,49 @@ public class WeeklyReviewGenerator {
     private String characterBlock(UUID userId) {
         CharacterPromptSource source = characterPromptSource.getIfAvailable();
         return source == null ? "" : source.render(userId);
+    }
+
+    /**
+     * Memória mindenhol S8 (mezo-eq85.8): the {@code [Hosszú távú memória]} block for the review's
+     * OWN week — same {@code WEEKLY_MEMOIR}/{@code deep=true} contract as {@code MemoirGenerator};
+     * see that class' {@code memoryBlock} javadoc for the fail-open rationale.
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate asOf, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
+                "proactive_feed", operation, entityId);
+    }
+
+    /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' three-component {@link
+     *  Highlight} shape. {@code refId} is a {@link UUID}; a ref whose {@code id()} is not a valid
+     *  UUID is SKIPPED rather than throwing (mezo-eq85.8, task-8 codebase notes) — an
+     *  unparseable id would break the {@code refId} contract every other highlight satisfies, and
+     *  losing one candidate costs far less than a broken week. */
+    private static List<Highlight> memoryHighlightCandidates(MemoryContextBlock.Rendered mem) {
+        List<Highlight> highlights = new ArrayList<>();
+        for (var ref : mem.refs()) {
+            UUID refId;
+            try {
+                refId = UUID.fromString(ref.id());
+            } catch (IllegalArgumentException | NullPointerException e) {
+                continue;
+            }
+            highlights.add(new Highlight(ref.kind(), ref.label(), refId));
+        }
+        return highlights;
+    }
+
+    /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string
+     *  when it is shorter — the memory-query truncation every Part-B surface uses. */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 
     private static boolean hasLoggedData(MeWeekDay day) {

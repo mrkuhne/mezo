@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -138,6 +141,13 @@ public class MemoirGenerator {
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S8 (mezo-eq85.8): same lazy idiom as {@link #characterPromptSource} — the
+     *  memory-platform beans are {@code COMPANION_SWITCH}-gated, and while this generator itself
+     *  already requires that switch (its class-level {@code @ConditionalOnProperty}), the
+     *  {@code ObjectProvider} indirection is kept for defensive symmetry with the Task-7 idiom.
+     *  Absent ⇒ the memoir ships exactly as it did pre-S8, with no {@code [Hosszú távú memória]}
+     *  block and no extra anchor candidates. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     public record MemoirGather(String payload, List<MemoirAnchorsEnvelope.Anchor> candidates) {
     }
@@ -260,6 +270,16 @@ public class MemoirGenerator {
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append(characterBlock(userId));
         payload.append(growthDigestBlock.render(userId, weekStart));
+        // Memória mindenhol S8 (mezo-eq85.8): the week's own narratives ARE the query — the
+        // memoir is a consolidation of exactly this week, so what it retrieves should be memories
+        // that resonate with what actually happened, not a re-derivation of the week from scratch.
+        String memoryQuery = firstChars(
+                week.stream().map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
+                + "\na hét: " + weekStart;
+        MemoryContextBlock.Rendered mem =
+                memoryBlock(userId, weekEnd, memoryQuery, "memoir", null);
+        payload.append(mem.block());
+        candidates.addAll(memoryAnchorCandidates(mem));
         payload.append("\nHORGONY-JELÖLTEK (az anchors indexei ezekre mutatnak):\n");
         for (int i = 0; i < candidates.size(); i++) {
             payload.append(i).append(": [").append(candidates.get(i).kind()).append("] ")
@@ -273,6 +293,43 @@ public class MemoirGenerator {
     private String characterBlock(UUID userId) {
         CharacterPromptSource source = characterPromptSource.getIfAvailable();
         return source == null ? "" : source.render(userId);
+    }
+
+    /**
+     * Memória mindenhol S8 (mezo-eq85.8): the {@code [Hosszú távú memória]} block for the memoir's
+     * OWN week, or {@link MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code
+     * WEEKLY_MEMOIR} policy is disabled, or retrieval fails — {@link MemoryContextBlock#render} is
+     * itself fail-open, so no try/catch is needed here. {@code deep = true}: {@code WEEKLY_MEMOIR}
+     * is configured for the deeper, offline-shaped variant (no one is waiting synchronously on a
+     * chat turn).
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate asOf, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
+                "proactive_feed", operation, entityId);
+    }
+
+    /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' two-component {@link
+     *  MemoirAnchorsEnvelope.Anchor} shape — the numbered candidate list is label-only, so the
+     *  memory ref's id is dropped, only its kind and label survive (the
+     *  {@code CompanionMessageGenerator#memoryRefCandidates} precedent). */
+    private static List<MemoirAnchorsEnvelope.Anchor> memoryAnchorCandidates(MemoryContextBlock.Rendered mem) {
+        return mem.refs().stream()
+                .map(ref -> new MemoirAnchorsEnvelope.Anchor(ref.kind(), ref.label()))
+                .toList();
+    }
+
+    /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string
+     *  when it is shorter — the memory-query truncation every Part-B surface uses. */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 
     private ParsedMemoir parse(String answer) {
