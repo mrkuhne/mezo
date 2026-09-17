@@ -70,6 +70,12 @@ public class WeeklySuggestionGenerator {
      *  rendered block text. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
+    /** mezo-eq85.8 fix round 1: this generator's own LLM-call feature (the {@code
+     *  LlmCallContext} in {@link #generate}) — the memory-retrieval audit row MUST bill under
+     *  this same feature, or "what did the weekly suggestion cost" can't be answered by grouping
+     *  on feature. */
+    private static final String MEMORY_FEATURE = "proactive_weekly";
+
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
     @Transactional
     public WeeklySuggestionEntity generate(UUID userId, LocalDate weekStart) {
@@ -83,6 +89,7 @@ public class WeeklySuggestionGenerator {
             log.debug("No prior-week summaries for {} before {} — no suggestion", userId, weekStart);
             return null;
         }
+        // mezo-eq85.8 fix round 1: MEMORY_FEATURE above MUST equal this literal — see its javadoc.
         String prose = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_weekly", "generate", null, null),
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
@@ -119,7 +126,7 @@ public class WeeklySuggestionGenerator {
                 .map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
                 + "\na hét: " + weekStart;
         MemoryContextBlock.Rendered mem =
-                memoryBlock(userId, weekStart.plusDays(6), memoryQuery, "weekly_suggestion", null);
+                memoryBlock(userId, weekStart.plusDays(6), memoryQuery, "generate", null);
         String patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
@@ -150,7 +157,7 @@ public class WeeklySuggestionGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                "proactive_feed", operation, entityId);
+                MEMORY_FEATURE, operation, entityId);
     }
 
     /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string

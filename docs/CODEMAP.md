@@ -1149,11 +1149,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`, `GraphPopulator`,
     `HabitPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
-    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`,
-    `MemoryItemPopulator`, `MentionPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`,
-    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
-    `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`,
-    `WeeklySuggestionPopulator`, `WeightLogPopulator`
+    `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
+    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+    `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`,
+    `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
+    `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### progression
 

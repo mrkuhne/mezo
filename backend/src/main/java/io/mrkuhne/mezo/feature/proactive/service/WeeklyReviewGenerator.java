@@ -125,6 +125,12 @@ public class WeeklyReviewGenerator {
      *  see {@code MemoirGenerator#memoryContextBlock}'s javadoc for the rationale. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
+    /** mezo-eq85.8 fix round 1: this generator's own LLM-call feature (the
+     *  {@code LlmCallContext} in {@link #generate}) — the memory-retrieval audit row MUST bill
+     *  under this same feature, or "what did the weekly review cost" can't be answered by
+     *  grouping on feature. */
+    private static final String MEMORY_FEATURE = "proactive_weekly_review";
+
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
 
@@ -150,6 +156,7 @@ public class WeeklyReviewGenerator {
             log.debug("No logged data in week {} for {} — no weekly review", weekStart, userId);
             return null;
         }
+        // mezo-eq85.8 fix round 1: MEMORY_FEATURE below MUST equal this literal — see its javadoc.
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_weekly_review", "generate", null, null),
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
@@ -267,7 +274,7 @@ public class WeeklyReviewGenerator {
         String memoryQuery = firstChars(weekSummaries.stream()
                 .map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
                 + "\na hét: " + weekStart;
-        MemoryContextBlock.Rendered mem = memoryBlock(userId, weekEnd, memoryQuery, "weekly_review", null);
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, weekEnd, memoryQuery, "generate", null);
         payload.append(mem.block());
         candidates.addAll(memoryHighlightCandidates(mem));
 
@@ -298,7 +305,7 @@ public class WeeklyReviewGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                "proactive_feed", operation, entityId);
+                MEMORY_FEATURE, operation, entityId);
     }
 
     /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' three-component {@link

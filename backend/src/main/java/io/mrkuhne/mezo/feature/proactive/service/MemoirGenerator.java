@@ -123,6 +123,11 @@ public class MemoirGenerator {
     private static final DateTimeFormatter MEMORY_DAY_FORMAT =
             DateTimeFormatter.ofPattern("MMM d., EEEE", Locale.of("hu", "HU"));
 
+    /** mezo-eq85.8 fix round 1: the memoir's own LLM-call feature (the {@code LlmCallContext}
+     *  above in {@link #generate}) — the memory-retrieval audit row MUST bill under this same
+     *  feature, or "what did the memoir cost" can't be answered by grouping on feature. */
+    private static final String MEMORY_FEATURE = "proactive_memoir";
+
     private final MemoirRepository memoirRepository;
     private final DailySummaryRepository dailySummaryRepository;
     private final PatternRepository patternRepository;
@@ -173,6 +178,17 @@ public class MemoirGenerator {
             log.debug("No summaries in week {} for {} — no memoir", weekStart, userId);
             return null;
         }
+        // mezo-eq85.8: MEMORY_FEATURE MUST equal this literal, and the reason is load-bearing
+        // rather than cosmetic. "proactive_memoir" is on mezo.llm-log.budget.throttled-features
+        // (application.yml), so a throttled account has this surface's retrieval suspended along
+        // with the surface itself. Passing Task 7's "proactive_feed" here — which is NOT on that
+        // list — would let the memory block render straight through that safety valve. The grouping
+        // argument ("what did the memoir cost") is the weaker, secondary reason.
+        //
+        // Not covered by a test, deliberately: the effect cannot be observed end-to-end, because
+        // throttling this feature also refuses the call below, two lines later, so generate() never
+        // returns a memoir to inspect. A test that appears to prove it would be proving something
+        // else.
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_memoir", "generate", null, null),
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
@@ -277,7 +293,7 @@ public class MemoirGenerator {
                 week.stream().map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
                 + "\na hét: " + weekStart;
         MemoryContextBlock.Rendered mem =
-                memoryBlock(userId, weekEnd, memoryQuery, "memoir", null);
+                memoryBlock(userId, weekEnd, memoryQuery, "generate", null);
         payload.append(mem.block());
         candidates.addAll(memoryAnchorCandidates(mem));
         payload.append("\nHORGONY-JELÖLTEK (az anchors indexei ezekre mutatnak):\n");
@@ -310,7 +326,7 @@ public class MemoirGenerator {
             return MemoryContextBlock.Rendered.EMPTY;
         }
         return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
-                "proactive_feed", operation, entityId);
+                MEMORY_FEATURE, operation, entityId);
     }
 
     /** {@link MemoryContextBlock.Rendered#refs()} mapped to this class' two-component {@link

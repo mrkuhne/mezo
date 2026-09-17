@@ -9,22 +9,27 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.feature.proactive.service.MemoirGenerator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Memória mindenhol S8 (bd mezo-eq85.8): the memoir's own gather appends a {@code [Hosszú távú
@@ -42,6 +47,9 @@ import org.springframework.test.context.ActiveProfiles;
  * actually carries an error, proof the marker reached {@code embedQuery} and was absorbed.
  */
 @ActiveProfiles("companion-fake")
+// mezo-eq85.8 fix round 1: pinned low purely so 90 cents of spend IS the 90% throttle line —
+// the shipped ceiling is $30 (see application.yml); the LlmBudgetCapIT precedent for this trick.
+@TestPropertySource(properties = "mezo.llm-log.budget.hard-cap-usd=1.00")
 class MemoirGeneratorMemoryIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEEK_START = LocalDate.now()
@@ -56,6 +64,7 @@ class MemoirGeneratorMemoryIT extends AbstractIntegrationTest {
     @Autowired private MemoryItemRepository itemRepository;
     @Autowired private MemoryRetrievalRunRepository runRepository;
     @Autowired private FakeCompanionLlm fakeLlm;
+    @Autowired private LlmLogPopulator llmLogPopulator;
 
     @Test
     void testGenerate_shouldAppendMemoryBlockAndAuditRun_whenAMemorySeededItemMatches() {
