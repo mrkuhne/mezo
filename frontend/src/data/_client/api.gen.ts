@@ -4877,6 +4877,7 @@ export interface components {
             stress?: number;
             body?: number;
             mental?: number;
+            /** @description Optional free-form note, without an application character limit. */
             note?: string;
         };
         CheckInResponse: {
@@ -4890,6 +4891,7 @@ export interface components {
             stress?: number;
             body?: number;
             mental?: number;
+            /** @description Optional free-form note, without an application character limit. */
             note?: string;
             /** Format: date-time */
             savedAt: string;
