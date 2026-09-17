@@ -129,6 +129,7 @@ class CompanionApiIT extends ApiIntegrationTest {
 
         String body = postForBody(
                 CONVERSATION_URI + "/" + conversation.getId() + "/message",
+                // gear-audited: rejected by bean validation — no gear, no model, no prompt.
                 SendMessageRequest.builder().content("").build(),
                 ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
 
@@ -195,6 +196,7 @@ class CompanionApiIT extends ApiIntegrationTest {
         ConversationResponse conversation = postForBody(
                 CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
         postForBody(CONVERSATION_URI + "/" + conversation.getId() + "/message",
+                // gear-audited: CHAT is fine — this asserts the soft delete, never the prompt.
                 SendMessageRequest.builder().content("törlés előtt").build(),
                 ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
 

@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextRenderer;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextSelector;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryPreparer;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryEmbedder;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetriever;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
@@ -70,6 +71,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
     @Autowired private FakeCompanionLlm fakeLlm;
     @Autowired private FakeEmbeddingAdapter fakeEmbedding;
     @Autowired private MemoryQueryPreparer queryPreparer;
+    @Autowired private MemoryQueryEmbedder queryEmbedder;
     @Autowired private MemoryCandidateFusion fusion;
     @Autowired private MemoryContextSelector selector;
     @Autowired private MemoryContextRenderer renderer;
@@ -181,7 +183,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "facts", failingRetriever("facts"),
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
-                queryPreparer, failingRetrievers, fusion, selector, renderer, reranker,
+                queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
                 auditWriter, properties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = failingService.retrieve(request(owner, "Mi történt Boglárkával?"));
@@ -204,7 +206,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "facts", failingRetriever("facts"),
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
-                queryPreparer, failingRetrievers, fusion, selector, renderer, reranker,
+                queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
                 auditWriter, properties, llmCallContextHolder, taskExecutor);
 
         assertThatThrownBy(() -> failingService.retrieveForServing(
@@ -232,7 +234,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "facts", emptyRetriever("facts"),
                 "graph", emptyRetriever("graph"));
         MemoryContextService boundedService = new MemoryContextService(
-                queryPreparer, retrieverSet, fusion, selector, renderer, reranker,
+                queryPreparer, queryEmbedder, retrieverSet, fusion, selector, renderer, reranker,
                 auditWriter, properties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
@@ -247,7 +249,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         UUID owner = databasePopulator.populateUser("memory-context-late-completion@test.local");
         AsyncTaskExecutor callerThreadExecutor = new TaskExecutorAdapter(new SyncTaskExecutor());
         MemoryContextService boundedService = new MemoryContextService(
-                queryPreparer, Map.of("dense", delayedEmptyRetriever("dense", 250)),
+                queryPreparer, queryEmbedder, Map.of("dense", delayedEmptyRetriever("dense", 250)),
                 fusion, selector, renderer, reranker, auditWriter, properties, llmCallContextHolder,
                 callerThreadExecutor);
 
@@ -256,6 +258,38 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         MemoryRetrievalRunEntity run = runRepository.findByTraceIdAndCreatedBy(result.traceId(), owner).orElseThrow();
         assertThat(((Map<?, ?>) run.getRetrieverTrace().get("dense")).get("error")).isEqualTo("TIMEOUT");
         assertThat(run.getErrorCode()).isEqualTo("MEMORY_RETRIEVAL_ALL_FAILED");
+    }
+
+    /**
+     * mezo-iddo: {@code execution.retriever-timeout-ms} is a DATABASE budget. The dense retriever
+     * additionally has to embed the query — a network hop whose production latency is p50 ~270 ms
+     * and p95 ~675 ms, i.e. routinely past the 200 ms deadline. Measured on the live database, that
+     * killed {@code dense} on 55 of 55 runs over 14 days while every run was still audited clean
+     * (an {@code error_code} needs ALL FOUR retrievers to fail), so the semantic half of memory had
+     * never once worked in production. The embedding therefore has to happen ONCE, before the
+     * fan-out, outside the per-retriever deadline.
+     */
+    @Test
+    void testRetrieve_shouldStillRankDense_whenTheQueryEmbeddingOutlastsTheRetrieverDeadline() {
+        UUID owner = databasePopulator.populateUser("memory-slow-embed@test.local");
+        MemoryItemEntity seeded = item(owner, "Boglárkával futottunk a Duna-parton");
+
+        // The scripted vector is exactly the seeded item's axis, so dense must rank it first; the
+        // only thing that can keep it out of the result is the deadline killing the embed hop.
+        MemoryContext result = service.retrieve(request(owner, "[fake-embed:1 0] "
+                + FakeEmbeddingAdapter.slowEmbed(400) + " Mi volt Boglárkával?"));
+
+        MemoryRetrievalRunEntity run =
+                runRepository.findByTraceIdAndCreatedBy(result.traceId(), owner).orElseThrow();
+        assertThat(denseTrace(run)).as("dense must have run at all").isNotNull();
+        assertThat(denseTrace(run).get("error")).as("dense must not be deadlined by a slow embed").isNull();
+        assertThat(result.items()).extracting(candidate -> candidate.sourceId())
+                .contains(seeded.getSourceId());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> denseTrace(MemoryRetrievalRunEntity run) {
+        return (Map<String, Object>) run.getRetrieverTrace().get("dense");
     }
 
     private MemoryItemEntity item(UUID owner, String content) {

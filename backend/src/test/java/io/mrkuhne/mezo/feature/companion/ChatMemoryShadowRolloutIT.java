@@ -57,6 +57,7 @@ class ChatMemoryShadowRolloutIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(owner);
         seedBothStores(owner);
 
+        // gear-audited: see the request() helper below
         MessageResponse response = chatService.sendMessage(owner, conversation.getId(), request());
 
         assertLegacyResponse(response);
@@ -70,6 +71,7 @@ class ChatMemoryShadowRolloutIT extends AbstractIntegrationTest {
         seedBothStores(owner);
 
         List<ServerSentEvent<Object>> events = chatStreamService
+                // gear-audited: see the request() helper below
                 .streamMessage(owner, conversation.getId(), request()).collectList().block();
 
         MessageResponse done = (MessageResponse) events.getLast().data();
@@ -88,6 +90,7 @@ class ChatMemoryShadowRolloutIT extends AbstractIntegrationTest {
         memoryPopulator.vector(item, VERSION, axisVector(0));
     }
 
+    // gear-audited: QUERY is a data-bearing prompt-order fixture; its three callers all mean it.
     private static SendMessageRequest request() {
         return SendMessageRequest.builder().content(QUERY).build();
     }

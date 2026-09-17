@@ -79,11 +79,19 @@ public class ChatStreamService {
 
         // mezo-2zyu: the adapter reads the holder EAGERLY (before the Flux is returned), so tagging
         // the stream() call itself is enough — the deferred pipeline carries the closed-over context.
-        Flux<ServerSentEvent<Object>> deltas = llmCallContextHolder.runWith(
-                        new LlmCallContext("companion_chat", "stream", "conversation", conversationId),
+        LlmCallContext streamContext =
+                new LlmCallContext("companion_chat", "stream", "conversation", conversationId);
+        // mezo-rj214.7: a CHAT turn is tool-free and smart-tier — the streamed twin of sendMessage's
+        // completeSmart branch. No tool callbacks are registered, so the audit stays empty.
+        Flux<String> rawDeltas = turn.gear() == TurnGear.CHAT
+                ? llmCallContextHolder.runWith(streamContext,
+                        () -> companionLlm.streamSmart(turn.systemPrompt(), turn.turnContext(),
+                                turn.history(), turn.userContent()))
+                : llmCallContextHolder.runWith(streamContext,
                         () -> companionLlm.stream(turn.systemPrompt(), turn.turnContext(), turn.history(),
                                 turn.userContent(),
-                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)))
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+        Flux<ServerSentEvent<Object>> deltas = rawDeltas
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
@@ -99,7 +107,16 @@ public class ChatStreamService {
                     String finalAnswer = answer.toString();
                     boolean degraded = false;
                     CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-                    if (chain != null) {
+                    if (chain != null && turn.gear() == TurnGear.CHAT) {
+                        // CHAT skips the LLM verdict — that check grades an answer against the
+                        // context and tool outcomes it was grounded in, and a CHAT turn has
+                        // neither. The deterministic clinical check still runs: the dose-change
+                        // prohibition must have no branch where it does not apply (mezo-rj214.7).
+                        AdvisedAnswer advised = chain.reviewChat(turn.systemPrompt(),
+                                turn.turnContext(), turn.history(), turn.userContent(), finalAnswer);
+                        finalAnswer = advised.answer();
+                        degraded = advised.degraded();
+                    } else if (chain != null) {
                         AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.turnContext(),
                                 turn.history(), turn.userContent(), finalAnswer,
                                 toolRegistry.callbacks(audit),

@@ -67,6 +67,7 @@ class ChatSeedReplyFailureIT extends AbstractIntegrationTest {
         failTheReplyWrite();
 
         MessageResponse answer = chatService.sendMessage(owner, conversation.getId(),
+                // gear-audited: CHAT is right — the user row content is asserted verbatim.
                 SendMessageRequest.builder().content("nem Anna miatt").build());
 
         assertThat(answer).isNotNull();
@@ -91,6 +92,7 @@ class ChatSeedReplyFailureIT extends AbstractIntegrationTest {
 
         ChatService.PreparedTurn[] prepared = new ChatService.PreparedTurn[1];
         assertThatCode(() -> prepared[0] = chatService.prepareTurn(owner, conversation.getId(),
+                // gear-audited: CHAT is right — this asserts the user row commits, not the prompt.
                 SendMessageRequest.builder().content("inkább a szabadnap").build()))
                 .doesNotThrowAnyException();
 

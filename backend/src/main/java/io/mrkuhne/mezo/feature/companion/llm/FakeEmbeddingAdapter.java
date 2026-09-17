@@ -55,6 +55,20 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
      */
     public static final String FAIL_ANN = "[fake-embed-shortvec]";
 
+    /**
+     * Latency sentinel (mezo-iddo): {@code [fake-embed-slow:400]} makes the port sleep that many
+     * milliseconds before returning. The real embed hop is a NETWORK call whose production p50 is
+     * ~270 ms and p95 ~675 ms, so ITs need a way to stage "this hop is slower than a deadline"
+     * without the network — that is the exact shape of the bug where a 200 ms per-retriever budget
+     * killed the query embedding on 55 of 55 live runs.
+     */
+    public static final Pattern SLOW_SENTINEL = Pattern.compile("\\[fake-embed-slow:(\\d{1,5})]");
+
+    /** The {@link #SLOW_SENTINEL} text for {@code millis}, so ITs never hand-build the sentinel. */
+    public static String slowEmbed(int millis) {
+        return "[fake-embed-slow:" + millis + "]";
+    }
+
     @Override
     public List<float[]> embedDocuments(List<String> texts) {
         return texts.stream().map(this::vectorFor).toList();
@@ -67,6 +81,7 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
     }
 
     private float[] vectorFor(String text) {
+        sleepIfScripted(text);
         if (text.contains(FAIL_EMBED)) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_EMBEDDING_INVALID_RESPONSE").build());
@@ -85,6 +100,21 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
             vector[i] = (float) random.nextGaussian();
         }
         return normalize(vector);
+    }
+
+    /** Honours {@link #SLOW_SENTINEL}; an interrupt during the sleep surfaces like a cancelled call. */
+    private static void sleepIfScripted(String text) {
+        Matcher matcher = SLOW_SENTINEL.matcher(text);
+        if (!matcher.find()) {
+            return;
+        }
+        try {
+            Thread.sleep(Integer.parseInt(matcher.group(1)));
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("COMPANION_EMBEDDING_INVALID_RESPONSE").build());
+        }
     }
 
     private static float[] scripted(String dims) {

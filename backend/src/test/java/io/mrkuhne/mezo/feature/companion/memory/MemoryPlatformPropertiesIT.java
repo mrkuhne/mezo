@@ -32,6 +32,7 @@ class MemoryPlatformPropertiesIT {
         PREFIX + "fusion.pinned-boost=0.005", PREFIX + "fusion.source-reliability-max-boost=0.004",
         PREFIX + "fusion.temporal-max-boost=0.004", PREFIX + "fusion.salience-max-adjustment=0.002",
         PREFIX + "fusion.recency-max-boost=0.003", PREFIX + "execution.retriever-timeout-ms=200",
+        PREFIX + "execution.query-embedding-timeout-ms=2500",
         PREFIX + "reranker.enabled=false", PREFIX + "reranker.uncertainty-delta=0.002",
         PREFIX + "reranker.max-candidates=20", PREFIX + "reranker.max-content-chars=600",
         PREFIX + "reranker.timeout-ms=200",
@@ -73,6 +74,11 @@ class MemoryPlatformPropertiesIT {
             assertThat(properties.fusion().rrfConstant()).isEqualTo(60);
             assertThat(properties.fusion().retrieverWeights()).containsEntry("dense", 1.0);
             assertThat(properties.execution().retrieverTimeoutMs()).isEqualTo(200);
+            // mezo-iddo: the embedding budget must stay far above the retriever deadline — the two
+            // being one number is what silently killed semantic recall in production.
+            assertThat(properties.execution().queryEmbeddingTimeoutMs()).isEqualTo(2500);
+            assertThat(properties.execution().queryEmbeddingTimeoutMs())
+                    .isGreaterThan(properties.execution().retrieverTimeoutMs());
             assertThat(properties.reranker().enabled()).isFalse();
             assertThat(properties.reranker().timeoutMs()).isEqualTo(200);
             assertThat(properties.indicators().oldAfterDays()).isEqualTo(365);

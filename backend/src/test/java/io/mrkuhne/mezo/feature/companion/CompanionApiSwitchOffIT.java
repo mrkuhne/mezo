@@ -59,7 +59,8 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
         // V0.4 stream sibling — the hand-written controller is switch-gated the same way
         String body = postForBody(
                 "/api/companion/conversation/" + java.util.UUID.randomUUID() + "/message/stream",
-                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("x").build(),
+                io.mrkuhne.mezo.api.dto.// gear-audited: the companion switch is OFF here — the request never reaches a gear.
+                SendMessageRequest.builder().content("x").build(),
                 ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
