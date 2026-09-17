@@ -283,4 +283,37 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
         AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
         assertThat(reloaded.getToolCalls().calls().getFirst().why()).isNull();
     }
+
+    /**
+     * S9.7 task 1: {@link ToolCallsEnvelope.ToolCall} gained a {@code why} field (4th component).
+     * Jackson serialises new writes with an explicit {@code "why":null} key present. A pre-S9.7
+     * row has no {@code why} key at all. This writes that raw shape directly and confirms Jackson
+     * defaults the missing record component to null rather than failing deserialisation.
+     */
+    @Test
+    void testToolCalls_shouldDeserialiseWithNullWhy_whenTheJsonbPredatesTheWhyField() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-legacy-tool-calls@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz régi tool callokkal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[{\"type\":\"read\",\"name\":\"get_meals\",\"args\":\"day=2026-09-18\"}]}", id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).singleElement().satisfies(call -> {
+            assertThat(call.type()).isEqualTo("read");
+            assertThat(call.name()).isEqualTo("get_meals");
+            assertThat(call.args()).isEqualTo("day=2026-09-18");
+            assertThat(call.why()).isNull();
+        });
+    }
 }
