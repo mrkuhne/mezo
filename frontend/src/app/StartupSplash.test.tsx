@@ -2,17 +2,18 @@ import { StrictMode } from 'react'
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { StartupSplash } from '@/app/StartupSplash'
-import { TitanCompanion } from '@/features/today/components/TitanCompanion'
+
+// Visszaöltöztetés (mezo-ju4j6.3): a jel STATIKUS agyag-gömb, nem élő 3D jelenet, ezért a
+// „készen van-e már" varrat (és a hozzá tartozó 5 másodperces vészkijárat) tárgytalan lett —
+// a StartupSplash.readiness.test.tsx vele együtt szűnt meg. Amit a felhasználó lát, az
+// VÁLTOZATLAN, és pont az marad itt kikötve: három másodperc, aztán az app.
 
 beforeEach(() => vi.useFakeTimers())
-afterEach(() => {
-  vi.useRealTimers()
-  vi.unstubAllGlobals()
-})
+afterEach(() => vi.useRealTimers())
 
 test('blocks interaction until exactly 3 seconds, then reveals the mounted app', () => {
   const { container } = render(<StartupSplash><button>Dashboard</button></StartupSplash>)
-  expect(screen.getByRole('status', { name: 'Mezo betöltése' })).toBeInTheDocument()
+  expect(screen.getByRole('status', { name: 'Boop betöltése' })).toBeInTheDocument()
   expect(container.querySelector('[inert]')).toContainElement(screen.getByText('Dashboard'))
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
   act(() => vi.advanceTimersByTime(2999))
@@ -43,27 +44,11 @@ test('StrictMode still reveals once and unmount clears the pending timer', () =>
   expect(vi.getTimerCount()).toBe(0)
 })
 
-test('reduced motion uses the existing SVG and still finishes after 3 seconds', () => {
-  vi.stubGlobal('matchMedia', () => ({ matches: true }))
+// A jel az agyag-készlet gömbje (style bible §6) — se emoji, se a Titán 3D jelenet.
+test('the mark is the clay orb spot, and the wordmark stays "boop"', () => {
   const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
-  expect(container.querySelector('.startup-splash .titan-svg')).not.toBeNull()
+  expect(container.querySelector('.startup-splash use')!.getAttribute('href')).toBe('#s-orb')
   expect(container.querySelector('.startup-splash canvas')).toBeNull()
-  act(() => vi.advanceTimersByTime(3000))
-  expect(screen.queryByRole('status')).not.toBeInTheDocument()
-})
-
-test('the splash and Dashboard SVGs have independent gradient references', () => {
-  const { container } = render(
-    <StartupSplash><TitanCompanion states={[]} onOpenSignals={() => {}} /></StartupSplash>,
-  )
-  const marks = Array.from(container.querySelectorAll('.titan-svg'))
-  expect(marks).toHaveLength(2)
-  const ids = Array.from(container.querySelectorAll('[id]'), (element) => element.id)
-  expect(new Set(ids).size).toBe(ids.length)
-  for (const mark of marks) {
-    const ownIds = Array.from(mark.querySelectorAll('[id]'), (element) => element.id)
-    for (const element of mark.querySelectorAll('[fill^="url"]')) {
-      expect(ownIds).toContain(element.getAttribute('fill')!.slice(5, -1))
-    }
-  }
+  expect(container.querySelector('.startup-splash .titan-svg')).toBeNull()
+  expect(container.querySelector('.startup-splash__wordmark')!.textContent).toBe('boop')
 })

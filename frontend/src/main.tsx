@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { StartupSplash } from '@/app/StartupSplash'
 import { QueryProvider } from '@/app/providers/QueryProvider'
 import { routes } from '@/app/router'
+import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import '@/index.css'
 
@@ -27,6 +28,12 @@ createRoot(document.getElementById('root')!).render(
     >
       <QueryProvider>
         <ThemeProvider>
+          {/* A clay <symbol> defek EGYETLEN mountja (mezo-ju4j6.3). Korábban minden
+              shell-réteg (AppLayout, AdminLayout) külön mountolta őket — az indító-
+              képernyő viszont MINDKETTŐ fölött él, és a visszaállított jele agyag-gömb,
+              tehát neki is látnia kell a defeket. Egy közös, gyökérszintű példány mindhárom
+              fogyasztót kiszolgálja, duplikált id-k nélkül. */}
+          <ClaySprites />
           <StartupSplash>
             {/* App-root boundary for the FIRST lazily-loaded chunk (mezo-d5iy.9): AdminLayout
                 itself is behind a React.lazy(), so a Suspense mounted only inside it can't
