@@ -112,7 +112,16 @@ export function WorkoutCard({
   const weightless = exercise.type === 'plyo'
   // The card's ONE sentence: the exercise's own rationale, falling back to the engine's
   // wording when the plan carries none. Never both — the banner no longer repeats it.
-  const cue = exercise.rationale ?? exercise.progression?.rationale ?? null
+  // The prototype's cue is a COACHING sentence ("Vidd hátra a könyököd…"). Production has
+  // no such field yet — `rationale` carries the plan's PROGRESSION prose, i.e. the banner's
+  // own story in words, so rendering it on every card re-stated the banner (owner
+  // screenshot, 2026-09-17). The one case the prose says something the numbers cannot is a
+  // FIRST-EVER exercise (no lastWeek to compare — the banner's left cell is an em dash):
+  // there the rationale explains the starting choice, so it keeps that one slot. The real
+  // coaching cue arrives with its own field (mezo-b516k's cue work).
+  const cue = exercise.lastWeek == null
+    ? (exercise.rationale ?? exercise.progression?.rationale ?? null)
+    : null
 
   // The draft for the ONE editable row (the cursor slot). Reset whenever the cursor
   // moves or the slot count changes — a removeSet splices the prescription, so the
@@ -188,10 +197,7 @@ export function WorkoutCard({
 
       {!skipped && (
         <>
-          {/* The cue belongs to the EXERCISE, the banner to TODAY's target — the prototype
-              shows the cue on every card, so the two are no longer mutually exclusive
-              (mezo-i8ahy). The sentence is printed ONCE, here: the banner dropped its own
-              copy of it, which was the duplication the owner saw. */}
+          {/* The cue slot stays wired for the coaching-cue field; see the note at `cue`. */}
           {cue && (
             <div className="wo-cue">
               <ClayIcon name="i-minta" size={20} />

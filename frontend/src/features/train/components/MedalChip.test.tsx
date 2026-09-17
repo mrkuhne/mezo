@@ -12,10 +12,10 @@ const record: Medal = {
 }
 
 describe('MedalChip', () => {
-  it('renders a gold 🏅 disc named in Hungarian for a RECORD medal', () => {
+  it('renders a clay medal glyph named in Hungarian for a RECORD medal', () => {
     render(<MedalChip medal={record} />)
     const chip = screen.getByRole('img', { name: 'Súly-rekord' })
-    expect(chip).toHaveTextContent('🏅')
+    expect(chip.querySelector('use')!.getAttribute('href')).toBe('#i-erme')
   })
 
   it.each([

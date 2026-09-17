@@ -13648,6 +13648,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-rows-head { padding: 4px 2px 6px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; text-align: center; }
 .wo-rows-head span:first-child { text-align: left; }
 .wo-row {
+  /* A done row renders as a <button>: without an explicit width a button grid
+     container shrinks to fit and the 1fr columns collapse out of the shared
+     grid (owner screenshot, 2026-09-17 — the T9 poster shrink-to-fit trap). */
+  width: 100%; box-sizing: border-box;
+  font: inherit; color: inherit; text-align: inherit;
   padding: 6px 2px; margin: 4px 0; border-radius: 12px;
   border: 1px solid transparent; background: #ffffff03;
 }

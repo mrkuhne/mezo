@@ -96,8 +96,14 @@ test('the saved note renders as a .wo-note pill that opens the note editor', asy
   expect(props.onEditNote).toHaveBeenCalled()
 })
 
-test('the rationale renders as the .wo-cue sentence (the plan\'s own words)', () => {
+test('a card WITH a lastWeek renders no .wo-cue even when the plan carries a rationale — the banner owns the story', () => {
   const { container } = renderCard()
+  expect(container.querySelector('.wo-cue')).toBeNull()
+})
+
+test('a first-ever exercise (no lastWeek) renders the rationale as the .wo-cue sentence once', () => {
+  const { container } = renderCard({ exercise: makeExercise({ lastWeek: null }) })
+  expect(container.querySelectorAll('.wo-cue')).toHaveLength(1)
   expect(container.querySelector('.wo-cue p')).toHaveTextContent('A múlt heti RIR alapján tartjuk a súlyt.')
 })
 

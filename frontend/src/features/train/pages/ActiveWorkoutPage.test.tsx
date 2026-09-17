@@ -356,15 +356,18 @@ test('mock mode: the rows are the working slots, numbered 1..n', async () => {
   expect(idx).toEqual(['1', '2', '3'])
 })
 
-// mezo-i8ahy: the cue and the banner are NOT mutually exclusive any more — the cue
-// belongs to the exercise, the banner to today's target. The engine's rationale SENTENCE
-// is printed exactly once, in the cue; the banner stopped repeating it underneath.
-test('mock mode: a card with a progression shows BOTH the cue and the banner, sentence once', async () => {
+// mezo-i8ahy round 2: the cue and the banner are no longer both shown for a card that
+// HAS a lastWeek to compare — the structured ProgressionBanner is the single statement
+// of progression (the owner saw the same sentence three times). The rationale prose
+// keeps its one slot for a first-ever exercise only (WorkoutCard.tsx, the `cue` const).
+test('mock mode: a card with a progression shows the banner only — no .wo-cue, sentence once', async () => {
   setup()
   const c = card(EX1)
-  expect(c.querySelector('.wo-cue')).not.toBeNull()
+  expect(c.querySelector('.wo-cue')).toBeNull()
   expect(c.querySelector('.pobanner')).not.toBeNull()
-  expect(within(c).getAllByText(/Múlt hét 9 × 102.5 kg → \+2.5 kg/)).toHaveLength(1)
+  // The rationale prose is the .wo-cue's own text; with lastWeek present that slot is
+  // gone, so the raw sentence renders at most once on the card (never duplicated).
+  expect(within(c).queryAllByText(/Múlt hét 9 × 102.5 kg → \+2.5 kg/).length).toBeLessThanOrEqual(1)
   expect(c.querySelector('.pobanner-why')).toBeNull()
 })
 
@@ -1586,7 +1589,9 @@ test('real mode: the logging panel pre-fills from the prescribed target (not las
   await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
   expect(kgInput(EX1)).toHaveValue(105)
   expect(repsInput(EX1)).toHaveValue(10)
-  expect(screen.getByText(/→ \+2\.5 kg/)).toBeInTheDocument() // the card's own .wo-cue
+  // This exercise carries lastWeek, so its rationale prose no longer renders as a .wo-cue
+  // (mezo-i8ahy round 2) — the prefill itself, asserted above via the input values, is
+  // the load-bearing proof that the panel reads the prescribed target and not lastWeek.
   // the logged set carries the prescribed WORKING weight, and goes over the wire as a
   // working set at setIndex 0 — the warm-up ramp is never logged at all.
   await user.click(submitOf(EX1))
@@ -2050,14 +2055,19 @@ test('the active phase is ONE list of cards — no collapsible reference strips,
   expect(container.querySelectorAll('.mz-colstrip')).toHaveLength(0)
 })
 
-test('each card carries its own cue AND progression banner — the reference content is per exercise', async () => {
+test('each card carries its own progression banner — the reference content is per exercise', async () => {
   setup()
-  // ex1 has a progression signal (+2,5 kg). Since mezo-i8ahy the banner no longer
-  // SUPPRESSES the cue — the cue belongs to the exercise, the banner to today's target.
-  const banner = card(EX1).querySelector('.pobanner') as HTMLElement
-  expect(within(banner).getByText('⚡ Progresszió')).toBeInTheDocument()
-  expect(within(banner).getByText('+2,5 kg ↑')).toBeInTheDocument()
-  expect(card(EX1).querySelector('.wo-cue')).not.toBeNull()
+  // ex1's banner (+2,5 kg, weight lever) and ex3's banner (+1 rep, rep lever) are each
+  // exercise's OWN structured signal, not one shared strip (mezo-i8ahy round 2: the
+  // banner is now the single statement of progression, the cue reserved for first-ever
+  // exercises only).
+  const banner1 = card(EX1).querySelector('.pobanner') as HTMLElement
+  expect(within(banner1).getByText('⚡ Progresszió')).toBeInTheDocument()
+  expect(within(banner1).getByText('+2,5 kg ↑')).toBeInTheDocument()
+
+  const banner3 = card(EX3).querySelector('.pobanner') as HTMLElement
+  expect(within(banner3).getByText('⚡ Progresszió')).toBeInTheDocument()
+  expect(within(banner3).getByText('+1 rep ↑')).toBeInTheDocument()
 })
 
 test('a fully logged exercise reads as complete and offers no editable row', async () => {

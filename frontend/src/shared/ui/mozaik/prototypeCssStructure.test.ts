@@ -435,6 +435,26 @@ describe('the train session titanium section is registered (mezo-88iwa.7)', () =
       expect(section, `${cls} missing from the train session titanium section`).toContain(cls)
     }
   })
+
+  // Regression for the T9 poster shrink-to-fit trap (owner screenshot, 2026-09-17): a
+  // done row renders as a `<button>`, and a button with no explicit width shrinks to fit
+  // its content instead of filling the shared `.wo-rows` grid track — its 1fr columns
+  // then collapse. jsdom does not lay out flex/grid, so this asserts the RULE itself
+  // rather than a measured pixel width.
+  test('.wo-row carries an explicit width: 100% — a done <button>.wo-row must fill the grid, not shrink to fit', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    // The standalone `.wo-row { ... }` rule, not the earlier `.wo-rows-head, .wo-row {`
+    // grid-definition selector (a plain indexOf('.wo-row {') would match inside that
+    // combined selector too, since ", .wo-row {" contains it as a substring).
+    const ruleMatch = /(?:^|\n)\.wo-row \{/.exec(section)
+    expect(ruleMatch, '.wo-row standalone rule not found in the train session titanium section').not.toBeNull()
+    const ruleStart = ruleMatch!.index
+    const ruleEnd = section.indexOf('}', ruleStart)
+    const rule = section.slice(ruleStart, ruleEnd)
+    expect(rule).toContain('width: 100%')
+  })
 })
 
 /**
