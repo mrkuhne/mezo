@@ -1,0 +1,1552 @@
+import { RpgIcon } from "./RpgIcon.jsx";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Sparkline, FoodArt, WorkoutArt } from "./shared.jsx";
+import {
+  ROLES,
+  createPresence,
+  selectRole,
+  selectTab,
+  recordPresenceCheckin,
+  foodBudget,
+  presenceReply,
+  applyPresenceTool,
+} from "./presence-model.mjs";
+import {
+  BoopAvatar as Avatar,
+  BoopIcon as BaseIcon,
+  BoopPet,
+} from "./BoopIdentity.jsx";
+import "./presence.css";
+import "./boop.css";
+import { DailyImprint } from "./DailyImprint.jsx";
+import {
+  RhythmArc,
+  CycleSignature,
+  FuelSignature,
+  DayConnection,
+} from "./SignatureVisuals.jsx";
+import CompleteFlow, {
+  COMPLETE_ROUTES,
+  COMPLETE_TABS,
+  featureLocation,
+  makeCompleteApi,
+} from "./CompleteFlow.jsx";
+import { hydrateComplete } from "./complete-model.mjs";
+import RpgScreen, { RpgSidebar, RpgRight } from "./RpgStudy.jsx";
+import { ModuleBadge } from "./RpgVisuals.jsx";
+import { RPG_ROLES, storageFor } from "./rpg-model.mjs";
+const Icon = BaseIcon;
+const STORAGE = "mezo-presence-v1";
+function readState(storage = STORAGE) {
+  try {
+    const v = JSON.parse(localStorage.getItem(storage));
+    return v?.checkins && v?.tabs && v?.messages
+      ? { ...createPresence(), ...v }
+      : createPresence();
+  } catch {
+    return createPresence();
+  }
+}
+function readLocation() {
+  const parts = location.hash.slice(1).split("?"),
+    [, role = "home", tab] = parts[0].split("/");
+  const r = ROLES[role] ? role : "home";
+  const query = new URLSearchParams(parts[1] || "");
+  const page = query.get("page");
+  const params = Object.fromEntries(
+    [...query].filter(([k]) => k !== "page" && k !== "panel"),
+  );
+  return {
+    feature: COMPLETE_ROUTES[page] ? { page, params } : null,
+    role: r,
+    tab: ROLES[r].tabs.some(([id]) => id === tab) ? tab : ROLES[r].tabs[0][0],
+    panel: ["talk", "roles", "capture"].includes(
+      new URLSearchParams(parts[1] || "").get("panel"),
+    )
+      ? new URLSearchParams(parts[1] || "").get("panel")
+      : null,
+  };
+}
+function urlFor(role, tab, panel, feature = null) {
+  const query = new URLSearchParams(
+    feature ? { ...feature.params, page: feature.page } : {},
+  );
+  if (panel) query.set("panel", panel);
+  return `#presence/${role}/${tab}${query.size ? "?" + query : ""}`;
+}
+function Orb({ role, size = 70, state = "idle" }) {
+  const r = ROLES[role];
+  return (
+    <span
+      className="pr-orb"
+      style={{
+        "--clay-highlight": "#fff1e3",
+        "--clay-light": r.light,
+        "--clay-body": r.color,
+        "--clay-shadow": r.shadow,
+      }}
+    >
+      <Avatar size={size} state={state} />
+    </span>
+  );
+}
+export default function PresenceStudy({ variant = "boop" }) {
+  const rpg = variant === "rpg",
+    storage = storageFor(variant),
+    roles = rpg ? RPG_ROLES : ROLES;
+  const Icon = rpg ? RpgIcon : BaseIcon;
+  const [s, setS] = useState(() => {
+      let v = readState(storage);
+      if (location.hash.startsWith("#presence/")) {
+        const r = readLocation();
+        v = selectTab(selectRole(v, r.role), r.tab);
+      } else v = selectTab(selectRole(v, "home"), "today");
+      return hydrateComplete(v);
+    }),
+    [feature, setFeature] = useState(() => readLocation().feature),
+    [panel, setPanel] = useState(() => readLocation().panel),
+    [typing, setTyping] = useState(false),
+    [notice, setNotice] = useState(""),
+    [mood, setMood] = useState("idle");
+  const area = useRef(null),
+    dialog = useRef(null),
+    chatEnd = useRef(null),
+    positions = useRef(new Map()),
+    timer = useRef(null),
+    toastTimer = useRef(null),
+    moodTimer = useRef(null),
+    latest = useRef(s),
+    lastFocus = useRef(null),
+    historyDepth = useRef(history.state?.presence ? history.state.depth : 0),
+    sendLock = useRef(false);
+  latest.current = s;
+  const viewKey = useRef("");
+  const role = roles[s.role],
+    tab = s.tabs[s.role],
+    key = s.role + "/" + tab + (feature ? "/" + JSON.stringify(feature) : ""),
+    budget = foodBudget(s);
+  viewKey.current = key;
+  useEffect(() => {
+    localStorage.setItem(storage, JSON.stringify(s));
+  }, [s]);
+  useEffect(() => {
+    history.replaceState(
+      { presence: true, depth: historyDepth.current },
+      "",
+      location.search + urlFor(s.role, tab, panel, feature),
+    );
+    const pop = () => {
+      const current = latest.current;
+      positions.current.set(viewKey.current, area.current?.scrollTop || 0);
+      const r = readLocation();
+      historyDepth.current = history.state?.depth || 0;
+      setS((v) => selectTab(selectRole(v, r.role), r.tab));
+      setPanel(r.panel);
+      setFeature(r.feature);
+    };
+    addEventListener("popstate", pop);
+    return () => {
+      removeEventListener("popstate", pop);
+      clearTimeout(timer.current);
+      clearTimeout(toastTimer.current);
+      clearTimeout(moodTimer.current);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    if (area.current) area.current.scrollTop = positions.current.get(key) || 0;
+  }, [key]);
+  useEffect(() => {
+    const d = dialog.current;
+    if (panel) {
+      lastFocus.current = document.activeElement;
+      if (!d.open) d.showModal();
+    } else if (d.open) {
+      d.close();
+      if (lastFocus.current?.isConnected) lastFocus.current.focus();
+      else document.querySelector(".pr-role-toggle")?.focus();
+    }
+  }, [panel]);
+  useEffect(() => {
+    if (panel === "talk")
+      chatEnd.current?.scrollIntoView({
+        block: "nearest",
+        behavior: "instant",
+      });
+  }, [s.messages.length, typing, panel]);
+  function navigate(nextRole, nextTab, p = null, replace = false) {
+    const t =
+      nextTab || latest.current.tabs[nextRole] || ROLES[nextRole].tabs[0][0];
+    if (!ROLES[nextRole]?.tabs.some(([id]) => id === t)) return;
+    positions.current.set(key, area.current?.scrollTop || 0);
+    setS((v) => selectTab(selectRole(v, nextRole), t));
+    setPanel(p);
+    setFeature(p ? feature : null);
+    if (!replace) historyDepth.current++;
+    history[replace ? "replaceState" : "pushState"](
+      { presence: true, depth: historyDepth.current },
+      "",
+      location.search + urlFor(nextRole, t, p, p ? feature : null),
+    );
+  }
+  function open(p) {
+    navigate(s.role, tab, p);
+  }
+  function close() {
+    if (historyDepth.current > 0) history.back();
+    else {
+      setPanel(null);
+      history.replaceState(
+        { presence: true, depth: 0 },
+        "",
+        location.search + urlFor(s.role, tab, null, feature),
+      );
+    }
+  }
+  function back() {
+    if (historyDepth.current > 0) history.back();
+    else navigate("home", "today", null, true);
+  }
+  function toast(t) {
+    setNotice(t);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setNotice(""), 3000);
+  }
+  function celebrate() {
+    setMood("happy");
+    clearTimeout(moodTimer.current);
+    moodTimer.current = setTimeout(() => setMood("idle"), 2200);
+  }
+  function send(text) {
+    if (!text.trim() || sendLock.current) return;
+    sendLock.current = true;
+    const response = presenceReply(text, latest.current);
+    setS((v) => ({
+      ...v,
+      draft: "",
+      messages: [
+        ...v.messages,
+        { id: crypto.randomUUID(), role: "user", text: text.trim() },
+      ],
+    }));
+    setTyping(true);
+    timer.current = setTimeout(() => {
+      setS((v) => ({
+        ...applyPresenceTool(v, response.tool),
+        messages: [
+          ...v.messages,
+          { id: crypto.randomUUID(), role: "assistant", ...response },
+        ],
+      }));
+      setTyping(false);
+      sendLock.current = false;
+    }, 800);
+  }
+  function ask(text) {
+    if (rpg && s.role !== "life") {
+      navigate("life", "today", "talk");
+      setFeature(null);
+      history.replaceState(
+        history.state,
+        "",
+        location.search + urlFor("life", "today", "talk"),
+      );
+    } else open("talk");
+    if (text) send(text);
+  }
+  function pickTab(id) {
+    if (s.role === "home" && id === "talk") return ask();
+    if (s.role === "home" && id === "capture") return open("capture");
+    navigate(s.role, id);
+  }
+  function reset() {
+    clearTimeout(timer.current);
+    sendLock.current = false;
+    setTyping(false);
+    setS(hydrateComplete(createPresence()));
+    positions.current.clear();
+    navigate("home", "today", null, true);
+    toast("A mintanap újraindult");
+  }
+  function goFeature(page, params = {}) {
+    if (!COMPLETE_ROUTES[page]) return toast("Ez a nézet nem található");
+    const place = featureLocation(page),
+      next = { page, params };
+    positions.current.set(key, area.current?.scrollTop || 0);
+    setS((v) => selectTab(selectRole(v, place.role), place.tab));
+    setFeature(next);
+    setPanel(null);
+    const replace = !!panel;
+    if (!replace) historyDepth.current++;
+    history[replace ? "replaceState" : "pushState"](
+      { presence: true, depth: historyDepth.current },
+      "",
+      location.search + urlFor(place.role, place.tab, null, next),
+    );
+  }
+  const api = {
+    s,
+    setS,
+    budget,
+    navigate,
+    ask,
+    toast,
+    celebrate,
+    open,
+    back,
+    goFeature,
+  };
+  const coreApi = makeCompleteApi(api, feature?.params || {}, goFeature);
+  api.core = coreApi;
+  const activeFeature = feature?.page || COMPLETE_TABS[s.role]?.[tab];
+
+  return (
+    <div
+      className={`presence-study ${rpg ? "rpg-study" : ""}`}
+      style={{
+        "--pr-width":
+          new URLSearchParams(location.search).get("width") === "360"
+            ? "360px"
+            : "430px",
+      }}
+    >
+      <aside className="pr-study-note">
+        {rpg ? (
+          <RpgSidebar api={{ ...api, reset }} />
+        ) : (
+          <>
+            <a href="/" className="pr-lab-link">
+              ← Korábbi irányok
+            </a>
+            <span className="pr-eyebrow">BOOP / RITMUS ÉS KAPCSOLÓDÁS</span>
+            <h1>
+              Egy társ.
+              <br />
+              <em>Többféle tér.</em>
+            </h1>
+            <p>
+              A beszélgetés folytonos.
+              <br />A munkafelület ahhoz igazodik,
+              <br />
+              amivel éppen foglalkozol.
+            </p>
+            <div className="pr-note-rule" />
+            <p className="pr-note-small">
+              Kezdd egy check-innel. A lenti Boop-buborékkal válts területet,
+              majd térj vissza a beszélgetéshez.
+            </p>
+            <button onClick={reset}>
+              <Icon name="rotate" size={15} />
+              Mintanap újraindítása
+            </button>
+            <button onClick={() => goFeature("core-index")}>
+              Minden funkció · oldaltérkép
+            </button>
+            <span className="pr-demo-label">
+              Navigáció és kommunikáció.
+              <br />
+              Szemléltető adatok, előre írt AI-válaszok.
+            </span>
+          </>
+        )}
+      </aside>
+      <div
+        className="pr-device"
+        style={{
+          "--pr-accent": role.color,
+          "--pr-tint": role.light,
+          "--clay-highlight": "#fff1e3",
+          "--clay-light": role.light,
+          "--clay-body": role.color,
+          "--clay-shadow": role.shadow,
+        }}
+      >
+        <header className="pr-header">
+          <div>
+            {s.role === "home" ? (
+              <span className="pr-wordmark">
+                boop<span>{rpg ? "PLAY" : "veled."}</span>
+              </span>
+            ) : (
+              <>
+                <button
+                  className="pr-icon-button"
+                  onClick={back}
+                  aria-label="Vissza az előző helyre"
+                >
+                  <Icon name="arrow-left" size={20} />
+                </button>
+                <span className="pr-current-role">
+                  <i />
+                  {role.name}
+                </span>
+              </>
+            )}
+          </div>
+          <button
+            className="pr-chat-open"
+            onClick={() =>
+              rpg && s.role !== "life"
+                ? goFeature("notifications")
+                : open("talk")
+            }
+            aria-label={
+              rpg && s.role !== "life"
+                ? "Értesítések"
+                : "Folytatom a beszélgetést"
+            }
+          >
+            <Icon
+              name={rpg && s.role !== "life" ? "bell" : "message"}
+              size={20}
+            />
+            <span>
+              {rpg && s.role !== "life" ? "Értesítések" : "Beszélgessünk"}
+            </span>
+          </button>
+        </header>
+        <main className="pr-main" ref={area}>
+          <div key={key} className="pr-surface">
+            {rpg ? (
+              <RpgScreen
+                api={api}
+                feature={activeFeature}
+                coreApi={coreApi}
+                fallback={<Workspace api={api} />}
+              />
+            ) : activeFeature ? (
+              <CompleteFlow page={activeFeature} api={coreApi} />
+            ) : s.role === "home" ? (
+              <Home api={api} mood={mood} />
+            ) : (
+              <Workspace api={api} />
+            )}
+          </div>
+        </main>
+        <nav className="pr-dock" aria-label="Aktuális terület navigációja">
+          <button
+            className={`pr-role-toggle ${panel === "roles" ? "is-open" : ""}`}
+            onClick={() => open("roles")}
+            aria-label={`Területváltás, most ${role.name}`}
+            aria-haspopup="dialog"
+          >
+            {rpg ? (
+              <ModuleBadge role={s.role} size={42} />
+            ) : (
+              <Orb role={s.role} size={49} state={mood} />
+            )}
+            <span>
+              {s.role === "home" ? "Tereim" : role.short}
+              <Icon name="chevron-down" size={10} />
+            </span>
+          </button>
+          <div className="pr-dock-tabs" key={s.role}>
+            {role.tabs.map(([id, label, icon]) => (
+              <button
+                key={id}
+                onClick={() => pickTab(id)}
+                aria-current={tab === id ? "page" : undefined}
+                className={tab === id ? "active" : ""}
+              >
+                <Icon name={icon} size={19} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+        {notice && (
+          <div className="pr-toast" role="status">
+            <Icon name="check" size={16} />
+            {notice}
+          </div>
+        )}
+      </div>
+      <aside className="pr-study-right">
+        {rpg ? (
+          <RpgRight api={api} />
+        ) : (
+          <>
+            <span className="pr-eyebrow">UGYANAZ A BOOP</span>
+            <div className="pr-role-line">
+              {Object.entries(ROLES)
+                .filter(([id]) => id !== "home")
+                .map(([id, r]) => (
+                  <button
+                    key={id}
+                    onClick={() => navigate(id)}
+                    aria-label={`${r.name} terület`}
+                    className={id === s.role ? "selected" : ""}
+                  >
+                    <Orb role={id} size={42} />
+                    <span>{r.name}</span>
+                  </button>
+                ))}
+            </div>
+            <p>
+              Helyet váltasz.
+              <br />A történeted veled marad.
+            </p>
+            <div className="pr-note-rule" />
+            <span className="pr-eyebrow">PRÓBÁLD KI A KAPCSOLATOT</span>
+            <button
+              className="pr-demo-prompt"
+              onClick={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
+            >
+              „Mi lenne, ha elmaradna ma a röplabda?”
+              <Icon name="arrow-up-right" size={17} />
+            </button>
+            <p className="pr-note-small">
+              Előbb átbeszélitek. Átvezetés után az étkezési keret is követi a
+              változást.
+            </p>
+          </>
+        )}
+      </aside>
+      <dialog
+        ref={dialog}
+        className={`pr-dialog pr-dialog-${panel || "closed"} ${rpg ? "rpg-dialog" : ""}`}
+        onCancel={(e) => {
+          e.preventDefault();
+          close();
+        }}
+        onClick={(e) => {
+          if (e.target === dialog.current) close();
+        }}
+        style={{ "--pr-accent": role.color, "--pr-tint": role.light }}
+        aria-label={
+          panel === "talk"
+            ? "Beszélgetés Booppal"
+            : panel === "roles"
+              ? "Boop terei"
+              : "Gyors rögzítés"
+        }
+      >
+        <div className="pr-dialog-body">
+          {panel === "roles" ? (
+            <>
+              <div className="pr-sheet-handle" />
+              <div className="pr-sheet-heading">
+                <div>
+                  <span className="pr-eyebrow">
+                    {rpg ? "MODULVÁLASZTÓ" : "UGYANAZ A TÁRS"}
+                  </span>
+                  <h2>{rpg ? "Válts területet." : "Merre menjünk?"}</h2>
+                </div>
+                <button
+                  autoFocus
+                  className="pr-icon-button"
+                  onClick={close}
+                  aria-label="Területválasztó bezárása"
+                >
+                  <Icon name="x" />
+                </button>
+              </div>
+              <p className="pr-sheet-copy">
+                Válassz teret annak, amivel most foglalkozol.
+              </p>
+              <div className="pr-worlds">
+                {Object.entries(roles).map(([id, r]) => (
+                  <button
+                    key={id}
+                    className={id === s.role ? "selected" : ""}
+                    onClick={() => navigate(id, undefined, null, true)}
+                  >
+                    {rpg ? (
+                      <ModuleBadge role={id} size={52} />
+                    ) : (
+                      <Orb
+                        role={id}
+                        size={id === "home" ? 58 : 68}
+                        state={id === s.role ? "listening" : "idle"}
+                      />
+                    )}
+                    <span>
+                      <strong>{r.name}</strong>
+                      <small>{r.description}</small>
+                    </span>
+                    <Icon
+                      name={id === s.role ? "check" : "arrow-up-right"}
+                      size={18}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="pr-sheet-footer">
+                A közös emlékezet és a beszélgetés minden térben veled van.
+              </p>
+            </>
+          ) : panel === "capture" ? (
+            <>
+              <div className="pr-sheet-handle" />
+              <div className="pr-sheet-heading">
+                <h2>Mit hozol a napodból?</h2>
+                <button
+                  autoFocus
+                  className="pr-icon-button"
+                  onClick={close}
+                  aria-label="Rögzítésválasztó bezárása"
+                >
+                  <Icon name="x" />
+                </button>
+              </div>
+              <div className="pr-capture-grid">
+                {[
+                  ["fuel", "log", "Étel", "utensils"],
+                  ["life", "body", "Alvás és súly", "moon"],
+                  ["life", "journal", "Gondolat vagy hála", "book"],
+                  ["home", "today", "Check-in", "sun"],
+                ].map(([r, t, label, icon]) => (
+                  <button
+                    key={label}
+                    onClick={() =>
+                      label === "Étel"
+                        ? goFeature("fuel-log")
+                        : navigate(r, t, null, true)
+                    }
+                  >
+                    <Icon name={icon} size={25} />
+                    <span>{label}</span>
+                    <Icon name="arrow-up-right" size={17} />
+                  </button>
+                ))}
+              </div>
+              <button
+                className="pr-secondary"
+                onClick={() => navigate(s.role, tab, "talk", true)}
+              >
+                Inkább elmondom Boopnak
+                <Icon name="message" size={18} />
+              </button>
+            </>
+          ) : panel === "talk" ? (
+            <>
+              <header className="pr-talk-header">
+                <Orb
+                  role={s.role}
+                  size={48}
+                  state={typing ? "thinking" : "listening"}
+                />
+                <div>
+                  <h2>Itt vagyok.</h2>
+                  <span>Egy beszélgetés · {role.name}</span>
+                </div>
+                <button
+                  autoFocus
+                  className="pr-icon-button"
+                  onClick={close}
+                  aria-label="Vissza a munkafelületre"
+                >
+                  <Icon name="x" />
+                </button>
+              </header>
+              <div className="pr-context-ribbon">
+                <Icon name="layers" size={14} />
+                <span>
+                  {s.checkins.length} mai check-in · 3. hét · {budget.target}{" "}
+                  kcal keret
+                </span>
+              </div>
+              <div className="pr-talk-feed" aria-live="polite">
+                {s.messages.map((m) => (
+                  <article className={`pr-message ${m.role}`} key={m.id}>
+                    {m.role === "assistant" && (
+                      <span className="pr-message-author">BOOP</span>
+                    )}
+                    <p>{m.text}</p>
+                    {m.sources && (
+                      <details className="pr-sources">
+                        <summary>
+                          Miből indulok ki?
+                          <Icon name="chevron-down" size={12} />
+                        </summary>
+                        <ul>
+                          {m.sources.map((v) => (
+                            <li key={v}>{v}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    {m.tool && (
+                      <div className="pr-tool-result">
+                        <Icon name="check-circle" size={19} />
+                        <div>
+                          <strong>Átvezetve a mintanapban</strong>
+                          <span>Sportnaptár → étkezési keret</span>
+                        </div>
+                      </div>
+                    )}
+                    {m.actions?.length > 0 && (
+                      <div className="pr-message-actions">
+                        {m.actions.map((a) => (
+                          <button
+                            key={a.label}
+                            onClick={() => navigate(a.role, a.tab, null, true)}
+                          >
+                            {a.label}
+                            <Icon name="arrow-up-right" size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {m.suggestion && (
+                      <button
+                        className="pr-message-suggestion"
+                        disabled={typing}
+                        onClick={() => send(m.suggestion)}
+                      >
+                        {m.suggestion}
+                        <Icon name="arrow-right" size={16} />
+                      </button>
+                    )}
+                  </article>
+                ))}
+                {typing && (
+                  <div className="pr-thinking">
+                    <Orb role={s.role} size={37} state="thinking" />
+                    <span>Összekapcsolom a történetedet…</span>
+                  </div>
+                )}
+                <div ref={chatEnd} />
+              </div>
+              <div className="pr-talk-bottom">
+                <div className="pr-talk-starters">
+                  {[
+                    "Hogy fér össze a mai edzés és a közérzetem?",
+                    "Mire emlékszel rólam?",
+                    "Mi lenne, ha elmaradna ma a röplabda?",
+                  ].map((t) => (
+                    <button key={t} disabled={typing} onClick={() => send(t)}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    send(s.draft);
+                  }}
+                >
+                  <input
+                    aria-label="Üzenet Boopnak"
+                    placeholder="Nem kell az elejéről kezdened…"
+                    value={s.draft}
+                    onChange={(e) =>
+                      setS((v) => ({ ...v, draft: e.target.value }))
+                    }
+                    maxLength={2000}
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Üzenet küldése"
+                    disabled={typing || !s.draft.trim()}
+                  >
+                    <Icon name="send" size={21} />
+                  </button>
+                </form>
+                <span className="pr-chat-demo">
+                  Interakciós minta · előre megírt válaszok
+                </span>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </dialog>
+    </div>
+  );
+}
+function SectionTitle({ kicker, title, children }) {
+  return (
+    <div className="pr-section-title">
+      <span className="pr-eyebrow">{kicker}</span>
+      <h1>{title}</h1>
+      {children && <p>{children}</p>}
+    </div>
+  );
+}
+function Row({ icon, title, sub, value, onClick }) {
+  const C = onClick ? "button" : "div";
+  return (
+    <C className="pr-row" onClick={onClick}>
+      <span className="pr-row-icon">
+        <Icon name={icon} size={20} />
+      </span>
+      <span>
+        <strong>{title}</strong>
+        <small>{sub}</small>
+      </span>
+      {value ? (
+        <b>{value}</b>
+      ) : onClick ? (
+        <Icon name="arrow-up-right" size={16} />
+      ) : null}
+    </C>
+  );
+}
+function Home({ api, mood }) {
+  const { s, setS, navigate, ask, celebrate, toast } = api;
+  const [feeling, setFeeling] = useState(null),
+    [note, setNote] = useState(""),
+    [saved, setSaved] = useState(false);
+  const next =
+    ["Reggel", "Délben", "Délután", "Este"][s.checkins.length] || "Napközben";
+  return (
+    <div className="pr-home">
+      <span className="pr-date">
+        KEDD, SZEPTEMBER 8. <i /> 16:40
+      </span>
+      <div className="pr-home-hero">
+        <div className="pr-halo pr-halo-a" />
+        <div className="pr-halo pr-halo-b" />
+        <BoopPet state={feeling ? "listening" : mood} />
+      </div>
+      <h1>
+        {saved ? (
+          <>
+            Köszönöm, hogy
+            <br />
+            <em>elhoztad magad.</em>
+          </>
+        ) : (
+          <>
+            Hogy vagy most,
+            <br />
+            <em>Daniel?</em>
+          </>
+        )}
+      </h1>
+      <p className="pr-home-sub">
+        {saved
+          ? "Ez is része a mai történetednek."
+          : "A napod számai mellett te is itt vagy."}
+      </p>
+      <RhythmArc
+        labels={["Reggel", "Délben", "Délután", "Este"]}
+        completed={s.checkins.length}
+        title={`${s.checkins.length} napi bejelentkezés`}
+      />
+      {!saved ? (
+        <div className="pr-checkin">
+          <span className="pr-eyebrow">{next} · EGY PILLANAT MAGADRA</span>
+          <div className="pr-feelings">
+            {[
+              ["good", "Jól vagyok", "sun"],
+              ["busy", "Tele a fejem", "wind"],
+              ["tired", "Fáradtabban", "moon"],
+            ].map(([id, t, icon]) => (
+              <button
+                key={id}
+                aria-pressed={id === feeling}
+                onClick={() => setFeeling(id)}
+              >
+                <Icon name={icon} size={20} />
+                <span>{t}</span>
+              </button>
+            ))}
+          </div>
+          {feeling && (
+            <div className="pr-checkin-note">
+              <textarea
+                aria-label="Egy mondat a közérzetedről"
+                placeholder="Van mögötte valami? Egy mondat is elég. (Opcionális)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={1000}
+              />
+              <button
+                className="pr-primary"
+                onClick={() => {
+                  setS((v) => recordPresenceCheckin(v, feeling, note));
+                  setSaved(true);
+                  celebrate();
+                  toast("A check-in a mai kontextusod része lett");
+                }}
+              >
+                Elteszem a napomba
+                <Icon name="check" size={17} />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="pr-checkin-saved">
+          <Icon name="check-circle" size={21} />
+          <span>{s.checkins.at(-1).note || "A közérzeted elmentve."}</span>
+          <button
+            onClick={() => {
+              setSaved(false);
+              setFeeling(null);
+              setNote("");
+            }}
+          >
+            Új bejelentkezés
+          </button>
+        </div>
+      )}
+      <button className="pr-conversation-invite" onClick={() => ask()}>
+        <span className="pr-invite-icon">
+          <Icon name="message" size={24} />
+        </span>
+        <span>
+          <strong>Mi jár a fejedben?</strong>
+          <small>Folytassuk onnan, ahol tartasz.</small>
+        </span>
+        <Icon name="arrow-up-right" size={20} />
+      </button>
+      <section className="pr-home-thread">
+        <span className="pr-eyebrow">KÖZBEN AZ ÉLETED IS HALAD</span>
+        <h2>
+          Az apró részletek
+          <br />
+          <em>összeérnek.</em>
+        </h2>
+        <DayConnection
+          cycle={s.training.cycle}
+          budget={api.budget}
+          onMovement={() => navigate("movement", "gym")}
+          onFuel={() => navigate("fuel", "today")}
+        />
+        <Row
+          icon="sparkles"
+          title="Egy alakuló összefüggés"
+          sub="Sűrű munkanapok, esti lelassulás"
+          onClick={() => navigate("understanding", "patterns")}
+        />
+      </section>
+      <button className="pr-primary" onClick={() => api.open("capture")}>
+        Hozzáadok a napomhoz <Icon name="plus" />
+      </button>
+      <DailyImprint
+        state={s}
+        compact
+        onOpen={() => navigate("life", "today")}
+      />
+      <p className="pr-quiet-foot">
+        Nem mindenből lesz teendő.
+        <br />
+        Van, amit egyszerűen jó megosztani.
+      </p>
+    </div>
+  );
+}
+function Workspace({ api }) {
+  const { s, budget, navigate, ask } = api,
+    tab = s.tabs[s.role],
+    role = ROLES[s.role];
+  return (
+    <div className="pr-workspace">
+      <div className="pr-workspace-intro">
+        <SectionTitle
+          kicker={role.eyebrow}
+          title={
+            s.role === "life" && tab === "today"
+              ? "A napjaid lenyomata."
+              : role.name
+          }
+        />
+        <Orb role={s.role} size={74} />
+      </div>
+      {s.role === "movement" ? (
+        <>
+          {tab === "today" ? (
+            <>
+              <p className="pr-lead">A sportjaid egy közös nap részei.</p>
+              <button
+                className="pr-primary"
+                onClick={() => api.core.go("workout")}
+              >
+                {s.full.session?.status === "active"
+                  ? "Edzés folytatása"
+                  : "Edzés indítása"}
+              </button>
+              <button
+                className="pr-secondary"
+                onClick={() => api.goFeature("train")}
+              >
+                Mai és heti edzésnapló
+              </button>
+              <CycleSignature
+                cycle={s.training.cycle}
+                onOpen={() => navigate("movement", "gym")}
+              />
+              <Row
+                icon="dumbbell"
+                title={
+                  s.full.session?.status === "active"
+                    ? s.full.session.title
+                    : s.training.cycle.session
+                }
+                sub="A mezociklus edzésnapja"
+                value="17:30"
+              />
+              <Row
+                icon="activity"
+                title="Röplabda"
+                sub={
+                  s.training.sportActive
+                    ? "75 perc · tervezett"
+                    : "Ma elmarad · átvezetve"
+                }
+                value={s.training.sportActive ? "19:00" : "—"}
+                onClick={() => navigate("movement", "sport")}
+              />
+              <Bridge
+                api={api}
+                text="A mai sportterhelés az étkezési keretben is megjelenik."
+                label="Táplálás"
+                role="fuel"
+                tab="today"
+              />
+            </>
+          ) : tab === "gym" ? (
+            <>
+              <p className="pr-lead">A következetes munka íve.</p>
+              <CycleSignature cycle={s.training.cycle} />
+              <div className="pr-program-days">
+                {[
+                  ["H", "Push A", "Teljesítve"],
+                  ["K", "Pull A", "Ma · 17:30"],
+                  ["Cs", "Láb A", "Következő"],
+                  ["Szo", "Felsőtest", "Tervezett"],
+                ].map(([d, t, sub]) => (
+                  <div key={d} className={d === "K" ? "today" : ""}>
+                    <b>{d}</b>
+                    <span>
+                      <strong>{t}</strong>
+                      <small>{sub}</small>
+                    </span>
+                    <Icon name={d === "H" ? "check" : "dumbbell"} size={18} />
+                  </div>
+                ))}
+              </div>
+              <CompanionLine api={api}>
+                A programodat, a naplózott sorozatokat és a sportjaidat együtt
+                figyelem. A beszélgetés innen indul.
+              </CompanionLine>
+              <button
+                className="pr-secondary"
+                onClick={() =>
+                  ask("Hogy fér össze a mai edzés és a közérzetem?")
+                }
+              >
+                Beszéljük át a mai napot
+                <Icon name="message" size={18} />
+              </button>
+            </>
+          ) : tab === "sport" ? (
+            <>
+              <p className="pr-lead">A pályán is ugyanaz a tested dolgozik.</p>
+              <div className="pr-sport-art">
+                <Icon name="activity" size={65} />
+                <span>Röplabda</span>
+                <small>
+                  {s.training.sportActive
+                    ? "Ma · 19:00 · 75 perc"
+                    : "Mai alkalom elmarad"}
+                </small>
+              </div>
+              <Row
+                icon="calendar"
+                title="Kedd és csütörtök"
+                sub="A megszokott sportheted"
+              />
+              <Bridge
+                api={api}
+                text={`${budget.sport} kcal sporthoz kapcsolt rész a mai mintakeretben.`}
+                label="Étkezési összefüggés"
+                role="fuel"
+                tab="today"
+              />
+              <button
+                className="pr-primary"
+                onClick={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
+              >
+                Mi változik, ha ma elmarad?
+                <Icon name="message" size={18} />
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="pr-lead">Futás a teljes terhelésed mellett.</p>
+              <div className="pr-run-art">
+                <svg
+                  viewBox="0 0 300 120"
+                  aria-label="Szemléltető futóútvonal"
+                  role="img"
+                >
+                  <path
+                    d="M10 90C50 15 100 130 143 45S219 35 280 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray="3 7"
+                  />
+                  <circle cx="10" cy="90" r="6" fill="currentColor" />
+                  <circle cx="280" cy="20" r="6" fill="currentColor" />
+                </svg>
+                <strong>
+                  4,1 <small>km</small>
+                </strong>
+                <p>Legutóbbi könnyű kör · 29 perc</p>
+              </div>
+              <Row
+                icon="run"
+                title="Könnyű futás"
+                sub="Beszélgetős tempó · szombat"
+              />
+              <CompanionLine api={api}>
+                A futásodat is beleszámítjuk a mozgásod történetébe, az erősítés
+                és a röplabda mellé.
+              </CompanionLine>
+            </>
+          )}
+        </>
+      ) : s.role === "fuel" ? (
+        <>
+          {tab === "today" ? (
+            <>
+              <p className="pr-lead">A célod együtt mozog a napoddal.</p>
+              <button
+                className="pr-primary"
+                onClick={() => api.goFeature("fuel-log")}
+              >
+                Étkezés hozzáadása <Icon name="plus" />
+              </button>
+              <FuelSignature
+                budget={budget}
+                sportActive={s.training.sportActive}
+                onSport={() => navigate("movement", "sport")}
+                onExplain={() => ask("Mi lenne, ha elmaradna ma a röplabda?")}
+              />
+              <p className="pr-small-note">
+                Szemléltető összefüggés, nem személyre számított táplálkozási
+                előírás.
+              </p>
+              <Bridge
+                api={api}
+                text={
+                  s.training.sportActive
+                    ? "A mai röplabdád is része ennek a keretnek."
+                    : "A röplabda elmaradását a keret is követte."
+                }
+                label="Mai mozgás"
+                role="movement"
+                tab="sport"
+              />
+              <Row
+                icon="utensils"
+                title="Étkezési naplóm"
+                sub="Reggeli, ebéd és a köztük lévő apróságok"
+                onClick={() => navigate("fuel", "log")}
+              />
+            </>
+          ) : tab === "log" ? (
+            <>
+              <p className="pr-lead">A teljes napod egy asztalnál.</p>
+              <div className="pr-food-scene">
+                <FoodArt kind="bowl" />
+              </div>
+              {[
+                ["07:50", "Joghurtos zab", "420 kcal"],
+                ["12:40", "Csirkés rizstál", "680 kcal"],
+                ["15:10", "Gyümölcs és mandula", "340 kcal"],
+              ].map(([t, n, k]) => (
+                <Row key={t} icon="utensils" title={n} sub={t} value={k} />
+              ))}
+              <button
+                className="pr-primary"
+                onClick={() =>
+                  ask("Nézzük át a mai étkezésemet a sport mellett.")
+                }
+              >
+                Beszéljünk az étkezésemről
+                <Icon name="message" size={18} />
+              </button>
+            </>
+          ) : tab === "recipes" ? (
+            <>
+              <p className="pr-lead">Ötletek a valódi napjaidhoz.</p>
+              <div className="pr-recipe-cover">
+                <FoodArt kind="salmon" />
+                <span>ESTÉRE</span>
+                <h2>Citromos lazactál</h2>
+                <p>25 perc · a kamrádból indulva</p>
+              </div>
+              <Bridge
+                api={api}
+                text="Az otthoni alapanyagaid a receptválasztásnál is számítanak."
+                label="Kamrám"
+                role="fuel"
+                tab="pantry"
+              />
+            </>
+          ) : (
+            <>
+              <p className="pr-lead">Amiből otthon építkezhetsz.</p>
+              {[
+                ["box", "Barna rizs", "750 g"],
+                ["utensils", "Görög joghurt", "400 g"],
+                ["leaf", "Brokkoli", "300 g"],
+                ["utensils", "Lazac", "2 adag"],
+              ].map(([icon, n, v]) => (
+                <Row
+                  key={n}
+                  icon={icon}
+                  title={n}
+                  sub="A bemutató kamrájában"
+                  value={v}
+                />
+              ))}
+              <Bridge
+                api={api}
+                text="A receptek és a napló ugyanazokra az alapanyagokra épülnek."
+                label="Receptötletek"
+                role="fuel"
+                tab="recipes"
+              />
+            </>
+          )}
+        </>
+      ) : s.role === "life" ? (
+        <Life api={api} />
+      ) : (
+        <Understanding api={api} />
+      )}
+    </div>
+  );
+}
+function Bridge({ api, text, label, role, tab }) {
+  return (
+    <button className="pr-bridge" onClick={() => api.navigate(role, tab)}>
+      <Orb role={role} size={36} />
+      <span>
+        <small>{text}</small>
+        <strong>
+          {label}
+          <Icon name="arrow-up-right" size={14} />
+        </strong>
+      </span>
+    </button>
+  );
+}
+function CompanionLine({ api, children }) {
+  return (
+    <div className="pr-companion-line">
+      <Orb role={api.s.role} size={40} />
+      <p>{children}</p>
+    </div>
+  );
+}
+function Life({ api }) {
+  const { s, setS, navigate, ask, toast } = api,
+    tab = s.tabs.life;
+  return tab === "today" ? (
+    <>
+      <div className="core-hub-links">
+        <button onClick={() => api.goFeature("me-people")}>
+          Emberek és kapcsolatok →
+        </button>
+        <button onClick={() => api.goFeature("goals")}>
+          Életcélok és pillérek →
+        </button>
+        <button onClick={() => api.goFeature("me-routines")}>Rutinok →</button>
+        <button onClick={() => api.goFeature("notifications")}>
+          Értesítések →
+        </button>
+      </div>
+      <DailyImprint state={s} onJournal={() => navigate("life", "journal")} />
+      <Row
+        icon="sun"
+        title={`${s.checkins.length} mai bejelentkezés`}
+        sub="Reggel, délben, délután és este"
+        onClick={() => navigate("home", "today")}
+      />
+      <Row
+        icon="book"
+        title="Napló és hála"
+        sub="Szabad szöveg. A saját hangodon."
+        onClick={() => navigate("life", "journal")}
+      />
+      <Row
+        icon="moon"
+        title="Alvás és súly"
+        sub="Mérések a közérzet mellé"
+        onClick={() => navigate("life", "body")}
+      />
+      <Row
+        icon="heart"
+        title="Rutinok és kapcsolatok"
+        sub="Ami megtart a hétköznapokban"
+        onClick={() => navigate("life", "goals")}
+      />
+    </>
+  ) : tab === "journal" ? (
+    <>
+      <p className="pr-lead">Itt nem kell szépen megfogalmaznod.</p>
+      <label className="pr-journal-field">
+        Mi van most benned?
+        <textarea
+          value={s.journal}
+          onChange={(e) => setS((v) => ({ ...v, journal: e.target.value }))}
+          placeholder="Ami foglalkoztat, ami nehéz, ami jólesett…"
+          maxLength={4000}
+        />
+      </label>
+      <label className="pr-journal-field">
+        Miért vagy ma hálás?
+        <textarea
+          value={s.gratitude}
+          onChange={(e) => setS((v) => ({ ...v, gratitude: e.target.value }))}
+          placeholder="Egy egészen kis dolog is lehet."
+          maxLength={2000}
+        />
+      </label>
+      <DailyImprint
+        state={s}
+        compact
+        onOpen={() => navigate("life", "today")}
+      />
+      <span className="pr-saved-note">
+        <Icon name="check" size={13} />
+        Helyben, írás közben megőrizve
+      </span>
+      <button
+        className="pr-primary"
+        onClick={() => ask("Szeretnék beszélni arról, ami ma foglalkoztat.")}
+      >
+        Beszélgetnék róla
+        <Icon name="message" size={18} />
+      </button>
+    </>
+  ) : tab === "body" ? (
+    <>
+      <p className="pr-lead">A tested jelzései is hozzád tartoznak.</p>
+      <div className="core-hub-links">
+        <button onClick={() => api.goFeature("me-weight-log")}>
+          Súly rögzítése →
+        </button>
+        <button onClick={() => api.goFeature("me-weight")}>
+          Súlynapló és trend →
+        </button>
+        <button onClick={() => api.goFeature("me-sleep-log")}>
+          Alvás rögzítése →
+        </button>
+        <button onClick={() => api.goFeature("me-sleep")}>
+          Alvásnapló és cél →
+        </button>
+      </div>
+      <div className="pr-body-pair">
+        <div>
+          <Icon name="moon" />
+          <strong>
+            {Math.floor((s.full.personal.sleep.latest?.minutes || 0) / 60)}{" "}
+            <small>ó</small> {(s.full.personal.sleep.latest?.minutes || 0) % 60}{" "}
+            <small>p</small>
+          </strong>
+          <span>Legutóbbi alvás</span>
+        </div>
+        <div>
+          <Icon name="scale" />
+          <strong>
+            {s.full.personal.weight.latest} <small>kg</small>
+          </strong>
+          <span>Legutóbbi mérés</span>
+        </div>
+      </div>
+      <Sparkline
+        values={
+          s.full.personal.weight.logs.length
+            ? [...s.full.personal.weight.logs].reverse().map((l) => l.value)
+            : [0]
+        }
+        width={320}
+        height={95}
+      />
+      <p className="pr-small-note">
+        A trend a mentett súlyméréseidet követi. A naplókban a korábbi
+        bejegyzéseket is módosíthatod.
+      </p>
+      <CompanionLine api={api}>
+        Az alvás és a súly a mozgásoddal, az étkezéseiddel és a közérzeteddel
+        együtt adnak képet.
+      </CompanionLine>
+      <button
+        className="pr-secondary"
+        onClick={() => ask("Mire emlékszel rólam a naplóim alapján?")}
+      >
+        A tágabb összefüggés
+        <Icon name="message" size={18} />
+      </button>
+    </>
+  ) : (
+    <>
+      <p className="pr-lead">Amiért jó elindulni reggel.</p>
+      <div className="pr-goal-art">
+        <Icon name="sun" size={41} />
+        <h2>
+          Erősen jelen lenni
+          <br />a saját életemben.
+        </h2>
+        <p>Egy életcél a bemutatóban</p>
+      </div>
+      <Row
+        icon="target"
+        title="Tartható mozgásritmus"
+        sub="Az erő építése hosszabb távon"
+      />
+      <Row
+        icon="users"
+        title="Több valódi közös idő"
+        sub="Máté · szombati kávé"
+      />
+      <Row
+        icon="moon"
+        title="Nyugodtabb esték"
+        sub="Telefon félre, néhány sor napló"
+      />
+      <button
+        className="pr-secondary"
+        onClick={() => ask("Beszélgessünk arról, mi fontos nekem most.")}
+      >
+        Mi fontos nekem most?
+        <Icon name="message" size={18} />
+      </button>
+    </>
+  );
+}
+function Understanding({ api }) {
+  const { s, navigate, ask } = api,
+    tab = s.tabs.understanding;
+  return tab === "patterns" ? (
+    <>
+      <p className="pr-lead">A részletekből lassan kirajzolódik valami.</p>
+      <div className="pr-pattern-study">
+        <span className="pr-eyebrow">ALAKULÓ MEGFIGYELÉS</span>
+        <h2>
+          A sűrű napok után
+          <br />
+          nehezebb lelassulni?
+        </h2>
+        <Sparkline
+          values={[30, 50, 40, 75, 60, 85, 64]}
+          width={300}
+          height={80}
+        />
+        <p>
+          Check-inek és esti napló · szemléltető összefüggés, még nem
+          megerősített tudás.
+        </p>
+      </div>
+      <CompanionLine api={api}>
+        A mintát a saját tapasztalatoddal együtt értelmezzük. Együttjárásból
+        önmagában nem lesz biztos következtetés.
+      </CompanionLine>
+      <button
+        className="pr-primary"
+        onClick={() => ask("Mit tudsz rólam a minták és a naplóim alapján?")}
+      >
+        Beszéljük át
+        <Icon name="message" size={18} />
+      </button>
+    </>
+  ) : tab === "memory" ? (
+    <>
+      <p className="pr-lead">Nem kell minden alkalommal újrakezdenünk.</p>
+      <div className="pr-memory-layers">
+        {[
+          ["01", "Most", "A mai nap, a check-inek és ez a beszélgetés."],
+          [
+            "02",
+            "Emlékek",
+            "Edzések, étkezések, naplórészletek, kapcsolódások.",
+          ],
+          [
+            "03",
+            "Közös tudás",
+            "Megerősített minták, preferenciák és életcélok.",
+          ],
+          [
+            "04",
+            "Alakuló kép",
+            "A rólad épülő többoldalú profil, javítható állításokkal.",
+          ],
+        ].map(([n, t, d]) => (
+          <div key={n}>
+            <span>{n}</span>
+            <h2>{t}</h2>
+            <p>{d}</p>
+          </div>
+        ))}
+      </div>
+      <p className="pr-small-note">
+        A memória szerepeinek szemléltetése; itt nem fut háttérfeldolgozás.
+      </p>
+      <Bridge
+        api={api}
+        text="Az emlékezetből áll össze a tágabb kép, a te visszajelzéseiddel."
+        label="Karakter"
+        role="understanding"
+        tab="profile"
+      />
+    </>
+  ) : tab === "profile" ? (
+    <>
+      <p className="pr-lead">Több vagy, mint egyetlen mutató.</p>
+      <div className="pr-profile-orbit">
+        <Orb role="understanding" size={92} />
+        {[
+          ["Fizikai", "dumbbell"],
+          ["Mentális", "brain"],
+          ["Szociális", "users"],
+          ["Egészségi", "heart"],
+          ["Lelki", "sun"],
+        ].map(([t, i], n) => (
+          <span style={{ "--n": n }} key={t}>
+            <Icon name={i} size={20} />
+            <small>{t}</small>
+          </span>
+        ))}
+      </div>
+      <p className="pr-profile-caption">
+        Egy közös történet.
+        <br />
+        Öt egymáshoz kapcsolódó nézőpont.
+      </p>
+      <CompanionLine api={api}>
+        A rólad alakuló kép nem végleges címke. A saját szavaid és
+        visszajelzéseid mindig részei maradnak.
+      </CompanionLine>
+      <button
+        className="pr-secondary"
+        onClick={() => ask("Miből épül a rólam alakuló profil?")}
+      >
+        Miből áll össze?
+        <Icon name="message" size={18} />
+      </button>
+    </>
+  ) : (
+    <>
+      <p className="pr-lead">Lehetőségek, amelyeket együtt mérlegelünk.</p>
+      <div className="pr-outlook">
+        <Icon name="sparkles" size={32} />
+        <h2>
+          Mi könnyíthetné
+          <br />a következő hetedet?
+        </h2>
+        <p>
+          A visszatérő megfigyelésekből beszélgetésre hívó javaslat lesz. A
+          mezociklusod, az étkezésed és a jólléted együtt marad a képben.
+        </p>
+      </div>
+      <button
+        className="pr-primary"
+        onClick={() => ask("Hogy fér össze a mai edzés és a közérzetem?")}
+      >
+        Nézzük együtt a lehetőségeket
+        <Icon name="message" size={18} />
+      </button>
+      <p className="pr-small-note">
+        Szemléltető irány, nem automatikus diagnózis vagy kész tervmódosítás.
+      </p>
+    </>
+  );
+}

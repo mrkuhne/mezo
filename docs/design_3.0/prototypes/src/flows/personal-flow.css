@@ -1,0 +1,814 @@
+.personal-flow {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.personal-flow p {
+  overflow-wrap: anywhere;
+}
+.personal-flow button {
+  font-family: inherit;
+}
+.personal-flow .flow-title {
+  font-size: 34px;
+}
+.personal-flow .text-button {
+  min-height: 44px;
+}
+.personal-flow .flow-companion-copy {
+  font-size: 14px;
+}
+.personal-flow .flow-companion .flow-kicker {
+  font-size: 11px;
+}
+.personal-flow .flow-tabs button {
+  font-size: 14px;
+}
+.personal-flow .flow-status {
+  font-size: 14px;
+}
+.personal-full {
+  width: 100%;
+  margin-top: 22px;
+}
+.personal-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 8px 0 30px;
+}
+.personal-monogram {
+  width: 70px;
+  height: 70px;
+  border: 1px solid var(--accent);
+  outline: 6px solid var(--panel);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 34px;
+  flex-shrink: 0;
+  background: var(--soft);
+}
+.personal-identity h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 4px 0;
+}
+.personal-identity p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+.personal-hub-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+.personal-hub-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 15px;
+  color: var(--ink);
+  text-align: left;
+  overflow: hidden;
+}
+.personal-hub-tile > svg:first-child {
+  margin-bottom: 16px;
+  color: var(--accent);
+}
+.personal-hub-tile > span {
+  font-size: 14px;
+}
+.personal-hub-tile > strong {
+  font-family: var(--font-display);
+  font-size: 26px;
+  white-space: nowrap;
+  margin-top: 5px;
+  font-weight: 500;
+}
+.personal-hub-tile em {
+  font-family: inherit;
+  font-size: 16px;
+  font-style: normal;
+}
+.personal-hub-tile small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.personal-hub-tile > svg:last-child {
+  width: 100%;
+  margin-top: 12px;
+}
+.personal-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  width: 100%;
+  height: 62px;
+  margin-top: 12px;
+}
+.personal-mini-bars i {
+  flex: 1;
+  background: var(--accent);
+  opacity: 0.6;
+  border-radius: 4px;
+}
+.personal-mini-bars i:last-child {
+  opacity: 1;
+}
+.personal-note {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--muted);
+  border-left: 2px solid var(--accent);
+  padding-left: 16px;
+  margin: 26px 0;
+}
+.personal-note .text-button {
+  display: flex;
+}
+.personal-sleep-hero {
+  position: relative;
+  margin: 28px auto 18px;
+  max-width: 300px;
+  height: 165px;
+}
+.personal-sleep-hero > svg {
+  width: 100%;
+  height: 150px;
+}
+.personal-sleep-hero > div {
+  position: absolute;
+  top: 77px;
+  width: 100%;
+  text-align: center;
+}
+.personal-sleep-hero strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.personal-sleep-hero small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.personal-statline {
+  display: flex;
+  justify-content: space-around;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  margin: 27px 0 8px;
+}
+.personal-statline > div {
+  text-align: center;
+  flex: 1;
+}
+.personal-statline svg {
+  display: block;
+  margin: 0 auto 6px;
+  color: var(--accent);
+  width: 17px;
+}
+.personal-statline strong {
+  font-size: 18px;
+  display: block;
+  font-weight: 500;
+}
+.personal-statline small {
+  font-size: 11px;
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.personal-sleep-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 10px 4px 0;
+}
+.personal-sleep-bars button {
+  background: none;
+  border: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  min-width: 24px;
+  min-height: 120px;
+}
+.personal-sleep-bars button > span {
+  width: 100%;
+  background: var(--accent);
+  border-radius: 7px 7px 3px 3px;
+  opacity: 0.58;
+  max-height: 130px;
+}
+.personal-sleep-bars button:last-child > span {
+  opacity: 1;
+}
+.personal-sleep-bars small {
+  font-size: 11px;
+  margin-top: 9px;
+  color: var(--muted);
+}
+.personal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.personal-tags button {
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 10px 13px;
+  min-height: 44px;
+  font-size: 14px;
+  border-radius: 12px;
+  color: var(--ink);
+}
+.personal-tags button.selected,
+.personal-quality button.selected,
+.personal-week-picker button.selected {
+  background: var(--ink);
+  color: var(--app-bg);
+  border-color: var(--ink);
+}
+.personal-quote {
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.7;
+  padding: 10px 0;
+  color: var(--ink);
+}
+.personal-duration {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 17px;
+  background: var(--soft);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+.personal-duration > strong {
+  font-size: 23px;
+  font-weight: 500;
+}
+.personal-duration > span {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+.personal-fieldset {
+  padding: 0;
+  border: 0;
+  margin: 25px 0;
+}
+.personal-fieldset legend {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.personal-fieldset legend small {
+  font-size: 11px;
+  display: inline-block;
+  margin-left: 7px;
+}
+.personal-quality {
+  display: flex;
+  gap: 5px;
+}
+.personal-quality button {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 11px 1px;
+  color: var(--ink);
+  min-height: 66px;
+}
+.personal-quality span {
+  display: block;
+  font-size: 18px;
+}
+.personal-quality small {
+  font-size: 11px;
+  display: block;
+  margin-top: 3px;
+}
+.personal-weight-number {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 25px 0 0;
+}
+.personal-weight-number strong {
+  font-family: var(--font-display);
+  font-size: 76px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+.personal-weight-number span {
+  font-size: 22px;
+  color: var(--muted);
+}
+.personal-subline {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 10px 0;
+}
+.personal-weight-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 30px;
+  overflow: hidden;
+}
+.personal-chart-bounds {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 0;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.personal-weight-chart > svg {
+  width: 100%;
+  min-width: 0;
+}
+.personal-facepile {
+  display: flex;
+  align-items: center;
+  padding: 6px 5px 18px;
+}
+.personal-facepile > button,
+.personal-face {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--soft);
+  border: 3px solid var(--app-bg);
+  font-family: var(--font-display);
+  font-size: 23px;
+  color: var(--ink);
+}
+.personal-facepile > button {
+  margin-left: -5px;
+}
+.personal-facepile > button:nth-child(2n) {
+  background: var(--panel);
+}
+.personal-facepile > span {
+  margin-left: 15px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.personal-person-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+  color: var(--ink);
+  align-items: flex-start;
+}
+.personal-person-row > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.personal-person-row strong {
+  font-size: 17px;
+  font-weight: 500;
+  display: block;
+}
+.personal-person-row small {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin: 3px 0 8px;
+}
+.personal-person-row p {
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0;
+  color: var(--muted);
+}
+.personal-person-row > svg {
+  margin-top: 15px;
+}
+.personal-profile {
+  text-align: center;
+  padding: 8px 0;
+}
+.personal-profile .large {
+  width: 90px;
+  height: 90px;
+  font-size: 44px;
+  margin: 0 auto 14px;
+  border: 1px solid var(--line);
+  outline: 7px solid var(--panel);
+}
+.personal-profile h1 {
+  font-family: var(--font-display);
+  font-size: 39px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 8px 0;
+}
+.personal-profile > .text-button {
+  margin: auto;
+}
+.personal-event {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+}
+.personal-event h3 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  margin: 9px 0;
+}
+.personal-event p {
+  color: var(--muted);
+  font-size: 14px;
+}
+.personal-event .flow-actions {
+  margin-bottom: 0;
+}
+.personal-event .text-button {
+  font-size: 12px;
+}
+.personal-contact {
+  display: flex;
+  gap: 15px;
+  position: relative;
+  border-left: 1px solid var(--line);
+  margin-left: 6px;
+  padding: 0 0 25px 21px;
+}
+.personal-timeline-dot {
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.personal-contact p {
+  font-size: 14px;
+  margin: 8px 0 12px;
+  line-height: 1.8;
+}
+.personal-date-edit {
+  padding-bottom: 16px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  gap: 0 8px;
+}
+.personal-date-edit .flow-field:first-child {
+  grid-column: 1 / -1;
+}
+.personal-date-edit > .icon-button {
+  align-self: end;
+  margin-bottom: 18px;
+}
+.personal-date-edit .flow-field {
+  margin: 8px 0;
+}
+.personal-routine-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 22px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.personal-routine-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--accent);
+}
+.personal-routine-top span {
+  font-size: 11px;
+  color: var(--muted);
+  flex: 1;
+}
+.personal-routine-card h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 17px 0 6px;
+}
+.personal-routine-card p {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+.personal-routine-progress {
+  display: flex;
+  gap: 7px;
+  margin: 0 0 10px;
+}
+.personal-routine-progress i {
+  height: 4px;
+  background: var(--line);
+  flex: 1;
+  border-radius: 4px;
+}
+.personal-routine-progress i.done {
+  background: var(--accent);
+}
+.personal-routine-card small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.personal-routine-big {
+  margin: 10px 0 26px;
+}
+.personal-routine-big > strong {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 500;
+}
+.personal-routine-big > strong span {
+  font-size: 28px;
+  color: var(--muted);
+}
+.personal-routine-big p {
+  font-size: 14px;
+  color: var(--muted);
+}
+.personal-step {
+  display: flex;
+  gap: 15px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+}
+.personal-step-check {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.personal-step.completed .personal-step-check {
+  background: var(--accent);
+  color: var(--button-ink);
+  border-color: var(--accent);
+}
+.personal-step-check:disabled {
+  opacity: 1;
+}
+.personal-step strong {
+  font-size: 15px;
+  font-weight: 500;
+  display: block;
+  padding-top: 4px;
+}
+.personal-step small {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  display: block;
+  margin-top: 5px;
+}
+.personal-consistency {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.personal-consistency > div {
+  text-align: center;
+  flex: 1;
+}
+.personal-consistency i {
+  display: grid;
+  place-items: center;
+  height: 35px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--button-ink);
+  font-style: normal;
+}
+.personal-consistency i.active {
+  background: var(--accent);
+}
+.personal-consistency small {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-top: 7px;
+}
+.personal-week-picker {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.personal-week-picker button {
+  height: 44px;
+  min-width: 0;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.personal-routine-edit-step {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.personal-routine-edit-step .flow-field {
+  flex: 1;
+  min-width: 0;
+}
+.personal-routine-edit-step .icon-button {
+  margin-top: 25px;
+  flex-shrink: 0;
+}
+.personal-notification-filters .flow-tabs {
+  gap: 5px;
+}
+.personal-notification-filters .flow-tabs button {
+  font-size: 12px;
+  padding: 9px 11px;
+}
+.personal-notification {
+  display: flex;
+  text-align: left;
+  gap: 13px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  padding: 18px 0;
+  color: var(--ink);
+}
+.personal-notification.unread {
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 18px 12px;
+  margin: 8px 0;
+  border-bottom-color: transparent;
+}
+.personal-notification-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 38px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.personal-notification > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.personal-notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 5px;
+}
+.personal-notification-meta i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.personal-notification strong {
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 500;
+  display: block;
+}
+.personal-notification p {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+  margin: 7px 0 10px;
+}
+.personal-notification small {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+.personal-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  min-height: 66px;
+  border-bottom: 1px solid var(--line);
+  padding: 15px 0;
+}
+.personal-switch > span {
+  flex: 1;
+  min-width: 0;
+}
+.personal-switch strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.personal-switch small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 4px;
+}
+.personal-switch > input {
+  width: 44px;
+  height: 30px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.personal-flow button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.personal-flow .secondary-button:disabled {
+  opacity: 0.45;
+}
+.personal-flow form .flow-status svg {
+  vertical-align: middle;
+  margin-right: 7px;
+}
+@media (max-width: 380px) {
+  .personal-flow {
+    padding-left: 19px;
+    padding-right: 19px;
+  }
+  .personal-hub-tile {
+    padding: 16px 12px;
+  }
+  .personal-hub-tile > strong {
+    font-size: 24px;
+  }
+  .personal-flow .flow-actions {
+    gap: 7px;
+  }
+  .personal-flow .flow-actions > button {
+    font-size: 13px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .personal-quality small {
+    font-size: 11px;
+  }
+}
+
+.personal-sleep-bars {
+  gap: 2px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.personal-sleep-bars button {
+  min-width: 44px;
+}
+.personal-week-picker {
+  gap: 2px;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+}

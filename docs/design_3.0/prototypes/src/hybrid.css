@@ -1,0 +1,565 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap");
+
+/* ==== Hibrid tanulmány — Mozaik fény · Titanium szerkezet · Boop ==== */
+
+.hy-stage {
+  --hy-paper: #faf6f0;
+  --hy-ink: #2b2118;
+  --hy-ink-soft: #6e6257;
+  --hy-ink-mut: #a2958a;
+  --hy-ff-body: "Geist", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hy-ff-disp: "Fraunces", Georgia, serif;
+
+  --hy-wash-coral: linear-gradient(150deg, #ffe7dc, #fff7f2);
+  --hy-wash-sage: linear-gradient(150deg, #e9f1e2, #f7fbf3);
+  --hy-wash-sky: linear-gradient(150deg, #dfedf5, #f5fafd);
+  --hy-wash-gold: linear-gradient(150deg, #fff1d6, #fffaf0);
+  --hy-wash-lav: linear-gradient(150deg, #ebe6f8, #f9f6fe);
+  --hy-wash-rose: linear-gradient(150deg, #fae3ed, #fef8fb);
+
+  --hy-ink-coral: #a84a26;
+  --hy-ink-sage: #4e6b42;
+  --hy-ink-sky: #2e6e96;
+  --hy-ink-gold: #8a5e07;
+  --hy-ink-lav: #5d4fa0;
+  --hy-ink-rose: #8e3f6f;
+
+  --hy-sh-base: 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --hy-sh-coral: 0 17px 31px -17px rgba(255, 107, 74, 0.42), var(--hy-sh-base);
+  --hy-sh-sage: 0 17px 31px -17px rgba(110, 139, 94, 0.45), var(--hy-sh-base);
+  --hy-sh-sky: 0 17px 31px -17px rgba(78, 143, 184, 0.4), var(--hy-sh-base);
+  --hy-sh-gold: 0 17px 31px -17px rgba(181, 126, 20, 0.4), var(--hy-sh-base);
+  --hy-sh-lav: 0 17px 31px -17px rgba(93, 79, 160, 0.4), var(--hy-sh-base);
+  --hy-sh-rose: 0 17px 31px -17px rgba(142, 63, 111, 0.35), var(--hy-sh-base);
+
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 48px;
+  padding: 40px 20px 60px;
+  background: #f2ece3;
+  color: var(--hy-ink);
+  font-family: var(--hy-ff-body);
+}
+
+.hy-stage :where(button),
+.hy-selector :where(button) {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+/* ---- oldalsó magyarázó ---- */
+.hy-aside {
+  max-width: 240px;
+  padding-top: 18px;
+  display: none;
+}
+@media (min-width: 900px) {
+  .hy-aside {
+    display: block;
+  }
+}
+.hy-aside a {
+  color: var(--hy-ink-soft);
+  text-decoration: none;
+  font-size: 13px;
+}
+.hy-aside-eyebrow {
+  margin: 26px 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--hy-ink-mut);
+}
+.hy-aside h2 {
+  margin: 0 0 14px;
+  font-family: var(--hy-ff-disp);
+  font-size: 30px;
+  line-height: 1.14;
+  font-weight: 560;
+}
+.hy-aside h2 em {
+  color: #b0813b;
+}
+.hy-aside p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--hy-ink-soft);
+}
+
+/* ---- telefonkeret ---- */
+.hy-phone {
+  position: relative;
+  width: min(414px, 100%);
+  min-height: 780px;
+  display: flex;
+  flex-direction: column;
+  background: var(--hy-paper);
+  border-radius: 38px;
+  box-shadow:
+    0 40px 80px -30px rgba(43, 33, 24, 0.35),
+    0 0 0 1px rgba(43, 33, 24, 0.05);
+  overflow: hidden;
+}
+@media (max-width: 480px) {
+  .hy-stage {
+    padding: 0;
+    background: var(--hy-paper);
+  }
+  .hy-phone {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.hy-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px 2px;
+}
+.hy-date {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hy-ink-mut);
+}
+.hy-bell {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--hy-sh-base), 0 10px 20px -12px rgba(43, 33, 24, 0.25);
+}
+
+.hy-screen {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 18px 116px;
+}
+
+/* ---- Nap Mai: hero ---- */
+.hy-hero {
+  text-align: center;
+  padding: 14px 8px 20px;
+}
+.hy-pet {
+  display: inline-block;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+}
+.hy-pet:active {
+  transform: scale(0.94);
+}
+.hy-hello {
+  margin: 14px 0 6px;
+  font-family: var(--hy-ff-disp);
+  font-size: 27px;
+  font-weight: 560;
+}
+.hy-line {
+  margin: 0 auto;
+  max-width: 300px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--hy-ink-soft);
+}
+
+/* ---- mozaik ---- */
+.hy-mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.hy-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 128px;
+  padding: 14px 15px;
+  border-radius: 22px;
+  text-align: left;
+  color: var(--hy-ink);
+  animation: hy-enter 0.5s both;
+  animation-delay: var(--d, 0ms);
+  transition: transform 0.18s ease;
+}
+.hy-tile:active {
+  transform: scale(0.97);
+}
+.hy-tile.is-wide {
+  grid-column: span 2;
+}
+.hy-tile-eyebrow {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.hy-tile-spot {
+  margin: 4px 0 auto;
+  filter: drop-shadow(0 6px 8px rgba(43, 33, 24, 0.22));
+}
+.hy-tile-value {
+  font-size: 23px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.hy-tile-sub {
+  font-size: 12px;
+  color: var(--hy-ink-soft);
+}
+.hy-tile-action {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 650;
+  box-shadow: 0 8px 16px -8px rgba(43, 33, 24, 0.3);
+}
+.hy-tile-action:active {
+  transform: scale(0.92);
+}
+
+/* tónusok */
+.tone-coral { background: var(--hy-wash-coral); box-shadow: var(--hy-sh-coral); }
+.tone-sage { background: var(--hy-wash-sage); box-shadow: var(--hy-sh-sage); }
+.tone-sky { background: var(--hy-wash-sky); box-shadow: var(--hy-sh-sky); }
+.tone-gold { background: var(--hy-wash-gold); box-shadow: var(--hy-sh-gold); }
+.tone-lav { background: var(--hy-wash-lav); box-shadow: var(--hy-sh-lav); }
+.tone-rose { background: var(--hy-wash-rose); box-shadow: var(--hy-sh-rose); }
+.tone-coral .hy-tile-eyebrow { color: var(--hy-ink-coral); }
+.tone-sage .hy-tile-eyebrow { color: var(--hy-ink-sage); }
+.tone-sky .hy-tile-eyebrow { color: var(--hy-ink-sky); }
+.tone-gold .hy-tile-eyebrow { color: var(--hy-ink-gold); }
+.tone-lav .hy-tile-eyebrow { color: var(--hy-ink-lav); }
+.tone-rose .hy-tile-eyebrow { color: var(--hy-ink-rose); }
+
+/* ---- feladat-fejléc (kompakt, társ nélkül) ---- */
+.hy-task-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0 16px;
+  padding: 16px;
+  border-radius: 22px;
+}
+.hy-task-head h1 {
+  margin: 0;
+  font-family: var(--hy-ff-disp);
+  font-size: 21px;
+  font-weight: 600;
+}
+.hy-task-head p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--hy-ink-soft);
+}
+.hy-task-head .hy-clay {
+  filter: drop-shadow(0 6px 8px rgba(43, 33, 24, 0.22));
+}
+
+/* ---- kártyák, sorok ---- */
+.hy-page > .hy-card,
+.hy-page > .hy-energy,
+.hy-page > .hy-macros,
+.hy-page > .hy-primary,
+.hy-page > .hy-meals {
+  animation: hy-enter 0.5s both;
+  animation-delay: var(--d, 0ms);
+}
+.hy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--hy-sh-base), 0 14px 28px -18px rgba(43, 33, 24, 0.3);
+}
+.hy-card.tone-sky { background: var(--hy-wash-sky); box-shadow: var(--hy-sh-sky); }
+.hy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 14.5px;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.06);
+}
+.hy-row:last-of-type {
+  border-bottom: 0;
+}
+.hy-row strong {
+  font-variant-numeric: tabular-nums;
+}
+.hy-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  margin: 6px 0 14px;
+  padding: 15px;
+  border-radius: 18px;
+  font-size: 15px;
+  font-weight: 650;
+  color: #fff;
+  background: linear-gradient(150deg, #3f3226, #2b2118);
+  box-shadow: 0 16px 26px -14px rgba(43, 33, 24, 0.55);
+}
+.hy-primary:active {
+  transform: scale(0.98);
+}
+.hy-quiet {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--hy-ink-mut);
+}
+
+/* ---- Fuel energiaműszer ---- */
+.hy-energy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 10px 0 16px;
+}
+.hy-energy-num strong {
+  display: block;
+  font-size: 44px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hy-energy-num span {
+  font-size: 13px;
+  color: var(--hy-ink-soft);
+}
+.hy-macros {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 6px;
+}
+.hy-macro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--hy-ink-soft);
+}
+.hy-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.hy-ring > svg {
+  position: absolute;
+  inset: 0;
+}
+.hy-ring circle {
+  fill: none;
+  stroke-linecap: round;
+}
+.hy-ring-track {
+  stroke: rgba(43, 33, 24, 0.08);
+}
+.tone-sage .hy-ring-fill, .hy-ring.tone-sage .hy-ring-fill { stroke: #6e8b5e; }
+.hy-ring.tone-gold .hy-ring-fill { stroke: #c99425; }
+.hy-ring.tone-coral .hy-ring-fill { stroke: #ff6b4a; }
+.hy-ring.tone-lav .hy-ring-fill { stroke: #7f6cc9; }
+.hy-ring.tone-sky .hy-ring-fill { stroke: #4e8fb8; }
+.hy-ring-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hy-ring.tone-gold .hy-ring-track { stroke: rgba(181, 126, 20, 0.14); }
+
+.hy-meals .hy-meal {
+  gap: 12px;
+}
+.hy-meal > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.hy-meal small {
+  font-size: 11.5px;
+  color: var(--hy-ink-mut);
+}
+.hy-meal .hy-clay {
+  filter: drop-shadow(0 4px 6px rgba(43, 33, 24, 0.18));
+}
+
+/* ---- heti terhelés sávok ---- */
+.hy-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 64px;
+  padding: 4px 2px 0;
+}
+.hy-spark i {
+  flex: 1;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #7fb0d2, #4e8fb8);
+}
+.hy-spark i[data-empty="true"] {
+  background: rgba(43, 33, 24, 0.08);
+}
+
+/* ---- csonk ---- */
+.hy-stub-note {
+  max-width: 280px;
+  margin: 8px auto;
+  text-align: center;
+}
+
+/* ---- dokk ---- */
+.hy-dock {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 36px -18px rgba(43, 33, 24, 0.45), 0 0 0 1px rgba(43, 33, 24, 0.05);
+}
+.hy-boop-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 8px 5px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 650;
+  color: var(--hy-ink-soft);
+}
+.hy-boop-toggle:hover {
+  background: rgba(43, 33, 24, 0.05);
+}
+.hy-dock-tabs {
+  flex: 1;
+  display: flex;
+}
+.hy-dock-tabs button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px 7px;
+  border-radius: 18px;
+  font-size: 10.5px;
+  color: var(--hy-ink-mut);
+  animation: hy-enter 0.35s both;
+}
+.hy-dock-tabs button.is-active {
+  color: var(--hy-ink);
+  background: rgba(43, 33, 24, 0.055);
+  font-weight: 650;
+}
+.hy-dock-tabs .hy-clay {
+  filter: drop-shadow(0 3px 4px rgba(43, 33, 24, 0.18));
+}
+
+/* ---- területválasztó ---- */
+.hy-selector {
+  position: fixed;
+  inset: auto auto 18px 18px;
+  margin: 0;
+  padding: 18px 16px 14px;
+  width: min(320px, calc(100vw - 36px));
+  border: 0;
+  border-radius: 30px 30px 30px 12px;
+  background: #fffdf9;
+  box-shadow: 0 30px 60px -20px rgba(43, 33, 24, 0.45);
+  transform-origin: bottom left;
+  animation: hy-fan 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.hy-selector::backdrop {
+  background: rgba(43, 33, 24, 0.28);
+  backdrop-filter: blur(3px);
+}
+.hy-selector-eyebrow {
+  margin: 0 0 10px 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--hy-ink-mut);
+}
+.hy-selector button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 18px;
+  text-align: left;
+}
+.hy-selector button:hover,
+.hy-selector button.is-current {
+  background: rgba(43, 33, 24, 0.05);
+}
+.hy-selector strong {
+  display: block;
+  font-size: 15px;
+}
+.hy-selector small {
+  font-size: 11px;
+  color: var(--hy-ink-mut);
+}
+
+/* ---- belépő mozgás ---- */
+@keyframes hy-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes hy-fan {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hy-stage *,
+  .hy-selector {
+    animation: none !important;
+    transition: none !important;
+  }
+}
