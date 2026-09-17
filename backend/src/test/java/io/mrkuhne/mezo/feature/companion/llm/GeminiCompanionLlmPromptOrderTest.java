@@ -193,6 +193,8 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Graph(2, 8, 0.99, 0.05, 800, 6, 0.4, "0 20 3 * * *", 30, 0.05, 8),
                 List.of(),
                 new CompanionProperties.Turn(new CompanionProperties.Turn.Gear(true),
+                        new CompanionProperties.Turn.Planner(1),
+                        new CompanionProperties.Turn.Executor(4, 15_000L),
                         new CompanionProperties.Turn.Answerer("high")));
     }
 

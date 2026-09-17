@@ -15,6 +15,8 @@ final class CompanionPropertiesFixtures {
     static CompanionProperties withGearClassifier(boolean enabled) {
         CompanionProperties.Turn turn = new CompanionProperties.Turn(
             new CompanionProperties.Turn.Gear(enabled),
+            new CompanionProperties.Turn.Planner(1),
+            new CompanionProperties.Turn.Executor(4, 15_000L),
             new CompanionProperties.Turn.Answerer("high"));
         // 18 nulls + interventions + turn = the 20 components of CompanionProperties.
         return new CompanionProperties(null, null, null, null, null, null, null, null, null, null,

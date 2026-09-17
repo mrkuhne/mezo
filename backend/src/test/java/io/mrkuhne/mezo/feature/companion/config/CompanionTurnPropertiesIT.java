@@ -19,4 +19,11 @@ class CompanionTurnPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.turn().gear().classifierEnabled()).isTrue();
         assertThat(properties.turn().answerer().chatEffort()).isEqualTo("high");
     }
+
+    @Test
+    void testTurn_shouldBindPlannerAndExecutorDefaults_whenApplicationYmlIsLoaded() {
+        assertThat(properties.turn().planner().repairAttempts()).isEqualTo(1);
+        assertThat(properties.turn().executor().parallelism()).isEqualTo(4);
+        assertThat(properties.turn().executor().stepTimeoutMs()).isEqualTo(15000L);
+    }
 }
