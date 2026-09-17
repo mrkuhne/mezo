@@ -24,4 +24,15 @@ final class CompanionPropertiesFixtures {
         return new CompanionProperties(null, null, null, tools, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null, java.util.List.of(), turn);
     }
+
+    static CompanionProperties withExecutor(int parallelism, long stepTimeoutMs) {
+        CompanionProperties.Turn turn = new CompanionProperties.Turn(
+            new CompanionProperties.Turn.Gear(true),
+            new CompanionProperties.Turn.Planner(1),
+            new CompanionProperties.Turn.Executor(parallelism, stepTimeoutMs),
+            new CompanionProperties.Turn.Answerer("high"));
+        return new CompanionProperties(null, null, null, new CompanionProperties.Tools(15, 30, 26, 10),
+            null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, java.util.List.of(), turn);
+    }
 }

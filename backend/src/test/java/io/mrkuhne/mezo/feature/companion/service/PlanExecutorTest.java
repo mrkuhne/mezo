@@ -1,0 +1,111 @@
+package io.mrkuhne.mezo.feature.companion.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * Unit test with stub callbacks and a real pool — the end-to-end run against the real registry
+ * happens in TurnPipelineIT (Task 8). NOTE ON MOCKS: the house testing standard forbids mocks in
+ * INTEGRATION tests; this is a plain unit test of orchestration logic, where a stubbed registry
+ * is the only way to script slow/failing tools deterministically.
+ */
+class PlanExecutorTest {
+
+    private final ThreadPoolTaskExecutor pool = new ThreadPoolTaskExecutor();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    { pool.setCorePoolSize(4); pool.initialize(); }
+
+    @AfterEach
+    void shutDown() { pool.shutdown(); }
+
+    private static ToolCallback tool(String name, java.util.function.Function<String, String> body) {
+        ToolDefinition def = DefaultToolDefinition.builder()
+            .name(name).description("stub").inputSchema("{\"type\":\"object\",\"properties\":{}}").build();
+        return new ToolCallback() {
+            @Override public ToolDefinition getToolDefinition() { return def; }
+            @Override public String call(String toolInput) { return body.apply(toolInput); }
+            @Override public String call(String toolInput, ToolContext ctx) { return body.apply(toolInput); }
+        };
+    }
+
+    private PlanExecutor executor(long stepTimeoutMs, ToolCallback... tools) {
+        CompanionToolRegistry registry = Mockito.mock(CompanionToolRegistry.class);
+        Mockito.when(registry.callbacks(Mockito.any())).thenReturn(List.of(tools));
+        Mockito.when(registry.toolContext(Mockito.any(), Mockito.any())).thenReturn(Map.of());
+        return new PlanExecutor(registry, objectMapper,
+            CompanionPropertiesFixtures.withExecutor(4, stepTimeoutMs), pool);
+    }
+
+    private static TurnPlan.PlanStep step(String tool) {
+        return new TurnPlan.PlanStep(tool, Map.of(), "teszt");
+    }
+
+    @Test
+    void testExecute_shouldReturnOutcomesInPlanOrder_whenStepsFinishOutOfOrder() throws Exception {
+        CountDownLatch releaseSlow = new CountDownLatch(1);
+        ToolCallback slow = tool("slow_tool", in -> {
+            try { releaseSlow.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "lassú kész";
+        });
+        ToolCallback fast = tool("fast_tool", in -> { releaseSlow.countDown(); return "gyors kész"; });
+        PlanExecutor executor = executor(5_000, slow, fast);
+
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("slow_tool"), step("fast_tool")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+
+        assertThat(outcomes).extracting(ToolCallAudit.ToolOutcome::name)
+            .containsExactly("slow_tool", "fast_tool");
+        assertThat(outcomes).extracting(ToolCallAudit.ToolOutcome::result)
+            .containsExactly("lassú kész", "gyors kész");
+    }
+
+    @Test
+    void testExecute_shouldReportTimeoutHonestly_whenAStepMissesTheDeadline() {
+        CountDownLatch never = new CountDownLatch(1);
+        ToolCallback hanging = tool("hang_tool", in -> {
+            try { never.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "soha";
+        });
+        PlanExecutor executor = executor(200, hanging, tool("ok_tool", in -> "rendben"));
+
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("hang_tool"), step("ok_tool")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+
+        never.countDown();
+        assertThat(outcomes.getFirst().result()).isEqualTo(PlanExecutor.STEP_TIMEOUT);
+        assertThat(outcomes.get(1).result()).isEqualTo("rendben");
+    }
+
+    @Test
+    void testExecute_shouldReportFailureHonestly_whenSubmissionItselfBreaks() {
+        // A tool that is in the plan but not in the registry's callback list: validator normally
+        // prevents this, but the executor must not throw if reality diverges.
+        PlanExecutor executor = executor(1_000, tool("present_tool", in -> "megvan"));
+
+        List<ToolCallAudit.ToolOutcome> outcomes = executor.execute(
+            new ValidatedPlan(List.of(step("missing_tool"), step("present_tool")), List.of()),
+            UUID.randomUUID(), new ToolCallAudit(15, 10));
+
+        assertThat(outcomes.getFirst().result()).isEqualTo(PlanExecutor.STEP_FAILED);
+        assertThat(outcomes.get(1).result()).isEqualTo("megvan");
+    }
+}
