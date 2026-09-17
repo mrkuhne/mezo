@@ -11,7 +11,12 @@ shared styles in `food.css` (`fcer-`/`scx-` blocks) and `session.css` (`cer-` bl
 
 A ceremony is the full-screen celebratory moment that OWNS the screen right after the user
 completes something whole. It is not a toast and not a sheet: navigation hides, one choreography
-plays exactly once, and the way onward is a single clear CTA. The owner-approved dramaturgy is
+plays exactly once, and the way onward is a single clear CTA. **Owning the screen is literal:
+nothing else may be painted over a ceremony.** The workout close used to raise the pre-Titanium
+level-up overlay on top of itself, so the owner never saw the stars he had just earned; the
+finish flow no longer raises it and the ceremony carries `+N szerzett XP` itself
+(`mezo-e1ii9` Task 2). A surface that needs to celebrate a second thing folds it INTO the
+ceremony or waits for the way out. The owner-approved dramaturgy is
 always the same **two-act structure**:
 
 1. **Act one — the ignition.** Sky wash warms up, the gold-stone bar runs, counters count up,
@@ -50,8 +55,16 @@ Partial progress gets the quiet toast/react pair. Undo never triggers or replays
   comet head at the fill edge. Meal: fills to `score/10`. Completion ceremonies: fills to 1.
 - **Counters** — up to three warm tiles whose numbers count up with the same pass
   (meal: kcal / fehérje / szénhidrát; supplements: block items / taken today of total;
-  sport: perc / RPE / kcal-ha-ismert).
+  sport: perc / RPE / kcal-ha-ismert; **workout close: szett / ismétlés / kg × rep**, with a
+  separate two-tile stat strip below the verdict — `a pulton töltött idő` (omitted entirely
+  when the session is unmeasurable: an estimate is never printed as if it were a measurement)
+  and `szerzett XP`).
 - **Verdict** — one short sentence (see Copy), then context line (meal name · time, item names).
+  The workout close additionally keeps a **pending-sets line** when the session closed with
+  unticked sets — shared Titanium copy, and honest: the ceremony must not celebrate a whole
+  that was not whole (ruling, `mezo-e1ii9` Task 3). The prototype's `summary()` has neither
+  the verdict sentence nor that line; both are deliberate production additions, recorded in
+  the parity matrix (§19) so the deviation stays visible.
 - **Score card** (meal only) — the product's own AI-score mark + flat gold numeral `x,y / 10`.
   The owner explicitly rejected a stone box here: the AI score keeps its existing logo.
 - **CTA** — one primary button; meal and **train**: "Részletek" into the second step (the
