@@ -42,7 +42,7 @@ public class LexicalMemoryQuery {
               and (i.valid_from is null or i.valid_from <= :asOf)
               and (i.valid_to is null or i.valid_to >= :asOf)
               and i.occurred_on <= :asOf
-        """;
+        """ + " and " + MemorySourceVisibilitySql.predicate("i", "userId") + "\n";
     private static final String EXCLUDE_CONVERSATION = """
               and not (i.source_kind = 'chat_turn' and exists (
                   select 1 from ai_message m

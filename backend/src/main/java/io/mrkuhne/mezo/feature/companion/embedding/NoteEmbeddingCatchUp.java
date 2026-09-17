@@ -54,6 +54,7 @@ public class NoteEmbeddingCatchUp {
     private final MemoryEmbeddingRepository memoryEmbeddingRepository;
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
+    private final io.mrkuhne.mezo.feature.companion.memory.service.MemorySourceRepairService sourceRepair;
 
     /**
      * Embeds this user's still-unembedded notes up to and including {@code through}, newest run
@@ -81,6 +82,9 @@ public class NoteEmbeddingCatchUp {
         for (NarrativeNoteSource source : noteSources.orderedStream().toList()) {
             written += embed(source, userId, through, minChars, budget - written);
         }
+        // A separate bounded canonical pass repairs all narrative kinds (including missed journal
+        // listeners and long-note tail edits) without changing the OLD note writer's return count.
+        sourceRepair.repair(userId, through, budget);
         return written;
     }
 
@@ -143,6 +147,9 @@ public class NoteEmbeddingCatchUp {
         List<Note> candidates = source.notesToEmbed(userId, through, minChars);
         int written = 0;
         for (Note note : candidates) {
+            if (note.text() == null || note.text().isBlank()) {
+                continue;
+            }
             if (written >= budget) {
                 log.info("Note-embedding budget reached for user {} kind {} — the rest waits for the next run",
                         userId, kind);

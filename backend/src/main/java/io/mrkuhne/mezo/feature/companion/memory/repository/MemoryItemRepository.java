@@ -12,8 +12,19 @@ public interface MemoryItemRepository extends JpaRepository<MemoryItemEntity, UU
 
     Optional<MemoryItemEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    @Query("select i from MemoryItemEntity i where i.createdBy = :createdBy and i.sourceKind = :sourceKind and i.sourceId = :sourceId and i.chunkIndex = 0")
     Optional<MemoryItemEntity> findByCreatedByAndSourceKindAndSourceId(
             UUID createdBy, String sourceKind, UUID sourceId);
+
+    List<MemoryItemEntity> findByCreatedByAndSourceKindAndSourceIdOrderByChunkIndex(
+            UUID createdBy, String sourceKind, UUID sourceId);
+
+    Optional<MemoryItemEntity> findByCreatedByAndSourceKindAndSourceIdAndChunkIndex(
+            UUID createdBy, String sourceKind, UUID sourceId, int chunkIndex);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from MemoryItemEntity i where i.createdBy = :createdBy and i.sourceKind = :sourceKind and i.sourceId = :sourceId order by i.chunkIndex")
+    List<MemoryItemEntity> findSourceForUpdate(UUID createdBy, String sourceKind, UUID sourceId);
 
     @Query(value = """
             select i.*

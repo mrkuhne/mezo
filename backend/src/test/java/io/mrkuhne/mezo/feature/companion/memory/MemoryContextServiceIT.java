@@ -155,6 +155,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> denseTrace = (Map<String, Object>) run.getRetrieverTrace().get("dense");
         assertThat(denseTrace.get("error")).isNotNull();
+        assertThat(run.getErrorCode()).isEqualTo("MEMORY_RETRIEVAL_PARTIAL_FAILURE");
         assertThat(run.getRetrieverTrace()).containsKeys("lexical", "facts", "graph");
     }
 

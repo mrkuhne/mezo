@@ -37,6 +37,7 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     private static final String SHORT_NOTE = "fáradt";
 
     @Autowired private NoteEmbeddingCatchUp noteEmbeddingCatchUp;
+    @Autowired private io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository canonicalItems;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private UserPopulator userPopulator;
@@ -45,7 +46,18 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     @MockitoSpyBean private MemoryEmbeddingWriter memoryEmbeddingWriter;
 
     @Test
-    void testRun_shouldEmbedBothKindsAndGateOnLength_whenNotesExist() {
+    void testRun_shouldIgnoreWhitespaceOnlyNotes_whenMinimumLengthIsOne() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        activityPopulator.activity(owner, yesterday, " \n\t ", "mindset", 0, "AI");
+        checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, " \n\t ");
+        assertThat(noteEmbeddingCatchUp.run(owner, yesterday)).isZero();
+        assertThat(memoryEmbeddingRepository.findAll()).isEmpty();
+        assertThat(canonicalItems.findAll()).isEmpty();
+    }
+
+    @Test
+    void testRun_shouldEmbedShortAndLongNotes_whenNotesExist() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate yesterday = LocalDate.now().minusDays(1);
         ActivityLogEntity activity = activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
@@ -55,12 +67,12 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
 
         int written = noteEmbeddingCatchUp.run(owner, yesterday);
 
-        assertThat(written).isEqualTo(2);
+        assertThat(written).isEqualTo(4);
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, activity.getId())).isTrue();
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId())).isTrue();
-        assertThat(memoryEmbeddingRepository.count()).isEqualTo(2);
+        assertThat(memoryEmbeddingRepository.count()).isEqualTo(4);
     }
 
     @Test

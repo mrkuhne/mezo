@@ -34,7 +34,7 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "memory_item", uniqueConstraints = {
     @UniqueConstraint(name = "uq_memory_item_id_created_by", columnNames = {"id", "created_by"}),
-    @UniqueConstraint(name = "uq_memory_item_owner_source", columnNames = {"created_by", "source_kind", "source_id"})
+    @UniqueConstraint(name = "uq_memory_item_owner_source", columnNames = {"created_by", "source_kind", "source_id", "chunk_index"})
 })
 @SQLDelete(sql = "update memory_item set is_deleted = true where id = ?")
 @SQLRestriction("is_deleted = false")
@@ -57,6 +57,10 @@ public class MemoryItemEntity extends OwnedEntity {
     @NotNull
     @Column(name = "source_id", nullable = false, columnDefinition = "uuid")
     private UUID sourceId;
+
+    @jakarta.validation.constraints.Min(0)
+    @Column(name = "chunk_index", nullable = false)
+    private int chunkIndex;
 
     @Column(columnDefinition = "text")
     private String title;

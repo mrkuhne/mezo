@@ -70,6 +70,59 @@ class MemoryProjectionWriterIT extends AbstractIntegrationTest {
         assertNoteLifecycle(NarrativeNoteSource.CHECKIN_NOTE);
     }
 
+    @Test
+    void testWriteReflection_shouldPreserveUnicode_whenEmojiCrossesChunkBoundary() {
+        UUID owner = userPopulator.createUser().getId();
+        RitualDayEntity day = ritualPopulator.closedDay(owner, DAY);
+        String text = "a".repeat(1999) + "😀 öröm";
+        day.setReflectionText(text);
+        memoryEmbeddingWriter.writeReflection(day);
+        assertThat(memoryItemRepository.findByCreatedByAndSourceKindAndSourceIdOrderByChunkIndex(owner, "reflection", day.getId())
+                .stream().map(MemoryItemEntity::getContent).collect(java.util.stream.Collectors.joining())).isEqualTo(text);
+    }
+
+    @Test
+    void testWriteReflection_shouldRepairVectorHash_whenReadyVectorDescribesStaleContent() {
+        UUID owner = userPopulator.createUser().getId();
+        RitualDayEntity day = ritualPopulator.closedDay(owner, DAY);
+        day.setReflectionText("Megnyugtató esti séta.");
+        memoryEmbeddingWriter.writeReflection(day);
+        var item = memoryItemRepository.findByCreatedByAndSourceKindAndSourceId(owner, "reflection", day.getId()).orElseThrow();
+        var vector = memoryVectorRepository.findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, item.getId()).getFirst();
+        vector.setEmbeddedContentHash("0".repeat(64));
+        memoryVectorRepository.saveAndFlush(vector);
+        memoryEmbeddingWriter.writeReflection(day);
+        assertThat(memoryVectorRepository.findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, item.getId()).getFirst()
+                .getEmbeddedContentHash()).isEqualTo(item.getContentHash());
+    }
+
+    @Test
+    void testWriteReflection_shouldKeepTailSearchableAndReconcileChunks_whenLongSourceChanges() {
+        UUID owner = userPopulator.createUser().getId();
+        RitualDayEntity day = ritualPopulator.closedDay(owner, DAY);
+        String prefix = "nyugodt nap ".repeat(220);
+        day.setReflectionText(prefix + "különleges farok: hegyi futóverseny");
+        memoryEmbeddingWriter.writeReflection(day);
+        var chunks = memoryItemRepository.findAll().stream()
+                .filter(item -> item.getCreatedBy().equals(owner) && item.getSourceId().equals(day.getId()))
+                .filter(item -> MemoryItemEntity.STATE_ACTIVE.equals(item.getState())).toList();
+        assertThat(chunks).hasSizeGreaterThan(1);
+        assertThat(chunks).anySatisfy(item -> assertThat(item.getContent()).contains("hegyi futóverseny"));
+        assertThat(chunks).allSatisfy(item -> assertThat(item.getContent().length()).isLessThanOrEqualTo(2000));
+
+        day.setReflectionText("rövid új szöveg");
+        memoryEmbeddingWriter.writeReflection(day);
+        var active = memoryItemRepository.findAll().stream()
+                .filter(item -> item.getCreatedBy().equals(owner) && item.getSourceId().equals(day.getId()))
+                .filter(item -> MemoryItemEntity.STATE_ACTIVE.equals(item.getState())).toList();
+        assertThat(active).singleElement().satisfies(item -> assertThat(item.getContent()).isEqualTo("rövid új szöveg"));
+        day.setReflectionText("");
+        memoryEmbeddingWriter.writeReflection(day);
+        assertThat(memoryItemRepository.findAll().stream()
+                .filter(item -> item.getSourceId().equals(day.getId())))
+                .allSatisfy(item -> assertThat(item.getState()).isEqualTo(MemoryItemEntity.STATE_SUPPRESSED));
+    }
+
     private void assertNoteLifecycle(String kind) {
         UUID owner = userPopulator.createUser().getId();
         UUID sourceId = UUID.randomUUID();
