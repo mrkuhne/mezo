@@ -41,8 +41,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -196,6 +198,10 @@ public class ChatService {
     private final PromptPersona promptPersona;
     /** spec 2026-09-16 — decides how much thinking a turn earns before any context is assembled. */
     private final TurnGearRouter turnGearRouter;
+    /** mezo-rj214.7 — the LIVE pipeline: what to fetch (spec §6.2), never called blind (§6.3/§6.4). */
+    private final TurnPlanner turnPlanner;
+    private final PlanExecutor planExecutor;
+    private final TurnAnswerer turnAnswerer;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
@@ -288,17 +294,37 @@ public class ChatService {
         } else if (gear == TurnGear.CHAT) {
             answer = llmCallContextHolder.runWith(turnContext,
                     () -> companionLlm.completeSmart(systemPrompt, turnCtx, history, request.getContent()));
-        } else if (chain != null) {
-            // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
-            AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                    () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
-                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
-            answer = advised.answer();
-            degraded = advised.degraded();
         } else {
-            answer = llmCallContextHolder.runWith(turnContext,
-                    () -> companionLlm.complete(systemPrompt, turnCtx, history, request.getContent(),
-                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+            // mezo-rj214.7: the LIVE pipeline (spec §5) — plan -> execute -> answer, with a replan
+            // lap for ANALYSIS turns that hit a data gap. A null pipelined answer means the planner
+            // produced nothing usable, and the turn falls straight to the UNCHANGED legacy branches
+            // below (spec §8: degraded, but an answer) — the fallback the whole migration leans on.
+            String pipelined = properties.turn().pipelineEnabled()
+                    ? llmCallContextHolder.runWith(turnContext,
+                            () -> pipelineAnswer(userId, conversationId, routed, history,
+                                    request.getContent(), today, audit))
+                    : null;
+            if (pipelined != null) {
+                answer = pipelined;
+                if (chain != null) {
+                    AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                            () -> chain.reviewChat(routed.systemPrompt(), routed.turnContext(), history,
+                                    request.getContent(), pipelined));
+                    answer = advised.answer();
+                    degraded = advised.degraded();
+                }
+            } else if (chain != null) {
+                // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
+                AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                        () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
+                answer = advised.answer();
+                degraded = advised.degraded();
+            } else {
+                answer = llmCallContextHolder.runWith(turnContext,
+                        () -> companionLlm.complete(systemPrompt, turnCtx, history, request.getContent(),
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+            }
         }
         // mezo-8z79: same guard as the streamed path — a blank answer is a failed turn. Here the
         // whole method is ONE transaction, so throwing also rolls the user row back; the FE's
@@ -415,6 +441,68 @@ public class ChatService {
                         memory.memoriesBlock(), memory.graphBlock(),
                         conversation.getContextKind(), conversation.getContextDate());
         return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+    }
+
+    /**
+     * The live plan→execute→answer path (spec §5). Returns null when the planner produced no
+     * usable plan — the caller falls back to the legacy tool-loop (spec §8: degraded, but an
+     * answer). One turn = one audit: the plan is capped to the REMAINING budget (companion.md,
+     * "Three seams") so the envelopes stay within max-calls-per-turn.
+     *
+     * <p>Package-private (mezo-rj214.7 S9.6): {@link ChatStreamService} reuses this and {@link
+     * #capToRemainingBudget} for the streamed path, the same way it already reaches {@link
+     * #prepareTurn}/{@link #completeTurn}.
+     */
+    String pipelineAnswer(UUID userId, UUID conversationId, RoutedContext routed,
+                          List<Turn> history, String content, LocalDate today,
+                          ToolCallAudit audit) {
+        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
+                () -> turnPlanner.plan(history, content, today));
+        if (planned.isEmpty()) {
+            return null;
+        }
+        ValidatedPlan plan = capToRemainingBudget(planned.get(), audit);
+        List<ToolCallAudit.ToolOutcome> outcomes = planExecutor.execute(plan, userId, audit);
+        boolean replanAllowed = routed.gear() == TurnGear.ANALYSIS
+                && properties.turn().replan().maxLaps() > 0;
+        String volatileHalf = turnAnswerer.buildVolatile(routed.turnContext(), outcomes,
+                routed.gear(), replanAllowed);
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "answer", "conversation", conversationId),
+                () -> turnAnswerer.answer(routed.systemPrompt(), volatileHalf, history, content));
+
+        Optional<String> gap = TurnAnswerer.dataGapReason(answer);
+        if (gap.isEmpty() || !replanAllowed) {
+            // A marker on a gear that never offered it is model noise; the defensive read is to
+            // treat it as the answer text minus nothing — never loop.
+            return answer;
+        }
+        String hint = content + "\n\n[KIEGÉSZÍTÉS] Az előző körből hiányzó adat: " + gap.get();
+        Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan_replan", "conversation", conversationId),
+                () -> turnPlanner.plan(history, hint, today));
+        List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(outcomes);
+        if (replanned.isPresent()) {
+            ValidatedPlan second = capToRemainingBudget(replanned.get(), audit);
+            merged.addAll(planExecutor.execute(second, userId, audit));
+        }
+        String lapTwoVolatile = turnAnswerer.buildReplanVolatile(routed.turnContext(), merged);
+        return llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
+                () -> turnAnswerer.answer(routed.systemPrompt(), lapTwoVolatile, history, content));
+    }
+
+    /** Package-private for the same reason as {@link #pipelineAnswer} (Task 6 reuse). */
+    ValidatedPlan capToRemainingBudget(ValidatedPlan plan, ToolCallAudit audit) {
+        int remaining = Math.max(0, properties.tools().maxCallsPerTurn() - audit.callCount());
+        if (plan.steps().size() <= remaining) {
+            return plan;
+        }
+        List<String> rejections = new ArrayList<>(plan.rejections());
+        plan.steps().stream().skip(remaining)
+                .forEach(step -> rejections.add(step.tool() + ": a körre jutó keret betelt"));
+        return new ValidatedPlan(List.copyOf(plan.steps().subList(0, remaining)), List.copyOf(rejections));
     }
 
     /**
