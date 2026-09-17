@@ -13331,6 +13331,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    nem egy nagy ikon, hanem egy sor apró, mert a poszter a NAPOT mutatja, nem egy gyakorlatot. */
 .tr-day-constellation { position: relative; display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
 .tr-day .tr-pills { position: relative; margin-top: 16px; }
+/* Inside the poster the first pill is QUIET again — the prototype cancels the domain fill
+   there (train-pages.css:99) because the poster already carries the domain wash; a filled
+   chip on top of it would read as a second, louder badge. The port kept only the loud
+   `:first-child` rule, so production's poster pill stayed domain-filled
+   (mezo-fsz2r Task 3 finding, adjudicated and ported in the Task 4 sweep). */
+.tr-day .tr-pills span:first-child { color: var(--text-secondary); border-color: #ffffff17; background: #ffffff08; }
 
 /* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip).
    Translucent in the prototype (`#ffffff08` fill, `#ffffff17` border, train-pages.css:72):
@@ -13380,11 +13386,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 88%, var(--surface-card)), var(--amber-deep));
   box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 80%, transparent), 0 2px 0 #ffffff40 inset;
 }
+/* The reviewed state is the prototype's `.tr-start.is-done` (train-pages.css:16): a quiet
+   graphite key with a BLACK lift and a fainter inner top highlight — `0 12px 26px -18px #000,
+   0 1px 0 #ffffff14 inset`. The port left it on `var(--shadow-sm)`, which made it the one
+   state without the highlight once `.is-go`/`.is-resume` got theirs back (mezo-fsz2r Task 3
+   finding, adjudicated in the Task 4 sweep). The house border stays: production's own quiet
+   key needs an edge where the prototype's darker `#1a1b26` body supplied one. */
 .tr-start.is-review {
   color: var(--text-primary);
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14266,6 +14278,42 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `.mz-play` fán KÍVÜL portálozódik) és a visszatérő „pop" érkezés is kész sávot
    mutat, sosem 0-t. Csökkentett mozgás mellett minden animáció kivezetve. */
 
+/* THE HAIRLINE RULING (mezo-fsz2r Task 4 sweep) — amends the „AMIT NEM" paragraph above
+   for BORDERS ONLY. The ports replaced every near-transparent hairline literal with
+   `var(--border-subtle)` (and raised the domain-tinted ones to a flat 24%). Measured over
+   the canvas `rgb(11,13,18)`, most of those land within ΔE76 1.4–2.7 — below the ~2.3
+   just-noticeable threshold on a 1px line, i.e. noise. But ONE member is not noise:
+   `.ld-sport`/`.ld-move-card` went `#78cfe72b` (α .17) → 24%, which measures **ΔE76 5.90**
+   — a visible thickening of the sport card's outline. Since the group cannot be called
+   uniformly-invisible, it is adjudicated as ONE decision the other way: every hairline in
+   the audit's §20.1 border list goes back to the prototype's own literal/alpha
+   (`#ffffff0d/0f/10/12/14/17/20`, and 17% / 22% for the tinted ones). Safe because every
+   one of these families is Train-scoped and therefore always renders inside `titanDark`
+   (the plan's safety insight) — the surrounding fills are already prototype literals after
+   Tasks 1–3, so the borders now match their own fills' provenance.
+   Applies to: `.ld-group` `.ld-map-card` `.ld-move-card` `.ld-sport` `.ld-move-box`
+   `.ld-wait-row` `.gy-card` `.gy-curve-box` `.mm-cell` `.pl-item` `.pl-row` `.pl-day`
+   `.pl-day-tag` `.pl-day-facts i` `.pl-ex-grid span` `.pl-add` `.pl-mstats span`
+   `.pl-lib-card` `.pl-lib-musrow` `.pl-tpl-exs` `.tr-pills span` `.pl-poster-foot span`
+   `.pl-dhero-pills span` + the `.pl-ex`/`.pl-dest` color-mix targets. */
+
+/* THE HERO-BODY RULING (mezo-fsz2r Task 4 sweep; Tasks 1+2 carried it here). The prototype's
+   hero body is an OPAQUE ramp whose first stop mixes the domain colour INTO the graphite card
+   (`color-mix(--domain-color 12%, #1b2029)`, load.css:7 / plan.css:10 / plan.css:261) — the
+   ground never shows through it. `.ld-hero` and `.pl-poster` instead started the ramp on a
+   TRANSLUCENT `--wash-*` token over the page, which (a) measures ΔE76 **11.29** against the
+   prototype's stop at the same hue — far above the visible threshold, on the largest surface
+   in the domain — and (b) is internally inconsistent: `--wash-gym` is a hotter orange than the
+   `--tag-gym` the same hero's radial uses, so the hero carried two oranges. `.pl-dhero` already
+   shipped the prototype's recipe, so the ruling follows the sibling that was already right:
+   all three heroes take `color-mix(<accent> N%, var(--surface-card))` as stop 0, on the
+   prototype's own N (12 / 11 / 13).
+   BOUNDARY: only stop 0 moves. The ramp's later stops and angle stay the ported house ones
+   (`--surface-card` then `--canvas`) — measured ΔE76 2.5 / 2.3 against the prototype's
+   `#14181f`/`#0f1218`, i.e. the house canvas IS the prototype's canvas to within noise, and
+   both apps' heroes fade into their own page ground. Recorded as an accepted house deviation
+   in the matrix rather than pinned to untokenised literals. */
+
 /* — a hős: milyen mélyen vagy a hétben — */
 .ld-hero {
   position: relative; overflow: hidden;
@@ -14273,7 +14321,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   --ld-accent: var(--tag-gym);
   background:
     radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--ld-accent) 22%, transparent), transparent 64%),
-    linear-gradient(168deg, var(--wash-gym), var(--surface-card) 62%, var(--canvas) 100%);
+    linear-gradient(168deg, color-mix(in srgb, var(--ld-accent) 12%, var(--surface-card)), var(--surface-card) 62%, var(--canvas) 100%);
 }
 .ld-hero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%;
@@ -14331,12 +14379,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-map-card, .ld-move-card {
   display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 14px; cursor: pointer;
   text-align: left; font: inherit; color: var(--text-primary);
-  border: 1px solid var(--border-subtle); border-radius: 20px;
+  border: 1px solid #ffffff12; border-radius: 20px;
   background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 8%, transparent), #ffffff03);
 }
 .ld-move-card {
   margin-top: 16px;
-  border-color: color-mix(in srgb, var(--tag-sport) 24%, transparent);
+  border-color: color-mix(in srgb, var(--tag-sport) 17%, transparent);
   background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 7%, transparent), color-mix(in srgb, var(--tag-sport) 1.6%, transparent));
 }
 .ld-map-mini { width: 96px; height: 78px; flex: 0 0 auto; overflow: hidden; }
@@ -14350,7 +14398,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-group {
   display: grid; gap: 9px; width: 100%; padding: 12px 13px; cursor: pointer; text-align: left;
   font: inherit; color: var(--text-primary);
-  border: 1px solid var(--border-subtle); border-radius: 18px;
+  border: 1px solid #ffffff10; border-radius: 18px;
   background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 7%, transparent), #ffffff03);
 }
 .ld-group-head { display: flex; align-items: center; gap: 9px; }
@@ -14387,7 +14435,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — a sport-kártya — */
 .ld-sport {
   display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--tag-sport) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent);
   background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 8%, transparent), color-mix(in srgb, var(--tag-sport) 2%, transparent));
 }
 .ld-sport-art {
@@ -14460,7 +14508,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-wait { display: grid; gap: 7px; margin-top: 4px; }
 .ld-wait-row {
   display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 15px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid #ffffff10;
   background: #ffffff04;
 }
 .ld-wait-row strong { font-size: 13px; font-weight: 600; }
@@ -14480,7 +14528,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-move-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
 .ld-move-box {
   display: grid; gap: 4px; padding: 13px 14px; border-radius: 18px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 22%, transparent);
   background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, transparent), #ffffff03);
 }
 .ld-move-box strong { font-size: 17px; font-weight: 700; }
@@ -14553,7 +14601,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mm-cell {
   display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px;
-  border: 1px solid var(--border-subtle); border-radius: 15px; background: var(--surface-recess);
+  border: 1px solid #ffffff0d; border-radius: 15px; background: var(--surface-recess);
 }
 .mm-cell.is-live {
   border-color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 55%, transparent);
@@ -14603,7 +14651,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-list { display: grid; gap: 8px; }
 .gy-card {
   display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; cursor: pointer; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
+  border: 1px solid #ffffff10; border-radius: 18px;
   /* Translucent in the prototype (gyak.css:5): a 6% muscle tint over NOTHING, so the list
      reads as washes on the dark ground, not as a stack of opaque cards (mezo-fsz2r Task 3,
      audit §20.1). Every `.gy-card` carries its own inline `--mus-color`. */
@@ -14655,7 +14703,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-rec-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .gy-rec-bar b {
   display: block; height: 100%; width: var(--w); border-radius: 999px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 50%, transparent), var(--mus-color, var(--tag-gym)));
+  /* THE RENDERED-RESULT RULE again (mezo-fsz2r Task 4 sweep). Same mechanism as `.gy-rec`
+     above: the prototype's fill is `color-mix(in srgb, var(--mus-color) 50%, transparent)`
+     with `--mus-color` unset on this subtree, so the declaration is invalid at
+     computed-value time and the prototype paints NO fill — the record bar renders as an
+     empty track. Production's `--mus-color` IS inherited here, so the ported fallback made
+     the bar paint. We ship what the owner sees: the empty track. The width mechanics
+     (`--w`, the reveal transition below) stay, so restoring the fill is one declaration
+     if the bar is ever made real. */
+  background: none;
 }
 .gy-rec > small { font-size: 10.5px; color: var(--text-tertiary); }
 [data-reveal] .gy-rec-bar b { width: 0; }
@@ -14671,7 +14727,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — the strength curve — */
 .gy-curve-box {
-  position: relative; padding: 14px 14px 10px; border: 1px solid var(--border-subtle); border-radius: 18px;
+  position: relative; padding: 14px 14px 10px; border: 1px solid #ffffff10; border-radius: 18px;
   /* Translucent in the prototype (gyak.css:60) — and here the prototype's own literal
      fallback keeps the declaration VALID where `--mus-color` is unset, so unlike `.gy-rec`
      above this box really does paint its 6% wash (mezo-fsz2r Task 3, audit §20.1). */
@@ -14754,7 +14810,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   --tr-accent: var(--tag-gym); --tr-wash: var(--wash-gym);
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
+    linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 11%, var(--surface-card)), var(--surface-card) 68%);
 }
 .pl-poster-glow {
   position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
@@ -14784,7 +14840,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `titanDark`, so the literal is safe here. */
 .pl-poster-foot span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: #ffffff08;
+  border: 1px solid #ffffff17; background: #ffffff08;
 }
 /* A foot fact that is also a doorway (the Gyakorlatok poster's medal count → the medal
    vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>` so it can carry its
@@ -14854,7 +14910,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    day rows are quiet washes on the dark ground, not lifted cards (audit §20.1/§20.2). */
 .pl-day {
   display: grid; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 18px;
+  border: 1px solid #ffffff10; border-radius: 18px;
   background: linear-gradient(150deg, #ffffff08, #ffffff03);
 }
 .pl-day-head { display: flex; align-items: center; gap: 9px; }
@@ -14867,7 +14923,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .pl-day-facts i {
   display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-style: normal; min-width: 0;
-  border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+  border: 1px solid #ffffff0d; border-radius: 12px; background: var(--surface-recess);
 }
 .pl-day-facts .icon { width: 22px; height: 22px; flex: 0 0 auto; }
 .pl-day-facts b { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
@@ -14880,7 +14936,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .pl-day-tag {
   display: inline-grid; place-items: center; height: 28px; padding: 0 11px; border-radius: 10px;
-  font-size: 11px; color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-recess);
+  font-size: 11px; color: var(--text-secondary); border: 1px solid #ffffff14; background: var(--surface-recess);
 }
 .pl-day.is-now .pl-day-tag { color: var(--text-primary); border-color: color-mix(in srgb, var(--tag-gym) 40%, transparent); }
 .pl-day-bars { display: flex; gap: 4px; }
@@ -14901,7 +14957,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-dest {
   position: relative; overflow: hidden; display: grid; justify-items: start; gap: 3px;
   padding: 16px 14px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, var(--border-subtle)); border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, #ffffff10); border-radius: 22px;
   background:
     radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 22%, transparent), transparent 64%),
     linear-gradient(155deg, #ffffff0a, #ffffff03);
@@ -14931,7 +14987,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 0; border-radius: 0;
   background:
     radial-gradient(120% 90% at 85% 6%, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent), transparent 64%),
-    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, var(--surface-card)), var(--surface-card) 68%);
+    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 13%, var(--surface-card)), var(--surface-card) 68%);
 }
 .pl-dhero-wash {
   position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
@@ -14971,7 +15027,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* Same near-transparent pill as `.pl-poster-foot span` (plan.css:300). */
 .pl-dhero-pills span {
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: #ffffff08;
+  border: 1px solid #ffffff17; background: #ffffff08;
 }
 
 /* — the body-map slot the day/muscle heroes carry — */
@@ -15028,7 +15084,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex {
   position: relative; overflow: hidden; display: grid; grid-template-columns: 22px 38px 1fr auto;
   align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, var(--border-subtle)); border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, #ffffff0c); border-radius: 16px;
   background:
     radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 13%, transparent), transparent 58%),
     linear-gradient(155deg, #ffffff08, #ffffff03);
@@ -15040,7 +15096,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex-copy small { display: block; font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; }
 .pl-ex-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 6px; }
 .pl-ex-grid span {
-  padding: 9px 6px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-recess);
+  padding: 9px 6px; text-align: center; border: 1px solid #ffffff0f; border-radius: 12px; background: var(--surface-recess);
 }
 .pl-ex-grid b { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
 .pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: var(--text-tertiary); margin-top: 4px; }
@@ -15057,7 +15113,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-dayfoot { display: grid; gap: 8px; margin-top: 12px; }
 .pl-add {
   display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
+  border: 1px dashed #ffffff20; border-radius: 18px; background: var(--surface-recess);
 }
 .pl-editlink {
   display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary);
@@ -15069,7 +15125,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-item {
   display: grid; grid-template-columns: 32px 1fr auto 14px; align-items: center; column-gap: 11px; row-gap: 6px;
   width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: #ffffff05;
+  border: 1px solid #ffffff0f; border-radius: 16px; background: #ffffff05;
 }
 .pl-item-art .icon { width: 32px; height: 32px; }
 .pl-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
@@ -15138,7 +15194,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — the muscle page's three plain facts (plan.css :402-405) — */
 .pl-mstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
 .pl-mstats span {
-  padding: 12px 4px; text-align: center; border: 1px solid var(--border-subtle);
+  padding: 12px 4px; text-align: center; border: 1px solid #ffffff0f;
   border-radius: 15px; background: var(--surface-recess);
 }
 .pl-mstats strong {
@@ -15229,7 +15285,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* one card grammar for the running, queued, template and closed rows */
 .pl-lib-card {
   display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
-  border: 1px solid var(--border-subtle); border-radius: 20px;
+  border: 1px solid #ffffff12; border-radius: 20px;
   background: linear-gradient(150deg, #ffffff09, #ffffff03);
 }
 /* The running run is a DOMAIN WASH over the same film, one layer, no radial — the port
@@ -15304,7 +15360,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-muslist.is-bars { grid-template-columns: 1fr; }
 .pl-lib-musrow {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
 }
 .pl-lib-musrow > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
 .pl-lib-musrow strong { font-size: 13px; font-weight: 500; color: var(--text-primary); }
@@ -15334,7 +15390,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-dests { padding: 22px 20px 4px; margin-inline: 0; }
 
 /* — a template's week, spelled out — */
-.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }
+.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
 .pl-tpl-ex { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 9px; }
 .pl-tpl-ex .icon { width: 24px; height: 24px; }
 .pl-tpl-ex strong { font-size: 12.5px; font-weight: 500; min-width: 0; line-height: 1.3; color: var(--text-primary); }
@@ -15357,7 +15413,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-row {
   display: flex; align-items: center; gap: 12px; width: calc(100% - 40px); margin: 0 20px 8px;
   padding: 14px 16px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-recess);
+  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
 }
 .pl-row strong { display: block; font-size: 14.5px; font-weight: 500; color: var(--text-primary); }
 .pl-row small { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }

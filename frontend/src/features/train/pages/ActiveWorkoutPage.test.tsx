@@ -603,6 +603,27 @@ test('mock mode: a set that hits its target gets a sage ✓ status and a chip pe
 
 })
 
+// mezo-fsz2r Task 4 sweep. The surfaces slice restored `.wo-verdict` to the prototype's
+// `display: grid` and keeps the production-only two-medal row behind
+// `.wo-verdict:has(> [role="img"] + [role="img"])` (prototype.css). That selector keys on
+// ADJACENT DIRECT CHILDREN — a medal wrapped in one more element, or a third node slipped
+// between the two chips, silently drops the flex row and the second medal gets clipped by
+// the cell's `overflow: hidden`. jsdom cannot compute the stylesheet, so this pins the DOM
+// SHAPE the selector needs instead of the painted result.
+test('mock mode: two RECORD medals are two ADJACENT DIRECT [role="img"] children of the verdict cell', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(submitOf(EX1)) // the WEIGHT + E1RM (+ TARGET_HIT, chip-less) set
+
+  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
+  const cell = firstWorkingRow().querySelector('.wo-verdict')!
+  const directImgs = cell.querySelectorAll(':scope > [role="img"]')
+  expect(directImgs).toHaveLength(2)
+  // ...and they are siblings with nothing between them, which is what `+` requires.
+  expect(directImgs[0].nextElementSibling).toBe(directImgs[1])
+  expect(cell.children).toHaveLength(2)
+})
+
 test('mock mode: a set that sets records still shows its chips even when the logged weight misses the prescribed target', async () => {
   const user = userEvent.setup()
   setup()
