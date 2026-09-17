@@ -2241,9 +2241,11 @@ pre-stream and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`,
 S9.6 gives ANALYSIS its own native streaming answerer. Both modes still stream real tool-call chips
 AHEAD of the answer: the `ToolCallAudit` listener that turns each executed call into an SSE `tool`
 event is registered before the pre-stream pipeline lap runs, so the pre-stream execution's calls
-are buffered and reach the client before the first delta (`ChatStreamService.java:85-105`,
-`ChatStreamPipelineIT`) — the chips are what covers the pre-answer gap until S9.6 adds explicit
-phase events.
+are BUFFERED into the unicast `toolSink` the moment they run (`ChatStreamService.java:85-105`,
+`ChatStreamPipelineIT`). The buffer only FLUSHES once the SSE response begins, after the pre-stream
+lap has already finished — so ordering ahead of the answer is guaranteed, but earliness is not; the
+client's wait through the pre-answer gap itself is unchanged. S9.6's explicit phase events are the
+real cure for that.
 
 **Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
 either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
