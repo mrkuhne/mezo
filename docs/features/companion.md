@@ -2190,6 +2190,25 @@ thread-bound connection would hide (the same reason `MemoryContextServiceIT` and
 siblings skip it) — the populated rows commit immediately and `ResetDatabase` truncates between
 tests instead.
 
+**Three seams the S9.5 wiring and beyond must not paper over.** First, a budget double-cap:
+`PlanValidator` caps accepted steps at the FULL `mezo.companion.tools.max-calls-per-turn`, with no
+knowledge of any calls an already-used `ToolCallAudit` has recorded, and `RecordingToolCallback`'s
+budget-check-then-record pair is non-atomic — so once a call site hands `PlanExecutor` an audit that
+already has calls on it (S9.5's shape) AND runs steps in parallel, which steps land
+`BUDGET_EXHAUSTED` becomes scheduling-nondeterministic and the turn's total calls can overshoot the
+configured cap by up to `parallelism − 1`. The call site must either hand `PlanExecutor` a FRESH
+audit for the plan, or cap the plan itself at `budget − audit.callCount()` before validating. Second,
+the wall-time bound above ("near its SLOWEST step") only strictly holds when the number of steps is
+`<=` the executor's parallelism; once steps outnumber permits, later steps queue for a permit behind
+earlier ones and the waits compound, so total wall time can exceed one step's timeout by more than a
+rounding error. Third, provenance (S9.7) must pick exactly one source per consumer rather than
+mixing them: `PlanExecutor`'s own outcome list is PLAN-truth (the raw JSON args the model proposed,
+honest in-band `STEP_TIMEOUT`/`STEP_FAILED` text for what never finished), while the `ToolCallAudit`
+envelope is RAN-truth (`compactArgs`, and — because the budget-check/record pair above is
+non-atomic — a step the executor reported as timed out may still show up in the audit with a late,
+real result that arrived after the deadline). Reading both as if they agreed would surface either a
+plan that was never validated as a call, or a call whose outcome silently changed after the fact.
+
 **What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
 verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
 in — a `CHAT` turn has neither, so asking it would be paying a model call to grade nothing. The
