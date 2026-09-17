@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -465,7 +466,7 @@ public class ChatService {
         try {
             return llmCallContextHolder.runWith(turnContext,
                     () -> pipelineAnswer(userId, conversationId, gear, systemPrompt, turnCtx,
-                            history, content, today, audit));
+                            history, content, today, audit, null));
         } catch (RuntimeException e) {
             log.warn("Turn pipeline failed on the sync path — falling back to the legacy tool loop", e);
             return null;
@@ -484,20 +485,29 @@ public class ChatService {
      * RoutedContext}: that record is {@code private} to this class, so a package-private caller in
      * another class could never have passed one in — the streamed path could not reach this method
      * at all before this signature change.
+     *
+     * @param onPhase mezo-rj214.7 S9.6 Task 2 — the phase-seam callback, nullable (the sync {@link
+     *                #sendMessage} path passes {@code null}; {@link ChatStreamService}'s stream
+     *                wiring supplies the real emitter, Task 3). Fires {@link TurnPhase#RETRIEVING}
+     *                right before each lap's {@code planExecutor.execute} call and {@link
+     *                TurnPhase#ANSWERING} right before each lap's {@code turnAnswerer.answer} call
+     *                — never {@link TurnPhase#PLANNING}, which belongs to the caller at attempt
+     *                start (see the class javadoc).
      */
     String pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
                           String turnContext, List<Turn> history, String content, LocalDate today,
-                          ToolCallAudit audit) {
+                          ToolCallAudit audit, Consumer<TurnPhase> onPhase) {
         boolean replanAllowed = gear == TurnGear.ANALYSIS
                 && properties.turn().replan().maxLaps() > 0;
         // Task 6 fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile
         // half — used to be duplicated verbatim in ChatStreamService's LOOKUP branch. It now
         // lives ONCE, in planAndExecuteVolatile below, and both call sites share it.
         PlanLapResult lap1 = planAndExecuteVolatile(userId, conversationId, gear, turnContext,
-                history, content, today, audit, replanAllowed);
+                history, content, today, audit, replanAllowed, onPhase);
         if (lap1 == null) {
             return null;
         }
+        notify(onPhase, TurnPhase.ANSWERING);
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer", "conversation", conversationId),
                 () -> turnAnswerer.answer(systemPrompt, lap1.volatileHalf(), history, content));
@@ -514,15 +524,28 @@ public class ChatService {
                 () -> turnPlanner.plan(history, hint, today));
         List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(lap1.outcomes());
         if (replanned.isPresent()) {
+            notify(onPhase, TurnPhase.RETRIEVING);
             CappedPlan secondCapped = capToRemainingBudget(replanned.get(), audit);
             merged.addAll(planExecutor.execute(secondCapped.plan(), userId, audit));
             merged.addAll(secondCapped.dropped());
         }
         String lapTwoVolatile = turnAnswerer.buildReplanVolatile(turnContext, merged);
+        notify(onPhase, TurnPhase.ANSWERING);
         String lapTwoAnswer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
                 () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
         return guardAgainstMarkerLogged(lapTwoAnswer);
+    }
+
+    /**
+     * Null-guard helper for the phase-seam callback (mezo-rj214.7 S9.6 Task 2): the sync path
+     * passes {@code null} on purpose (no stream to narrate to), so every emission point goes
+     * through here instead of calling {@code onPhase.accept(..)} directly.
+     */
+    private static void notify(Consumer<TurnPhase> onPhase, TurnPhase phase) {
+        if (onPhase != null) {
+            onPhase.accept(phase);
+        }
     }
 
     /**
@@ -539,16 +562,21 @@ public class ChatService {
      * {@code audit} afterwards: {@link #capToRemainingBudget}'s synthetic "budget exhausted"
      * outcomes for a dropped step never go through {@code audit.recordCall}, so {@code
      * audit.toolOutcomes()} would silently lose them.
+     *
+     * @param onPhase mezo-rj214.7 S9.6 Task 2 — nullable phase-seam callback (see {@link
+     *                #pipelineAnswer}'s javadoc); fires {@link TurnPhase#RETRIEVING} once a usable
+     *                plan exists, right before {@code planExecutor.execute}.
      */
     PlanLapResult planAndExecuteVolatile(UUID userId, UUID conversationId, TurnGear gear,
             String turnContext, List<Turn> history, String content, LocalDate today,
-            ToolCallAudit audit, boolean replanAllowed) {
+            ToolCallAudit audit, boolean replanAllowed, Consumer<TurnPhase> onPhase) {
         Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
                 () -> turnPlanner.plan(history, content, today));
         if (planned.isEmpty()) {
             return null;
         }
+        notify(onPhase, TurnPhase.RETRIEVING);
         CappedPlan capped = capToRemainingBudget(planned.get(), audit);
         List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
                 planExecutor.execute(capped.plan(), userId, audit));

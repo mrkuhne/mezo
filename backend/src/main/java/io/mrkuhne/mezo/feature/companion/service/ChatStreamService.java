@@ -258,8 +258,10 @@ public class ChatStreamService {
         // between the plan's "Ma:" context and the persisted turn's assembled context.
         LocalDate today = turn.today();
         if (turn.gear() == TurnGear.ANALYSIS) {
+            // Task 2 finding: onPhase stays null for now — Task 3 wires the real stream emitter.
             String synced = chatService.pipelineAnswer(userId, turn.conversationId(), turn.gear(),
-                    turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(), today, audit);
+                    turn.systemPrompt(), turn.turnContext(), turn.history(), turn.userContent(), today,
+                    audit, null);
             return synced == null
                     ? PipelineResult.legacy()
                     : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced, null);
@@ -268,8 +270,9 @@ public class ChatStreamService {
         // used to be a verbatim copy of ChatService#pipelineAnswer's own lap 1. It now lives ONCE,
         // in ChatService#planAndExecuteVolatile, which both call sites share. LOOKUP never
         // replans, so replanAllowed is always false here.
+        // Task 2 finding: onPhase stays null for now — Task 3 wires the real stream emitter.
         var lap = chatService.planAndExecuteVolatile(userId, turn.conversationId(), turn.gear(),
-                turn.turnContext(), turn.history(), turn.userContent(), today, audit, false);
+                turn.turnContext(), turn.history(), turn.userContent(), today, audit, false, null);
         return lap == null
                 ? PipelineResult.legacy()
                 : new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, lap.volatileHalf());
