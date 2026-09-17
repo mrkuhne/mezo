@@ -68,14 +68,43 @@ export function makeSession(exercises: SessionExerciseInput[]): Session {
   return { order, logged: {}, extra: {}, removed: {}, skipped: [], planned, prescribed }
 }
 
-/** The prescribed target for a given set index of an exercise (null past the plan / no prescription). */
+/** The prescribed target for a given MODEL set index of an exercise (null past the plan /
+ *  no prescription). The model index is warmup-then-working — map a visible row index
+ *  through `slotIndex()` before asking. */
 export function prescribedAt(s: Session, id: string, idx: number): PrescribedSet | null {
   return s.prescribed[id]?.[idx] ?? null
 }
 
-/** Planned sets + extras − removed slots, never below one (the exercise always has a slot). */
-export function effectiveSetCount(s: Session, id: string): number {
+/**
+ * Warm-up slots prescribed for an exercise (mezo-i8ahy). The engine still PRESCRIBES a
+ * warm-up ramp and the wire still carries it — but the card no longer SHOWS it and the
+ * user never logs it, so it counts for nothing on screen. The prescription array keeps
+ * its warmup-then-working shape (nothing is renumbered): the view addresses a working
+ * slot through `slotIndex()` instead.
+ */
+export function warmupSlotCount(s: Session, id: string): number {
+  let n = 0
+  for (const p of s.prescribed[id] ?? []) if (p.kind === 'warmup') n++
+  return n
+}
+
+/** Every slot the model holds — warm-up slots included. Removal arithmetic only. */
+export function modelSetCount(s: Session, id: string): number {
   return Math.max(1, (s.planned[id] ?? 0) + (s.extra[id] ?? 0) - (s.removed[id] ?? 0))
+}
+
+/**
+ * The slots the user actually sees and logs: planned + extras − removed − the warm-up
+ * ramp, never below one (the exercise always has a slot). Every counter on screen — the
+ * card's rows, the dock's `n / m szett`, the finish gate — derives from THIS.
+ */
+export function effectiveSetCount(s: Session, id: string): number {
+  return Math.max(1, modelSetCount(s, id) - warmupSlotCount(s, id))
+}
+
+/** Model index of the nth VISIBLE (working) slot — the address `prescribedAt` wants. */
+export function slotIndex(s: Session, id: string, visibleIdx: number): number {
+  return visibleIdx + warmupSlotCount(s, id)
 }
 
 /** A slot may be dropped only while the exercise would keep at least one (spec D4). */
@@ -98,6 +127,10 @@ export function canRemoveSet(s: Session, id: string): boolean {
  * `SetUpdateRequest` PUT with no `rir` — a full-replacement write, so the server would zero out a
  * real RIR value. `removed[id]` keeps counting (the slot-count arithmetic is unchanged) — only the
  * per-index prescribed alignment is corrected.
+ *
+ * `index` is a VISIBLE (working) slot index — the same address the card's rows and
+ * `logged[id]` use. The prescription splice goes through `slotIndex()`, so the warm-up
+ * ramp at the head of the array is never touched and `warmupSlotCount` stays put.
  */
 export function removeSet(s: Session, id: string, index: number): Session {
   if (!canRemoveSet(s, id) || index >= effectiveSetCount(s, id)) return s
@@ -107,8 +140,9 @@ export function removeSet(s: Session, id: string, index: number): Session {
     next.logged = { ...s.logged, [id]: [...logged.slice(0, index), ...logged.slice(index + 1)] }
   }
   const prescribed = s.prescribed[id]
-  if (prescribed && index < prescribed.length) {
-    next.prescribed = { ...s.prescribed, [id]: [...prescribed.slice(0, index), ...prescribed.slice(index + 1)] }
+  const slot = slotIndex(s, id, index)
+  if (prescribed && slot < prescribed.length) {
+    next.prescribed = { ...s.prescribed, [id]: [...prescribed.slice(0, slot), ...prescribed.slice(slot + 1)] }
   }
   return next
 }

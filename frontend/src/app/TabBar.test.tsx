@@ -140,6 +140,8 @@ test.each([
   ['/train/week/terkep', 'Terhelés'],
   ['/train/week/mozgas', 'Terhelés'],
   ['/train/medals', 'Gyakorlatok'],
+  // Parity P2 Task 4/5: one exercise's own story page — the Gyakorlatok row owns it.
+  ['/train/exercises/f1e3a0e2-0000-4000-8000-000000000072', 'Gyakorlatok'],
 ])('%s a(z) %s fület gyújtja ki', (path, tab) => {
   renderAt(path, <TabBar />)
   const bar = screen.getByRole('navigation', { name: 'Edzés menü' })

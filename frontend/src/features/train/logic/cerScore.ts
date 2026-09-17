@@ -8,7 +8,7 @@
 // ============================================================
 import type { LoggedWorkoutExercise } from '@/data/types'
 import { MUSCLE_LABELS } from '@/data/train/train'
-import { effectiveSetCount, prescribedAt, type Session } from './workoutState'
+import { effectiveSetCount, prescribedAt, slotIndex, type Session } from './workoutState'
 
 export interface CerScore {
   target: { sets: number; reps: number; volume: number }
@@ -38,7 +38,7 @@ export function cerScore(s: Session, exercises: LoggedWorkoutExercise[]): CerSco
     const id = ex.id
     const count = effectiveSetCount(s, id)
     for (let idx = 0; idx < count; idx++) {
-      const prescription = prescribedAt(s, id, idx)
+      const prescription = prescribedAt(s, id, slotIndex(s, id, idx))
       if (!prescription) continue
       target.sets += 1
       target.reps += prescription.targetReps

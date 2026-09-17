@@ -13,12 +13,14 @@ import { EletjelPage } from '@/features/today/pages/EletjelPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
+import { TrainWeekJelekPage } from '@/features/train/pages/TrainWeekJelekPage'
 import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { SportLogPage } from '@/features/train/pages/SportLogPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
+import { ExerciseStoryPage } from '@/features/train/pages/ExerciseStoryPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
@@ -266,11 +268,12 @@ export const routes: RouteObject[] = [
       { path: 'train', element: <TrainIndex /> },
       { path: 'train/mai', element: <TrainTodayPage /> },
       { path: 'train/week', element: <TrainWeekPage /> },
-      // Terhelés subpages (Train Titanium T12 Task 4): both sit UNDER /train/week,
-      // so navModel's own prefix rule lights the Terhelés tab for them — no `owns`
-      // entry needed (navModel.ts's `isPrefix`).
+      // Terhelés subpages (Train Titanium T12 Task 4, + `jelek` from parity P2 Task 1):
+      // all three sit UNDER /train/week, and the Terhelés tab also OWNS the path
+      // explicitly (navModel.ts) so the lit tab is a statement, not a prefix guess.
       { path: 'train/week/terkep', element: <TrainWeekMapPage /> },
       { path: 'train/week/mozgas', element: <TrainWeekMozgasPage /> },
+      { path: 'train/week/jelek', element: <TrainWeekJelekPage /> },
       { path: 'train/gym', element: <GymPage /> },
       { path: 'train/sport', element: <SportPage /> },
       // The full-screen sport-logging flow (mezo-88iwa.9, T8): pick a sport, then only the
@@ -279,6 +282,12 @@ export const routes: RouteObject[] = [
       { path: 'train/sport/log', element: <SportLogPage /> },
       { path: 'train/futas', element: <RunningPage /> },
       { path: 'train/exercises', element: <ExercisesPage /> },
+      // ONE exercise's whole story (Train parity P2 Task 5, mezo-lf3cv) — the catalogue
+      // card's target. `:key` is the catalog uuid when the row has one, else the local
+      // catalogue row's own id (`exerciseKey`). Listed after the static catalogue route
+      // (React Router ranks static over dynamic anyway); the Gyakorlatok tab's
+      // `owns: ['/train/exercises']` already lights it by prefix (navModel.isPrefix).
+      { path: 'train/exercises/:key', element: <ExerciseStoryPage /> },
       { path: 'train/medals', element: <MedalsPage /> },
       { path: 'train/mesocycles', element: <MesoTervPage /> },
       // The plan library (Train Titanium T9 Task 2, mezo-88iwa.10): the landing's

@@ -2,17 +2,22 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.E1rmPoint;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.RecordSetRef;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.service.E1rmSeries;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,12 +36,22 @@ class ExerciseRecordServiceIT extends AbstractIntegrationTest {
 
     @Autowired private ExerciseRecordService service;
     @Autowired private ExerciseRepository exerciseRepository;
+    @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private ExerciseCatalogRepository catalogRepository;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
     private static Instant day(int offset) {
         return Instant.parse("2026-06-01T10:00:00Z").plusSeconds(offset * 86_400L);
+    }
+
+    /** A logged set marked skipped (the populator has no skip+doneAt factory). */
+    private void skippedSet(UUID by, UUID exerciseId, UUID sessionId, int index,
+        String weightKg, int reps, Instant doneAt) {
+        ExerciseSetEntity s = trainPopulator.createLoggedSet(
+            by, exerciseId, sessionId, index, weightKg, reps, 1, doneAt);
+        s.setSkipped(true);
+        exerciseSetRepository.saveAndFlush(s);
     }
 
     /** meso + template day + instance; returns the instance for set linkage. */
@@ -167,6 +182,7 @@ class ExerciseRecordServiceIT extends AbstractIntegrationTest {
         assertThat(r.getRepRecords()).isEmpty();
         assertThat(r.getRecentTopSets()).hasSize(1); // one session -> its top set (12 reps)
         assertThat(r.getRecentTopSets().get(0).getReps()).isEqualTo(12);
+        assertThat(r.getE1rmSeries()).isEmpty(); // no load -> no honest e1RM, a gap not a zero
     }
 
     @Test
@@ -243,5 +259,95 @@ class ExerciseRecordServiceIT extends AbstractIntegrationTest {
 
         assertThat(records).extracting(ExerciseRecordResponse::getName)
             .containsExactly("B Exercise", "A Exercise", "C Exercise");
+    }
+
+    @Test
+    void testList_shouldBuildE1rmSeriesOldestFirst_whenSeveralSessions() {
+        UUID by = databasePopulator.populateUser("rec11@test.local");
+        UUID catalogId = catalogRepository.findBySlug("barbell-bench-press").orElseThrow().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(by, "R11", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(by, meso.getId(), "Hét", "Push", 0, "planned");
+        String[] weights = {"100", "105", "110"};
+        for (int i = 0; i < 3; i++) {
+            WorkoutSessionEntity w = trainPopulator.createWorkoutInstance(
+                by, template, LocalDate.parse("2026-06-01").plusDays(i), "completed");
+            ExerciseEntity ex = trainPopulator.createExercise(
+                by, w.getId(), "Barbell Bench Press", 0, "chest", "compound", catalogId);
+            // the session's SECOND set is the better one: the series must take the best, not the last
+            trainPopulator.createLoggedSet(by, ex.getId(), w.getId(), 0, weights[i], 3, 1, day(i));
+            trainPopulator.createLoggedSet(by, ex.getId(), w.getId(), 1, weights[i], 5, 1, day(i));
+        }
+
+        List<E1rmPoint> series = service.list(by).get(0).getE1rmSeries();
+
+        assertThat(series).hasSize(3);
+        assertThat(series).extracting(E1rmPoint::getDate).containsExactly(
+            LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-02"),
+            LocalDate.parse("2026-06-03")); // oldest first
+        assertThat(series.get(0).getE1rm()).isEqualByComparingTo("116.7"); // 100 × 35/30
+        assertThat(series.get(1).getE1rm()).isEqualByComparingTo("122.5"); // 105 × 35/30
+        assertThat(series.get(2).getE1rm()).isEqualByComparingTo("128.3"); // 110 × 35/30
+    }
+
+    @Test
+    void testList_shouldOmitTheSession_whenNothingInItIsE1rmEligible() {
+        UUID by = databasePopulator.populateUser("rec12@test.local");
+        UUID catalogId = catalogRepository.findBySlug("barbell-squat").orElseThrow().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(by, "R12", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(by, meso.getId(), "Hét", "Legs", 0, "planned");
+        WorkoutSessionEntity w0 = trainPopulator.createWorkoutInstance(
+            by, template, LocalDate.parse("2026-06-01"), "completed");
+        WorkoutSessionEntity w1 = trainPopulator.createWorkoutInstance(
+            by, template, LocalDate.parse("2026-06-02"), "completed");
+        WorkoutSessionEntity w2 = trainPopulator.createWorkoutInstance(
+            by, template, LocalDate.parse("2026-06-03"), "completed");
+        ExerciseEntity e0 = trainPopulator.createExercise(by, w0.getId(), "Barbell Squat", 0, "quad", "compound", catalogId);
+        ExerciseEntity e1 = trainPopulator.createExercise(by, w1.getId(), "Barbell Squat", 0, "quad", "compound", catalogId);
+        ExerciseEntity e2 = trainPopulator.createExercise(by, w2.getId(), "Barbell Squat", 0, "quad", "compound", catalogId);
+        trainPopulator.createLoggedSet(by, e0.getId(), w0.getId(), 0, "140", 5, 1, day(0));
+        // the middle session: a high-rep back-off (above the rep cap) and a skipped heavy set
+        trainPopulator.createLoggedSet(by, e1.getId(), w1.getId(), 0, "80", 20, 1, day(1));
+        skippedSet(by, e1.getId(), w1.getId(), 1, "200", 3, day(1));
+        trainPopulator.createLoggedSet(by, e2.getId(), w2.getId(), 0, "145", 5, 1, day(2));
+
+        List<E1rmPoint> series = service.list(by).get(0).getE1rmSeries();
+
+        assertThat(series).hasSize(2); // the middle session is a GAP, not a zero
+        assertThat(series).extracting(E1rmPoint::getDate)
+            .containsExactly(LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-03"));
+        assertThat(series).noneMatch(p -> p.getE1rm().signum() == 0);
+    }
+
+    @Test
+    void testList_shouldKeepTheNewestFiftyTwoPoints_whenHistoryIsLonger() {
+        UUID by = databasePopulator.populateUser("rec13@test.local");
+        UUID catalogId = catalogRepository.findBySlug("leg-press").orElseThrow().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(by, "R13", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(by, meso.getId(), "Hét", "Legs", 0, "planned");
+        int sessions = E1rmSeries.MAX_POINTS + 5;
+        for (int i = 0; i < sessions; i++) {
+            WorkoutSessionEntity w = trainPopulator.createWorkoutInstance(
+                by, template, LocalDate.parse("2026-01-01").plusDays(i), "completed");
+            ExerciseEntity ex = trainPopulator.createExercise(
+                by, w.getId(), "Leg Press", 0, "quad", "compound", catalogId);
+            trainPopulator.createLoggedSet(
+                by, ex.getId(), w.getId(), 0, String.valueOf(100 + i), 5, 1, day(i));
+        }
+
+        List<E1rmPoint> series = service.list(by).get(0).getE1rmSeries();
+
+        assertThat(series).hasSize(E1rmSeries.MAX_POINTS);
+        // the 5 oldest sessions fall off the front; the newest survive, still oldest-first
+        BigDecimal first = new BigDecimal("105").multiply(new BigDecimal("35"))
+            .divide(new BigDecimal("30"), 1, java.math.RoundingMode.HALF_UP);
+        assertThat(series.get(0).getE1rm()).isEqualByComparingTo(first);
+        assertThat(series.get(0).getDate()).isEqualTo(LocalDate.parse("2026-06-01").plusDays(5));
+        assertThat(series.get(series.size() - 1).getDate())
+            .isEqualTo(LocalDate.parse("2026-06-01").plusDays(sessions - 1L));
+        assertThat(series).isSortedAccordingTo(
+            java.util.Comparator.comparing(E1rmPoint::getDate));
     }
 }

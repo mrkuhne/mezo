@@ -129,3 +129,15 @@ test('the sport-reach note names the touched muscles and labels itself an estima
   expect(screen.getByText(/A sport ezeket is dolgoztatta/)).toBeInTheDocument()
   expect(screen.getByText(/Becslés, nem mérés/)).toBeInTheDocument()
 })
+
+// Parity P2 Task 1 (matrix §13): the prototype's own quiet doorway at the foot of
+// `mapScreen()` — copy verbatim, routing to the „Minden izomjel" screen.
+test('the quiet doorway to „Minden izomjel" carries the prototype copy and routes there', () => {
+  const { container } = renderPage()
+  const row = container.querySelector('.pl-row.is-quiet') as HTMLElement
+  expect(row).not.toBeNull()
+  expect(within(row).getByText('Minden izomjel')).toBeInTheDocument()
+  expect(within(row).getByText('A 21 izom, saját jellel, régiónként')).toBeInTheDocument()
+  fireEvent.click(row)
+  expect(mockNavigate).toHaveBeenCalledWith('/train/week/jelek')
+})

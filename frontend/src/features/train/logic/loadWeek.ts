@@ -25,6 +25,7 @@ import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
 import type { WeekZoneRow, WeekZoneStatus } from '@/features/train/logic/weekZone'
 import type { BodyHeat } from '@/features/train/components/BodyMap'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
+import type { WorkoutDetailResponse } from '@/data/train/trainApi'
 
 export type LoadWeek = { doneSets: number; plannedSets: number; percent: number }
 
@@ -115,6 +116,28 @@ export function untouchedMuscles(rows: WeekZoneRow[]): Array<{ label: string; pl
     .filter((r) => r.plannedSets > 0 && r.doneSets === 0)
     .sort((a, b) => b.plannedSets - a.plannedSets || a.label.localeCompare(b.label))
     .map((r) => ({ label: r.label, plannedSets: r.plannedSets, colorMuscle: r.colorMuscle }))
+}
+
+/**
+ * The muscle TOKENS this week's LOGGED work actually touched (mezo-lf3cv, P2 Task 1) —
+ * the „Minden izomjel" screen's only source of truth for a lit cell. Deliberately
+ * per-token (not per budget group, the way `weekZoneRows` aggregates): the screen lights
+ * one cell per catalog muscle, so a group-level aggregate would light siblings that were
+ * never worked. Same honesty cuts the logged path of `weekZoneRows` applies (weekZone.ts:66):
+ * plyo exercises never count, and a set only counts when it is a real, un-skipped working
+ * set. A token this week's log cannot speak for is simply absent from the set — the caller
+ * renders it unlit rather than guessing.
+ */
+export function workedMusclesThisWeek(details: WorkoutDetailResponse[]): Set<string> {
+  const worked = new Set<string>()
+  for (const w of details) {
+    for (const wx of w.exercises) {
+      if (wx.type === 'plyo' || !wx.muscle) continue
+      const counted = wx.sets.some((s) => !s.skipped && (s.kind ?? 'working') === 'working')
+      if (counted) worked.add(wx.muscle)
+    }
+  }
+  return worked
 }
 
 /**

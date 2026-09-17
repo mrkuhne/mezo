@@ -5350,6 +5350,13 @@ export interface components {
             value: number;
             set: components["schemas"]["RecordSetRef"];
         };
+        /** @description One point of the strength story curve — the date of a session and that session's best eligible e1RM. Sessions without an eligible set carry no point at all (gap, not zero). */
+        E1rmPoint: {
+            /** Format: date */
+            date: string;
+            /** @description Epley estimate weight×(1+reps/30) of the session's best eligible set, 1 decimal */
+            e1rm: number;
+        };
         SessionVolumeRecord: {
             volumeKg: number;
             /** Format: date */
@@ -5377,6 +5384,8 @@ export interface components {
             repRecords: components["schemas"]["RecordSetRef"][];
             /** @description Top set of the last 5 sessions, oldest first (sparkline order), max 5 */
             recentTopSets: components["schemas"]["RecordSetRef"][];
+            /** @description The strength story curve ("Az erőd íve"): one point per session the exercise was logged in, OLDEST FIRST, each point that session's best eligible e1RM. Eligible = working set, not skipped, positive load, reps 1..12 (above that Epley stops being trustworthy). A session with no eligible set — bodyweight-only, all-warmup, all skipped, every set above the rep cap — is OMITTED, never emitted as 0, so a reader can tell "no data" from "zero". Capped at the most recent 52 points; a longer history keeps the NEWEST. Absent/empty when the exercise has no eligible history. */
+            e1rmSeries?: components["schemas"]["E1rmPoint"][];
         };
         Medal: {
             /** @enum {string} */

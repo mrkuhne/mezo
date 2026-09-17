@@ -62,9 +62,15 @@ export const DOMAINS: NavDomain[] = [
       { label: 'Terv', route: '/train/mesocycles', icon: 'i-retegek',
         owns: ['/train/templates', '/train/futas'] },
       { label: 'Terhelés', route: '/train/week', icon: 'i-meso',
-        owns: ['/train/gym'] },
+        // `/train/week/jelek` („Minden izomjel", parity P2 Task 1) would already win on
+        // prefix — it is listed so the subpage SAYS where it belongs, the rule this
+        // field exists for.
+        owns: ['/train/gym', '/train/week/jelek'] },
       { label: 'Gyakorlatok', route: '/train/exercises', icon: 'i-naplo',
-        owns: ['/train/medals'] },
+        // `/train/exercises/:key` (one exercise's story, parity P2) sits UNDER the tab
+        // route, so the prefix rule would already light it — it is listed so the subpage
+        // SAYS where it belongs, the same statement `/train/week/jelek` makes.
+        owns: ['/train/medals', '/train/exercises'] },
     ],
   },
   {

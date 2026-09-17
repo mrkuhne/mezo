@@ -14,7 +14,9 @@ import type { KalauzEntry } from '@/features/tutorial/registry/types'
 
 export const TRAIN_KALAUZ: KalauzEntry[] = [
   // ── T2 aloldalak (mezo-gb1s.5 → mezo-88iwa.5) ────────────────────────────────
-  // Címke = az oldal saját megjelenített neve, szó szerint (PageTitle / mz-hero-nm).
+  // Címke = az oldal saját megjelenített neve, szó szerint (mz-hero-nm / a Titanium
+  // poszterek saját címe). A korábban idézett PageTitle primitív megszűnt: utolsó
+  // fogyasztója a pre-Titanium Gyakorlatok héj volt (mezo-lf3cv P2).
   // A /train/review a T2-lista egyetlen paraméteres route-ja — az átfedés-lint
   // (registry.test.ts) őrzi, hogy egy jövőbeli literál testvér ne rang-holtversenyezzen.
   // A /train/session chrome-mentes oldal (AppLayout hideChrome): a fejléc ?-e ott nem
@@ -183,23 +185,27 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-exercises',
     route: '/train/exercises',
     tier: 'T2',
-    version: 1,
+    // v2 (parity P2 Task 4, mezo-lf3cv): a lap a teljes katalógus lett — a top-ötös
+    // sorrend és a ▶ videógomb tűnt el róla, a szöveg követi. Az „Új gyakorlat" felvétel
+    // MEGMARADT (fix round 1): a lista végén álló szaggatott `.pl-add` sor az egyetlen
+    // helye az egész appban, ezért a „hogyan" kártya külön ki is mondja, hol van.
+    version: 2,
     label: 'Gyakorlatok',
     cards: [
       {
         kind: 'intro', spot: 'i-polc', orb: 's-orb',
         title: 'Ez a Gyakorlatok.',
-        voice: 'A teljes katalógus és a saját rekordjaid: a top gyakorlataid elöl, minden más egy keresésre.',
+        voice: 'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',
       },
       {
         kind: 'hogyan', spot: 'i-video', orb: 's-orb-figyel', anchor: 'exercises-kereso',
         title: 'Keress vagy szűrj.',
-        voice: 'Írj a keresőbe vagy szűrj izomcsoportra — a találat sora a rekordjaidat nyitja, a ▶ a technika-videót. Sajátot az Új gyakorlat gombbal veszel fel.',
+        voice: 'Írj a keresőbe névre vagy izomra, vagy szűrj izomcsoportra a gombokkal — egy sorra koppintva megnyílik a gyakorlat egész története. Ha valamit nem találsz, a lista legalján a „＋ Új gyakorlat" sorral veheted fel.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Edzés közben, tervezéskor.',
-        voice: 'Edzés közben egy videóért, tervezéskor egy új gyakorlatért. A rekordok maguktól frissülnek a szettjeidből.',
+        voice: 'Edzés közben egy mozdulat utánanézéséért, tervezéskor a válogatásért. A rekordok maguktól frissülnek a szettjeidből.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

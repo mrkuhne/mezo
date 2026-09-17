@@ -6,8 +6,9 @@ import { makeSession, completeSet, skipExercise, type Session } from '@/features
 import type { LoggedWorkoutExercise, PrescribedSet } from '@/data/types'
 
 // Two warmups then three working sets — the same shape the engine prescribes for a
-// compound, so the card's B1/B2 amber labels and the "no RIR on a warmup" rule both
-// have something to bite on.
+// compound. The warm-up ramp is still PRESCRIBED (nothing is renumbered in the model);
+// the card just never shows it (mezo-i8ahy), so these fixtures prove the rows, the
+// counts and the prescription addressing all land on the WORKING slots.
 const PRESCRIBED: PrescribedSet[] = [
   { kind: 'warmup', targetWeightKg: 52.5, targetReps: 8, targetRIR: null },
   { kind: 'warmup', targetWeightKg: 80, targetReps: 3, targetRIR: null },
@@ -60,10 +61,21 @@ function renderCard(over: Partial<React.ComponentProps<typeof WorkoutCard>> = {}
   return { ...utils, props }
 }
 
-test('renders one row per effective slot, plus the column header', () => {
+test('renders one row per WORKING slot — the prescribed warm-ups are not shown', () => {
   const { container } = renderCard()
-  expect(container.querySelectorAll('.wo-row')).toHaveLength(5)
+  expect(container.querySelectorAll('.wo-row')).toHaveLength(3)
   expect(container.querySelector('.wo-rows-head')).toBeInTheDocument()
+  // No B-prefixed warm-up index survives anywhere on the card.
+  expect([...container.querySelectorAll('.wo-idx')].map((n) => n.textContent)).toEqual(['1', '2', '3'])
+})
+
+test('the header strip and the rows share ONE column grid', () => {
+  const { container } = renderCard()
+  const head = container.querySelector('.wo-rows-head')!
+  const row = container.querySelector('.wo-row')!
+  // Six cells each: # · KG · REP · RIR · ✓ · verdict.
+  expect(head.children).toHaveLength(6)
+  expect(row.children).toHaveLength(6)
 })
 
 test('the head carries the name, the records button and the ⋮ menu button', async () => {
@@ -84,8 +96,14 @@ test('the saved note renders as a .wo-note pill that opens the note editor', asy
   expect(props.onEditNote).toHaveBeenCalled()
 })
 
-test('the rationale renders as the .wo-cue sentence (the plan\'s own words)', () => {
+test('a card WITH a lastWeek renders no .wo-cue even when the plan carries a rationale — the banner owns the story', () => {
   const { container } = renderCard()
+  expect(container.querySelector('.wo-cue')).toBeNull()
+})
+
+test('a first-ever exercise (no lastWeek) renders the rationale as the .wo-cue sentence once', () => {
+  const { container } = renderCard({ exercise: makeExercise({ lastWeek: null }) })
+  expect(container.querySelectorAll('.wo-cue')).toHaveLength(1)
   expect(container.querySelector('.wo-cue p')).toHaveTextContent('A múlt heti RIR alapján tartjuk a súlyt.')
 })
 
@@ -103,39 +121,39 @@ test('only the NEXT pending row has enabled inputs — later slots are inert', (
   const { container } = renderCard()
   // The one editable row is a form; later pending rows are plain divs.
   expect(container.querySelectorAll('form.wo-row')).toHaveLength(1)
-  expect(container.querySelectorAll('.wo-row input')).toHaveLength(2)
+  // Three inline fields on that one row: kg, rep and RIR (mezo-i8ahy).
+  expect(container.querySelectorAll('.wo-row input')).toHaveLength(3)
   const inputs = screen.getAllByRole('spinbutton')
-  expect(inputs).toHaveLength(2)
+  expect(inputs).toHaveLength(3)
   for (const input of inputs) expect(input).toBeEnabled()
 })
 
-test('the editable row prefills kg/reps from the slot\'s prescribed target', () => {
+test('the editable row prefills kg/reps/RIR from the first WORKING slot\'s target', () => {
   renderCard()
-  expect(screen.getByLabelText(/súly$/)).toHaveValue(52.5)
-  expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(8)
+  // The warm-up rungs (52,5 × 8 and 80 × 3) are skipped — the cursor sits on slot 3 of
+  // the prescription, the first working set.
+  expect(screen.getByLabelText(/súly$/)).toHaveValue(105)
+  expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(10)
+  expect(screen.getByLabelText(/RIR$/)).toHaveValue(2)
 })
 
-test('a warmup slot shows an amber B-index and NO RIR pills', () => {
-  renderCard()
-  expect(screen.getByLabelText(/B1 bemelegítő szett, súly/)).toBeInTheDocument()
+test('the RIR field is inline on the row, and the pill strip is gone', () => {
+  const { container } = renderCard()
+  const row = container.querySelector('form.wo-row')!
+  expect(within(row as HTMLElement).getByLabelText(/RIR$/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'RIR 0' })).toBeNull()
+  expect(container.querySelector('.wo-pick')).toBeNull()
 })
 
-test('a working slot offers six RIR pills, with the prescribed targetRIR pre-pressed', () => {
-  // Both warmups already logged → the cursor sits on the first WORKING slot.
-  let session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, id: 's0' })
-  session = completeSet(session, 'ex1', { weight: 80, reps: 3, rir: 0, id: 's1' })
-  renderCard({ session })
-  const pills = [0, 1, 2, 3, 4, 5].map((n) => screen.getByRole('button', { name: `RIR ${n}` }))
-  expect(pills).toHaveLength(6)
-  expect(screen.getByRole('button', { name: 'RIR 2' })).toHaveAttribute('aria-pressed', 'true')
-  for (const n of [0, 1, 3, 4, 5]) {
-    expect(screen.getByRole('button', { name: `RIR ${n}` })).toHaveAttribute('aria-pressed', 'false')
-  }
+test('the RIR field holds the 0–5 contract', () => {
+  renderCard()
+  const rir = screen.getByLabelText(/RIR$/)
+  expect(rir).toHaveAttribute('min', '0')
+  expect(rir).toHaveAttribute('max', '5')
+  expect(rir).toHaveAttribute('inputmode', 'numeric')
 })
 
-test('the ✓ submits the typed values — rir null on a warmup slot', async () => {
+test('the ✓ submits the typed values, RIR included', async () => {
   const user = userEvent.setup()
   const { props } = renderCard()
   const kg = screen.getByLabelText(/súly$/)
@@ -144,19 +162,20 @@ test('the ✓ submits the typed values — rir null on a warmup slot', async () 
   const reps = screen.getByLabelText(/ismétlés$/)
   await user.clear(reps)
   await user.type(reps, '7')
-  await user.click(screen.getByRole('button', { name: 'B1 bemelegítő szett mentése' }))
-  expect(props.onLogSet).toHaveBeenCalledWith({ weight: 60, reps: 7, rir: null, side: null })
+  const rir = screen.getByLabelText(/RIR$/)
+  await user.clear(rir)
+  await user.type(rir, '1')
+  await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
+  expect(props.onLogSet).toHaveBeenCalledWith({ weight: 60, reps: 7, rir: 1, side: null })
 })
 
-test('the ✓ submits the picked RIR on a working slot', async () => {
+test('the cursor lands on the SECOND working slot once the first is logged', async () => {
   const user = userEvent.setup()
   let session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, id: 's0' })
-  session = completeSet(session, 'ex1', { weight: 80, reps: 3, rir: 0, id: 's1' })
+  session = completeSet(session, 'ex1', { weight: 105, reps: 10, rir: 2, id: 's0' })
   const { props } = renderCard({ session })
-  await user.click(screen.getByRole('button', { name: 'RIR 1' }))
-  await user.click(screen.getByRole('button', { name: '1. working szett mentése' }))
-  expect(props.onLogSet).toHaveBeenCalledWith({ weight: 105, reps: 10, rir: 1, side: null })
+  await user.click(screen.getByRole('button', { name: '2. szett mentése' }))
+  expect(props.onLogSet).toHaveBeenCalledWith({ weight: 105, reps: 10, rir: 2, side: null })
 })
 
 test('an isolation exercise offers the L/B/R side segment, and it rides the log payload', async () => {
@@ -164,42 +183,42 @@ test('an isolation exercise offers the L/B/R side segment, and it rides the log 
   const exercise = makeExercise({ type: 'isolation', warmupSets: 0, workingSets: 1, sets: 1, prescribedSets: [PRESCRIBED[2]] })
   const { props } = renderCard({ exercise })
   await user.click(screen.getByRole('button', { name: 'Oldal L' }))
-  await user.click(screen.getByRole('button', { name: '1. working szett mentése' }))
+  await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
   expect(props.onLogSet).toHaveBeenCalledWith(expect.objectContaining({ side: 'L' }))
 })
 
 test('a done row tap fires onTapDoneRow', async () => {
   const user = userEvent.setup()
   let session: Session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, id: 'srv-1' })
+  session = completeSet(session, 'ex1', { weight: 105, reps: 10, rir: 2, id: 'srv-1' })
   const { props } = renderCard({ session })
-  await user.click(screen.getByRole('button', { name: /B1 bemelegítő szett szerkesztése/ }))
+  await user.click(screen.getByRole('button', { name: /1\. szett szerkesztése/ }))
   expect(props.onTapDoneRow).toHaveBeenCalledWith(0)
 })
 
 test('a done row whose server id has not landed yet is NOT tappable (mezo-l3on)', () => {
   let session: Session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, localId: 'loc-1' })
+  session = completeSet(session, 'ex1', { weight: 105, reps: 10, rir: 2, localId: 'loc-1' })
   renderCard({ session })
-  expect(screen.getByRole('button', { name: /B1 bemelegítő szett szerkesztése/ })).toBeDisabled()
+  expect(screen.getByRole('button', { name: /1\. szett szerkesztése/ })).toBeDisabled()
 })
 
 test('a done row whose POST is KNOWN to have failed is tappable again (mezo-l3on F1)', () => {
   let session: Session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, localId: 'loc-1' })
+  session = completeSet(session, 'ex1', { weight: 105, reps: 10, rir: 2, localId: 'loc-1' })
   renderCard({ session, failedLocalIds: new Set(['loc-1']) })
-  expect(screen.getByRole('button', { name: /B1 bemelegítő szett szerkesztése/ })).toBeEnabled()
+  expect(screen.getByRole('button', { name: /1\. szett szerkesztése/ })).toBeEnabled()
 })
 
 test('a RECORD medal renders its chip in the done row\'s end cell', () => {
   let session: Session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
-  session = completeSet(session, 'ex1', { weight: 52.5, reps: 8, rir: 0, id: 'srv-1' })
+  session = completeSet(session, 'ex1', { weight: 105, reps: 10, rir: 2, id: 'srv-1' })
   renderCard({
     session,
-    medalsBySetIdx: { 0: [{ type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Chest Supported Row', setIndex: 0, label: 'Súly-rekord', value: '52,5 kg' } as never] },
+    medalsBySetIdx: { 0: [{ type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Chest Supported Row', setIndex: 0, label: 'Súly-rekord', value: '105 kg' } as never] },
   })
-  const row = screen.getByRole('button', { name: /B1 bemelegítő szett szerkesztése/ })
-  expect(within(row).getByText(/Súly-rekord|52,5/)).toBeInTheDocument()
+  const row = screen.getByRole('button', { name: /1\. szett szerkesztése/ })
+  expect(within(row).getByText(/Súly-rekord|105/)).toBeInTheDocument()
 })
 
 test('a skipped exercise renders collapsed with the KIHAGYVA tag and no rows', () => {
@@ -226,6 +245,6 @@ test('a plyo exercise logs weightKg 0 and disables the kg input', async () => {
   const exercise = makeExercise({ type: 'plyo', warmupSets: 0, workingSets: 1, sets: 1, prescribedSets: [PRESCRIBED[2]] })
   const { props } = renderCard({ exercise })
   expect(screen.getByLabelText(/súly$/)).toBeDisabled()
-  await user.click(screen.getByRole('button', { name: '1. working szett mentése' }))
+  await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
   expect(props.onLogSet).toHaveBeenCalledWith(expect.objectContaining({ weight: 0 }))
 })

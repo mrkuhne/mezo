@@ -1,27 +1,30 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { delay, http, HttpResponse } from 'msw'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// Real-mode view: records + catalog come from the MSW fixtures.
+// The Titanium catalogue (parity P2 Task 4, mezo-lf3cv) — the retired page's top-5 shell
+// („Top gyakorlatok · rekordjaid", the dashed ghost rows, the ⋯/▶ sheets) is gone, so this
+// suite was rewritten from scratch rather than extended.
+//
+// Real-mode view: catalogue (6 rows), records (Chest Supported Row + Box Jump by catalogId,
+// Hip Thrust name-grouped, Dead Hang for an exercise NOT in the catalogue) and medals
+// (Chest Supported Row + Hip Thrust in the catalogue, Leg Press outside it) all come from
+// the MSW fixtures.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 afterEach(() => vi.unstubAllEnvs())
 
-const renderView = () =>
-  render(<QueryWrapper><MemoryRouter><ExercisesPage /></MemoryRouter></QueryWrapper>)
-
-// LocationProbe idiom (MesocycleLibraryPage.test.tsx): the selection is what a nav
-// row's onClick fires, so the URL is what to assert on.
 function LocationProbe() {
   const { pathname } = useLocation()
   return <div data-testid="loc">{pathname}</div>
 }
-const renderWithLoc = () =>
+
+const renderPage = () =>
   render(
     <QueryWrapper>
       <MemoryRouter>
@@ -31,374 +34,205 @@ const renderWithLoc = () =>
     </QueryWrapper>,
   )
 
-// Final-review fix wave (mezo-88iwa.5): the six-tile hub retirement left Medálok
-// (owned by Gyakorlatok, navModel.ts) with no entry point of its own — restore it
-// as a nav row.
-test('the Medálok entry row navigates to /train/medals', async () => {
+const cards = () => Array.from(document.querySelectorAll<HTMLElement>('.gy-card'))
+
+test('the poster carries the prototype eyebrow, title and lead verbatim', async () => {
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  const hero = container.querySelector('.pl-dhero')!
+  expect(within(hero as HTMLElement).getByText('Gyakorlatok')).toBeInTheDocument()
+  expect(within(hero as HTMLElement).getByText(
+    'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',
+  )).toBeInTheDocument()
+})
+
+test('the poster foot shows three REAL counts (katalógus · rekordos sorok · medálok)', async () => {
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  const foot = container.querySelector('.pl-poster-foot')!
+  // 6 catalogue rows; 3 of them carry a record (Dead Hang's record has no catalogue row);
+  // 2 medals land on catalogue rows (Leg Press's medal has no catalogue row).
+  expect(foot.textContent).toBe('6 gyakorlat3 rekorddal2 medál')
+})
+
+test('the counts stay honest at zero — an empty catalogue says 0 of everything', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/exercises`, () => HttpResponse.json([])),
+  )
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  expect(container.querySelector('.pl-poster-foot')!.textContent).toBe('0 gyakorlat0 rekorddal0 medál')
+  expect(screen.getByText('Nincs ilyen gyakorlat a tárban.')).toBeInTheDocument()
+})
+
+test('one card per catalogue exercise: art, name, muscle label', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  expect(cards()).toHaveLength(6)
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  expect(within(row).getByText('Hát (közép)')).toBeInTheDocument()
+  expect(row.querySelector('.muscle-chip')).toBeTruthy()
+})
+
+test('a logged exercise shows its estimated 1RM and its medal count', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  const best = row.querySelector('.gy-card-best')!
+  expect(within(best as HTMLElement).getByText('133,3 kg')).toBeInTheDocument()
+  expect(within(best as HTMLElement).getByText('becsült 1RM')).toBeInTheDocument()
+  expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
+})
+
+test('a logged exercise with an e1RM but no medals shows no medal segment at all — never a bare 0 (parity P2)', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/medals`, () => HttpResponse.json({ medals: [] })),
+  )
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  const best = row.querySelector('.gy-card-best')!
+  expect(within(best as HTMLElement).getByText('133,3 kg')).toBeInTheDocument()
+  expect(row.querySelector('.gy-medals')).toBeNull()
+  expect(within(row).queryByText('0')).toBeNull()
+})
+
+test('a logged exercise with an e1RM and a medal shows the medal segment (parity P2)', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  expect(row.querySelector('.gy-medals')).not.toBeNull()
+  expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
+})
+
+test('a logged exercise with no trustworthy estimate shows an em dash, never a zero', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  // Box Jump is logged (plyo, 6 sessions) but carries no bestE1rm.
+  const row = cards().find((c) => c.textContent?.includes('Box Jump'))!
+  expect(within(row).getByText('—')).toBeInTheDocument()
+  expect(within(row).queryByText('még nincs naplózva')).toBeNull()
+})
+
+test('a name-grouped record still attaches to its catalogue row', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  // The Hip Thrust record carries NO catalogId; its catalogue row does (mezo-u5gk).
+  const row = cards().find((c) => c.textContent?.includes('Hip Thrust'))!
+  expect(within(row).getByText('160 kg')).toBeInTheDocument()
+})
+
+test('an unlogged exercise says „még nincs naplózva"', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const row = cards().find((c) => c.textContent?.includes('Lateral Raise'))!
+  expect(within(row).getByText('még nincs naplózva')).toBeInTheDocument()
+  expect(row.querySelector('.gy-card-best')).toBeNull()
+})
+
+test('search matches the name, the muscle label, and is accent-blind', async () => {
   const user = userEvent.setup()
-  renderWithLoc()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  await user.click(screen.getByRole('button', { name: 'Medálok' }))
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const field = screen.getByLabelText('Keresés a gyakorlatok között')
+  expect(field).toHaveAttribute('placeholder', 'Keresés névre vagy izomra…')
+
+  await user.type(field, 'lateral')
+  expect(cards().map((c) => c.querySelector('strong')!.textContent)).toEqual(['Lateral Raise'])
+
+  await user.clear(field)
+  await user.type(field, 'hat') // „Hát (közép)" typed without the accent
+  expect(cards().map((c) => c.querySelector('strong')!.textContent)).toEqual(['Chest Supported Row'])
+
+  await user.clear(field)
+  await user.type(field, 'zzz')
+  expect(cards()).toHaveLength(0)
+  expect(screen.getByText('Nincs ilyen gyakorlat a tárban.')).toBeInTheDocument()
+})
+
+test('the chips are Mind + one per region the catalogue has, and they filter', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  const chips = screen.getByRole('group', { name: 'Izomcsoport-szűrő' })
+  expect(within(chips).getAllByRole('button').map((b) => b.textContent))
+    .toEqual(['Mind', 'Hát', 'Váll', 'Láb', 'Core'])
+
+  await user.click(within(chips).getByRole('button', { name: 'Láb' }))
+  // sage = Hip Thrust (glute), Box Jump (quad), Standing Calf Raise (calf)
+  expect(cards().map((c) => c.querySelector('strong')!.textContent))
+    .toEqual(['Hip Thrust', 'Box Jump', 'Standing Calf Raise'])
+
+  await user.click(within(chips).getByRole('button', { name: 'Mind' }))
+  expect(cards()).toHaveLength(6)
+})
+
+test('tapping a card opens that exercise’s story route', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  // No `aria-label` on the card any more (fix round 1) — its accessible name is now
+  // built from its own visible text, so this matches on a fragment rather than the
+  // exact `name · muscleLabel` string the old override produced.
+  await user.click(screen.getByRole('button', { name: /Box Jump/ }))
+  expect(screen.getByTestId('loc'))
+    .toHaveTextContent('/train/exercises/f1e3a0e2-0000-4000-8000-000000000072')
+})
+
+test('a card’s accessible name carries its e1RM, its medal count and the empty state — never overridden (fix round 1)', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  // Chest Supported Row: logged, 133,3 kg, 1 medal — an overriding `aria-label` used to
+  // hide all of this from a screen reader.
+  const logged = screen.getByRole('button', {
+    name: (n) => n.includes('Chest Supported Row') && n.includes('133,3 kg') && n.includes('becsült 1RM'),
+  })
+  expect(logged).toBeInTheDocument()
+  // Lateral Raise: never logged.
+  const empty = screen.getByRole('button', {
+    name: (n) => n.includes('Lateral Raise') && n.includes('még nincs naplózva'),
+  })
+  expect(empty).toBeInTheDocument()
+})
+
+test('the poster foot’s medal count is a doorway to the medal vitrine — the other two facts are not (fix round 1)', async () => {
+  const user = userEvent.setup()
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  const foot = container.querySelector('.pl-poster-foot')!
+
+  // Only the medal segment is a button; „gyakorlat" and „rekorddal" stay plain text.
+  expect(within(foot as HTMLElement).getAllByRole('button')).toHaveLength(1)
+
+  const medalLink = within(foot as HTMLElement).getByRole('button', { name: /medál/ })
+  expect(medalLink).toHaveAccessibleName('2 medál · a medálvitrinbe')
+  await user.click(medalLink)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/medals')
 })
 
-test('own header: pghead-np over + h1', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  expect(screen.getByText('Edzés · Gyakorlatok')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { level: 1, name: 'Gyakorlatok' })).toBeInTheDocument()
+test('a quiet „＋ Új gyakorlat" row at the list’s foot opens the creation sheet (fix round 1)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  expect(screen.queryByLabelText('Név')).toBeNull()
+
+  await user.click(screen.getByRole('button', { name: '＋ Új gyakorlat' }))
+  expect(await screen.findByLabelText('Név')).toBeInTheDocument()
+  expect(screen.getByLabelText('Videó URL')).toBeInTheDocument()
+  // Create mode only — no delete affordance reachable from here (Task 5's, not this door's).
+  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).toBeNull()
 })
 
-// Mozaik re-face (mezo-d20.3.3): compact hero (icon + catalog count) + an honest
-// 3-cell stat strip (rekord/saját/videóval) below the header — the prototype's
-// 4th cell ("PR e héten") is dropped: no dated week-boundary contract exists to
-// derive it truthfully (honest states over placeholder theatre).
-test('compact hero shows the catalog count + an honest record/saját/videóval stat strip', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  expect(screen.getByText('6')).toBeInTheDocument() // catalog size (fixture: 6 rows)
-  const strip = screen.getByLabelText('Katalógus áttekintés')
-  expect(within(strip).getByText('4')).toBeInTheDocument() // rekord (4 records in fixture)
-  expect(within(strip).getByText('rekord')).toBeInTheDocument()
-  expect(within(strip).getByText('1')).toBeInTheDocument() // saját (Chest Supported Row only)
-  expect(within(strip).getByText('saját')).toBeInTheDocument()
-  expect(within(strip).getByText('2')).toBeInTheDocument() // videóval (Chest Supported Row + Hip Thrust)
-  expect(within(strip).getByText('videóval')).toBeInTheDocument()
-})
-
-test('default state ranks top exercises with best set and e1RM chip', async () => {
-  renderView()
-  expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()
-  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  expect(within(row).getByText('#1')).toBeInTheDocument()          // inline #n rank prefix
-  expect(within(row).getByText('102.5×9')).toBeInTheDocument()    // Legjobb szett cell
-  expect(within(row).getByText('133.3 kg')).toBeInTheDocument()   // e1RM cell
-  expect(within(row).getByText('182.5 t')).toBeInTheDocument()    // Összvolumen cell
-  expect(within(row).getByText('Hát (közép)')).toBeInTheDocument()// muscle pill
-  expect(within(row).getByText('21 alkalom')).toBeInTheDocument() // sessions pill
-  expect(within(row).getByText('Saját')).toBeInTheDocument()      // editable badge
-  // bodyweight (plyo) record: rep-based stat cells + filled plyo pill
-  const plyoRow = screen.getByRole('button', { name: /Box Jump/ })
-  expect(within(plyoRow).getByText('Max rep')).toBeInTheDocument()
-  expect(within(plyoRow).getByText('12')).toBeInTheDocument()     // max reps from recentTopSets
-  expect(within(plyoRow).getByText('186')).toBeInTheDocument()    // Összes rep
-  expect(within(plyoRow).getByText(/Plyo/)).toBeInTheDocument()   // ⚡ Plyo pill
-})
-
-test('a name-grouped record (no catalogId) gets the video affordance via name fallback', async () => {
-  renderView()
-  const row = await screen.findByRole('button', { name: /Hip Thrust/ })
-  // the record fixture has no catalogId — the catalog row (with its video) is
-  // resolved by name, so the roundel is the EDIT affordance seeded with the URL
-  const scope = within(row.parentElement as HTMLElement)
-  await userEvent.click(scope.getByRole('button', { name: 'Videó szerkesztése' }))
-  expect(await screen.findByText('Videó · Hip Thrust')).toBeInTheDocument()
-  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/xDmFkJxPzeM')
-})
-
-test('a name-grouped record opens the record sheet WITH the demo player chip', async () => {
-  renderView()
-  // the videoUrl prop must resolve through the same name fallback (mezo-7ndk)
-  await userEvent.click(await screen.findByRole('button', { name: /Hip Thrust/ }))
-  const sheet = await screen.findByRole('dialog')
-  expect(within(sheet).getByRole('button', { name: /Demo/ })).toBeInTheDocument()
-})
-
-test('the record sheet heroes the catalog demo stills above the video chip', async () => {
-  renderView()
-  await userEvent.click(await screen.findByRole('button', { name: /Hip Thrust/ }))
-  const sheet = await screen.findByRole('dialog')
-  // Resolved through the same name fallback as videoUrl; the pair renders as one figure.
-  const frames = sheet.querySelectorAll('.exdemo img')
-  expect(frames).toHaveLength(2)
-  expect(frames[0]).toHaveAttribute('src', '/exercises/hip-thrust-a.jpg')
-})
-
-test('a record whose catalog row has no image renders no demo figure at all', async () => {
-  renderView()
-  // Box Jump is imageless in the fixture, like the 37 unmapped master rows.
-  await userEvent.click(await screen.findByRole('button', { name: /Box Jump/ }))
-  const sheet = await screen.findByRole('dialog')
-  expect(sheet.querySelector('.exdemo')).toBeNull()
-})
-
-test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
-  renderView()
-  const row = await screen.findByRole('button', { name: /Dead Hang/ })
-  // no weighted cells — 0×35 / e1RM 0 must NOT appear
-  expect(within(row).queryByText('0×35')).not.toBeInTheDocument()
-  expect(within(row).queryByText('e1RM')).not.toBeInTheDocument()
-  expect(within(row).getByText('Max rep')).toBeInTheDocument()
-  expect(within(row).getByText('35')).toBeInTheDocument()
-  expect(within(row).getByText('65')).toBeInTheDocument()
-})
-
-test('search merges record rows with catalog ghost rows', async () => {
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'r')
-  expect(screen.getByText('Találatok · teljes katalógus')).toBeInTheDocument()
-  // record match still a button; catalog-only match renders as a ghost row
-  expect(screen.getByRole('button', { name: /Chest Supported Row/ })).toBeInTheDocument()
-  expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
-  expect(screen.getAllByText(/MÉG NINCS REKORD/i).length).toBeGreaterThan(0)
-})
-
-test('the search field carries an accessible name, not just a placeholder', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  expect(screen.getByRole('textbox', { name: 'Keresés a gyakorlatok között' })).toBeInTheDocument()
-})
-
-test('a ghost row is not a button — nothing to open until it has a record', async () => {
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'lateral')
-  // Lateral Raise is catalog-only in the fixture: it renders, but as inert copy —
-  // a dead button would promise a record sheet that cannot open (mezo-setx.6.7).
-  expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Lateral Raise/ })).not.toBeInTheDocument()
-})
-
-test('plyo chip filters records and ghosts by type', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  await userEvent.click(screen.getByRole('button', { name: 'Plyo' }))
-  expect(await screen.findByRole('button', { name: /Box Jump/ })).toBeInTheDocument()
-  expect(screen.queryByText('Chest Supported Row')).not.toBeInTheDocument()
-})
-
-test('tapping a record row opens the record sheet', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  await userEvent.click(await screen.findByRole('button', { name: /Chest Supported Row/ }))
-  expect(await screen.findByRole('heading', { name: 'Chest Supported Row' })).toBeInTheDocument()
-  expect(screen.getByText('102.5 kg × 9')).toBeInTheDocument()
-})
-
-test('empty records show the ghost state while the catalog search stays usable', async () => {
+test('the medals query’s own pending state is folded into the skeleton gate — no fake „0 medál" while it loads (fix round 1)', async () => {
   server.use(
-    http.get(`${API_BASE}/api/train/exercise-records`, () => HttpResponse.json([])),
-  )
-  renderView()
-  expect(await screen.findByText(/Az első logolt edzés után itt nőnek a rekordjaid/)).toBeInTheDocument()
-  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'calf')
-  expect(screen.getByText('Standing Calf Raise')).toBeInTheDocument()
-})
-
-// Loading skeleton (mezo-f2z) — real mode shows the ExercisesSkeleton (role="status")
-// while the catalog/records queries are unresolved (exercisesPending); mock seeds → none.
-// Writable catalog (mezo-52zg) — the header authoring button + edit/delete
-// affordances on user-authored (editable) rows. The MSW catalog fixture marks
-// Chest Supported Row editable with a videoUrl, and it also has a record, so it
-// renders as a record row in the default (unsearched) view.
-test('the header + Új gyakorlat button opens the create sheet', async () => {
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  await userEvent.click(screen.getByRole('button', { name: /Új gyakorlat/ }))
-  expect(await screen.findByText('Gyakorlat · Katalógus')).toBeInTheDocument()
-  expect(screen.getByLabelText('Név')).toHaveValue('')
-})
-
-test('an editable record row exposes the ⋯ edit roundel but no page-level delete', async () => {
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  expect(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' })).toBeInTheDocument()
-  // delete moved into CatalogExerciseSheet (mezo-kaui) — no longer on the page
-  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).not.toBeInTheDocument()
-})
-
-test('editing an owned row opens the sheet seeded with its name', async () => {
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' }))
-  expect(await screen.findByText('Gyakorlat szerkesztése')).toBeInTheDocument()
-  expect(screen.getByLabelText('Név')).toHaveValue('Chest Supported Row')
-})
-
-test('deleting an owned row goes through the edit sheet with a confirm step', async () => {
-  let deleted = ''
-  server.use(
-    http.delete(`${API_BASE}/api/train/exercises/:id`, ({ params }) => {
-      deleted = String(params.id)
-      return new HttpResponse(null, { status: 204 })
+    http.get(`${API_BASE}/api/train/medals`, async () => {
+      await delay(50)
+      return HttpResponse.json([])
     }),
   )
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' }))
-  const del = await screen.findByRole('button', { name: 'Gyakorlat törlése' })
-  await userEvent.click(del)                      // first tap: arm
-  expect(deleted).toBe('')                        // not deleted yet
-  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat törlése' })) // confirm
-  await waitFor(() => expect(deleted).toBe('f1e3a0e2-0000-4000-8000-000000000070'))
-})
-
-// Video affordance (mezo-bnsk) — the demo video can be attached to ANY catalog row.
-// Box Jump is a seed (non-editable) record row: it has NO edit/delete affordance but
-// DOES get a video button. Chest Supported Row is editable and already has a video.
-test('a seed (non-editable) record row exposes a video-add affordance and opens the sheet', async () => {
-  renderView()
-  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
-  // Box Jump carries no edit/delete (not editable), but the video-add roundel is
-  // present (scoped: Hip Thrust's no-video row exposes the same label) and opens
-  // the VideoUrlSheet for it.
-  const scope = within(boxRow.parentElement as HTMLElement)
-  await userEvent.click(scope.getByRole('button', { name: 'Videó hozzáadása' }))
-  expect(await screen.findByText('Videó · Box Jump')).toBeInTheDocument()
-  expect(screen.getByLabelText('Videó URL')).toHaveValue('')
-})
-
-test('an editable row with a video exposes a video-edit affordance seeded with its URL', async () => {
-  renderView()
-  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.click(within(row.parentElement as HTMLElement).getByRole('button', { name: 'Videó szerkesztése' }))
-  expect(await screen.findByText('Videó · Chest Supported Row')).toBeInTheDocument()
-  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/GZTvxN5fPBc')
-})
-
-test('setting a video on a seed row issues the PUT /video request', async () => {
-  let videoId = ''
-  let videoBody: unknown = null
-  server.use(
-    http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
-      videoId = String(params.id)
-      videoBody = await request.json()
-      return HttpResponse.json({ id: params.id, slug: 'box-jump', ...(videoBody as object) })
-    }),
-  )
-  renderView()
-  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
-  await userEvent.click(within(boxRow.parentElement as HTMLElement).getByRole('button', { name: 'Videó hozzáadása' }))
-  await userEvent.type(await screen.findByLabelText('Videó URL'), 'https://youtu.be/dQw4w9WgXcQ')
-  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  await waitFor(() => expect(videoId).toBe('f1e3a0e2-0000-4000-8000-000000000072'))
-  expect(videoBody).toEqual({ videoUrl: 'https://youtu.be/dQw4w9WgXcQ' })
-})
-
-// Multi-user catalog (mezo-qw37.5): a row another user authored is SHARED — it renders with a
-// `Közös · {név}` stamp and, because the viewer may neither edit nor re-mediate it, with NO
-// roundel at all. The MSW fixture's Lateral Raise is Anna's (catalog-only, so a ghost row).
-test('a shared row from another user carries the Közös badge and no edit/video roundel', async () => {
-  renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'lateral')
-  const name = screen.getByText('Lateral Raise')
-  const card = name.closest('.excat') as HTMLElement
-  expect(within(card).getByText('Közös · Anna')).toBeInTheDocument()
-  expect(within(card).queryByText('Saját')).not.toBeInTheDocument()
-  expect(within(card).queryByRole('button', { name: 'Gyakorlat szerkesztése' })).not.toBeInTheDocument()
-  expect(within(card).queryByRole('button', { name: /^Videó/ })).not.toBeInTheDocument()
-})
-
-test('a master row shows neither Saját nor Közös, and the video roundel follows mediaEditable', async () => {
-  renderView()
-  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
-  const card = boxRow.closest('.excat') as HTMLElement
-  expect(within(card).queryByText('Saját')).not.toBeInTheDocument()
-  expect(within(card).queryByText(/Közös/)).not.toBeInTheDocument()
-  // the fixture viewer is the OWNER → master media stays editable for them
-  expect(within(card).getByRole('button', { name: 'Videó hozzáadása' })).toBeInTheDocument()
-})
-
-test('a master row hides the video roundel when the viewer may not re-mediate it', async () => {
-  server.use(
-    http.get(`${API_BASE}/api/train/exercises`, () =>
-      HttpResponse.json([
-        { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35, editable: false, mediaEditable: false, authoredByMe: false, authorName: null },
-      ]),
-    ),
-  )
-  renderView()
-  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
-  const card = boxRow.closest('.excat') as HTMLElement
-  expect(within(card).queryByRole('button', { name: /^Videó/ })).not.toBeInTheDocument()
-})
-
-test('the saját stat counts authored rows, not editable ones', async () => {
-  server.use(
-    http.get(`${API_BASE}/api/train/exercises`, () =>
-      HttpResponse.json([
-        // the OWNER may edit Anna's row (editable) but did not author it — must not count as saját
-        { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2, editable: true, mediaEditable: true, authoredByMe: false, authorName: 'Anna' },
-        { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel' },
-      ]),
-    ),
-  )
-  renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  const strip = screen.getByLabelText('Katalógus áttekintés')
-  expect(within(strip).getByText('saját').previousElementSibling).toHaveTextContent('1')
-})
-
-describe('ExercisesPage (real mode, pending)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-  afterEach(() => vi.unstubAllEnvs())
-  it('shows the skeleton while the catalog + records queries are unresolved', async () => {
-    // exercisesPending = catalogPending || recordsPending — never-resolve both.
-    server.use(
-      http.get(`${API_BASE}/api/train/exercises`, () => new Promise(() => {})),
-      http.get(`${API_BASE}/api/train/exercise-records`, () => new Promise(() => {})),
-    )
-    renderView()
-    expect(await screen.findByRole('status')).toBeInTheDocument()
-  })
-})
-
-describe('ExercisesPage (mock mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-  afterEach(() => vi.unstubAllEnvs())
-  it('renders content with no skeleton (synchronous seed)', () => {
-    renderView()
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-  // The static Phase-1 catalog carries no backend catalogId, so it exposes no video
-  // affordance — the video button is gated on a real backend catalog row (mezo-bnsk).
-  it('exposes no video affordance on static catalog ghost rows', async () => {
-    renderView()
-    await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'bench')
-    expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^Videó/ })).toBeNull()
-  })
-  // The Phase-1 static seed carries no authorship → no Közös stamp anywhere in mock mode.
-  it('shows no Közös badge on static catalog rows', async () => {
-    renderView()
-    await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'row')
-    expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
-    expect(screen.queryByText(/Közös/)).toBeNull()
-  })
-})
-
-test('a record card leads with the catalog thumbnail and keeps the rank as a #n prefix', async () => {
-  renderView()
-  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  // Chest Supported Row is one of the 37 unmapped slugs — the slot is still
-  // reserved, by the fallback TILE (a div), so the list's left edge stays straight.
-  const tile = row.querySelector('.exdemo-thumb')
-  expect(tile).not.toBeNull()
-  expect(tile!.tagName).toBe('DIV')
-  expect(within(row).getByText('#1')).toBeInTheDocument()
-  // Hip Thrust carries stills in the MSW catalog fixture (mezo-8xdl.3) → a real <img>.
-  const hip = await screen.findByRole('button', { name: /Hip Thrust/ })
-  expect(hip.querySelector('img.exdemo-thumb')).not.toBeNull()
-})
-
-// Motion (mezo-d20.11): only the RESULT LIST was inside an EntranceGroup — the
-// hero strip, the search field, the filter chips and the list head had no
-// `.rise` at all, so the page chrome snapped in. The chrome now has its own
-// one-shot group (prototype #page-gyak: 30 · 60 · 90 · 120ms) while the list
-// keeps its filter-keyed group beneath it.
-test('the page chrome staggers inside its own entrance group', async () => {
-  const { container } = renderView()
-  await screen.findByText('Top gyakorlatok · rekordjaid')
-  const play = container.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  const at = (d: string) =>
-    [...play!.querySelectorAll('.rise')].filter((el) => (el as HTMLElement).style.getPropertyValue('--d') === d)
-  expect(play!.querySelector('.mz-statstrip.rise')).not.toBeNull()
-  expect(at('30ms').length).toBe(1)
-  expect(play!.querySelector('.searchfield.rise')).not.toBeNull()
-  expect(at('60ms').length).toBe(1)
-  expect(at('90ms').length).toBe(1)
-  expect(at('120ms').length).toBe(1)
+  renderPage()
+  // The catalogue/records resolve fast; the skeleton must still hold while medals lags.
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
+  await screen.findByText('A mozdulataid')
+  expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
 })

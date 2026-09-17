@@ -4,7 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
-import type { ExerciseRecordResponse } from '@/data/train/trainApi'
+import { E1RM_SERIES_MAX_POINTS, type E1rmPoint, type ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
@@ -1018,19 +1018,62 @@ export const workout: WorkoutPlan = {
 // reps-only sets, no bestE1rm/bestSessionVolume, totalVolume 0) to exercise that render
 // path; the other four carry full weighted data, Chest Supported Row's bestE1rm included
 // per the Task 5 brief.
+//
+// `e1rmSeries` (mezo-lf3cv) is the story curve's solid line. Chest Supported Row carries a
+// FULL 52-point series — the wire's cap — so the curve is exercised at maximum length; Lat
+// Pulldown carries gaps (skipped weeks) so the "no data ≠ zero" branch has something to draw;
+// Face Pull carries none at all (bodyweight: nothing is ever e1RM-eligible).
+/**
+ * A plausible weekly e1RM progression for the record fixtures (mezo-lf3cv): `weeks` slots ending
+ * on `endIso`, ONE POINT PER SESSION, oldest first, drifting up from `start` by `gainPerWeek`
+ * with a small wobble. Week indices listed in `gaps` are OMITTED entirely — a session where
+ * nothing was e1RM-eligible is a gap on the wire, never a zero, and the curve must be fed the
+ * real thing. Hand-built like the rest of this fixture: nothing derives it from the mock sets.
+ */
+const weeklyE1rm = (
+  weeks: number,
+  endIso: string,
+  start: number,
+  gainPerWeek: number,
+  gaps: number[] = [],
+): E1rmPoint[] => {
+  const wobble = [0, 0.8, -0.6, 1.2, -0.3]
+  const points: E1rmPoint[] = []
+  for (let i = 0; i < weeks; i++) {
+    if (gaps.includes(i)) continue
+    const d = new Date(`${endIso}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() - (weeks - 1 - i) * 7)
+    points.push({
+      date: d.toISOString().slice(0, 10),
+      e1rm: Math.round((start + i * gainPerWeek + wobble[i % wobble.length]) * 10) / 10,
+    })
+  }
+  return points
+}
+
 export const exerciseRecordsMock: ExerciseRecordResponse[] = [
   {
     name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
     bestSet: { weightKg: 107.5, reps: 8, date: '2026-08-12' },
     bestE1rm: { value: 140, set: { weightKg: 105, reps: 10, date: '2026-08-26' } },
     bestSessionVolume: { volumeKg: 3150, date: '2026-08-26' },
-    totalVolume: 42000, totalSets: 130, totalReps: 1150, sessionCount: 26,
+    // 61 sessions against a series the wire capped at 52 points: the count has to EXCEED
+    // the cap or the fixture contradicts itself (52 sessions' worth of points cannot come
+    // out of 26 sessions), and exceeding it is also what makes this row the one that
+    // exercises the story hero's window branch — „ebből az utolsó 52 látszik".
+    totalVolume: 231800, totalSets: 305, totalReps: 2440, sessionCount: 61,
     repRecords: [
       { weightKg: 107.5, reps: 8, date: '2026-08-12' },
       { weightKg: 105, reps: 10, date: '2026-08-26' },
       { weightKg: 100, reps: 12, date: '2026-07-01' },
     ],
     recentTopSets: [],
+    // The 52-point cap (`E1RM_SERIES_MAX_POINTS`), no gaps. Every generated value stays at or
+    // below this row's own `bestE1rm`, and the LAST one lands exactly on it (117,27 + 51 ×
+    // 0,43 + 0,8 wobble = 140,0 on 2026-08-26, the very date `bestE1rm.set` carries) — so the
+    // record genuinely lives IN the series, which is what lets the story card draw its bar at
+    // all (`ExerciseStoryPage`: a headline the series does not own gets an unfilled rail).
+    e1rmSeries: weeklyE1rm(E1RM_SERIES_MAX_POINTS, '2026-08-26', 117.27, 0.43),
   },
   {
     name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
@@ -1044,6 +1087,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 70, reps: 14, date: '2026-06-24' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(20, '2026-08-05', 87.5, 0.65, [6, 13]), // two sessions are gaps
   },
   {
     name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation',
@@ -1057,6 +1101,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 20, reps: 18, date: '2026-06-10' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(9, '2026-08-19', 27.5, 0.7),
   },
   {
     name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
@@ -1070,6 +1115,7 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
       { weightKg: 16, reps: 14, date: '2026-06-15' },
     ],
     recentTopSets: [],
+    e1rmSeries: weeklyE1rm(12, '2026-07-29', 20.8, 0.45),
   },
   {
     // Bodyweight-style demo row (mezo-88iwa.7 Task 5): no weightKg anywhere — reps-only
@@ -1212,6 +1258,11 @@ export const sport: Sport = {
 }
 
 // --- exercise library (data.js:538-560) — all 21 items verbatim ---
+// Two rows carry AUTHORSHIP (mezo-lf3cv): Barbell Bench Press is the demo user's own
+// („Saját"), Lateral Raise is someone else's („Közös · Anna") — the exercise story's hero
+// stamp is display-only, and without a seed it would be unreachable in a walkthrough.
+// Deliberately NO `editable`/`mediaEditable` here: mock-mode catalogue writes are no-ops,
+// and an authoring row whose Save does nothing is a worse lie than an absent affordance.
 export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false },
   { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound', stim: 0.84, fatigue: 0.4, imageStartUrl: '/exercises/lat-pulldown-pronated-a.jpg', imageEndUrl: '/exercises/lat-pulldown-pronated-b.jpg' },
@@ -1222,11 +1273,11 @@ export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-7', name: 'Incline DB Curl', muscle: 'biceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
   { id: 'exl-8', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation', stim: 0.7, fatigue: 0.18 },
   { id: 'exl-9', name: 'Reverse Pec Deck', muscle: 'shoulder-rear', type: 'isolation', stim: 0.66, fatigue: 0.18 },
-  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest-mid', type: 'compound', stim: 0.94, fatigue: 0.7 },
+  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest-mid', type: 'compound', stim: 0.94, fatigue: 0.7, authoredByMe: true },
   { id: 'exl-11', name: 'Incline DB Press', muscle: 'chest-upper', type: 'compound', stim: 0.86, fatigue: 0.5 },
   { id: 'exl-12', name: 'Cable Fly', muscle: 'chest-mid', type: 'isolation', stim: 0.74, fatigue: 0.25 },
   { id: 'exl-13', name: 'Overhead Press', muscle: 'shoulder-front', type: 'compound', stim: 0.86, fatigue: 0.55 },
-  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2 },
+  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2, authorName: 'Anna' },
   { id: 'exl-15', name: 'Tricep Pushdown', muscle: 'triceps-medial', type: 'isolation', stim: 0.7, fatigue: 0.2 },
   { id: 'exl-16', name: 'Overhead Tricep Ext', muscle: 'triceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
   { id: 'exl-17', name: 'Barbell Squat', muscle: 'quad', type: 'compound', stim: 0.94, fatigue: 0.85 },
