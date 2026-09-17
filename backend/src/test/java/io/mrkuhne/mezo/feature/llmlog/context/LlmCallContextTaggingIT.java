@@ -7,10 +7,12 @@ import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.CreateConversationRequestContext;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ScoreBreakdown;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryEmbedder;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
@@ -114,6 +116,47 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
         }
     }
 
+
+    /**
+     * mezo-1qfzu: the embed-side twin of {@link CapturingCompanionLlm} — reads the holder DURING
+     * the call, exactly where {@code GeminiEmbeddingAdapter} does.
+     */
+    static class CapturingEmbeddingPort implements EmbeddingPort {
+
+        private final LlmCallContextHolder contextHolder;
+        private LlmCallContext captured;
+
+        CapturingEmbeddingPort(LlmCallContextHolder contextHolder) {
+            this.contextHolder = contextHolder;
+        }
+
+        LlmCallContext captured() {
+            return captured;
+        }
+
+        void reset() {
+            this.captured = null;
+        }
+
+        @Override
+        public List<float[]> embedDocuments(List<String> texts) {
+            captured = contextHolder.get();
+            return texts.stream().map(text -> unitVector()).toList();
+        }
+
+        @Override
+        public float[] embedQuery(String text) {
+            captured = contextHolder.get();
+            return unitVector();
+        }
+
+        private static float[] unitVector() {
+            float[] vector = new float[EmbeddingPort.DIMENSIONS];
+            vector[0] = 1f;
+            return vector;
+        }
+    }
+
     @TestConfiguration
     static class CapturingLlmConfiguration {
 
@@ -121,6 +164,12 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
         @Primary
         CapturingCompanionLlm capturingCompanionLlm(LlmCallContextHolder contextHolder) {
             return new CapturingCompanionLlm(contextHolder);
+        }
+
+        @Bean
+        @Primary
+        CapturingEmbeddingPort capturingEmbeddingPort(LlmCallContextHolder contextHolder) {
+            return new CapturingEmbeddingPort(contextHolder);
         }
     }
 
@@ -137,10 +186,14 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     @Autowired private MemoryQueryRewriter memoryQueryRewriter;
     @Autowired private LlmMemoryReranker llmMemoryReranker;
     @Autowired private ConversationService conversationService;
+    @Autowired private CapturingEmbeddingPort capturingEmbeddingPort;
+    @Autowired private MemoryQueryEmbedder memoryQueryEmbedder;
+    @Autowired private LlmCallContextHolder taggingContextHolder;
 
     @BeforeEach
     void resetCapture() {
         capturingCompanionLlm.reset();
+        capturingEmbeddingPort.reset();
     }
 
     @Test
@@ -243,5 +296,38 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
                 "journal_entry", "Napló", "tartalom", LocalDate.of(2026, 9, 1), 0.9,
                 false, false, 0.5, null, null);
         return new FusedCandidate(candidate, new ScoreBreakdown(0.5, 0, 0, 0, 0, 0, 0.5), Map.of("dense", 1));
+    }
+
+    /**
+     * mezo-1qfzu: the query-embedding hop is a PAID provider call and must be attributable. It used
+     * to land as {@link LlmCallContext#UNKNOWN} — observed live on 2026-09-17, where the legacy path
+     * logged {@code companion_recall/recall_embed} and the platform's own embed logged
+     * {@code unknown}, so the serving-mode flip made chat attribution worse, not better.
+     */
+    @Test
+    void testEmbed_shouldTagTheCallWithTheRecallContext_whenTheQueryIsEmbedded() {
+        memoryQueryEmbedder.embed("Mennyit aludtam a héten?");
+
+        LlmCallContext captured = capturingEmbeddingPort.captured();
+        assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
+        assertThat(captured.feature()).isEqualTo("companion_recall");
+        assertThat(captured.operation()).isEqualTo("recall_embed");
+    }
+
+    /**
+     * The invariant {@code LlmMemoryQueryRewriter} already protects, now also for the embed: a chat
+     * turn's ambient {@code companion_chat} is live on this thread, and inheriting it would move
+     * every chat recall embed out of {@code companion_recall} and corrupt the shipped cost matrix.
+     */
+    @Test
+    void testEmbed_shouldKeepTheRecallFeature_whenAChatTurnsAmbientContextIsLive() {
+        taggingContextHolder.runWith(
+                new LlmCallContext("companion_chat", "answer", null, null),
+                () -> memoryQueryEmbedder.embed("Mennyit aludtam a héten?"));
+
+        LlmCallContext captured = capturingEmbeddingPort.captured();
+        assertThat(captured).isNotNull();
+        assertThat(captured.feature()).isEqualTo("companion_recall");
+        assertThat(captured.operation()).isEqualTo("recall_embed");
     }
 }
