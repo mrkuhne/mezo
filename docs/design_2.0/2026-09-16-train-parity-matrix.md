@@ -123,7 +123,7 @@ shell (§0) is explicitly **out of scope by owner decision A** and is excluded f
 |---|---|
 | `‹ Vissza` + `Hát` + prose + `Hétfőn 2 szettel többet kapsz.` | present; adds eyebrow `3. HÉT · ÉPÍTÉS` and a hero numeral `14 szett hetente` |
 | 3 stats `edzés hetente / szett az 1. héten / a legtöbb lesz` | present |
-| `Hol tartasz` gauge (`10 ennyitől fejlődik · 20 eddig mész el`) | present, **plus** an explanatory paragraph `10 szett alatt nincs elég inger…` |
+| `Hol tartasz` gauge (`10 ennyitől fejlődik · 20 eddig mész el`) | present — **and since P3 (`mezo-b516k`) 1:1**: the explanatory paragraph `10 szett alatt nincs elég inger…` that used to print under the gauge is **deleted**; the sentence is said once, behind the heading's new ⓘ (§22 row 11), exactly as the prototype keeps it |
 | `A hat hét` bar chart + deload note | present (`A 6 hét`) |
 | `Hol edzed` day rows | present |
 | `Az előző tervhez képest` (`Akkor 10 → 16 / Most 12 → 20`) | present (empty-state copy when there is no prior plan) |
@@ -533,6 +533,28 @@ times, with the owner-iterated copy shipped **word for word**.
 | 19 | §14 Mozgás | Hogyan olvasd? | `h3` „Izomcsoportok, sporttal együtt" | ✅ CLOSED |
 | 20 | §17 exercise story | Mi számít rekordnak? | `h3` „Rekordjaid" | ✅ CLOSED |
 | 21 | §17 exercise story | Mit mutat a vonal? | `h3` „Az erőd íve" | ✅ CLOSED |
+
+**The glass anatomy is 1:1 — CLOSED, verified live (whole-screen walk, 2026-09-17).** Both
+apps were driven side by side (production `:5183` mock · prototype `:5190/nap.html?r=122`, both
+at 393×852) and every overlay compared by `getComputedStyle`, not by eye. The header is the
+prototype's **ONE ROW** — leading clay icon `@0`, the `MEZO · RÉSZLET`-over-title column `@45`,
+the close button hard right — identical offsets on both sides (`GlassBox`'s own `art`/`eyebrow`
+props; the first cut stacked a second header block next to it and produced a two-row head, which
+is gone). Identical too: the fixed `--ex-color: #bca6f1` on all thirteen, the `MEZO · RÉSZLET`
+eyebrow, `role="dialog"` named by the title, the copy paragraph's computed type
+(`13px / 22.1px / rgb(214,210,226) / margin 2px 4px 6px`), and the card's whole computed surface —
+background image (the `120% 60% at 80% 0%` tint wash over the `#181d26→#10141b` gradient), the
+`1px` top border, the `0 -20px 60px -20px` shadow plus the inset hairline, and `18px 18px 26px`
+padding. The trigger measures 22×22 at `opacity .75` on both sides and is the LAST child of its
+row everywhere. **All 13 copy blocks are byte-identical**; the ONLY text difference in the whole
+walk is row 13's adjudicated title swap, below.
+
+**Two card traits are GlassBox's, shared by every glass in the app — not this layer's debt.**
+The close glyph is `✕` (U+2715) where the prototype writes `×` (U+00D7), and the card's bottom
+corners are square where the prototype rounds them `43px` to meet its device bezel (production's
+`.gl-card` spans the full `.phone-screen` and docks flush to the bottom edge). Both predate
+`mezo-b516k` — they arrived with the shipped `GlassBox` port (T12) and would have to change for
+every glass at once, so they are recorded here rather than fixed inside an explain-layer slice.
 
 **⚠ The one temporary divergence — audit row 13, §10 closed run.** The prototype's title
 there is **„Mit mutat a sáv?"**. Production's muscle-journey section renders TEXT ROWS, not
