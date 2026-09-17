@@ -28,7 +28,13 @@ public class TurnPlanner {
     /** Public so FakeCompanionLlm can dispatch on the prompt prefix. */
     public static final String PROMPT_MARKER = "TERV-FELADAT.";
 
-    static final String PROMPT = PROMPT_MARKER + """
+    /**
+     * Template, not literal: {@code %d} carries the live {@code maxCallsPerTurn} cap so the
+     * prompt never drifts from enforcement ({@link PlanValidator#validate}). {@link
+     * #PROMPT_MARKER} stays the unchanged literal prefix the fake dispatches on —
+     * {@code startsWith(PROMPT_MARKER)} must keep working after interpolation.
+     */
+    static final String PROMPT_TEMPLATE = PROMPT_MARKER + """
          Te a felhasznalo szemelyes egeszseg-tarsanak ADATTERVEZOJE vagy. NEM valaszolsz a kerdesre:
         kizarolag azt mondod meg, mely lekerdezesek kellenek a megvalaszolasahoz.
         A hasznalhato lekerdezesek neve, leirasa es parameterei a lenti katalogusban vannak.
@@ -36,12 +42,13 @@ public class TurnPlanner {
         {"needsData":true|false,"steps":[{"tool":"<nev>","args":{...},"why":"<fel mondat magyarul>"}]}
         Szabalyok: csak katalogusbeli nevet hasznalj; csak a katalogusban felsorolt parametereket add at;
         ha a kerdeshez nem kell a felhasznalo sajat adata, needsData=false es ures steps;
-        legfeljebb 15 lepes; ugyanazt a lekerdezest ne ismeteld.
+        legfeljebb %d lepes; ugyanazt a lekerdezest ne ismeteld.
 
         """;
 
     static final String REPAIR_PREFIX = "[JAVÍTÁS] Az előző terved hibás volt (";
     static final String REPAIR_SUFFIX = "). Adj érvényes tervet ugyanerre a kérdésre, kizárólag a katalógus eszközeivel.";
+    static final String CONTRADICTORY_PLAN_REASON = "needsData=true, de nincs egyetlen lépés sem";
 
     private final CompanionLlm companionLlm;
     private final TurnPlanParser parser;
@@ -55,8 +62,9 @@ public class TurnPlanner {
      * tool-loop path (spec §8). Present with zero steps = the planner ruled no data is needed.
      */
     public Optional<ValidatedPlan> plan(List<CompanionLlm.Turn> history, String userMessage, LocalDate today) {
-        // Stable half: prompt + catalogue (identical across turns => cacheable prefix).
-        String system = PROMPT + catalogue.render();
+        // Stable half: prompt + catalogue (identical across turns => cacheable prefix per config
+        // value, since maxCallsPerTurn does not change at runtime).
+        String system = PROMPT_TEMPLATE.formatted(properties.tools().maxCallsPerTurn()) + catalogue.render();
         String turnContext = "\n\nMa: " + today + "\n";
         // Definitions only — no call ever goes through these callbacks here.
         List<ToolCallback> callbacks = toolRegistry.callbacks(toolRegistry.newTurnAudit());
@@ -68,8 +76,15 @@ public class TurnPlanner {
             Optional<TurnPlan> parsed = parser.parse(raw);
             if (parsed.isPresent()) {
                 TurnPlan turnPlan = parsed.get();
-                if (!turnPlan.needsData() || turnPlan.steps().isEmpty()) {
+                if (!turnPlan.needsData()) {
                     return Optional.of(new ValidatedPlan(List.of(), List.of()));
+                }
+                if (turnPlan.steps().isEmpty()) {
+                    // Contradictory: says data is needed but names no query to fetch it — not a
+                    // legitimate "no data needed" answer, so it earns a repair lap like any other
+                    // invalid plan rather than silently short-circuiting to zero steps.
+                    message = userMessage + "\n\n" + REPAIR_PREFIX + CONTRADICTORY_PLAN_REASON + REPAIR_SUFFIX;
+                    continue;
                 }
                 ValidatedPlan validated = validator.validate(turnPlan, callbacks);
                 if (!validated.isEmpty()) {

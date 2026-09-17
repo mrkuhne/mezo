@@ -112,6 +112,20 @@ class TurnPlannerTest {
     }
 
     @Test
+    void testPlan_shouldRepair_whenNeedsDataButNoSteps() {
+        ScriptedLlm llm = new ScriptedLlm(
+            "{\"needsData\":true,\"steps\":[]}",
+            "{\"needsData\":true,\"steps\":[{\"tool\":\"get_fuel_log\",\"args\":{\"range\":\"day\"},\"why\":\"mai étkezés\"}]}");
+
+        ValidatedPlan plan = planner(llm).plan(List.of(), "Mit ettem ma?", TODAY).orElseThrow();
+
+        assertThat(plan.steps()).hasSize(1);
+        assertThat(llm.userMessages).hasSize(2);
+        assertThat(llm.userMessages.get(1)).contains("[JAVÍTÁS]")
+            .contains("needsData=true, de nincs egyetlen lépés sem");
+    }
+
+    @Test
     void testPlan_shouldNotRepair_whenOnlySomeStepsWereRejected() {
         ScriptedLlm llm = new ScriptedLlm(
             "{\"needsData\":true,\"steps\":[{\"tool\":\"get_fuel_log\",\"args\":{\"range\":\"day\"},\"why\":\"ok\"},"
