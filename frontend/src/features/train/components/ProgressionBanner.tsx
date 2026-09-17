@@ -1,7 +1,9 @@
 // ============================================================
 // Mezo · ProgressionBanner (mezo-5pfe) — the in-workout progressive-overload
-// signal: label + delta chip, a "Múlt hét → Ma a cél" two-cell comparison, and
-// the engine rationale. Three visual states by lever: weight=coral, rep=sage,
+// signal: label + delta chip and a "Múlt hét → Ma a cél" two-cell comparison.
+// The engine's rationale SENTENCE is NOT repeated here (mezo-i8ahy): the card prints
+// it once, in its cue line — the banner said the same thing a second time, in words,
+// right under its own numbers. Three visual states by lever: weight=coral, rep=sage,
 // hold/deload=amber back-off. Presentational only; replaces the .aistrip strip.
 // ============================================================
 import type { LastWeekSet, ProgressionSignal } from '@/data/types'
@@ -44,7 +46,6 @@ export function ProgressionBanner({ progression, lastWeek, bare = false }: {
           <div className="cval up">{now}</div>
         </div>
       </div>
-      <p className="pobanner-why">{p.rationale}</p>
     </div>
   )
 }

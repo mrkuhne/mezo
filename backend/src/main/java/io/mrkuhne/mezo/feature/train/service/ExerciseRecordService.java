@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.E1rmPoint;
 import io.mrkuhne.mezo.api.dto.E1rmRecord;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.RecordSetRef;
@@ -151,6 +152,12 @@ public class ExerciseRecordService {
             .sessionCount(bySession.size())
             .repRecords(repRecords)
             .recentTopSets(recentTopSets)
+            // The story curve (mezo-lf3cv): oldest-first, one point per session, capped at the
+            // newest 52, sessions with nothing eligible omitted (gap, never a zero). Unlike the
+            // figures above it honours the skipped flag — see E1rmSeries / bd mezo-za09c.
+            .e1rmSeries(E1rmSeries.from(bySession.values()).stream()
+                .map(p -> E1rmPoint.builder().date(p.date()).e1rm(p.e1rm()).build())
+                .toList())
             .build();
     }
 

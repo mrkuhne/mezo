@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-12
+updated: 2026-09-17
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
@@ -33,6 +33,9 @@ Fuel is mezo's nutrition domain: five sub-views under the bottom-nav route `/fue
 Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)** (Slice C · Fuel: `food_item`/`meal`/`meal_item`/`recipe`/`supplement_intake`/`medication(_dose)`/`nutrition_targets` + a fuel-timeline **view**, wiring these same nine hooks). Fuel is sequenced **after** Train deliberately because Train de-risks the typed-jsonb provenance-envelope pattern (`@JdbcTypeCode(SqlTypes.JSON)`) that Fuel's meal `score` will reuse. Roadmap: **[`docs/milestones/roadmap.md`](../milestones/roadmap.md)**.
 
 ## 2. User-facing behavior
+
+**Water capture appearance (`mezo-62xey`).** `WaterLogSheet` uses the shared Titanium capture header and a liquid graphic whose accessible output reflects the selected amount, never a fabricated daily reading. The graphic is empty until a 250/400/500 ml chip or valid manual amount is chosen; manual input still replaces the chip and the existing Mentés action performs the write. Current/target water totals remain hook-owned. The rest of the meal and stack routes keep their existing Titanium implementations.
+
 
 `/fuel` is one of the **five first-class tabs** of the Design 2.0 shell (Nap · Edzés · Fuel · Mezo · Én — [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)). **The Fuel section shell is dissolved and DELETED (F8, `mezo-d20.9.1`):** `FuelSection.tsx`, `pages/tabs.ts`/`FUEL_TABS`, the shared `AppHero` identity header and the `SubNavDropdown` sub-nav are gone. `/fuel` now renders **`FuelMaiPage` directly — the tab's Mozaik hub** — and every former sub-tab is a **full-page sibling** on its own stable route, reached by tapping a hub tile (the Huawei-Health „tile → own page” idiom of **Mozaik 2.0**, [ADR 0033](../decisions/0033-mozaik-2-tile-language.md), which supersedes the Napív iOS-list language of [ADR 0026](../decisions/0026-today-ios-list-language.md)). This is a **view-layer swap only**: the routes, the composed day (`useFuelTimeline`/`buildDayPlan`), every data hook and every contract survived; the settings sheet alone was later promoted to its own page (`mezo-2xzf`) — the redesign is *recompose, not reinvent*. There is no nested shell and no section-level navigation dropdown left in Fuel; the ⚙️ **Fuel-beállítások** action the old dropdown owned re-homed onto the hub as its own band, and the sub-pages own their headers (`MozaikPage`/`PageHead`/`PageHero` on the F3-refaced ones, the older `.pghead-np` header on the ones whose deep design round is still F7.3 pending — §9). Quick logging is the shell's floating coral **`QuickLogFab`** (`frontend/src/app/QuickLogFab.tsx`), present on every screen; its `QuickInputSheet` „Étkezés” tile is **dynamic** — with an open eating window it routes straight into `/fuel/log/uj?w=<tileKey>`, with none it lands on `/fuel/log/uj`'s free-item branch (mezo-7lst) — but it only ever resolves against **today's** window, so the hub's own window lane must still end with a log door itself (below), the only way to log against a past day. Routes are declared in `frontend/src/app/router.tsx`.
 

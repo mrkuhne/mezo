@@ -14,7 +14,7 @@ export type ClayIconName =
   | 'i-nap' | 'i-edzes' | 'i-fuel' | 'i-mezo' | 'i-polc' | 'i-viz' | 'i-alvas'
   | 'i-eletjel' | 'i-minta' | 'i-naplo' | 'i-cel' | 'i-stack' | 'i-suly' | 'i-sport'
   | 'i-futas' | 'i-meso' | 'i-emberek' | 'i-tudas' | 'i-ertesites' | 'i-growth'
-  | 'i-erme' | 'i-lang' | 'i-beallitas' | 'i-mikrofon' | 'i-kamra' | 'i-recept'
+  | 'i-info' | 'i-erme' | 'i-lang' | 'i-beallitas' | 'i-mikrofon' | 'i-kamra' | 'i-recept'
   | 'i-rend' | 'i-level' | 'i-hajnal' | 'i-video' | 'i-idozito' | 'i-kihivas'
   | 'i-checkin' | 'i-injekcio' | 'i-reggeli' | 'i-ebed' | 'i-snack' | 'i-vacsora'
   | 'i-memoar' | 'i-lombik' | 'i-kristaly' | 'i-retegek' | 'i-heti'

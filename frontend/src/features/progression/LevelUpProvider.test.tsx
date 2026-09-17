@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LevelUpProvider, useLevelUp } from '@/features/progression/LevelUpProvider'
 import { gymLevelUpMock } from '@/data/progression/progressionMock'
@@ -55,6 +56,40 @@ describe('LevelUpProvider', () => {
       </LevelUpProvider>,
     )
     fireEvent.click(screen.getByText('fire'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  // mezo-e1ii9 (Train parity P1, Task 2): the overlay used to be dismissible ONLY by its own
+  // Tovább CTA, so a user who navigated away kept a full-frame `.levelup` painted over every
+  // following route until a hard reload (measured live over /train/mesocycles/new and
+  // /train/gym). A route change now clears it — a provider-level fix, domain-agnostic.
+  it('clears the overlay on a route change (it must never outlive the route that raised it)', () => {
+    stubReduced()
+    function Raiser() {
+      const { showLevelUp } = useLevelUp()
+      const navigate = useNavigate()
+      return (
+        <>
+          <button onClick={() => showLevelUp(gymLevelUpMock)}>fire</button>
+          <button onClick={() => navigate('/elsewhere')}>go</button>
+        </>
+      )
+    }
+    render(
+      <MemoryRouter initialEntries={['/here']}>
+        <LevelUpProvider>
+          <Routes>
+            <Route path="/here" element={<Raiser />} />
+            <Route path="/elsewhere" element={<div>ELSEWHERE</div>} />
+          </Routes>
+        </LevelUpProvider>
+      </MemoryRouter>,
+    )
+    fireEvent.click(screen.getByText('fire'))
+    expect(document.querySelector('.levelup')).not.toBeNull()
+    fireEvent.click(screen.getByText('go'))
+    expect(screen.getByText('ELSEWHERE')).toBeInTheDocument()
+    expect(document.querySelector('.levelup')).toBeNull()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

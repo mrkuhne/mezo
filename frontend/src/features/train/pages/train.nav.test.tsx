@@ -62,16 +62,25 @@ test('the full Mai day view lives at /train/mai and /train?day= forwards to it',
 test('the active workout session is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
+  // The route opens DIRECTLY in the Titanium card list (mezo-e1ii9) — no prep screen.
+  expect(container.querySelector('.wo-list')).not.toBeNull()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
 })
 
-// Sablonok folds into the Mesociklus page in the new IA (handoff §10), but its route
-// stays reachable — the library's nav row still links here (mezo-tlwa).
-test('Sablonok stays reachable on its own route', async () => {
+// „Sablonjaid" stays reachable on its own route — the library landing's doorway links
+// here (mezo-tlwa; refaced into the Titanium list in T10 Task 3, mezo-88iwa.11, so the
+// page's name now lives in its poster hero's h2, not in a DS h1).
+test('Sablonjaid stays reachable on its own route', async () => {
   renderApp('/train/templates')
-  expect(await screen.findByRole('heading', { level: 1, name: 'Sablonok' })).toBeInTheDocument()
-  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
+})
+
+// A template's own READ-FIRST page (T10 Task 3) — a real route under the list, NOT the
+// raw editor at /train/mesocycles/templates/:id.
+test('a template opens its own story page at /train/templates/:id', async () => {
+  renderApp('/train/templates/b20f0000-0000-4000-8000-000000000000')
+  expect(await screen.findByRole('heading', { name: 'Upper/Lower Power' })).toBeInTheDocument()
+  expect(screen.getByText('A hét felépítése')).toBeInTheDocument()
 })
 
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {

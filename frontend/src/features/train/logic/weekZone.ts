@@ -4,8 +4,9 @@
 // (completed workout instances, meso + custom), TODAY's session plan,
 // and the weekly meso plan onto the shared budget scale (budgetOf
 // units, GROUP_MEV zone floors from setBudget). Pure derivations —
-// consumed by WeekZoneCard (PrepHetiZonaPage forecast) and by TrainWeekPage's
-// group cards/glass (mezo-88iwa.13 T12 Titanium face).
+// consumed by TrainWeekPage's group cards/glass (mezo-88iwa.13 T12 Titanium
+// face). The prep-screen consumer (WeekZoneCard on PrepHetiZonaPage) and its
+// selectPrepRows/prepSegments helpers died with the prep mosaic (mezo-e1ii9 P1).
 // Logged sets price by their own RIR (fallback: exercise targetRIR);
 // skip-marker and warmup rows are excluded, plyo exercises never count.
 // GD5 (mezo-3m5m) reframed muscleBudgets' own row.budget/level to be
@@ -129,31 +130,11 @@ export function weekZoneRows({ plannedDays, completed, todayPlan }: {
   })
 }
 
-/** Prep card rows: groups trained today, biggest contribution first. */
-export function selectPrepRows(rows: WeekZoneRow[]): WeekZoneRow[] {
-  return rows
-    .filter((r) => r.todaySets > 0)
-    .sort((a, b) => b.todaySets - a.todaySets || a.group.localeCompare(b.group))
-}
-
 /** GYM meta-card rows: every planned or already-trained group, heaviest plan first. */
 export function selectGymRows(rows: WeekZoneRow[]): WeekZoneRow[] {
   return rows
     .filter((r) => r.plannedSets > 0 || r.doneSets > 0)
     .sort((a, b) => b.planBudget - a.planBudget || a.group.localeCompare(b.group))
-}
-
-/** done → today → remaining-plan segments; caps at 100%, over turns the today slice into overflow. */
-export function prepSegments(row: WeekZoneRow): ZoneSegment[] {
-  const done = Math.min(row.doneBudget, 1)
-  const live = Math.min(row.doneBudget + row.todayBudget, 1)
-  const today = live - done
-  const plan = Math.max(0, Math.min(row.planBudget, 1) - live)
-  const segs: ZoneSegment[] = []
-  if (done > 0) segs.push({ pct: done, kind: 'solid' })
-  if (today > 0) segs.push({ pct: today, kind: row.status === 'over' ? 'overflow' : 'today' })
-  if (plan > 0) segs.push({ pct: plan, kind: 'ghost' })
-  return segs
 }
 
 /** done → remaining-plan segments for the GYM mini bars (no today slice). */

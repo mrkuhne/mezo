@@ -246,7 +246,10 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
 
   const chromeFree = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    const sticky = sc.querySelector('.sticky-top') as HTMLElement | null
+    // A lap saját tapadó chrome-ja: a prep-morzsa `.sticky-top`-ja mezo-e1ii9 óta nincs
+    // (az edzés a kártyalistán nyílik), a kártyalista fejléce a `.wk-top`. Mindkettőt
+    // elfogadjuk, de a NULL-t nem: az üres találat vakon zöld tesztet jelentene.
+    const sticky = sc.querySelector('.sticky-top, .wk-top') as HTMLElement | null
     return {
       hasHead: !!document.querySelector('.app-head'),
       stickyTop: sticky
@@ -255,7 +258,8 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
     }
   })
   expect(chromeFree.hasHead, '/train/session nem renderel shell-fejlécet').toBe(false)
-  expect(chromeFree.stickyTop, "a lap .sticky-top-ja tapad, üres sáv nélkül").toBe(0)
+  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja létezik (.sticky-top vagy .wk-top)').not.toBeNull()
+  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja tapad, üres sáv nélkül').toBe(0)
 })
 
 test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
@@ -531,4 +535,71 @@ test('a részletek fejlécében a pont-chip és a mikor-kártya nem fedi egymás
   }
   // Az owner elrendezése: az értékelés JOBB FENT áll — a mikor-kártya fölött.
   expect(boxes.score!.bottom).toBeLessThanOrEqual(boxes.when!.top + 1)
+})
+
+// ── The ⓘ explain button's hit box, off the glyph's LEADING edge (mezo-b516k fix round 1) ──
+// `.pl-info::after` gives the 22px glyph a 44px hit box (the house touch-target rule). A
+// box CENTRED on the glyph overflowed 11px per side while `.pl-h3`/`.ld-h3` puts only a
+// 7px gap between the heading text and the button, so the box reached ~4px INTO the
+// heading's own text — a tap meant for the heading could open the explain glass instead.
+// jsdom computes no layout, so the unit-level guard (InfoButton.headingHitArea.test.tsx)
+// can only prove the WIRING is correct, never the geometry. This is the real probe: at a
+// real phone viewport, `elementFromPoint` at the heading text's own right edge must
+// resolve to the heading, and at the glyph's centre must resolve to the button.
+test('the ⓘ hit box overhangs the button, never the heading text (mezo-b516k fix round 1)', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.goto('/train/week')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  // The app-root StartupSplash overlays the phone frame for 3-5 REAL seconds on every
+  // fresh load (StartupSplash.tsx) — `inert`/`aria-hidden`, but still the TOPMOST
+  // painted layer, so `elementFromPoint` hits its artwork instead of the page beneath
+  // until it unmounts. Other checks in this file outlive it incidentally (several
+  // locator round-trips); this probe needs the app interactive FAST, so it waits for
+  // the splash to actually leave the DOM first.
+  await page.waitForSelector('.startup-stage', { state: 'detached', timeout: 8000 }).catch(() => {})
+
+  const heading = page.locator('h3.ld-h3', { hasText: 'Izomcsoportok ezen a héten' })
+  await heading.scrollIntoViewIfNeeded()
+  const info = heading.locator('.pl-info')
+  await expect(info).toBeVisible()
+
+  const probe = await page.evaluate(() => {
+    const headingEl = Array.from(document.querySelectorAll('h3.ld-h3'))
+      .find((h) => h.textContent?.startsWith('Izomcsoportok ezen a héten')) as HTMLElement
+    const btn = headingEl.querySelector('.pl-info') as HTMLElement
+    // The heading's OWN text lives in its first child text node (the button is the
+    // second child). A Range over just the text's LAST character gives an unambiguous
+    // point inside a real glyph — its own centre, not an edge a sub-pixel device-scale
+    // rounding could tip onto a neighbour — so the probe is a solid "this is definitely
+    // still heading text" point rather than a hairline boundary case.
+    const textNode = Array.from(headingEl.childNodes).find((n) => n.nodeType === Node.TEXT_NODE)!
+    const length = (textNode.textContent ?? '').length
+    const range = document.createRange()
+    range.setStart(textNode, length - 1)
+    range.setEnd(textNode, length)
+    const textBox = range.getBoundingClientRect()
+    const btnBox = btn.getBoundingClientRect()
+    const textEdgeX = textBox.left + textBox.width / 2
+    const textEdgeY = textBox.top + textBox.height / 2
+    const glyphCenterX = btnBox.left + btnBox.width / 2
+    const glyphCenterY = btnBox.top + btnBox.height / 2
+    const atTextEdge = document.elementFromPoint(textEdgeX, textEdgeY)
+    const atGlyphCenter = document.elementFromPoint(glyphCenterX, glyphCenterY)
+    const tagOf = (el: Element | null) =>
+      el ? `${el.tagName}${el.className ? '.' + String(el.className).replace(/\s+/g, '.') : ''}` : 'null'
+    return {
+      textEdgeX, textEdgeY, glyphCenterX, glyphCenterY,
+      atTextEdgeIsHeading: atTextEdge === headingEl || headingEl.contains(atTextEdge),
+      atTextEdgeIsButton: atTextEdge === btn || btn.contains(atTextEdge),
+      atGlyphCenterIsButton: atGlyphCenter === btn || btn.contains(atGlyphCenter),
+      atTextEdgeTag: tagOf(atTextEdge),
+      atGlyphCenterTag: tagOf(atGlyphCenter),
+    }
+  })
+
+  expect(probe.atTextEdgeIsButton, `heading's own text edge (${probe.textEdgeX}, ${probe.textEdgeY}) hit the ⓘ button — the hit box still overhangs the heading`).toBe(false)
+  expect(probe.atTextEdgeIsHeading, `heading's own text edge (${probe.textEdgeX}, ${probe.textEdgeY}) resolved to ${probe.atTextEdgeTag}, not the heading`).toBe(true)
+  expect(probe.atGlyphCenterIsButton, `the glyph's own centre (${probe.glyphCenterX}, ${probe.glyphCenterY}) resolved to ${probe.atGlyphCenterTag}, not the ⓘ button`).toBe(true)
 })

@@ -5,6 +5,7 @@
 // ActiveWorkoutPage.tsx's prescribed-set rows).
 // ============================================================
 import type { Medal } from '@/data/train/medalTypes'
+import { ClayIcon } from '@/shared/ui/clay'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 
 export function MedalChip({ medal }: { medal: Medal }) {
@@ -28,7 +29,7 @@ export function MedalChip({ medal }: { medal: Medal }) {
         flexShrink: 0,
       }}
     >
-      🏅
+      <ClayIcon name="i-erme" size={14} />
     </span>
   )
 }

@@ -52,7 +52,7 @@ public class CheckInEntity extends OwnedEntity {
     @Column
     private Integer mental;
 
-    @Column(length = 500)
+    @Column(columnDefinition = "text")
     private String note;
 
     @Column(name = "saved_at")

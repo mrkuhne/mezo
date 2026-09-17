@@ -817,6 +817,34 @@ mezo:
       # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
       # block ("ezt megtanultam rólad"); 0 = off
       pattern-ack-days: 3
+    # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
+    # The gear never decides WHICH MODEL plans — the smart tier always does.
+    turn:
+      # Kill switch: false sends every LOOKUP/ANALYSIS turn down the legacy tool-loop unchanged.
+      pipeline-enabled: true
+      gear:
+        # false => an UNSURE turn goes straight to ANALYSIS instead of spending a cheap call.
+        classifier-enabled: true
+      planner:
+        # One repair lap: an unparseable or fully-rejected plan gets a single corrected retry
+        # before the caller falls back to the legacy tool-loop path (spec §8).
+        repair-attempts: 1
+      executor:
+        # Independent reads fan out in parallel; a step that misses the deadline becomes an
+        # honest "időtúllépés" outcome instead of stalling the turn (spec §6.4).
+        parallelism: 4
+        step-timeout-ms: 15000
+      answerer:
+        # The CHAT branch carries no tools, so this effort actually reaches the provider
+        # (OpenAiCompanionLlm.optionsFor pins effort to `none` only when a request carries tools).
+        chat-effort: high
+        outcome-max-chars-per-result: 8000
+        outcome-max-chars-total: 40000
+      replan:
+        # Data-gap laps an ANALYSIS answer may request (spec A2). 1 is the implemented ceiling —
+        # ChatService#pipelineAnswer only runs a SINGLE replan lap today; a future multi-lap loop
+        # widens this alongside the implementation.
+        max-laps: 1
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)
@@ -925,7 +953,15 @@ mezo:
         recency-max-boost: 0.003
       execution:
         # Independent deadline for each parallel retriever; one timeout never cancels its peers.
+        # This is a DATABASE budget — every retriever below it does one indexed query and nothing
+        # else. Do NOT put a network hop inside it (mezo-iddo: the query embedding used to live
+        # here, and at p50 ~270 ms it lost the race on 55 of 55 live runs, silently disabling
+        # semantic recall while every run still audited clean).
         retriever-timeout-ms: 200
+        # The one query-embedding hop, taken ONCE before the fan-out. Sized off measured provider
+        # latency (p50 ~270 ms, p95 ~675 ms, slowest observed success 1430 ms) with headroom, so it
+        # bounds a hung provider without ever cutting off a normal call.
+        query-embedding-timeout-ms: 2500
       reranker:
         # Off by default: normal chat never requires an LLM reranker.
         enabled: false

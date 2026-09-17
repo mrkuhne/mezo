@@ -88,6 +88,7 @@ public class MemoryContextService {
     }
 
     private final MemoryQueryPreparer queryPreparer;
+    private final MemoryQueryEmbedder queryEmbedder;
     private final Map<String, MemoryRetriever> retrievers;
     private final MemoryCandidateFusion fusion;
     private final MemoryContextSelector selector;
@@ -192,8 +193,13 @@ public class MemoryContextService {
         // REFLECTION and CHAT_AMBIENT are adapted from their pre-existing config shapes so their
         // numbers stay byte-identical to before this shared seam existed.
         int candidateLimit = properties.limitsFor(request.consumerPolicy()).candidateLimit();
+        // mezo-iddo: the query embedding is a NETWORK hop and must be taken here, once, BEFORE the
+        // fan-out — never inside a retriever, where the 200 ms database deadline would kill it.
+        // Reached only past the NO_MEMORY_NEEDED early return, so a turn that needs no memory still
+        // costs no embedding call.
+        float[] queryEmbedding = queryEmbedder.embed(query.denseQuery()).orElse(null);
         RetrievalInput input = new RetrievalInput(
-                request, query, properties.servingEmbeddingVersion(), candidateLimit);
+                request, query, properties.servingEmbeddingVersion(), candidateLimit, queryEmbedding);
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
         // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a

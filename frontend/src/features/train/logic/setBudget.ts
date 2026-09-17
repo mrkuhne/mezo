@@ -38,6 +38,22 @@ export const VOLUME_WEEKLY_CAP = 20
 export const SESSION_MUSCLE_CAP = 8
 export const NEAR_THRESHOLD = 0.85
 
+/**
+ * The per-muscle bar on the day page (`.pl-mrow-bar`, MesoDayPage) draws the session cap as
+ * a fixed pin at 80% of the track, so the track itself runs a quarter past the cap — at
+ * SESSION_MUSCLE_CAP = 8 that is a 10-set scale with the pin at 80%, exactly the two numbers
+ * that used to sit hardcoded in the page's JSX (mezo-88iwa.11). Derived here, in one place,
+ * the way mesoLoad's tiles already thread the cap instead of retyping it: raise the cap and
+ * the bar follows on its own.
+ */
+export const SESSION_CAP_PIN_PCT = 80
+export const SESSION_BAR_MAX_SETS = SESSION_MUSCLE_CAP / (SESSION_CAP_PIN_PCT / 100)
+
+/** A muscle's session set count as a percentage of that bar's track, clamped to full. */
+export function sessionBarPct(sets: number): number {
+  return Math.min(100, (sets / SESSION_BAR_MAX_SETS) * 100)
+}
+
 // Weekly minimum-effective set counts per budget group — lower edges of the
 // RP intermediate MEV ranges (docs/research/concepts/program-design-rules.md),
 // conservative on purpose. traps/core are intentionally absent: RP treats

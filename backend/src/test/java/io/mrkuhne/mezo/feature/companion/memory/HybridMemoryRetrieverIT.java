@@ -348,6 +348,8 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
         return input(owner, conversationId, QUERY);
     }
 
+    private static final FakeEmbeddingAdapter FAKE_EMBEDDING = new FakeEmbeddingAdapter();
+
     private static RetrievalInput input(UUID owner, UUID conversationId, String rawQuery) {
         return input(owner, conversationId, rawQuery, 30);
     }
@@ -358,7 +360,10 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
                 AS_OF, 1200, conversationId, false);
         PreparedMemoryQuery query = new PreparedMemoryQuery(
                 SELF_CONTAINED, rawQuery, rawQuery, Optional.empty(), Optional.empty());
-        return new RetrievalInput(request, query, VERSION, candidateLimit);
+        // mezo-iddo: the caller embeds now, never the retriever — the fake reproduces the exact
+        // vector geometry the sentinels in rawQuery script, including FAIL_ANN's short vector.
+        return new RetrievalInput(
+                request, query, VERSION, candidateLimit, FAKE_EMBEDDING.embedQuery(rawQuery));
     }
 
     /** Diagnostic only: execute the real join/filter shape without asserting planner choices. */

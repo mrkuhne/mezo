@@ -29,8 +29,12 @@ import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet
 
 interface MesoExercisesProps {
   meso: Mesocycle
-  /** Restricts the editor to ONE day (its `MesoDay.day` key) — the day page's shape. */
+  /** Restricts the editor to ONE day (its `MesoDay.day` key) — the day editor route's shape. */
   day?: string
+  /** Opens the exercise picker for `day` on mount — the day page's „＋ Gyakorlat hozzáadása"
+   *  lands on the editor route with `?add=1`, so that button still adds an exercise instead
+   *  of merely dropping the user in a form (Train parity P1 Task 4, mezo-e1ii9). */
+  autoAdd?: boolean
   /** Calibrated pacing (Task 12, mezo-dzbm), fetched by the calling page
    *  (MesocycleBuilderPage) and threaded down to MesoEditor — this component stays
    *  presentational, matching MesoEditor's own `timingProfile`/`timingProfilePending` props. */
@@ -38,7 +42,7 @@ interface MesoExercisesProps {
   timingProfilePending?: boolean
 }
 
-export function MesoExercises({ meso, day, timingProfile, timingProfilePending }: MesoExercisesProps) {
+export function MesoExercises({ meso, day, autoAdd, timingProfile, timingProfilePending }: MesoExercisesProps) {
   const { saveDayExercises } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
   // Read-only now: tiers are a planning-time decision (see the header note), so the
@@ -59,7 +63,7 @@ export function MesoExercises({ meso, day, timingProfile, timingProfilePending }
     })))
   }
   // The day (by `day` key) whose picker is open, or null when closed.
-  const [pickerDay, setPickerDay] = useState<string | null>(null)
+  const [pickerDay, setPickerDay] = useState<string | null>(autoAdd && day ? day : null)
 
   // Planned / archived mesos have no day plan yet.
   if (!meso.days || meso.days.length === 0) {

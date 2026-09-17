@@ -24,10 +24,21 @@ describe('ProgressionBanner', () => {
   })
 
   it('shows a back-off state on deload', () => {
-    render(<ProgressionBanner lastWeek={{ weight: 62.5, reps: 6, rir: 0 }} progression={{
+    const { container } = render(<ProgressionBanner lastWeek={{ weight: 62.5, reps: 6, rir: 0 }} progression={{
       lever: 'deload', deltaKg: -8, deltaReps: null, targetWeightKg: 54, targetReps: 6,
       rationale: 'Deload hét — visszaveszünk',
     }} />)
-    expect(screen.getByText(/Deload hét/)).toBeInTheDocument()
+    expect(container.querySelector('.pobanner')).toHaveClass('po-hold')
+    expect(screen.getByText(/−8 kg/, { selector: '.delta' })).toBeInTheDocument()
+  })
+
+  // mezo-i8ahy: the rationale SENTENCE is the card's cue line, printed once. The banner
+  // used to repeat it verbatim right under its own numbers.
+  it('never repeats the rationale sentence', () => {
+    render(<ProgressionBanner lastWeek={{ weight: 102.5, reps: 9, rir: 2 }} progression={{
+      lever: 'weight', deltaKg: 2.5, deltaReps: null, targetWeightKg: 105, targetReps: 10,
+      rationale: 'Múlt hét 9 × 102,5 kg → +2,5 kg',
+    }} />)
+    expect(screen.queryByText('Múlt hét 9 × 102,5 kg → +2,5 kg')).toBeNull()
   })
 })

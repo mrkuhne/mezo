@@ -75,6 +75,8 @@ test.each([
   ['/train/exercises', 'exercises-kereso'],
   ['/train/medals', 'medals-hero'],
   ['/train/mesocycles', 'mesociklus-mosaic'],
+  // T10 Task 2 (mezo-88iwa.11): az Edzéstervek könyvtár saját hőse.
+  ['/train/mesocycles/konyvtar', 'konyvtar-hero'],
   ['/train/session', 'session-start'],
 ])('%s — a(z) %s anchor jelen van', async (path, name) => {
   renderAt(path)
@@ -82,9 +84,11 @@ test.each([
 })
 
 // D11 (epic-spec §2): az aktív edzés oldala chrome-mentes (AppLayout hideChrome),
-// tehát a fejléc „?" gombja itt nem létezik — a prep-fázis saját mini ?-e nyitja
-// újra a kalauzt. Auto-open először, mini ? utána: mindkét út él.
-test('/train/session — a prep-fázisban van mini ? gomb', async () => {
+// tehát a fejléc „?" gombja itt nem létezik — a kártyalista fejlécének saját mini ?-e
+// nyitja újra a kalauzt (mezo-e1ii9: a prep-breadcrumbról költözött ide). Az AUTO-OPEN
+// már nem él sehol a Train doméniumban (mezo-e1ii9 Task 6 kapuzta ki az egészet), tehát
+// ez a mini ? az EGYETLEN út a kalauzhoz ezen az útvonalon — nem egy második út.
+test('/train/session — a kártyalista fejlécében van mini ? gomb', async () => {
   renderAt('/train/session')
   await waitFor(() =>
     expect(document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]')).not.toBeNull(),
@@ -131,7 +135,8 @@ test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
 // minden /train/*-on) fedi le a TRAIN_KALAUZ MINDEN „hogyan" horgonyát.
 test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
   const covered = new Set(['train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs',
-    'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start'])
+    'futas-tabs', 'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'session-start',
+    'konyvtar-hero'])
   const anchors = TRAIN_KALAUZ.flatMap(e => e.cards.flatMap(c =>
     c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
   expect(anchors.filter(a => !covered.has(a))).toEqual([])

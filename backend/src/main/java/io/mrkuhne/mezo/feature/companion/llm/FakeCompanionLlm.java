@@ -13,10 +13,14 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
+import io.mrkuhne.mezo.feature.companion.service.GearClassifier;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
+import io.mrkuhne.mezo.feature.companion.service.TurnGear;
+import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
+import io.mrkuhne.mezo.feature.companion.service.TurnPlanner;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,6 +51,41 @@ import reactor.core.publisher.Flux;
 public class FakeCompanionLlm implements CompanionLlm {
 
     public static final String PREFIX = "FAKE-LLM";
+
+    /** Proves a turn took the tool-free smart branch — asserted by the gear ITs (mezo-rj214.7). */
+    public static final String CHAT_GEAR_SENTINEL = "FAKE-CHAT-GEAR";
+
+    /** Scripts the planner's reply: [fake-plan:{...json...}] anywhere in the user message. */
+    private static final Pattern FAKE_PLAN =
+            Pattern.compile("\\[fake-plan:(\\{.*})]", Pattern.DOTALL);
+
+    /** The planner branch's UNSCRIPTED default (mezo-rj214.7): deliberately UNPARSEABLE (no
+     *  '{') so {@code TurnPlanner.plan(...)} returns {@code Optional.empty()} and the pipeline
+     *  wiring falls back to the legacy path. A parseable default (the old {@code
+     *  {"needsData":false,"steps":[]}}) would silently reroute every existing IT that never
+     *  scripts a plan through the new pipeline the moment it goes live. */
+    public static final String PLANNER_NO_SCRIPT = "FAKE-PLANNER: nincs szkriptelt terv";
+
+    /** Proves a turn took the answerer branch (mezo-rj214.7): the volatile half carries an
+     *  {@code ESZKÖZHÍVÁSOK} digest (present on every answerer call — {@code
+     *  ToolOutcomeDigest.NONE}/{@code HEADER} both start with it — and never on a CHAT-gear
+     *  call). Echoes exactly like the CHAT-gear branch so prompt-order ITs read the same way. */
+    public static final String ANSWER_SENTINEL = "FAKE-ANSWER";
+
+    /** Mirror of {@code ToolOutcomeDigest}'s {@code NONE}/{@code HEADER} shared prefix — LITERAL,
+     *  not an import: this fake reads the digest by CONTENT the way a real model would, it does
+     *  not need the producing class. Routes the answerer branch. */
+    private static final String ANSWERER_DIGEST_PREFIX = "ESZKÖZHÍVÁSOK";
+
+    /** Scripts a lap-1 data-gap reply from the answerer: [fake-datagap:<reason>] in the user
+     *  message. Fires ONLY when the volatile half ALSO carries the DATA-GAP OFFER block ({@code
+     *  "[Adathiány]"} — present only on ANALYSIS lap 1, Task 4's literal) — the honest
+     *  simulation of a real model that can only use the marker when the offer was made. */
+    private static final Pattern FAKE_DATAGAP = Pattern.compile("\\[fake-datagap:([^\\]]+)]");
+
+    /** Mirrors the real router's deterministic pre-classifier so scripted questions classify the
+     *  same way a reader expects, without paying for a fake model round-trip. */
+    private static final TurnGearAnalyzer GEAR_ANALYZER = new TurnGearAnalyzer();
 
     /** Content markers that force a deterministic failure — lets ITs exercise error paths. */
     public static final String FAIL_COMPLETE = "[fake-fail]";
@@ -951,6 +990,11 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (workshop.find()) {
             return workshop.group(1);
         }
+        if (systemPrompt.startsWith(GearClassifier.PROMPT)) {
+            // Mirror the deterministic analyzer so fixture questions classify the way a reader
+            // expects; anything it cannot settle becomes ANALYSIS, exactly like the router.
+            return GEAR_ANALYZER.analyze(userMessage).orElse(TurnGear.ANALYSIS).name();
+        }
         return PREFIX + " system=[" + systemPrompt + "]"
                 + " history=[" + ChatHistory.render(history) + "]"
                 + " user=[" + userMessage + "]"
@@ -1140,6 +1184,66 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /**
+     * The tool-free smart-tier entry point (mezo-rj214.7): overridden — rather than left on the
+     * interface default — so a CHAT-gear turn is provably distinguishable from the ordinary
+     * {@link #complete(String, List, String, List, Map)} echo. The shape otherwise matches that
+     * echo character-for-character so the existing prompt-order ITs stay unaffected.
+     *
+     * <p>It honours the same failure sentinels as the tool-carrying twins: a provider outage and a
+     * text-free candidate are provider behaviours, not gear behaviours, so a CHAT turn must be
+     * scriptable into them exactly like every other turn.
+     */
+    @Override
+    public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                String userMessage) {
+        if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
+            throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return "";
+        }
+        if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
+            Matcher plan = FAKE_PLAN.matcher(userMessage);
+            return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
+        }
+        if (turnContext.contains(ANSWERER_DIGEST_PREFIX)) {
+            if (turnContext.contains("[Adathiány]")) {
+                Matcher datagap = FAKE_DATAGAP.matcher(userMessage);
+                if (datagap.find()) {
+                    return "[TOVÁBBI-ADAT: " + datagap.group(1) + "]";
+                }
+            }
+            return ANSWER_SENTINEL + " " + PREFIX
+                + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]";
+        }
+        return CHAT_GEAR_SENTINEL + " " + PREFIX
+            + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
+            + " history=[" + ChatHistory.render(history) + "]"
+            + " user=[" + userMessage + "]";
+    }
+
+    /**
+     * Streamed twin of {@link #completeSmart(String, String, List, String)} — including the
+     * streamed failure shapes: {@link #FAIL_STREAM} errors mid-stream after one chunk, and
+     * {@link #EMPTY_ANSWER} completes with no text at all (mezo-8z79).
+     */
+    @Override
+    public Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                    String userMessage) {
+        if (userMessage.contains(FAIL_STREAM)) {
+            return Flux.concat(
+                Flux.just(PREFIX),
+                Flux.error(new IllegalStateException("FAKE-LLM forced stream failure")));
+        }
+        if (userMessage.contains(EMPTY_ANSWER)) {
+            return Flux.empty();
+        }
+        return Flux.just(completeSmart(systemPrompt, turnContext, history, userMessage));
     }
 
     /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}

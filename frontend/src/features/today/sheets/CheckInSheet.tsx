@@ -3,9 +3,11 @@
 // 4×/nap dimenziók: Energia · Stressz · Testi · Mentális tisztaság
 // + opcionális voice/free note
 // ============================================================
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
+import { CaptureSculpture } from '@/shared/ui/CaptureSculpture'
 import type { CheckinSlot, CheckinValues } from '@/data/types'
 
 type DimId = keyof CheckinValues
@@ -62,12 +64,14 @@ export function CheckInSheet({
   slot: CheckinSlot
   slotIdx: number
   onClose: () => void
-  onSave: (data: Partial<CheckinSlot>) => void
+  onSave: (data: Partial<CheckinSlot>) => void | Promise<void>
 }) {
   const [values, setValues] = useState<CheckinValues>(
     () => slot.values ?? { energy: 7, stress: 4, body: 7, mental: 7 },
   )
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(slot.note ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [step, setStep] = useState(0) // 0..3 = dim, 4 = note
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -92,30 +96,31 @@ export function CheckInSheet({
     [],
   )
 
-  const save = (close: () => void) => {
-    onSave({
-      state: 'done',
-      values,
-      note: note.trim() || null,
-      savedAt: new Date().toISOString(),
-    })
-    close()
+  const save = async (close: () => void) => {
+    if (saving) return
+    setSaving(true)
+    setSaveError(false)
+    try {
+      await onSave({
+        state: 'done',
+        values,
+        note: note.trim() || null,
+        savedAt: new Date().toISOString(),
+      })
+      close()
+    } catch {
+      setSaveError(true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <Sheet onClose={onClose}>
+    <Sheet onClose={onClose} labelledBy="checkin-title" className="capture-sheet capture-tone-checkin">
       {(close) => (
       <>
-      {/* Header */}
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-        <div className="col">
-          <span className="eyebrow brand">Heartbeat · {slot.time}</span>
-          <div className="h-display size-md" style={{ marginTop: 4 }}>Hogy vagyunk?</div>
-        </div>
-        <button className="chip" onClick={close} style={{ padding: '6px 8px' }}>
-          <Icon name="x" size={12} />
-        </button>
-      </div>
+      <CaptureHeader id="checkin-title" title="Hogy vagyunk?" eyebrow={`Heartbeat · ${slot.time}`}
+        kind="checkin" onClose={close} />
 
       {/* Step progress */}
       <div className="row gap-xs" style={{ margin: '16px 0 18px' }}>
@@ -148,7 +153,8 @@ export function CheckInSheet({
           </div>
 
           {/* Selected value display */}
-          <div className="col" style={{ alignItems: 'center', padding: '12px 0 4px' }}>
+          <div className="capture-check-orbit" data-step={dim.id} style={{ color: dim.color }}>
+            <CaptureSculpture kind="checkin" />
             <div style={{
               fontFamily: 'var(--ff-display)',
               fontSize: 56, fontWeight: 200, letterSpacing: '-0.04em',
@@ -165,7 +171,7 @@ export function CheckInSheet({
 
           {/* 1-10 scale */}
           <div>
-            <div className="row" style={{
+            <div className="row capture-rating-scale" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(10, 1fr)',
               gap: 4,
@@ -256,8 +262,7 @@ export function CheckInSheet({
           {/* Optional free note */}
           <div className="col gap-sm">
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <label htmlFor="checkin-note" className="label-mono">Egy mondat · opcionális</label>
-              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{note.length}/200</span>
+              <label htmlFor="checkin-note" className="label-mono">Gondolatok · opcionális</label>
             </div>
             {/* the decorative mic chip is gone (mezo-setx.5.5) — a control that does
                 nothing is the ItemRow doctrine's dead button, not a form affordance */}
@@ -265,10 +270,10 @@ export function CheckInSheet({
               <textarea
                 id="checkin-note"
                 value={note}
-                onChange={e => setNote(e.target.value.slice(0, 200))}
+                onChange={e => setNote(e.target.value)}
                 placeholder='pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"'
                 style={{
-                  flex: 1, minHeight: 50, resize: 'none',
+                  flex: 1, minHeight: 120, resize: 'vertical',
                   fontSize: 16, color: 'var(--text-primary)',
                   lineHeight: 1.45,
                 }}
@@ -276,69 +281,16 @@ export function CheckInSheet({
             </div>
           </div>
 
-          {/* Companion observation */}
-          <CheckInObservation values={values} slot={slot} />
-
           {/* Save */}
-          <button className="cta-primary" onClick={() => save(close)}>
+          {saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
+          <button className="cta-primary" disabled={saving} onClick={() => { void save(close) }}>
             <Icon name="check" size={16} />
-            <span>Mentés · {slot.time}</span>
+            <span>{saving ? 'Mentés…' : `Mentés · ${slot.time}`}</span>
           </button>
         </div>
       )}
       </>
       )}
     </Sheet>
-  )
-}
-
-// Mezo's reactive observation based on the values entered
-function CheckInObservation({ values }: { values: CheckinValues; slot?: CheckinSlot }) {
-  const obs = useMemo(() => {
-    if (values.energy <= 4 && values.stress >= 6) {
-      return {
-        tone: 'concern',
-        msg: 'Alacsony energia + magas stressz — ezt láttuk múlt kedden is volleyball után. Délután lehet hogy érdemes a Pull Day-t enyhébbre venni.',
-      }
-    }
-    if (values.body <= 4) {
-      return {
-        tone: 'concern',
-        msg: 'A testi 4 alatt van — ez a 3. nap a héten. Lehet hogy az alvás-mennyiség nem elég, vagy egy aktív niggle nyomja. Nézzünk rá ma?',
-      }
-    }
-    if (values.energy >= 8 && values.mental >= 8) {
-      return {
-        tone: 'good',
-        msg: 'Energia 8+, mentális 8+ — ez Pull Day-en a PR-attempt-re ideális ablak. Most aktiváltam a 107.5kg target predikciót.',
-      }
-    }
-    if (values.stress >= 8) {
-      return {
-        tone: 'concern',
-        msg: 'Magas stressz — most lélegezzünk együtt. Próbáljunk 4 másodperc be / 6 másodperc ki ritmust 2 percig, mielőtt belevágsz a következőbe.',
-      }
-    }
-    return {
-      tone: 'neutral',
-      msg: 'Megvan, beírom. A 4×/nap mérés ritmusa az, amiből a heti memoir is épül — köszönöm.',
-    }
-  }, [values])
-
-  const accent = obs.tone === 'concern' ? 'var(--warning-hover)' : obs.tone === 'good' ? 'var(--primary-deep)' : 'var(--text-secondary)'
-  return (
-    <div className="card" style={{
-      padding: 12,
-      background: obs.tone === 'good' ? 'var(--primary-bg)' : obs.tone === 'concern' ? 'var(--warning-bg)' : 'var(--surface-card)',
-      borderColor: obs.tone === 'good' ? 'var(--primary-soft)' : obs.tone === 'concern' ? 'var(--warning-soft)' : 'var(--divider)',
-    }}>
-      <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-        <Icon name="sparkle" size={12} color={accent} />
-        <div className="col flex-1">
-          <span className="label-mono" style={{ color: accent }}>Mezo · azonnali olvasat</span>
-          <p style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>{obs.msg}</p>
-        </div>
-      </div>
-    </div>
   )
 }

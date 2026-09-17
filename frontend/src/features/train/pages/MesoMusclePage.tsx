@@ -22,7 +22,9 @@
 //                          top of each other.
 //                        · `--nudge` EDGE-CLAMPING — a label anchored past 86% (or
 //                          under 14%) is pulled back onto the track instead of being
-//                          centred off the end of it.
+//                          centred off the end of it. Mid-scale that clamp does nothing,
+//                          so a pair whose geometry merges while its NUMBERS differ is
+//                          first pushed apart to a minimum gap (`spreadCaptions`).
 //   `.pl-arc`        — the plan's ramp, one bar per week, this week lit, the pihenőhét
 //                      hatched, with the per-week set counts under it (`.pl-weekvals`).
 //   `.pl-exs`        — where it actually works: one `.pl-ex` row per training day,
@@ -50,6 +52,7 @@ import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozai
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { muscleTiles, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
 import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { tierLabel } from '@/features/train/logic/tierLabel'
@@ -65,11 +68,28 @@ export function nudgeFor(at: number): string {
   return '-50%'
 }
 
-/** Two landmarks within 7 points of each other are ONE landmark to the eye. A maintain
- *  muscle is the case that matters: its lower threshold IS its ceiling, so two captions
- *  would stack on top of each other and say the same thing twice. */
+/** Two landmarks within CAPTION_MIN_GAP points of each other are ONE landmark to the eye. A
+ *  maintain muscle is the case that matters: its lower threshold IS its ceiling, so two
+ *  captions would stack on top of each other and say the same thing twice. */
+export const CAPTION_MIN_GAP = 7
 export function labelsMerge(lowPct: number, topPct: number): boolean {
-  return Math.abs(topPct - lowPct) < 7
+  return Math.abs(topPct - lowPct) < CAPTION_MIN_GAP
+}
+
+/** When the geometry merges but the NUMBERS don't (mev !== ceiling), both captions still
+ *  render — and `nudgeFor` only clamps at the track's ENDS, so mid-scale the two would sit
+ *  on top of each other. Push the pair apart to exactly CAPTION_MIN_GAP around their own
+ *  midpoint, then slide the pair back inside the track if that pushed an end off it. Only
+ *  the CAPTION anchors move (by at most half the gap); the marks keep their true positions,
+ *  and a pair that is already far enough apart is returned untouched. */
+export function spreadCaptions(lowPct: number, topPct: number): [number, number] {
+  if (topPct - lowPct >= CAPTION_MIN_GAP) return [lowPct, topPct]
+  const mid = (lowPct + topPct) / 2
+  let lo = mid - CAPTION_MIN_GAP / 2
+  let hi = mid + CAPTION_MIN_GAP / 2
+  if (lo < 0) { hi -= lo; lo = 0 }
+  if (hi > 100) { lo -= hi - 100; hi = 100 }
+  return [lo, hi]
 }
 
 /** Mirrors the hero + facts + gauge anatomy below. */
@@ -169,6 +189,8 @@ export function MesoMusclePage() {
   // something the numbers don't back up.
   const merged = labelsMerge(lowPct, topPct)
   const mergedText = tile.mev === tile.ceiling
+  // Two captions that survive a merged GEOMETRY get anchors far enough apart to read.
+  const [lowCapPct, topCapPct] = spreadCaptions(lowPct, topPct)
 
   const say =
     tile.tier === 'maintain'
@@ -225,7 +247,15 @@ export function MesoMusclePage() {
           </div>
 
           {/* — the gauge: fill + landmarks + labelled pin, this page only — */}
-          <h3 className="pl-h3 rise">Hol tartasz</h3>
+          <h3 className="pl-h3 rise">
+            Hol tartasz
+            {/* The prototype interpolates the muscle's own MEV into this copy
+                (plan-pages.js:268, `${muscle.mev}`) — never a literal number. */}
+            <InfoButton
+              title="Mit jelentenek a jelölések?"
+              copy={`A ${tile.mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`}
+            />
+          </h3>
           <div className="pl-scale-wrap rise" style={accent}>
             <span className="pl-scale-bar">
               <i className="fill" style={{ '--w': `${nowPct}%` } as CSSProperties} />
@@ -242,20 +272,16 @@ export function MesoMusclePage() {
                 </i>
               ) : (
                 <>
-                  <i style={{ '--at': `${lowPct}%`, '--nudge': nudgeFor(lowPct) } as CSSProperties}>
+                  <i style={{ '--at': `${lowCapPct}%`, '--nudge': nudgeFor(lowCapPct) } as CSSProperties}>
                     {tile.mev}<small>ennyitől fejlődik</small>
                   </i>
-                  <i style={{ '--at': `${topPct}%`, '--nudge': nudgeFor(topPct) } as CSSProperties}>
+                  <i style={{ '--at': `${topCapPct}%`, '--nudge': nudgeFor(topCapPct) } as CSSProperties}>
                     {tile.ceiling}<small>eddig mész el</small>
                   </i>
                 </>
               )}
             </span>
           </div>
-          <p className="pl-foot-say">
-            {tile.mev} szett alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az,
-            ameddig ebben a tervben elmész — ezt a fókuszod szabja meg.
-          </p>
 
           {/* — the plan's ramp, week by week — */}
           <h3 className="pl-h3 rise">A {arc.weeks} hét</h3>

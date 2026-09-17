@@ -132,6 +132,37 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
                 .call().chatResponse());
     }
 
+    /**
+     * The smart tier for a whole conversational turn (spec 2026-09-16). Overridden ON PURPOSE for
+     * the same reason as {@link #completeSmart(String, String)}: the interface default drops to the
+     * cheap tier, silently, with no error anywhere.
+     */
+    @Override
+    public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                String userMessage) {
+        String model = route(ModelTier.SMART, CallKind.SMART);
+        CallSpec spec = new CallSpec(CallKind.SMART, model,
+            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            ChatHistory.render(history), null, null, null, false);
+        LlmRoundUsage tally = new LlmRoundUsage();
+        return recorded(spec, tally,
+            () -> request(systemPrompt, turnContext, history, userMessage, List.of(), Map.of(),
+                model, ModelTier.SMART, tally)
+                .call().chatResponse());
+    }
+
+    /** Streamed twin of {@link #completeSmart(String, String, List, String)}. Also tool-free. */
+    @Override
+    public Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                    String userMessage) {
+        String model = route(ModelTier.SMART, CallKind.SMART);
+        CallSpec spec = new CallSpec(CallKind.SMART, model,
+            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            ChatHistory.render(history), null, null, null, true);
+        return streamRecorded(spec, model, ModelTier.SMART, systemPrompt, turnContext, history,
+            userMessage, List.of(), Map.of());
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -150,7 +181,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             ChatHistory.render(history), null, null, null, false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
-            () -> request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model, tally)
+            () -> request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model,
+                ModelTier.CHEAP, tally)
                 .call().chatResponse());
     }
 
@@ -201,20 +233,6 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             .chatResponse());
     }
 
-    /**
-     * The streamed twin of {@link #recorded}: the outcome is only known when the Flux terminates, so
-     * the record is emitted from the terminal signals instead of a try/catch.
-     *
-     * <p>The context is read HERE (the caller's thread still owns it); everything per-subscription
-     * lives inside the {@code defer} so a re-subscribed stream is timed and recorded on its own. The
-     * provider attaches the usage block to the LAST chunk only — hence the running reference; if the
-     * stream ends without one, the token columns stay null rather than fabricated.
-     *
-     * <p>Three mutually exclusive terminals, each recording exactly once (the CAS guard): complete
-     * ⇒ SUCCESS, error ⇒ ERROR, and — mezo-1rz9 — a downstream cancel (the SSE client
-     * disconnected) ⇒ CANCELLED with the partial answer, because the provider billed the tokens
-     * generated up to that point even though neither complete nor error will ever fire.
-     */
     @Override
     public Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -230,6 +248,30 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
         CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, model,
             CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
             ChatHistory.render(history), null, null, null, true);
+        return streamRecorded(spec, model, ModelTier.CHEAP, systemPrompt, turnContext, history, userMessage,
+            tools, toolContext);
+    }
+
+    /**
+     * The streamed twin of {@link #recorded}: the outcome is only known when the Flux terminates, so
+     * the record is emitted from the terminal signals instead of a try/catch.
+     *
+     * <p>The context is read HERE (the caller's thread still owns it); everything per-subscription
+     * lives inside the {@code defer} so a re-subscribed stream is timed and recorded on its own. The
+     * provider attaches the usage block to the LAST chunk only — hence the running reference; if the
+     * stream ends without one, the token columns stay null rather than fabricated.
+     *
+     * <p>Three mutually exclusive terminals, each recording exactly once (the CAS guard): complete
+     * ⇒ SUCCESS, error ⇒ ERROR, and — mezo-1rz9 — a downstream cancel (the SSE client
+     * disconnected) ⇒ CANCELLED with the partial answer, because the provider billed the tokens
+     * generated up to that point even though neither complete nor error will ever fire.
+     *
+     * <p>Shared by every streamed entry point (the cheap-tier {@link #stream} and the smart-tier
+     * {@link #streamSmart}) so there is exactly one CAS-guarded recorder (mezo-1rz9) to keep correct.
+     */
+    private Flux<String> streamRecorded(CallSpec spec, String model, ModelTier tier, String systemPrompt,
+                                        String turnContext, List<Turn> history, String userMessage,
+                                        List<ToolCallback> tools, Map<String, Object> toolContext) {
         LlmCallContext context = llmCallContextHolder.get();
 
         return Flux.defer(() -> {
@@ -238,7 +280,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
             LlmRoundUsage tally = new LlmRoundUsage();
             StringBuilder answer = new StringBuilder();
-            return request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model, tally)
+            return request(systemPrompt, turnContext, history, userMessage, tools, toolContext, model,
+                tier, tally)
                 .stream().chatResponse()
                 .doOnNext(response -> {
                     lastChunk.set(response);
@@ -368,6 +411,7 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
                                                      List<Turn> history,
                                                      String userMessage, List<ToolCallback> tools,
                                                      Map<String, Object> toolContext, String model,
+                                                     ModelTier tier,
                                                      LlmRoundUsage tally) {
         List<Message> messages = new ArrayList<>(toMessages(history));
         if (turnContext != null && !turnContext.isBlank()) {
@@ -376,7 +420,7 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
             messages.add(new org.springframework.ai.chat.messages.SystemMessage(turnContext));
         }
         ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
-            .options(optionsFor(model, ModelTier.CHEAP, !tools.isEmpty()))
+            .options(optionsFor(model, tier, !tools.isEmpty()))
             .system(systemPrompt)
             .messages(messages)
             .user(userMessage)

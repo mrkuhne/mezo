@@ -4,7 +4,9 @@ import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 
 test('prefills the current weight readout', () => {
   render(<WeightLogSheet onClose={() => {}} onSave={() => {}} currentWeight={72.4} />)
+  expect(screen.getByRole('heading', { name: 'Mi a számunk ma?' })).toBeInTheDocument()
   expect(screen.getByText('72.4')).toBeInTheDocument()
+  expect(screen.queryByText(/Beírom a 7-napos MA-ba/)).not.toBeInTheDocument()
 })
 
 test('Save bubbles up a WeightLogInput then closes', async () => {

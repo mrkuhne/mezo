@@ -65,6 +65,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
 
     private SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 
@@ -99,7 +100,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         List<ServerSentEvent<Object>> events = chatStreamService
-                .streamMessage(userId, conversation.getId(), request("mi a mai terv?"))
+                .streamMessage(userId, conversation.getId(), request("mi a terv ma?"))
                 .collectList().block();
 
         assertThat(events).isNotEmpty();
@@ -110,7 +111,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
                 });
         String joined = events.stream().limit(events.size() - 1)
                 .map(e -> ((StreamDelta) e.data()).getText()).reduce("", String::concat);
-        assertThat(joined).startsWith(FakeCompanionLlm.PREFIX).contains("user=[mi a mai terv?]");
+        assertThat(joined).startsWith(FakeCompanionLlm.PREFIX).contains("user=[mi a terv ma?]");
 
         ServerSentEvent<Object> last = events.getLast();
         assertThat(last.event()).isEqualTo("done");
@@ -121,11 +122,11 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         List<MessageResponse> messages = conversationService.listMessages(userId, conversation.getId());
         assertThat(messages).hasSize(2);
         assertThat(messages.getFirst().getRole()).isEqualTo("user");
-        assertThat(messages.getFirst().getContent()).isEqualTo("mi a mai terv?");
+        assertThat(messages.getFirst().getContent()).isEqualTo("mi a terv ma?");
         assertThat(messages.getLast().getContent()).isEqualTo(joined);
 
         AiConversationEntity touched = conversationRepository.findById(conversation.getId()).orElseThrow();
-        assertThat(touched.getTitle()).isEqualTo("mi a mai terv?");
+        assertThat(touched.getTitle()).isEqualTo("mi a terv ma?");
         assertThat(touched.getLastMessageAt()).isNotNull();
     }
 
@@ -134,9 +135,12 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("stream-error@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
+        // mezo-rj214.7: "aludtam" is a data word so this stays on the tool-registered (non-CHAT)
+        // branch — a gearless "szállj el" would now route to the tool-free CHAT branch, which the
+        // fake's streamSmart(..) does not wire FAIL_STREAM into, making the scripted failure inert.
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("szállj el " + FakeCompanionLlm.FAIL_STREAM))
+                        request("aludtam jól, szállj el " + FakeCompanionLlm.FAIL_STREAM))
                 .collectList().block();
 
         ServerSentEvent<Object> last = events.getLast();
@@ -174,7 +178,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("stream-foreign@test.local");
 
         assertThatThrownBy(() -> chatStreamService.streamMessage(
-                userId, UUID.randomUUID(), request("x")))
+                userId, UUID.randomUUID(), request("mi volt ma?")))
                 .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
@@ -237,7 +241,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         List<ServerSentEvent<Object>> events = chatStreamService
-                .streamMessage(userId, conversation.getId(), request("mi a mai terv?"))
+                .streamMessage(userId, conversation.getId(), request("mi a terv ma?"))
                 .collectList().block();
 
         assertThat(events).noneMatch(e -> "tool".equals(e.event()));
@@ -251,7 +255,10 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
 
         // A delta-eseményekből összefűzött teljes szöveg — a fájl meglévő mintája szerint.
-        String streamed = collectDeltas(userId, conversation.getId(), "és most?");
+        // mezo-rj214.7: data-bearing ("ma" is a time word) — passed through the collectDeltas
+        // helper below, so PromptOrderFixtureGearGuardTest's request(/setContent(/content( regex
+        // cannot see this literal; caught by manual inspection instead.
+        String streamed = collectDeltas(userId, conversation.getId(), "és most, mi volt ma?");
 
         String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
         String historyBlock = streamed.substring(streamed.indexOf("history=["), streamed.indexOf("] user=["));
@@ -268,7 +275,9 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         // mezo-q71s: prepareTurn (the STREAMED assembly site) must carry the same recency
         // counterweight as sendMessage — a mismatch between the two paths is a real bug that
         // ChatServiceIT's sync-only coverage would not catch.
-        String streamed = collectDeltas(userId, conversation.getId(), "szia");
+        // mezo-rj214.7: data-bearing, and (like above) invisible to the guard's regex through
+        // the collectDeltas helper — caught by manual inspection.
+        String streamed = collectDeltas(userId, conversation.getId(), "szia, mi volt ma?");
 
         String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
         String toneReminder = ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "stream-tone-tail@test.local");
@@ -345,6 +354,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
      *  filtered by event type instead of by index so a scripted 'tool' event never sneaks in. */
     private String collectDeltas(UUID userId, UUID conversationId, String content) {
         List<ServerSentEvent<Object>> events = chatStreamService
+                // gear-audited: forwards collectDeltas' argument; its callers are the audited sites.
                 .streamMessage(userId, conversationId, request(content))
                 .collectList().block();
         return events.stream()

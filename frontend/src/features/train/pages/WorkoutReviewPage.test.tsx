@@ -59,6 +59,16 @@ test('the closing note is editable in place, and an empty one offers ＋ Jegyzet
   expect(await screen.findByRole('button', { name: /Jegyzet ehhez az edzéshez/ })).toBeInTheDocument()
 })
 
+// mezo-e1ii9 Task 3: the closing ceremony no longer carries the küldetés rows (the prototype
+// has none on either of its two steps). This page is their ONE remaining home, so it is
+// pinned here — removing the strip from the ceremony must never leave the outcomes homeless.
+test('the challenge outcomes live here — the review page is their remaining home', () => {
+  setup()
+  const rows = document.querySelectorAll('.wsum-chal')
+  expect(rows.length).toBeGreaterThan(0)
+  expect(screen.getByText('Kihívások')).toBeInTheDocument()
+})
+
 test('renders the Medálok section with the seeded medal in mock mode', () => {
   setup()
   const section = screen.getByText('Medálok').closest('.wsum-sec') as HTMLElement
@@ -125,18 +135,21 @@ describe('the exercise view', () => {
     await user.click(screen.getByRole('button', { name: /Chest Supported Row/ }))
 
     const sets = [...document.querySelectorAll('.wr-set')]
-    // 2 logged working sets + 1 warmup + 2 ghost rows for the unlogged slots.
-    expect(sets).toHaveLength(5)
-    // The warmup is numbered B, so the working sets stay 1..n on their own.
-    expect(sets[0].querySelector('.ix')!.textContent).toBe('B')
-    expect(sets[1].querySelector('.ix')!.textContent).toBe('1')
+    // This instance was recorded BEFORE the warm-up ruling (mezo-i8ahy), so it really does
+    // carry one logged warm-up — the report keeps showing it, numbered B, while the PLAN it
+    // is measured against is the 3 working sets. 1 warmup + 2 working = every planned slot
+    // accounted for, so no ghost row.
+    expect(sets).toHaveLength(3)
+    expect(sets.map((x) => x.querySelector('.ix')!.textContent)).toEqual(['B', '1', '2'])
     // The band label is what makes a set readable: not just what you lifted, but whether it counted.
     expect(within(sets[1] as HTMLElement).getByText('célsávban')).toBeInTheDocument()
-    // A missed slot is a ghost, never an error — and it continues the WORKING numbering, so
-    // the column reads B · 1 · 2 · 3 · 4 rather than jumping to 4 over a logged warmup.
-    expect(sets.map((x) => x.querySelector('.ix')!.textContent)).toEqual(['B', '1', '2', '3', '4'])
-    expect(sets[4].className).toContain('ghost')
-    expect(within(sets[4] as HTMLElement).getByText('— kimaradt')).toBeInTheDocument()
+  })
+
+  test('a workout that logged every working set reads complete, not partial', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: /Chest Supported Row/ }))
+    expect(document.querySelector('.wr-set.ghost')).toBeNull()
   })
 
   test('carries the reference top set, under the same gate as the comparison tile', async () => {

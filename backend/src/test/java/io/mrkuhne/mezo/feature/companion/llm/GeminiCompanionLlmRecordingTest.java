@@ -388,7 +388,13 @@ class GeminiCompanionLlmRecordingTest {
             new CompanionProperties.Llm(LlmProvider.GEMINI,
                 tier(CHAT_MODEL, SMART_MODEL),
                 tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+            new CompanionProperties.Turn(true,
+                new CompanionProperties.Turn.Gear(true),
+                new CompanionProperties.Turn.Planner(1),
+                new CompanionProperties.Turn.Executor(4, 15_000L),
+                new CompanionProperties.Turn.Answerer("high", 8000, 40000),
+                new CompanionProperties.Turn.Replan(1)));
     }
 
     private static ChatModel chatModel(ChatResponse canned) {

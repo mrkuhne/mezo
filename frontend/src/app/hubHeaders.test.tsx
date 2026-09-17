@@ -82,7 +82,7 @@ test('az aloldalakon is ott a fejléc', () => {
 })
 
 // A chrome-mentes teljes képernyős flow-k: ahol a TabBar sem látszik, a fejléc sem.
-test.each(['/train/session', '/me/sleep/night', '/ritual'])('a %s chrome-mentes felületen nincs fejléc', (path) => {
+test.each(['/train/session', '/train/sport/log', '/me/sleep/night', '/ritual'])('a %s chrome-mentes felületen nincs fejléc', (path) => {
   renderAt(path)
   expect(document.querySelector('.nap-head')).not.toBeInTheDocument()
 })

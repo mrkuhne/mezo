@@ -1,22 +1,34 @@
 // ============================================================
-// Mezo · WorkoutCeremony — the two-act workout-close ceremony (mezo-88iwa.8, T7 Task 3)
+// Mezo · WorkoutCeremony — the TWO-STEP workout-close ceremony (mezo-e1ii9, T3)
 //
-// Act one: the sky, five stars, the gold-stone bar and the three counters, all driven by
-// ONE rAF pass (cubic ease-out 1-(1-t)^3, 2400 ms) to `score.ratio` — per the ceremony
-// pattern doc's §Motion spec. Fills and counters are FRAME-driven (a throttled/hidden
-// webview freezes a just-started CSS transition at 0), so the pass writes `--p`, the
-// counter textContents and the star is-lit/is-half classes itself.
-// Act two (`.is-told`, revealed when the pass lands): the verdict, the honest stat tiles,
-// the records strip, the muscle rows, the kcal estimate, the closing note and the way out.
+// 1:1 with the prototype (`session.js` `summary()` → `detailsStep()`): the ceremony is two
+// SCREENS inside the same overlay, not one screen in two acts. T7 collapsed them onto one
+// page citing the ceremony-pattern doc; the owner's directive is 1:1 with the prototype, so
+// the split is restored here and the doc corrected to match what ships.
 //
-// `reducedMotion` (defaults to the media query) and `settled` (the recap read-back) paint
-// the final state on the FIRST render — no pass at all. The pass itself is guarded by a
-// ref, so a re-render can never restart it (the ceremony plays exactly once per close).
+//   Step 1 `.cer-screen` — the sky, five stars, the gold-stone bar and the three counters,
+//     all driven by ONE rAF pass (cubic ease-out 1-(1-t)^3, 2400 ms) to `score.ratio`; then
+//     the sr-only star heading, the verdict, the honest stat tiles (percs + XP), the records
+//     strip, the pending-sets line, and exactly ONE way on: `Részletek`.
+//   Step 2 `.cer-details-screen` — `Izomcsoportok fejlődése a mai edzésen` (the per-muscle
+//     rows, each with its mini-stars and its OWN done/plan fill bar — `ZoneTrack` and the
+//     weekly zone it drew are gone from the app entirely, this bar is the row's completion
+//     share and nothing else), the kcal tile, the closing note, the close
+//     CTA, `Vissza az értékeléshez` back to step 1, and the star footnote.
+//
+// Fills and counters are FRAME-driven (a throttled/hidden webview freezes a just-started CSS
+// transition at 0), so the pass writes `--p`, the counter textContents and the star
+// is-lit/is-half classes itself. `reducedMotion` (defaults to the media query) and `settled`
+// (the recap read-back) paint the final state on the FIRST render — no pass at all. The pass
+// is guarded by a ref, so neither a re-render nor a trip to step 2 and back can restart it
+// (the ceremony plays exactly once per close).
+//
+// The küldetés rows and the streak line that T7 carried here are GONE: neither has a
+// prototype counterpart in the ceremony. The challenge outcomes keep their other home — the
+// review page (`WorkoutReviewPage` → `WorkoutSummary`'s own challenge strip).
 //
 // Every number is a prop: this component computes nothing and fabricates nothing. A tile
 // whose input is unknown is not rendered — never a 0 (minutes, XP, kcal).
-// Ported from prototype session.js:292-361 (summary + detailsStep) and :420-452
-// (runCeremony), merged onto one screen per the ceremony doc's two-ACT structure.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -25,26 +37,6 @@ import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { ClayIcon } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
-
-/** One challenge's closing outcome, as the page maps it (T7 Task 4). Structurally the
- *  legacy `SummaryChallenge`, but declared here so the ceremony does not depend on the
- *  pre-Titanium summary shell (which now only serves the review page). */
-export interface CeremonyChallenge {
-  id: string
-  typeLabel: string
-  exercise?: string
-  target: string
-  state: 'hit' | 'miss' | 'skipped' | 'inconclusive'
-  detail?: string
-}
-
-/** The verdict words are the summary's own — the outcomes are carried over, not restyled away. */
-const CHALLENGE_COPY: Record<CeremonyChallenge['state'], { label: string; cls: string }> = {
-  hit: { label: 'megcsináltad', cls: 'is-hit' },
-  miss: { label: 'nem jött össze', cls: 'is-miss' },
-  skipped: { label: 'skippelted', cls: 'is-skip' },
-  inconclusive: { label: 'nem értékelhető', cls: 'is-skip' },
-}
 
 export interface WorkoutCeremonyProps {
   score: CerScore
@@ -56,8 +48,6 @@ export interface WorkoutCeremonyProps {
   xpGained: number | null
   /** The RECORD-tier medals earned this session, already rendered to copy. */
   records: Array<{ name: string; value: string }>
-  /** The session's challenge outcomes; an empty list renders no strip at all. */
-  challenges?: CeremonyChallenge[]
   muscles: MuscleStarRow[]
   /** The T5 `trainDayEnergy` estimate; null hides the tile (never a 0 kcal). */
   kcal: { value: number; known: true } | null
@@ -80,7 +70,7 @@ const STAR_SLOTS = [0, 1, 2, 3, 4]
 
 /** hu-HU grouping, with the locale's thin spaces normalised (the ExerciseRecordSheet idiom). */
 function huNumber(n: number): string {
-  return Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g, ' ')
+  return Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 }
 
 /** '4,5' — the Hungarian decimal comma, without depending on the runtime's ICU data. */
@@ -103,19 +93,40 @@ function starClass(index: number, progressed: number): string {
 }
 
 export function WorkoutCeremony({
-  score, eyebrow, minutes, xpGained, records, challenges = [], muscles, kcal,
+  score, eyebrow, minutes, xpGained, records, muscles, kcal,
   note, onNote, onClose, onGoFuel, settled = false, pendingSets = 0, reducedMotion,
 }: WorkoutCeremonyProps) {
   // The pass is skipped entirely for the recap read-back and for reduced motion — both
-  // paint the final state on the first render, so act two is told immediately.
+  // paint the final state on the first render, so the reading is told immediately.
   const [instant] = useState(() => settled || (reducedMotion ?? prefersReducedMotion()))
   const [told, setTold] = useState(instant)
+  const [step, setStep] = useState<'summary' | 'details'>('summary')
+  const [detailsTold, setDetailsTold] = useState(false)
   const stageRef = useRef<HTMLElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const detailsHeadingRef = useRef<HTMLHeadingElement>(null)
   const ranRef = useRef(false)
+  const mountedRef = useRef(false)
 
-  // The announcement is where the screen starts, for a screen reader and for the keyboard.
-  useEffect(() => { headingRef.current?.focus() }, [])
+  // The announcement is where each step starts, for a screen reader and for the keyboard.
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      headingRef.current?.focus()
+      return
+    }
+    if (step === 'details') detailsHeadingRef.current?.focus()
+    else headingRef.current?.focus()
+  }, [step])
+
+  // Step two plays too (prototype render(): `is-told` added on the next frame, so the
+  // muscle bars/stars and the kcal tile have a state to transition FROM).
+  useEffect(() => {
+    if (step !== 'details' || detailsTold) return
+    if (instant) { setDetailsTold(true); return }
+    const id = requestAnimationFrame(() => setDetailsTold(true))
+    return () => cancelAnimationFrame(id)
+  }, [step, detailsTold, instant])
 
   useEffect(() => {
     // ONE pass per mount, ever: the guard survives every re-render (and a StrictMode
@@ -149,115 +160,38 @@ export function WorkoutCeremony({
       const t = Math.max(0, Math.min(1, (now - started) / DURATION_MS))
       paint(1 - (1 - t) ** 3)
       if (t < 1 && stage.isConnected) requestAnimationFrame(frame)
-      else if (stage.isConnected) setTold(true)
+      // `told` is set even when the stage left the DOM mid-pass (a tap on `Részletek`
+      // before it landed): step one is re-entered from step two, and React must paint the
+      // FINAL numbers there — the pass that owned those nodes is gone and never re-runs.
+      else setTold(true)
     }
     requestAnimationFrame(frame)
   }, [instant, score])
 
-  // The first painted frame: zeroes while the pass is about to run, the real values when
-  // there is no pass. React never touches these nodes again — the pass owns them.
-  const progressed = instant ? score.ratio : 0
+  // The first painted frame: zeroes while the pass is about to run, the real values once it
+  // has landed (or when there is no pass at all). While the pass runs, React never touches
+  // these nodes — the rendered value does not change, so there is nothing to patch.
+  const progressed = told ? score.ratio : 0
   const counterValue = (value: number, volume = false) =>
-    instant ? (volume ? huNumber(value) : String(value)) : volume ? huNumber(0) : '0'
+    told ? (volume ? huNumber(value) : String(value)) : volume ? huNumber(0) : '0'
 
-  return (
-    <div className={`cer-screen cer-details-screen${told ? ' is-told' : ''}`}>
-      {/* — act one — */}
-      <section
-        ref={stageRef}
-        className={`cer${settled ? ' is-settled' : ''}`}
-        style={{ '--p': String(progressed) } as CSSProperties}
-      >
-        <span className="cer-sky" aria-hidden="true" />
-        <span className="cer-eyebrow">{eyebrow}</span>
-        <div className="cer-stars" aria-hidden="true">
-          {STAR_SLOTS.map((i) => (
-            <i key={i} data-cer-star={i} className={instant ? starClass(i, progressed) : undefined}>
-              <b className="cer-aura" />
-              <ClayIcon name="i-termes" size={42} className="icon" />
-            </i>
-          ))}
-        </div>
-        <div className="cer-bar" aria-hidden="true">
-          <i className="cer-fill" />
-          <span className="cer-comet" />
-          {[1, 2, 3, 4].map((i) => <u key={i} style={{ '--at': `${i * 20}%` } as CSSProperties} />)}
-        </div>
-        <div className="cer-counters">
-          <span>
-            <i><ClayIcon name="i-suly" size={22} className="icon" /></i>
-            <strong data-cer-count="sets">{counterValue(score.done.sets)}</strong>
-            <small>szett</small>
-          </span>
-          <span>
-            <i><ClayIcon name="i-edzes" size={22} className="icon" /></i>
-            <strong data-cer-count="reps">{counterValue(score.done.reps)}</strong>
-            <small>ismétlés</small>
-          </span>
-          <span>
-            <i><ClayIcon name="i-stack" size={22} className="icon" /></i>
-            <strong data-cer-count="volume">{counterValue(score.done.volume, true)}</strong>
-            <small>kg × rep</small>
-          </span>
-        </div>
-      </section>
-
-      {/* — act two: the reading — */}
-      <section className="cer-result">
-        <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
-          {huStars(score.stars)} csillag az ötből
-        </h1>
-        <p>{verdictFor(score.stars)}</p>
-        {minutes != null || xpGained != null ? (
-          <div className="cer-stats">
-            {minutes != null && (
-              <span><strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
-            )}
-            {xpGained != null && (
-              <span><strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small></span>
-            )}
-          </div>
-        ) : null}
-        {records.length > 0 && (
-          <div className="cer-record">
-            <ClayIcon name="i-erme" size={32} className="icon" />
-            <span>
-              <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
-              <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
-            </span>
-          </div>
-        )}
-        {/* The challenge outcomes (ported from the old summary's `.wsum-chal` strip,
-            mezo-88iwa.8 T7 Task 4): records-adjacent, one `.cer-record`-shaped row each,
-            toned by the verdict. Real outcomes — the detail the server resolved beats the
-            target text whenever it exists. */}
-        {challenges.length > 0 && (
-          <div className="cer-chals">
-            {challenges.map((c) => {
-              const copy = CHALLENGE_COPY[c.state]
-              return (
-                <div key={c.id} className={`cer-record cer-chal ${copy.cls}`}>
-                  <ClayIcon name="i-kihivas" size={32} className="icon" />
-                  <span>
-                    <strong>{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</strong>
-                    <small>{c.detail ?? c.target}</small>
-                  </span>
-                  <em className="cer-chal-out">{copy.label}</em>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        {/* The recap's honest tail: the close did not tick everything (prototype recap()). */}
-        {pendingSets > 0 && (
-          <p className="cer-recap-note">{pendingSets} szett kihagyott státusszal zárult.</p>
-        )}
-      </section>
-
-      <div className="cer-foot">
+  // ---------- step two: what the session did to the week, and the way out ----------
+  if (step === 'details') {
+    return (
+      // The `key` is load-bearing: both steps return a bare <div> at the same position, and
+      // React would otherwise REUSE step one's DOM nodes (the ceremony stage included) for
+      // step two's — leaving the still-running rAF pass writing into the details screen.
+      <div key="details" className={`cer-details-screen${detailsTold ? ' is-told' : ''}`}>
+        {/* Step two's focus target, unconditionally — a session with no muscle rows must
+            still land focus here on entry, not on <body> (mezo-e1ii9 Task 3, fix round 1). */}
+        <h2 className="sr-only" tabIndex={-1} ref={detailsHeadingRef}>
+          Az edzés részletei
+        </h2>
         {muscles.length > 0 && (
           <section className="cer-muscles">
-            <div className="cer-section"><strong>Izomcsoportok fejlődése a mai edzésen</strong></div>
+            <div className="cer-section">
+              <strong>Izomcsoportok fejlődése a mai edzésen</strong>
+            </div>
             <div className="cer-mstars">
               {muscles.map((row, i) => (
                 <div
@@ -300,7 +234,8 @@ export function WorkoutCeremony({
           </button>
         )}
 
-        {/* The closing note (mezo-d20.8.2.2) lives here now — the draft is the page's. */}
+        {/* The closing note (mezo-d20.8.2.2) travels with the way out — the draft is the
+            page's, and the page guarantees the save on both CTAs AND on unmount. */}
         <div className="wsum-note">
           <span className="wsum-note-q">Hogy ment?</span>
           <textarea
@@ -323,11 +258,104 @@ export function WorkoutCeremony({
             </span>
             <u className="chip-sheen" />
           </button>
+          <button type="button" className="wo-secondary" onClick={() => setStep('summary')}>
+            Vissza az értékeléshez
+          </button>
         </div>
 
         <p className="cer-recap-note">
           A csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.
         </p>
+      </div>
+    )
+  }
+
+  // ---------- step one: the ceremony owns the screen, and ends with the way on ----------
+  return (
+    <div key="summary" className={`cer-screen${told ? ' is-told' : ''}`}>
+      <section
+        ref={stageRef}
+        className={`cer${settled ? ' is-settled' : ''}`}
+        style={{ '--p': String(progressed) } as CSSProperties}
+      >
+        <span className="cer-sky" aria-hidden="true" />
+        <span className="cer-eyebrow">{eyebrow}</span>
+        <div className="cer-stars" aria-hidden="true">
+          {STAR_SLOTS.map((i) => (
+            <i key={i} data-cer-star={i} className={told ? starClass(i, progressed) : undefined}>
+              <b className="cer-aura" />
+              <ClayIcon name="i-termes" size={42} className="icon" />
+            </i>
+          ))}
+        </div>
+        <div className="cer-bar" aria-hidden="true">
+          <i className="cer-fill" />
+          <span className="cer-comet" />
+          {[1, 2, 3, 4].map((i) => <u key={i} style={{ '--at': `${i * 20}%` } as CSSProperties} />)}
+        </div>
+        <div className="cer-counters">
+          <span>
+            <i><ClayIcon name="i-suly" size={22} className="icon" /></i>
+            <strong data-cer-count="sets">{counterValue(score.done.sets)}</strong>
+            <small>szett</small>
+          </span>
+          <span>
+            <i><ClayIcon name="i-edzes" size={22} className="icon" /></i>
+            <strong data-cer-count="reps">{counterValue(score.done.reps)}</strong>
+            <small>ismétlés</small>
+          </span>
+          <span>
+            <i><ClayIcon name="i-stack" size={22} className="icon" /></i>
+            <strong data-cer-count="volume">{counterValue(score.done.volume, true)}</strong>
+            <small>kg × rep</small>
+          </span>
+        </div>
+      </section>
+
+      <section className="cer-result">
+        <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
+          {huStars(score.stars)} csillag az ötből
+        </h1>
+        <p>{verdictFor(score.stars)}</p>
+        {minutes != null || xpGained != null ? (
+          <div className="cer-stats">
+            {minutes != null && (
+              <span><strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
+            )}
+            {xpGained != null && (
+              <span><strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small></span>
+            )}
+          </div>
+        ) : null}
+        {records.length > 0 && (
+          <div className="cer-record">
+            <ClayIcon name="i-erme" size={32} className="icon" />
+            <span>
+              <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
+              <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
+            </span>
+          </div>
+        )}
+        {/* The honest tail: the close did not tick everything (prototype recap()). */}
+        {pendingSets > 0 && (
+          <p className="cer-recap-note">{pendingSets} szett kihagyott státusszal zárult.</p>
+        )}
+      </section>
+
+      {/* The single way on — the prototype's only CTA on this screen. */}
+      <div className="cer-foot">
+        {/* `.cer-cta` is what carries the CTA chrome (`.cer-cta .wo-close-cta`, prototype.css) —
+            the wrapper is the style hook, not decoration. */}
+        <div className="cer-cta">
+          <button type="button" className="wo-close-cta" onClick={() => setStep('details')}>
+            <span className="wo-close-art"><ClayIcon name="i-naplo" size={34} className="icon" /></span>
+            <span>
+              <strong>Részletek</strong>
+              <small>Izomcsoportok és a nyert kalória</small>
+            </span>
+            <u className="chip-sheen" />
+          </button>
+        </div>
       </div>
     </div>
   )

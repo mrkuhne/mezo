@@ -121,6 +121,29 @@ public interface CompanionLlm {
         return complete(systemPrompt, userMessage);
     }
 
+    /**
+     * A full conversational turn on the SMART tier, carrying history and the split prompt halves —
+     * but <b>no tools, by contract</b> (spec 2026-09-16 §6.5). That absence is the point: on OpenAI
+     * a request carrying function tools has its reasoning effort forced to {@code none}
+     * ({@code OpenAiCompanionLlm.optionsFor}), so a tool-free call is the only way a conversational
+     * turn can think at all on Chat Completions.
+     *
+     * <p>The DEFAULT re-joins the halves and drops to the cheap path, which is right for the fake
+     * and for any adapter with no smart model — but a real adapter MUST override it (spec §8.3).
+     */
+    default String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                 String userMessage) {
+        return complete(joinInstructions(systemPrompt, turnContext), history, userMessage,
+            List.of(), Map.of());
+    }
+
+    /** Streamed twin of {@link #completeSmart(String, String, List, String)}. Also tool-free. */
+    default Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
+                                     String userMessage) {
+        return stream(joinInstructions(systemPrompt, turnContext), history, userMessage,
+            List.of(), Map.of());
+    }
+
     default Flux<String> stream(String systemPrompt, String userMessage) {
         return stream(systemPrompt, userMessage, List.of(), Map.of());
     }

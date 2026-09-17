@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextRenderer;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextSelector;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryPreparer;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryEmbedder;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetriever;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmActorResolver;
@@ -133,6 +134,7 @@ class LlmActorPropagationIT extends AbstractIntegrationTest {
     @Autowired private LlmActorResolver llmActorResolver;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private MemoryQueryPreparer queryPreparer;
+    @Autowired private MemoryQueryEmbedder queryEmbedder;
     @Autowired private MemoryCandidateFusion fusion;
     @Autowired private MemoryContextSelector selector;
     @Autowired private MemoryContextRenderer renderer;
@@ -185,7 +187,7 @@ class LlmActorPropagationIT extends AbstractIntegrationTest {
         authenticateAs(user);
         AtomicReference<UUID> seenInRetriever = new AtomicReference<>();
         MemoryContextService probedService = new MemoryContextService(
-                queryPreparer, Map.of("dense", actorProbeRetriever("dense", seenInRetriever)),
+                queryPreparer, queryEmbedder, Map.of("dense", actorProbeRetriever("dense", seenInRetriever)),
                 fusion, selector, renderer, llmMemoryReranker, auditWriter, properties,
                 llmCallContextHolder, taskExecutor);
 

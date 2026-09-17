@@ -56,13 +56,21 @@ export const DOMAINS: NavDomain[] = [
       // Owner-approved four tabs (2026-09-12): sport/running are not a tab — logging
       // lives on Mai, plans on Terv, history beside the volume on Terhelés.
       { label: 'Mai', route: '/train/mai', icon: 'i-edzes',
+        // `/train/sport` covers the full-screen sport-logging flow at `/train/sport/log`
+        // too — `isPrefix` matches everything under the owned route (T8 Task 4).
         owns: ['/train/session', '/train/review', '/train/sport', '/train/custom'] },
       { label: 'Terv', route: '/train/mesocycles', icon: 'i-retegek',
         owns: ['/train/templates', '/train/futas'] },
       { label: 'Terhelés', route: '/train/week', icon: 'i-meso',
-        owns: ['/train/gym'] },
+        // `/train/week/jelek` („Minden izomjel", parity P2 Task 1) would already win on
+        // prefix — it is listed so the subpage SAYS where it belongs, the rule this
+        // field exists for.
+        owns: ['/train/gym', '/train/week/jelek'] },
       { label: 'Gyakorlatok', route: '/train/exercises', icon: 'i-naplo',
-        owns: ['/train/medals'] },
+        // `/train/exercises/:key` (one exercise's story, parity P2) sits UNDER the tab
+        // route, so the prefix rule would already light it — it is listed so the subpage
+        // SAYS where it belongs, the same statement `/train/week/jelek` makes.
+        owns: ['/train/medals', '/train/exercises'] },
     ],
   },
   {

@@ -27,11 +27,14 @@ const dayDiff = (fromIso: string, toIso: string): number =>
  *  award — level-up > streak milestone > saver notice > plain XP. `silentXp` suppresses
  *  ONLY that last, plain `+N XP` line — for call sites that already emit their own richer
  *  reward toast (habit check, mezo-k5sa); the level-up / streak / saver notices are about
- *  DIFFERENT events and always still fire. Real mode never calls this; the backend awards
- *  server-side (mezo-huzd). */
+ *  DIFFERENT events and always still fire. `silent` suppresses ALL FOUR — for a call site
+ *  whose own surface already IS the reward and must own the screen alone (the workout
+ *  closing ceremony, mezo-e1ii9: the prototype's close has exactly one layer, and a
+ *  `🔥 7 napos sorozat` toast floating over it is the second layer the owner complained
+ *  about). Real mode never calls this; the backend awards server-side (mezo-huzd). */
 export function awardGamificationEvent(
   qc: QueryClient,
-  event: { type: XpEventType; date?: string; xpOverride?: number; silentXp?: boolean },
+  event: { type: XpEventType; date?: string; xpOverride?: number; silentXp?: boolean; silent?: boolean },
 ): AwardResult {
   const today = event.date ?? localDateString()
   const prev = qc.getQueryData<GamificationProfile>(GAMIFICATION_KEY) ?? gamificationProfileMock
@@ -76,7 +79,8 @@ export function awardGamificationEvent(
   next = { ...next, totalXp, level, xpInLevel, xpForNext, coins: next.coins + coinsAwarded }
   qc.setQueryData(GAMIFICATION_KEY, next)
 
-  if (leveledUp) emitToast({ kind: 'success', text: `🎉 Szint ${level} — +${LEVEL_UP_COINS} 🪙` })
+  if (event.silent) { /* the caller's own surface carries the reward — no toast at all */ }
+  else if (leveledUp) emitToast({ kind: 'success', text: `🎉 Szint ${level} — +${LEVEL_UP_COINS} 🪙` })
   else if (milestone > 0)
     emitToast({ kind: 'success', text: `🔥 ${next.streakDays} napos sorozat — +${milestone} 🪙` })
   else if (saverUsed)

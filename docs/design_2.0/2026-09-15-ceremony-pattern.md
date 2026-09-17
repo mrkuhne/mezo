@@ -11,7 +11,12 @@ shared styles in `food.css` (`fcer-`/`scx-` blocks) and `session.css` (`cer-` bl
 
 A ceremony is the full-screen celebratory moment that OWNS the screen right after the user
 completes something whole. It is not a toast and not a sheet: navigation hides, one choreography
-plays exactly once, and the way onward is a single clear CTA. The owner-approved dramaturgy is
+plays exactly once, and the way onward is a single clear CTA. **Owning the screen is literal:
+nothing else may be painted over a ceremony.** The workout close used to raise the pre-Titanium
+level-up overlay on top of itself, so the owner never saw the stars he had just earned; the
+finish flow no longer raises it and the ceremony carries `+N szerzett XP` itself
+(`mezo-e1ii9` Task 2). A surface that needs to celebrate a second thing folds it INTO the
+ceremony or waits for the way out. The owner-approved dramaturgy is
 always the same **two-act structure**:
 
 1. **Act one — the ignition.** Sky wash warms up, the gold-stone bar runs, counters count up,
@@ -20,11 +25,20 @@ always the same **two-act structure**:
    single CTA pinned near the thumb. Optionally a second step ("Részletek") opens a deeper
    panel (e.g. the glucose insight) before returning to the day.
 
+**Two acts are not two screens.** The acts are the choreography inside one screen; the
+"Részletek" second STEP is a separate screen that replaces it. The workout close uses both:
+act one and act two play on step one, and `Részletek` opens a second screen. Correction
+(`mezo-e1ii9`, 2026-09-17): an earlier reading of this section merged the workout's second
+step into act two and shipped the close as ONE screen. The owner's directive for Train is
+1:1 with the prototype, and the prototype's `session.js` is unambiguous — `summary()` and
+`detailsStep()` are two screens. What ships now is two screens; see the row below.
+
 ## Where it fires (trigger rules)
 
 | Surface | Trigger | Never on |
 | --- | --- | --- |
-| Train — workout close | Closing the session (complete or confirmed-partial) | mid-workout |
+| Train — workout close | Closing the session (complete or confirmed-partial) — **two screens**: step one is the ignition + reading ending in `Részletek`, step two is the muscle rows + kcal + the way out + `Vissza az értékeléshez` | mid-workout |
+| Train — sport session | Saving a sport session from the full-screen `/train/sport/log` flow | editing an existing session |
 | Fuel — meal logging | Saving a meal from the pontosítás screen | editing an existing meal |
 | Fuel — supplements | The tick that completes a WHOLE block (Reggel/Délben/Este); a one-item block completes on its single tick | partial ticks (quiet toast), un-ticks |
 
@@ -40,12 +54,22 @@ Partial progress gets the quiet toast/react pair. Undo never triggers or replays
 - **Gold-stone bar** — the fill is cut from the Ritmus swatch material (see Materials), with a
   comet head at the fill edge. Meal: fills to `score/10`. Completion ceremonies: fills to 1.
 - **Counters** — up to three warm tiles whose numbers count up with the same pass
-  (meal: kcal / fehérje / szénhidrát; supplements: block items / taken today of total).
+  (meal: kcal / fehérje / szénhidrát; supplements: block items / taken today of total;
+  sport: perc / RPE / kcal-ha-ismert; **workout close: szett / ismétlés / kg × rep**, with a
+  separate two-tile stat strip below the verdict — `a pulton töltött idő` (omitted entirely
+  when the session is unmeasurable: an estimate is never printed as if it were a measurement)
+  and `szerzett XP`).
 - **Verdict** — one short sentence (see Copy), then context line (meal name · time, item names).
+  The workout close additionally keeps a **pending-sets line** when the session closed with
+  unticked sets — shared Titanium copy, and honest: the ceremony must not celebrate a whole
+  that was not whole (ruling, `mezo-e1ii9` Task 3). The prototype's `summary()` has neither
+  the verdict sentence nor that line; both are deliberate production additions, recorded in
+  the parity matrix (§19) so the deviation stays visible.
 - **Score card** (meal only) — the product's own AI-score mark + flat gold numeral `x,y / 10`.
   The owner explicitly rejected a stone box here: the AI score keeps its existing logo.
-- **CTA** — one primary button; meal: "Részletek" into the glucose step, supplements/train:
-  the way back to the day.
+- **CTA** — one primary button; meal and **train**: "Részletek" into the second step (the
+  glucose insight / the muscle rows + kcal), supplements: the way back to the day. Train's
+  way back to the day sits on step two, beside `Vissza az értékeléshez`.
 
 ## Star mapping (meal)
 
@@ -53,6 +77,12 @@ House score is 0–10 with one decimal. Stars are whole, 1–5, **rounded up**:
 `stars = clamp(1, 5, ceil(score / 2))` — 8,3 → 5 csillag, 7,4 → 4, 5,2 → 3.
 A missing score never fabricates stars: the scoreless fallback screen shows no ceremony
 (honest-null, same rule as the `folyamatban` chip).
+
+**Star source (sport):** unlike the meal's 0–10 score, a sport session's stars come from
+its own ratio — `sportStars` (`features/train/logic/sportScore.ts`) weighs time against the
+sport's own usual duration at 0.7 and felt effort (RPE/10) at 0.3, then runs through the
+SAME halves math as the gym ceremony (`starsFor`, `cerScore.ts`) — so a short, brutal
+session is not written off just because it ran shorter than usual.
 
 ## Motion spec
 

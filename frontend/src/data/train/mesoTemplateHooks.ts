@@ -102,6 +102,11 @@ export function useMesoTemplates() {
     templates: data,
     pending: !mock && isPending,
     createTemplate: (input: MesoTemplateUpsertRequest): Promise<MesoTemplate> => createM.mutateAsync(input),
+    // Task 3 fix round (mezo-88iwa.11): the story page's Másolat/Törlés guard against a
+    // double-fire while their own mutation is in flight — read the mutation's own
+    // isPending rather than re-deriving local state.
+    createPending: createM.isPending,
+    deletePending: deleteM.isPending,
     updateTemplate: (id: string, input: MesoTemplateUpsertRequest): Promise<MesoTemplate> =>
       updateM.mutateAsync({ id, input }),
     deleteTemplate: (id: string): Promise<void> => deleteM.mutateAsync(id),

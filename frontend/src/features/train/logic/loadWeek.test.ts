@@ -5,8 +5,9 @@ import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
 import {
   loadGroups, loadWeekTotals, mapHeat, mapWeekHeat, movementWeek, runMinutesForWeek,
-  sportReach, untouchedMuscles,
+  sportReach, untouchedMuscles, workedMusclesThisWeek,
 } from '@/features/train/logic/loadWeek'
+import type { WorkoutDetailResponse } from '@/data/train/trainApi'
 
 // Minimal WeekZoneRow builder — only the fields loadWeek.ts's exports read are meaningful,
 // the rest are filled with the neutral zero/default so tests read as intent, not boilerplate.
@@ -220,3 +221,43 @@ describe('movementWeek', () => {
 // file's compile rather than silently drifting the word ladder / mapHeat status mapping.
 const _statusVocab: WeekZoneStatus[] = ['below', 'entering', 'in', 'over']
 void _statusVocab
+
+describe('workedMusclesThisWeek', () => {
+  const logged = (exercises: Array<{
+    muscle: string; type?: string; sets: Array<{ skipped?: boolean; kind?: string }>
+  }>): WorkoutDetailResponse => ({
+    id: 'w', templateSessionId: 'ts', date: '2026-05-20', status: 'completed',
+    title: 'Push', dayLabel: 'Hét',
+    exercises: exercises.map((e, i) => ({
+      exerciseId: `e-${i}`, name: 'Ex', muscle: e.muscle, type: e.type ?? 'compound',
+      warmupSets: 0, workingSets: e.sets.length, repMin: 8, repMax: 10, targetRIR: 2, skipped: false,
+      sets: e.sets.map((s, j) => ({
+        id: `s-${i}-${j}`, exerciseId: `e-${i}`, setIndex: j, reps: 8, rir: 2,
+        skipped: s.skipped ?? false, kind: s.kind ?? 'working',
+      })),
+    })),
+  }) as unknown as WorkoutDetailResponse
+
+  it('collects the muscle TOKENS a real working set landed on, never the group', () => {
+    const worked = workedMusclesThisWeek([
+      logged([{ muscle: 'chest-mid', sets: [{}] }]),
+      logged([{ muscle: 'quad', sets: [{}, {}] }]),
+    ])
+    expect([...worked].sort()).toEqual(['chest-mid', 'quad'])
+    // Region siblings are NOT lit by association — the screen draws one cell per token.
+    expect(worked.has('chest-upper')).toBe(false)
+  })
+
+  it('ignores skipped sets, warmup sets and plyo exercises — the weekZone logged-path cuts', () => {
+    const worked = workedMusclesThisWeek([logged([
+      { muscle: 'chest-mid', sets: [{ skipped: true }] },
+      { muscle: 'back-wide', sets: [{ kind: 'warmup' }] },
+      { muscle: 'calf', type: 'plyo', sets: [{}] },
+    ])])
+    expect(worked.size).toBe(0)
+  })
+
+  it('an empty week is an empty set — nothing is guessed into it', () => {
+    expect(workedMusclesThisWeek([]).size).toBe(0)
+  })
+})

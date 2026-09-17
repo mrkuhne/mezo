@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Icon } from '@/shared/ui/Icon'
 import { TimePicker } from '@/features/me/components/TimePicker'
 import { useSleep, useSleepShot } from '@/data/hooks'
@@ -135,16 +136,11 @@ export function SleepLogSheet({
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="sleep-log-title">
+    <Sheet onClose={onClose} labelledBy="sleep-log-title" className="capture-sheet capture-tone-sleep">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Reggeli sleep log</span>
-              <div id="sleep-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Hogyan aludtunk?</div>
-            </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
-          </div>
+          <CaptureHeader id="sleep-log-title" kind="sleep" title="Hogyan aludtunk?"
+            subtitle="Az éjszakád, néhány mozdulattal." onClose={close} />
 
           <div className="row gap-xs" style={{ marginBottom: 14 }}>
             {(['manual', 'shot'] as const).map((m) => (
@@ -190,8 +186,9 @@ export function SleepLogSheet({
 
           {showInputs && (
             <>
-              {/* F7.4: the duration + window headline rides the tinted hero band. */}
-              <div className="mz-sheet-hero" style={{ padding: 18, background: 'var(--mz-wash-lav)', boxShadow: 'var(--mz-shadow-lav)', display: 'block' }}>
+              {/* The saved duration remains the hero in manual and screenshot review modes. */}
+              <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+                <div className="capture-night-arc" aria-hidden="true" />
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
                   <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{durationH}</span>
                   <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>
@@ -216,7 +213,7 @@ export function SleepLogSheet({
                   <span style={SECTION_LABEL}>Minőség</span>
                   <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{quality}<span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>/10</span></span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3 }}>
+                <div className="capture-rating-scale" style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3 }}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                     <button key={n} onClick={() => setQuality(n)} aria-pressed={quality === n}
                       style={{ padding: '8px 0',
@@ -304,21 +301,6 @@ export function SleepLogSheet({
                   <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
                     placeholder='pl. "magnézium kihagyva" · "sok só tegnap" · "késő vacsora"'
                     style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
-                </div>
-              </div>
-
-              <div className="card mt-lg" style={{ padding: 10, background: 'var(--wash-lav)' }}>
-                <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                  <Icon name="sparkle" size={11} color="var(--lav-deep)" />
-                  <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
-                    {/* durationH, not the bare bedtime→wakeup `duration` — the 48px hero above
-                        was repointed to durationH (mezo-fk9a), so the tip must agree with what
-                        the user is actually looking at. */}
-                    {durationH < 7 ? '7h alatt — a sleep-first triage alapján a reggeli briefing ezt fogja primary risk-ként jelölni.'
-                      : quality <= 5 ? 'Alacsony minőség — keressük meg a faktort együtt (késő szénhidrát? kávé? stressz?).'
-                      : durationH >= 7.5 && quality >= 8 ? 'Target felett · ragyogó nap. Pattern engine ezt boldog vasárnap megerősíti.'
-                      : 'Stabil tartomány — beírom a 7-napos MA-ba.'}
-                  </p>
                 </div>
               </div>
 

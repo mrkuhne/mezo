@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.service.ToolOutcomeDigest;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit.ToolOutcome;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;

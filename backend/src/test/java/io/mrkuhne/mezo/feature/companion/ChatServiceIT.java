@@ -50,6 +50,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
 
     private SendMessageRequest request(String content) {
+        // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
     }
 
@@ -61,7 +62,11 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = user.getId();
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        // mezo-rj214.7: data-bearing ("héten" is a time word) so this stays off the lightened
+        // CHAT gear once wired — the persona line asserted below survives that branch too, but
+        // a CHAT-classified fixture would make the FULL system-prompt-assembly coverage vacuous.
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("Mesélj az edzéseimről a héten"));
         String systemBlock = answer.getContent();
 
         assertThat(systemBlock).contains("Te vagy a mezo, Anna személyes egészség- és teljesítmény-társa.");
@@ -118,7 +123,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-tool-hint@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         assertThat(resp.getContent()).contains("használd a kapott tool-okat");
         // mezo-xixu: terse question-type -> tool routing hint, present in EVERY system prompt.
@@ -132,7 +137,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("prompt-no-preamble@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         // The tool-routing hint says WHICH tool; this says WHEN — the companion used to stream
         // "most megnézem…" and end the turn there, which reads as answering before it looked.
@@ -143,8 +148,14 @@ class ChatServiceIT extends AbstractIntegrationTest {
     void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
         UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        String overCapCalls = "[fake-tool:get_goal]".repeat(16);
+        // mezo-rj214.7: "hány célom van" (domain + lookup words) keeps this off the lightened CHAT
+        // gear — a CHAT-classified fixture here would skip tool registration entirely and make the
+        // cap assertion vacuous. The sentinel repetition itself carries no domain/time word, so
+        // without this prefix the fixture guard's regex (it only sees inline string literals, not
+        // this variable) cannot catch the collision.
+        String overCapCalls = "hány célom van? " + "[fake-tool:get_goal]".repeat(16);
 
+        // gear-audited: LOOKUP — overCapCalls starts with "hány célom van?" (see above).
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(overCapCalls));
 
         assertThat(resp.getTools()).hasSize(15); // mezo.companion.tools.max-calls-per-turn (raised 6→15, mezo-xixu)
@@ -184,7 +195,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a mai terv?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a terv ma?"));
 
         String echoed = answer.getContent();
         int voice = echoed.indexOf("Te vagy a mezo");
@@ -204,7 +215,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
         factPopulator.fact(userId, "Kikapcsolt tény", "life", 9, false, "manual");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a helyzet?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a helyzet ma?"));
 
         String echoed = answer.getContent();
         int snapshot = echoed.indexOf("AKTUÁLIS ÁLLAPOT");
@@ -222,7 +233,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // a freshly promoted pattern-fact (createdAt = now) sits inside the ack window (3 days)
         factPopulator.fact(userId, "Stressz rontja az alvást", "health", 0, true, "pattern");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         String echoed = answer.getContent();
         assertThat(echoed).contains("ÚJ FELISMERÉSEK");
@@ -240,7 +251,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // include_in_prompt=false is the user's kill-switch for EVERY injection channel
         factPopulator.fact(userId, "Kikapcsolt felismerés", "health", 0, false, "pattern");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         assertThat(answer.getContent()).doesNotContain("ÚJ FELISMERÉSEK");
         assertThat(answer.getContent()).doesNotContain("Kikapcsolt felismerés");
@@ -251,7 +262,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-no-facts@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         assertThat(answer.getContent()).doesNotContain("MEGERŐSÍTETT TÉNYEK");
     }
@@ -261,12 +272,13 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-voice@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia mezo"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("szia mezo, mi volt ma?"));
 
         // The fake echoes system=[...] user=[...] — the persisted answer proves prompt assembly.
         assertThat(answer.getContent()).contains("Te vagy a mezo");
         assertThat(answer.getContent()).contains("Gyógyszer adagolására vonatkozó változtatást");
-        assertThat(answer.getContent()).contains("user=[szia mezo]");
+        assertThat(answer.getContent()).contains("user=[szia mezo, mi volt ma?]");
         assertThat(answer.getContent()).contains("history=[]");
     }
 
@@ -300,7 +312,8 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // A pre-mezo-8z79 blank assistant row: it must never travel as an empty AssistantMessage.
         messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("és most, mi volt ma?"));
 
         String history = answer.getContent()
                 .substring(answer.getContent().indexOf("history=["), answer.getContent().indexOf("] user=["));
@@ -314,14 +327,15 @@ class ChatServiceIT extends AbstractIntegrationTest {
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
         messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "korábbi válasz");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("és most, mi volt ma?"));
 
         assertThat(answer.getContent()).contains("Eddigi beszélgetés");
         assertThat(answer.getContent()).contains("Felhasználó: korábbi kérdés");
         assertThat(answer.getContent()).contains("Mezo: korábbi válasz");
         // The current message is the user param, not part of the rendered history block.
-        assertThat(answer.getContent()).doesNotContain("Felhasználó: és most?");
-        assertThat(answer.getContent()).contains("user=[és most?]");
+        assertThat(answer.getContent()).doesNotContain("Felhasználó: és most, mi volt ma?");
+        assertThat(answer.getContent()).contains("user=[és most, mi volt ma?]");
     }
 
     @Test
@@ -333,7 +347,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
             messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "üzenet-" + i);
         }
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("összegzés?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("heti összegzés?"));
 
         assertThat(answer.getContent()).doesNotContain("üzenet-1\n");
         assertThat(answer.getContent()).doesNotContain("üzenet-2\n");
@@ -347,6 +361,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         String longContent = "x".repeat(200);
 
+        // gear-audited: CHAT on purpose — this asserts title truncation, never the prompt.
         chatService.sendMessage(userId, conversation.getId(), request(longContent));
 
         AiConversationEntity touched = conversationRepository.findById(conversation.getId()).orElseThrow();
@@ -357,12 +372,12 @@ class ChatServiceIT extends AbstractIntegrationTest {
     void testSendMessage_shouldKeepTitle_whenSecondMessage() {
         UUID userId = databasePopulator.populateUser("chat-title2@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        chatService.sendMessage(userId, conversation.getId(), request("első téma"));
+        chatService.sendMessage(userId, conversation.getId(), request("első téma: edzés"));
 
-        chatService.sendMessage(userId, conversation.getId(), request("második üzenet"));
+        chatService.sendMessage(userId, conversation.getId(), request("második üzenet: alvás"));
 
         AiConversationEntity touched = conversationRepository.findById(conversation.getId()).orElseThrow();
-        assertThat(touched.getTitle()).isEqualTo("első téma");
+        assertThat(touched.getTitle()).isEqualTo("első téma: edzés");
     }
 
     @Test
@@ -371,7 +386,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID theirs = databasePopulator.populateUser("chat-owner@test.local");
         AiConversationEntity foreign = conversationPopulator.conversation(theirs);
 
-        assertThatThrownBy(() -> chatService.sendMessage(mine, foreign.getId(), request("hahó")))
+        assertThatThrownBy(() -> chatService.sendMessage(mine, foreign.getId(), request("hahó, mi volt ma?")))
                 .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
@@ -382,7 +397,8 @@ class ChatServiceIT extends AbstractIntegrationTest {
         messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
         messagePopulator.message(conversation, AiMessageEntity.ROLE_ASSISTANT, "korábbi válasz");
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                request("és most, mi volt ma?"));
 
         // A fake echója a hívó összeállítását tükrözi: system=[...] history=[...] user=[...]
         String echoed = answer.getContent();
@@ -396,8 +412,8 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(historyBlock).contains("Felhasználó: korábbi kérdés");
         assertThat(historyBlock).contains("Mezo: korábbi válasz");
         // Az aktuális üzenet a user-paraméter, nem a history része.
-        assertThat(historyBlock).doesNotContain("Felhasználó: és most?");
-        assertThat(echoed).contains("user=[és most?]");
+        assertThat(historyBlock).doesNotContain("Felhasználó: és most, mi volt ma?");
+        assertThat(echoed).contains("user=[és most, mi volt ma?]");
     }
 
     @Test
@@ -405,7 +421,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-voice-rules@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         String echoed = answer.getContent();
         // A "tömören" utasítás okozta a lélektelenül rövid válaszokat — nem térhet vissza.
@@ -423,7 +439,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         String echoed = answer.getContent();
         String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
@@ -447,7 +463,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("chat-memories-none@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
         assertThat(answer.getContent()).doesNotContain("[Emlékek]");
         assertThat(answer.getRefs()).isEmpty();

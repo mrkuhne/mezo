@@ -1,0 +1,35 @@
+.nap-personal {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 28px;
+  border: 1px solid color-mix(in srgb, var(--lav) 20%, transparent);
+  background: radial-gradient(ellipse at 100% 5%, color-mix(in srgb, var(--lav) 18%, transparent), transparent 68%), var(--surface-card);
+  color: var(--text-primary);
+}
+.nap-personal-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; position: relative; z-index: 1; }
+.nap-personal-heading > span, .nap-personal-eyebrow { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--lav); }
+.nap-personal-heading a { font-size: 10px; color: var(--text-secondary); }
+.nap-personal h2 { margin: 26px 62px 14px 0; font-size: 22px; line-height: 1.2; letter-spacing: -.035em; }
+.nap-personal-copy { position: relative; font-size: 16px; line-height: 1.6; max-width: 36em; margin: 0; overflow-wrap: anywhere; }
+.nap-personal-copy strong { color: var(--lav); font-weight: 600; }
+.nap-personal-question { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.nap-personal-art { pointer-events: none; position: absolute; top: 48px; right: 10px; width: 105px; height: 92px; opacity: .8; z-index: -1; transform: rotate(-22deg); }
+.nap-personal-art i { position: absolute; inset: 9px 2px; border: 8px solid transparent; border-radius: 50%; background: linear-gradient(135deg, var(--lav), var(--surface-card) 47%, var(--lav)) border-box; mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0); mask-composite: exclude; transform: rotateX(50deg); animation: nap-personal-orbit 12s ease-in-out infinite alternate; }
+.nap-personal-art i:nth-child(2) { transform: rotate(65deg) rotateX(50deg); animation-delay: -4s; }
+.nap-personal-art i:nth-child(3) { transform: rotate(-65deg) rotateX(50deg); animation-delay: -8s; }
+.nap-personal-art b { position: absolute; width: 24px; height: 24px; left: 41px; top: 34px; border-radius: 50%; background: radial-gradient(circle at 30% 20%, var(--text-primary), var(--lav) 35%, var(--surface-card) 85%); box-shadow: 0 0 22px color-mix(in srgb, var(--lav) 35%, transparent); }
+.nap-personal-evidence { margin-top: 20px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--lav) 15%, transparent); font-size: 12px; color: var(--text-secondary); }
+.nap-personal-evidence summary { cursor: pointer; padding: 7px 0; color: var(--text-primary); }
+.nap-personal-evidence ul { margin: 8px 0; padding-left: 18px; line-height: 1.6; }
+.nap-personal-evidence li + li { margin-top: 7px; }
+.nap-personal-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.nap-personal-actions button, .nap-personal-chat { min-height: 44px; padding: 10px 13px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--lav) 24%, transparent); background: color-mix(in srgb, var(--lav) 9%, transparent); color: var(--text-primary); font-size: 12px; text-decoration: none; }
+.nap-personal-actions button:first-child { color: var(--lav); }
+.nap-personal-actions button:disabled { opacity: .5; cursor: wait; }
+.nap-personal-chat { display: inline-flex; align-items: center; gap: 20px; margin-top: 18px; }
+.nap-personal-ack { font-size: 12px; color: var(--lav); margin-bottom: 0; }
+.nap-personal :focus-visible { outline: 2px solid var(--lav); outline-offset: 4px; }
+@keyframes nap-personal-orbit { to { rotate: 22deg; translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .nap-personal-art i { animation: none; } }

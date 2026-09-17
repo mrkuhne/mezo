@@ -133,7 +133,13 @@ class OpenAiCompanionLlmOptionsTest {
         CompanionProperties properties = new CompanionProperties(
             new Llm(LlmProvider.OPENAI, gemini, openai, Map.of()),
             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null);
+            null, null, null,
+            new CompanionProperties.Turn(true,
+                new CompanionProperties.Turn.Gear(true),
+                new CompanionProperties.Turn.Planner(1),
+                new CompanionProperties.Turn.Executor(4, 15_000L),
+                new CompanionProperties.Turn.Answerer("high", 8000, 40000),
+                new CompanionProperties.Turn.Replan(1)));
         LlmActorResolver actorResolver = new LlmActorResolver() {
             @Override
             public UUID currentActor() {

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-09
+updated: 2026-09-17
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -20,7 +20,7 @@ related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-
 > One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
 > `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
 > snapshot** (now forward-resolving today+tomorrow's training, dated) + the **top-N confirmed
-> knowledge facts** in every system prompt, **15 read-only hub-tools** (scope-enumerated,
+> knowledge facts** in every system prompt, **18 read-only hub-tools** (scope-enumerated,
 > `mezo.companion.tools.max-calls-per-turn` = 15) for history/aggregate + forward-plan +
 > browse questions (audited into the message envelopes, rendered as real FE chips), a
 > system-prompt **`[Eszköz-útmutató]`** tool-routing hint, answered **sync JSON or streamed
@@ -794,7 +794,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
 | LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5, + `[fake-briefing:…]` scripted briefing dispatched on `BRIEFING_MARKER_MIRROR` — a literal mirror of `BriefingGenerator.BRIEFING_MARKER`, not an import, to avoid a companion→proactive package cycle — since proactive B1.1; + `[fake-weekly:…]` scripted weekly-suggestion prose dispatched on `WEEKLY_MARKER_MIRROR` (same literal-mirror rule) since proactive W1; + `[fake-memoir:{…}]` scripted memoir JSON dispatched on `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`, same literal-mirror rule) since proactive W2 (GREEDY since prompt v2 `mezo-uajy` — the `anchors:[{index,note}]` payload nests objects); + `[fake-heartbeat:…]` scripted heartbeat prose dispatched on `HEARTBEAT_MARKER_MIRROR` (`"NAPKOZBENI-JEGYZET-FELADAT"`, same literal-mirror rule) since proactive H1; + `[fake-prediction:{…}]` scripted predictions JSON (GREEDY regex — the payload nests objects) dispatched on `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`) since proactive P1; + `[fake-experiment:{…}]` scripted experiment-proposal JSON (GREEDY) dispatched on `EXPERIMENT_MARKER_MIRROR` (`"N1-KISERLET-FELADAT"`, same literal-mirror rule) since proactive P2; + `[fake-activity:{…}]` scripted activity-classification JSON (GREEDY) dispatched on `ACTIVITY_MARKER_MIRROR` (`"TEVEKENYSEG-BESOROLAS-FELADAT"`, same literal-mirror rule) since gamified growth E2 `mezo-jzca` — the cheap-tier `ActivityClassifier` is a new `CompanionLlm` consumer outside `feature/companion`, see [`growth.md`](growth.md); + `[fake-quest-flavor:[…]]` scripted quest title/why rewrite (GREEDY — a JSON array; default `[]` = no rewrite → catalog copy) dispatched on `QUEST_FLAVOR_MARKER_MIRROR` (`"KULDETES-IZESITES-FELADAT"`, same literal-mirror rule) since gamified growth E3 `mezo-6ng8` — the cheap-tier `QuestFlavor` is a second such outside-`feature/companion` consumer, see [`growth.md`](growth.md)). |
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
-| Tool calling + audit | ✅ V0.5, expanded mezo-xixu | 8 read tools at V0.5, **15 read hub-tools now** (scope-consolidated) over existing services; `RecordingToolCallback` audit + per-turn cap (raised 6→15, mezo-xixu); `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
+| Tool calling + audit | ✅ V0.5, expanded mezo-xixu → mezo-iizd.10 | 8 read tools at V0.5, **18 read hub-tools now** across 10 toolsets (scope-consolidated) over existing services; `RecordingToolCallback` audit + per-turn cap (raised 6→15, mezo-xixu); `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
@@ -1640,8 +1640,11 @@ request contract; later tasks apply its retrieval/ranking differences.
 **Shared hybrid candidate retrieval (`mezo-6dii.4`; SHADOW by default, NEW-capable):**
 
 ```text
-RetrievalInput(request, prepared query, serving embedding version, per-retriever limit)
-  ├─ dense   → query embedding → memory_vector ⟕ active memory_item
+query embedding (ONCE, before the fan-out — MemoryQueryEmbedder, own 2500 ms budget)
+       ↓
+RetrievalInput(request, prepared query, serving embedding version, per-retriever limit,
+               query embedding)
+  ├─ dense   → memory_vector ⟕ active memory_item (ranks the vector it was handed)
   ├─ lexical → folded raw query → memory_item FTS + trigram score
   ├─ facts   → pinned ∪ query-matching knowledge_fact (+ valid conflict counterpart)
   └─ graph   → deterministic seed nodes → bounded GraphTraversalService neighborhood
@@ -1660,6 +1663,23 @@ future-dated nodes, keeps the configured hop/top-K bounds, and maps each edge un
 All three new JDBC queries use the existing same-connection savepoint pattern and deliberately
 rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
 empty result cannot be mistaken for an outage.
+
+**`execution.retriever-timeout-ms` is a DATABASE budget — never put a network hop inside it
+(`mezo-iddo`).** The 200 ms is sized for one indexed query, which is all any retriever below it
+does. Dense used to embed the query itself, inside that budget; embedding is a provider call
+measured in production at p50 ~270 ms and p95 ~675 ms, so the deadline won essentially every race.
+On the live database, `dense` recorded `TIMEOUT` on **55 of 55 runs over 14 days** — semantic recall
+had never once worked in production. Two things hid it: a run only gets an `error_code` when *all
+four* retrievers fail (`successCount == 0`), and the other three kept answering, so every run
+audited clean; and the 200 ms `future.cancel(true)` interrupted the in-flight HTTP request, so the
+symptom surfaced far away as 55 `GenAiIOException` `EMBED_QUERY` rows that read like provider
+flakiness. `MemoryQueryEmbedder` now takes the hop once, before the fan-out, under
+`execution.query-embedding-timeout-ms` (2500 ms — the measured p95 plus headroom, so it bounds a
+hung provider without cutting off a normal call), carrying the actor and replay-only context
+breadcrumbs across the executor boundary the same way the retrievers do. `DenseMemoryRetriever`
+now ranks the vector it is handed, and **throws** when there is none: returning an empty list would
+count dense as a success and re-hide the outage. `MemoryPlatformPropertiesIT` pins the embedding
+budget above the retriever deadline so the two can never collapse back into one number.
 
 **Shared memory context orchestration (`mezo-6dii.5`; chat-integrated by `mezo-6dii.6`):**
 
@@ -1846,11 +1866,11 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
        mapper serves GET /messages, so a reloaded history re-renders the disclosure unchanged)
 ```
 
-**The tool pipeline (V0.5, expanded to 15 tools at mezo-xixu).** `CompanionToolRegistry`
-(`tools/CompanionToolRegistry.java`) is the ONLY assembly point: it builds the 15 callbacks from
-the 9 domain toolsets (`TrainTools`/`BiometricsTools`/`FuelTools`/`GoalTools`/`MedicationTools`/
-`MemoryTools` — the V0.5–V2.3 batch — plus the mezo-xixu trio `GrowthTools`/`PracticeTools`/
-`InsightsTools`) via `ToolCallbacks.from`
+**The tool pipeline (V0.5, expanded to 18 tools across 10 toolsets by mezo-iizd.10).**
+`CompanionToolRegistry` (`tools/CompanionToolRegistry.java`, `:44-50`) is the ONLY assembly point: it
+builds the 18 callbacks from the 10 domain toolsets (`TrainTools`/`BiometricsTools`/`FuelTools`/
+`GoalTools`/`MedicationTools`/`MemoryTools` — the V0.5–V2.3 batch — the mezo-xixu trio
+`GrowthTools`/`PracticeTools`/`InsightsTools` — plus `LifeGoalTools`, mezo-iizd.10) via `ToolCallbacks.from`
 and wraps each in `RecordingToolCallback` (`tools/RecordingToolCallback.java`) bound to the turn's
 `ToolCallAudit` (`tools/ToolCallAudit.java`). The decorator records `{type:'read', name, args}`
 BEFORE delegating (a tool cannot forget its audit), soft-fails past
@@ -1860,8 +1880,12 @@ into an honest error result (one broken read never kills a streamed turn). **Sin
 `onCall(Consumer<ToolCall>)`, invoked from `recordCall` inside a try/catch so a broken listener can
 never fail a turn. `ChatStreamService` registers one to turn each recorded call into the live
 `tool` SSE event described above; the sync `ChatService.sendMessage` path registers none, so it is
-unaffected. Spring AI executes a turn's tool calls sequentially, so the listener needs no extra
-synchronization on top of the audit's own. Tools receive the
+unaffected. Spring AI still executes a LIVE turn's tool calls sequentially on one thread, but
+**since S9.4** every state-touching `ToolCallAudit` method is `synchronized`: the dark-shipped
+`PlanExecutor` (see "The planner/executor pipeline" below) calls the SAME `RecordingToolCallback`-
+wrapped callbacks from multiple `applicationTaskExecutor` pool threads at once, and the listener
+itself now runs under the audit's lock, so a slow/broken listener would stall every concurrent
+`recordCall`/`recordResult`/`addRef` — cheap listeners only. Tools receive the
 Spring AI `ToolContext` carrying `userId` (ownership scoping is structural — model args are never
 trusted for identity, `tools/ToolContexts.java`) and the audit (for `addRef(kind, id)` — deduped,
 capped at `max-refs-per-turn`). Results are compact deterministic Hungarian text with `nincs adat`
@@ -2102,6 +2126,223 @@ callers hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors o
 V1.2 behavior byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!"
 decision).
 
+**The turn gear (spec 2026-09-16 §5-§6, `mezo-rj214.7`).** Before any context is assembled,
+`TurnGearRouter.route(userMessage)` (`service/TurnGearRouter.java`) decides how much thinking the
+turn earns — `TurnGear.{CHAT, LOOKUP, ANALYSIS}` (`service/TurnGear.java`). The gear does NOT decide
+WHO plans, only the reasoning effort and (in later slices) whether a replan lap is allowed.
+Deterministic rules run first: `TurnGearAnalyzer.analyze` (`service/TurnGearAnalyzer.java`, the same
+shape as `MemoryQueryAnalyzer`) folds the message (`ToolText.fold`) and classifies on word sets —
+`DOMAIN_WORDS`+`DOMAIN_STEMS`/`TIME_WORDS`+`TIME_STEMS` (does it refer to the user's own data at
+all?) crossed with `LOOKUP_WORDS`/`LOOKUP_STEMS` ("mennyit"/"mikor"/…) vs
+`ANALYSIS_WORDS`/`ANALYSIS_STEMS` ("miert"/"trend"/…) — plus an explicit
+"look deeper" override (`DEEPER_LOOK_PHRASES`/`DEEPER_LOOK_VERBS`, always ANALYSIS, no classifier
+call, spec §2 G3): a verb immediately followed by "at" counts as the phrasal-verb bigram UNLESS the
+word after "at" is a modal/auxiliary (`NON_PHRASAL_POST_AT_VERBS` — "at kell", "at lehet", …), which
+marks "at" as a preposition instead. No data reference at all ⇒ `CHAT`; a data reference with no
+question shape returns `Optional.empty()` — UNSURE, not `CHAT`. `TurnGearRouter` resolves an UNSURE
+result through `GearClassifier` (`service/GearClassifier.java`) — one tool-free, history-less cheap
+call (`GearClassifier.PROMPT`) asking the model to answer with exactly one of the three words — only
+when `mezo.companion.turn.gear.classifier-enabled` is true (§4); the classifier fails OPEN (any
+exception or unparseable answer ⇒ `Optional.empty()`), and an UNSURE turn the classifier could not
+settle — or that never got a classifier call — falls to `TurnGear.ANALYSIS`, the router's TOP-gear
+fallback: guessing too high costs latency, guessing too low costs the user a worse answer.
+
+**Why the word sets come in two halves.** Hungarian is agglutinative, so an exact-match set is a
+sieve: "súly" arrives as `sulyt`/`sulyom`/`sulyommal`, "ismétlés" as `ismetlesre`. The first cut of
+the analyzer matched exactly and **19 of `ToolSelectionEvalIT`'s 42 data-bearing questions
+classified as `CHAT`** — which would have stripped their tools and had the model answer from
+nothing. Each set is therefore now a pair: an exact `*_WORDS` set for words too short to be safe
+prefixes (`pr`, `ma`, `viz` — which would swallow `vizsgald` — `cel`, `szint` — which would swallow
+`szinte`), and a `*_STEMS` set matched with `startsWith`. Over-matching is the deliberate direction
+of error: a word that merely starts like a domain stem buys a heavier gear, it never removes one.
+**Supplement, medicine and exercise NAMES are banned from the stems** — "Mit gondolsz a
+kreatinról?" is a general-knowledge question, not a question about the user's log, and must stay
+`CHAT`. `TurnGearAnalyzerEvalCorpusTest` (`service/`) runs the analyzer over the whole 42-case
+corpus and fails on any `CHAT`; `UNSURE` is fine there (the classifier or the ANALYSIS fallback
+still hands the turn its tools), and `TurnGearAnalyzerTest` binds the other direction. The two
+suites together are what a new stem must satisfy.
+
+`ChatService.sendMessage` and `prepareTurn` both call **one** private helper,
+`routeAndAssemble(userId, conversation, userContent, history, today) -> RoutedContext(gear, memory,
+systemPrompt, turnContext)` — the single place a turn's gear is decided and the context it earns is
+assembled. The two paths used to carry a byte-identical copy of that branch held together only by a
+comment asking the next reader not to let them drift, which is not a mechanism: a drift there would
+have been invisible in testing, since both paths would still answer, just with different context.
+Inside it: a `CHAT` turn skips `chatMemoryContextAdapter.resolve` entirely (no embedding
+call, no graph traversal — a tool-free, data-free turn has no use for either) and its volatile prompt
+half is `chatGearContext(userId, today)` instead of the full `turnContext(..)` — just `"\n\nMa:
+<date>\n"` + the `[Rólad tanultam]` profile block + `TONE_REMINDER`, no snapshot, no week anchor, no
+facts, no reflection, no `[Karakter]`, no `[Emlékek]`, no `[Összefüggések]` (contrast with the full
+volatile list two paragraphs below). `sendMessage`'s `CHAT` branch calls
+`CompanionAdvisorChain.completeChat(systemPrompt, turnCtx, history, content)`, which wraps the
+tool-free SMART-tier entry point `companionLlm.completeSmart(..)` (§5.3) instead of the
+tool-carrying `complete`; `ChatStreamService` mirrors it with `streamSmart` plus
+`chain.reviewChat(..)` on the already-streamed answer. With the advisors switch off (no chain bean)
+both paths call `completeSmart`/`streamSmart` directly, exactly as the non-CHAT branches fall back
+to the unadvised `complete`/`stream`.
+`LOOKUP` and `ANALYSIS` turns diverge from pre-gear behavior since S9.5 landed the planner/executor/
+replan blocks live (below) — with the pipeline switched off, or on a planner failure, both still
+fall back to the byte-identical pre-gear tool-loop.
+
+**The planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
+and `ANALYSIS` turns now run plan → execute → answer on both the sync path
+(`ChatService.sendMessage`/`prepareTurn` → `pipelineAnswer`, `ChatService.java:306-336,467-505`) and
+the streamed path (`ChatStreamService.streamMessage` → `runPipelinePreStream`,
+`ChatStreamService.java:96-131,242-276`), gated by the kill switch
+`mezo.companion.turn.pipeline-enabled` (§4, default **true**) — `false` sends every LOOKUP/ANALYSIS
+turn down the legacy tool-loop unchanged, byte-identical to the pre-S9.5 shape
+(`ChatServicePipelineSwitchOffIT`/`ChatStreamPipelineSwitchOffIT`). A `CHAT` turn never reaches the
+pipeline at all (§3 "The turn gear" above). Proved end to end by `TurnPipelineIT`
+(`service/TurnPipelineIT.java`, the pipeline's own unit-of-work test) plus the call-site ITs below.
+Shape: `TurnPlanner.plan(history, userMessage, today)`
+(`service/TurnPlanner.java`) makes ONE tool-free SMART-tier call (`completeSmart`, §5.3 — no tool
+schemas travel, so the model reasons in prose, never by calling a tool) against a prompt carrying the
+LIVE-rendered tool catalogue (`ToolCatalogue.render()`, the same registry `CompanionToolRegistry`
+assembles — no hand-maintained tool list anywhere in this slice) and parses the JSON answer
+(`TurnPlanParser`) into a `TurnPlan` (`needsData`, `steps[]{tool,args,why}`). `PlanValidator.validate`
+(`service/PlanValidator.java`) then checks every step against the SAME live registry's tool schemas —
+unknown tool names and unknown parameters are dropped with a recorded Hungarian rejection reason,
+never executed blind — and caps accepted steps at `mezo.companion.tools.max-calls-per-turn`. An
+unparseable or fully-rejected plan earns up to `mezo.companion.turn.planner.repair-attempts` repair
+laps (`TurnPlanner.REPAIR_PREFIX`/`REPAIR_SUFFIX`, a `[JAVÍTÁS]`-prefixed re-ask naming what was
+wrong) before the planner gives up with `Optional.empty()` — the call sites' contract (below) is to fall
+back to the legacy tool-loop path on that empty result. The resulting `ValidatedPlan` (accepted
+steps + rejections, for provenance) runs through `PlanExecutor.execute(plan, userId, audit)`
+(`service/PlanExecutor.java`) with PURE JAVA — no model in this loop, so nothing can misread or skip
+a step. Independent steps fan out in PARALLEL over `applicationTaskExecutor`
+(`mezo.companion.turn.executor.parallelism` permits, a `Semaphore`) through the SAME
+`RecordingToolCallback`-wrapped callbacks the live loop uses, so the audit, the ref budget and the
+`companion_tools_are_internal_sphere_only` ArchUnit guarantee all hold unchanged; outcomes return in
+PLAN ORDER regardless of completion order. `LlmActorContext.capture()` runs ONCE on the submitting
+thread before the fan-out and every pool task re-binds that SAME actor via
+`LlmActorContext.runAsCaptured` (mirroring `MemoryShadowRunner`/`MemoryQueryEmbedder`), because a
+step's tool may itself make a provider embedding call (e.g. `find_similar_past_days`) whose
+`llm_log` row would otherwise book against nobody. One ABSOLUTE deadline
+(`mezo.companion.turn.executor.step-timeout-ms`) is computed once before collection and shared
+across every step, so total wall time for a plan stays bounded near its SLOWEST step rather than the
+sum of every step's timeout; a step that never gets a permit or never completes in time reports the
+honest `PlanExecutor.STEP_TIMEOUT`/`STEP_FAILED` text (ADR 0010 — shown to the model, never
+fabricated data), it is never thrown into the turn. `TurnPipelineIT` is deliberately NOT
+`@Transactional`: its assertions depend on a `PlanExecutor` pool thread's own DB connection seeing
+rows the test just inserted on the JUnit thread, which a wrapping test transaction's uncommitted,
+thread-bound connection would hide (the same reason `MemoryContextServiceIT` and its memory-platform
+siblings skip it) — the populated rows commit immediately and `ResetDatabase` truncates between
+tests instead.
+
+**Fallback: silent by design.** Both call sites share ONE contract — a planner failure
+(`TurnPlanner.plan` returns `Optional.empty()`, its repair laps exhausted) OR ANY exception the
+pre-stream pipeline lap throws falls straight to the legacy tool-loop path, unchanged.
+`ChatService.pipelineAnswer`/`planAndExecuteVolatile` return `null` on planner failure
+(`ChatService.java:467-505,522-536`) and `sendMessage` takes the legacy `chain.complete`/
+`companionLlm.complete` branch on `null` (`ChatService.java:315,324-335`) with no flag recording that
+the pipeline was even attempted. `ChatStreamService.runPipelinePreStream`
+(`ChatStreamService.java:242-252`) wraps the whole pre-stream lap in a try/catch and returns
+`PipelineResult.legacy()` on ANY `RuntimeException` — a planner outage degrades to the
+byte-identical legacy stream instead of surfacing as an SSE `error` event. The fallback never sets
+`degraded` on the persisted row: `degraded` means "the advisor's retry-once-then-degraded semantics
+kicked in", and a legacy tool-loop answer is a FULL answer by the pre-S9.5 contract, not a lesser
+one — the two concepts stay orthogonal on purpose (spec §8).
+
+**The replan contract (ANALYSIS only, spec §A2).** An `ANALYSIS` turn with `replan.max-laps > 0`
+(§4) gets ONE escape hatch: `TurnAnswerer` appends `DATA_GAP_OFFER` to lap 1's volatile half
+(`TurnAnswerer.java:41-46`), inviting the model to answer with EXACTLY the single line
+`[TOVÁBBI-ADAT: mi hiányzik]` (`TurnAnswerer.DATA_GAP_MARKER`, `TurnAnswerer.java:33`) instead of
+guessing past insufficient tool results. `LOOKUP` never offers it — `buildVolatile` appends the
+offer only when `gear == ANALYSIS` (`TurnAnswerer.java:68-73`) — so a LOOKUP answer cannot
+legitimately contain the marker. When lap 1's answer starts with the marker
+(`TurnAnswerer.dataGapReason`, `TurnAnswerer.java:103-115`), `ChatService.pipelineAnswer`
+(`ChatService.java:484-504`) re-plans ONCE against a `[KIEGÉSZÍTÉS]`-prefixed hint naming the gap
+(`ChatService.java:490`), merges lap 2's executed outcomes onto lap 1's (plan order preserved,
+budget-dropped steps included), and answers again off a volatile half carrying the
+`[PÓTLÁS]`-prefixed `REPLAN_DONE_BLOCK` (`TurnAnswerer.java:53-57`) instead of the offer — the
+marker is spent, never offered a second time. The marker must never reach the client as text:
+`ChatService.guardAgainstMarker` (`ChatService.java:554-556`) strips it at EVERY persisted exit —
+the no-replan exit, the lap-2 exit, and the "marker on a gear that never offered it" corner (model
+noise, treated as a pipeline failure so the legacy fallback answers fully instead) — and
+`ChatStreamService` runs the same guard a second time on a `STREAM_ANSWER`'s already-streamed text
+before persisting the done row (`ChatStreamService.java:180-182`): the streamed deltas themselves
+are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
+only protects what re-enters history on the next turn.
+
+**Streamed modes differ by gear (until S9.6).** `LOOKUP` runs plan → cap → execute BEFORE the SSE
+`Flux` is assembled, then the answerer streams NATIVELY off the built volatile half
+(`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:112-123,267-275`) — real per-token
+deltas, no replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included)
+pre-stream and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`,
+`ChatStreamService.java:124-126,260-265`) — a synchronous round-trip disguised as a stream, until
+S9.6 gives ANALYSIS its own native streaming answerer. Both modes still stream real tool-call chips
+AHEAD of the answer: the `ToolCallAudit` listener that turns each executed call into an SSE `tool`
+event is registered before the pre-stream pipeline lap runs, so the pre-stream execution's calls
+are BUFFERED into the unicast `toolSink` the moment they run (`ChatStreamService.java:85-105`,
+`ChatStreamPipelineIT`). The buffer only FLUSHES once the SSE response begins, after the pre-stream
+lap has already finished — so ordering ahead of the answer is guaranteed, but earliness is not; the
+client's wait through the pre-answer gap itself is unchanged. S9.6's explicit phase events are the
+real cure for that.
+
+**Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
+either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
+`CHAT` answer gets — never the full `chain.complete`/`chain.review` tool-loop advisor
+(`ChatService.java:317-323`, `ChatStreamService.java:148-161`). The LLM verdict
+(`TurnVerdictCheck`) is skipped on purpose: `pipelineAnswer`'s own answering call already graded the
+answer against the tool-outcome digest it was grounded in, so a second verdict call would pay twice
+to grade the same thing. The deterministic `ClinicalOutputCheck` still runs — its dose-change
+prohibition has no branch where it does not apply. Legacy tool-loop answers (fallback, or the
+switch off) are untouched: they still take the full `chain.complete`/`chain.review` advisor exactly
+as before S9.5.
+
+**Provenance in `llm_log` (audit trail only, not yet a consumer contract — S9.7).** A pipeline turn
+books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap 1's
+`TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan lap —
+`plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed LOOKUP
+path tags its native answer stream `answer` too, `ChatStreamService.java:118-123`). Each is its own
+`llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds, not one
+row hiding a retry inside it.
+
+**`PreparedTurn` carries `today` (midnight-skew fix, Task 6 fix round 1 finding M2).**
+`ChatService.prepareTurn` resolves `LocalDate.now()` ONCE (`ChatService.java:234`) and the streamed
+path's pre-stream pipeline lap reads that SAME value off `PreparedTurn.today`
+(`ChatService.java:219-222,259`) instead of calling `LocalDate.now()` a second time milliseconds
+later — without this, a turn straddling exact midnight could see the plan's `"Ma:"` context land on
+a different calendar day than the persisted turn's own assembled context.
+
+**Three seams the S9.5 wiring and beyond must not paper over — the first is now RESOLVED.**
+`ChatService.capToRemainingBudget` (`ChatService.java:580-593`) caps each plan lap to
+`max-calls-per-turn − audit.callCount()` BEFORE `PlanExecutor` ever sees it — cap-at-the-call-site,
+not a `PlanExecutor`-side fix — so a call site that hands `PlanExecutor` an audit already carrying
+calls (S9.5's actual shape) cannot overshoot the configured cap even with parallel step execution. A
+step that does not fit the remaining budget never runs at all: it gets a synthetic, honest
+`RecordingToolCallback.BUDGET_EXHAUSTED` outcome instead (`TurnAnswerer`'s digest renders it like
+any other outcome), never a race against `RecordingToolCallback`'s non-atomic check-then-record
+pair. `PlanValidator` itself is UNCHANGED and still caps at the FULL configured budget, ignorant of
+any calls already on the audit — every caller (both call sites, and any future one) must apply
+`capToRemainingBudget` before executing; the seam is resolved by discipline at the two current call
+sites, not by a change inside `PlanValidator`/`PlanExecutor` itself (before this, the hazard was:
+`PlanExecutor` given an audit that already had calls on it, running steps in parallel, could let
+`BUDGET_EXHAUSTED` land scheduling-nondeterministically and overshoot the configured cap by up to
+`parallelism − 1` — see `ChatServicePipelineIT`/`ChatStreamPipelineIT` for the coverage).
+
+Second, the wall-time bound above ("near its SLOWEST step") only strictly holds when the number of steps is
+`<=` the executor's parallelism; once steps outnumber permits, later steps queue for a permit behind
+earlier ones and the waits compound, so total wall time can exceed one step's timeout by more than a
+rounding error. Third, provenance (S9.7) must pick exactly one source per consumer rather than
+mixing them: `PlanExecutor`'s own outcome list is PLAN-truth (the raw JSON args the model proposed,
+honest in-band `STEP_TIMEOUT`/`STEP_FAILED` text for what never finished), while the `ToolCallAudit`
+envelope is RAN-truth (`compactArgs`, and — because the budget-check/record pair above is
+non-atomic — a step the executor reported as timed out may still show up in the audit with a late,
+real result that arrived after the deadline). Reading both as if they agreed would surface either a
+plan that was never validated as a call, or a call whose outcome silently changed after the fact.
+
+**What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
+verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
+in — a `CHAT` turn has neither, so asking it would be paying a model call to grade nothing. The
+deterministic `ClinicalOutputCheck` is a different animal: a regex over the answer text, no LLM, no
+context, ~0 ms. Its prohibition — never suggest changing a prescription dose — is the one rule that
+must not have a branch where it does not apply, and a general question ("mit gondolsz erről a
+szerről?") is exactly the shape in which a model volunteers dosing advice. So `reviewChat` gives a
+CHAT answer the SAME retry-once-then-degraded semantics every other answer gets, with the corrective
+round staying tool-free and smart-tier like the answer it is correcting. Covered on both paths by
+`CompanionAdvisorChainIT` / `ChatStreamAdvisorIT`, each with a dose-suggesting CHAT fixture.
+
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
 message, so the current turn travels as the `userMessage` param — this was true before mezo-q71s
 and stays true after it. What changed (mezo-q71s): the history is **no longer rendered into the
@@ -2112,7 +2353,7 @@ as its own parameter — `sendMessage` (`ChatService.java:193`) and `prepareTurn
 retired `renderHistory`'s direct successor, now living in `feature/companion/ChatHistory.java`) is
 never called on the model-bound path — only by the three non-model consumers described below.
 
-`SYSTEM_PROMPT` (`ChatService.java:56-109`) is now **named blocks**, not one instruction stream:
+`SYSTEM_PROMPT` (`ChatService.java:69-148`) is now **named blocks**, not one instruction stream:
 `[Ki vagy]` (IDENT-1 "társ, nem edző", T/1 plural, never classifies/moralizes) · `[Hogyan beszélsz]`
 (mezo-q71s, new — states BEHAVIOUR, not adjectives: converse rather than report, list only when
 asked or when there are 4+ peer items, length follows the question, has opinions, asks a real
@@ -2124,7 +2365,10 @@ message, and inventing one is forbidden even hedged; see [ADR
 contrasting "data-terminal" vs "conversational" answer to the same question, calibrating what
 "marked" looks like) · `[Tiltás]` (the clinical guard — *"Gyógyszer adagolására vonatkozó
 változtatást SOHA ne javasolj — az orvosi döntés."*; the drug-name example was removed in
-`mezo-lwmq`, the prohibition itself is unchanged) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
+`mezo-lwmq`, the prohibition itself is unchanged) · `[Két mód]` (since commit 944f5f866 — the
+"Adatkérés" vs "Szabad beszélgetés" split the turn gear now IMPLEMENTS in code, §3 "The turn gear"
+above: tool-carrying data questions vs general-knowledge chat that needs neither a tool nor the
+data snapshot) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
 kérdéshez … használd a kapott tool-okat", plus the mezo-280 tool-timing sentence below) ·
 `[Eszköz-útmutató]` ((mezo-xixu) the terse question-type → tool name routing hint, PR →
 `get_exercise_records`, edzésterv → `get_training_plan`, recept → `get_recipes`, … — one line per
@@ -2157,7 +2401,9 @@ returns the persona alone (`SYSTEM_PROMPT` through `PromptPersona`), and
 `[Emlékek]` → `[Összefüggések]` → `TONE_REMINDER`. `PreparedTurn` carries both;
 `SpringAiCompanionLlm` sends the stable half as the leading system message and the volatile half as
 a SECOND system message appended to the message list, i.e. after the history and immediately before
-the user's turn.
+the user's turn. **A `TurnGear.CHAT` turn (see "The turn gear" above) gets a much shorter volatile
+half instead** — `ChatService.chatGearContext(userId, today)` returns just `"Ma: <date>"` +
+`[Rólad tanultam]` + `TONE_REMINDER`, none of the other nine blocks in the list above.
 
 *Why.* OpenAI renders a request's cacheable prefix as *instructions → tool definitions →
 conversation history* (verified 2026-09-07 against
@@ -5376,6 +5622,45 @@ since S2.
 - Feature switch `mezo.feature.intervention.enabled`
   (`FeaturesConfiguration.INTERVENTION_SWITCH`) — W5.2's own switch, `@ConditionalOnProperty`-gated
   ALONGSIDE `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH` (§4 above).
+- `mezo.companion.turn.pipeline-enabled` = **true** — S9.5 (`mezo-rj214.7`, §3 "The planner/executor
+  pipeline"): the pipeline's OWN kill switch. `false` sends every LOOKUP/ANALYSIS turn down the
+  legacy tool-loop unchanged, byte-identical to the pre-S9.5 shape — a `CHAT` turn never reads this
+  key at all (it never reaches the pipeline). Covered by `ChatServicePipelineSwitchOffIT`/
+  `ChatStreamPipelineSwitchOffIT`.
+- `mezo.companion.turn.gear.classifier-enabled` = **true** — the turn gear's (spec 2026-09-16 §5-§6,
+  `mezo-rj214.7`, §3 "The turn gear") own switch: whether an UNSURE `TurnGearAnalyzer` result may
+  spend one cheap `GearClassifier` call, or falls straight to `TurnGear.ANALYSIS` (the router's
+  top-gear fallback either way). `false` never disables the gear itself, only the tie-break call.
+- `mezo.companion.turn.planner.repair-attempts` = **1** (`@Min(0) @Max(3)`) — S9.4 (`mezo-rj214.7`,
+  §3 "The planner/executor pipeline"): how many `[JAVÍTÁS]` repair laps `TurnPlanner.plan` spends on
+  an unparseable-or-fully-rejected plan before it gives up (`Optional.empty()`, and the pipeline
+  call site falls back to the legacy tool-loop). Covered by `TurnPipelineIT`; live since S9.5.
+- `mezo.companion.turn.executor.parallelism` = **4** (`@Min(1) @Max(16)`) — S9.4: the `Semaphore`
+  width `PlanExecutor` fans validated steps out over `applicationTaskExecutor` with.
+- `mezo.companion.turn.executor.step-timeout-ms` = **15000** (`@Min(100) @Max(60_000)`) — S9.4: the
+  per-step wait budget `PlanExecutor` shares as ONE absolute deadline across every step in a plan
+  (§3), past which an unfinished step reports `PlanExecutor.STEP_TIMEOUT` rather than blocking the
+  turn indefinitely.
+- `mezo.companion.turn.answerer.chat-effort` = **`high`** (`@NotBlank`) — bound and validated
+  (`CompanionTurnPropertiesIT`) but **not yet read by any call site**: the CHAT branch's actual
+  reasoning effort still comes from the SMART tier's existing `mezo.companion.llm.{gemini,openai}.*`
+  config, same as any other smart-tier call (`OpenAiCompanionLlm.optionsFor`) — it reaches the
+  provider at all only because a CHAT-gear call carries no tools (§5.3). This key is scaffolding for
+  a per-gear answerer effort; the LOOKUP/ANALYSIS per-gear effort keys are deliberately **still
+  deferred** — no per-call effort override exists on the LLM seam yet, so only `chat-effort` exists
+  today and only the gear itself (not the effort) is operative.
+- `mezo.companion.turn.answerer.outcome-max-chars-per-result` = **8000** (`@Min(500) @Max(60_000)`)
+  — S9.5 (spec §6.5): per-tool-outcome clamp `ToolOutcomeDigest.render` applies before the digest
+  becomes the answerer's volatile half — NOT the advisor's separate 700/3000 clamps; here the digest
+  IS the answer's whole basis. A cut output is marked `[…a kimenet innen levágva]` — the same three
+  honest-loss markers `ToolOutcomeDigest` already used for the advisor's own tool digest (§3).
+- `mezo.companion.turn.answerer.outcome-max-chars-total` = **40000** (`@Min(2_000) @Max(200_000)`) —
+  S9.5: the whole digest's total budget across every outcome; an output past it becomes `[a kimenet
+  helyhiány miatt kimaradt]` while its CALL keeps its line.
+- `mezo.companion.turn.replan.max-laps` = **1** (`@Min(0) @Max(2)`) — S9.5 (spec §A2, §3 "The replan
+  contract"): data-gap laps an ANALYSIS answer may request via the `[TOVÁBBI-ADAT:` marker before the
+  offer stops being made. `0` disables replan entirely (an ANALYSIS turn then behaves like LOOKUP:
+  one lap, no data-gap offer). `LOOKUP` never reads this key — it never replans regardless of value.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)
@@ -5660,10 +5945,21 @@ Every companion write/read rides the auth spine ([`_platform-auth-security.md`](
 from JWT subject) → `OwnedEntity.createdBy`; the boundary DTOs never carry `created_by`.
 
 ### 5.3 Companion ↔ LLM provider (wired, ADR 0008)
-All model access goes through the `CompanionLlm` port (`CompanionLlm.java`). **Contract crossing
-the seam:** `complete(systemPrompt, userMessage) → String` (V0.2 uses only `complete`; `stream(…) →
-Flux<String>` exists for V0.4). Real adapter `GeminiCompanionLlm` / test fake `FakeCompanionLlm`;
-provider swap = one new adapter + one starter swap (ADR 0008). **Since mezo-78rn the port also
+All model access goes through the `CompanionLlm` port (`CompanionLlm.java`) — retired: the old
+two-string `complete(systemPrompt, userMessage) → String` shape this paragraph used to describe
+(mezo-rj214.8). **Contract crossing the seam today** is the **six-arg stable/volatile pair**
+(mezo-ozri.5) — `complete`/`stream(systemPrompt, turnContext, history, userMessage, tools,
+toolContext)`, DEFAULTS that re-join the halves for every implementation but `SpringAiCompanionLlm`
+(§3 "The prompt is SPLIT in two" has the full inversion history) — plus **two tool-free SMART-tier
+entry points** (mezo-rj214.7): `completeSmart`/`streamSmart(systemPrompt, turnContext, history,
+userMessage)` carry no tools, by contract, so a CHAT-gear turn is the only conversational shape that
+can carry reasoning on OpenAI Chat Completions (§3 "The turn gear"). Real traffic runs through
+`SpringAiCompanionLlm` (`llm/SpringAiCompanionLlm.java`), the shared base both provider adapters
+extend; **`OpenAiCompanionLlm` is the production adapter** (`@Primary` under
+`mezo.companion.llm.provider: openai`), with `GeminiCompanionLlm` staying live as the chat fallback
+and the TRANSCRIBE/VISION delegate (§3 "LLM adapter selection" has the full two-adapter table); test
+fake `FakeCompanionLlm`. Provider swap = one new `SpringAiCompanionLlm` subclass + one starter swap
+(ADR 0008 + its mezo-ozri.2 amendment). **Since mezo-78rn the port also
 carries a multimodal overload** — `complete(system, user, imageBytes, mimeType) → String`, ONE
 ephemeral inline image on the cheap tier: `GeminiCompanionLlm` wraps the bytes in a Spring AI
 `Media` part (`content.Media` + `MimeTypeUtils`), `FakeCompanionLlm` matches its greedy
@@ -5863,7 +6159,7 @@ between two features is kept one-directional at the package level.
 V0.3 also added four derived finders to those features' repos (sleep/check-in latest, sport/run
 since-date) — plain finders, no companion dependency.
 
-**V0.5 tools seam (✅ wired, now 15 tools since mezo-xixu).** The read tools in
+**V0.5 tools seam (✅ wired, now 18 tools across 10 toolsets, mezo-iizd.10).** The read tools in
 `feature/companion/tools/` compose the same one-way reads (see §4 catalog). V0.5 added **three
 plain finders** to the owning features' repos
 (the V0.3 precedent — no companion dependency): `SleepLogRepository` since-date,
@@ -6528,7 +6824,7 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   (`src/test/msw/handlers.ts`) mirror `initialChat` and reuse `cannedReply`, so both modes
   assert the same strings; the stream handler answers with a real `ReadableStream` SSE body.
 
-**V0.5 test additions (grown to 15 tools' worth by mezo-xixu):**
+**V0.5 test additions (grown to 18 tools' worth by mezo-iizd.10):**
 
 - **`CompanionToolsRenderIT`** (106 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
@@ -8268,10 +8564,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/repository/{LlmStatusRow,LlmGroupRow,LlmCallRow,LlmUsageAggregate}.java` — the JPQL constructor-expression projections behind `aggregateByStatusSince`/`aggregateByFeatureSince`/`aggregateByModelSince`/`findCalls`/`aggregateSince` (`LlmLogRepository`); `findCalls` fetches `limit + 1` rows so the service can derive `hasMore` without a second `count(*)`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GoogleGenAiUsageExtractorTest,OpenAiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest,ChatModelQualifierIT,OpenAiCompanionLlmOptionsTest,OpenAiProviderWiringIT}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs. Since **mezo-ozri.2**: `ChatModelQualifierIT` asserts BOTH real provider `ChatModel`s and BOTH `LlmUsageExtractor` beans (an unqualified injection point breaks every context); `OpenAiProviderWiringIT` flips `mezo.companion.llm.provider=openai` and proves the OpenAI adapter becomes primary, the Gemini adapter SURVIVES (fallback + audio route), and `completeSmart` is really overridden — asserted structurally, since inheriting the port default would fail silently.
 
-**Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
+**Backend — tools (V0.5, expanded to 18 tools across 10 toolsets by mezo-iizd.10)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools,MemoryTools}.java` — the 12 `@Tool` reads from the V0.5–V2.3 batch.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools,MemoryTools}.java` — the 14 `@Tool` reads from the V0.5–V2.3 batch.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 17 `@Tool` reads; `LifeGoalTools` (the 10th toolset, see §11) adds `get_life_goals`, reaching 18 across 10 toolsets.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam. **`ToolText` is also the shared render seam every prompt-facing figure passes through** (§3): `RATING_MAX`/`rating`/`sleepQuality` (one declared 1..10 ceiling), `huWeight`/`huRate`/`huHours` (Hungarian comma, precision bound to the quantity by NAME — for figures the model QUOTES BACK) over the shared `huNum`, beside the locale-independent `num` (for payloads the model only PARSES), `huTrajectory`, and the now-`public` `NO_DATA` the proactive presence probes read.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, model chosen by `-Dmezo.eval.model`, 42-case Hungarian question set, incumbent baseline 37/42 = 88.1% exact match). Support classes beside it: `EvalTarget`, `EvalApiKeyCondition`, `ToolDomains`, `ToolSelectionEvalMetrics`, `EvalReportWriter`, plus `ToneJudgeEvalIT`/`ToneJudgePairing` for the blind Hungarian tone A/B.
@@ -8334,7 +8630,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 48 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest,ToolTextTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools) + `ToolTextTest`, the 2026-09-08 render-seam guard (§8).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest,ToolTextTest}.java` — the V0.5–mezo-iizd.10 tool batch (77 render tests over what was 15 tools at write time, now 18) + `ToolTextTest`, the 2026-09-08 render-seam guard (§8).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, 42-case set, incumbent baseline 37/42 exact match).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.

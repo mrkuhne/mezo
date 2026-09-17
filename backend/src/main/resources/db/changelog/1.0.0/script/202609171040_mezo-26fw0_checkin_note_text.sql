@@ -1,0 +1,1 @@
+ALTER TABLE check_in ALTER COLUMN note TYPE TEXT;

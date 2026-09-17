@@ -63,6 +63,25 @@ export function huMonthDay(iso: string): string {
   return `${HU_MONTHS[m - 1]} ${d}`
 }
 
+/**
+ * '2026-05-01' -> 'Máj 1', but '2025-09-03' -> '2025. Szep 3' — `huMonthDay` with the YEAR
+ * spelled out once the date is no longer recent (older than ~10 months, or in a future year).
+ *
+ * `huMonthDay` is right where the date is inherently recent (this week's log, this block's
+ * days), and it stays that way for its many callers. It is WRONG wherever a date is stated as
+ * a fact about the reader's own history — „Szep 3 óta" on 2026-09-17 reads as „fourteen days
+ * ago" when the truth is a year (mezo-lf3cv, the exercise story's hero + record cards). Ten
+ * months rather than twelve: at eleven months „Okt 20" would still be read as last autumn's
+ * date by a reader who has just lived through an October.
+ */
+export function huMonthDayAged(iso: string, today: Date = new Date()): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const at = new Date(y, m - 1, d)
+  const cutoff = new Date(today.getFullYear(), today.getMonth() - 10, today.getDate())
+  const nextYear = new Date(today.getFullYear() + 1, 0, 1)
+  return at < cutoff || at >= nextYear ? `${y}. ${HU_MONTHS[m - 1]} ${d}` : huMonthDay(iso)
+}
+
 /** '2026-05-20' -> 'Máj 20 · Sze' (TRUE day-of-week — mock fixtures are not authoritative here). */
 export function huMonthDayDow(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)

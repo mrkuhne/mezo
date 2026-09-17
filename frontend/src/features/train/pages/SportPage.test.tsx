@@ -9,6 +9,13 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { sportLevelUpMock } from '@/data/progression/progressionMock'
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
 
 // Asserts Phase-1 mock sport data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -144,17 +151,34 @@ test('switching to Cross-load shows the read tool chip', async () => {
   expect(screen.getByText('get_sport_load')).toBeInTheDocument()
 })
 
-test('the + Log header chip opens the SportLogSheet', async () => {
+// T8 Task 4 (mezo-88iwa.9): the header's log CTA no longer opens the sheet in place — it
+// leaves for the full-screen sport flow, which asks WHICH sport before anything else.
+test('the + Log header chip routes to the full-screen sport flow', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Log/ }))
-  expect(await screen.findByText(/Sport log ·/)).toBeInTheDocument()
+  expect(mockNavigate).toHaveBeenCalledWith('/train/sport/log')
+  expect(screen.queryByText(/Sport log ·/)).not.toBeInTheDocument()
 })
 
-test('logging a sport session presents the level-up overlay (mock fixture)', async () => {
+// The scheduled slot's inline "Logold ›" still logs in place (it carries the slot's own
+// preselected sport), so the level-up overlay contract is asserted through THAT door —
+// real mode, because that door only appears when a slot sits on today.
+test('logging a sport session presents the level-up overlay', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-today', dayOfWeek: todayIdx, time: '18:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.post(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json(
+      { id: 'ss-1', sport: 'trx', date: '2026-09-16', time: '18:00', duration: 60, rpe: 7, levelUp: sportLevelUpMock },
+      { status: 201 },
+    )),
+  )
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: /Log/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Logold ›' }))
   await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
-  // The mock logSportSession returns a seeded LevelUpResult → the overlay shows.
   expect(await screen.findByRole('dialog', { name: 'Szintlépés' })).toBeInTheDocument()
 })
 

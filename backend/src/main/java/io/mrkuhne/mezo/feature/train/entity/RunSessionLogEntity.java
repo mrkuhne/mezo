@@ -67,4 +67,14 @@ public class RunSessionLogEntity extends OwnedEntity {
 
     @Column
     private String notes;
+
+    /** Burnt energy from the personalised MET estimate ({@code SportEnergyCalculator}); NULL when
+     *  the athlete's weight or the session's duration is unknown — never 0. */
+    @Column
+    private Integer kcal;
+
+    /** True when {@link #kcal} is the backend's estimate, false when it came from the user; NULL
+     *  together with {@link #kcal}. */
+    @Column(name = "kcal_is_estimate")
+    private Boolean kcalIsEstimate;
 }

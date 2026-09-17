@@ -307,6 +307,63 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
 })
 
 /**
+ * Section registration (mezo-lf3cv, P2 Task 1): the „Minden izomjel" subpage's `.mm-*`
+ * section — the head, the six region boxes, their 3-wide grid and the muscle cells,
+ * ported from the prototype's `train-pages.css` `.mm-*` family.
+ */
+describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => {
+  const START_MARKER = 'train izomjel titanium'
+  const END_MARKER = '/train izomjel titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the mm- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.mm-head', '.mm-region', '.mm-grid', '.mm-cell']) {
+      expect(section, `${cls} missing from the train izomjel titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Section registration (mezo-lf3cv, P2 Task 3): the Gyakorlatok tab's own `.gy-*`
+ * section — the catalogue rows, the detail hero, the record stat cards, the `.gy-
+ * next` nudge, the strength-curve graphic and the medal rows — ported from the
+ * prototype's `gyak.css`, registered exactly like the blocks above.
+ */
+describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', () => {
+  const START_MARKER = 'train gyakorlatok titanium'
+  const END_MARKER = '/train gyakorlatok titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the gy- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.gy-card', '.gy-rec', '.gy-curve', '.gy-medal', '.gy-next', '.gy-hero',
+    ]) {
+      expect(section, `${cls} missing from the train gyakorlatok titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
  * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
  * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
  * and the muscle detail's gauge, ported from the prototype's `plan.css`.
@@ -333,6 +390,48 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
     ]) {
       expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
     }
+  })
+
+  // T10 Task 1: the plan library families the T9 port stopped short of — the library
+  // hero/cards, the star rating, the template-detail exercise rows, the wizard's load
+  // bars (ported renamed to .pl-wload/.pl-wload-row) and the small quiet-row idiom.
+  test('the T10 library sub-block carries its own class family', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.pl-lib-card', '.pl-lhero', '.pl-stars', '.pl-tpl-ex', '.pl-wload', '.pl-row',
+    ]) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
+
+  // mezo-b516k Task 1: the ⓘ explain layer's own sub-block — the 22px icon-only
+  // button (ported from plan.css:313-314) and the glass copy paragraph (ported from
+  // load.css:179's `.info-glass-copy`, renamed with the house `pl-` prefix).
+  test('the explain-layer sub-block carries .pl-info and .pl-info-copy', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of ['.pl-info', '.pl-info-copy']) {
+      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+    }
+  })
+
+  // The prototype's glyph is 22px; the house tap-target rule is 44px. The button must
+  // grow its HIT AREA, not the glyph — a `::after` hit box, so a future edit that
+  // "simplifies" it back to a bare 22px control fails here instead of shipping a
+  // 22px touch target.
+  test('.pl-info keeps the 22px glyph but carries a 44px hit box', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    const ruleMatch = /(?:^|\n)\.pl-info \{([^}]*)\}/.exec(section)
+    expect(ruleMatch, '.pl-info standalone rule not found in the terv titanium section').not.toBeNull()
+    expect(ruleMatch![1]).toContain('width: 22px')
+    const hit = /(?:^|\n)\.pl-info::after \{([^}]*)\}/.exec(section)
+    expect(hit, '.pl-info::after hit box not found — the 44px tap target is gone').not.toBeNull()
+    expect(hit![1]).toContain('44px')
   })
 })
 
@@ -364,6 +463,26 @@ describe('the train session titanium section is registered (mezo-88iwa.7)', () =
       expect(section, `${cls} missing from the train session titanium section`).toContain(cls)
     }
   })
+
+  // Regression for the T9 poster shrink-to-fit trap (owner screenshot, 2026-09-17): a
+  // done row renders as a `<button>`, and a button with no explicit width shrinks to fit
+  // its content instead of filling the shared `.wo-rows` grid track — its 1fr columns
+  // then collapse. jsdom does not lay out flex/grid, so this asserts the RULE itself
+  // rather than a measured pixel width.
+  test('.wo-row carries an explicit width: 100% — a done <button>.wo-row must fill the grid, not shrink to fit', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    // The standalone `.wo-row { ... }` rule, not the earlier `.wo-rows-head, .wo-row {`
+    // grid-definition selector (a plain indexOf('.wo-row {') would match inside that
+    // combined selector too, since ", .wo-row {" contains it as a substring).
+    const ruleMatch = /(?:^|\n)\.wo-row \{/.exec(section)
+    expect(ruleMatch, '.wo-row standalone rule not found in the train session titanium section').not.toBeNull()
+    const ruleStart = ruleMatch!.index
+    const ruleEnd = section.indexOf('}', ruleStart)
+    const rule = section.slice(ruleStart, ruleEnd)
+    expect(rule).toContain('width: 100%')
+  })
 })
 
 /**
@@ -392,6 +511,38 @@ describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () 
       '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
     ]) {
       expect(section, `${cls} missing from the train ceremony titanium section`).toContain(cls)
+    }
+  })
+})
+
+/**
+ * Section registration (mezo-88iwa.9, T8 Task 3): the sport-logging flow's own `.sp-*`
+ * section — the sport picker grid/tiles, the per-sport form (mode toggle, numeric
+ * stepper, chip picker, free text, range, the kcal estimate tile), ported from the
+ * prototype's sport.css, registered exactly like the blocks above. The ceremony
+ * families (`.sp-cer`, `.sp-keep`, `.sp-details`) are NOT re-ported here — T7's
+ * `.cer-*` section already serves the shared close ceremony.
+ */
+describe('the train sport titanium section is registered (mezo-88iwa.9)', () => {
+  const START_MARKER = 'train sport titanium'
+  const END_MARKER = '/train sport titanium'
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section actually carries the sp- class family, not just the markers', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
+    for (const cls of [
+      '.sp-grid', '.sp-tile', '.sp-field', '.sp-chips', '.sp-kcal', '.sp-note',
+    ]) {
+      expect(section, `${cls} missing from the train sport titanium section`).toContain(cls)
     }
   })
 })

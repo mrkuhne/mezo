@@ -154,9 +154,10 @@ describe('MesoCloseSheet (mock mode)', () => {
       () => expect(screen.getByText('Offline demo zárás.', { selector: 'p' })).toBeInTheDocument(),
       { timeout: 3000 },
     )
-    // ...titled from the run itself, not from mockClose's last-resort literal...
+    // ...titled from the run itself, not from mockClose's last-resort literal (the report's
+    // Titanium star hero puts the run's name in the page heading, T10 Task 4)...
     expect(
-      await screen.findByText('Hypertrophy 04 · Tavasz · riport', {}, { timeout: 3000 }),
+      await screen.findByRole('heading', { name: 'Hypertrophy 04 · Tavasz' }, { timeout: 3000 }),
     ).toBeInTheDocument()
     // ...and nothing claims the run is still going.
     expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()

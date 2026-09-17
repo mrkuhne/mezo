@@ -99,6 +99,7 @@ components:
           maximum: 10
         note:
           type: string
+          description: Optional free-form note, without an application character limit.
     CheckInResponse:
       type: object
       required:
@@ -128,6 +129,7 @@ components:
           type: integer
         note:
           type: string
+          description: Optional free-form note, without an application character limit.
         savedAt:
           type: string
           format: date-time

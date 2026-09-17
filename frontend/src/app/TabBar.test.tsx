@@ -131,12 +131,17 @@ test.each([
   // longest-prefix rule — `/train/mesocycles` IS its tab route, so no `owns` entry is needed.
   ['/train/mesocycles/konyvtar', 'Terv'],
   ['/train/futas/123', 'Terv'],
+  // T8 Task 4 (mezo-88iwa.9): the full-screen sport-logging flow sits UNDER /train/sport,
+  // which the Mai tab already `owns` — so the owns rule reaches it with no new entry.
+  ['/train/sport/log', 'Mai'],
   ['/train/gym', 'Terhelés'],
   // T12 Task 4: the two Terhelés subscreens sit UNDER /train/week — the plain prefix rule
   // lights the tab with no `owns` entry needed.
   ['/train/week/terkep', 'Terhelés'],
   ['/train/week/mozgas', 'Terhelés'],
   ['/train/medals', 'Gyakorlatok'],
+  // Parity P2 Task 4/5: one exercise's own story page — the Gyakorlatok row owns it.
+  ['/train/exercises/f1e3a0e2-0000-4000-8000-000000000072', 'Gyakorlatok'],
 ])('%s a(z) %s fület gyújtja ki', (path, tab) => {
   renderAt(path, <TabBar />)
   const bar = screen.getByRole('navigation', { name: 'Edzés menü' })
