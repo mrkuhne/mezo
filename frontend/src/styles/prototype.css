@@ -13281,28 +13281,39 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    mintáját követve (:12570). */
 .tr-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--text-tertiary); }
 
-/* — a nap posztere: van-e ma edzés, és mi az — */
+/* — a nap posztere: van-e ma edzés, és mi az —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.1 + §20.2): the prototype's poster is a
+   FLOATING ROUNDED CARD (train-pages.css:79) — `border: 1px solid #ffffff14`,
+   `border-radius: 26px`, no shadow, a translucent `#ffffff0f → #ffffff05` body over the
+   dark ground. The port turned it into a full-bleed header band (radius 0, a
+   `border-bottom` rule, `var(--shadow-sm)`, an opaque `--surface-card` body). Restored.
+   The inset: the poster is no longer full-bleed, so it needs a real side margin. The
+   prototype's own `margin: 4px 20px 14px` is measured against a container that ALSO pays
+   20px (`.demo-pages`), which the house has no counterpart for; what matters here is that
+   the poster lands on the SAME rail as every other Mai section, and that rail is
+   `--screen-gutter + 6px` (the `0 6px` wrappers `.tr-energy`/`.tr-mus`/`.tr-alt` sit in).
+   Hence the 6px — measured, not guessed: the poster and the sections below it now share
+   one edge. See the Task 3 report for the prototype's own 40px reading. */
 .tr-day {
   position: relative;
+  display: block;
   overflow: hidden;
   margin: 4px 0 14px;
-  margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 20px calc(var(--screen-gutter) + 6px) 18px;
+  margin-inline: 6px;
+  padding: 20px 20px 18px;
   --tr-accent: var(--tag-gym);
-  --tr-wash: var(--wash-gym);
+  border: 1px solid #ffffff14;
+  border-radius: 26px;
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%);
-  border-bottom: 1px solid color-mix(in srgb, var(--tr-accent) 18%, transparent);
-  box-shadow: var(--shadow-sm);
+    linear-gradient(155deg, #ffffff0f, #ffffff05);
 }
+/* The live state is a BORDER RING in the prototype, not an inset shadow on a band. */
 .tr-day.is-live {
-  box-shadow: var(--shadow-sm), inset 0 0 0 1px color-mix(in srgb, var(--tr-accent) 42%, transparent);
+  border-color: color-mix(in srgb, var(--tr-accent) 40%, transparent);
 }
 .tr-day.is-done {
-  background:
-    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 15%, transparent), transparent 62%),
-    linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 18%, transparent), var(--surface-card) 68%);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 16%, transparent), #ffffff05);
 }
 .tr-day .tr-eyebrow { color: var(--text-secondary); letter-spacing: .16em; }
 .tr-day h2 {
@@ -13311,7 +13322,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-day p { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 70%; }
 .tr-day-status {
-  position: absolute; top: 16px; right: calc(var(--screen-gutter) + 6px);
+  position: absolute; top: 16px; right: 16px;
   font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
   padding: 4px 9px; border-radius: 999px; color: var(--text-inverse);
   background: color-mix(in srgb, var(--tr-accent) 85%, var(--surface-card));
@@ -13321,39 +13332,53 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tr-day-constellation { position: relative; display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
 .tr-day .tr-pills { position: relative; margin-top: 16px; }
 
-/* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip). */
+/* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip).
+   Translucent in the prototype (`#ffffff08` fill, `#ffffff17` border, train-pages.css:72):
+   the chips are quiet washes ON the poster, not opaque cards floating over it
+   (mezo-fsz2r Task 3, audit §20.1). */
 .tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .tr-pills span {
   font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
-  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-card);
+  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
 }
 .tr-pills span:first-child {
   color: var(--text-inverse); border-color: transparent;
   background: color-mix(in srgb, var(--tr-accent) 82%, var(--surface-card));
 }
 
-/* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében — */
+/* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): the prototype's CTA is `border-radius:
+   22px` and carries its own domain-gradient body plus a TWO-layer shadow — the domain-tinted
+   lift AND `0 2px 0 #ffffff40 inset`, the top inner highlight that makes the chip read as a
+   pressed metal key (train-pages.css:10). The port dropped the highlight and rounded to 20px.
+   The base background is the prototype's own declaration back (every rendered instance
+   carries `.is-go`/`.is-resume`/`.is-review`, so it is the default, not the painted layer). */
 .tr-start {
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 20px;
+  width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 22px;
   font: inherit; text-align: center; cursor: pointer;
+  color: var(--text-inverse);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tr-accent, var(--sage)) 92%, var(--text-primary)), color-mix(in srgb, var(--tr-accent, var(--sage)) 70%, var(--sage-deep)));
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--tr-accent, var(--sage)) 80%, transparent), 0 2px 0 #ffffff40 inset;
   transition: transform var(--duration-fast, .15s) var(--ease-out, ease);
 }
 .tr-start:active { transform: scale(0.98); }
 .tr-start-art { width: 26px; height: 26px; display: grid; place-items: center; flex: 0 0 auto; }
 .tr-start-art .icon, .tr-start-art svg { width: 26px; height: 26px; }
 .tr-start strong { display: block; font-size: 16px; font-weight: 700; }
-.tr-start small { display: block; margin-top: 2px; font-size: 12px; opacity: .82; }
+.tr-start small { display: block; margin-top: 2px; font-size: 12px; opacity: .72; }
 
+/* The three tokenised states keep their own hues, but each regains the prototype's inner
+   top highlight as its second shadow layer (mezo-fsz2r Task 3). */
 .tr-start.is-go {
   color: var(--text-inverse);
   background: linear-gradient(135deg, color-mix(in srgb, var(--sage) 88%, var(--surface-card)), var(--sage-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--sage) 70%, transparent), var(--shadow-sm);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--sage) 80%, transparent), 0 2px 0 #ffffff40 inset;
 }
 .tr-start.is-resume {
   color: var(--text-inverse);
   background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 88%, var(--surface-card)), var(--amber-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 70%, transparent), var(--shadow-sm);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 80%, transparent), 0 2px 0 #ffffff40 inset;
 }
 .tr-start.is-review {
   color: var(--text-primary);
@@ -13380,10 +13405,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tr-alt button strong { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; }
 
-/* — a mai kerethez: a nap mozgásának kcal-hozzájárulása, becslésként kimondva — */
+/* — a mai kerethez: a nap mozgásának kcal-hozzájárulása, becslésként kimondva —
+   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): `.tr-energy` has NO box in the
+   prototype (train-pages.css:112 is layout only) — the box belonged to `.tr-card`, the
+   wrapper this port never rendered, and the port moved its fill/border/radius/shadow onto
+   the section itself, turning two transparent stretches of the page into two filled cards.
+   They go back to transparent; giving the sections a real `.tr-card` parent is CONTENT
+   work (mezo-edg42), not a surface fix. */
 .tr-energy {
-  margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
+  margin: 0 0 14px;
 }
 .tr-energy .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-energy h3 { margin: 4px 0 12px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
@@ -13402,10 +13432,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tr-energy-empty { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
 .tr-energy-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
 
-/* — hatás az izomzatra: a nap terhelése régiónként, szavakban — */
+/* — hatás az izomzatra: a nap terhelése régiónként, szavakban —
+   Same as `.tr-energy` above: no box in the prototype (train-pages.css:125). */
 .tr-mus {
-  margin: 0 0 14px; padding: 16px 18px; border-radius: 22px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card); box-shadow: var(--shadow-sm);
+  margin: 0 0 14px;
 }
 .tr-mus .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
 .tr-mus h3 { margin: 4px 0 14px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
@@ -13697,7 +13727,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-pick .wo-pick-key {
   flex: 0 0 auto; font-size: 8px; letter-spacing: .14em; color: #6f7d77; margin-right: 2px;
 }
-.wo-verdict { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* `display: grid; place-items: center` is the prototype's own (session.css:103) — restored
+   (mezo-fsz2r Task 3, audit §20.2). The one case the prototype never has is TWO medals in
+   the cell: grid would stack them in two rows and `overflow: hidden` would clip the second,
+   so that production-only case keeps the flex row the overlap rule below needs. */
+.wo-verdict { width: 22px; height: 22px; display: grid; place-items: center; overflow: hidden; }
+.wo-verdict:has(> [role="img"] + [role="img"]) {
+  display: flex; align-items: center; justify-content: center;
+}
 .wo-verdict .icon { width: 20px; height: 20px; }
 /* Icon-only cell (fix wave I2): one compact glyph sized to the 22px box — the sentence
    ("cél alatt" …) lives in the cell's title/aria-label, never as overflowing text. */
@@ -14156,7 +14193,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-kcal-copy { font-size: 13.5px; color: #ffffffb0; }
 .cer-kcal-go { position: absolute; top: 16px; right: 18px; font-style: normal; font-size: 17px; color: #ffffff4a; }
 
-.cer-cta { padding-top: 4px; display: grid; gap: 8px; }
+/* `padding-top: 4px` and nothing else, exactly as the prototype leaves it (session.css:578,
+   mezo-fsz2r Task 3, audit §20.2): the CTAs stack on their OWN `margin: 6px 0 10px`
+   (`.cer-cta .wo-close-cta`, :13846), so the added `display: grid` + `gap: 8px` was adding
+   8px on top of that margin the prototype never adds. */
+.cer-cta { padding-top: 4px; }
 .cer-recap-note { margin: 10px 0 0; font-size: 9.5px; line-height: 1.7; color: #ffffff45; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14563,7 +14604,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-card {
   display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 13px; cursor: pointer; text-align: left;
   border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+  /* Translucent in the prototype (gyak.css:5): a 6% muscle tint over NOTHING, so the list
+     reads as washes on the dark ground, not as a stack of opaque cards (mezo-fsz2r Task 3,
+     audit §20.1). Every `.gy-card` carries its own inline `--mus-color`. */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, transparent), #ffffff03);
 }
 .gy-card > .icon { width: 34px; height: 34px; flex: 0 0 auto; }
 .gy-card-name { flex: 1; min-width: 0; }
@@ -14590,10 +14634,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — records — */
 .gy-recs { display: grid; gap: 8px; }
+/* THE RENDERED-RESULT RULE (mezo-fsz2r, audit §0.2). The prototype asks for a tinted,
+   bordered card here (gyak.css:35) — but `--mus-color` is set on `.gy-hero` only, never on
+   `.gy-rec`, so both `color-mix()` calls are INVALID AT COMPUTED-VALUE TIME and the whole
+   `border` and `background` shorthands fall back to their initial values. What the owner
+   actually sees, and compares against, is a FLAT record card: no border, no fill, just the
+   numerals and the bar on the page ground. The port added a `var(--mus-color, …)` fallback,
+   which validated the declarations and made them paint an opaque bordered box.
+   We ship the RENDERED result with clean CSS — never the invalid declarations. If a
+   `--mus-color` is ever put on `.gy-rec` deliberately, that is a design decision to make
+   then, not a bug to inherit now. */
 .gy-rec {
   display: grid; gap: 6px; padding: 12px 13px;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, var(--border-subtle)); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, var(--surface-card)), var(--surface-card));
+  border: 0; border-radius: 18px;
+  background: none;
 }
 .gy-rec .tr-eyebrow { color: var(--text-tertiary); letter-spacing: .14em; }
 .gy-rec strong { font-size: 21px; font-weight: 500; letter-spacing: -.02em; }
@@ -14618,7 +14672,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — the strength curve — */
 .gy-curve-box {
   position: relative; padding: 14px 14px 10px; border: 1px solid var(--border-subtle); border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, var(--surface-card)), var(--surface-card));
+  /* Translucent in the prototype (gyak.css:60) — and here the prototype's own literal
+     fallback keeps the declaration VALID where `--mus-color` is unset, so unlike `.gy-rec`
+     above this box really does paint its 6% wash (mezo-fsz2r Task 3, audit §20.1). */
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 6%, transparent), #ffffff03);
 }
 .gy-curve-val { position: absolute; right: 14px; top: 12px; text-align: right; }
 .gy-curve-val b { font-size: 22px; font-weight: 500; }
