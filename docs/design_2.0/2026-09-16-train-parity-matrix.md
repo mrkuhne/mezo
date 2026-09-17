@@ -317,12 +317,33 @@ per catalogue exercise. The joins live in `features/train/logic/exerciseLibrary.
 | Tap → the exercise's story | routes to `/train/exercises/:key` (§17, P2 Task 5) |
 
 **Deliberate losses (capabilities the prototype's catalogue has no home for — recorded, not silent):**
-`Új gyakorlat` authoring + the ⋯ edit/delete sheet (`CatalogExerciseSheet`), the ▶ demo-video sheet
-(`VideoUrlSheet`), the `REKORDOK` modal (`ExerciseRecordSheet` — §17's story page replaces it), and the
-`Medálok` nav row, which was `/train/medals`'s only entry point. The ranked top-5 and the dashed ghost
-rows are NOT losses — they are presentation the catalogue replaces.
+the ⋯ per-exercise edit/delete sheet (`CatalogExerciseSheet` in its edit mode) and the ▶ demo-video
+sheet (`VideoUrlSheet`); the `REKORDOK` modal (`ExerciseRecordSheet` — §17's story page replaces it).
+The ranked top-5 and the dashed ghost rows are NOT losses — they are presentation the catalogue
+replaces. `Új gyakorlat` authoring itself (create mode) is **not** a loss any more: fix round 1
+gave it a quiet `.pl-add` row at the foot of the list.
 
-**Severity: ✅ CLOSED (P2 Task 4)** — was BLOCKER.
+**Two more losses the first pass did not declare (found in fix round 1, both undeclared until now):**
+- The `Saját` / `Közös · {név}` authorship stamps (`ExerciseLibraryItem.authoredByMe` /
+  `.authorName`) render nowhere in the catalogue — the retired page's only renderer for them is gone
+  and the catalogue's `.gy-card` never grew a replacement. **Pending, not dead:** Task 5 (the exercise
+  story page) is asked to give them a home; until then the fields are fetched and carried but never
+  shown.
+- The Plyo filter chip (`muscleFilters.ts`'s `TOP_FILTERS`: `all | plyo | <region>`) survives only
+  inside the plan-builder's `ExercisePickerSheet` — the catalogue's own chip row
+  (`libraryRegions`/`exerciseLibrary.ts`) is region-only and has no type axis, so „Plyo" as a
+  catalogue-level filter has no home here.
+
+The medal foot fact (`counts.medals`) is also worth reading precisely: it is **catalogue-scoped**
+(`libraryCounts`'s own comment) — a medal earned on an exercise absent from the catalogue is excluded,
+so this poster count can legitimately read LOWER than the medal vitrine's own total.
+
+**Severity: ✅ CLOSED (P2 Task 4)** — was BLOCKER. Fix round 1 (mezo-lf3cv) additionally: gave the
+poster's medal fact a doorway to `/train/medals` (it was `owns`-claimed in `navModel.ts` but
+unreachable), gave `Új gyakorlat` creation the `.pl-add` row above, dropped the card's overriding
+`aria-label` (it hid the e1RM/medal-count/„még nincs naplózva" from a screen reader), and folded
+`useMedals()`'s own pending state into the skeleton gate (it was painting a fake „0 medál" while
+loading).
 
 ---
 

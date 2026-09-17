@@ -14799,6 +14799,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
   border: 1px solid var(--border-subtle); background: var(--surface-card);
 }
+/* A foot fact that is also a doorway (the Gyakorlatok poster's medal count → the medal
+   vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>` so it can carry its
+   own click handler and accessible name without disturbing the plain-text siblings. */
+.pl-poster-foot-link {
+  font: inherit; font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  color: var(--text-secondary); border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
 
 /* — the week numeral + progress ring, sharing the poster's top row — */
 .pl-week { position: relative; display: flex; align-items: baseline; gap: 2px; }

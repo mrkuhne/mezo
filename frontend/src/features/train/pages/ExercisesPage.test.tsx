@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -150,7 +150,68 @@ test('tapping a card opens that exercise’s story route', async () => {
   const user = userEvent.setup()
   renderPage()
   await screen.findByText('A mozdulataid')
-  await user.click(screen.getByRole('button', { name: 'Box Jump · Comb' }))
+  // No `aria-label` on the card any more (fix round 1) — its accessible name is now
+  // built from its own visible text, so this matches on a fragment rather than the
+  // exact `name · muscleLabel` string the old override produced.
+  await user.click(screen.getByRole('button', { name: /Box Jump/ }))
   expect(screen.getByTestId('loc'))
     .toHaveTextContent('/train/exercises/f1e3a0e2-0000-4000-8000-000000000072')
+})
+
+test('a card’s accessible name carries its e1RM, its medal count and the empty state — never overridden (fix round 1)', async () => {
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  // Chest Supported Row: logged, 133,3 kg, 1 medal — an overriding `aria-label` used to
+  // hide all of this from a screen reader.
+  const logged = screen.getByRole('button', {
+    name: (n) => n.includes('Chest Supported Row') && n.includes('133,3 kg') && n.includes('becsült 1RM'),
+  })
+  expect(logged).toBeInTheDocument()
+  // Lateral Raise: never logged.
+  const empty = screen.getByRole('button', {
+    name: (n) => n.includes('Lateral Raise') && n.includes('még nincs naplózva'),
+  })
+  expect(empty).toBeInTheDocument()
+})
+
+test('the poster foot’s medal count is a doorway to the medal vitrine — the other two facts are not (fix round 1)', async () => {
+  const user = userEvent.setup()
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  const foot = container.querySelector('.pl-poster-foot')!
+
+  // Only the medal segment is a button; „gyakorlat" and „rekorddal" stay plain text.
+  expect(within(foot as HTMLElement).getAllByRole('button')).toHaveLength(1)
+
+  const medalLink = within(foot as HTMLElement).getByRole('button', { name: /medál/ })
+  expect(medalLink).toHaveAccessibleName('2 medál · a medálvitrinbe')
+  await user.click(medalLink)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/medals')
+})
+
+test('a quiet „＋ Új gyakorlat" row at the list’s foot opens the creation sheet (fix round 1)', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await screen.findByText('A mozdulataid')
+  expect(screen.queryByLabelText('Név')).toBeNull()
+
+  await user.click(screen.getByRole('button', { name: '＋ Új gyakorlat' }))
+  expect(await screen.findByLabelText('Név')).toBeInTheDocument()
+  expect(screen.getByLabelText('Videó URL')).toBeInTheDocument()
+  // Create mode only — no delete affordance reachable from here (Task 5's, not this door's).
+  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).toBeNull()
+})
+
+test('the medals query’s own pending state is folded into the skeleton gate — no fake „0 medál" while it loads (fix round 1)', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/medals`, async () => {
+      await delay(50)
+      return HttpResponse.json([])
+    }),
+  )
+  renderPage()
+  // The catalogue/records resolve fast; the skeleton must still hold while medals lags.
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
+  await screen.findByText('A mozdulataid')
+  expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
 })

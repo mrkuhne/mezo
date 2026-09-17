@@ -51,6 +51,12 @@ export function exerciseKey(item: { catalogId?: string; id: string }): string {
  * Accent-blind, case-folded search text: „Bicepsz (hosszú fej)" → "bicepsz (hosszu fej)",
  * so „hosszu" typed without accents still finds it. NFD splits an accented letter into
  * its base + a combining mark, which the Diacritic class then drops.
+ *
+ * Note this has no bearing on `recordFor`'s own name matching (below) — that stays
+ * EXACT, deliberately: the search field is forgiving for a human typing, the identity
+ * join is not, because it now has to agree with the backend's own `"n:" + name` grouping
+ * key for a catalogId-less record. The retired page's case-insensitive name join was the
+ * anomaly, not this one — do not re-loosen `recordFor` to "help" a near-miss name match.
  */
 export function foldAccents(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
@@ -115,7 +121,15 @@ export interface LibraryCounts {
   medals: number
 }
 
-/** The poster's three foot facts — all three real, all three honest at zero. */
+/**
+ * The poster's three foot facts — all three real, all three honest at zero.
+ *
+ * `medals` is CATALOGUE-SCOPED: it sums `LibraryRow.medalCount`, which `buildLibraryRows`
+ * only ever attaches to a row that exists in the catalogue (see its own comment — a medal
+ * matching no catalogue row is left out, not invented a row). So a medal earned on an
+ * exercise that has since left the catalogue (or was never in it) is excluded here, and
+ * this poster count can legitimately read LOWER than the medal vitrine's own total.
+ */
 export function libraryCounts(rows: readonly LibraryRow[]): LibraryCounts {
   return {
     total: rows.length,
