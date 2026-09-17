@@ -116,6 +116,63 @@ class ChatServicePipelineIT extends AbstractIntegrationTest {
         assertThat(assistant.getToolOutcomes()).isNull();
     }
 
+    /** Task 4 fix round 2: the genuinely risky shape the brief calls out — the pipeline actually
+     *  EXECUTES lap 1's tools (so {@code audit} already holds a pipeline-executed call), and ONLY
+     *  THEN does the turn fall back to legacy (here: the answerer call itself fails, caught by
+     *  {@code pipelineAnswerGuarded}). The existing unscripted-planner fallback test is vacuous —
+     *  no tool ever runs there — so it cannot catch a regression that silently persists plan-truth
+     *  {@code why} values (or a plan/ran mix) on a legacy row. This one can: it asserts the
+     *  persisted row HAS a tool call (proving it really ran) with {@code why() == null} (ran-truth,
+     *  never the planner's "alvás" reason), and the outcomes envelope is consistent with that same
+     *  ran-truth list.
+     *
+     * <p>Trigger choice: neither of the two candidates named in the brief is reachable with the
+     * fake as it stood. (a) The marker-veto path is structurally unreachable — {@code
+     * TurnAnswerer.buildVolatile} only ever appends the "[Adathiány]" offer when {@code
+     * gear == ANALYSIS && replanStillAllowed}, and {@code ChatService.pipelineAnswer}'s immediate
+     * (non-replan) veto branch ({@code gap.isEmpty() || !replanAllowed}) can only see a live gap
+     * when {@code replanAllowed} is FALSE — the exact opposite of what the offer requires to ever
+     * appear in the first place, so a scripted gap can never land there; and lap 2 never re-offers
+     * the marker, so there is no lever to veto the replan exit either. (b) The literal {@code
+     * FAIL_COMPLETE} sentinel cannot isolate the answerer: {@code pipelineAnswer} passes the SAME
+     * {@code content} string as {@code userMessage} to both {@code TurnPlanner.plan} and {@code
+     * TurnAnswerer.answer}, and the fake's fail-check runs unconditionally before the two branches
+     * even diverge — so planting it anywhere in the turn fails the PLANNER first, before any tool
+     * executes, reproducing only the already-vacuous case. Rather than leave the non-negotiable
+     * unpinned, this fix round adds one narrowly-scoped fake sentinel, {@code
+     * FakeCompanionLlm.FAIL_ANSWERER}, checked ONLY inside the answerer's own dispatch branch. */
+    @Test
+    void testSendMessage_shouldPersistRanTruthProvenance_whenToolsRanThenAnswererFailsToLegacy() {
+        UUID userId = databasePopulator.populateUser("pipe-tools-ran-fallback@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.5"), 2);
+
+        Sent sent = sendTracked(userId,
+            "Hogy aludtam mostanában?" + PLAN_SLEEP + FakeCompanionLlm.FAIL_ANSWERER);
+        MessageResponse answer = sent.response();
+
+        // Legacy echo shape, same as the unscripted-planner fallback — proves this turn also
+        // ended up on the legacy tool-loop path, not a half-built pipeline answer.
+        assertThat(answer.getContent()).startsWith(FakeCompanionLlm.PREFIX);
+        assertThat(answer.getContent()).doesNotContain(FakeCompanionLlm.ANSWER_SENTINEL);
+
+        AiMessageEntity assistant = lastAssistantRow(sent.conversationId(), userId);
+        // Ran-truth, not vacuous: lap 1's get_recovery call genuinely executed before the
+        // answerer failed, and that call survives into the persisted (legacy-attributed) row.
+        assertThat(assistant.getToolCalls()).isNotNull();
+        assertThat(assistant.getToolCalls().calls()).isNotEmpty();
+        assertThat(assistant.getToolCalls().calls()).allSatisfy(
+            call -> assertThat(call.why()).as("ran-truth call must never carry the planner's why")
+                .isNull());
+        assertThat(assistant.getToolCalls().calls()).extracting(
+            io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope.ToolCall::name)
+            .containsExactly("get_recovery");
+        // The outcomes envelope must describe the SAME ran-truth list, not the plan's.
+        assertThat(assistant.getToolOutcomes()).isNotNull();
+        assertThat(assistant.getToolOutcomes().outcomes()).extracting(
+            io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope.Outcome::name)
+            .containsExactly("get_recovery");
+    }
+
     @Test
     void testSendMessage_shouldAnswerWithoutData_whenPlanSaysNoDataNeeded() {
         UUID userId = databasePopulator.populateUser("pipe-nodata@test.local");

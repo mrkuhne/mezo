@@ -570,7 +570,10 @@ public class ChatService {
      *  same as before PipelineAnswer existed): a null answer means "no pipeline answer at all",
      *  never a {@link PipelineAnswer} with a null {@code answer()}. */
     private static PipelineAnswer toPipelineAnswer(String answer, List<ToolCallAudit.ToolOutcome> outcomes) {
-        return answer == null ? null : new PipelineAnswer(answer, outcomes);
+        // Fix round (minor finding 2): the record reads as immutable but used to wrap the caller's
+        // live ArrayList (lap1.outcomes() / merged) verbatim — nothing mutates it today, but
+        // List.copyOf makes the contract actually hold rather than merely look like it does.
+        return answer == null ? null : new PipelineAnswer(answer, outcomes == null ? null : List.copyOf(outcomes));
     }
 
     /**
