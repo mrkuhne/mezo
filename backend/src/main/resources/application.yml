@@ -780,6 +780,19 @@ mezo:
       per-call-kind:
         TRANSCRIBE: gemini
         VISION: gemini
+    conversation:
+      # Conversation-first smart retrieval; false restores the previous gear pipeline.
+      enabled: true
+      # Bounded dependent retrieval batches, sharing tools.max-calls-per-turn.
+      max-read-rounds: 3
+      # Recent history plus on-demand older pages; all sizes have explicit truncation markers.
+      history-messages: 80
+      history-page-size: 20
+      history-message-max-chars: 12000
+      history-max-chars: 100000
+      # Persisted evidence per result and per assistant row (internal JSONB, not the REST DTO).
+      result-max-chars: 8000
+      results-max-chars: 40000
     chat:
       # How many prior messages (user+assistant rows) are windowed into the system prompt (20 = ~10 turns)
       history-window: 20

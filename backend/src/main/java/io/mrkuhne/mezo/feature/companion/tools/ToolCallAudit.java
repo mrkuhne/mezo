@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 
 import java.util.ArrayList;
@@ -46,6 +47,17 @@ public class ToolCallAudit {
     private final Map<RefKey, RefsEnvelope.Ref> refs = new LinkedHashMap<>();
     /** Positionally parallel to {@link #calls}; a null entry is a call whose output never arrived. */
     private final List<String> results = new ArrayList<>();
+    private final List<RecalledMemoriesEnvelope.Item> recalled = new ArrayList<>();
+
+    public synchronized void addRecalled(RecalledMemoriesEnvelope envelope) {
+        if (envelope != null) {
+            envelope.items().stream().filter(item -> !recalled.contains(item)).forEach(recalled::add);
+        }
+    }
+
+    public synchronized RecalledMemoriesEnvelope recalled() {
+        return RecalledMemoriesEnvelope.ofOrNull(recalled);
+    }
 
     public ToolCallAudit(int maxCalls, int maxRefs) {
         this.maxCalls = maxCalls;

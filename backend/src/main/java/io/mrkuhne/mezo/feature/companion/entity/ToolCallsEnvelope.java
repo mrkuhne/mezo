@@ -10,6 +10,10 @@ import java.util.List;
  */
 public record ToolCallsEnvelope(List<ToolCall> calls) {
 
-    public record ToolCall(String type, String name, String args) {
+    public record ToolCall(String type, String name, String args, String result) {
+        /** Legacy rows and API chip callers have no stored result. */
+        public ToolCall(String type, String name, String args) {
+            this(type, name, args, null);
+        }
     }
 }

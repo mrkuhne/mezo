@@ -90,6 +90,8 @@ public class ChatStreamService {
      *  {@code TurnPlanner}/{@code PlanExecutor} references. */
     private final CompanionProperties properties;
     private final TurnAnswerer turnAnswerer;
+    private final ConversationTurnService conversationTurnService;
+    private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
 
     public Flux<ServerSentEvent<Object>> streamMessage(
             UUID userId, UUID conversationId, SendMessageRequest request) {
@@ -155,7 +157,8 @@ public class ChatStreamService {
                     // never reaches this branch), the switch being off, and a planner that produced
                     // nothing usable — the byte-identical existing companionLlm.stream(...) call.
                     boolean pipelineAttempted =
-                            turn.gear() != TurnGear.CHAT && properties.turn().pipelineEnabled();
+                            !conversationProperties.enabled()
+                                    && turn.gear() != TurnGear.CHAT && properties.turn().pipelineEnabled();
                     if (pipelineAttempted) {
                         toolSink.tryEmitNext(phaseEvent(TurnPhase.PLANNING));
                     }
@@ -163,7 +166,13 @@ public class ChatStreamService {
                             ? runPipelinePreStream(turn, userId, audit, onPhase)
                             : PipelineResult.legacy();
 
-                    Flux<String> rawDeltas = turn.gear() == TurnGear.CHAT
+                    ConversationTurnService.Prepared conversational = conversationProperties.enabled()
+                            ? conversationTurnService.prepare(userId, conversationId, turn.turnContext(),
+                                    turn.history(), turn.userContent(), audit, onPhase) : null;
+                    Flux<String> rawDeltas = conversational != null
+                            ? companionLlm.streamSmart(turn.systemPrompt(), conversational.context(),
+                                    turn.history(), turn.userContent())
+                            : turn.gear() == TurnGear.CHAT
                             ? companionLlm.streamSmart(turn.systemPrompt(), turn.turnContext(),
                                     turn.history(), turn.userContent())
                             : switch (pipe.mode()) {
@@ -231,7 +240,7 @@ public class ChatStreamService {
                         // V1.3: post-hoc review — deltas already delivered attempt-1; the done row is
                         // authoritative (the FE swaps it in), so a corrective retry lands silently here.
                         String finalAnswer = answer.toString();
-                        boolean degraded = false;
+                        boolean degraded = conversational != null && conversational.degraded();
                         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
                         // mezo-rj214.7 Task 6: a pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only,
                         // exactly like CHAT — the same branch sendMessage's own pipelined arm takes
@@ -245,9 +254,10 @@ public class ChatStreamService {
                             // neither. The deterministic clinical check still runs: the dose-change
                             // prohibition must have no branch where it does not apply (mezo-rj214.7).
                             AdvisedAnswer advised = chain.reviewChat(turn.systemPrompt(),
-                                    turn.turnContext(), turn.history(), turn.userContent(), finalAnswer);
+                                    conversational == null ? turn.turnContext() : conversational.context(),
+                                    turn.history(), turn.userContent(), finalAnswer);
                             finalAnswer = advised.answer();
-                            degraded = advised.degraded();
+                            degraded = degraded || advised.degraded();
                         } else if (chain != null) {
                             AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.turnContext(),
                                     turn.history(), turn.userContent(), finalAnswer,
