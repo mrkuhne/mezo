@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Icon } from '@/shared/ui/Icon'
 import { useActivityActions } from '@/data/hooks'
 import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
@@ -61,22 +62,11 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
   const doneMeta = skillMeta(result?.entry.skillKey)
 
   return (
-    <Sheet onClose={onClose} labelledBy="activity-log-title">
+    <Sheet onClose={onClose} labelledBy="activity-log-title" className="capture-sheet capture-tone-journal">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col" style={{ gap: 4 }}>
-              {onBack && (
-                <button type="button" className="cta-ghost" onClick={onBack}
-                  style={{ padding: '4px 8px', fontSize: 14 }}>
-                  ← Vissza
-                </button>
-              )}
-              <span className="eyebrow">Tevékenységnapló</span>
-              <div id="activity-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mi történt ma?</div>
-            </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
-          </div>
+          <CaptureHeader id="activity-log-title" title="Mi történt ma?" eyebrow="Tevékenységnapló"
+            subtitle="A kis lépések is a napod részei." kind="journal" onClose={close} onBack={onBack} />
 
           {quest && phase === 'compose' && (
             <div className="card" style={{ padding: 12, marginBottom: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>

@@ -62,3 +62,13 @@ test('an empty manual value with no chip selected keeps Mentés inert', () => {
   render(<WaterLogSheet currentMl={0} targetMl={2500} onLog={() => {}} onClose={() => {}} />)
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
 })
+
+test('the liquid graphic announces the selected amount and follows manual corrections', async () => {
+  render(<WaterLogSheet currentMl={1200} targetMl={2500} onLog={() => {}} onClose={() => {}} />)
+  const amount = screen.getByRole('status', { name: 'Rögzítendő vízmennyiség' })
+  expect(amount).toHaveTextContent('—')
+  await userEvent.click(screen.getByRole('button', { name: '400 ml' }))
+  expect(amount).toHaveTextContent('400 ml')
+  await userEvent.type(screen.getByLabelText(/kézzel/i), '330')
+  expect(amount).toHaveTextContent('330 ml')
+})

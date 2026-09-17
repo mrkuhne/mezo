@@ -8,6 +8,8 @@ test('Save bubbles up a SleepLogInput with computed duration then closes', async
   const onSave = vi.fn()
   const onClose = vi.fn()
   render(<QueryWrapper><SleepLogSheet onClose={onClose} onSave={onSave} /></QueryWrapper>)
+  expect(screen.getByRole('heading', { name: 'Hogyan aludtunk?' })).toBeInTheDocument()
+  expect(screen.queryByText(/beírom a 7-napos MA-ba/)).not.toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave).toHaveBeenCalledWith(
     expect.objectContaining({ bedtime: '23:00', wakeup: '06:30', durationH: 7.5, quality: 7, awakenings: 1 }),

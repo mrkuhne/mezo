@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-17
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -73,6 +73,9 @@ decision-journal slice spec), §11 (cross-cutting conventions). Plans of record:
 [`2026-08-20-w1-4-decision-journal.md`](../superpowers/plans/2026-08-20-w1-4-decision-journal.md).
 
 ## 2. User-facing behavior
+
+**Capture presentation (`mezo-62xey`).** `JournalSheet` and `ActivityLogSheet` share the Titanium `CaptureHeader` and scoped sheet controls. The quick-log picker still branches into activity, journal and gratitude; note/decision/gratitude mode switching, voice transcription, date selection, create/edit/delete and server classification stay on their existing paths. Decorative graphics contain no inferred personal data.
+
 
 Two entry points into the **same** `JournalSheet`, plus a dedicated read/manage page.
 
