@@ -35,12 +35,11 @@ import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 /** The prototype's fixed explain-layer accent (navigation.js:91, `--ex-color:#bca6f1`). */
 export const INFO_TINT = '#bca6f1'
 
-/** The prototype asks for `#i-info`, a symbol that exists in NEITHER sprite (verified:
- *  no `id="i-info"` anywhere in docs/design_2.0/assets or clay-icons.svg) — it renders
- *  as an empty <use> there. `i-tudas` is the quietest neutral stand-in in the shipped
- *  set: a titanium card with a purple gem, reading as „knowledge / explanation", and
- *  its purple family already matches this layer's #bca6f1 identity colour. */
-const DEFAULT_INFO_ICON: ClayIconName = 'i-tudas'
+/** The prototype's own `#i-info` glyph — a titanium circle with a blue lowercase i,
+ *  defined in the prototype's live sprite (companion-titanium/nap.html:40; an earlier
+ *  claim that it did not exist looked in the wrong files) — is now PORTED into
+ *  clay-icons.svg verbatim, adapted only to the house gradient ids (ig-*). 1:1. */
+const DEFAULT_INFO_ICON: ClayIconName = 'i-info'
 
 export interface InfoButtonProps {
   title: string
