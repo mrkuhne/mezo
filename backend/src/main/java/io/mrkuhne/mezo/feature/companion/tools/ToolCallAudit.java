@@ -15,8 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Per-turn tool audit collector (V0.5). One instance per chat turn, carried to the tools inside
  * the Spring AI ToolContext ({@link ToolContexts#AUDIT}); the {@link RecordingToolCallback}
- * decorator records every call, the tools add their data refs. Spring AI executes a turn's tool
- * calls sequentially, so no synchronization is needed.
+ * decorator records every call, the tools add their data refs.
+ *
+ * <p>Thread-safety: originally the Spring AI loop executed a turn's tool calls sequentially and
+ * this class assumed it. Since S9.4 the {@code PlanExecutor} invokes callbacks in PARALLEL, so
+ * every state-touching method is synchronized. Contention is negligible: a turn records at most
+ * {@code maxCallsPerTurn} entries.
  */
 @Slf4j
 public class ToolCallAudit {
@@ -48,7 +52,7 @@ public class ToolCallAudit {
         this.maxRefs = maxRefs;
     }
 
-    public boolean budgetExhausted() {
+    public synchronized boolean budgetExhausted() {
         return calls.size() >= maxCalls;
     }
 
@@ -63,23 +67,36 @@ public class ToolCallAudit {
     // guaranteed to be visible across that handoff.
     private volatile Consumer<ToolCallsEnvelope.ToolCall> listener;
 
-    public void onCall(Consumer<ToolCallsEnvelope.ToolCall> listener) {
+    public synchronized void onCall(Consumer<ToolCallsEnvelope.ToolCall> listener) {
         this.listener = listener;
     }
 
-    /** @return the call's index, the handle {@link #recordResult(int, String)} attaches its output to. */
+    /**
+     * @return the call's index, the handle {@link #recordResult(int, String)} attaches its output to.
+     *
+     * <p>The listener is invoked OUTSIDE the lock, once {@code call}/{@code index} are captured
+     * locally: it is arbitrary caller code (the SSE tool-event emitter today), and calling it
+     * while holding the audit's monitor would let a slow or blocked consumer stall every other
+     * thread's {@code recordCall}/{@code recordResult}/{@code addRef}. Consumers must still be
+     * cheap and non-reentrant into this audit.
+     */
     public int recordCall(String name, String args) {
         ToolCallsEnvelope.ToolCall call = new ToolCallsEnvelope.ToolCall(TYPE_READ, name, args);
-        calls.add(call);
-        results.add(null);
-        if (listener != null) {
+        int index;
+        synchronized (this) {
+            calls.add(call);
+            results.add(null);
+            index = calls.size() - 1;
+        }
+        Consumer<ToolCallsEnvelope.ToolCall> currentListener = listener;
+        if (currentListener != null) {
             try {
-                listener.accept(call);
+                currentListener.accept(call);
             } catch (RuntimeException e) {
                 log.warn("Companion tool-call listener failed for {}", name, e);
             }
         }
-        return calls.size() - 1;
+        return index;
     }
 
     /**
@@ -89,7 +106,7 @@ public class ToolCallAudit {
      * Out-of-range indices are ignored: the audit is the turn's record and must never throw into a
      * streamed answer.
      */
-    public void recordResult(int callIndex, String result) {
+    public synchronized void recordResult(int callIndex, String result) {
         if (callIndex < 0 || callIndex >= results.size()) {
             log.warn("Companion tool-result recorded for unknown call index {}", callIndex);
             return;
@@ -99,7 +116,7 @@ public class ToolCallAudit {
 
     /** Deduped on (kind, id) and capped — the first {@code maxRefs} distinct refs win. Label-less
      *  form every non-graph producer uses. */
-    public void addRef(String kind, String id) {
+    public synchronized void addRef(String kind, String id) {
         addRef(kind, id, null);
     }
 
@@ -108,7 +125,7 @@ public class ToolCallAudit {
      *  for the same key — labelled or not — is dropped rather than replacing it, so tool refs
      *  (added first) keep provenance priority over ambient refs added afterwards
      *  ({@code ChatService:281-283}). */
-    public void addRef(String kind, String id, String label) {
+    public synchronized void addRef(String kind, String id, String label) {
         RefKey key = new RefKey(kind, id);
         if (refs.containsKey(key)) {
             return;
@@ -118,7 +135,7 @@ public class ToolCallAudit {
         }
     }
 
-    public int callCount() {
+    public synchronized int callCount() {
         return calls.size();
     }
 
@@ -129,18 +146,18 @@ public class ToolCallAudit {
      * mezo-9yqq class 1). {@code result} is null when no output was ever recorded for the call.
      * NOT persisted — the tool_calls jsonb envelope deliberately keeps only {type,name,args}.
      */
-    public List<ToolOutcome> toolOutcomes() {
+    public synchronized List<ToolOutcome> toolOutcomes() {
         return IntStream.range(0, calls.size())
                 .mapToObj(i -> new ToolOutcome(calls.get(i).name(), calls.get(i).args(), results.get(i)))
                 .toList();
     }
 
     /** Null when no tool ran — a tool-less turn persists exactly like V0.2 (null envelope → [] on the wire). */
-    public ToolCallsEnvelope toToolCallsEnvelope() {
+    public synchronized ToolCallsEnvelope toToolCallsEnvelope() {
         return calls.isEmpty() ? null : new ToolCallsEnvelope(List.copyOf(calls));
     }
 
-    public RefsEnvelope toRefsEnvelope() {
+    public synchronized RefsEnvelope toRefsEnvelope() {
         return refs.isEmpty() ? null : new RefsEnvelope(List.copyOf(refs.values()));
     }
 }
