@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Icon } from '@/shared/ui/Icon'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useDecisionActions, useJournalActions, useGratitudeActions } from '@/data/hooks'
@@ -69,24 +70,11 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
     : 'Mi jár a fejedben?'
 
   return (
-    <Sheet onClose={onClose} labelledBy="journal-title">
+    <Sheet onClose={onClose} labelledBy="journal-title" className="capture-sheet capture-tone-journal">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col" style={{ gap: 4 }}>
-              {onBack && (
-                <button type="button" className="cta-ghost" onClick={onBack}
-                  style={{ padding: '4px 8px', fontSize: 14 }}>
-                  ← Vissza
-                </button>
-              )}
-              <span className="eyebrow">Napló</span>
-              <div id="journal-title" className="h-display size-md" style={{ marginTop: 4 }}>
-                {title}
-              </div>
-            </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
-          </div>
+          <CaptureHeader id="journal-title" kind="journal" title={title}
+            subtitle="A gondolataidnak itt van helye." onClose={close} onBack={onBack} />
 
           {!entry && (
             <div className="row gap-sm" role="group" aria-label="Bejegyzés típusa" style={{ marginBottom: 12 }}>

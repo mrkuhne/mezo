@@ -143,3 +143,11 @@ test('a gyors étkezés-logolás az aktuális ablak kulcsát viszi', async () =>
   await vi.waitFor(() => expect(navigateCalls).toContain(
     `/fuel/log/uj?w=${encodeURIComponent(tileKey(NOW_WINDOW))}`))
 })
+
+test('quick logging has one heading and opens an accessible water capture dialog', async () => {
+  renderPage()
+  expect(screen.getAllByRole('heading')).toHaveLength(1)
+  expect(screen.getByRole('heading', { name: 'Mi érkezett?' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /^Víz/ }))
+  expect(screen.getByRole('dialog', { name: 'Mennyit ittál?' })).toBeInTheDocument()
+})

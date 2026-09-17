@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.TurnGear;
 import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
+import io.mrkuhne.mezo.feature.companion.service.TurnPlanner;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -53,6 +54,34 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     /** Proves a turn took the tool-free smart branch — asserted by the gear ITs (mezo-rj214.7). */
     public static final String CHAT_GEAR_SENTINEL = "FAKE-CHAT-GEAR";
+
+    /** Scripts the planner's reply: [fake-plan:{...json...}] anywhere in the user message. */
+    private static final Pattern FAKE_PLAN =
+            Pattern.compile("\\[fake-plan:(\\{.*})]", Pattern.DOTALL);
+
+    /** The planner branch's UNSCRIPTED default (mezo-rj214.7): deliberately UNPARSEABLE (no
+     *  '{') so {@code TurnPlanner.plan(...)} returns {@code Optional.empty()} and the pipeline
+     *  wiring falls back to the legacy path. A parseable default (the old {@code
+     *  {"needsData":false,"steps":[]}}) would silently reroute every existing IT that never
+     *  scripts a plan through the new pipeline the moment it goes live. */
+    public static final String PLANNER_NO_SCRIPT = "FAKE-PLANNER: nincs szkriptelt terv";
+
+    /** Proves a turn took the answerer branch (mezo-rj214.7): the volatile half carries an
+     *  {@code ESZKÖZHÍVÁSOK} digest (present on every answerer call — {@code
+     *  ToolOutcomeDigest.NONE}/{@code HEADER} both start with it — and never on a CHAT-gear
+     *  call). Echoes exactly like the CHAT-gear branch so prompt-order ITs read the same way. */
+    public static final String ANSWER_SENTINEL = "FAKE-ANSWER";
+
+    /** Mirror of {@code ToolOutcomeDigest}'s {@code NONE}/{@code HEADER} shared prefix — LITERAL,
+     *  not an import: this fake reads the digest by CONTENT the way a real model would, it does
+     *  not need the producing class. Routes the answerer branch. */
+    private static final String ANSWERER_DIGEST_PREFIX = "ESZKÖZHÍVÁSOK";
+
+    /** Scripts a lap-1 data-gap reply from the answerer: [fake-datagap:<reason>] in the user
+     *  message. Fires ONLY when the volatile half ALSO carries the DATA-GAP OFFER block ({@code
+     *  "[Adathiány]"} — present only on ANALYSIS lap 1, Task 4's literal) — the honest
+     *  simulation of a real model that can only use the marker when the offer was made. */
+    private static final Pattern FAKE_DATAGAP = Pattern.compile("\\[fake-datagap:([^\\]]+)]");
 
     /** Mirrors the real router's deterministic pre-classifier so scripted questions classify the
      *  same way a reader expects, without paying for a fake model round-trip. */
@@ -1175,6 +1204,22 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (userMessage.contains(EMPTY_ANSWER)) {
             return "";
+        }
+        if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
+            Matcher plan = FAKE_PLAN.matcher(userMessage);
+            return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
+        }
+        if (turnContext.contains(ANSWERER_DIGEST_PREFIX)) {
+            if (turnContext.contains("[Adathiány]")) {
+                Matcher datagap = FAKE_DATAGAP.matcher(userMessage);
+                if (datagap.find()) {
+                    return "[TOVÁBBI-ADAT: " + datagap.group(1) + "]";
+                }
+            }
+            return ANSWER_SENTINEL + " " + PREFIX
+                + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"
+                + " history=[" + ChatHistory.render(history) + "]"
+                + " user=[" + userMessage + "]";
         }
         return CHAT_GEAR_SENTINEL + " " + PREFIX
             + " system=[" + CompanionLlm.joinInstructions(systemPrompt, turnContext) + "]"

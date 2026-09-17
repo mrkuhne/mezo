@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionReplyRecor
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.RecordingToolCallback;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -38,11 +39,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -196,16 +200,26 @@ public class ChatService {
     private final PromptPersona promptPersona;
     /** spec 2026-09-16 — decides how much thinking a turn earns before any context is assembled. */
     private final TurnGearRouter turnGearRouter;
+    /** mezo-rj214.7 — the LIVE pipeline: what to fetch (spec §6.2), never called blind (§6.3/§6.4). */
+    private final TurnPlanner turnPlanner;
+    private final PlanExecutor planExecutor;
+    private final TurnAnswerer turnAnswerer;
+    /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
+    private final ObjectMapper objectMapper;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
      *  refs the stream path adds to its audit;
      *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
-     *  the turn recalled nothing. */
+     *  the turn recalled nothing;
+     *  {@code today} (Task 6 fix round 1 finding M2) is the SAME {@link LocalDate#now()} this
+     *  transaction already resolved for context assembly — {@link ChatStreamService}'s pre-stream
+     *  pipeline lap reads it instead of calling {@code LocalDate.now()} a second time, milliseconds
+     *  later, which could skew the plan's "Ma:" context by a day across an exact-midnight turn. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
                                String turnContext, List<Turn> history, String userContent,
                                List<RefsEnvelope.Ref> recalledRefs, RecalledMemoriesEnvelope recalled,
-                               TurnGear gear) {}
+                               TurnGear gear, LocalDate today) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -226,7 +240,7 @@ public class ChatService {
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
                 routed.turnContext(), history, request.getContent(),
-                routed.memory().refs(), routed.memory().recalled(), routed.gear());
+                routed.memory().refs(), routed.memory().recalled(), routed.gear(), today);
     }
 
     /**
@@ -288,17 +302,36 @@ public class ChatService {
         } else if (gear == TurnGear.CHAT) {
             answer = llmCallContextHolder.runWith(turnContext,
                     () -> companionLlm.completeSmart(systemPrompt, turnCtx, history, request.getContent()));
-        } else if (chain != null) {
-            // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
-            AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                    () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
-                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
-            answer = advised.answer();
-            degraded = advised.degraded();
         } else {
-            answer = llmCallContextHolder.runWith(turnContext,
-                    () -> companionLlm.complete(systemPrompt, turnCtx, history, request.getContent(),
-                            toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+            // mezo-rj214.7: the LIVE pipeline (spec §5) — plan -> execute -> answer, with a replan
+            // lap for ANALYSIS turns that hit a data gap. A null pipelined answer means the planner
+            // produced nothing usable, and the turn falls straight to the UNCHANGED legacy branches
+            // below (spec §8: degraded, but an answer) — the fallback the whole migration leans on.
+            String pipelined = properties.turn().pipelineEnabled()
+                    ? pipelineAnswerGuarded(userId, conversationId, gear, systemPrompt, turnCtx,
+                            history, request.getContent(), today, audit, turnContext)
+                    : null;
+            if (pipelined != null) {
+                answer = pipelined;
+                if (chain != null) {
+                    AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                            () -> chain.reviewChat(routed.systemPrompt(), routed.turnContext(), history,
+                                    request.getContent(), pipelined));
+                    answer = advised.answer();
+                    degraded = advised.degraded();
+                }
+            } else if (chain != null) {
+                // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
+                AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
+                        () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
+                answer = advised.answer();
+                degraded = advised.degraded();
+            } else {
+                answer = llmCallContextHolder.runWith(turnContext,
+                        () -> companionLlm.complete(systemPrompt, turnCtx, history, request.getContent(),
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
+            }
         }
         // mezo-8z79: same guard as the streamed path — a blank answer is a failed turn. Here the
         // whole method is ONE transaction, so throwing also rolls the user row back; the FE's
@@ -415,6 +448,194 @@ public class ChatService {
                         memory.memoriesBlock(), memory.graphBlock(),
                         conversation.getContextKind(), conversation.getContextDate());
         return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+    }
+
+    /**
+     * Sync-path twin of {@link ChatStreamService#runPipelinePreStream}: {@link #pipelineAnswer}
+     * itself never throws by construction ({@link PlanExecutor} always turns a per-step failure
+     * into an honest {@link ToolCallAudit.ToolOutcome} and never propagates it) — but the planner
+     * and answerer calls it makes (via {@link TurnPlanner} / {@link TurnAnswerer}) hit an LLM
+     * provider directly, and a provider failure (timeout, 5xx, malformed response) must not sink
+     * the whole turn. Mirrors the streamed path's guard exactly: an answer via the caller's legacy
+     * tool-loop fallback beats an error (spec §8's philosophy applies here too).
+     */
+    private String pipelineAnswerGuarded(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+            String turnCtx, List<Turn> history, String content, LocalDate today, ToolCallAudit audit,
+            LlmCallContext turnContext) {
+        try {
+            return llmCallContextHolder.runWith(turnContext,
+                    () -> pipelineAnswer(userId, conversationId, gear, systemPrompt, turnCtx,
+                            history, content, today, audit));
+        } catch (RuntimeException e) {
+            log.warn("Turn pipeline failed on the sync path — falling back to the legacy tool loop", e);
+            return null;
+        }
+    }
+
+    /**
+     * The live plan→execute→answer path (spec §5). Returns null when the planner produced no
+     * usable plan — the caller falls back to the legacy tool-loop (spec §8: degraded, but an
+     * answer). One turn = one audit: the plan is capped to the REMAINING budget (companion.md,
+     * "Three seams") so the envelopes stay within max-calls-per-turn.
+     *
+     * <p>Package-private (mezo-rj214.7 S9.6, fix round 1 finding 4): {@link ChatStreamService}
+     * reuses this and {@link #capToRemainingBudget} for the streamed path, the same way it already
+     * reaches {@link #prepareTurn}/{@link #completeTurn}. Takes scalars rather than {@link
+     * RoutedContext}: that record is {@code private} to this class, so a package-private caller in
+     * another class could never have passed one in — the streamed path could not reach this method
+     * at all before this signature change.
+     */
+    String pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+                          String turnContext, List<Turn> history, String content, LocalDate today,
+                          ToolCallAudit audit) {
+        boolean replanAllowed = gear == TurnGear.ANALYSIS
+                && properties.turn().replan().maxLaps() > 0;
+        // Task 6 fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile
+        // half — used to be duplicated verbatim in ChatStreamService's LOOKUP branch. It now
+        // lives ONCE, in planAndExecuteVolatile below, and both call sites share it.
+        PlanLapResult lap1 = planAndExecuteVolatile(userId, conversationId, gear, turnContext,
+                history, content, today, audit, replanAllowed);
+        if (lap1 == null) {
+            return null;
+        }
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "answer", "conversation", conversationId),
+                () -> turnAnswerer.answer(systemPrompt, lap1.volatileHalf(), history, content));
+
+        Optional<String> gap = TurnAnswerer.dataGapReason(answer);
+        if (gap.isEmpty() || !replanAllowed) {
+            // A marker on a gear that never offered it is model noise; guardAgainstMarker strips
+            // it defensively so it can never persist as an assistant message either way.
+            return guardAgainstMarkerLogged(answer);
+        }
+        String hint = content + "\n\n[KIEGÉSZÍTÉS] Az előző körből hiányzó adat: " + gap.get();
+        Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan_replan", "conversation", conversationId),
+                () -> turnPlanner.plan(history, hint, today));
+        List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(lap1.outcomes());
+        if (replanned.isPresent()) {
+            CappedPlan secondCapped = capToRemainingBudget(replanned.get(), audit);
+            merged.addAll(planExecutor.execute(secondCapped.plan(), userId, audit));
+            merged.addAll(secondCapped.dropped());
+        }
+        String lapTwoVolatile = turnAnswerer.buildReplanVolatile(turnContext, merged);
+        String lapTwoAnswer = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
+                () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
+        return guardAgainstMarkerLogged(lapTwoAnswer);
+    }
+
+    /**
+     * Lap 1 shared by {@link #pipelineAnswer} and the streamed LOOKUP path (Task 6 fix round 1
+     * finding I2): plan -> cap to remaining budget -> execute -> build the volatile half. Package
+     * private, like {@link #capToRemainingBudget}, so {@link ChatStreamService} can call it
+     * directly instead of keeping its own copy of this mechanics. Returns {@code null} when the
+     * planner produced no usable plan — the same "caller falls back to legacy" contract {@link
+     * #pipelineAnswer} already has.
+     *
+     * <p>Returns the executed {@code outcomes} alongside the built volatile half — not a bare
+     * {@code String} — because {@link #pipelineAnswer}'s replan lap needs lap 1's outcomes to
+     * build the MERGED digest for its second answering call, and they cannot be re-derived from
+     * {@code audit} afterwards: {@link #capToRemainingBudget}'s synthetic "budget exhausted"
+     * outcomes for a dropped step never go through {@code audit.recordCall}, so {@code
+     * audit.toolOutcomes()} would silently lose them.
+     */
+    PlanLapResult planAndExecuteVolatile(UUID userId, UUID conversationId, TurnGear gear,
+            String turnContext, List<Turn> history, String content, LocalDate today,
+            ToolCallAudit audit, boolean replanAllowed) {
+        Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
+                () -> turnPlanner.plan(history, content, today));
+        if (planned.isEmpty()) {
+            return null;
+        }
+        CappedPlan capped = capToRemainingBudget(planned.get(), audit);
+        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
+                planExecutor.execute(capped.plan(), userId, audit));
+        outcomes.addAll(capped.dropped());
+        String volatileHalf = turnAnswerer.buildVolatile(turnContext, outcomes, gear, replanAllowed);
+        return new PlanLapResult(volatileHalf, outcomes);
+    }
+
+    /** What {@link #planAndExecuteVolatile} built for its caller: the volatile half ready to
+     *  answer against, plus the outcomes that produced it (needed only by {@link #pipelineAnswer}'s
+     *  replan lap — the streamed LOOKUP path reads {@code volatileHalf} alone). */
+    record PlanLapResult(String volatileHalf, List<ToolCallAudit.ToolOutcome> outcomes) {}
+
+    /**
+     * Defensive backstop (fix round 1 finding 1): {@link TurnAnswerer#DATA_GAP_MARKER} must never
+     * persist as an assistant message — not on the no-replan exit, not on the lap-2 exit, and not
+     * on the stray-marker-on-a-gear-that-never-offered-it corner. Returns {@code null} whenever the
+     * marker is present so the answer propagates as a pipeline failure and the caller's legacy
+     * fallback answers fully: a full answer beats a broken one.
+     *
+     * <p>Package-private static, next to {@link #pipelineAnswer}, so {@link
+     * ChatServiceMarkerGuardTest} can exercise it directly without a Spring context.
+     */
+    static String guardAgainstMarker(String answer) {
+        return TurnAnswerer.dataGapReason(answer).isPresent() ? null : answer;
+    }
+
+    /**
+     * {@link #pipelineAnswer}'s own wrapper around {@link #guardAgainstMarker} (minor finding 3):
+     * the guard itself stays {@code static}+pure — {@link ChatServiceMarkerGuardTest} exercises it
+     * without a Spring context — so the log line lives here instead, at the instance-level call
+     * sites, logged exactly once per discarded leak instead of duplicated at both return statements.
+     */
+    private String guardAgainstMarkerLogged(String answer) {
+        String guarded = guardAgainstMarker(answer);
+        if (guarded == null && answer != null) {
+            log.warn("Answer discarded — data-gap marker leaked outside the replan contract");
+        }
+        return guarded;
+    }
+
+    /**
+     * Result of {@link #capToRemainingBudget}: the steps that still fit the remaining per-turn
+     * budget, plus honest synthetic outcomes (fix round 1 finding 2) for whichever steps did not —
+     * {@link #pipelineAnswer} appends {@code dropped} AFTER the executed outcomes, in plan order,
+     * so the answerer's digest shows the drop instead of silently answering with fewer facts than
+     * the plan asked for.
+     *
+     * <p>Package-private, not {@code private} (Task 6): a {@code private} nested type stays
+     * inaccessible to a same-package caller even through {@code var} — the member itself is not
+     * accessible once the declaring type is not, regardless of the member's own modifier (JLS
+     * 6.6.1) — so {@link ChatStreamService}'s pre-stream LOOKUP execution could read
+     * {@code capToRemainingBudget}'s return value but never call {@code plan()}/{@code dropped()}
+     * on it while this stayed {@code private}.
+     */
+    record CappedPlan(ValidatedPlan plan, List<ToolCallAudit.ToolOutcome> dropped) {}
+
+    /**
+     * Package-private for the same reason as {@link #pipelineAnswer} (Task 6 reuse): a caller in
+     * {@code ChatStreamService} can invoke this and read {@code plan()}/{@code dropped()} off the
+     * result via {@code var} — {@link CappedPlan} itself is package-private too, so the type never
+     * needs to be spelled out at the call site.
+     */
+    CappedPlan capToRemainingBudget(ValidatedPlan plan, ToolCallAudit audit) {
+        int remaining = Math.max(0, properties.tools().maxCallsPerTurn() - audit.callCount());
+        if (plan.steps().size() <= remaining) {
+            return new CappedPlan(plan, List.of());
+        }
+        List<ToolCallAudit.ToolOutcome> dropped = plan.steps().stream()
+                .skip(remaining)
+                .map(step -> new ToolCallAudit.ToolOutcome(
+                        step.tool(), argsJson(step), RecordingToolCallback.BUDGET_EXHAUSTED))
+                .toList();
+        ValidatedPlan cappedPlan = new ValidatedPlan(
+                List.copyOf(plan.steps().subList(0, remaining)), plan.rejections());
+        return new CappedPlan(cappedPlan, dropped);
+    }
+
+    /** Best-effort JSON of a dropped step's args, for its synthetic {@link ToolCallAudit.ToolOutcome}. */
+    private String argsJson(TurnPlan.PlanStep step) {
+        try {
+            return objectMapper.writeValueAsString(step.args());
+        } catch (Exception e) {
+            log.warn("Failed to serialize dropped plan step args for {}; substituting an empty object",
+                    step.tool(), e);
+            return "{}";
+        }
     }
 
     /**

@@ -24,7 +24,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName } from '@/shared/ui/clay'
+import { CaptureSculpture, type CaptureKind } from '@/shared/ui/CaptureSculpture'
+import '@/features/quickinput/QuickLogSurface.css'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
@@ -46,6 +48,12 @@ type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratit
 
 const HU = new Intl.NumberFormat('hu-HU')
 
+const SCULPTURES: Partial<Record<ClayIconName, CaptureKind>> = {
+  'i-fuel': 'food', 'i-viz': 'water', 'i-stack': 'stack', 'i-edzes': 'training',
+  'i-sport': 'sport', 'i-suly': 'weight', 'i-checkin': 'checkin', 'i-naplo': 'journal',
+  'i-alvas': 'sleep', 'i-lang': 'sport', 'i-growth': 'checkin',
+}
+
 function Tile({ icon, label, sub, subDone, tone, onClick, disabled }: {
   icon: ClayIconName; label: string; sub?: string; subDone?: boolean
   tone?: 'sky' | 'lav' | 'sage' | 'coral' | 'gold' | 'rose'
@@ -53,7 +61,7 @@ function Tile({ icon, label, sub, subDone, tone, onClick, disabled }: {
 }) {
   return (
     <button type="button" className={tone ? `quicklog-tile tone-${tone} np-press` : 'quicklog-tile np-press'} onClick={onClick} disabled={disabled}>
-      <ClayIcon name={icon} size={26} />
+      <CaptureSculpture kind={SCULPTURES[icon] ?? 'journal'} />
       <span className="quicklog-label">{label}</span>
       {sub && <span className={subDone ? 'quicklog-sub-line done' : 'quicklog-sub-line'}>{sub}</span>}
     </button>
@@ -143,7 +151,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
       : undefined
 
   const grid = (close: () => void) => (
-    <div className="quicklog">
+    <div className="quicklog quicklog-titanium">
       {phase === 'naplo-pick' ? (
         <>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
@@ -161,15 +169,15 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
         </>
       ) : (
         <>
-          <h2 id="quicklog-title">Gyors logolás</h2>
-          <p className="quicklog-sub">bármikor, két koppintás</p>
+          <h2 id="quicklog-title">{variant === 'page' ? 'Mi érkezett?' : 'Gyors logolás'}</h2>
+          <p className="quicklog-sub">Egy pillanat. És a napod része.</p>
 
           <button
             type="button"
             className="quicklog-chat np-press"
             onClick={() => { close(); navigate('/mezo/chat') }}
           >
-            <ClayIcon name="i-mezo" size={26} />
+            <CaptureSculpture kind="chat" />
             <span className="quicklog-chat-text">
               <span className="quicklog-chat-label">Mondd el Mezónak</span>
               <span className="quicklog-chat-hint">kérdezz, mesélj — vagy logolj szóban</span>
@@ -216,7 +224,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
   if (variant === 'page') return grid(() => {})
 
   return (
-    <Sheet onClose={onDone} labelledBy="quicklog-title">
+    <Sheet onClose={onDone} labelledBy="quicklog-title" className="capture-sheet capture-tone-chat">
       {(close) => grid(close)}
     </Sheet>
   )

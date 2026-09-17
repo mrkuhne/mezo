@@ -469,17 +469,45 @@ public record CompanionProperties(
     ) {}
 
     /**
-     * How one chat turn is shaped (spec 2026-09-16). Only the gear and the CHAT-branch effort live
-     * here for now; the planner, executor and replan blocks arrive with slices S9.4/S9.5.
+     * How one chat turn is shaped (spec 2026-09-16). Gear + CHAT-branch effort landed with
+     * S9.1–S9.3; planner and executor land dark with S9.4 and become operative in S9.5.
+     * Per-gear reasoning-effort keys are DEFERRED to S9.5 (no per-call effort override exists on
+     * the LLM seam yet; see the S9.4 plan's scope decisions).
      */
     public record Turn(
+        boolean pipelineEnabled,
         @NotNull @Valid Gear gear,
-        @NotNull @Valid Answerer answerer
+        @NotNull @Valid Planner planner,
+        @NotNull @Valid Executor executor,
+        @NotNull @Valid Answerer answerer,
+        @NotNull @Valid Replan replan
     ) {
         /** Whether an UNSURE turn may spend one cheap call on a classifier, or falls straight to ANALYSIS. */
         public record Gear(boolean classifierEnabled) {}
 
-        /** Reasoning effort per gear. Only the CHAT branch exists in this slice. */
-        public record Answerer(@NotBlank String chatEffort) {}
+        /** How many repair laps an unparseable/fully-rejected plan earns before the caller falls back (spec §6.3). */
+        public record Planner(@Min(0) @Max(3) int repairAttempts) {}
+
+        /** Parallel fan-out width and the per-step wait before a read is declared timed out (spec §6.4). */
+        public record Executor(@Min(1) @Max(16) int parallelism,
+                               @Min(100) @Max(60_000) long stepTimeoutMs) {}
+
+        /**
+         * The answerer's outcome-digest budgets (spec §6.5) — NOT the advisor's 700/3000: here the
+         * digest is the answer's whole basis. chatEffort stays scaffolding (per-gear effort keys
+         * deferred until the seam carries a per-call override; third deferral, deliberate).
+         */
+        public record Answerer(@NotBlank String chatEffort,
+                               @Min(500) @Max(60_000) int outcomeMaxCharsPerResult,
+                               @Min(2_000) @Max(200_000) int outcomeMaxCharsTotal) {}
+
+        /**
+         * Data-gap laps an ANALYSIS answer may request (spec A2). 0 disables replan entirely; 1 is
+         * the current ceiling because {@code io.mrkuhne.mezo.feature.companion.service.ChatService
+         * #pipelineAnswer} only implements a SINGLE replan lap — a value above 1 would validate but
+         * do nothing beyond the first lap. A future multi-lap loop widens this cap alongside the
+         * implementation.
+         */
+        public record Replan(@Min(0) @Max(1) int maxLaps) {}
     }
 }

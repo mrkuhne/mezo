@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-07
+updated: 2026-09-17
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -59,6 +59,9 @@ Only the *log arrays* (`weightLog`, `sleepLog`), the **active goal** + its **pre
 Specs of record: **[`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.md`](../superpowers/specs/2026-06-08-me-domain-sheets-design.md)** (the sheets/log design, issue `mezo-k0i`) and **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)** (backend slice map; biometrics = Slice A, issue `mezo-v67`).
 
 ## 2. User-facing behavior
+
+**Titanium capture sheets (`mezo-62xey`).** Weight, Sleep and Journal use the shared `CaptureHeader` / `CaptureSculpture` with scoped `capture-sheet` styling from `shared/ui/capture.css`, including when launched outside quick logging. Weight adds a decorative ruler; sleep adds a night arc. They preserve their existing step sizes, dates, optional notes, voice, journal modes and Sleep Cycle import/review/phase fields. Weight and sleep no longer display canned personal interpretations or claims that a pattern engine confirmed a result. The inputs and saved payloads remain unchanged.
+
 
 **The Me section shell is gone (`mezo-d20.6.1`, cleaned up in `mezo-d20.9.1`).** `MeSection.tsx`, `pages/tabs.ts` (`ME_TABS`), the shared `AppHero` (`features/progression/components/AppHero.tsx`) and `shared/ui/SubNavDropdown.tsx` are all **deleted** — there is no `<Outlet>` under `/me` any more, and `router.tsx` registers every `/me/*` view as a flat sibling route. Navigation between them is **the hub's tiles going down and each page's `‹ Én` back chip coming up**, plus the five-tab `TabBar` (`app/TabBar.tsx`: Nap · Edzés · Fuel · Mezo · Én) and the floating coral quick-log FAB (`app/QuickLogFab.tsx`) that ride above every route. The `MeOutletContext` (`{ openSettings }`) was already retired in S7; the settings sheet is now owned by `EnHubPage` itself. Rationale and the full IA: [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md); the tile/clay/token vocabulary: [ADR 0033](../decisions/0033-mozaik-2-tile-language.md) and [`_platform-design-system.md`](_platform-design-system.md).
 

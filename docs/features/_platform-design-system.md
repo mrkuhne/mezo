@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-15
+updated: 2026-09-17
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -734,6 +734,8 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 ---
 
 ## 10. Key files
+
+- **Capture presentation** (`mezo-62xey`): `shared/ui/CaptureHeader.tsx`, `CaptureSculpture.tsx` and `capture.css` are domain-free, token-based primitives used by the quick-log launcher and capture sheets. The header receives its title ID, close/back handlers and category; sculptures are decorative. Styles are scoped under `capture-sheet`, including five-column touch scales, reduced-motion graphics and 320px handle alignment. Existing `Sheet` owns the portal, drag and animated dismissal.
 
 **Tokens & CSS**
 - `frontend/src/styles/prototype.css` — all tokens + every component CSS class. The `:root` / `:root[data-theme="dark"]` blocks at the top (lines 3–111) carry the **inverted** theme semantics in place (light is now the base, dark the override — Napív, `mezo-8141`) — the top `:root` also holds the surviving legacy-token→Napív aliases (§3 Token cascade; the `--brand-*` alias family was deleted in `mezo-x3x0`); a separate Napív section appended at the end (its own `:root` accent block at `1055–1095`, incl. the `--cta-g*` gradient stops + the Pulse dark accents) overrides several other earlier rules by cascade order rather than deleting them (`.tab-bar`, `.screen-content`, and — in the same safe-area media block — `.recipe-save-bar`), and adds the circadian `.sky`/`[data-day]` rules and the `.np-*` motion vocabulary; the Napiv S5 active-workout section follows (the `.wk-top`/`.excard` family + the `mezo-xt65` `.restbar`; the S5 rest-island CSS is deleted, §3); then the Napiv S6 Fuel-domain section (`.pghead-np.sage`, `--wash-sage/-amber/-lav`, `.gauge`, `.slot` family + `.chx`, `.fuelchips`/`.macror`, §3); then the sleep night-layer family (`mezo-d71m`, ~110 lines) — since `mezo-euze` only the literal-dark `.wdb-night*` remains of the `.wdb*` Today evening band (§3), followed by the `.night*`/`.nb-*`/`.ns-*`/`.nw-*` NightPage families; the **`mezo-euze` „Today három sziget" block** sits right before those NightPage families — the `.sky-islands`/`.isl*` family + its own trailing `:where()`-guarded reduce block (§3); the **`mezo-ilsj` block (~350 lines)** is the Ritual family — the literal-dark full-screen `.rz-*` `/ritual` flow classes (its `.ritcard*` half was deleted with Today's bespoke ritual card, `mezo-j7u4`); the **tail** is the morning-nudge `.mtr*` family. The daypart-faces slice (`mezo-mvb4`) inserted the shared-card-language block **mid-file, next to `.todaycard*`** rather than appending — `.itemrow*` sits directly under `.donebar*`, and `.creedchip*` sits in the intention block; the `.dfs*`/`.tdc*`/`.fhc-*`/`.donefold*`/`.zoneline`/`.dayxp`/`.faceswap` families that followed were deleted outright by `mezo-euze` (their successor is the one `.sky-islands`/`.isl*` block, §3); `mezo-mvb4`'s own eleven retirements keep their in-place comments pointing at their successors (§3).

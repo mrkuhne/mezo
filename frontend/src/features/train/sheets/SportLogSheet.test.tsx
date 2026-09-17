@@ -8,7 +8,7 @@ function setup() {
   return { onClose }
 }
 
-test('renders the sport-log fields and Mezo observation (volleyball default)', () => {
+test('renders the sport-log fields (volleyball default)', () => {
   setup()
   expect(screen.getByText('Sport log · Röpi')).toBeInTheDocument()
   expect(screen.getByText('Hogy ment?')).toBeInTheDocument()
@@ -24,11 +24,12 @@ test('Mentés closes the sheet', async () => {
   await waitFor(() => expect(onClose).toHaveBeenCalled())
 })
 
-test('high shoulder strain swaps the observation copy', async () => {
+test('captures high shoulder strain without inventing personalized training advice', async () => {
   setup()
   // default shoulder 6 → baseline copy; raise to ≥7 via the scale grid
   await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 8' }))
-  expect(screen.getByText(/Váll terhelés magas/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Váll terhelés 8' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByText(/Overhead Press|Pull Day|heti ritmusodhoz képest/)).not.toBeInTheDocument()
 })
 
 test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', async () => {
