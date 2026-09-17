@@ -845,6 +845,14 @@ mezo:
         # ChatService#pipelineAnswer only runs a SINGLE replan lap today; a future multi-lap loop
         # widens this alongside the implementation.
         max-laps: 1
+      # S9.7 (mezo-rj214.7): what each answer looked up and what came back. The RESULT half is
+      # NULLed after retention-days (the ask half is kept forever) — the llm-log payload scrub at
+      # 03:40 is the precedent; 03:50 is the next free slot in the dawn cron cluster.
+      provenance:
+        retention-days: 90
+        cron: "0 50 3 * * *"
+        per-outcome-chars: 4000
+        total-chars: 20000
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)

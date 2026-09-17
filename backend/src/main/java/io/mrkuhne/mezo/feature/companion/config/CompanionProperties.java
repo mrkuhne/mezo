@@ -480,7 +480,8 @@ public record CompanionProperties(
         @NotNull @Valid Planner planner,
         @NotNull @Valid Executor executor,
         @NotNull @Valid Answerer answerer,
-        @NotNull @Valid Replan replan
+        @NotNull @Valid Replan replan,
+        @NotNull @Valid Provenance provenance
     ) {
         /** Whether an UNSURE turn may spend one cheap call on a classifier, or falls straight to ANALYSIS. */
         public record Gear(boolean classifierEnabled) {}
@@ -509,5 +510,17 @@ public record CompanionProperties(
          * implementation.
          */
         public record Replan(@Min(0) @Max(1) int maxLaps) {}
+
+        /**
+         * S9.7 provenance (spec §6.6). {@code retentionDays} is the age past which the RESULT half
+         * is NULLed — the ask half is kept forever. The char caps bound what a single message row
+         * can store: a tool may return thousands of characters and every turn writes a row.
+         */
+        public record Provenance(
+                @Min(1) int retentionDays,
+                @NotBlank String cron,
+                @Min(200) int perOutcomeChars,
+                @Min(1000) int totalChars) {
+        }
     }
 }
