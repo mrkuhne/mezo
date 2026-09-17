@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { LoggedWorkoutExercise } from '@/data/types'
-import { WorkoutMenuGlass, WorkoutVideoGlass, noteHint } from '@/features/train/components/WorkoutMenuGlass'
+import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
+import { WorkoutChallengesGlass, WorkoutMenuGlass, WorkoutVideoGlass, challengeHint, noteHint } from '@/features/train/components/WorkoutMenuGlass'
 
 // WorkoutMenuGlass (mezo-88iwa.7, T6 Task 4) — the per-card ⋮ menu, GlassBox-hosted.
 // Ports the prototype's `menuGlass` (session.js:101-126) row-for-row: Videó (only with
@@ -25,8 +25,12 @@ function baseProps() {
     skipped: false,
     hasNote: false,
     canRemoveTrailingSet: true,
+    acceptedChallenges: 1,
+    totalChallenges: 3,
+    challengesPending: false,
     onClose: vi.fn(),
     onVideo: vi.fn(),
+    onChallenges: vi.fn(),
     onEditNote: vi.fn(),
     onAddSet: vi.fn(),
     onRemoveSet: vi.fn(),
@@ -165,4 +169,65 @@ test('no demo url -> the frame renders the empty-state copy, not an iframe', () 
   const frame = document.querySelector('.wo-video-frame') as HTMLElement
   expect(within(frame).queryByTitle('Demo videó')).not.toBeInTheDocument()
   expect(within(frame).getByText('Nincs elérhető videó')).toBeInTheDocument()
+})
+
+// ── Küldetések row (mezo-e1ii9): accept/dismiss's new home, opened from the header ⋯ ──
+test('the Küldetések row opens the challenges glass WITHOUT closing the menu itself', async () => {
+  const user = userEvent.setup()
+  const p = baseProps()
+  render(<WorkoutMenuGlass {...p} />)
+  await user.click(screen.getByText('Küldetések'))
+  expect(p.onChallenges).toHaveBeenCalled()
+  expect(p.onClose).not.toHaveBeenCalled()
+})
+
+test('challengeHint: pending -> készül, empty -> the honest line, else accepted/total', () => {
+  expect(challengeHint(true, 0, 0)).toMatch(/készülnek/)
+  expect(challengeHint(false, 0, 0)).toBe('Ma nincs kihívás')
+  expect(challengeHint(false, 1, 3)).toBe('1/3 elfogadva')
+})
+
+// ── WorkoutChallengesGlass · the three-state guard (mezo-e1ii9 fix round 1) ──
+// The retired PrepKuldetesekPage.test.tsx covered all three states; the glass inherited
+// the priority (pending → honest-empty → list) but only the loaded path had cover. The
+// priority IS the mezo-hbwi silent-gap fix: "still generating" must never be shown as
+// "ma nincs kihívás", so the pending branch has to win over an empty list.
+const CHALLENGE: Challenge = {
+  id: 'c1', type: 'PR', typeLabel: 'PR-kísérlet', exerciseId: 'e-1', exercise: 'Chest Supported Row',
+  target: '80 kg × 5', risk: 'low', why: 'jó formában vagy', refs: [], glory: 'új csúcs',
+}
+
+function challengeProps(over: Partial<React.ComponentProps<typeof WorkoutChallengesGlass>> = {}) {
+  return {
+    open: true,
+    challenges: [CHALLENGE],
+    accepted: {} as Record<string, boolean>,
+    onToggle: vi.fn(),
+    pending: false,
+    tint: '#abcdef',
+    onClose: vi.fn(),
+    ...over,
+  }
+}
+
+test('challenges glass · pending: the generation loader wins, and NEVER the honest-empty line', () => {
+  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: true })} />)
+  expect(screen.getByRole('status')).toBeInTheDocument()
+  expect(screen.getByText(/A mai küldetések · készül…/)).toBeInTheDocument()
+  expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
+})
+
+test('challenges glass · resolved empty: the honest-empty line, no loader, 0/0', () => {
+  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: false })} />)
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  expect(screen.getByText('Ma nincs kihívás')).toBeInTheDocument()
+  expect(screen.getByText(/A mai küldetések · 0\/0 elfogadva/)).toBeInTheDocument()
+})
+
+test('challenges glass · loaded: the cards render, loader gone, real accepted count', () => {
+  render(<WorkoutChallengesGlass {...challengeProps({ accepted: { c1: true } })} />)
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
+  expect(screen.getByText(/A mai küldetések · 1\/1 elfogadva/)).toBeInTheDocument()
+  expect(screen.getByText(/PR-kísérlet/)).toBeInTheDocument()
 })

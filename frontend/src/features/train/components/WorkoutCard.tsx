@@ -83,11 +83,14 @@ export interface WorkoutCardProps {
   /** The accepted challenge (mezo-88iwa quest) targeting THIS exercise, if any —
    *  restored per-card after fd58c790c removed the single-exercise metaline chip. */
   challenge?: { label: string; target: string } | null
+  /** No instance id to log against (a failed start — mezo-e1ii9 fix round 1): the cursor
+   *  row's ✓ is disabled, so a set that the server cannot store is never shown as stored. */
+  logBlocked?: boolean
 }
 
 export function WorkoutCard({
   exercise, session, busy, onLogSet, onTapDoneRow, onOpenRecords, onOpenMenu, onEditNote,
-  note = '', medalsBySetIdx = {}, failedLocalIds, challenge,
+  note = '', medalsBySetIdx = {}, failedLocalIds, challenge, logBlocked = false,
 }: WorkoutCardProps) {
   const id = exercise.id
   const logged = session.logged[id] ?? []
@@ -284,7 +287,7 @@ export function WorkoutCard({
                       />
                     </label>
                     <span className="wo-field small num">{warm ? '—' : rir}</span>
-                    <button type="submit" className="wo-check" aria-pressed={false} aria-label={`${setSlotLabel(i, warm, warmupCount)} mentése`}>
+                    <button type="submit" className="wo-check" disabled={logBlocked} aria-pressed={false} aria-label={`${setSlotLabel(i, warm, warmupCount)} mentése`}>
                       ✓
                     </button>
                     <span className="wo-verdict" />

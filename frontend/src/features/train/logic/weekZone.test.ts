@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GymExercise, MesoDay } from '@/data/types'
 import type { WorkoutDetailResponse } from '@/data/train/trainApi'
 import {
-  gymSegments, prepSegments, selectGymRows, selectPrepRows, weekZoneRows,
+  gymSegments, selectGymRows, weekZoneRows,
 } from '@/features/train/logic/weekZone'
 
 const ex = (muscle: string, workingSets: number, targetRIR: number): GymExercise => ({
@@ -112,11 +112,6 @@ describe('weekZoneRows — zone projection reference', () => {
 
 describe('row selection', () => {
   const planned = [day('Hét', [ex('chest-mid', 6, 2), ex('quad', 4, 2)])]
-  const todayPlan = [{ muscle: 'chest-mid', type: 'compound' as const, workingSets: 6, targetRIR: 2 }]
-  it('selectPrepRows keeps only groups trained today, ordered by today contribution', () => {
-    const rows = selectPrepRows(weekZoneRows({ plannedDays: planned, completed: [], todayPlan }))
-    expect(rows.map((r) => r.group)).toEqual(['chest'])
-  })
   it('selectGymRows keeps planned OR done groups, ordered by plan budget desc', () => {
     const rows = selectGymRows(weekZoneRows({ plannedDays: planned, completed: [detail([{ muscle: 'biceps', setRirs: [1] }])] }))
     expect(rows.map((r) => r.group)).toEqual(['chest', 'quad', 'biceps'])
@@ -124,28 +119,6 @@ describe('row selection', () => {
 })
 
 describe('segments', () => {
-  it('prepSegments: done solid + today dashed + plan ghost, widths in budget units', () => {
-    const rows = weekZoneRows({
-      plannedDays: [day('Hét', [ex('chest-mid', 5, 2)]), day('Csü', [ex('chest-mid', 5, 2)])],
-      completed: [detail([{ muscle: 'chest', setRirs: [2, 2, 2, 2, 2] }])],
-      todayPlan: [{ muscle: 'chest-mid', type: 'compound', workingSets: 5, targetRIR: 2 }],
-    })
-    expect(prepSegments(rows[0])).toEqual([
-      { pct: expect.closeTo(0.25, 5), kind: 'solid' },
-      { pct: expect.closeTo(0.25, 5), kind: 'today' },
-    ])
-  })
-  it('prepSegments: the today segment turns overflow and everything caps at 100% when over', () => {
-    const rows = weekZoneRows({
-      plannedDays: [],
-      completed: [detail([{ muscle: 'chest', setRirs: Array.from({ length: 11 }, () => 0) }])],
-      todayPlan: [{ muscle: 'chest-mid', type: 'compound', workingSets: 4, targetRIR: 0 }],
-    })
-    const segs = prepSegments(rows[0])
-    expect(segs[0]).toEqual({ pct: expect.closeTo(11 / 12, 5), kind: 'solid' })
-    expect(segs[1].kind).toBe('overflow')
-    expect(segs[0].pct + segs[1].pct).toBeCloseTo(1)
-  })
   it('gymSegments: done solid + plan-remainder ghost, no today segment', () => {
     const rows = weekZoneRows({
       plannedDays: [day('Hét', [ex('chest-mid', 5, 2)]), day('Csü', [ex('chest-mid', 5, 2)])],

@@ -444,7 +444,7 @@ type TrainData = {
   /** Replaces a run's per-muscle priority tiers wholesale (mezo-3m5m); null/empty -> all-Grow. */
   updateMusclePriorities: (id: string, musclePriorities: MusclePriorities | null, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
-  startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
+  startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void; onError?: (err: unknown) => void }) => void
   // `ctx` is the mock evaluator's baseline (exercise name + lastWeek + date) — the caller
   // (ActiveWorkoutPage) supplies it because only it knows which exercise/lastWeek is being
   // logged; real mode ignores it. The response carries `medals` in BOTH modes. `onError`
@@ -828,7 +828,9 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // can't compute one) so the gym complete flow shows the level-up overlay.
     mutationFn: mock
       ? async (_v: { id: string; note?: string | null }) => {
-          awardGamificationEvent(qc, { type: 'GYM' })
+          // `silent`: the closing ceremony IS the reward surface (mezo-e1ii9) and owns the
+          // screen alone — the streak / level-up toasts would float over it as a second layer.
+          awardGamificationEvent(qc, { type: 'GYM', silent: true })
           return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
         }
       : (v: { id: string; note?: string | null }) => trainApi.finishWorkout(v.id, v.note),
@@ -925,9 +927,13 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     [replaceMutation],
   )
   const startWorkout = useCallback(
-    (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) =>
+    // `onError` (mezo-e1ii9 fix round 1): a failed start used to be silent — the caller
+    // never bound an instance id, yet the card list looked fully functional and every
+    // later set POSTed against a bogus id. The session screen needs to hear about it.
+    (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void; onError?: (err: unknown) => void }) =>
       startMutation.mutate(templateSessionId, {
         onSuccess: (w) => { if (w) opts?.onSuccess?.(w) },
+        onError: (err) => opts?.onError?.(err),
       }),
     [startMutation],
   )

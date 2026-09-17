@@ -13,20 +13,27 @@
 // answer to the old `StatStrip`/`StatCell` pair, now graphic instead of numeric tiles.
 // Then `.pl-exs`, the exercise VIEW cells — index + `MuscleChip` + name + the 4-cell
 // labelled prescription grid (szett×ismétlés tinted by muscle color, RIR, kg induló,
-// bemelegítő), read-only and rendered from the SAME `day.exercises` rows `MesoExercises`
-// edits below. This is BodyMap's first in-plan consumer.
+// bemelegítő), read-only and rendered from the same `day.exercises` rows the day editor
+// route edits. This is BodyMap's first in-plan consumer.
 // Honest words, not placeholders: 0 kg reads "saját testsúly" (not a dash — the model
 // really has no weight to track there), and a plank-style hold (repMin AND repMax both
 // 0) reads "tartás" in the szett×ismétlés cell instead of a nonsense "0–0" range.
-// The editor itself is `MesoExercises` with its `day` prop — the same component that
-// owns the PUT …/days/{dayId}/exercises save path, not a second editor (which would
-// drift). Its week-scope derivations still read the whole week (see MesoExercises).
+// Train parity P1 Task 4 (mezo-e1ii9): the page is ONLY this. A whole pre-Titanium
+// editor used to be welded onto the bottom of it — ⠿ drag handles, 🔥, English
+// Grow/Maintain/Emphasize tier words, the `HETI SZETEK` typo, `⚠ 1 jelzés`,
+// `CSÚCSHÉT · IDŐBECSLÉS`, `STRUKTÚRA`, a duplicate exercise list and a duplicate
+// add-CTA. Nothing was deleted, it MOVED: the same `MesoExercises` (which owns the PUT
+// …/days/{dayId}/exercises save path) now renders on its own route,
+// /train/mesocycles/:id/days/:day/edit (`MesoDayEditPage`), the way the TEMPLATE's day
+// plan is edited at /train/mesocycles/templates/:id. The page's tail carries the
+// prototype's `.pl-add` into it (with `?add=1`, so the picker opens on arrival) plus a
+// quiet „A nap szerkesztése" link for everything else the editor does.
 // A real ROUTE, not page state: a day is a place you can link to, come back to and
 // hit back out of — the wizard's ProgramDayView is page state because its draft is
 // not saved anywhere yet; this one edits a persisted run.
 // ============================================================
 import type { CSSProperties } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain, useTimingProfile } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { useBackNav } from '@/shared/hooks/useBackNav'
@@ -36,7 +43,6 @@ import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozai
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { MesoExercises } from '@/features/train/components/MesoExercises'
 import { huKg } from '@/features/train/logic/mesoDates'
 import type { DayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -75,12 +81,11 @@ function DaySkeleton() {
 
 export function MesoDayPage() {
   const { id, day: dayParam } = useParams<{ id: string; day: string }>()
+  const navigate = useNavigate()
   const goBack = useBackNav(`/train/mesocycles/${id}`)
   const { mesocycles, workoutPending } = useTrain()
-  // Calibrated pacing (Task 12, mezo-dzbm) for the hero's minutes pill AND MesoExercises'
-  // MesoEditor hero (fetched here — before either early return below, since hooks must run
-  // unconditionally — and threaded down as a prop: components/ stay presentational, pages/
-  // own data fetching).
+  // Calibrated pacing (Task 12, mezo-dzbm) for the hero's minutes pill (fetched here —
+  // before either early return below, since hooks must run unconditionally).
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   const meso = mesocycles.find((m) => m.id === id)
@@ -207,12 +212,26 @@ export function MesoDayPage() {
             </>
           )}
 
-          <MesoExercises
-            meso={meso}
-            day={day.day}
-            timingProfile={timingProfile}
-            timingProfilePending={timingProfilePending}
-          />
+          {/* The prototype's end-of-screen affordance (`.pl-add`), and the ONLY one here:
+              the editing itself lives on its own route (MesoDayEditPage), the way the
+              template's day plan does. `?add=1` opens the picker on arrival so this button
+              still adds an exercise. */}
+          <div className="pl-dayfoot rise">
+            <button
+              type="button"
+              className="pl-add"
+              onClick={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(day.day)}/edit?add=1`)}
+            >
+              ＋ Gyakorlat hozzáadása
+            </button>
+            <button
+              type="button"
+              className="pl-editlink"
+              onClick={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(day.day)}/edit`)}
+            >
+              A nap szerkesztése
+            </button>
+          </div>
         </PageBody>
       </EntranceGroup>
     </MozaikPage>

@@ -15,11 +15,12 @@ import { activeMeso } from '@/data/train/train'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-// The editor's own surface is the DAY page now (mezo-d20.15): the run page is status-first
-// and `MesoExercises` renders one day, reached at its own route.
+// The editor's own surface is the day EDITOR route (Train parity P1 Task 4, mezo-e1ii9):
+// the day page itself is read-only Titanium now, and `MesoExercises` renders one day at
+// /train/mesocycles/:id/days/:day/edit (`MesoDayEditPage`).
 function renderDay(mesoId: string, day = 'Csü') {
   const router = createMemoryRouter(routes, {
-    initialEntries: [`/train/mesocycles/${mesoId}/days/${encodeURIComponent(day)}`],
+    initialEntries: [`/train/mesocycles/${mesoId}/days/${encodeURIComponent(day)}/edit`],
   })
   render(
     <QueryWrapper>
@@ -33,8 +34,6 @@ function renderDay(mesoId: string, day = 'Csü') {
 
 async function renderExercisesView() {
   renderDay(activeMeso.id)
-  // The day page (T9 Task 4) now shows this same exercise TWICE — a read-only `.pl-ex`
-  // view cell above, this editor below — so an exact single-match query would throw.
   await screen.findAllByText('Chest Supported Row')
 }
 

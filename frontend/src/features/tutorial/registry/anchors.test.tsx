@@ -84,9 +84,11 @@ test.each([
 })
 
 // D11 (epic-spec §2): az aktív edzés oldala chrome-mentes (AppLayout hideChrome),
-// tehát a fejléc „?" gombja itt nem létezik — a prep-fázis saját mini ?-e nyitja
-// újra a kalauzt. Auto-open először, mini ? utána: mindkét út él.
-test('/train/session — a prep-fázisban van mini ? gomb', async () => {
+// tehát a fejléc „?" gombja itt nem létezik — a kártyalista fejlécének saját mini ?-e
+// nyitja újra a kalauzt (mezo-e1ii9: a prep-breadcrumbról költözött ide). Az AUTO-OPEN
+// már nem él sehol a Train doméniumban (mezo-e1ii9 Task 6 kapuzta ki az egészet), tehát
+// ez a mini ? az EGYETLEN út a kalauzhoz ezen az útvonalon — nem egy második út.
+test('/train/session — a kártyalista fejlécében van mini ? gomb', async () => {
   renderAt('/train/session')
   await waitFor(() =>
     expect(document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]')).not.toBeNull(),

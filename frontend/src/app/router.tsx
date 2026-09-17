@@ -32,6 +32,7 @@ import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPag
 import { MesoWeekPage } from '@/features/train/pages/MesoWeekPage'
 import { MesoMusclePage } from '@/features/train/pages/MesoMusclePage'
 import { MesoDayPage } from '@/features/train/pages/MesoDayPage'
+import { MesoDayEditPage } from '@/features/train/pages/MesoDayEditPage'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
@@ -316,6 +317,11 @@ export const routes: RouteObject[] = [
       // ONE day of a running block (mezo-d20.15): the run page is status-first and the
       // editing lives here, one level down. The day token travels URL-encoded ('H%C3%A9t').
       { path: 'train/mesocycles/:id/days/:day', element: <MesoDayPage /> },
+      // …and its EDITOR, one level further down (Train parity P1 Task 4, mezo-e1ii9).
+      // The day page used to carry a whole pre-Titanium editor welded under the Titanium
+      // content; it lives here now, the way the TEMPLATE's day plan lives at
+      // `train/mesocycles/templates/:id`. `?add=1` opens the exercise picker on arrival.
+      { path: 'train/mesocycles/:id/days/:day/edit', element: <MesoDayEditPage /> },
       // „Heti vizsgálat" + „izom-részlet" (mezo-d20.15 Task 4) — absorbs the retired
       // Volumen page's provenance anatomy (MesoMusclePage's DerivationSteps).
       { path: 'train/mesocycles/:id/week', element: <MesoWeekPage /> },

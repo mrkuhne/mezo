@@ -13,8 +13,8 @@ interface RecordIdentity {
 }
 
 /**
- * catalogId-when-present-else-name — the records idiom (mirrors prepBriefing's
- * identityKeyOf, but as a direct lookup rather than a shared key): an exercise
+ * catalogId-when-present-else-name — the records idiom (a direct lookup rather
+ * than a shared key): an exercise
  * carrying a catalogId is matched ONLY against a record with that same
  * catalogId (a same-named legacy row never substitutes for it); an exercise
  * with no catalogId (every mock-mode exercise, and any real one not yet

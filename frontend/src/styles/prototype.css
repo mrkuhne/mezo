@@ -7011,56 +7011,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    stripbg/shadow/radius as .mz-colstrip, just without the toggle chrome. ── */
 .mz-panel { background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
   border-radius: 18px; padding: 12px 14px; box-shadow: var(--mz-shadow); margin-bottom: 12px; }
-/* ── Edzés · session prep mosaic (mezo-d20.3.8) — prototype session-body
-   #prepPanel + tile pages ×1.18. The long hero-tile (eyebrow + title + the
-   4 mini stat cells + the CTA above the fold), the 6-tile mosaic, and the
-   Gyakorlatok page's tile-styled exercise cards (family wash + rail, clay
-   disc, labeled Cél · Induló súly columns, mini set dots, 1RM medal, a
-   múlt-hét → progresszió footer). Küldetések/Niggle badges reuse the
-   anchor+badge idiom (a numbered/exclamation dot pinned on the tile icon). */
-.tp-hero { padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 9px;
-  background: linear-gradient(140deg, var(--mz-wash-coral), var(--surface-card) 72%); }
-.tp-title { font-family: var(--ff-display); font-weight: 700; font-size: 23px; line-height: 1.15; }
-.tp-cta { width: 100%; margin-top: 2px; }
-.tp-anchor { position: relative; display: inline-flex; }
-.tp-badge { position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 3px;
-  border-radius: 999px; background: #FF6B4A; color: #fff; font-size: 9.5px; font-weight: 800;
-  display: grid; place-items: center; box-shadow: 0 2px 6px rgba(255, 107, 74, 0.5); }
-.tp-niggle { background: linear-gradient(150deg, var(--mz-cell-gold-bg), var(--mz-wash-white)); }
-.tp-niggle .tp-badge { background: var(--mz-strength); box-shadow: 0 3px 8px -2px rgba(201, 150, 46, 0.6); }
-
-/* Gyakorlatok tile page — .gx-tile exercise card */
-.gx-tile { border-radius: 19px; padding: 12px 13px 11px; background: var(--fw, var(--mz-stripbg));
-  box-shadow: inset 3px 0 0 var(--fr, transparent), 0 12px 22px -16px rgba(43, 33, 24, 0.28); }
-.gx-top { display: flex; align-items: flex-start; gap: 9px; }
-.gx-disc { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
-  background: rgba(255, 255, 255, 0.8); }
-.gx-grow { flex: 1; min-width: 0; }
-.gx-name { font-size: 13px; font-weight: 700; margin-top: 1px; }
-.gx-medal { flex: none; text-align: right; font-size: 11px; font-weight: 800; color: var(--amber-deep, #A8801F); }
-.gx-medal small { display: block; font-size: 7px; font-weight: 700; letter-spacing: 0.08em; }
-.gx-cols { display: flex; gap: 16px; margin-top: 9px; }
-.gx-cols small { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mz-ink-mut); }
-.gx-cols b { font-size: 12px; font-weight: 700; }
-.gx-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.gx-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 8px; font-weight: 800; flex: none; }
-.gx-dot-wu { border: 1.5px dashed var(--fd, var(--text-tertiary)); color: var(--fd, var(--text-tertiary)); }
-.gx-dot-wk { background: var(--fr, var(--text-tertiary)); color: #fff; }
-.gx-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;
-  padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 10px; color: var(--mz-ink-soft); }
-.gx-foot b { font-weight: 700; color: var(--text-primary); }
-.gx-arr { color: var(--mz-ink-mut); }
-.gx-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; background: var(--fr); }
-.gx-chip[data-lever='deload'] { background: var(--amber-deep, #A8801F); }
-.gx-chip[data-lever='rep'] { background: var(--sage, #7FA06C); }
-.gx-challenge { margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
-  font-size: 9px; font-weight: 700; color: #A84A26; }
-
-@media (prefers-reduced-motion: reduce) {
-  .mz-play .gx-tile.rise { opacity: 1; transform: none; animation: none; }
-}
-
 /* ── Edzés · élő session (mezo-d20.3.9) — prototype session-body #page-active
    ×1.18 (330→390px frame). SUPERSEDED by the Titanium card list (mezo-88iwa.7
    T6): the execution-card body (.wkx-exhead/-mbtn, .wkx-metaline/-chmini,
@@ -13719,6 +13669,32 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-list { display: flex; flex-direction: column; padding: 10px 16px 112px; }
 .wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
 
+/* — the day-level overload tally, at the head of the list (mezo-e1ii9 fix round 1) —
+   Quiet by design: it is a caption for the stack below it, not a card competing with
+   the cards. Amber only because every progression signal in the session screen is
+   amber (the warmup B-rows, `.warmstrip`); a drops-only day reads in the same amber,
+   because a back-off is a planned move, not a failure. */
+.wo-overload {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 0 2px 12px; padding: 9px 12px;
+  border: 1px solid #ffffff0e; border-left: 2px solid var(--amber, #e8c07d);
+  border-radius: 12px; background: #ffffff05;
+}
+.wo-overload-title { font-size: 12px; font-weight: 700; color: #e6ead9; }
+/* The clay growth glyph that replaced the ⚡ emoji (mezo-e1ii9 fix wave) — inline with the
+   words, baseline-nudged so it reads as part of the sentence, not as an icon slot. */
+.wo-overload-icon { vertical-align: -2px; margin-right: 5px; }
+.wo-overload-why { font-size: 10.5px; line-height: 1.4; color: #ffffff6b; }
+/* The same strip carries the failed-start alert + its retry (mezo-e1ii9 fix round 1). */
+.wo-overload[role="alert"] { border-left-color: #e08a7d; }
+.wo-overload-retry {
+  align-self: flex-start; margin-top: 6px; cursor: pointer;
+  padding: 5px 13px; border-radius: 999px;
+  border: 1px solid #ffffff1f; background: #ffffff0c;
+  color: #e6ead9; font-size: 11px; font-weight: 700;
+}
+.wo-overload-retry:disabled { opacity: .55; cursor: default; }
+
 /* — one card per exercise — */
 .wo-card {
   border: 1px solid #ffffff10; border-radius: 22px; margin-bottom: 14px; padding: 14px 14px 10px;
@@ -13972,7 +13948,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
 }
 
-.gl-card .wo-secondary {
+/* The ceremony's step two ends with the same secondary control (mezo-e1ii9): the
+   prototype's `Vissza az értékeléshez` back to step one. */
+.gl-card .wo-secondary, .cer-cta .wo-secondary {
   display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 12.5px; color: #bcb2c8;
   border: 1px solid #ffffff16; border-radius: 18px; background: #ffffff04;
 }
@@ -14215,23 +14193,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-record strong { display: block; font-size: 13.5px; font-weight: 500; color: #f2e4c2; }
 .cer-record small { display: block; font-size: 10.5px; color: #ffffff70; margin-top: 2px; }
 
-/* — the challenge outcomes, records-adjacent (T7 Task 4, mezo-88iwa.8) —
-   The same `.cer-record` row shape, retoned per verdict: the gold-stone band is the
-   RECORD medal's own signature, so a hit borrows the sage of a kept promise, a miss the
-   muted coral, and a skip/inconclusive stays neutral glass. */
-.cer-chals { display: grid; gap: 8px; }
-.cer-chal { grid-template-columns: 34px 1fr auto; }
-.cer-chal strong { color: #eef3e4; }
-.cer-chal .icon { opacity: .85; }
-.cer-chal-out {
-  font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #ffffff6b; white-space: nowrap;
-}
-.cer-chal.is-hit { border-color: #b9d3a340; background: #b9d3a312; }
-.cer-chal.is-hit .cer-chal-out { color: #c8e0b2; }
-.cer-chal.is-miss { border-color: #e2a89440; background: #e2a89410; }
-.cer-chal.is-miss .cer-chal-out { color: #eebaa8; }
-.cer-chal.is-skip { border-color: #ffffff1f; background: #ffffff0a; }
+/* The challenge-outcome rows (.cer-chals/.cer-chal*, T7 Task 4, mezo-88iwa.8) are gone
+   with their last consumer: the prototype's closing ceremony carries no challenge block,
+   and P1 (mezo-e1ii9) moved challenges to the workout header's ⋯ glass. */
 
 .cer-foot { margin-top: auto; padding: 4px 0 10px; }
 
@@ -14277,7 +14241,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-kcal-copy { font-size: 13.5px; color: #ffffffb0; }
 .cer-kcal-go { position: absolute; top: 16px; right: 18px; font-style: normal; font-size: 17px; color: #ffffff4a; }
 
-.cer-cta { padding-top: 4px; }
+.cer-cta { padding-top: 4px; display: grid; gap: 8px; }
 .cer-recap-note { margin: 10px 0 0; font-size: 9.5px; line-height: 1.7; color: #ffffff45; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14896,6 +14860,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-ex.is-link { grid-template-columns: 34px 34px 1fr auto; cursor: pointer; }
 .pl-ex-sets { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 78%, var(--text-primary)); white-space: nowrap; }
 .pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
+
+/* — the day page's tail (Train parity P1 Task 4, mezo-e1ii9): the prototype's dashed
+     `.pl-add` (plan.css:362) end-of-screen CTA, plus the quiet link to the day's own
+     editor route — the day page itself no longer carries an editor. — */
+.pl-dayfoot { display: grid; gap: 8px; margin-top: 12px; }
+.pl-add {
+  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  border: 1px dashed var(--border-subtle); border-radius: 18px; background: var(--surface-recess);
+}
+.pl-editlink {
+  display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary);
+  border: 0; background: none; text-align: center;
+}
 
 /* — the ranked list: name, number, bar, verdict — */
 .pl-list { display: grid; gap: 7px; }
