@@ -43,7 +43,7 @@
 // ============================================================
 import type { E1rmPoint } from '@/data/train/trainApi'
 import { hu1 } from '@/shared/lib/huNum'
-import { huMonthDay } from '@/shared/lib/dates'
+import { huMonthDayAged } from '@/shared/lib/dates'
 
 /** Prototype geometry, verbatim (`curve()`): the 300×76 box and its 8/20 insets. */
 const W = 300
@@ -102,7 +102,7 @@ export function StrengthCurve({ points }: StrengthCurveProps) {
     // history of holding a level that was measured exactly once.
     return (
       <p className="pl-foot-say">
-        Egyetlen becslésed van eddig ({huMonthDay(points[0].date)} · {hu1(points[0].e1rm)} kg) — a vonal a másodiktól kezd ívelni.
+        Egyetlen becslésed van eddig ({huMonthDayAged(points[0].date)} · {hu1(points[0].e1rm)} kg) — a vonal a másodiktól kezd ívelni.
       </p>
     )
   }
@@ -136,7 +136,7 @@ export function StrengthCurve({ points }: StrengthCurveProps) {
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-label={
-          `Becsült maximumod alakulása ${huMonthDay(first.date)} óta: ${points.length} mérés, ` +
+          `Becsült maximumod alakulása ${huMonthDayAged(first.date)} óta: ${points.length} mérés, ` +
           `${hu1(first.e1rm)} kg-tól ${hu1(last.e1rm)} kg-ig` +
           (gaps > 0 ? `, ${gaps} kihagyott időszakkal — ott a vonal megszakad.` : '.')
         }
@@ -152,7 +152,7 @@ export function StrengthCurve({ points }: StrengthCurveProps) {
         <circle className="gy-curve-now" cx={x(last.date)} cy={y(last.e1rm)} r={4} />
       </svg>
       <span className="gy-curve-cap">
-        <i>ami eddig megtörtént · {huMonthDay(first.date)} óta</i>
+        <i>ami eddig megtörtént · {huMonthDayAged(first.date)} óta</i>
         <i>becslés, nem mérés</i>
       </span>
     </div>

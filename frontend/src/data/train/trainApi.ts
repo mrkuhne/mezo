@@ -38,6 +38,16 @@ export type CatalogExerciseCreateRequest = components['schemas']['CatalogExercis
 export type CatalogVideoRequest = components['schemas']['CatalogVideoRequest']
 export type ExerciseRecordResponse = components['schemas']['ExerciseRecordResponse']
 export type E1rmPoint = components['schemas']['E1rmPoint']
+
+/**
+ * The wire's cap on `ExerciseRecordResponse.e1rmSeries` — at most this many points, and a
+ * longer history keeps the NEWEST (`E1rmSeries.MAX_POINTS` on the server; the contract
+ * states it in the field's own description, but only as prose, so `openapi-typescript` has
+ * nothing to hand us). THE FE's single home for the number: `sinceFact`, the mock fixtures
+ * and their tests all read it from here, so a server-side change to the cap is one edit on
+ * this side instead of a hunt through three files that each happened to spell `52`.
+ */
+export const E1RM_SERIES_MAX_POINTS = 52
 export type ExerciseNoteRequest = components['schemas']['ExerciseNoteRequest']
 export type LevelUpResult = components['schemas']['LevelUpResult']
 export type LevelUpGain = components['schemas']['LevelUpGain']

@@ -49,9 +49,32 @@ test('the hero carries the muscle eyebrow, the name and the three real foot fact
   await screen.findByText('Chest Supported Row')
   const hero = container.querySelector('.pl-dhero.gy-hero') as HTMLElement
   expect(within(hero).getByText('Hát (közép)')).toBeInTheDocument()
-  // 21 sessions · only 6 of them are IN the series, so the middle fact is the bounded one
-  // (an „Ápr 21 óta" here would tell a 21-session lifter he started in April) · 182 450 kg → tonnes
-  expect(hero.querySelector('.pl-poster-foot')!.textContent).toBe('21 alkalomebből az utolsó 6 látszik182,4 t összsúly')
+  // 21 sessions · 6 of them produced an e1RM point. That is an ELIGIBILITY shortfall, not
+  // the wire's window (the cap is 52 and the series is nowhere near it), so the middle fact
+  // is the absolute date the row actually carries — „az utolsó 6" would be a falsehood: the
+  // missing 15 sessions are scattered through the history, not cut off the front.
+  // · 182 450 kg → tonnes
+  expect(hero.querySelector('.pl-poster-foot')!.textContent).toBe('21 alkalomÁpr 21 óta182,4 t összsúly')
+})
+
+test('a series the wire actually CAPPED says „ebből az utolsó N látszik", not an „óta" date', async () => {
+  // 61 sessions and a FULL 52-point series: the server did drop the oldest points, so the
+  // oldest date the row carries is the WINDOW's start and must not be passed off as a start.
+  const capped = Array.from({ length: 52 }, (_, i) => ({
+    date: new Date(Date.UTC(2025, 8, 3 + i * 7)).toISOString().slice(0, 10),
+    e1rm: 100 + i * 0.4,
+  }))
+  server.use(
+    http.get(`${API_BASE}/api/train/exercise-records`, () =>
+      HttpResponse.json([{
+        catalogId: ROW, name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+        totalVolume: 231800, totalSets: 305, totalReps: 2440, sessionCount: 61,
+        repRecords: [], recentTopSets: [], e1rmSeries: capped,
+      }])),
+  )
+  const { container } = renderStory(ROW)
+  await screen.findByText('Chest Supported Row')
+  expect(container.querySelector('.pl-poster-foot')!.textContent).toContain('ebből az utolsó 52 látszik')
 })
 
 test('the hero shows the authorship stamp — the first renderer in the app for it', async () => {
@@ -149,14 +172,21 @@ test('a live-backend bodyweight record (weightKg 0) is an em dash on the 1RM car
   expect(cards[1].textContent).toBe('35 ismétlés')
 })
 
-test('the em-dashed 1RM card paints NO bar and no „Becslés" caption', async () => {
-  // Box Jump has no bestE1rm at all — a full bar under an em dash would paint a figure
-  // that is not there, and the caption would be captioning nothing.
+test('EVERY em-dashed card paints NO rail, no fill and no caption', async () => {
+  // Box Jump has no bestE1rm, no bestSet and no bestSessionVolume — all three cards are an
+  // em dash. A full bar under one would paint a record that is not there, and the caption
+  // would be captioning nothing (card 3 used to render a bare „—" under its own em dash).
   const { container } = renderStory(PLYO)
   await screen.findByText('Box Jump')
-  const card = container.querySelectorAll('.gy-rec')[0]
-  expect(card.textContent).not.toContain('Becslés, nem mérés')
-  expect(card.querySelector('.gy-rec-bar')).toBeNull()
+  const cards = Array.from(container.querySelectorAll('.gy-rec'))
+  expect(cards).toHaveLength(3)
+  for (const card of cards) {
+    expect(card.querySelector('strong')!.textContent).toBe('—')
+    expect(card.querySelector('.gy-rec-bar')).toBeNull()
+    expect(card.querySelector('.gy-rec-bar b')).toBeNull()
+    expect(card.querySelector('small')).toBeNull()
+  }
+  expect(container.querySelector('.gy-recs')!.textContent).not.toContain('Becslés, nem mérés')
 })
 
 test('a best with an EMPTY series gets an unfilled rail, not a 100% „you are at your peak"', async () => {

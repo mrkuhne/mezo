@@ -13,7 +13,7 @@
 // Mirrors the prototype's `exercise-state.js` (`exerciseList`, `libraryCounts`)
 // — docs/design_2.0/prototypes/companion-titanium/exercise-state.js:14-43.
 // ============================================================
-import type { ExerciseRecordResponse } from '@/data/train/trainApi'
+import { E1RM_SERIES_MAX_POINTS, type ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { ExerciseKind, ExerciseLibraryItem } from '@/data/types'
@@ -91,11 +91,21 @@ export function buildLibraryRows(
   records: readonly ExerciseRecordResponse[],
   medals: readonly Medal[],
 ): LibraryRow[] {
+  // Each medal is claimed by AT MOST ONE row, in the catalogue's own order. A name-only
+  // medal matches every catalogue row carrying that name, so without this two same-named
+  // rows (neither with a `catalogId`) would both count it and the poster's Σ would read
+  // higher than the medals the reader actually owns. Names are unique server-side today —
+  // this is the guard, not a fix for a live symptom (see `libraryCounts`).
+  const claimed = new Set<number>()
   return catalog.map((item) => {
     const record = joinByIdentity(records, item) ?? null
     // Same rule, one medal at a time: ask the join whether THIS medal belongs to the row,
     // rather than writing a second identity rule here.
-    const medalCount = medals.filter((m) => joinByIdentity([medalIdentity(m)], item) !== undefined).length
+    const medalCount = medals.reduce((n, m, i) => {
+      if (claimed.has(i) || joinByIdentity([medalIdentity(m)], item) === undefined) return n
+      claimed.add(i)
+      return n + 1
+    }, 0)
     return {
       key: exerciseKey(item),
       id: item.id,
@@ -129,6 +139,10 @@ export interface LibraryCounts {
  * matching no catalogue row is left out, not invented a row). So a medal earned on an
  * exercise that has since left the catalogue (or was never in it) is excluded here, and
  * this poster count can legitimately read LOWER than the medal vitrine's own total.
+ *
+ * It can never read HIGHER: `buildLibraryRows` lets each medal be claimed by at most ONE row
+ * (see its own comment), so two catalogue rows sharing a name — both name-only, no
+ * `catalogId` — cannot both count the same medal into this Σ.
  */
 export function libraryCounts(rows: readonly LibraryRow[]): LibraryCounts {
   return {
@@ -214,15 +228,24 @@ export function firstSeenDate(record: ExerciseRecordResponse): string | null {
  * What the hero's middle foot fact may HONESTLY say about how far back this exercise goes.
  *
  * `firstSeenDate` above is the oldest date the row CARRIES, and the wire's e1RM series keeps
- * only the newest 52 points (`E1rmSeries.MAX_POINTS`). For a long-running exercise that oldest
- * date is therefore the WINDOW's start, not the first session — „26 alkalom · Ápr 21 óta" tells
- * a two-year lifter he started this April. The row's own `sessionCount` is the tell: when it
- * exceeds the number of points the series actually carries, the series is bounded and the copy
- * must say the bounded thing („the last N sessions") instead of an absolute start date.
+ * only the newest `E1RM_SERIES_MAX_POINTS` points. For a long-running exercise that oldest
+ * date is therefore the WINDOW's start, not the first session — „60 alkalom · Ápr 21 óta"
+ * tells a two-year lifter he started this April, so the copy has to say the bounded thing
+ * („ebből az utolsó N látszik") instead.
  *
- * With NO series at all (a bodyweight row: nothing is ever e1RM-eligible) there is no point
- * count to compare against and no „last N" to name, so the dated refs the row carries are used
- * as before — that date is the oldest thing the row knows, and it is stated as such.
+ * The tell is the POINT COUNT AT THE CAP, not `sessionCount > points`. Points are lost to two
+ * different causes and only one of them is a window: the cap, and ELIGIBILITY — a session with
+ * nothing e1RM-eligible (bodyweight-only, all warm-up, all skipped, every set above the rep
+ * cap) is omitted from the series while still counting in `sessionCount`. Reading the mere
+ * shortfall as a window made the copy state a falsehood in the ordinary case: 21 logged
+ * sessions of which 6 produced a point are not „the last 6 of 21" — nothing was cut off the
+ * FRONT, the missing 15 are scattered all through the history. So the window is claimed only
+ * when the series is genuinely full (`points === E1RM_SERIES_MAX_POINTS`, where the server did
+ * drop the oldest); below the cap the row's oldest carried date is the oldest thing it knows,
+ * and that absolute fact is what gets said.
+ *
+ * With NO series at all (a bodyweight row: nothing is ever e1RM-eligible) the same fallback
+ * applies for the same reason.
  */
 export type SinceFact =
   | { kind: 'since'; date: string }
@@ -230,7 +253,11 @@ export type SinceFact =
 
 export function sinceFact(record: ExerciseRecordResponse): SinceFact | null {
   const points = record.e1rmSeries?.length ?? 0
-  if (points > 0 && record.sessionCount > points) return { kind: 'window', sessions: points }
+  // `>=` rather than `===`: if a future server ever ships a longer series, a full window is
+  // still a window — the branch must not fall silently back to an absolute start date.
+  if (points >= E1RM_SERIES_MAX_POINTS && record.sessionCount > points) {
+    return { kind: 'window', sessions: points }
+  }
   const date = firstSeenDate(record)
   return date ? { kind: 'since', date } : null
 }

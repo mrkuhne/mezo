@@ -334,11 +334,6 @@ describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => 
 })
 
 /**
- * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
- * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
- * and the muscle detail's gauge, ported from the prototype's `plan.css`.
- */
-/**
  * Section registration (mezo-lf3cv, P2 Task 3): the Gyakorlatok tab's own `.gy-*`
  * section — the catalogue rows, the detail hero, the record stat cards, the `.gy-
  * next` nudge, the strength-curve graphic and the medal rows — ported from the
@@ -368,6 +363,11 @@ describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', ()
   })
 })
 
+/**
+ * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
+ * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
+ * and the muscle detail's gauge, ported from the prototype's `plan.css`.
+ */
 describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
   const START_MARKER = 'terv titanium'
   const END_MARKER = '/terv titanium'

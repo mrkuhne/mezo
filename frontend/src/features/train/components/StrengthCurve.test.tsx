@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, test } from 'vitest'
+import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import { StrengthCurve, splitOnGaps } from '@/features/train/components/StrengthCurve'
 import type { E1rmPoint } from '@/data/train/trainApi'
 
@@ -23,6 +23,22 @@ function weekly(n: number, startIso = '2026-01-07', skip: readonly number[] = []
 
 const polylines = (c: HTMLElement) => Array.from(c.querySelectorAll('polyline'))
 const pointCount = (el: Element) => el.getAttribute('points')!.trim().split(/\s+/).length
+
+afterEach(() => vi.useRealTimers())
+
+// A 52-point WEEKLY series spans a year by construction, so the curve's oldest date being a
+// year old is the common case, not an edge one — and the hero above this component already
+// states its own „óta" with the year (`huMonthDayAged`). „Szep 3 óta" in the caption under
+// „2025. Szep 3 óta" in the hero would be the same date told two different ways on ONE screen.
+test('the caption carries the YEAR on a date old enough to be misread', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date(2026, 8, 17))
+  const { container } = render(
+    <StrengthCurve points={[{ date: '2025-09-03', e1rm: 100 }, { date: '2026-09-01', e1rm: 120 }]} />,
+  )
+  expect(container.querySelector('.gy-curve-cap')!.textContent).toContain('2025. Szep 3 óta')
+  expect(container.querySelector('svg')!.getAttribute('aria-label')).toContain('2025. Szep 3 óta')
+})
 
 test('no points at all says so — and draws nothing', () => {
   const { container } = render(<StrengthCurve points={[]} />)

@@ -186,7 +186,9 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     route: '/train/exercises',
     tier: 'T2',
     // v2 (parity P2 Task 4, mezo-lf3cv): a lap a teljes katalógus lett — a top-ötös
-    // sorrend, a ▶ videógomb és az „Új gyakorlat" felvétel eltűnt róla, a szöveg követi.
+    // sorrend és a ▶ videógomb tűnt el róla, a szöveg követi. Az „Új gyakorlat" felvétel
+    // MEGMARADT (fix round 1): a lista végén álló szaggatott `.pl-add` sor az egyetlen
+    // helye az egész appban, ezért a „hogyan" kártya külön ki is mondja, hol van.
     version: 2,
     label: 'Gyakorlatok',
     cards: [
@@ -198,7 +200,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-video', orb: 's-orb-figyel', anchor: 'exercises-kereso',
         title: 'Keress vagy szűrj.',
-        voice: 'Írj a keresőbe névre vagy izomra, vagy szűrj izomcsoportra a gombokkal — egy sorra koppintva megnyílik a gyakorlat egész története.',
+        voice: 'Írj a keresőbe névre vagy izomra, vagy szűrj izomcsoportra a gombokkal — egy sorra koppintva megnyílik a gyakorlat egész története. Ha valamit nem találsz, a lista legalján a „＋ Új gyakorlat" sorral veheted fel.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',

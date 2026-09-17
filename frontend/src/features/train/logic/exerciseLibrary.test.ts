@@ -3,7 +3,7 @@ import {
   buildLibraryRows, exerciseKey, filterLibraryRows, firstSeenDate, foldAccents, libraryCounts,
   libraryRegions, medalsForExercise, nextTarget, sinceFact, whereUsed,
 } from './exerciseLibrary'
-import type { ExerciseRecordResponse } from '@/data/train/trainApi'
+import { E1RM_SERIES_MAX_POINTS, type ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
 import type { ExerciseLibraryItem } from '@/data/types'
 
@@ -110,6 +110,19 @@ describe('libraryCounts', () => {
   ] as const)('%s', (_name, catalog, records, medals, expected) => {
     expect(libraryCounts(buildLibraryRows(catalog, records, medals))).toEqual(expected)
   })
+
+  // A name-only medal matches EVERY catalogue row carrying that name, so two same-named
+  // rows without a catalogId would each claim it and the poster's Σ would read higher than
+  // the medals the reader owns. The first row in catalogue order claims it, once.
+  it('counts a medal ONCE even when two catalogue rows share its name', () => {
+    const rows = buildLibraryRows(
+      [item({ id: 'l1', name: 'Hip Thrust', muscle: 'glute' }), item({ id: 'l2', name: 'Hip Thrust', muscle: 'glute' })],
+      [],
+      [medal({ exerciseName: 'Hip Thrust' })],
+    )
+    expect(rows.map((r) => r.medalCount)).toEqual([1, 0])
+    expect(libraryCounts(rows).medals).toBe(1)
+  })
 })
 
 test('libraryRegions lists only the regions the catalogue actually has', () => {
@@ -194,19 +207,36 @@ describe('firstSeenDate', () => {
 })
 
 describe('sinceFact', () => {
-  // The series is capped on the wire (52 points), so an absolute „óta" is only honest when
-  // the series covers the whole history — `sessionCount` is the tell.
-  const series = (n: number) => Array.from({ length: n }, (_, i) => ({ date: `2026-0${1 + (i % 9)}-0${1 + (i % 9)}`, e1rm: 100 + i }))
+  // The series is capped on the wire (`E1RM_SERIES_MAX_POINTS`), so an absolute „óta" is only
+  // dishonest when the server actually cut the FRONT off — i.e. when the series came back
+  // FULL. A shortfall alone proves nothing: points are also lost to eligibility (a session
+  // with nothing e1RM-eligible is omitted while still counting in `sessionCount`), and those
+  // are scattered through the history, not taken off the front, so „the last N" would be a
+  // falsehood. Both branches are pinned below, the shortfall row included.
+  const series = (n: number, startDay = 1) => Array.from({ length: n }, (_, i) => ({
+    date: new Date(Date.UTC(2025, 0, startDay + i * 7)).toISOString().slice(0, 10),
+    e1rm: 100 + i,
+  }))
+  const FULL = E1RM_SERIES_MAX_POINTS
   const cases: Array<[string, ExerciseRecordResponse, ReturnType<typeof sinceFact>]> = [
     ['series covers every session → the absolute date',
       record({ name: 'X', sessionCount: 3, e1rmSeries: [{ date: '2025-09-03', e1rm: 90 }, { date: '2026-01-02', e1rm: 95 }, { date: '2026-06-02', e1rm: 100 }] }),
       { kind: 'since', date: '2025-09-03' }],
-    ['more sessions than points → the window, named by its point count',
-      record({ name: 'X', sessionCount: 26, e1rmSeries: series(6) }),
-      { kind: 'window', sessions: 6 }],
-    ['one session more than points is already a window',
-      record({ name: 'X', sessionCount: 4, e1rmSeries: series(3) }),
-      { kind: 'window', sessions: 3 }],
+    ['a FULL series with more sessions behind it → the window, named by its point count',
+      record({ name: 'X', sessionCount: FULL + 9, e1rmSeries: series(FULL) }),
+      { kind: 'window', sessions: FULL }],
+    ['one session more than a FULL series is already a window',
+      record({ name: 'X', sessionCount: FULL + 1, e1rmSeries: series(FULL) }),
+      { kind: 'window', sessions: FULL }],
+    ['a FULL series with no sessions behind it is not a window — nothing was cut',
+      record({ name: 'X', sessionCount: FULL, e1rmSeries: series(FULL) }),
+      { kind: 'since', date: '2025-01-01' }],
+    // The row the old `sessionCount > points` rule got wrong: 21 sessions, 6 of them
+    // e1RM-eligible. Nothing hit the cap, so these 6 are NOT „the last 6" of anything —
+    // the honest thing is the oldest date the row carries.
+    ['an ELIGIBILITY shortfall is NOT a window — the absolute date, not „the last N"',
+      record({ name: 'X', sessionCount: 21, e1rmSeries: series(6) }),
+      { kind: 'since', date: '2025-01-01' }],
     ['no series at all (a bodyweight row) keeps the dated-ref fallback',
       record({ name: 'X', sessionCount: 6, bestSet: { weightKg: 0, reps: 10, date: '2026-05-26' } }),
       { kind: 'since', date: '2026-05-26' }],

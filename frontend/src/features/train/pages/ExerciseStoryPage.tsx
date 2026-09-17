@@ -53,7 +53,7 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMedals, useMesoTemplates, useTrain } from '@/data/hooks'
-import { huMonthDay, huMonthDayAged } from '@/shared/lib/dates'
+import { huMonthDayAged } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -134,25 +134,45 @@ export function ExerciseStoryPage() {
   const used = whereUsed(row, activeMeso, templates)
   const usedPending = workoutPending || templatesPending
 
-  // The 1RM card's delta: how much the RECORD estimate improved on the best estimate
-  // that stood before the session which set it. Not „since last session" — the headline
-  // is the all-time best, so its delta has to be measured against the previous best or
-  // the two numbers would be talking about different things.
   const bestE1rm = record?.bestE1rm?.value ?? null
-  const priorBest = record?.bestE1rm
-    ? series.filter((p) => p.date < record.bestE1rm!.set.date).reduce<number | null>(
+  const hasE1rm = bestE1rm != null && bestE1rm > 0
+
+  // TWO POPULATIONS, and the card's derived numbers must not straddle them. The headline
+  // `bestE1rm` comes from `ExerciseRecordService`, which still counts SKIPPED working sets
+  // (mezo-za09c, open — not this slice's to widen or to fix); the `e1rmSeries` below it comes
+  // from `E1rmSeries`, which excludes them. So a record set on a skipped set exists in the
+  // headline and has NO point in the curve at all, and a delta or a share measured across
+  // that gap would be two different things divided by each other.
+  //
+  // The series' own peak is the tell. When it reaches the headline the two populations agree
+  // on this exercise and the comparison is sound; when it falls short the record lives
+  // outside the series and BOTH derived numbers are withheld — the card keeps its real
+  // figure and simply says nothing it cannot back up. (Half a decimal of slack: the wire
+  // rounds both to scale 1.)
+  const seriesPeak = series.length ? Math.max(...series.map((p) => p.e1rm)) : null
+  const seriesOwnsRecord = hasE1rm && seriesPeak != null && seriesPeak >= bestE1rm! - 0.05
+
+  // The delta: how much the RECORD estimate improved on the best estimate that stood before
+  // the session which set it. Not „since last session" — the headline is the all-time best,
+  // so its delta has to be measured against the previous best.
+  //
+  // It is also withheld on a WINDOW-BOUNDED series (`sinceFact`): past the wire's point cap
+  // the earlier peak may simply have fallen out of the series, and „+X kg a korábbi csúcsod
+  // óta" would then be measured from whatever survived the window rather than from the real
+  // previous best — overstating the gain by however much the lost peak was worth.
+  const priorBest = seriesOwnsRecord && since?.kind !== 'window'
+    ? series.filter((p) => p.date < record!.bestE1rm!.set.date).reduce<number | null>(
       (max, p) => (max === null || p.e1rm > max ? p.e1rm : max), null)
     : null
   const e1rmDelta = bestE1rm != null && priorBest != null && bestE1rm > priorBest ? bestE1rm - priorBest : null
-  // The bar: where the LATEST estimate sits against the best one — the only share on
-  // this card that is a real ratio of two real numbers.
+  // The bar: where the LATEST estimate sits against the best one — a real ratio of two real
+  // numbers, once both are known to come from the same population.
   const latestE1rm = series.length ? series[series.length - 1].e1rm : null
   // …and it is NULL when there is nothing to compare: no best estimate (the card is an em
   // dash — a bar under a missing number would be painting a figure that is not there), or a
   // best with an empty series, where a full bar would silently claim „you are at your peak
   // right now". An unfilled rail says the true thing: this comparison cannot be made.
-  const hasE1rm = bestE1rm != null && bestE1rm > 0
-  const e1rmShare = hasE1rm && latestE1rm != null
+  const e1rmShare = seriesOwnsRecord && latestE1rm != null
     ? Math.min(100, (latestE1rm / bestE1rm!) * 100)
     : null
 
@@ -229,8 +249,16 @@ export function ExerciseStoryPage() {
                         : <>{record.bestSet.reps} <small>ismétlés</small></>
                       : '—'}
                   </strong>
-                  <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
-                  <small>{record.bestSet ? huMonthDayAged(record.bestSet.date) : '—'}</small>
+                  {/* Same rule as the 1RM card above: no figure ⇒ no rail, no fill, no
+                      caption. The full bar means „ez A rekord" — under an em dash it would
+                      be painting a record that does not exist, and the date caption would
+                      be an em dash captioning an em dash. */}
+                  {record.bestSet && (
+                    <>
+                      <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
+                      <small>{huMonthDayAged(record.bestSet.date)}</small>
+                    </>
+                  )}
                 </div>
                 <div className="gy-rec">
                   <span className="tr-eyebrow">Legtöbb volumen</span>
@@ -239,12 +267,14 @@ export function ExerciseStoryPage() {
                       ? <>{huInt(record.bestSessionVolume.volumeKg)} <small>kg × rep</small></>
                       : '—'}
                   </strong>
-                  <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
-                  <small>
-                    {record.bestSessionVolume
-                      ? `${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`
-                      : '—'}
-                  </small>
+                  {record.bestSessionVolume && (
+                    <>
+                      <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
+                      <small>
+                        {`${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`}
+                      </small>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -278,7 +308,7 @@ export function ExerciseStoryPage() {
                     <strong>{MEDAL_TYPE_LABEL[m.type] ?? m.type}</strong>
                     <small>{medalValueLabel(m)}</small>
                   </span>
-                  <small className="gy-medal-date">{huMonthDay(m.date)}</small>
+                  <small className="gy-medal-date">{huMonthDayAged(m.date)}</small>
                 </span>
               ))}
             </div>

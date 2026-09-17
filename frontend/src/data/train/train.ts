@@ -4,7 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
-import type { E1rmPoint, ExerciseRecordResponse } from '@/data/train/trainApi'
+import { E1RM_SERIES_MAX_POINTS, type E1rmPoint, type ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
@@ -1057,14 +1057,23 @@ export const exerciseRecordsMock: ExerciseRecordResponse[] = [
     bestSet: { weightKg: 107.5, reps: 8, date: '2026-08-12' },
     bestE1rm: { value: 140, set: { weightKg: 105, reps: 10, date: '2026-08-26' } },
     bestSessionVolume: { volumeKg: 3150, date: '2026-08-26' },
-    totalVolume: 42000, totalSets: 130, totalReps: 1150, sessionCount: 26,
+    // 61 sessions against a series the wire capped at 52 points: the count has to EXCEED
+    // the cap or the fixture contradicts itself (52 sessions' worth of points cannot come
+    // out of 26 sessions), and exceeding it is also what makes this row the one that
+    // exercises the story hero's window branch — „ebből az utolsó 52 látszik".
+    totalVolume: 231800, totalSets: 305, totalReps: 2440, sessionCount: 61,
     repRecords: [
       { weightKg: 107.5, reps: 8, date: '2026-08-12' },
       { weightKg: 105, reps: 10, date: '2026-08-26' },
       { weightKg: 100, reps: 12, date: '2026-07-01' },
     ],
     recentTopSets: [],
-    e1rmSeries: weeklyE1rm(52, '2026-08-26', 117, 0.43), // the 52-point cap, no gaps
+    // The 52-point cap (`E1RM_SERIES_MAX_POINTS`), no gaps. Every generated value stays at or
+    // below this row's own `bestE1rm`, and the LAST one lands exactly on it (117,27 + 51 ×
+    // 0,43 + 0,8 wobble = 140,0 on 2026-08-26, the very date `bestE1rm.set` carries) — so the
+    // record genuinely lives IN the series, which is what lets the story card draw its bar at
+    // all (`ExerciseStoryPage`: a headline the series does not own gets an unfilled rail).
+    e1rmSeries: weeklyE1rm(E1RM_SERIES_MAX_POINTS, '2026-08-26', 117.27, 0.43),
   },
   {
     name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
