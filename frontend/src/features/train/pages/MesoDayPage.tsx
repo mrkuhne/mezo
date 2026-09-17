@@ -43,6 +43,7 @@ import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozai
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { huKg } from '@/features/train/logic/mesoDates'
 import type { DayTone } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -151,7 +152,13 @@ export function MesoDayPage() {
               SESSION_MUSCLE_CAP (setBudget.ts) — neither number is written here. */}
           {muscleRows.length > 0 && (
             <>
-              <h3 className="pl-h3 rise">Mit terhel ez a nap</h3>
+              <h3 className="pl-h3 rise">
+                Mit terhel ez a nap
+                <InfoButton
+                  title="Miért nyolcnál a jelölés?"
+                  copy="Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz."
+                />
+              </h3>
               <div className="pl-mrows">
                 {muscleRows.map((r) => (
                   <div
@@ -176,7 +183,13 @@ export function MesoDayPage() {
               below edits. Index + MuscleChip + name + the 4-cell prescription grid. */}
           {day.exercises.length > 0 && (
             <>
-              <h3 className="pl-h3 rise">A nap gyakorlatai</h3>
+              <h3 className="pl-h3 rise">
+                A nap gyakorlatai
+                <InfoButton
+                  title="Mikortól él a változtatás?"
+                  copy="Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted."
+                />
+              </h3>
               <div className="pl-exs">
                 {day.exercises.map((e, i) => {
                   const isHold = e.repMin === 0 && e.repMax === 0

@@ -619,3 +619,28 @@ describe('versusPairs', () => {
     expect(versusPairs(closed, active)).toEqual([{ muscle: 'chest', label: 'Mell', then: 16, now: 11 }])
   })
 })
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+// The TITLE here is the one adjudicated swap: production renders text rows, not the
+// prototype's bars, so „Mit mutat a sáv?" would point at a bar that is not on screen.
+// It reads „Hogyan olvasd?" until the surfaces slice (mezo-fsz2r) brings the bars back.
+describe('MesoReportPage · the ⓘ explain layer (mezo-b516k)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('ⓘ beside the muscle-journey eyebrow explains the journey, copy word for word', async () => {
+    const user = userEvent.setup()
+    renderAt('meso-rec-03')
+    const btn = await screen.findByRole('button', { name: 'Hogyan olvasd? — mit jelent?' })
+    expect(btn.previousElementSibling?.textContent).toBe('Izmonként · indulás → elért csúcs / plafon')
+    await user.click(btn)
+    expect(
+      within(screen.getByRole('dialog', { name: 'Hogyan olvasd?' })).getByText(
+        'Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét.',
+      ),
+    ).toBeInTheDocument()
+  })
+})

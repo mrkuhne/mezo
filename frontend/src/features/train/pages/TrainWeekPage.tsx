@@ -52,6 +52,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
 import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
@@ -252,7 +253,13 @@ export function TrainWeekPage() {
           <div className="ld-hero-bar">
             <i style={{ '--w': `${totals.percent}%` } as CSSProperties} />
           </div>
-          <p className="ld-hero-say">{heroSay(totals, waiting.length)}</p>
+          <p className="ld-hero-say">
+            {heroSay(totals, waiting.length)}{' '}
+            <InfoButton
+              title="Miből áll össze a szám?"
+              copy="A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké."
+            />
+          </p>
           <div className="ld-hero-chips">
             <button type="button" className="mz-pgact" onClick={() => setScheduleOpen(true)}>Időpontok</button>
             <button
@@ -290,7 +297,13 @@ export function TrainWeekPage() {
             <b>›</b>
           </button>
 
-          <h3 className="ld-h3">Izomcsoportok ezen a héten</h3>
+          <h3 className="ld-h3">
+            Izomcsoportok ezen a héten
+            <InfoButton
+              title="Mit mutat a sáv?"
+              copy="A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott, és melyik napokon."
+            />
+          </h3>
           <div className="ld-groups">
             {groups.map((g, i) => (
               <button
@@ -337,6 +350,15 @@ export function TrainWeekPage() {
                   </small>
                   <em>Becslés — a szettszámokba nem számít bele.</em>
                 </span>
+                {/* The ⓘ sits INSIDE the sport card, as the prototype's sportCard()
+                    inlines it (load-pages.js:95). The prototype's art override there is
+                    `volley`, which has no clay equivalent — `i-sport` is the honest
+                    neighbour and the card's own glyph. */}
+                <InfoButton
+                  icon="i-sport"
+                  title="A sport és a szettek"
+                  copy="A sportod a heti mozgásod és a pihenésed része — a szettszámokba nem számít bele, mert ott a terved emelkedését követjük. A regenerációnál viszont figyelembe vesszük."
+                />
               </section>
             </>
           )}

@@ -14274,7 +14274,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 
 /* — a szakasz-fejek — */
-.ld-h3 { margin: 22px 2px 10px; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+/* `display:flex` + the 7px gap match `.pl-h3` (:14900) so a trailing `.pl-info` sits
+   beside the heading text on the Terhelés screens too (mezo-b516k). */
+.ld-h3 { margin: 22px 2px 10px; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
 .ld-h3:first-child { margin-top: 6px; }
 
 /* — a két ajtó: a test térképe és az összes mozgás — */

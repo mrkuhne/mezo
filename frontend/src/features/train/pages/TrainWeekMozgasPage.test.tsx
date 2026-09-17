@@ -262,3 +262,31 @@ test('the sport/futás event list renders the honest absence when the week has n
   expect(container.querySelectorAll('.ld-event').length).toBe(0)
   expect(screen.getByText('Nincs tervezett sport/futás esemény ezen a héten.')).toBeInTheDocument()
 })
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ in the hero sentence explains why the minutes are an estimate, word for word', async () => {
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Miért becslés? — mit jelent?' })
+  expect(btn.closest('.ld-hero-say')).not.toBeNull()
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Miért becslés?' })).getByText(
+      'A gym percei a szettjeidből becsültek, a röplabdát te naplóztad. A kalória mindkettőnél becslés a mozgás jellegéből — nem mérés.',
+    ),
+  ).toBeInTheDocument()
+})
+
+test('ⓘ beside „Izomcsoportok, sporttal együtt" explains how to read it, word for word', async () => {
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Hogyan olvasd? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Izomcsoportok, sporttal együtt')
+  fireEvent.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Hogyan olvasd?' })).getByText(
+      'A sáv a gym szettjeidet mutatja a heti tervhez képest. A kék jel azt jelzi, hogy a sport is dolgoztatta a csoportot — ez becslés, és nem adódik hozzá a szettekhez.',
+    ),
+  ).toBeInTheDocument()
+})

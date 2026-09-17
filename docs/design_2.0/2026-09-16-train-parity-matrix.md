@@ -508,6 +508,42 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 
 ---
 
+## 22. The ⓘ explain layer — all 13 controls, CLOSED (P3 wave, `mezo-b516k`, 2026-09-17)
+
+The prototype's smallest control: one 22px icon-only button beside a heading (or inlined at
+the end of a hero sentence), opening the workout-style 3D glass with a short plain-language
+explanation. Production had **no info idiom at all** — rows 7, 8, 11–21 of the deep audit's
+closing table (`2026-09-17-train-deep-parity-audit.md` §22) were thirteen BLOCKER-severity
+missing controls across eight screens. All thirteen are now **✅ CLOSED**: one shared
+primitive (`features/train/components/InfoButton.tsx`, built on `GlassBox`) placed thirteen
+times, with the owner-iterated copy shipped **word for word**.
+
+| Audit row | Screen | Title (the `aria-label` is `„<title> — mit jelent?"`) | Anchor in production | State |
+|---|---|---|---|---|
+| 7 | §3 plan day | Miért nyolcnál a jelölés? | `h3` „Mit terhel ez a nap" | ✅ CLOSED |
+| 8 | §3 plan day | Mikortól él a változtatás? | `h3` „A nap gyakorlatai" | ✅ CLOSED |
+| 11 | §5 muscle | Mit jelentenek a jelölések? | `h3` „Hol tartasz" | ✅ CLOSED — the copy interpolates the muscle's REAL MEV, never a literal |
+| 12 | §8 template story | Mit jelent a szám? | `h3` „Heti szettek izmonként" | ✅ CLOSED — the static paragraph that used to print this sentence on the page was **deleted** in the same change, so it is said once, behind the button, as the prototype keeps it |
+| 13 | §10 closed run | **Hogyan olvasd?** | the `Eyebrow` „Izmonként · indulás → elért csúcs / plafon" | ✅ CLOSED — **⚠ TEMPORARY TITLE SWAP** (see below) |
+| 14 | §12 Terhelés | Miből áll össze a szám? | the `.ld-hero-say` hero sentence | ✅ CLOSED |
+| 15 | §12 Terhelés | Mit mutat a sáv? | `h3` „Izomcsoportok ezen a héten" | ✅ CLOSED |
+| 16 | §12 Terhelés | A sport és a szettek | inside the `.ld-sport` card | ✅ CLOSED — the prototype's `volley` art override has no clay equivalent; the card's own `i-sport` glyph stands in |
+| 17 | §13 Izomtérkép | Miből rajzoljuk? | the `.ld-hero-say` sentence | ✅ CLOSED |
+| 18 | §14 Mozgás | Miért becslés? | the `.ld-hero-say` sentence | ✅ CLOSED |
+| 19 | §14 Mozgás | Hogyan olvasd? | `h3` „Izomcsoportok, sporttal együtt" | ✅ CLOSED |
+| 20 | §17 exercise story | Mi számít rekordnak? | `h3` „Rekordjaid" | ✅ CLOSED |
+| 21 | §17 exercise story | Mit mutat a vonal? | `h3` „Az erőd íve" | ✅ CLOSED |
+
+**⚠ The one temporary divergence — audit row 13, §10 closed run.** The prototype's title
+there is **„Mit mutat a sáv?"**. Production's muscle-journey section renders TEXT ROWS, not
+the prototype's bars (a documented P1 decision, `mezo-e1ii9`), so that title would point at a
+bar that is not on the screen. The **copy is verbatim** (it describes the journey, not the
+bar); only the TITLE reads **„Hogyan olvasd?"**, and it **flips back to the prototype's
+„Mit mutat a sáv?" when the surfaces slice (`mezo-fsz2r`) returns the bars**. This row is the
+reason the matrix carries this table at all — do not close `mezo-fsz2r` without flipping it.
+
+---
+
 ## Severity roll-up (one row per prototype screen)
 
 | Severity | Count | Screens |

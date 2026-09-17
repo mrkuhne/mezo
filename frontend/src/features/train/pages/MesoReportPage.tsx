@@ -89,6 +89,7 @@ import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { runStars } from '@/features/train/logic/libraryStory'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { InfoButton } from '@/features/train/components/InfoButton'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
@@ -504,8 +505,16 @@ export function MesoReportPage() {
               MEV/MAV/MRV/Deload legend jargon, so it went (T-P1 Task 5, mezo-e1ii9). */}
           {arcs.length > 0 && (
             <>
-              <div style={{ padding: '12px 0 0' }}>
+              {/* The ⓘ's anchor here is the Eyebrow, not a heading — production
+                  renamed this section (mezo-e1ii9). Its TITLE is „Hogyan olvasd?" and not
+                  the prototype's „Mit mutat a sáv?" only until the surfaces slice
+                  (mezo-fsz2r) brings the bars back; the COPY is verbatim (mezo-b516k). */}
+              <div className="row" style={{ padding: '12px 0 0', alignItems: 'center', gap: 7 }}>
                 <Eyebrow>Izmonként · indulás → elért csúcs / plafon</Eyebrow>
+                <InfoButton
+                  title="Hogyan olvasd?"
+                  copy="Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét."
+                />
               </div>
               <div className="card col" style={{ padding: '8px 12px' }} data-testid="meso-report-bands">
                 {peakBands(arcs).map((r) => (

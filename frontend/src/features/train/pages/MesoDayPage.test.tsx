@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -202,4 +202,34 @@ describe('MesoDayPage (real mode)', () => {
     expect(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })).toBeInTheDocument()
     expect(document.body.textContent).not.toContain('Heti szetek')
   })
+})
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ beside „Mit terhel ez a nap" explains the eight-set marking, word for word', async () => {
+  const user = userEvent.setup()
+  setup()
+  const btn = screen.getByRole('button', { name: 'Miért nyolcnál a jelölés? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Mit terhel ez a nap')
+  await user.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Miért nyolcnál a jelölés?' })).getByText(
+      'Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz.',
+    ),
+  ).toBeInTheDocument()
+})
+
+test('ⓘ beside „A nap gyakorlatai" explains when an edit starts counting, word for word', async () => {
+  const user = userEvent.setup()
+  setup()
+  const btn = screen.getByRole('button', { name: 'Mikortól él a változtatás? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('A nap gyakorlatai')
+  await user.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Mikortól él a változtatás?' })).getByText(
+      'Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted.',
+    ),
+  ).toBeInTheDocument()
 })

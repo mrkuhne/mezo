@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -475,4 +475,24 @@ describe('MesoMusclePage (real mode)', () => {
     expect(widths[1]).toContain('--w: 66.6')
     expect(widths[0]).not.toBe(widths[1])
   })
+})
+
+// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
+// The button beside the heading, the prototype's copy word for word. The aria-label is
+// the prototype's own `"<title> — mit jelent?"`.
+
+test('ⓘ beside „Hol tartasz" interpolates the muscle\'s REAL MEV — never a literal number', async () => {
+  const user = userEvent.setup()
+  setup('back')
+  // The page already prints the same threshold in its own words below the gauge; the
+  // glass must quote THAT number, not a constant baked into the copy.
+  const mev = document.querySelector('.pl-foot-say')!.textContent!.match(/^(\d+) szett alatt/)![1]
+  const btn = screen.getByRole('button', { name: 'Mit jelentenek a jelölések? — mit jelent?' })
+  expect(btn.closest('h3')?.textContent).toBe('Hol tartasz')
+  await user.click(btn)
+  expect(
+    within(screen.getByRole('dialog', { name: 'Mit jelentenek a jelölések?' })).getByText(
+      `A ${mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`,
+    ),
+  ).toBeInTheDocument()
 })
