@@ -46,6 +46,17 @@
 // backend feature with no prototype counterpart — so it kept its place as a quiet,
 // collapsed `details` at the foot of the story, labelled for what it is: an
 // estimate written by the program, not a measurement.
+//
+// Fix round 1 (mezo-e1ii9): the claim that the run-window context averages "have their
+// own home" on MesoComparePage was only true for a user with TWO OR MORE closed runs —
+// `MesoFutamokPage` gates the compare entry behind `archived.length >= 2`, so a first
+// closed run (or any run reviewed alone) had no path to those six numbers at all. Per the
+// brief's own fallback ("fold a plain-language version into the collapsed section"), the
+// same six `CONTEXT_METRICS` this page's `contextDiff` sibling draws now also render as
+// plain prose-and-number rows inside the collapsed disclosure below — no emoji, no table,
+// the MEV/MAV/MRV block stays retired. A metric the run never measured renders '–', never
+// a fabricated 0, and an averaged/summed figure says so in words rather than posing as a
+// single measurement.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -55,7 +66,8 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
-import type { MesoStrengthDelta, MesocycleReportResponse } from '@/data/train/trainApi'
+import { CONTEXT_METRICS } from '@/features/train/logic/mesoCompare'
+import type { MesoContextTotals, MesoStrengthDelta, MesocycleReportResponse } from '@/data/train/trainApi'
 import type { MedalType } from '@/data/train/medalTypes'
 import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
@@ -183,6 +195,42 @@ export function versusPairs(closed: MuscleVolumeArc[], activeArc: MesoVolumeArc 
 /** '–' for a missing per-muscle start value — never a fabricated 0. */
 const dash = (n: number | null | undefined, suffix = ''): string => (n == null ? '–' : `${fmt(n)}${suffix}`)
 
+// --- run-window lifestyle context, folded into the collapsed section (fix round, mezo-e1ii9) ---
+
+export interface ContextRow {
+  key: string
+  /** Plain-language description of what the number IS — an average, a total, an estimate —
+   *  never bare enough to be mistaken for a single measurement. */
+  descriptor: string
+  /** '–' when this run never measured the metric — the honesty rule, never a fabricated 0. */
+  value: string
+}
+
+/**
+ * Same six fields `mesoCompare`'s `contextDiff` draws on `MesoComparePage`, reused here
+ * (not re-declared) so the two surfaces can never quietly disagree about which metrics
+ * exist. Each row spells out in words whether the number is an average over the run's days
+ * or a total across it — `contextDiff` only ever shows two runs side by side, so it never
+ * had to say this out loud; a lone run's row does.
+ */
+const CONTEXT_ROW_COPY: Record<string, { descriptor: string; render: (n: number) => string }> = {
+  Alvás: { descriptor: 'Átlagos alvásidő éjszakánként', render: (n) => `${fmt(n)} óra` },
+  Kcal: { descriptor: 'Átlagos napi kalóriabevitel', render: (n) => `${fmt(Math.round(n))} kcal` },
+  Energia: { descriptor: 'Energiaszint — a napi önértékelések átlaga', render: (n) => fmt(n) },
+  Stressz: { descriptor: 'Stresszszint — a napi önértékelések átlaga', render: (n) => fmt(n) },
+  Súlyváltozás: { descriptor: 'Testsúlyváltozás a futam alatt, összesítve a mért napokból', render: (n) => `${signed(n)} kg` },
+  Sport: { descriptor: 'Sportra fordított idő összesen a futam alatt', render: (n) => `${fmt(n)} perc` },
+}
+
+/** The plain-language context rows for a closed run's OWN report — absent metrics stay '–'. */
+function contextRows(totals: MesoContextTotals): ContextRow[] {
+  return CONTEXT_METRICS.map((m) => {
+    const copy = CONTEXT_ROW_COPY[m.label]
+    const raw = m.pick(totals)
+    return { key: m.label, descriptor: copy.descriptor, value: raw == null ? '–' : copy.render(raw) }
+  })
+}
+
 export function MesoReportPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -230,6 +278,9 @@ export function MesoReportPage() {
   const rating = report ? runStars(report.adherence.completionPct) : null
   const pairs = versusPairs(arcs, activeArc)
   const versusScale = Math.max(1, ...pairs.map((p) => Math.max(p.then, p.now)))
+  // The run-window lifestyle rows (fix round, mezo-e1ii9) — absent only when the report
+  // itself carries no context at all (async aggregation never ran, or the run predates it).
+  const ctxRows = report?.context ? contextRows(report.context.totals) : []
 
   return (
     <MozaikPage tone="gold">
@@ -527,61 +578,96 @@ export function MesoReportPage() {
             </div>
           )}
 
-          {/* The machine's own read of the run — a REAL backend feature the prototype's
-              closed-run story has no counterpart for, so it is not a design leftover to
-              delete (T-P1 Task 5, mezo-e1ii9). It keeps its data and its three live states,
-              but it no longer competes with the story: a closed `details` at the foot,
-              opened only by a reader who wants it, and captioned for what it is — a guess
-              the program wrote from the numbers above, not a measurement of its own.
-              `ready` with a null `aiEval` (should not happen server-side) deliberately falls
-              through to the `failed` branch below — a defensive guard, not a fourth state. */}
-          {report.aiEvalEnabled && (
+          {/* The foot's one collapsed disclosure — a home for two things that both need a
+              quiet place, not the story's main flow: the machine's own read of the run (a
+              REAL backend feature the prototype's closed-run story has no counterpart for,
+              T-P1 Task 5, mezo-e1ii9), and — since the fix round — the run-window lifestyle
+              averages. Those averages have exactly one OTHER surface, `MesoComparePage`'s
+              `contextDiff`, and that page is reachable only once a second closed run exists
+              (`MesoFutamokPage` gates it behind `archived.length >= 2`); a first closed run,
+              or any run reviewed alone, had no path to them at all until this fold-in. Either
+              half can exist without the other (`aiEvalEnabled` off, or a report with no
+              `context`), so the details block itself renders whenever EITHER has something to
+              show — never an empty shell for a run with neither. `ready` with a null `aiEval`
+              (should not happen server-side) deliberately falls through to the `failed`
+              branch below — a defensive guard, not a fourth state. */}
+          {(report.aiEvalEnabled || ctxRows.length > 0) && (
             <details
               className="card"
               data-testid="meso-report-ai"
               style={{ padding: '12px var(--sp-4)', margin: '4px 0 0' }}
             >
               <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                Mit olvas ki ebből a gép?
+                {report.aiEvalEnabled ? 'Mit olvas ki ebből a gép?' : 'Életmód a futam alatt'}
               </summary>
-              <div className="col gap-sm" style={{ paddingTop: 10 }}>
-                <p className="text-secondary" style={{ fontSize: 11.5, lineHeight: 1.5, margin: 0, color: 'var(--text-tertiary)' }}>
-                  A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.
-                </p>
-                {report.aiEvalStatus === 'ready' && report.aiEval ? (
-                  <>
-                    {report.aiEval.split(/\n\n+/).map((para, i) => (
-                      <p key={i} className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{para}</p>
-                    ))}
-                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                      {report.aiEvalGeneratedAt ? (
-                        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                          {`Generálva · ${day(report.aiEvalGeneratedAt)}`}
+              <div className="col gap-md" style={{ paddingTop: 10 }}>
+                {/* The lifestyle rows — plain prose-and-number, no emoji pills (those were
+                    the T-P1 Task 5 removal), no per-week table (the MEV/MAV/MRV spreadsheet
+                    stays retired). A metric this run never measured shows '–', never 0; an
+                    averaged or summed figure says so in its own description rather than
+                    posing as a single measurement. */}
+                {ctxRows.length > 0 && (
+                  <div className="col gap-xs" data-testid="meso-report-context">
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                      A futam napjainak összesítése — nem napi mérés, hanem a teljes ablak átlaga/összege.
+                    </span>
+                    {ctxRows.map((r) => (
+                      <div
+                        key={r.key}
+                        className="row"
+                        style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}
+                        data-testid="context-row"
+                      >
+                        <span className="text-secondary" style={{ fontSize: 12.5, lineHeight: 1.4 }}>{r.descriptor}</span>
+                        <span className="label-mono" style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          {r.value}
                         </span>
-                      ) : (
-                        <span />
-                      )}
-                      <CtaGhost onClick={fireRegenerate} disabled={regenerating} style={{ padding: '8px 14px' }}>
-                        {regenerating ? 'Riport készül…' : 'Újragenerálás'}
-                      </CtaGhost>
-                    </div>
-                  </>
-                ) : report.aiEvalStatus === 'pending' ? (
-                  <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                    <Spinner size="sm" />
-                    <span className="text-secondary" style={{ fontSize: 13 }}>Az értékelés készül…</span>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <>
-                    <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült az értékelés.</span>
-                    <CtaGhost
-                      onClick={fireRegenerate}
-                      disabled={regenerating}
-                      style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
-                    >
-                      {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
-                    </CtaGhost>
-                  </>
+                )}
+
+                {report.aiEvalEnabled && (
+                  <div className="col gap-sm">
+                    <p className="text-secondary" style={{ fontSize: 11.5, lineHeight: 1.5, margin: 0, color: 'var(--text-tertiary)' }}>
+                      A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.
+                    </p>
+                    {report.aiEvalStatus === 'ready' && report.aiEval ? (
+                      <>
+                        {report.aiEval.split(/\n\n+/).map((para, i) => (
+                          <p key={i} className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{para}</p>
+                        ))}
+                        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                          {report.aiEvalGeneratedAt ? (
+                            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                              {`Generálva · ${day(report.aiEvalGeneratedAt)}`}
+                            </span>
+                          ) : (
+                            <span />
+                          )}
+                          <CtaGhost onClick={fireRegenerate} disabled={regenerating} style={{ padding: '8px 14px' }}>
+                            {regenerating ? 'Riport készül…' : 'Újragenerálás'}
+                          </CtaGhost>
+                        </div>
+                      </>
+                    ) : report.aiEvalStatus === 'pending' ? (
+                      <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                        <Spinner size="sm" />
+                        <span className="text-secondary" style={{ fontSize: 13 }}>Az értékelés készül…</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült az értékelés.</span>
+                        <CtaGhost
+                          onClick={fireRegenerate}
+                          disabled={regenerating}
+                          style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
+                        >
+                          {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
+                        </CtaGhost>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </details>
