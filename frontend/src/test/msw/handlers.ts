@@ -1177,6 +1177,17 @@ export const handlers = [
           { weightKg: 102.5, reps: 8, date: '2026-05-26' },
           { weightKg: 102.5, reps: 9, date: '2026-06-02' },
         ],
+        // The story curve's series (mezo-lf3cv, Task 2's wire field): weekly points with
+        // ONE MISSING WEEK (no 2026-05-05 point — that session had nothing e1RM-eligible),
+        // so the real-mode story page exercises the gap branch rather than a clean ramp.
+        e1rmSeries: [
+          { date: '2026-04-21', e1rm: 118.3 },
+          { date: '2026-04-28', e1rm: 121 },
+          { date: '2026-05-12', e1rm: 123.5 },
+          { date: '2026-05-19', e1rm: 130 },
+          { date: '2026-05-26', e1rm: 131.2 },
+          { date: '2026-06-02', e1rm: 133.3 },
+        ],
       },
       {
         catalogId: 'f1e3a0e2-0000-4000-8000-000000000072',

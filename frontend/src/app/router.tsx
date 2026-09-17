@@ -20,6 +20,7 @@ import { SportPage } from '@/features/train/pages/SportPage'
 import { SportLogPage } from '@/features/train/pages/SportLogPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
+import { ExerciseStoryPage } from '@/features/train/pages/ExerciseStoryPage'
 import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { MesoKonyvtarPage } from '@/features/train/pages/MesoKonyvtarPage'
@@ -281,6 +282,12 @@ export const routes: RouteObject[] = [
       { path: 'train/sport/log', element: <SportLogPage /> },
       { path: 'train/futas', element: <RunningPage /> },
       { path: 'train/exercises', element: <ExercisesPage /> },
+      // ONE exercise's whole story (Train parity P2 Task 5, mezo-lf3cv) — the catalogue
+      // card's target. `:key` is the catalog uuid when the row has one, else the local
+      // catalogue row's own id (`exerciseKey`). Listed after the static catalogue route
+      // (React Router ranks static over dynamic anyway); the Gyakorlatok tab's
+      // `owns: ['/train/exercises']` already lights it by prefix (navModel.isPrefix).
+      { path: 'train/exercises/:key', element: <ExerciseStoryPage /> },
       { path: 'train/medals', element: <MedalsPage /> },
       { path: 'train/mesocycles', element: <MesoTervPage /> },
       // The plan library (Train Titanium T9 Task 2, mezo-88iwa.10): the landing's

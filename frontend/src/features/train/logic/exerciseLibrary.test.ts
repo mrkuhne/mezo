@@ -1,6 +1,7 @@
 import { describe, expect, it, test } from 'vitest'
 import {
-  buildLibraryRows, exerciseKey, filterLibraryRows, foldAccents, libraryCounts, libraryRegions,
+  buildLibraryRows, exerciseKey, filterLibraryRows, firstSeenDate, foldAccents, libraryCounts,
+  libraryRegions, medalsForExercise, nextTarget, whereUsed,
 } from './exerciseLibrary'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { Medal } from '@/data/train/medalTypes'
@@ -140,5 +141,115 @@ describe('filterLibraryRows', () => {
     ['a region with nothing matching is empty', 'bench', 'sage', []],
   ] as const)('%s', (_name, query, region, expected) => {
     expect(filterLibraryRows(rows, query, region).map((r) => r.name)).toEqual(expected)
+  })
+})
+
+// ── the exercise STORY's derivations (Train parity P2 Task 5, mezo-lf3cv) ──────────────
+
+describe('medalsForExercise', () => {
+  it('keeps only THIS exercise’s medals, newest first', () => {
+    const medals = [
+      medal({ catalogId: 'c1', exerciseName: 'Bench Press', date: '2026-07-01' }),
+      medal({ catalogId: 'c1', exerciseName: 'Bench Press', date: '2026-09-01', type: 'WEIGHT' }),
+      medal({ exerciseName: 'Barbell Curl', date: '2026-08-01' }),
+    ]
+    const rows = buildLibraryRows(CATALOG, RECORDS, medals)
+    const bench = rows.find((r) => r.name === 'Bench Press')!
+    expect(medalsForExercise(medals, bench).map((m) => m.date)).toEqual(['2026-09-01', '2026-07-01'])
+  })
+
+  it('a name-grouped medal still reaches its catalog-linked row', () => {
+    const medals = [medal({ exerciseName: 'Bench Press', date: '2026-09-02' })]
+    const bench = buildLibraryRows(CATALOG, RECORDS, medals).find((r) => r.name === 'Bench Press')!
+    expect(medalsForExercise(medals, bench)).toHaveLength(1)
+  })
+
+  it('an exercise with no medals answers an empty list, not a guess', () => {
+    const box = buildLibraryRows(CATALOG, RECORDS, MEDALS).find((r) => r.name === 'Box Jump')!
+    expect(medalsForExercise(MEDALS, box)).toEqual([])
+  })
+})
+
+describe('firstSeenDate', () => {
+  it('prefers the oldest e1RM point', () => {
+    expect(firstSeenDate(record({
+      name: 'X',
+      bestSet: { weightKg: 60, reps: 8, date: '2026-08-01' },
+      e1rmSeries: [{ date: '2026-03-04', e1rm: 70 }, { date: '2026-08-01', e1rm: 80 }],
+    }))).toBe('2026-03-04')
+  })
+
+  it('falls back to the oldest dated set ref when there is no series', () => {
+    expect(firstSeenDate(record({
+      name: 'X',
+      bestSet: { weightKg: 60, reps: 8, date: '2026-08-01' },
+      repRecords: [{ weightKg: 55, reps: 10, date: '2026-05-09' }],
+      recentTopSets: [{ weightKg: 60, reps: 8, date: '2026-08-01' }],
+    }))).toBe('2026-05-09')
+  })
+
+  it('is null when the row dates nothing at all', () => {
+    expect(firstSeenDate(record({ name: 'X' }))).toBeNull()
+  })
+})
+
+describe('nextTarget', () => {
+  it('is the same load with one more rep', () => {
+    expect(nextTarget(record({ name: 'X', bestSet: { weightKg: 102.5, reps: 9, date: '2026-06-02' } })))
+      .toEqual({ kg: 102.5, reps: 10, note: 'ugyanaz a súly, egy ismétléssel több' })
+  })
+
+  it('a bodyweight best set keeps the rep step and drops the kg', () => {
+    expect(nextTarget(record({ name: 'X', bestSet: { reps: 22, date: '2026-06-02' } })))
+      .toEqual({ kg: null, reps: 23, note: 'ugyanaz a mozdulat, egy ismétléssel több' })
+    // A live-backend bodyweight row carries weightKg 0 rather than omitting it.
+    expect(nextTarget(record({ name: 'X', bestSet: { weightKg: 0, reps: 35, date: '2026-06-02' } }))?.kg).toBeNull()
+  })
+
+  it('is null without a best set — there is nothing to step past', () => {
+    expect(nextTarget(record({ name: 'X' }))).toBeNull()
+  })
+})
+
+describe('whereUsed', () => {
+  const planned = (name: string, catalogId?: string) => ({ name, ...(catalogId ? { catalogId } : {}) })
+  const meso = {
+    id: 'm1',
+    templateId: 't-active',
+    days: [
+      { day: 'Csü', type: 'Pull Day', exercises: [planned('Bench Press', 'c1'), planned('Barbell Curl')] },
+      { day: 'Vas', type: 'Rest', exercises: [] },
+    ],
+  }
+  const templates = [
+    { id: 't-active', title: 'A futó terv sablonja', days: [{ exercises: [planned('Bench Press', 'c1')] }] },
+    { id: 't-shelf', title: 'Nyári tömegelés', days: [{ exercises: [planned('Bench Press', 'c1')] }] },
+    { id: 't-other', title: 'Lábnap', days: [{ exercises: [planned('Box Jump', 'c3')] }] },
+  ]
+  const rows = buildLibraryRows(CATALOG, RECORDS, MEDALS)
+  const bench = rows.find((r) => r.name === 'Bench Press')!
+  const curl = rows.find((r) => r.name === 'Barbell Curl')!
+  const box = rows.find((r) => r.name === 'Box Jump')!
+
+  it('lists the running plan’s days that prescribe it', () => {
+    expect(whereUsed(bench, meso, templates).days).toEqual([{ mesoId: 'm1', day: 'Csü', type: 'Pull Day' }])
+  })
+
+  it('excludes the template the running plan was started FROM (it is the same week)', () => {
+    expect(whereUsed(bench, meso, templates).templates).toEqual([{ id: 't-shelf', name: 'Nyári tömegelés' }])
+  })
+
+  it('keeps that template when no run came from it', () => {
+    expect(whereUsed(bench, { ...meso, templateId: null }, templates).templates.map((t) => t.id))
+      .toEqual(['t-active', 't-shelf'])
+  })
+
+  it('matches a name-grouped plan row too', () => {
+    expect(whereUsed(curl, meso, templates).days.map((d) => d.day)).toEqual(['Csü'])
+  })
+
+  it('a miss is an empty result, never a near match', () => {
+    expect(whereUsed(box, meso, templates)).toEqual({ days: [], templates: [{ id: 't-other', name: 'Lábnap' }] })
+    expect(whereUsed(bench, null, [])).toEqual({ days: [], templates: [] })
   })
 })

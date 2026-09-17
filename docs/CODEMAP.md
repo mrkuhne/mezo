@@ -1386,16 +1386,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts,
     workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
-  - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExercisesPage.tsx, ExercisesSkeleton.tsx,
-    GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayEditPage.tsx, MesoDayPage.tsx, MesoFutamokPage.tsx,
-    MesoFutamokSkeleton.tsx, MesoKonyvtarPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx, MesoTemplateEditorPage.tsx,
-    MesoTemplateStoryPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx, MesoTervPage.tsx,
-    MesoTervSkeleton.tsx, MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx, MesocycleSkeleton.tsx,
-    RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx, SportPage.tsx, SportSkeleton.tsx,
-    TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekJelekPage.tsx, TrainWeekMapPage.tsx, TrainWeekMozgasPage.tsx,
-    TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
-  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx,
-    FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
+  - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExerciseStoryPage.tsx, ExercisesPage.tsx,
+    ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayEditPage.tsx, MesoDayPage.tsx,
+    MesoFutamokPage.tsx, MesoFutamokSkeleton.tsx, MesoKonyvtarPage.tsx, MesoMusclePage.tsx, MesoReportPage.tsx,
+    MesoTemplateEditorPage.tsx, MesoTemplateStoryPage.tsx, MesoTemplatesPage.tsx, MesoTemplatesSkeleton.tsx,
+    MesoTervPage.tsx, MesoTervSkeleton.tsx, MesoWeekPage.tsx, MesocycleBuilderPage.tsx, MesocyclePlannerPage.tsx,
+    MesocycleSkeleton.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx, SportPage.tsx,
+    SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekJelekPage.tsx, TrainWeekMapPage.tsx,
+    TrainWeekMozgasPage.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
+  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, FeedbackModal.tsx,
+    GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
     SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
   - **components:** BodyMap.tsx, ChallengeCard.tsx, ChallengeGenerationLoader.tsx, CompactStepper.tsx,
     CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx,
@@ -1404,9 +1404,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekEditor.tsx, MiniBar.tsx, MiniStat.tsx,
     MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx, ProgressionBanner.tsx,
     RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx,
-    SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx,
-    WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx,
-    WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
+    SportSessionCard.tsx, SportStat.tsx, StrengthCurve.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
+    WeekLoadPanel.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx,
+    WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, cerScore.ts, dayImpact.ts,
     dayStripItems.ts, exerciseDefaults.ts, exerciseLibrary.ts, growthForecast.ts, gymDayTarget.ts, libraryStory.ts,
     loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts,

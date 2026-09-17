@@ -319,6 +319,8 @@ per catalogue exercise. The joins live in `features/train/logic/exerciseLibrary.
 **Deliberate losses (capabilities the prototype's catalogue has no home for — recorded, not silent):**
 the ⋯ per-exercise edit/delete sheet (`CatalogExerciseSheet` in its edit mode) and the ▶ demo-video
 sheet (`VideoUrlSheet`); the `REKORDOK` modal (`ExerciseRecordSheet` — §17's story page replaces it).
+**All three are resolved by P2 Task 5:** the edit and video sheets have a home on the story page
+(gated on the server's own `editable`/`mediaEditable`), and the `REKORDOK` sheet is deleted.
 The ranked top-5 and the dashed ghost rows are NOT losses — they are presentation the catalogue
 replaces. `Új gyakorlat` authoring itself (create mode) is **not** a loss any more: fix round 1
 gave it a quiet `.pl-add` row at the foot of the list.
@@ -328,7 +330,7 @@ gave it a quiet `.pl-add` row at the foot of the list.
   `.authorName`) render nowhere in the catalogue — the retired page's only renderer for them is gone
   and the catalogue's `.gy-card` never grew a replacement. **Pending, not dead:** Task 5 (the exercise
   story page) is asked to give them a home; until then the fields are fetched and carried but never
-  shown.
+  shown. **Resolved by P2 Task 5 — the stamps render in the story page's hero.**
 - The Plyo filter chip (`muscleFilters.ts`'s `TOP_FILTERS`: `all | plyo | <region>`) survives only
   inside the plan-builder's `ExercisePickerSheet` — the catalogue's own chip row
   (`libraryRegions`/`exerciseLibrary.ts`) is region-only and has no type axis, so „Plyo" as a
@@ -349,19 +351,46 @@ loading).
 
 ## 17. `train/3/{key}` — exercise story
 
-**Production: MISSING as a screen — no `/train/exercises/:id` route.** Tapping a card opens a **pre-Titanium modal sheet** titled `REKORDOK` instead.
+**Production: ✅ CLOSED (P2 Task 5)** — `/train/exercises/:key` (`ExerciseStoryPage`) is the screen. It
+was MISSING entirely: Task 4's catalogue already routed every card here and the router's catch-all
+dropped the reader on `/nap`; the only per-exercise story production had was the pre-Titanium
+`REKORDOK` modal (`sheets/ExerciseRecordSheet.tsx`), which is **retired with this commit** — grepped,
+this page was its last consumer. The joins stay in `features/train/logic/exerciseLibrary.ts` (the same
+`recordFor` identity rule the catalogue uses), the curve is
+`features/train/components/StrengthCurve.tsx`.
 
-| Prototype section | Production modal |
+| Prototype section | Production |
 |---|---|
-| `‹ Gyakorlatok` + eyebrow `MELL (KÖZÉP)` + `Fekvenyomás` + cue prose `Talpak lent. Stabil lapockák…` | cue prose absent; header is `REKORDOK` + name + `HÁT (KÖZÉP) · COMPOUND · 26 ALKALOM` |
-| Facts `12 alkalom / jún. 3. óta / 18,2 t összsúly` | present in a different shape |
-| `Rekordjaid` — `BECSÜLT 1RM 76,5 kg (+2,5 kg a múltkori óta)`, `LEGJOBB SZETT`, `LEGTÖBB VOLUMEN` | present (`LEGJOBB SZETT / BECSÜLT 1RM / LEGJOBB SESSION / ÖSSZ-VOLUMEN / SZETT · REP`) |
-| `Következő cél: 62,5 kg × 9 — egy ismétléssel a legjobb szetted fölé.` | **absent** |
-| **`Az erőd íve`** story-curve graphic (`0 kg most · eddig · a terv várakozása`) | **absent** |
-| `Medáljaid` (3 medal cards) | **absent** from the modal (medals live on a separate `/train/medals` page) |
-| `Hol szerepel` — `Felsőtest A / A futó tervedben · Szerda ›`, `Nyári tömegelés / Sablon a polcodon ›` | **absent** |
+| `‹ Gyakorlatok` + eyebrow `MELL (KÖZÉP)` + `Fekvenyomás` + cue prose `Talpak lent. Stabil lapockák…` | present, on the house `PageHead` + `.pl-dhero.gy-hero`. **The cue prose is OMITTED** — no production field carries per-exercise cue text and none was invented (see the deliberate omissions below) |
+| Facts `12 alkalom / jún. 3. óta / 18,2 t összsúly` | **identical shape, real figures** — `26 alkalom · Szep 3 óta · 42 t összsúly` in mock. „óta" is the oldest date the record row can actually SHOW (`firstSeenDate`: the first e1RM point, else the oldest dated set ref), never a guess; a BODYWEIGHT row says `N ismétlés` instead of „0 t összsúly", which is a different true fact rather than a missing one |
+| `Rekordjaid` — `BECSÜLT 1RM 76,5 kg (+2,5 kg a múltkori óta)`, `LEGJOBB SZETT`, `LEGTÖBB VOLUMEN` | **present, the three `.gy-rec` cards.** Every absent figure is an EM DASH, never a 0 (Face Pull: `— / 22 ismétlés / —`). The 1RM delta is measured against the best estimate that stood BEFORE the session which set the record (`+2,1 kg a korábbi csúcsod óta`) rather than the prototype's „a múltkori óta" — the headline is the all-time best, so its delta has to be about the same quantity — and the card carries the „Becslés, nem mérés" caveat as its own line |
+| `Következő cél: 62,5 kg × 9 — egy ismétléssel a legjobb szetted fölé.` | **present**, `.gy-next`, DERIVED from the real best set (`nextTarget`): the same load, one rep more, worded as the prototype's own note („ugyanaz a súly, egy ismétléssel több"). A TARGET, never a prediction; no best set ⇒ no line at all |
+| **`Az erőd íve`** story-curve graphic (`0 kg most · eddig · a terv várakozása`) | **present** — the SOLID line only, over Task 2's `e1rmSeries`. The DASHED „a terv várakozása" branch is **NOT drawn**: nothing in production forecasts an e1RM, so the caption reads `ami eddig megtörtént · <dátum> óta` / `becslés, nem mérés`. Two further honesty rules: the x axis is TIME (not index), and an interval out of character for the series' own cadence BREAKS the stroke, so a wire gap reads as a gap. Under two points there is a sentence instead of a line — never a flat line through one measurement |
+| `Medáljaid` (3 medal cards) | **present** — this exercise's medals only, filtered from `useMedals` through the SAME identity join. Unlike the prototype (which omits the section entirely on an unlogged exercise) production always shows the heading with an honest empty line |
+| `Hol szerepel` — `Felsőtest A / A futó tervedben · Szerda ›`, `Nyári tömegelés / Sablon a polcodon ›` | **present**, derived CLIENT-SIDE (`whereUsed`, no new endpoint) from the running plan's days and the template shelf, each row a door (`/train/mesocycles/:id/days/:day`, `/train/templates/:id`). Mirrors the prototype's own subtraction: the template the active run was STARTED from is left out, because its week is the same week the day rows already list |
 
-**Severity: BLOCKER**
+**Three capabilities that had no reachable home after Task 4 and live here now** (the rule: no feature
+dies silently) — all three were listed as losses under §16:
+- **per-exercise edit/delete** → a quiet `Szerkesztés` row opens `CatalogExerciseSheet` in EDIT mode
+  (which also hosts its two-tap `Gyakorlat törlése`), offered ONLY when the server says `editable`;
+- **the demo-video URL** → a `Demó videó` row opens `VideoUrlSheet`, gated on `mediaEditable`, and the
+  row itself says whether a video is attached („Csere vagy eltávolítás" / „Még nincs videó");
+- **the `Saját` / `Közös · {név}` authorship stamps** (`authoredByMe`/`authorName`) → in the hero.
+  This page is the app's FIRST renderer for them.
+
+Both authoring rows are absent when the viewer may not author (and in mock mode, whose static seed
+carries no flags at all), so the page never offers an affordance that would come back 403.
+
+**Deliberate omissions (recorded, not silent):**
+- the hero's **cue prose** — no production field carries it; writing coaching copy out of nothing was
+  refused rather than faked;
+- the curve's **dashed projected branch** — no model behind it;
+- **the demo VIDEO PLAYER and the demo stills.** Production has `videoUrl`/`imageStartUrl`/
+  `imageEndUrl` and the prototype's story shows neither. Watching already survives elsewhere (the
+  workout card glass, the plan picker), so the story page keeps only the AUTHORING half as the one
+  quiet row above — a player would have been a new section, not a ported one.
+
+**Severity: ✅ CLOSED (P2 Task 5)** — was BLOCKER.
 
 ---
 
@@ -439,7 +468,7 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 | 1 | **Workout PREP mosaic** — `⚡ Kezdjük el →`, `+1192 várható XP`, tiles `GYAKORLATOK / FEJLŐDÉS / HETI ZÓNA / KÜLDETÉSEK / BEMELEGÍTÉS / NIGGLE` | `/train/session` phase 1 (`ActiveWorkoutPage`) | ✅ **CLOSED** (P1 Task 1 — the workout opens in the card list) |
 | 2 | **`.levelup` overlay** — `z-index: 250`, 416 × 932, `🏋️ KLASSZIK KONDI · 58'`, `ERŐS NAP VOLT.`, `+480 XP`, `💪`, `🔁`, `🛡️`, `★`; persists across route changes | after closing a workout, over the Titanium recap | ✅ **CLOSED** (P1 Task 2 — the gym finish no longer raises it; the provider also dismisses on route change) |
 | 3 | **Old exercise catalogue** — `EDZÉS · GYAKORLATOK` header, top-5-only ranked list, `COMPOUND` / `ISOLATION`, letter avatars, no search, no full list | `/train/exercises` (`ExercisesPage`) | BLOCKER |
-| 4 | **`REKORDOK` modal sheet** standing in for the exercise story | `/train/exercises`, on card tap | BLOCKER |
+| 4 | **`REKORDOK` modal sheet** standing in for the exercise story | `/train/exercises`, on card tap | ✅ **CLOSED** (P2 Task 5 — `/train/exercises/:key` is the story; the sheet is deleted, this page was its last consumer) |
 | 5 | **Day-plan editor welded under the Titanium day page** — `⠿` handles, `🔥` per row, `Grow` / `Maintain` / `Emphasize`, `HETI SZETEK` (typo), `⚠ 1 jelzés`, `CSÚCSHÉT · IDŐBECSLÉS`, `STRUKTÚRA` | `/train/mesocycles/:id/days/:day` (`MesoDayPage`), below the fold | ✅ **CLOSED** (P1 Task 4 — moved to its own `/edit` route; still pre-Titanium there, row 15) |
 | 6 | **Old block "interview" replacing the 6-step wizard** — `ÚJ BLOKK · INTERJÚ`, `✨ Program generálása`, English `Emphasize/Grow/Maintain` | `/train/mesocycles/new` (`MesocyclePlannerPage`) | BLOCKER |
 | 7 | **Closed-run report tail** — `ÉLETMÓD-KONTEXTUS` emoji row (`😴 🍽 ⚡ 😰 ⚖️ 🏐 🏃`), the W1–W8 spreadsheet table, `MEV/MAV/MRV/DELOAD`, the 4-paragraph `AI ÉRTÉKELÉS` | `/train/mesocycles/:id/report` (`MesoReportPage`) | ✅ **CLOSED** (P1 Task 5 — the emoji row, the W1–W8 table and the MEV/MAV/MRV arc are gone; the AI evaluation survives as a collapsed `details`, captioned as a guess) |
@@ -463,8 +492,8 @@ These are reachable inside the Train domain and have no Titanium prototype desig
 | Severity | Count | Screens |
 |---|---|---|
 | **✅ CLOSED by P1** (`mezo-e1ii9`) | 4 | §3 day page, §10 closed run, §19 ceremony, and §18's prep phase (the screen itself drops to MAJOR) |
-| **✅ CLOSED by P2** (`mezo-lf3cv`) | 2 | §15 jelek (Task 1 — the screen AND its §13 doorway), §16 Gyakorlatok (Task 4 — the catalogue) |
-| **BLOCKER** (open → P2) | 2 | §11 wizard (all steps), §17 exercise story |
+| **✅ CLOSED by P2** (`mezo-lf3cv`) | 3 | §15 jelek (Task 1 — the screen AND its §13 doorway), §16 Gyakorlatok (Task 4 — the catalogue), §17 exercise story (Task 5 — the screen, and the three capabilities §16 had orphaned) |
+| **BLOCKER** (open → P2) | 1 | §11 wizard (all steps) |
 | **MAJOR** (open → P2/P3) | 8 screens + the shell | §1 Mai, §3b day EDIT route (new in P1), §5 muscle detail, §9 closed list, §12 Terhelés, §13 Izomtérkép, §14 Mozgás, §18 active workout (in-card differences) (+ §0 global shell — **out of scope, owner decision A**) |
 | **MINOR** (open → P3) | 5 | §2 Terv, §4 week, §6 library, §7 templates, §8 template story |
 

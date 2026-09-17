@@ -66,7 +66,7 @@ export function foldAccents(text: string): string {
 const medalIdentity = (m: Medal) => ({ catalogId: m.catalogId ?? undefined, name: m.exerciseName })
 
 /** What both joins match on — a structural subset of a record row and of a medal. */
-interface Identity { catalogId?: string; name: string }
+export interface Identity { catalogId?: string; name: string }
 
 /**
  * „catalogId when BOTH sides carry one, else the name" — expressed as two `recordFor`
@@ -171,4 +171,110 @@ export function filterLibraryRows(
     if (q === '') return true
     return foldAccents(r.name).includes(q) || foldAccents(r.muscleLabel).includes(q)
   })
+}
+
+// ── the exercise STORY's own derivations (Train parity P2 Task 5, mezo-lf3cv) ──────────
+// All three below are pure and live here rather than in the page, and all three reuse
+// `joinByIdentity` above — the story must never disagree with the catalogue card about
+// which record/medal/plan row belongs to which exercise.
+
+/** Does this catalogue row own that identity (a medal, a planned exercise, …)? */
+export function belongsToExercise(item: Identity, other: Identity): boolean {
+  return joinByIdentity([other], item) !== undefined
+}
+
+/** Every medal earned on ONE catalogue row, newest first. */
+export function medalsForExercise(medals: readonly Medal[], item: Identity): Medal[] {
+  return medals
+    .filter((m) => belongsToExercise(item, medalIdentity(m)))
+    .sort((a, b) => b.date.localeCompare(a.date))
+}
+
+/**
+ * The first date this exercise can honestly claim („… óta" in the hero foot).
+ *
+ * The wire carries no „first logged" field, so the earliest date the record row can
+ * actually SHOW is used: the oldest e1RM point when there is a series, else the oldest
+ * date among the dated set refs it carries. `null` when the row dates nothing at all —
+ * the fact is then omitted rather than guessed.
+ */
+export function firstSeenDate(record: ExerciseRecordResponse): string | null {
+  const dates = [
+    ...(record.e1rmSeries ?? []).map((p) => p.date),
+    ...(record.bestSet ? [record.bestSet.date] : []),
+    ...(record.bestE1rm ? [record.bestE1rm.set.date] : []),
+    ...(record.bestSessionVolume ? [record.bestSessionVolume.date] : []),
+    ...record.repRecords.map((s) => s.date),
+    ...record.recentTopSets.map((s) => s.date),
+  ]
+  return dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null
+}
+
+export interface NextTarget {
+  /** Load to aim at, kg — null for a bodyweight best set (no load to repeat). */
+  kg: number | null
+  /** Reps to aim at: the best set's reps + 1. */
+  reps: number
+  /** The prototype's own note — a TARGET you set, never a prediction the app makes. */
+  note: string
+}
+
+/**
+ * „Következő cél" — DERIVED from the best set, never predicted: the same load, one rep
+ * more. Nothing models this; it is the smallest honest next step past a record you
+ * already own, which is why the copy says „cél" and the note says what to do rather than
+ * what will happen. `null` when there is no best set to step past.
+ *
+ * A best set with no load (a bodyweight/plyo record — `weightKg` absent or 0) keeps the
+ * rep step and drops the kg: there is no weight to repeat.
+ */
+export function nextTarget(record: ExerciseRecordResponse): NextTarget | null {
+  const best = record.bestSet
+  if (!best) return null
+  const kg = best.weightKg != null && best.weightKg > 0 ? best.weightKg : null
+  return {
+    kg,
+    reps: best.reps + 1,
+    note: kg != null ? 'ugyanaz a súly, egy ismétléssel több' : 'ugyanaz a mozdulat, egy ismétléssel több',
+  }
+}
+
+export interface WhereUsedDay {
+  /** The run this day belongs to — the row's route target. */
+  mesoId: string
+  /** 'Hét'..'Vas' */
+  day: string
+  /** The day's type („Pull Day"). */
+  type: string
+}
+export interface WhereUsedTemplate {
+  id: string
+  name: string
+}
+export interface WhereUsed {
+  days: WhereUsedDay[]
+  templates: WhereUsedTemplate[]
+}
+
+/**
+ * „Hol szerepel" — derived CLIENT-SIDE (no endpoint): the running plan's days and the
+ * shelf's templates that actually prescribe this exercise.
+ *
+ * Mirrors the prototype's `whereUsed` (exercise-state.js:24) including its one
+ * subtraction: the template the ACTIVE run was started from is left out, because its week
+ * is the very same week the day rows above already list — showing both would tell the
+ * reader the exercise appears twice when it appears once.
+ */
+export function whereUsed(
+  item: Identity,
+  activeMeso: { id: string; templateId?: string | null; days?: { day: string; type: string; exercises: Identity[] }[] } | null,
+  templates: readonly { id: string; title: string; days: { exercises: Identity[] }[] }[],
+): WhereUsed {
+  const days = (activeMeso?.days ?? [])
+    .filter((d) => d.exercises.some((e) => belongsToExercise(item, e)))
+    .map((d) => ({ mesoId: activeMeso!.id, day: d.day, type: d.type }))
+  const templateRows = templates
+    .filter((t) => t.id !== activeMeso?.templateId && t.days.some((d) => d.exercises.some((e) => belongsToExercise(item, e))))
+    .map((t) => ({ id: t.id, name: t.title }))
+  return { days, templates: templateRows }
 }
