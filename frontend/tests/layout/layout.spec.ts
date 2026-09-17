@@ -246,7 +246,10 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
 
   const chromeFree = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    const sticky = sc.querySelector('.sticky-top') as HTMLElement | null
+    // A lap saját tapadó chrome-ja: a prep-morzsa `.sticky-top`-ja mezo-e1ii9 óta nincs
+    // (az edzés a kártyalistán nyílik), a kártyalista fejléce a `.wk-top`. Mindkettőt
+    // elfogadjuk, de a NULL-t nem: az üres találat vakon zöld tesztet jelentene.
+    const sticky = sc.querySelector('.sticky-top, .wk-top') as HTMLElement | null
     return {
       hasHead: !!document.querySelector('.app-head'),
       stickyTop: sticky
@@ -255,7 +258,8 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
     }
   })
   expect(chromeFree.hasHead, '/train/session nem renderel shell-fejlécet').toBe(false)
-  expect(chromeFree.stickyTop, "a lap .sticky-top-ja tapad, üres sáv nélkül").toBe(0)
+  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja létezik (.sticky-top vagy .wk-top)').not.toBeNull()
+  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja tapad, üres sáv nélkül').toBe(0)
 })
 
 test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
