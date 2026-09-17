@@ -7,7 +7,11 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamPhase;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
@@ -44,6 +48,7 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private AiMessageRepository messageRepository;
 
     /** Mirrors {@code ChatServicePipelineIT}'s fixture: needsData scripts one get_recovery step. */
     private static final String PLAN_SLEEP =
@@ -52,6 +57,15 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
     private SendMessageRequest request(String content) {
         // gear-audited: forwards its caller's string — the call sites are the audited ones.
         return SendMessageRequest.builder().content(content).build();
+    }
+
+    /** S9.7 Task 5: mirrors {@code ChatServicePipelineIT#lastAssistantRow} — the streamed path's
+     *  provenance lands on the persisted row, not on the wire {@code MessageResponse} (which never
+     *  carried {@code why}/outcome text at all), so these assertions must re-query it. */
+    private AiMessageEntity lastAssistantRow(UUID conversationId, UUID userId) {
+        return messageRepository
+            .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId)
+            .getLast();
     }
 
     @Test
@@ -188,5 +202,106 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
                 .map(e -> ((StreamPhase) e.data()).getPhase()).toList();
         assertThat(phases).containsExactly("planning");
         assertThat(events.getLast().event()).isEqualTo("done");
+    }
+
+    /**
+     * S9.7 Task 5: the streamed LOOKUP turn's pre-stream execution (Task 6) already builds
+     * {@code lap.outcomes()} — this pins that the trailing done-Mono actually threads it into
+     * {@link ChatService#completeTurn}, carrying the planner's {@code why} onto the persisted row,
+     * exactly like the sync path's {@code ChatServicePipelineIT#testSendMessage_shouldPersistPipelineProvenance_whenPlanIsScripted}.
+     */
+    @Test
+    void testStreamMessage_shouldPersistPlanTruthProvenance_whenLookupPipelineExecutesPreStream() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-lookup-provenance@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.5"), 2);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        chatStreamService
+                .streamMessage(userId, conversation.getId(), request("Mennyit aludtam mostanában?" + PLAN_SLEEP))
+                .collectList().block();
+
+        AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
+        assertThat(assistant.getToolCalls().calls()).hasSize(1);
+        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_recovery");
+        assertThat(assistant.getToolCalls().calls().getFirst().why()).isEqualTo("alvás");
+        assertThat(assistant.getToolOutcomes().outcomes()).hasSize(1);
+        assertThat(assistant.getToolOutcomes().outcomes().getFirst().name()).isEqualTo("get_recovery");
+        assertThat(assistant.getToolOutcomes().outcomes().getFirst().text()).contains("7,5");
+        assertThat(assistant.getToolOutcomes().outcomes().getFirst().failed()).isFalse();
+    }
+
+    /**
+     * S9.7 Task 5: the streamed ANALYSIS turn resolves its replan lap server-side (Task 6) via the
+     * SYNC {@link ChatService#pipelineAnswer} — this pins that the merged lap1+lap2 outcome list
+     * (Task 4's fix) reaches the persisted row through the streamed path too, not just the sync one.
+     */
+    @Test
+    void testStreamMessage_shouldPersistMergedLapOutcomes_whenAnalysisReplansOverStream() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-replan-provenance@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("6.0"), 4);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("Miért alszom rosszul mostanában? [fake-datagap:alvásnapló]" + PLAN_SLEEP))
+                .collectList().block();
+
+        AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
+        assertThat(assistant.getToolCalls().calls()).hasSize(2);
+        assertThat(assistant.getToolCalls().calls()).allSatisfy(
+                call -> assertThat(call.name()).isEqualTo("get_recovery"));
+        assertThat(assistant.getToolOutcomes().outcomes()).hasSize(2);
+        assertThat(assistant.getToolOutcomes().outcomes()).allSatisfy(
+                outcome -> assertThat(outcome.name()).isEqualTo("get_recovery"));
+    }
+
+    /**
+     * S9.7 Task 5 non-negotiable (mirrors {@code ChatServicePipelineIT
+     * #testSendMessage_shouldPersistRanTruthProvenance_whenToolsRanThenAnswererFailsToLegacy}): a
+     * turn whose pipeline actually EXECUTED a tool call before falling back to the legacy stream
+     * (the answerer call itself fails here) must persist RAN-truth provenance — the audit's list,
+     * {@code why() == null} on every entry — never a half-built plan-truth row.
+     */
+    @Test
+    void testStreamMessage_shouldPersistRanTruthProvenance_whenToolsRanThenFallBackToLegacy() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-ran-truth-fallback@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.5"), 2);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("Hogy aludtam mostanában?" + PLAN_SLEEP + FakeCompanionLlm.FAIL_ANSWERER))
+                .collectList().block();
+
+        AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
+        assertThat(assistant.getToolCalls()).isNotNull();
+        assertThat(assistant.getToolCalls().calls()).isNotEmpty();
+        assertThat(assistant.getToolCalls().calls()).allSatisfy(
+                call -> assertThat(call.why()).as("ran-truth call must never carry the planner's why")
+                        .isNull());
+        assertThat(assistant.getToolCalls().calls()).extracting(ToolCallsEnvelope.ToolCall::name)
+                .containsExactly("get_recovery");
+        assertThat(assistant.getToolOutcomes()).isNotNull();
+        assertThat(assistant.getToolOutcomes().outcomes()).extracting(ToolOutcomesEnvelope.Outcome::name)
+                .containsExactly("get_recovery");
+    }
+
+    /**
+     * S9.7 Task 5: a CHAT turn never enters the pre-stream pipeline lap at all (it is tool-free by
+     * construction — see {@code ChatStreamServiceGearIT}), so both provenance envelopes must stay
+     * null end to end — never an empty-but-present envelope.
+     */
+    @Test
+    void testStreamMessage_shouldPersistNullProvenance_whenChatGearRuns() {
+        UUID userId = databasePopulator.populateUser("stream-pipe-chat-provenance@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        chatStreamService
+                .streamMessage(userId, conversation.getId(), request("Mit gondolsz a kreatinról?"))
+                .collectList().block();
+
+        AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
+        assertThat(assistant.getToolCalls()).isNull();
+        assertThat(assistant.getToolOutcomes()).isNull();
     }
 }

@@ -30,6 +30,7 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -280,9 +281,18 @@ public class ChatStreamService {
                         }
                         // W3.1: ambient Memory refs after the tool loop + review — tool refs keep cap priority
                         turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
+                        // S9.7 Task 5: the streamed twin of sendMessage's own choke point — plan-truth
+                        // outcomes (pipe.outcomes(), non-null only for STREAM_ANSWER/SYNC_ANSWER) when
+                        // present, otherwise the legacy tool-loop's ran-truth audit list. Never mixes
+                        // the two truths in one row (TurnProvenance's own contract).
+                        List<ToolCallAudit.ToolOutcome> pipelineOutcomes = pipe.outcomes();
+                        TurnProvenance.Built provenance = TurnProvenance.build(
+                                pipelineOutcomes != null ? pipelineOutcomes : audit.toolOutcomes(),
+                                properties.turn().provenance());
                         return ServerSentEvent.<Object>builder(
                                         chatService.completeTurn(userId, conversationId, turn.userMessageId(),
-                                                turn.userContent(), finalAnswer, audit, degraded, turn.recalled()))
+                                                turn.userContent(), finalAnswer, audit, provenance.ask(),
+                                                provenance.result(), degraded, turn.recalled()))
                                 .event(EVENT_DONE).build();
                     }));
 
@@ -369,7 +379,7 @@ public class ChatStreamService {
                     today, audit, onPhase);
             return synced == null
                     ? PipelineResult.legacy()
-                    : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced.answer(), null);
+                    : new PipelineResult(PipelineResult.Mode.SYNC_ANSWER, synced.answer(), null, synced.outcomes());
         }
         // fix round 1 finding I2: lap 1 — plan -> cap -> execute -> build the volatile half —
         // used to be a verbatim copy of ChatService#pipelineAnswer's own lap 1. It now lives ONCE,
@@ -379,7 +389,7 @@ public class ChatStreamService {
                 turn.turnContext(), turn.history(), turn.userContent(), today, audit, false, onPhase);
         return lap == null
                 ? PipelineResult.legacy()
-                : new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, lap.volatileHalf());
+                : new PipelineResult(PipelineResult.Mode.STREAM_ANSWER, null, lap.volatileHalf(), lap.outcomes());
     }
 
     /**
@@ -387,12 +397,21 @@ public class ChatStreamService {
      * trailing Mono's review branch to read. {@code syncAnswer}/{@code volatileHalf} are mutually
      * exclusive with each other and with {@link Mode#LEGACY} — only the field the mode names is
      * ever non-null.
+     *
+     * <p>S9.7 Task 5: {@code outcomes} is the plan-truth list that produced the answer — {@code
+     * synced.outcomes()} for {@link Mode#SYNC_ANSWER} (lap 1, or lap1+replan merged — the same
+     * list {@link ChatService#pipelineAnswer} already threads out for the sync path), {@code
+     * lap.outcomes()} for {@link Mode#STREAM_ANSWER}, and {@code null} for {@link Mode#LEGACY} —
+     * the trailing done-Mono then falls back to {@code audit.toolOutcomes()} (ran-truth), exactly
+     * mirroring {@code sendMessage}'s own {@code pipelineOutcomes != null ? pipelineOutcomes :
+     * audit.toolOutcomes()} choice so the two paths cannot drift.
      */
-    private record PipelineResult(Mode mode, String syncAnswer, String volatileHalf) {
+    private record PipelineResult(Mode mode, String syncAnswer, String volatileHalf,
+            List<ToolCallAudit.ToolOutcome> outcomes) {
         private enum Mode { LEGACY, STREAM_ANSWER, SYNC_ANSWER }
 
         private static PipelineResult legacy() {
-            return new PipelineResult(Mode.LEGACY, null, null);
+            return new PipelineResult(Mode.LEGACY, null, null, null);
         }
     }
 

@@ -253,13 +253,15 @@ public class ChatService {
     @Transactional
     public MessageResponse completeTurn(
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
-            String answer, ToolCallAudit audit, boolean degraded, RecalledMemoriesEnvelope recalled) {
+            String answer, ToolCallAudit audit, ToolCallsEnvelope toolCalls, ToolOutcomesEnvelope toolOutcomes,
+            boolean degraded, RecalledMemoriesEnvelope recalled) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-        // mezo-rj214.7 S9.7 Task 4: the SYNC path (sendMessage) wires provenance below; the
-        // streamed path's tool_outcomes wiring is a later task — null here keeps completeTurn's
-        // persisted shape unchanged until that task lands.
+        // mezo-rj214.7 S9.7 Task 5: the two envelopes now arrive pre-built by the caller (via
+        // TurnProvenance.build) — ChatStreamService's trailing done-Mono, mirroring sendMessage's
+        // own choke point below. audit is kept only for toRefsEnvelope(): the refs envelope has no
+        // plan-truth/ran-truth distinction to make.
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), null, audit.toRefsEnvelope(), degraded, recalled);
+                answer, toolCalls, toolOutcomes, audit.toRefsEnvelope(), degraded, recalled);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
