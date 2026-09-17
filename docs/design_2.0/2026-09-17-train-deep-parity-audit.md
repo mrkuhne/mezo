@@ -25,6 +25,12 @@ buttons). The **seven-day strip** IS reported — it is a Train component, not s
 
 **Counts: 19 BLOCKER · 32 MAJOR · 27 MINOR.**
 
+> **Surfaces closed 2026-09-17 (`mezo-fsz2r`).** Every §20.1 and §20.2 row was taken back to
+> what the prototype renders and re-measured live; both tables carry a `walk 2026-09-17`
+> column and **§23** records the walk, the seven sweep adjudications and the four rows that
+> could not be measured live. The per-screen „2 · Surfaces" tables below are the ORIGINAL
+> 2026-09-17 readings — read them together with §20/§23, not on their own.
+
 ---
 
 ## 0. The two findings that drove this audit — root cause, measured
@@ -569,29 +575,29 @@ a family that was effectively invisible against the canvas into a lifted, filled
 **Families where a transparent/near-transparent fill became an opaque `--surface-card` fill
 (21 declarations, the list the owner's record-card finding belongs to):**
 
-| selector | prototype | production |
-|---|---|---|
-| `.ld-group` | `linear-gradient(150deg, color-mix(--mus-color 7%, transparent), #ffffff03)` | `linear-gradient(150deg, color-mix(--mus-color 10%, var(--surface-card)), var(--surface-card) 72%)` |
-| `.ld-sport` | `linear-gradient(120deg, #78cfe714, #78cfe705)` | `linear-gradient(120deg, color-mix(--tag-sport 10%, var(--surface-card)), var(--surface-card) 72%)` |
-| `.ld-map-card` | `linear-gradient(150deg, color-mix(--domain-color 8%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card) 70%` |
-| `.ld-move-card` | `linear-gradient(120deg, #78cfe712, #78cfe704)` | `…, var(--surface-card)), var(--surface-card) 70%` |
-| `.ld-move-box` | `linear-gradient(150deg, color-mix(--mus-color 10%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card) 72%` |
-| `.ld-wait-row` | `#ffffff04` | `linear-gradient(150deg, color-mix(--mus-color 8%, var(--surface-card)), var(--surface-card) 72%)` |
-| `.gy-card` | `linear-gradient(150deg, color-mix(--mus-color 6%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` |
-| **`.gy-rec`** | `linear-gradient(150deg, color-mix(--mus-color 8%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` |
-| `.gy-curve-box` | `linear-gradient(150deg, color-mix(--mus-color 6%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` |
-| `.mm-region` | `radial-gradient(…), #ffffff04` | `radial-gradient(…), var(--surface-card)` |
-| `.pl-item` | `#ffffff05` | `var(--surface-card)` |
-| `.pl-day` | `linear-gradient(150deg, #ffffff08, #ffffff03)` | `linear-gradient(150deg, var(--surface-card), color-mix(--surface-card 60%, var(--surface-recess)))` |
-| `.pl-day.is-now` | `radial-gradient(…), linear-gradient(150deg, #ffffff0a, #ffffff03)` | `radial-gradient(…), linear-gradient(150deg, var(--surface-card), …)` |
-| `.pl-dest` | `radial-gradient(…), linear-gradient(155deg, #ffffff0a, #ffffff03)` | `radial-gradient(…), var(--surface-card)` |
-| `.pl-ex` | `radial-gradient(…), linear-gradient(155deg, #ffffff08, #ffffff03)` | `radial-gradient(…), var(--surface-card)` |
-| `.pl-lib-card` | `linear-gradient(150deg, #ffffff09, #ffffff03)` | `linear-gradient(150deg, var(--surface-card), …)` |
-| `.pl-lib-card.is-now` | `linear-gradient(150deg, color-mix(--domain-color 13%, transparent), #ffffff03)` | `radial-gradient(…), linear-gradient(150deg, var(--surface-card), …)` |
-| `.tr-day` | `radial-gradient(…), linear-gradient(155deg, #ffffff0f, #ffffff05)` | `radial-gradient(…), linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%)` |
-| `.tr-day.is-done` | `linear-gradient(155deg, color-mix(--domain-color 16%, transparent), #ffffff05)` | `radial-gradient(…), linear-gradient(155deg, …, var(--surface-card) 68%)` |
-| `.tr-pills span` | `#ffffff08` | `var(--surface-card)` |
-| `.pl-poster-foot span` / `.pl-dhero-pills span` | `#ffffff08` | `var(--surface-card)` |
+| selector | prototype | production | walk 2026-09-17 |
+|---|---|---| ---|
+| `.ld-group` | `linear-gradient(150deg, color-mix(--mus-color 7%, transparent), #ffffff03)` | `linear-gradient(150deg, color-mix(--mus-color 10%, var(--surface-card)), var(--surface-card) 72%)` | ✅ MATCHED |
+| `.ld-sport` | `linear-gradient(120deg, #78cfe714, #78cfe705)` | `linear-gradient(120deg, color-mix(--tag-sport 10%, var(--surface-card)), var(--surface-card) 72%)` | ✅ MATCHED |
+| `.ld-map-card` | `linear-gradient(150deg, color-mix(--domain-color 8%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card) 70%` | ✅ MATCHED |
+| `.ld-move-card` | `linear-gradient(120deg, #78cfe712, #78cfe704)` | `…, var(--surface-card)), var(--surface-card) 70%` | ✅ MATCHED |
+| `.ld-move-box` | `linear-gradient(150deg, color-mix(--mus-color 10%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card) 72%` | ✅ MATCHED |
+| `.ld-wait-row` | `#ffffff04` | `linear-gradient(150deg, color-mix(--mus-color 8%, var(--surface-card)), var(--surface-card) 72%)` | ✅ MATCHED |
+| `.gy-card` | `linear-gradient(150deg, color-mix(--mus-color 6%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` | ✅ MATCHED |
+| **`.gy-rec`** | `linear-gradient(150deg, color-mix(--mus-color 8%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` | ✅ MATCHED |
+| `.gy-curve-box` | `linear-gradient(150deg, color-mix(--mus-color 6%, transparent), #ffffff03)` | `…, var(--surface-card)), var(--surface-card)` | ✅ MATCHED |
+| `.mm-region` | `radial-gradient(…), #ffffff04` | `radial-gradient(…), var(--surface-card)` | ✅ MATCHED |
+| `.pl-item` | `#ffffff05` | `var(--surface-card)` | ✅ MATCHED |
+| `.pl-day` | `linear-gradient(150deg, #ffffff08, #ffffff03)` | `linear-gradient(150deg, var(--surface-card), color-mix(--surface-card 60%, var(--surface-recess)))` | ✅ MATCHED |
+| `.pl-day.is-now` | `radial-gradient(…), linear-gradient(150deg, #ffffff0a, #ffffff03)` | `radial-gradient(…), linear-gradient(150deg, var(--surface-card), …)` | ✅ MATCHED |
+| `.pl-dest` | `radial-gradient(…), linear-gradient(155deg, #ffffff0a, #ffffff03)` | `radial-gradient(…), var(--surface-card)` | ✅ MATCHED |
+| `.pl-ex` | `radial-gradient(…), linear-gradient(155deg, #ffffff08, #ffffff03)` | `radial-gradient(…), var(--surface-card)` | ✅ MATCHED |
+| `.pl-lib-card` | `linear-gradient(150deg, #ffffff09, #ffffff03)` | `linear-gradient(150deg, var(--surface-card), …)` | ✅ MATCHED |
+| `.pl-lib-card.is-now` | `linear-gradient(150deg, color-mix(--domain-color 13%, transparent), #ffffff03)` | `radial-gradient(…), linear-gradient(150deg, var(--surface-card), …)` | ✅ MATCHED |
+| `.tr-day` | `radial-gradient(…), linear-gradient(155deg, #ffffff0f, #ffffff05)` | `radial-gradient(…), linear-gradient(155deg, var(--tr-wash), var(--surface-card) 68%)` | ✅ MATCHED |
+| `.tr-day.is-done` | `linear-gradient(155deg, color-mix(--domain-color 16%, transparent), #ffffff05)` | `radial-gradient(…), linear-gradient(155deg, …, var(--surface-card) 68%)` | ✅ MATCHED |
+| `.tr-pills span` | `#ffffff08` | `var(--surface-card)` | ✅ MATCHED |
+| `.pl-poster-foot span` / `.pl-dhero-pills span` | `#ffffff08` | `var(--surface-card)` | ✅ MATCHED |
 
 Borders that took the same treatment but stayed translucent — `#ffffff10` → `var(--border-subtle)` on
 `.ld-group`, `.ld-map-card`, `.ld-move-card`, `.ld-wait-row`, `.gy-card`, `.gy-curve-box`, `.mm-cell`,
@@ -603,48 +609,48 @@ Measured delta ≈ 2–3 % alpha. **MINOR, one finding for the whole set.**
 
 ### 20.2 Discrete meaning-changes (declaration added, dropped, or flipped)
 
-| selector | property | prototype → production | meaning |
-|---|---|---|---|
-| `.tr-day` | `border` | `1px solid #ffffff14` → *(dropped)* | the card's outline is gone |
-| `.tr-day` | `border-radius` | `26px` → *(dropped)* | rounded poster → square band |
-| `.tr-day` | `border-bottom` | *(absent)* → `1px solid color-mix(--tr-accent 18%)` | a band rule appears |
-| `.tr-day` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears |
-| `.tr-day` | `display` | `block` → *(dropped)* | — |
-| `.tr-day.is-live` | `border-color` → `box-shadow` | `color-mix(--domain-color 40%)` → `var(--shadow-sm), inset 0 0 0 1px color-mix(--tr-accent 42%)` | the live ring became an inset shadow |
-| `.tr-start` | `background` | domain-gradient → *(dropped, tokenised elsewhere)* | — |
-| `.tr-start` | `box-shadow` | `0 14px 30px -16px …, 0 2px 0 #ffffff40 inset` → *(dropped)* | the inner top highlight is gone |
-| `.tr-start` | `border-radius` | `22px` → `20px` | — |
-| `.tr-energy` | `background`/`border`/`border-radius`/`box-shadow`/`padding` | *(all absent)* → `var(--surface-card)` / `1px solid var(--border-subtle)` / `22px` / `var(--shadow-sm)` / `16px 18px` | a transparent section became a filled card (it inherited `.tr-card`'s box, which is unported) |
-| `.tr-mus` | same five | *(all absent)* → same values | as above |
-| `.ld-hero` | `border-bottom` | *(absent)* → `1px solid color-mix(--ld-accent 18%)` | a rule appears |
-| `.ld-hero` | `padding` | `24px 20px 26px` → `18px calc(var(--screen-gutter)+6px) 20px` | — |
-| **`.ld-sport-note`** | `background` | `#78cfe70d` → *(dropped)* | **the note card lost its fill** |
-| **`.ld-sport-note`** | `border` | `1px solid #78cfe72b` → *(dropped)* | **lost its border** |
-| **`.ld-sport-note`** | `border-radius` | `15px` → *(dropped)* | **lost its radius** |
-| **`.ld-sport-note`** | `padding` | `12px 13px` → *(dropped)* | **lost its padding** — a card became plain text |
-| `.ld-sport-chip` | `border` | `1px solid #78cfe733` → *(dropped)* | outlined pill → filled pill |
-| `.ld-sport-chip` | `padding` | `4px 10px 4px 6px` → `3px 8px` | — |
-| `.ld-map-big` | `display` | `flex` → `block` | layout model changed |
-| `.ld-map-stage` | `padding` | `6px 4px 0` → `4px 0 0` | — |
-| `.ld-wait-row` | `border-radius` / `padding` | `15px` → `14px` / `10px 12px` → `9px 12px` | — |
-| `.ld-move-box` | `padding` | `13px 14px` → `14px 13px` | axes swapped |
-| `.ld-glass-name small`, `.ld-sport-copy small` | `display` | *(absent)* → `block` | — |
-| **`.pl-mrow`** | `background` | `linear-gradient(150deg, color-mix(--mus-color 8%, #ffffff05), #ffffff03)` → *(dropped)* | **the muscle chip lost its fill** |
-| **`.pl-mrow`** | `border` | `1px solid color-mix(--mus-color 16%, #ffffff0c)` → *(dropped)* | **lost its border** |
-| **`.pl-mrow`** | `border-radius` | `14px` → *(dropped)* | **lost its radius** |
-| **`.pl-mrow`** | `padding` | `9px 12px` → `6px 2px` | **a chip became a bare row** |
-| `.pl-dhero` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears |
-| `.pl-dhero` | `border-bottom` | *(absent)* → `1px solid color-mix(--mus-color 18%)` | a rule appears |
-| `.pl-dhero` | `padding` | `22px 20px 26px` → `20px calc(var(--screen-gutter)+6px) 24px` | — |
-| `.pl-poster` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears |
-| `.pl-poster` | `border-bottom` | *(absent)* → `1px solid color-mix(--tr-accent 18%)` | a rule appears |
-| `.pl-poster` | `padding` | `22px 20px 26px` → `20px calc(var(--screen-gutter)+6px) 24px` | — |
-| `.pl-day` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears |
-| `.pl-day.is-rest` | `opacity` | `.45` → `.55` | rest days read louder |
-| `.pl-days` / `.pl-dests` | `padding` | `0 20px` / `22px 20px 10px` → `0 var(--screen-gutter)` / `18px var(--screen-gutter) 4px` | narrower gutter |
-| `.pl-dhero-number strong` | `background` | `linear-gradient(#fff, color-mix(--mus-color 80%, #fff))` → *(dropped)* | the numeral lost its gradient clip |
-| `.wo-verdict` | `display` | `grid` → `flex` | — |
-| `.cer-cta` | `display` | *(absent)* → `grid` | — |
+| selector | property | prototype → production | meaning | walk 2026-09-17 |
+|---|---|---|---| ---|
+| `.tr-day` | `border` | `1px solid #ffffff14` → *(dropped)* | the card's outline is gone | ✅ MATCHED |
+| `.tr-day` | `border-radius` | `26px` → *(dropped)* | rounded poster → square band | ✅ MATCHED |
+| `.tr-day` | `border-bottom` | *(absent)* → `1px solid color-mix(--tr-accent 18%)` | a band rule appears | ✅ MATCHED |
+| `.tr-day` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears | ✅ MATCHED |
+| `.tr-day` | `display` | `block` → *(dropped)* | — | ✅ MATCHED |
+| `.tr-day.is-live` | `border-color` → `box-shadow` | `color-mix(--domain-color 40%)` → `var(--shadow-sm), inset 0 0 0 1px color-mix(--tr-accent 42%)` | the live ring became an inset shadow | ✅ MATCHED |
+| `.tr-start` | `background` | domain-gradient → *(dropped, tokenised elsewhere)* | — | ✅ MATCHED |
+| `.tr-start` | `box-shadow` | `0 14px 30px -16px …, 0 2px 0 #ffffff40 inset` → *(dropped)* | the inner top highlight is gone | ✅ MATCHED |
+| `.tr-start` | `border-radius` | `22px` → `20px` | — | ✅ MATCHED |
+| `.tr-energy` | `background`/`border`/`border-radius`/`box-shadow`/`padding` | *(all absent)* → `var(--surface-card)` / `1px solid var(--border-subtle)` / `22px` / `var(--shadow-sm)` / `16px 18px` | a transparent section became a filled card (it inherited `.tr-card`'s box, which is unported) | ✅ MATCHED |
+| `.tr-mus` | same five | *(all absent)* → same values | as above | ✅ MATCHED |
+| `.ld-hero` | `border-bottom` | *(absent)* → `1px solid color-mix(--ld-accent 18%)` | a rule appears | ✅ MATCHED |
+| `.ld-hero` | `padding` | `24px 20px 26px` → `18px calc(var(--screen-gutter)+6px) 20px` | — | ✅ MATCHED |
+| **`.ld-sport-note`** | `background` | `#78cfe70d` → *(dropped)* | **the note card lost its fill** | ✅ MATCHED |
+| **`.ld-sport-note`** | `border` | `1px solid #78cfe72b` → *(dropped)* | **lost its border** | ✅ MATCHED |
+| **`.ld-sport-note`** | `border-radius` | `15px` → *(dropped)* | **lost its radius** | ✅ MATCHED |
+| **`.ld-sport-note`** | `padding` | `12px 13px` → *(dropped)* | **lost its padding** — a card became plain text | ✅ MATCHED |
+| `.ld-sport-chip` | `border` | `1px solid #78cfe733` → *(dropped)* | outlined pill → filled pill | ✅ MATCHED |
+| `.ld-sport-chip` | `padding` | `4px 10px 4px 6px` → `3px 8px` | — | ✅ MATCHED |
+| `.ld-map-big` | `display` | `flex` → `block` | layout model changed | ✅ MATCHED |
+| `.ld-map-stage` | `padding` | `6px 4px 0` → `4px 0 0` | — | ✅ MATCHED |
+| `.ld-wait-row` | `border-radius` / `padding` | `15px` → `14px` / `10px 12px` → `9px 12px` | — | ✅ MATCHED |
+| `.ld-move-box` | `padding` | `13px 14px` → `14px 13px` | axes swapped | ✅ MATCHED |
+| `.ld-glass-name small`, `.ld-sport-copy small` | `display` | *(absent)* → `block` | — | ✅ MATCHED (Task 1, live) |
+| **`.pl-mrow`** | `background` | `linear-gradient(150deg, color-mix(--mus-color 8%, #ffffff05), #ffffff03)` → *(dropped)* | **the muscle chip lost its fill** | ✅ MATCHED |
+| **`.pl-mrow`** | `border` | `1px solid color-mix(--mus-color 16%, #ffffff0c)` → *(dropped)* | **lost its border** | ✅ MATCHED |
+| **`.pl-mrow`** | `border-radius` | `14px` → *(dropped)* | **lost its radius** | ✅ MATCHED |
+| **`.pl-mrow`** | `padding` | `9px 12px` → `6px 2px` | **a chip became a bare row** | ✅ MATCHED |
+| `.pl-dhero` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears | ✅ MATCHED |
+| `.pl-dhero` | `border-bottom` | *(absent)* → `1px solid color-mix(--mus-color 18%)` | a rule appears | ✅ MATCHED |
+| `.pl-dhero` | `padding` | `22px 20px 26px` → `20px calc(var(--screen-gutter)+6px) 24px` | — | ✅ MATCHED |
+| `.pl-poster` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears | ✅ MATCHED |
+| `.pl-poster` | `border-bottom` | *(absent)* → `1px solid color-mix(--tr-accent 18%)` | a rule appears | ✅ MATCHED |
+| `.pl-poster` | `padding` | `22px 20px 26px` → `20px calc(var(--screen-gutter)+6px) 24px` | — | ✅ MATCHED |
+| `.pl-day` | `box-shadow` | *(absent)* → `var(--shadow-sm)` | a shadow appears | ✅ MATCHED |
+| `.pl-day.is-rest` | `opacity` | `.45` → `.55` | rest days read louder | ✅ MATCHED |
+| `.pl-days` / `.pl-dests` | `padding` | `0 20px` / `22px 20px 10px` → `0 var(--screen-gutter)` / `18px var(--screen-gutter) 4px` | narrower gutter | ✅ MATCHED |
+| `.pl-dhero-number strong` | `background` | `linear-gradient(#fff, color-mix(--mus-color 80%, #fff))` → *(dropped)* | the numeral lost its gradient clip | ✅ MATCHED |
+| `.wo-verdict` | `display` | `grid` → `flex` | — | ✅ MATCHED (grid base; the production-only two-medal row keeps a `:has()` flex — §23) |
+| `.cer-cta` | `display` | *(absent)* → `grid` | — | ✅ MATCHED (prototype-side + production source — the ceremony is still undrivable, §21) |
 
 ### 20.3 Families present in the prototype's CSS and never rendered in production
 
@@ -707,3 +713,58 @@ Measured delta ≈ 2–3 % alpha. **MINOR, one finding for the whole set.**
 Screens with **no** missing control: `train/1` Terv, `train/1/week`, `train/1/library`,
 `train/1/library/templates`, `train/1/library/closed`, `train/2/jelek`, `train/3`, the
 active-workout overlay, and (source-level) both ceremony steps.
+
+---
+
+## 23. The closing walk — every §20.1 / §20.2 row re-measured live (2026-09-17, `mezo-fsz2r`)
+
+The surfaces slice (`mezo-fsz2r`, branch `feat/train-parity-surfaces`, Tasks 1–4) took every
+row of §20.1 and §20.2 back to what the prototype RENDERS. The two tables above now carry a
+`walk 2026-09-17` column: **all 21 §20.1 declarations and all 40 §20.2 declarations measure
+MATCHED**, `getComputedStyle` side by side — production `http://localhost:5183` (vite, mock,
+375×812) against the prototype `http://localhost:5190/nap.html?r=122`, the seven properties
+(`background-color`, `background-image`, `border-top-width`, `border-top-color`,
+`border-radius`, `box-shadow`, `padding`) plus `display` / `opacity` / `place-items` /
+`-webkit-background-clip` wherever §20.2 flags them.
+
+**How „match" is read** (unchanged from Tasks 1–3): the ported `mezo-88iwa.13` decision —
+the prototype's hardcoded domain hexes become the house domain tokens (`--tag-gym`,
+`--tag-sport`, per-muscle `--mus-color`, `--sky`/`--lav`/`--amber`) — stays. What is measured
+is the **alpha/opaque-base structure and the geometry**.
+
+Screens walked on both sides: Mai · Terhelés · Izomtérkép · Minden mozgásod · Jelek · Terv ·
+a day · the week · the library · templates · a template story · futamok · a closed-run report ·
+Gyakorlatok · an exercise story · the workout. The two `.tr-day` state classes and
+`.tr-start.is-review` were toggled by hand on the production side (mock renders none of them).
+
+### 23.1 The sweep rows — adjudicated, not left as notes
+
+| row | ruling | evidence |
+|---|---|---|
+| The `--border-subtle` hairline group (`.ld-sport`/`.ld-move-card` .17@24 %, `.ld-move-box` .22@24 %, `.pl-ex`/`.pl-dest` mix targets, the `.09`-vs-`.063` reading) | **RESTORE, family-wide** — every hairline in §20.1's border list goes back to the prototype's own literal/alpha | The group is not uniform noise: composited over `rgb(11,13,18)` most members measure **ΔE76 1.4–2.7** (below the ~2.3 JND, on a 1px line), but `.ld-sport`/`.ld-move-card` measures **ΔE76 5.90** — a visibly thicker outline. „Accepted house deviation" would have papered over a visible drift, so one decision the other way. Safe: every family is Train-scoped, always inside `titanDark`. |
+| `.ld-hero` / `.pl-poster` house-wash BODY vs the prototype's opaque layer | **RESTORE stop 0, family-wide** — all three heroes take `color-mix(<accent> N%, var(--surface-card))` on the prototype's own N (12 / 11 / 13) | Stop 0 measured **ΔE76 11.29** against the prototype's at the same hue, on the largest surface in the domain; and `--wash-gym` is a hotter orange than the `--tag-gym` the same hero's radial uses, so the hero carried two oranges. `.pl-dhero` already shipped the prototype's recipe — the ruling follows the sibling that was already right. **Boundary:** only stop 0 moves; the ramp's later stops stay on `--surface-card` / `--canvas` (ΔE76 2.5 / 2.3 against `#14181f` / `#0f1218`), an accepted house deviation rather than untokenised literals. |
+| `.tr-day`'s 21 px vs the prototype's 40 px effective inset | **KEEP 21 px** — accepted house deviation, cause recorded | Measured: the prototype's `.day-swipe-page` root is itself inset 20 px inside the 375 px frame and `.tr-day` adds 20 px → **40 px**; every prototype sibling (`.tr-start`, both `.tr-card`s) also measures 20 px inside that root, i.e. the prototype's rail is uniformly 40 px. Production measures **21 px** for the poster AND for `.tr-energy` / `.tr-mus` — uniformly 21. The difference is the page container (`--screen-gutter` 12 px vs the prototype demo page's 20 px), a global-shell decision explicitly out of this audit's scope (§Method), not a Train surface. What the audit measures — the poster's relationship to its own siblings — matches on both sides. |
+| `.tr-day .tr-pills span:first-child` | **PORTED** | The prototype quiets the first pill back to `#ffffff08` / `#ffffff17` inside the poster (`train-pages.css:99`) because the poster already carries the domain wash; production kept only the loud `:first-child` rule. Measured after: bg `rgba(255,255,255,0.03)`, border `rgba(255,255,255,0.09)` on both sides. |
+| `.gy-rec-bar b` | **THE RENDERED-RESULT RULE**, as `.gy-rec` | Prototype measured `background-image: none`, `background-color: rgba(0,0,0,0)` — its fill is invalid at computed-value time for exactly the `--mus-color` reason of §0.2, so the prototype renders an EMPTY track. Production's fallback made it paint. Now `background: none`, with the mechanism in a comment at the rule; the `--w` width mechanics stay, so restoring the fill is one declaration if the bar is ever made real. |
+| `.tr-start.is-review` | **PORTED** — the prototype's `.tr-start.is-done` recipe | Once `.is-go`/`.is-resume` regained the inner top highlight (Task 3) the reviewed state was the only one without it. Now `0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset` (measured on production by toggling the class). The house border stays: production's quiet key needs an edge where the prototype's darker `#1a1b26` body supplied one. |
+| `.pl-poster` full-bleed vs `.tr-day`'s rounded poster | **NOT a missed row** — owner-approved | „full-bleed heroes" is a Global Constraint of the whole Train Titanium slice map (`docs/superpowers/plans/2026-09-15-train-titanium-slices.md` §Global Constraints). The prototype's `.pl-poster` sits inset 20 px inside its demo page; production cancels the screen gutter (`margin-inline: calc(-1 * var(--screen-gutter))`, measured L = 4 px against the app frame) and pays the prototype's literal 20 px as its own padding, so the CONTENT lands where the prototype puts it. The mechanism is documented at the rule in `prototype.css`. `.tr-day` is the exception the audit itself demanded (§20.2: radius 26 + border back), so Mai's poster is rounded and gutter-aligned while the Terv landing hero stays full-bleed — deliberate on both counts. |
+
+### 23.2 Rows that could not be re-measured live, and why
+
+- **`.cer-cta`** — the ceremony is still undrivable in the dev server (§21); measured on the
+  prototype and matched against production's source, exactly as this audit did originally.
+- **`.pl-lib-musrow`** — still has no renderer in production (§10 BLOCKER); its hairline was
+  restored from source, not from a live instance.
+- **`.pl-mstats span`, `.pl-day-facts i`, `.pl-tpl-exs`** — members of §20.1's border
+  sub-list with no reachable instance in mock on the screens walked; restored from the
+  prototype's own literals (`#ffffff0f`, `#ffffff0d`, `#ffffff0d`).
+- **`.ld-sport-copy small`** — measured live by Task 1; no instance rendered on the mozgás
+  screen at walk time.
+
+### 23.3 What this slice did NOT close
+
+The `mezo-b516k` flip-back debt (row 13's ⓘ title „Hogyan olvasd?" → „Mit mutat a sáv?")
+stays **open and chained**. It fires only when the closed-run report renders the muscle
+journey as BARS (`.pl-lib-muslist` / `.pl-lib-musrow`, §10) — that is CONTENT work, not
+surface work, and this slice added no renderer. The `mezo-fsz2r` comment thread stays
+referenced to it.

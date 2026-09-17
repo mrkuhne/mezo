@@ -564,6 +564,41 @@ bar); only the TITLE reads **„Hogyan olvasd?"**, and it **flips back to the pr
 „Mit mutat a sáv?" when the surfaces slice (`mezo-fsz2r`) returns the bars**. This row is the
 reason the matrix carries this table at all — do not close `mezo-fsz2r` without flipping it.
 
+> **Status after `mezo-fsz2r` (2026-09-17): NOT discharged, still chained.** The surfaces
+> slice touched only what already renders; the muscle-journey BARS (`.pl-lib-muslist` /
+> `.pl-lib-musrow`, audit §10) are CONTENT work and no renderer was added, so row 13's title
+> correctly still reads „Hogyan olvasd?". The debt now hangs on whichever slice ships the
+> bars — it did NOT move to `mezo-fsz2r`'s closure and `mezo-fsz2r`'s comment thread stays
+> referenced to it.
+
+---
+
+## Surfaces — closed by `mezo-fsz2r` (2026-09-17)
+
+The deep audit's two surface lists — §20.1 (21 declarations where a near-transparent
+prototype fill became an opaque `--surface-card` card) and §20.2 (40 discrete
+meaning-changes: a tinted note that lost its box, a chip that became a bare row, two tiles
+that gained boxes the prototype never had, a rounded poster that became a header band) —
+are **all measured MATCHED**. The scoreboard is the audit itself: both tables now carry a
+`walk 2026-09-17` column, and audit §23 records the walk, screen by screen.
+
+Seven rows were adjudicated rather than simply ported. In plain terms:
+
+| what | what we decided |
+|---|---|
+| Every thin outline in the domain had drifted a little brighter than the prototype's | Put them all back to the prototype's own values. Most of the drift was invisible, but one card's outline was visibly thicker — so one rule for the whole set, rather than half-fixing it. |
+| The two big page-top posters started their colour wash over the page instead of over the card behind it | Put the wash back on the card, like the third poster already did. Measured, this was the most visible difference left in the domain — and the hero was carrying two different oranges at once. |
+| Mai's poster sits closer to the screen edge than the prototype's | Kept as is. The prototype's whole page is inset further; ours is inset less — and everything on our page shares one edge, which is what the audit actually measures. Changing it would move every screen in the app. |
+| The first fact-pill on Mai's poster was loud where the prototype quiets it | Ported the prototype's quiet version. |
+| A record bar paints a coloured fill that the prototype never actually paints | Ships empty, like the prototype — the same „match what he sees" rule the record cards got. |
+| The „Eredmény" button was the only one of the three states without its inner highlight | Gave it the prototype's own recipe. |
+| The Terv landing poster runs edge-to-edge where the prototype's sits inset | **Not a missed row** — „full-bleed heroes" is an owner rule for the whole Train rebuild (`2026-09-15-train-titanium-slices.md` §Global Constraints). The poster cancels the page gutter and pays the prototype's 20 px itself, so the CONTENT lands where the prototype puts it. Mai's poster is the deliberate exception: the audit demanded its rounded card back, and a rounded card cannot be full-bleed. |
+
+Two house deviations are accepted on the record rather than fixed: the heroes' ramp keeps the
+house `--surface-card` → `--canvas` tail below stop 0 (measured within noise of the
+prototype's own literals), and Mai's 21 px rail stays. Everything else in §20.1/§20.2 is the
+prototype's own value.
+
 ---
 
 ## Severity roll-up (one row per prototype screen)
