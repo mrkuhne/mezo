@@ -11,8 +11,8 @@
 // `estimateSessionMinutes` now takes an optional `SessionTimingProfile`
 // (GET /api/train/timing-profile, Task 11). Only the TrainToday chip and
 // the MesoEditor hero pass it — those are the two "how long will THIS
-// session take ME" reads. structureLint, peakWeekFit, programFit and
-// prepBriefing deliberately stay on the static path: they encode
+// session take ME" reads. structureLint, peakWeekFit and programFit
+// deliberately stay on the static path: they encode
 // programming RULES (e.g. structureLint's 45-90 minute band), not personal
 // predictions, and a per-user calibrated number would drift those bands
 // out from under their own thresholds.
