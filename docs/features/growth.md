@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-09-04
+updated: 2026-09-18
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
@@ -124,6 +124,8 @@ Both ports (`TrainingCommitmentSource`, `QuestLedgerSource`) keep the dependency
 - **Config:** switches `mezo.feature.quest.enabled`, `mezo.feature.activity.enabled` (+ `mezo.techcore.cron.quest-job.enabled`); **E3 adds the `mezo.quest.flavor.enabled` sub-switch** (`QUEST_FLAVOR_SWITCH`, default `true`; the rewrite additionally needs the companion switch). Tunables in `QuestProperties` (`mezo.quest`) — including the E3 **`adaptive` record** (`window-days` 28, `min-sample` 5, `high-ratio` 0.85, `low-ratio` 0.50) — and **`ActivityProperties` (`mezo.activity`: `xp-min` 5, `xp-max` 25, `per-skill-daily-cap` 40, `daily-cap` 100, `confidence-threshold` 0.6, `default-xp` 10)**. Quest XP lives in the catalog; activity XP amounts + the adaptive bands are all config, never code.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read persisted skill progress, level-up events, perks and daily quest details through the full-source reader, alongside the computed growth overview. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **← Train:** day-type seam `WorkoutService.findPlannedTemplateForDate`; `gym_session_done` via `WorkoutSessionRepository.findMesoDoneInstanceDates` (the plan-adherence variant since `mezo-ws2x` — custom/saját workouts don't complete the quest); the **discipline trait's training half** via `TrainingCommitmentSource` (impl `feature/train/signal/TrainingCommitmentCalculator`).
 - **← Goal:** protein target from the active goal's prescription segment (`GoalPrescriptionJson.currentSegment`); `bio_protein` only eligible when a prescription exists.

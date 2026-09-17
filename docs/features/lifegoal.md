@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -593,6 +593,8 @@ permissive than the real API:
   real assertion rather than one the seed itself has quietly falsified.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read full life goals, pillars, if–then plans and historical pillar-day evidence through the owner-scoped full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **← Companion** (port, real one-way). *Contract:* `LifeGoalProposePort.Proposal` — dimension
   (+ secondary), frame + frame note + optional reframe, pillars, obstacles, if–then plans.

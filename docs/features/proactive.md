@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-08
+updated: 2026-09-18
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -1879,6 +1879,8 @@ direct call still works, the `FlagSweepJob` vs `FlagService` idiom), **`weekly-s
 (`CHALLENGE_JOB_SWITCH` — outcome backstop only), all `mezo.techcore.cron.*.enabled`, default `true`.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read existing predictions, experiments, diagnoses, challenges, memoirs and weekly artifacts through the full-source reader. These reads do not invoke lazy generation or start new experiments. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 Proactive is a **Phase-4 domain that reads from companion + the other features, never the reverse**
 (the roadmap coupling rule; the frozen ArchUnit cycle rule guards it).

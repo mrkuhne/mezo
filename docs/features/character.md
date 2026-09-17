@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-07
+updated: 2026-09-18
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -548,6 +548,8 @@ built, is expected to render human words — the Minták precedent); the wire DT
 raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read owned character dimensions, claims, observations, portrait revisions and conference artifacts through the full-source reader, beyond the bounded character summary. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **[Companion](companion.md)** — every LLM call rides `CompanionLlm` (cheap tier for
   per-expert proposals/observations, smart tier for Szkeptikus/Mezo/portrait writes), audited

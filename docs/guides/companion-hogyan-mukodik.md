@@ -1,7 +1,7 @@
 ---
 title: A companion — hogyan működik (útmutató)
 type: guide
-updated: 2026-07-04
+updated: 2026-09-18
 tags: [companion, ai, insights, guide]
 related: [companion, insights]
 ---
@@ -35,7 +35,9 @@ a companion lekéri a releváns részt. Szükség esetén az első eredmény ala
 az adatokat. A „és ez miért lehet?” folytatásnál is látja az előzményt és eléri az eszközeit.
 
 Általános kérdéshez, ötleteléshez vagy egyszerű beszélgetéshez nem kell adatot lekérnie.
-A mai állapotod és az összes személyes háttér nem kerül automatikusan minden válasz elé.
+Az alapadataidat — életkor, magasság, nem, legutóbbi súly és aktív súlycél — a beszélgetés ismeri, ha rögzítetted őket. A mai állapotod és az összes személyes háttér nem kerül automatikusan minden válasz elé.
+
+A részletes adatokhoz is hozzáfér: az étkezés összetevőihez, az edzés egyes sorozataihoz, régi naplóbejegyzésekhez, szokásokhoz, emberekhez és a korábbi felismerésekhez. Hosszú bejegyzést több részletben is végigolvashat. Egy memória-találatból vissza tud lépni az eredeti szöveghez; a keresési kivonat nem az egész bejegyzés. A korábban kimaradt hosszú emlékeket az éjszakai feldolgozás fokozatosan pótolja.
 A válasz alatti címkék jelzik, minek nézett utána. Az elemző válasz szövege is folyamatosan
 érkezik, miután a szükséges adatokat összegyűjtötte.
 

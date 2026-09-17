@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
@@ -210,6 +210,8 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 These are the empirical-tuning surface (research §7): EWMA half-life, kcal/kg, the −5% e1RM breach, and the rate bands are all tunable from real data without a code change.
 
 ## 5. Integrations
+
+**Companion source access:** Chat receives the active weight trajectory, start/target weight and dates, plus the date-current stored prescription in its baseline. Goal history, full prescriptions, timeline links and suggestions are available through the full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 The engine is a **consumer hub** — it reads three other domains and writes one:
 
