@@ -1649,6 +1649,20 @@ now ranks the vector it is handed, and **throws** when there is none: returning 
 count dense as a success and re-hide the outage. `MemoryPlatformPropertiesIT` pins the embedding
 budget above the retriever deadline so the two can never collapse back into one number.
 
+**The embed carries its own cost label (`mezo-1qfzu`).** `MemoryQueryEmbedder` stamps
+`companion_recall/recall_embed` — its own, never the ambient one — in exactly the shape
+`LlmMemoryQueryRewriter` already uses, and honours only the admin replay's override. Two reasons.
+It shipped **unlabelled**: observed live on 2026-09-17, a chat turn logged the legacy path's embed
+as `companion_recall/recall_embed` and the platform's own as `unknown`, so the serving-mode flip
+made chat attribution *worse* — a paid provider call invisible in the cost report and outside the
+per-user budget gate's view. And inheriting the ambient label instead would be wrong: `runWith`
+save-and-restores, so a chat turn's `companion_chat` is live on that thread, and inheriting would
+move every chat recall embed out of `companion_recall` and corrupt the shipped cost matrix.
+Consequence to know: a Part-B surface reaching retrieval through `MemoryContextBlock` books its
+embed under `companion_recall` too, **not** under the calling surface — that block's javadoc used
+to claim otherwise and has been corrected. Per-surface *retrieval* cost is a separate question from
+per-surface *answer* cost; only the `memory_retrieval_run` row carries the surface today.
+
 **Shared memory context orchestration (`mezo-6dii.5`; chat-integrated by `mezo-6dii.6`):**
 
 ```text
