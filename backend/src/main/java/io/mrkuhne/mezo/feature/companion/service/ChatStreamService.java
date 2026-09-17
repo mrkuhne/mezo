@@ -53,6 +53,13 @@ import java.util.function.Consumer;
  * unicast sink during the lap was buffered and flushed only after the wait, narrating nothing.
  * Deferring the lap lets the HTTP response open immediately; the lap then runs on a boundedElastic
  * worker and its {@link TurnPhase} frames (see {@link #phaseEvent}) reach the client live.
+ *
+ * <p>fix round 1 finding M1: a client disconnect mid-lap does NOT interrupt the blocking lap
+ * running on that boundedElastic worker — it runs to completion (and is billed) regardless, since
+ * nothing in the pipeline/advisor/completeTurn chain polls for cancellation. This is strictly
+ * better than the pre-restructure behaviour, where the identical lap ran pinned to the request
+ * thread instead: a worker thread freed sooner beats a request thread held hostage for the same
+ * uninterruptible work.
  */
 @Slf4j
 @Service
@@ -117,6 +124,20 @@ public class ChatStreamService {
         // completeSmart branch. No tool callbacks are registered, so the audit stays empty.
         Consumer<TurnPhase> onPhase = phase -> toolSink.tryEmitNext(phaseEvent(phase));
 
+        // fix round 1 finding I1: preflight budget gate, EAGER on the request thread, before the
+        // Flux is even built. LlmCallContextHolder#runWith throws the LLM_BUDGET_EXHAUSTED/
+        // THROTTLED SystemRuntimeErrorException (429) BEFORE installing its own ThreadLocal
+        // binding — so with the real runWith call living only inside Flux.defer (below), an
+        // exhausted budget used to surface AFTER Spring MVC had already committed the 200 SSE
+        // response, as a terminal 'error' frame instead of a normal HTTP 429. Asking the same
+        // question here, synchronously, restores the 404-style contract
+        // (testStreamMessage_shouldThrow404BeforeStreaming_whenConversationForeign's sibling): a
+        // refusal now escapes as a plain 429 before any frame is written. The call is otherwise a
+        // no-op — the body returns null and touches nothing — and the deferred runWith below still
+        // asks again (harmless: same context, same actor, same thread-local save/restore dance) so
+        // the ambient binding it needs for the actual LLM calls is unaffected.
+        llmCallContextHolder.runWith(streamContext, () -> null);
+
         // mezo-rj214.7 S9.6 Task 3 — THE structural change: everything from here down used to run
         // synchronously on the request thread, BEFORE this method returned its Flux. Spring MVC
         // only starts writing the SSE response once it subscribes to that Flux, so anything pushed
@@ -177,12 +198,30 @@ public class ChatStreamService {
                             .doOnNext(answer::append)
                             .map(chunk -> ServerSentEvent.<Object>builder(
                                     StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
-                            // Completing the sink with the deltas ends the merge. Any LATER call (an
-                            // advisor corrective round) emits into a terminated sink and is dropped —
-                            // deliberately: those calls still reach the client in the terminal 'done' row.
+                            // fix round 1 finding I2: this doFinally is now ONLY the error/cancel
+                            // backstop — a rawDeltas failure or a client disconnect terminates
+                            // deltasMapped without ever reaching trailingDoneMono's concatWith, so
+                            // the sink still needs closing on THAT path. On the happy path
+                            // (deltasMapped completes normally), doFinally's callback races
+                            // concatWith's own subscription to trailingDoneMono — Reactor does not
+                            // guarantee doFinally runs before the downstream onComplete it reacts to
+                            // is propagated — so it is NOT reliable for closing the sink before the
+                            // trailing advisor review round runs. See the FIRST statement of
+                            // trailingDoneMono's callable below for the deterministic close.
                             .doFinally(signal -> toolSink.tryEmitComplete());
 
                     Mono<ServerSentEvent<Object>> trailingDoneMono = Mono.fromCallable(() -> {
+                        // fix round 1 finding I2: close the sink HERE, first, deterministically —
+                        // not in deltasMapped's doFinally (see its comment above). This must run
+                        // BEFORE the advisor review below, which — on a corrective retry — makes
+                        // live tool calls through the SAME audit.onCall listener that feeds
+                        // toolSink. Completing the sink first makes those retry emissions hit an
+                        // already-terminated sink and drop, restoring the intended invariant: a
+                        // corrective retry's tool calls surface ONLY in the terminal 'done' row,
+                        // never as live frames (possibly emitted after the client already saw
+                        // 'done'). tryEmitComplete is idempotent, so the doFinally above completing
+                        // it a second time on this same path is harmless.
+                        toolSink.tryEmitComplete();
                         // V1.3: post-hoc review — deltas already delivered attempt-1; the done row is
                         // authoritative (the FE swaps it in), so a corrective retry lands silently here.
                         String finalAnswer = answer.toString();
