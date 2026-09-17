@@ -110,7 +110,8 @@ public class ConversationTurnService {
     }
 
     private String digest(List<ToolCallAudit.ToolOutcome> outcomes) {
-        return ToolOutcomeDigest.render(outcomes, properties.turn().answerer().outcomeMaxCharsPerResult(),
+        // Follow-up reads must remain visible even when earlier batches filled the budget.
+        return ToolOutcomeDigest.render(outcomes.reversed(), properties.turn().answerer().outcomeMaxCharsPerResult(),
                 properties.turn().answerer().outcomeMaxCharsTotal());
     }
 }

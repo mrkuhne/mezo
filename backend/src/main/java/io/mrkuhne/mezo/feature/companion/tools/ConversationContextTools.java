@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.ConversationProperties;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionPromptBlock;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
@@ -43,6 +44,7 @@ public class ConversationContextTools {
     private final AiConversationRepository conversations;
     private final ConversationHistory historyRenderer;
     private final ConversationProperties properties;
+    private final CompanionProperties companionProperties;
     private final LlmCallContextHolder callContext;
 
     @Tool(name = "get_personal_context", description = "Személyes háttér egy kiválasztott része. "
@@ -101,16 +103,20 @@ public class ConversationContextTools {
         }
         int index = page == null ? 0 : Math.max(0, page);
         int offset = messageOffset == null ? 0 : Math.max(0, messageOffset);
-        if (index > Integer.MAX_VALUE / properties.historyPageSize()) {
+        int resultBudget = Math.min(properties.resultMaxChars(),
+                companionProperties.turn().answerer().outcomeMaxCharsPerResult());
+        // Budget room for header/footer and at least 100 body characters plus row metadata.
+        int pageSize = Math.min(properties.historyPageSize(), Math.max(1, (resultBudget - 200) / 250));
+        if (index > Integer.MAX_VALUE / pageSize) {
             return "Az oldalszám túl nagy.";
         }
         var rows = messages.findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtDesc(
-                conversation, user, PageRequest.of(index, properties.historyPageSize()));
+                conversation, user, PageRequest.of(index, pageSize));
         StringBuilder result = new StringBuilder("Beszélgetési előzmény; page=" + index + "\n");
         // Leave room for timestamps, roles and continuation instructions inside the tool's
         // result budget; every message on a page remains reachable via messageOffset.
         int messageCap = Math.min(properties.historyMessageMaxChars(),
-                Math.max(100, (properties.resultMaxChars() - 500) / properties.historyPageSize() - 150));
+                Math.max(100, (resultBudget - 200) / pageSize - 150));
         for (var row : rows.reversed()) {
             String text = historyRenderer.render(row);
             String rest = text.substring(Math.min(offset, text.length()));
@@ -121,7 +127,7 @@ public class ConversationContextTools {
                         - ConversationHistory.CLIPPED.length()).append('\n');
             }
         }
-        return result.append(rows.size() < properties.historyPageSize() ? "Nincs régebbi oldal."
+        return result.append(rows.size() < pageSize ? "Nincs régebbi oldal."
                 : "Régebbi oldal: page=" + (index + 1)).toString();
     }
 }

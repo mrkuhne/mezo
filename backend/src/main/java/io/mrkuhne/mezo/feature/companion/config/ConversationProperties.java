@@ -23,6 +23,6 @@ public record ConversationProperties(
         @Min(10000) @Max(400000) int historyMaxChars,
         /** Maximum persisted characters per tool result. */
         @Min(500) @Max(60000) int resultMaxChars,
-        /** Maximum persisted tool-result characters per assistant message. */
+        /** Persisted result payload budget per assistant message; omission markers and metadata are extra. */
         @Min(2000) @Max(200000) int resultsMaxChars
 ) {}

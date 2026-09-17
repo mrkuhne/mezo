@@ -58,4 +58,27 @@ class ConversationLimitsIT extends AbstractIntegrationTest {
         var answer = chat.sendMessage(user, conversation.getId(), SendMessageRequest.builder().content(message).build());
         assertThat(answer.getTools()).hasSize(1);
     }
+    @Autowired private io.mrkuhne.mezo.feature.companion.tools.ConversationContextTools contextTools;
+    @Autowired private io.mrkuhne.mezo.support.populator.AiMessagePopulator messages;
+
+    @Test
+    void testHistory_shouldKeepEveryMessageReachable_whenResultBudgetIsSmall() {
+        var user = users.populateUser("free-small-history@test.local");
+        var conversation = conversations.conversation(user);
+        for (int i = 0; i < 10; i++) {
+            messages.message(conversation, "user", "Egyedi üzenet " + i + "x".repeat(500));
+        }
+        var ctx = new java.util.HashMap<String, Object>(tools.toolContext(user, tools.newTurnAudit()));
+        ctx.put(io.mrkuhne.mezo.feature.companion.tools.ConversationContextTools.CONVERSATION_ID, conversation.getId());
+        var rendered = new StringBuilder();
+        for (int page = 0; page < 10; page++) {
+            String part = contextTools.conversationHistory(page, 0, new org.springframework.ai.chat.model.ToolContext(ctx));
+            assertThat(part).hasSizeLessThanOrEqualTo(500);
+            rendered.append(part);
+        }
+        for (int i = 0; i < 10; i++) {
+            assertThat(rendered.toString()).contains("Egyedi üzenet " + i);
+        }
+    }
+
 }

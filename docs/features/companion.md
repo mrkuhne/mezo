@@ -1561,7 +1561,8 @@ health snapshot, character assessment, memory search or newly-learned announceme
 `ConversationTurnService.prepare` gives the smart planner the full 21-tool catalogue, history
 and accumulated tool results. `needsData=false` stops retrieval; otherwise validated reads run
 through `PlanExecutor` and the existing audit. Each subsequent decision sees the results and can
-request dependent reads. Caps: three batches and 15 total reads; repeated identical reads do not
+request dependent reads. Newest results get priority in the bounded digest so a large earlier
+batch cannot hide a newly requested fact. Caps: three batches and 15 total reads; repeated identical reads do not
 run again. Failed planning/budget exhaustion is explicit context and marks the answer degraded;
 account/billing refusal still propagates. The final `completeSmart`/`streamSmart` writes ordinary
 prose, never the legacy data-gap marker. All topics, including analysis, use native streaming.
@@ -1574,9 +1575,11 @@ existing OLD/SHADOW/NEW adapter and carries retrieval disclosure and refs into t
 A context tool is not arbitrary database access: domain-specific gaps retain their existing scope.
 
 The internal `tool_calls.calls[].result` stores bounded evidence (8,000 characters per result,
-40,000 per assistant row). REST tool chips remain `{type,name}`. Legacy JSON without result still
+40,000 payload characters per assistant row, plus omission markers and call metadata). REST tool chips remain `{type,name}`. Legacy JSON without result still
 loads. The recent transcript labels restored evidence with its timestamp and as historical data;
-older-history pages expose 20 messages with continuation offsets when a body is clipped. Refresh
+older-history pages expose up to 20 messages with continuation offsets when a body is clipped.
+The effective page size shrinks with the smaller persistence/answerer result budget so every row
+and the continuation footer remain reachable. Refresh
 changing measurements through their source tools rather than treating old output as current.
 
 `ConversationProperties` owns these knobs under `mezo.companion.conversation`. Setting `enabled`
@@ -6653,7 +6656,9 @@ execution checklist"). The house recipe, **contract-first**:
 
 **Conversation-first:** `ConversationFirstIT` covers general-topic context, pronoun follow-ups,
 dependent reads, stored evidence, long history and owner isolation through real repositories and
-audited tools. The deterministic fake proves orchestration, not subjective naturalness.
+audited tools. `ConversationEvidenceIT` covers new evidence after a full earlier batch;
+`ConversationLimitsIT` covers read limits, deduplication, and small-budget history pagination.
+The deterministic fake proves orchestration, not subjective naturalness.
 `ConversationQualityEvalIT` is an opt-in real-model three-arm comparison: minimal prompt, rollback
 prompt (both prompt-only controls with identical synthetic facts), and the new full flow. Corpus:
 `backend/src/test/resources/companion/conversation-quality-cases.json`. Run with

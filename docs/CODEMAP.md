@@ -428,7 +428,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 224 IT + 79 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 225 IT + 79 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -447,11 +447,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `CompanionTurnPropertiesIT`,
     `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
-    `ContextSnapshotAssemblerPeopleOffIT`, `ConversationFirstIT`, `ConversationLimitsIT`, `ConversationQualityEvalIT`,
-    `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`, `DailySummaryServiceIT`,
-    `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`, `DayScoreServiceIT`,
-    `DayScoreServiceWindowFetchCountIT`, `EnergyDipMealTimingRuleSwitchOffIT`, `FactCandidateServiceIT`,
-    `FactExtractionServiceIT`, `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`,
+    `ContextSnapshotAssemblerPeopleOffIT`, `ConversationEvidenceIT`, `ConversationFirstIT`, `ConversationLimitsIT`,
+    `ConversationQualityEvalIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
+    `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
+    `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`, `EnergyDipMealTimingRuleSwitchOffIT`,
+    `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`,
     `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`, `FeedbackRollupPersistenceIT`,
     `FlagEvaluationListenerIT`, `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorEnergyDipIT`,
     `FlagEvaluatorIgnoredNudgeIT`, `FlagEvaluatorJointOveruseIT`, `FlagEvaluatorLateEatingIT`,
