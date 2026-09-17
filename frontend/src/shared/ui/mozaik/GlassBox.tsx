@@ -40,6 +40,16 @@ export interface GlassBoxProps {
    *  (`.gl-card.is-menu` / `.gl-card.is-confirm`, prototype.css). Omitted = no class,
    *  which is what every pre-existing caller (TrainWeekPage) wants. */
   variant?: 'menu' | 'confirm'
+  /** Optional leading art rendered in `.gl-head`, before the eyebrow/label pair — the
+   *  prototype's `.wo-glass-head` icon slot (session.css:219). Omitted = no icon column,
+   *  exactly today's `.gl-head` render (every pre-existing caller). Fix round 1
+   *  (mezo-b516k): pulled up from InfoButton's own `.pl-info-head`, which duplicated
+   *  this same icon+eyebrow anatomy next to GlassBox instead of inside it. */
+  art?: ReactNode
+  /** Optional small eyebrow rendered above the `<strong>{label}</strong>` title — the
+   *  prototype's „MEZO · RÉSZLET" line. Omitted = the label renders alone, exactly
+   *  today's render. */
+  eyebrow?: ReactNode
   children: ReactNode
 }
 
@@ -48,7 +58,7 @@ function prefersReducedMotion(): boolean {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function GlassBox({ open, onClose, label, tint, variant, children }: GlassBoxProps) {
+export function GlassBox({ open, onClose, label, tint, variant, art, eyebrow, children }: GlassBoxProps) {
   // Hooks must run on every render regardless of `open` (React's rule), but the
   // PORTAL TARGET itself is resolved below, in the open branch, on every open render —
   // never cached via useState at mount. GlassBox commonly stays mounted with open=false
@@ -81,7 +91,11 @@ export function GlassBox({ open, onClose, label, tint, variant, children }: Glas
       <div className={cn('gl-backdrop', anim && 'gl-anim')} onClick={onClose} aria-hidden="true" />
       <div className={cn('gl-card', variant && `is-${variant}`, anim && 'gl-anim')} style={style} role="dialog" aria-modal="true" aria-label={label}>
         <div className="gl-head">
-          <strong>{label}</strong>
+          {art}
+          <div className="gl-head-title">
+            {eyebrow && <small>{eyebrow}</small>}
+            <strong>{label}</strong>
+          </div>
           <button type="button" className="gl-x" aria-label="Bezárás" onClick={onClose}>✕</button>
         </div>
         {children}

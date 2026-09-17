@@ -282,10 +282,6 @@ export function MesoMusclePage() {
               )}
             </span>
           </div>
-          <p className="pl-foot-say">
-            {tile.mev} szett alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az,
-            ameddig ebben a tervben elmész — ezt a fókuszod szabja meg.
-          </p>
 
           {/* — the plan's ramp, week by week — */}
           <h3 className="pl-h3 rise">A {arc.weeks} hét</h3>

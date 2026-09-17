@@ -413,7 +413,7 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
     const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
-    for (const cls of ['.pl-info', '.pl-info-head', '.pl-info-copy']) {
+    for (const cls of ['.pl-info', '.pl-info-copy']) {
       expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
     }
   })

@@ -7,18 +7,21 @@
 // The prototype's own comment at navigation.js:89 records the owner call of
 // 2026-09-15: „Every ⓘ opens the workout-style 3D glass, never the drawer" — and
 // GlassBox IS that glass (it ports `.wo-glass`/`.wo-glass-card` from session.css),
-// so this component adds nothing to the surface, only the three pieces GlassBox
+// so this component adds nothing to the surface, only the two pieces GlassBox
 // leaves to its caller:
 //
 //   1. the icon-only 22px trigger (`.pl-info`) with the prototype's exact
 //      aria-label, `"<title> — mit jelent?"`;
-//   2. the prototype's header anatomy GlassBox has no slot for — the leading clay
-//      icon + the „MEZO · RÉSZLET" eyebrow — rendered as the glass's first child
-//      rather than by widening GlassBox's props (plan §Global Constraints);
-//   3. ROUTE-CHANGE close. The prototype auto-closes the info layer on `hashchange`
+//   2. ROUTE-CHANGE close. The prototype auto-closes the info layer on `hashchange`
 //      (navigation.js:100); GlassBox listens for Escape/backdrop/✕ only, so an
 //      open glass would otherwise survive a client-side navigation and hang over
 //      the next screen.
+//
+// The prototype's header anatomy — the leading clay icon + the „MEZO · RÉSZLET"
+// eyebrow (`.wo-glass-head`, session.css:219) — is fix round 1 (mezo-b516k): it now
+// goes through GlassBox's own `art`/`eyebrow` props rather than a separate
+// `.pl-info-head` block InfoButton stacked next to GlassBox's header. GlassBox's
+// `.gl-head` is the prototype's ONE glass header every glass shares.
 //
 // The tint is FIXED at the prototype's `#bca6f1` for every info glass — it is the
 // explain layer's identity colour, deliberately NOT the section's own accent
@@ -70,11 +73,14 @@ export function InfoButton({ title, copy, icon = DEFAULT_INFO_ICON }: InfoButton
       >
         <ClayIcon name={icon} size={22} className="icon" />
       </button>
-      <GlassBox open={open} onClose={() => setOpen(false)} label={title} tint={INFO_TINT}>
-        <header className="pl-info-head">
-          <ClayIcon name={icon} size={34} />
-          <small>MEZO · RÉSZLET</small>
-        </header>
+      <GlassBox
+        open={open}
+        onClose={() => setOpen(false)}
+        label={title}
+        tint={INFO_TINT}
+        art={<ClayIcon name={icon} size={34} />}
+        eyebrow="MEZO · RÉSZLET"
+      >
         <p className="pl-info-copy">{copy}</p>
       </GlassBox>
     </>

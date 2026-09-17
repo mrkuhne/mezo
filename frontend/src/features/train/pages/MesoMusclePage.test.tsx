@@ -484,9 +484,11 @@ describe('MesoMusclePage (real mode)', () => {
 test('ⓘ beside „Hol tartasz" interpolates the muscle\'s REAL MEV — never a literal number', async () => {
   const user = userEvent.setup()
   setup('back')
-  // The page already prints the same threshold in its own words below the gauge; the
-  // glass must quote THAT number, not a constant baked into the copy.
-  const mev = document.querySelector('.pl-foot-say')!.textContent!.match(/^(\d+) szett alatt/)![1]
+  // The gauge legend already prints this threshold (fix round 1, mezo-b516k: the
+  // `.pl-foot-say` paragraph that used to repeat it below the gauge is gone — a
+  // near-duplicate the ⓘ glass itself already says in full); the glass must quote
+  // THAT number, not a constant baked into the copy.
+  const mev = gaugeLegend()[0].textContent!.match(/^(\d+)/)![1]
   const btn = screen.getByRole('button', { name: 'Mit jelentenek a jelölések? — mit jelent?' })
   expect(btn.closest('h3')?.textContent).toBe('Hol tartasz')
   await user.click(btn)
@@ -495,4 +497,15 @@ test('ⓘ beside „Hol tartasz" interpolates the muscle\'s REAL MEV — never a
       `A ${mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`,
     ),
   ).toBeInTheDocument()
+})
+
+// The no-duplicate-text directive (mezo-b516k fix round 1, same ruling as item #4): the
+// MEV threshold the ⓘ glass explains must appear ONCE on the page — in the gauge legend —
+// never repeated a second time in a plain paragraph sitting behind the button.
+test('the MEV threshold is not printed twice — the near-duplicate paragraph is gone', () => {
+  setup('back')
+  // Other `.pl-foot-say` paragraphs remain on the page (the pihenőhét note, etc.) — only
+  // THIS gauge's near-duplicate of the ⓘ glass's own copy is the one that had to go.
+  const mev = gaugeLegend()[0].textContent!.match(/^(\d+)/)![1]
+  expect(screen.queryByText(new RegExp(`^${mev} szett alatt nincs elég inger`))).not.toBeInTheDocument()
 })

@@ -13502,7 +13502,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card::-webkit-scrollbar { display: none; }
 .gl-card.gl-anim { animation: gl-slide-up 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
 .gl-head { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
-.gl-head strong { flex: 1; font-size: 17px; font-weight: 500; }
+/* Fix round 1 (mezo-b516k): the prototype's `.wo-glass-head` icon + eyebrow pair
+   (session.css:219-221) moved INTO `.gl-head` itself via GlassBox's optional
+   `art`/`eyebrow` props, instead of InfoButton stacking its own `.pl-info-head`
+   block next to GlassBox's header. `.gl-head-title` is the flex-growing column the
+   `<strong>` used to be directly — it now wraps the eyebrow + title so both can
+   stack without the leading `art` icon or the trailing ✕ losing their own width. */
+.gl-head-title { flex: 1; min-width: 0; }
+.gl-head-title small { display: block; font-size: 9.5px; letter-spacing: .14em; color: var(--text-tertiary); }
+.gl-head strong { font-size: 17px; font-weight: 500; }
 .gl-x {
   width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 17px; line-height: 1;
   border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); color: #d6d1e4;
@@ -15285,28 +15293,31 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   grid-row: 1 / -1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
   background: color-mix(in srgb, var(--mus-color) 13%, var(--surface-recess));
 }
-/* — the ⓘ explain layer (mezo-b516k, Task 1) —
+/* — the ⓘ explain layer (mezo-b516k, Task 1; header anatomy moved into GlassBox
+   itself fix round 1) —
    One small icon-only button beside a heading, opening the workout-style 3D glass
    (GlassBox) with a short plain-language explanation. `.pl-info` is VERBATIM from the
    prototype's plan.css:313-314 — 22px, borderless, no background, .75 opacity — with
    one production-only addition: a `::after` HIT BOX that lifts the tap target to the
    house 44px rule WITHOUT growing the 22px glyph (the prototype never had to satisfy
    it). The copy paragraph ports load.css:179's `.info-glass-copy`, renamed to the
-   house `pl-` prefix. `.pl-info-head` carries the prototype's `.wo-glass-head`
-   icon + „MEZO · RÉSZLET" eyebrow pair, which GlassBox's own header has no slot for,
-   so the shared component renders it as the glass's first child instead. */
+   house `pl-` prefix. The prototype's `.wo-glass-head` icon + „MEZO · RÉSZLET" eyebrow
+   pair now lives in GlassBox's own `.gl-head` (its `art`/`eyebrow` props) instead of a
+   separate `.pl-info-head` block — GlassBox is the ONE glass header every glass shares. */
 .pl-info {
   position: relative; width: 22px; height: 22px; padding: 0; border: 0; background: none;
   cursor: pointer; line-height: 0; opacity: .75; flex: none;
 }
 .pl-info .icon, .pl-info svg { width: 22px; height: 22px; display: block; }
 .pl-info::after {
-  content: ''; position: absolute; top: 50%; left: 50%;
-  width: 44px; height: 44px; transform: translate(-50%, -50%);
-}
-.pl-info-head { display: flex; align-items: center; gap: 10px; margin: 2px 4px 8px; }
-.pl-info-head small {
-  font-size: 9.5px; letter-spacing: .14em; color: var(--text-tertiary);
+  /* Anchored to the glyph's LEADING (left) edge, not centred (mezo-b516k fix round 1):
+     a centred 44px box over the 22px glyph intruded ~4px into the heading text through
+     the `.pl-h3`/`.ld-h3` 7px gap. Every placement has the button LAST in its row, so
+     anchoring left pushes the whole overhang to the button's right — off the heading,
+     into empty space — without touching the 7px gap itself. Geometry is probed live in
+     the Playwright layout suite (frontend/tests/layout/layout.spec.ts); jsdom can't. */
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 44px; height: 44px; transform: translateY(-50%);
 }
 .pl-info-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: #d6d2e2; }
 

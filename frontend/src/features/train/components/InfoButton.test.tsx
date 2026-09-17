@@ -54,10 +54,26 @@ test('the open glass carries the eyebrow, the title and the copy paragraph', asy
   await user.click(trigger())
 
   const dialog = screen.getByRole('dialog')
+  // Fix round 1 (mezo-b516k): the eyebrow + title now render through GlassBox's own
+  // `.gl-head` (its `art`/`eyebrow` props) rather than InfoButton's own header block —
+  // `.pl-info-head` is gone.
+  expect(dialog.querySelector('.pl-info-head')).not.toBeInTheDocument()
   expect(within(dialog).getByText('MEZO · RÉSZLET')).toBeInTheDocument()
   expect(within(dialog).getByText(TITLE, { selector: 'strong' })).toBeInTheDocument()
   const copy = within(dialog).getByText(COPY)
   expect(copy).toHaveClass('pl-info-copy')
+})
+
+test('the leading clay icon renders inside GlassBox\'s own .gl-head, not a separate header', async () => {
+  const user = userEvent.setup()
+  renderButton()
+  await user.click(trigger())
+
+  const dialog = screen.getByRole('dialog')
+  const head = dialog.querySelector('.gl-head')!
+  expect(head.querySelector('svg, .icon')).toBeInTheDocument()
+  expect(head.textContent).toContain('MEZO · RÉSZLET')
+  expect(head.textContent).toContain(TITLE)
 })
 
 test('Escape closes the glass', async () => {

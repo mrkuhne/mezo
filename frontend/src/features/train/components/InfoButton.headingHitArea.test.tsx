@@ -1,16 +1,17 @@
 // ============================================================
-// Mezo · InfoButton — the heading HIT-AREA regression (mezo-b516k, Task 2).
+// Mezo · InfoButton — the heading click-WIRING regression (mezo-b516k, Task 2).
 //
-// The explain button is a 22px glyph with a 44px `::after` hit box (the house touch
-// rule), so the box overflows the glyph by 11px per side while `.pl-h3`/`.ld-h3` only
-// put a 7px gap between the heading text and the button — the box therefore reaches
-// ~4px INTO the heading text's own box. Several screens have handlers that fire on a
+// This guards the WIRING, not the geometry: jsdom computes no layout, so it cannot
+// tell whether the `::after` hit box's 44px box actually overlaps the heading text on
+// screen — that is a real geometric probe, in the Playwright layout suite
+// (frontend/tests/layout/layout.spec.ts, `.pl-info` heading hit-box probe), against a
+// live page. What IS assertable here, in jsdom, is the EVENT WIRING: a click that
+// lands on the heading's own text must reach the heading's own handler once — not be
+// swallowed by an intervening element, and not emitted as a click on the explain
+// button (which would open the glass). Several screens have handlers that fire on a
 // tap anywhere on the page or on the heading itself (MesoTemplateStoryPage's
 // „arming Törlés then tapping anything else disarms it" test taps the heading TEXT),
-// and a tap that landed on the explain button instead would open the glass over them.
-//
-// This is the shared guard for the whole placement grammar: a click on a heading's own
-// text must reach the heading and must NOT open the explain glass.
+// so a misrouted click here would open the glass over them.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
