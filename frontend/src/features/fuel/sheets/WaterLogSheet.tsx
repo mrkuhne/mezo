@@ -6,7 +6,8 @@
 // (`logWater`) and wires it into `onLog` — this component has no `@/data/*` import.
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary } from '@/shared/ui/Cta'
@@ -38,16 +39,13 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="water-log-title">
+    <Sheet onClose={onClose} labelledBy="water-log-title" className="capture-sheet capture-tone-water">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px', textAlign: 'center' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <span className="eyebrow" style={{ color: 'var(--sky)' }}>💧 Víz logolása</span>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
+          <CaptureHeader id="water-log-title" title="Mennyit ittál?" subtitle="Egy korty szünet." kind="water" eyebrow="Víz" onClose={close} />
+          <div className="capture-water-hero" style={{ '--capture-fill': selected ? `${Math.max(12, 85 - selected / 12)}%` : '100%' } as CSSProperties}>
+            <output className="capture-water-value" aria-label="Rögzítendő vízmennyiség" aria-live="polite">{selected ?? '—'}<small> ml</small></output>
           </div>
-          <h2 id="water-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mennyit ittál?</h2>
           <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 4 }}>
             ma eddig {hu1(currentMl / 1000)} / {hu1(targetMl / 1000)} l
           </p>
@@ -75,14 +73,14 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
               value={manual}
               onChange={e => editManual(e.target.value)}
               style={{
-                width: 90, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 700,
+                width: 120, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 700,
                 padding: '9px 12px', borderRadius: 'var(--r-lg)', border: '1px solid var(--divider)',
                 background: 'var(--surface-page)', color: 'var(--text-primary)',
               }}
             />
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>ml kézzel</span>
           </div>
-          <CtaPrimary style={{ marginTop: 16, alignSelf: 'center' }} disabled={!canSave} onClick={() => save(close)}>
+          <CtaPrimary style={{ marginTop: 22, width: '100%' }} disabled={!canSave} onClick={() => save(close)}>
             <Icon name="check" size={14} /> Mentés
           </CtaPrimary>
         </div>
