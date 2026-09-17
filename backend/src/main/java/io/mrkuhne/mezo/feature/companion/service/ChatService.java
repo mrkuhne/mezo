@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionReplyRecor
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.RecordingToolCallback;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -38,6 +39,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -202,6 +204,8 @@ public class ChatService {
     private final TurnPlanner turnPlanner;
     private final PlanExecutor planExecutor;
     private final TurnAnswerer turnAnswerer;
+    /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
+    private final ObjectMapper objectMapper;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
@@ -301,8 +305,8 @@ public class ChatService {
             // below (spec §8: degraded, but an answer) — the fallback the whole migration leans on.
             String pipelined = properties.turn().pipelineEnabled()
                     ? llmCallContextHolder.runWith(turnContext,
-                            () -> pipelineAnswer(userId, conversationId, routed, history,
-                                    request.getContent(), today, audit))
+                            () -> pipelineAnswer(userId, conversationId, gear, systemPrompt, turnCtx,
+                                    history, request.getContent(), today, audit))
                     : null;
             if (pipelined != null) {
                 answer = pipelined;
@@ -449,12 +453,15 @@ public class ChatService {
      * answer). One turn = one audit: the plan is capped to the REMAINING budget (companion.md,
      * "Three seams") so the envelopes stay within max-calls-per-turn.
      *
-     * <p>Package-private (mezo-rj214.7 S9.6): {@link ChatStreamService} reuses this and {@link
-     * #capToRemainingBudget} for the streamed path, the same way it already reaches {@link
-     * #prepareTurn}/{@link #completeTurn}.
+     * <p>Package-private (mezo-rj214.7 S9.6, fix round 1 finding 4): {@link ChatStreamService}
+     * reuses this and {@link #capToRemainingBudget} for the streamed path, the same way it already
+     * reaches {@link #prepareTurn}/{@link #completeTurn}. Takes scalars rather than {@link
+     * RoutedContext}: that record is {@code private} to this class, so a package-private caller in
+     * another class could never have passed one in — the streamed path could not reach this method
+     * at all before this signature change.
      */
-    String pipelineAnswer(UUID userId, UUID conversationId, RoutedContext routed,
-                          List<Turn> history, String content, LocalDate today,
+    String pipelineAnswer(UUID userId, UUID conversationId, TurnGear gear, String systemPrompt,
+                          String turnContext, List<Turn> history, String content, LocalDate today,
                           ToolCallAudit audit) {
         Optional<ValidatedPlan> planned = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "plan", "conversation", conversationId),
@@ -462,21 +469,22 @@ public class ChatService {
         if (planned.isEmpty()) {
             return null;
         }
-        ValidatedPlan plan = capToRemainingBudget(planned.get(), audit);
-        List<ToolCallAudit.ToolOutcome> outcomes = planExecutor.execute(plan, userId, audit);
-        boolean replanAllowed = routed.gear() == TurnGear.ANALYSIS
+        CappedPlan capped = capToRemainingBudget(planned.get(), audit);
+        List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(
+                planExecutor.execute(capped.plan(), userId, audit));
+        outcomes.addAll(capped.dropped());
+        boolean replanAllowed = gear == TurnGear.ANALYSIS
                 && properties.turn().replan().maxLaps() > 0;
-        String volatileHalf = turnAnswerer.buildVolatile(routed.turnContext(), outcomes,
-                routed.gear(), replanAllowed);
+        String volatileHalf = turnAnswerer.buildVolatile(turnContext, outcomes, gear, replanAllowed);
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer", "conversation", conversationId),
-                () -> turnAnswerer.answer(routed.systemPrompt(), volatileHalf, history, content));
+                () -> turnAnswerer.answer(systemPrompt, volatileHalf, history, content));
 
         Optional<String> gap = TurnAnswerer.dataGapReason(answer);
         if (gap.isEmpty() || !replanAllowed) {
-            // A marker on a gear that never offered it is model noise; the defensive read is to
-            // treat it as the answer text minus nothing — never loop.
-            return answer;
+            // A marker on a gear that never offered it is model noise; guardAgainstMarker strips
+            // it defensively so it can never persist as an assistant message either way.
+            return guardAgainstMarker(answer);
         }
         String hint = content + "\n\n[KIEGÉSZÍTÉS] Az előző körből hiányzó adat: " + gap.get();
         Optional<ValidatedPlan> replanned = llmCallContextHolder.runWith(
@@ -484,25 +492,69 @@ public class ChatService {
                 () -> turnPlanner.plan(history, hint, today));
         List<ToolCallAudit.ToolOutcome> merged = new ArrayList<>(outcomes);
         if (replanned.isPresent()) {
-            ValidatedPlan second = capToRemainingBudget(replanned.get(), audit);
-            merged.addAll(planExecutor.execute(second, userId, audit));
+            CappedPlan secondCapped = capToRemainingBudget(replanned.get(), audit);
+            merged.addAll(planExecutor.execute(secondCapped.plan(), userId, audit));
+            merged.addAll(secondCapped.dropped());
         }
-        String lapTwoVolatile = turnAnswerer.buildReplanVolatile(routed.turnContext(), merged);
-        return llmCallContextHolder.runWith(
+        String lapTwoVolatile = turnAnswerer.buildReplanVolatile(turnContext, merged);
+        String lapTwoAnswer = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_chat", "answer_replan", "conversation", conversationId),
-                () -> turnAnswerer.answer(routed.systemPrompt(), lapTwoVolatile, history, content));
+                () -> turnAnswerer.answer(systemPrompt, lapTwoVolatile, history, content));
+        return guardAgainstMarker(lapTwoAnswer);
     }
 
-    /** Package-private for the same reason as {@link #pipelineAnswer} (Task 6 reuse). */
-    ValidatedPlan capToRemainingBudget(ValidatedPlan plan, ToolCallAudit audit) {
+    /**
+     * Defensive backstop (fix round 1 finding 1): {@link TurnAnswerer#DATA_GAP_MARKER} must never
+     * persist as an assistant message — not on the no-replan exit, not on the lap-2 exit, and not
+     * on the stray-marker-on-a-gear-that-never-offered-it corner. Returns {@code null} whenever the
+     * marker is present so the answer propagates as a pipeline failure and the caller's legacy
+     * fallback answers fully: a full answer beats a broken one.
+     *
+     * <p>Package-private static, next to {@link #pipelineAnswer}, so {@link
+     * ChatServiceMarkerGuardTest} can exercise it directly without a Spring context.
+     */
+    static String guardAgainstMarker(String answer) {
+        return TurnAnswerer.dataGapReason(answer).isPresent() ? null : answer;
+    }
+
+    /**
+     * Result of {@link #capToRemainingBudget}: the steps that still fit the remaining per-turn
+     * budget, plus honest synthetic outcomes (fix round 1 finding 2) for whichever steps did not —
+     * {@link #pipelineAnswer} appends {@code dropped} AFTER the executed outcomes, in plan order,
+     * so the answerer's digest shows the drop instead of silently answering with fewer facts than
+     * the plan asked for.
+     */
+    private record CappedPlan(ValidatedPlan plan, List<ToolCallAudit.ToolOutcome> dropped) {}
+
+    /**
+     * Package-private for the same reason as {@link #pipelineAnswer} (Task 6 reuse): a caller in
+     * {@code ChatStreamService} can invoke this and read {@code plan()}/{@code dropped()} off the
+     * result via {@code var} without ever needing to name {@link CappedPlan} itself.
+     */
+    CappedPlan capToRemainingBudget(ValidatedPlan plan, ToolCallAudit audit) {
         int remaining = Math.max(0, properties.tools().maxCallsPerTurn() - audit.callCount());
         if (plan.steps().size() <= remaining) {
-            return plan;
+            return new CappedPlan(plan, List.of());
         }
-        List<String> rejections = new ArrayList<>(plan.rejections());
-        plan.steps().stream().skip(remaining)
-                .forEach(step -> rejections.add(step.tool() + ": a körre jutó keret betelt"));
-        return new ValidatedPlan(List.copyOf(plan.steps().subList(0, remaining)), List.copyOf(rejections));
+        List<ToolCallAudit.ToolOutcome> dropped = plan.steps().stream()
+                .skip(remaining)
+                .map(step -> new ToolCallAudit.ToolOutcome(
+                        step.tool(), argsJson(step), RecordingToolCallback.BUDGET_EXHAUSTED))
+                .toList();
+        ValidatedPlan cappedPlan = new ValidatedPlan(
+                List.copyOf(plan.steps().subList(0, remaining)), plan.rejections());
+        return new CappedPlan(cappedPlan, dropped);
+    }
+
+    /** Best-effort JSON of a dropped step's args, for its synthetic {@link ToolCallAudit.ToolOutcome}. */
+    private String argsJson(TurnPlan.PlanStep step) {
+        try {
+            return objectMapper.writeValueAsString(step.args());
+        } catch (Exception e) {
+            log.warn("Failed to serialize dropped plan step args for {}; substituting an empty object",
+                    step.tool(), e);
+            return "{}";
+        }
     }
 
     /**

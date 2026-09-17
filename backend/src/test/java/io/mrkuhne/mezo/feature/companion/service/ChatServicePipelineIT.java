@@ -94,6 +94,9 @@ class ChatServicePipelineIT extends AbstractIntegrationTest {
         assertThat(answer.getContent()).doesNotContain(TurnAnswerer.DATA_GAP_MARKER);
         // Two executed steps: lap 1 + the replan lap re-executed the scripted plan.
         assertThat(answer.getTools()).hasSize(2);
+        // fix round 1 finding 5: the answer echo's digest carries the merged lap1+lap2 outcomes,
+        // not just the last lap's — TWO "- get_recovery" lines, one per executed call.
+        assertThat(answer.getContent()).containsSubsequence("- get_recovery", "- get_recovery");
     }
 
     @Test
