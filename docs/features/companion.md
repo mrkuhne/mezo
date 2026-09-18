@@ -1468,6 +1468,61 @@ window).
   where each surface's own query actually reads it (morning: the `[Cél]` goal title; sleep/weight:
   the log's free-text note above; window: the daily-summary narrative).
 
+**Memória mindenhol S8 (`mezo-eq85.8`) — the weekly retrospective surfaces join the seam.** Same
+`MemoryContextBlock` contract as S7, now wired into the three WEEKLY surfaces instead of the daily
+ones: `MemoirGenerator`, `WeeklyReviewGenerator` and `WeeklySuggestionGenerator` — all three already
+`ObjectProvider<CharacterPromptSource>` callers, so the new `ObjectProvider<MemoryContextBlock>`
+field is the same lazy idiom, not a new one.
+
+- **All three retrieve under `ConsumerPolicy.WEEKLY_MEMOIR`** (already declared and configured —
+  30 candidates / 1200 tokens / rerank / **deep** — but, before this slice, unused by any caller),
+  with `deep = true` on every call: nobody is waiting synchronously on a weekly generation, so the
+  deeper offline-shaped retrieval variant is the right default here, unlike the four
+  `MORNING_BRIEFING` callers. **Unlike the four proactive-feed kinds, which share one `"proactive_feed"`
+  feature and differ only by `operation` under `MORNING_BRIEFING`, each of these three surfaces
+  bills the memory retrieval under its OWN feature** — `proactive_memoir`, `proactive_weekly_review`,
+  `proactive_weekly` (each obtained via `CONTEXT.feature()` where `CONTEXT` is that generator's
+  single `LlmCallContext` constant used for both the surface's own billing AND its memory-retrieval
+  calls), all three with `operation = "generate"`. This is load-bearing, not cosmetic:
+  `proactive_memoir` and `proactive_weekly_review` sit on
+  `mezo.llm-log.budget.throttled-features` in `application.yml`, so a throttled account has each
+  surface's OWN memory retrieval suspended along with the surface itself — the shared
+  `"proactive_feed"` label a first cut used here would have let retrieval render straight through
+  that safety valve. `MemoirGeneratorMemoryIT` seeds an account past the 90% throttle line and
+  asserts both halves of the guard: the surface's own `LLM_BUDGET_THROTTLED` refusal, AND that no
+  `memory_retrieval_run` row was written. The second is **not** implied by the first —
+  `MemoirGenerator.gather` (and so `memoryBlock`) runs at `:183`, *before* the throttled top-level
+  call at `:194`. Retrieval really is attempted; it is refused inside `MemoryContextBlock.render`'s
+  own `runWith` and swallowed into `Rendered.EMPTY`. A label passed only to `memoryBlock` and not on
+  the throttled list would therefore leave a run row behind while the throw still happened — which
+  is exactly what the second assertion catches.
+- **One query shape, reused three times.** Each surface's memory query is **the week's OWN
+  daily-summary narratives, joined and clipped to the first 800 chars, plus `"\na hét: " +
+  weekStart"`** — `MemoirGenerator` and `WeeklyReviewGenerator` build it from `[weekStart,
+  weekStart+6]` (the week the surface is ABOUT); `WeeklySuggestionGenerator` builds it from the
+  PRIOR week (the only daily-summary text its gather has — the suggestion itself is FOR the
+  upcoming week). `asOf` is `weekEnd` (the week's Sunday) for all three. `WeeklyReviewGenerator`
+  gained a `DailySummaryRepository` dependency purely to build this query — it previously read day
+  data only through `MeWeekService`, which carries no narrative text.
+- **Two different ref shapes, mapped from the ONE `RefsEnvelope.Ref(kind, id, label)`.**
+  `MemoirGenerator` maps onto its own two-component `MemoirAnchorsEnvelope.Anchor(kind, label)` —
+  the id is dropped, the `CompanionMessageEnvelope.Ref` precedent — and appends at the END of the
+  HORGONY-JELÖLTEK candidate list so existing anchor indexes never shift; a memory ref's kind is a
+  source kind like `journal_entry`, never `MemoirGenerator`'s own literal `"Memory"` kind (the
+  daily-summary anchors), so `resolveAnchors`' Memory-day-label composition is unaffected.
+  `WeeklyReviewGenerator` maps onto its three-component `Highlight(kind, label, refId: UUID)` —
+  `refId` is `UUID.fromString(ref.id())`, and a ref whose id fails to parse is SKIPPED rather than
+  thrown (an unparseable id would break the `refId` contract every other highlight satisfies; losing
+  one candidate costs far less than a broken week). `WeeklySuggestionGenerator` has **no**
+  candidate/anchor list at all — it contributes the rendered block text only, no refs, no new
+  mechanism invented for it.
+- **Fail-open, same as S7.** `MemoryContextBlock.render` itself never throws, so a memory-platform
+  outage never costs a user their memoir/review/suggestion. The "policy disabled" kill switch is the
+  identical `WEEKLY_MEMOIR.enabled=false` config flip `MemoryContextBlockIT` already covers
+  generically; Task 8 repeats the assertion once per surface anyway (`MemoirGeneratorMemoryDisabledIT`
+  et al., [`proactive.md`](proactive.md) §8) per the Part-B four-case checklist, even though the
+  mechanism itself is not new here.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real

@@ -237,6 +237,21 @@ this redesign and remain as shipped.
   gather also appends the growth-domain **`NÖVEKEDÉS` block** (`GrowthDigestBlock.render`, feature/quest→progression
   aggregate — quest ratio + LIFE XP + activity count + savings; `""` on an empty week) for the
   **PRIOR** week (`weekStart.minusWeeks(1)`), so the plan prose can reflect the week's growth. See [`growth.md` §5](growth.md).
+  **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
+  block right after the facts block, via `MemoryContextBlock.render(userId,
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekStart.plusDays(6), true, "proactive_weekly",
+  "generate", null)`, reached through an `ObjectProvider<MemoryContextBlock>` (same idiom
+  as the S7 companion-feed kinds) — **unlike Task 7's shared `"proactive_feed"` label, this surface
+  bills its OWN feature (`proactive_weekly`, obtained via `CONTEXT.feature()` where `CONTEXT` is
+  this generator's single `LlmCallContext` constant used for both the surface's own billing AND
+  its memory-retrieval calls)**, purely so "what did the weekly suggestion cost" can be
+  answered by grouping on feature; `proactive_weekly` itself is NOT on
+  `mezo.llm-log.budget.throttled-features` (its siblings below, `proactive_memoir` and
+  `proactive_weekly_review`, are — see those sections for the load-bearing version of this
+  argument). Query = the prior week's daily-summary narratives joined, first 800 chars, +
+  `"\na hét: " + weekStart`. This generator has **no candidate/anchor list at all**, so unlike the
+  other two Task-8 surfaces it contributes no ref candidates — only the rendered block text.
+  Fail-open, deep query: [`companion.md`](companion.md) §1 "Memória mindenhol S8".
 - **A Monday-dawn cron** — `WeeklySuggestionJob` `@Scheduled` on `mezo.proactive.weekly.cron`
   (**`0 0 6 * * MON`** — Monday 06:00 server zone) pre-generates the **CURRENT** week's suggestion
   per user (gathered from the just-finished previous week — §9 decision j). Gated on a THIRD switch
@@ -324,6 +339,25 @@ this redesign and remain as shipped.
   `templateSessionId`, its started instance carries one like any other. Reads `closingNote`, never
   `note` (the template day's plan note, a different row of the same table). The FE chip label
   lives in `toolDomains.ts` / `chatRefs.ts` (`Edzés-jegyzet`).
+  **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
+  block right after the `NÖVEKEDÉS` block, via `MemoryContextBlock.render(userId,
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_memoir", "generate", null)`,
+  reached through an `ObjectProvider<MemoryContextBlock>` (same idiom as the S7 companion-feed
+  kinds and the `characterPromptSource` dossier already on this class) — **its OWN feature
+  (`proactive_memoir`, obtained via `CONTEXT.feature()` where `CONTEXT` is this generator's
+  single `LlmCallContext` constant used for both the surface's own billing AND its memory-retrieval
+  calls), not Task 7's shared `"proactive_feed"`**, because `proactive_memoir` sits on
+  `mezo.llm-log.budget.throttled-features` in `application.yml`: a mislabeled block would let this
+  surface's memory retrieval render straight through the budget-throttle safety valve that
+  suspends the surface itself. Query = the week's OWN daily-summary
+  narratives joined, first 800 chars, + `"\na hét: " + weekStart`; `asOf = weekEnd` (the week's
+  Sunday) — a **deep** query (`WEEKLY_MEMOIR` is configured `deep: true`, no latency gate). The
+  returned `refs` are mapped onto this class' own two-component `MemoirAnchorsEnvelope.Anchor` — kind
+  and label survive, the id is dropped (the `CompanionMessageEnvelope.Ref` precedent) — and appended
+  at the END of the HORGONY-JELÖLTEK candidate list, so existing candidate indexes never shift. A
+  memory ref's kind is a source kind like `journal_entry`, never the literal `"Memory"` this class
+  already uses for daily-summary anchors, so `resolveAnchors`' day-label composition is unaffected.
+  Fail-open like the S7 idiom: [`companion.md`](companion.md) §1 "Memória mindenhol S8".
 - **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
   (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
   for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the
@@ -579,6 +613,24 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   invented — the memoir/prediction ref rule) + day-notes filtered to dates inside the week.
   **Empty week (no day carries ANY logged data) or an unusable answer (blank/null summary) ⇒ NO
   row** (honest absence); existing row ⇒ returned untouched (idempotent, no second LLM call).
+  **Since Memória mindenhol S8 (`mezo-eq85.8`)** the gather also appends a `[Hosszú távú memória]`
+  block right after the wider `WeeklyReviewContextSources` context, via the same `WEEKLY_MEMOIR`/
+  `deep=true` contract `MemoirGenerator` uses, `MemoryContextBlock.render(userId,
+  ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_weekly_review", "generate", null)`
+  — **its OWN feature (`proactive_weekly_review`, obtained via `CONTEXT.feature()` where `CONTEXT`
+  is this generator's single `LlmCallContext` constant used for both the surface's own billing AND
+  its memory-retrieval calls), not Task 7's shared `"proactive_feed"`**, because
+  `proactive_weekly_review` sits on `mezo.llm-log.budget.throttled-features` in
+  `application.yml`: a mislabeled block would let this surface's memory retrieval render straight
+  through the budget-throttle safety valve that suspends the surface itself. This class had **no**
+  `DailySummaryRepository` dependency before this slice — it is now injected purely to build the
+  memory query from the week's OWN daily-summary narratives, joined and first-800-chars-clipped,
+  `+ "\na hét: " + weekStart`; `asOf = weekEnd`. The returned `refs` are mapped onto this class'
+  three-component `Highlight(kind, label, refId: UUID)` — `refId` is parsed from `RefsEnvelope.Ref
+  .id()`, and a ref whose id is **not** a valid UUID is SKIPPED rather than throwing (an unparseable
+  id would break the `refId` contract every other highlight satisfies). Fail-open, no ref candidates
+  contributed from anywhere else in the wider-context block (unchanged): [`companion.md`](companion.md)
+  §1 "Memória mindenhol S8".
 - **A Monday-06:50 cron, running BACKWARD** — `WeeklyReviewJob` `@Scheduled` on
   `mezo.proactive.weekly-review.cron` (**`0 50 6 * * MON`**) generates the review for the week that
   **JUST FINISHED** (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`) — the opposite direction
@@ -2591,6 +2643,26 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   degrades, lexical/facts/graph still ran). The "policy disabled ⇒ no block, no run row" case is
   proven ONCE at the seam (`MemoryContextBlockIT`, [`companion.md`](companion.md) §8), not repeated
   per kind — all four generators reach the identical `MemoryContextBlock.render` call.
+- **`MemoirGeneratorMemoryIT`/`WeeklyReviewGeneratorMemoryIT`/`WeeklySuggestionGeneratorMemoryIT`
+  (2 each, `mezo-eq85.8`)** — the same idiom applied to the three weekly-retrospective surfaces
+  (not `@Transactional`, for the identical pooled-connection reason): a seeded `memory_item`/
+  `memory_vector` reaches the fake LLM's recorded payload as a `[Hosszú távú memória]` block and
+  the audited run carries `WEEKLY_MEMOIR`; the memoir and weekly-review tests additionally assert
+  the ref lands in the numbered candidate list (`[journal_entry] Napló`) — `WeeklySuggestionGenerator`
+  has no candidate list, so its test stops at the block+run assertion. Each also proves a
+  `FakeEmbeddingAdapter.FAIL_EMBED` marker planted in the week's own daily-summary narrative — the
+  ONLY text each generator's memory query is built from — still lets the surface persist, with the
+  audited run's `dense` retriever trace carrying a non-null `error`. Unlike the S7 precedent above,
+  the "policy disabled" case is repeated per surface here (`MemoirGeneratorMemoryDisabledIT` /
+  `WeeklyReviewGeneratorMemoryDisabledIT` / `WeeklySuggestionGeneratorMemoryDisabledIT`, 1 test
+  each, own `@TestPropertySource` context — the `ChatServicePipelineSwitchOffIT` precedent) per the
+  Part-B task's four-case checklist, even though the underlying kill-switch mechanism is the same
+  one `MemoryContextBlockIT` already exercises generically. `WeeklySuggestionGeneratorIT` (the
+  existing, `@Transactional` gather/generate-flow class) now disables `WEEKLY_MEMOIR` for its whole
+  class via `@TestPropertySource` — the same reason `CompanionMessageGeneratorIT` disables
+  `MORNING_BRIEFING`: a real retrieval's retriever tasks need their own pooled connection, which a
+  class-transactional test's single held connection cannot supply. `MemoirGeneratorIT`/
+  `WeeklyReviewGeneratorIT` needed no such change — neither is class-transactional.
 - **`CompanionMessageEventIT` (4)** — logging fresh sleep creates the sleep-reaction message;
   logging a backfilled sleep date does NOT (freshness guard); logging today's weight creates the
   weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
@@ -3492,8 +3564,8 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`. **Memória mindenhol S8** (`mezo-eq85.8`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`firstChars` so the gather appends a `[Hosszú távú memória]` block right after the facts block (no ref candidates — this generator has no anchor list).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record. **Memória mindenhol S8** (`mezo-eq85.8`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryAnchorCandidates`/`firstChars` so the gather appends a `[Hosszú távú memória]` block and its ref candidates into the numbered HORGONY-JELÖLTEK list.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` persists the grounding pattern id on `sourcePatternId` (the only pattern-derived field this generator stores).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toFeedResponse` replaces `toBriefingResponse`+`toHeartbeatResponse`; …+ `toPredictionResponse` + `toExperimentResponse` + **`toChallengeResponse`** (`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, derived `typeLabel`/`target` via `@Mapping(expression=…)`); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
@@ -3628,7 +3700,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Weekly review — WR (`mezo-p2tr`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{WeeklyReviewEntity,WeeklyReviewDayNotesEnvelope,WeeklyReviewHighlightsEnvelope}.java` — the owned entity (`weekStart`/`summary`/`generatedAt` + two typed jsonb envelopes).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes, candidateFacts}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`; hands `candidateFacts` to `WeeklyLessonService` (mezo-d20.7.6).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes, candidateFacts}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`; hands `candidateFacts` to `WeeklyLessonService` (mezo-d20.7.6). **Memória mindenhol S8** (`mezo-eq85.8`) added a `DailySummaryRepository` dependency (new — this class had none before) + `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryHighlightCandidates`/`firstChars` so the gather appends a `[Hosszú távú memória]` block and its ref candidates (UUID-parsed, unparseable ids skipped) into the numbered HORGONY-JELÖLTEK list.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyLessonService.java` (mezo-d20.7.6) — „A hét tanulságai": `propose` (bounds-check + normalised dedupe against confirmed facts and EVERY existing candidate + the reused `max-candidates-per-turn` cap, writing `learned_fact` rows with `source=weekly_review`/`week_start`/`evidence`, no notification), `list` (the week's candidates WITH their decisions) and `archiveOpen` (the regenerate policy: decided candidates survive, open ones are archived with the review).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewJob.java` — the backward-looking Monday-06:50 `@Scheduled` cron (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`, three-switch-gated `WEEKLY_REVIEW_JOB_SWITCH`, no backfill).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate + RE-PROBES `stale` against the fresh row, 409 while the week is in progress).
