@@ -15,7 +15,7 @@
 ## Global Constraints
 
 - **Branch:** `feat/companion-provenance-cards` (already created from `origin/main`). Conventional commits carrying `(mezo-rj214.7)`.
-- **Config keys live under `mezo.companion.turn.provenance.*`** — spec §9's block nests provenance under `turn:`, and every companion turn key already lives there. (Spec §6.6 writes the key as `mezo.companion.provenance.retention-days` — that is an inconsistency inside the spec; §9's placement wins. Do not create a second top-level `mezo.companion.provenance` namespace.) Values: `retention-days: 90`, `cron: "0 50 3 * * *"`, `max-chars: { per-outcome: 4000, total: 20000 }`.
+- **Config keys live under `mezo.companion.turn.provenance.*`** — spec §9's block nests provenance under `turn:`, and every companion turn key already lives there. (Spec §6.6 writes the key as `mezo.companion.provenance.retention-days` — that is an inconsistency inside the spec; §9's placement wins. Do not create a second top-level `mezo.companion.provenance` namespace.) Values: `retention-days: 90`, `cron: "0 55 3 * * *"`, `max-chars: { per-outcome: 4000, total: 20000 }`.
 - **Every new Spring bean carries `@ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")`** — an ungated companion bean broke every `*SwitchOffIT` in S9.1 (standing rule). A job bean ANDs its own job switch on top, like `MemoryRetrievalRetentionJob`.
 - **Two truths never mix inside one row.** A pipeline turn's provenance is built ENTIRELY from the plan-truth outcome list (`PlanExecutor` output + `capToRemainingBudget` synthetic drops). A legacy turn's provenance is built ENTIRELY from `audit.toolOutcomes()` (ran-truth). See `docs/features/companion.md` "Three seams" — reading both as if they agreed surfaces either an unvalidated plan or an outcome that silently changed.
 - **jsonb envelopes are typed records with a static `ofOrNull(...)`** returning `null` (never an empty envelope) when nothing happened — `RecalledMemoriesEnvelope` is the precedent. New envelope records live in `feature/companion/entity/` (ArchUnit enforces subpackage placement).
@@ -253,11 +253,11 @@ and in `application.yml` under `mezo.companion.turn:`
 
 ```yaml
       # S9.7 (mezo-rj214.7): what each answer looked up and what came back. The RESULT half is
-      # NULLed after retention-days (the ask half is kept forever) — the llm-log payload scrub at
-      # 03:40 is the precedent; 03:50 is the next free slot in the dawn cron cluster.
+      # NULLed after retention-days (the ask half is kept forever) — 03:55 is the verified-free
+      # minute after the 03:40 llm-log scrub and the 03:50 audit-retention + monthly pair.
       provenance:
         retention-days: 90
-        cron: "0 50 3 * * *"
+        cron: "0 55 3 * * *"
         per-outcome-chars: 4000
         total-chars: 20000
 ```

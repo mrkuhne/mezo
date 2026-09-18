@@ -52,6 +52,9 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
      * its {@code why}) is deliberately untouched — irreversible by design, no row is ever
      * deleted, only this one column is cleared. The {@code tool_outcomes is not null} guard keeps
      * re-runs free: an already-scrubbed row is not counted again.
+     *
+     * <p>{@code clearAutomatically = true} avoids stale first-level-cache reads when a caller
+     * reloads the scrubbed row in the same session.
      */
     @Modifying(clearAutomatically = true)
     @Query("""

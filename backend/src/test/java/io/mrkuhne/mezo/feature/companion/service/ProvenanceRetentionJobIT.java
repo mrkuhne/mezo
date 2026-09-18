@@ -116,6 +116,27 @@ class ProvenanceRetentionJobIT extends AbstractIntegrationTest {
         assertThat(scrubbedCount).isEqualTo(2);
     }
 
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void testRun_shouldSpareRowAtExactCutoff() {
+        AiConversationEntity conversation = aiConversationPopulator.conversation(ownerId());
+        ToolCallsEnvelope toolCalls = new ToolCallsEnvelope(
+            List.of(new ToolCallsEnvelope.ToolCall("read", "get_weight_trend", "weeks=4", "why")));
+        ToolOutcomesEnvelope toolOutcomes = new ToolOutcomesEnvelope(
+            List.of(new ToolOutcomesEnvelope.Outcome("get_weight_trend", "eredmény", false)));
+
+        AiMessageEntity atCutoff = withEnvelopes(conversation, toolCalls, toolOutcomes);
+        Instant cutoffInstant = Instant.now().minus(90, ChronoUnit.DAYS);
+        backdate(atCutoff.getId(), cutoffInstant);
+
+        // The predicate is createdAt < :cutoff, so equality is spared (not scrubbed)
+        int scrubbedCount = scrub(cutoffInstant);
+
+        assertThat(scrubbedCount).isZero();
+        AiMessageEntity reloaded = aiMessageRepository.findById(atCutoff.getId()).orElseThrow();
+        assertThat(reloaded.getToolOutcomes()).isEqualTo(toolOutcomes);
+    }
+
     /** Runs the {@code @Modifying} query in its own transaction — mirroring
      *  {@code LlmLogRetentionScrubIT}, since the surrounding test method itself opts out of one
      *  (Propagation.NOT_SUPPORTED) to keep the backdating writes visible to the scrub's own tx. */

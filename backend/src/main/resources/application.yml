@@ -851,11 +851,11 @@ mezo:
         # widens this alongside the implementation.
         max-laps: 1
       # S9.7 (mezo-rj214.7): what each answer looked up and what came back. The RESULT half is
-      # NULLed after retention-days (the ask half is kept forever) — the llm-log payload scrub at
-      # 03:40 is the precedent; 03:50 is the next free slot in the dawn cron cluster.
+      # NULLed after retention-days (the ask half is kept forever) — 03:55 is the verified-free
+      # minute after the 03:40 llm-log scrub and the 03:50 audit-retention + monthly pair.
       provenance:
         retention-days: 90
-        cron: "0 50 3 * * *"
+        cron: "0 55 3 * * *"
         per-outcome-chars: 4000
         total-chars: 20000
     extraction:
