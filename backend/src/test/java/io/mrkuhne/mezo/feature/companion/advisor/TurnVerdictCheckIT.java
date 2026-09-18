@@ -38,6 +38,17 @@ class TurnVerdictCheckIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testCheck_shouldReturnNoViolations_whenSpeculationIsLinguisticallyMarked() {
+        // S9.8 (mezo-rj214.7, mezo-rj214.5): moved down from CompanionAdvisorChainIT — this pins
+        // the JUDGE'S OWN policy (mezo-q71s: a linguistically hedged hunch is clean, never a
+        // retry trigger), which the chain can no longer exercise since it stopped calling this
+        // check at all.
+        assertThat(verdictCheck.check("PROMPT", List.of(), "kérdés",
+                "válasz " + FakeCompanionLlm.MARKED_SPECULATION, List.of()))
+                .isEmpty();
+    }
+
+    @Test
     void testCheck_shouldReturnUnmarkedViolation_whenFakeScriptsUnmarkedClaim() {
         // Pins the renamed unmarkedClaim/"unmarked" pair end to end: the fake answers the
         // VERDICT_PROMPT's unmarkedClaim JSON key true, TurnVerdict binds it, and check(...) must

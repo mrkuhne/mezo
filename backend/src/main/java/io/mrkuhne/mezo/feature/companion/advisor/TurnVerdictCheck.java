@@ -19,15 +19,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * V1.3 combined LLM verdict — ONE cheap-tier call judging the answer for (1) never-ask-twice
- * redundancy against the injected fact block and (2) unmarked claims (mezo-q71s: specific past
- * claims with no source in the provided context AND no linguistic hedge — a marked hunch is
- * allowed, an invented concrete number never is, marked or not). Strict JSON, defensively
- * parsed, FAIL-OPEN: a broken or unreachable judge yields zero violations (availability over
- * strictness) + a warn log. Since mezo-indo the payload carries the tool OUTPUTS next to the tool
- * names ({@link ToolOutcomeDigest}, budgeted) — the v1 names-only payload made every tool-derived
- * number structurally unsupported to the judge (0% pass at every reasoning-effort level, measured
- * in mezo-9yqq class 1), which was the last known structural false-positive source in the chain.
+ * OFF THE LIVE ANSWER PATH since S9.8 (mezo-rj214.7, mezo-rj214.5) — {@link CompanionAdvisorChain}
+ * no longer calls this. Kept only as an OFFLINE REGRESSION INSTRUMENT (the eval harness this
+ * class's own IT, {@code TurnVerdictCheckIT}, drives against {@code FakeCompanionLlm}'s scripted
+ * verdicts) and as an injectable {@code @Component} nothing in production wires up.
+ *
+ * <p>Why it left: this is a combined LLM verdict — ONE cheap-tier call judging the answer for (1)
+ * never-ask-twice redundancy against the injected fact block and (2) unmarked claims (mezo-q71s:
+ * specific past claims with no source in the provided context AND no linguistic hedge). Measured
+ * against a 12-case labelled set, its {@code unmarkedClaim} criterion never cleared 0.60
+ * PRECISION even at the highest reasoning effort — roughly four false positives in ten, each one
+ * costing a full extra turn (the corrective re-prompt) and rewriting an already-honest, already
+ * tool-grounded answer into a hedged one. {@link ActionClaimCheck} replaced the one failure mode
+ * this check was actually catching in production (the "Felírtam: taco…" incident, mezo-q0p5a) —
+ * deterministically, with no false-positive tax at all.
+ *
+ * <p>Strict JSON, defensively parsed, FAIL-OPEN: a broken or unreachable judge yields zero
+ * violations (availability over strictness) + a warn log. Since mezo-indo the payload carries the
+ * tool OUTPUTS next to the tool names ({@link ToolOutcomeDigest}, budgeted) — the v1 names-only
+ * payload made every tool-derived number structurally unsupported to the judge (0% pass at every
+ * reasoning-effort level, measured in mezo-9yqq class 1), which was the last known structural
+ * false-positive source in the chain — precision still topped out at 0.60.
  */
 @Slf4j
 @Component

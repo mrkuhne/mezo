@@ -271,8 +271,8 @@ The sections below describe its current behavior and the supporting components.
 
 **V1.3 (`mezo-fnnq.8`) shipped never-ask-twice + the advisor chain v1 — v1 „megjegyez" complete:**
 
-- **Post-response advisor chain** (`feature/companion/advisor/`, old docs §4.5 retry semantics
-  on the port): `CompanionAdvisorChain.review(...)` runs after every LLM answer —
+- **(Historical, superseded by S9.8 — see below) Post-response advisor chain** (`feature/companion/advisor/`,
+  old docs §4.5 retry semantics on the port): `CompanionAdvisorChain.review(...)` ran after every LLM answer —
   `ClinicalOutputCheck` first (deterministic accent-folded regex: Rx term + dose-change verb in
   one sentence; a hit skips the verdict that round), then `TurnVerdictCheck` (ONE cheap-tier
   LLM call → strict-JSON `{redundantQuestion, unmarkedClaim, reason}` — the second key was
@@ -288,6 +288,9 @@ The sections below describe its current behavior and the supporting components.
 - **Reinforcement starts** — an extraction dedupe-hit against a CONFIRMED fact now increments
   `reinforcement_count` + `last_reinforced_at` (the chat re-learned it) instead of silently
   dropping; pending-candidate duplicates still just skip.
+- **Superseded at S9.8** (`mezo-rj214.7`/`mezo-rj214.5`): the `TurnVerdictCheck` LLM verdict this
+  entry describes is off every live path now — see §3 "The advisor chain, current shape" for the
+  shipped state (two deterministic checks) and why the judge left.
 
 **V2.1 (`mezo-fnnq.9`) shipped the vector layer — pgvector infra + the embedding port:**
 
@@ -754,7 +757,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
-| Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s`, tool outputs in the judge payload `mezo-indo` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. The judge now sees the tool OUTPUTS (budgeted, lossy cases marked), which removed the last measured structural false-positive class (`mezo-9yqq` class 1). |
+| Advisor chain (clinical + action-claim, no judge) | ✅ V1.3 shipped it with an LLM verdict; **S9.8 (`mezo-rj214.7`/`mezo-rj214.5`) removed the judge from every live path** | Two deterministic checks, both ~0 ms, no LLM call: `ClinicalOutputCheck` (Rx dose-change regex) then `ActionClaimCheck` (fabricated first-person past-tense action claim, e.g. "Felírtam: taco…" — the production incident `mezo-q0p5a`), retry-once → `degraded` flag (`mezo.companion.advisors.*`). `TurnVerdictCheck` (the old LLM verdict — `redundantQuestion`/`unmarkedClaim`, marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)) survives only as an offline regression instrument; its `unmarkedClaim` criterion never cleared 0.60 precision. `redundantQuestion` (never-ask-twice) left the live path together with `unmarkedClaim` — no separate check replaced it. Production's default conversation-first path never ran the judge at all even before S9.8 (it took the tool-free `reviewChat` branch), so that path's own behaviour is unchanged by the removal. Honest gap: nothing on the live path mechanically checks an invented NUMBER any more — that now rests on the voice prompt plus the answering model having the raw tool data in front of it. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Canonical dual-write + vector generations | ✅ `mezo-6dii.2` | Every OLD memory write projects AFTER_COMMIT into source-addressable `memory_item` + versioned `memory_vector`; isolated failure preserves OLD. Optional resumable re-embedding builds a target generation without switching serving. |
@@ -1986,12 +1989,15 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
          feeds toolSink: closing the sink first makes those retry emissions hit an
          already-terminated sink and drop silently from the LIVE stream — they still land in the
          done row's tools[], never as a live 'tool' frame the client could see twice
-      4a. advisorChain.review(prompt, content, answer, …)   ── V1.3 (NO TX, bean present only when
-         mezo.companion.advisors.enabled): clinical regex → LLM verdict; violation → ONE
-         corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
-         still violating ⇒ degraded=true. The done row carries the FINAL (possibly retried) text.
-         A pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only (reviewChat), exactly like CHAT —
-         never the full tool-loop chain that LEGACY still takes (mezo-rj214.7 Task 6).
+      4a. advisorChain.review(prompt, content, answer, …)   ── V1.3, S9.8 dropped the judge
+         (mezo-rj214.7/mezo-rj214.5; NO TX, bean present only when
+         mezo.companion.advisors.enabled): clinical regex → action-claim regex, BOTH
+         deterministic, no LLM call; violation → ONE corrective re-prompt (AdvisorRetry.block
+         appended; same tools+audit) → re-check; still violating ⇒ degraded=true. The done row
+         carries the FINAL (possibly retried) text. `review` and the old `reviewChat` collapsed
+         into one method at S9.8 — every gear (CHAT, a pipeline LOOKUP/ANALYSIS answer, and the
+         LEGACY tool-loop fallback) now runs the SAME two checks; none of them ever reaches an
+         LLM judge any more.
       4b. turn.recalledRefs().forEach(audit::addRef)   ── W3.1: the ambient Memory refs join the
          audit AFTER the tool loop AND the advisor review, immediately before step 5 — the tool
          refs are the answer's own provenance and win the tools.max-refs-per-turn cap (first-wins)
@@ -2279,61 +2285,105 @@ health→egészség, life→élet). No facts ⇒ `""` (no empty header). Both `s
 `prepareTurn` insert it **between the snapshot and the history**, so the sync AND streamed turns
 silently know every confirmed fact.
 
-**The advisor chain (V1.3).** `feature/companion/advisor/` — `CompanionAdvisorChain` wraps the
-port with the old docs' §4.5 semantics: `runChecks` = `ClinicalOutputCheck.check(answer)`
-(deterministic: accent-folded lowercase (NFD strip), sentence-split on `[.!?
-]`, violation when
-an `advisors.rx-terms` term AND a dose-change verb (`emeld|emeljük|csökkentsd|…hagyd el|állítsd
-át…` — imperative/we-forms only, written accent-folded) share a sentence) first; a clinical hit
-skips `TurnVerdictCheck` that round. The verdict is ONE cheap-tier call through the history-less
-two-string port (`VERDICT_MARKER`-prefixed judge prompt; payload = `"KONTEXTUS:
-" + turnSystemPrompt
-+ ChatHistory.render(history)` + the tool block from `ToolOutcomeDigest.render(audit.toolOutcomes(),
-…)` + the user message + the answer, `TurnVerdictCheck.check`, `advisor/TurnVerdictCheck.java`) —
-**since mezo-q71s the history is no longer inside `turnSystemPrompt`** (§3 "Prompt assembly"), so
-the payload renders it explicitly with `ChatHistory.render`; without this the judge would go blind
-to the conversation and fire false `redundantQuestion`/`unmarkedClaim` verdicts. Parsed
-first-`{`-to-last-`}` into `{redundantQuestion, unmarkedClaim, reason}` — **fail-open** on any
-call/parse failure. **`unmarkedClaim`** (renamed from `ungroundedClaim`, mezo-q71s — [ADR
-0028](../decisions/0028-marked-speculation-in-chat.md)): the judge asks whether the answer states a
-concrete unsupported claim **confidently, without a linguistic hedge** — a marked hunch
-("tippelek", "gyanítom", "lehet, hogy", "ezt csak sejtem") is no longer itself a violation; an
-invented concrete number still is, hedged or not. Violations map to `redundancy`/`unmarked`
-(`AdvisorViolation.check` — was `"grounding"`); retry = `systemPrompt +
-AdvisorRetry.block(violations)` with the same tools and the SAME audit (chips reflect the whole
-turn), re-checked; after `advisors.max-retries` rounds a still-violating answer returns
-`AdvisedAnswer(answer, degraded=true)`.
+**The advisor chain, current shape (S9.8, `mezo-rj214.7`/`mezo-rj214.5`) — two deterministic
+checks, no LLM judge on any live path.** `feature/companion/advisor/` — `CompanionAdvisorChain`
+wraps the port with the old docs' §4.5 retry semantics, but `runChecks` no longer calls an LLM at
+all: `ClinicalOutputCheck.check(answer)` first (deterministic: accent-folded lowercase (NFD
+strip), sentence-split on `[.!? ]`, violation when an `advisors.rx-terms` term AND a dose-change
+verb — `emeld|emeljük|csökkentsd|…hagyd el|állítsd át…`, imperative/we-forms only, written
+accent-folded — share a sentence; a hit short-circuits the second check that round), then
+`ActionClaimCheck.check(answer)` — the fabricated-action-claim backstop. Both are ~0 ms and never
+call the model, so `review`'s single `while` retry loop pays nothing extra when an answer is
+clean.
 
-**The judge sees the tool OUTPUTS, not just the tool names (`mezo-indo`).** The v1 payload listed
-call names only, and the javadoc owned that as a known limit — so every number a tool produced was
-*structurally* unsupported to the judge, however well grounded. That was measured, not assumed:
-two such cases passed **0% of the time at every reasoning-effort level, xhigh included**
-(`mezo-641c` S2/A, 144 live judge calls; write-up on `mezo-9yqq`), because it is a missing-INPUT
-problem — more thinking cannot supply an input that is not in the payload. It was the last known
-structural false-positive source in the chain, and each false positive costs a whole extra
-streamed answer (the retry). The fix: `RecordingToolCallback` — the only place that sees a tool's
-output — hands it to `ToolCallAudit.recordResult(callIndex, result)`, two steps rather than one
-because `recordCall` fires the live SSE chip listener BEFORE the tool runs. `toolOutcomes()`
-(name + args + output) replaced `callNames()`, and `ToolOutcomeDigest` renders the
-`ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:` block under a per-output cap
-(`advisors.tool-result-max-chars`) and a total cap (`advisors.tool-results-total-max-chars`) —
-the judge runs on the cheap tier and its payload already carries the system prompt plus the whole
-rendered history, while tool outputs are unbounded per turn (a 30-day weight log is one line per
-day). **Both lossy outcomes stay visible**: a cut output is marked `[…a kimenet innen levágva]`, an
-output past the total budget becomes `[a kimenet helyhiány miatt kimaradt]` while its CALL keeps
-its line, and a call with no recorded output reads `[a kimenet nem ismert]`. Silent loss would let
-the judge conclude "the tool did not return this number" from an artifact of our truncation, or
-read a dropped output as a tool that returned nothing — misleading in exactly the direction the
-change exists to remove — so the judge prompt names the three markers and says not to infer
-fabrication from them. A tool that THREW is recorded with its honest `TOOL_FAILED` text, so a
-failed read never looks like support. The outputs are **not persisted** — the `tool_calls` jsonb
-envelope still carries only `{type, name, args}`. `AdvisorRetry.block` gained a closing tone-preservation
-sentence (mezo-q71s, `advisor/AdvisorRetry.java:24-25`): *"A hangnem NE változzon — ugyanaz az élő,
-beszélgetős stílus; a javítás kizárólag a fent megjelölt problémára vonatkozzon."* — without it a
-corrective retry structurally flattened the whole answer, not just the flagged problem. Both
-callers hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors off ⇒ no chain bean ⇒
-V1.2 behavior byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!"
-decision).
+**`ActionClaimCheck` — the backstop for a prompt rule that already existed and still failed
+(`mezo-q0p5a`).** In production the companion once answered "Felírtam: taco, fehérjeszelet,
+banán." — the companion has **no write tools at all** (ArchUnit-enforced: every registered
+`@Tool` is a read), so nothing was logged, and the user believed it had been. The prompt already
+forbade claiming an unperformed action when that shipped; asking nicely has a demonstrated
+failure rate on this exact sentence shape, hence the code-side check. Matching is deterministic
+and precision-over-recall on purpose: `advisors.action-claim-terms` is a fixed list of
+already-conjugated first-person PAST-tense verb forms (e.g. "felírtam", not the stem "felír"),
+matched as accent-folded WHOLE words (never a raw substring), and excluded when the immediately
+preceding token is a negator ("nem"/"sem"/"sosem", or the interposed "nem is") — so an honest
+refusal ("Nem naplóztam ezt…") does not fire, nor does an offer ("felírhatod"), an instruction
+("felírni"), a second-person form, or a negation that splits a separable verb prefix ("nem
+írtam fel"). Known, accepted limitation (not fixed, by design): quoting the user's own claim back
+("azt mondtad, felírtam") and a question form ("felírtam?") still fire — a bounded term list
+cannot distinguish every Hungarian construction that merely contains the term from an actual
+claim, and this check stays silent rather than risk rewriting an honest answer when in doubt over
+recall.
+
+**`review` and `reviewChat` collapsed into one method (S9.8).** Before this, a tool-carrying turn
+ran `review` (clinical + judge) and a tool-free CHAT/pipeline turn ran a separate `reviewChat`
+(clinical only, because the judge was skippable there but not on the tool-carrying path) —
+production's default conversation-first path runs tool-free, so it always took `reviewChat` and
+never reached the judge at all. With the judge gone from both branches the split had nothing left
+to justify it: `review(systemPrompt, turnContext, history, userMessage, answer, tools,
+toolContext)` is now the ONE method every caller uses (`tools == null` for a tool-free turn), and
+`runChecks` above is what actually runs for every turn shape, including production's default
+path — which is what makes the action-claim backstop cover the path where the original incident
+happened. Violation → corrective re-prompt (`AdvisorRetry.block` appended to the volatile half of
+the prompt, same tools/audit where the original round had them) up to `advisors.max-retries`
+rounds; a still-violating answer returns `AdvisedAnswer(answer, degraded=true)`. Both callers
+still hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors off ⇒ no chain bean ⇒
+byte-for-byte unadvised behavior. Timing + violations are `log.info`/`log.warn`-ed per turn (the
+roadmap's "measure!" decision).
+
+**`TurnVerdictCheck` — off every live path, kept as an offline regression instrument.** The
+combined LLM verdict (`redundantQuestion` + the marked-speculation-aware `unmarkedClaim`,
+mezo-q71s — [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)) is still a `@Component`
+(`advisor/TurnVerdictCheck.java`) and its own IT (`TurnVerdictCheckIT`, driven against
+`FakeCompanionLlm`'s scripted verdicts) still exercises it, but nothing in production wires it up
+any more. Why it left the live path: measured against a 12-case labelled set, `unmarkedClaim`
+never cleared **0.60 precision** even at the highest reasoning effort — roughly four false
+positives in ten, each one costing a whole extra turn (the corrective re-prompt) and rewriting an
+already-honest, already tool-grounded answer into a hedged one. `ActionClaimCheck` replaced the
+one failure mode this check was actually catching in production (the "Felírtam: taco…" incident,
+`mezo-q0p5a`) — deterministically, with no false-positive tax at all. Everything §3 previously
+documented about the judge's payload shape (`VERDICT_MARKER`-prefixed prompt, `ChatHistory.render`
+carrying the history explicitly since mezo-q71s, the tool-OUTPUT digest added at `mezo-indo` to
+close the last measured structural false-positive class, the fail-open JSON parsing) is still
+literally true of the class — it is simply not called from `CompanionAdvisorChain.runChecks`
+any more, and that history is kept below as a record of a check the offline harness still runs,
+not of the live chain.
+
+**Honest gap this leaves.** After the judge's removal, nothing on the live path mechanically
+audits an invented concrete NUMBER any more (the judge's `unmarkedClaim` half was the only thing
+that ever tried). That rule now rests entirely on the voice prompt (`[Mit szabad állítani]`/
+`ConversationTurnService.VOICE`, §3 "Prompt assembly" below) plus the answering model having the
+tool's raw data in front of it when it writes the number down — there is no code-side backstop for
+a fabricated figure the way `ActionClaimCheck` backstops a fabricated action. This is a deliberate
+trade (a 0.60-precision judge cost more honest answers than it saved), not an oversight, and it is
+the one place this feature doc cannot claim mechanical enforcement.
+
+**(Historical, superseded by the above) The judge saw the tool OUTPUTS, not just the tool names
+(`mezo-indo`).** While the judge was still live, the v1 payload listed call names only, and the
+javadoc owned that as a known limit — so every number a tool produced was *structurally*
+unsupported to the judge, however well grounded. That was measured, not assumed: two such cases
+passed **0% of the time at every reasoning-effort level, xhigh included** (`mezo-641c` S2/A, 144
+live judge calls; write-up on `mezo-9yqq`), because it is a missing-INPUT problem — more thinking
+cannot supply an input that is not in the payload. The fix: `RecordingToolCallback` — the only
+place that sees a tool's output — hands it to `ToolCallAudit.recordResult(callIndex, result)`, two
+steps rather than one because `recordCall` fires the live SSE chip listener BEFORE the tool runs.
+`toolOutcomes()` (name + args + output) replaced `callNames()`, and `ToolOutcomeDigest` renders
+the `ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:` block under a per-output cap (`advisors.tool-result-max-chars`)
+and a total cap (`advisors.tool-results-total-max-chars`) — the judge ran on the cheap tier and its
+payload already carried the system prompt plus the whole rendered history, while tool outputs are
+unbounded per turn (a 30-day weight log is one line per day). **Both lossy outcomes stayed
+visible**: a cut output is marked `[…a kimenet innen levágva]`, an output past the total budget
+becomes `[a kimenet helyhiány miatt kimaradt]` while its CALL keeps its line, and a call with no
+recorded output reads `[a kimenet nem ismert]`, so the judge prompt named the three markers and
+said not to infer fabrication from them. A tool that THREW is recorded with its honest
+`TOOL_FAILED` text. `ToolOutcomeDigest` itself is not retired — `ConversationTurnService` and
+`TurnAnswerer` (§3 "The turn gear"/"The replan contract") still use it to render tool results into
+the ANSWERING model's own prompt; only the judge-specific payload assembly in
+`TurnVerdictCheck.check` is now dead code on the live path. `AdvisorRetry.block` gained a closing
+tone-preservation sentence in mezo-q71s (*"A hangnem NE változzon — ugyanaz az élő, beszélgetős
+stílus; a javítás kizárólag a fent megjelölt problémára vonatkozzon."*) and S9.8 removed the
+hedging-license clause it used to carry alongside it — the retry block now names only the rules
+that can actually fire against the current chain (the action-claim rule, the unmarked-fact rule,
+the Rx-dose rule) and keeps the tone-preservation closer verbatim (`AdvisorRetryTest`).
 
 **Rollback-only turn gear (conversation.enabled=false; spec 2026-09-16, `mezo-rj214.7`).** Before any context is assembled,
 `TurnGearRouter.route(userMessage)` (`service/TurnGearRouter.java`) decides how much thinking the
@@ -2386,7 +2436,8 @@ volatile list two paragraphs below). `sendMessage`'s `CHAT` branch calls
 `CompanionAdvisorChain.completeChat(systemPrompt, turnCtx, history, content)`, which wraps the
 tool-free SMART-tier entry point `companionLlm.completeSmart(..)` (§5.3) instead of the
 tool-carrying `complete`; `ChatStreamService` mirrors it with `streamSmart` plus
-`chain.reviewChat(..)` on the already-streamed answer. With the advisors switch off (no chain bean)
+`chain.review(..)` (the collapsed `review`/`reviewChat`, S9.8) on the already-streamed answer.
+With the advisors switch off (no chain bean)
 both paths call `completeSmart`/`streamSmart` directly, exactly as the non-CHAT branches fall back
 to the unadvised `complete`/`stream`.
 `LOOKUP` and `ANALYSIS` turns diverge from pre-gear behavior since S9.5 landed the planner/executor/
@@ -2492,16 +2543,18 @@ after the pre-stream lap has already finished as it did pre-S9.6 — so both ord
 answer AND earliness now hold; the `phase` frames are what actually fill the pre-answer gap the
 buffered-chip ordering alone never addressed.
 
-**Advisor review: clinical-only on a pipeline answer.** A pipeline answer (LOOKUP or ANALYSIS,
-either path) reviews through `CompanionAdvisorChain.reviewChat` — the SAME clinical-only path a
-`CHAT` answer gets — never the full `chain.complete`/`chain.review` tool-loop advisor
-(`ChatService.java:317-323`, `ChatStreamService.java:235-258`). The LLM verdict
-(`TurnVerdictCheck`) is skipped on purpose: `pipelineAnswer`'s own answering call already graded the
-answer against the tool-outcome digest it was grounded in, so a second verdict call would pay twice
-to grade the same thing. The deterministic `ClinicalOutputCheck` still runs — its dose-change
-prohibition has no branch where it does not apply. Legacy tool-loop answers (fallback, or the
-switch off) are untouched: they still take the full `chain.complete`/`chain.review` advisor exactly
-as before S9.5.
+**Advisor review: the same two deterministic checks everywhere, since S9.8.** A pipeline answer
+(LOOKUP or ANALYSIS, either path) reviews through `CompanionAdvisorChain.review` — the SAME
+clinical + action-claim path a `CHAT` answer gets, because `review` and the old
+tool-loop-only/clinical-only split (`review` vs `reviewChat`) collapsed into one method once the
+LLM verdict left both branches (`ChatService.java:317-323`, `ChatStreamService.java:235-258`).
+Before S9.8 the LLM verdict was skipped here on purpose — `pipelineAnswer`'s own answering call
+already graded the answer against the tool-outcome digest it was grounded in, so a second verdict
+call would have paid twice to grade the same thing — but that reasoning is now moot: there is no
+verdict call left to skip on ANY path. The deterministic `ClinicalOutputCheck` and
+`ActionClaimCheck` still run identically everywhere, pipeline or legacy tool-loop, fallback or not
+— dose-change and fabricated-action-claim are both rules with no branch where they should not
+apply.
 
 **Provenance in `llm_log` — the model-call audit, separate from the per-turn provenance below.** A
 pipeline turn books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap
@@ -2622,16 +2675,20 @@ choice is made per persistence path — a PIPELINE turn reads PLAN-truth, a LEGA
 RAN-truth, never both into one row, which is exactly what would otherwise surface either a plan
 that was never validated as a call, or a call whose outcome silently changed after the fact.
 
-**What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
-verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
-in — a `CHAT` turn has neither, so asking it would be paying a model call to grade nothing. The
-deterministic `ClinicalOutputCheck` is a different animal: a regex over the answer text, no LLM, no
-context, ~0 ms. Its prohibition — never suggest changing a prescription dose — is the one rule that
-must not have a branch where it does not apply, and a general question ("mit gondolsz erről a
-szerről?") is exactly the shape in which a model volunteers dosing advice. So `reviewChat` gives a
-CHAT answer the SAME retry-once-then-degraded semantics every other answer gets, with the corrective
-round staying tool-free and smart-tier like the answer it is correcting. Covered on both paths by
-`CompanionAdvisorChainIT` / `ChatStreamAdvisorIT`, each with a dose-suggesting CHAT fixture.
+**Every turn shape now runs the SAME two checks — clinical, then action-claim.** Before S9.8 a
+`CHAT` turn only ever got the clinical check, because the LLM verdict it might otherwise have run
+grades an answer against context/tool outcomes a tool-free turn has neither of. With the judge
+gone that distinction is moot: `review` (the collapsed `review`/`reviewChat`, above) runs
+`ClinicalOutputCheck` then `ActionClaimCheck` for every answer regardless of gear or tool-carrying
+status, at ~0 ms combined — no LLM, no context needed by either check. `ClinicalOutputCheck`'s
+prohibition — never suggest changing a prescription dose — is the one rule that must not have a
+branch where it does not apply, and a general question ("mit gondolsz erről a szerről?") is
+exactly the shape in which a model volunteers dosing advice; `ActionClaimCheck` matters just as
+much on a tool-free CHAT turn as anywhere else, since the fabricated-log incident it backstops
+(`mezo-q0p5a`) happened on exactly this kind of turn. Every answer gets the SAME
+retry-once-then-degraded semantics, with the corrective round staying tool-free and smart-tier
+when the answer it is correcting was. Covered on both paths by `CompanionAdvisorChainIT` /
+`ChatStreamAdvisorIT`, each with a dose-suggesting CHAT fixture.
 
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
 message, so the current turn travels as the `userMessage` param — this was true before mezo-q71s
@@ -2648,31 +2705,57 @@ never called on the model-bound path — only by the three non-model consumers d
 (mezo-q71s, new — states BEHAVIOUR, not adjectives: converse rather than report, list only when
 asked or when there are 4+ peer items, length follows the question, has opinions, asks a real
 follow-up question but never a courtesy one, builds on what was already said) · `[Mit szabad
-állítani]` (mezo-q71s, new — the marked-speculation policy: a linguistically hedged hunch is
-allowed, a concrete number/date/past fact needs a source in the context/a tool call/Daniel's
-message, and inventing one is forbidden even hedged; see [ADR
-0028](../decisions/0028-marked-speculation-in-chat.md)) · `[Példa a hangnemre]` (mezo-q71s, new — one
-contrasting "data-terminal" vs "conversational" answer to the same question, calibrating what
-"marked" looks like) · `[Tiltás]` (the clinical guard — *"Gyógyszer adagolására vonatkozó
-változtatást SOHA ne javasolj — az orvosi döntés."*; the drug-name example was removed in
-`mezo-lwmq`, the prohibition itself is unchanged) · `[Két mód]` (since commit 944f5f866 — the
-"Adatkérés" vs "Szabad beszélgetés" split the turn gear now IMPLEMENTS in code, §3 "The turn gear"
-above: tool-carrying data questions vs general-knowledge chat that needs neither a tool nor the
-data snapshot) · `[Eszközhasználat]` (the V0.5 tool-usage line, "Múltbeli vagy összesítő
-kérdéshez … használd a kapott tool-okat", plus the mezo-280 tool-timing sentence below) ·
+állítani]` — **rewritten at S9.8** (`mezo-rj214.7`; the ADR is [ADR
+0028](../decisions/0028-marked-speculation-in-chat.md), also updated at S9.8). It NO LONGER
+prescribes hedge vocabulary: a hunch may be voiced as an opinion when it is genuinely uncertain,
+but the block does not hand the model example hedge phrases and does not make hedging the safe
+default for an already-supported answer — a concrete number/date/past fact still needs a source
+in the context/a tool call/Daniel's message, and inventing one is forbidden even if marked. The
+block also states the action-claim rule in prose (mirroring `ActionClaimCheck`'s code-side
+enforcement, since prose alone failed in production — `mezo-q0p5a`): the companion cannot log,
+save, modify or otherwise act for Daniel, only talk and read; asked to do one of those, say so
+honestly and point at the surface where Daniel can do it himself; never claim to have done it. ·
+`[Példa a hangnemre]` (mezo-q71s; **its few-shot answer was rewritten at S9.8** to close on an
+owned opinion — *"Szerintem az alvás a különbség."* — instead of a hedge-and-retract, since the
+old example modeled exactly the safe-default hedging habit S9.8 removed) · `[Tiltás]` (the
+clinical guard — *"Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi
+döntés."*; the drug-name example was removed in `mezo-lwmq`, the prohibition itself is unchanged)
+· `[Két mód]` (since commit 944f5f866 — the "Adatkérés" vs "Szabad beszélgetés" split the turn
+gear now IMPLEMENTS in code, §3 "The turn gear" above: tool-carrying data questions vs
+general-knowledge chat that needs neither a tool nor the data snapshot). **The
+`[Két mód]`/`[Eszközhasználat]` contradiction is gone, not reworded, at S9.8**: before,
+`[Eszközhasználat]` carried a BLANKET "tool nélkül ne találgass" that contradicted `[Két mód]`'s
+own free-conversation branch (general-knowledge chat needs neither tool nor data, by design); the
+rule now lives ONLY inside `[Két mód]`'s data-request branch (*"EKKOR használd a tool-okat. Tool
+nélkül ne találgass."*), scoped to the branch it actually applies to — `[Két mód]` itself stays,
+because its free-conversation branch is the explicit permission to talk freely that the whole
+block exists to grant. · `[Eszközhasználat]` now carries only the tool-timing sentence (below);
+the "use the tools" instruction moved into `[Két mód]` as just described. ·
 `[Eszköz-útmutató]` ((mezo-xixu) the terse question-type → tool name routing hint, PR →
 `get_exercise_records`, edzésterv → `get_training_plan`, recept → `get_recipes`, … — one line per
 tool, kept in sync with the `@Tool` descriptions per
 [`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). `Válaszolj
 magyarul, tömören.` is GONE (mezo-q71s) — identified as the single line most responsible for the
 terse, terminal-like tone; `[Hogyan beszélsz]`'s length rule replaces it. **Since mezo-280** one
-closing timing sentence follows the tool-usage line: *"Ha tool kell a válaszhoz, ELŐBB hívd meg, és
+closing timing sentence lives in `[Eszközhasználat]`: *"Ha tool kell a válaszhoz, ELŐBB hívd meg, és
 csak a megkapott adatból válaszolj — ne írd le előre, hogy „megnézem" vagy „megpróbálom", és ne
-ígérj utólagos utánanézést."* The `[Eszköz-útmutató]` block says WHICH tool; this sentence says
-WHEN — it targets a live-observed failure mode where the model narrated an intent to look something
-up ("most megpróbálom megnézni…") and streamed that narration before the tool result came back,
-which read as answering before it had looked even though Spring AI's own streaming tool loop is
-correctly ordered (design spec §1, `2026-07-30-companion-stream-tool-events-design.md` §1.2).
+ígérj utólagos utánanézést."* The `[Eszköz-útmutató]` block says WHICH tool; `[Két mód]` says WHEN
+to use one AT ALL; this sentence says WHEN within a tool-using turn — it targets a live-observed
+failure mode where the model narrated an intent to look something up ("most megpróbálom
+megnézni…") and streamed that narration before the tool result came back, which read as answering
+before it had looked even though Spring AI's own streaming tool loop is correctly ordered (design
+spec §1, `2026-07-30-companion-stream-tool-events-design.md` §1.2).
+
+**`ConversationTurnService.VOICE` (production's own prompt, §3 "The turn gear") got the S9.8
+action rule too**, even though it is not built from named blocks: it now states in prose (*"Nem
+tudsz naplózni, menteni, módosítani vagy bármit elvégezni a felhasználó helyett; csak beszélgetni
+és lekérdezni tudsz. … Soha ne állítsd, hogy elvégeztél valamit."*) the same claim `ActionClaimCheck`
+enforces in code — production's default conversation-first path is exactly where the "Felírtam:
+taco…" incident happened, so the prose half of the fix has to live here, not only in the
+rollback's `SYSTEM_PROMPT`. `VOICE` never prescribed hedge vocabulary in the first place — its one
+relevant sentence (*"A bizonytalanságot ott jelezd, ahol tényleg van; az alátámasztott választ ne
+gyengítsd kötelező találgatással."*) already said the opposite of a safe-default hedge: don't
+weaken an already-supported answer with an obligatory guess.
 
 `ChatService.TONE_REMINDER` (mezo-q71s, `public` — the advisor's retry re-prompt needs it too,
 `ChatService.java:116-119`) is appended at the very END of the FULLY assembled prompt — after
@@ -5725,6 +5808,12 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
     a whole extra streamed chat turn (the advisor retry). `redundantQuestion` was already perfect at
     every level. mezo-9yqq class (1), tool-derived numbers, is **not fixable here** — it failed
     100% of the time at every level including `xhigh`, because the judge never sees the tool OUTPUT.
+    **S9.8 note:** this whole measurement is about `TurnVerdictCheck`, which S9.8 took off every
+    live path (§3 "The advisor chain") because 0.60 was never good enough regardless of reasoning
+    effort. The measurement stands as the record of WHY it left — it does not justify `chat: high`
+    for the judge any more, since the judge no longer runs on a live turn. `chat: high` still
+    applies to every live `chat`-tier call (the answering model itself included), so the setting
+    was left as-is; only the "why" attached to the judge's own accuracy is now historical.
   - **Why `smart: high`, and why the first pass got it wrong.** Scoring the mesocycle plan for
     STRUCTURAL validity separates nothing — it is perfect even at `none` — and the konzílium
     skeptic's KEEP/KILL pattern looks like noise at n=2, so the first draft left this unset. A
@@ -7257,6 +7346,24 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`ChatStreamAdvisorIT`** (2, NOT `@Transactional`) — deltas carry attempt-1 (no marker),
   `done` carries the retried answer clean; violate-always → `done.degraded` + persisted flag.
 - **`CompanionAdvisorsSwitchOffIT`** (2) — no chain bean; violation sentinels change nothing.
+
+**S9.8 test changes (`mezo-rj214.7`/`mezo-rj214.5`) — the judge left, the backstop arrived.**
+`CompanionAdvisorChainIT` now covers a clean turn, retry-recover, degraded-after-retry,
+clinical-persists, and a `CHAT`-gear dose-change turn — all through the two deterministic checks
+only; the old verdict-broken/fail-open-JSON case has nothing left to exercise on the live chain
+(that path only exists inside `TurnVerdictCheckIT` now, which keeps running unchanged as the
+offline harness). Two new pure-unit suites, no Spring context:
+
+- **`ActionClaimCheckTest`** — the production incident itself (`felírtam` fires), the other
+  configured terms (`elmentettem`/`naplóztam`/`rögzítettem`/`módosítottam`/`töröltem`), the four
+  pass cases the negation/whole-word logic exists for (an instruction, an offer, a second-person
+  negation, a first-person negation splitting a separable prefix), the plain-negation cases for
+  the four terms with no separable prefix (folded and unfolded), accent-stripping, upper-case, and
+  a blank answer.
+- **`AdvisorRetryTest`** — `AdvisorRetry.block` states the action-claim rule, the unmarked-fact
+  rule and the Rx-dose rule; it does NOT license marked guessing any more (the assertion that
+  would have failed before S9.8); it dropped the now-pointless `redundantQuestion` rule; and the
+  tone-preservation closer is kept verbatim.
 - **Extended:** `ChatServiceIT` (clean turn ⇒ `degraded=false` persisted + on-wire),
   `CompanionPropertiesIT` (advisors binding), `FactExtractionServiceIT` (+2: confirmed-dupe
   reinforces `reinforcement_count`/`last_reinforced_at`, pending-dupe does not).
@@ -8157,6 +8264,15 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     violation, only an unmarked one). Full per-claim EvidenceCheck + numericGroundingCheck stay
     deferred (classifier-tier cost data first). Old ContinuityGate / MultiHorizonLoader intent is
     covered by the snapshot injection — not carried.
+    **Superseded at S9.8** (`mezo-rj214.7`/`mezo-rj214.5`): the LLM verdict call is GONE from
+    every live path — measured precision on `unmarkedClaim` never cleared 0.60, so a chain depth
+    that spends its one model call on a coin-flip-ish judge was the wrong shape. Chain depth is
+    still 2 checks, but both are now deterministic (`ClinicalOutputCheck` +
+    `ActionClaimCheck`, replacing the fabrication-claim failure the verdict call was actually
+    catching in production) and neither calls a model. `TurnVerdictCheck` is kept as an
+    injectable `@Component` and an offline regression instrument only — see §3 "The advisor
+    chain" above for the full account, including the honest gap this leaves (no live-path check
+    on an invented number).
 34. **Retry semantics per old docs §4.5:** violation → ONE corrective re-prompt with the
     violation summary appended to the system prompt (same user message, same tools, SAME audit —
     chips honestly reflect all calls of the turn); still violating ⇒ ship WITH `degraded=true`
@@ -8372,10 +8488,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   having emitted **no text at all** — no tool call, no error, a candidate with zero text parts (a
   thinking-only round that hits the output cap is the usual cause). The deltas then carry nothing,
   `answer.toString()` is `""`, and — this is the part that made it silent — **the advisor chain
-  PASSES an empty answer**: the clinical regex finds nothing to object to and the LLM verdict
-  returns `false/false` on an empty "MEZO VÁLASZA" block, so `retries=0, degraded=false`. The
-  observed live signature was exactly that: `Advisor chain took 6316 ms (retries=0,
-  degraded=false)` on a turn that persisted an empty row.
+  PASSES an empty answer**: at the time, the clinical regex found nothing to object to and the LLM
+  verdict returned `false/false` on an empty "MEZO VÁLASZA" block, so `retries=0, degraded=false`.
+  The observed live signature was exactly that: `Advisor chain took 6316 ms (retries=0,
+  degraded=false)` on a turn that persisted an empty row. **Unaffected by S9.8**: the judge is gone
+  from the chain now, but `ActionClaimCheck` passes an empty answer for the same reason the regex
+  always did — nothing to match — so this failure mode needed its own dedicated guard either way,
+  which is exactly what the blank-answer guard below is.
 - **What the user saw:** an answer card with no prose, carrying only the `Hivatkozott · L3` strip
   and the `Emlékek` row — because the ambient Memory refs are added to the audit **after** the LLM
   round (step 4b of the stream flow), so they exist even when the answer does not.
@@ -8393,11 +8512,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   cut off mid-thinking" (`MAX_TOKENS`) or a blocked candidate (`SAFETY`). Read off the FINAL
   generation's `ChatGenerationMetadata` in `GoogleGenAiUsageExtractor.finishReason` — the one place
   allowed to touch provider metadata — and surfaced on the `/me/ai-usage` detail page.
-- **Related, still open: the verdict judge cannot see tool RESULTS.** The same incident's *first*
-  turn was degraded with a plausible-looking but unverifiable complaint about a weight number,
-  because `TurnVerdictCheck` gets the tool call NAMES but not their output (documented v1 limitation
-  in its javadoc). A judge that must reason about a number it was never shown will keep producing
-  this class of false positive.
+- **Related, since resolved differently than planned: the verdict judge could not see tool
+  RESULTS.** The same incident's *first* turn was degraded with a plausible-looking but
+  unverifiable complaint about a weight number, because `TurnVerdictCheck` got the tool call NAMES
+  but not their output (documented v1 limitation in its javadoc; `mezo-indo` later closed the gap
+  by adding the tool-output digest to its payload). The class of false positive did not go away by
+  being fixed, though — it went away at S9.8 because `TurnVerdictCheck` came off the live path
+  entirely (§3 "The advisor chain"), for a broader reason than this one incident: even with tool
+  outputs added, `unmarkedClaim` never cleared 0.60 precision.
 
 **W5.1 composite-flag decisions + gotchas (`mezo-b3pp.18`, spec §9.1):**
 
@@ -8607,9 +8729,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **V2.x RAG (pgvector) · V3.x patterns** — see the roadmap; `find_similar_past_days` joins the
   registry at V2.3 (`mezo-fnnq.11`); `get_knowledge_facts(topic)` is a v1-batch tool candidate
   once facts outgrow the top-N window.
-- **Advisor hardening (V1.3 follow-ups, bd-filed):** tool-RESULT capture into `ToolCallAudit`
-  for the verdict judge · `SelfHealthCheck` persistence for violations (log-only today) ·
-  latency/cost review of the verdict call after real-key usage (classifier-tier decision).
+- **Advisor hardening (V1.3 follow-ups, bd-filed) — mostly moot after S9.8.** Tool-RESULT capture
+  into `ToolCallAudit` for the verdict judge shipped (`mezo-indo`) before the judge left the live
+  path; the latency/cost review of the verdict call is now irrelevant to production (the judge
+  never runs there). `SelfHealthCheck` persistence for violations (log-only today) still applies —
+  it would cover clinical/action-claim violations exactly as it would have covered judge ones.
 - **Knowledge graph edges — RESOLVED (`mezo-ms9a`).** The graph layer (now the unified Tudástár's
   `?view=kategoriak`) has real backend data since W2.6 (`GET /api/companion/graph/node`,
   `topEdges` per node) and the hero's active-edge COUNT is real since `mezo-ms9a`'s
@@ -8863,11 +8987,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MesoReviewGenerator.java` — the one-shot SMART-tier generator (`MESO_REVIEW_MARKER`): context-first persistence, `MesoReviewGate` via `ObjectProvider`, pending-only idempotency, every failure swallowed into a persisted `failed`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MesoReviewListener.java` — the `@Async @TransactionalEventListener(AFTER_COMMIT)` trigger on train's `MesocycleClosed` (the `FactExtractionListener` idiom, companion-switch-gated only).
 
-**Backend — advisor chain (V1.3)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator (`complete` sync / `review` streamed).
+**Backend — advisor chain (V1.3, S9.8 dropped the judge from the live path)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator; `review` is now the ONE entry point every caller uses (the old `review`/`reviewChat` split collapsed at S9.8), and `runChecks` calls only the two deterministic checks below — no LLM.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/ClinicalOutputCheck.java` — deterministic Rx dose-change regex (accent-folded, sentence-scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse; `unmarkedClaim` since mezo-q71s — [ADR 0028](../decisions/0028-marked-speculation-in-chat.md) — renders `history` via `ChatHistory.render` into its own payload).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block (mezo-q71s: gained a closing tone-preservation sentence) + value records (`AdvisorViolation.check` ∈ `clinical|redundancy|unmarked`, was `grounding`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/ActionClaimCheck.java` — **new at S9.8** (`mezo-rj214.7`, backstopping `mezo-q0p5a`) — deterministic fabricated-action-claim regex (accent-folded, whole-word, negator-excluded); the second and last live check.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — **off every live path since S9.8** — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse; `unmarkedClaim` since mezo-q71s — [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)/[ADR 0045](../decisions/0045-honest-voice-no-prescribed-hedging-no-judge.md) — renders `history` via `ChatHistory.render` into its own payload). Kept as a `@Component` and an offline regression instrument only (`TurnVerdictCheckIT`); its `unmarkedClaim` precision never cleared 0.60.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block (mezo-q71s: gained a closing tone-preservation sentence; S9.8: dropped the hedging-license clause — its closing rules paragraph now names action-claim, an unmarked-fact reminder that no live check actually fires on, and Rx-dose) + value records (`AdvisorViolation.check` ∈ `clinical|action-claim|unmarked`, was `grounding`, then `redundancy`/`unmarked`).
 
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
@@ -8973,7 +9098,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, 42-case set, incumbent baseline 37/42 exact match).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,ActionClaimCheckTest,AdvisorRetryTest,TurnVerdictCheckIT}.java` — the advisor batch: the V1.3 originals plus S9.8's `ActionClaimCheckTest`/`AdvisorRetryTest` (the deterministic backstop + the no-more-hedge-license retry block); `TurnVerdictCheckIT` still runs, now exercising an offline-only instrument.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/MesoReviewGeneratorIT.java` — the `mezo-meyc.3` §5.6 batch (7 tests, `companion-fake`, deliberately NOT `@Transactional`): per-week/totals context numbers incl. the honest-absence nulls of a data-less W2 **plus the contract round-trip through `getReport`**, the metric **legend** asserted on the real prompt via the `[fake-meso-review-echo]` channel (content + ordering before the JSON), `markReady`'s **fresh-row** write (a concurrent `selfEval` survives), the title-planted sentinel proving the assembled payload reached the port, pending-only idempotency (a `ready` row's narrative AND null context both survive), `[fake-fail]` → `failed` **with the context still persisted**, and the real `closeMesocycle` → AFTER_COMMIT → `@Async` path awaited with Awaitility. The switch-off half lives in `feature/train/MesoReviewSwitchOffIT.java` (own `@TestPropertySource` context: `aiEvalEnabled` false + context written/status left `pending`, and it now **awaits** the listener's write so the async thread cannot collide with the next class's `ResetDatabase` TRUNCATE). Note `feature/train/MesocycleCloseReportIT.java` runs with `mezo.feature.companion.enabled=false` so the deterministic close report is asserted without this listener racing it from another thread; its regenerate test also pins that `computeAndStore` clears `context`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/{entity/PeriodSummaryEntity,repository/PeriodSummaryRepository,service/PeriodSummaryService,service/ConsolidationJob}.java` + `backend/src/main/resources/db/changelog/1.0.0/script/202608231400_mezo-b3pp.13_create_period_summary.sql` — the `mezo-b3pp.13` W3.2 consolidation ladder (§4): the two rungs, their generator, their cron and the table.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{PeriodSummaryPersistenceIT,PeriodSummaryServiceIT,ConsolidationJobIT,ConsolidationJobSwitchOffIT,ConsolidationPropertiesIT,PromptMemoryAssemblerShadowIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/support/populator/PeriodSummaryPopulator.java` — the W3.2 test batch (§8), incl. the shadowing proof that the fine-grained row survives.

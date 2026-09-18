@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
@@ -52,6 +53,39 @@ class ConversationFirstIT extends AbstractIntegrationTest {
         assertThat(turn.turnContext()).doesNotContain("AKTUÁLIS ÁLLAPOT", "ÚJ FELISMERÉSEK");
         assertThat(turn.systemPrompt()).contains("bármilyen témáról")
                 .doesNotContain("többes szám első személy", "[Két mód]", "négynél több");
+    }
+
+    @Test
+    void testSendMessage_shouldCatchFabricatedActionClaim_whenConversationFirstAnswerClaimsAWrite() {
+        // S9.8 Task 3 (mezo-rj214.7, mezo-rj214.5) — the real headline: production shipped
+        // "Felírtam: taco…" though the companion has no write tool, and that bug's own path is
+        // THIS one — conversation-first (this class's @TestPropertySource), the shipped default.
+        // Before Task 3, ChatService.sendMessage's conversation-first branch called
+        // chain.reviewChat, which ran ONLY ClinicalOutputCheck inline and never reached runChecks
+        // at all — ActionClaimCheck (Tasks 1-2's deterministic backstop) never covered the path
+        // the incident actually shipped from. Task 3 collapsed review/reviewChat into one method
+        // that always runs clinical + action-claim, so this now catches it.
+        UUID user = users.populateUser("free-action-claim@test.local");
+        var conversation = conversations.conversation(user);
+
+        var answer = chatService.sendMessage(user, conversation.getId(),
+                request("Mit ettem ma? " + FakeCompanionLlm.ACTION_CLAIM_ONCE));
+
+        // the fake fabricates "Felírtam…" on round 1 unconditionally and only rewrites to this
+        // exact clean sentence once the corrective retry actually ran (see
+        // FakeCompanionLlm.ACTION_CLAIM_ONCE's own javadoc) — so this proves the catch, not a
+        // lucky clean first answer.
+        assertThat(answer.getContent()).isEqualTo("Ezt te tudod felírni, ha szeretnéd.");
+        assertThat(answer.getDegraded()).isFalse();
+    }
+
+    @Test
+    void testPrepareTurn_shouldCarryActionHonestyRule_whenSystemPromptIsRendered() {
+        UUID user = users.populateUser("free-honesty@test.local");
+        var conversation = conversations.conversation(user);
+        var turn = chatService.prepareTurn(user, conversation.getId(), request("Szia"));
+        assertThat(turn.systemPrompt()).contains("Nem tudsz naplózni, menteni, módosítani vagy bármit elvégezni",
+                "Soha ne állítsd, hogy elvégeztél valamit");
     }
 
     @Test

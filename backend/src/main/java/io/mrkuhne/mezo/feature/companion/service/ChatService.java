@@ -67,10 +67,13 @@ public class ChatService {
      *
      * <p>mezo-q71s: named blocks instead of one instruction stream, and the voice block states
      * BEHAVIOUR, not adjectives — "legyél barátságos" is inert on the cheap tier, "listát csak
-     * akkor, ha…" is not. {@code [Mit szabad állítani]} encodes the marked-speculation policy
-     * (see the ADR): a hunch is allowed if it is linguistically marked; an invented number is not,
-     * marked or otherwise. The advisor's {@code unmarkedClaim} check is the enforcement half —
-     * keep the two in sync.
+     * akkor, ha…" is not. {@code [Mit szabad állítani]} encodes the honest-voice policy (mezo-rj214.3):
+     * a hunch may be voiced as an opinion without prescribed hedge vocabulary and without making
+     * hedging the safe default; an invented number is never allowed, marked or otherwise. Since
+     * S9.8 ({@link CompanionAdvisorChain}) the number/date/past-data half is prompt-only on the
+     * live path — no code-side check enforces it any more. The advisor's deterministic checks
+     * cover a different pair of gaps: an Rx dose-change ({@code ClinicalOutputCheck}) and a
+     * fabricated first-person action claim ({@code ActionClaimCheck}), not an invented number.
      */
     static final String SYSTEM_PROMPT = """
             [Ki vagy]
@@ -89,11 +92,15 @@ public class ChatService {
             Építs arra, ami már elhangzott a beszélgetésben; ne kezdd újra minden körben.
 
             [Mit szabad állítani]
-            Sejtésed, hipotézised lehet, és ki is mondhatod — de jelöld meg nyelvileg: \
-            „tippelek", „erős a gyanúm", „lehet, hogy", „ezt csak sejtem".
+            Sejtésed, hipotézised lehet, és ki is mondhatod, ha tényleg bizonytalan vagy benne — de a \
+            bizonytalanságot ott jelezd, ahol tényleg van; az alátámasztott választ ne gyengítsd \
+            kötelező találgatással.
             Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, ha a kontextusból, \
             egy eszközhívásból vagy {{NÉV}} üzenetéből származik. Adatot kitalálni akkor is tilos, ha megjelölöd.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod.
+            Naplózni, menteni, módosítani vagy bármit elvégezni {{NÉV}} helyett nem tudsz — csak \
+            beszélgetni és lekérdezni. Ha ilyet kérnek, mondd meg őszintén, és mondd el, hol tudja \
+            ő maga megtenni. Soha ne állítsd, hogy elvégeztél valamit.
             Az [Emberek] sorai {{NÉV}} emberi köre: ha egy nevet említ, onnan tudod, ki ő (kapcsolat) \
             és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
             harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
@@ -106,8 +113,7 @@ public class ChatService {
             Kérdés: „hogy állok a súllyal?"
             ROSSZ: „Aktuális: 88,4 kg. 7 napos trend: -0,6 kg. Cél: 85 kg."
             JÓ: „88,4 — a héten fél kilót lement, ami pont a tervezett ütem. Ami engem jobban érdekel: \
-            múlt héten megállt, most meg simán viszi tovább. Tippelem, hogy az alvás a különbség, \
-            de ezt tényleg csak sejtem.”
+            múlt héten megállt, most meg simán viszi tovább. Szerintem az alvás a különbség.”
             (A példában minden szám a kontextusból jött volna — a formát másold, ne a számokat.)
 
             [Tiltás]
@@ -128,8 +134,6 @@ public class ChatService {
             beszélgetés.
 
             [Eszközhasználat]
-            Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
-            használd a kapott tool-okat — a pillanatkép csak a mai napot mutatja; tool nélkül ne találgass.
             Ha tool kell a válaszhoz, ELŐBB hívd meg, és csak a megkapott adatból válaszolj — ne írd \
             le előre, hogy „megnézem" vagy „megpróbálom", és ne ígérj utólagos utánanézést.
             Válaszolj magyarul.
@@ -313,16 +317,16 @@ public class ChatService {
             String initial = llmCallContextHolder.runWith(turnContext,
                     () -> companionLlm.completeSmart(systemPrompt, prepared.context(), history, request.getContent()));
             AdvisedAnswer advised = chain == null ? new AdvisedAnswer(initial, false)
-                    : llmCallContextHolder.runWith(turnContext, () -> chain.reviewChat(systemPrompt,
-                            prepared.context(), history, request.getContent(), initial));
+                    : llmCallContextHolder.runWith(turnContext, () -> chain.review(systemPrompt,
+                            prepared.context(), history, request.getContent(), initial, null, null));
             answer = advised.answer();
             degraded = prepared.degraded() || advised.degraded();
         } else if (gear == TurnGear.CHAT && chain != null) {
             // Tool-free and smart-tier (the ONLY shape in which a conversational turn can carry
             // reasoning on OpenAI Chat Completions — OpenAiCompanionLlm.optionsFor), but still
-            // under the deterministic clinical check: the dose-change prohibition has no branch
-            // where it does not apply, and a general question is exactly where a model volunteers
-            // dosing advice. The LLM verdict is skipped — a CHAT turn has no context to grade.
+            // under the deterministic clinical + action-claim review: the dose-change prohibition
+            // has no branch where it does not apply, and a general question is exactly where a
+            // model volunteers dosing advice.
             AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                     () -> chain.completeChat(systemPrompt, turnCtx, history, request.getContent()));
             answer = advised.answer();
@@ -345,8 +349,8 @@ public class ChatService {
                 if (chain != null) {
                     String pipelinedAnswer = pipelined.answer();
                     AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                            () -> chain.reviewChat(routed.systemPrompt(), routed.turnContext(), history,
-                                    request.getContent(), pipelinedAnswer));
+                            () -> chain.review(routed.systemPrompt(), routed.turnContext(), history,
+                                    request.getContent(), pipelinedAnswer, null, null));
                     answer = advised.answer();
                     degraded = advised.degraded();
                 }
@@ -354,7 +358,7 @@ public class ChatService {
                 // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
                 AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                         () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
-                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
                 answer = advised.answer();
                 degraded = advised.degraded();
             } else {
