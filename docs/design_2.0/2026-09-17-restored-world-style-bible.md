@@ -796,7 +796,18 @@ than a sticker dropped into it:
    glitch rather than a blink, so the lid ellipses were deleted rather than left dormant.
    `docs/design_2.0/prototypes/boop-avatar.html` runs the surviving loop and is the reference
    8b ports.
-4. **`<use>` clones share one timeline.** CSS reaches the symbol's source elements, so every
-   `<use>` instance on a page blinks in unison. Where two Boops share a screen and that reads
-   wrong, inline the SVG per instance (`?raw`) instead of referencing the sprite — the classes
-   are the same either way.
+4. **`<use>` clones share one timeline, so Boop is inlined per instance.** CSS cannot reach
+   into a `<use>` shadow tree: rules match the symbol's SOURCE elements, so every instance
+   would move together and none could be stilled on its own. `shared/ui/clay/boop/Boop.tsx`
+   therefore inlines the symbol's markup per instance and namespaces the gradient ids with
+   `useId` — without that, two Boops of different domains on one screen (the bar wears the
+   current domain, the Nap centre wears lavender) would both resolve to the first definition
+   and wear one colour.
+
+**Where she appears** (`mezo-ju4j6.15`): the Nap/Mai centre (lavender, `alive`), the docked
+bar's domain-switch mark and every row of the DomainSwitcher (each in ITS domain's hue, still).
+Only the Nap centre moves — in navigation chrome a moving figure competes with the thing the
+user came to tap. The component takes the NAV domain id (`nap` · `train` · `fuel` · `mezo` ·
+`me`) rather than a symbol name, and `navModel`'s `NavDomain.id` is typed to that union: a new
+domain cannot ship without a figure, which is exactly how the Én row shipped blank in the first
+integration pass (`me` vs `boop-en`).

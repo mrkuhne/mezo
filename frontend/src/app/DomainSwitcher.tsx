@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Boop } from '@/shared/ui/clay'
 import { DOMAINS, routeForDomain } from '@/app/navModel'
 
 /** Five independent cards over blur; deliberately no Sheet or drawer chrome.
  *  Restored world (mezo-ju4j6.4): the cards are §2.2 A wash tiles, one per domain wash,
- *  with the clay domain mark at 44px — style bible §7.4. The overlay keeps its blur: there
+ *  with the domain's mark at 44px — style bible §7.4. Since mezo-ju4j6.15 that mark is
+ *  Boop in the row's own domain hue: five rooms, one character, five colours. The overlay keeps its blur: there
  *  it is functional (it separates a modal layer), the one place §2.3's frosting ban lifts. */
 export function DomainSwitcher({ currentDomainId, onClose }: {
   currentDomainId: string | null
@@ -72,7 +73,7 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
                   onClose()
                   navigate(routeForDomain(domain.id))
                 }}>
-                <span className="domain-row-mark"><ClayIcon name={domain.tabs[0].icon} size={44} /></span>
+                <span className="domain-row-mark"><Boop domain={domain.id} size={44} /></span>
                 <span className="domain-row-text"><strong>{domain.name}</strong><small>{summary}</small></span>
                 <b className="domain-row-end" aria-hidden="true">{current ? '✓' : '↗'}</b>
               </button>

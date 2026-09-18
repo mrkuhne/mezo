@@ -79,3 +79,7 @@ export function ClayIcon(props: ClayProps<ClayIconName>) {
 export function ClaySpot(props: ClayProps<ClaySpotName>) {
   return <ClayUse {...props} />
 }
+
+// Boop (mezo-ju4j6.15) — a kabalafigura a clay készlet része, de SAJÁT komponenssel jön:
+// példányonként inline SVG, mert mozog (lásd `boop/Boop.tsx` fejlécét).
+export { Boop, type BoopDomain } from './boop/Boop'

@@ -11,7 +11,7 @@
 //            (the `domains` object + `rememberRoute`; there memory keyed page
 //             INDEX, here it keys the tab's full ROUTE).
 // ============================================================
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { BoopDomain, ClayIconName } from '@/shared/ui/clay'
 
 export interface NavTab {
   label: string
@@ -29,8 +29,11 @@ export interface NavTab {
 }
 
 export interface NavDomain {
-  /** First path segment that selects this domain (`/nap`→nap, `/train`→train, …). */
-  id: string
+  /** First path segment that selects this domain (`/nap`→nap, `/train`→train, …).
+   *  A típus a Boop-változatok uniója (mezo-ju4j6.15): a sáv és a területváltó a domain
+   *  azonosítójából választ figurát, tehát egy ÚJ terület csak figurával együtt születhet —
+   *  különben a sora némán, jel nélkül renderelne (ez történt az Én területével). */
+  id: BoopDomain
   /** The domain's display name — shown on the switch mark and in the switcher list. */
   name: string
   /** Exactly four contextual tabs, in bar order (tab 1 = the domain's home). */
@@ -110,7 +113,10 @@ export const DOMAINS: NavDomain[] = [
   },
 ]
 
-/** The companion mark on the bar's switch button — always the Mezo mark, per the matrix. */
+/** A sáv váltó-gombjának jele. Visszaöltöztetés (mezo-ju4j6.15): a jel BOOP, az aktuális
+ *  terület színében — a `TabBar` a domain id-ből választ változatot, ezért itt nincs több
+ *  fix ikonnév. A konstans azért marad, mert a régi Mezo-jel a NÉVSORBAN (Beszélgetés fül)
+ *  továbbra is él, és több teszt erre a névre hivatkozik. */
 export const SWITCH_MARK: ClayIconName = 'i-mezo'
 
 /** `route` is a prefix of `pathname` iff they're equal or `pathname` sits under `route/`. */
