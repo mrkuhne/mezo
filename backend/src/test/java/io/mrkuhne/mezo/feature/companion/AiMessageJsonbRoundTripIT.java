@@ -316,4 +316,39 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
             assertThat(call.why()).isNull();
         });
     }
+
+    /**
+     * mezo-rj214.10 unification: for a short window main stored a 4th {@code "result"} component
+     * inside tool_calls. Result text now has exactly ONE home (ai_message.tool_outcomes, the
+     * 90-day-scrubbed column), so {@code result} is no longer a component here — but rows written
+     * in that window still carry the key, and Hibernate's Jackson 2 mapper fails on an unknown key
+     * by default. Such a row must still load, with its ask intact and no result text taken from it.
+     */
+    @Test
+    void testToolCalls_shouldDeserialiseIgnoringResult_whenTheJsonbCarriesTheRetiredResultKey() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-retired-result@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz a rövid életű result-mezős formátummal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[{\"type\":\"read\",\"name\":\"get_recovery\",\"args\":\"scope=sleep\","
+                        + "\"result\":\"6,5 óra alvás\"}]}", id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).singleElement().satisfies(call -> {
+            assertThat(call.name()).isEqualTo("get_recovery");
+            assertThat(call.args()).isEqualTo("scope=sleep");
+            assertThat(call.why()).isNull();
+        });
+        assertThat(reloaded.getToolOutcomes()).isNull();
+    }
 }

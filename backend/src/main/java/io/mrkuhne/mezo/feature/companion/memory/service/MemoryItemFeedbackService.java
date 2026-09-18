@@ -73,8 +73,11 @@ public class MemoryItemFeedbackService {
         MemoryItemEntity item = itemRepository
                 .findByIdAndCreatedByAndDeletedFalse(result.getMemoryItemId(), userId)
                 .orElseThrow(MemoryItemFeedbackService::notFound);
-        item.setState(MemoryItemEntity.STATE_SUPPRESSED);
-        itemRepository.save(item);
+        for (MemoryItemEntity chunk : itemRepository.findSourceForUpdate(userId, item.getSourceKind(), item.getSourceId())) {
+            chunk.setState(MemoryItemEntity.STATE_SUPPRESSED);
+            chunk.setProvenance(chunk.getProvenance().withUserSuppression());
+            itemRepository.save(chunk);
+        }
     }
 
     private static MemoryRetrievalFeedbackEntity newFeedback(

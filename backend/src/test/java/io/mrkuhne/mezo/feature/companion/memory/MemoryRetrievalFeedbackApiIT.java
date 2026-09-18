@@ -52,6 +52,31 @@ class MemoryRetrievalFeedbackApiIT extends ApiIntegrationTest {
     @Autowired private MemoryItemRepository itemRepository;
     @Autowired private MemoryRetrievalFeedbackRepository feedbackRepository;
     @Autowired private MemoryContextService contextService;
+    @Autowired private io.mrkuhne.mezo.feature.companion.memory.service.MemoryProjectionWriter projectionWriter;
+
+    @Test
+    void testSuppress_shouldSuppressWholeSourceAndSurviveFeedbackRetention_whenSourceHasChunks() {
+        UUID owner = ownerId();
+        Fixture fixture = fixture(owner, "Régi emlék");
+        var command = new io.mrkuhne.mezo.feature.companion.memory.service.MemoryProjectionWriter.ProjectionCommand(
+                owner, fixture.item().getSourceKind(), fixture.item().getSourceId(), null,
+                "hosszú emlék ".repeat(400), AS_OF, List.of(), List.of(), 0.5,
+                io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope.empty());
+        projectionWriter.upsert(command, null);
+        putForBody(feedbackPutUri(fixture.run().getId(), fixture.result().getId()),
+                request(MemoryRetrievalFeedbackEntity.ACTION_SUPPRESS), ownerAuthHeaders(),
+                HttpStatus.OK, MemoryRetrievalFeedbackResponse.class);
+        assertThat(itemRepository.findByCreatedByAndSourceKindAndSourceIdOrderByChunkIndex(owner,
+                fixture.item().getSourceKind(), fixture.item().getSourceId()))
+                .hasSizeGreaterThan(1).allSatisfy(item -> assertThat(item.getState()).isEqualTo("suppressed"));
+        feedbackRepository.deleteAll();
+        projectionWriter.upsert(new io.mrkuhne.mezo.feature.companion.memory.service.MemoryProjectionWriter.ProjectionCommand(
+                owner, command.sourceKind(), command.sourceId(), null, "Teljesen új tartalom", AS_OF,
+                List.of(), List.of(), 0.5, command.provenance()), null);
+        assertThat(itemRepository.findByCreatedByAndSourceKindAndSourceIdOrderByChunkIndex(owner,
+                command.sourceKind(), command.sourceId()))
+                .allSatisfy(item -> assertThat(item.getState()).isEqualTo("suppressed"));
+    }
 
     @Test
     void testEndpoints_shouldReturn401_whenAuthenticationIsMissing() {

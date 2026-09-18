@@ -140,7 +140,7 @@ class OpenAiCompanionLlmOptionsTest {
                 new CompanionProperties.Turn.Executor(4, 15_000L),
                 new CompanionProperties.Turn.Answerer("high", 8000, 40000),
                 new CompanionProperties.Turn.Replan(1),
-                        new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *", 4000, 20000)));
+                        new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *")));
         LlmActorResolver actorResolver = new LlmActorResolver() {
             @Override
             public UUID currentActor() {

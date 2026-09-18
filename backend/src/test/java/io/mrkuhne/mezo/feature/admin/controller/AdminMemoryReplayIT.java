@@ -216,8 +216,10 @@ class AdminMemoryReplayIT extends ApiIntegrationTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(dense.getError()).isNotNull();
-        // A single retriever failing is a degraded run, not a failed one: the peers still answered.
-        assertThat(detail.getRun().getErrorCode()).isNull();
+        // Successful peers remain usable, while partial failure is explicitly observable.
+        assertThat(detail.getRun().getErrorCode()).isEqualTo("MEMORY_RETRIEVAL_PARTIAL_FAILURE");
+        assertThat(detail.getRun().getRetrieverTrace())
+                .anySatisfy(entry -> assertThat(entry.getError()).isNull());
     }
 
     @Test

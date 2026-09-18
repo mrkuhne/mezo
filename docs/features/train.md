@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -646,6 +646,8 @@ A **standalone** owner-scoped weekly schedule answering only *when* the user tra
 ---
 
 ## 5. Integrations
+
+**Companion source access:** Chat training summaries expose individual exercises, sets, targets and feedback. Historical workouts, running/sport sessions, plans, schedules and mesocycles are available through the full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 This is the highest-value section: Train both consumes and exposes a number of seams. The contract (the type/shape that crosses) is named at each.
 

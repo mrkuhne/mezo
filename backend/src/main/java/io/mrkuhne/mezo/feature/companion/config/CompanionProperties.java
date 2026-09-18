@@ -513,14 +513,16 @@ public record CompanionProperties(
 
         /**
          * S9.7 provenance (spec §6.6). {@code retentionDays} is the age past which the RESULT half
-         * is NULLed — the ask half is kept forever. The char caps bound what a single message row
-         * can store: a tool may return thousands of characters and every turn writes a row.
+         * is NULLed — the ask half is kept forever.
+         *
+         * <p>No char caps here on purpose: the stored result text has ONE home
+         * ({@code ai_message.tool_outcomes}) and therefore ONE budget, which lives with its more
+         * demanding consumer at {@code mezo.companion.conversation.result-max-chars} /
+         * {@code results-max-chars} (the conversation-history replay).
          */
         public record Provenance(
                 @Min(1) int retentionDays,
-                @NotBlank String cron,
-                @Min(200) int perOutcomeChars,
-                @Min(1000) int totalChars) {
+                @NotBlank String cron) {
         }
     }
 }

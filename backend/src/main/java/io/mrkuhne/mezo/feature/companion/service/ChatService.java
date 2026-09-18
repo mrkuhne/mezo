@@ -149,7 +149,7 @@ public class ChatService {
             - számszerű cél: súlycél, kalóriacél, heti ütem → get_goal
             - életcél, életterület (PERMAH), pillér, ha–akkor terv → get_life_goals
             - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
-            - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
+            - minták, „mit vettél észre rólam" → get_insights (megerősített minták; predikció/kísérlet külön részletes forrásolvasást igényel)
             - hasonló korábbi nap → find_similar_past_days
             - két időszak összevetése (negyedév/hónap) → compare_periods""";
 
@@ -206,6 +206,10 @@ public class ChatService {
     private final TurnPlanner turnPlanner;
     private final PlanExecutor planExecutor;
     private final TurnAnswerer turnAnswerer;
+    private final ConversationTurnService conversationTurnService;
+    private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
+    private final ConversationHistory conversationHistory;
+    private final PersonalBaselineContext personalBaselineContext;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -234,7 +238,7 @@ public class ChatService {
     public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
-        List<Turn> history = toTurns(loadWindow(userId, conversationId));
+        List<Turn> history = historyFor(userId, conversationId);
         RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
         AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
                 request.getContent(), null, null, null, false, null);
@@ -261,7 +265,8 @@ public class ChatService {
         // own choke point below. audit is kept only for toRefsEnvelope(): the refs envelope has no
         // plan-truth/ran-truth distinction to make.
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, toolCalls, toolOutcomes, audit.toRefsEnvelope(), degraded, recalled);
+                answer, toolCalls, toolOutcomes, audit.toRefsEnvelope(), degraded,
+                audit.recalled() == null ? recalled : audit.recalled());
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
@@ -277,7 +282,7 @@ public class ChatService {
         // (mezo-q71s), not a transcript inside the system prompt.
         LocalDate today = LocalDate.now();
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        List<Turn> history = toTurns(loadWindow(userId, conversationId));
+        List<Turn> history = historyFor(userId, conversationId);
         RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
         TurnGear gear = routed.gear();
         ChatMemoryPayload memory = routed.memory();
@@ -301,7 +306,18 @@ public class ChatService {
         LlmCallContext turnContext =
                 new LlmCallContext("companion_chat", "send", "conversation", conversationId);
         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-        if (gear == TurnGear.CHAT && chain != null) {
+        if (conversationProperties.enabled()) {
+            ConversationTurnService.Prepared prepared = llmCallContextHolder.runWith(turnContext,
+                    () -> conversationTurnService.prepare(userId, conversationId, turnCtx, history,
+                            request.getContent(), audit, phase -> {}));
+            String initial = llmCallContextHolder.runWith(turnContext,
+                    () -> companionLlm.completeSmart(systemPrompt, prepared.context(), history, request.getContent()));
+            AdvisedAnswer advised = chain == null ? new AdvisedAnswer(initial, false)
+                    : llmCallContextHolder.runWith(turnContext, () -> chain.reviewChat(systemPrompt,
+                            prepared.context(), history, request.getContent(), initial));
+            answer = advised.answer();
+            degraded = prepared.degraded() || advised.degraded();
+        } else if (gear == TurnGear.CHAT && chain != null) {
             // Tool-free and smart-tier (the ONLY shape in which a conversational turn can carry
             // reasoning on OpenAI Chat Completions — OpenAiCompanionLlm.optionsFor), but still
             // under the deterministic clinical check: the dose-change prohibition has no branch
@@ -366,11 +382,11 @@ public class ChatService {
         // legacy turn never wrote before this task.
         TurnProvenance.Built provenance = TurnProvenance.build(
                 pipelineOutcomes != null ? pipelineOutcomes : audit.toolOutcomes(),
-                properties.turn().provenance());
+                conversationProperties);
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, provenance.ask(), provenance.result(), audit.toRefsEnvelope(), degraded,
-                memory.recalled());
+                audit.recalled() == null ? memory.recalled() : audit.recalled());
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -393,7 +409,9 @@ public class ChatService {
         try {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
             String systemPrompt = stableSystemPrompt(userId);
-            String turnCtx = turnContext(userId, LocalDate.now(),
+            String turnCtx = conversationProperties.enabled()
+                    ? conversationContext(userId, conversation, LocalDate.now())
+                    : turnContext(userId, LocalDate.now(),
                     knowledgeFactService.renderPromptBlock(userId), "", "",
                     conversation.getContextKind(), conversation.getContextDate());
             // mezo-ozri.8: tagged like every other LLM entry point. Without this the turn books as
@@ -403,7 +421,9 @@ public class ChatService {
             // simply gets a silent, empty conversation instead of a 429 on a turn it never asked for.
             String answer = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_chat", "opening_turn", "conversation", conversationId),
-                    () -> companionLlm.complete(
+                    () -> conversationProperties.enabled()
+                            ? companionLlm.completeSmart(systemPrompt, turnCtx, List.of(), KICKOFF_PROMPT)
+                            : companionLlm.complete(
                             systemPrompt, turnCtx, List.of(), KICKOFF_PROMPT, List.of(), Map.of()));
             if (answer == null || answer.isBlank()) {
                 log.warn("Opening turn for conversation {} produced no text — conversation stays empty",
@@ -435,7 +455,7 @@ public class ChatService {
      * cache entry on every single turn and re-bill them at the full input rate.
      */
     private String stableSystemPrompt(UUID userId) {
-        return promptPersona.render(userId, SYSTEM_PROMPT);
+        return promptPersona.render(userId, conversationProperties.enabled() ? ConversationTurnService.VOICE : SYSTEM_PROMPT);
     }
 
     /**
@@ -462,6 +482,10 @@ public class ChatService {
      */
     private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
             String userContent, List<Turn> history, LocalDate today) {
+        if (conversationProperties.enabled()) {
+            return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
+                    conversationContext(userId, conversation, today));
+        }
         TurnGear gear = turnGearRouter.route(userContent);
         ChatMemoryPayload memory = gear == TurnGear.CHAT
                 ? ChatMemoryPayload.empty()
@@ -473,6 +497,14 @@ public class ChatService {
                         memory.memoriesBlock(), memory.graphBlock(),
                         conversation.getContextKind(), conversation.getContextDate());
         return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+    }
+
+    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today) {
+        return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
+                + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
+                + personalBaselineContext.render(userId, today)
+                + profileBlock(userId)
+                + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()));
     }
 
     /**
@@ -810,8 +842,20 @@ public class ChatService {
     private List<AiMessageEntity> loadWindow(UUID userId, UUID conversationId) {
         return messageRepository
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtDesc(
-                        conversationId, userId, PageRequest.of(0, properties.chat().historyWindow()))
+                        conversationId, userId, PageRequest.of(0, conversationProperties.enabled()
+                                ? conversationProperties.historyMessages() : properties.chat().historyWindow()))
                 .reversed();
+    }
+
+    /**
+     * NOTE (S9.7 + mezo-rj214.10 unification): {@code conversationProperties.enabled()} is a
+     * rollback switch for HISTORY RENDERING only — whether prior turns are replayed with their
+     * stored tool evidence. It is NOT a switch for provenance persistence: both persistence call
+     * sites always write the two envelopes built by {@link TurnProvenance}, in either mode.
+     */
+    private List<Turn> historyFor(UUID userId, UUID conversationId) {
+        var rows = loadWindow(userId, conversationId);
+        return conversationProperties.enabled() ? conversationHistory.turns(rows) : toTurns(rows);
     }
 
     /**

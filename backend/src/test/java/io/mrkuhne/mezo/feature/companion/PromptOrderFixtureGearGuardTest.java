@@ -94,6 +94,12 @@ class PromptOrderFixtureGearGuardTest {
             String relative = TEST_ROOT.relativize(path).toString();
             List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
             String source = String.join("\n", lines);
+            // Conversation-first has no gear gate: these explicitly opted-in fixtures MUST
+            // include pronoun-only/general turns to prove tools stay reachable. The global
+            // test profile keeps all other fixtures on the rollback path guarded below.
+            if (source.contains("\"mezo.companion.conversation.enabled=true\"")) {
+                continue;
+            }
 
             Matcher matcher = FIXTURE_CALL.matcher(source);
             while (matcher.find()) {

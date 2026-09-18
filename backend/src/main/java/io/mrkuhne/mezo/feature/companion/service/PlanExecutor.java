@@ -76,12 +76,17 @@ public class PlanExecutor {
 
     public List<ToolCallAudit.ToolOutcome> execute(ValidatedPlan plan, UUID userId, ToolCallAudit audit) {
         List<ToolCallback> callbacks = toolRegistry.callbacks(audit);
+        return execute(plan, callbacks, toolRegistry.toolContext(userId, audit));
+    }
+
+    public List<ToolCallAudit.ToolOutcome> execute(ValidatedPlan plan, List<ToolCallback> callbacks,
+            Map<String, Object> context) {
         Map<String, ToolCallback> byName = callbacks.stream()
             .collect(Collectors.toMap(cb -> cb.getToolDefinition().name(), Function.identity(), (a, b) -> {
                 log.warn("Duplicate tool callback name {} from the registry; keeping the first", a.getToolDefinition().name());
                 return a;
             }));
-        ToolContext toolContext = new ToolContext(toolRegistry.toolContext(userId, audit));
+        ToolContext toolContext = new ToolContext(context);
         long timeoutMs = properties.turn().executor().stepTimeoutMs();
         Semaphore permits = new Semaphore(properties.turn().executor().parallelism());
 

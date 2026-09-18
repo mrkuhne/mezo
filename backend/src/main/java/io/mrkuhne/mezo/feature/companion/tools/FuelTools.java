@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.IngredientResponse;
 import io.mrkuhne.mezo.api.dto.IntakeResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.Macros;
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.ProtocolItemResponse;
@@ -19,7 +21,6 @@ import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
-import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -63,7 +64,6 @@ public class FuelTools {
     private static final List<String> PROTOCOL_SCOPES = List.of("adherence", "intake", "supplements");
 
     private final FuelDayService fuelDayService;
-    private final WaterLogService waterLogService;
     private final ProtocolService protocolService;
     private final SupplementIntakeRepository supplementIntakeRepository;
     private final IntakeService intakeService;
@@ -73,12 +73,13 @@ public class FuelTools {
 
     @Tool(name = "get_fuel_log", description = "Napi vagy heti étkezés-összesítő: kcal és fehérje a célhoz "
             + "képest. range=day — napi bontású összesítők visszamenőleg N napra (a megadott dátumig): "
-            + "soronként kcal/fehérje a célhoz képest, az adott nap étkezésszáma és (legfeljebb 3) "
-            + "étkezés-cím; víz a célhoz képest csak az utolsó (megadott) napra. range=week — a hét "
+            + "soronként kcal/fehérje/szénhidrát/zsír a célhoz képest, minden étkezés címe, időpontja, "
+            + "makrói, tételei mennyiséggel, ismert tápanyagokkal és NOVA-val; víz minden napra a napi célhoz képest. range=week — a hét "
             + "(hétfő–vasárnap, a megadott dátumot tartalmazó ISO-hét) napi bontásban: soronként "
-            + "kcal/fehérje/víz a célhoz képest, étkezésszám és cím nélkül. Szénhidrátot és zsírt nem "
-            + "tartalmaz. Használd, amikor a user a napi/heti kalória-, fehérje- vagy víz-bevitelről "
-            + "kérdez, vagy (range=day esetén) az étkezéseiről. range: day (alapértelmezés), week.")
+            + "kcal/fehérje/szénhidrát/zsír/víz a célhoz képest, étkezésszám és cím nélkül. "
+            + "Használd, amikor a user a napi/heti kalória-, makró- vagy víz-bevitelről "
+            + "kérdez, vagy (range=day esetén) az étkezéseiről. range: day (alapértelmezés), week."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=meal|meal_item|water_log, id/from/to/parentId/offset/contentOffset).")
     public String getFuelLog(
             @ToolParam(required = false, description = "day|week (alapértelmezés: day).") String range,
             @ToolParam(required = false, description = "ISO dátum (ÉÉÉÉ-HH-NN) — az irányadó nap "
@@ -116,41 +117,38 @@ public class FuelTools {
         }
     }
 
-    /** range=day (default): the old {@code get_recent_meals} N-day rollup, ending at {@code anchor} —
-     *  per-day kcal/protein vs targets + meal count/titles (≤3), plus a water line for {@code anchor}
-     *  itself via {@link WaterLogService#sumForDay} (targets reused from the loop's last iteration —
-     *  same config-driven values for every day, no extra {@code FuelDayService} call needed). */
+    /** Day rollups retain each day's own macro and water targets, followed by complete meal details. */
     private String renderFuelDay(UUID userId, LocalDate anchor, Integer days, ToolContext toolContext) {
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
         StringBuilder b = new StringBuilder("Napi étkezés-összesítők (utolsó ").append(d).append(" nap):");
+        StringBuilder details = new StringBuilder();
         int daysWithMeals = 0;
-        MacroSet lastTargets = null;
         for (int i = d - 1; i >= 0; i--) {
             LocalDate date = anchor.minusDays(i);
             FuelDayResponse day = fuelDayService.getDay(userId, date);
             MacroSet c = day.getConsumed();
             MacroSet t = day.getTargets();
-            lastTargets = t;
             b.append('\n').append(date).append(": ")
                     .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
                     .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
                     .append(" g; ").append(day.getMeals().size()).append(" étkezés");
             if (!day.getMeals().isEmpty()) {
                 b.append(" (").append(day.getMeals().stream()
-                        .map(MealResponse::getTitle).limit(3).collect(Collectors.joining(", ")));
-                if (day.getMeals().size() > 3) {
-                    b.append(", …");
-                }
+                        .map(MealResponse::getTitle).collect(Collectors.joining(", ")));
                 b.append(')');
                 daysWithMeals++;
                 if (daysWithMeals <= 5) {
                     ToolContexts.audit(toolContext).addRef("FuelDay", date.toString());
                 }
             }
+            b.append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
+                    .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
+            b.append("\nVíz (").append(date).append("): ").append(ToolText.num(c.getWater())).append('/')
+                    .append(ToolText.num(t.getWater())).append(" ml");
+            day.getMeals().forEach(meal -> appendMeal(details, meal));
         }
-        int water = waterLogService.sumForDay(userId, anchor);
-        b.append("\nVíz (").append(anchor).append("): ").append(water).append('/')
-                .append(ToolText.num(lastTargets.getWater())).append(" ml");
+        // Preserve all daily totals before verbose records can hit the conversation evidence budget.
+        b.append(details);
         return b.toString();
     }
 
@@ -172,7 +170,9 @@ public class FuelTools {
                     .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
                     .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
                     .append(" g, víz ").append(ToolText.num(c.getWater())).append('/')
-                    .append(ToolText.num(t.getWater())).append(" ml");
+                    .append(ToolText.num(t.getWater())).append(" ml")
+                    .append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
+                    .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
             if (refCount < 5) {
                 ToolContexts.audit(toolContext).addRef("FuelDay", day.getDate().toString());
                 refCount++;
@@ -181,13 +181,47 @@ public class FuelTools {
         return b.toString();
     }
 
+    private static void appendMeal(StringBuilder b, MealResponse meal) {
+        b.append("\n  Étkezés id=").append(meal.getId()).append(": ").append(meal.getTitle())
+                .append("; idő: ").append(meal.getLoggedAt()).append("; sáv: ").append(meal.getSlot());
+        appendMacros(b, meal.getMacros());
+        appendNutrients(b, meal.getNutrients());
+        if (meal.getScore() != null && meal.getScore().getValue() != null) {
+            b.append("; pontszám ").append(ToolText.num(meal.getScore().getValue()));
+        }
+        for (var item : meal.getItems()) {
+            b.append("\n    ").append(item.getName()).append(": ").append(ToolText.num(item.getAmount()))
+                    .append(' ').append(item.getUnit()).append("; forrás ").append(item.getSource());
+            appendMacros(b, item.getContribution());
+            appendNutrients(b, item.getNutrients());
+            if (item.getNova() != null) b.append("; NOVA ").append(item.getNova());
+        }
+    }
+
+    private static void appendMacros(StringBuilder b, Macros macros) {
+        if (macros == null) return;
+        b.append("; ").append(ToolText.num(macros.getKcal())).append(" kcal, F ")
+                .append(ToolText.num(macros.getP())).append(" g, CH ").append(ToolText.num(macros.getC()))
+                .append(" g, ZS ").append(ToolText.num(macros.getF())).append(" g");
+    }
+
+    private static void appendNutrients(StringBuilder b, Nutrients nutrients) {
+        if (nutrients == null) return;
+        if (nutrients.getFiberG() != null) b.append("; rost ").append(ToolText.num(nutrients.getFiberG())).append(" g");
+        if (nutrients.getSugarG() != null) b.append("; cukor ").append(ToolText.num(nutrients.getSugarG())).append(" g");
+        if (nutrients.getSaltG() != null) b.append("; só ").append(ToolText.num(nutrients.getSaltG())).append(" g");
+        if (nutrients.getSaturatedFatG() != null) b.append("; telített zsír ")
+                .append(ToolText.num(nutrients.getSaturatedFatG())).append(" g");
+    }
+
     @Tool(name = "get_protocol", description = "Az étrendkiegészítő-protokoll nézetei. scope=adherence — "
             + "napi bontású követés az elmúlt N napra: naponta hány elem lett bevéve az aktív protokollból, "
             + "plusz az ablak összesítése (bevett/elvárt, %). scope=intake — a mai nap bevett kiegészítői "
             + "(tétel neve, ismert dózissal); nincs protokollhoz kötve. scope=supplements — az aktív "
             + "protokoll tételeinek listája (nevek). Használd, amikor a user az étrendkiegészítő-"
             + "protokolljáról, bevételéről vagy a supplementjeiről kérdez. scope: adherence "
-            + "(alapértelmezés), intake, supplements.")
+            + "(alapértelmezés), intake, supplements."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=protocol|protocol_item|supplement_intake, id/from/to/parentId/offset/contentOffset).")
     public String getProtocol(
             @ToolParam(required = false, description = "adherence|intake|supplements (alapértelmezés: adherence).")
             String scope,
@@ -253,7 +287,7 @@ public class FuelTools {
      *  independent of any active protocol (a taken item need not belong to it), so the {@code Protocol}
      *  ref is only added when one happens to be active (kept as the tool's one ref kind — no new kind
      *  introduced). Item names resolved via the pantry stash (intakes are never {@code kind=food} —
-     *  {@link IntakeService#logIntake} rejects that), capped at 5 lines like the sibling {@code get_pantry}. */
+     *  {@link IntakeService#logIntake} rejects that), with every intake retained. */
     private String renderProtocolIntake(UUID userId, ToolContext toolContext) {
         LocalDate today = LocalDate.now();
         List<IntakeResponse> intakes = intakeService.listForDay(userId, today).getIntakes();
@@ -263,7 +297,7 @@ public class FuelTools {
         Map<UUID, String> names = pantryStashNames(userId);
         StringBuilder b = new StringBuilder("Mai bevétel (").append(today).append("): ")
                 .append(intakes.size()).append(" tétel");
-        for (IntakeResponse intake : intakes.stream().limit(5).toList()) {
+        for (IntakeResponse intake : intakes) {
             b.append('\n').append(names.getOrDefault(intake.getPantryItemId(), "ismeretlen tétel"));
             if (intake.getDose() != null && !intake.getDose().isBlank()) {
                 b.append(": ").append(intake.getDose());
@@ -278,7 +312,7 @@ public class FuelTools {
 
     /** scope=supplements (mezo-xixu) — the active protocol's item names (distinct {@code
      *  items[].pantryItemId}, zone-sorted by {@link ProtocolService#getView}, not itemOrder),
-     *  capped at 5 like the other list tools. */
+     *  with every active item retained. */
     private String renderProtocolSupplements(UUID userId, ToolContext toolContext) {
         ProtocolResponse active = protocolService.getView(userId).getActive();
         if (active == null) {
@@ -289,7 +323,7 @@ public class FuelTools {
         Map<UUID, String> names = pantryStashNames(userId);
         StringBuilder b = new StringBuilder("Protokoll szupplementjei (v").append(active.getVersion())
                 .append("): ").append(ids.size()).append(" elem");
-        for (UUID id : ids.stream().limit(5).toList()) {
+        for (UUID id : ids) {
             b.append('\n').append(names.getOrDefault(id, "ismeretlen tétel"));
         }
         ToolContexts.audit(toolContext).addRef("Protocol", "v" + active.getVersion());
@@ -306,7 +340,8 @@ public class FuelTools {
     @Tool(name = "get_recipes", description = "A user receptjei: név, makrók, illeszkedés-pontszám, "
             + "összetevők. Használd, amikor a user receptet keres, mit főzzön/egyen kérdez, vagy egy "
             + "konkrét recept részleteire kíváncsi — a szűrő a recept NEVÉRE és összetevőire is "
-            + "illeszkedik, nem kell szó szerint pontosan megadni.")
+            + "illeszkedik, nem kell szó szerint pontosan megadni."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=recipe|recipe_ingredient, id/from/to/parentId/offset/contentOffset).")
     public String getRecipes(
             @ToolParam(required = false, description = "Szabad szöveges keresés: recept neve, "
                     + "összetevő, étkezés/kategória/tag/csillagozott/illeszkedés (szavanként, "
@@ -320,7 +355,8 @@ public class FuelTools {
         }
         List<String> tokens = filter == null ? List.of() : ToolText.searchTokens(filter);
         if (tokens.isEmpty()) {
-            return renderRecipeList(recipes.stream().limit(5).toList(), toolContext);
+            return renderRecipeList(recipes.stream().limit(5).toList(), toolContext)
+                    + ToolText.coverage(5, recipes.size(), "recipe|recipe_ingredient");
         }
         RankResult ranked = rankRecipes(recipes, tokens);
         List<ScoredRecipe> winners = ranked.winners();
@@ -341,11 +377,12 @@ public class FuelTools {
             return header == null ? detail : header + "\n" + detail;
         }
         if (header == null) {
-            return renderRecipeList(winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
+            return renderRecipeList(winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext)
+                    + ToolText.coverage(5, winners.size(), "recipe|recipe_ingredient");
         }
         StringBuilder b = new StringBuilder(header);
         appendRecipeLines(b, winners.stream().limit(5).map(ScoredRecipe::recipe).toList(), toolContext);
-        return b.toString();
+        return b + ToolText.coverage(5, winners.size(), "recipe|recipe_ingredient");
     }
 
     /** One recipe with its relevance score for the current filter (highest first). */
@@ -465,7 +502,7 @@ public class FuelTools {
                 ToolContexts.audit(toolContext).addRef("Recipe", s.recipe().getName());
             }
         }
-        return b.toString();
+        return b + ToolText.coverage(1 + runnerUps.size(), winners.size(), "recipe|recipe_ingredient");
     }
 
     /** Full detail for a single strong filter match: all 4 macros + fit score + the ingredient lines. */
@@ -493,7 +530,8 @@ public class FuelTools {
 
     @Tool(name = "get_pantry", description = "A kamra készlete: mi van otthon, mennyi, meddig jó. Használd, "
             + "amikor a user azt kérdezi mije van otthon, miből tud főzni, vagy mit kell pótolni. kind: food, "
-            + "supplement, stim, med (alapértelmezés: az összes).")
+            + "supplement, stim, med (alapértelmezés: az összes)."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=pantry_item|pantry_catalog, id/from/to/parentId/offset/contentOffset).")
     public String getPantry(
             @ToolParam(required = false, description = "food|supplement|stim|med (alapértelmezés: az összes).")
             String kind,
@@ -519,7 +557,7 @@ public class FuelTools {
             b.append('\n').append(line.text());
             ToolContexts.audit(toolContext).addRef("Pantry", line.name());
         }
-        return b.toString();
+        return b + ToolText.coverage(5, lines.size(), "pantry_item|pantry_catalog");
     }
 
     /** name + null-guarded qty/unit/expiry — {@code stock} is only present when {@code stockQty} is set

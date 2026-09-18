@@ -63,7 +63,8 @@ public class GoalTools {
             + "Használd, amikor a user a céljáról, a receptjéről/kalóriacéljáról, a korlátairól, a cél "
             + "reálisságáról, vagy a célhoz rendelt tervekről/lefedettségéről (pl. milyen tervek fedik "
             + "le a célt, mely hetek nincsenek lefedve) kérdez. scope: progress (alapértelmezés), "
-            + "recept, timeline, guards, feasibility.")
+            + "recept, timeline, guards, feasibility."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=goal|goal_plan_link, id/from/to/parentId/offset/contentOffset).")
     public String getGoal(
             @ToolParam(required = false, description = "progress|recept|timeline|guards|feasibility "
                     + "(alapértelmezés: progress).") String scope,
@@ -139,7 +140,7 @@ public class GoalTools {
     }
 
     /** scope=recept (mezo-xixu) — the goal's full segmented prescription: per-segment kcal/protein/
-     *  sleep/rest-days/rate/rationale, capped at 3 segments (the other scoped tools' list-cap idiom).
+     *  sleep/rest-days/rate/rationale, with every segment retained.
      *  {@code prescription == null} (goal not yet activated/evaluated) renders an honest
      *  "még nincs kiértékelve" rather than nulls. */
     private String renderRecept(GoalEntity goal, ToolContext toolContext) {
@@ -152,11 +153,15 @@ public class GoalTools {
         if (p.basis() != null) {
             b.append(" (").append(p.basis()).append(')');
         }
-        for (GoalPrescriptionJson.Segment seg : p.segments().stream().limit(3).toList()) {
+        for (GoalPrescriptionJson.Segment seg : p.segments()) {
             b.append('\n').append(seg.fromWeek() != null ? seg.fromWeek() : "?")
                     .append('-').append(seg.toWeek() != null ? seg.toWeek() : "?").append(". hét: ")
                     .append(seg.kcal() != null ? seg.kcal() : "?").append(" kcal, ")
                     .append(seg.proteinG() != null ? seg.proteinG() : "?").append(" g fehérje");
+            if (seg.carbsG() != null) b.append(", ").append(seg.carbsG()).append(" g szénhidrát");
+            if (seg.fatG() != null) b.append(", ").append(seg.fatG()).append(" g zsír");
+            if (seg.trainingDayKcal() != null) b.append(", edzésnap ").append(seg.trainingDayKcal()).append(" kcal");
+            if (seg.restDayKcal() != null) b.append(", pihenőnap ").append(seg.restDayKcal()).append(" kcal");
             if (seg.sleepTargetH() != null) {
                 b.append(", alvás ")
                         .append(ToolText.huHours(seg.sleepTargetH())).append(" h");
@@ -214,7 +219,7 @@ public class GoalTools {
 
     private static void appendNotes(StringBuilder b, List<String> notes) {
         if (notes != null && !notes.isEmpty()) {
-            b.append(" (").append(String.join("; ", notes.stream().limit(3).toList())).append(')');
+            b.append(" (").append(String.join("; ", notes)).append(')');
         }
     }
 
@@ -230,7 +235,7 @@ public class GoalTools {
         }
         b.append(": ").append(f.verdict());
         if (f.notes() != null && !f.notes().isEmpty()) {
-            b.append('\n').append(String.join("\n", f.notes().stream().limit(3).toList()));
+            b.append('\n').append(String.join("\n", f.notes()));
         }
         return b.toString();
     }
@@ -246,7 +251,7 @@ public class GoalTools {
         if (timeline.getLinks().isEmpty()) {
             b.append("; nincs hozzárendelt terv");
         } else {
-            for (GoalPlanLinkResponse link : timeline.getLinks().stream().limit(3).toList()) {
+            for (GoalPlanLinkResponse link : timeline.getLinks()) {
                 b.append('\n').append(link.getStartWeek()).append('-').append(link.getEndWeek())
                         .append(". hét: ").append(link.getPlanType().getValue());
                 if (link.getPlan() != null && link.getPlan().getTitle() != null) {
@@ -257,7 +262,7 @@ public class GoalTools {
         if (timeline.getGaps().isEmpty()) {
             b.append("\nLefedetlen hét: nincs");
         } else {
-            b.append("\nLefedetlen hetek: ").append(timeline.getGaps().stream().limit(3)
+            b.append("\nLefedetlen hetek: ").append(timeline.getGaps().stream()
                     .map(g -> g.getFromWeek() + "-" + g.getToWeek() + ". hét")
                     .collect(Collectors.joining(", ")));
         }

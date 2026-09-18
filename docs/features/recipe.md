@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -62,6 +62,8 @@ Contract (`api/feature/recipe/recipe.yml`):
 Error codes: `RECIPE_WORKSHOP_LLM_UNAVAILABLE` (503, companion off), `RECIPE_WORKSHOP_EXTRACT_FAILED` (502), `RECIPE_WORKSHOP_DRAFT_SERIALIZE_FAILED` (500).
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read complete recipe records and ingredient snapshots through the full-source reader. Summary tools explicitly report partial list coverage. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **Pantry** — every line FK's `pantry_item`; definition reads (name/macros/NOVA/category at score time) go through `item.getCatalog()`. Deleting a pantry item is RESTRICTed by the FK (a live recipe line blocks a hard delete); soft-delete only hides the item from new line resolution — an existing line's frozen snapshot survives, but the fit score degrades honestly once the item can no longer be re-resolved. See [`pantry.md`](pantry.md) §5. **Macros are honestly nullable (`mezo-6omv`, `mezo-xaq5`)** — `PantryMacros`' fields are nullable on the wire and the read model no longer fabricates `""`/`0` defaults for a definition that simply has no value, so a recipe line built on an unmeasured item renders „nincs adat" instead of a plausible-looking zero. Consumers (including `RecipeEditorPage`) must null-guard rather than arithmetic on a missing macro.
 - **Meal** — `MealService`'s recipe arm computes the per-serving rollup (`MealService.perServing`), applies `recipe_overrides` keyed by `lineOrder` with a `pantryItemId` consistency check, and drives `RecipeLogs`.

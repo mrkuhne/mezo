@@ -1,6 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
-import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.ConversationProperties;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.tools.RecordingToolCallback;
@@ -39,7 +39,17 @@ public final class TurnProvenance {
     public record Built(ToolCallsEnvelope ask, ToolOutcomesEnvelope result) {
     }
 
-    public static Built build(List<ToolCallAudit.ToolOutcome> outcomes, CompanionProperties.Turn.Provenance limits) {
+    /**
+     * @param limits ONE storage budget, read from {@code mezo.companion.conversation}
+     *        ({@code result-max-chars} / {@code results-max-chars}). Deliberately not a second
+     *        provenance-specific knob: the stored text has exactly one home
+     *        ({@code ai_message.tool_outcomes}) and two consumers — the chat card and the
+     *        conversation-history replay — so two knobs for one budget would be the same drift
+     *        this unification removes. The replay is the more demanding consumer, so its measured
+     *        values win; the card is unaffected because the UI clamps the outcome to 2 lines with
+     *        tap-to-expand.
+     */
+    public static Built build(List<ToolCallAudit.ToolOutcome> outcomes, ConversationProperties limits) {
         if (outcomes == null || outcomes.isEmpty()) {
             return new Built(null, null);
         }
@@ -50,10 +60,10 @@ public final class TurnProvenance {
             ask.add(new ToolCallsEnvelope.ToolCall(READ, outcome.name(), compactArgs(outcome.args()), outcome.why()));
             String raw = outcome.result() == null ? NO_OUTPUT : outcome.result();
             String text;
-            if (spent >= limits.totalChars()) {
+            if (spent >= limits.resultsMaxChars()) {
                 text = OVER_BUDGET;
-            } else if (raw.length() > limits.perOutcomeChars()) {
-                text = raw.substring(0, limits.perOutcomeChars()) + TRUNCATED;
+            } else if (raw.length() > limits.resultMaxChars()) {
+                text = raw.substring(0, limits.resultMaxChars()) + TRUNCATED;
             } else {
                 text = raw;
             }

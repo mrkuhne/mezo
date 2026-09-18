@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
@@ -160,6 +160,8 @@ Constraints/indexes: `fk_pantry_item_catalog_id_pantry_catalog_id` (`RESTRICT` �
 **Accepted limit — not every fabricated default was worth removing.** `SupplementStashResponse.dose`/`protocol`/`timing` and `PantryStock.unit` (the stock quantity's unit) all still map a `null` entity column to `""` in `PantryMapper` (`toSupplementResponse`, `toStock`). These are deliberately left alone: each is free text living on the caller's OWN `pantry_item` row, never on the shared `pantry_catalog` definition, so `definitionDiffers` never sees them, there is no shared row to silently rewrite, and no 403 to trip — fixing them would be a pure cosmetic improvement (an empty string vs. a "not set" state in a text field) with none of the correctness payoff the definition-field fixes have.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can page through owned pantry items/imports and the shared pantry catalogue, including stored nutrition and product details. Summary tools explicitly report partial list coverage. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **Meal** — `MealService` snapshots macro/nutrient facts from `item.getCatalog()` at log time (frozen snapshot, ADR 0026); `MealAiDraftService` + `PantryNameIndex` match free-text/photo food mentions against the GLOBAL catalog (not just the caller's shelf) and auto-`ensureItem` the caller onto the shelf at match time.
 - **Recipe** — `RecipeService` snapshots/`NOVA`/category are live reads off `item.getCatalog()`; `RecipeWorkshopService`/`RecipeWorkshopValidator` do the same name-match + auto-add over the global catalog via `PantryNameIndex`.

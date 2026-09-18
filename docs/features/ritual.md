@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -159,6 +159,8 @@ IslandEvening (Este island hero)      RitualPage (act state machine, /ritual)
 **The `evening_ritual` habit + its `ritual_closed` metric** live in the **habit** catalog/evaluator (`content/habit-catalog.json`, `HabitEvaluator`), documented in [habit.md §4](habit.md)/[§5](habit.md) — not restated here; this doc documents only the `RitualDayRepository` read they perform.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read saved ritual reflections and closure details through the owner-scoped full-source reader. Closed reflections are also indexed as complete, ordered memory chunks. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 All backend dependencies are **pure reads** — ritual depends on {sleep goal}; nothing backend-side depends back on ritual **except** habit's evaluator read (a one-way pure read, not a cycle).
 

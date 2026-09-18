@@ -81,6 +81,19 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
     @Autowired private Map<String, MemoryRetriever> retrievers;
 
     @Test
+    void testLexicalRetrieve_shouldUseContextualQuery_whenFollowUpHasNoStandaloneTopic() {
+        UUID owner = databasePopulator.populateUser("hybrid-followup@test.local");
+        UUID expected = item(owner, "journal_entry", "Ultramaratonra készültem a hegyekben.", AS_OF.minusDays(2), 0);
+        var history = List.of(new Turn(USER, "Beszéljünk az ultramaratonról."));
+        var request = new MemoryRequest(owner, CHAT_AMBIENT, "És előtte?", history, AS_OF, 1200, null, false);
+        var query = new PreparedMemoryQuery(
+                io.mrkuhne.mezo.feature.companion.memory.dto.QueryMode.CONTEXT_DEPENDENT,
+                request.currentQuery(), "ultramaraton", Optional.empty(), Optional.empty());
+        assertThat(lexical.retrieve(new RetrievalInput(request, query, "gemini-embedding-001-768-v1", 30, null)))
+                .extracting(MemoryCandidate::sourceId).contains(expected);
+    }
+
+    @Test
     void testWiring_shouldExposeFourStableRetrieverBeanNames() {
         assertThat(retrievers).containsOnlyKeys("dense", "lexical", "facts", "graph");
     }

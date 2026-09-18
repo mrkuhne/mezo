@@ -64,7 +64,8 @@ public class GrowthTools {
             + "mind a 9 jelvény állása (elért/cél) + a feloldott perkek. scope=titles — a "
             + "felszerelt cím és a birtokolt címek listája. Használd, amikor a user XP-ről, "
             + "szintekről, skillekről, streakről, címekről vagy eredményekről kérdez. scope: skills "
-            + "(alapértelmezés), week, achievements, titles.")
+            + "(alapértelmezés), week, achievements, titles."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=skill_progress|level_up_event|gamification_profile, id/from/to/parentId/offset/contentOffset).")
     public String getGrowth(
             @ToolParam(required = false, description = "skills|week|achievements|titles (alapértelmezés: skills).")
             String scope,

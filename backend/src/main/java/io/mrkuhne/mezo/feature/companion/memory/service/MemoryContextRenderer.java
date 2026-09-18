@@ -31,7 +31,7 @@ public class MemoryContextRenderer {
         }
         StringBuilder result = new StringBuilder(HEADER);
         for (MemoryContextItem item : items) {
-            String line = line(item.label(), item.occurredOn(), item.indicator(), item.content());
+            String line = line(item.label(), item.occurredOn(), item.indicator(), item.content(), item.sourceKind(), item.sourceId(), item.memoryItemId());
             if (result.length() + line.length() > maxChars) {
                 continue;
             }
@@ -61,13 +61,25 @@ public class MemoryContextRenderer {
 
     int candidateLineLength(FusedCandidate candidate, LocalDate asOf) {
         MemoryCandidate item = candidate.candidate();
-        return line(item.label(), item.occurredOn(), indicator(item, asOf), item.content()).length();
+        return line(item.label(), item.occurredOn(), indicator(item, asOf), item.content(), item.sourceKind(), item.sourceId(), item.memoryItemId()).length();
     }
 
-    private static String line(String label, LocalDate occurredOn, String indicator, String content) {
+    private static String line(String label, LocalDate occurredOn, String indicator, String content, String kind, java.util.UUID sourceId, java.util.UUID itemId) {
         String safeLabel = label == null || label.isBlank() ? "emlék" : label;
         String date = occurredOn == null ? "n/a" : occurredOn.toString();
         String marker = indicator == null || indicator.isBlank() ? "" : "|" + indicator;
-        return "- " + safeLabel + "|" + date + marker + "|" + content + "\n";
+        String source = switch (kind) {
+            case "chat_turn" -> "ai_message";
+            case "weekly_summary", "monthly_summary" -> "period_summary";
+            case "reflection" -> "ritual_day";
+            case "decision" -> "decision_entry";
+            case "gratitude" -> "gratitude_entry";
+            case "activity_note" -> "activity_log";
+            case "checkin_note" -> "check_in";
+            default -> kind;
+        };
+        String reference = sourceId == null ? "" : " [source=" + source + ";id=" + sourceId
+                + (itemId == null ? "" : ";memory_item=" + itemId) + "]";
+        return "- " + safeLabel + "|" + date + marker + "|" + content + reference + "\n";
     }
 }

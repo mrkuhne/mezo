@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.ConversationProperties;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
@@ -17,9 +17,17 @@ import org.junit.jupiter.api.Test;
  */
 class TurnProvenanceTest {
 
-    /** Generous defaults; only cases 5/6 shrink these to force truncation/over-budget. */
-    private static final CompanionProperties.Turn.Provenance DEFAULT_LIMITS =
-            new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *", 4000, 20000);
+    /**
+     * The production storage budget, which since the mezo-rj214.10 unification is the ONE budget
+     * in {@code mezo.companion.conversation} (result-max-chars / results-max-chars) rather than a
+     * second provenance-specific pair. Only cases 5/6 shrink it to force truncation/over-budget,
+     * and they stay inside the property's own validation range (500 / 2000 minimums).
+     */
+    private static final ConversationProperties DEFAULT_LIMITS = limits(8000, 40000);
+
+    private static ConversationProperties limits(int resultMaxChars, int resultsMaxChars) {
+        return new ConversationProperties(true, 3, 80, 20, 12000, 100000, resultMaxChars, resultsMaxChars);
+    }
 
     @Test
     void emptyListYieldsBothEnvelopesNull() {
@@ -86,24 +94,22 @@ class TurnProvenanceTest {
 
     @Test
     void resultLongerThanPerOutcomeCapIsTruncatedWithSuffixKeepingPrefix() {
-        CompanionProperties.Turn.Provenance tightPerOutcome =
-                new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *", 200, 20000);
-        String longResult = "a".repeat(300);
+        ConversationProperties tightPerOutcome = limits(500, 40000);
+        String longResult = "a".repeat(700);
         ToolCallAudit.ToolOutcome outcome = new ToolCallAudit.ToolOutcome("get_meals", "{}", longResult, "miert");
 
         TurnProvenance.Built built = TurnProvenance.build(List.of(outcome), tightPerOutcome);
 
         String text = built.result().outcomes().get(0).text();
-        assertThat(text).startsWith("a".repeat(200));
+        assertThat(text).startsWith("a".repeat(500));
         assertThat(text).endsWith(" …(rövidítve)");
-        assertThat(text).isEqualTo("a".repeat(200) + " …(rövidítve)");
+        assertThat(text).isEqualTo("a".repeat(500) + " …(rövidítve)");
     }
 
     @Test
     void onceRunningTotalPassesBudgetFurtherOutcomesGetOverBudgetTextButAreNeverDropped() {
-        CompanionProperties.Turn.Provenance tightTotal =
-                new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *", 4000, 1000);
-        ToolCallAudit.ToolOutcome first = new ToolCallAudit.ToolOutcome("a", "{}", "x".repeat(1000), "w1");
+        ConversationProperties tightTotal = limits(8000, 2000);
+        ToolCallAudit.ToolOutcome first = new ToolCallAudit.ToolOutcome("a", "{}", "x".repeat(2000), "w1");
         ToolCallAudit.ToolOutcome second = new ToolCallAudit.ToolOutcome("b", "{}", "some more text", "w2");
         ToolCallAudit.ToolOutcome third = new ToolCallAudit.ToolOutcome(
                 "c", "{}", PlanExecutor.STEP_TIMEOUT, "w3");

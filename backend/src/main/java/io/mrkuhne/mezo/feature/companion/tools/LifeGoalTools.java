@@ -30,7 +30,8 @@ public class LifeGoalTools {
             + "(mai találat + heti irány), és a ha–akkor tervek (melyik él ma). Használd, amikor "
             + "a user az életcéljairól, életterületeiről, pillérjeiről, ha–akkor terveiről kérdez "
             + "(pl. „hogy állok a kapcsolatok célommal?”, „melyik pillérem a leggyengébb?”). "
-            + "A számszerű súly/kalória-célhoz NEM ez kell, az a get_goal.")
+            + "A számszerű súly/kalória-célhoz NEM ez kell, az a get_goal."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=life_goal|life_goal_pillar|life_goal_pillar_day, id/from/to/parentId/offset/contentOffset).")
     public String getLifeGoals(ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
         LifeGoalSource source = lifeGoalSource.getIfAvailable();
@@ -48,6 +49,7 @@ public class LifeGoalTools {
             }
             b.append("Életcél: ").append(goal.title())
                 .append(" [").append(LifeGoalText.dimensionHu(goal.dimension())).append(']')
+                .append(", keret: ").append(goal.frame())
                 .append(", heti irány: ").append(LifeGoalText.arrowWord(goal.arrow()));
             if (goal.weekPercent() != null) {
                 b.append(", heti szint: ").append(goal.weekPercent()).append('%');
@@ -72,6 +74,6 @@ public class LifeGoalTools {
             }
             ToolContexts.audit(toolContext).addRef("LifeGoal", goal.title());
         }
-        return b.toString();
+        return b + ToolText.detailHint("life_goal|life_goal_pillar");
     }
 }
