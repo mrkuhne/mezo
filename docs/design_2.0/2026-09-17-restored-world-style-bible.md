@@ -748,3 +748,26 @@ block is A.1 rows plus A.4's dynamic-tint wash — and two rules:
    that *carry a number or a promise* (captures, posters, tiles, the note, the two CTAs) become
    wash tiles. Washing everything flattens the page's hierarchy just as thoroughly as Titanium's
    borders did.
+
+## Appendix B — the Nap/Mai re-dress (`mezo-ju4j6.10`, Phase 6)
+
+The Nap landing is not a card page: it is one **orbit** — a centred presence mark with five
+action nodes around it — plus the fuel instrument, Mezo's observation and the day's moments.
+Geometry, routes and behaviour were untouched; three decisions are worth copying.
+
+1. **A hero that is not a card is a halo, and a mark that is not a card is a symbol.** The orbit's
+   cold lavender/sky fog became the §2.2 C halo (gold centre, lavender company), and the Titanium
+   presence mark — titanium petals + gold core in front of a live WebGL scene — became the **clay
+   Mezo symbol** over a need-coloured halo. The aura keeps its meaning (the first three needs,
+   dimmed per band); only the material changed. That centre box is the **Boop avatar's reserved
+   slot** (Phase 8b swaps the art, not the layout).
+2. **A retired material can take a dependency with it.** The 3D scene was the tree's only
+   `three.js` consumer, so retiring it removed the package as well (`TitanCompanion.tsx`,
+   `TitanScene.tsx` and the WebGL-gate test went with it; `todayScope.test.ts` pins them out).
+   A re-dress that leaves a dead 3D engine in the bundle is not finished.
+3. **One quantity, one face, app-wide** (owner, 2026-09-18). The Nap fuel instrument measured the
+   same three macros as Fuel · Mai but wore its own vocabulary: sky/amber/lavender arcs with
+   blurred gradient "beads". It now wears the Fuel faces — `--macro-protein/carbs/fat` and the
+   clay `i-hus` / `i-gabona` / `i-avokado` — so a macro looks the same wherever it appears. This
+   is A.2 rule 1 read forward: if two screens measure the same thing, the hue and the symbol are
+   part of the meaning, not of the skin.
