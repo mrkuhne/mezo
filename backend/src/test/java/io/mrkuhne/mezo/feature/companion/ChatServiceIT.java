@@ -135,7 +135,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
 
-        assertThat(resp.getContent()).contains("használd a kapott tool-okat");
+        assertThat(resp.getContent()).contains("használd a tool-okat");
         // mezo-xixu: terse question-type -> tool routing hint, present in EVERY system prompt.
         assertThat(resp.getContent()).contains("[Eszköz-útmutató]");
         assertThat(resp.getContent()).contains("get_exercise_records");
@@ -441,6 +441,31 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // A megőrzött guárdok — a klinikai tiltás mezo-lwmq óta gyógyszernév nélkül szól
         assertThat(echoed).contains("Gyógyszer adagolására vonatkozó változtatást");
         assertThat(echoed).contains("[Eszköz-útmutató]");
+    }
+
+    @Test
+    void testSendMessage_shouldStopTeachingHedgingButKeepGroundingAndActionRule_whenAssemblingPrompt() {
+        // mezo-rj214.7 / mezo-rj214.3: the rollback prompt must not teach the hedge-and-retract
+        // shape the honest-voice decision retired — it still teaches the opposite once cut.
+        UUID userId = databasePopulator.populateUser("chat-honest-voice@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia, mi volt ma?"));
+
+        String echoed = answer.getContent();
+        // The prescribed hedge vocabulary is gone — it is not taught as the safe default anymore.
+        // Asserted on the bare words, not the quoted forms: this pins the VOCABULARY itself,
+        // so a future edit cannot smuggle it back in with different quote marks.
+        assertThat(echoed).doesNotContain("tippelek", "erős a gyanúm", "ezt csak sejtem");
+        // The double hedge-and-retract closing line of the old few-shot is gone.
+        assertThat(echoed).doesNotContain("Tippelem, hogy az alvás a különbség, de ezt tényleg csak sejtem");
+        // What D2 explicitly preserves — inventing numbers/dates/past data stays forbidden, verbatim.
+        assertThat(echoed).contains("Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, "
+                + "ha a kontextusból, egy eszközhívásból vagy chat-honest-voice@test.local üzenetéből "
+                + "származik. Adatot kitalálni akkor is tilos, ha megjelölöd.");
+        // The action rule (mezo-rj214.3) now lands in the rollback prompt too.
+        assertThat(echoed).contains("Naplózni, menteni, módosítani vagy bármit elvégezni")
+                .contains("Soha ne állítsd, hogy elvégeztél valamit.");
     }
 
     @Test
