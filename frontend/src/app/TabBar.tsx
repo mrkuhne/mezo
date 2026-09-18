@@ -12,7 +12,8 @@ import {
   rememberRoute,
 } from '@/app/navModel'
 
-// Titanium navigation (mezo-jkh4): the bottom bar is a domain-switch mark (the Mezo
+// Docked navigation (mezo-jkh4; re-skinned to the restored world in mezo-ju4j6.4 —
+// style bible §7.4): the bottom bar is a domain-switch mark (the Mezo
 // companion mark + the CURRENT domain's name + a ⌃ caret) followed by that domain's
 // FOUR contextual tabs. The active domain is the first path segment; the active tab is
 // the longest-matching-prefix among the domain's four routes. Tapping the switch mark
