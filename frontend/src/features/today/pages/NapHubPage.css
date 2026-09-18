@@ -19,7 +19,8 @@
 .nap-center-orbit::before { content: ''; position: absolute; inset: 36px 32px 28px; border: 1px solid color-mix(in srgb,var(--dv-amber) 26%,transparent); border-radius: 50%; transform: rotate(-17deg); box-shadow: 0 0 0 18px color-mix(in srgb,var(--dv-amber) 4%,transparent),0 0 0 38px color-mix(in srgb,var(--dv-lav) 3%,transparent); pointer-events: none; }
 .nap-center-companion { position: absolute; width: 172px; height: 172px; left: calc(50% - 86px); top: 111px; z-index: 1; }
 
-/* Az öt művelet: agyag szimbólum ikon-pajzson (§3.1, §6) — se fém-gradiens, se ikon-glória. */
+/* Az öt művelet: PUSZTA agyag szimbólum (§6) — se fém-gradiens, se ikon-glória, és (owner
+   2026-09-18) se ikon-pajzs: a pályán a szimbólum maga áll, keret és korong nélkül, nagyobban. */
 .nap-center-node { position: absolute; width: 112px; min-height: 94px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: transparent; border: 0; z-index: 2; font-family: var(--ff-display); font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer; border-radius: 20px; }
 .nap-center-node small { font-size: 10.5px; color: var(--sub); font-weight: 500; }
 .nap-node-membrane { top: 5px; left: calc(50% - 56px); }
@@ -27,7 +28,7 @@
 .nap-node-pages { top: 116px; right: 0; }
 .nap-node-ribbon { bottom: 4px; left: 28px; }
 .nap-node-chat { bottom: 4px; right: 28px; }
-.nap-center-art { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 18px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); transition: transform .3s; }
+.nap-center-art { display: grid; place-items: center; width: 66px; height: 66px; transition: transform .3s; }
 .nap-center-node:hover .nap-center-art { transform: translateY(-3px); }
 .nap-center button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 3px; }
 
@@ -45,7 +46,7 @@
 /* 320px: a megemelt szemöldök- és címtipográfia lépcsőzése (stíluskönyv A.2 5. szabály). */
 @media (max-width: 360px) {
   .nap-center-node { width: 94px; font-size: 12px; }
-  .nap-center-art { width: 48px; height: 48px; border-radius: 16px; }
+  .nap-center-art { width: 56px; height: 56px; }
   .nap-node-membrane { left: calc(50% - 47px); }
   .nap-node-ribbon { left: 20px; }
   .nap-node-chat { right: 20px; }
