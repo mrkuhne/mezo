@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,6 +90,14 @@ public class ChallengeGenerator {
     private final ProactiveProperties properties;
     private final AppNotificationEmitter appNotificationEmitter;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S9 (mezo-eq85.9): same lazy idiom as {@code MemoirGenerator
+     *  #memoryContextBlock}. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+
+    /** mezo-eq85.9: this generator's own LLM-call feature/operation, shared with the
+     *  memory-retrieval audit row in {@link #memoryBlock} — the Task-8 single-constant guard.
+     *  {@code proactive_challenge} sits on {@code mezo.llm-log.budget.throttled-features}. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("proactive_challenge", "generate", null, null);
 
     record ExerciseCandidate(ExerciseEntity exercise, int maxWeightPr, int loggedSetCount) {
     }
@@ -123,8 +134,7 @@ public class ChallengeGenerator {
             log.debug("No exercise history for {} / {} — no challenges", userId, templateSessionId);
             return List.of();   // grounding gate
         }
-        String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_challenge", "generate", null, null),
+        String answer = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedChallenges parsed = parse(answer);
         if (parsed == null || parsed.challenges() == null) {
@@ -203,6 +213,12 @@ public class ChallengeGenerator {
         // with, so the snapshot describes exactly that session (see this method's javadoc).
         StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, date));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        // Memória mindenhol S9 (mezo-eq85.9): the CONFIRMED-pattern candidates' own titles ARE the
+        // memory query — same shape as PredictionGenerator's/ExperimentProposalGenerator's.
+        String memoryQuery = patterns.stream().map(PatternEntity::getTitle)
+                .collect(Collectors.joining("; "));
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, date, memoryQuery, CONTEXT.operation(), null);
+        payload.append(mem.block());
         payload.append("\n\nGYAKORLATOK (az exerciseIndex ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             ExerciseCandidate c = candidates.get(i);
@@ -224,6 +240,23 @@ public class ChallengeGenerator {
         }
         payload.append("\nKIHÍVÁS-TÍPUSOK: PR | Depth | Volume");
         return new Gather(payload.toString(), candidates, patterns, refCandidates);
+    }
+
+    /**
+     * Memória mindenhol S9 (mezo-eq85.9): the {@code [Hosszú távú memória]} block for this
+     * generator's own gather — {@code PREDICTION_EVIDENCE}/{@code deep=false}; same fail-open
+     * idiom and "no candidate-list entry" deviation as {@code PredictionGenerator#memoryBlock}
+     * (this gather's {@code patterns} index is likewise the model's {@code patternIndex} contract,
+     * and {@code exercises}/{@code refCandidates} are equally index-contracted).
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate asOf, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.PREDICTION_EVIDENCE, query, asOf, false,
+                CONTEXT.feature(), operation, entityId);
     }
 
     /** Exercise identity across rows: catalog id, else exact name (ExerciseRecordService idiom). */

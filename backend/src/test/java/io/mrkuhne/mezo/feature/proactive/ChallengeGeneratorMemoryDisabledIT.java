@@ -1,0 +1,76 @@
+package io.mrkuhne.mezo.feature.proactive;
+
+import static io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.axisVector;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.proactive.service.ChallengeGenerator;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
+/**
+ * Memória mindenhol S9 (mezo-eq85.9): {@code PREDICTION_EVIDENCE} disabled by config ⇒ the
+ * challenge generator's gather ships with no {@code [Hosszú távú memória]} block and writes no
+ * {@code memory_retrieval_run} row. Separate class — same precedent as {@code
+ * PredictionGeneratorMemoryDisabledIT}.
+ */
+@ActiveProfiles("companion-fake")
+@TestPropertySource(properties = "mezo.companion.memory-platform.policies.prediction-evidence.enabled=false")
+class ChallengeGeneratorMemoryDisabledIT extends AbstractIntegrationTest {
+
+    private static final String VERSION = "gemini-embedding-001-768-v1";
+
+    @Autowired private ChallengeGenerator generator;
+    @Autowired private UserPopulator userPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private PatternPopulator patternPopulator;
+    @Autowired private MemoryItemPopulator memoryPopulator;
+    @Autowired private MemoryItemRepository itemRepository;
+    @Autowired private MemoryRetrievalRunRepository runRepository;
+    @Autowired private FakeCompanionLlm fakeLlm;
+
+    @Test
+    void testGenerate_shouldShipWithNoMemoryBlockAndWriteNoRun_whenThePolicyIsDisabled() {
+        UUID user = userPopulator.createUser("challenge-memory-disabled@test.local").getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Meso", "active");
+        WorkoutSessionEntity session =
+                trainPopulator.createWorkoutSession(user, meso.getId(), "Pull", "pull", 0, "planned");
+        ExerciseEntity ex = trainPopulator.createExercise(user, session.getId(), "Chest Supported Row", 0);
+        trainPopulator.createExerciseSet(user, ex.getId(), 0);
+        trainPopulator.createExerciseSet(user, ex.getId(), 1);
+        // A CONFIRMED pattern is required so the memory query (the candidate patterns' own titles
+        // joined) is non-blank — otherwise MemoryContextBlock#render short-circuits on the BLANK
+        // query alone and this assertion would pass whether or not the policy is actually disabled.
+        patternPopulator.statistical(user, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
+        MemoryItemEntity item = memoryPopulator.item(user, "journal_entry", UUID.randomUUID(),
+                "Napló", "Régen is hasonló mintát figyeltél meg.", LocalDate.now().minusDays(3),
+                new String[0], new String[0], MemoryProvenanceEnvelope.empty());
+        item.setSalience(new BigDecimal("0.900"));
+        itemRepository.saveAndFlush(item);
+        memoryPopulator.vector(item, VERSION, axisVector(0));
+        long before = runRepository.count();
+
+        generator.generate(user, session.getId(), LocalDate.now());
+
+        assertThat(fakeLlm.lastUserMessage()).doesNotContain("[Hosszú távú memória]");
+        assertThat(runRepository.count()).isEqualTo(before);
+    }
+}

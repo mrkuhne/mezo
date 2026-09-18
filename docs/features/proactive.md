@@ -418,6 +418,17 @@ resolves to something.
   (same index resolution as `resolveConfidence`) stores the grounding pattern's id on
   `sourcePatternId` (bounds-checked, else null); `PredictionRepository.
   findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail page's impact-list read.
+  **Since Memória mindenhol S9 (`mezo-eq85.9`)** the gather also appends a `[Hosszú távú memória]`
+  block right after the facts block, via `MemoryContextBlock.render(userId,
+  ConsumerPolicy.PREDICTION_EVIDENCE, query, weekStart, false, "proactive_prediction", "generate",
+  null)`, reached through an `ObjectProvider<MemoryContextBlock>` (the S7/S8 idiom) — **its OWN
+  feature (`proactive_prediction`, via `CONTEXT.feature()`, the S8 single-`LlmCallContext`-constant
+  guard)**, because `proactive_prediction` sits on `mezo.llm-log.budget.throttled-features`. Query =
+  the CONFIRMED-pattern candidates' own titles joined; `asOf = weekStart`; **not deep** (a
+  latency-gated call, unlike diagnosis below). **Deviation from the task-9 plan:** contributes NO
+  refs and adds NO entry to `PredictionGather.candidates()` — that list's INDEX is the model's
+  `patternIndex` contract, and a memory item there would corrupt `resolveSourcePatternId`. Fail-open:
+  [`companion.md`](companion.md) §1 "Memória mindenhol S9".
 - **`PredictionValidationService`** — pure-code, LLM-free: for each `pending` row whose window has
   closed (`valid_to < today`), compares the window's metric average/count against the **preceding 7
   days** and flips to `validated`/`missed` with a code-formatted HU `actual`. The v1 metric catalog
@@ -464,6 +475,12 @@ resolves to something.
   `sourcePatternId` (this generator carries no `confidence` field, so this is the only
   pattern-derived field it persists); `ExperimentRepository.
   findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail page's impact-list read.
+  **Since Memória mindenhol S9 (`mezo-eq85.9`)** the gather also appends a `[Hosszú távú memória]`
+  block right after the facts block — same `PREDICTION_EVIDENCE`/`deep=false` contract and same "no
+  candidate-list entry" deviation as `PredictionGenerator` above (`Gather.candidates()`'s index is
+  likewise the `patternIndex` contract). Query = the CONFIRMED-pattern candidates' own titles
+  joined; `asOf` = the owner-local today. Fail-open: [`companion.md`](companion.md) §1 "Memória
+  mindenhol S9".
 - **`ExperimentOutcomeService`** — deterministic, LLM-free: for each `active` experiment whose window
   closed (`start_date + total_days <= today`), the shared **`MetricWindowEvaluator`** compares the
   experiment window `[start, start+total-1]` vs the equally-long baseline before start → `completed`
@@ -524,7 +541,14 @@ evaluator**. Design of record:
   confidence/refs. **S2 (`mezo-tk88.2`)** — `resolveSourcePatternId` (same index resolution as
   `resolveConfidence`) stores the grounding pattern's id on `sourcePatternId` beside `confidence`;
   `ChallengeRepository.findByCreatedByAndSourcePatternIdAndDeletedFalse` is the pattern-detail
-  page's impact-list read. **Generation guard (`mezo-cd8s`)** — the lazy prep-read never generates once the
+  page's impact-list read. **Since Memória mindenhol S9 (`mezo-eq85.9`)** the gather also appends a
+  `[Hosszú távú memória]` block right after the facts block — same `PREDICTION_EVIDENCE`/
+  `deep=false` contract as `PredictionGenerator`/`ExperimentProposalGenerator`; query = the
+  CONFIRMED-pattern candidates' own titles joined (this generator's ONE pattern-typed list);
+  `asOf` = the workout `date`. No candidate-list entry in ANY of this generator's three
+  index-contracted lists (`exercises`, `patterns`, `refCandidates`) — same deviation as the other
+  two P-stage generators. Fail-open: [`companion.md`](companion.md) §1 "Memória mindenhol S9".
+  **Generation guard (`mezo-cd8s`)** — the lazy prep-read never generates once the
   day's instance is **`completed`** (`ProactiveChallengeService.instanceCompleted` via
   `findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc`): a finished workout is over,
   so no new proposal appears post-hoc.
@@ -1796,7 +1820,25 @@ The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
    **exactly once** in one numbered list (unlike the weekly gather, which renders labels twice).
    Prior diagnosis-sourced experiments and their outcomes are appended as CONTEXT ONLY — they
    produce no candidates, because a prior experiment is something not to repeat, not evidence to
-   cite. This is what makes a second run non-blind.
+   cite. This is what makes a second run non-blind. **Since Memória mindenhol S9 (`mezo-eq85.9`)**
+   the render also appends a `[Hosszú távú memória]` block right after the numbered
+   EVIDENCIA-JELÖLTEK list (before the prior-experiments context), via `MemoryContextBlock.render(
+   userId, ConsumerPolicy.PREDICTION_EVIDENCE, query, today, true, "proactive_diagnosis",
+   "generate", null)`, reached through this class' own `ObjectProvider<MemoryContextBlock>` — this
+   PURE-CODE gather has no `LlmCallContext` of its own, so it shares `DiagnosisGenerator.CONTEXT`
+   (package-visible for exactly this) rather than hard-coding a second copy of the
+   `"proactive_diagnosis"` label. **`deep = true`** (unlike the other three Memória S9 surfaces
+   above) — diagnosis is `DiagnosisGenerator`'s offline SMART-tier pass, nobody is waiting on it.
+   Query = the just-rendered evidence candidates' own label/detail lines joined (the task-9 brief's
+   "fatigue evidence summary line"), built purely from the `candidates` this gather already
+   collects — no new read. **Deviations from the task-9 plan, both load-bearing:** (1) no memory
+   entry is added to `candidates` — that list is BOTH the model's `evidenceIndexes` contract AND is
+   persisted verbatim into `DiagnosisEvidenceEnvelope`; a new `EvidenceItem` kind would be a schema
+   change out of scope; (2) the plan's suggested refactor — replacing the raw
+   `knowledgeFactRepository` read below with `renderPromptBlock` "while there" — was **skipped
+   entirely**: each fact here becomes an indexed `EvidenceItem`, and doing that refactor would
+   delete indexed candidates and silently shift every index after them. Fail-open:
+   [`companion.md`](companion.md) §1 "Memória mindenhol S9".
 2. **`DiagnosisGenerator`** (`service/`, marker `FARADTSAG-DIAGNOZIS-FELADAT`) — ONE SMART-tier
    call, strict JSON `{verdict, confidence, suspects[{title, claim, evidenceIndexes, strength,
    probe{text, metricKey, expectedDirection, totalDays}}]}`. **Drop-on-violation:** empty or
@@ -2665,6 +2707,29 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   `MORNING_BRIEFING`: a real retrieval's retriever tasks need their own pooled connection, which a
   class-transactional test's single held connection cannot supply. `MemoirGeneratorIT`/
   `WeeklyReviewGeneratorIT` needed no such change — neither is class-transactional.
+- **`PredictionGeneratorMemoryIT`/`ExperimentProposalGeneratorMemoryIT`/`ChallengeGeneratorMemoryIT`/
+  `DiagnosisGeneratorMemoryIT` (2 each, `mezo-eq85.9`)** — the same idiom applied to the four
+  forward-looking surfaces (none class-transactional already — the `AppNotificationEmitter`
+  `REQUIRES_NEW` deadlock precedent, bd mezo-gzhp.1 — so no change needed there): a seeded
+  `memory_item`/`memory_vector` reaches the fake LLM's recorded payload as a `[Hosszú távú memória]`
+  block and the audited run carries `PREDICTION_EVIDENCE`. None of the four asserts a ref-candidate
+  entry (task-9 codebase notes Deviation 1: each generator's candidate list(s) are index-contracted
+  by the model's own answer format, so no memory item is ever added to them). Each also proves a
+  `FakeEmbeddingAdapter.FAIL_EMBED` marker planted in the memory query — a second, custom-titled
+  CONFIRMED pattern for prediction/experiment/challenge (since `PatternPopulator.statistical`
+  always titles its row identically), a marker-titled CONFIRMED pattern's mechanism/title for
+  diagnosis (folded into its evidence-summary query) — still lets the surface run, with the audited
+  run's `dense` retriever trace carrying a non-null `error`. The "policy disabled" case is a
+  separate class per surface (`PredictionGeneratorMemoryDisabledIT`/
+  `ExperimentProposalGeneratorMemoryDisabledIT`/`ChallengeGeneratorMemoryDisabledIT`/
+  `DiagnosisGeneratorMemoryDisabledIT`, 1 test each, own `@TestPropertySource` disabling
+  `prediction-evidence`) — the S8 precedent. **A review-caught trap while building these:**
+  `ChallengeGeneratorMemoryDisabledIT`'s first draft seeded no CONFIRMED pattern, so the memory
+  query was BLANK and `MemoryContextBlock#render` short-circuited on the blank-query guard alone —
+  the assertion passed whether or not the policy was actually disabled. Fixed by seeding a
+  CONFIRMED pattern (verified: swapping the generator's policy to `WEEKLY_MEMOIR` now fails the test
+  as expected, both before and after the fix — before the fix it did NOT fail, proving the original
+  test was vacuous).
 - **`CompanionMessageEventIT` (4)** — logging fresh sleep creates the sleep-reaction message;
   logging a backfilled sleep date does NOT (freshness guard); logging today's weight creates the
   weight-reaction message; logging a backfilled weight date does NOT. Exercises the REAL
@@ -3563,13 +3628,13 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentJob.java` — **P2** two `@Scheduled` crons (Mon-06:45 `runPropose` + daily-06:20 `runOutcome`, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentOutcomeService.java` — **P2** deterministic outcome eval (active window-closed → completed via `MetricWindowEvaluator`; null = inconclusive).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveChallengeService.java` — **HBWI** the challenge read + WRITE path (`getChallenges` = list · lazy generate (`date==today`) · lazy resolve accepted; `decide` with the 404/409 guards; dismissed excluded).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`. **Memória mindenhol S9** (`mezo-eq85.9`) added `ObjectProvider<MemoryContextBlock>` + `CONTEXT` (`proactive_challenge`) + `memoryBlock` so the gather appends a `[Hosszú távú memória]` block right after the facts block (no refs — see §1).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`. **Memória mindenhol S8** (`mezo-eq85.8`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`firstChars` so the gather appends a `[Hosszú távú memória]` block right after the facts block (no ref candidates — this generator has no anchor list).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record. **Memória mindenhol S8** (`mezo-eq85.8`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryAnchorCandidates`/`firstChars` so the gather appends a `[Hosszú távú memória]` block and its ref candidates into the numbered HORGONY-JELÖLTEK list.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` persists the grounding pattern id on `sourcePatternId` (the only pattern-derived field this generator stores).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` also persists the grounding pattern id on `sourcePatternId`. **Memória mindenhol S9** (`mezo-eq85.9`) added `ObjectProvider<MemoryContextBlock>` + `CONTEXT` (`proactive_prediction`) + `memoryBlock` so the gather appends a `[Hosszú távú memória]` block right after the facts block (no refs — see §1).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`. **S2 (`mezo-tk88.2`)** `resolveSourcePatternId` persists the grounding pattern id on `sourcePatternId` (the only pattern-derived field this generator stores). **Memória mindenhol S9** (`mezo-eq85.9`) added `ObjectProvider<MemoryContextBlock>` + `CONTEXT` (`proactive_experiment`) + `memoryBlock` so the gather appends a `[Hosszú távú memória]` block right after the facts block (no refs — see §1).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toFeedResponse` replaces `toBriefingResponse`+`toHeartbeatResponse`; …+ `toPredictionResponse` + `toExperimentResponse` + **`toChallengeResponse`** (`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, derived `typeLabel`/`target` via `@Mapping(expression=…)`); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ChallengeDisplay.java` — **HBWI** the static `typeLabel`/`target` derivation helpers, deliberately OUTSIDE the `@Mapper` interface (§9 gotcha hh — a String→String default method there would be auto-selected as an implicit converter for every String property).
 
@@ -3730,8 +3795,14 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   + schemas (`DiagnosisResponse`, `DiagnosisSuspect`, `DiagnosisEvidenceItem`,
   `DiagnosisGenerateRequest`), tag `Diagnosis` → `DiagnosisApi`; registered in `api/generate/merge.yml`.
 - `feature/proactive/config/DiagnosisProperties.java` — window / baseline / coverage / min-domains / quota.
-- `feature/proactive/service/FatigueEvidenceCollector.java` — the pure-code gather.
+- `feature/proactive/service/FatigueEvidenceCollector.java` — the pure-code gather. **Memória
+  mindenhol S9** (`mezo-eq85.9`) added `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/
+  `memoryQuery` so `render` appends a `[Hosszú távú memória]` block after the numbered
+  EVIDENCIA-JELÖLTEK list — `deep=true`, sharing `DiagnosisGenerator.CONTEXT`'s feature label (no
+  `LlmCallContext` of its own; see §1).
 - `feature/proactive/service/DiagnosisGenerator.java` — the one SMART call + bounds-checking.
+  **Memória mindenhol S9** extracted the inline `LlmCallContext` into a package-visible
+  `static final CONTEXT` so `FatigueEvidenceCollector` can share its `proactive_diagnosis` label.
 - `feature/proactive/service/DiagnosisService.java` — reads, quota, `stale`, probe→experiment.
 - `feature/proactive/service/LogFreshnessProbe.java` — the shared stale probe (also used by the weekly review).
 - `feature/proactive/entity/DiagnosisEntity.java` + `DiagnosisEvidenceEnvelope.java` + `DiagnosisSuspectsEnvelope.java`.

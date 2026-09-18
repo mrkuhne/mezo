@@ -56,6 +56,14 @@ public class DiagnosisGenerator {
     private static final Set<String> DIRECTIONS = Set.of("up", "down", "stable");
     private static final Set<String> STRENGTHS = Set.of("strong", "moderate", "weak");
 
+    /** mezo-eq85.9: this generator's own LLM-call feature/operation. Package-visible (not
+     *  {@code private}) so {@link FatigueEvidenceCollector} — the PURE-CODE gather this generator
+     *  delegates to — can share the SAME label for its memory-retrieval audit row rather than
+     *  hard-coding a second copy; the Task-8 single-constant guard, applied across the two classes
+     *  the {@code DiagnosisGenerator}/{@code FatigueEvidenceCollector} split already has. {@code
+     *  proactive_diagnosis} sits on {@code mezo.llm-log.budget.throttled-features}. */
+    static final LlmCallContext CONTEXT = new LlmCallContext("proactive_diagnosis", "generate", null, null);
+
     /** The shared instruction block — the recipe supplies the question sentence up front. */
     private static final String PROMPT_RULES =
             "Válaszolj KIZÁRÓLAG a megadott evidencia-jelöltekből. "
@@ -106,8 +114,7 @@ public class DiagnosisGenerator {
             log.debug("Not enough data for a fatigue diagnosis for {}", userId);
             return null;
         }
-        String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_diagnosis", "generate", null, null),
+        String answer = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, prompt(recipe)), gather.payload()));
         ParsedDiagnosis parsed = parse(answer);
         if (parsed == null || parsed.verdict() == null || parsed.verdict().isBlank()

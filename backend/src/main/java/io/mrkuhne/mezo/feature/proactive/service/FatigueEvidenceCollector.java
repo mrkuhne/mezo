@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
@@ -18,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -55,6 +59,11 @@ public class FatigueEvidenceCollector {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final ExperimentRepository experimentRepository;
     private final DiagnosisProperties properties;
+    /** Memória mindenhol S9 (mezo-eq85.9): same lazy idiom as {@code MemoirGenerator
+     *  #memoryContextBlock}. This class has no {@code LlmCallContext} of its own — it shares
+     *  {@link DiagnosisGenerator#CONTEXT}, the generator it is a PURE-CODE gather for (see that
+     *  field's javadoc). */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     public record FatigueGather(String payload, List<EvidenceItem> candidates, int domainCount) {
     }
@@ -143,8 +152,38 @@ public class FatigueEvidenceCollector {
             }
             payload.append('\n');
         }
+        // Memória mindenhol S9 (mezo-eq85.9): the just-rendered evidence candidates' own
+        // label/detail lines ARE the memory query — this recipe's "evidence summary line" (the
+        // task-9 brief's phrase), built purely from the `candidates` this gather already has, no
+        // new read. deep=true (unlike the other three Part-B surfaces): diagnosis is DiagnosisGenerator's
+        // offline SMART-tier pass, nobody is waiting on it (see DiagnosisGenerator#CONTEXT).
+        payload.append(memoryBlock(userId, today, memoryQuery(candidates)).block());
         appendPriorExperiments(userId, payload);
         return payload.toString();
+    }
+
+    private static String memoryQuery(List<EvidenceItem> candidates) {
+        return candidates.stream()
+                .map(item -> item.detail() == null ? item.label() : item.label() + " " + item.detail())
+                .collect(Collectors.joining("; "));
+    }
+
+    /**
+     * Memória mindenhol S9 (mezo-eq85.9): the {@code [Hosszú távú memória]} block for the
+     * diagnosis's own gather — {@code PREDICTION_EVIDENCE}/{@code deep=true}; same fail-open idiom
+     * as {@code MemoirGenerator#memoryBlock}. Deviation from the plan (task-9 codebase notes): does
+     * NOT add a memory entry to {@code candidates} — that list is the model's {@code
+     * evidenceIndexes} contract AND is persisted verbatim into {@code DiagnosisEvidenceEnvelope};
+     * a new {@code EvidenceItem} kind is a contract change out of this task's scope. Uses {@link
+     * DiagnosisGenerator#CONTEXT} rather than a constant of its own — see that field's javadoc.
+     */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate asOf, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.PREDICTION_EVIDENCE, query, asOf, true,
+                DiagnosisGenerator.CONTEXT.feature(), DiagnosisGenerator.CONTEXT.operation(), null);
     }
 
     /**
