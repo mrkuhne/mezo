@@ -79,6 +79,15 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
             )
           })}
         </div>
+        {/* Az oldal-leltár bejárata (mezo-ju4j6.17). Itt van, és nem egy ötödik fülben, hogy
+            a négy fül a teljes szélességét megtartsa — pont amíg azt mérlegeljük, jól vannak-e
+            tagolva. A horgony a JELENLEGI területre nyitja a listát, nem a tetejére. */}
+        <button type="button" className="domain-all" onClick={() => {
+          onClose()
+          navigate(`/minden${currentDomainId ? `#${currentDomainId}` : ''}`)
+        }}>
+          Minden oldal <b aria-hidden="true">→</b>
+        </button>
       </div>
     </div>, target,
   )

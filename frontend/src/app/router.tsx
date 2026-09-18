@@ -117,6 +117,7 @@ import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
+import MindenOldalPage from '@/app/MindenOldalPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
 import { DimensionPage } from '@/features/character/pages/DimensionPage'
@@ -556,6 +557,10 @@ export const routes: RouteObject[] = [
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).
       { path: 'ritual', element: <RitualPage /> },
+      // Az oldal-leltár (mezo-ju4j6.17) — a területváltó alsó sorából nyílik, nem fülből.
+      // Domain-en KÍVÜL él szándékosan: minden területet egyszerre mutat, és a `#nap`…`#me`
+      // horgonnyal arra a szakaszra nyit, ahonnan érkeztél.
+      { path: 'minden', element: <MindenOldalPage /> },
       { path: '*', element: <Navigate to="/nap" replace /> },
     ],
   },
