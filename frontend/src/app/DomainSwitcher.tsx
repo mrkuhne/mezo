@@ -5,7 +5,10 @@ import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
 import { DOMAINS, routeForDomain } from '@/app/navModel'
 
-/** Five independent cards over blur; deliberately no Sheet or drawer chrome. */
+/** Five independent cards over blur; deliberately no Sheet or drawer chrome.
+ *  Restored world (mezo-ju4j6.4): the cards are §2.2 A wash tiles, one per domain wash,
+ *  with the clay domain mark at 44px — style bible §7.4. The overlay keeps its blur: there
+ *  it is functional (it separates a modal layer), the one place §2.3's frosting ban lifts. */
 export function DomainSwitcher({ currentDomainId, onClose }: {
   currentDomainId: string | null
   onClose: () => void
@@ -69,13 +72,22 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
                   onClose()
                   navigate(routeForDomain(domain.id))
                 }}>
-                <span className="domain-row-mark"><ClayIcon name={domain.tabs[0].icon} size={40} /></span>
+                <span className="domain-row-mark"><ClayIcon name={domain.tabs[0].icon} size={44} /></span>
                 <span className="domain-row-text"><strong>{domain.name}</strong><small>{summary}</small></span>
                 <b className="domain-row-end" aria-hidden="true">{current ? '✓' : '↗'}</b>
               </button>
             )
           })}
         </div>
+        {/* Az oldal-leltár bejárata (mezo-ju4j6.17). Itt van, és nem egy ötödik fülben, hogy
+            a négy fül a teljes szélességét megtartsa — pont amíg azt mérlegeljük, jól vannak-e
+            tagolva. A horgony a JELENLEGI területre nyitja a listát, nem a tetejére. */}
+        <button type="button" className="domain-all" onClick={() => {
+          onClose()
+          navigate(`/minden${currentDomainId ? `#${currentDomainId}` : ''}`)
+        }}>
+          Minden oldal <b aria-hidden="true">→</b>
+        </button>
       </div>
     </div>, target,
   )

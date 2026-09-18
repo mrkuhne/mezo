@@ -33,7 +33,11 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
       const opener = nav.getByRole('button', { name: `Területváltó: ${name}` })
       await opener.click()
       const dialog = page.getByRole('dialog', { name: 'Területváltó', exact: true })
-      await expect(dialog.getByRole('button')).toHaveCount(5)
+      // Five domain cards + the „Minden oldal" leltár row (mezo-ju4j6.17). The
+      // `toBeInViewport` loop below covers the row too, which is the assertion that
+      // matters at 320px: a sixth control must still fit without scrolling the dialog.
+      await expect(dialog.getByRole('button')).toHaveCount(6)
+      await expect(dialog.getByRole('button', { name: /Minden oldal/ })).toBeVisible()
       await expect(dialog.getByRole('heading')).toHaveCount(0)
       await expect(page.locator('.sheet')).toHaveCount(0)
       await expect(dialog.locator('[aria-current="true"]')).toBeFocused()

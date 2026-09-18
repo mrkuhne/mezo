@@ -15490,24 +15490,30 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /train sport titanium ───────────────────────────────────────────────── */
 
-/* Approved dark Titanium navigation (mezo-0i5y6). These chrome tokens deliberately
-   stay dark on legacy light pages; the page's theme preference is not changed. */
+/* Docked navigation chrome (mezo-0i5y6 → restored world, mezo-ju4j6.4).
+   The bar is graphite in BOTH themes by design — that predates Titanium and stays.
+   What was Titanium is the COLD graphite and the pastel-neon accents; the style bible
+   (docs/design_2.0/2026-09-17-restored-world-style-bible.md §7.4) re-tones both warm,
+   so the bar sits in the same brown/ochre family as the restored light ground.
+   These chrome tokens deliberately stay dark on light pages; the page's theme
+   preference is not changed. */
 :root, :root[data-theme="dark"] {
-  --nav-surface: #111319;
-  --nav-surface-top: #181920;
-  --nav-card: #181923;
-  --nav-ink: #eae8ee;
-  --nav-muted: #b9b2c5;
-  --nav-idle: #8e879b;
-  --nav-line: #c4afd726;
-  --nav-backdrop: #090b125c;
-  --nav-shadow: #0000001a;
-  --nav-highlight: #ffffff08;
-  --nav-nap: #d9c395;
-  --nav-train: #c8e895;
-  --nav-fuel: #8ed2e8;
-  --nav-mezo: #bca6f1;
-  --nav-me: #d7a7bc;
+  --nav-surface: #241E1A;
+  --nav-surface-top: #2C2521;
+  --nav-card: #2C2521;
+  --nav-ink: #F6F1EA;
+  --nav-muted: #C6BAAD;
+  --nav-idle: #9A8D80;
+  --nav-line: rgba(246, 241, 234, 0.10);
+  --nav-backdrop: rgba(36, 30, 26, 0.36);
+  --nav-shadow: rgba(43, 33, 24, 0.10);
+  --nav-highlight: rgba(255, 255, 255, 0.05);
+  /* The §2.1 --dv- domain ramp, lifted for contrast against the graphite bar. */
+  --nav-nap: #FFC46B;
+  --nav-train: #FF8A6A;
+  --nav-fuel: #9DC4AC;
+  --nav-mezo: #B7ABDD;
+  --nav-me: #EE9AA8;
 }
 [data-domain="nap"] { --nav-accent: var(--nav-nap); }
 [data-domain="train"] { --nav-accent: var(--nav-train); }
@@ -15527,9 +15533,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .tab-bar[data-domain] .tab-item > span { white-space: nowrap; }
 .tab-bar[data-domain] .tab-item.active { color: var(--nav-accent); }
-.tab-bar[data-domain] .tab-item.active .tab-ico svg {
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--nav-accent) 32%, transparent));
-}
 .tab-bar[data-domain] .domain-switch {
   flex: 0 0 56px; border-right: 1px solid var(--nav-line); padding-right: 5px;
 }
@@ -15538,7 +15541,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tab-bar[data-domain] .tab-item:focus-visible {
   outline: 2px solid var(--nav-ink); outline-offset: -2px; border-radius: 8px;
 }
-.domain-row:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 3px; }
+.domain-row:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 /* Whole-screen overlay owns blur/scroll; its dialog has no enclosing surface. */
 .domain-switcher-overlay {
   position: absolute; inset: 0; z-index: 250;
@@ -15549,25 +15552,46 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   backdrop-filter: blur(22px) saturate(.65);
   -webkit-backdrop-filter: blur(22px) saturate(.65);
 }
-.domain-switcher { width: 100%; max-width: 372px; flex: none; color: var(--nav-ink); }
+.domain-switcher { width: 100%; max-width: 372px; flex: none; color: var(--text-primary); }
 .domain-list { display: flex; flex-direction: column; gap: 12px; }
+/* The switcher's five cards are §2.2 A wash tiles — one per domain wash, with the
+   signature shadow (long hue-tinted drop + contact shadow + white inset top edge).
+   The BAR stays graphite (§7.4); the switcher is a page-level surface, so it wears the
+   restored world's own material instead of the bar's chrome. */
 .domain-row {
   display: flex; align-items: center; gap: 14px;
   width: 100%; min-height: 80px; padding: 16px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--nav-accent) 21%, transparent);
-  border-radius: 17px; cursor: pointer;
-  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 12%, var(--nav-card)), color-mix(in srgb, var(--nav-surface) 80%, transparent));
-  box-shadow: 0 8px 28px var(--nav-shadow), inset 0 1px 0 var(--nav-highlight);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border-radius: 21px; cursor: pointer;
+  background: var(--mz-wash-sand);
+  box-shadow: var(--mz-shadow-lav);
 }
-.domain-row.current {
-  border-color: var(--nav-accent);
-  background: linear-gradient(125deg, color-mix(in srgb, var(--nav-accent) 19%, var(--nav-card)), var(--nav-card));
-}
+.domain-row[data-domain="nap"]   { background: var(--mz-wash-gold);  box-shadow: var(--mz-shadow-gold); }
+.domain-row[data-domain="train"] { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.domain-row[data-domain="fuel"]  { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
+.domain-row[data-domain="mezo"]  { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
+.domain-row[data-domain="me"]    { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
+/* „Itt állsz" is said by the sage check (§7.4) + a hairline of the domain's own accent —
+   not by a second, louder tile, so the five cards keep one material grade between them. */
+.domain-row.current { border: 1px solid color-mix(in srgb, var(--dv-sage) 55%, transparent); }
 .domain-row-mark { display: grid; place-items: center; flex: none; }
 .domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.domain-row-text strong { font: 500 16px var(--ff-body); color: var(--nav-accent); }
-.domain-row-text small { font: 400 10px/1.6 var(--ff-body); color: var(--nav-muted); overflow-wrap: anywhere; }
-.domain-row-end { flex: none; font-size: 16px; font-weight: 400; color: var(--nav-accent); }
+.domain-row-text strong { font: 500 16px var(--ff-body); color: var(--text-primary); }
+.domain-row-text small { font: 600 10.5px/1.6 var(--ff-body); color: var(--text-secondary); overflow-wrap: anywhere; }
+.domain-row-end { flex: none; font-size: 16px; font-weight: 400; color: var(--text-muted); }
+.domain-row.current .domain-row-end { color: var(--mz-cell-sage-ink); }
+/* Az oldal-leltár bejárata a váltó alján — szándékosan halkabb, mint az öt terület-kártya:
+   ez egy szerszám, nem egy hatodik terület. Kontúros, nem washolt (§2.2 B, keret nélküli). */
+.domain-all {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 14px; padding: 13px 16px; cursor: pointer;
+  border: 1px solid var(--divider); border-radius: 999px; background: none;
+  /* `--text-secondary`, NOT `--nav-muted`: the switcher is a light surface now (§7.4), and the
+     bar's muted ink was picked to read against graphite — on this ground it nearly vanishes. */
+  font: 600 12px var(--ff-body); color: var(--text-secondary);
+}
+.domain-all b { font-weight: 400; }
+.domain-all:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 .phone-screen:has(.domain-switcher-overlay) .screen-content { overflow: hidden; }
 @supports not (backdrop-filter: blur(1px)) {
   .domain-switcher-overlay { background: color-mix(in srgb, var(--nav-surface) 96%, transparent); }
@@ -15596,3 +15620,43 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .domain-list { gap: 8px; }
   .domain-row { min-height: 64px; padding: 10px 14px; }
 }
+
+/* ── oldal-leltár (mezo-ju4j6.17) ──────────────────────────────────────────
+   A „Minden oldal" lista: a négy fül átszabása alatti biztonsági háló. Nem díszes —
+   sűrű, olvasható, egy képernyőn sok sor. Anyaga a §2.2 A wash-csempe területenként
+   EGYSZER (a szakasz feje), a sorok maguk keret nélküli listaelemek: száz csempe
+   száz árnyékkal zajt csinálna, nem térképet. */
+.mno-head { padding: 4px 2px 18px; }
+.mno-head h1 { margin: 6px 0 4px; font: 500 26px/1.15 var(--ff-display); color: var(--text-primary); }
+.mno-head p { margin: 0; font: 400 12.5px/1.55 var(--ff-body); color: var(--text-secondary); }
+
+.mno-domain { margin-bottom: 26px; scroll-margin-top: 12px; }
+.mno-domain-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 10px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-lav);
+}
+.mno-domain[data-wash="gold"]  .mno-domain-head { background: var(--mz-wash-gold);  box-shadow: var(--mz-shadow-gold); }
+.mno-domain[data-wash="coral"] .mno-domain-head { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.mno-domain[data-wash="sage"]  .mno-domain-head { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
+.mno-domain[data-wash="lav"]   .mno-domain-head { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
+.mno-domain[data-wash="rose"]  .mno-domain-head { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
+.mno-domain-head strong { flex: 1; font: 500 17px var(--ff-body); color: var(--text-primary); }
+.mno-domain-head small { font: 600 10.5px var(--ff-body); color: var(--text-secondary); }
+
+.mno-group { padding: 0 2px 4px; }
+.mno-group h2 {
+  margin: 12px 0 6px; font: 600 10.5px/1 var(--ff-body); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.mno-group ul { list-style: none; margin: 0; padding: 0; }
+.mno-group li + li { border-top: 1px solid var(--divider); }
+.mno-group a {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 6px; text-decoration: none; border-radius: 10px;
+}
+.mno-group a b { font: 500 14px var(--ff-body); color: var(--text-primary); }
+.mno-group a small { font: 400 11.5px/1.45 var(--ff-body); color: var(--text-secondary); }
+.mno-group a:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: -2px; }
+/* ── /oldal-leltár ─────────────────────────────────────────────────────────── */

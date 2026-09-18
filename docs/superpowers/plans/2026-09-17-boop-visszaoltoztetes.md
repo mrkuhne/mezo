@@ -108,30 +108,28 @@ in every session.
 - [ ] `verify`-skill runtime pass: shell reads as old world on /nap, /fuel, /train
 - [ ] Commit(s), local gates, --no-ff merge to main (no-wait flow)
 
-### Task 3: Nav orphans + nav re-skin (bead: phase 3, model:fast, ~1–2 sessions, blocked by 2)
+### Task 3: Nav re-skin (bead: phase 3, model:fast, ~1–2 sessions, blocked by 2) — DONE 2026-09-18
+
+> **Scope change, owner 2026-09-18.** The orphan measurement came back empty — **no page in the
+> app lacks a menu path** (method and full classification: spec §"Nav orphans: the measurement",
+> and the `mezo-ju4j6.4` bd comment). The 5th "Továbbiak" tab is therefore **dropped**: it would
+> list nothing and narrow the bar on all five domains. The matrix stays 5×4. Task 3 is the nav
+> re-skin alone. The *discovery-index* re-framing was offered to the owner and declined.
 
 **Files:**
-- Modify: `frontend/src/app/navModel.ts` (add 5th tab "Továbbiak" per domain)
-- Modify: `frontend/src/app/TabBar.tsx`, `DomainSwitcher.tsx` (5-tab support, old-world skin
-  via `.tab-bar[data-domain]` rules ONLY)
-- Create: `frontend/src/app/pages/TovabbiakPage.tsx` (or per-domain card-index page) listing
-  every orphaned surface as tiles
+- Modify: `frontend/src/app/TabBar.tsx`, `DomainSwitcher.tsx` (old-world skin via
+  `.tab-bar[data-domain]` / `.domain-*` rules ONLY; `navModel.ts` untouched)
 - Modify: `frontend/src/styles/prototype.css` (nav section re-skin)
-- Test: extend `frontend/tests/layout/navigation.spec.ts`; router redirect tests untouched
-
-**Orphan inventory (from spec/investigator; re-verify in-session against `router.tsx`):**
-`FUEL_RETIRED_REDIRECTS` targets' old entry points (`/fuel/log`, `/fuel/plan`, `/fuel/naplo`,
-`/fuel/stack/*`), `/today/*`, `/insights/*`, `/me/karakter/*`, `/mezo/weekly`, `/mezo/motor`.
-The 5th tab lists the *destinations users lost a menu path to*, not the dead URLs.
+- Test: `frontend/tests/layout/navigation.spec.ts`; router redirect tests untouched
 
 **Steps:**
-- [ ] Build the definitive orphan list: diff every route in `router.tsx` against routes reachable from `navModel.ts:41` tabs; classify each unreachable route: card on Továbbiak vs intentionally retired (record the classification in the bd issue)
-- [ ] Add 5th tab to navModel matrix (test: navModel unit test asserts 5×5)
-- [ ] Továbbiak page: simple tile list per domain, old-world tile styling per style bible
-- [ ] Re-skin TabBar/DomainSwitcher; geometry changes only in `.tab-bar[data-domain]`
-- [ ] Tutorial anchor check: `grep -n "train-tabs\|tab-bar" frontend/src/features/tutorial/registry*`
-- [ ] Tests both modes + navigation.spec.ts; `verify` runtime pass
-- [ ] Commit, local gates, --no-ff merge to main (no-wait flow)
+- [x] Build the definitive orphan list: two passes over `router.tsx` (strict per-route link search incl. dynamic prefixes; transitive BFS from the nav tabs + `owns` + global chrome) → **0 orphaned pages**, 4 retired `<Navigate>` stubs; classification recorded in the bd issue
+- [x] ~~Add 5th tab to navModel matrix~~ — dropped per the scope change above
+- [x] ~~Továbbiak page~~ — dropped per the scope change above
+- [x] Re-skin TabBar/DomainSwitcher; geometry changes only in `.tab-bar[data-domain]` — warm-graphite chrome, `--dv-` domain accents, glow dropped, switcher cards → §2.2 A wash tiles
+- [x] Tutorial anchor check: `train-tabs` anchor untouched (`registry/train.ts:49`, `anchors.test.tsx:70` green)
+- [x] Tests both modes (7303/7304 passed) + `test:layout` (91 passed); `verify` runtime pass
+- [x] Commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 4: GlassBox re-skin (bead: phase 4, model:strong, ~1 session, blocked by 2)
 
