@@ -47,7 +47,7 @@ export function NapHubPage() {
       <section className="nap-center-orbit" aria-label="Gyors műveletek" data-kalauz-anchor="nap-hero">
         <div className="nap-center-companion"><NapCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} /></div>
         {actions.map(a => <button type="button" aria-label={a.label} key={a.art} className={`nap-center-node nap-node-${a.art}`} onClick={a.run} disabled={a.art === 'membrane' && (checkinDay.isPending || checkinDay.isError)}>
-          <span className="nap-center-art" aria-hidden="true"><ClayIcon name={a.icon} size={34} /></span><span>{a.label}</span><small>{a.sub}</small>
+          <span className="nap-center-art" aria-hidden="true"><ClayIcon name={a.icon} size={64} /></span><span>{a.label}</span><small>{a.sub}</small>
         </button>)}
       </section>
       {checkinDay.isError && <p className="nap-center-read-error" role="alert">A check-injeidet most nem sikerült betölteni. <button type="button" onClick={() => { void checkinDay.refetch() }}>Check-in újratöltése</button></p>}
