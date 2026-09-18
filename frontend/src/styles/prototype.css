@@ -11122,20 +11122,25 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
 .am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
 
-/* ── titanium companion (mezo-mhum) ──────────────────────────────────────
-   TitanCompanion: the Nap/Mai presence mark. A static aura glow (radial
-   gradient built from the first three need colors, alpha set per band by
-   the component via --aura-0/-1/-2) sits behind a titanium-petal + gold-core
-   SVG. All motion (whole-form rotation, counter-rotating rings, planet
-   orbit, an occasional core glow pulse) is gated behind
-   prefers-reduced-motion: no-preference — without it the mark is static. */
-.titan-companion {
+/* ── nap-companion (mezo-mhum · visszaöltöztetve mezo-ju4j6.10) ──────────
+   A Nap/Mai jelenlét-jele. A Titán-kori jel (titán-szirmok + arany mag, mögötte élő
+   WebGL-jelenet) a spec kill-listáján volt: helyén az AGYAG Mezo-szimbólum áll, mögötte
+   a szükséglet-színekből kevert halo-sáv (stíluskönyv §2.2 C). A halo alfáit a komponens
+   adja sávonként (`--aura-0/-1/-2`) — a szín itt JELENTÉS (melyik szükséglet hogy áll),
+   ezért marad, csak az anyaga lett a régi világé.
+
+   Ez a doboz EGYBEN a Boop-avatar foglalt helye (Phase 8b): a méret és a pozíció ott már
+   nem mozdul, csak az ábra cserél.
+
+   Mozgás: a blokkban NINCS animáció — a Titán-kori forgás, ellenforgás, pálya és mag-pulzus
+   a jelenettel együtt megszűnt (§8.6). */
+.nap-companion {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 180px;
-  height: 180px;
+  width: 100%;
+  height: 100%;
   min-width: 44px;
   min-height: 44px;
   border: none;
@@ -11144,107 +11149,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.titan-aura {
+.nap-companion-halo {
   position: absolute;
-  inset: -20%;
+  inset: -26%;
   border-radius: 50%;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 30% 30%, var(--aura-0, transparent) 0%, transparent 60%),
-    radial-gradient(circle at 70% 35%, var(--aura-1, transparent) 0%, transparent 62%),
-    radial-gradient(circle at 50% 75%, var(--aura-2, transparent) 0%, transparent 65%);
-  filter: blur(6px);
+    radial-gradient(circle at 34% 28%, var(--aura-0, transparent) 0%, transparent 55%),
+    radial-gradient(circle at 72% 38%, var(--aura-1, transparent) 0%, transparent 56%),
+    radial-gradient(circle at 50% 76%, var(--aura-2, transparent) 0%, transparent 58%);
 }
-.titan-svg {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.titan-form { transform-origin: 90px 90px; }
-.titan-rings { transform-origin: 90px 90px; }
-.titan-petals { transform-origin: 90px 90px; }
-.titan-core { transform-origin: 90px 90px; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .titan-form { animation: titan-spin 30s linear infinite; }
-  .titan-rings { animation: titan-spin-back 42s linear infinite; }
-  .titan-planet { animation: titan-orbit 22s linear infinite; transform-origin: 90px 90px; }
-  .titan-core { animation: titan-glow 7s ease-in-out infinite; }
-}
-@keyframes titan-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes titan-spin-back {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
-}
-@keyframes titan-orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes titan-glow {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.18); }
-}
-/* ── /titanium companion ─────────────────────────────────────────────── */
-
-/* ── nap-mai titanium · companion-first (mezo-mhum → mezo-7flr) ─────────────
-   A `/nap` nyitóoldal ma PUSZTA társ-belépő: a TitanCompanion (középpont) + a
-   napszak-köszönés + alatta a beszélgetés-composer (mező + mikrofon). A régi
-   csempe-réteg (következő lépés, hat csempe, statisztika-sor, horgony-csempék)
-   a navigációba költözött (mezo-jkh4), a CSS-ük innen kivezetve. A composer a
-   beszélgetés-felület saját `.mzc-composer` pirulája, itt a társ alatt, normál
-   folyásban (nincs sticky `.chat-composer` plumbing).
-   Ez a blokk nem indít saját animációt, tehát nincs mit kivezetni csökkentett
-   mozgás mellett. */
-.nap-titan-hero { display: flex; flex-direction: column; align-items: center; gap: 7px;
-  padding: 14px 16px 16px; border-radius: 20px; text-align: center;
-  background: linear-gradient(160deg, var(--mz-tone-lav), var(--mz-wash-white) 72%); }
-/* Horgony mód: ugyanaz a blokk, csendesebbre véve — a társ aurája visszafogott. */
-.nap-titan-quiet { background: var(--mz-wash-anchor); }
-.nap-titan-quiet .titan-aura { opacity: 0.45; }
-.nap-titan-greet { font-family: var(--ff-display); font-size: 22px; font-weight: 300;
-  letter-spacing: -0.02em; margin: 0; }
-
-/* Companion-first rétegek (mezo-7flr): a társ NAGYOBB középpont, alatta a composer.
-   Az élő jelenet (`.titan-companion.is-live`) már teljes szélességű, 232px magas sáv;
-   itt csak a statikus SVG-változatot nagyítjuk, hogy reduced-motion / WebGL nélkül is
-   a lap uralkodó eleme legyen. */
-/* Companion-first, TELJES KÉPERNYŐS elrendezés (mezo-7flr): a társ a képernyő közepén,
-   doboz nélkül, a mező pedig alul, közvetlenül a menü fölött. A lap kitölti a görgetőport
-   látható magasságát; rövid tartalomnál a `margin-top:auto` nyomja a mezőt a menü fölé. */
-.nap-companion-page { min-height: 100%; padding: 0; gap: 0; }
-.nap-companion-stack { flex: 1 1 auto; min-height: 100%; display: flex; flex-direction: column; }
-.nap-companion-hero {
-  flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 14px; padding: 12px 16px; text-align: center;
-  /* NINCS doboz — a társ közvetlenül a sötét háttéren ül. */
-  background: none; border: none; box-shadow: none; border-radius: 0;
-}
-.nap-companion-hero .titan-companion.is-live { height: min(46vh, 340px); }
-.nap-companion-hero .titan-companion:not(.is-live) { width: 240px; height: 240px; }
-/* CSAK a 3D elem (owner 2026-09-11): se doboz, se homályos kör. A jelenet renderelője már
-   átlátszó (alpha), így a „doboz" pusztán CSS — levesszük a belső keret-árnyékot, a panel-
-   lekerekítést ÉS a maszkot; az aurát (a homályos színes kör) pedig elrejtjük. Marad a puszta
-   forgó 3D forma a sötét háttéren. */
-.nap-companion-hero .titan-companion { box-shadow: none; }
-.nap-companion-hero .titan-scene { border-radius: 0; -webkit-mask-image: none; mask-image: none; }
-.nap-companion-hero .titan-aura { display: none; }
-/* A bloom-composer ÁTLÁTSZATLAN #000 hátteret ad — ez volt a „fekete doboz". Ahelyett, hogy a
-   canvas keverésével bajlódnánk (a belépő-animáció stacking-contextje elszigetelné), a `/nap`
-   tartalmi hátterét TISZTA FEKETÉRE vesszük: a jelenet #000-ja így nyom nélkül beleolvad, csak a
-   világító 3D forma marad — keret nélkül. A fejléc/menü a saját (közel fekete) felületén marad. */
-.nap-companion-page { background: #000; }
-/* Lélegzetnyi tér a mező és az alsó menü között. */
-.nap-companion-page .nap-composer-wrap { padding-bottom: 18px; }
-.nap-composer-wrap { margin-top: auto; display: flex; flex-direction: column; gap: 7px; padding: 0 4px 4px; }
-.nap-composer-err { font-size: 11px; text-align: center; color: var(--coral-deep); margin: 0; }
-.nap-composer { width: 100%; }
-/* ── /nap-mai titanium ───────────────────────────────────────────────────── */
+.nap-companion-mark { position: relative; z-index: 1; display: grid; place-items: center; }
+/* Horgony mód: ugyanaz a jel, csendesebbre véve — a halo visszafogott. */
+.nap-titan-quiet .nap-companion-halo { opacity: 0.45; }
+/* ── /nap-companion ─────────────────────────────────────────────────────── */
 
 /* ── fuel-mai (mezo-33k6; re-dressed to the restored world in mezo-ju4j6.6) ──
    A Fuel Mai energiaműszere (fagyasztott manifeszt A1 · A2 · A15). A GEOMETRIA jóváhagyott
@@ -13219,30 +13138,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-recipe-top { min-width: 0; }
 /* ── /fuel overflow guard ── */
 
-/* ── az ÉLŐ társ (TitanScene) beágyazása ─────────────────────────────────
-   Visszaöltöztetés (mezo-ju4j6.3): a `.titan-dark` hatókör MEGSZŰNT (a shell-strip
-   törölte a scope-osztályt és a kényszerített sötét témát is). Ez a két szabály
-   viszont NEM a bőr része, hanem az élő társ-jelenet geometriája — a Nap oldal és az
-   indító-képernyő is ezen áll —, ezért marad. A társ SAJÁT megjelenését a Nap
-   visszaöltöztetése (mezo-ju4j6.10) rendezi.
-   A jelenet a `.titan-companion` gomb belsejében él, a prototípus Nap-oldalának
-   arányaival (iframe ~231px magas, teljes szélességű sáv). A statikus SVG-változat
-   mérete VÁLTOZATLAN — csak az élő jelenet kap sávot. */
-.titan-companion.is-live { width: 100%; height: 232px; }
-.titan-scene {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 18px;
-  overflow: hidden;
-  /* A prototípus maszkja: a jelenet széle beleolvad a lapba, nem éles vágás. */
-  -webkit-mask-image: linear-gradient(transparent, #000 8%, #000 82%, transparent);
-  mask-image: linear-gradient(transparent, #000 8%, #000 82%, transparent);
-}
-.titan-scene canvas { display: block; width: 100%; height: 100%; }
-/* ── /élő társ ──────────────────────────────────────────────────────────── */
 
 /* ── boop szó-logó a visszaállított fejlécben (mezo-ju4j6.3) ───────────────────
    A Titánium bőr (owner 2026-09-12) az EGÉSZ fejlécet sötétre festette: elrejtette az
