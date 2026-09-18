@@ -3,6 +3,9 @@ package io.mrkuhne.mezo.feature.companion.repository;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,4 +44,21 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     long countByCreatedByAndRole(UUID createdBy, String role);
 
     boolean existsByCreatedByAndRoleAndCreatedAtAfter(UUID createdBy, String role, Instant createdAt);
+
+    /**
+     * The S9.7 provenance retention primitive (mezo-rj214.7), mirroring
+     * {@code LlmLogRepository#scrubPayloadsOlderThan}: one idempotent bulk UPDATE that NULLs the
+     * RESULT half of every row older than {@code cutoff}. {@code toolCalls} (the ask, including
+     * its {@code why}) is deliberately untouched — irreversible by design, no row is ever
+     * deleted, only this one column is cleared. The {@code tool_outcomes is not null} guard keeps
+     * re-runs free: an already-scrubbed row is not counted again.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        update AiMessageEntity m
+           set m.toolOutcomes = null
+         where m.createdAt < :cutoff
+           and m.toolOutcomes is not null
+        """)
+    int scrubToolOutcomesOlderThan(@Param("cutoff") Instant cutoff);
 }

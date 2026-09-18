@@ -597,6 +597,11 @@ mezo:
       # retention; nothing else changes). Previously gated ONLY by mezo.feature.companion.enabled.
       memory-retrieval-retention-job:
         enabled: true
+      # S9.7 provenance retention (mezo-rj214.7, schedule: mezo.companion.turn.provenance.cron);
+      # off = the ProvenanceRetentionJob bean does not exist (tool_outcomes keeps aging past 90
+      # days; tool_calls, the ask half, is never touched by this job regardless).
+      companion-provenance-retention-job:
+        enabled: true
   # Lean screen-event telemetry (mezo-o5cz, spec 2026-09-07 §5) — binds TelemetryProperties.
   # Bound regardless of mezo.feature.screen-telemetry.enabled: the switch gates BEANS, these are
   # the numbers those beans read, so a typo here is a startup failure, not a silent default.
