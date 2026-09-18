@@ -22,11 +22,16 @@ describe('NapCompanion', () => {
     expect(open).toHaveBeenCalledOnce()
   })
 
-  test('a jel az AGYAG Mezo-szimbólum — nincs canvas és nincs titán-SVG', () => {
+  test('a jel BOOP, élő mozdulatokkal — nincs canvas és nincs titán-SVG', () => {
     const { container } = render(<NapCompanion states={states} onOpenSignals={() => {}} />)
     expect(container.querySelector('canvas')).toBeNull()
     expect(container.querySelector('.titan-svg')).toBeNull()
-    expect(container.querySelector('.nap-companion-mark use')?.getAttribute('href')).toBe('#i-mezo')
+    // a figura a lap közepén ÉL: a tekintet/szemöldök/lélegzet fogói az `is-alive` példányhoz
+    // tartoznak (a menü Boopja ugyanaz a komponens, `alive` nélkül)
+    const boop = container.querySelector('.nap-companion-mark .boop')
+    expect(boop).not.toBeNull()
+    expect(boop).toHaveClass('is-alive')
+    expect(boop?.querySelector('.boop-pupil')).not.toBeNull()
   })
 
   test('aura colors come from the need meta, per band', () => {

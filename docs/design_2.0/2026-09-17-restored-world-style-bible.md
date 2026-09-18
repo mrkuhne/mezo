@@ -787,12 +787,27 @@ than a sticker dropped into it:
 2. **The hue is the domain, the shape is constant.** Only the gradient ramp changes between
    variants; geometry, eyes and mouth are identical, so the five read as one character wearing
    the room's colour rather than five mascots.
-3. **Blink and breath live in CSS, on named parts.** Each eye carries a `.boop-lid` ellipse
-   filled with the body gradient, resting at `scaleY(0)` (`transform-box: fill-box`), and the
-   torso is `.boop-body`. A blink is a short 0→1→0 step; the idle gesture is a ≤2% scale
-   breath from the feet. Both belong inside a `prefers-reduced-motion: no-preference` branch —
-   the static figure is complete on its own.
-4. **`<use>` clones share one timeline.** CSS reaches the symbol's source elements, so every
-   `<use>` instance on a page blinks in unison. Where two Boops share a screen and that reads
-   wrong, inline the SVG per instance (`?raw`) instead of referencing the sprite — the classes
-   are the same either way.
+3. **The gestures live in CSS, on named parts — and blinking is NOT one of them.** The handles
+   are `.boop-pupil` (the gaze: a ±3-unit horizontal shift, each pupil resting at its eye's
+   centre so both directions have the same room), `.boop-brow` (a -1.6 raise) and `.boop-body`
+   (a ≤2% breath from the feet). All three belong inside a `prefers-reduced-motion:
+   no-preference` branch — the static figure is complete on its own. A closing eyelid was
+   drawn, reviewed and **rejected by the owner (2026-09-18)**: at this scale the lid read as a
+   glitch rather than a blink, so the lid ellipses were deleted rather than left dormant.
+   `docs/design_2.0/prototypes/boop-avatar.html` runs the surviving loop and is the reference
+   8b ports.
+4. **`<use>` clones share one timeline, so Boop is inlined per instance.** CSS cannot reach
+   into a `<use>` shadow tree: rules match the symbol's SOURCE elements, so every instance
+   would move together and none could be stilled on its own. `shared/ui/clay/boop/Boop.tsx`
+   therefore inlines the symbol's markup per instance and namespaces the gradient ids with
+   `useId` — without that, two Boops of different domains on one screen (the bar wears the
+   current domain, the Nap centre wears lavender) would both resolve to the first definition
+   and wear one colour.
+
+**Where she appears** (`mezo-ju4j6.15`): the Nap/Mai centre (lavender, `alive`), the docked
+bar's domain-switch mark and every row of the DomainSwitcher (each in ITS domain's hue, still).
+Only the Nap centre moves — in navigation chrome a moving figure competes with the thing the
+user came to tap. The component takes the NAV domain id (`nap` · `train` · `fuel` · `mezo` ·
+`me`) rather than a symbol name, and `navModel`'s `NavDomain.id` is typed to that union: a new
+domain cannot ship without a figure, which is exactly how the Én row shipped blank in the first
+integration pass (`me` vs `boop-en`).
