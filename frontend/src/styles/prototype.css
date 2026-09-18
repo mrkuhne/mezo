@@ -939,11 +939,25 @@ button:disabled { opacity: .45; cursor: default; }
 .rirrow button:disabled { cursor: default; }
 input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
 
+/* The shell spans the VISIBLE viewport, not the layout one. On mobile the software
+   keyboard shrinks only the visual viewport (and iOS pans it), so a plain `inset: 0`
+   shell keeps its full height underneath the keyboard — every docked surface (sheet,
+   tab bar, save bar) slid under it and the browser then scrolled the page to reach the
+   focused field, visibly shoving the screen around. `--app-vh` / `--app-vv-top` are
+   written by shared/lib/viewportInsets.ts; the fallbacks keep the old full-screen shell
+   wherever the visualViewport API is unavailable. */
 .app-root {
-  position: fixed; inset: 0;
+  position: fixed;
+  top: var(--app-vv-top, 0px);
+  left: 0; right: 0;
+  height: var(--app-vh, 100%);
   display: flex; align-items: center; justify-content: center;
   background: radial-gradient(ellipse at center, var(--page-glow) 0%, var(--page-bg) 70%);
 }
+
+/* While the keyboard is up, the docked tab bar would float on top of it and eat the
+   little room the typing surface has left — and it is unreachable anyway. */
+html.kb-open .tab-bar { display: none; }
 
 /* ============== iPhone 17 Pro Max frame ============== */
 .phone {

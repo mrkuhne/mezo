@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <!-- maximum-scale=1 + user-scalable=no: disable all browser zoom app-wide.
          Primary effect: kills iOS Safari's auto-zoom when focusing sub-16px inputs (the app's
-         compact UI uses 12–13px fields). viewport-fit=cover kept for notch/safe-area insets. -->
+         compact UI uses 12–13px fields). viewport-fit=cover kept for notch/safe-area insets.
+         interactive-widget=resizes-content: on Android/Chromium the software keyboard then
+         shrinks the LAYOUT viewport too, so the fixed app shell fits above it by itself
+         (iOS ignores the key — there shared/lib/viewportInsets.ts does the same job from
+         the visualViewport API). -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#FBF6EF" />
     <!-- Installed-PWA chrome (mezo-cp8w → status bar): on Android + Safari-browser the
