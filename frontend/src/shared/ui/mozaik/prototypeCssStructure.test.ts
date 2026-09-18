@@ -213,14 +213,18 @@ describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
 })
 
 /**
- * Section registration (mezo-88iwa.13, T12 Task 2): the `GlassBox` shared 3D glass
+ * Section registration (mezo-88iwa.13, T12 Task 2): the `GlassBox` shared glass
  * primitive's `.gl-*` section, registered the same way the `train mai titanium` block
  * above is — open/close comment markers, both present and in order, with the class
  * family actually inside the span.
+ *
+ * Renamed `titanium glass primitive` → `glassbox` in Phase 4 of the Boop
+ * visszaöltöztetés (mezo-ju4j6.5), in the same commit as the CSS section itself:
+ * the primitive stays, its Titanium skin does not.
  */
-describe('the titanium glass primitive section is registered (mezo-88iwa.13)', () => {
-  const START_MARKER = 'titanium glass primitive'
-  const END_MARKER = '/titanium glass primitive'
+describe('the glassbox section is registered (mezo-88iwa.13, re-dressed mezo-ju4j6.5)', () => {
+  const START_MARKER = 'glassbox'
+  const END_MARKER = '/glassbox'
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -235,7 +239,7 @@ describe('the titanium glass primitive section is registered (mezo-88iwa.13)', (
     const end = rawCss.indexOf(END_MARKER)
     const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head', '.gl-x', '.gl-anim']) {
-      expect(section, `${cls} missing from the titanium glass primitive section`).toContain(cls)
+      expect(section, `${cls} missing from the glassbox section`).toContain(cls)
     }
   })
 })

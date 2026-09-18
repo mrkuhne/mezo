@@ -324,7 +324,7 @@ spec's keep-list: **their behaviour, API and DOM structure do not change.**
 >
 > | Component | Class family | Geometry | Consumers |
 > | --- | --- | --- | --- |
-> | `shared/ui/mozaik/GlassBox.tsx` (Train, `mezo-88iwa.13`) | `.gl-*`, CSS section `titanium glass primitive` | bottom-docked, z 220/221 | 6 files: `WorkoutMenuGlass`, `WorkoutRecordsGlass`, `InfoButton`, `FinishConfirmGlass`, `SportLogPage`, `TrainWeekPage` |
+> | `shared/ui/mozaik/GlassBox.tsx` (Train, `mezo-88iwa.13`) | `.gl-*`, CSS section `glassbox` (was `titanium glass primitive`, renamed in `mezo-ju4j6.5`) | bottom-docked, z 220/221 | 6 files: `WorkoutMenuGlass`, `WorkoutRecordsGlass`, `InfoButton`, `FinishConfirmGlass`, `SportLogPage`, `TrainWeekPage` |
 > | `features/fuel/components/GlassBox.tsx` (Fuel, `mezo-jb84`) | `.fmx-glass*`, inside the fuel titanium sections | centered, z 60 | 6 files: `FuelScoreSurface`, `GlycemicGlass`, `FuelWeekDayGlass`, `FuelStackItemGlass`, `FuelMealBlocks`, `FuelEnergyHero` |
 >
 > ~36 `<GlassBox>` call sites across those 12 files. **Do not merge the two components** — that is
