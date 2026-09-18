@@ -89,7 +89,7 @@ public class TrainTools {
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
             + "scope=latest — a legutóbbi sorozatokkal rögzített gym-edzés, az újabb üres lezárások jelzésével; "
-            + "scope=gym — gym-edzések (legújabb elöl: dátum, edzésnap, sorozatszám, összvolumen, gyakorlatonként súly/ismétlés/RIR/jegyzet és visszajelzés); scope=sport — "
+            + "scope=gym — gym-edzések (legújabb elöl: dátum, edzésnap, munka/bemelegítő sorozatszám, össz- és munkavolumen, gyakorlatonként súly/ismétlés/RIR/jegyzet és visszajelzés); scope=sport — "
             + "sportalkalmak (röplabda/cross/TRX: időtartam, intenzitás, RPE, szettek); scope=run — futások "
             + "(hét, session, kör, RPE, időtartam). Használd, amikor a user MÚLTBELI edzésekről/sportról/"
             + "futásról kérdez. A legutóbbi gym-edzéshez scope=latest. scope: gym (alapértelmezés), latest, sport, run. A korábbi napok és teljes "
@@ -152,8 +152,16 @@ public class TrainTools {
             if (w.getType() != null) {
                 b.append(" (").append(w.getType()).append(')');
             }
-            b.append(" — ").append(sets.size()).append(" sorozat, volumen ")
-                    .append(ToolText.num(volume)).append(" kg");
+            long working = sets.stream().filter(s -> "working".equals(s.getKind())).count();
+            long warmup = sets.stream().filter(s -> "warmup".equals(s.getKind())).count();
+            BigDecimal workingVolume = sets.stream()
+                    .filter(s -> "working".equals(s.getKind()) && s.getWeightKg() != null)
+                    .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            b.append(" — ").append(sets.size()).append(" sorozat (").append(working)
+                    .append(" munkasorozat, ").append(warmup).append(" bemelegítő), volumen ")
+                    .append(ToolText.num(volume)).append(" kg; munkasorozatok volumene ")
+                    .append(ToolText.num(workingVolume)).append(" kg");
             b.append("; id=").append(w.getId());
             if (w.getActiveSeconds() != null) b.append("; aktív másodperc: ").append(w.getActiveSeconds());
             for (ExerciseSetEntity set : allSets) {

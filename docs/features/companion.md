@@ -1688,6 +1688,12 @@ prose, never the legacy data-gap marker. All topics, including analysis, use nat
 The clinical guard remains; the LLM verdict/rewrite is not used on this path.
 Weight interpretation must distinguish dated raw measurements from the smoothed trend and state the
 comparison window; one meal/workout day cannot establish long-term goal progress.
+For compound requests, the planner checks evidence for each requested decision: evaluating a past
+day does not complete a request for today's personalized changes. Relevant current intake and
+planned training are fetched before stopping; stored daily targets are not a substitute for either.
+This is a semantic planner instruction, not a keyword-triggered mandatory read or an extra judge;
+general conversation still needs no personal-data reads. The final overall assessment must reconcile
+the same recent evidence and goal direction as its detailed explanation (`mezo-rj214.15`).
 
 `SpringAiCompanionLlm` captures the effective actor when the stream is created, then rebinds it for
 request construction and success/error/cancellation recording on provider threads. Post-turn
@@ -1696,7 +1702,11 @@ async work. This keeps per-user cost attribution across thread boundaries withou
 on pooled threads. `StreamActorAttributionIT` uses HTTP SSE plus PostgreSQL to verify this boundary;
 `ConversationContinuationIT` guards dependent reads beyond the third batch. The opt-in
 `ComplexPersonalQueryEvalIT` replays the natural goal/food/workout question with a real provider and
-synthetic fixtures; its saved JSON requires a separate review of the response's numerical claims.
+synthetic fixtures. It also checks the planner's continuation after past evidence, re-reads actual
+intake after a newly logged meal in a follow-up, and switches to a general topic without tools.
+Its saved JSON requires a separate review of the response's numerical claims and overall verdict.
+`CompletePersonalContextEvalIT` exercises real retrieval, a pronoun-based follow-up, complete-source
+quotation, recall from a separate conversation with a pronoun follow-up, and a general-topic switch; it is opt-in and uses synthetic records only.
 
 The three extra reads are `get_personal_context(scope=facts|people|character|reflections|today)`,
 `search_personal_memory(query)` and `get_conversation_history(page,messageOffset)`. All use the
@@ -5677,7 +5687,7 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
 
 | Tool (args) | Source (existing reads) | Ref |
 |---|---|---|
-| `get_training_log(scope, days)` | `WorkoutSessionRepository.findDoneInstancesBetween` + sets and exercise feedback: date/day/count/volume, exercise names, every set's kind, weight/reps/RIR/side, targets, skipped state and note, active seconds and closing note. Sport/run include stored timing, load, recovery, notes and kcal/estimate fields. Newest-first recent-window summary; `scope=latest` returns only the latest session with non-skipped, rep-bearing sets and explicitly reports any newer empty completed sessions. Its default window is `tools.max-window-days`; older records use the source reader. | `Workout`/date (≤5), `Sport`/date (≤3), `Run`/date (≤3) |
+| `get_training_log(scope, days)` | `WorkoutSessionRepository.findDoneInstancesBetween` + sets and exercise feedback: date/day/count/volume (working and warmup counts separated, working volume alongside total volume), exercise names, every set's kind, weight/reps/RIR/side, targets, skipped state and note, active seconds and closing note. Sport/run include stored timing, load, recovery, notes and kcal/estimate fields. Newest-first recent-window summary; `scope=latest` returns only the latest session with non-skipped, rep-bearing sets and explicitly reports any newer empty completed sessions. Its default window is `tools.max-window-days`; older records use the source reader. | `Workout`/date (≤5), `Sport`/date (≤3), `Run`/date (≤3) |
 | `get_training_plan(scope, date)` (mezo-xixu, sport added mezo-ajp) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `SportService.getSchedule` (recurring slots matched on the date's weekday) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_weight_log(days)` | `WeightLogRepository` → newest-first raw measurements: rounded display **and exact stored kg**, delta vs the previous row, date and note. Historical reads beyond the summary window use `read_personal_records(source=weight_log)`. | `Weight`/date (≤5) |

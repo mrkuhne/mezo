@@ -50,6 +50,8 @@ class ComplexPersonalQueryEvalIT extends AbstractIntegrationTest {
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".chat-model", TARGET::model);
     }
     @Autowired private ChatService chat;
+    @Autowired private TurnPlanner planner;
+    @Autowired private io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry registry;
     @Autowired private DatabasePopulator users;
     @Autowired private AiConversationPopulator conversations;
     @Autowired private GoalPopulator goals;
@@ -59,8 +61,36 @@ class ComplexPersonalQueryEvalIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator meals;
     @Autowired private ObjectMapper json;
     @Autowired private io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository logs;
+    @Autowired private io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository messages;
 
     record AuditCall(String operation, java.util.UUID owner, int millis, BigDecimal costUsd) {}
+
+    @Test
+    void testPlanner_shouldCompleteTodayEvidence_whenPastEvidenceAlreadyAnswersOnlyHalfTheQuestion() {
+        var today = LocalDate.now();
+        String context = """
+                Ma: %s
+                Aktív cél: súlytartás, recomp. Mai cél: 3221 kcal, 165 g fehérje, 420 g CH, 98 g zsír.
+                ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:
+                - get_fuel_log({"range":"day","date":"%s","days":1}):
+                Tegnap 6 étkezés, 3694 kcal, 204 g fehérje, 371 g CH, 159 g zsír. Víz: 3000 ml.
+                - get_training_log({"scope":"latest"}):
+                Tegnap hát-bicepsz, 21 sorozat, lehúzás 50 kg × 10 RIR 0, evezés 35 kg × 9 RIR 1.
+                - get_goal({"scope":"progress"}):
+                Súlytartás. Hosszú simított ütem -0,08 kg/hét; friss nyers mérésközi eltérés +0,8 kg öt nap alatt.
+                Tegnap 85,2 kg, ma 85,6 kg; napi eltérés +0,4 kg, nem bizonyított testzsírváltozás.
+                """.formatted(today, today.minusDays(1));
+        var plan = planner.planConversation(context, List.of(), QUESTION,
+                registry.conversationCallbacks(registry.newTurnAudit())).orElseThrow();
+        assertThat(plan.steps()).anySatisfy(step -> {
+            assertThat(step.tool()).isEqualTo("get_fuel_log");
+            assertThat(step.args().get("date")).isEqualTo(today.toString());
+        });
+        assertThat(plan.steps()).anySatisfy(step -> {
+            assertThat(step.tool()).isEqualTo("get_training_plan");
+            assertThat(step.args().get("scope")).isEqualTo("today");
+        });
+    }
 
     @Test
     void testConversation_shouldReadLatestMeaningfulWorkoutAndDatedWeights_whenNaturalQuestionIsAsked() throws Exception {
@@ -95,6 +125,9 @@ class ComplexPersonalQueryEvalIT extends AbstractIntegrationTest {
                     new MealPopulator.Line("Teszt főétel", "900", "50", "80", "40", (short) 1),
                     new MealPopulator.Line("Teszt kiegészítő", "330", "18", "44", "13", (short) 1)));
         }
+        meals.createMealWithItems(user, today, "breakfast", Instant.now(), List.of(
+                new MealPopulator.Line("Mai zabos reggeli", "600", "30", "90", "13", (short) 1)));
+        train.createScheduleSlot(user, today.getDayOfWeek().getValue() - 1, "20:00", 120, "training");
         var conversation = conversations.conversation(user);
         long started = System.currentTimeMillis();
         var answer = LlmActorContext.runAsCaptured(user, () -> chat.sendMessage(user, conversation.getId(),
@@ -108,6 +141,35 @@ class ComplexPersonalQueryEvalIT extends AbstractIntegrationTest {
         assertThat(answer.getTools().stream().map(tool -> tool.getName().split("\\(")[0]).toList())
                 .contains("get_goal", "get_fuel_log", "get_training_log");
         assertThat(answer.getContent()).isNotBlank();
+        var recorded = messages.findById(answer.getId()).orElseThrow();
+        assertThat(recorded.getToolCalls().calls()).anySatisfy(call -> {
+            assertThat(call.name()).isEqualTo("get_fuel_log");
+            assertThat(call.args()).contains("date=" + today);
+        });
+        assertThat(recorded.getToolCalls().calls()).anySatisfy(call -> {
+            assertThat(call.name()).isEqualTo("get_training_plan");
+            assertThat(call.args()).contains("scope=today");
+        });
+        assertThat(json.writeValueAsString(recorded.getToolOutcomes())).contains("120 perc");
+
+        // A real DB change between turns must invalidate reliance on the prior tool result.
+        meals.createMealWithItems(user, today, "lunch", Instant.now(), List.of(
+                new MealPopulator.Line("Most naplózott rizses ebéd", "900", "50", "130", "20", (short) 1)));
+        var followup = LlmActorContext.runAsCaptured(user, () -> chat.sendMessage(user, conversation.getId(),
+                SendMessageRequest.builder().content("Közben naplóztam az ebédemet is. Így mi marad még mára?").build()));
+        var refreshed = messages.findById(followup.getId()).orElseThrow();
+        Files.writeString(Path.of("target/complex-personal-query-followup.json"), json.writeValueAsString(
+                Map.of("answer", followup, "calls", refreshed.getToolCalls(), "outcomes", refreshed.getToolOutcomes())));
+        assertThat(followup.getDegraded()).isFalse();
+        assertThat(refreshed.getToolCalls().calls()).anySatisfy(call -> {
+            assertThat(call.name()).isEqualTo("get_fuel_log");
+            assertThat(call.args()).contains("date=" + today);
+        });
+        assertThat(json.writeValueAsString(refreshed.getToolOutcomes())).contains("Most naplózott rizses ebéd");
+        var general = LlmActorContext.runAsCaptured(user, () -> chat.sendMessage(user, conversation.getId(),
+                SendMessageRequest.builder().content("Most más: írj egy rövid, vicces mesét egy könyvtáros polipról.").build()));
+        assertThat(general.getTools()).isEmpty();
+        assertThat(general.getDegraded()).isFalse();
         // Numerical/causal interpretation is assessed against the saved answer and evidence,
         // not by keyword matching a free-form model response.
     }
