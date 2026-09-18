@@ -54,7 +54,7 @@ import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
 
 /** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
- *  `fuel-mai titanium` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
+ *  `fuel-mai` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
 const BLOCK: Record<MealSlot, { color: string; icon: ClayIconName; label: string }> = {
   breakfast: { color: 'var(--amber)', icon: 'i-reggeli', label: 'Reggeli' },
   lunch: { color: 'var(--sage)', icon: 'i-ebed', label: 'Ebéd' },

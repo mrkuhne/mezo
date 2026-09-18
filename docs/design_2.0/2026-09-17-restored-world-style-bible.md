@@ -607,3 +607,51 @@ Every Titanium visual named in the spec's kill-list has a defined replacement ab
 | `wo-` / `pl-` / `sp-` / `cer-` / `gy-` feature sections | §8 recipes + §7.3 for the workout screen | §7.3, §8 |
 
 Anything not in this table is functionality and is kept untouched.
+
+---
+
+## Appendix A — the Fuel re-dress exemplar (`mezo-ju4j6.6`, Phase 5a)
+
+Phase 5a re-dressed **Fuel · Mai** (`FuelMaiPage` + the `fmx-` families it renders:
+`FuelEnergyHero`, `FuelMacroRings`, `FuelMealBlocks`, the water module and the quiet corner).
+The CSS block was renamed `fuel-mai titanium` → **`fuel-mai`** in the same commit as the rules,
+and registered in `prototypeCssStructure.test.ts`. **Phases 5b–5d copy the decisions below
+verbatim** rather than re-deriving them; everything here is an application of §1–§8, not a new
+rule. Behaviour, DOM and routes were untouched — only material moved.
+
+### A.1 The substitution table
+
+| Titanium material found | Restored replacement | § |
+| --- | --- | --- |
+| Bordered hero card (`border` + `--mz-shadow-sage` on `.fh-hero`) | **halo band**: `background: var(--halo-sage)`, no border, no shadow | §2.2 C, §8.1 |
+| Glass chip (`--surface-glass` + `backdrop-filter: blur()` + drop shadow) | flat **cell chip**: `--mz-cell-<hue>-bg` / `-ink`, `border-radius: 999px`, `border: 0` | §2.2 B, §2.3 |
+| Decorative sheen element (`.fmx-chip-sheen`) | `display: none` — the element stays in the DOM (the component draws it), the material does not | §2.3, §8.6 |
+| `filter: drop-shadow(… )` on any clay `<svg>` | deleted — the icon's own gradients carry the volume | §6.1, §2.3 |
+| `box-shadow: … rgba(0,0,0,.x)` on a card | `var(--mz-shadow)` (or the hue variant); never a raw black shadow | §2.2 A |
+| Tinted card = `color-mix(tint 11%, transparent)` + `1px` tint border | **wash tile**: `linear-gradient(150deg, color-mix(tint 16%, var(--surface-card)), color-mix(tint 5%, var(--surface-page)))` + `0.5px solid rgba(43,33,24,.06)` + `--mz-shadow`, radius **22** | §2.2 A, §3.1 |
+| `is-now` = brighter tint border + tint glow | **coral**: `1px solid var(--dv-coral)` + `--mz-shadow-coral` + the 2.6s now-pulse | §4.4 |
+| `is-missed` = `border-style: dashed` keeping its shadow | `1.2px dashed` amber at 55%, **`box-shadow: none`** | §4.4 |
+| Glass disc button (`--surface-glass` + blur) | **icon shield**: `var(--surface-1)` + `inset 0 0 0 1px var(--border-subtle)`, `border: 0` | §3.1 |
+| `text-shadow`/`drop-shadow` glow on a numeral or arc | deleted; the lead number is distinguished by **colour alone** (`--ink` vs `--sub`) | §2.3 |
+| `7–8px` eyebrow with `letter-spacing: 1.2px` | `9px / 800 / .16em`, uppercase, in the domain's `*-ink` | §3.2 |
+| Big numeral at weight `300` | weight **200** + `font-variant-numeric: tabular-nums` | §3.2 beat 3 |
+| Section `h2` at `17px/500` | `var(--ff-display) 24px/700`, `letter-spacing: -0.02em` | §3.3 |
+| Infinite decorative loop (float, sheen, attention-pulse) | deleted. The **only** surviving loop is the now-pulse | §8.6, §4.4 |
+
+### A.2 Rules of engagement learned here
+
+1. **Domain accent before Titanium accent.** Fuel's arc and its chips were `--sky`; sage is the
+   Fuel accent (§2.1). `--sky` survives only where it *means water* (the water module, the water
+   ring) — a hue that carries meaning is not a skin and does not get re-hued.
+2. **Never write a literal where a `--mz-*` token exists.** Every replacement above is a token,
+   so dark mode follows for free — this is what makes a re-dress a one-pass job.
+3. **The DOM is frozen, so kill materials, not elements.** A decorative node with no job left
+   (`.fmx-chip-sheen`) is turned off in CSS; removing it from the component would be a
+   behaviour change and is out of scope.
+4. **A guard travels with the re-dress.** The section-registration describe added in
+   `prototypeCssStructure.test.ts` also asserts the banished materials (`--surface-glass`,
+   `drop-shadow`) cannot come back on that slice, and that the chips are `--mz-cell-*` pairs.
+   Strip comments before scanning — the block's own prose names the materials it banished.
+5. **Check 320px after a type change.** Raising an eyebrow from 7px to 9px broke a three-column
+   hero at 320px; the fix is a `@media (max-width: 360px)` step-down inside the same block, not
+   a retreat from §3.2.

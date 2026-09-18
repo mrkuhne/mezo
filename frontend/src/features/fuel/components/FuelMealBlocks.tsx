@@ -97,7 +97,7 @@ function MacroRings({ row, fiberTargetG }: { row: DoneMealRow; fiberTargetG: num
 }
 
 /** Blokk-hue a ház tokenjeiből (a prototípus beégetett hexei helyett — a Mai a ház saját
- *  világos/sötét témájában él, lásd a prototype.css `fuel-mai titanium` blokk fejlécét). */
+ *  világos/sötét témájában él, lásd a prototype.css `fuel-mai` blokk fejlécét). */
 const BLOCK_COLOR: Record<MealSlot, string> = {
   breakfast: 'var(--amber)',
   lunch: 'var(--sage)',
