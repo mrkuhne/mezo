@@ -15558,14 +15558,43 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /train sport titanium ───────────────────────────────────────────────── */
 
-/* Docked navigation chrome (mezo-0i5y6 → restored world, mezo-ju4j6.4).
-   The bar is graphite in BOTH themes by design — that predates Titanium and stays.
-   What was Titanium is the COLD graphite and the pastel-neon accents; the style bible
-   (docs/design_2.0/2026-09-17-restored-world-style-bible.md §7.4) re-tones both warm,
-   so the bar sits in the same brown/ochre family as the restored light ground.
-   These chrome tokens deliberately stay dark on light pages; the page's theme
-   preference is not changed. */
-:root, :root[data-theme="dark"] {
+/* Docked navigation chrome (mezo-0i5y6 → restored world, mezo-ju4j6.4, mezo-ju4j6.18).
+   CORRECTION (mezo-ju4j6.18, owner report + git archaeology): this block used to claim the
+   graphite bar "predates Titanium and stays". The DATE is wrong. `mezo-0i5y6` (b02e06a8c,
+   the docked nav) landed 2026-09-17 — the TAIL of the Titanium period — and the last
+   pre-Titanium stylesheet (`0f887e565`, 2026-09-12) carries neither `--nav-surface` nor
+   `.tab-bar[data-domain]`. The old world's bar was the floating pill above, whose ground is
+   `color-mix(… var(--canvas) …)`: THEME-AWARE. A permanently dark dock is therefore a
+   Titanium-period artefact, not a pre-Titanium decision, and §1's light-first rule applies
+   to it like to every other surface.
+   So the chrome now has two sets: a warm sand bar in light, the warm graphite in dark. The
+   DOCKED GEOMETRY (88px, the 56px switch column, the 5×4 matrix, focus management) is
+   keep-list and is untouched — only the material follows the theme. */
+:root {
+  /* Light: the bar is page-family chrome, one step brighter than the ground so it still
+     reads as a dock, with the §2.2 A white inset top edge doing the separating. */
+  --nav-surface: #F7F2E9;
+  --nav-surface-top: #FFFDF9;
+  --nav-card: var(--surface-card);
+  --nav-ink: var(--text-primary);
+  --nav-muted: var(--text-secondary);
+  /* `--text-tertiary` measures 3.71:1 on this ground — under AA for the bar's 10px labels.
+     `--text-secondary` reads 6.70:1; the ACTIVE tab is still told apart by its domain hue,
+     not by being the only legible one. */
+  --nav-idle: var(--text-secondary);
+  --nav-line: rgba(43, 33, 24, 0.08);
+  --nav-backdrop: rgba(43, 33, 24, 0.36);
+  --nav-shadow: rgba(43, 33, 24, 0.10);
+  --nav-highlight: rgba(255, 255, 255, 0.75);
+  /* On a light bar the §2.1 accents must be the READABLE `--mz-cell-*-ink` halves —
+     the lifted pastels below are calibrated for graphite and vanish here. */
+  --nav-nap: var(--mz-cell-amber-ink);
+  --nav-train: var(--mz-cell-coral-ink);
+  --nav-fuel: var(--mz-cell-sage-ink);
+  --nav-mezo: var(--mz-cell-lav-ink);
+  --nav-me: var(--mz-cell-rose-ink);
+}
+:root[data-theme="dark"] {
   --nav-surface: #241E1A;
   --nav-surface-top: #2C2521;
   --nav-card: #2C2521;
@@ -15593,7 +15622,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-radius: 0; border-top: 1px solid var(--nav-line);
   padding: 12px 8px 24px; gap: 3px;
   background: linear-gradient(180deg, var(--nav-surface-top), var(--nav-surface) 80%);
-  box-shadow: none; align-items: stretch;
+  /* The white inset top edge (§2.2 A) is what lifts the bar off a LIGHT page now that its
+     ground is no longer a hard dark band; on graphite the same line is near-invisible. */
+  box-shadow: 0 -10px 24px -14px var(--nav-shadow), inset 0 1px 0 var(--nav-highlight);
+  align-items: stretch;
 }
 .tab-bar[data-domain] .tab-item {
   min-width: 0; min-height: 44px; gap: 3px;
