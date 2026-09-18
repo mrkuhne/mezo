@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -82,8 +83,9 @@ class PredictionGeneratorMemoryIT extends AbstractIntegrationTest {
         patternPopulator.save(marker);
         item(user, "Régen is hasonló mintát figyeltél meg.");
 
-        generator.generate(user, WEEK_START);
+        List<PredictionEntity> predictions = generator.generate(user, WEEK_START);
 
+        assertThat(predictions).isNotEmpty();
         assertDenseRetrieverFailed(user);
     }
 

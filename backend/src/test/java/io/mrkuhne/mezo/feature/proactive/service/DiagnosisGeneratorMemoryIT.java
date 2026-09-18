@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
@@ -50,6 +51,14 @@ class DiagnosisGeneratorMemoryIT extends AbstractIntegrationTest {
 
     private static final LocalDate TODAY = LocalDate.now();
     private static final String VERSION = "gemini-embedding-001-768-v1";
+    // DiagnosisGeneratorIT's scripted-answer shape: evidenceIndexes [0] is always in range —
+    // `seedTwoDomains` guarantees at least one metric-kind candidate at index 0.
+    private static final String DIAGNOSIS_ANSWER =
+            "{\"verdict\":\"Fáradtságot okozó minta.\",\"confidence\":\"strong\","
+            + "\"suspects\":[{\"title\":\"Alváshiány\",\"claim\":\"Kevesebbet alszol.\","
+            + "\"evidenceIndexes\":[0],\"strength\":\"strong\","
+            + "\"probe\":{\"text\":\"Feküdj le korábban.\",\"metricKey\":\"SLEEP_DURATION_H\","
+            + "\"expectedDirection\":\"up\",\"totalDays\":7}}]}";
 
     @Autowired private DiagnosisGenerator generator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
@@ -94,16 +103,22 @@ class DiagnosisGeneratorMemoryIT extends AbstractIntegrationTest {
         seedTwoDomains(user);
         // The diagnosis memory query is the evidence candidates' own label/detail lines joined —
         // a CONFIRMED pattern becomes a "pattern"-kind candidate whose label is its title, so the
-        // marker riding the pattern title reaches the query with no new read.
+        // marker riding the pattern title reaches the query with no new read. The SAME pattern also
+        // carries the DiagnosisGeneratorIT `[fake-diagnosis:{…}]` sentinel in its mechanism, so the
+        // fake LLM answers with a real suspect instead of the un-scripted default's empty list —
+        // otherwise `generate` would return null regardless of the memory outcome, and the
+        // isNotNull assertion below would prove nothing about the fail-open contract.
         PatternEntity marker = patternPopulator.createPattern(user,
                 "pair-" + UUID.randomUUID().toString().substring(0, 8),
                 "Fáradtság mintázat " + FakeEmbeddingAdapter.FAIL_EMBED);
         marker.setStatus(PatternEntity.STATUS_CONFIRMED);
+        marker.setMechanism("[fake-diagnosis:" + DIAGNOSIS_ANSWER + "]");
         patternPopulator.save(marker);
         item(user, "Régen is hasonló fáradtságot éltél át.");
 
-        generator.generate(user, TODAY);
+        DiagnosisEntity diagnosis = generator.generate(user, TODAY);
 
+        assertThat(diagnosis).isNotNull();
         assertDenseRetrieverFailed(user);
     }
 

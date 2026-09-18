@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.service.ExperimentProposalGenerator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
@@ -17,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -74,8 +76,9 @@ class ExperimentProposalGeneratorMemoryIT extends AbstractIntegrationTest {
         patternPopulator.save(marker);
         item(user, "Régen is hasonló mintát figyeltél meg.");
 
-        generator.propose(user);
+        List<ExperimentEntity> experiments = generator.propose(user);
 
+        assertThat(experiments).isNotEmpty();
         assertDenseRetrieverFailed(user);
     }
 

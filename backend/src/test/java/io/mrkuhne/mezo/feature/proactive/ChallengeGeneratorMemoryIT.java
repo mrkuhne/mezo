@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryRetrievalRunRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.service.ChallengeGenerator;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -21,6 +22,7 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -93,8 +95,9 @@ class ChallengeGeneratorMemoryIT extends AbstractIntegrationTest {
         patternPopulator.save(marker);
         item(user, "Régen is hasonló mintát figyeltél meg.");
 
-        generator.generate(user, session.getId(), LocalDate.now());
+        List<ChallengeEntity> challenges = generator.generate(user, session.getId(), LocalDate.now());
 
+        assertThat(challenges).isNotEmpty();
         assertDenseRetrieverFailed(user);
     }
 
