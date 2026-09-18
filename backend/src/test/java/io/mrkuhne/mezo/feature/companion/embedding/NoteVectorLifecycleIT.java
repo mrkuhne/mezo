@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * W1.5 lifecycle (mezo-b3pp.26): the writer-level drift-detection and reap cases for
@@ -31,6 +32,8 @@ import org.springframework.test.context.ActiveProfiles;
  * revive-trap case). Task 2 adds the nightly-sweep-level cases alongside these.
  */
 @ActiveProfiles("companion-fake")
+// Exercise the configurable legacy length gate explicitly; default short-note coverage is tested separately.
+@TestPropertySource(properties = "mezo.companion.embedding.note-min-chars=80")
 class NoteVectorLifecycleIT extends AbstractIntegrationTest {
 
     private static final String KIND = NarrativeNoteSource.ACTIVITY_NOTE;
@@ -274,11 +277,10 @@ class NoteVectorLifecycleIT extends AbstractIntegrationTest {
 
     @Test
     void testRun_shouldNotReap_whenALiveNoteFellBelowMinChars() {
-        // Deliberate residue (mezo-b3pp.26): liveness and length are different questions. A note
-        // edited down below note-min-chars drops out of the CANDIDATE set (length-gated), so it
-        // is neither re-embedded nor reaped — its stale vector survives untouched. Reaping on the
-        // length gate would mean merely RAISING note-min-chars mass-deletes a user's existing
-        // vectors on the next nightly run.
+        // Legacy length-gate contract (mezo-b3pp.26): a live note edited below the explicitly
+        // configured threshold is neither re-embedded nor reaped from memory_embedding.
+        // Raising the threshold must not delete existing vectors. Canonical source repair is
+        // independent and may refresh its full-source chunks; this assertion concerns OLD storage.
         UUID owner = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
         ActivityLogEntity activity = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");

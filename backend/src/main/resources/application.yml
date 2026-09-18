@@ -780,6 +780,24 @@ mezo:
       per-call-kind:
         TRANSCRIBE: gemini
         VISION: gemini
+    personal-records:
+      # Maximum full-source rows per page; character budget can reduce this.
+      page-size: 5
+      # Bound literal substring searches over allowlisted personal projections.
+      query-max-chars: 400
+    conversation:
+      # Conversation-first smart retrieval; false restores the previous gear pipeline.
+      enabled: true
+      # Bounded dependent retrieval batches, sharing tools.max-calls-per-turn.
+      max-read-rounds: 3
+      # Recent history plus on-demand older pages; all sizes have explicit truncation markers.
+      history-messages: 80
+      history-page-size: 20
+      history-message-max-chars: 12000
+      history-max-chars: 100000
+      # Persisted evidence per result and per assistant row (internal JSONB, not the REST DTO).
+      result-max-chars: 8000
+      results-max-chars: 40000
     chat:
       # How many prior messages (user+assistant rows) are windowed into the system prompt (20 = ~10 turns)
       history-window: 20
@@ -859,13 +877,13 @@ mezo:
       # V2.2: embed each completed chat turn (user+assistant as ONE unit) after commit;
       # off = the TurnEmbeddingListener bean does not exist (no post-turn embedding call ever)
       embed-chat-turns: true
-      # Upper cap on embedded content length (chars) per narrative unit (turn / summary)
+      # Canonical chunk size in characters; OLD compatibility keeps only the first chunk.
       embed-max-chars: 2000
       # W1.5 (mezo-b3pp.5): the nightly sweep also embeds the narrative written OUTSIDE the journal —
       # activity_log.text (QuickInput „Napló") and check_in.note. Off = the catch-up pass does nothing.
       embed-notes: true
-      # Length gate: a note shorter than this carries no retrieval value, so it never becomes a vector
-      note-min-chars: 80
+      # Index every nonblank note by default, including short but meaningful observations.
+      note-min-chars: 1
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
     reflection:

@@ -41,7 +41,8 @@ import java.util.UUID;
  * back ONLY that unit's transaction (callers run one unit per call through the proxy and
  * log-and-continue; the next nightly run heals whatever a race dropped). Content is capped at
  * {@code embedding.embed-max-chars} BEFORE embedding, and the capped text is what gets stored
- * (the vector must describe the stored content, not a longer original).
+ * (the vector must describe the stored content, not a longer original). The canonical projection
+ * receives the FULL source and indexes consecutive chunks; the cap applies only to legacy storage.
  */
 @Slf4j
 @Component
@@ -67,7 +68,7 @@ public class MemoryEmbeddingWriter {
         Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, summary.getId());
         if (existing.isPresent()) {
-            publishProjection(existing.get());
+            publishProjection(existing.get(), summary.getNarrative());
             return;
         }
         memoryEmbeddingRepository
@@ -97,17 +98,18 @@ public class MemoryEmbeddingWriter {
         }
         Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId());
-        if (existing.isPresent()) {
-            publishProjection(existing.get());
-            return;
-        }
         String userContent = aiMessageRepository
                 .findFirstByConversationIdAndRoleAndDeletedFalseAndCreatedAtLessThanEqualOrderByCreatedAtDesc(
                         assistant.getConversation().getId(), AiMessageEntity.ROLE_USER,
                         assistant.getCreatedAt())
                 .map(AiMessageEntity::getContent).orElse("");
+        String fullContent = PromptPersona.USER_TURN_LABEL + userContent + "\nMezo: " + assistant.getContent();
+        if (existing.isPresent()) {
+            publishProjection(existing.get(), fullContent);
+            return;
+        }
         write(assistant.getCreatedBy(), MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId(),
-                PromptPersona.USER_TURN_LABEL + userContent + "\nMezo: " + assistant.getContent(),
+                fullContent,
                 LocalDate.ofInstant(assistant.getCreatedAt(), ZoneId.systemDefault()));
     }
 
@@ -209,12 +211,11 @@ public class MemoryEmbeddingWriter {
         Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
                 kind, summary.getId());
         if (existing.filter(row -> capped.equals(row.getContent())).isPresent()) {
-            // the nightly job re-offers every period in its backfill window; re-embedding an
-            // unchanged text would burn a provider call per period per night for nothing
-            publishProjection(existing.get());
+            // Reuse the legacy prefix vector; canonical projection still checks every full-source chunk.
+            publishProjection(existing.get(), summary.getSummaryText());
             return;
         }
-        upsert(summary.getCreatedBy(), kind, summary.getId(), capped, summary.getPeriodStart());
+        upsert(summary.getCreatedBy(), kind, summary.getId(), summary.getSummaryText(), summary.getPeriodStart());
     }
 
     /**
@@ -226,8 +227,9 @@ public class MemoryEmbeddingWriter {
      * <p>The comparison is against the CAPPED text, not the raw source text, and that is
      * load-bearing: {@link #cap} is what actually gets stored, so a note longer than
      * {@code embedding.embed-max-chars} whose tail changes has NOT changed as far as its vector is
-     * concerned. Comparing the raw text would re-embed such a note on every single nightly run,
-     * forever, for no change in the stored content.
+     * concerned. The canonical projection independently checks the full text and refreshes tail
+     * chunks even when this legacy prefix is unchanged. The nightly source repair also catches
+     * prefix-identical edits skipped by the legacy sweep.
      *
      * <p>Routed through {@link #upsert}, never {@link #write}: a previously reaped vector keeps
      * its {@code (kind, ref_id)} slot under the plain (non-partial)
@@ -242,7 +244,7 @@ public class MemoryEmbeddingWriter {
         String capped = cap(note.text());
         Optional<MemoryEmbeddingEntity> live = memoryEmbeddingRepository.findByKindAndRefId(kind, note.id());
         if (live.isPresent() && capped.equals(live.get().getContent())) {
-            publishProjection(live.get());
+            publishProjection(live.get(), note.text());
             return false;
         }
         upsert(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
@@ -287,7 +289,7 @@ public class MemoryEmbeddingWriter {
                     existing.setOccurredOn(occurredOn);
                     existing.setDeleted(false); // revive: the key is still ours, take it back
                     memoryEmbeddingRepository.saveAndFlush(existing);
-                    publishProjection(existing);
+                    publishProjection(existing, content);
                 }, () -> write(createdBy, kind, refId, content, occurredOn));
     }
 
@@ -318,7 +320,7 @@ public class MemoryEmbeddingWriter {
         // A lost race raises the uq violation and rolls back this unit's tx — deliberate:
         // catching it here cannot recover an aborted PG transaction. Callers log-and-continue.
         memoryEmbeddingRepository.saveAndFlush(entity);
-        publishProjection(entity);
+        publishProjection(entity, content);
     }
 
     private void deleteAndSuppress(MemoryEmbeddingEntity row) {
@@ -327,13 +329,13 @@ public class MemoryEmbeddingWriter {
         publishSuppression(row);
     }
 
-    private void publishProjection(MemoryEmbeddingEntity row) {
+    private void publishProjection(MemoryEmbeddingEntity row, String fullContent) {
         eventPublisher.publishEvent(new MemoryProjectionEvent.Upsert(
                 new ProjectionCommand(
-                    row.getCreatedBy(), row.getKind(), row.getRefId(), null, row.getContent(),
+                    row.getCreatedBy(), row.getKind(), row.getRefId(), null, fullContent,
                     row.getOccurredOn(), List.of(), List.of(), 0.5,
                     MemoryProvenanceEnvelope.empty()),
-                row.getEmbedding()));
+                row.getContent().equals(cap(fullContent)) ? row.getEmbedding() : null));
     }
 
     private void publishSuppression(MemoryEmbeddingEntity row) {
@@ -349,6 +351,6 @@ public class MemoryEmbeddingWriter {
      */
     String cap(String content) {
         int max = properties.embedding().embedMaxChars();
-        return content.length() <= max ? content : content.substring(0, max);
+        return content.substring(0, io.mrkuhne.mezo.feature.companion.memory.service.MemoryChunkText.end(content, 0, max));
     }
 }

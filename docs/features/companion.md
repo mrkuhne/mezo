@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -17,30 +17,18 @@ related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-
 
 # Companion (AI chat brain) — Feature Documentation
 
-> One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
-> `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** (now forward-resolving today+tomorrow's training, dated) + the **top-N confirmed
-> knowledge facts** in every system prompt, **18 read-only hub-tools** (scope-enumerated,
-> `mezo.companion.tools.max-calls-per-turn` = 15) for history/aggregate + forward-plan +
-> browse questions (audited into the message envelopes, rendered as real FE chips), a
-> system-prompt **`[Eszköz-útmutató]`** tool-routing hint, answered **sync JSON or streamed
-> SSE**, and consumed by the **real dual-mode ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
-> confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
-> V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
-> pgvector/EmbeddingPort infra + narrative-memory pipeline + episodic recall tool); FE ✅ V1.3
-> (ChatPage + KnowledgeListPage real + degraded badge)
-> — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**. The shared hybrid
-> memory platform now shadows every chat turn by default and can serve it behind one
-> `OLD`/`SHADOW`/`NEW` switch (`mezo-6dii.6`).**
-> Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
-> ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5). Nem-technikai
-> működés-magyarázó: [`docs/guides/companion-hogyan-mukodik.md`](../guides/companion-hogyan-mukodik.md).
+> Open-ended Hungarian conversation with owner-scoped data access when relevant. The default
+> path uses a smart retrieval loop and natively streamed answers; context and memory are fetched
+> on demand. 18 domain reads plus 5 context/source reads share the audited 15-call budget.
+> The previous keyword-gear pipeline remains available only as a configuration rollback.
+> Surfaces: Insights ChatPage + KnowledgeListPage ([insights](insights.md)).
+> User guide: [how the companion works](../guides/companion-hogyan-mukodik.md).
 
 ## 1. Summary
 
-The **companion** is mezo's Phase-3 "AI brain": a context-aware chat that will eventually know
-Daniel's day, remember facts, recall similar past days, and surface patterns. It is being built
-in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually exists now**.
+The **companion** is mezo's AI conversation layer: it receives stored profile and goal basics,
+retrieves detailed personal records when relevant, recalls past evidence and surfaces patterns.
+The sections below describe its current behavior and the supporting components.
 
 **V0.2 (`mezo-fnnq.2`) shipped the persistence spine** — the API everything else hangs on:
 
@@ -775,7 +763,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
 | Gratitude embedding seam | ✅ `mezo-b3pp.3` | A SIXTH `memory_embedding` kind, `gratitude`: 1–3 short lines a day from `gratitude_entry` (`feature/journal`, [`journal.md`](journal.md) §5). `GratitudeEmbeddingListener` is the journal-shaped twin of the journal listener (`COMPANION_SWITCH` + `JOURNAL_SWITCH`, AFTER_COMMIT/`@Async`), calling `MemoryEmbeddingWriter.writeGratitude` / `.deleteGratitudeEmbedding` over the shared `upsert`; no edit endpoint, so only the create-then-delete liveness re-check. Short texts embed fine — they carry disproportionate emotional signal (spec §5.3). |
-| Note catch-up seam | ✅ `mezo-b3pp.5`, lifecycle `mezo-b3pp.26` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.syncNote`, lifecycle-aware since `mezo-b3pp.26` (replaces the original insert-only `writeNote`): it compares a candidate's CAPPED text against the live vector's stored content and re-embeds through the revive-capable `upsert` only on a first write or a drift, so an unchanged corpus costs no embed call. No lower date bound, so the first run IS the one-time history backfill and later runs both catch up and heal drift; `NoteEmbeddingCatchUp.embed` also REAPS — before any budget check, every stored ref-id whose source row is gone OR still live but cleared to blank gets its vector soft-deleted via `MemoryEmbeddingWriter.deleteNoteEmbedding` — via `NarrativeNoteSource.liveNotes`. `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
+| Note catch-up seam | ✅ `mezo-b3pp.5`, lifecycle `mezo-b3pp.26` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.syncNote`, lifecycle-aware since `mezo-b3pp.26` (replaces the original insert-only `writeNote`): it compares a candidate's CAPPED text against the live vector's stored content and re-embeds through the revive-capable `upsert` only on a first write or a drift, so an unchanged corpus costs no embed call. No lower date bound, so the first run IS the one-time history backfill and later runs both catch up and heal drift; `NoteEmbeddingCatchUp.embed` also REAPS — before any budget check, every stored ref-id whose source row is gone OR still live but cleared to blank gets its vector soft-deleted via `MemoryEmbeddingWriter.deleteNoteEmbedding` — via `NarrativeNoteSource.liveNotes`. `mezo.companion.embedding.embed-notes` / `note-min-chars` (1; every nonblank note) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
@@ -1617,6 +1605,57 @@ companion surface since V0.4, dual-mode:
 
 ## 3. Architecture & data flow
 
+### Default interactive conversation path (`mezo-rj214.9`)
+
+`mezo.companion.conversation.enabled=true` selects the conversation-first path in BOTH
+`ChatService.sendMessage` and `ChatStreamService.streamMessage`. The gear classifier is bypassed.
+Preparation supplies the date, a compact stored biometric/current-goal baseline, learned communication preferences, explicit day/week anchor, and
+up to 80 recent messages under a 100,000-character cap (12,000 per message). There is no automatic
+health snapshot, character assessment, memory search or newly-learned announcement.
+
+`ConversationTurnService.prepare` gives the smart planner the full 23-tool catalogue, history
+and accumulated tool results. `needsData=false` stops retrieval; otherwise validated reads run
+through `PlanExecutor` and the existing audit. Each subsequent decision sees the results and can
+request dependent reads. Newest results get priority in the bounded digest so a large earlier
+batch cannot hide a newly requested fact. Caps: three batches and 15 total reads; repeated identical reads do not
+run again. Failed planning/budget exhaustion is explicit context and marks the answer degraded;
+account/billing refusal still propagates. The final `completeSmart`/`streamSmart` writes ordinary
+prose, never the legacy data-gap marker. All topics, including analysis, use native streaming.
+The clinical guard remains; the LLM verdict/rewrite is not used on this path.
+
+The three extra reads are `get_personal_context(scope=facts|people|character|reflections|today)`,
+`search_personal_memory(query)` and `get_conversation_history(page,messageOffset)`. All use the
+server-supplied owner; history also uses the current conversation only. Memory goes through the
+existing OLD/SHADOW/NEW adapter and carries retrieval disclosure and refs into the final message.
+The additional `list_personal_sources(domain,offset)` and `read_personal_records(source,id,parentId,from,to,query,offset,contentOffset)` reads expose the approved personal domain projections described below.
+
+The internal `tool_calls.calls[].result` stores bounded evidence (8,000 characters per result,
+40,000 payload characters per assistant row, plus omission markers and call metadata). REST tool chips remain `{type,name}`. Legacy JSON without result still
+loads. The recent transcript labels restored evidence with its timestamp and as historical data;
+older-history pages expose up to 20 messages with continuation offsets when a body is clipped.
+The effective page size shrinks with the smaller persistence/answerer result budget so every row
+and the continuation footer remain reachable. Refresh
+changing measurements through their source tools rather than treating old output as current.
+
+`ConversationProperties` owns these knobs under `mezo.companion.conversation`. Setting `enabled`
+to false restores the previous 20-message gear/pipeline behavior described in the rollback
+sections below. Existing historical integration fixtures explicitly exercise rollback; the
+`ConversationFirstIT` suite opts into the shipped path. The tradeoff is an extra smart preparation
+call even for general chat. [ADR 0043](../decisions/0043-conversation-first-companion.md) records why.
+
+
+### Complete personal source access (`mezo-rj214.10`)
+
+`PersonalBaselineContext` supplies stored sex, derived age, height, body fat/activity, latest dated weight, active weight-goal direction/start/target weights and dates, and the currently applicable stored calorie/macronutrient prescription. Missing values stay explicit; future/expired prescription segments are not today's target. Planning, final sync/SSE answering and opening turns share this baseline. Personal facts remain background, not a mandatory conversation topic.
+
+`PersonalRecordSource` is the reviewed catalogue of 95 explicit SQL projections. It covers biometrics/settings, meals and frozen ingredient nutrition, pantry/catalogue, recipes/ingredients, gym sets/feedback/plans, running/sport, medication/protocol, goals, habits/quests/needs, journals/gratitude/decisions/rituals, people/mentions, character, knowledge and proactive artifacts. Account credentials, provider logs and infrastructure state are not sources. New columns require an explicit catalogue change; SQL identifiers never come from model text. `PersonalRecordQuery` binds all user/date/id/search values and enforces ownership, soft deletion and declared containment parents. Shared exercise/pantry catalogue rows follow the catalogue visibility rule.
+
+Discovery names the date field and parent relationship. Reads have no 30-day historical clamp, accept literal text search, and return stable date/ID ordered pages. `nextOffset` continues records; `nextContentOffset` continues the same record's JSON text with its `id` and `offset=0`. Bounded results fit both persistence and answerer caps. A fragment is not a complete record. Meal snapshots are per stored basis (`snapshot_per`, `snapshot_basis_unit`); amount/unit must be applied before treating them as consumed totals. No missing nutrient is converted to zero. Domain tools retain convenient summaries, now with meal macros/items/times, individual training sets/feedback, exact raw weight, check-in/ritual text and life-goal frame; bounded summaries point to the full source reader.
+
+Canonical memory now stores consecutive `chunk_index` parts of a source rather than only its first 2,000 characters. The legacy OLD row remains prefix-capped; canonical NEW chunks preserve the complete source and each receives a serving-generation vector. Edits suppress obsolete trailing chunks, source deletion suppresses all parts, and returned evidence includes original physical source name/ID plus canonical item ID for full-source reads. Explicit user forgetting suppresses every chunk of the source and persists a source-wide provenance marker: later edits/repair and retrieval-feedback retention cannot resurrect it. Source-deleted or blank memories are hidden immediately by both retrieval queries and the direct `memory_item` reader, before asynchronous repair runs. The existing nightly note catch-up also reconciles missed/drifted canonical sources, including older journals; historical repair converges in bounded batches rather than being instant on deployment. All nonblank notes qualify by default (`note-min-chars=1`). Contextual lexical retrieval uses the prepared standalone query, and partial retriever failure is explicitly audited/rendered without discarding healthy results.
+
+Tests: `PersonalRecordIT`, `PersonalBaselineContextIT`, `MemorySourceRepairIT`, `MemoryProjectionWriterIT`, `HybridMemoryRetrieverIT`, `MemoryContextServiceIT`, and expanded `CompanionToolsRenderIT`. See [ADR 0044](../decisions/0044-complete-personal-source-access.md).
+
 **Shared-memory dual-write (`mezo-6dii.2`; OLD still serves):**
 
 ```text
@@ -1636,9 +1675,10 @@ optional MemoryReembeddingJob
 ```
 
 The commit boundary is load-bearing: canonical projection is synchronous after OLD commits, but in
-a separate transaction. It can therefore reuse the vector already paid for by OLD while a failure
-only leaves a repairable projection gap. Re-offering an unchanged OLD row also republishes the event,
-which heals a previously missed canonical row without another provider call. The re-embedding path
+a separate transaction. The already-paid OLD vector is reusable only when its embedded content/hash
+exactly matches the first canonical chunk; other or changed chunks receive their own embeddings.
+A failure leaves a repairable projection gap. Re-offering an unchanged OLD row republishes the event;
+matching ready chunks can be reused while missing or changed chunks are repaired. The re-embedding path
 selects a named target version and never mutates `servingEmbeddingVersion`.
 
 **Adaptive memory-query preparation (`mezo-6dii.3`; consumed by shared retrieval):**
@@ -1779,7 +1819,7 @@ rejected instead of silently leaving a contradictory suppressed item. No learnin
 rank-weight mutation is emitted in this slice: `.8` owns using the accumulated labels for
 evaluation/tuning.
 
-**The streamed turn (V0.4 + V0.5 tools + S9.6 phase narration — what the FE uses).** Since S9.6
+**Shared SSE transport and rollback pipeline (V0.4 + V0.5 + S9.6).** The default conversation-first branch is described above. The following gear-specific branches apply only with conversation-first disabled. Since S9.6
 (`mezo-rj214.7` Task 3) everything from the audit/`toolSink` setup down runs inside a
 `Flux.defer(() -> …).subscribeOn(Schedulers.boundedElastic())` (`ChatStreamService.java:148-291`).
 Before that restructure the whole pre-stream lap (plan → cap → execute → answer) ran
@@ -2216,7 +2256,7 @@ callers hold the chain as `ObjectProvider<CompanionAdvisorChain>` — advisors o
 V1.2 behavior byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!"
 decision).
 
-**The turn gear (spec 2026-09-16 §5-§6, `mezo-rj214.7`).** Before any context is assembled,
+**Rollback-only turn gear (conversation.enabled=false; spec 2026-09-16, `mezo-rj214.7`).** Before any context is assembled,
 `TurnGearRouter.route(userMessage)` (`service/TurnGearRouter.java`) decides how much thinking the
 turn earns — `TurnGear.{CHAT, LOOKUP, ANALYSIS}` (`service/TurnGear.java`). The gear does NOT decide
 WHO plans, only the reasoning effort and (in later slices) whether a replan lap is allowed.
@@ -2274,7 +2314,7 @@ to the unadvised `complete`/`stream`.
 replan blocks live (below) — with the pipeline switched off, or on a planner failure, both still
 fall back to the byte-identical pre-gear tool-loop.
 
-**The planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
+**Rollback-only planner/executor pipeline (S9.4 dark → S9.5 LIVE, `mezo-rj214.7`, spec §6.2-§6.4).** `LOOKUP`
 and `ANALYSIS` turns now run plan → execute → answer on both the sync path
 (`ChatService.sendMessage`/`prepareTurn` → `pipelineAnswer`, `ChatService.java:306-336,467-505`) and
 the streamed path (`ChatStreamService.streamMessage` → `runPipelinePreStream`,
@@ -2354,14 +2394,13 @@ before persisting the done row (`ChatStreamService.java:269-271`): the streamed 
 are unrecoverable by design (no SSE mechanism retracts a delta already sent), so that second pass
 only protects what re-enters history on the next turn.
 
-**Streamed modes still differ by gear post-S9.6 — a native ANALYSIS streamer remains future
-work.** `LOOKUP` runs plan → cap → execute pre-stream (inside the S9.6 deferred lap, §3 "The
+**Rollback streaming differs by gear. The default conversation-first path streams every final answer natively.** `LOOKUP` runs plan → cap → execute pre-stream (inside the S9.6 deferred lap, §3 "The
 streamed turn"), then the answerer streams NATIVELY off the built volatile half
 (`PipelineResult.Mode.STREAM_ANSWER`, `ChatStreamService.java:180-187`) — real per-token deltas, no
 replan. `ANALYSIS` instead calls the FULL sync `pipelineAnswer` (replan lap included) pre-stream
 and emits the resolved answer as ONE delta (`Mode.SYNC_ANSWER`, `ChatStreamService.java:192`) — a
 synchronous round-trip disguised as a stream; that LOOKUP/ANALYSIS asymmetry is UNCHANGED by
-S9.6 — a native ANALYSIS streamer remains future work. What S9.6 actually shipped is explicit
+S9.6 on the rollback path; conversation-first does not use this buffered branch. What S9.6 actually shipped is explicit
 `phase` events (`PLANNING`/`RETRIEVING`/`ANSWERING`) narrating that pre-answer wait for BOTH
 gears — the client now sees why it is waiting instead of staring at a blank draft bubble; the
 wait itself is exactly as long as before. Both modes still stream real tool-call chips AHEAD of the
@@ -5383,28 +5422,38 @@ stores them — and the two status moves (`monitoring`, `refuted`) plus the thre
 (`user_reply`, `monitoring`, `refuted`) were already in `ck_pattern_status`/`ck_pattern_event_kind`
 since S2.
 
-### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
+### Companion read-tool catalog (ownership-scoped, audited)
+
+The conversation path exposes **23 tools: 18 domain reads + 3 context reads + 2 full-source reads**.
+Domain tools are useful summaries, not exhaustive inventories. Their descriptions name the full-source
+continuation; a clipped result or an empty recent window does not prove that older data is absent.
+The Ref column describes UI/audit references, whose limits do not limit source-record access.
 
 | Tool (args) | Source (existing reads) | Ref |
 |---|---|---|
-| `get_training_log(scope, days)` (mezo-xixu, merged from `get_recent_workouts`+`get_sport_sessions`) | scope=gym: `WorkoutSessionRepository.findDoneInstancesBetween` + per-instance sets → date, dayLabel, set count, Σ volume kg; scope=sport/run: sport + run since-date finders → sport/duration/intensity/RPE or run week/rounds | `Workout`/date (≤5) or `Sport`/date (≤3) or `Run`/date (≤3) |
+| `get_training_log(scope, days)` | `WorkoutSessionRepository.findDoneInstancesBetween` + sets and exercise feedback: date/day/count/volume, exercise names, every set's kind, weight/reps/RIR/side, targets, skipped state and note, active seconds and closing note. Sport/run include stored timing, load, recovery, notes and kcal/estimate fields. Recent-window summary; older records use the source reader. | `Workout`/date (≤5), `Sport`/date (≤3), `Run`/date (≤3) |
 | `get_training_plan(scope, date)` (mezo-xixu, sport added mezo-ajp) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `SportService.getSchedule` (recurring slots matched on the date's weekday) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
-| `get_weight_log(days)` (mezo-8z79) | `WeightLogRepository` since-date finder → the RAW daily weigh-ins, newest first: date, kg, day-over-day delta vs the previous row, note. The companion piece to `get_weight_trend`: the trend is EWMA-smoothed and therefore CANNOT answer "why does it fluctuate so much" — that question needs the unsmoothed points | `Weight`/date (≤5) |
-| `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
-| `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
-| `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
-| `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
+| `get_weight_log(days)` | `WeightLogRepository` → newest-first raw measurements: rounded display **and exact stored kg**, delta vs the previous row, date and note. Historical reads beyond the summary window use `read_personal_records(source=weight_log)`. | `Weight`/date (≤5) |
+| `get_fuel_log(range, date, days)` | `FuelDayService`: day/week kcal, protein, carbs and fat vs targets. Day mode retains all meal titles, then meal IDs, timestamps, slots, macros, known fiber/sugar/salt/saturated fat, score, item names/amounts/units/source/NOVA; each day’s own macro targets and water consumed/target precede verbose meal details; the daily-summary narrative also retains every meal title. Week mode returns daily macro/water totals. Full score envelopes and item snapshots remain available through `meal`/`meal_item` source reads. | `FuelDay`/date (≤5) |
+| `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header and `sleep_log` source-reader continuation when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) and the complete note per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
+| `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → every item name (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → all item names, without the former five-item cut | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
+| `get_goal(scope)` | Active goal progress: direction, week, start→target, actual/planned rate and current prescription. `recept` renders every segment with kcal/protein/carbs/fat, training/rest-day kcal, sleep/rest days/rate/rationale; `guards` renders strength/muscle guard details; `feasibility` retains all notes; `timeline` retains all plan links and uncovered weeks. Unevaluated prescriptions remain explicitly absent. Archived goals and complete envelopes use `goal`/`goal_plan_link` reads. | `Goal`/title |
 | `get_life_goals()` (mezo-iizd.10) | `LifeGoalSource.details` (port → `LifeGoalCompanionAdapter`, see "Célok a chat pillanatképben" above) → per active life goal: title, dimension (PERMAH), frame, weekly arrow + weekly %, per-pillar today-hit + weekly arrow, and ha–akkor plans with a `(MA ÉL)` marker on the live ones. The rich view behind the terse `[Célok]` snapshot block — NOT for the numeric weight/kcal goal, which is `get_goal` | `LifeGoal`/goal title (one per rendered goal) |
-| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
-| `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
-| `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
-| `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both retain all returned recent doses (the repository returns the latest ten) and direct complete history to `medication`/`medication_dose`. Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
+| `get_exercise_records(exercise)` | `ExerciseRecordService.list` computes working-set PRs. Blank query: every lift with an e1RM ranked by its best estimate; name query: all case-insensitive matches with best set/e1RM, rep records and the service's recent top sets. Complete set history uses `exercise`/`exercise_set` source reads. | `ExerciseRecord`/exercise name, bounded by the turn's shared ref budget |
+| `get_recipes(filter)` | `RecipeService.list` + accent-folded weighted token matching. Lists/ties show up to five recipes; a clear winner gets full macros/ingredients plus up to four runner-ups. Every branch reports shown/total and points to `recipe`/`recipe_ingredient` for explicit IDs, full fields and continuation. | `Recipe`/recipe name (≤5) |
+| `get_pantry(kind)` | `PantryService.getPantry`: food stock quantities/units/expiry and supplement/stim/med stock, filtered by kind. Shows five entries with explicit shown/total; `pantry_item` and `pantry_catalog` reads expose all remaining entries and nutritional/catalog details. | `Pantry`/item name (≤5) |
 | `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
-| `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |
-| `get_insights(scope)` (mezo-xixu) | scope=patterns (default, only live scope): `PatternService.list` (same `companion` slice, read-only) filtered to `PatternEntity.STATUS_CONFIRMED` → title + deterministic mechanism prose (direction/strength) + evidence chips (r/n/p), capped at 5. scope=predictions/experiments DEFERRED — `ProactivePredictionService.getPredictions`/`ProactiveExperimentService.getExperiments` (`feature.proactive.service`) lazily GENERATE on a miss (a write) and a direct import would open a new companion↔proactive cycle; both render "még nem elérhető" | `Insight`/pattern title (≤5); none for predictions/experiments |
+| `get_daily_practice(date)` | Quest completed/total for the date; habit summary explicitly labeled **as of today**; creed/foci/intention reflection for the date; ritual closed/open **and reflection text**; all logged activities with text/XP. Quest details, historical habit rows, rituals and challenges use the discovered `daily_quest`, `habit_day`, `ritual_day`, `challenge` sources; no generation-on-read service is called. | `Practice`/date |
+| `get_insights(scope)` | `patterns`: every confirmed pattern's title/mechanism/evidence; other statuses use `read_personal_records(source=pattern)`. `predictions` and `experiments` explicitly direct the planner to `read_personal_records(source=prediction)` / `source=experiment`, which read stored records without generating proposals or creating a feature cycle. | `Insight`/pattern title, bounded by the shared ref budget; no refs on redirect |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 | `compare_periods(periodA, periodB)` (W5.3, `mezo-b3pp.20`) | `Quarters.parse` reads each side as a quarter (`2026-Q3`) or a month (`2026-07`); `PeriodSummaryRepository`'s MONTH-granularity finder over `[periodStart, Quarters.endOf(periodStart)]` for a quarter (its 3 month rungs) or `[periodStart, periodStart]` for a month; per-rung capped at `quarterly.render-max-chars`. Deliberately does NOT read `feedback_rollup` (§9) | `Időszak`/`YYYY-MM` (one per rendered rung — a MONTH, never a day; none for a period with no rungs) |
+| `get_personal_context(scope)` | Bounded facts/people/character/reflections/today summaries; complete records remain available through source discovery and reads. | Tool audit; source-specific summary references where supplied |
+| `search_personal_memory(query)` | `ChatMemoryContextAdapter` → relevant memory/fact/graph excerpts and source IDs. Hydrate exact originals via `read_personal_records(source,id)`; a retrieval miss is not proof of source absence. | Recalled-memory and retrieval-run provenance |
+| `get_conversation_history(page, messageOffset)` | Current conversation only, paginated timestamped messages plus persisted tool evidence; the response gives continuation for clipped messages. | Tool audit |
+| `list_personal_sources(domain, offset)` | Discover domains, source names, date fields and parent relationships; follow `nextOffset` when the catalogue is paged. | Tool audit |
+| `read_personal_records(source, id, parentId, from, to, query, offset, contentOffset)` | Allowlisted complete owned records with explicit fields and parent ownership. Arbitrary historical date filters, literal substring search, record `nextOffset`, and long-record `nextContentOffset` using the same ID. Unknown values stay null; transport credentials are excluded. | Tool audit; source/record IDs in result |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
 
@@ -5536,8 +5585,8 @@ since S2.
   `EmbeddingPort.DIMENSIONS` constant), deliberately NOT config.
 - `mezo.companion.embedding.embed-chat-turns` = **true** — the V2.2 post-turn embedding toggle
   (`COMPANION_EMBED_TURNS_SWITCH`); off ⇒ the `TurnEmbeddingListener` bean does not exist.
-- `mezo.companion.embedding.embed-max-chars` = **2000** (`@Min(200) @Max(20000)`) — content cap
-  per embedded narrative unit, applied BEFORE embedding (the stored text is the embedded text).
+- `mezo.companion.embedding.embed-max-chars` = **2000** (`@Min(200) @Max(20000)`) — OLD-path prefix cap, applied before embedding; on the NEW path this sets the chunk size,
+  preserving the whole source across individually embedded chunks rather than discarding its tail.
 - `mezo.companion.summary.cron` = `"0 20 2 * * *"` (`@NotBlank`, server zone) — the nightly
   daily-summary job schedule (02:20, so "yesterday" is truly finished).
 - `mezo.companion.summary.catch-up-days` = **7** (`@Min(1) @Max(60)`) — finished days back the job
@@ -6696,6 +6745,19 @@ execution checklist"). The house recipe, **contract-first**:
   ([`proactive.md`](proactive.md) §3).
 
 ## 8. Testing
+
+**Conversation-first:** `ConversationFirstIT` covers general-topic context, pronoun follow-ups,
+dependent reads, stored evidence, long history and owner isolation through real repositories and
+audited tools. `ConversationEvidenceIT` covers new evidence after a full earlier batch;
+`ConversationLimitsIT` covers read limits, deduplication, and small-budget history pagination.
+The deterministic fake proves orchestration, not subjective naturalness.
+`ConversationQualityEvalIT` is an opt-in real-model three-arm comparison: minimal prompt, rollback
+prompt (both prompt-only controls with identical synthetic facts), and the new full flow. Corpus:
+`backend/src/test/resources/companion/conversation-quality-cases.json`. Run with
+`./mvnw clean test -Dtest=ConversationQualityEvalIT -Dmezo.excludedTestGroups= -Dmezo.eval.model=gpt-5.6-terra -Dmezo.test.use-testcontainers=true`.
+Report: `backend/target/eval/conversation-quality-<model>.json`; only synthetic users/data are sent.
+The test checks completed answers; quality scoring is a separate review, not a fake pass claim.
+
 
 Backend integration-first (compose Postgres up: `cd backend && docker compose up -d`), run with
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
@@ -8369,6 +8431,22 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 ## 10. Key files
 
+**Complete personal evidence (`mezo-rj214.10`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/PersonalRecordSource.java` — explicit source/column/date/containment catalogue.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/PersonalRecordQuery.java` — bound owner-scoped projections.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PersonalRecordService.java` — bounded discovery and record/character continuation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/PersonalRecordTools.java` — model-facing discovery/read contracts.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PersonalBaselineContext.java` — shared stored profile/current-goal baseline.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemorySourceRepairService.java` — nightly canonical source reconciliation.
+
+**Conversation-first path (`mezo-rj214.9`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationTurnService.java` — broad voice and iterative retrieval preparation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationHistory.java` — bounded evidence persistence and transcript restoration.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/ConversationContextTools.java` — owner-scoped context, memory and older-history reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ConversationProperties.java` — rollback and all continuity/retrieval bounds.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/service/ConversationFirstIT.java` — default flow regressions; sibling `ConversationQualityEvalIT.java` captures real-model comparisons.
+
+
 **API contract**
 - `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
@@ -8383,7 +8461,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryPlatformPersistenceIT.java` + `support/populator/MemoryItemPopulator.java` — PostgreSQL persistence/backfill/ownership/cascade coverage.
 
 **Backend — canonical dual-write + vector generations (`mezo-6dii.2` — §3/§4/§8)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — unchanged OLD persistence semantics plus commit-bound canonical upsert/suppress events, reusing the already-produced vector.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — OLD prefix persistence plus full-source canonical upsert/suppress events; only the content/hash-matching first chunk reuses the already-produced vector.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/config/MemoryPlatformProperties.java` + `backend/src/main/resources/application.yml` — typed serving-generation, retrieval, re-embedding and audit-retention configuration; scheduled re-embedding is off by default.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryProjectionEvent,MemoryProjectionListener,MemoryProjectionWriter}.java` — AFTER_COMMIT hand-off, isolated transaction, source-key lifecycle and serving-generation write.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReembeddingService,MemoryReembeddingJob}.java` — bounded resumable target-generation backfill and active-user fan-out without serving-version mutation.

@@ -21,6 +21,15 @@ class MemoryContextSelectorTest {
     private final MemoryContextSelector selector = new MemoryContextSelector(renderer);
 
     @Test
+    void testRender_shouldExposeSourceReference_whenFactOrGraphHasNoCanonicalItem() {
+        for (String kind : List.of("knowledge_fact", "knowledge_edge")) {
+            UUID source = UUID.randomUUID();
+            var item = new MemoryContextItem(null, null, source, kind, kind, "Megőrzött részlet", null, "", null);
+            assertThat(renderer.render(List.of(item), 500)).contains("source=" + kind, "id=" + source);
+        }
+    }
+
+    @Test
     void testSelect_shouldCollapseNearDuplicatesAndCapChatTurns_whenCandidatesOverlap() {
         UUID conversation = UUID.randomUUID();
         List<FusedCandidate> ranked = List.of(
@@ -86,12 +95,13 @@ class MemoryContextSelectorTest {
         FusedCandidate first = fused(content, "journal_entry", UUID.randomUUID(), false, 10);
         FusedCandidate second = fused("Ez a második elem már nem férhet bele a keretbe.",
                 "journal_entry", UUID.randomUUID(), false, 9);
-        List<FusedCandidate> selected = selector.select(List.of(first, second), 25);
+        int budget = (renderer.render(List.of(contextItem(first)), 1000).length() + 3) / 3;
+        List<FusedCandidate> selected = selector.select(List.of(first, second), budget);
         List<MemoryContextItem> items = selected.stream().map(this::contextItem).toList();
 
-        String block = renderer.render(items, 25);
+        String block = renderer.render(items, budget);
 
-        assertThat(block.length()).isLessThanOrEqualTo(25 * 3);
+        assertThat(block.length()).isLessThanOrEqualTo(budget * 3);
         assertThat(block).contains(content);
         assertThat(block).doesNotContain("már nem férhet");
     }

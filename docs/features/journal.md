@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -552,6 +552,8 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   never computes or overrides `reviewDue`).
 
 ## 5. Integrations
+
+**Companion source access:** Journal, gratitude and decision records (including outcomes) are available to chat through the owner-scoped full-source reader. Canonical memory indexes the complete text in ordered chunks; older missed records are repaired in bounded nightly batches. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **→ Companion (embed pipeline, wired, one-way OUT — `journal_entry`):** every journal write feeds
   `memory_embedding` through the seam in §3 above. **Since `mezo-6dii.2` that write ALSO dual-writes a canonical projection:** `MemoryEmbeddingWriter`

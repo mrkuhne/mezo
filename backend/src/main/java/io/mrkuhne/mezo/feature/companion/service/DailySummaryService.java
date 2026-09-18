@@ -181,12 +181,12 @@ public class DailySummaryService {
         if (day.getMeals().isEmpty()) {
             return;
         }
-        String titles = day.getMeals().stream().map(MealResponse::getTitle).limit(3)
+        String titles = day.getMeals().stream().map(MealResponse::getTitle)
                 .collect(Collectors.joining(", "));
         blocks.add("Étkezés: " + ToolText.num(day.getConsumed().getKcal()) + "/" + ToolText.num(day.getTargets().getKcal())
                 + " kcal, fehérje " + ToolText.num(day.getConsumed().getP()) + "/" + ToolText.num(day.getTargets().getP())
                 + " g, " + day.getMeals().size() + " étkezés (" + titles
-                + (day.getMeals().size() > 3 ? ", …" : "") + ")");
+                + ")");
     }
 
     private void addSleep(List<String> blocks, UUID userId, LocalDate date) {

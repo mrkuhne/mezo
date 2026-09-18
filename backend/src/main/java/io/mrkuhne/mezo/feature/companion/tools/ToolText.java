@@ -24,6 +24,17 @@ public final class ToolText {
     private ToolText() {
     }
 
+    /** A summary is never proof of exhaustive source coverage. IDs and dates continue in the read tool. */
+    static String detailHint(String sources) {
+        return "\nÖsszefoglaló nézet; a teljes részletek és az előzmények: "
+                + "read_personal_records(source=" + sources
+                + ", id/from/to/parentId/offset/contentOffset). A forrásokat külön kérd le.";
+    }
+
+    static String coverage(int shown, int total, String sources) {
+        return "\nMegjelenítve: " + Math.min(shown, total) + "/" + total + detailHint(sources);
+    }
+
     /** Locale-independent compact number: strip trailing zeros, plain (non-scientific) string.
      *  Public because every prompt/snapshot renderer needs exactly this rendering — it was
      *  copy-pasted into three of them while this helper stayed package-private. */

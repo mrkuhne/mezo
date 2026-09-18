@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -453,6 +453,8 @@ Domain types: `WeightEntry`, `WeightTrends`, `Goal`/`GoalKind`, `LinkedMeso`, `S
 `data/me/people.ts` (`people`, `mentions`, plus `affectColor`/`affectLabel` helpers — since Slice E consumed **only in mock mode** as the `usePeople` seed; the 5 persons are ALSO seeded server-side by `PeopleSeedData` — **`@Profile("demofixtures")` since S2 (`mezo-qw37.2`)**, so a plain `demodata` deploy starts every account with an empty Emberek and `POST /api/people` is the live write path; **Emberek S4** added a sixth seed person, `pp-marci` (`status='candidate'`, `sourceKind='extractor'`), so `PeopleJeloltekPage`'s candidate-card path renders in mock mode too), the mock `weightTrends`/`linkedMesocycles` + the `mockGoal` (`data/me/goals.ts`, used by `useGoal` **only in mock mode** now — `mezo-72d` dropped the real-mode no-goal fallback, which returns `null` instead), and `sleepLog` (`data/me/sleep.ts` — its `sleepTrends` export was deleted in `mezo-lfw`). **`data/me/sleepGoal.ts` (`mezo-dbsr`)** holds the sleep-goal mock seed (`mockSleepGoal` — WAKE 06:45 / 450 → bed 23:15, tuned to the mock `sleepLog` cluster) + the `SLEEP_GOAL_GHOST` config-ghost + the pure `deriveSleepTimes`/`composeSleepGoal` helpers. **`data/me/sleepShot.ts` (`mezo-66ab`)** holds the canonical `MOCK_SLEEP_SHOT_DRAFT` (the all-checks-pass Sleep Cycle example — `confidence: 1`, `needsReview: false`) that mock-mode `useSleepShot` returns. `data/me.ts` no longer exists.
 
 ## 5. Integrations
+
+**Companion source access:** Every chat turn receives the stored age/birth date, sex, height, latest weight and active weight goal as a compact baseline. Exact historical biometric rows and diet settings remain available through the full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 The Me area's seams are mostly **conceptual/narrative** in the mock (illustrating the Phase-3 pattern engine) with a few **wired** code paths. Be precise about which is which.
 

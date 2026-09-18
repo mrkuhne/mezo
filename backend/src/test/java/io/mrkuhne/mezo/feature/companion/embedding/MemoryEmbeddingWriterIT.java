@@ -51,6 +51,23 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
     @Autowired private AiMessagePopulator aiMessagePopulator;
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private PeriodSummaryPopulator periodSummaryPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator embeddingPopulator;
+    @Autowired private EmbeddingPort embeddingPort;
+
+    @Test
+    void testWriteSummary_shouldReembedFirstChunk_whenLegacyPrefixUsedDifferentBoundary() {
+        UUID owner = userPopulator.createUser().getId();
+        String first = "x".repeat(1099) + " ";
+        String full = first + "y".repeat(2000);
+        var summary = dailySummaryPopulator.summary(owner, DAY, full);
+        embeddingPopulator.embedding(owner, "daily_summary", summary.getId(), full.substring(0, 2000), DAY,
+                io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.axisVector(0));
+        memoryEmbeddingWriter.writeSummary(summary);
+        var item = memoryItemRepository.findByCreatedByAndSourceKindAndSourceId(owner, "daily_summary", summary.getId()).orElseThrow();
+        assertThat(item.getContent()).isEqualTo(first);
+        var vector = memoryVectorRepository.findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, item.getId()).getFirst();
+        assertThat(vector.getEmbedding()).containsExactly(embeddingPort.embedDocuments(List.of(first)).getFirst());
+    }
 
     @Test
     void testEmbedTurnByMessageId_shouldPersistTurnUnit_whenNewTurn() {

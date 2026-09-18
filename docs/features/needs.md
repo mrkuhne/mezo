@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -207,6 +207,8 @@ mirrors `NEEDS_TUNING.bands.green` / the mock award constants; keep the three in
 tuning changes (§7).
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read historical needs-day values and streak/completion data through the owner-scoped full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **→ Karakter (`mezo-1gim.15`)** — the character dossier's trend window reads Életjel/needs alongside intention, the decision journal and gratitude. A **pure outbound read**: nothing on the needs side changed for it. See [`character.md`](character.md).
 

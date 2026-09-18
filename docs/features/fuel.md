@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
@@ -332,6 +332,8 @@ Key FE shapes:
 **Day-type kcal shift (Diet Plan slice 3, `mezo-sxlj`) — the same budget, day-type-aware on BOTH surfaces.** A per-user `dayTypeShiftKcal` setting (0–500 kcal, `diet_settings.day_type_shift_kcal`, ghost 0 = uniform days — see [`goal-engine.md`](goal-engine.md) §4) drives the goal engine to prescribe each segment's **`trainingDayKcal`/`restDayKcal`** alongside its existing uniform `kcal` (both nullable — null on both ⇔ uniform day; the split math + edge cases are in [`goal-engine.md`](goal-engine.md) §3). Both the backend `FuelDayService` (`targetSet`/`dailyTargets`) and the frontend `deriveDailyBudget` pick the date's number off that split rather than the segment's uniform `kcal`, and both derive the resulting carbs delta **at serve time, never stored** (§9 has the full decision + a worked example). **BE picks by `WorkoutWindowQueryService.hasScheduledTrainingOn`** — a SCHEDULE-derived training source (a gym schedule slot, a sport schedule slot, a dated sport event, a prescribed run) covering the date makes it a training day (`FuelDayService.project` → the shared pure **`DayTargetProjector`** in `feature/nutrition/service/`, which since `mezo-u2pd` is the ONE segment → served-targets rule behind the Fuel day, the meal scorer AND the diet-settings draft preview) — while **FE picks by `resolveDayType`/`deriveBlocks`** (the same day-planner blocks the timeline already renders — gym/sport slots by weekday + dated sport events + the active run's prescribed days, schedule-only, deliberately NOT an ad-hoc logged session). Both sides are now schedule-only and classify every date identically (`windowsFor` — which also counts ad-hoc logged sessions — stays reserved for the unrelated meal-role pre/post-workout classification, §5). **A one-off dated sport event still serves the training-day kcal even though events don't enter the engine's weekly T-count** (`WeeklyScheduledActivityService.scheduledTrainingDayOfWeeks`, [`goal-engine.md`](goal-engine.md) §3) — so an event week's served kcal Σ can exceed `7×kcal` by design: "aznap tényleg edzel" wins over weekly-sum purity for that one day.
 
 ## 5. Integrations
+
+**Companion source access:** Chat food summaries expose all meal names, item quantities and stored nutritional details. Full meal/item snapshots, water, protocol/intake history and nutrition settings remain available through the full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 Fuel is the most cross-coupled mock domain. Each seam below names the **contract** (the type/shape that crosses):
 

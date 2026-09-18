@@ -1224,6 +1224,22 @@ public class FakeCompanionLlm implements CompanionLlm {
             return "";
         }
         if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
+            if (turnContext.contains("[Beszélgetési adat-előkészítés]")) {
+                if (userMessage.contains("[fake-broken-conversation-plan]")) {
+                    return PLANNER_NO_SCRIPT;
+                }
+                if (turnContext.contains("ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:")) {
+                    Matcher next = Pattern.compile("\\[fake-next-plan:(\\{.*})]", Pattern.DOTALL).matcher(userMessage);
+                    if (next.find() && !turnContext.contains("- get_personal_context(")) {
+                        return next.group(1);
+                    }
+                    return "{\"needsData\":false,\"steps\":[]}";
+                }
+                Matcher first = FAKE_PLAN.matcher(userMessage);
+                // Separate adjacent scripted plans before the legacy greedy capture.
+                String scripted = first.find() ? first.group(1).split("] \\[fake-next-plan:", 2)[0] : null;
+                return scripted == null ? "{\"needsData\":false,\"steps\":[]}" : scripted;
+            }
             Matcher plan = FAKE_PLAN.matcher(userMessage);
             return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
         }
@@ -1261,7 +1277,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (userMessage.contains(EMPTY_ANSWER)) {
             return Flux.empty();
         }
-        return Flux.just(completeSmart(systemPrompt, turnContext, history, userMessage));
+        String answer = completeSmart(systemPrompt, turnContext, history, userMessage);
+        if (turnContext.contains("[Beszélgetés]")) {
+            return Flux.fromIterable(java.util.stream.IntStream.iterate(0, i -> i < answer.length(), i -> i + 32)
+                    .mapToObj(i -> answer.substring(i, Math.min(i + 32, answer.length()))).toList());
+        }
+        return Flux.just(answer);
     }
 
     /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}

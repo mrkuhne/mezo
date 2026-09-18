@@ -46,6 +46,8 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MemoryContextService {
 
+    private static final String PARTIAL_NOTICE = "[Memóriakeresés: részleges eredmény; egyes keresők nem válaszoltak. A hiányzó találat nem bizonyítja, hogy nincs adat.]\n";
+
     private static final String ALL_RETRIEVERS_FAILED = "MEMORY_RETRIEVAL_ALL_FAILED";
 
     /**
@@ -134,7 +136,8 @@ public class MemoryContextService {
 
         RetrievalBatch batch = retrieveCandidates(request, query);
         List<FusedCandidate> ranked = fusion.fuse(batch.candidates(), query, request.asOf());
-        int tokenBudget = boundedTokenBudget(request);
+        boolean partialFailure = batch.successCount() > 0 && batch.successCount() < retrievers.size();
+        int tokenBudget = Math.max(0, boundedTokenBudget(request) - (partialFailure ? (PARTIAL_NOTICE.length() + 2) / 3 : 0));
         List<FusedCandidate> selected = selector.select(ranked, tokenBudget, request.asOf());
         boolean reranked = options.reranker()
                 && reranker.shouldRerank(request, batch.candidates(), selected);
@@ -145,7 +148,8 @@ public class MemoryContextService {
 
         boolean totalFailure = batch.successCount() == 0 && !retrievers.isEmpty();
         String errorCode = totalFailure
-                ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "") : null;
+                ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "")
+                : batch.successCount() < retrievers.size() ? "MEMORY_RETRIEVAL_PARTIAL_FAILURE" : null;
         // One source for both shapes: the audit command wants a List, the outcome a Set, and a
         // candidate must never be "selected" in one and not the other (mezo-4qyt).
         List<MemoryRetrievalAuditWriter.CandidateIdentity> selectedIds = selected.stream()
@@ -166,6 +170,9 @@ public class MemoryContextService {
                 .map(item -> contextItem(item, audit, request))
                 .toList();
         String promptBlock = renderer.render(items, tokenBudget);
+        if (partialFailure && boundedTokenBudget(request) * 3 >= PARTIAL_NOTICE.length()) {
+            promptBlock = PARTIAL_NOTICE + promptBlock;
+        }
         List<RefsEnvelope.Ref> refs = items.stream()
                 .map(item -> new RefsEnvelope.Ref(
                         item.sourceKind(), item.sourceId().toString(), item.label()))

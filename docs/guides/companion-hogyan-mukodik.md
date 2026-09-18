@@ -1,7 +1,7 @@
 ---
 title: A companion — hogyan működik (útmutató)
 type: guide
-updated: 2026-07-04
+updated: 2026-09-18
 tags: [companion, ai, insights, guide]
 related: [companion, insights]
 ---
@@ -19,26 +19,27 @@ edzel, mit eszel, mi a célod, hol tartasz (ha van ilyen) a gyógyszer-ciklusban
 tárolja mindezt**: az edzéseket, az étkezéseket, az alvást, a súlyt, a gyógyszert, a
 check-ineket.
 
-A companion egy chat, ami **e fölött az adat fölött ül**. Az első üzenetednél már képben van a mai
-napoddal, és minden beszélgetéssel többet tud rólad — de tartósan csak azt, amit **te
-megerősítettél**.
+A companionnel bármilyen témáról beszélgethetsz. Amikor a kérdésedhez segít, utánanéz a rólad
+tárolt adatoknak; egy regényről vagy nehéz napról szóló beszélgetést nem kell egészségügyi
+elemzéssé alakítanod. A megerősített tények, emlékek és korábbi beszélgetésrészletek kérésre elérhetők.
 
 ## A négy képesség
 
 A companion négy, egymásra épülő szintben lett felépítve. Mindegyik önállóan is értéket ad, együtt
 pedig egy tanuló társat adnak ki.
 
-### 1. „Lát engem" — a beszélgetés már ismeri a napod
+### 1. „Lát engem" — szükség esetén utánanéz
 
-Minden beszélgetés-forduló mögé automatikusan odakerül egy **pillanatkép a mai napodról**: az
-aktív célod és a hét étrendi/edzés-előírása, a meso-hét és az edzésbeosztás, a mai étkezések a
-célokhoz képest, vízbevitel, gyógyszer-ciklusnap, a tegnapi alvás, a friss check-in és a
-súlytrend. Ezért tud a „mit egyek ma edzés előtt?" kérdésre azonnal, a TE számaidból válaszolni.
+Ha a saját alvásodról, étkezésedről, edzésedről vagy más rögzített adatodról kérdezel,
+a companion lekéri a releváns részt. Szükség esetén az első eredmény alapján tovább kérdezheti
+az adatokat. A „és ez miért lehet?” folytatásnál is látja az előzményt és eléri az eszközeit.
 
-A múltra is rá tud nézni: kilenc **belső eszköze** van (edzések, sportok, súlytrend, étkezési
-napok, alvás, protokoll-követés, célhaladás, gyógyszer-ciklus, hasonló napok felidézése). Amikor
-használ egyet, a válasz alatt egy **kis címke (chip)** jelzi — mindig látod, minek nézett utána,
-nem kell hinned neki vakon.
+Általános kérdéshez, ötleteléshez vagy egyszerű beszélgetéshez nem kell adatot lekérnie.
+Az alapadataidat — életkor, magasság, nem, legutóbbi súly és aktív súlycél — a beszélgetés ismeri, ha rögzítetted őket. A mai állapotod és az összes személyes háttér nem kerül automatikusan minden válasz elé.
+
+A részletes adatokhoz is hozzáfér: az étkezés összetevőihez, az edzés egyes sorozataihoz, régi naplóbejegyzésekhez, szokásokhoz, emberekhez és a korábbi felismerésekhez. Hosszú bejegyzést több részletben is végigolvashat. Egy memória-találatból vissza tud lépni az eredeti szöveghez; a keresési kivonat nem az egész bejegyzés. A korábban kimaradt hosszú emlékeket az éjszakai feldolgozás fokozatosan pótolja.
+A válasz alatti címkék jelzik, minek nézett utána. Az elemző válasz szövege is folyamatosan
+érkezik, miután a szükséges adatokat összegyűjtötte.
 
 ### 2. „Megjegyez" — tények, amiket te hagysz jóvá
 
@@ -46,15 +47,12 @@ Minden beszélgetés után a háttérben megnézi, mondtál-e magadról valami *
 („laktózérzékeny vagyok", „hétfőn sosem edzem"). Ezekből **javaslat** lesz, nem tudás: az
 Insights → Knowledge fülön várnak rád, és te döntesz — **Elfogad / Pontosít / Elvet**.
 
-Amit elfogadsz, az bekerül a tartós tudástárba, és a **legfontosabb (nagyjából tíz, a
-megerősítés-számláló szerint rangsorolt) tény minden beszélgetésben automatikusan ott van** a
-companion alap-tudásaként. A tudástár teljes egésze megmarad — az épp kevésbé releváns tények is
-előrébb sorolódnak, ahogy az élet újra igazolja őket.
+Amit elfogadsz, bekerül a tartós tudástárba. A companion akkor kérheti le, amikor a témához
+releváns; nem kell minden beszélgetésben felsorolnia, amit tud rólad.
 
-A „ne kérdezzen rá arra, amit már tud" elv **törekvés, nem tévedhetetlen garancia**: minden
-választ egy önellenőrző lépés vizsgál, és ha ismert tényre kérdezne rá, egyszer újrafogalmaztatjuk
-vele. Ha a javítás sem sikerül, a válasz **„nem ellenőrzött"** jelet kap — épp ezért létezik ez a
-jelzés (lásd az őszinteségi elveket lentebb).
+A „ne kérdezzen rá arra, amit már tud” elv törekvés: a beszélgetési előzmény és az adatlekérés
+segíti. A normál válasz után nincs külön nyelvi bíró, amely némán újrafogalmaztatja a választ.
+A gyógyszeradagolásra vonatkozó korlát és a sikertelen adatelérés jelzése megmarad.
 
 Minden tény mellett a Knowledge fülön kapcsoló van: bármelyiket **kikapcsolhatod** — onnantól
 semmilyen csatornán nem kerül a beszélgetéseidbe.
@@ -70,9 +68,10 @@ Ezért működik a „**volt már ilyen napod?**" kérdés: a companion tematiku
 idéz fel — dátummal és a nap kivonatával, a frissebb emlékeket előrébb sorolva. Gyenge,
 erőltetett hasonlóságot nem mutat: ha nincs igazi találat, azt mondja, „nincs adat".
 
-Fontos pontosítás: ma a felidézés **nap-alapú** — a napi összefoglalók kereshetők vissza. A
-beszélgetéseid is elmentődnek és beágyazódnak (készen a jövőre), de a „mit beszéltünk múlt
-kedden?" típusú, beszélgetés-szintű visszakeresés még nem bekötött képesség.
+A közelmúltból legfeljebb 80 üzenetet kap meg közvetlenül, méretkorláttal. A jelenlegi
+beszélgetés régebbi részeit külön is lekérheti. A korábbi eszközeredményekből megőrzött kivonat
+időbélyeget kap: egy múlt heti mérés ettől még nem mai adat. Hosszú távú személyes emléket
+jelentés alapján is kereshet; a keresés nem garantálja minden korábbi részlet megtalálását.
 
 ### 4. „Észrevesz" — minták, amiket te ítélsz meg
 
@@ -92,8 +91,8 @@ Mindkettő az Insights → Patterns **inboxba** érkezik, ahol te ítélsz: **Co
 Reject** (Megerősít / Figyelem alatt tart / Elvet). A visszautasított minta soha nem jön vissza.
 A megerősített minta **tartós ténnyé válik** — és amikor az éjszakai számítás újra kimutatja
 ugyanazt az összefüggést, a tény megerősítés-számlálója nő (legfeljebb hetente egyszer), így
-egyre előrébb sorolódik a companion tudásában. A frissen megerősített felismerést a companion a
-**következő ~3 napban** magától is szóba hozhatja a beszélgetésekben: „ezt megtanultam rólad".
+egyre előrébb sorolódik a companion tudásában. A felismerést a companion akkor kéri le és
+használja a beszélgetésben, amikor az kapcsolódik a témádhoz; nincs kötelező bejelentése.
 
 ## Mi fut magától, és mikor?
 
@@ -113,7 +112,7 @@ beszélgetést: ha bármelyik hibázik, csendben kimarad, és a következő fut�
 
 Néhány kérdéstípus, amire kifejezetten fel van készítve:
 
-- **„Mit egyek ma vacsorára a maradék makróim alapján?"** — a mai pillanatképből válaszol.
+- **„Mit egyek ma vacsorára a maradék makróim alapján?"** — lekéri a releváns mai adatokat, és azokból válaszol.
 - **„Hogy aludtam a héten, és látszott ez az edzéseimen?"** — eszközökkel néz utána, chipekkel.
 - **„Mennyi volt az átlag fehérjém az elmúlt két hétben?"** — a számokat mindig kiszámolja, nem becsüli.
 - **„Volt már ilyen napom?" / „Mikor éreztem utoljára így magam edzés után?"** — emlék-felidézés.

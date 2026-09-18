@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-09-07
+updated: 2026-09-18
 tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -201,6 +201,8 @@ NapHubPage (the Rutin tile) / NapRutinPage (the chains) / RutinHubPage (Én — 
 **FE types** (`data/types.ts`): `HabitChain`/`HabitMode`/`HabitStatus`, `HabitItem`, `HabitStrengthRow`, `HabitSummary`, **`HabitFormation`/`HabitFormationDay`** (`mezo-08zl` — the estimate fields are typed `number | null`, not optional, so the "no estimate yet" branch cannot be forgotten at a call site); **`HabitSuggestion`** (`mezo-n5e9.3`) alongside `HabitChainInfo`/`HabitDefInfo`/`HabitCatalog`/`HabitDaypart`. Wire↔domain mapping in `data/habit/habitApi.ts` (day/summary) and `data/habit/habitAdminApi.ts` (catalog CRUD + `suggest()`) off `api.gen.ts`.
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read habit definitions and historical completion records through the full-source reader; the compact practice summary continues to describe its explicit current-day window. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 All inbound edges are **pure reads** — habit depends on {biometrics, meal, fuel, train, goal, intention, ritual, progression}; none of those eight depend back on habit. **Companion is a separate, ONE-DIRECTIONAL dependent** (companion → habit — the pre-existing `ContextSnapshotAssembler`/`PracticeTools` reads, plus the `HabitSuggestLlmAdapter` suggest seam below): habit itself never imports `feature.companion`, so this is not a cycle (`feature_slices_are_cycle_free` holds).
 

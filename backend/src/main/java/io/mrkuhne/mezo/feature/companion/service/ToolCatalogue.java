@@ -26,9 +26,13 @@ public class ToolCatalogue {
     private final ObjectMapper objectMapper;
 
     public String render() {
+        return render(toolRegistry.callbacks(toolRegistry.newTurnAudit()));
+    }
+
+    public String render(java.util.List<ToolCallback> callbacks) {
         // Throwaway audit: the catalogue only reads definitions, no call is ever made through it.
         StringBuilder sb = new StringBuilder("[Eszköz-katalógus]\n");
-        for (ToolCallback callback : toolRegistry.callbacks(toolRegistry.newTurnAudit())) {
+        for (ToolCallback callback : callbacks) {
             ToolDefinition def = callback.getToolDefinition();
             sb.append("- ").append(def.name()).append(": ").append(def.description()).append('\n');
             appendParams(sb, def.name(), def.inputSchema());

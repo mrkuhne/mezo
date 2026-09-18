@@ -2,17 +2,19 @@
 
 > Every companion read tool lives under `feature/companion/tools/` (`TrainTools`, `BiometricsTools`,
 > `FuelTools`, `GoalTools`, `MedicationTools`, `MemoryTools`, `GrowthTools`, `PracticeTools`,
-> `InsightsTools`) and is wired ONCE, in `CompanionToolRegistry` — the ArchUnit rule
+> `InsightsTools`, `LifeGoalTools`, `ConversationContextTools`, `PersonalRecordTools`) and is wired ONCE, in `CompanionToolRegistry` — the ArchUnit rule
 > `companion_tools_are_internal_sphere_only` guards that every tool only reads our own features.
 > This doc codifies the `@Tool(description = …)` house rule every one of those already follows;
 > read it before adding or editing a `@Tool`. The system prompt's `[Eszköz-útmutató]` routing hint
-> (`ChatService.SYSTEM_PROMPT`) is the model-facing mirror of this rule — keep both in sync when a
-> tool is added, renamed, or gets a new `scope`.
+> (`ChatService.SYSTEM_PROMPT`) is retained for rollback. The normal conversation-first path
+> generates its catalogue directly from registered descriptions (`ToolCatalogue`), including
+> `ConversationContextTools` and `PersonalRecordTools`; it has no second hand-maintained routing table.
 
 ## Why this matters
 
-With ~15 tools registered on every turn, tool SELECTION is the bottleneck, not tool
-implementation — a vague or overlapping description makes the model guess wrong (call nothing,
+With **23 tools (18 domain + 3 conversation-context + 2 full-source reads)** available, clear tool
+SELECTION matters.
+A vague or overlapping description makes the model guess wrong (call nothing,
 call the wrong tool, or call the right tool with a made-up scope). The description is the ONLY
 signal the model has; it must do the routing work a docstring usually doesn't have to.
 
@@ -49,19 +51,43 @@ Real code, `MedicationTools.java` — all four rules present, tight and unambigu
         + "gyógyszer-ciklusáról kérdez. scope: cycle (alapértelmezés), all.")
 ```
 
-Another real example worth studying, `InsightsTools.java` — because it shows rule 4 (no
-overclaim) handling a PARTIALLY implemented tool: the description names the deferred scopes
-explicitly instead of quietly omitting them, so the model never routes a "mit jósolsz" question
-into a tool that can't answer it yet:
+`InsightsTools.java` distinguishes a summary from a full-source redirect. The confirmed-pattern
+scope renders actual evidence; prediction/experiment scopes name the deterministic reader instead
+of calling services that generate new proposals on a read:
 
 ```java
 @Tool(name = "get_insights", description = "Amit a rendszer ÉSZREVETT rólad. Használd, amikor a "
         + "user azt kérdezi 'mit vettél észre rólam', mik a mintáim/összefüggéseim, vagy mit "
         + "jósolsz. scope=patterns (alapértelmezés, jelenleg az egyetlen élő scope) — a "
         + "MEGERŐSÍTETT statisztikai/AI minták listája: cím, mechanizmus (irány/erősség, ha "
-        + "van), bizonyíték (r/n/p, ha van). scope=predictions és scope=experiments még nem "
-        + "elérhetők ezen a tool-on. scope: patterns (alapértelmezés), predictions, experiments.")
+        + "van), bizonyíték (r/n/p, ha van). scope=predictions és scope=experiments "
+        + "a teljes forrás lekérdezésére irányít: read_personal_records(source=prediction|experiment). "
+        + "A többi státuszú minta: read_personal_records(source=pattern). "
+        + "scope: patterns (alapértelmezés), predictions, experiments.")
 ```
+
+## Complete-source continuation
+
+- Domain summaries must name their full-source alternative in the **description**, so clipping a
+  result cannot hide the route. Use `list_personal_sources(domain, offset)` to discover approved
+  names, date fields and parent relationships; source names are allowlisted, never arbitrary SQL.
+- A bounded list states shown/total when known (recipes/pantry); a recent-window summary states
+  its window. Neither a clipped summary nor an empty recent window proves historical absence.
+  `read_personal_records` accepts arbitrary historical `from`/`to` bounds without the summary's
+  30-day clamp.
+- Follow `nextOffset` for another record page. Follow `nextContentOffset` for another fragment of
+  the **same record**, passing its `id` and `offset=0`. `content` is JSON text; incomplete fragments
+  are not complete records and must not be treated as an exhaustive source.
+- RAG selects relevant excerpts. Use its physical `source`/`id` to read the complete original when
+  exact wording, omitted details or the end of a long entry matters. A retrieval miss is not an
+  inventory check. Source deletion/blanking and durable user-forgetting also apply to direct
+  `memory_item` reads.
+- Preserve unknowns as null/unknown. Food `snapshot_*` values are per `snapshot_per` and
+  `snapshot_basis_unit`; apply the recorded amount/unit before interpreting them as consumed
+  nutrition. Do not invent vitamins/minerals that the source does not store.
+- Identity and containment ownership stay server-enforced. Read tools must not call services that
+  lazily generate, initialize, update or otherwise mutate data; stored predictions/experiments,
+  quest rows and historical habits use the read-only source surface.
 
 ## BAD example
 
@@ -96,7 +122,7 @@ What's wrong, line by line:
 - `@ToolParam(required = false, description = …)` on every optional parameter needs the same
   enumerated-values treatment as the top-level description (see `scope`/`kind`/`range` params
   above).
-- After adding or changing a tool, add or update its line in the `[Eszköz-útmutató]` block in
-  `ChatService.SYSTEM_PROMPT` — that block is the terse, model-facing summary of exactly the same
-  routing decision this doc governs at the description level. Keep the two consistent; a tool
-  documented here but missing from the routing hint is half-shipped.
+- Domain tools shared with rollback also update the `[Eszköz-útmutató]` block in
+  `ChatService.SYSTEM_PROMPT`. Conversation-only tools register via
+  `CompanionToolRegistry.conversationCallbacks()`; their catalogue is generated automatically.
+  Identity/conversation/history are server-owned ToolContext values, never model parameters.

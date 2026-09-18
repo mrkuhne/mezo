@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -57,8 +58,23 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private MealPopulator mealPopulator;
     // mezo-b6zt: the contradiction guard below needs BOTH renderers of the same day
     @Autowired private ContextSnapshotAssembler contextSnapshotAssembler;
+
+    @Test
+    void testGenerate_shouldKeepEveryMealTitle_whenDayContainsMoreThanThreeMeals() {
+        UUID owner = userPopulator.createUser().getId();
+        for (String slot : java.util.List.of("breakfast", "lunch", "dinner", "snack")) {
+            mealPopulator.createBareMeal(owner, DAY, slot);
+        }
+
+        DailySummaryEntity summary = dailySummaryService.generate(owner, DAY);
+
+        assertThat(summary.getNarrative()).contains("4 étkezés", "breakfast", "lunch", "dinner", "snack");
+        assertThat(dailySummaryRepository.findById(summary.getId()).orElseThrow().getNarrative())
+                .contains("breakfast", "lunch", "dinner", "snack");
+    }
 
     @Test
     void testGenerate_shouldCarryQualityFields_whenNotesMentionAndReflectionExist() {

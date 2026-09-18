@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-09-06
+updated: 2026-09-18
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -118,6 +118,8 @@ Errors go through `SystemRuntimeErrorException` + `SystemMessage` (codes in `bac
 - **Tunables:** `IntentionProperties` (`@Validated`, prefix `mezo.intention`): `focus-cap` 3, `creed-max-len` 280, `focus-max-len` 200 (`application.yml:541`). Never code constants ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 ## 5. Integrations
+
+**Companion source access:** Chat can read stored intention days and reflections across historical dates through the owner-scoped full-source reader. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 All inbound edges are **pure reads** — habit/quest depend on intention; intention depends on neither (`feature_slices_are_cycle_free` holds).
 

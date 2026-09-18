@@ -45,7 +45,8 @@ public class MedicationTools {
             + "hányadik nap, fázis, utolsó dózis, következő esedékes nap, utolsó dózisok. scope=all — az "
             + "aktív gyógyszer általános adatai: név, hatóanyag, adagolási rend, alapdózis, ciklusállás "
             + "(ha van már rögzített dózis), utolsó dózisok. Használd, amikor a user a gyógyszeréről / a "
-            + "gyógyszer-ciklusáról kérdez. scope: cycle (alapértelmezés), all.")
+            + "gyógyszer-ciklusáról kérdez. scope: cycle (alapértelmezés), all."
+            + " Teljes részletek, további mezők és előzmények: read_personal_records(source=medication|medication_dose, id/from/to/parentId/offset/contentOffset).")
     public String getMedication(
             @ToolParam(required = false, description = "cycle|all (alapértelmezés: cycle).") String scope,
             ToolContext toolContext) {
@@ -86,12 +87,12 @@ public class MedicationTools {
                     .append(last.getAdministeredDate().plusDays(med.getCycle().cycleLengthDays()));
         }
         if (doses.size() > 1) {
-            b.append("\nUtolsó dózisok: ").append(doses.stream().limit(5)
+            b.append("\nUtolsó dózisok: ").append(doses.stream()
                     .map(d -> d.getAdministeredDate() + ": " + ToolText.num(d.getDose()) + " " + med.getDoseUnit())
                     .collect(Collectors.joining("; ")));
         }
         ToolContexts.audit(toolContext).addRef("Medication", med.getName());
-        return b.toString();
+        return b + ToolText.detailHint("medication|medication_dose");
     }
 
     /**
@@ -122,12 +123,12 @@ public class MedicationTools {
         }
         List<MedicationDoseResponse> doses = day.getRecentDoses();
         if (doses != null && !doses.isEmpty()) {
-            b.append("\nUtolsó dózisok: ").append(doses.stream().limit(5)
+            b.append("\nUtolsó dózisok: ").append(doses.stream()
                     .map(d -> d.getAdministeredAt().toLocalDate() + ": " + ToolText.num(d.getDose())
                             + " " + m.getDoseUnit())
                     .collect(Collectors.joining("; ")));
         }
         ToolContexts.audit(toolContext).addRef("Medication", m.getName());
-        return b.toString();
+        return b + ToolText.detailHint("medication|medication_dose");
     }
 }
