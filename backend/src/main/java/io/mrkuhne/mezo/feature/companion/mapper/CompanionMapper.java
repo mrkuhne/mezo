@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import org.mapstruct.Mapper;
 
 import java.time.Instant;
@@ -47,7 +48,7 @@ public interface CompanionMapper {
                 .role(entity.getRole())
                 .content(entity.getContent())
                 .createdAt(toOffset(entity.getCreatedAt()))
-                .tools(toTools(entity.getToolCalls()))
+                .tools(toTools(entity.getToolCalls(), entity.getToolOutcomes()))
                 .refs(toRefs(entity.getRefs()))
                 .recalled(toRecalled(entity.getRecalledMemories()))
                 .degraded(entity.isDegraded())
@@ -168,17 +169,33 @@ public interface CompanionMapper {
                 .build();
     }
 
-    /** Null envelope maps to []; the wire name carries the args — "get_recovery(scope=sleep,days=3)" (FE chip style). */
-    default List<MessageTool> toTools(ToolCallsEnvelope envelope) {
+    /** Null ask envelope maps to []; the wire name carries the args —
+     *  "get_recovery(scope=sleep,days=3)" (FE chip style).
+     *
+     *  <p>S9.7 (mezo-rj214.7): {@code outcomes} is zipped onto {@code calls} BY INDEX — the two
+     *  envelopes are built from one list per turn so they cannot disagree in order, but the
+     *  90-day retention scrub NULLs {@code outcomes} while keeping {@code calls} forever, and a
+     *  length mismatch must never throw (the missing side is simply absent on that entry). */
+    default List<MessageTool> toTools(ToolCallsEnvelope envelope, ToolOutcomesEnvelope outcomes) {
         if (envelope == null || envelope.calls() == null) {
             return List.of();
         }
-        return envelope.calls().stream()
-                .map(call -> MessageTool.builder()
-                        .type(call.type())
-                        .name(call.args() == null || call.args().isBlank()
-                                ? call.name() : call.name() + "(" + call.args() + ")")
-                        .build())
+        List<ToolOutcomesEnvelope.Outcome> results =
+                outcomes == null || outcomes.outcomes() == null ? List.of() : outcomes.outcomes();
+        List<ToolCallsEnvelope.ToolCall> calls = envelope.calls();
+        return java.util.stream.IntStream.range(0, calls.size())
+                .mapToObj(i -> {
+                    ToolCallsEnvelope.ToolCall call = calls.get(i);
+                    ToolOutcomesEnvelope.Outcome outcome = i < results.size() ? results.get(i) : null;
+                    return MessageTool.builder()
+                            .type(call.type())
+                            .name(call.args() == null || call.args().isBlank()
+                                    ? call.name() : call.name() + "(" + call.args() + ")")
+                            .why(call.why())
+                            .outcome(outcome == null ? null : outcome.text())
+                            .failed(outcome != null && outcome.failed())
+                            .build();
+                })
                 .toList();
     }
 

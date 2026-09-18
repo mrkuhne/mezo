@@ -7351,7 +7351,7 @@ export interface components {
             createdAt: string;
             /** @description True when the answer failed the V1.3 advisor self-check (redundancy / grounding / clinical) even after the corrective retry — render it flagged, honest (old docs §4.5 [degraded] semantics). Always false on user rows. */
             degraded: boolean;
-            /** @description Tool calls behind this answer (V0.5): read-tool invocations of this turn, name carries the args, e.g. "get_weight_trend(weeks=2)". Empty when the turn used no tools. */
+            /** @description Tool calls behind this answer (V0.5): read-tool invocations of this turn, name carries the args, e.g. "get_weight_trend(weeks=2)". Empty when the turn used no tools. S9.7 adds per-item provenance (why/outcome/failed) — see MessageTool. */
             tools: components["schemas"]["MessageTool"][];
             /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */
             refs: components["schemas"]["MessageRef"][];
@@ -7397,6 +7397,12 @@ export interface components {
             /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */
             type: string;
             name: string;
+            /** @description S9.7 provenance: the planner's half-sentence for WHY this read was requested, in Hungarian. Absent on legacy (non-planned) turns and on pre-S9.7 rows. */
+            why?: string;
+            /** @description S9.7 provenance: what this read returned, as the tool's own Hungarian text (truncated server-side). Absent once the 90-day retention scrub has emptied the result half, and on pre-S9.7 rows — the ask half above survives. */
+            outcome?: string;
+            /** @description True when this step timed out, errored or was dropped for budget. Rendered honestly rather than hidden; `outcome` then carries the in-band marker text. */
+            failed?: boolean;
         };
         MessageRef: {
             kind: string;
