@@ -655,3 +655,21 @@ rule. Behaviour, DOM and routes were untouched — only material moved.
 5. **Check 320px after a type change.** Raising an eyebrow from 7px to 9px broke a three-column
    hero at 320px; the fix is a `@media (max-width: 360px)` step-down inside the same block, not
    a retreat from §3.2.
+
+### A.3 Phase 5b addenda (`mezo-ju4j6.7`)
+
+Applying A.1 to the meal-detail page, the AI score page, the camera-first logger and the
+glucose glass added three rows to the table and one rule:
+
+| Titanium material found | Restored replacement | § |
+| --- | --- | --- |
+| A decorative radial "glow" element behind a hero (`.fmx-detail-glow`, `.fmx-score-glow`) | the **hero itself** gets the halo (`--halo-violet`, or a `--block-color` ellipse); the glow element goes `display: none` | §2.2 C |
+| `border-style: dashed` kept on top of a coloured card (honest-null / degraded states) | `1.2px dashed` neutral **plus `box-shadow: none`** — an empty state does not float | §4.4 |
+| A tinted disc behind an icon (`--surface-recess` + tint border + tint glow) | the **icon shield**: `var(--surface-1)` + `inset 0 0 0 1px var(--border-subtle)` | §3.1 |
+
+6. **Separate a functional loop from a decorative one before you kill it.** Every infinite
+   animation in these sub-blocks was decoration except the microphone breathe, which is the
+   user's only signal that recording is live. It survives, narrowed from `.fmx-mic:not(:disabled)`
+   (which also ran at idle) to `.fmx-mic.is-live`. Everything else — hero tilt, glow pulse, bowl
+   and finder float — is gone, and the keyframes they orphaned (`fmx-float`, `fmx-score-tilt`)
+   went with them. A re-dress that leaves dead `@keyframes` behind is not finished.

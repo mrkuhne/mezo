@@ -252,32 +252,29 @@ describe('the glassbox section is registered (mezo-88iwa.13, re-dressed mezo-ju4
  * marker in the SAME commit, the way `titanium glass primitive` → `glassbox` went in Phase 4.
  * Registered here so a merge that drops the block fails with a one-line pointer.
  *
- * The second test is the re-dress guard the style bible asks for: the three Titanium
- * materials it forbids (§2.3 — decorative backdrop frosting, icon drop-shadow haloes) must
- * not come back on the Mai families, and the surfaces that became `--mz-cell-*` chips
- * (§2.2 B) must stay chips. Scoped to the Mai slice of the block: the detail / score /
- * logger / glucose families are mezo-ju4j6.7's job and still carry their Titanium skin.
+ * The second test is the re-dress guard the style bible asks for: the Titanium materials it
+ * forbids (§2.3 — decorative backdrop frosting, icon drop-shadow haloes, raw black card
+ * shadows) must not come back, and the surfaces that became `--mz-cell-*` chips (§2.2 B)
+ * must stay chips.
+ *
+ * Phase 5b (mezo-ju4j6.7) re-dressed the block's remaining sub-blocks — meal detail, AI
+ * score, the camera-first logger and the glucose glass — so the guard now covers the WHOLE
+ * block rather than the Mai slice only. That widening is the signal 5b is done.
  */
-describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6)', () => {
+describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6, widened .7)', () => {
   // The bare name also appears in a cross-reference comment far earlier in the file, so the
   // markers carry the block's own box-drawing frame — indexOf must land on the block itself.
   const START_MARKER = '── fuel-mai ('
   const END_MARKER = '── /fuel-mai '
-  const MAI_END = 'Étkezés-részletező oldal'
 
   const section = () => {
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
     return start > -1 && end > start ? rawCss.slice(start, end) : ''
   }
-  /** The Mai-scoped head of the block — everything before the meal-detail sub-block,
-   *  with comments stripped: the prose NAMES the materials it banished, so a guard that
-   *  scanned the comments would fail on its own documentation. */
-  const maiSlice = () => {
-    const whole = section()
-    const cut = whole.indexOf(MAI_END)
-    return (cut > -1 ? whole.slice(0, cut) : whole).replace(/\/\*[\s\S]*?\*\//g, '')
-  }
+  /** The block's RULES only: comments stripped, because the prose NAMES the materials it
+   *  banished and a guard that scanned it would fail on its own documentation. */
+  const rules = () => section().replace(/\/\*[\s\S]*?\*\//g, '')
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -293,21 +290,35 @@ describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6)', () 
     }
   })
 
-  test('the Mai families carry no Titanium material the style bible forbids', () => {
-    const mai = maiSlice()
-    expect(mai.length).toBeGreaterThan(2_000)
-    // §2.3: decorative frosting is gone from the Mai surfaces (the Fuel GlassBox's own
-    // functional backdrop blur lives further down, in the glass sub-block).
-    expect(mai).not.toContain('var(--surface-glass)')
+  test('the whole block carries no Titanium material the style bible forbids', () => {
+    const css = rules()
+    expect(css.length).toBeGreaterThan(10_000)
+    // §2.3: decorative frosting is gone. The ONE surviving backdrop-filter is the Fuel
+    // GlassBox's own backdrop, where the blur is functional separation (§7.1b).
+    expect(css).not.toContain('var(--surface-glass)')
+    // Exactly one element still blurs — the Fuel GlassBox backdrop (prefixed pair) — and the
+    // card it covers explicitly turns its own frosting off.
+    expect(css.match(/backdrop-filter: blur\(/g) ?? []).toHaveLength(2)
+    expect(css).toContain('backdrop-filter: none')
     // §6.1: clay icons carry their own volume — no drop-shadow haloes on them.
-    expect(mai).not.toContain('drop-shadow')
+    expect(css).not.toContain('drop-shadow')
+    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
+    expect(css).not.toContain('rgba(0, 0, 0,')
   })
 
   test('the tappable chips are --mz-cell-* pairs, not bordered tint boxes (§2.2 B)', () => {
-    const mai = maiSlice()
-    for (const token of ['--mz-cell-sage-bg', '--mz-cell-lav-bg', '--mz-cell-amber-bg']) {
-      expect(mai, `${token} missing — a Mai chip is not a restored cell chip`).toContain(token)
+    const css = rules()
+    for (const token of ['--mz-cell-sage-bg', '--mz-cell-lav-bg', '--mz-cell-amber-bg',
+      '--mz-cell-sky-bg', '--mz-cell-coral-bg']) {
+      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
     }
+  })
+
+  test('both sub-page heroes are halo bands, not glowing posters (§2.2 C)', () => {
+    const css = rules()
+    expect(css).toContain('background: var(--halo-violet)')       // the AI score hero
+    expect(css).toContain('.fmx-score-glow { display: none; }')   // its decorative glow, retired
+    expect(css).toContain('.fmx-detail-glow { display: none; }')  // the meal detail's, likewise
   })
 
   test('the hero is a halo band, not a framed poster (§2.2 C, §8.1)', () => {

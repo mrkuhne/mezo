@@ -11283,8 +11283,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
    A blokk az S1b részletező/értékelő oldalaival, az S1c kamera-első logolójával és az S1d
    nap-lapozójával/víz-moduljával/csendes sarkával bővült (ugyanaz a `fmx-` prefix, EGY blokk
-   — második `fuel-mai` blokk nem nyílik). A Mai lap családjai mezo-ju4j6.6-ban vissza vannak
-   öltöztetve; a részletező/értékelő/logoló/vércukor családok mezo-ju4j6.7 dolga. */
+   — második `fuel-mai` blokk nem nyílik). A Mai lap családjai mezo-ju4j6.6-ban, a
+   részletező / értékelő / logoló / vércukor családok mezo-ju4j6.7-ben öltöztek vissza,
+   ugyanezen helyettesítési tábla szerint — a blokk EGÉSZE a visszaállított világot viseli.
+   Két további, ott hozott döntés:
+     • a részletező és az értékelés hero-ja is HALO-SÁV (§2.2 C); a dekoratív fény-korongjaik
+       (`.fmx-detail-glow`, `.fmx-score-glow`) anyag nélkül maradnak a DOM-ban;
+     • a mikrofon lélegzése FUNKCIÓ (felvétel-visszajelzés), ezért `.is-live` alá szűkítve
+       marad, üresjáratban a korong áll — a többi végtelen hurok (hero-billegés, fénylüktetés,
+       tál- és kereső-lebegés) kivezetve, a `fmx-float`/`fmx-score-tilt` képkockákkal együtt. */
 
 /* S1d (A13): a nap-lapozó keretezése. A nyilakat és a naptár-pilulát a megosztott
    `DayNavigator` primitív hozza (saját inline stílusaival), itt csak a lap ritmusába
@@ -11652,42 +11659,49 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* ── Étkezés-részletező oldal (S1b, mezo-33k6 — A10/A11) ───────────────────
    Prototípus: fuel-pages.css `Shared sub-page head` (:107), `Meal detail page` (:113),
    `Meal detail — icon-rich, hue-coded` (:406) és a jóváhagyott v3 kalibráció,
-   `Meal detail v3 — split hero, share rings, micronutrient cards` (:453). */
+   `Meal detail v3 — split hero, share rings, micronutrient cards` (:453).
+   VISSZAÖLTÖZTETVE mezo-ju4j6.7-ben a stílus-biblia A. függeléke (az 5a mintapélda)
+   helyettesítési táblája szerint — a geometria és a viselkedés változatlan. */
 .fmx-page { padding: 2px 0 18px; }
 .fmx-subhead { display: flex; align-items: center; gap: 12px; margin: 2px 0 16px; }
 .fmx-subhead > button { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
-  border: 1px solid var(--border-subtle); background: var(--surface-recess); color: var(--ink);
-  font-family: inherit; font-size: 20px; line-height: 1; }
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-secondary); font-family: inherit; font-size: 20px; line-height: 1; }
 .fmx-subhead > span { flex: 1; min-width: 0; }
-.fmx-subhead small { display: block; font-size: 8px; letter-spacing: 1.3px; color: var(--faint); }
-.fmx-subhead strong { display: block; margin-top: 3px; font-size: 21px; font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+/* Szemöldök + laptitulus (§3.2 / §3.3). */
+.fmx-subhead small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-cell-sage-ink); }
+.fmx-subhead strong { display: block; margin-top: 3px; font-family: var(--ff-display);
+  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
 
 /* Split hero: bal = ikon + kcal, jobb = két info-sor, az AI értékelés jobbra FENT. */
+/* §2.2 C: a hero HALO-SÁV az étkezés saját színében — keret és árnyék nélkül. A dekoratív
+   fény-korong (`.fmx-detail-glow`) anyag nélkül marad, ahogy a Mai chip-csillanása. */
 .fmx-detail-hero { position: relative; display: grid;
   grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px;
-  padding: 4px 2px 20px; border-bottom: 1px solid var(--divider); }
-.fmx-detail-glow { position: absolute; top: -46px; left: 23%; width: 270px; height: 270px;
-  pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--block-color) 22%, transparent) 0, transparent 62%); }
+  padding: 14px 2px 20px; border-bottom: 1px solid var(--divider);
+  background: radial-gradient(ellipse at 34% 30%,
+    color-mix(in srgb, var(--block-color) 20%, transparent) 0%, transparent 62%); }
+.fmx-detail-glow { display: none; }
 .fmx-detail-left { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 128px; }
 .fmx-detail-art { width: 96px; height: 96px; display: grid; place-items: center; }
-.fmx-detail-art svg { width: 96px; height: 96px;
-  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.32)) drop-shadow(0 0 16px color-mix(in srgb, var(--block-color) 32%, transparent)); }
+.fmx-detail-art svg { width: 96px; height: 96px; }
 .fmx-detail-kcal { position: relative; text-align: center; white-space: nowrap; }
-.fmx-detail-kcal strong { font-family: var(--ff-display); font-size: 44px; font-weight: 300;
-  letter-spacing: -0.04em; color: var(--ink); }
+.fmx-detail-kcal strong { font-family: var(--ff-display); font-size: 44px; font-weight: 200;
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
 .fmx-detail-kcal small { margin-left: 5px; font-size: 12px; color: var(--sub); }
 .fmx-detail-right { position: relative; display: grid; gap: 10px; }
+/* Mosott sor-csempe (§2.2 A) az étkezés hue-jában. */
 .fmx-detail-when, .fmx-detail-share { display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 15px;
-  border: 1px solid color-mix(in srgb, var(--block-color) 28%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--block-color) 15%, transparent), var(--surface-card)); }
+  padding: 10px 12px; border-radius: 18px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--block-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--block-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
 .fmx-detail-share { --block-color: var(--sky); }
 .fmx-di-art { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; }
-.fmx-di-art svg { width: 30px; height: 30px;
-  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 7px color-mix(in srgb, var(--block-color) 30%, transparent)); }
-.fmx-detail-when strong, .fmx-detail-share strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+.fmx-di-art svg { width: 30px; height: 30px; }
+.fmx-detail-when strong, .fmx-detail-share strong { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); }
 .fmx-detail-when small, .fmx-detail-share small { display: block; margin-top: 2px; font-size: 10px; color: var(--sub); }
 /* A pont-chip a jobb oszlop első SORA — nem lebeg fölötte (mezo-jb84: rálógott a
    „mikor logoltad" kártyára). Jobbra zárva marad, ahogy az owner kérte. */
@@ -11700,7 +11714,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* Szakasz-fejléc: darabszám és felirat NÉLKÜL (owner). */
 .fmx-detail-sec { margin-top: 18px; }
 .fmx-section { padding: 0 2px 10px; }
-.fmx-section h2 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; color: var(--ink); }
+.fmx-section h2 { margin: 0; font-family: var(--ff-display); font-size: 15px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--text-primary); }
 
 /* Megoszlás-gyűrűk: az S1a gyűrű-geometria, három hasábban, az étkezés SAJÁT arányaival. */
 .fmx-detail-rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px;
@@ -11716,47 +11731,49 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* Hozzávaló-sorok: hue-kódolt, ikonos — egy pillantásra olvasható tányér-anatómia. */
 .fmx-ing-list { display: grid; gap: 8px; }
-.fmx-ing-row { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--ing-color) 22%, transparent);
-  background: linear-gradient(155deg, color-mix(in srgb, var(--ing-color) 12%, transparent), var(--surface-card) 66%);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
+.fmx-ing-row { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 18px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ing-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--ing-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
+/* Ikon-pajzs (§3.1): semleges korong hajszál-belsőkerettel, se tint-keret, se fénykör. */
 .fmx-ing-art { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
-  border-radius: 50%; background: var(--surface-recess);
-  border: 1px solid color-mix(in srgb, var(--ing-color) 36%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--ing-color) 20%, transparent); }
+  border-radius: 50%; background: var(--surface-1); border: 0;
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .fmx-ing-copy { flex: 1; min-width: 0; }
-.fmx-ing-copy > strong { display: block; font-size: 14px; font-weight: 500; color: var(--ink); }
+.fmx-ing-copy > strong { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); }
 .fmx-ing-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
 .fmx-ing-meta em { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px;
   border-radius: 10px; background: var(--surface-recess); font-style: normal; font-size: 9px; color: var(--sub); }
 .fmx-ing-meta em svg { width: 13px; height: 13px; }
 .fmx-ing-meta em.is-nova { padding-left: 7px; }
-.fmx-ing-meta em.is-nova i { width: 7px; height: 7px; border-radius: 50%; background: var(--nova);
-  box-shadow: 0 0 6px var(--nova); }
+.fmx-ing-meta em.is-nova i { width: 7px; height: 7px; border-radius: 50%; background: var(--nova); }
 .fmx-ing-bar { position: relative; display: block; height: 4px; margin-top: 8px; border-radius: 3px;
   background: var(--surface-recess); }
 .fmx-ing-bar b { position: absolute; inset: 0; width: var(--w); border-radius: 3px;
-  background: var(--ing-color); box-shadow: 0 0 6px color-mix(in srgb, var(--ing-color) 45%, transparent); }
+  background: var(--ing-color); }
 .fmx-ing-end { flex: 0 0 auto; text-align: right; }
-.fmx-ing-end b { display: block; font-size: 17px; font-weight: 600;
+.fmx-ing-end b { display: block; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--ing-color) 58%, var(--ink)); }
 .fmx-ing-end b small { margin-left: 2px; font-size: 9px; font-weight: 400; color: var(--sub); }
 .fmx-ing-end > small { display: block; margin-top: 3px; font-size: 10px; color: var(--sub); }
 
 /* Minőség-lapkák. `is-unknown` = őszinte hiány: szaggatott, halkabb, „—". */
 .fmx-nutri-tiles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-.fmx-nutri-tile { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--nt-color) 26%, transparent);
-  background: linear-gradient(155deg, color-mix(in srgb, var(--nt-color) 14%, transparent), var(--surface-card) 62%);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1); }
+.fmx-nutri-tile { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 18px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--nt-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--nt-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
 .fmx-nt-top { display: flex; align-items: center; justify-content: space-between; }
-.fmx-nt-art svg { width: 34px; height: 34px;
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 8px color-mix(in srgb, var(--nt-color) 28%, transparent)); }
-.fmx-nutri-tile strong { font-size: 24px; font-weight: 500; letter-spacing: -0.03em;
+.fmx-nt-art svg { width: 34px; height: 34px; }
+.fmx-nutri-tile strong { font-family: var(--ff-display); font-size: 26px; font-weight: 200;
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--nt-color) 58%, var(--ink)); }
 .fmx-nutri-tile strong small { margin-left: 3px; font-size: 11px; letter-spacing: 0; color: var(--sub); }
 .fmx-nt-label { font-size: 12px; color: var(--sub); }
-.fmx-nutri-tile.is-unknown { border-style: dashed; opacity: 0.78; }
+/* Őszinte hiány (§4.4 „free/empty"): szaggatott semleges keret, árnyék NÉLKÜL. */
+.fmx-nutri-tile.is-unknown { border: 1.2px dashed rgba(43, 33, 24, 0.2); box-shadow: none; opacity: 0.78; }
 /* Koppintható lapka (mezo-6mi43): a vércukor-kártya ajtó, a többi három nem. Gombként a böngésző
    alapjait vissza kell venni, és a lapka SZÓT visel szám helyett — a hosszabb szó ezért törhet,
    hogy egy fél szélességű lapkából ne feszüljön ki. */
@@ -11769,114 +11786,116 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* Mikrotápanyag-kártyák: a NÉGY tárolt tény. `is-unknown` = a forrás nem adott értéket. */
 .fmx-micro-list { display: grid; gap: 8px; }
-.fmx-micro-card { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--mc-color) 24%, transparent);
-  background: linear-gradient(155deg, color-mix(in srgb, var(--mc-color) 12%, transparent), var(--surface-card) 66%);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
+.fmx-micro-card { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 18px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--mc-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--mc-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
 .fmx-mc-art { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
-  border-radius: 50%; background: var(--surface-recess);
-  border: 1px solid color-mix(in srgb, var(--mc-color) 36%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--mc-color) 20%, transparent); }
+  border-radius: 50%; background: var(--surface-1); border: 0;
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .fmx-mc-copy { flex: 1; min-width: 0; }
-.fmx-mc-copy strong { display: block; font-size: 14px; font-weight: 500; color: var(--ink); }
+.fmx-mc-copy strong { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); }
 .fmx-mc-copy i { position: relative; display: block; height: 5px; margin: 7px 0 5px; border-radius: 3px;
   background: var(--surface-recess); }
 .fmx-mc-copy i b { position: absolute; inset: 0; width: var(--w); border-radius: 3px;
-  background: var(--mc-color); box-shadow: 0 0 6px color-mix(in srgb, var(--mc-color) 45%, transparent); }
+  background: var(--mc-color); }
 .fmx-mc-copy small { display: block; font-size: 10px; color: var(--sub); }
 .fmx-mc-end { flex: 0 0 auto; text-align: right; }
-.fmx-mc-end b { display: block; font-size: 17px; font-weight: 600;
+.fmx-mc-end b { display: block; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--mc-color) 58%, var(--ink)); }
-.fmx-mc-end em { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 9px;
-  font-style: normal; font-size: 9px; background: var(--surface-recess); color: var(--sub); }
-.fmx-micro-card.is-unknown { border-style: dashed; opacity: 0.78; }
+.fmx-mc-end em { display: inline-block; margin-top: 4px; padding: 3px 9px; border-radius: 999px;
+  font-style: normal; font-size: 9px; font-weight: 600;
+  background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fmx-micro-card.is-unknown { border: 1.2px dashed rgba(43, 33, 24, 0.2); box-shadow: none; opacity: 0.78; }
 .fmx-nutri-note { margin: 9px 2px 0; font-size: 10px; line-height: 1.5; color: var(--faint); }
 
 /* ── AI értékelés oldal (S1b, mezo-33k6 — A11) ─────────────────────────────
    Prototípus: fuel-pages.css `AI score page — centered hero, colorful dimension mosaic`
    (:344) + `Glass box: one dimension` (:370); markup: fuel-dashboard.js `scorePage` (:202),
    `dimTile` (:183), `dimGlassHtml` (:188). */
+/* §2.2 C: a pontszám-hero is HALO-SÁV (levendula), nem fénylő sötét poszter. A külön
+   fény-korong anyag nélkül marad — egy elem, aminek nincs többé dolga (A. függelék 3. szabály). */
 .fmx-score-hero { position: relative; display: flex; flex-direction: column; align-items: center;
-  text-align: center; padding: 8px 6px 22px; border-bottom: 1px solid var(--divider); overflow: hidden; }
-.fmx-score-glow { position: absolute; top: -16px; left: 50%; width: 280px; height: 210px;
-  transform: translateX(-50%); pointer-events: none;
-  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--lav) 34%, transparent),
-    color-mix(in srgb, var(--amber) 14%, transparent) 45%, transparent 70%); }
+  text-align: center; padding: 14px 6px 22px; border-bottom: 1px solid var(--divider);
+  overflow: hidden; background: var(--halo-violet); }
+.fmx-score-glow { display: none; }
 .fmx-score-art { position: relative; width: 92px; height: 92px; display: grid; place-items: center; }
-.fmx-score-art svg { width: 92px; height: 92px;
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 18px color-mix(in srgb, var(--lav) 38%, transparent)); }
+.fmx-score-art svg { width: 92px; height: 92px; }
 /* Owner: a szám mellől a „/10" elmarad — a skála a kontextusból olvasódik. */
 .fmx-score-value { position: relative; margin-top: 4px; font-family: var(--ff-display);
-  font-size: 66px; line-height: 1; font-weight: 300; letter-spacing: -0.05em;
-  color: color-mix(in srgb, var(--lav) 62%, var(--ink)); }
+  font-size: 66px; line-height: 1; font-weight: 200; letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums; color: var(--mz-cell-lav-ink); }
 .fmx-score-hero em { position: relative; display: block; margin-top: 9px; font-style: normal;
-  font-size: 15px; font-weight: 600; color: var(--ink); }
+  font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .fmx-score-hero p { position: relative; max-width: 310px; margin: 8px 0 13px; font-size: 12px;
   line-height: 1.6; color: var(--sub); }
 .fmx-score-pending { font-style: italic; color: var(--faint); }
+/* Cella-chip (§2.2 B) az üveges helyett. */
 .fmx-score-conf { position: relative; display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 13px; border-radius: 18px; border: 1px solid var(--border-subtle);
-  background: var(--surface-glass); font-size: 10px; color: var(--sub); }
+  padding: 6px 13px; border-radius: 999px; border: 0;
+  background: var(--mz-cell-lav-bg); font-size: 10px; font-weight: 600; color: var(--mz-cell-lav-ink); }
 .fmx-score-conf i { position: relative; width: 42px; height: 5px; border-radius: 3px;
-  background: var(--surface-recess); overflow: hidden; }
+  background: rgba(43, 33, 24, 0.09); overflow: hidden; }
 .fmx-score-conf i::before { content: ''; position: absolute; inset: 0; width: var(--w);
   border-radius: 3px; background: linear-gradient(90deg, var(--lav), var(--amber)); }
 .fmx-section-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.fmx-section-row small { font-size: 8px; letter-spacing: 1.2px; color: var(--faint); }
+.fmx-section-row small { font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-cell-sage-ink); }
 .fmx-subhead-end { margin-left: auto; font-size: 11px; color: var(--sub); white-space: nowrap; }
 
 /* Dimenzió-mozaik: minden szempont saját hue-ban, KOPPINTÁSRA nyílik (nem lenyíló). */
 .fmx-dims { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 6px; }
 .fmx-dim { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0;
-  padding: 12px 12px 11px; border-radius: 17px; font-family: inherit; text-align: left; color: var(--ink);
-  border: 1px solid color-mix(in srgb, var(--dim-color) 24%, transparent);
-  background: linear-gradient(155deg, color-mix(in srgb, var(--dim-color) 14%, transparent),
-    color-mix(in srgb, var(--dim-color) 3%, transparent) 62%, var(--surface-card));
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12), 0 0 18px color-mix(in srgb, var(--dim-color) 8%, transparent); }
+  padding: 12px 12px 11px; border-radius: 18px; font-family: inherit; text-align: left; color: var(--ink);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dim-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--dim-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
 .fmx-dim-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.fmx-dim-art svg { width: 34px; height: 34px;
-  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.3)) drop-shadow(0 0 8px color-mix(in srgb, var(--dim-color) 32%, transparent)); }
-.fmx-dim-top strong { font-size: 26px; font-weight: 500; letter-spacing: -0.03em;
+.fmx-dim-art svg { width: 34px; height: 34px; }
+.fmx-dim-top strong { font-family: var(--ff-display); font-size: 28px; font-weight: 200;
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--dim-color) 70%, var(--ink)); }
-.fmx-dim-label { font-size: 12px; font-weight: 500; line-height: 1.3; min-height: 31px; }
+.fmx-dim-label { font-size: 12px; font-weight: 600; line-height: 1.3; min-height: 31px; }
 .fmx-dim-bar { position: relative; display: block; width: 100%; height: 5px; border-radius: 3px;
-  background: var(--surface-recess); }
+  background: rgba(43, 33, 24, 0.09); }
 .fmx-dim-bar b { position: absolute; inset: 0; width: var(--v); border-radius: 3px;
-  background: var(--dim-color); box-shadow: 0 0 8px color-mix(in srgb, var(--dim-color) 45%, transparent); }
+  background: var(--dim-color); }
 .fmx-dim small { font-size: 9px; color: var(--sub); }
 /* Szégyenmentes degradált állapot: halkabb, szaggatott — „még tanulom", nem nulla. */
-.fmx-dim.is-degraded { border-style: dashed; opacity: 0.76; }
+.fmx-dim.is-degraded { border: 1.2px dashed rgba(43, 33, 24, 0.2); box-shadow: none; opacity: 0.76; }
 
 /* Üvegdoboz: EGY dimenzió — ugyanaz az anyag és ritmus, mint az energia-bontásé. */
 .fmx-glass-hero.is-dim svg { filter: none; }
 .fmx-glass-hero.is-dim strong { color: color-mix(in srgb, var(--dim-color) 62%, var(--ink)); }
 .fmx-glass-hero.is-dim small { font-size: 12px; }
 .fmx-glass-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
-.fmx-glass-chips span { padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border-subtle);
-  background: var(--surface-recess); font-size: 10px; color: var(--sub); }
+.fmx-glass-chips span { padding: 4px 11px; border-radius: 999px; border: 0;
+  background: var(--mz-cell-sage-bg); font-size: 10px; font-weight: 600; color: var(--mz-cell-sage-ink); }
 .fmx-glass-bar { position: relative; height: 10px; margin: 12px 0; border-radius: 6px;
-  background: var(--surface-recess); border: 1px solid var(--border-subtle); overflow: hidden; }
+  background: var(--surface-recess); border: 0.5px solid rgba(43, 33, 24, 0.06); overflow: hidden; }
 .fmx-glass-bar.is-dim i { position: absolute; inset: 0; width: var(--w); border-radius: 6px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--dim-color) 50%, transparent), var(--dim-color));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dim-color) 40%, transparent); }
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dim-color) 50%, transparent), var(--dim-color)); }
 .fmx-glass-lead { margin: 0 0 10px; font-size: 12px; line-height: 1.6; color: var(--sub); text-align: left; }
 .fmx-glass-panel { text-align: left; }
 .fmx-glass-callout { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; padding: 12px;
-  border-radius: 14px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--dim-color) 30%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--dim-color) 15%, transparent), var(--surface-card)); }
+  border-radius: 18px; text-align: left; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dim-color) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--dim-color) 5%, var(--surface-page)));
+  box-shadow: var(--mz-shadow); }
 .fmx-glass-callout svg { flex: 0 0 auto; }
 .fmx-glass-callout p { margin: 0; font-size: 12px; line-height: 1.55; color: var(--ink); }
-.fmx-glass-callout small { display: block; margin-bottom: 3px; font-size: 8px; letter-spacing: 1px; color: var(--faint); }
+.fmx-glass-callout small { display: block; margin-bottom: 3px; font-size: 9px; font-weight: 800;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
 
 /* „Ha feljebb vinnéd" — a javaslat és a nyereménye egy soron, szégyenmentes hangon. */
 .fmx-improve { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 9px; padding: 12px 13px;
-  border-radius: 14px; border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--amber) 14%, transparent), var(--surface-card));
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); }
+  border-radius: 18px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
 .fmx-improve p { margin: 0; flex: 1; font-size: 12px; line-height: 1.55; color: var(--ink); }
-.fmx-improve b { flex: 0 0 auto; font-size: 12px; font-weight: 600;
-  color: color-mix(in srgb, var(--amber) 62%, var(--ink)); white-space: nowrap; }
+.fmx-improve b { flex: 0 0 auto; font-size: 12px; font-weight: 700;
+  color: var(--mz-cell-amber-ink); white-space: nowrap; }
 .fmx-score-fb { margin: 14px 0 4px; }
 
 /* ── S1c: a kamera-első logoló héja (mezo-33k6; manifeszt A4 · A5 · A6 · A7) ──────────────
@@ -11887,42 +11906,42 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    itt valódi kamera-input és valódi felismerés áll. */
 .fmx-logmodes { margin: 0 0 14px; }
 .fmx-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 2px 0 14px; }
+/* A fül-rács: semleges lapok, az aktív egy égszín CELLA (§2.2 B) — se fénykör, se üveg. */
 .fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 9px 2px 8px; border: 1px solid var(--border-subtle); border-radius: 13px;
-  background: var(--surface-1); color: var(--sub); font-size: 8.5px; letter-spacing: 0.4px; }
-.fmx-mode.is-active { border-color: color-mix(in srgb, var(--sky) 45%, transparent);
-  background: color-mix(in srgb, var(--sky) 11%, var(--surface-card));
-  color: var(--ink); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12), 0 0 12px color-mix(in srgb, var(--sky) 16%, transparent); }
+  padding: 9px 2px 8px; border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 14px;
+  background: var(--surface-1); color: var(--sub); font-size: 8.5px; font-weight: 600;
+  letter-spacing: 0.04em; }
+.fmx-mode.is-active { border-color: transparent;
+  background: var(--mz-cell-sky-bg); color: var(--mz-cell-sky-ink); }
 
 /* A kereső: a kamera-bemenet MAGA a felület (label → rejtett file input). */
 .fmx-camera { text-align: center; }
 .fmx-finder { position: relative; display: grid; place-items: center; gap: 6px;
-  margin: 2px 0 10px; padding: 16px 10px 12px; min-height: 150px; border-radius: 18px;
-  border: 1px solid var(--border-subtle); cursor: pointer;
-  background: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--sky) 10%, var(--surface-card)), var(--surface-recess)); }
+  margin: 2px 0 10px; padding: 16px 10px 12px; min-height: 150px; border-radius: 21px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); cursor: pointer;
+  background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
 .fmx-finder > span { position: absolute; width: 22px; height: 22px;
-  border: 2px solid color-mix(in srgb, var(--sky) 55%, transparent); }
+  border: 2px solid color-mix(in srgb, var(--mz-cell-sky-ink) 55%, transparent); }
 .fmx-finder > span:nth-child(1) { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
 .fmx-finder > span:nth-child(2) { top: 8px; right: 8px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
 .fmx-finder > span:nth-child(3) { bottom: 8px; left: 8px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
 .fmx-finder > span:nth-child(4) { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
-.fmx-finder svg { filter: drop-shadow(0 12px 12px rgba(0, 0, 0, 0.3)); }
-.fmx-finder b { font-size: 12px; font-weight: 500; color: var(--ink); }
+.fmx-finder b { font-size: 12px; font-weight: 700; color: var(--text-primary); }
 .fmx-finder input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .fmx-mode-hint { margin: 0 0 4px; font-size: 11px; line-height: 1.55; color: var(--sub); text-align: center; }
 .fmx-mode-error { margin: 6px 0 0; font-size: 11px; color: var(--error); text-align: center; }
-.fmx-mode-empty { margin: 10px 0 4px; padding: 14px 13px; border-radius: 14px;
-  border: 1px dashed var(--border-subtle); background: var(--surface-1);
+.fmx-mode-empty { margin: 10px 0 4px; padding: 14px 13px; border-radius: 18px;
+  border: 1.2px dashed rgba(43, 33, 24, 0.2); background: transparent;
   font-size: 11.5px; line-height: 1.6; color: var(--sub); text-align: center; }
 
 /* Hang: egyetlen nagy korong — valódi felvétel, nem mintamondat-lista. */
 .fmx-voice { text-align: center; }
 .fmx-mic { width: 74px; height: 74px; margin: 6px auto 12px; display: grid; place-items: center;
-  border: 1px solid color-mix(in srgb, var(--lav) 42%, transparent); border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--lav) 22%, transparent), var(--surface-card));
-  color: var(--lav-deep); box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16); }
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 50%;
+  background: var(--mz-wash-lav); color: var(--mz-cell-lav-ink); box-shadow: var(--mz-shadow-lav); }
 .fmx-mic:disabled { opacity: 0.45; }
-.fmx-mic.is-live { border-color: color-mix(in srgb, var(--coral) 55%, transparent); color: var(--coral); }
+.fmx-mic.is-live { border: 1px solid var(--dv-coral); color: var(--dv-coral);
+  box-shadow: var(--mz-shadow-coral); }
 .fmx-typed { padding: 2px 0 4px; }
 
 /* Szokásosak: egy koppintás, aztán jóváhagyás. */
@@ -11930,51 +11949,53 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-usual { display: flex; align-items: center; gap: 11px; width: 100%; padding: 13px 2px;
   border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent;
   text-align: left; color: var(--ink); }
-.fmx-usual-art { flex: 0 0 auto; display: grid; place-items: center;
-  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.22)); }
+.fmx-usual-art { flex: 0 0 auto; display: grid; place-items: center; }
 .fmx-usual-copy { flex: 1; min-width: 0; }
-.fmx-usual-copy strong { display: block; font-size: 13px; font-weight: 500; }
+.fmx-usual-copy strong { display: block; font-size: 13px; font-weight: 700; }
 .fmx-usual-copy small { display: block; margin-top: 3px; font-size: 8.5px; color: var(--faint); }
-.fmx-usual > b { margin-left: auto; font-size: 15px; font-weight: 500; color: var(--sub); text-align: right; }
+.fmx-usual > b { margin-left: auto; font-size: 15px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--sub); text-align: right; }
 .fmx-usual > b small { display: block; margin-top: 2px; font-size: 8px; color: var(--faint); }
 
 /* A felismerés kudarca: saját állapot, a másik három úttal — nem hibajelzés. */
 .fmx-failed { padding-top: 8px; text-align: center; }
+/* §4.4: a felismerés kudarca BOROSTYÁN és szaggatott — sosem piros, sosem hibaállapot. */
 .fmx-failed-art { position: relative; width: 84px; height: 84px; margin: 6px auto 14px;
-  display: grid; place-items: center; border: 1px dashed color-mix(in srgb, var(--amber) 50%, transparent);
+  display: grid; place-items: center;
+  border: 1.2px dashed color-mix(in srgb, var(--mz-cell-amber-ink) 55%, transparent);
   border-radius: 50%; }
 .fmx-failed-art i { position: absolute; right: 2px; bottom: 4px; width: 24px; height: 24px;
-  display: grid; place-items: center; border-radius: 50%; background: var(--amber);
-  color: var(--surface-card); font-style: normal; font-weight: 600; font-size: 12px; }
-.fmx-failed small { display: block; font-size: 8px; letter-spacing: 1.4px; color: var(--faint); }
+  display: grid; place-items: center; border-radius: 50%; background: var(--mz-cell-amber-bg);
+  color: var(--mz-cell-amber-ink); font-style: normal; font-weight: 800; font-size: 12px; }
+.fmx-failed small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-cell-amber-ink); }
 .fmx-failed strong { display: block; margin: 6px 0 8px; font-family: var(--ff-display);
-  font-size: 22px; line-height: 1.2; font-weight: 300; color: var(--ink); }
+  font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 .fmx-failed p { margin: 0 0 16px; font-size: 11px; line-height: 1.6; color: var(--sub); }
 .fmx-failed-cta { display: block; width: 100%; margin: 0 0 8px; padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--sky) 45%, transparent); border-radius: 14px;
-  background: color-mix(in srgb, var(--sky) 12%, var(--surface-card));
-  color: var(--ink); font-size: 12.5px; font-weight: 500; }
-.fmx-failed-cta.is-quiet { border-color: var(--border-subtle); background: var(--surface-1); color: var(--sub); }
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 18px;
+  background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky);
+  color: var(--text-primary); font-size: 12.5px; font-weight: 700; }
+.fmx-failed-cta.is-quiet { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); color: var(--sub); }
 
 /* A8 · A9: a javítás idő-mezője, a javítás halk ajtaja a részletezőn, és a KÉT lépéses törlés
    (prototípus `food-time` + `deleteBlock`). A törlés szándékosan csendes és a lap alján áll. */
 .fmx-edit-time { display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--border-subtle);
-  border-radius: 12px; background: var(--surface-1); }
+  margin: 12px 0 0; padding: 10px 12px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border-radius: 15px; background: var(--surface-1); }
 .fmx-edit-time .label-mono { font-size: 8.5px; letter-spacing: 0.12em; color: var(--faint); }
 .fmx-edit-time input { padding: 6px 8px; border: 1px solid var(--border-subtle); border-radius: 9px;
   background: var(--surface-card); color: var(--ink); font-family: inherit; font-size: 13px; }
 .fmx-edit-door { display: block; width: 100%; margin: 16px 0 2px; padding: 11px 14px;
-  border: 1px solid var(--border-subtle); border-radius: 13px; background: var(--surface-1);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 15px; background: var(--surface-1);
   color: var(--sub); font-size: 12px; }
 .fmx-delete { margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--border-subtle);
   text-align: center; }
 .fmx-delete > button { padding: 9px 15px; border: 1px solid var(--border-subtle); border-radius: 11px;
   background: transparent; color: var(--faint); font-size: 10.5px; }
 .fmx-delete p { margin: 0 0 9px; font-size: 10.5px; color: var(--sub); }
-.fmx-delete .fmx-delete-yes { margin-right: 8px;
-  border-color: color-mix(in srgb, var(--coral) 55%, transparent);
-  color: color-mix(in srgb, var(--coral) 75%, var(--ink)); }
+.fmx-delete .fmx-delete-yes { margin-right: 8px; border-color: transparent;
+  background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); font-weight: 600; }
 
 /* ── Vércukor-válasz üvegdoboz (mezo-6mi43) ───────────────────────────────
    Jóváhagyott referencia: a companion-titanium prototípus `glucoseView` / `glucoseCurve` és a
@@ -11984,14 +12005,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    jelenik meg (owner-döntés). A sáv-szín HANGULAT, nem érdemjegy: a „magas" ezért LILA
    (--lav) és nem korall — a korall a ház hibaállapot-színe, és egy magas vércukor-válasz nem
    hiba, hanem egy tény, amivel lehet mit kezdeni. */
-.fmx-glu-glass { --glu-color: var(--sky); }
-.fmx-glu-glass.lvl-low { --glu-color: var(--sage); }
-.fmx-glu-glass.lvl-mid { --glu-color: var(--amber); }
-.fmx-glu-glass.lvl-high { --glu-color: var(--lav); }
+/* A sávok a `--mz-cell-*` páros tintáit viselik, ahogy a Mai vércukor-chipje (mezo-ju4j6.6). */
+.fmx-glu-glass { --glu-color: var(--mz-cell-sky-ink); --glu-bg: var(--mz-cell-sky-bg); }
+.fmx-glu-glass.lvl-low { --glu-color: var(--mz-cell-sage-ink); --glu-bg: var(--mz-cell-sage-bg); }
+.fmx-glu-glass.lvl-mid { --glu-color: var(--mz-cell-amber-ink); --glu-bg: var(--mz-cell-amber-bg); }
+.fmx-glu-glass.lvl-high { --glu-color: var(--mz-cell-lav-ink); --glu-bg: var(--mz-cell-lav-bg); }
 .fmx-glu-hero strong { font-size: 30px; letter-spacing: -0.02em;
-  color: color-mix(in srgb, var(--glu-color) 62%, var(--ink)); text-transform: lowercase; }
-.fmx-glu-hero svg { filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3))
-  drop-shadow(0 0 14px color-mix(in srgb, var(--glu-color) 32%, transparent)); }
+  color: var(--glu-color); text-transform: lowercase; }
 .fmx-glu-headline { margin: 14px 0 6px; font-family: var(--ff-display); font-size: 19px;
   font-weight: 300; line-height: 1.3; color: var(--ink); text-align: left; }
 
@@ -12009,8 +12029,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 12px 0 0; padding: 10px 0; border-top: 1px solid var(--divider);
   border-bottom: 1px solid var(--divider); }
 .fmx-glu-facts span { display: flex; flex-direction: column; gap: 3px; text-align: center; }
-.fmx-glu-facts small { font-size: 8.5px; letter-spacing: 0.4px; color: var(--faint); }
-.fmx-glu-facts b { font-size: 13px; font-weight: 600; color: var(--ink); }
+.fmx-glu-facts small { font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--faint); }
+.fmx-glu-facts b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 /* Őszinte becslés: a feltevést kimondjuk, nem mért adatként tesszük ki. */
 .fmx-glu-estimated { margin: 10px 0 0; padding: 9px 11px; border-radius: 12px;
   background: var(--surface-recess); color: var(--sub);
@@ -12019,18 +12040,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-glu-expect { display: grid; gap: 9px; margin: 14px 0 0; text-align: left; }
 .fmx-glu-expect > div { display: flex; align-items: flex-start; gap: 10px; }
 .fmx-glu-expect > div > span:last-child { min-width: 0; }
-.fmx-glu-expect small { display: block; font-size: 8.5px; letter-spacing: 0.9px;
+.fmx-glu-expect small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--faint); }
-.fmx-glu-expect b { display: block; margin-top: 2px; font-size: 12px; font-weight: 500;
-  line-height: 1.45; color: var(--ink); }
+.fmx-glu-expect b { display: block; margin-top: 2px; font-size: 12px; font-weight: 600;
+  line-height: 1.45; color: var(--text-primary); }
 .fmx-glu-meaning { margin: 12px 0 0; font-size: 11px; line-height: 1.6; color: var(--sub);
   text-align: left; }
 .fmx-glu-tip { display: flex; align-items: flex-start; gap: 11px; margin: 13px 0 0;
-  padding: 12px; border-radius: 16px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--glu-color) 32%, transparent);
-  background: color-mix(in srgb, var(--glu-color) 9%, var(--surface-card)); }
+  padding: 12px; border-radius: 18px; text-align: left;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--glu-bg); }
 .fmx-glu-tip svg { flex: 0 0 auto; }
-.fmx-glu-tip strong { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.fmx-glu-tip strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--glu-color); }
 .fmx-glu-tip p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--sub); }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -12053,18 +12073,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-dim:nth-child(7) { animation-delay: 0.24s; }
   .fmx-dim:nth-child(8) { animation-delay: 0.28s; }
   @keyframes fmx-tile-rise { from { opacity: 0; transform: translateY(10px); } }
-  .fmx-score-art { animation: fmx-score-tilt 5.2s ease-in-out infinite; }
-  .fmx-score-glow { animation: fmx-ai-glow 5s ease-in-out infinite; }
-  @keyframes fmx-ai-glow { 50% { opacity: 0.62; transform: translateX(-50%) scale(1.08); } }
-  /* A részletező hero tálja ugyanúgy lebeg, mint a Mai műszeré. */
-  .fmx-detail-art { animation: fmx-float 4.8s ease-in-out 0.4s infinite; }
+  /* mezo-ju4j6.7 (§8.6): az értékelés-hero billegése és fénylüktetése, valamint a részletező
+     táljának lebegése KIVEZETVE — dekoratív, végtelen hurkok. A lapok egyszer lépnek be
+     (a `.fmx-dim` lépcső alább), aztán csendben maradnak. */
   /* mezo-ju4j6.6 (§8.6): a pont-chip végtelen figyelem-pulzusa KIVEZETVE — a régi világ
-     egyetlen engedélyezett hurka a MOST-lüktetés, alább. */
-  @keyframes fmx-score-tilt {
-    0%, 100% { transform: rotate(-8deg); }
-    45% { transform: rotate(9deg) translateY(-1.5px) scale(1.06); }
-    70% { transform: rotate(4deg); }
-  }
+     egyetlen engedélyezett hurka a MOST-lüktetés, alább. A `fmx-score-tilt` és a `fmx-float`
+     képkocka-készlete mezo-ju4j6.7-ben elárvult, ezért törölve. */
   .fmx-cell:nth-child(2) .fmx-ring-progress { animation-delay: 0.08s; }
   .fmx-cell:nth-child(3) .fmx-ring-progress { animation-delay: 0.16s; }
   .fmx-cell:nth-child(4) .fmx-ring-progress { animation-delay: 0.24s; }
@@ -12082,20 +12096,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-node:nth-child(3) { animation-delay: 0.14s; }
   .fmx-node:nth-child(4) { animation-delay: 0.21s; }
   @keyframes fmx-ring-rise { from { stroke-dasharray: 0 100; } }
-  @keyframes fmx-float {
-    0%, 100% { transform: rotate(-7deg) translateY(2px); }
-    50% { transform: rotate(-3deg) translateY(-4px); }
-  }
   @keyframes fmx-glass-in { from { opacity: 0; transform: scale(0.92) translateY(8px); } }
   @keyframes fmx-node-in { from { opacity: 0; transform: translateX(-8px); } }
   /* S1c: a mikrofon-korong lélegzik, amíg hallgat (prototípus `mic-breathe`), a kereső tálja
      pedig ugyanúgy lebeg, mint a Mai műszeré. */
-  .fmx-mic:not(:disabled) { animation: fmx-mic-breathe 2.6s ease-in-out infinite; }
+  /* A mikrofon lélegzése a FELVÉTEL visszajelzése, nem dísz: csak `is-live` alatt fut
+     (mezo-ju4j6.7) — üresjáratban a korong áll. */
+  .fmx-mic.is-live { animation: fmx-mic-breathe 2.6s ease-in-out infinite; }
   @keyframes fmx-mic-breathe {
-    0%, 100% { box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16), 0 0 12px color-mix(in srgb, var(--lav) 18%, transparent); }
-    50% { box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16), 0 0 26px color-mix(in srgb, var(--lav) 34%, transparent); }
+    0%, 100% { box-shadow: var(--mz-shadow-coral); }
+    50% { box-shadow: var(--mz-shadow-coral), 0 0 0 5px color-mix(in srgb, var(--dv-coral) 26%, transparent); }
   }
-  .fmx-finder svg { animation: fmx-float 4.8s ease-in-out 0.3s infinite; }
+
 }
 /* Csökkentett mozgás: minden, amit ez a blokk indít, kivezetve. */
 @media (prefers-reduced-motion: reduce) {
@@ -12103,11 +12115,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-cell:active .fmx-ring { transform: none; transition: none; }
   .fmx-block.is-now { animation: none; }
   .fmx-glass[open], .fmx-node { animation: none; }
-  /* A részletező hero lebegése, a dimenzió-csempék belépője és az értékelés-hero fénye
-     kivezetve (S1b, mezo-33k6). */
-  .fmx-detail-art, .fmx-dim, .fmx-score-art, .fmx-score-glow { animation: none; }
-  /* S1c (mezo-33k6): a logoló-héj mikrofon-lélegzése és a kereső lebegése kivezetve. */
-  .fmx-mic, .fmx-mic:not(:disabled), .fmx-finder svg { animation: none; }
+  /* A dimenzió-csempék belépője kivezetve (S1b, mezo-33k6). */
+  .fmx-dim { animation: none; }
+  /* S1c (mezo-33k6): a logoló-héj mikrofon-lélegzése kivezetve. */
+  .fmx-mic, .fmx-mic.is-live { animation: none; }
   /* S1d (mezo-33k6): a víz-gyorsgomb nyomás-visszajelzése kivezetve. */
   .fmx-water-add, .fmx-water-add:active { transform: none; transition: none; }
   /* mezo-6mi43: a vércukor-görbe önrajzolása kivezetve — a végállapot statikusan látszik. */
