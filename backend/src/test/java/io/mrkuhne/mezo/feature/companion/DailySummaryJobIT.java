@@ -56,14 +56,15 @@ class DailySummaryJobIT extends AbstractIntegrationTest {
         String longNote = "Ma este végre leültem és átgondoltam a hetet, sokkal nyugodtabb voltam "
                 + "mint általában, és ez a séta után jött meg igazán.";
         ActivityLogEntity activity = activityPopulator.activity(owner, yesterday, longNote, "mindset", 10, "AI");
-        checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, "fáradt");
+        var checkIn = checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, "fáradt");
 
         dailySummaryJob.run();
 
         assertThat(memoryEmbeddingRepository.existsByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, activity.getId())).isTrue();
-        assertThat(memoryEmbeddingRepository.countByCreatedByAndKind(
-                owner, MemoryEmbeddingEntity.KIND_CHECKIN_NOTE)).isZero();
+        assertThat(memoryEmbeddingRepository.findByKindAndRefId(
+                MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId()))
+                .get().extracting(MemoryEmbeddingEntity::getContent).isEqualTo("fáradt");
     }
 
     @Test

@@ -79,7 +79,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.embedding().embedChatTurns()).isTrue();
         assertThat(properties.embedding().embedMaxChars()).isEqualTo(2000);
         assertThat(properties.embedding().embedNotes()).isTrue();
-        assertThat(properties.embedding().noteMinChars()).isEqualTo(80);
+        assertThat(properties.embedding().noteMinChars()).isEqualTo(1);
         assertThat(properties.embedding().noteBatchSize()).isEqualTo(200);
     }
 

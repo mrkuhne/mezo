@@ -33,6 +33,12 @@ final class ToolDomains {
         Map.entry("get_life_goals", "lifegoal"),
         Map.entry("get_growth", "growth"),
         Map.entry("find_similar_past_days", "memory"),
+        Map.entry("search_personal_memory", "memory"),
+        Map.entry("get_conversation_history", "memory"),
+        // Cross-domain evidence tools have their own category, not a blanket correct-domain exemption.
+        Map.entry("get_personal_context", "personal"),
+        Map.entry("list_personal_sources", "personal"),
+        Map.entry("read_personal_records", "personal"),
         Map.entry("get_medication", "medication"),
         Map.entry("get_protocol", "medication"),
         Map.entry("get_daily_practice", "practice"));
