@@ -1,9 +1,13 @@
 // ============================================================
-// Mezo · GlassBox — the shared 3D glass primitive (mezo-88iwa.13, T12 Task 2)
-// Ports the Titanium companion prototype's `.wo-glass`/`.wo-glass-card`
-// (docs/design_2.0/prototypes/companion-titanium/session.css) onto tokens:
-// a frosted full-bleed backdrop over the phone frame + a bottom-docked,
-// tinted card with a × in the header. Portal target resolution, Escape and
+// Mezo · GlassBox — the shared glass dialog primitive (mezo-88iwa.13, T12 Task 2)
+// Originally ported from the Titanium companion prototype's `.wo-glass`/
+// `.wo-glass-card`; RE-DRESSED to the restored Mozaik/Clay world in
+// mezo-ju4j6.5 (style bible §7.1a — "the Sheet's louder sibling"). Skin only:
+// this file's API, props and DOM are unchanged, all of it lives in the
+// `glassbox` section of prototype.css. Note there is a SECOND, unrelated
+// GlassBox in features/fuel/components (`.fmx-glass*`, centered) — the two are
+// deliberately not merged. A frosted full-bleed backdrop over the phone frame
+// + a bottom-docked, tinted card with a × in the header. Portal target resolution, Escape and
 // backdrop-click idioms follow Sheet.tsx. Deliberately generic
 // (open/onClose/label/tint/children only) — the T6 active-workout slice
 // reuses this component unchanged for its confirm/menu surfaces.
