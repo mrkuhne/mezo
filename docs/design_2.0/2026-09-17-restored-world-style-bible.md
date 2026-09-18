@@ -449,12 +449,45 @@ management, `inert` siblings and scroll-lock. **Geometry changes go only into th
 `.tab-bar[data-domain]` rules** (design-system doc §"Docked navigation") — never into the base
 `.tab-bar`.
 
-*The one real decision:* the docked bar is **graphite in both themes** by design (`mezo-0i5y6`,
-predates Titanium) — that is not a Titanium artefact and it stays. What is Titanium is the *cold*
-graphite and the pastel neon accents. So: **keep the graphite bar, re-tone it warm.**
+> **CORRECTED 2026-09-18 (`mezo-ju4j6.18`, owner report + git archaeology).** This section used
+> to read: *"the docked bar is graphite in both themes by design (`mezo-0i5y6`, predates
+> Titanium) — that is not a Titanium artefact and it stays."* **The date is wrong.**
+> `b02e06a8c` (`mezo-0i5y6`, the docked nav) landed **2026-09-17**, at the *tail* of the
+> Titanium period, and the last pre-Titanium stylesheet (`0f887e565`, 2026-09-12) carries
+> neither `--nav-surface` nor `.tab-bar[data-domain]`. The old world's bar was the floating
+> pill whose ground is `color-mix(… var(--canvas) …)` — **theme-aware**. A permanently dark
+> dock is therefore a Titanium-period artefact, and §1's light-first rule applies to it like
+> to every other surface.
+>
+> **Lesson for the rest of the programme:** "this predates Titanium" is a claim to *verify in
+> git*, not to carry forward from a doc. `git log -1 --format=%ad <commit>` against the
+> Titanium window (2026-09-09 → 2026-09-17) settles it in one command.
+
+*The decision, as corrected:* the docked bar **follows the theme** — a warm sand bar in light,
+the warm graphite in dark. What is Titanium is the *permanently* dark ground, the *cold*
+graphite and the pastel neon accents. The docked **geometry** is keep-list and does not move.
 
 ```css
-:root, :root[data-theme="dark"] {
+:root {
+  /* Light: page-family chrome, one step brighter than the ground, separated by the
+     §2.2 A white inset top edge rather than by being a dark band. */
+  --nav-surface:     #F7F2E9;
+  --nav-surface-top: #FFFDF9;
+  --nav-card:        var(--surface-card);
+  --nav-ink:         var(--text-primary);
+  --nav-muted:       var(--text-secondary);
+  --nav-idle:        var(--text-secondary);  /* --text-tertiary is 3.71:1 here — under AA */
+  --nav-line:        rgba(43, 33, 24, 0.08);
+  --nav-highlight:   rgba(255, 255, 255, 0.75);
+  /* On a light bar the accents are the READABLE `--mz-cell-*-ink` halves (5.1–6.1:1);
+     the lifted pastels below are calibrated for graphite and vanish here. */
+  --nav-nap:   var(--mz-cell-amber-ink);
+  --nav-train: var(--mz-cell-coral-ink);
+  --nav-fuel:  var(--mz-cell-sage-ink);
+  --nav-mezo:  var(--mz-cell-lav-ink);
+  --nav-me:    var(--mz-cell-rose-ink);
+}
+:root[data-theme="dark"] {
   --nav-surface:     #241E1A;   /* warm graphite, the dark-mode ground family */
   --nav-surface-top: #2C2521;
   --nav-card:        #2C2521;
@@ -476,6 +509,9 @@ graphite and the pastel neon accents. So: **keep the graphite bar, re-tone it wa
   tell; the active tab is identified by the accent *color* + the clay icon's own volume.
 - Keep the `88px` height, `12px 8px 24px` padding, the `56px` switch column and its divider, the
   focus-visible outlines, and the `home-indicator` tint hook.
+- **Light bar chrome:** `box-shadow: 0 -10px 24px -14px var(--nav-shadow), inset 0 1px 0
+  var(--nav-highlight)`. The white inset top edge is what lifts the bar off a light page; on
+  graphite the same line is near-invisible, so one rule serves both themes.
 - **`DomainSwitcher`:** the five cards become §2.2 A wash tiles, one per domain wash, each with its
   clay domain icon at 44px, the four-tab summary at `10.5px/600` and a sage check on the current
   domain. The overlay keeps its blur — there it is functional (it separates a modal layer), and it
