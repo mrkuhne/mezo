@@ -111,7 +111,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
 
   const dims: DimView[] = [
     {
-      key: 'nutrition', label: 'Táplálkozás', icon: 'i-makro', color: 'var(--coral)', weightPct: 30,
+      key: 'nutrition', label: 'Táplálkozás', icon: 'i-makro', color: 'var(--dv-coral)', weightPct: 30,
       score: subscores.nutrition,
       rows: [
         { label: 'Kalória', value: pair(rollup.consumed.kcal, day.targetKcal, 'kcal') },
@@ -121,7 +121,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
       ],
     },
     {
-      key: 'quality', label: 'Minőség', icon: 'i-feldolgozas', color: 'var(--amber)', weightPct: 15,
+      key: 'quality', label: 'Minőség', icon: 'i-feldolgozas', color: 'var(--dv-amber)', weightPct: 15,
       score: subscores.quality,
       // A feldolgozottság/mikro-részletek a napi motorból nem jönnek le naponta — inkább semmit
       // írunk, mint kitalált tényt. Az étkezésenkénti bontás a Mai oldal értékelőjén él.

@@ -449,12 +449,45 @@ management, `inert` siblings and scroll-lock. **Geometry changes go only into th
 `.tab-bar[data-domain]` rules** (design-system doc §"Docked navigation") — never into the base
 `.tab-bar`.
 
-*The one real decision:* the docked bar is **graphite in both themes** by design (`mezo-0i5y6`,
-predates Titanium) — that is not a Titanium artefact and it stays. What is Titanium is the *cold*
-graphite and the pastel neon accents. So: **keep the graphite bar, re-tone it warm.**
+> **CORRECTED 2026-09-18 (`mezo-ju4j6.18`, owner report + git archaeology).** This section used
+> to read: *"the docked bar is graphite in both themes by design (`mezo-0i5y6`, predates
+> Titanium) — that is not a Titanium artefact and it stays."* **The date is wrong.**
+> `b02e06a8c` (`mezo-0i5y6`, the docked nav) landed **2026-09-17**, at the *tail* of the
+> Titanium period, and the last pre-Titanium stylesheet (`0f887e565`, 2026-09-12) carries
+> neither `--nav-surface` nor `.tab-bar[data-domain]`. The old world's bar was the floating
+> pill whose ground is `color-mix(… var(--canvas) …)` — **theme-aware**. A permanently dark
+> dock is therefore a Titanium-period artefact, and §1's light-first rule applies to it like
+> to every other surface.
+>
+> **Lesson for the rest of the programme:** "this predates Titanium" is a claim to *verify in
+> git*, not to carry forward from a doc. `git log -1 --format=%ad <commit>` against the
+> Titanium window (2026-09-09 → 2026-09-17) settles it in one command.
+
+*The decision, as corrected:* the docked bar **follows the theme** — a warm sand bar in light,
+the warm graphite in dark. What is Titanium is the *permanently* dark ground, the *cold*
+graphite and the pastel neon accents. The docked **geometry** is keep-list and does not move.
 
 ```css
-:root, :root[data-theme="dark"] {
+:root {
+  /* Light: page-family chrome, one step brighter than the ground, separated by the
+     §2.2 A white inset top edge rather than by being a dark band. */
+  --nav-surface:     #F7F2E9;
+  --nav-surface-top: #FFFDF9;
+  --nav-card:        var(--surface-card);
+  --nav-ink:         var(--text-primary);
+  --nav-muted:       var(--text-secondary);
+  --nav-idle:        var(--text-secondary);  /* --text-tertiary is 3.71:1 here — under AA */
+  --nav-line:        rgba(43, 33, 24, 0.08);
+  --nav-highlight:   rgba(255, 255, 255, 0.75);
+  /* On a light bar the accents are the READABLE `--mz-cell-*-ink` halves (5.1–6.1:1);
+     the lifted pastels below are calibrated for graphite and vanish here. */
+  --nav-nap:   var(--mz-cell-amber-ink);
+  --nav-train: var(--mz-cell-coral-ink);
+  --nav-fuel:  var(--mz-cell-sage-ink);
+  --nav-mezo:  var(--mz-cell-lav-ink);
+  --nav-me:    var(--mz-cell-rose-ink);
+}
+:root[data-theme="dark"] {
   --nav-surface:     #241E1A;   /* warm graphite, the dark-mode ground family */
   --nav-surface-top: #2C2521;
   --nav-card:        #2C2521;
@@ -476,6 +509,9 @@ graphite and the pastel neon accents. So: **keep the graphite bar, re-tone it wa
   tell; the active tab is identified by the accent *color* + the clay icon's own volume.
 - Keep the `88px` height, `12px 8px 24px` padding, the `56px` switch column and its divider, the
   focus-visible outlines, and the `home-indicator` tint hook.
+- **Light bar chrome:** `box-shadow: 0 -10px 24px -14px var(--nav-shadow), inset 0 1px 0
+  var(--nav-highlight)`. The white inset top edge is what lifts the bar off a light page; on
+  graphite the same line is near-invisible, so one rule serves both themes.
 - **`DomainSwitcher`:** the five cards become §2.2 A wash tiles, one per domain wash, each with its
   clay domain icon at 44px, the four-tab summary at `10.5px/600` and a sage check on the current
   domain. The overlay keeps its blur — there it is functional (it separates a modal layer), and it
@@ -673,3 +709,42 @@ glucose glass added three rows to the table and one rule:
    (which also ran at idle) to `.fmx-mic.is-live`. Everything else — hero tilt, glow pulse, bowl
    and finder float — is gone, and the keyframes they orphaned (`fmx-float`, `fmx-score-tilt`)
    went with them. A re-dress that leaves dead `@keyframes` behind is not finished.
+
+### A.4 Phase 5c addenda (`mezo-ju4j6.8`)
+
+Applying A.1 to the Kiegészítők hub + protocol + dose setup (`fsx-`) and the Trendek weekly
+picture (`ftx-`) added one table row and two rules:
+
+| Titanium material found | Restored replacement | § |
+| --- | --- | --- |
+| A **dynamic**, per-item tint fed in from markup (`--fsx-band-color`, `--ftx-dim-color`…) as `color-mix(tint 12%, transparent)` + `1px` tint border + a raw black drop | the **same** wash-tile formula, written against the variable: `linear-gradient(150deg, color-mix(tint 16%, var(--surface-card)), color-mix(tint 5%, var(--surface-page)))` + `0.5px` hairline + the **neutral** `var(--mz-shadow)` (a named `--mz-shadow-<hue>` is only available where the hue is fixed at author time) | §2.2 A |
+
+7. **A legacy hue token is not the restored accent.** Feature markup that hands a colour down
+   (`face.color = 'var(--sky)'`) was still on the pre-`--dv-` palette. Moving those to
+   `var(--dv-*)` is part of the re-dress, not a refactor — it is what puts the card on the
+   §2.1 accent set and lets dark mode re-point it. Grep every touched page for
+   `var(--sky|lav|rose|amber|sage|coral)` before calling a slice done.
+8. **A.2 rule 1 cuts both ways: the same quantity wears the same hue everywhere.** The Trendek
+   week bars, the daily-average tile, the weekday split row and the long-horizon intake curve
+   all measure what the Mai energy arc measures — so all four moved from `--sky` to
+   `--dv-sage`. What stayed: the weight series' rose (a second measure on one axis), the
+   over-target amber (§4.4), and the time-of-day band vocabulary (hajnal amber · ebéd sage ·
+   edzés korall · este levendula), because there the hue is the wayfinding, not the skin.
+
+### A.5 Phase 5d addenda (`mezo-ju4j6.9`)
+
+Applying A.1 to the Konyha family (hub, the Receptek/Kamra libraries, the two detail pages and
+the Receptműhely canvas, `fkx-`) closed the Fuel domain. It added no new material — the whole
+block is A.1 rows plus A.4's dynamic-tint wash — and two rules:
+
+9. **A big title on a poster is an eyebrow plus a numeral, not a heading.** The Titanium posters
+   carried a `17px/600` card title AND a tinted 50px number. The restored anatomy (§3.2) splits
+   that into a `9.5px/800/.16em` uppercase eyebrow in the domain ink and ONE `display 200 / 44px`
+   tabular numeral in plain `--ink`. It reads quieter and lands the number harder — and it is the
+   change an owner notices first, so show it before you ship it.
+10. **A door that is not a card gets a shield, not a wash.** Rows that merely lead somewhere
+   (`.fkx-door`, the head actions, the search field, the filter pills) take the §3.1 shield
+   material — `var(--surface-1)` + `inset 0 0 0 1px var(--border-subtle)` — while only the things
+   that *carry a number or a promise* (captures, posters, tiles, the note, the two CTAs) become
+   wash tiles. Washing everything flattens the page's hierarchy just as thoroughly as Titanium's
+   borders did.

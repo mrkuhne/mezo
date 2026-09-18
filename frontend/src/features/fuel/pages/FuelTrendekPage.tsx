@@ -58,9 +58,9 @@ import { buildWeekView, mealDayScore, loggedKcalAvg, weekDeltas, type WeekDayVM,
 const STAT_FACE: Record<'avg' | 'score' | 'weight', {
   label: string; icon: ClayIconName; color: string; unit: string; dec: 0 | 1
 }> = {
-  avg: { label: 'Napi átlag', icon: 'i-tanyer', color: 'var(--sky)', unit: 'kcal', dec: 0 },
-  score: { label: 'Étkezés-minőség', icon: 'i-feldolgozas', color: 'var(--lav)', unit: '', dec: 1 },
-  weight: { label: 'Heti súlyátlag', icon: 'i-suly', color: 'var(--rose)', unit: 'kg', dec: 1 },
+  avg: { label: 'Napi átlag', icon: 'i-tanyer', color: 'var(--dv-sage)', unit: 'kcal', dec: 0 },
+  score: { label: 'Étkezés-minőség', icon: 'i-feldolgozas', color: 'var(--dv-lav)', unit: '', dec: 1 },
+  weight: { label: 'Heti súlyátlag', icon: 'i-suly', color: 'var(--dv-rose)', unit: 'kg', dec: 1 },
 }
 
 /** Egy felszámoló numerál. Üres érték „—" — a count-up hookot akkor sem hívjuk feltételesen
@@ -377,8 +377,8 @@ export function FuelTrendekPage() {
 
           <h2 className="ftx-section">Hétköznap és hétvége</h2>
           <div className="ftx-split">
-            <SplitRow label="Hétköznap" icon="i-nap" color="var(--sky)" pct={vm.weekdayAvgPct} />
-            <SplitRow label="Hétvége" icon="i-hold" color="var(--amber)" pct={vm.weekendAvgPct} />
+            <SplitRow label="Hétköznap" icon="i-nap" color="var(--dv-sage)" pct={vm.weekdayAvgPct} />
+            <SplitRow label="Hétvége" icon="i-hold" color="var(--dv-amber)" pct={vm.weekendAvgPct} />
             {delta == null ? (
               <p className="ftx-split-note">
                 A kettő összevetéséhez mindkét oldalon kell legalább egy naplózott nap — amíg nincs,

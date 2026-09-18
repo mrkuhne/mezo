@@ -438,7 +438,7 @@ export function RecipeWorkshopPage() {
                     <div className="col gap-sm">
                       {draft.steps.map((s, i) => (
                         <div key={i} className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', minWidth: 14 }}>{i + 1}.</span>
+                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--dv-coral)', minWidth: 14 }}>{i + 1}.</span>
                           <span style={{ fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-primary)' }}>{s}</span>
                         </div>
                       ))}
