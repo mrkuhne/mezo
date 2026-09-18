@@ -34,6 +34,7 @@ public class CompanionAdvisorChain {
 
     private final CompanionLlm companionLlm;
     private final ClinicalOutputCheck clinicalOutputCheck;
+    private final ActionClaimCheck actionClaimCheck;
     private final TurnVerdictCheck turnVerdictCheck;
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -126,12 +127,20 @@ public class CompanionAdvisorChain {
         return new AdvisedAnswer(answer, degraded);
     }
 
-    /** Clinical first; a clinical hit skips the verdict LLM call this round (the retry re-checks all). */
+    /**
+     * Clinical first (safety-critical: a wrong dose-change suggestion is the worse harm), then the
+     * fabricated-action-claim backstop (mezo-q0p5a) — both deterministic and ~0 ms, so either hit
+     * skips the verdict LLM call this round entirely (the retry re-checks all three).
+     */
     private List<AdvisorViolation> runChecks(
             String systemPrompt, List<Turn> history, String userMessage, String answer, ToolCallAudit audit) {
         Optional<AdvisorViolation> clinical = clinicalOutputCheck.check(answer);
         if (clinical.isPresent()) {
             return List.of(clinical.get());
+        }
+        Optional<AdvisorViolation> actionClaim = actionClaimCheck.check(answer);
+        if (actionClaim.isPresent()) {
+            return List.of(actionClaim.get());
         }
         return turnVerdictCheck.check(systemPrompt, history, userMessage, answer, audit.toolOutcomes());
     }

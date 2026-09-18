@@ -194,6 +194,10 @@ public record CompanionProperties(
         @Min(0) @Max(2) int maxRetries,
         /** Prescription-med terms the clinical check guards (accent-folded contains-match). */
         @NotEmpty List<String> rxTerms,
+        /** mezo-q0p5a: first-person PAST-tense action-claim terms the fabrication backstop
+         *  guards (accent-folded contains-match) — the companion has no write tools, so a claim
+         *  it performed one is always fabricated. */
+        @NotEmpty List<String> actionClaimTerms,
         /**
          * mezo-indo: per-tool-output character cap in the verdict judge's payload. The judge runs
          * on the cheap tier and already carries the system prompt + the whole history, while tool
