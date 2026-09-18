@@ -140,4 +140,33 @@ class TurnProvenanceTest {
         assertThat(result.failed()).isTrue();
         assertThat(result.text()).isNotNull();
     }
+
+    /**
+     * Today's tools only ever emit flat scalar args, but the plan's args are model-controlled and
+     * {@code PlanValidator} only checks key names — an array-valued arg must render as its own
+     * compact JSON rather than throw {@code JsonNodeException} (Jackson 3's {@code asString()}
+     * rejects container nodes) and fall into the outer "return unchanged" guard.
+     */
+    @Test
+    void arrayValuedArgRendersAsCompactJsonInsteadOfThrowing() {
+        ToolCallAudit.ToolOutcome outcome = new ToolCallAudit.ToolOutcome(
+                "get_meals", "{\"scope\":[\"a\",\"b\"]}", "ok", "miert");
+
+        TurnProvenance.Built built = TurnProvenance.build(List.of(outcome), DEFAULT_LIMITS);
+
+        ToolCallsEnvelope.ToolCall ask = built.ask().calls().get(0);
+        assertThat(ask.args()).isEqualTo("scope=[\"a\",\"b\"]");
+    }
+
+    /** A null-valued arg must render as an honest placeholder, never a bare {@code key=}. */
+    @Test
+    void nullValuedArgRendersAsHonestPlaceholderNotBareKey() {
+        ToolCallAudit.ToolOutcome outcome = new ToolCallAudit.ToolOutcome(
+                "get_meals", "{\"day\":null}", "ok", "miert");
+
+        TurnProvenance.Built built = TurnProvenance.build(List.of(outcome), DEFAULT_LIMITS);
+
+        ToolCallsEnvelope.ToolCall ask = built.ask().calls().get(0);
+        assertThat(ask.args()).isEqualTo("day=(üres)");
+    }
 }

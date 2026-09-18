@@ -70,6 +70,12 @@ public final class TurnProvenance {
      * ({@code "days=7"}) that {@code RecordingToolCallback.compactArgs} produced at record time.
      * Detected by a leading {@code '{'}; on ANY parse failure the input is returned unchanged —
      * provenance must never fail a turn.
+     *
+     * <p>Today's tools only ever produce flat scalar args, but the plan's args are
+     * model-controlled and {@code PlanValidator} only checks key names — so a container-valued
+     * (array/object) or null-valued arg must render honestly rather than throw or go blank:
+     * {@link #compactValue(JsonNode)} handles both, Jackson 3's {@code asString()} is never
+     * called on anything but a scalar node.
      */
     private static String compactArgs(String args) {
         if (args == null) {
@@ -85,11 +91,27 @@ public final class TurnProvenance {
                 return args;
             }
             return node.properties().stream()
-                    .map(entry -> entry.getKey() + "=" + entry.getValue().asString())
+                    .map(entry -> entry.getKey() + "=" + compactValue(entry.getValue()))
                     .collect(Collectors.joining(", "));
         } catch (RuntimeException e) {
             return args;
         }
+    }
+
+    /**
+     * One arg value as its chip-display string: a container node (array/object) renders as its
+     * own compact JSON — {@code asString()} throws {@link tools.jackson.databind.exc.JsonNodeException}
+     * on those in Jackson 3 — a null node renders as an honest placeholder rather than a bare
+     * {@code key=}, and any scalar node renders as {@code asString()} always has.
+     */
+    private static String compactValue(JsonNode value) {
+        if (value.isContainer()) {
+            return value.toString();
+        }
+        if (value.isNull()) {
+            return "(üres)";
+        }
+        return value.asString();
     }
 
     /**

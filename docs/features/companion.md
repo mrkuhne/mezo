@@ -2360,7 +2360,8 @@ on any parse failure the input passes through unchanged, because provenance must
 turn.
 
 **Wire.** `MessageTool` (`api/dto`) gained three optional fields — `why`, `outcome`, `failed` —
-alongside the pre-S9.7 `type`/`name`/`args`. `CompanionMapper.toTools` zips `ai_message.tool_calls`
+alongside the pre-S9.7 `type`/`name`; the WIRE item has no `args` field, args are baked into
+`name`, and `args?` exists only on the FE `Tool` type. `CompanionMapper.toTools` zips `ai_message.tool_calls`
 and `ai_message.tool_outcomes` together BY INDEX and tolerates any length mismatch between the two
 lists (the 90-day scrub NULLs one and keeps the other, so they routinely diverge in length once a
 row ages out): an ask with no matching outcome yields `failed:false` and no `outcome` field, never
@@ -2368,7 +2369,8 @@ a mapping exception. The FE's `Tool` type mirrors this — `why`/`outcome`/`fail
 absent on legacy rows and on any row past the scrub.
 
 **Scrub.** `ProvenanceRetentionJob` (cron `mezo.companion.turn.provenance.cron`, default `"0 55 3
-* * *"` — 03:55, the free minute after the 03:50 llm-log/audit-retention pair) NULLs
+* * *"` — 03:55, the free minute after the 03:40 llm-log payload scrub and the 03:50 audit-retention
+run) NULLs
 `ai_message.tool_outcomes` on rows with `createdAt < cutoff` where `cutoff = now −
 retention-days` (default 90); a row created exactly at the cutoff is spared (`<`, not `<=`). No row
 is ever deleted — the same standing exception the llm-log payload scrub uses — and `tool_calls`
