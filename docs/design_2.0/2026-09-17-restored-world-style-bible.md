@@ -730,3 +730,21 @@ picture (`ftx-`) added one table row and two rules:
    `--dv-sage`. What stayed: the weight series' rose (a second measure on one axis), the
    over-target amber (§4.4), and the time-of-day band vocabulary (hajnal amber · ebéd sage ·
    edzés korall · este levendula), because there the hue is the wayfinding, not the skin.
+
+### A.5 Phase 5d addenda (`mezo-ju4j6.9`)
+
+Applying A.1 to the Konyha family (hub, the Receptek/Kamra libraries, the two detail pages and
+the Receptműhely canvas, `fkx-`) closed the Fuel domain. It added no new material — the whole
+block is A.1 rows plus A.4's dynamic-tint wash — and two rules:
+
+9. **A big title on a poster is an eyebrow plus a numeral, not a heading.** The Titanium posters
+   carried a `17px/600` card title AND a tinted 50px number. The restored anatomy (§3.2) splits
+   that into a `9.5px/800/.16em` uppercase eyebrow in the domain ink and ONE `display 200 / 44px`
+   tabular numeral in plain `--ink`. It reads quieter and lands the number harder — and it is the
+   change an owner notices first, so show it before you ship it.
+10. **A door that is not a card gets a shield, not a wash.** Rows that merely lead somewhere
+   (`.fkx-door`, the head actions, the search field, the filter pills) take the §3.1 shield
+   material — `var(--surface-1)` + `inset 0 0 0 1px var(--border-subtle)` — while only the things
+   that *carry a number or a promise* (captures, posters, tiles, the note, the two CTAs) become
+   wash tiles. Washing everything flattens the page's hierarchy just as thoroughly as Titanium's
+   borders did.
