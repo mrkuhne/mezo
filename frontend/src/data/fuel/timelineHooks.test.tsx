@@ -289,6 +289,72 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
     expect(result.current.plan.slots.some(s => s.time === '05:50' && s.label === 'Ébresztő')).toBe(false)
   })
 
+  // mezo-rilew — the owner logged an unplanned volleyball session and the Fuel calorie target did
+  // not move: `deriveBlocks` was schedule-only, so a session that consumed no planned occurrence
+  // produced no block, and the day's `eat` term summed to zero over it. The day TYPE stays
+  // schedule-derived on purpose (the backend classifies the same date schedule-only) — what an
+  // ad-hoc session changes is what you BURNT, not where the plan prefers your calories.
+  describe('an ad-hoc logged sport session raises the day\'s calorie target (mezo-rilew)', () => {
+    const goalWithTdee = {
+      ...goalWithSettings,
+      currentWeight: 80,
+      tdeeBootstrap: { bmr: 1800, neat: 1.2, formula: 'MSJ' },
+    }
+    const scheduleFree = () => [
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+      http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+      http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-events`, () => HttpResponse.json([])),
+    ]
+
+    async function energyFor(sessions: unknown[]) {
+      server.use(
+        ...scheduleFree(),
+        http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json(sessions)),
+      )
+      const { Wrapper } = sharedWrapper()
+      const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+      await waitFor(() => expect(result.current.plan.energy?.base).toBe(2160)) // 1800 × 1.2
+      return result.current.plan.energy!
+    }
+
+    const today = '2026-07-02'
+    const session = {
+      id: 'd1f3a0e2-0000-4000-8000-000000000009', sport: 'volleyball', date: today,
+      time: '18:00', duration: 90, rpe: 7,
+    }
+
+    it('adds the session\'s movement energy — a schedule-free day is no longer a zero-burn day', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${today}T20:00:00`))
+      try {
+        const withoutSession = await energyFor([])
+        expect(withoutSession.activity).toBe(0)
+
+        const withSession = await energyFor([session])
+        // 90 minutes of sport at 80 kg, the same MET the planner already bills a PLANNED sport
+        // block at — the point is that it is billed at all.
+        expect(withSession.activity).toBeGreaterThan(0)
+        expect(withSession.target).toBe(withoutSession.target + withSession.activity)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('a session logged on ANOTHER day never inflates today', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${today}T20:00:00`))
+      try {
+        const energy = await energyFor([{ ...session, date: '2026-06-28' }])
+        expect(energy.activity).toBe(0)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   // Task 7 (mezo-7102): resolveDayType(blocks) picks the cached template matching today's REAL
   // day type, and buildDayPlan folds its anchors straight into plan.slots (compileTemplate
   // replaces placeWindows for this day). A blockless day (no gym/sport/running today, same

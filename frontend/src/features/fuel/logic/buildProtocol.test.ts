@@ -1,7 +1,7 @@
 import { deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
-import type { GymSchedule, VolleyballSession } from '@/data/types'
+import type { GymSchedule, SportSession, VolleyballSession } from '@/data/types'
 
 // --- deriveProtocolAnchors — the CANONICAL preWorkout derivation (fix round 1, mezo-h4wp.6.3) ---
 // Pinning the bug the review caught: without this, both the notification schedule writer and
@@ -62,5 +62,71 @@ describe('deriveBlocks — sport-slot skip', () => {
   test('no skips leaves today\'s sport block present (default param, byte-identical to pre-mezo-cq06 callers)', () => {
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null)
     expect(blocks.find((b) => b.kind === 'sport')?.time).toBe('18:00')
+  })
+})
+
+// --- deriveBlocks — ad-hoc logged sport session (mezo-rilew) ---
+// Owner report: an unplanned volleyball session was logged and the Fuel day's calorie target did
+// not move. The day's activity energy (`eat`) is summed over these blocks, and the block list was
+// SCHEDULE-only — a session the user actually played but never planned burned kcal that no surface
+// ever added back. A session that DOES consume a planned occurrence must not be counted twice.
+describe('deriveBlocks — ad-hoc logged sport session', () => {
+  const todayIso = localDateString(new Date())
+  const session = (overrides: Partial<SportSession> = {}): SportSession => ({
+    id: 's1', sport: 'volleyball', date: 'szept. 18.', isoDate: todayIso, time: '18:00', duration: 90,
+    setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null,
+    jumpCount: null, notes: null, kcal: 700, kcalIsEstimate: true,
+    ...overrides,
+  })
+  const planned = (overrides: Partial<VolleyballSession> = {}): VolleyballSession => ({
+    day: 'Kedd', time: '18:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés',
+    today: true,
+    ...overrides,
+  })
+  const withSessions = (plan: VolleyballSession[], sessions: SportSession[]) =>
+    deriveBlocks(
+      null,
+      { schedule: plan.length ? { volleyball: { team: '', sessions: plan, season: '', weeklyHours: 0 } } : null },
+      null,
+      [],
+      sessions,
+    )
+
+  test('a logged session with no plan behind it becomes a sport block at its own time and duration', () => {
+    const blocks = withSessions([], [session()])
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0]).toMatchObject({ kind: 'sport', time: '18:00', durationMin: 90, label: 'Volleyball' })
+  })
+
+  test('a logged session that consumes today\'s planned occurrence yields ONE block, not two', () => {
+    const blocks = withSessions([planned()], [session()])
+    expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
+  })
+
+  test('the logged session\'s OWN time and duration win over the plan it consumed', () => {
+    const blocks = withSessions([planned()], [session({ time: '19:30', duration: 120 })])
+    expect(blocks.filter((b) => b.kind === 'sport')).toEqual([
+      { kind: 'sport', time: '19:30', durationMin: 120, label: 'Volleyball' },
+    ])
+  })
+
+  test('a planned occurrence nobody logged still carries the day (nothing is dropped)', () => {
+    const blocks = withSessions([planned({ time: '20:00' })], [])
+    expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
+  })
+
+  test('a session logged on another date never lands on today', () => {
+    const blocks = withSessions([], [session({ isoDate: '1999-01-01' })])
+    expect(blocks).toHaveLength(0)
+  })
+
+  test('two logged sessions against one plan yield two blocks — the unplanned one is never swallowed', () => {
+    const blocks = withSessions([planned()], [session(), session({ id: 's2', time: '07:00', duration: 60 })])
+    expect(blocks.filter((b) => b.kind === 'sport').map((b) => b.time).sort()).toEqual(['07:00', '18:00'])
+  })
+
+  test('no sessions passed keeps every caller byte-identical (default param)', () => {
+    const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [planned()], season: '', weeklyHours: 0 } } }, null)
+    expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
   })
 })

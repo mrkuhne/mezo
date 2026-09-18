@@ -89,12 +89,24 @@ export function useFuelTimeline(date: string = localDateString()) {
   const bed = sleepGoal.bedTime
   const mealsPerDay = settings.mealsPerDay
 
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
+  // Two block lists, deliberately (mezo-rilew):
+  //   `blocks` is what the day ACTUALLY holds — the schedule reconciled with the logged sport
+  //     sessions — and it drives the meal windows and the day's activity energy (`eat`), so an
+  //     unplanned session the owner really played finally raises the calorie target instead of
+  //     burning kcal no surface ever adds back.
+  //   `plannedBlocks` is the SCHEDULE-only list and stays the day-type basis. The day type picks
+  //     the slot template and the segment's trainingDay/restDay kcal, and the backend classifies
+  //     the same date schedule-only (`WorkoutWindowQueryService.hasScheduledTrainingOn`) — driving
+  //     it off the logged sessions here would make the two surfaces serve different numbers for
+  //     the same day. `eat` answers "what did I burn", the day-type delta answers "where do I
+  //     prefer my calories": only the first one is a fact about an ad-hoc session.
+  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [])
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged
   // placeWindows/splitBudget path).
-  const dayType = resolveDayType(blocks)
+  const dayType = resolveDayType(plannedBlocks)
   const template = templates.find(t => t.dayType === dayType) ?? null
 
   // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
