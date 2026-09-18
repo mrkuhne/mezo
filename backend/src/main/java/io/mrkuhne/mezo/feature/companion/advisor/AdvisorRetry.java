@@ -17,9 +17,9 @@ public final class AdvisorRetry {
             block.append("- ").append(violation.check()).append(": ").append(violation.reason()).append('\n');
         }
         return block.append("""
-                Szabályok: ne kérdezz rá már megerősített tényre; konkrét adatot csak a kontextusból, \
-                az eszközhívásokból vagy a felhasználó üzenetéből állíts — jelöletlen, magabiztos állítás \
-                kitalált adatról nem megy (jelölt sejtés viszont igen); Rx gyógyszer adagolásának \
+                Szabályok: ne állítsd, hogy elvégeztél olyan műveletet, amit nem tudsz — nem tudsz naplózni, \
+                menteni vagy módosítani, csak beszélni és olvasni; konkrét adatot csak a kontextusból, \
+                az eszközhívásokból vagy a felhasználó üzenetéből állíts; Rx gyógyszer adagolásának \
                 módosítását soha ne javasold.
                 A hangnem NE változzon — ugyanaz az élő, beszélgetős stílus; a javítás kizárólag a \
                 fent megjelölt problémára vonatkozzon.""").toString();
