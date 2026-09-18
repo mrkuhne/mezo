@@ -771,3 +771,28 @@ Geometry, routes and behaviour were untouched; three decisions are worth copying
    clay `i-hus` / `i-gabona` / `i-avokado` — so a macro looks the same wherever it appears. This
    is A.2 rule 1 read forward: if two screens measure the same thing, the hue and the symbol are
    part of the meaning, not of the skin.
+
+### 6.4 Boop — the house character (`mezo-ju4j6.14`)
+
+`frontend/src/shared/ui/clay/boop/boop.svg` carries one `<symbol>` per domain hue
+(`boop-train` · `boop-fuel` · `boop-nap` · `boop-mezo` · `boop-en`, plus `boop-train-sky`
+while the Train hue is an open owner decision). Four things make it part of this world rather
+than a sticker dropped into it:
+
+1. **Drawn in the §6.1 recipe, not imported.** `viewBox 0 0 100 100`, a 3-stop radial per
+   object, ONE white specular ellipse rotated ~-22° upper-left, no stroke, no drop-shadow
+   filter, a flat tinted ground ellipse instead of a glow. The `bible-strong-avatar-lab`
+   (AGPL-3.0) named in the spec was an idea source only — no code and no exported art crossed
+   over, so nothing in the app is a derivative work.
+2. **The hue is the domain, the shape is constant.** Only the gradient ramp changes between
+   variants; geometry, eyes and mouth are identical, so the five read as one character wearing
+   the room's colour rather than five mascots.
+3. **Blink and breath live in CSS, on named parts.** Each eye carries a `.boop-lid` ellipse
+   filled with the body gradient, resting at `scaleY(0)` (`transform-box: fill-box`), and the
+   torso is `.boop-body`. A blink is a short 0→1→0 step; the idle gesture is a ≤2% scale
+   breath from the feet. Both belong inside a `prefers-reduced-motion: no-preference` branch —
+   the static figure is complete on its own.
+4. **`<use>` clones share one timeline.** CSS reaches the symbol's source elements, so every
+   `<use>` instance on a page blinks in unison. Where two Boops share a screen and that reads
+   wrong, inline the SVG per instance (`?raw`) instead of referencing the sprite — the classes
+   are the same either way.
