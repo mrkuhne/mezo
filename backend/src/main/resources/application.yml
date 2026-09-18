@@ -751,16 +751,16 @@ mezo:
         # a tool-carrying request still pins `none` regardless, because /v1/chat/completions
         # rejects function tools + reasoning effort outright (measured, mezo-ozri.3).
         #
-        # chat: high. The one place in the whole sweep where more thinking bought accuracy is the
-        # cheap-tier advisor judge (companion_advisor/verdict_check). On a 12-case labelled set it
-        # held recall at 1.00 everywhere, but its unmarkedClaim PRECISION went 0.50 (none) → 0.55
-        # (provider default) → 0.60 (high, unchanged at xhigh): `high` is the first level that
-        # reliably stops reading a qualitative judgement ("ez nagyjából a tervezett ütem") as a
-        # fabricated number — the mezo-9yqq false-positive class (2). It buys that for ~+33% output
-        # tokens on the CHEAPEST model, while each false positive it removes costs a whole extra
-        # streamed chat turn (the advisor retry). Redundancy detection was already perfect at every
-        # level. mezo-9yqq class (1) — tool-derived numbers — is NOT fixable here: it failed 100% of
-        # the time at every level including xhigh, because the judge never sees the tool OUTPUT.
+        # chat: high. MEASURED FOR A CALLER THAT NO LONGER RUNS ON THIS TIER — the evidence below is
+        # kept as a record, not a live justification. The one place in the original sweep where more
+        # thinking bought accuracy was the cheap-tier advisor judge (companion_advisor/verdict_check,
+        # TurnVerdictCheck): on a 12-case labelled set it held recall at 1.00 everywhere, but its
+        # unmarkedClaim PRECISION went 0.50 (none) → 0.55 (provider default) → 0.60 (high, unchanged
+        # at xhigh) — never good enough, and S9.8 (mezo-rj214.7, mezo-rj214.5) took that judge off
+        # the live answer path entirely (see TurnVerdictCheck's javadoc). Every OTHER caller on this
+        # tier was untouched by that sweep, so `high` stays set on their behalf by default rather
+        # than by evidence — this tier is OWED A RE-MEASURE against whichever callers actually use it
+        # now (companion_chat and the rest of the cheap tier; not changed by this task, mezo-rj214.7).
         #
         # smart: high. The first pass read this wrong. Scoring the mesocycle plan for STRUCTURAL
         # validity found nothing to separate the levels (it is perfect even at `none`), and the
@@ -1970,6 +1970,8 @@ mezo:
       # reasoning-effort level, mezo-9yqq class 1). Budgeted, because the judge runs on the cheap
       # tier and its payload already carries the system prompt + the whole history; a cut or
       # dropped output is MARKED, never silently removed.
+      # S9.8 (mezo-rj214.7, mezo-rj214.5): the judge left the LIVE answer path — these two bind
+      # ONLY its offline regression run (TurnVerdictCheckIT against the fake) now, not a live turn.
       tool-result-max-chars: 700
       tool-results-total-max-chars: 3000
     habit-suggest:

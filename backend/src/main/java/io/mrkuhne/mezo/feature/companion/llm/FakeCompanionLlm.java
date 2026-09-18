@@ -130,6 +130,18 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  systemPrompt is echoed back verbatim as the answer instead of a scripted/default reply. */
     public static final String SYSTEM_ECHO_SENTINEL = "[fake-system-echo]";
 
+    /**
+     * Scripted action-claim fabrication (S9.8, mezo-rj214.7, mezo-rj214.5): the FIRST round
+     * fabricates a write claim ("Felírtam…") the deterministic {@code ActionClaimCheck} catches;
+     * the corrective retry self-heals into a clean answer, stateless, the same shape
+     * {@link #VIOLATE_ONCE} used for the now-offline LLM verdict — except this one is detected by
+     * checking directly for {@link AdvisorRetry#RETRY_MARKER} in the prompt half the retry round
+     * actually changes (the joined systemPrompt for {@link #complete}, {@code turnContext} for
+     * {@link #completeSmart}), since {@code ActionClaimCheck} never sees a judge payload to embed
+     * the marker in.
+     */
+    public static final String ACTION_CLAIM_ONCE = "[fake-action-claim-once]";
+
     /** Scripted verdicts (V1.3): violate only until the retry header appears in the checked answer. */
     public static final String VIOLATE_ONCE = "[fake-violate]";
     /** Scripted verdicts (V1.3): violate every round — exercises the degraded path. */
@@ -643,13 +655,16 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  per-detail sentinel. */
     private final List<String> userMessages = new java.util.concurrent.CopyOnWriteArrayList<>();
     /** mezo-rj214.7 final fix wave: the {@link io.mrkuhne.mezo.techcore.security.LlmActorContext}
-     *  actor visible on the CALLING thread at the advisor's verdict-check call — {@code
+     *  actor visible on the CALLING thread at the advisor's corrective-retry call — {@code
      *  llm_log_history.created_by} is not observable under this profile (see the "Call counter"
      *  javadoc above), so this is the substitute oracle for "was the acting user actually re-bound
-     *  before the deferred advisor round ran". Overwritten by every verdict-check call in a turn
-     *  (initial + post-retry); they all run inside the same actor-binding scope, so any one of them
-     *  proves the point. */
-    private volatile UUID lastVerdictCheckActor;
+     *  before the deferred advisor round ran". S9.8 (mezo-rj214.7, mezo-rj214.5) moved the capture
+     *  point from the (now offline-only) verdict-check call onto the retry call itself — the chain
+     *  still makes exactly that LLM call on the corrective round, tool-carrying or not, so it is
+     *  detected the same stateless way {@link #VIOLATE_ONCE}/{@link #ACTION_CLAIM_ONCE} detect a
+     *  retry round: {@link AdvisorRetry#RETRY_MARKER} present in the prompt half that round
+     *  actually rewrites. */
+    private volatile UUID lastAdvisorRetryActor;
 
     public int completeCallCount() {
         return completeCallCount.get();
@@ -663,8 +678,8 @@ public class FakeCompanionLlm implements CompanionLlm {
         return lastUserMessage;
     }
 
-    public UUID lastVerdictCheckActor() {
-        return lastVerdictCheckActor;
+    public UUID lastAdvisorRetryActor() {
+        return lastAdvisorRetryActor;
     }
 
     public List<String> userMessages() {
@@ -677,6 +692,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         completeCallCount.incrementAndGet();
         lastUserMessage = userMessage;
         userMessages.add(userMessage);
+        // see lastAdvisorRetryActor's own javadoc: this IS the chain's corrective-retry call
+        // whenever the joined prompt (the 6-arg default forwards turnContext joined in here)
+        // carries the retry header.
+        if (systemPrompt.contains(AdvisorRetry.RETRY_MARKER)) {
+            lastAdvisorRetryActor = LlmActorContext.capture();
+        }
         // mezo-p2tr: the opening turn's userMessage is the FIXED KICKOFF_PROMPT (no room to plant a
         // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
         // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
@@ -747,10 +768,9 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
-            // mezo-rj214.7 final fix wave: read on the SAME thread TurnVerdictCheck#check calls in
-            // on — see lastVerdictCheckActor's own javadoc for why this stands in for the
-            // llm_log_history.created_by row this profile never writes.
-            lastVerdictCheckActor = LlmActorContext.capture();
+            // S9.8 (mezo-rj214.7, mezo-rj214.5): this branch is now driven only by
+            // TurnVerdictCheckIT's direct calls, never by the chain — see lastAdvisorRetryActor's
+            // own javadoc for where the actor-rebinding oracle moved to.
             return verdictAnswer(userMessage);
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
@@ -1026,6 +1046,9 @@ public class FakeCompanionLlm implements CompanionLlm {
             // expects; anything it cannot settle becomes ANALYSIS, exactly like the router.
             return GEAR_ANALYZER.analyze(userMessage).orElse(TurnGear.ANALYSIS).name();
         }
+        if (userMessage.contains(ACTION_CLAIM_ONCE)) {
+            return actionClaimOnceAnswer(systemPrompt);
+        }
         return PREFIX + " system=[" + systemPrompt + "]"
                 + " history=[" + ChatHistory.render(history) + "]"
                 + " user=[" + userMessage + "]"
@@ -1097,6 +1120,16 @@ public class FakeCompanionLlm implements CompanionLlm {
      * state. {@link #VIOLATE_ALWAYS} ignores the header (degraded path); {@link #VERDICT_BROKEN}
      * returns non-JSON (fail-open path).
      */
+    /** {@link #ACTION_CLAIM_ONCE}'s scripting: fabricate on round 1, self-heal on the retry —
+     *  {@code promptHalf} is whichever prompt fragment carries {@link AdvisorRetry#RETRY_MARKER}
+     *  once the chain appends its corrective block. The clean branch names the action with an
+     *  infinitive ("felírni"), never a configured past-tense term, so it never re-trips the check. */
+    private static String actionClaimOnceAnswer(String promptHalf) {
+        return promptHalf != null && promptHalf.contains(AdvisorRetry.RETRY_MARKER)
+                ? "Ezt te tudod felírni, ha szeretnéd."
+                : "Felírtam: teszt étel.";
+    }
+
     private String verdictAnswer(String userMessage) {
         if (userMessage.contains(VERDICT_BROKEN)) {
             return "ez nem json";
@@ -1208,6 +1241,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (userMessage.contains(EMPTY_ANSWER)) {
             return Flux.empty();
         }
+        // S9.8: attempt-1 on the streamed tool-carrying (LEGACY) path never carries the retry
+        // header — a retry always runs through the non-streamed complete(...) instead — so this
+        // always fabricates; actionClaimOnceAnswer's self-heal fires only on that later call.
+        if (userMessage.contains(ACTION_CLAIM_ONCE)) {
+            return Flux.just(actionClaimOnceAnswer(null));
+        }
         List<String> chunks = new ArrayList<>(List.of(
             PREFIX,
             " system=[" + systemPrompt + "]",
@@ -1255,6 +1294,15 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             Matcher plan = FAKE_PLAN.matcher(userMessage);
             return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
+        }
+        // see lastAdvisorRetryActor's own javadoc — this IS the chain's corrective-retry call
+        // whenever turnContext carries the retry header (only ever true past the planner branch
+        // above, since the chain never retries the plan itself).
+        if (turnContext.contains(AdvisorRetry.RETRY_MARKER)) {
+            lastAdvisorRetryActor = LlmActorContext.capture();
+        }
+        if (userMessage.contains(ACTION_CLAIM_ONCE)) {
+            return actionClaimOnceAnswer(turnContext);
         }
         if (turnContext.contains(ANSWERER_DIGEST_PREFIX)) {
             if (userMessage.contains(FAIL_ANSWERER)) {

@@ -250,20 +250,20 @@ public class ChatStreamService {
                         // graded the answer against the tool digest it was grounded in.
                         if (chain != null
                                 && (turn.gear() == TurnGear.CHAT || pipe.mode() != PipelineResult.Mode.LEGACY)) {
-                            // CHAT skips the LLM verdict — that check grades an answer against the
-                            // context and tool outcomes it was grounded in, and a CHAT turn has
-                            // neither. The deterministic clinical check still runs: the dose-change
-                            // prohibition must have no branch where it does not apply (mezo-rj214.7).
-                            AdvisedAnswer advised = chain.reviewChat(turn.systemPrompt(),
+                            // CHAT (and any non-LEGACY pipeline mode) already answered tool-free, so
+                            // the retry stays tool-free too. The deterministic clinical + action-claim
+                            // review still runs: the dose-change prohibition must have no branch
+                            // where it does not apply (mezo-rj214.7).
+                            AdvisedAnswer advised = chain.review(turn.systemPrompt(),
                                     conversational == null ? turn.turnContext() : conversational.context(),
-                                    turn.history(), turn.userContent(), finalAnswer);
+                                    turn.history(), turn.userContent(), finalAnswer, null, null);
                             finalAnswer = advised.answer();
                             degraded = degraded || advised.degraded();
                         } else if (chain != null) {
                             AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.turnContext(),
                                     turn.history(), turn.userContent(), finalAnswer,
                                     toolRegistry.callbacks(audit),
-                                    toolRegistry.toolContext(userId, audit), audit);
+                                    toolRegistry.toolContext(userId, audit));
                             finalAnswer = advised.answer();
                             degraded = advised.degraded();
                         }

@@ -21,15 +21,20 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The V1.3 advisor chain through ChatService.sendMessage — retry-once, degraded-on-2nd-failure,
- * fail-open, and the persisted flag. The fake's verdict scripting is stateless: [fake-violate]
- * violates only until the retry header shows up in the checked answer (the echo carries it).
+ * The advisor chain through ChatService.sendMessage — retry-once and degraded-on-2nd-failure,
+ * against the two checks still on the live path since S9.8 (mezo-rj214.7, mezo-rj214.5):
+ * deterministic clinical + action-claim. The fake's action-claim scripting is stateless too:
+ * {@link FakeCompanionLlm#ACTION_CLAIM_ONCE} fabricates a claim only until the retry header
+ * shows up in the prompt half the corrective round actually rewrites.
  *
  * <p><b>Every fixture here is data-bearing unless it says otherwise</b> (mezo-rj214.7): a
- * {@code CHAT}-gear turn skips the LLM verdict, so a greeting fixture would make these assertions
- * pass while covering nothing at all — the clean-answer and fail-open cases were exactly that
- * until this was fixed. The one deliberate CHAT case is the clinical check, which must run on
- * that branch too. {@code PromptOrderFixtureGearGuardTest} keeps the distinction honest.
+ * greeting fixture would make these assertions pass while covering nothing at all — the
+ * clean-answer case was exactly that until this was fixed. The one deliberate CHAT case is the
+ * clinical check, which must run on that branch too. {@code PromptOrderFixtureGearGuardTest}
+ * keeps the distinction honest. The retired LLM verdict's OWN behaviour (fail-open, the
+ * linguistically-marked-speculation policy) is covered separately by {@code TurnVerdictCheckIT} —
+ * see the comment above {@code testSendMessage_shouldShipDegraded_whenAChatTurnSuggestsADoseChange}
+ * below for what moved and why.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
@@ -58,24 +63,33 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
 
     @Test
     void testSendMessage_shouldRetryAndRecover_whenFirstAnswerViolates() {
+        // S9.8 (mezo-rj214.7, mezo-rj214.5): re-pointed from the retired LLM verdict's
+        // FakeCompanionLlm.VIOLATE_ONCE onto the deterministic action-claim backstop — this test
+        // pins the RETRY MACHINERY (violation -> corrective re-prompt -> clean), not the judge's
+        // own behaviour, so the retry-machinery premise survives the judge's removal intact.
         UUID userId = databasePopulator.populateUser("advisor-retry@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
-        MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ONCE));
+        MessageResponse response = chatService.sendMessage(userId, conversation.getId(),
+                request("mit ettem ma? " + FakeCompanionLlm.ACTION_CLAIM_ONCE));
 
-        // the retry echo carries the corrective block -> proves the second LLM round happened
-        assertThat(response.getContent()).contains(AdvisorRetry.RETRY_MARKER);
+        // the fake answers round 1 with a fabricated claim UNCONDITIONALLY and only rewrites it to
+        // this exact clean sentence once its own corrective retryContext carries the retry header
+        // — so the clean text landing here is only possible if the second LLM round actually ran.
+        assertThat(response.getContent()).isEqualTo("Ezt te tudod felírni, ha szeretnéd.");
         assertThat(response.getDegraded()).isFalse();
     }
 
     @Test
     void testSendMessage_shouldShipDegraded_whenRetryStillViolates() {
+        // S9.8: re-pointed from FakeCompanionLlm.VIOLATE_ALWAYS onto a persistent action claim —
+        // the fabricated "naplóztam" is baked into the content itself, so it survives the retry's
+        // corrective round unchanged (unlike ACTION_CLAIM_ONCE above) and ships degraded.
         UUID userId = databasePopulator.populateUser("advisor-degraded@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS));
+                userId, conversation.getId(), request("mit ettem ma? Naplóztam ezt."));
 
         assertThat(response.getDegraded()).isTrue();
         AiMessageEntity row = messageRepository.findById(response.getId()).orElseThrow();
@@ -94,30 +108,15 @@ class CompanionAdvisorChainIT extends AbstractIntegrationTest {
         assertThat(response.getDegraded()).isTrue();
     }
 
-    @Test
-    void testSendMessage_shouldFailOpen_whenVerdictIsBroken() {
-        UUID userId = databasePopulator.populateUser("advisor-broken@test.local");
-        AiConversationEntity conversation = conversationPopulator.conversation(userId);
-
-        MessageResponse response = chatService.sendMessage(
-                userId, conversation.getId(), request("aludtam jól, kérdés " + FakeCompanionLlm.VERDICT_BROKEN));
-
-        assertThat(response.getDegraded()).isFalse();
-        assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
-    }
-
-    @Test
-    void testSendMessage_shouldNotRetry_whenSpeculationIsLinguisticallyMarked() {
-        UUID userId = databasePopulator.populateUser("advisor-marked@test.local");
-        AiConversationEntity conversation = conversationPopulator.conversation(userId);
-
-        MessageResponse response = chatService.sendMessage(userId, conversation.getId(),
-                request("aludtam jól, kérdés " + FakeCompanionLlm.MARKED_SPECULATION));
-
-        // A jelölt sejtés a mezo-q71s politika szerint MEGENGEDETT — nem indít korrekciós kört.
-        assertThat(response.getContent()).doesNotContain(AdvisorRetry.RETRY_MARKER);
-        assertThat(response.getDegraded()).isFalse();
-    }
+    // S9.8 (mezo-rj214.7, mezo-rj214.5): testSendMessage_shouldFailOpen_whenVerdictIsBroken and
+    // testSendMessage_shouldNotRetry_whenSpeculationIsLinguisticallyMarked used to live here,
+    // scripted via FakeCompanionLlm.VERDICT_BROKEN / MARKED_SPECULATION. Both pinned the LLM
+    // JUDGE's OWN behaviour (fail-open on broken JSON; a linguistically-hedged claim stays clean),
+    // not the chain's retry machinery — and the chain no longer calls that judge at all, so their
+    // premise ("the CHAIN fails open / does not retry a marked hunch") genuinely no longer exists
+    // at this level. The judge behaviour itself is still covered, unchanged, by
+    // TurnVerdictCheckIT.testCheck_shouldFailOpen_whenVerdictIsNotJson and the new
+    // testCheck_shouldReturnNoViolations_whenSpeculationIsLinguisticallyMarked.
 
     @Test
     void testSendMessage_shouldShipDegraded_whenAChatTurnSuggestsADoseChange() {

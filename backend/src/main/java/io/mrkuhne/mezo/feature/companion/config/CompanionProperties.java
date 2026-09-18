@@ -199,14 +199,16 @@ public record CompanionProperties(
          *  it performed one is always fabricated. */
         @NotEmpty List<String> actionClaimTerms,
         /**
-         * mezo-indo: per-tool-output character cap in the verdict judge's payload. The judge runs
-         * on the cheap tier and already carries the system prompt + the whole history, while tool
-         * outputs are unbounded per turn (a 30-day weight log is one line per day). A cut output is
-         * MARKED, and the judge prompt tells the judge not to read the cut as fabrication.
+         * mezo-indo: per-tool-output character cap in the verdict judge's payload. S9.8
+         * (mezo-rj214.7, mezo-rj214.5) took {@link io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck}
+         * off the live answer path — the
+         * judge runs only offline now (its own IT against the scripted fake), so this bound serves
+         * that instrument, not a live turn. Kept because the class still reads it.
          */
         @Min(0) @Max(4000) int toolResultMaxChars,
         /** mezo-indo: budget across ALL tool outputs in one verdict payload; past it a call keeps
-         *  its line and its output is replaced with the honest "omitted" marker. */
+         *  its line and its output is replaced with the honest "omitted" marker. Same S9.8 note as
+         *  {@link #toolResultMaxChars} — offline-instrument-only since the judge left the live path. */
         @Min(0) @Max(20000) int toolResultsTotalMaxChars
     ) {}
 

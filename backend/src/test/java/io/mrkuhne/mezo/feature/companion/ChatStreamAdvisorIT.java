@@ -58,6 +58,10 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
 
     @Test
     void testStreamMessage_shouldCarryRetriedAnswerInDone_whenFirstAnswerViolates() {
+        // S9.8 (mezo-rj214.7, mezo-rj214.5): re-pointed from the retired LLM verdict's
+        // FakeCompanionLlm.VIOLATE_ONCE onto the deterministic action-claim backstop — this test
+        // pins the RETRY MACHINERY (attempt-1 streams unchecked, the trailing review retries and
+        // rewrites the done row), not the judge's own behaviour.
         UUID userId = databasePopulator.populateUser("stream-advisor-retry@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
@@ -69,15 +73,16 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
         AtomicReference<List<ServerSentEvent<Object>>> seen = new AtomicReference<>();
         LlmActorContext.runAs(userId, () -> seen.set(chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ONCE))
+                        request("mit ettem ma? " + FakeCompanionLlm.ACTION_CLAIM_ONCE))
                 .collectList().block()));
         List<ServerSentEvent<Object>> events = seen.get();
 
-        // attempt-1 streamed as-is: no retry marker in the deltas
+        // attempt-1 streamed as-is (the fabricated claim, unchecked): no retry marker in the deltas
         assertThat(joinDeltas(events)).doesNotContain(AdvisorRetry.RETRY_MARKER);
         MessageResponse done = doneOf(events);
-        // done = the retried answer (echo carries the corrective block), clean
-        assertThat(done.getContent()).contains(AdvisorRetry.RETRY_MARKER);
+        // done = the retried answer, clean — only reachable if the corrective round actually ran
+        // (see FakeCompanionLlm.ACTION_CLAIM_ONCE's own javadoc for the self-healing mechanism)
+        assertThat(done.getContent()).isEqualTo("Ezt te tudod felírni, ha szeretnéd.");
         assertThat(done.getDegraded()).isFalse();
 
         // mezo-rj214.7 final fix wave: the regression this pins — ChatStreamService's
@@ -88,18 +93,22 @@ class ChatStreamAdvisorIT extends AbstractIntegrationTest {
         // already gone. LlmActorResolver (and so llm_log_history.created_by) reads exactly this
         // same LlmActorContext.capture() call to attribute an LLM call; companion-fake never writes
         // that row (see FakeCompanionLlm's "Call counter" javadoc), so this asserts the identical
-        // resolution one level up, at its source, via the advisor's own verdict-check call.
-        assertThat(fakeCompanionLlm.lastVerdictCheckActor()).isEqualTo(userId);
+        // resolution one level up, at its source — S9.8 moved the capture from the (now
+        // chain-unreachable) verdict-check call onto the chain's own corrective-retry call, the
+        // only advisor LLM call left on this path (see lastAdvisorRetryActor's own javadoc).
+        assertThat(fakeCompanionLlm.lastAdvisorRetryActor()).isEqualTo(userId);
     }
 
     @Test
     void testStreamMessage_shouldFlagDoneDegraded_whenRetryStillViolates() {
+        // S9.8: re-pointed from FakeCompanionLlm.VIOLATE_ALWAYS onto a persistent action claim —
+        // baked into the content itself, so it survives the retry's corrective round unchanged.
         UUID userId = databasePopulator.populateUser("stream-advisor-degraded@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("aludtam jól, kérdés " + FakeCompanionLlm.VIOLATE_ALWAYS))
+                        request("mit ettem ma? Naplóztam ezt."))
                 .collectList().block();
 
         MessageResponse done = doneOf(events);

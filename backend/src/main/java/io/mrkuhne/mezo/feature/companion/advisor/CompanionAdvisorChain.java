@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.companion.advisor;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
-import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -18,11 +17,13 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * V1.3 post-response advisor chain (old docs §4.5 retry semantics on the CompanionLlm port):
- * clinical check first (deterministic, ~0 ms; a hit skips the LLM verdict for that round), then
- * the combined LLM verdict. Violation -> corrective re-prompt (same user message, same tools,
- * SAME audit — chips honestly reflect the whole turn) up to advisors.max-retries times; a final
- * violating answer ships degraded=true. Timing + verdicts are logged (the roadmap's "measure!").
+ * Post-response advisor chain (old docs §4.5 retry semantics on the CompanionLlm port): clinical
+ * check first (deterministic, ~0 ms), then the fabricated-action-claim backstop (also
+ * deterministic, ~0 ms) — see {@link #runChecks}. Violation -> corrective re-prompt (same user
+ * message, same tools, SAME audit — chips honestly reflect the whole turn) up to
+ * advisors.max-retries times; a final violating answer ships degraded=true. Timing + violations
+ * are logged (the roadmap's "measure!"). S9.8 (mezo-rj214.7, mezo-rj214.5) dropped the third,
+ * LLM-judged check from this chain — {@link TurnVerdictCheck} explains why.
  */
 @Slf4j
 @Component
@@ -35,26 +36,46 @@ public class CompanionAdvisorChain {
     private final CompanionLlm companionLlm;
     private final ClinicalOutputCheck clinicalOutputCheck;
     private final ActionClaimCheck actionClaimCheck;
-    private final TurnVerdictCheck turnVerdictCheck;
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** Sync path: first attempt + review in one call. */
     public AdvisedAnswer complete(String systemPrompt, String turnContext, List<Turn> history,
-            String userMessage, List<ToolCallback> tools, Map<String, Object> toolContext,
-            ToolCallAudit audit) {
+            String userMessage, List<ToolCallback> tools, Map<String, Object> toolContext) {
         String answer = companionLlm.complete(systemPrompt, turnContext, history, userMessage, tools, toolContext);
-        return review(systemPrompt, turnContext, history, userMessage, answer, tools, toolContext, audit);
+        return review(systemPrompt, turnContext, history, userMessage, answer, tools, toolContext);
     }
 
-    /** Streamed path: attempt-1 already delivered as deltas — review it, retry non-streamed if needed. */
+    /**
+     * CHAT gear, sync path: the tool-free smart round plus the review below.
+     *
+     * <p>Mirrors {@link #complete} so the CHAT branch cannot drift from the others.
+     */
+    public AdvisedAnswer completeChat(String systemPrompt, String turnContext, List<Turn> history,
+            String userMessage) {
+        String answer = companionLlm.completeSmart(systemPrompt, turnContext, history, userMessage);
+        return review(systemPrompt, turnContext, history, userMessage, answer, null, null);
+    }
+
+    /**
+     * Post-response review, every live path's only gate since S9.8 (mezo-rj214.7, mezo-rj214.5):
+     * the deterministic clinical + action-claim checks below, with a corrective re-prompt (same
+     * user message, same tools, SAME audit — chips honestly reflect the whole turn) up to
+     * advisors.max-retries times; a final violating answer ships degraded=true. Used to be two
+     * methods — {@code review} for the tool-carrying turn and {@code reviewChat} for the tool-free
+     * one, split only because the now-removed LLM verdict was skippable on a CHAT turn but not on
+     * a tool-carrying one. With the verdict gone from BOTH, the split had nothing left to justify
+     * it (see {@link TurnVerdictCheck}'s javadoc for where that check went).
+     *
+     * <p>{@code tools} is {@code null} for a tool-free turn (CHAT gear, and any turn a
+     * pipeline/conversation-first round already answered without this chain's own tool loop) — the
+     * corrective retry then runs the tool-free smart completion instead of the tool-carrying one,
+     * so a retry never hands out tools the original round never had.
+     */
     public AdvisedAnswer review(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
-            String answer, List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
+            String answer, List<ToolCallback> tools, Map<String, Object> toolContext) {
         long startedAt = System.currentTimeMillis();
-        // The checks judge the answer against EVERYTHING it was grounded in, so they see the two
-        // halves joined — the split (mezo-ozri.5) is a transport detail of the outgoing request.
-        String instructions = CompanionLlm.joinInstructions(systemPrompt, turnContext);
-        List<AdvisorViolation> violations = runChecks(instructions, history, userMessage, answer, audit);
+        List<AdvisorViolation> violations = runChecks(answer);
         int retries = 0;
         while (!violations.isEmpty() && retries < properties.advisors().maxRetries()) {
             retries++;
@@ -67,8 +88,10 @@ public class CompanionAdvisorChain {
             answer = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_advisor", "retry", null, null),
                     // a korrekciós kör ugyanazt a beszélgetést látja, mint az eredeti
-                    () -> companionLlm.complete(systemPrompt, retryContext, history, userMessage, tools, toolContext));
-            violations = runChecks(instructions, history, userMessage, answer, audit);
+                    () -> tools == null
+                            ? companionLlm.completeSmart(systemPrompt, retryContext, history, userMessage)
+                            : companionLlm.complete(systemPrompt, retryContext, history, userMessage, tools, toolContext));
+            violations = runChecks(answer);
         }
         boolean degraded = !violations.isEmpty();
         if (degraded) {
@@ -80,68 +103,15 @@ public class CompanionAdvisorChain {
     }
 
     /**
-     * CHAT gear, sync path: the tool-free smart round plus the clinical review below.
-     *
-     * <p>Mirrors {@link #complete} so the CHAT branch cannot drift from the others.
-     */
-    public AdvisedAnswer completeChat(String systemPrompt, String turnContext, List<Turn> history,
-            String userMessage) {
-        String answer = companionLlm.completeSmart(systemPrompt, turnContext, history, userMessage);
-        return reviewChat(systemPrompt, turnContext, history, userMessage, answer);
-    }
-
-    /**
-     * CHAT gear, review only: the deterministic clinical check with the SAME retry-once/degraded
-     * semantics every other answer gets (spec 2026-09-16 §6.5, mezo-rj214.7).
-     *
-     * <p>A CHAT turn skips the LLM verdict on purpose — that check judges an answer against the
-     * context and tool outcomes it was grounded in, and a CHAT turn deliberately has neither, so
-     * it would be paying a model call to grade nothing. {@link ClinicalOutputCheck} is a different
-     * animal: a regex over the answer text, no LLM, no context, ~0 ms. The prohibition it enforces
-     * — never suggest changing a prescription dose — is the one rule that must not have a branch
-     * where it does not apply, and "the user asked a general question" is exactly the shape in
-     * which a model is most tempted to volunteer dosing advice.
-     *
-     * <p>The corrective round stays tool-free and smart-tier, like the answer it is correcting.
-     */
-    public AdvisedAnswer reviewChat(String systemPrompt, String turnContext, List<Turn> history,
-            String userMessage, String answer) {
-        long startedAt = System.currentTimeMillis();
-        Optional<AdvisorViolation> violation = clinicalOutputCheck.check(answer);
-        int retries = 0;
-        while (violation.isPresent() && retries < properties.advisors().maxRetries()) {
-            retries++;
-            String retryContext =
-                    (turnContext == null ? "" : turnContext) + AdvisorRetry.block(List.of(violation.get()));
-            answer = llmCallContextHolder.runWith(
-                    new LlmCallContext("companion_advisor", "retry", null, null),
-                    () -> companionLlm.completeSmart(systemPrompt, retryContext, history, userMessage));
-            violation = clinicalOutputCheck.check(answer);
-        }
-        boolean degraded = violation.isPresent();
-        if (degraded) {
-            log.warn("Advisor chain degraded a CHAT answer after {} retries: {}", retries, violation.get());
-        }
-        log.info("Advisor CHAT review took {} ms (retries={}, degraded={})",
-                System.currentTimeMillis() - startedAt, retries, degraded);
-        return new AdvisedAnswer(answer, degraded);
-    }
-
-    /**
      * Clinical first (safety-critical: a wrong dose-change suggestion is the worse harm), then the
-     * fabricated-action-claim backstop (mezo-q0p5a) — both deterministic and ~0 ms, so either hit
-     * skips the verdict LLM call this round entirely (the retry re-checks all three).
+     * fabricated-action-claim backstop (mezo-q0p5a) — both deterministic and ~0 ms. The LLM verdict
+     * that used to run third here left the live path in S9.8; see {@link TurnVerdictCheck}.
      */
-    private List<AdvisorViolation> runChecks(
-            String systemPrompt, List<Turn> history, String userMessage, String answer, ToolCallAudit audit) {
+    private List<AdvisorViolation> runChecks(String answer) {
         Optional<AdvisorViolation> clinical = clinicalOutputCheck.check(answer);
         if (clinical.isPresent()) {
             return List.of(clinical.get());
         }
-        Optional<AdvisorViolation> actionClaim = actionClaimCheck.check(answer);
-        if (actionClaim.isPresent()) {
-            return List.of(actionClaim.get());
-        }
-        return turnVerdictCheck.check(systemPrompt, history, userMessage, answer, audit.toolOutcomes());
+        return actionClaimCheck.check(answer).map(List::of).orElseGet(List::of);
     }
 }

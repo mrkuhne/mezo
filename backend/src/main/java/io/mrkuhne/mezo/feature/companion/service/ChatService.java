@@ -313,16 +313,16 @@ public class ChatService {
             String initial = llmCallContextHolder.runWith(turnContext,
                     () -> companionLlm.completeSmart(systemPrompt, prepared.context(), history, request.getContent()));
             AdvisedAnswer advised = chain == null ? new AdvisedAnswer(initial, false)
-                    : llmCallContextHolder.runWith(turnContext, () -> chain.reviewChat(systemPrompt,
-                            prepared.context(), history, request.getContent(), initial));
+                    : llmCallContextHolder.runWith(turnContext, () -> chain.review(systemPrompt,
+                            prepared.context(), history, request.getContent(), initial, null, null));
             answer = advised.answer();
             degraded = prepared.degraded() || advised.degraded();
         } else if (gear == TurnGear.CHAT && chain != null) {
             // Tool-free and smart-tier (the ONLY shape in which a conversational turn can carry
             // reasoning on OpenAI Chat Completions — OpenAiCompanionLlm.optionsFor), but still
-            // under the deterministic clinical check: the dose-change prohibition has no branch
-            // where it does not apply, and a general question is exactly where a model volunteers
-            // dosing advice. The LLM verdict is skipped — a CHAT turn has no context to grade.
+            // under the deterministic clinical + action-claim review: the dose-change prohibition
+            // has no branch where it does not apply, and a general question is exactly where a
+            // model volunteers dosing advice.
             AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                     () -> chain.completeChat(systemPrompt, turnCtx, history, request.getContent()));
             answer = advised.answer();
@@ -345,8 +345,8 @@ public class ChatService {
                 if (chain != null) {
                     String pipelinedAnswer = pipelined.answer();
                     AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                            () -> chain.reviewChat(routed.systemPrompt(), routed.turnContext(), history,
-                                    request.getContent(), pipelinedAnswer));
+                            () -> chain.review(routed.systemPrompt(), routed.turnContext(), history,
+                                    request.getContent(), pipelinedAnswer, null, null));
                     answer = advised.answer();
                     degraded = advised.degraded();
                 }
@@ -354,7 +354,7 @@ public class ChatService {
                 // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
                 AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
                         () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
-                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
+                                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
                 answer = advised.answer();
                 degraded = advised.degraded();
             } else {
