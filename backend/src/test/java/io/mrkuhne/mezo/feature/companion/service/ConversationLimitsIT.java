@@ -21,7 +21,7 @@ import org.springframework.test.context.TestPropertySource;
 })
 class ConversationLimitsIT extends AbstractIntegrationTest {
     @Autowired private ChatService chat;
-    @Autowired private ConversationHistory history;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
     @Autowired private CompanionToolRegistry tools;
     @Autowired private DatabasePopulator users;
     @Autowired private AiConversationPopulator conversations;
@@ -40,13 +40,28 @@ class ConversationLimitsIT extends AbstractIntegrationTest {
         assertThat(answer.getDegraded()).isTrue();
     }
 
+    /**
+     * Same premise as before the mezo-rj214.10 unification — a huge tool result must be BOUNDED by
+     * result-max-chars when persisted, and the cut must be VISIBLE, never silent — but read at the
+     * new single source of truth. Persistence now runs through {@link TurnProvenance#build} into
+     * ai_message.tool_outcomes, so the budget it honours is this same
+     * {@code mezo.companion.conversation.result-max-chars}, and the visible marker is
+     * provenance's own " …(rövidítve)" rather than ConversationHistory.CLIPPED (which stays the
+     * RENDER-time marker, asserted by testHistory_* below).
+     */
     @Test
-    void testEnvelope_shouldBoundEvidenceAndMarkTruncation_whenToolResultIsLarge() {
+    void testProvenance_shouldBoundEvidenceAndMarkTruncation_whenToolResultIsLarge() {
         var audit = tools.newTurnAudit();
         int index = audit.recordCall("get_recovery", "scope=sleep");
         audit.recordResult(index, "x".repeat(10000));
-        var result = history.envelope(audit).calls().getFirst().result();
-        assertThat(result).hasSizeLessThanOrEqualTo(500).endsWith(ConversationHistory.CLIPPED);
+
+        var built = TurnProvenance.build(audit.toolOutcomes(), conversationProperties);
+
+        var text = built.result().outcomes().getFirst().text();
+        assertThat(text).startsWith("x".repeat(500)).endsWith(" …(rövidítve)")
+                .hasSize(500 + " …(rövidítve)".length());
+        // the ask half keeps the call, and carries no result text at all any more
+        assertThat(built.ask().calls().getFirst().name()).isEqualTo("get_recovery");
     }
 
     @Test
@@ -79,6 +94,11 @@ class ConversationLimitsIT extends AbstractIntegrationTest {
         for (int i = 0; i < 10; i++) {
             assertThat(rendered.toString()).contains("Egyedi üzenet " + i);
         }
+        // Each fixture message (~515 chars) exceeds the page's message cap (~150 chars here), so
+        // the render-time truncation marker must actually show up — this is its only assertion
+        // left after the mezo-rj214.10 unification moved testEnvelope_* onto TurnProvenance's own
+        // " …(rövidítve)" marker instead.
+        assertThat(rendered.toString()).contains(ConversationHistory.CLIPPED);
     }
 
 }

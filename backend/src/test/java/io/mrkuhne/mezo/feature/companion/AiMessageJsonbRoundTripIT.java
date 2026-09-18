@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -13,9 +14,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StreamUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -178,5 +182,235 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
             assertThat(item.memoryItemId()).isNull();
             assertThat(item.indicator()).isNull();
         });
+    }
+
+    /**
+     * S9.7 (mezo-rj214.7): tool_outcomes is the RESULT half of a turn's provenance, positionally
+     * parallel to tool_calls (the ask). It must round-trip independently of tool_calls because the
+     * 90-day retention scrub NULLs only this column.
+     */
+    @Test
+    void testPersist_shouldRoundTripToolOutcomes_whenReadsReturned() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-outcomes@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz kimenetekkel");
+        message.setToolOutcomes(ToolOutcomesEnvelope.ofOrNull(List.of(
+                new ToolOutcomesEnvelope.Outcome("get_recovery", "Kedd óta 7,2 óra átlag.", false),
+                new ToolOutcomesEnvelope.Outcome("get_meals", "A lekérés nem sikerült.", true))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolOutcomes().outcomes()).hasSize(2);
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).name()).isEqualTo("get_recovery");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).text()).isEqualTo("Kedd óta 7,2 óra átlag.");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(0).failed()).isFalse();
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).name()).isEqualTo("get_meals");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).text()).isEqualTo("A lekérés nem sikerült.");
+        assertThat(reloaded.getToolOutcomes().outcomes().get(1).failed()).isTrue();
+        assertThat(jdbcTemplate.queryForObject(
+                "select jsonb_typeof(tool_outcomes) from ai_message where id = ?", String.class, id))
+                .isEqualTo("object");
+    }
+
+    @Test
+    void testPersist_shouldKeepToolOutcomesNull_whenOfOrNullGivenEmptyOrNullList() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-outcomes-empty@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        assertThat(ToolOutcomesEnvelope.ofOrNull(List.of())).isNull();
+        assertThat(ToolOutcomesEnvelope.ofOrNull(null)).isNull();
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz kimenet nélkül");
+        message.setToolOutcomes(ToolOutcomesEnvelope.ofOrNull(List.of()));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolOutcomes()).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "select tool_outcomes is null from ai_message where id = ?", Boolean.class, id))
+                .isTrue();
+    }
+
+    /**
+     * S9.7 (mezo-rj214.7): {@code why} exists only on a planned (pipeline) turn, where the planner
+     * said why it wanted this read. The 3-arg constructor is kept for the legacy shape and the
+     * ran-truth audit path — it must keep reloading with {@code why == null}.
+     */
+    @Test
+    void testPersist_shouldRoundTripToolCallWhy_whenPlannedTurnGivesAReason() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-why@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz indoklással");
+        message.setToolCalls(new ToolCallsEnvelope(List.of(
+                new ToolCallsEnvelope.ToolCall("read", "get_recovery", "days=7",
+                        "a felhasználó az alvásáról kérdezett"))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls().getFirst().why())
+                .isEqualTo("a felhasználó az alvásáról kérdezett");
+    }
+
+    @Test
+    void testPersist_shouldRoundTripToolCallWhyAsNull_whenWrittenThroughLegacyThreeArgConstructor() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-why-legacy@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz indoklás nélkül");
+        message.setToolCalls(new ToolCallsEnvelope(List.of(
+                new ToolCallsEnvelope.ToolCall("read", "get_weight_trend", "weeks=2"))));
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls().getFirst().why()).isNull();
+    }
+
+    /**
+     * S9.7 task 1: {@link ToolCallsEnvelope.ToolCall} gained a {@code why} field (4th component).
+     * Jackson serialises new writes with an explicit {@code "why":null} key present. A pre-S9.7
+     * row has no {@code why} key at all. This writes that raw shape directly and confirms Jackson
+     * defaults the missing record component to null rather than failing deserialisation.
+     */
+    @Test
+    void testToolCalls_shouldDeserialiseWithNullWhy_whenTheJsonbPredatesTheWhyField() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-legacy-tool-calls@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz régi tool callokkal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[{\"type\":\"read\",\"name\":\"get_meals\",\"args\":\"day=2026-09-18\"}]}", id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).singleElement().satisfies(call -> {
+            assertThat(call.type()).isEqualTo("read");
+            assertThat(call.name()).isEqualTo("get_meals");
+            assertThat(call.args()).isEqualTo("day=2026-09-18");
+            assertThat(call.why()).isNull();
+        });
+    }
+
+    /**
+     * mezo-rj214.10 unification: for a short window main stored a 4th {@code "result"} component
+     * inside tool_calls. Result text now has exactly ONE home (ai_message.tool_outcomes, the
+     * 90-day-scrubbed column), so {@code result} is no longer a component here — but rows written
+     * in that window still carry the key, and Hibernate's Jackson 2 mapper fails on an unknown key
+     * by default. Such a row must still load, with its ask intact and no result text taken from it.
+     */
+    @Test
+    void testToolCalls_shouldDeserialiseIgnoringResult_whenTheJsonbCarriesTheRetiredResultKey() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-retired-result@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz a rövid életű result-mezős formátummal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[{\"type\":\"read\",\"name\":\"get_recovery\",\"args\":\"scope=sleep\","
+                        + "\"result\":\"6,5 óra alvás\"}]}", id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).singleElement().satisfies(call -> {
+            assertThat(call.name()).isEqualTo("get_recovery");
+            assertThat(call.args()).isEqualTo("scope=sleep");
+            assertThat(call.why()).isNull();
+        });
+        assertThat(reloaded.getToolOutcomes()).isNull();
+    }
+
+    /**
+     * mezo-rj214.7 fix wave: rows written during the retired-"result" window are read-tolerant
+     * (proven above) but that is not enough — the owner's decision is that 90 days genuinely
+     * means 90 days, so the retired copy is backfilled out by a Liquibase changeset rather than
+     * left to outlive the retention scrub forever. Liquibase itself already ran (against rows that
+     * did not exist yet) by the time this test seeds one, so this pins the changeset's own SQL —
+     * read straight from the shipped .sql file, so the two cannot drift — against a row seeded
+     * with the retired shape, proving the key is gone, order is preserved, and the untouched
+     * neighbouring element (no "result" key) survives unchanged.
+     */
+    @Test
+    void testBackfill_shouldStripRetiredResultKey_whenChangesetSqlRunsAgainstARetiredShapeRow() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-backfill@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz vegyes tool_calls formátummal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[" +
+                        "{\"type\":\"read\",\"name\":\"get_recovery\",\"args\":\"scope=sleep\","
+                        + "\"result\":\"6,5 óra alvás\"}," +
+                        "{\"type\":\"read\",\"name\":\"get_meals\",\"args\":\"day=2026-09-18\"}" +
+                        "]}", id);
+        entityManager.clear();
+
+        jdbcTemplate.update(readBackfillChangesetSql());
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).hasSize(2);
+        assertThat(reloaded.getToolCalls().calls().get(0).name()).isEqualTo("get_recovery");
+        assertThat(reloaded.getToolCalls().calls().get(0).args()).isEqualTo("scope=sleep");
+        assertThat(reloaded.getToolCalls().calls().get(1).name()).isEqualTo("get_meals");
+        assertThat(reloaded.getToolCalls().calls().get(1).args()).isEqualTo("day=2026-09-18");
+        String storedCalls = jdbcTemplate.queryForObject(
+                "select (tool_calls -> 'calls')::text from ai_message where id = ?", String.class, id);
+        assertThat(storedCalls).doesNotContain("result").doesNotContain("6,5 óra alvás");
+    }
+
+    /** Reads the shipped changeset's own SQL so this test and the migration cannot drift apart. */
+    private static String readBackfillChangesetSql() {
+        try {
+            return StreamUtils.copyToString(
+                    new ClassPathResource(
+                            "db/changelog/1.0.0/script/202609181200_mezo-rj214.7_ai_message_tool_calls_backfill_strip_result.sql")
+                            .getInputStream(),
+                    StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 }

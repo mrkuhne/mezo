@@ -143,7 +143,8 @@ public class PlanExecutor {
 
         List<ToolCallAudit.ToolOutcome> outcomes = new ArrayList<>(submitted.size());
         for (Submitted entry : submitted) {
-            outcomes.add(new ToolCallAudit.ToolOutcome(entry.step().tool(), entry.args(), collect(entry, deadlineNanos)));
+            outcomes.add(new ToolCallAudit.ToolOutcome(
+                    entry.step().tool(), entry.args(), collect(entry, deadlineNanos), entry.step().why()));
         }
         return List.copyOf(outcomes);
     }

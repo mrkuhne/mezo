@@ -18,12 +18,21 @@ final class CompanionPropertiesFixtures {
             new CompanionProperties.Turn.Planner(1),
             new CompanionProperties.Turn.Executor(4, 15_000L),
             new CompanionProperties.Turn.Answerer("high", 8000, 40000),
-            new CompanionProperties.Turn.Replan(1));
+            new CompanionProperties.Turn.Replan(1),
+            new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *"));
         // tools (4th component) mirrors application.yml's companion.tools block; the remaining
         // 17 nulls + interventions + turn make up the 20 components of CompanionProperties.
         CompanionProperties.Tools tools = new CompanionProperties.Tools(15, 30, 26, 10);
         return new CompanionProperties(null, null, null, tools, null, null, null, null, null, null,
             null, null, null, null, null, null, null, null, java.util.List.of(), turn);
+    }
+
+    /** Only {@code tools().maxCallsPerTurn()} is meaningful — for {@code ChatService.capToRemainingBudget}
+     *  unit coverage, which reads nothing else off {@link CompanionProperties}. */
+    static CompanionProperties withMaxCallsPerTurn(int maxCallsPerTurn) {
+        CompanionProperties.Tools tools = new CompanionProperties.Tools(maxCallsPerTurn, 30, 26, 10);
+        return new CompanionProperties(null, null, null, tools, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, java.util.List.of(), null);
     }
 
     static CompanionProperties withExecutor(int parallelism, long stepTimeoutMs) {
@@ -32,7 +41,8 @@ final class CompanionPropertiesFixtures {
             new CompanionProperties.Turn.Planner(1),
             new CompanionProperties.Turn.Executor(parallelism, stepTimeoutMs),
             new CompanionProperties.Turn.Answerer("high", 8000, 40000),
-            new CompanionProperties.Turn.Replan(1));
+            new CompanionProperties.Turn.Replan(1),
+            new CompanionProperties.Turn.Provenance(90, "0 50 3 * * *"));
         return new CompanionProperties(null, null, null, new CompanionProperties.Tools(15, 30, 26, 10),
             null, null, null, null, null, null,
             null, null, null, null, null, null, null, null, java.util.List.of(), turn);

@@ -63,9 +63,16 @@ describe('useChatActions (real mode)', () => {
     expect(texts).toContain(cannedReply('Fáradt vagyok'))
     expect(actions.result.current.error).toBeNull()
 
-    // V0.5: the persisted done event carries the turn's REAL tool chips + refs
+    // V0.5: the persisted done event carries the turn's REAL tool chips + refs. S9.7
+    // (mezo-rj214.7) adds the done row's provenance (why/outcome) — see the MSW stream
+    // handler's default fixture.
     const assistant = chat.result.current.data.messages.at(-1)!
-    expect(assistant.tools).toEqual([{ type: 'read', name: 'get_recovery(days=3)' }])
+    expect(assistant.tools).toEqual([{
+      type: 'read', name: 'get_recovery(days=3)',
+      why: 'Meg akartam nézni, hogy a fáradtság az alváshiányból jön-e.',
+      outcome: 'Az elmúlt 3 napban átlag 6.1 óra alvás volt, a szokásosnál kevesebb.',
+      failed: undefined,
+    }])
     expect(assistant.refs).toEqual([{ kind: 'Sleep', id: '2026-07-02' }])
   })
 

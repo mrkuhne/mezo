@@ -597,6 +597,11 @@ mezo:
       # retention; nothing else changes). Previously gated ONLY by mezo.feature.companion.enabled.
       memory-retrieval-retention-job:
         enabled: true
+      # S9.7 provenance retention (mezo-rj214.7, schedule: mezo.companion.turn.provenance.cron);
+      # off = the ProvenanceRetentionJob bean does not exist (tool_outcomes keeps aging past 90
+      # days; tool_calls, the ask half, is never touched by this job regardless).
+      companion-provenance-retention-job:
+        enabled: true
   # Lean screen-event telemetry (mezo-o5cz, spec 2026-09-07 §5) — binds TelemetryProperties.
   # Bound regardless of mezo.feature.screen-telemetry.enabled: the switch gates BEANS, these are
   # the numbers those beans read, so a typo here is a startup failure, not a silent default.
@@ -795,7 +800,9 @@ mezo:
       history-page-size: 20
       history-message-max-chars: 12000
       history-max-chars: 100000
-      # Persisted evidence per result and per assistant row (internal JSONB, not the REST DTO).
+      # ONE budget for the persisted tool-result text in ai_message.tool_outcomes — it serves
+      # BOTH consumers: this conversation-history replay and the chat provenance card (S9.7).
+      # Written by TurnProvenance.build; the 90-day scrub NULLs that column, so this is the only copy.
       result-max-chars: 8000
       results-max-chars: 40000
     chat:
@@ -863,6 +870,12 @@ mezo:
         # ChatService#pipelineAnswer only runs a SINGLE replan lap today; a future multi-lap loop
         # widens this alongside the implementation.
         max-laps: 1
+      # S9.7 (mezo-rj214.7): what each answer looked up and what came back. The RESULT half is
+      # NULLed after retention-days (the ask half is kept forever) — 03:55 is the verified-free
+      # minute after the 03:40 llm-log scrub and the 03:50 audit-retention + monthly pair.
+      provenance:
+        retention-days: 90
+        cron: "0 55 3 * * *"
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)

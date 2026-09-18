@@ -362,14 +362,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
     `PersonExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`, `PersonalRecordService`,
     `PlanExecutor`, `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`,
-    `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`,
-    `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`,
-    `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`,
-    `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
+    `PromptMemoryAssembler`, `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
+    `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
+    `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
+    `SeasonSuggestion`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
     `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`,
     `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`,
-    `TurnPlanParser`, `TurnPlanner`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`, `WeeklyScoreService`,
-    `WeightByDateSupport`
+    `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`,
+    `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`, `CompanionStreamController`,
@@ -403,8 +403,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`,
     `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
     `SustainedStressRule`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `TodayActivitySource`,
-    `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`, `TrainTools`,
-    `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
+    `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`,
+    `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -430,7 +430,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 230 IT + 79 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 231 IT + 83 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -487,14 +487,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`, `ProfilePromptAssemblerFailureIT`,
     `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`, `PromptMemoryAssemblerIT`,
     `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`, `ProtocolLapseRuleSwitchOffIT`,
-    `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,
-    `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `QuickNoticeBudgetOffIT`,
-    `QuickNoticePushOffIT`, `QuickNoticeServiceIT`, `ReflectionDigestServiceIT`, `ReflectionJobIT`,
-    `ReflectionJobStepIsolationIT`, `ReflectionJobSwitchOffIT`, `ReflectionMemoryGatewayIT`,
-    `ReflectionReplyServiceIT`, `SleepLogDetailRenderIT`, `TextSignalCatchUpIT`, `TextSignalListenerIT`,
-    `TextSignalListenerSwitchOffIT`, `TextSignalNameNormalizationIT`, `TextSignalSeriesIT`, `ToneJudgeEvalIT`,
-    `ToolCatalogueIT`, `ToolSelectionEvalIT`, `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`,
-    `TurnEmbeddingSwitchOffIT`, `TurnPipelineIT`, `TurnVerdictCheckIT`
+    `ProvenanceRetentionJobIT`, `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`,
+    `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`,
+    `QuarterlyReviewServiceIT`, `QuickNoticeBudgetOffIT`, `QuickNoticePushOffIT`, `QuickNoticeServiceIT`,
+    `ReflectionDigestServiceIT`, `ReflectionJobIT`, `ReflectionJobStepIsolationIT`, `ReflectionJobSwitchOffIT`,
+    `ReflectionMemoryGatewayIT`, `ReflectionReplyServiceIT`, `SleepLogDetailRenderIT`, `TextSignalCatchUpIT`,
+    `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalNameNormalizationIT`, `TextSignalSeriesIT`,
+    `ToneJudgeEvalIT`, `ToolCatalogueIT`, `ToolSelectionEvalIT`, `TrainingNoteMentionSweepIT`,
+    `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnPipelineIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
@@ -510,7 +510,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-17, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-18, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -687,7 +687,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-18, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-17, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-18, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,

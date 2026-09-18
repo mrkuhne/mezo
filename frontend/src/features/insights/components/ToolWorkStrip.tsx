@@ -15,6 +15,9 @@ const MAX_STACK_ICONS = 6
 
 export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }) {
   const [open, setOpen] = useState(false)
+  // S9.7 provenance (mezo-rj214.7): at most one row's outcome unclamped at a time per strip —
+  // mirrors RecalledMemoriesRow's `openCard` idiom rather than a per-row state machine.
+  const [openRow, setOpenRow] = useState<number | null>(null)
   if (tools.length === 0) return null
   const shown = tools.slice(0, MAX_STACK_ICONS)
   const extra = tools.length - shown.length
@@ -50,16 +53,37 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
             const d = toolDomain(t.name)
             const running = live && i === tools.length - 1
             const params = t.args ?? parseToolName(t.name).params
+            const expanded = openRow === i
             return (
               <div key={i} className={running ? 'mzc-wrow run' : 'mzc-wrow'}>
                 <span className={`mzc-wric dm-${d.wash}`}>
                   <ClayIcon name={d.icon} size={14} />
                 </span>
-                <span className="col" style={{ minWidth: 0 }}>
+                <span className="col" style={{ minWidth: 0, flex: 1 }}>
                   <span className="mzc-wnm">{d.label}</span>
                   {params && <span className="mzc-wprm">{params}</span>}
+                  {t.why && <span className="mzc-wwhy">{t.why}</span>}
+                  {/* Retention-scrubbed rows carry no `outcome` — the ask half above still
+                     renders, never an empty content block for the missing result half. */}
+                  {t.outcome && (
+                    <button
+                      type="button"
+                      className={expanded ? 'mzc-wout open' : 'mzc-wout'}
+                      aria-expanded={expanded}
+                      aria-label={`${d.label} eredmény megnyitása`}
+                      onClick={() => setOpenRow(expanded ? null : i)}
+                    >
+                      {t.outcome}
+                    </button>
+                  )}
                 </span>
-                <span className="mzc-wst">{running ? <><i /> fut</> : <Icon name="check" size={12} />}</span>
+                <span className="mzc-wst">
+                  {running
+                    ? <><i /> fut</>
+                    : t.failed
+                      ? <Icon name="warning" size={12} color="var(--amber-deep)" />
+                      : <Icon name="check" size={12} />}
+                </span>
               </div>
             )
           })}

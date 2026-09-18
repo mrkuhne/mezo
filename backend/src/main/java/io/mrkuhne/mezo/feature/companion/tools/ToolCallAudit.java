@@ -37,8 +37,14 @@ public class ToolCallAudit {
     }
 
     /** One executed tool call as the verdict judge sees it (mezo-indo). {@code result} is the raw
-     *  tool output — the digest that renders it into the judge payload owns truncation. */
-    public record ToolOutcome(String name, String args, String result) {
+     *  tool output — the digest that renders it into the judge payload owns truncation.
+     *  {@code why} is the planner's half-sentence for a PLANNED read (S9.7 provenance); the
+     *  ran-truth list from {@link #toolOutcomes()} has none. */
+    public record ToolOutcome(String name, String args, String result, String why) {
+
+        public ToolOutcome(String name, String args, String result) {
+            this(name, args, result, null);
+        }
     }
 
     private final int maxCalls;
@@ -154,7 +160,7 @@ public class ToolCallAudit {
      * (mezo-indo). The v1 payload listed names only, which made every tool-derived number
      * structurally unsupported to the judge (measured: 0% pass at every reasoning-effort level,
      * mezo-9yqq class 1). {@code result} is null when no output was ever recorded for the call.
-     * NOT persisted — the tool_calls jsonb envelope deliberately keeps only {type,name,args}.
+     * Persisted as the ran-truth provenance on both sync and streamed paths (S9.7 Task 5).
      */
     public synchronized List<ToolOutcome> toolOutcomes() {
         return IntStream.range(0, calls.size())

@@ -93,6 +93,19 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String FAIL_COMPLETE = "[fake-fail]";
     public static final String FAIL_STREAM = "[fake-stream-fail]";
 
+    /** S9.7 Task 4 fix round 2: fails ONLY the pipeline's ANSWERER call, never the PLANNER call —
+     *  {@link #FAIL_COMPLETE} cannot serve this: it is checked unconditionally against the raw
+     *  {@code userMessage} before the planner/answerer branches even diverge, and {@code
+     *  ChatService.pipelineAnswer} passes the SAME {@code content} string as {@code userMessage}
+     *  to both {@code TurnPlanner.plan} and {@code TurnAnswerer.answer} — so planting
+     *  {@code FAIL_COMPLETE} anywhere in the turn's content fails the PLANNER first, before any
+     *  tool ever executes, which can only reproduce the already-vacuous "planner never scripted"
+     *  fallback. This sentinel is checked ONLY inside the {@code ANSWERER_DIGEST_PREFIX} branch
+     *  below, so a scripted plan's tools still execute normally and the failure fires strictly
+     *  AFTER lap 1 has run — the shape needed to prove a tools-ran turn still falls back to
+     *  LEGACY provenance end to end. */
+    public static final String FAIL_ANSWERER = "[fake-fail-answerer]";
+
     /** Scripted memory-query rewrite: {@code [fake-memory-rewrite:…]} returns the payload. */
     public static final Pattern MEMORY_REWRITE_SENTINEL =
             Pattern.compile("\\[fake-memory-rewrite:([^\\]]*)]", Pattern.DOTALL);
@@ -1244,6 +1257,9 @@ public class FakeCompanionLlm implements CompanionLlm {
             return plan.find() ? plan.group(1) : PLANNER_NO_SCRIPT;
         }
         if (turnContext.contains(ANSWERER_DIGEST_PREFIX)) {
+            if (userMessage.contains(FAIL_ANSWERER)) {
+                throw new IllegalStateException("FAKE-LLM forced answerer-only failure");
+            }
             if (turnContext.contains("[Adathiány]")) {
                 Matcher datagap = FAKE_DATAGAP.matcher(userMessage);
                 if (datagap.find()) {

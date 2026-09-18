@@ -107,7 +107,10 @@ class ConversationFirstIT extends AbstractIntegrationTest {
         sleeps.createSleepLog(user, LocalDate.now(), new BigDecimal("6.5"), 3);
         var answer = chatService.sendMessage(user, conversation.getId(), request("Nézzük meg." + SLEEP_PLAN));
         var stored = messageRepository.findById(answer.getId()).orElseThrow();
-        assertThat(stored.getToolCalls().calls().getFirst().result()).contains("6,5");
+        // mezo-rj214.10 unification: the RESULT text has ONE home, ai_message.tool_outcomes
+        // (the 90-day-scrubbed column); tool_calls keeps only the ask (name/args/why).
+        assertThat(stored.getToolOutcomes().outcomes().getFirst().text()).contains("6,5");
+        assertThat(stored.getToolCalls().calls().getFirst().name()).isEqualTo("get_recovery");
         var turn = chatService.prepareTurn(user, conversation.getId(), request("És ebből mi következik?"));
         assertThat(turn.history()).anySatisfy(t -> assertThat(t.content())
                 .contains("Korábbi eszközadat", "nem friss mérés", "6,5"));

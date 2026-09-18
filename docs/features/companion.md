@@ -1629,9 +1629,16 @@ server-supplied owner; history also uses the current conversation only. Memory g
 existing OLD/SHADOW/NEW adapter and carries retrieval disclosure and refs into the final message.
 The additional `list_personal_sources(domain,offset)` and `read_personal_records(source,id,parentId,from,to,query,offset,contentOffset)` reads expose the approved personal domain projections described below.
 
-The internal `tool_calls.calls[].result` stores bounded evidence (8,000 characters per result,
-40,000 payload characters per assistant row, plus omission markers and call metadata). REST tool chips remain `{type,name}`. Legacy JSON without result still
-loads. The recent transcript labels restored evidence with its timestamp and as historical data;
+The restored evidence is read from `tool_outcomes.outcomes[].text` — the ONE storage place for
+tool result text (mezo-rj214.10 unification, §6.6) — while each entry's name and args come from the
+positionally parallel `tool_calls.calls[]` ask half, zipped BY INDEX and tolerant of a null side or
+a length mismatch. `TurnProvenance.build` writes both halves under the same bounded budget (8,000
+characters per result, 40,000 per assistant row, plus omission markers and call metadata). The
+consequence of the 90-day retention decision, and the intended one: once `ProvenanceRetentionJob`
+NULLs an old row's `tool_outcomes`, that row replays its text but NO tool evidence — nothing is
+reconstructed from the ask half, because an ask without its result is not evidence. REST tool chips
+remain `{type,name}`. Legacy JSON, and the rows from the brief window when result text lived inside
+`tool_calls`, still load. The recent transcript labels restored evidence with its timestamp and as historical data;
 older-history pages expose up to 20 messages with continuation offsets when a body is clipped.
 The effective page size shrinks with the smaller persistence/answerer result budget so every row
 and the continuation footer remain reachable. Refresh
@@ -2424,13 +2431,88 @@ prohibition has no branch where it does not apply. Legacy tool-loop answers (fal
 switch off) are untouched: they still take the full `chain.complete`/`chain.review` advisor exactly
 as before S9.5.
 
-**Provenance in `llm_log` (audit trail only, not yet a consumer contract — S9.7).** A pipeline turn
-books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap 1's
-`TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan lap —
-`plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed LOOKUP
-path tags its native answer stream `answer` too, `ChatStreamService.java:180-187`). Each is its own
-`llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds, not one
-row hiding a retry inside it.
+**Provenance in `llm_log` — the model-call audit, separate from the per-turn provenance below.** A
+pipeline turn books up to FOUR ops under the `companion_chat` `LlmCallContext` action: `plan` (lap
+1's `TurnPlanner.plan` call), `answer` (lap 1's answering call), and — only on an ANALYSIS replan
+lap — `plan_replan` and `answer_replan` (`ChatService.java:481,492,502,525-527`; the streamed
+LOOKUP path tags its native answer stream `answer` too, `ChatStreamService.java:180-187`). Each is
+its own `llm_log` row, so a replanned turn is legible in the audit as two full plan→answer rounds,
+not one row hiding a retry inside it.
+
+**Provenance as a consumer contract, shipped (S9.7, `mezo-rj214.7`): two columns because retention
+must split them.** `ai_message.tool_calls` is the ASK — what was requested and why — kept forever.
+`ai_message.tool_outcomes` is the RESULT — what came back, and whether it failed — NULLed by a
+nightly scrub 90 days after the turn (below). They are two columns, not one, for exactly that
+reason: retention can empty the result half while the ask half — including the planner's stated
+reason — stays legible indefinitely. `TurnProvenance.build` (`TurnProvenance.java`) is the single
+funnel that turns ONE outcome list into both envelopes, which is what keeps a row from ever mixing
+plan-truth and ran-truth: a PIPELINE turn passes the executor's own plan-ordered outcome list
+(`capToRemainingBudget`'s synthetic `BUDGET_EXHAUSTED` drops included, in plan order; a replanned
+ANALYSIS turn passes the two laps already merged per §3 "The replan contract" above) — this list
+carries `why`. A LEGACY turn (pipeline off, planner failure, marker veto on a gear that never
+offered it, or an answerer exception — every fallback path in this document) passes
+`audit.toolOutcomes()` instead — ran-truth, `why` always null, because nothing planned this turn.
+Both the sync (`ChatService`) and streamed (`ChatStreamService`) persistence paths run the
+identical ternary between the two sources before calling `TurnProvenance.build`, so which truth a
+row carries depends only on which path produced it, never on which reads it back.
+
+`why`'s lifecycle, planner to card: `TurnPlanParser` parses the planner's stated reason for each
+step (defaulting to `""` when the model omits it), `PlanExecutor` and `capToRemainingBudget` carry
+it through unchanged on `ToolCallAudit.ToolOutcome.why()` (a synthetic budget-drop outcome still
+carries the step's original `why`), `TurnProvenance.build` writes it into
+`ToolCallsEnvelope.ToolCall.why`, `CompanionMapper.toTools` serves it on `MessageTool.why`, and
+`ToolWorkStrip`'s expanded row renders it as the card's reason line (§5.1).
+
+**One storage place (mezo-rj214.10 unification).** Tool RESULT text is persisted in exactly one
+column, `ai_message.tool_outcomes`, and only by `TurnProvenance.build`. `tool_calls` carries the
+ASK only (`type`, `name`, `args`, `why`) and is kept forever; `tool_outcomes` is what the 90-day
+scrub NULLs. An earlier conversation-first slice briefly stored a second copy of the result text as
+a 4th `tool_calls` component, which would have silently outlived that scrub — the component is gone
+and `ToolCall` is `@JsonIgnoreProperties(ignoreUnknown = true)` so rows written in that window still
+load. Read-tolerance alone was judged not enough: the owner's decision is that 90 days genuinely
+means 90 days, so a Liquibase backfill (`202609181200_mezo-rj214.7_ai_message_tool_calls_backfill_strip_result.sql`)
+strips the retired `result` key from every `tool_calls.calls[]` element that still carries one — the
+stale copy is gone, not merely unread. The two envelopes are built positionally parallel in one
+pass, which is what lets every reader zip them BY INDEX.
+
+Because there is one storage place, there is ONE budget, and it lives with its more demanding
+consumer: `mezo.companion.conversation.result-max-chars` (8000) and `results-max-chars` (40000),
+the conversation-history replay's measured values. `TurnProvenance` reads those keys directly;
+`mezo.companion.turn.provenance` keeps only `retention-days` and `cron`. The card is unaffected by
+the larger values — `ToolWorkStrip` clamps the outcome to 2 lines with tap-to-expand — and two
+knobs for one budget is exactly the drift this unification removes.
+
+Truncation is per-outcome then total, and an entry is never dropped — only its text is replaced:
+each outcome's returned text is clamped to `conversation.result-max-chars` with the
+suffix `" …(rövidítve)"`; once the running total across the turn's outcomes passes
+`conversation.results-max-chars`, every further outcome's text becomes
+`"…(a többi részlet nem fér ide)"` — its ASK line (name, args, why) still appears in full, only the
+RESULT text is elided. `TurnProvenance.compactArgs` also reconciles the two `args` dialects that
+reach it: a plan-truth outcome's `args` is the planner's raw JSON, a ran-truth outcome's `args` is
+already `RecordingToolCallback`'s compact chip form (`"days=7"`) — detected by a leading `{`, and
+on any parse failure the input passes through unchanged, because provenance must never fail a
+turn.
+
+**Wire.** `MessageTool` (`api/dto`) gained three optional fields — `why`, `outcome`, `failed` —
+alongside the pre-S9.7 `type`/`name`; the WIRE item has no `args` field, args are baked into
+`name`, and `args?` exists only on the FE `Tool` type. `CompanionMapper.toTools` zips `ai_message.tool_calls`
+and `ai_message.tool_outcomes` together BY INDEX and tolerates any length mismatch between the two
+lists (the 90-day scrub NULLs one and keeps the other, so they routinely diverge in length once a
+row ages out): an ask with no matching outcome yields `failed:false` and no `outcome` field, never
+a mapping exception. The FE's `Tool` type mirrors this — `why`/`outcome`/`failed` all optional,
+absent on legacy rows and on any row past the scrub.
+
+**Scrub.** `ProvenanceRetentionJob` (cron `mezo.companion.turn.provenance.cron`, default `"0 55 3
+* * *"` — 03:55, the free minute after the 03:40 llm-log payload scrub and the 03:50 audit-retention
+run) NULLs
+`ai_message.tool_outcomes` on rows with `createdAt < cutoff` where `cutoff = now −
+retention-days` (default 90); a row created exactly at the cutoff is spared (`<`, not `<=`). No row
+is ever deleted — the same standing exception the llm-log payload scrub uses — and `tool_calls`
+(the ask, `why` included) is never touched by this job regardless of age. The job is gated on BOTH
+`mezo.feature.companion.enabled` and its own switch,
+`mezo.techcore.cron.companion-provenance-retention-job.enabled`: off ⇒ the
+`ProvenanceRetentionJob` bean does not exist at all, and `tool_outcomes` keeps aging past 90 days
+unscrubbed.
 
 **`PreparedTurn` carries `today` (midnight-skew fix, Task 6 fix round 1 finding M2).**
 `ChatService.prepareTurn` resolves `LocalDate.now()` ONCE (`ChatService.java:234`) and the streamed
@@ -2458,13 +2540,15 @@ sites, not by a change inside `PlanValidator`/`PlanExecutor` itself (before this
 Second, the wall-time bound above ("near its SLOWEST step") only strictly holds when the number of steps is
 `<=` the executor's parallelism; once steps outnumber permits, later steps queue for a permit behind
 earlier ones and the waits compound, so total wall time can exceed one step's timeout by more than a
-rounding error. Third, provenance (S9.7) must pick exactly one source per consumer rather than
+rounding error. Third — RESOLVED by S9.7 — provenance picks exactly one source per row rather than
 mixing them: `PlanExecutor`'s own outcome list is PLAN-truth (the raw JSON args the model proposed,
 honest in-band `STEP_TIMEOUT`/`STEP_FAILED` text for what never finished), while the `ToolCallAudit`
 envelope is RAN-truth (`compactArgs`, and — because the budget-check/record pair above is
 non-atomic — a step the executor reported as timed out may still show up in the audit with a late,
-real result that arrived after the deadline). Reading both as if they agreed would surface either a
-plan that was never validated as a call, or a call whose outcome silently changed after the fact.
+real result that arrived after the deadline). `TurnProvenance.build` (above) is where that single
+choice is made per persistence path — a PIPELINE turn reads PLAN-truth, a LEGACY turn reads
+RAN-truth, never both into one row, which is exactly what would otherwise surface either a plan
+that was never validated as a call, or a call whose outcome silently changed after the fact.
 
 **What a `CHAT` turn keeps from the advisor chain: the clinical check, and only that.** The LLM
 verdict (`TurnVerdictCheck`) grades an answer against the context and tool outcomes it was grounded
@@ -3373,7 +3457,14 @@ Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registe
   item additively with optional `retrievalRunId`, `retrievalResultId`, `memoryItemId` and
   `indicator`. OLD/pre-platform JSON remains readable because absent keys deserialize to null;
   NEW selected items carry the audit run/result identities and may omit `occurredOn` for a
-  timeless fact or graph edge.
+  timeless fact or graph edge. **S9.7** adds `tool_outcomes jsonb`
+  (`202609180900_mezo-rj214.7_ai_message_tool_outcomes.sql`, `ToolOutcomesEnvelope`) — the RESULT
+  half of a turn's provenance, positionally parallel to `tool_calls`' ASK half (§3 "Provenance as a
+  consumer contract"); split into its own column specifically so the nightly
+  `ProvenanceRetentionJob` can NULL it independently of `tool_calls` once a row passes
+  `provenance.retention-days` (default 90) — `tool_calls` (including the planner's `why`) is never
+  touched by that job. **Null** on user rows and on every turn that retrieved nothing (the same
+  null-not-empty precedent as `refs`/`recalled_memories`).
 
 ### Backend tables (V1.1, ✅)
 
@@ -5809,6 +5900,21 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   contract"): data-gap laps an ANALYSIS answer may request via the `[TOVÁBBI-ADAT:` marker before the
   offer stops being made. `0` disables replan entirely (an ANALYSIS turn then behaves like LOOKUP:
   one lap, no data-gap offer). `LOOKUP` never reads this key — it never replans regardless of value.
+- `mezo.companion.turn.provenance.retention-days` = **90** (`@Min(1)`) — S9.7 (spec §6.6): the age
+  past which the nightly `ProvenanceRetentionJob` NULLs `ai_message.tool_outcomes` (the RESULT
+  half); `tool_calls` (the ASK half, `why` included) is kept forever regardless of this value.
+- `mezo.companion.turn.provenance.cron` = **`"0 55 3 * * *"`** (`@NotBlank`) — S9.7: 03:55, the
+  verified-free minute after the 03:40 llm-log scrub and the 03:50 audit-retention/monthly pair.
+- The RESULT-text storage caps are NOT under `turn.provenance`: since the mezo-rj214.10
+  unification there is one storage place and therefore one budget, read from
+  `mezo.companion.conversation.result-max-chars` (**8000**) and `results-max-chars` (**40000**)
+  — see that section. `TurnProvenance.build` clamps each outcome at the former with the suffix
+  `" …(rövidítve)"` and, past the latter, replaces further outcomes' text with
+  `"…(a többi részlet nem fér ide)"`; an ASK line is never touched by either.
+- Provenance retention job switch `mezo.techcore.cron.companion-provenance-retention-job.enabled`
+  (`FeaturesConfiguration.COMPANION_PROVENANCE_RETENTION_JOB_SWITCH`) — gated together with
+  `mezo.feature.companion.enabled`; either off ⇒ the `ProvenanceRetentionJob` bean does not exist
+  and `tool_outcomes` keeps aging past `retention-days` unscrubbed.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ### Config keys (`mezo.companion.flags.*` — `FlagProperties`, `@Validated`)
@@ -6080,7 +6186,16 @@ optimistic `ChatTurn {userText, draft, thinking, tools}` overlay, `done` appende
 render as `ToolChip`s and `refs[]` as `RefTag`s on history AND streamed turns — the FE needed
 zero code changes (the pass-through was built at V0.4). **Since mezo-280 the chips are also live**:
 each `tool` SSE event appends onto `ChatTurn.tools`, so the in-flight draft bubble renders its
-chips through the same `ToolChipRow` as they execute, rather than all at once after the answer.
+chips as they execute, rather than all at once after the answer. **Since mezo-vdf4 the mounted
+component is `ToolWorkStrip`, not `ToolChipRow`**: overlapping domain clay icons collapsed into one
+`Utánanézett · N forrás` strip that expands to a per-source panel, rather than N raw monospace
+pills. **Since S9.7 (`mezo-rj214.7`) each expanded row is a provenance card**: the human tool
+label, its params, the planner's reason line (`t.why`, present only on a pipeline turn — §3
+"Provenance") and the returned Hungarian text (`t.outcome`, clamped to 2 lines, tap to expand,
+mirroring `RecalledMemoriesRow`'s `openCard` idiom); a failed step (`t.failed`) shows a warning
+mark in place of the check and still shows whatever text it produced. A retention-scrubbed row
+carries no `outcome` — the ask half (label, params, why) still renders, never an empty content
+block for the missing result half.
 The draft — chips included — is still discarded wholesale when the terminal `done` row is appended:
 that row's `tools[]` stays the persisted truth (it also covers advisor-retry calls made after the
 stream ended), so the live chips are progress only.
@@ -8441,7 +8556,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Conversation-first path (`mezo-rj214.9`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationTurnService.java` — broad voice and iterative retrieval preparation.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationHistory.java` — bounded evidence persistence and transcript restoration.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationHistory.java` — transcript restoration and render-time clipping (read side only; persistence is `TurnProvenance`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/ConversationContextTools.java` — owner-scoped context, memory and older-history reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ConversationProperties.java` — rollback and all continuity/retrieval bounds.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/service/ConversationFirstIT.java` — default flow regressions; sibling `ConversationQualityEvalIT.java` captures real-model comparisons.

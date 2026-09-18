@@ -20,9 +20,22 @@ export const initialChat: ChatMessage[] = [
     role: 'assistant',
     ts: '06:32',
     text: 'Jó reggelt. Tegnap a Push Day jól ment — a Lat Pulldown 105 × 9 @ RIR 1 volt, és ez a sorozat az egyik legtisztább március óta. Ma Pull Day, a Chest Row PR-attempt logikus, ha az első melegítő szet könnyű.',
+    // S9.7 (mezo-rj214.7): the seed carries the provenance cards too. The mock UI path reads
+    // THIS list directly (chatHooks' isMockMode branch), not the MSW wire — so without it the
+    // dev server shows an empty disclosure while the live app shows full cards.
     tools: [
-      { type: 'read', name: 'get_training_log(days=3)' },
-      { type: 'compute', name: "find_similar_past_days(theme='pull-day pr')" },
+      {
+        type: 'read',
+        name: 'get_training_log(days=3)',
+        why: 'Hogy lássam, mi volt az elmúlt napok edzésein.',
+        outcome: 'Tegnap Push Day: Lat Pulldown 105 kg × 9 @ RIR 1, Chest Press 80 kg × 8. Előtte szerdán pihenőnap.',
+      },
+      {
+        type: 'compute',
+        name: "find_similar_past_days(theme='pull-day pr')",
+        why: 'Hogy megnézzem, korábban milyen napokon sikerült PR-t húzni.',
+        outcome: 'Három hasonló nap: 2026-03-04 (PR), 2026-04-11, 2026-05-02. Mindháromnál 7 óra fölötti alvás előzte meg.',
+      },
     ],
     refs: [
       { kind: 'Workout', id: 'w-2026-05-21' },
@@ -60,9 +73,22 @@ export const initialChat: ChatMessage[] = [
     ts: '06:34',
     text: 'Jó jel. 7h a héten az átlag fölött van — vasárnap óta négy nap volt 7+. A gyógyszer-ciklus D3-át ne felejtsük: az étvágy ma délután fog leesni, és ha PR-t akarunk, a 13:30 pre-workout meal nem opcionális. Ha 30g whey + banán + földimogyoróvaj akkor is megy, ha nem éhezünk, az ma fontos.',
     tools: [
-      { type: 'read', name: 'get_recovery(days=7)' },
-      { type: 'read', name: 'get_medication()' },
-      { type: 'compute', name: 'get_insights()' },
+      // No outcome on purpose: after the 90-day scrub the ask survives and the result half is
+      // gone, so the retention-aged card stays visible in the demo surface too.
+      { type: 'read', name: 'get_recovery(days=7)', why: 'Hogy lássam a heti alvásodat.' },
+      {
+        type: 'read',
+        name: 'get_medication()',
+        why: 'Hogy tudjam, hol tartasz a gyógyszer-ciklusban.',
+        outcome: 'Jelenlegi ciklus: D3. Ismert hatás: étvágycsökkenés kora délután.',
+      },
+      {
+        type: 'compute',
+        name: 'get_insights()',
+        why: 'Hogy előhozzam a rád illő mintázatokat.',
+        outcome: 'A lekérés időtúllépés miatt megszakadt.',
+        failed: true,
+      },
     ],
     refs: [
       { kind: 'Pattern', id: 'p-medication-appetite' },

@@ -76,6 +76,13 @@ describe('ChatPage (mock mode)', () => {
       vi.advanceTimersByTime(1300)
     })
     expect(screen.getByText(/A gyógyszer-ciklus D3-án ez gyakori/)).toBeInTheDocument()
+    // mezo-rj214.7 follow-up: a NEWLY SENT mock answer carries provenance too, not just the
+    // seeded ones — expand its work strip (the third, after the two seed answers) and confirm
+    // the tool's `why` reasoning is there.
+    // fireEvent, not userEvent — this test runs under fake timers (see the file-level note above).
+    const strips = screen.getAllByRole('button', { name: /Utánanézett/ })
+    fireEvent.click(strips[strips.length - 1])
+    expect(screen.getByText(/Hogy lássam, hogyan alakult az elmúlt napok regenerációja\./)).toBeInTheDocument()
     vi.useRealTimers()
   })
 

@@ -24,8 +24,19 @@ export function toChatMessage(m: MessageResponse): ChatMessage {
     role: m.role as ChatRole,
     ts: new Date(m.createdAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }),
     text: m.content,
-    // wire `type` is a plain string; values come from our own backend ('read' | 'compute')
-    tools: m.tools.length ? (m.tools as Tool[]) : undefined,
+    // wire `type` is a plain string; values come from our own backend ('read' | 'compute').
+    // S9.7 provenance (mezo-rj214.7): `why`/`outcome` can arrive as explicit wire `null`
+    // (no NON_NULL inclusion policy on MessageTool, same as RecalledMemory.indicator) even
+    // though the generated type says `string | undefined` — truthiness, never `=== undefined`.
+    tools: m.tools.length
+      ? m.tools.map((t): Tool => ({
+          type: t.type as Tool['type'],
+          name: t.name,
+          why: t.why || undefined,
+          outcome: t.outcome || undefined,
+          failed: t.failed || undefined,
+        }))
+      : undefined,
     refs: m.refs.length ? m.refs : undefined,
     degraded: m.degraded || undefined,
     // The disclosure is passed through without rebuilding it: NEW's stable retrieval ids and

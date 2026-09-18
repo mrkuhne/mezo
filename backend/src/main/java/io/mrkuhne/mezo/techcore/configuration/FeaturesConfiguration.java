@@ -232,6 +232,13 @@ public class FeaturesConfiguration {
     public static final String MEMORY_RETRIEVAL_RETENTION_JOB_SWITCH =
         "mezo.techcore.cron.memory-retrieval-retention-job.enabled";
 
+    /** S9.7 provenance retention cron (mezo-rj214.7) — off ⇒ the ProvenanceRetentionJob bean does
+     *  not exist (the RESULT half of ai_message.tool_outcomes keeps aging past 90 days; the ASK
+     *  half, tool_calls, is never touched by this job regardless). Array-AND'ed with
+     *  {@link #COMPANION_SWITCH} exactly like {@link #MEMORY_RETRIEVAL_RETENTION_JOB_SWITCH}. */
+    public static final String COMPANION_PROVENANCE_RETENTION_JOB_SWITCH =
+        "mezo.techcore.cron.companion-provenance-retention-job.enabled";
+
     /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
     public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
 

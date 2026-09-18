@@ -260,8 +260,18 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
       onConversationCreated?.(conversationId)
     }
     const tools: Tool[] = [
-      { type: 'read', name: 'get_recovery(days=3, scope=checkin)' },
-      { type: 'compute', name: `find_similar_past_days(theme='${text.slice(0, 20)}')` },
+      {
+        type: 'read',
+        name: 'get_recovery(days=3, scope=checkin)',
+        why: 'Hogy lássam, hogyan alakult az elmúlt napok regenerációja.',
+        outcome: 'Az elmúlt 3 napban a bejelentkezések stabilak, nincs kiugró fáradtság-jelzés.',
+      },
+      {
+        type: 'compute',
+        name: `find_similar_past_days(theme='${text.slice(0, 20)}')`,
+        why: 'Hogy megnézzem, volt-e már ehhez hasonló napod korábban.',
+        outcome: 'Két hasonló nap került elő az elmúlt hetekből.',
+      },
     ]
     setTimeout(() => {
       setTurn((t) => (t ? { ...t, phase: 'retrieving', tools } : t))

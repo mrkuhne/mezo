@@ -98,6 +98,16 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(assistant.getRefs().refs()).isNotEmpty();
         // the fake echoes the tool result — Spring AI's result converter JSON-encodes the String
         assertThat(resp.getContent()).contains("tool:get_recovery=[\"Alvás");
+        // Task 4 (mezo-rj214.7 S9.7): legacy-row equivalence pin — TurnProvenance.build(
+        // audit.toolOutcomes(), ...) REPLACED the direct audit.toToolCallsEnvelope() argument, but
+        // a legacy row's ask shape must not drift: type "read", same name, same compact args, and
+        // why null (a ran-truth outcome carries no planner reason). tool_outcomes is new — the
+        // result half a legacy turn never persisted before this task.
+        assertThat(assistant.getToolCalls().calls().getFirst().type()).isEqualTo("read");
+        assertThat(assistant.getToolCalls().calls().getFirst().why()).isNull();
+        assertThat(assistant.getToolOutcomes().outcomes()).hasSize(1);
+        assertThat(assistant.getToolOutcomes().outcomes().getFirst().name()).isEqualTo("get_recovery");
+        assertThat(assistant.getToolOutcomes().outcomes().getFirst().failed()).isFalse();
     }
 
     @Test
