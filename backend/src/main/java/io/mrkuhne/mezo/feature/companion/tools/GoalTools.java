@@ -4,6 +4,8 @@ import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -47,11 +49,13 @@ public class GoalTools {
     // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
 
     private final GoalRepository goalRepository;
+    private final WeightLogRepository weightLogRepository;
+    private final CompanionProperties properties;
     private final WeightTrendService weightTrendService;
     private final GoalTimelineService goalTimelineService;
 
     @Tool(name = "get_goal", description = "Az aktív cél. scope=progress (alapértelmezés) — "
-            + "kezdő/cél/aktuális trendsúly, hét sorszáma, terv szerinti és tényleges heti ütem, "
+            + "kezdő/cél/aktuális trendsúly, dátumozott nyers súlyok és mérésközi eltérés, trend-időablak és adatellátottság, hét sorszáma, terv szerinti és tényleges heti ütem, "
             + "e heti recept (kcal/fehérje) rövid összegzése. scope=recept — a cél teljes szegmentált "
             + "receptje: időszakonként kcal, fehérje, alváscél, pihenőnapok, tervezett heti ütem és "
             + "indoklás. scope=guards — az erő- és izomkorlátok állása: e1RM trend és megsértés, heti "
@@ -121,7 +125,9 @@ public class GoalTools {
             if (trend.getWeeklyRateKgPerWeek() != null) {
                 b.append(", tényleges ütem ")
                         .append(ToolText.huRate(trend.getWeeklyRateKgPerWeek()))
-                        .append(" kg/hét");
+                        .append(" kg/hét; teljes mérési időszak: ")
+                        .append(trend.getEwmaSeries().getFirst().getDate()).append(" → ")
+                        .append(trend.getEwmaSeries().getLast().getDate());
             }
         } else {
             b.append("; trendsúly: ").append(ToolText.NO_DATA);
@@ -134,6 +140,39 @@ public class GoalTools {
         if (seg != null) {
             b.append("; e heti recept: ").append(seg.kcal()).append(" kcal, ")
                     .append(seg.proteinG()).append(" g fehérje");
+        }
+        b.append("\nTrend adatellátottság: ").append(trend.getDataSufficiency());
+        if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE
+                && !trend.getEwmaSeries().isEmpty()) {
+            var end = trend.getEwmaSeries().getLast().getDate();
+            var start = end.minusDays(28);
+            long count = trend.getEwmaSeries().stream().filter(point -> !point.getDate().isBefore(start)).count();
+            b.append("; utolsó 28 nap (").append(start).append(" → ").append(end).append("): ");
+            if (count >= 2) b.append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét, ").append(count).append(" mérési nap");
+            else b.append("nincs elegendő mérési nap a heti ütemhez");
+        }
+        b.append("\nA simított trendsúly és a nyers mérés különbsége nem napi változás; az okát ezekből nem lehet biztosan megállapítani");
+        var raw = weightLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(
+                userId, today.minusDays(properties.tools().maxWindowDays() - 1L), today);
+        var daily = new java.util.TreeMap<LocalDate, java.math.BigDecimal>();
+        raw.forEach(row -> daily.put(row.getDate(), row.getWeightKg()));
+        b.append("\nNyers mérések (naponként az utolsó, utolsó ").append(properties.tools().maxWindowDays()).append(" nap):");
+        daily.forEach((date, kg) -> b.append("\n").append(date).append(": ").append(ToolText.huWeight(kg)).append(" kg"));
+        if (daily.isEmpty()) b.append(" ").append(ToolText.NO_DATA);
+        if (daily.size() >= 2) {
+            var last = daily.lastEntry();
+            var recentStart = daily.ceilingEntry(last.getKey().minusDays(7));
+            if (recentStart.getKey().isBefore(last.getKey())) {
+                b.append("\nFriss nyers irány (").append(recentStart.getKey()).append(" → ")
+                        .append(last.getKey()).append(", ")
+                        .append(ChronoUnit.DAYS.between(recentStart.getKey(), last.getKey())).append(" nap): ")
+                        .append(ToolText.huWeight(last.getValue().subtract(recentStart.getValue()))).append(" kg")
+                        .append("; mérésközi eltérés, nem simított heti ütem és nem testzsírváltozás");
+            }
+            var previous = daily.lowerEntry(last.getKey());
+            b.append("\nKét legutóbbi mérési nap eltérése (").append(previous.getKey()).append(" → ")
+                    .append(last.getKey()).append("): ").append(ToolText.huWeight(last.getValue().subtract(previous.getValue())))
+                    .append(" kg; eltelt napok: ").append(ChronoUnit.DAYS.between(previous.getKey(), last.getKey()));
         }
         ToolContexts.audit(toolContext).addRef("Goal", goal.getTitle());
         return b.toString();

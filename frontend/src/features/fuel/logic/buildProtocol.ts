@@ -1,11 +1,11 @@
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
-import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import { sportOf, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
 import { localDateString } from '@/shared/lib/dates'
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
-import type { GymSchedule, SportSchedule } from '@/data/types'
+import type { GymSchedule, SportSchedule, SportSession } from '@/data/types'
 
 /** The user's real day anchors that drive slot times when provided. */
 export interface ProtocolAnchors {
@@ -37,6 +37,13 @@ export function deriveBlocks(
   // pre-workout meal / calorie budget on a sport block the backend already treats as absent.
   // Empty default keeps every caller that hasn't threaded skips through yet byte-identical.
   skips: SportSlotSkip[] = [],
+  // The day's LOGGED sport sessions (mezo-rilew). A session the user played but never planned
+  // produced no block at all, so its burnt energy never reached the day's `eat` term and the Fuel
+  // calorie target stayed put — the owner-visible bug. Sessions are matched against the planned
+  // occurrences first (the backend's `addSportWindowsForDay` rule), so a planned session that was
+  // then logged still yields exactly ONE block; only the leftovers are added. Empty default keeps
+  // the forward-looking callers (the notification schedule writer / its preview) schedule-only.
+  sessions: SportSession[] = [],
 ): PlannerBlock[] {
   const blocks: PlannerBlock[] = []
   // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
@@ -49,16 +56,59 @@ export function deriveBlocks(
   // A skipped occurrence (mezo-cq06) is matched on today's weekday index + the slot's own
   // unnormalised time + today's ISO date — the same identity `buildWeekAgenda` uses.
   const todayIso = localDateString(new Date())
-  for (const vb of sport.schedule?.volleyball.sessions.filter(
+  const plannedSport: PlannerBlock[] = (sport.schedule?.volleyball.sessions.filter(
     s => s.today && s.time && !isSportSlotSkipped(skips, todayIdx(), s.time, todayIso),
-  ) ?? []) {
-    blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
-  }
+  ) ?? []).map(vb => (
+    { kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] }
+  ))
+  blocks.push(...resolveSportBlocks(plannedSport, sessions, todayIso))
   // Run: today's prescribed session in the active block's current week (needs a plan time).
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
   const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
   if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
   return blocks
+}
+
+/**
+ * Today's sport blocks: the planned occurrences RECONCILED with what was actually logged
+ * (mezo-rilew) — the frontend twin of the backend's `WorkoutWindowQueryService
+ * .addSportWindowsForDay`, so the two sides read one day the same way.
+ *
+ * A logged session is the primary source: it carries the clock time the sport was really played
+ * and its real duration. Each session, earliest first, consumes the planned occurrence nearest to
+ * it in time; the planned ones left over still yield their own blocks (a session yet to be played
+ * is still fuel the day has to carry). That matching is the whole point of the reconciliation:
+ * without it a planned session that was then logged would be counted TWICE in the day's activity
+ * energy — and without the sessions at all (the state this fixes) a session played outside the
+ * plan was counted ZERO times, so the Fuel calorie target never moved for it.
+ *
+ * A session with no clock time cannot be placed and is dropped rather than invented, exactly as on
+ * the backend.
+ */
+function resolveSportBlocks(planned: PlannerBlock[], sessions: SportSession[], todayIso: string): PlannerBlock[] {
+  const unmatched = [...planned]
+  const blocks: PlannerBlock[] = []
+  const todaysSessions = [...sessions]
+    .filter(s => s.isoDate === todayIso && s.time)
+    .sort((a, b) => toMin(a.time) - toMin(b.time))
+  for (const s of todaysSessions) {
+    const plan = nearestPlannedSport(unmatched, s.time)
+    if (plan) unmatched.splice(unmatched.indexOf(plan), 1)
+    blocks.push({
+      kind: 'sport',
+      time: s.time,
+      durationMin: s.duration ?? plan?.durationMin ?? null,
+      label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],
+    })
+  }
+  return [...blocks, ...unmatched]
+}
+
+/** The planned sport block closest in time to a logged session — the backend's `nearestPlan`. */
+function nearestPlannedSport(planned: PlannerBlock[], time: string): PlannerBlock | null {
+  if (!planned.length) return null
+  const at = toMin(time)
+  return [...planned].sort((a, b) => Math.abs(toMin(a.time) - at) - Math.abs(toMin(b.time) - at))[0]
 }
 
 /**

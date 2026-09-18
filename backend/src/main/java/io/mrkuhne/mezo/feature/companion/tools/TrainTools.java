@@ -56,7 +56,7 @@ public class TrainTools {
     private static final List<String> PLAN_SCOPES = List.of("today", "tomorrow", "week", "meso", "date");
 
     /** get_training_log's supported scope values; anything else (incl. null) falls back to "gym". */
-    private static final List<String> LOG_SCOPES = List.of("gym", "sport", "run");
+    private static final List<String> LOG_SCOPES = List.of("gym", "latest", "sport", "run");
 
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
@@ -88,20 +88,22 @@ public class TrainTools {
     private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
-            + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen, gyakorlatonként súly/ismétlés/RIR/jegyzet és visszajelzés); scope=sport — "
+            + "scope=latest — a legutóbbi sorozatokkal rögzített gym-edzés, az újabb üres lezárások jelzésével; "
+            + "scope=gym — gym-edzések (legújabb elöl: dátum, edzésnap, sorozatszám, összvolumen, gyakorlatonként súly/ismétlés/RIR/jegyzet és visszajelzés); scope=sport — "
             + "sportalkalmak (röplabda/cross/TRX: időtartam, intenzitás, RPE, szettek); scope=run — futások "
             + "(hét, session, kör, RPE, időtartam). Használd, amikor a user MÚLTBELI edzésekről/sportról/"
-            + "futásról kérdez. scope: gym (alapértelmezés), sport, run. A korábbi napok és teljes "
+            + "futásról kérdez. A legutóbbi gym-edzéshez scope=latest. scope: gym (alapértelmezés), latest, sport, run. A korábbi napok és teljes "
             + "adatok: read_personal_records(source=workout_session|exercise_set|exercise_feedback|sport_session|run_session_log).")
     public String getTrainingLog(
-            @ToolParam(required = false, description = "gym|sport|run (alapértelmezés: gym).") String scope,
-            @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
+            @ToolParam(required = false, description = "gym|latest|sport|run (alapértelmezés: gym).") String scope,
+            @ToolParam(required = false, description = "Hány napra visszamenőleg (latest: a beállított maximális ablak; egyébként 7 nap).") Integer days,
             ToolContext toolContext) {
         String s = normalizeLogScope(scope);
         return switch (s) {
             case "sport" -> renderSportLog(toolContext, days);
             case "run" -> renderRunLog(toolContext, days);
-            default -> renderGymLog(toolContext, days);
+            case "latest" -> renderGymLog(toolContext, days, true);
+            default -> renderGymLog(toolContext, days, false);
         };
     }
 
@@ -114,13 +116,16 @@ public class TrainTools {
     }
 
     /** scope=gym: done gym instances in the window, with per-instance set count + volume. */
-    private String renderGymLog(ToolContext toolContext, Integer days) {
+    private String renderGymLog(ToolContext toolContext, Integer days, boolean latest) {
         UUID userId = ToolContexts.userId(toolContext);
-        int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
+        int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), latest ? properties.tools().maxWindowDays() : 7);
         LocalDate today = LocalDate.now();
         List<WorkoutSessionEntity> instances =
-                workoutSessionRepository.findDoneInstancesBetween(userId, today.minusDays(d - 1L), today);
-        String header = "Gym-edzések (utolsó " + d + " nap):";
+                workoutSessionRepository.findDoneInstancesBetween(userId, today.minusDays(d - 1L), today).stream()
+                        .sorted(java.util.Comparator.comparing(WorkoutSessionEntity::getDate)
+                                .thenComparing(w -> w.getStartedAt() == null ? w.getCreatedAt() : w.getStartedAt())
+                                .thenComparing(WorkoutSessionEntity::getId).reversed()).toList();
+        String header = (latest ? "Legutóbbi rögzített gym-edzés" : "Gym-edzések") + " (utolsó " + d + " nap):";
         if (instances.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
@@ -133,6 +138,12 @@ public class TrainTools {
                     .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(userId, w.getId());
             List<ExerciseSetEntity> sets = allSets.stream()
                     .filter(s -> !s.isSkipped() && s.getReps() != null).toList();
+            if (latest && sets.isEmpty()) {
+                b.append("\nÜres lezárt alkalom: ").append(w.getDate()).append("; id=").append(w.getId())
+                        .append(" — nincs végrehajtott, ismétléssel rögzített sorozat");
+                ToolContexts.audit(toolContext).addRef("Workout", w.getDate().toString());
+                continue;
+            }
             BigDecimal volume = sets.stream()
                     .filter(s -> s.getWeightKg() != null)
                     .map(s -> s.getWeightKg().multiply(BigDecimal.valueOf(s.getReps())))
@@ -170,8 +181,13 @@ public class TrainTools {
             if (note != null && !note.isBlank()) {
                 b.append("\n  jegyzet: \"").append(note.strip()).append('"');
             }
+            if (latest) {
+                ToolContexts.audit(toolContext).addRef("Workout", w.getDate().toString());
+                return b.toString();
+            }
         }
-        instances.reversed().stream().limit(5).forEach(w ->
+        if (latest) b.append("\nEbben az időablakban nincs sorozatokkal rögzített edzés; régebbi alkalmak: read_personal_records(source=workout_session)");
+        if (!latest) instances.stream().limit(5).forEach(w ->
                 ToolContexts.audit(toolContext).addRef("Workout", w.getDate().toString()));
         return b.toString();
     }
