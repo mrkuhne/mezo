@@ -1,0 +1,267 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!--
+    Boop — a ház saját kabalafigurája, agyag anyagban (visszaöltöztetés, mezo-ju4j6.14).
+
+    EREDET: a figura SAJÁT rajz, a stíluskönyv §6.1 agyag-receptje szerint (viewBox 0 0 100 100,
+    objektumonként saját 3-stop radiális gradiens, EGY fehér csúcsfény bal felül, körvonal és
+    drop-shadow nélkül). A `bible-strong-avatar-lab` (AGPL-3.0) ötletadóként szerepelt a tervben;
+    innen sem kód, sem exportált ábra nem került át, így licenc-kérdés sem keletkezik.
+
+    VÁLTOZATOK: domainenként egy-egy hue-készlet. A `boop-train-sky` a kék Edzés-változat, amit a
+    bead szövege kért — a stíluskönyv §2.1 szerint viszont az Edzés színe korall (`boop-train`);
+    a döntés a tulajdonosé, a vesztes változat törölhető.
+
+    PISLOGÁS (8b köti be): minden szem `.boop-lid` ellipszise a törzs anyagával fedi le a szemet.
+    Alapban `scaleY(0)` a szem középpontja körül, a pislogás egy rövid 0→1→0 lépés. A `.boop-ear`
+    és a `.boop-body` az alap-mozdulat (lélegzet) fogója. Mindkettőnek KELL egy csökkentett-mozgás
+    ága — a figura statikusan is teljes értékű.
+  -->
+  <defs>
+    <radialGradient id="bg-boop-train-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-train-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-train-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.55" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-train-sky-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#CFE4F5"/><stop offset="0.5" stop-color="#6FA7D8"/><stop offset="1" stop-color="#2E6E96"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-train-sky-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6FA7D8"/><stop offset="1" stop-color="#2E6E96"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-train-sky-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#CFE4F5"/><stop offset="0.55" stop-color="#6FA7D8"/><stop offset="1" stop-color="#2E6E96"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-fuel-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-fuel-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-fuel-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.55" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-nap-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-nap-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-nap-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#FFEDB8"/><stop offset="0.55" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-mezo-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.5" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-mezo-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-mezo-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.55" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-en-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.5" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-en-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-en-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.55" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+  </defs>
+  <symbol id="boop-train" viewBox="0 0 100 100">
+    <title>Boop — Edzés · korall</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#D8481F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="boop-train-sky" viewBox="0 0 100 100">
+    <title>Boop — Edzés · kék (alternatíva)</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#2E6E96" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-sky-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-sky-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-sky-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-sky-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-sky-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-sky-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-sky-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="boop-fuel" viewBox="0 0 100 100">
+    <title>Boop — Fuel · zsálya</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#4E6B42" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-fuel-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-fuel-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-fuel-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="boop-nap" viewBox="0 0 100 100">
+    <title>Boop — Nap · arany</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#B57E14" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-nap-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-nap-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-nap-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="boop-mezo" viewBox="0 0 100 100">
+    <title>Boop — Boop · levendula</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#5D4FA0" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-mezo-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-mezo-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-mezo-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+  <symbol id="boop-en" viewBox="0 0 100 100">
+    <title>Boop — Én · rózsa</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#8E3F6F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-en-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-en-body)"/>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
+        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-en-body)"/>
+      </g>
+      <!-- száj: rövid, nyugodt ív -->
+      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </symbol>
+</svg>
