@@ -280,6 +280,51 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetTrainingLog_shouldReturnLatestMeaningfulSession_whenLatestCompletedSessionIsEmpty() {
+        UUID owner = userPopulator.createUser().getId();
+        var meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Pull", "pull", 0, "planned");
+        var old = trainPopulator.createWorkoutInstance(owner, template, LocalDate.now().minusDays(20), "completed");
+        var oldEx = trainPopulator.createExercise(owner, old.getId(), "Régi gyakorlat", 0);
+        trainPopulator.createLoggedSet(owner, oldEx.getId(), old.getId(), 0, "20", 8, 2, Instant.now());
+        var latest = trainPopulator.createWorkoutInstance(owner, template, LocalDate.now().minusDays(1), "completed");
+        var ex = trainPopulator.createExercise(owner, latest.getId(), "Legutóbbi lehúzás", 0);
+        trainPopulator.createLoggedSet(owner, ex.getId(), latest.getId(), 0, "50", 10, 0, Instant.now());
+        var empty = trainPopulator.createWorkoutInstance(owner, template, LocalDate.now(), "completed");
+        var other = userPopulator.createUser().getId();
+        var foreignMeso = trainPopulator.createMesocycle(other, "Másé", "active");
+        var foreignTemplate = trainPopulator.createWorkoutSession(other, foreignMeso.getId(), "Másé", "pull", 0, "planned");
+        var foreign = trainPopulator.createWorkoutInstance(other, foreignTemplate, LocalDate.now(), "completed");
+        var foreignEx = trainPopulator.createExercise(other, foreign.getId(), "IDEGEN", 0);
+        trainPopulator.createLoggedSet(other, foreignEx.getId(), foreign.getId(), 0, "90", 10, 0, Instant.now());
+
+        String out = trainTools.getTrainingLog("latest", 30, ctx(owner));
+
+        assertThat(out).contains("Legutóbbi lehúzás", "50 kg × 10", "RIR 0", latest.getId().toString())
+                .contains("Üres lezárt alkalom", empty.getId().toString())
+                .doesNotContain("Régi gyakorlat", "IDEGEN");
+        String history = trainTools.getTrainingLog("gym", 30, ctx(owner));
+        assertThat(history.indexOf(latest.getId().toString())).isLessThan(history.indexOf(old.getId().toString()));
+    }
+
+    @Test
+    void testGetGoal_shouldSeparateRawChangesAndTrendWindows_whenRecentWeightRises() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusDays(12), LocalDate.now().plusWeeks(6),
+                null, 4, "06:30", "22:30");
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(25), new BigDecimal("90"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(7), new BigDecimal("83"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("85.2"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now(), new BigDecimal("85.6"));
+
+        String out = goalTools.getGoal("progress", ctx(owner));
+
+        assertThat(out).contains("Nyers mérések", LocalDate.now() + ": 85,6 kg",
+                LocalDate.now().minusDays(1) + ": 85,2 kg", "0,4 kg", "teljes mérési időszak",
+                "28 nap", "nem napi változás", "adatellátottság", "Friss nyers irány", "2,6 kg");
+    }
+
+    @Test
     void testGetTrainingLog_shouldRenderInstanceLinesWithVolume_whenScopeGym() {
         UUID owner = userPopulator.createUser().getId();
         MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");

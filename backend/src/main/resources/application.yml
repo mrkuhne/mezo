@@ -794,7 +794,7 @@ mezo:
       # Conversation-first smart retrieval; false restores the previous gear pipeline.
       enabled: true
       # Bounded dependent retrieval batches, sharing tools.max-calls-per-turn.
-      max-read-rounds: 3
+      max-read-rounds: 5
       # Recent history plus on-demand older pages; all sizes have explicit truncation markers.
       history-messages: 80
       history-page-size: 20
