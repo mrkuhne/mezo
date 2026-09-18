@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
+import { seedSplashSkipped } from './splashSeed'
 
 for (const width of [320, 390, 430]) {
   for (const theme of ['light', 'dark']) {
@@ -8,6 +9,7 @@ for (const width of [320, 390, 430]) {
       await page.setViewportSize({ width, height: 852 })
       await page.clock.setFixedTime(new Date('2026-05-21T13:42:00+02:00'))
       await seedKalauzSeen(page)
+    await seedSplashSkipped(page)
       await page.addInitScript(t => localStorage.setItem('mezo-theme', t), theme)
         await page.goto(theme === 'light' ? '/me' : '/nap/gyors')
         if (theme === 'light') await page.getByRole('button', { name: 'Gyors logolás', exact: true }).click()
