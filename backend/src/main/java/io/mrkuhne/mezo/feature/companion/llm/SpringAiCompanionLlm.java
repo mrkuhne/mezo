@@ -29,6 +29,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -273,8 +274,9 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
                                         String turnContext, List<Turn> history, String userMessage,
                                         List<ToolCallback> tools, Map<String, Object> toolContext) {
         LlmCallContext context = llmCallContextHolder.get();
+        var actor = LlmActorContext.capture();
 
-        return Flux.defer(() -> {
+        return Flux.defer(() -> LlmActorContext.runAsCaptured(actor, () -> {
             long startedAt = System.nanoTime();
             AtomicReference<ChatResponse> lastChunk = new AtomicReference<>();
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
@@ -292,22 +294,23 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
                 })
                 .doOnError(ex -> {
                     if (recordedOnce.compareAndSet(false, true)) {
-                        llmCallRecorder.record(failureRecord(spec, ex, startedAt, context));
+                        LlmActorContext.runAsCaptured(actor, () ->
+                            llmCallRecorder.record(failureRecord(spec, ex, startedAt, context)));
                     }
                 })
                 .doOnComplete(() -> {
                     if (recordedOnce.compareAndSet(false, true)) {
-                        llmCallRecorder.record(
-                            successRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally));
+                        LlmActorContext.runAsCaptured(actor, () -> llmCallRecorder.record(
+                            successRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally)));
                     }
                 })
                 .doOnCancel(() -> {
                     if (recordedOnce.compareAndSet(false, true)) {
-                        llmCallRecorder.record(
-                            cancelRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally));
+                        LlmActorContext.runAsCaptured(actor, () -> llmCallRecorder.record(
+                            cancelRecord(spec, lastChunk.get(), answer.toString(), startedAt, context, tally)));
                     }
                 });
-        }).handle((response, sink) -> {
+        })).handle((response, sink) -> {
             // Same emission shape as ChatClient's own stream().content(): null AND empty chunks are
             // dropped (the final usage-only chunk carries no text) — the SSE contract is unchanged.
             String text = textOf(response);

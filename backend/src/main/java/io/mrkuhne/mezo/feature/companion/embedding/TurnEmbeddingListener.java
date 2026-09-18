@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.embedding;
 import io.mrkuhne.mezo.feature.companion.service.ChatTurnCompleted;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
@@ -33,7 +34,8 @@ public class TurnEmbeddingListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onChatTurnCompleted(ChatTurnCompleted event) {
         try {
-            memoryEmbeddingWriter.embedTurnByMessageId(event.assistantMessageId());
+            LlmActorContext.runAsCaptured(event.userId(), () ->
+                    memoryEmbeddingWriter.embedTurnByMessageId(event.assistantMessageId()));
         } catch (Exception e) {
             log.warn("Post-turn embedding failed for user {}", event.userId(), e);
         }
