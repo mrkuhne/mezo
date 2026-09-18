@@ -242,8 +242,9 @@ this redesign and remain as shipped.
   ConsumerPolicy.WEEKLY_MEMOIR, query, weekStart.plusDays(6), true, "proactive_weekly",
   "generate", null)`, reached through an `ObjectProvider<MemoryContextBlock>` (same idiom
   as the S7 companion-feed kinds) — **unlike Task 7's shared `"proactive_feed"` label, this surface
-  bills its OWN feature (`proactive_weekly`, held in a `MEMORY_FEATURE` constant beside the
-  generator's own `LlmCallContext`)**, purely so "what did the weekly suggestion cost" can be
+  bills its OWN feature (`proactive_weekly`, obtained via `CONTEXT.feature()` where `CONTEXT` is
+  this generator's single `LlmCallContext` constant used for both the surface's own billing AND
+  its memory-retrieval calls)**, purely so "what did the weekly suggestion cost" can be
   answered by grouping on feature; `proactive_weekly` itself is NOT on
   `mezo.llm-log.budget.throttled-features` (its siblings below, `proactive_memoir` and
   `proactive_weekly_review`, are — see those sections for the load-bearing version of this
@@ -343,8 +344,9 @@ this redesign and remain as shipped.
   ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_memoir", "generate", null)`,
   reached through an `ObjectProvider<MemoryContextBlock>` (same idiom as the S7 companion-feed
   kinds and the `characterPromptSource` dossier already on this class) — **its OWN feature
-  (`proactive_memoir`, a `MEMORY_FEATURE` constant beside this generator's own `LlmCallContext`),
-  not Task 7's shared `"proactive_feed"`**, because `proactive_memoir` sits on
+  (`proactive_memoir`, obtained via `CONTEXT.feature()` where `CONTEXT` is this generator's
+  single `LlmCallContext` constant used for both the surface's own billing AND its memory-retrieval
+  calls), not Task 7's shared `"proactive_feed"`**, because `proactive_memoir` sits on
   `mezo.llm-log.budget.throttled-features` in `application.yml`: a mislabeled block would let this
   surface's memory retrieval render straight through the budget-throttle safety valve that
   suspends the surface itself. Query = the week's OWN daily-summary
@@ -615,8 +617,9 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   block right after the wider `WeeklyReviewContextSources` context, via the same `WEEKLY_MEMOIR`/
   `deep=true` contract `MemoirGenerator` uses, `MemoryContextBlock.render(userId,
   ConsumerPolicy.WEEKLY_MEMOIR, query, weekEnd, true, "proactive_weekly_review", "generate", null)`
-  — **its OWN feature (`proactive_weekly_review`, a `MEMORY_FEATURE` constant beside this
-  generator's own `LlmCallContext`), not Task 7's shared `"proactive_feed"`**, because
+  — **its OWN feature (`proactive_weekly_review`, obtained via `CONTEXT.feature()` where `CONTEXT`
+  is this generator's single `LlmCallContext` constant used for both the surface's own billing AND
+  its memory-retrieval calls), not Task 7's shared `"proactive_feed"`**, because
   `proactive_weekly_review` sits on `mezo.llm-log.budget.throttled-features` in
   `application.yml`: a mislabeled block would let this surface's memory retrieval render straight
   through the budget-throttle safety valve that suspends the surface itself. This class had **no**
