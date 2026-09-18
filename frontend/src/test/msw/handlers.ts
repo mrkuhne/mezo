@@ -1457,7 +1457,18 @@ export const handlers = [
         role: m.role,
         content: m.text,
         createdAt: `2026-07-03T06:3${i}:00Z`,
-        tools: m.tools ?? [],
+        // S9.7 provenance (mezo-rj214.7): the first seed answer's tools carry full why/outcome
+        // cards; the second's first tool is left WITHOUT an outcome so the retention-scrubbed
+        // case (ask survives, result half gone) stays covered in mock mode too.
+        tools: (m.tools ?? []).map((t, ti) =>
+          i === 2
+            ? {
+                ...t,
+                why: 'Meg akartam nézni, mennyit pihentél az elmúlt napokban.',
+                outcome: ti === 0 ? undefined : 'Az elmúlt 7 napból 4 volt 7 óránál hosszabb.',
+              }
+            : t,
+        ),
         refs: m.refs ?? [],
         recalled: m.recalled ?? [],
         degraded: false,
@@ -1602,11 +1613,18 @@ export const handlers = [
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
-        // the args in ("get_recovery(days=3)"), refs are the tool-contributed data references
+        // the args in ("get_recovery(days=3)"), refs are the tool-contributed data references.
+        // S9.7 provenance (mezo-rj214.7): the done row's tool carries why/outcome — the LIVE
+        // 'tool' frame above deliberately does not (the wire never streams provenance early;
+        // it lands only once the turn persists).
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
           createdAt: '2026-07-03T07:00:05Z',
-          tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
+          tools: [{
+            type: 'read', name: 'get_recovery(days=3)',
+            why: 'Meg akartam nézni, hogy a fáradtság az alváshiányból jön-e.',
+            outcome: 'Az elmúlt 3 napban átlag 6.1 óra alvás volt, a szokásosnál kevesebb.',
+          }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
           // W3.1b: the persisted row also carries what ambient recall fed the prompt
           recalled: [{

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { chatApi, toChatMessage } from '@/data/insights/chatApi'
+import { chatApi, toChatMessage, type MessageResponse } from '@/data/insights/chatApi'
 
 test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
   const mapped = toChatMessage({
@@ -49,6 +49,43 @@ test('passes the recalled memories through untouched so the Emlékek row can ren
   })
   // Same order, same values — legacy and unified provenance both survive the wire adapter.
   expect(mapped.recalled).toEqual(recalled)
+})
+
+test('passes S9.7 provenance (why/outcome/failed) through, treating wire null like an absent field', () => {
+  const mapped = toChatMessage({
+    id: 'm5', role: 'assistant', content: 'Jó jel.', createdAt: '2026-07-03T06:37:00Z',
+    // The wire can deliver explicit `null` for why/outcome even though the generated TS type
+    // says `string | undefined` — MessageTool has no NON_NULL inclusion policy, same as
+    // RecalledMemory.indicator. Cast around the generated type to exercise that real shape.
+    tools: [
+      { type: 'read', name: 'get_recovery(days=3)', why: 'Meg akartam nézni a pihenést.', outcome: 'Kevés alvás volt.', failed: false },
+      { type: 'read', name: 'get_medication()', why: null, outcome: null },
+    ] as unknown as MessageResponse['tools'],
+    refs: [], recalled: [], degraded: false,
+  })
+  expect(mapped.tools).toEqual([
+    { type: 'read', name: 'get_recovery(days=3)', why: 'Meg akartam nézni a pihenést.', outcome: 'Kevés alvás volt.', failed: undefined },
+    { type: 'read', name: 'get_medication()', why: undefined, outcome: undefined, failed: undefined },
+  ])
+})
+
+test('an empty-string why/outcome becomes undefined, never an empty rendered line', () => {
+  const mapped = toChatMessage({
+    id: 'm6', role: 'assistant', content: 'Jó jel.', createdAt: '2026-07-03T06:38:00Z',
+    tools: [{ type: 'read', name: 'get_recovery(days=3)', why: '', outcome: '' }],
+    refs: [], recalled: [], degraded: false,
+  })
+  expect(mapped.tools?.[0].why).toBeUndefined()
+  expect(mapped.tools?.[0].outcome).toBeUndefined()
+})
+
+test('a failed step is passed through honestly, never dropped', () => {
+  const mapped = toChatMessage({
+    id: 'm7', role: 'assistant', content: 'Jó jel.', createdAt: '2026-07-03T06:39:00Z',
+    tools: [{ type: 'read', name: 'get_medication()', failed: true, outcome: 'Időtúllépés.' }],
+    refs: [], recalled: [], degraded: false,
+  })
+  expect(mapped.tools?.[0]).toEqual({ type: 'read', name: 'get_medication()', why: undefined, outcome: 'Időtúllépés.', failed: true })
 })
 
 test('maps a degraded answer so the bubble can render the flag (V1.3)', () => {
