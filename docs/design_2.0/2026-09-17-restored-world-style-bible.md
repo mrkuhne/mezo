@@ -709,3 +709,24 @@ glucose glass added three rows to the table and one rule:
    (which also ran at idle) to `.fmx-mic.is-live`. Everything else — hero tilt, glow pulse, bowl
    and finder float — is gone, and the keyframes they orphaned (`fmx-float`, `fmx-score-tilt`)
    went with them. A re-dress that leaves dead `@keyframes` behind is not finished.
+
+### A.4 Phase 5c addenda (`mezo-ju4j6.8`)
+
+Applying A.1 to the Kiegészítők hub + protocol + dose setup (`fsx-`) and the Trendek weekly
+picture (`ftx-`) added one table row and two rules:
+
+| Titanium material found | Restored replacement | § |
+| --- | --- | --- |
+| A **dynamic**, per-item tint fed in from markup (`--fsx-band-color`, `--ftx-dim-color`…) as `color-mix(tint 12%, transparent)` + `1px` tint border + a raw black drop | the **same** wash-tile formula, written against the variable: `linear-gradient(150deg, color-mix(tint 16%, var(--surface-card)), color-mix(tint 5%, var(--surface-page)))` + `0.5px` hairline + the **neutral** `var(--mz-shadow)` (a named `--mz-shadow-<hue>` is only available where the hue is fixed at author time) | §2.2 A |
+
+7. **A legacy hue token is not the restored accent.** Feature markup that hands a colour down
+   (`face.color = 'var(--sky)'`) was still on the pre-`--dv-` palette. Moving those to
+   `var(--dv-*)` is part of the re-dress, not a refactor — it is what puts the card on the
+   §2.1 accent set and lets dark mode re-point it. Grep every touched page for
+   `var(--sky|lav|rose|amber|sage|coral)` before calling a slice done.
+8. **A.2 rule 1 cuts both ways: the same quantity wears the same hue everywhere.** The Trendek
+   week bars, the daily-average tile, the weekday split row and the long-horizon intake curve
+   all measure what the Mai energy arc measures — so all four moved from `--sky` to
+   `--dv-sage`. What stayed: the weight series' rose (a second measure on one axis), the
+   over-target amber (§4.4), and the time-of-day band vocabulary (hajnal amber · ebéd sage ·
+   edzés korall · este levendula), because there the hue is the wayfinding, not the skin.

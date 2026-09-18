@@ -42,10 +42,10 @@ import { FuelStackItemGlass } from '@/features/fuel/components/FuelStackItemGlas
 /** Egy-egy clay szimbólum és ház-hue sávonként (a prototípus `ZONE_STYLE`-ja ház-tokenekkel —
  *  a beégetett sötét hexeket nem vesszük át, a Kiegészítők a ház saját témájában él). */
 const BAND_FACE: Record<BandKey, { icon: ClayIconName; color: string }> = {
-  morning: { icon: 'i-hajnal', color: 'var(--amber)' },
-  midday: { icon: 'i-ebed', color: 'var(--sage)' },
-  afternoon: { icon: 'i-nap', color: 'var(--coral)' },
-  evening: { icon: 'i-hold', color: 'var(--lav)' },
+  morning: { icon: 'i-hajnal', color: 'var(--dv-amber)' },
+  midday: { icon: 'i-ebed', color: 'var(--dv-sage)' },
+  afternoon: { icon: 'i-nap', color: 'var(--dv-coral)' },
+  evening: { icon: 'i-hold', color: 'var(--dv-lav)' },
 }
 
 function BandRowView({ row, onToggle, onOpen }: {

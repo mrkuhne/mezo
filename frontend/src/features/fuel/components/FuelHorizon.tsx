@@ -109,8 +109,8 @@ export function FuelHorizon({ weeks }: { weeks: HorizonWeek[] }) {
       >
         <defs>
           <linearGradient id="ftx-horizon-area" x1="0" y1="0" x2="0" y2="1">
-            <stop stopColor="var(--sky)" stopOpacity="0.28" />
-            <stop offset="1" stopColor="var(--sky)" stopOpacity="0" />
+            <stop stopColor="var(--dv-sage)" stopOpacity="0.28" />
+            <stop offset="1" stopColor="var(--dv-sage)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path className="ftx-horizon-grid" d={`M${X0} ${Y_TOP}H${X1}M${X0} 70H${X1}M${X0} ${Y_BOTTOM}H${X1}`} />

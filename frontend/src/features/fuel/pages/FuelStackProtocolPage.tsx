@@ -39,16 +39,16 @@ import type { StackZoneKey } from '@/data/types'
 
 /** Zóna-arcok a ház tokenjeivel (a prototípus `ZONE_STYLE`-ja — beégetett hexek nélkül). */
 const ZONE_FACE: Partial<Record<StackZoneKey, { icon: ClayIconName; color: string }>> = {
-  wake: { icon: 'i-hajnal', color: 'var(--amber)' },
-  breakfast: { icon: 'i-reggeli', color: 'var(--amber)' },
-  pre_workout: { icon: 'i-edzes', color: 'var(--coral)' },
-  post_workout: { icon: 'i-edzes', color: 'var(--coral)' },
-  lunch: { icon: 'i-ebed', color: 'var(--sage)' },
-  dinner: { icon: 'i-vacsora', color: 'var(--sky)' },
-  evening: { icon: 'i-hold', color: 'var(--lav)' },
-  bedtime: { icon: 'i-alvas', color: 'var(--lav)' },
+  wake: { icon: 'i-hajnal', color: 'var(--dv-amber)' },
+  breakfast: { icon: 'i-reggeli', color: 'var(--dv-amber)' },
+  pre_workout: { icon: 'i-edzes', color: 'var(--dv-coral)' },
+  post_workout: { icon: 'i-edzes', color: 'var(--dv-coral)' },
+  lunch: { icon: 'i-ebed', color: 'var(--dv-sage)' },
+  dinner: { icon: 'i-vacsora', color: 'var(--dv-sky)' },
+  evening: { icon: 'i-hold', color: 'var(--dv-lav)' },
+  bedtime: { icon: 'i-alvas', color: 'var(--dv-lav)' },
 }
-const FALLBACK_FACE = { icon: 'i-kiegeszito' as ClayIconName, color: 'var(--sage)' }
+const FALLBACK_FACE = { icon: 'i-kiegeszito' as ClayIconName, color: 'var(--dv-sage)' }
 
 export function FuelStackProtocolPage() {
   const navigate = useNavigate()
