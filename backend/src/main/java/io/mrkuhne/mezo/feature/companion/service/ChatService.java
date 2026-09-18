@@ -141,7 +141,7 @@ public class ChatService {
             [Eszköz-útmutató] — kérdéstípus → tool (ne találgass, hívd meg a megfelelőt):
             - PR / rekord / „megdöntöm?" → get_exercise_records
             - mai/holnapi/heti edzésterv, mezociklus → get_training_plan
-            - legutóbbi tényleges gym-edzés → get_training_log(scope=latest); múltbeli edzés/sport/futás → get_training_log
+            - legutóbbi tényleges gym-edzés → get_training_log(scope=latest); múltbeli edzés/sport/futás → get_training_log (gym: munka/bemelegítő sorozatok és munkavolumen külön)
             - súlytrend, fogyás ÜTEME (simított) → get_weight_trend
             - napi súlyok, egy-egy nap súlya, INGADOZÁS/kilengés → get_weight_log
             - alvás, alvási cél, közérzet (energia/stressz) → get_recovery

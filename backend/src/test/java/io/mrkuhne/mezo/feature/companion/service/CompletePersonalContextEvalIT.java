@@ -81,6 +81,7 @@ class CompletePersonalContextEvalIT extends AbstractIntegrationTest {
     @Autowired private MemoryRetrievalRunRepository runs;
     @Autowired private DatabasePopulator users;
     @Autowired private AiConversationPopulator conversations;
+    @Autowired private io.mrkuhne.mezo.support.populator.AiMessagePopulator messages;
     @Autowired private BiometricProfilePopulator profiles;
     @Autowired private WeightLogPopulator weights;
     @Autowired private GoalPopulator goals;
@@ -150,9 +151,23 @@ class CompletePersonalContextEvalIT extends AbstractIntegrationTest {
         List<String> questions = List.of(
                 "A profilom szerint hány éves vagyok, milyen magas, milyen nemű, és mi a testsúlycélom?",
                 recallQuestion,
+                "És akkor pontosan mit kapcsoltam ki, és mennyi időre?",
                 "Kérlek, olvasd vissza az eredeti naplóbejegyzést, és idézd szó szerint az utolsó mondatát.",
+                "A másik beszélgetésben említett szélcsengő túra után mit hagytam ott?",
+                "És kinél maradt?",
                 "Most váltsunk témát: írj hárommondatos mesét egy könyvtáros polipról.");
         for (int index = 0; index < questions.size(); index++) {
+            if (index == 4) {
+                // Publish only now: an earlier broad recall must not prefetch this fact and
+                // make the cross-conversation retrieval assertion vacuous.
+                var earlierConversation = conversations.conversation(user);
+                messages.message(earlierConversation, "user",
+                        "A szélcsengő túra után a kék termoszomat Zsófinál hagytam. Legközelebb elhozom.");
+                var earlierReply = messages.message(earlierConversation, "assistant",
+                        "A következő találkozáskor el tudod hozni tőle.");
+                report.put("earlierChatSourceId", earlierReply.getId());
+                LlmActorContext.runAsCaptured(user, () -> repair.repair(user, today, 20));
+            }
             String question = questions.get(index);
             var before = auditRuns(user).stream().map(Run::id).toList();
             long started = System.currentTimeMillis();
@@ -195,7 +210,16 @@ class CompletePersonalContextEvalIT extends AbstractIntegrationTest {
             assertThat(turn.degraded()).as(turn.question()).isFalse();
         });
         assertThat(turns.getFirst().answer().toLowerCase()).contains("180", String.valueOf(age), "férfi", "80", "fogy");
-        assertThat(turns.get(2).answer()).contains(LAST_SENTENCE);
+        assertThat(turns.get(2).answer().toLowerCase()).contains("telefon");
+        assertThat(turns.get(2).answer().toLowerCase()).containsAnyOf("húsz", "20");
+        assertThat(turns.get(3).answer()).contains(LAST_SENTENCE);
+        assertThat(turns.get(3).tools()).anyMatch(tool -> tool.startsWith("read_personal_records"));
+        assertThat(turns.get(4).answer().toLowerCase()).contains("kék", "termosz");
+        assertThat(turns.get(4).tools()).isNotEmpty();
+        assertThat(turns.get(4).retrievalRuns()).isNotEmpty();
+        assertThat(json.writeValueAsString(turns.get(4).recalledProvenance())).contains("chat_turn", "termosz");
+        assertThat(turns.get(5).answer()).containsIgnoringCase("Zsófi");
+        assertThat(turns.get(6).tools()).isEmpty();
     }
 
     private Probe probe(UUID user, UUID conversation, String question, List<CompanionLlm.Turn> history) {

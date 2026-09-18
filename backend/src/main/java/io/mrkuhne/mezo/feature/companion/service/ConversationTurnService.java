@@ -55,6 +55,8 @@ public class ConversationTurnService {
             időablakból állapíts meg; kevés adatból ne mondj biztos trendet vagy biztos okot.
             A cél felé haladást értékelve a friss nyers irányt is vedd figyelembe: a hosszabb időablak
             simított üteme nem írja felül az újabb mérések ellenkező irányát.
+            Az összegző értékelésed is ugyanazt a célirányt és friss bizonyítékot tükrözze,
+            mint a részletes indoklás; az ellentétes jeleket az összképben is mérlegeld.
             Egyetlen étkezési vagy edzésnapból nem következik a hosszú távú cél teljesülése.
             Gyógyszer adagolásának módosítását ne javasold; ez orvosi döntés.
             """;

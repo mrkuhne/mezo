@@ -308,6 +308,28 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetTrainingLog_shouldSeparateWorkingAndWarmupSets_whenSummarizingLoad() {
+        UUID owner = userPopulator.createUser().getId();
+        var meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Pull", "pull", 0, "planned");
+        var exercise = trainPopulator.createExercise(owner, template.getId(), "Lehúzás", 0);
+        trainPopulator.completedInstanceWithSets(owner, template.getId(), exercise.getId(), sets -> {
+            sets.add(trainPopulator.set("warmup", new BigDecimal("20"), 5, 4));
+            sets.add(trainPopulator.set("working", new BigDecimal("50"), 10, 1));
+            sets.add(trainPopulator.set("working", new BigDecimal("50"), 8, 0));
+            var skipped = trainPopulator.set("working", new BigDecimal("50"), 8, 0);
+            skipped.setSkipped(true);
+            sets.add(skipped);
+        });
+
+        for (String scope : List.of("gym", "latest")) {
+            assertThat(trainTools.getTrainingLog(scope, 7, ctx(owner)))
+                    .contains("3 sorozat (2 munkasorozat, 1 bemelegítő)")
+                    .contains("volumen 1000 kg", "munkasorozatok volumene 900 kg");
+        }
+    }
+
+    @Test
     void testGetGoal_shouldSeparateRawChangesAndTrendWindows_whenRecentWeightRises() {
         UUID owner = userPopulator.createUser().getId();
         goalPopulator.createGoalFull(owner, LocalDate.now().minusDays(12), LocalDate.now().plusWeeks(6),
@@ -339,7 +361,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = trainTools.getTrainingLog("gym", 7, ctx(owner));
 
         assertThat(out).startsWith("Gym-edzések (utolsó 7 nap):")
-                .contains(LocalDate.now().minusDays(2) + ": Pull A (pull) — 2 sorozat, volumen 1120 kg")
+                .contains(LocalDate.now().minusDays(2) + ": Pull A (pull) — 2 sorozat (2 munkasorozat, 0 bemelegítő), volumen 1120 kg")
                 .contains("Húzódzkodás", "80 kg × 8", "RIR 2", "80 kg × 6", "RIR 1");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("Workout", LocalDate.now().minusDays(2).toString()));
