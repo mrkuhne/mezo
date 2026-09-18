@@ -92,7 +92,7 @@ executing an established pattern.
 | 0 | Rulebook flip: CLAUDE.md §Design direction, `docs/design_2.0/README.md` canon index (Titanium → superseded, restored world → living), `docs/features/_platform-design-system.md` staleness, `bd memories` audit for Titanium-mandating entries | — | 1 | fast |
 | 1 | **Old-world style bible**: mine git history ≤ v2.243 (pre #630/#635, ~2026-09-12) for the deleted CSS families (`.flog-*` :3179-area, `.fh-logtile*`, `.fh-naplorow*`, `.khero-*`, `.trainhero*`), old clay icon art (pre-d302e941f), materials/colors/card anatomy; write `docs/design_2.0/2026-09-17-restored-world-style-bible.md` + extract old `clay-icons.svg` to an assets reference. Also define the old-world treatment for components that never existed pre-Titanium (GlassBox, BodyMap, in-workout list) | 0 | 1–2 | strong |
 | 2 | Shell strip: remove `titanDark` from AppLayout, restore header (keep "Boop" wordmark) + StartupSplash, merge clay icons (old art + ~8 new icons redrawn old-material) | 1 | 2 | strong |
-| 3 | Nav orphans: 5th menu item per domain ("Továbbiak") listing every page reachable only via redirects/legacy funnels (`FUEL_RETIRED_REDIRECTS` router.tsx:161, `/today/*`, `/insights/*`, `/me/karakter/*`, `/mezo/weekly`, `/mezo/motor`); re-skin TabBar/DomainSwitcher to old world; navModel stays frozen otherwise | 2 | 1–2 | fast |
+| 3 | ~~Nav orphans: 5th menu item per domain ("Továbbiak")~~ — **dropped, owner 2026-09-18** (see §Nav orphans: the measurement); re-skin TabBar/DomainSwitcher to old world; navModel stays frozen | 2 | 1–2 | fast |
 | 4 | GlassBox re-skin (single component, 21 consumers inherit) per style-bible treatment | 2 | 1 | strong |
 | 5 | Fuel re-dress: Mai → Stack → Trendek → Konyha → LogFlow → score/glycemic pages; one bead per page-group; reverse parity checklist from the fuel coverage docs (2026-09-11-fuel-coverage.md) | 4 | 4–5 | first strong, rest fast |
 | 6 | Nap/Mai re-dress + centered Clay Mezo icon (nap-mai coverage doc as checklist) | 2 | 1–2 | strong |
@@ -125,6 +125,23 @@ pointer) so a fresh session needs no prior context.
   freshness gate after file moves; regenerate CODEMAP after every merge.
 - prototype.css line anchors in this spec drift as sections are deleted — always re-locate
   by marker comments, not line numbers.
+### Nav orphans: the measurement (mezo-ju4j6.4, 2026-09-18)
+
+The 5th "Továbbiak" tab was planned on the premise that the retired Titanium funnels had left
+pages reachable only by legacy URL. **Measured: that premise is false.** Two independent passes
+over `router.tsx`'s 106 concrete routes — a strict per-route link search across `frontend/src`
+(dynamic template-literal prefixes included), and a transitive BFS from the navModel tabs, their
+`owns` prefixes and the global chrome — found **zero orphaned pages**. Everything that is
+genuinely unreachable is a bare `<Navigate>` stub for a retired URL (`/mezo/weekly`,
+`/me/growth/rutin`, `/me/routines/edit`, `/me/beallitasok/admin`), and every destination named in
+the row above (`/fuel`, `/fuel/trendek`, `/fuel/stack`, `/fuel/stack/protocol`, `/nap`, `/mezo`,
+`/mezo/karakter`, `/me/week`, `/mezo/patterns`) is a nav tab or reachable from one.
+
+Owner decision (2026-09-18): **no 5th tab.** It would show an empty list and narrow the bar on
+all five domains for nothing. Task 3 is the nav re-skin alone; the matrix stays 5×4. Do not
+re-open this without a new reason — the *discovery-index* framing (a per-domain contents page for
+beta onboarding) was offered and declined.
+
 - Nav geometry changes go only into the `.tab-bar[data-domain]` rules (design-system doc
   §"Docked navigation").
 
