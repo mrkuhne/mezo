@@ -787,11 +787,15 @@ than a sticker dropped into it:
 2. **The hue is the domain, the shape is constant.** Only the gradient ramp changes between
    variants; geometry, eyes and mouth are identical, so the five read as one character wearing
    the room's colour rather than five mascots.
-3. **Blink and breath live in CSS, on named parts.** Each eye carries a `.boop-lid` ellipse
-   filled with the body gradient, resting at `scaleY(0)` (`transform-box: fill-box`), and the
-   torso is `.boop-body`. A blink is a short 0→1→0 step; the idle gesture is a ≤2% scale
-   breath from the feet. Both belong inside a `prefers-reduced-motion: no-preference` branch —
-   the static figure is complete on its own.
+3. **The gestures live in CSS, on named parts — and blinking is NOT one of them.** The handles
+   are `.boop-pupil` (the gaze: a ±3-unit horizontal shift, each pupil resting at its eye's
+   centre so both directions have the same room), `.boop-brow` (a -1.6 raise) and `.boop-body`
+   (a ≤2% breath from the feet). All three belong inside a `prefers-reduced-motion:
+   no-preference` branch — the static figure is complete on its own. A closing eyelid was
+   drawn, reviewed and **rejected by the owner (2026-09-18)**: at this scale the lid read as a
+   glitch rather than a blink, so the lid ellipses were deleted rather than left dormant.
+   `docs/design_2.0/prototypes/boop-avatar.html` runs the surviving loop and is the reference
+   8b ports.
 4. **`<use>` clones share one timeline.** CSS reaches the symbol's source elements, so every
    `<use>` instance on a page blinks in unison. Where two Boops share a screen and that reads
    wrong, inline the SVG per instance (`?raw`) instead of referencing the sprite — the classes
