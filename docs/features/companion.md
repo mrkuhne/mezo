@@ -1489,9 +1489,13 @@ field is the same lazy idiom, not a new one.
   surface's OWN memory retrieval suspended along with the surface itself — the shared
   `"proactive_feed"` label a first cut used here would have let retrieval render straight through
   that safety valve. `MemoirGeneratorMemoryIT` seeds an account past the 90% throttle line and
-  asserts the unified label's guard: the surface's own `LLM_BUDGET_THROTTLED` refusal (which
-  prevents memoryBlock from ever being called) AND that no `memory_retrieval_run` row was written
-  (verifying the absence that follows from the throw).
+  asserts both halves of the guard: the surface's own `LLM_BUDGET_THROTTLED` refusal, AND that no
+  `memory_retrieval_run` row was written. The second is **not** implied by the first —
+  `MemoirGenerator.gather` (and so `memoryBlock`) runs at `:183`, *before* the throttled top-level
+  call at `:194`. Retrieval really is attempted; it is refused inside `MemoryContextBlock.render`'s
+  own `runWith` and swallowed into `Rendered.EMPTY`. A label passed only to `memoryBlock` and not on
+  the throttled list would therefore leave a run row behind while the throw still happened — which
+  is exactly what the second assertion catches.
 - **One query shape, reused three times.** Each surface's memory query is **the week's OWN
   daily-summary narratives, joined and clipped to the first 800 chars, plus `"\na hét: " +
   weekStart"`** — `MemoirGenerator` and `WeeklyReviewGenerator` build it from `[weekStart,
