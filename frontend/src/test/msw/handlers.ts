@@ -1457,18 +1457,10 @@ export const handlers = [
         role: m.role,
         content: m.text,
         createdAt: `2026-07-03T06:3${i}:00Z`,
-        // S9.7 provenance (mezo-rj214.7): the first seed answer's tools carry full why/outcome
-        // cards; the second's first tool is left WITHOUT an outcome so the retention-scrubbed
-        // case (ask survives, result half gone) stays covered in mock mode too.
-        tools: (m.tools ?? []).map((t, ti) =>
-          i === 2
-            ? {
-                ...t,
-                why: 'Meg akartam nézni, mennyit pihentél az elmúlt napokban.',
-                outcome: ti === 0 ? undefined : 'Az elmúlt 7 napból 4 volt 7 óránál hosszabb.',
-              }
-            : t,
-        ),
+        // S9.7 provenance (mezo-rj214.7): the seed itself carries why/outcome/failed now (the
+        // mock UI path reads it directly, bypassing MSW), so the wire fixture is a pass-through —
+        // one source of mock truth instead of two that can drift.
+        tools: m.tools ?? [],
         refs: m.refs ?? [],
         recalled: m.recalled ?? [],
         degraded: false,

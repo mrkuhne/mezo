@@ -301,6 +301,8 @@ class ChatStreamPipelineIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         chatStreamService
+                // gear-audited: CHAT is the point — this test exists to prove a tool-free turn
+                // persists no provenance at all, so the lightened branch is what it must exercise.
                 .streamMessage(userId, conversation.getId(), request("Mit gondolsz a kreatinról?"))
                 .collectList().block();
 
