@@ -1953,17 +1953,19 @@ mezo:
           metric-b: late-meal-hour
           lag-days: 0
     advisors:
-      # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
-      # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective
-      # re-prompt -> degraded flag. Off = the chain beans do not exist (V1.2 behavior).
+      # V1.3 post-response advisor chain. S9.8 (mezo-rj214.7, mezo-rj214.5) dropped the LLM
+      # verdict from the live path — the chain is now two deterministic checks only: the
+      # clinical Rx-dose guard below and the action-claim fabrication backstop; reject -> one
+      # corrective re-prompt -> degraded flag. Off = the chain beans do not exist (V1.2 behavior).
       enabled: true
       # Corrective re-prompts before an answer ships degraded (0 = check-only flagging)
       max-retries: 1
       # Prescription-med terms the clinical check guards (accent-folded match; dose-CHANGE verbs only)
       rx-terms: [retatrutid, reta, tirzepatid, mounjaro, szemaglutid, ozempic, wegovy]
       # mezo-q0p5a: first-person PAST-tense action-claim terms the fabrication backstop guards
-      # (accent-folded contains-match) — the companion has no write tools, so a claim it performed
-      # one of these is always fabricated (the "Felírtam: taco..." production bug, verbatim).
+      # (accent-folded, whole-word match with negator exclusion, not a plain contains-match) —
+      # the companion has no write tools, so a claim it performed one of these is always
+      # fabricated (the "Felírtam: taco..." production bug, verbatim).
       action-claim-terms: [felírtam, elmentettem, naplóztam, rögzítettem, hozzáadtam, beírtam, módosítottam, töröltem, beállítottam]
       # mezo-indo: the judge sees the tool OUTPUTS, not just the tool names — without them every
       # tool-derived number is structurally unsupported to it (measured 0% pass at every

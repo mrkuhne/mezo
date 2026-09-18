@@ -74,11 +74,13 @@ public class CompanionAdvisorChain {
      * <p>{@code tools} is {@code null} for a tool-free turn (CHAT gear, and any turn a
      * pipeline/conversation-first round already answered without this chain's own tool loop) — the
      * corrective retry then runs the tool-free smart completion instead of the tool-carrying one,
-     * so a retry never hands out tools the original round never had. One exception, pre-existing
-     * and not fixed here: {@code ChatStreamService}'s streamed conversation-first path decides the
-     * retry's tool-freeness from {@code turn.gear()}/{@code pipe.mode()}, not from whether that
-     * turn's OWN original round actually called a tool — a non-CHAT-gear turn that conversation-first
-     * already answered tool-free can still route its retry through the tool-carrying branch below.
+     * so a retry never hands out tools the original round never had. {@code ChatStreamService}'s
+     * streamed conversation-first path decides the retry's tool-freeness from
+     * {@code turn.gear()}/{@code pipe.mode()}, not from whether that turn's OWN original round
+     * actually called a tool — currently a distinction without a difference, because
+     * {@code routeAndAssemble} ({@code ChatService}) always returns {@code TurnGear.CHAT} while
+     * conversation-first is enabled, so a non-CHAT-gear turn cannot reach conversation-first in
+     * the first place; the two would only diverge if that routing changed.
      */
     public AdvisedAnswer review(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
             String answer, List<ToolCallback> tools, Map<String, Object> toolContext) {

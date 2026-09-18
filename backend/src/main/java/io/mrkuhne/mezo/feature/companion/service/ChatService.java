@@ -69,9 +69,11 @@ public class ChatService {
      * BEHAVIOUR, not adjectives — "legyél barátságos" is inert on the cheap tier, "listát csak
      * akkor, ha…" is not. {@code [Mit szabad állítani]} encodes the honest-voice policy (mezo-rj214.3):
      * a hunch may be voiced as an opinion without prescribed hedge vocabulary and without making
-     * hedging the safe default; an invented number is never allowed, marked or otherwise. The
-     * advisor's {@code unmarkedClaim} check still enforces the number/date/past-data half — keep
-     * the two in sync.
+     * hedging the safe default; an invented number is never allowed, marked or otherwise. Since
+     * S9.8 ({@link CompanionAdvisorChain}) the number/date/past-data half is prompt-only on the
+     * live path — no code-side check enforces it any more. The advisor's deterministic checks
+     * cover a different pair of gaps: an Rx dose-change ({@code ClinicalOutputCheck}) and a
+     * fabricated first-person action claim ({@code ActionClaimCheck}), not an invented number.
      */
     static final String SYSTEM_PROMPT = """
             [Ki vagy]

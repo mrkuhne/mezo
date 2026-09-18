@@ -186,7 +186,9 @@ public record CompanionProperties(
         @Min(1) @Max(10) int maxCandidatesPerTurn
     ) {}
 
-    /** V1.3 post-response advisor chain — clinical output check + LLM verdict (redundancy/grounding-lite). */
+    /** V1.3 post-response advisor chain — since S9.8, two deterministic checks: the clinical
+     *  output check and the action-claim fabrication backstop; the LLM verdict is off the live
+     *  path (see {@link io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck}). */
     public record Advisors(
         /** Master toggle — off removes the chain beans entirely (COMPANION_ADVISORS_SWITCH). */
         boolean enabled,
@@ -195,8 +197,9 @@ public record CompanionProperties(
         /** Prescription-med terms the clinical check guards (accent-folded contains-match). */
         @NotEmpty List<String> rxTerms,
         /** mezo-q0p5a: first-person PAST-tense action-claim terms the fabrication backstop
-         *  guards (accent-folded contains-match) — the companion has no write tools, so a claim
-         *  it performed one is always fabricated. */
+         *  guards (accent-folded, whole-word match with negator exclusion, not a plain
+         *  contains-match) — the companion has no write tools, so a claim it performed one is
+         *  always fabricated. */
         @NotEmpty List<String> actionClaimTerms,
         /**
          * mezo-indo: per-tool-output character cap in the verdict judge's payload. S9.8

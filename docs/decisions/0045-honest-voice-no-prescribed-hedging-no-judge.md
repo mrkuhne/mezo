@@ -68,17 +68,23 @@ there to fix.
    (Rx dose-change) then the new `ActionClaimCheck` (fabricated first-person past-tense action
    claim — the `mezo-q0p5a` backstop: a fixed, accent-folded, whole-word term list with negator
    exclusion, so an honest refusal never fires). `TurnVerdictCheck` stays a `@Component` and an
-   offline regression instrument (its own IT still exercises it against the labelled set) but
-   nothing in production wires it up.
+   offline regression instrument: its own IT (`TurnVerdictCheckIT`) still exercises it, but only
+   against `FakeCompanionLlm`'s scripted verdicts (`[fake-violate]`, `[fake-verdict-broken]`) —
+   that proves the check is still correctly wired (parses a verdict, fails open on a broken one),
+   not that its precision holds. There is no labelled verdict set checked into the repo (only
+   memory-eval fixtures live under `backend/src/test/resources/eval/`); the 12-case set and the
+   0.60 ceiling below survive only as prose, in this check's own javadoc and in
+   `application.yml`. Nothing in production wires the check up either way.
 3. **Both prompts state the action-claim rule in prose, matching the code-side backstop.**
    `ActionClaimCheck` exists BECAUSE prose alone failed in production; the prose stays, because a
    deterministic term list also cannot catch every phrasing (a quoted-back claim, a question form)
    and the two are meant to cover different corners together, not to replace each other.
-4. **`AdvisorRetry.block` no longer licenses marked guessing.** Its closing rules paragraph named
-   only the checks that could actually still fire — the action-claim rule, the unmarked-fact rule,
-   the Rx-dose rule — and dropped the redundancy-guarding clause the removed `redundantQuestion`
-   criterion used to justify. The tone-preservation closing sentence (ADR 0028's contribution)
-   stays verbatim.
+4. **`AdvisorRetry.block` no longer licenses marked guessing.** Its closing rules paragraph names
+   the action-claim rule and the Rx-dose rule, both of which a check below actually fires on, plus
+   an unmarked-fact reminder that — since neither check enforces it any more — is prose only, not
+   a rule any live check backs; it dropped the redundancy-guarding clause the removed
+   `redundantQuestion` criterion used to justify. The tone-preservation closing sentence (ADR
+   0028's contribution) stays verbatim.
 5. **The `[Két mód]`/`[Eszközhasználat]` contradiction is removed by scope, not by rewording.**
    `[Eszközhasználat]` used to carry a blanket "tool nélkül ne találgass" that contradicted
    `[Két mód]`'s own free-conversation branch (general-knowledge chat needs neither tool nor data,
@@ -112,6 +118,12 @@ remain out of scope here.
   or action-claim hit, not on a 40%-wrong judge call — the `degraded` rate should be a strictly more
   meaningful signal than it was under ADR 0028, and any rise now means one of the two deterministic
   rules is actually firing, not that the judge misjudged again.
+- **`redundantQuestion` (never-ask-twice) left with `unmarkedClaim`, not separately.** No
+  replacement check covers it; it is now the same kind of honest gap as the invented-number one
+  above. And for production's default conversation-first path specifically, this whole decision
+  changes nothing observable: that path ran the tool-free `reviewChat` branch before S9.8 too, so
+  it never reached the judge either way — the removal only changes behaviour on paths that used
+  to run the tool-carrying `review`.
 - **A rediscovered need for numeric grounding enforcement is a new decision, not a reopening of
   this one.** If production later shows the honest gap above causing real harm, the fix is a new,
   purpose-built deterministic check (in the spirit of `ActionClaimCheck`) or a differently-scoped
@@ -119,9 +131,12 @@ remain out of scope here.
   whose 0.60 ceiling is now a matter of record.
 - **`TurnVerdictCheck`, its IT, and the tool-output-digest payload assembly it carries are not
   deleted.** They remain buildable, testable code — an offline instrument for a future eval pass,
-  not dead weight to clean up reflexively. Deleting them would also delete the only artifact that
-  currently proves the 0.60 ceiling, which is exactly the evidence a future "should we bring the
-  judge back" conversation would need first.
+  not dead weight to clean up reflexively. Note what this does and does not preserve: no artifact
+  in the repo currently *proves* the 0.60 ceiling — there is no labelled verdict set checked in,
+  only the number in prose (this check's javadoc, `application.yml`). Keeping the class preserves
+  the WIRING a future re-measurement would need (the judge call, the strict-JSON parse, the
+  fail-open path, the payload assembly) — deleting it would mean rebuilding that scaffolding from
+  scratch, not losing proof of a number that was never checked in as data.
 
 ## Alternatives considered
 
