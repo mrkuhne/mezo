@@ -1511,6 +1511,67 @@ field is the same lazy idiom, not a new one.
   et al., [`proactive.md`](proactive.md) §8) per the Part-B four-case checklist, even though the
   mechanism itself is not new here.
 
+**Memória mindenhol S9 (`mezo-eq85.9`) — the four forward-looking surfaces join the seam.** Same
+`MemoryContextBlock` contract as S7/S8, now wired into `PredictionGenerator`,
+`ExperimentProposalGenerator`, `ChallengeGenerator` and `FatigueEvidenceCollector` (the PURE-CODE
+gather `DiagnosisGenerator` delegates to) — all four gaining the same lazy
+`ObjectProvider<MemoryContextBlock>` idiom.
+
+- **All four retrieve under `ConsumerPolicy.PREDICTION_EVIDENCE`** (already declared and configured
+  — 30 candidates / 800 tokens / rerank — but, before this slice, unused by any caller). `deep`
+  matches the plan exactly: **`false`** for prediction/experiment/challenge (latency-gated calls
+  nobody is meant to wait long on) and **`true`** for diagnosis (`DiagnosisGenerator`'s offline
+  SMART-tier pass). Each surface bills its memory retrieval under its OWN feature —
+  `proactive_prediction`, `proactive_experiment`, `proactive_challenge`, `proactive_diagnosis` (each
+  obtained via `CONTEXT.feature()`, the S8 single-`LlmCallContext`-constant guard) — because **all
+  four sit on `mezo.llm-log.budget.throttled-features`** in `application.yml`, so a throttled
+  account has each surface's OWN memory retrieval suspended along with the surface itself.
+  **`FatigueEvidenceCollector` is the one class in this slice with no `LlmCallContext` of its own**
+  (it is a PURE-CODE gather, never itself the top-level `completeSmart` caller) — rather than
+  hard-coding a second `"proactive_diagnosis"` literal that could drift from `DiagnosisGenerator`'s,
+  its `memoryBlock` reads `DiagnosisGenerator.CONTEXT` directly (package-visible for exactly this,
+  same package). Both classes live in `feature/proactive/service`, so no new coupling crosses a
+  package boundary.
+- **Three query shapes, all built from data the gather already collects — no new read.**
+  `PredictionGenerator`/`ExperimentProposalGenerator`/`ChallengeGenerator` query on **the
+  CONFIRMED-pattern candidates' own titles, joined** — the same shape `WeeklySuggestionGenerator`
+  (S8) uses for its narrative text, applied here to a pattern list instead. `asOf` is `weekStart`
+  (prediction), the owner-local today (experiment), the workout `date` (challenge) — whichever date
+  the surface's OWN gather already works with. `FatigueEvidenceCollector` queries on **the evidence
+  candidates' own label/detail lines, joined** — the task-9 brief's "fatigue evidence summary
+  line" — built from the SAME `candidates` list `render` is already rendering into the numbered
+  EVIDENCIA-JELÖLTEK block; `asOf` is `today`.
+- **No refs, by design — the task-9 codebase notes' Deviation 1.** Unlike S7/S8, none of these four
+  contributes memory refs into its candidate list, because none of the four candidate lists here is
+  a display-ref record the way `CompanionMessageEnvelope`/`MemoirAnchorsEnvelope`/`Highlight` are:
+  `PredictionGather.candidates()`, `ExperimentProposalGenerator.Gather.candidates()` and
+  `ChallengeGenerator.Gather.patterns()`/`exercises()`/`refCandidates()` are typed domain lists whose
+  INDEX **is** the model's answer contract (`patternIndex`, `exerciseIndex`, `refIndexes`) — a
+  memory entry inserted there would resolve to the wrong pattern/exercise/ref. `FatigueGather
+  .candidates()` is worse: it is BOTH the model's `evidenceIndexes` contract AND is persisted
+  verbatim into `DiagnosisEvidenceEnvelope` and rendered by the FE — a new `EvidenceItem` kind would
+  be a schema change out of this task's scope. All four therefore append ONLY the rendered block
+  text to the payload.
+- **Deviation 2 (task-9 codebase notes) — the plan's diagnosis refactor was skipped.** The plan
+  proposed replacing `FatigueEvidenceCollector`'s raw `knowledgeFactRepository` read with
+  `renderPromptBlock` "while there, one fewer bespoke fact renderer." That raw read does not merely
+  render prose here: each fact becomes an indexed `EvidenceItem("fact", …)` in the SAME candidate
+  list the model's `evidenceIndexes` point into (the class javadoc: *"Ordering is the FIXED enum
+  order, then patterns, then facts. The index IS the contract"*), and those indexes are persisted.
+  Doing the refactor would silently delete indexed candidates and shift every index after them —
+  corrupting already-persisted diagnoses' evidence pointers. Skipped entirely; noted here so nobody
+  re-proposes it without re-reading this paragraph.
+- **Fail-open, same as S7/S8.** `MemoryContextBlock.render` itself never throws, so a
+  memory-platform outage never costs a user their prediction/experiment/challenge/diagnosis. The
+  "policy disabled" kill switch is the identical `PREDICTION_EVIDENCE.enabled=false` config flip
+  `MemoryContextBlockIT` already covers generically; Task 9 repeats the assertion once per surface
+  anyway (`PredictionGeneratorMemoryDisabledIT` et al., [`proactive.md`](proactive.md) §8) per the
+  Part-B four-case checklist. **One vacuous-test trap caught and fixed while building these:**
+  `ChallengeGeneratorMemoryDisabledIT`'s first draft seeded no CONFIRMED pattern, so the memory
+  query was blank and `MemoryContextBlock#render`'s blank-query short-circuit — not the disabled
+  policy — was what made the block absent; the test passed regardless of the policy flag. Fixed by
+  seeding a CONFIRMED pattern so the query is genuinely non-blank.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real

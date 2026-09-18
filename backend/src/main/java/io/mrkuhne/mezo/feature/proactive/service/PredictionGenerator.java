@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -83,6 +86,17 @@ public class PredictionGenerator {
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S9 (mezo-eq85.9): same lazy idiom as the [Karakter] dossier's {@code
+     *  ObjectProvider} above — see {@code MemoirGenerator#memoryContextBlock}'s javadoc for the
+     *  rationale. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+
+    /** mezo-eq85.9: this generator's own LLM-call feature/operation, used BOTH for the top-level
+     *  {@code completeSmart} call in {@link #generate} AND (via {@link LlmCallContext#feature()})
+     *  for the memory-retrieval audit row in {@link #memoryBlock} — the Task-8 single-constant
+     *  guard (see {@code MemoirGenerator#CONTEXT}), so the two labels cannot drift apart.
+     *  {@code proactive_prediction} sits on {@code mezo.llm-log.budget.throttled-features}. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("proactive_prediction", "generate", null, null);
 
     public record PredictionGather(String payload, List<PatternEntity> candidates) {
     }
@@ -104,8 +118,7 @@ public class PredictionGenerator {
             log.debug("No confirmed patterns for {} — no predictions for week {}", userId, weekStart);
             return List.of();
         }
-        String answer = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_prediction", "generate", null, null),
+        String answer = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedPredictions parsed = parse(answer);
         if (parsed == null || parsed.predictions() == null) {
@@ -157,6 +170,13 @@ public class PredictionGenerator {
         }
         StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, weekStart));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        // Memória mindenhol S9 (mezo-eq85.9): the CONFIRMED-pattern candidates' own titles ARE the
+        // memory query — the same shape as WeeklySuggestionGenerator's query, applied to this
+        // generator's one real candidate list.
+        String memoryQuery = confirmed.stream().map(PatternEntity::getTitle)
+                .collect(Collectors.joining("; "));
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, weekStart, memoryQuery, CONTEXT.operation(), null);
+        payload.append(mem.block());
         payload.append(characterBlock(userId));
         payload.append("\n\nMINTA-JELÖLTEK (a patternIndex ezekre mutat):\n");
         for (int i = 0; i < confirmed.size(); i++) {
@@ -191,6 +211,25 @@ public class PredictionGenerator {
             return null;
         }
         return candidates.get(index).getId();
+    }
+
+    /**
+     * Memória mindenhol S9 (mezo-eq85.9): the {@code [Hosszú távú memória]} block for the
+     * prediction's own gather — {@code PREDICTION_EVIDENCE}/{@code deep=false} (this is a
+     * latency-gated call, unlike diagnosis's offline deep pass); same fail-open idiom as {@code
+     * MemoirGenerator#memoryBlock}. Deviation from the plan (task-9 codebase notes): appends only
+     * the rendered block text — no refs, no candidate-list entry — because {@code
+     * PredictionGather.candidates()}'s INDEX is the model's {@code patternIndex} contract; a
+     * memory entry there would corrupt {@link #resolveSourcePatternId}.
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate asOf, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.PREDICTION_EVIDENCE, query, asOf, false,
+                CONTEXT.feature(), operation, entityId);
     }
 
     /** mezo-1gim.8: the [Karakter] dossier's contribution — "" when the bean is absent (either
