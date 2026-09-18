@@ -7,7 +7,7 @@ tags: [today, nap, mozaik, titanium, biometrics, frontend, data-layer, ritual, n
 key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
   - frontend/src/features/today/pages/NapGyorsPage.tsx
-  - frontend/src/features/today/components/TitanCompanion.tsx
+  - frontend/src/features/today/components/NapCompanion.tsx
   - frontend/src/features/today/components/NapFuelGraphic.tsx
   - frontend/src/features/today/components/NapPersonalInsight.tsx
   - frontend/src/features/today/logic
@@ -53,8 +53,8 @@ Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the 
 
 ### The Napközpont composition
 
-1. **Five orbital actions:** Check-in opens the current unfilled slot (then another unfilled slot, or the overview if all complete); Gyors logolás opens `/nap/gyors`; Napló opens `JournalSheet`; Aktivitás opens `ActivityLogSheet`; Chat opens `/mezo/chat`. Check-in waits for successful hydration to avoid overwriting unseen records. Sculptural CSS graphics and the existing `TitanCompanion` provide the animated Titanium language. The companion still opens `/nap/eletjel`.
-2. **Nutrition:** `NapFuelGraphic` displays actual consumed kcal in a metallic core and three independent 270° arcs for protein/carbs/fat against their own targets. Macro buttons select gram/target detail; the core restores kcal. Zero, unknown target, loading and read failure are distinct. No duplicate water or check-in statistic strip.
+1. **Five orbital actions:** Check-in opens the current unfilled slot (then another unfilled slot, or the overview if all complete); Gyors logolás opens `/nap/gyors`; Napló opens `JournalSheet`; Aktivitás opens `ActivityLogSheet`; Chat opens `/mezo/chat`. Check-in waits for successful hydration to avoid overwriting unseen records. **Visszaöltöztetés (mezo-ju4j6.10):** the five sculptural CSS graphics are clay symbols on icon shields (`i-checkin` · `i-kristaly` · `i-naplo` · `i-sport` · `i-mezo`), and the centre is **`NapCompanion`** — the clay Mezo symbol over a need-coloured halo, the Boop avatar's reserved slot (Phase 8b). The Titanium mark and its live three.js scene (`TitanCompanion`/`TitanScene`) are gone, the package with them. The companion still opens `/nap/eletjel`, and the aura still carries the first three needs' colors, dimmed per band.
+2. **Nutrition:** `NapFuelGraphic` displays actual consumed kcal in a light core and three independent 270° arcs for protein/carbs/fat against their own targets. **Since mezo-ju4j6.10 the macro vocabulary is the app-wide one** (owner 2026-09-18): `--macro-protein/carbs/fat` plus the clay `i-hus`/`i-gabona`/`i-avokado` faces — the same colour and symbol Fuel · Mai's rings use, instead of this page's former sky/amber/lavender beads. Macro buttons select gram/target detail; the core restores kcal. Zero, unknown target, loading and read failure are distinct. No duplicate water or check-in statistic strip.
 3. **Personal observation:** `NapPersonalInsight` selects the first nonempty, non-rejected observation in the existing server order. `SafeMarkdown` renders the actual prose; expandable evidence explains its basis. Fresh/return feedback follows the existing reply contract, guarded against duplicate submissions; chat reuses the returned conversation or passes the observation as context. Empty/degraded/error states make no personal claims.
 4. **Mai pillanatok:** the latest eight current-day check-ins, meals, journal notes and activities, sorted by known capture time. Unknown timestamps say “Ma”; scheduled slot times never masquerade as save times. Rows open their existing domain pages. Loading and partial read errors are visible.
 

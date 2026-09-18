@@ -1,52 +1,60 @@
+/* ============================================================
+   Nap · Mai (NapHubPage) — visszaöltöztetve a Mozaik/Clay világba (mezo-ju4j6.10).
+   A GEOMETRIA marad: kiskapitális fejléc + állítás, a pálya (orbit) az öt művelettel és a
+   középponttal, alatta az üzemanyag-kártya, Mezo észrevétele és a Mai pillanatok.
+   Az ANYAG cserél a stíluskönyv szerint: meleg arany/levendula halo-sáv a hideg köd helyén,
+   agyag szimbólum ikon-pajzson a gradiens-kavicsok helyén, display-tipográfia.
+   A középpont az agyag Mezo-jel — ez egyben a Boop-avatar foglalt helye (Phase 8b).
+   ============================================================ */
 .nap-center { padding-bottom: 24px; }
 .nap-center-heading { padding: 16px 8px 0; }
-.nap-center-heading p,.nap-center-timeline header p { font-size: 10px; letter-spacing: .18em; color: var(--text-muted); margin: 0 0 10px; }
-.nap-center-heading h1 { font-size: clamp(28px,8vw,36px); line-height: 1.08; font-weight: 550; letter-spacing: -.035em; margin: 0; }
-.nap-center-heading h1 span { color: var(--lav); }
-.nap-center-orbit { position: relative; height: 366px; isolation: isolate; background: radial-gradient(ellipse at 47% 46%, color-mix(in srgb,var(--lav) 14%,transparent),transparent 60%), radial-gradient(ellipse at 90% 72%,color-mix(in srgb,var(--sky) 8%,transparent),transparent 55%); }
-.nap-center-orbit::before { content: ''; position: absolute; inset: 36px 32px 28px; border: 1px solid color-mix(in srgb,var(--lav) 14%,transparent); border-radius: 50%; transform: rotate(-17deg); box-shadow: 0 0 0 18px color-mix(in srgb,var(--lav) 2%,transparent),0 0 0 38px color-mix(in srgb,var(--lav) 1%,transparent); pointer-events: none; }
+/* Szemöldök (§3.2 1. ütem): kiskapitális, a Nap arany tintájában. */
+.nap-center-heading p { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); margin: 0 0 10px; }
+.nap-center-timeline header p { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); margin: 0 0 10px; }
+.nap-center-heading h1 { font-family: var(--ff-display); font-size: clamp(28px,8vw,36px); line-height: 1.08; font-weight: 700; letter-spacing: -.03em; margin: 0; }
+.nap-center-heading h1 span { color: var(--mz-cell-lav-ink); }
+
+/* A pálya: halo-sáv (§2.2 C), nem doboz — arany középpont, levendula kísérettel. */
+.nap-center-orbit { position: relative; height: 366px; isolation: isolate; background: radial-gradient(ellipse at 50% 46%, color-mix(in srgb,var(--dv-amber) 26%,transparent) 0%, transparent 58%), radial-gradient(ellipse at 50% 50%, color-mix(in srgb,var(--dv-lav) 14%,transparent), transparent 64%); }
+.nap-center-orbit::before { content: ''; position: absolute; inset: 36px 32px 28px; border: 1px solid color-mix(in srgb,var(--dv-amber) 26%,transparent); border-radius: 50%; transform: rotate(-17deg); box-shadow: 0 0 0 18px color-mix(in srgb,var(--dv-amber) 4%,transparent),0 0 0 38px color-mix(in srgb,var(--dv-lav) 3%,transparent); pointer-events: none; }
 .nap-center-companion { position: absolute; width: 172px; height: 172px; left: calc(50% - 86px); top: 111px; z-index: 1; }
-.nap-center-companion .titan-companion,.nap-center-companion .titan-companion.is-live { width: 172px; height: 172px; min-height: 0; margin: 0; }
-.nap-center-companion .titan-svg { width: 150px; height: 150px; }
-.nap-center-node { position: absolute; width: 112px; min-height: 94px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; background: transparent; border: 0; z-index: 2; font-size: 13px; font-weight: 550; color: var(--text-primary); cursor: pointer; border-radius: 20px; }
-.nap-center-node small { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+
+/* Az öt művelet: PUSZTA agyag szimbólum (§6) — se fém-gradiens, se ikon-glória, és (owner
+   2026-09-18) se ikon-pajzs: a pályán a szimbólum maga áll, keret és korong nélkül, nagyobban. */
+.nap-center-node { position: absolute; width: 112px; min-height: 94px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: transparent; border: 0; z-index: 2; font-family: var(--ff-display); font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer; border-radius: 20px; }
+.nap-center-node small { font-size: 10.5px; color: var(--sub); font-weight: 500; }
 .nap-node-membrane { top: 5px; left: calc(50% - 56px); }
 .nap-node-crystal { top: 116px; left: 0; }
 .nap-node-pages { top: 116px; right: 0; }
 .nap-node-ribbon { bottom: 4px; left: 28px; }
 .nap-node-chat { bottom: 4px; right: 28px; }
-.nap-center-art { position: relative; display: block; width: 48px; height: 47px; filter: drop-shadow(0 7px 12px color-mix(in srgb,var(--lav) 18%,transparent)); transition: transform .3s; }
-.nap-center-art i { position: absolute; display: block; }
-.nap-center-art.membrane i { inset: 0; border-radius: 38% 62% 66% 34%/53% 35% 65% 47%; background: radial-gradient(ellipse at 27% 19%,#f0dfff,#bb94e7 18%,#41364e 44%,#aea1da 70%,#302337); box-shadow: inset 1px 1px #ffffff88; animation: nap-center-morph 9s ease-in-out infinite alternate; }
-.nap-center-art.crystal { perspective: 180px; }
-.nap-center-art.crystal i { inset: 1px 8px; clip-path: polygon(50% 0,100% 36%,76% 100%,24% 100%,0 36%); background: conic-gradient(from 20deg at 50% 36%,#fff0c4,#514333,#d5b87c,#fff0c4,#635347,#e5d5ac,#fff0c4); animation: nap-center-rock 7s ease-in-out infinite alternate; }
-.nap-center-art.pages i { width: 30px; height: 37px; left: 5px; top: 5px; border-radius: 3px 9px 4px 3px; background: linear-gradient(130deg,#ddf5ff,#729fab 30%,#324655 65%,#a0c8dc); box-shadow: inset 1px 1px #ffffffaa; transform: rotate(-20deg); }
-.nap-center-art.pages i:nth-child(2) { transform: translate(4px,-2px) rotate(-5deg); }
-.nap-center-art.pages i:nth-child(3) { transform: translate(8px,-4px) rotate(10deg); background: linear-gradient(130deg,#d1f5fd,#5994b0 40%,#253e51); animation: nap-center-page 8s ease-in-out infinite alternate; }
-.nap-center-art.ribbon i { height: 38px; width: 27px; border: 7px solid #b7d987; border-right-color: #efffcc; border-bottom-color: #4e653b; border-radius: 50%; left: 5px; top: 2px; transform: rotate(-35deg) rotateY(30deg); animation: nap-center-rock 8s ease-in-out infinite alternate; }
-.nap-center-art.ribbon i:nth-child(2) { left: 15px; transform: rotate(40deg) rotateY(25deg); animation-direction: alternate-reverse; opacity: .7; }
-.nap-center-art.ribbon i:nth-child(3) { display: none; }
-.nap-center-art.chat i { inset: 5px 1px 8px; border-radius: 44% 52% 46% 14%; background: radial-gradient(ellipse at 26% 20%,#e7ddff,#a291c2 24%,#443951 57%,#bca6f1 88%); transform: rotate(-12deg); animation: nap-center-rock 10s ease-in-out infinite alternate; }
-.nap-center-art.chat i:nth-child(2) { inset: 20px 11px 20px; border-radius: 5px; background: #dfd4f0; transform: none; animation: none; }
-.nap-center-art.chat i:nth-child(3) { display: none; }
-.nap-center-node:hover .nap-center-art { transform: translateY(-4px) scale(1.08); }
-.nap-center button:focus-visible { outline: 2px solid var(--lav); outline-offset: 3px; }
+.nap-center-art { display: grid; place-items: center; width: 66px; height: 66px; transition: transform .3s; }
+.nap-center-node:hover .nap-center-art { transform: translateY(-3px); }
+.nap-center button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 3px; }
+
+/* Mai pillanatok: halk sorok, a régi világ lista-anyagával. */
 .nap-center-timeline { padding: 28px 8px 0; }
-.nap-center-timeline h2 { font-size: 22px; letter-spacing: -.03em; margin: 0 0 14px; }
-.nap-center-timeline>p { color: var(--text-muted); font-size: 13px; }
+.nap-center-timeline h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 14px; }
+.nap-center-timeline>p { color: var(--sub); font-size: 13px; }
 .nap-center-timeline ol { list-style: none; margin: 0; padding: 0; }
-.nap-center-timeline li { position: relative; border-bottom: 1px solid color-mix(in srgb,var(--text-primary) 7%,transparent); }
+.nap-center-timeline li { position: relative; border-bottom: 1px solid var(--divider); }
 .nap-center-timeline li button { width: 100%; display: grid; grid-template-columns: 42px minmax(0,1fr) 14px; gap: 12px; align-items: start; text-align: left; color: var(--text-primary); background: transparent; padding: 14px 0; border: 0; cursor: pointer; }
-.nap-center-timeline time { font-size: 10px; color: var(--text-muted); padding-top: 3px; }
-.nap-center-timeline strong { font-size: 12px; font-weight: 500; }
-.nap-moment-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; color: var(--text-muted); font-size: 12px; line-height: 1.5; margin-top: 4px; }
-@keyframes nap-center-morph { to { border-radius: 62% 38% 34% 66%/35% 53% 47% 65%; transform: rotate(12deg); } }
-@keyframes nap-center-rock { to { transform: rotate(13deg) rotateY(-15deg) translateY(-3px); } }
-@keyframes nap-center-page { to { transform: translate(10px,-6px) rotate(17deg); } }
-@media (max-width: 360px) { .nap-center-node { width: 94px; font-size: 12px; } .nap-node-membrane { left: calc(50% - 47px); } .nap-node-ribbon { left: 20px; } .nap-node-chat { right: 20px; } .nap-center-companion { transform: scale(.85); } }
-@media (prefers-reduced-motion: reduce) { .nap-center-art i { animation: none !important; } .nap-center-art { transition: none; } }
-.nap-titan-quiet .nap-center-art i { animation: none; }
-.nap-center-companion canvas { mask-image: radial-gradient(ellipse, black 35%, transparent 72%); }
+.nap-center-timeline time { font-size: 10px; color: var(--sub); padding-top: 3px; font-variant-numeric: tabular-nums; }
+.nap-center-timeline strong { font-size: 12.5px; font-weight: 600; }
+.nap-moment-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; color: var(--sub); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+
+/* 320px: a megemelt szemöldök- és címtipográfia lépcsőzése (stíluskönyv A.2 5. szabály). */
+@media (max-width: 360px) {
+  .nap-center-node { width: 94px; font-size: 12px; }
+  .nap-center-art { width: 56px; height: 56px; }
+  .nap-node-membrane { left: calc(50% - 47px); }
+  .nap-node-ribbon { left: 20px; }
+  .nap-node-chat { right: 20px; }
+  .nap-center-companion { transform: scale(.85); }
+}
+/* Ebben a blokkban nincs végtelen animáció (a Titán-kori kavics-hurkok az anyaggal együtt
+   megszűntek), ezért a csökkentett-mozgás ág csak az egyetlen átmenetet vezeti ki. */
+@media (prefers-reduced-motion: reduce) { .nap-center-art { transition: none; } }
 .nap-center-node:disabled { opacity: .5; cursor: wait; }
-.nap-center-read-error { color: var(--text-muted); font-size: 12px; padding: 0 8px; }
-.nap-center-read-error button { color: var(--lav); padding: 8px; }
+.nap-center-read-error { color: var(--sub); font-size: 12px; padding: 0 8px; }
+.nap-center-read-error button { color: var(--mz-cell-lav-ink); padding: 8px; font-weight: 600; }

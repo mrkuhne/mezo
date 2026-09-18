@@ -39,8 +39,15 @@ const RETIRED_DESIGN_20 = [
  *  marad. A csempe-komponens így gazdátlan lett — visszahozni csak tudatos döntésként szabad. */
 const RETIRED_TITANIUM = ['LifeGoalTodayTile.tsx']
 
+/** Visszaöltöztetés (mezo-ju4j6.10): a Titán-kori jelenlét-jel és az ÉLŐ three.js jelenete.
+ *  A Nap/Mai középpontján ma az agyag Mezo-szimbólum áll (`NapCompanion.tsx`) — ez egyben a
+ *  Boop-avatar foglalt helye. A `TitanScene` volt a fa EGYETLEN three.js-fogyasztója, ezért a
+ *  csomag is kikerült a `package.json`-ból: ha valaki visszahozza a fájlt, a hiányzó függőség
+ *  azonnal megbuktatja a buildet — ez a teszt viszont hamarabb és beszédesebben szól. */
+const RETIRED_VISSZAOLTOZTETES = ['TitanCompanion.tsx', 'TitanScene.tsx']
+
 describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
-  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM])('%s nincs a fában', (file) => {
+  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM, ...RETIRED_VISSZAOLTOZTETES])('%s nincs a fában', (file) => {
     expect(readdirSync(DIR)).not.toContain(file)
   })
 
@@ -50,10 +57,10 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
       'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx',
       'DailyQuestsSheet.tsx', 'EletjelStrip.tsx',
       // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája.
-      'MezoMessagesSheet.tsx', 'NapFuelGraphic.tsx', 'NapPersonalInsight.tsx', 'ObservationCard.tsx',
-      // Titánium Nap/Mai (mezo-mhum) — a nyitóoldal társ-jelenléte és (Task 7) az élő,
-      // lusta chunkban érkező Three.js jelenete.
-      'TitanCompanion.tsx', 'TitanScene.tsx',
+      // Visszaöltöztetés (mezo-ju4j6.10): a nyitóoldal jelenlét-jele — agyag Mezo-szimbólum
+      // a szükséglet-színek haloja előtt, a Boop-avatar foglalt helyén.
+      'MezoMessagesSheet.tsx', 'NapCompanion.tsx', 'NapFuelGraphic.tsx',
+      'NapPersonalInsight.tsx', 'ObservationCard.tsx',
     ])
   })
 })

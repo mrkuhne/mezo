@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { MacroSet } from '@/data/types'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import '@/features/today/components/NapFuelGraphic.css'
 
 interface NapFuelGraphicProps {
@@ -11,11 +12,16 @@ interface NapFuelGraphicProps {
   onRetry?: () => void
 }
 
+// A makró ARCA EGY helyen dől el az egész appban (owner 2026-09-18): ugyanaz a szín és
+// ugyanaz az agyag szimbólum, amit a Fuel oldal gyűrűi viselnek (`FuelMacroRings`) — fehérje
+// hús, szénhidrát gabona, zsír avokádó, a `--macro-*` sávon. Korábban itt a Nap saját
+// kék/arany/lila készlete állt elmosódott „kavicsokkal", és ugyanaz a mennyiség két lapon
+// két arcot viselt. A hue itt jelentés, nem bőr: egy makró egy szín, mindenhol.
 const macros = [
-  { key: 'p', label: 'Fehérje', goalName: 'fehérjecél', color: 'var(--dv-sky)', radius: 115 },
-  { key: 'c', label: 'Szénhidrát', goalName: 'szénhidrátcél', color: 'var(--dv-amber)', radius: 94 },
-  { key: 'f', label: 'Zsír', goalName: 'zsírcél', color: 'var(--dv-lav)', radius: 73 },
-] as const
+  { key: 'p', label: 'Fehérje', goalName: 'fehérjecél', color: 'var(--macro-protein)', icon: 'i-hus', radius: 115 },
+  { key: 'c', label: 'Szénhidrát', goalName: 'szénhidrátcél', color: 'var(--macro-carbs)', icon: 'i-gabona', radius: 94 },
+  { key: 'f', label: 'Zsír', goalName: 'zsírcél', color: 'var(--macro-fat)', icon: 'i-avokado', radius: 73 },
+] as const satisfies readonly { key: string; label: string; goalName: string; color: string; icon: ClayIconName; radius: number }[]
 const format = (value: number) => new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 1, useGrouping: true }).format(value).replace(/\u00a0/g, ' ')
 const amount = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0
 const hasGoal = (value: number) => Number.isFinite(value) && value > 0
@@ -67,7 +73,7 @@ export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry 
           <div className="nap-fuel-remaining">{energyGoal ? `${format(Math.abs(energyRemaining))} kcal a napi keret${energyRemaining < 0 ? ' felett' : 'ig'}` : 'A napi energiakeret még nincs beállítva'}</div>
         </div>
         <div className="nap-fuel-choices">{macros.map(macro => <button type="button" key={macro.key} className="nap-fuel-macro" aria-pressed={active === macro.key} style={{ '--fuel-color': macro.color } as CSSProperties} onClick={() => setActive(macro.key)}>
-          <i className="nap-fuel-bead" aria-hidden="true" />
+          <i className="nap-fuel-bead" aria-hidden="true"><ClayIcon name={macro.icon} size={30} /></i>
           <span>{macro.label}</span><strong>{format(amount(consumed[macro.key]))} g</strong>
           <small>{hasGoal(targets[macro.key]) ? `/ ${format(targets[macro.key])} g cél` : 'Nincs beállított cél'}</small>
         </button>)}</div>

@@ -3,10 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useObservations, useObservationReply } from '@/data/hooks'
 import type { Observation, ObservationChoice } from '@/data/types'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { ClayIcon } from '@/shared/ui/clay'
 import '@/features/today/components/NapPersonalInsight.css'
 
+/** A kártya jele (visszaöltöztetés, mezo-ju4j6.10): agyag kristály — az észrevétel
+ *  szimbóluma a ház saját készletéből. A Titán-kori forgó pálya-rajz (három maszkolt
+ *  gyűrű + izzó mag) a helyével együtt megmarad, csak az anyaga lett a régi világé. */
 function InsightArt() {
-  return <div className="nap-personal-art" aria-hidden="true"><i /><i /><i /><b /></div>
+  return <div className="nap-personal-art" aria-hidden="true"><ClayIcon name="i-kristaly" size={64} /></div>
 }
 
 function InsightContent({ item }: { item: Observation }) {
