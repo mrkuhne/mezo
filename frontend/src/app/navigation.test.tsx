@@ -275,13 +275,15 @@ test('the tab bar and the FAB hide on the full-screen sport log flow (mezo-88iwa
 })
 
 
-test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {
+// mezo-d20.1.2 óta a clay <symbol> defek egyetlen példányban élnek; mezo-ju4j6.3-ban ez a
+// példány FELJEBB költözött az AppLayoutból a gyökérbe (main.tsx), mert az indító-képernyő
+// is agyag-jelet visel, és az MINDKÉT shell fölött él. A `<use>`-ok ugyanúgy feloldódnak,
+// és a duplikált id veszélye pont az, ami ellen ez a teszt véd: ha valaki visszatenné a
+// saját példányát a shellbe, a gyökérbeli mellett KÉT `#i-nap` lenne a dokumentumban.
+test('a shell NEM mountol saját clay sprite-példányt (mezo-ju4j6.3)', () => {
   renderApp('/today')
-  expect(document.querySelector('symbol#i-nap')).not.toBeNull()
-  expect(document.querySelector('symbol#s-orb')).not.toBeNull()
-  // Mounted exactly once — a shared gradient def from the icon sprite must not duplicate
-  // (Titanium redraw, mezo-ve03: the ramp is #ig-titanium now, not the old #ig-orb).
-  expect(document.querySelectorAll('#ig-titanium')).toHaveLength(1)
+  expect(document.querySelectorAll('symbol#i-nap')).toHaveLength(0)
+  expect(document.querySelectorAll('symbol#s-orb')).toHaveLength(0)
 })
 
 // --- Design 2.0 shell (mezo-d20.1.1): /nap + /mezo routes, legacy redirects, floating FAB ---

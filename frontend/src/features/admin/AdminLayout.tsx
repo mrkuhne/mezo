@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
 import { AdminRail } from '@/features/admin/AdminRail'
-import { ClaySprites } from '@/shared/ui/clay'
 import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
@@ -14,11 +13,11 @@ import { emitToast } from '@/shared/lib/toastBus'
 // QuickLogFab/AppHeader/CircadianTheme/LevelUpProvider/TutorialProvider/MezoThreadProvider —
 // those are the phone-shell's furniture, and the admin surface is a desktop mosaic instead.
 //
-// Three things AppLayout gets for free that this layout must supply itself, because all three
-// are mounted ONLY by AppLayout today and the two route trees are mutually exclusive (never both
-// mounted at once, so no duplicate-DOM-id/duplicate-context risk):
-//  - <ClaySprites/> — the only mount point for the clay <symbol> defs; every ClayIcon's
-//    <use> resolves against it, so AdminRail's icons would render empty boxes without it.
+// Two things AppLayout gets for free that this layout must supply itself, because both are
+// mounted ONLY by AppLayout today and the two route trees are mutually exclusive (never both
+// mounted at once, so no duplicate-context risk). (The clay <symbol> defs USED to be a third:
+// mezo-ju4j6.3 hoisted <ClaySprites/> to main.tsx, above both shells AND the indító-képernyő,
+// so both trees now inherit one shared mount.)
 //  - <ToastProvider/> — useToast() itself works providerless (falls back to the toastBus),
 //    but nothing RENDERS a toast without a host mounted somewhere above the caller.
 //  - <ArrivalProvider/> (Task 20, mezo-d5iy.20) — without it every `useArrival()`/
@@ -70,7 +69,6 @@ function AdminLayoutInner() {
 
   return (
     <div className="ad-shell">
-      <ClaySprites />
       <AdminRail />
       <main className="ad-main">
         {/* Tab-level boundary, matching AppLayout's: a crashed admin page degrades to a

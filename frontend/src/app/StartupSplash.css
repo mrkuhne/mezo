@@ -1,3 +1,9 @@
+/* Indító-képernyő (mezo-qducz; visszaöltöztetve mezo-ju4j6.3).
+   A Titán változat egy WebGL jelenetet tett hideg grafit vászonra, bloom-maszkkal és
+   három fényvillanással. A visszaállított világ hőse a HALO-SÁV (style bible §2.2 C):
+   keret és árnyék nélküli, középre igazított légkör, benne az agyag-gömb és a szó-logó.
+   Se kártya, se keret, se hideg felület — a vászon a ház saját lapja mindkét témában. */
+
 .startup-content { display: contents; }
 
 .startup-stage {
@@ -11,60 +17,58 @@
   inset: 0;
   z-index: 40;
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
   overflow: hidden;
   background: var(--surface-page);
   touch-action: none;
   overscroll-behavior: none;
 }
 
+/* A halo a jel MÖGÖTT ül, nála bőven nagyobb sugárral: ez adja a „fény, nem doboz"
+   hatást. FIGYELEM a dobozméretre: a `--halo-amber` ellipszise a saját doboza 30%-ánál
+   ül és 55%-nál ér átlátszóba — ha a doboz csak kicsit nagyobb a jelnél, a felső éle
+   ott vágja el a gradienst, ahol az még látható, és a „fény" egyenes vonalú sávvá válik
+   (első mérés, mezo-ju4j6.3). A doboz ezért a jel két és félszerese: így a fakulás
+   bőven a szélen BELÜL fejeződik be, és nincs mit elvágni. */
 .startup-splash__mark {
   position: relative;
-  width: min(86%, 360px, 72dvh);
+  display: grid;
+  place-items: center;
+  width: min(72vw, 260px);
   aspect-ratio: 1;
 }
-
-.startup-splash__light { width: 100%; height: 100%; }
-.startup-stage[data-ready="false"] .startup-splash__mark { visibility: hidden; }
-
 .startup-splash__mark::before {
   content: '';
   position: absolute;
-  inset: 5%;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent-base) 12%, transparent), transparent 68%);
+  inset: -75%;
+  background: var(--halo-amber);
+}
+.startup-splash__mark > svg { position: relative; }
+
+.startup-splash__wordmark {
+  font-family: var(--ff-display), system-ui, sans-serif;
+  font-size: 34px; font-weight: 700; letter-spacing: -0.045em; line-height: 1;
+  color: var(--text-primary);
 }
 
-.startup-splash .titan-artwork { display: block; width: 100%; height: 100%; }
-.startup-splash .titan-scene {
-  border-radius: 0;
-  /* Bloom's dark render-target edges must dissolve into both theme canvases. */
-  mask-image: radial-gradient(ellipse at center, #000 42%, transparent 72%);
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 42%, transparent 72%);
-}
-/* The intro owns its pulse and flashes; the SVG must not add its own glow loop. */
-.startup-splash .titan-form,
-.startup-splash .titan-rings,
-.startup-splash .titan-planet,
-.startup-splash .titan-core { animation: none; }
-
+/* Egyetlen lassú lélegzet, majd kivezetés — ugyanaz a 3 másodperc, amit a komponens mér.
+   Csökkentett mozgás mellett a jel egyszerűen ott van, és a kivezetés is elmarad. */
 @media (prefers-reduced-motion: no-preference) {
-  .startup-stage[data-ready="true"] { animation: startup-reveal 300ms ease-out 2700ms both; }
-  .startup-stage[data-ready="true"] .startup-splash__mark { animation: startup-pulse 3s cubic-bezier(.4, 0, .2, 1) both; }
-  .startup-stage[data-ready="true"] .startup-splash__light { animation: startup-flashes 3s linear both; }
+  .startup-stage { animation: startup-reveal 300ms ease-out 2700ms both; }
+  .startup-splash__mark { animation: startup-breath 3s cubic-bezier(.4, 0, .2, 1) both; }
+  .startup-splash__wordmark { animation: startup-rise 600ms cubic-bezier(.2, .7, .3, 1) 200ms both; }
 }
 
-@keyframes startup-pulse {
-  0%, 100% { transform: scale(.96); }
-  48% { transform: scale(1.08); }
+@keyframes startup-breath {
+  0%, 100% { transform: scale(.94); }
+  48% { transform: scale(1.04); }
 }
 
-/* Three separate light accents inside ONE slow breath: quick rise, softer decay. */
-@keyframes startup-flashes {
-  0%, 10%, 30%, 40%, 59%, 72%, 94%, 100% { filter: brightness(1); }
-  16% { filter: brightness(1.9); }
-  46% { filter: brightness(1.65); }
-  78% { filter: brightness(2.1); }
+@keyframes startup-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes startup-reveal {

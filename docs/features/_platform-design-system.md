@@ -1,8 +1,8 @@
 ---
-title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
+title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-17
+updated: 2026-09-18
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -15,7 +15,20 @@ key_files:
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
 
-# Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0) — Feature Documentation
+# Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
+
+> ## ⚠️ 2026-09-17 — design direction reversal (owner decision, epic `mezo-ju4j6`)
+>
+> The **Titanium** skin (dark liquid metal, ~2026-09-09 → 2026-09-17) was **rejected**. The living
+> visual language is again **Mozaik 2.0 / Clay** — see
+> [`docs/design_2.0/README.md`](../design_2.0/README.md) and the
+> [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md) it points at.
+> **Functionality shipped during the Titanium period is kept in full**; only the skin is rolled
+> back, forward-fix, one area per bead. **This ledger is therefore mid-rollback:** sections
+> describing Titanium classes, tokens, icon art and the `.titan-dark` shell scope record what is
+> *currently on screen*, not what to build. Never design from them — design from the style bible.
+> Each re-dress bead rewrites its own subsection as it lands; `mezo-ju4j6.16` closes the sweep.
+
 
 > **One-line:** mezo's mobile-first visual foundation — a single CSS-token vocabulary, the shared React primitives every screen composes, and the app shell they render on. **Status: ✅ done.** It is _platform-level_ (the `_` prefix): no route or tab of its own, living under `frontend/src/styles/`, `frontend/src/shared/ui/` and `frontend/src/app/`, consumed by all five tabs. **Since the Design 2.0 redesign (`mezo-d20`, 2026-08-29) the app's visual language is [Mozaik 2.0](../decisions/0033-mozaik-2-tile-language.md)** — a two-column mosaic of washed tiles carrying clay 3D SVG icons, with a one-shot entrance choreography and then calm. It replaces the Today-only iOS list language ([ADR 0026](../decisions/0026-today-ios-list-language.md)) **app-wide**, closing the two-row-language divergence that ADR named and tracked (`mezo-jaoy`). The IA it paints on is [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md): five domains (Nap · Edzés · Fuel · Mezo · Én), a contextual docked bar, a separate quick-log FAB, and no section shells. **Everything below §3 is a layered ledger, oldest first** — several of its families are now retired, and each such subsection says so in its own first line. The current language is §3's last subsection, *Mozaik 2.0*.
 

@@ -3,7 +3,12 @@
 // The sprite SVGs are VERBATIM copies of docs/design_2.0/assets/
 // clay-icons.svg + clay-spots.svg (1:1 fidelity contract). Never
 // edit them here — new art lands in the design_2.0 sprites first,
-// then gets re-copied. ClaySprites mounts the <symbol> defs once
+// then gets re-copied.
+// Visszaöltöztetés (mezo-ju4j6.3): the Titanium redraw (d302e941f) is rolled
+// back. The 54 pre-Titanium symbols + all 24 spots come verbatim from
+// docs/design_2.0/assets/restored-world/clay-{icons,spots}-pre-titanium.svg;
+// the 13 Titanium-era names (Fuel fülsor, makrók, értékelés-dimenziók,
+// vércukor, ⓘ) are redrawn in the clay material per the style bible §6.1. ClaySprites mounts the <symbol> defs once
 // (AppLayout); ClayIcon/ClaySpot render <use> references.
 // ============================================================
 import { memo } from 'react'

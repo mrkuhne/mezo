@@ -47,9 +47,17 @@ public class MemoryContextBlock {
     /**
      * Renders the {@code [Hosszú távú memória]} block for one non-chat consumer, or {@link
      * Rendered#EMPTY} when the query is blank, the policy is disabled, or retrieval fails for any
-     * reason. Wraps the retrieval in an {@link LlmCallContext} so the embedding/rewrite/rerank
-     * calls this triggers are billed to the CALLING surface ({@code feature}/{@code
-     * operation}_memory), not to a generic "memory" bucket.
+     * reason. Wraps the retrieval in an {@link LlmCallContext} of {@code feature}/{@code
+     * operation}_memory, so the surface's own retrieval is identifiable in the audit.
+     *
+     * <p>Correction (bd mezo-1qfzu): this javadoc used to claim the wrapped context makes the
+     * embedding, rewrite and rerank calls bill to the CALLING surface. It does not, and never did.
+     * {@link LlmMemoryQueryRewriter} and {@link MemoryQueryEmbedder} each deliberately stamp their
+     * OWN label ({@code companion_recall/query_rewrite}, {@code companion_recall/recall_embed})
+     * rather than inherit the ambient one — inheriting would re-file existing traffic and corrupt
+     * the shipped cost matrix. Retrieval-side provider cost therefore lands under
+     * {@code companion_recall} for every surface; only the run row itself carries the surface.
+     * Per-surface retrieval cost, if it is ever wanted, is a separate piece of work.
      *
      * @param feature   the calling surface's LLM billing feature (e.g. {@code proactive_feed})
      * @param operation the calling surface's operation label — the persisted label becomes

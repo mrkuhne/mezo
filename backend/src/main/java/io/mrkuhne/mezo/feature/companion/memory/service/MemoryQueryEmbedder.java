@@ -48,6 +48,12 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MemoryQueryEmbedder {
 
+    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String OPERATION = "recall_embed";
+
+    private static final LlmCallContext CALL_CONTEXT =
+            new LlmCallContext(FEATURE_COMPANION_RECALL, OPERATION, null, null);
+
     private final EmbeddingPort embeddingPort;
     private final MemoryPlatformProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -69,17 +75,13 @@ public class MemoryQueryEmbedder {
         long budgetMs = properties.execution().queryEmbeddingTimeoutMs();
         // Both LLM breadcrumb ThreadLocals are plain, so the pool thread would see neither the
         // actor nor the feature. Capture them HERE and re-bind them inside the task, exactly as
-        // MemoryContextService does for the retrievers (mezo-4qyt / mezo-ozri.7) — the ACTOR widens
+        // MemoryContextService does for the retrievers (mezo-4qyt / mezo-ozri.7). The ACTOR widens
         // to every caller so the embed books against the right user and its per-user cap can see
-        // it, while the CONTEXT label stays replay-only so the shipped cost matrix is not
-        // retroactively re-filed under a different feature.
+        // it; the LABEL is this class's own, never the ambient one — see callContext().
         UUID actor = LlmActorContext.capture();
-        LlmCallContext ambient = llmCallContextHolder.get();
-        LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
+        LlmCallContext label = callContext();
         Supplier<float[]> work = () -> embeddingPort.embedQuery(denseQuery);
-        Supplier<float[]> labelled = propagated == null
-                ? work
-                : () -> llmCallContextHolder.runWith(propagated, work);
+        Supplier<float[]> labelled = () -> llmCallContextHolder.runWith(label, work);
         Future<float[]> future;
         try {
             future = applicationTaskExecutor.submit(() -> LlmActorContext.runAsCaptured(actor, labelled));
@@ -102,5 +104,32 @@ public class MemoryQueryEmbedder {
             log.warn("Query embedding failed; dense recall is skipped", cause);
         }
         return Optional.empty();
+    }
+
+    /**
+     * {@code companion_recall/recall_embed} for every caller EXCEPT the admin explorer's dry-run
+     * replay (mezo-4qyt), which re-labels this call to its own feature so one replay's total cost
+     * is priceable in the admin cost matrix. Deliberately the SAME shape as
+     * {@link LlmMemoryQueryRewriter}'s, and deliberately the same label the legacy recall path
+     * already used, so the OLD → NEW serving-mode cutover does not split this traffic across two
+     * feature buckets.
+     *
+     * <p>Why not simply inherit the ambient feature: {@code LlmCallContextHolder.runWith}
+     * save-and-restores, so a chat turn's ambient {@code companion_chat} is live on this thread
+     * too — inheriting it would silently move EVERY chat recall embed out of
+     * {@code companion_recall} and corrupt the shipped cost matrix. This call site shipped
+     * unlabelled (bd mezo-1qfzu: it logged as {@code unknown}, which is how a paid provider call
+     * stayed invisible in the cost report); giving it its own label creates attribution where
+     * there was none rather than re-filing anything that already exists.
+     *
+     * <p>Consequence worth knowing: a Part-B surface reaching retrieval through
+     * {@link MemoryContextBlock} books its embed here, not under the calling surface. Per-surface
+     * retrieval cost is a separate question from per-surface answer cost.
+     */
+    private LlmCallContext callContext() {
+        LlmCallContext ambient = llmCallContextHolder.get();
+        return ambient.isAdminReplay()
+                ? new LlmCallContext(ambient.feature(), OPERATION, null, null)
+                : CALL_CONTEXT;
     }
 }

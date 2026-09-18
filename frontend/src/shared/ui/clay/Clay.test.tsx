@@ -2,11 +2,26 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (66 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
-// Titanium redraw (mezo-titanium-icons): the whole set was re-authored in the Titanium
-// material language — a brushed-titanium base gradient (ig-titanium/sg-titanium) plus a domain
-// accent — replacing the earlier warm-clay ramps. The existing NAMES are unchanged so every
-// call site and mapping table keeps compiling; the set only ever GROWS (66 i-* + 24 s-*).
+// (67 symbols) + clay-spots.svg (24 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+//
+// Visszaöltöztetés (mezo-ju4j6.3): the Titanium redraw (mezo-titanium-icons, d302e941f) is
+// ROLLED BACK. The 54 symbols that existed before it are restored verbatim from
+// docs/design_2.0/assets/restored-world/clay-icons-pre-titanium.svg; the 13 that were born
+// during the Titanium period (Fuel fülsor, makró-identitás, értékelés-dimenziók,
+// vércukor-válasz, ⓘ) are REDRAWN in the clay material per the style bible §6.1 recipe —
+// their names, subjects and call sites are unchanged, only the material. The set still only
+// ever grows (67 i-* + 24 s-*): nothing was dropped, so no call site can break.
+//
+// The clay recipe, and what this file guards:
+//   viewBox 0 0 100 100 · per-object named gradient (ig-*/sg-*) · one white specular ellipse
+//   · NO brushed-titanium base ramp, NO ig-shadow drop filter.
+
+/** Every symbol name a consumer can ask for, per the exported union in index.tsx. */
+const RESTORED_TITANIUM_ERA = [
+  'i-tanyer', 'i-kiegeszito', 'i-trend', 'i-fazek',
+  'i-hus', 'i-gabona', 'i-avokado', 'i-noveny',
+  'i-makro', 'i-mikro', 'i-feldolgozas', 'i-vercukor', 'i-info',
+] as const
 
 test('ClaySprites mounts all 67 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
@@ -14,82 +29,63 @@ test('ClaySprites mounts all 67 icon symbols and 24 spot symbols', () => {
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
 })
 
-// Fuel Titanium S1a (mezo-33k6): az owner rögzített makró-identitása — hús/gabona/avokádó/növény
-// a Mai hero gyűrűsorához. Ugyanaz a titánium recept: 64-es viewBox, titánium alap + EGY akcentus
-// a zárt ig-* palettáról, tompított árnyék. Új gradiens nem született.
-test('a négy makró-ikon a sprite-ban van, a titánium recept szerint', () => {
+// The kill-list itself (spec §Kill-list): the Titanium material must be GONE from the sprite,
+// not merely unused by the 13 redraws — a partial merge that left the old defs behind would
+// keep every restored symbol rendering in brushed metal.
+test('the Titanium material is gone from the sprite — no metal ramp, no drop-shadow filter', () => {
   render(<ClaySprites />)
-  for (const id of ['i-hus', 'i-gabona', 'i-avokado', 'i-noveny']) {
-    const sym = document.querySelector(`#${id}`)
-    expect(sym, `${id} hiányzik`).not.toBeNull()
-    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
-    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
-    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
+  expect(document.querySelector('#ig-titanium')).toBeNull()
+  expect(document.querySelector('#ig-shadow')).toBeNull()
+  expect(document.querySelector('#sg-titanium')).toBeNull()
+  expect(document.querySelector('#sg-shadow')).toBeNull()
+})
+
+test('every symbol is authored at the clay viewBox — ClayIcon/ClaySpot render 0 0 100 100', () => {
+  render(<ClaySprites />)
+  for (const sym of document.querySelectorAll('symbol[id^="i-"], symbol[id^="s-"]')) {
+    expect(sym.getAttribute('viewBox'), `${sym.id} viewBox`).toBe('0 0 100 100')
   }
 })
 
-// Fuel Titanium (mezo-o6uv): a Fuel fülsor négy saját szimbóluma — tányér, kiegészítő-tégely,
-// trend-tábla, fazék. A készlet szabálya szerint titánium alap + domén-akcentus.
-test('a négy Fuel-fül ikon a sprite-ban van, a titánium recept szerint', () => {
+// The 13 Titanium-era symbols had no pre-Titanium ancestor, so they are the ONLY ones this
+// task hand-drew — and therefore the only ones that could silently keep a Titanium tell.
+test.each(RESTORED_TITANIUM_ERA)('%s is redrawn in the clay material', id => {
   render(<ClaySprites />)
-  for (const id of ['i-tanyer', 'i-kiegeszito', 'i-trend', 'i-fazek']) {
-    const sym = document.querySelector(`#${id}`)
-    expect(sym, `${id} hiányzik`).not.toBeNull()
-    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
-    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
-    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
-  }
+  const sym = document.querySelector(`#${id}`)
+  expect(sym, `${id} hiányzik`).not.toBeNull()
+  expect(sym!.innerHTML).not.toContain('ig-titanium')
+  expect(sym!.innerHTML).not.toContain('ig-shadow')
+  // the upper-left specular is what makes a clay object read as lit volume (§6.1)
+  expect(sym!.querySelector('ellipse[fill^="rgba(255,255,255"]'), `${id} specular`).not.toBeNull()
 })
 
-// Fuel Titanium S1b (mezo-33k6): az AI értékelés három dimenziója saját szimbólumot kapott —
-// makró-tányér, mikro-molekula, feldolgozottság-tölcsér. Ugyanaz a titánium recept, új
-// gradiens NEM született (a paletta zárt).
-test('a három értékelés-dimenzió ikon a sprite-ban van, a titánium recept szerint', () => {
-  render(<ClaySprites />)
-  for (const id of ['i-makro', 'i-mikro', 'i-feldolgozas']) {
-    const sym = document.querySelector(`#${id}`)
-    expect(sym, `${id} hiányzik`).not.toBeNull()
-    expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
-    expect(sym!.innerHTML).toContain('url(#ig-titanium)')
-    expect(sym!.innerHTML).toContain('url(#ig-shadow)')
-  }
+// The palette is closed: a redraw may only reach for gradients the sprite actually defines.
+test('no symbol references a gradient the sprite does not define', () => {
+  const { container } = render(<ClaySprites />)
+  const defined = new Set(Array.from(container.querySelectorAll('[id^="ig-"], [id^="sg-"]'), n => n.id))
+  const referenced = new Set(
+    Array.from(container.innerHTML.matchAll(/url\(#((?:ig|sg)-[a-z0-9-]+)\)/g), m => m[1]),
+  )
+  expect([...referenced].filter(g => !defined.has(g))).toEqual([])
 })
 
-// Fuel · vércukor-válasz (mezo-6mi43): a negyedik Minőség-kártya saját szimbóluma — a
-// prototípus „domb" metaforája: alapszint-tengely, rajta a kék válasz-görbe és egy arany
-// csúcs-kavics. Titánium alap + zárt palettás akcentusok, új gradiens NEM született.
-test('a vércukor-válasz ikon a sprite-ban van, a titánium recept szerint', () => {
-  render(<ClaySprites />)
-  const sym = document.querySelector('#i-vercukor')
-  expect(sym, 'i-vercukor hiányzik').not.toBeNull()
-  expect(sym!.getAttribute('viewBox')).toBe('0 0 64 64')
-  expect(sym!.innerHTML).toContain('url(#ig-titanium)')
-  expect(sym!.innerHTML).toContain('url(#ig-shadow)')
-  // a paletta zárt: csak a meglévő ig-* rámpákat használja
-  for (const grad of sym!.innerHTML.matchAll(/url\(#(ig-[a-z]+)\)/g)) {
-    expect(['ig-titanium', 'ig-blue', 'ig-gold', 'ig-purple', 'ig-lime', 'ig-rose', 'ig-shadow'])
-      .toContain(grad[1])
-  }
-})
-
-// mezo-8az6: a fejléc szekció-spotjaihoz a Fuel és az Én darabja hiányzott a készletből.
-test('a két új szekció-spot a sprite-ban van, a clay recept szerint', () => {
+// mezo-8az6: a fejléc szekció-spotjaihoz a Fuel és az Én darabja kell.
+test('a két szekció-spot a sprite-ban van, a clay recept szerint', () => {
   render(<ClaySprites />)
   for (const id of ['s-fuel', 's-en']) {
     const sym = document.querySelector(`#${id}`)
     expect(sym, `${id} hiányzik`).not.toBeNull()
-    expect(sym!.getAttribute('viewBox')).toBe('0 0 100 100')
     // minden spot alján tompított árnyék-ellipszis ül
     expect(sym!.querySelector('ellipse')).not.toBeNull()
   }
 })
 
-test('sprite gradients are copied verbatim — the titanium ramp keeps its exact stops', () => {
+test('sprite gradients are copied verbatim — the sun ramp keeps its exact stops', () => {
   render(<ClaySprites />)
-  const ti = document.querySelector('#ig-titanium')
-  expect(ti).not.toBeNull()
-  const stops = Array.from(ti!.querySelectorAll('stop')).map(s => s.getAttribute('stop-color'))
-  expect(stops).toEqual(['#e9e4f6', '#8e8a9e', '#282b39', '#62697d', '#c9c7d8', '#393647'])
+  const sun = document.querySelector('#ig-sun')
+  expect(sun).not.toBeNull()
+  const stops = Array.from(sun!.querySelectorAll('stop')).map(s => s.getAttribute('stop-color'))
+  expect(stops).toEqual(['#FFEDB8', '#F0B429', '#B57E14'])
 })
 
 test('ClayIcon renders an aria-hidden svg with a use ref to the requested symbol', () => {

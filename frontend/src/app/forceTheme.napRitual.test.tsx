@@ -1,12 +1,17 @@
 // ============================================================
 // Mezo · Regresszió: /nap → /ritual, világos beállítás mellett (mezo-mhum javítóhullám).
 //
-// A Titán Nap shell (AppLayout) és a Napzárás rituálé (RitualPage) EGYSZERRE tartja a sötét
-// témát. A régi, egyszemélyes `setForceTheme` kapcsolóval a hatások gyerek-először futottak: a
-// rituálé sötétre váltott, majd az AppLayout hatásának újrafutása (titan-dark igaz→hamis) UTOLSÓ
-// lépésként törölte a kapcsolót — így a sötétre tervezett rituálé VILÁGOS tokenekkel rajzolódott
-// annál, aki világos témát állított be. Ez a teszt VALÓDI AppLayout + VALÓDI RitualPage mellett,
-// kipeckelt `light` beállítással figyeli, hogy a /ritual sötét marad.
+// A Napzárás rituálé (RitualPage) sötétre tervezett felület, és a `useForceTheme`-mel maga
+// kéri a sötét témát — a felhasználó világos beállítása FÖLÖTT is. Eredetileg (mezo-mhum
+// javítóhullám) azért kellett ez a regresszió, mert a Titán Nap shell EGYSZERRE tartott egy
+// második igényt ugyanazon a kapcsolón, és a két hatás sorrendje kiütötte a rituáléét.
+//
+// Visszaöltöztetés (mezo-ju4j6.3): a shell igénye MEGSZŰNT (nincs több kényszerített sötét
+// útvonal), tehát a rituálé maradt az EGYETLEN igénylő. Ez nem teszi feleslegessé a tesztet,
+// sőt: a többigénylős `useForceTheme` így már csak itt van használatban, és pont ez az a
+// helyzet, amiben egy „egyszerűsítsük vissza egyszemélyes kapcsolóra" változtatás észrevétlenül
+// átmenne. A teszt VALÓDI AppLayout + VALÓDI RitualPage mellett figyeli, hogy a /ritual sötét
+// marad, a rajta kívüli útvonalak pedig világosak.
 // ============================================================
 import { act, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
@@ -49,8 +54,8 @@ afterEach(() => {
 test('a /nap felől érkező Napzárás rituálé sötét marad világos beállítás mellett is', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  // A Titán Nap maga is sötétet kényszerít — ez az igény marad „alul".
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  // A shellnek már NINCS saját sötét igénye: a Nap a beállított világos témán indul.
+  expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 
   await act(async () => { await router.navigate('/ritual') })
 
@@ -58,9 +63,7 @@ test('a /nap felől érkező Napzárás rituálé sötét marad világos beáll�
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
-// mezo-88iwa.5 (Train Titanium T4) óta a /train IS a titan-dark hatókörbe tartozik — a
-// kontroll-útvonal ezért a hatókörön kívüli /me lett (a lényeg változatlan: VALAMELYIK
-// nem-titan-dark útvonalon a világos beállítás visszatér).
+// A kontroll-útvonal a /me: a rituáléból kilépve a felhasználó saját beállítása tér vissza.
 test('a rituáléból kilépve a világos beállítás visszatér (a /me nem sötét)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)

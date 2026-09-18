@@ -18,6 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,9 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
  * snapshot; the [fake-weekly:…] sentinel (planted via a check-in note → snapshot) scripts the
  * prose; empty prior week or blank answer ⇒ NO row (honest absence). The smart tier is used —
  * the fake's completeSmart default delegates to complete, so the marker dispatch covers both.
+ *
+ * <p>Memória mindenhol S8 (mezo-eq85.8): the {@code WEEKLY_MEMOIR} policy is switched OFF here
+ * (this class asserts nothing about the memory block) — same {@code CompanionMessageGeneratorIT}
+ * rationale: this class is {@code @Transactional}, so a real retrieval's retriever tasks would
+ * fight the single test connection for the pool. {@code WeeklySuggestionGeneratorMemoryIT} (not
+ * class-transactional) is what actually covers the memory-block path.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = "mezo.companion.memory-platform.policies.weekly-memoir.enabled=false")
 class WeeklySuggestionGeneratorIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEEK_START =

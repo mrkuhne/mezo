@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
@@ -21,6 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +63,21 @@ public class WeeklySuggestionGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final GrowthDigestBlock growthDigestBlock;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S8 (mezo-eq85.8): same lazy idiom as the [Karakter] dossier's
+     *  {@code ObjectProvider} in the other two generators — see {@code MemoirGenerator
+     *  #memoryContextBlock}'s javadoc for the rationale. This generator has NO candidate/anchor
+     *  list at all, so unlike the other two Task-8 surfaces it contributes no refs — only the
+     *  rendered block text. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+
+    /** mezo-eq85.8 fix round 2: this generator's own LLM-call feature/operation, used BOTH for
+     *  the top-level {@code completeSmart} call in {@link #generate} AND (via {@link
+     *  LlmCallContext#feature()}) for the memory-retrieval audit row in {@link #memoryBlock} —
+     *  ONE constant, so the two labels cannot drift apart the way they did in fix round 1. Unlike
+     *  its two siblings, {@code proactive_weekly} is NOT on
+     *  {@code mezo.llm-log.budget.throttled-features}; the shared constant is still worth it
+     *  purely so "what did the weekly suggestion cost" can be answered by grouping on feature. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("proactive_weekly", "generate", null, null);
 
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
     @Transactional
@@ -74,8 +92,9 @@ public class WeeklySuggestionGenerator {
             log.debug("No prior-week summaries for {} before {} — no suggestion", userId, weekStart);
             return null;
         }
-        String prose = llmCallContextHolder.runWith(
-                new LlmCallContext("proactive_weekly", "generate", null, null),
+        // mezo-eq85.8 fix round 2: CONTEXT is also the memory-retrieval feature in memoryBlock —
+        // see its javadoc.
+        String prose = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Blank weekly-suggestion answer for {} week {} — no row", userId, weekStart);
@@ -103,6 +122,14 @@ public class WeeklySuggestionGenerator {
                 .map(s -> "- " + s.getSummaryDate() + ": " + s.getNarrative())
                 .collect(Collectors.joining("\n"));
         String facts = knowledgeFactService.renderPromptBlock(userId);
+        // Memória mindenhol S8 (mezo-eq85.8): the same prior-week narratives that just built
+        // `narratives` above ARE the memory query — the MemoirGenerator/WeeklyReviewGenerator
+        // idiom, applied to the ONE week of daily-summary text this generator's gather has.
+        String memoryQuery = firstChars(priorWeek.stream()
+                .map(DailySummaryEntity::getNarrative).collect(Collectors.joining(" ")), 800)
+                + "\na hét: " + weekStart;
+        MemoryContextBlock.Rendered mem =
+                memoryBlock(userId, weekStart.plusDays(6), memoryQuery, "generate", null);
         String patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
@@ -115,8 +142,33 @@ public class WeeklySuggestionGenerator {
         LocalDate ownerToday = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
         return contextSnapshotAssembler.render(userId, ownerToday)
                 + facts
+                + mem.block()
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
                 + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)
                 + growthDigestBlock.render(userId, weekStart.minusWeeks(1));
+    }
+
+    /**
+     * Memória mindenhol S8 (mezo-eq85.8): the {@code [Hosszú távú memória]} block for the
+     * suggestion's own gather — same {@code WEEKLY_MEMOIR}/{@code deep=true} contract as {@code
+     * MemoirGenerator}; see that class' {@code memoryBlock} javadoc for the fail-open rationale.
+     */
+    private MemoryContextBlock.Rendered memoryBlock(
+            UUID userId, LocalDate asOf, String query, String operation, UUID entityId) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.WEEKLY_MEMOIR, query, asOf, true,
+                CONTEXT.feature(), operation, entityId);
+    }
+
+    /** First {@code maxChars} characters of {@code text}, or the whole (possibly blank) string
+     *  when it is shorter — the memory-query truncation every Part-B surface uses. */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 }
