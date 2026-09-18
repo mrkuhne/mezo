@@ -20,10 +20,12 @@ import java.util.Optional;
  * Post-response advisor chain (old docs §4.5 retry semantics on the CompanionLlm port): clinical
  * check first (deterministic, ~0 ms), then the fabricated-action-claim backstop (also
  * deterministic, ~0 ms) — see {@link #runChecks}. Violation -> corrective re-prompt (same user
- * message, same tools, SAME audit — chips honestly reflect the whole turn) up to
- * advisors.max-retries times; a final violating answer ships degraded=true. Timing + violations
- * are logged (the roadmap's "measure!"). S9.8 (mezo-rj214.7, mezo-rj214.5) dropped the third,
- * LLM-judged check from this chain — {@link TurnVerdictCheck} explains why.
+ * message, same tools where the original round had them — chips still honestly reflect the whole
+ * turn, since the closed-over caller callbacks are the same audit whether this call is the first
+ * attempt or a retry) up to advisors.max-retries times; a final violating answer ships
+ * degraded=true. Timing + violations are logged (the roadmap's "measure!"). S9.8 (mezo-rj214.7,
+ * mezo-rj214.5) dropped the third, LLM-judged check from this chain — {@link TurnVerdictCheck}
+ * explains why.
  */
 @Slf4j
 @Component
@@ -60,8 +62,10 @@ public class CompanionAdvisorChain {
     /**
      * Post-response review, every live path's only gate since S9.8 (mezo-rj214.7, mezo-rj214.5):
      * the deterministic clinical + action-claim checks below, with a corrective re-prompt (same
-     * user message, same tools, SAME audit — chips honestly reflect the whole turn) up to
-     * advisors.max-retries times; a final violating answer ships degraded=true. Used to be two
+     * user message, same tools where the original round had them — chips still honestly reflect
+     * the whole turn via the closed-over caller callbacks, unchanged between the first attempt and
+     * a retry) up to advisors.max-retries times; a final violating answer ships degraded=true. Used
+     * to be two
      * methods — {@code review} for the tool-carrying turn and {@code reviewChat} for the tool-free
      * one, split only because the now-removed LLM verdict was skippable on a CHAT turn but not on
      * a tool-carrying one. With the verdict gone from BOTH, the split had nothing left to justify
@@ -70,7 +74,11 @@ public class CompanionAdvisorChain {
      * <p>{@code tools} is {@code null} for a tool-free turn (CHAT gear, and any turn a
      * pipeline/conversation-first round already answered without this chain's own tool loop) — the
      * corrective retry then runs the tool-free smart completion instead of the tool-carrying one,
-     * so a retry never hands out tools the original round never had.
+     * so a retry never hands out tools the original round never had. One exception, pre-existing
+     * and not fixed here: {@code ChatStreamService}'s streamed conversation-first path decides the
+     * retry's tool-freeness from {@code turn.gear()}/{@code pipe.mode()}, not from whether that
+     * turn's OWN original round actually called a tool — a non-CHAT-gear turn that conversation-first
+     * already answered tool-free can still route its retry through the tool-carrying branch below.
      */
     public AdvisedAnswer review(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
             String answer, List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -112,6 +120,10 @@ public class CompanionAdvisorChain {
         if (clinical.isPresent()) {
             return List.of(clinical.get());
         }
-        return actionClaimCheck.check(answer).map(List::of).orElseGet(List::of);
+        Optional<AdvisorViolation> actionClaim = actionClaimCheck.check(answer);
+        if (actionClaim.isPresent()) {
+            return List.of(actionClaim.get());
+        }
+        return List.of();
     }
 }

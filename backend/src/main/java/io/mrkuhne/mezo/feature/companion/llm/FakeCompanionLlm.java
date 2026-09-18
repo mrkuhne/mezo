@@ -663,7 +663,11 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  still makes exactly that LLM call on the corrective round, tool-carrying or not, so it is
      *  detected the same stateless way {@link #VIOLATE_ONCE}/{@link #ACTION_CLAIM_ONCE} detect a
      *  retry round: {@link AdvisorRetry#RETRY_MARKER} present in the prompt half that round
-     *  actually rewrites. */
+     *  actually rewrites. Note for a future author: this oracle now fires ONLY on a turn that
+     *  actually violates and retries — before S9.8 it fired on the (then-unconditional) judge call
+     *  every turn made, violating or not. Re-pointing it at a clean fixture silently loses the S9.6
+     *  actor-rebinding invariant this field exists to protect, since a clean turn never reaches the
+     *  retry round at all now. */
     private volatile UUID lastAdvisorRetryActor;
 
     public int completeCallCount() {

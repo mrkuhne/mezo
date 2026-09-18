@@ -243,11 +243,12 @@ public class ChatStreamService {
                         String finalAnswer = answer.toString();
                         boolean degraded = conversational != null && conversational.degraded();
                         CompanionAdvisorChain chain = advisorChain.getIfAvailable();
-                        // mezo-rj214.7 Task 6: a pipeline mode (LOOKUP/ANALYSIS) reviews clinical-only,
-                        // exactly like CHAT — the same branch sendMessage's own pipelined arm takes
-                        // (ChatService#sendMessage). Skipped here is the same LLM verdict pay-twice the
-                        // CHAT comment below describes: pipelineAnswer's own answering call already
-                        // graded the answer against the tool digest it was grounded in.
+                        // mezo-rj214.7 Task 6: a pipeline mode (LOOKUP/ANALYSIS) takes the same
+                        // tool-free review branch as CHAT — the same branch sendMessage's own
+                        // pipelined arm takes (ChatService#sendMessage). Both deterministic checks
+                        // (clinical + action-claim) run here since S9.8 dropped the LLM verdict from
+                        // the chain entirely (mezo-rj214.7, mezo-rj214.5); there is no verdict left to
+                        // skip or pay twice for.
                         if (chain != null
                                 && (turn.gear() == TurnGear.CHAT || pipe.mode() != PipelineResult.Mode.LEGACY)) {
                             // CHAT (and any non-LEGACY pipeline mode) already answered tool-free, so
