@@ -11122,6 +11122,45 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
 .am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
 
+/* ── boop (mezo-ju4j6.15) ────────────────────────────────────────────────
+   A kabalafigura mozdulatai. A figura példányonként INLINE SVG (lásd
+   `shared/ui/clay/boop/Boop.tsx`), ezért ezek a szabályok tényleg az EGYES példányra
+   hatnak — egy `<use>` klónnál minden figura egyszerre mozogna.
+
+   Csak az `.is-alive` példány él (ma: a Nap/Mai középpontja). A menü és a területváltó
+   Boopja nyugalomban áll: ott a figyelem a navigációé.
+
+   Három mozdulat, mind a `no-preference` ág alatt: a tekintet (a pupilla vízszintes
+   eltolása), a szemöldök (rövid felhúzás) és a lélegzet (max 2% skála a lábfejektől).
+   PISLOGÁS NINCS (owner 2026-09-18, stíluskönyv §6.4). Csökkentett mozgás mellett a
+   figura statikus — és teljes értékű. */
+.boop { display: block; }
+.boop .boop-pupil, .boop .boop-brow, .boop .boop-body { transform-box: fill-box; }
+.boop .boop-pupil, .boop .boop-brow { transform-origin: center; }
+.boop .boop-body { transform-origin: 50% 96%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .boop.is-alive .boop-pupil { animation: boop-look 9s infinite; }
+  .boop.is-alive .boop-brow { animation: boop-brow 9s infinite; }
+  .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out infinite; }
+}
+@keyframes boop-look {
+  0%, 20% { transform: translateX(0); }
+  26%, 38% { transform: translateX(-3px); }
+  46%, 58% { transform: translateX(3px); }
+  66%, 100% { transform: translateX(0); }
+}
+@keyframes boop-brow {
+  0%, 66% { transform: translateY(0); }
+  72%, 82% { transform: translateY(-1.6px); }
+  88%, 100% { transform: translateY(0); }
+}
+@keyframes boop-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.018); }
+}
+/* ── /boop ──────────────────────────────────────────────────────────────── */
+
 /* ── nap-companion (mezo-mhum · visszaöltöztetve mezo-ju4j6.10) ──────────
    A Nap/Mai jelenlét-jele. A Titán-kori jel (titán-szirmok + arany mag, mögötte élő
    WebGL-jelenet) a spec kill-listáján volt: helyén az AGYAG Mezo-szimbólum áll, mögötte

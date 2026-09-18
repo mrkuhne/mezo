@@ -1,26 +1,39 @@
 <!doctype html>
-<html lang="hu"><head><meta charset="utf-8"><title>Boop — öt változat</title>
+<html lang="hu"><head><meta charset="utf-8"><title>Boop — élő</title>
 <style>
   body { margin:0; background:#F6F0E7; font-family: system-ui; color:#2B2118; }
   h1 { font-size:20px; margin:24px 24px 4px; }
-  p.sub { margin:0 24px 20px; font-size:13px; color:#6B5B4B; }
-  .row { display:flex; gap:22px; flex-wrap:wrap; padding:0 24px 24px; align-items:flex-end; }
-  figure { margin:0; text-align:center; }
-  figcaption { font-size:12px; color:#6B5B4B; margin-top:8px; }
-  .big { width:190px; height:190px; }
-  .mid { width:110px; height:110px; }
-  .small { width:44px; height:44px; }
+  p.sub { margin:0 24px 20px; font-size:13px; color:#6B5B4B; max-width:760px; line-height:1.5; }
   .band { background:#FBF6EF; border-radius:22px; margin:0 24px 22px; padding:18px 20px;
           box-shadow: 0 17px 31px -17px rgba(43,33,24,.28), inset 0 1px 0 rgba(255,255,255,.7); }
-  .band h2 { font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:#8A5E07; margin:0 0 14px; }
-  /* Pislogás + lélegzet — a 8b-ben ugyanez a két mozdulat kerül a komponensbe. */
-  .boop-lid { transform: scaleY(0); transform-box: fill-box; transform-origin: center; }
+  .band h2 { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#8A5E07; margin:0 0 14px; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-end; }
+  figure { margin:0; text-align:center; } figcaption { font-size:12px; color:#6B5B4B; margin-top:8px; }
+  .hero { width:260px; height:260px; } .big { width:150px; height:150px; } .small { width:44px; height:44px; }
+
+  /* ===== A mozdulatok. Mind a `no-preference` ág alatt: aki kikapcsolja a mozgást,
+     annál Boop nyugodtan, nyitott szemmel áll. Egy 9s-os kör: pislog, körbenéz,
+     felhúzza a szemöldökét, és végig lélegzik. ===== */
+  .boop-pupil, .boop-brow, .boop-body { transform-box: fill-box; }
+  .boop-pupil { transform-origin: center; }
+  .boop-brow { transform-origin: center; }
+  .boop-body { transform-origin: 50% 96%; }
   @media (prefers-reduced-motion: no-preference) {
-    .live .boop-lid { animation: boop-blink 5.4s infinite; }
-    .live .boop-eye-r .boop-lid { animation-delay: .06s; }
-    .live .boop-body { animation: boop-breathe 4.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
+    .boop-pupil { animation: boop-look 9s infinite; }
+    .boop-brow  { animation: boop-brow 9s infinite; }
+    .boop-body  { animation: boop-breathe 4.2s ease-in-out infinite; }
   }
-  @keyframes boop-blink { 0%,92% { transform: scaleY(0); } 94% { transform: scaleY(1); } 96%,100% { transform: scaleY(0); } }
+  @keyframes boop-look {
+    0%, 20% { transform: translateX(0); }
+    26%, 38% { transform: translateX(-3px); }
+    46%, 58% { transform: translateX(3px); }
+    66%, 100% { transform: translateX(0); }
+  }
+  @keyframes boop-brow {
+    0%, 66% { transform: translateY(0); }
+    72%, 82% { transform: translateY(-1.6px); }
+    88%, 100% { transform: translateY(0); }
+  }
   @keyframes boop-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.018); } }
 </style></head>
 <body>
@@ -37,10 +50,11 @@
     bead szövege kért — a stíluskönyv §2.1 szerint viszont az Edzés színe korall (`boop-train`);
     a döntés a tulajdonosé, a vesztes változat törölhető.
 
-    PISLOGÁS (8b köti be): minden szem `.boop-lid` ellipszise a törzs anyagával fedi le a szemet.
-    Alapban `scaleY(0)` a szem középpontja körül, a pislogás egy rövid 0→1→0 lépés. A `.boop-ear`
-    és a `.boop-body` az alap-mozdulat (lélegzet) fogója. Mindkettőnek KELL egy csökkentett-mozgás
-    ága — a figura statikusan is teljes értékű.
+    MOZDULAT-FOGÓK (8b köti be): `.boop-pupil` = a tekintet (vízszintes eltolás, kb. ±3 egység),
+    `.boop-brow` = a szemöldök felhúzása (kb. -1.6 egység), `.boop-body` = a lélegzet (max 2%
+    skála). Mindegyik a `prefers-reduced-motion: no-preference` ág alá tartozik — a figura
+    statikusan is teljes értékű. PISLOGÁS SZÁNDÉKOSAN NINCS (owner 2026-09-18): a lecsukódó
+    szemhéj furán hatott, a szemhéj-ellipszisek ki is kerültek a rajzból.
   -->
   <defs>
     <radialGradient id="bg-boop-train-body" cx="36%" cy="30%" r="86%">
@@ -112,22 +126,28 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
   <symbol id="boop-train-sky" viewBox="0 0 100 100">
@@ -144,22 +164,28 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-sky-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#2E6E96" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#2E6E96" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-sky-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-train-sky-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
   <symbol id="boop-fuel" viewBox="0 0 100 100">
@@ -176,22 +202,28 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-fuel-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-fuel-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-fuel-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
   <symbol id="boop-nap" viewBox="0 0 100 100">
@@ -208,22 +240,28 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-nap-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#B57E14" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#B57E14" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-nap-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-nap-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
   <symbol id="boop-mezo" viewBox="0 0 100 100">
@@ -240,22 +278,28 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-mezo-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-mezo-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-mezo-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
   <symbol id="boop-en" viewBox="0 0 100 100">
@@ -272,46 +316,51 @@
     <g class="boop-body">
       <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-en-body)"/>
       <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
-      <ellipse cx="35" cy="30" rx="11.5" ry="7" fill="rgba(255,255,255,0.55)" transform="rotate(-22 35 30)"/>
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
       <!-- szemek: fehér mandula + pupilla + csillanás; a fedő SZEMHÉJ a pislogásé (8b) -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
       <g class="boop-eye boop-eye-l">
-        <ellipse cx="39.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="40.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="39.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="39.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-en-body)"/>
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- a pupilla + csillanás EGY fogóban: a nézelődés ezt tolja el vízszintesen.
+             PISLOGÁS NINCS (owner 2026-09-18: „vegyük ki" — furán hatott): a szem mindig
+             nyitva van, a mozdulat a tekintet és a szemöldök. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
       <g class="boop-eye boop-eye-r">
-        <ellipse cx="60.5" cy="50" rx="6.6" ry="7.6" fill="#FFF9F0"/>
-        <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
-        <circle cx="60.1" cy="49.4" r="1.25" fill="#FFFFFF" opacity="0.9"/>
-        <ellipse class="boop-lid" cx="60.5" cy="50" rx="7.1" ry="8.1" fill="url(#bg-boop-en-body)"/>
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
       </g>
-      <!-- száj: rövid, nyugodt ív -->
-      <path class="boop-mouth" d="M44 64.5 Q50 69.5 56 64.5" fill="none" stroke="#3A2A22" stroke-opacity="0.72" stroke-width="2.4" stroke-linecap="round"/>
     </g>
   </symbol>
 </svg>
 </div>
-<h1>Boop — öt domain-változat</h1>
-<p class="sub">Saját rajz a ház agyag-receptje szerint. A pislogás és a lélegzet élőben fut (a nagy figurákon).</p>
+<h1>Boop — élőben</h1>
+<p class="sub">Egy kilenc másodperces kör: balra-jobbra körbenéz, a végén picit felhúzza a szemöldökét — és közben végig lélegzik. Pislogás nincs. Aki a telefonján kikapcsolja a mozgást, annál nyugodtan, nyitott szemmel áll.</p>
 
-<div class="band"><h2>Nagyban · élő pislogással</h2>
-<div class="row live">
-  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-mezo"/></svg><figcaption>Boop · levendula</figcaption></figure>
-  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-nap"/></svg><figcaption>Nap · arany</figcaption></figure>
-  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-fuel"/></svg><figcaption>Fuel · zsálya</figcaption></figure>
+<div class="band"><h2>Nagyban</h2>
+<div class="row">
+  <figure><svg class="hero" viewBox="0 0 100 100"><use href="#boop-mezo"/></svg><figcaption>Boop · levendula</figcaption></figure>
+  <figure><svg class="hero" viewBox="0 0 100 100"><use href="#boop-nap"/></svg><figcaption>Nap · arany</figcaption></figure>
 </div></div>
 
-<div class="band"><h2>Edzés — két lehetőség</h2>
-<div class="row live">
-  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-train"/></svg><figcaption>A) korall — a stíluskönyv Edzés-színe</figcaption></figure>
-  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-train-sky"/></svg><figcaption>B) kék — ahogy a feladat szövege kérte</figcaption></figure>
+<div class="band"><h2>Mind az öt (+ az Edzés két lehetősége)</h2>
+<div class="row">
+  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-train"/></svg><figcaption>Edzés · korall</figcaption></figure>
+  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-train-sky"/></svg><figcaption>Edzés · kék</figcaption></figure>
+  <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-fuel"/></svg><figcaption>Fuel · zsálya</figcaption></figure>
   <figure><svg class="big" viewBox="0 0 100 100"><use href="#boop-en"/></svg><figcaption>Én · rózsa</figcaption></figure>
 </div></div>
 
-<div class="band"><h2>Menüben (44px) és közepes méretben (110px)</h2>
+<div class="band"><h2>Menü-méret (44px)</h2>
 <div class="row">
-  <figure><svg class="mid" viewBox="0 0 100 100"><use href="#boop-nap"/></svg><figcaption>110px</figcaption></figure>
   <figure><svg class="small" viewBox="0 0 100 100"><use href="#boop-nap"/></svg><figcaption>Nap</figcaption></figure>
   <figure><svg class="small" viewBox="0 0 100 100"><use href="#boop-train"/></svg><figcaption>Edzés</figcaption></figure>
   <figure><svg class="small" viewBox="0 0 100 100"><use href="#boop-fuel"/></svg><figcaption>Fuel</figcaption></figure>

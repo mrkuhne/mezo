@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Boop, ClayIcon } from '@/shared/ui/clay'
 import { DomainSwitcher } from '@/app/DomainSwitcher'
 import {
   DOMAINS,
-  SWITCH_MARK,
   activeDomainId,
   activeTabRoute,
   domainById,
@@ -48,7 +47,9 @@ export function TabBar() {
           aria-label={`Területváltó: ${domain.name}`}
           onClick={() => setSwitcherOpen(true)}
         >
-          <span className="tab-ico"><ClayIcon name={SWITCH_MARK} size={27} /></span>
+          {/* A váltó jele Boop, az AKTUÁLIS terület színében (mezo-ju4j6.15) — itt
+              nyugalomban áll: a menüben egy mozgó figura elvonná a figyelmet. */}
+          <span className="tab-ico"><Boop domain={domain.id} size={27} /></span>
           <span className="domain-switch-name">
             {domain.name} <b aria-hidden="true">⌃</b>
           </span>
