@@ -382,29 +382,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PersonalRecordProperties`, `ProfileProperties`, `QuarterlyProperties`, `ReflectionProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `LifeGoalStatusChangedEvent`, `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
-  - **other:** `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`,
-    `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `CheckInNoteSourceAdapter`, `ClinicalOutputCheck`,
-    `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`, `ConsumerPolicy`,
-    `ConversationContextTools`, `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`, `EnergyDipMealTimingRule`,
-    `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`,
-    `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`,
-    `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`,
-    `InsightsTools`, `JointOveruseRule`, `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`,
-    `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`,
-    `LlmRoundUsageAdvisor`, `LlmUsageExtractor`, `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`,
-    `MealDraftLlmAdapter`, `MealRhythmDriftRule`, `MedicationTools`, `MemoryCandidate`, `MemoryContext`,
-    `MemoryContextItem`, `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`,
-    `MesoPlanLlmAdapter`, `MissedWorkoutsRule`, `MomentumAtRiskRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`,
-    `NoteMentionCatchUp`, `OpenAiCompanionLlm`, `OpenAiUsageExtractor`, `PantryPhotoLlmAdapter`,
-    `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`,
-    `PersonalRecordTools`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
-    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`,
-    `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
-    `SustainedStressRule`, `TestPlanEnvelope`, `TextSignalProvenanceEnvelope`, `TodayActivitySource`,
-    `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`,
-    `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`, `WeekReviewSource`
+  - **other:** `ActionClaimCheck`, `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`,
+    `AllHealthyRule`, `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `CheckInNoteSourceAdapter`,
+    `ClinicalOutputCheck`, `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`,
+    `ConsumerPolicy`, `ConversationContextTools`, `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`,
+    `EnergyDipMealTimingRule`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedbackRollupStatsEnvelope`,
+    `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`,
+    `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`,
+    `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `LateEatingRule`,
+    `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`,
+    `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
+    `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `OpenAiCompanionLlm`,
+    `OpenAiUsageExtractor`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersonalRecordTools`, `PracticeTools`,
+    `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`,
+    `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
+    `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`, `ScoreBreakdown`,
+    `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`,
+    `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`, `SustainedStressRule`, `TestPlanEnvelope`,
+    `TextSignalProvenanceEnvelope`, `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`,
+    `ToolContexts`, `ToolOutcomesEnvelope`, `ToolText`, `TrainTools`, `TrainingNoteMentionSweep`, `TurnVerdictCheck`,
+    `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -430,7 +431,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 231 IT + 83 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 231 IT + 85 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,

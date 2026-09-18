@@ -1,6 +1,12 @@
 # 0028 — Marked speculation is allowed in chat; the advisor punishes the missing marker, not the guess
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0045](0045-honest-voice-no-prescribed-hedging-no-judge.md)
+  (2026-09-18) — the hedge-vocabulary prescription this ADR taught the prompt is gone (it made
+  hedging the safe default), and the judge criterion below (`unmarkedClaim`) never cleared 0.60
+  precision and is off every live path; `TurnVerdictCheck` survives only as an offline regression
+  instrument. This ADR's underlying insight — a marked hunch should not be punished like an
+  invented fact — is carried forward, just enforced without teaching a vocabulary or running a
+  judge.
 - **Date:** 2026-08-16
 - **Driver:** `mezo-q71s`
 
