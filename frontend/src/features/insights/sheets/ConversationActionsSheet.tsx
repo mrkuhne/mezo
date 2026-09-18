@@ -80,7 +80,6 @@ export function ConversationActionsSheet({
                 aria-label="A beszélgetés címe"
                 value={title}
                 maxLength={120}
-                autoFocus
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return

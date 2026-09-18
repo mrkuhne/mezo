@@ -18,7 +18,7 @@ export function IntentionSheet({ creed, onSave, onClose }:
             </div>
           )}
           <textarea className="shta" value={text} onChange={(e) => setText(e.target.value)}
-            maxLength={200} rows={2} autoFocus aria-labelledby="focus-title"
+            maxLength={200} rows={2} aria-labelledby="focus-title"
             placeholder="Ma arra figyelek, hogy…" />
           <button className="cta-primary" disabled={!text.trim()}
             onClick={() => { onSave(text.trim()); close() }}>Hozzáadom</button>

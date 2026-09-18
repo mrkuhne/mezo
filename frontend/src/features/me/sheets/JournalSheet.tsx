@@ -115,7 +115,6 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
                   onRowsChange={setRows}
                   lifeArea={lifeArea}
                   onLifeAreaChange={setLifeArea}
-                  autoFocusFirst
                   hint="1–3 dolog, amiért ma hálás vagy (max. 280 karakter soronként)."
                 />
               )
@@ -128,7 +127,6 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
                     aria-label={mode === 'decision' ? 'Döntés' : undefined}
                     aria-labelledby={mode === 'decision' ? undefined : 'journal-title'}
                     placeholder={mode === 'decision' ? 'Mit döntöttél el — és miért?' : 'Írd le, mi jár a fejedben…'}
-                    autoFocus
                     style={{ width: '100%', minHeight: 120, resize: 'none', fontSize: 16, lineHeight: 1.45, paddingRight: 36 }}
                   />
                   <button

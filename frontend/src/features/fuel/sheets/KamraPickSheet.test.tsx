@@ -90,3 +90,11 @@ test('picking an item calls onPick and the sheet STAYS OPEN (multi-add)', async 
   // Still open: the title is still on screen.
   expect(screen.getByText('Válassz a polcról')).toBeInTheDocument()
 })
+
+// Owner decision (2026-09-18): a keresőmező CSAK koppintásra kapjon fókuszt — egy
+// megnyíló lap sosem hozza fel magától a mobil billentyűzetet a lista fölé.
+test('the search field does not steal focus when the sheet opens', () => {
+  renderSheet()
+  expect(screen.getByRole('textbox', { name: 'Keresés a kamrában' })).not.toHaveFocus()
+  expect(document.body).toHaveFocus()
+})

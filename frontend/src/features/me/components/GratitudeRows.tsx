@@ -12,8 +12,6 @@ interface GratitudeRowsProps {
   onLifeAreaChange: (area: string | null) => void
   /** Hard cap on the number of rows the user may add. Default 3 (spec §5.3, "1–3 lines a day"). */
   max?: number
-  /** Focus the first row on mount — the sheet wants it, the ritual act must not steal focus. */
-  autoFocusFirst?: boolean
   /** Small tertiary line under the chips. Omitted → not rendered. */
   hint?: string
 }
@@ -41,7 +39,6 @@ export function GratitudeRows({
   lifeArea,
   onLifeAreaChange,
   max = 3,
-  autoFocusFirst = false,
   hint,
 }: GratitudeRowsProps) {
   // Mirrors for the frozen voice callback (see the doc comment).
@@ -74,7 +71,6 @@ export function GratitudeRows({
             aria-label={`${i + 1}. hálás gondolat`}
             placeholder={`${i + 1}. dolog, amiért hálás vagy…`}
             maxLength={280}
-            autoFocus={autoFocusFirst && i === 0 && rows.length === 1}
             style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 16, lineHeight: 1.45, paddingRight: 36 }}
           />
           <button

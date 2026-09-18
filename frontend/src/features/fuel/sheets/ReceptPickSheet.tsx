@@ -76,7 +76,7 @@ export function ReceptPickSheet({ onPick, onClose }: { onPick: (r: Recipe) => vo
 
           <div className="row gap-sm" style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
             <Icon name="search" size={12} color="var(--text-tertiary)" />
-            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            <input value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Keress receptet…" aria-label="Keresés a receptek között"
               style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }} />
           </div>

@@ -92,7 +92,7 @@ export function KamraPickSheet({
 
           <div className="row gap-sm" style={{ padding: '8px 12px', marginBottom: 9, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
             <Icon name="search" size={12} color="var(--text-tertiary)" />
-            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            <input value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Keress a Kamrában…" aria-label="Keresés a kamrában"
               style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }} />
           </div>

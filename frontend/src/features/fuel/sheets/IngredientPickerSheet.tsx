@@ -119,7 +119,6 @@ export function IngredientPickerSheet({
           >
             <Icon name="search" size={12} color="var(--text-tertiary)" />
             <input
-              autoFocus
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Keress a Kamrában…"
