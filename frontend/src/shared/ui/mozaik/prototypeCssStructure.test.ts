@@ -766,3 +766,87 @@ describe('the train sport titanium section is registered (mezo-88iwa.9)', () => 
     }
   })
 })
+
+/**
+ * Phase 5d (mezo-ju4j6.9): the Konyha family — hub, the two libraries, the two detail pages
+ * and the Receptműhely canvas — is re-dressed to the restored Mozaik/Clay world, and the block
+ * loses its `titanium` suffix. Same guard shape as 5a/5c: both markers present, the class
+ * family actually inside them, and the banished Titanium materials unable to come back on this
+ * slice. Comments are stripped before scanning, because the block's own prose NAMES the
+ * materials it banished.
+ */
+describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', () => {
+  const START_MARKER = '── fuel-konyha ('
+  const END_MARKER = '── /fuel-konyha '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the Titanium-era marker name is gone — one block, renamed, not a second copy', () => {
+    expect(rawCss).not.toContain('fuel-konyha titanium')
+  })
+
+  test('the section actually carries the fkx- class family, not just the markers', () => {
+    for (const cls of ['.fkx-capture', '.fkx-poster', '.fkx-bowls', '.fkx-split', '.fkx-legend',
+      '.fkx-tile-grid', '.fkx-recipe', '.fkx-item', '.fkx-door', '.fkx-cta', '.fkx-stepper',
+      '.fkx-ws-goals']) {
+      expect(section(), `${cls} missing from the fuel-konyha section`).toContain(cls)
+    }
+  })
+
+  test('the whole block carries no Titanium material the style bible forbids', () => {
+    const css = rules()
+    expect(css.length).toBeGreaterThan(8_000)
+    // §2.3: decorative frosting and icon haloes are gone; this block frosts nothing at all.
+    expect(css).not.toContain('var(--surface-glass)')
+    expect(css).not.toContain('backdrop-filter')
+    expect(css).not.toContain('drop-shadow')
+    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
+    expect(css).not.toContain('rgba(0, 0, 0,')
+    // A.4 rule 7: the hue vocabulary is the --dv-* accent set, not the legacy aliases.
+    expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
+  })
+
+  test('the tiles are wash tiles: hairline border + --mz-shadow* lift (§2.2 A)', () => {
+    const css = rules()
+    expect(css.match(/border: 0\.5px solid rgba\(43, 33, 24, 0\.06\)/g) ?? []).not.toHaveLength(0)
+    for (const token of ['var(--mz-shadow)', 'var(--mz-shadow-lav)', 'var(--mz-shadow-gold)',
+      'var(--mz-shadow-sage)']) {
+      expect(css, `${token} missing — a tile in this block is not lifted by a token`).toContain(token)
+    }
+  })
+
+  test('the poster wears the §3.2 anatomy: kiskapitális eyebrow + one display-200 numeral', () => {
+    const css = rules()
+    expect(css).toContain('.fkx-poster-title strong { font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;')
+    expect(css).toMatch(/\.fkx-poster-main > strong \{[^}]*font-weight: 200;/)
+    expect(css).toMatch(/\.fkx-poster-main > strong \{[^}]*font-variant-numeric: tabular-nums;/)
+    // A.2 rule 5: the raised eyebrow type gets a 360px step-down rather than a retreat.
+    expect(css).toContain('@media (max-width: 360px)')
+  })
+
+  test('the chips and shields are restored materials, not bordered tint boxes (§2.2 B, §3.1)', () => {
+    const css = rules()
+    for (const token of ['--mz-cell-sage-bg', '--mz-cell-sage-ink', '--mz-cell-gold-bg',
+      '--mz-cell-gold-ink', '--mz-cell-lav-bg', '--mz-cell-coral-bg']) {
+      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
+    }
+    expect(css).toContain('box-shadow: inset 0 0 0 1px var(--border-subtle)')
+  })
+
+  test('the workshop hero is a halo band and no infinite loop survives (§2.2 C, §8.6)', () => {
+    const css = rules()
+    expect(css).toContain('background: var(--halo-violet)')
+    expect(css).toContain('.fkx-ws-glow { display: none; }')
+    // the decorative float loop and its keyframes went with the material
+    expect(css).not.toContain('@keyframes fkx-float')
+    expect(css).not.toContain('infinite')
+  })
+})

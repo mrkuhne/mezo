@@ -3,8 +3,9 @@
 // B1 · B2 · B3 · B4 · B10). Ez az a cél, amibe a Receptek és a Kamra összeolvad, és a
 // vezérgondolata a „Mentsd el, ami jött": a két rögzítő művelet áll elöl.
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `konyha` (:25), a fuel-pages.css „Konyha v2 — mosaic posters…" blokkjával (:497).
+// Vizuális referencia (visszaöltöztetés, mezo-ju4j6.9): docs/design_2.0/
+// 2026-09-17-restored-world-style-bible.md — a Titán-kori prototípus (companion-titanium/
+// fuel-pages.js `konyha` :25) már CSAK a geometria és a funkció-paritás forrása, a bőré nem.
 // Anatómia fentről le:
 //   a két rögzítő kártya — Recept mentése (a kézi szerkesztőbe) és Új elem a kamrába (a
 //     meglévő import-sheet fotó + link karjával),
@@ -36,9 +37,9 @@ import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
  *  Csak ARC (ikon + hue): a célok viselkedése a Műhely lapjáé, ez itt a meghívó. */
 const WORKSHOP_GOAL_FACES: { id: string; label: string; icon: ClayIconName; color: string }[] = [
   { id: 'high_protein', label: 'Magas fehérje', icon: 'i-hus', color: 'var(--macro-protein)' },
-  { id: 'pre_workout', label: 'Edzés előtt', icon: 'i-lang', color: 'var(--amber)' },
-  { id: 'post_workout', label: 'Edzés után', icon: 'i-edzes', color: 'var(--sage)' },
-  { id: 'before_bed', label: 'Lefekvés előtt', icon: 'i-hold', color: 'var(--lav)' },
+  { id: 'pre_workout', label: 'Edzés előtt', icon: 'i-lang', color: 'var(--dv-amber)' },
+  { id: 'post_workout', label: 'Edzés után', icon: 'i-edzes', color: 'var(--dv-sage)' },
+  { id: 'before_bed', label: 'Lefekvés előtt', icon: 'i-hold', color: 'var(--dv-lav)' },
   { id: 'breakfast', label: 'Reggeli', icon: 'i-nap', color: 'var(--macro-carbs)' },
 ]
 
@@ -67,14 +68,14 @@ export function FuelKonyhaPage() {
           {/* A18/E11 (mezo-qt5q): a Kalauz horgonya — a két gyors-felvétel feltétel nélkül
               renderel, tehát a „Mutasd meg a képernyőn" itt sosem degradál némán. */}
           <div className="fkx-captures" data-kalauz-anchor="konyha-felvetel">
-            <button type="button" className="fkx-capture" style={{ '--fkx': 'var(--lav)' } as React.CSSProperties}
+            <button type="button" className="fkx-capture" style={{ '--fkx': 'var(--dv-lav)' } as React.CSSProperties}
               onClick={() => navigate('/fuel/recipes/new')}>
               <span className="fkx-capture-art" aria-hidden="true"><ClayIcon name="i-recept" size={54} /></span>
               <b className="fkx-plus" aria-hidden="true">＋</b>
               <strong>Recept mentése</strong>
               <small>Kézzel, a saját szavaiddal</small>
             </button>
-            <button type="button" className="fkx-capture" style={{ '--fkx': 'var(--amber)' } as React.CSSProperties}
+            <button type="button" className="fkx-capture" style={{ '--fkx': 'var(--dv-amber)' } as React.CSSProperties}
               onClick={() => setImportOpen(true)}>
               <span className="fkx-capture-art" aria-hidden="true"><ClayIcon name="i-kamra" size={54} /></span>
               <b className="fkx-plus" aria-hidden="true">＋</b>
@@ -85,7 +86,7 @@ export function FuelKonyhaPage() {
 
           {/* B10: a Receptműhely a hub SAJÁT posztere — a gomb lejött a recept-listáról. */}
           <button type="button" className="fkx-poster is-workshop"
-            style={{ '--fkx': 'var(--lav)' } as React.CSSProperties}
+            style={{ '--fkx': 'var(--dv-lav)' } as React.CSSProperties}
             onClick={() => navigate('/fuel/recipes/muhely')}>
             <span className="fkx-poster-head">
               <span className="fkx-poster-title">
@@ -110,7 +111,7 @@ export function FuelKonyhaPage() {
           </button>
 
           <button type="button" className="fkx-poster is-recipes"
-            style={{ '--fkx': 'var(--lav)' } as React.CSSProperties}
+            style={{ '--fkx': 'var(--dv-lav)' } as React.CSSProperties}
             onClick={() => navigate('/fuel/recipes')}>
             <span className="fkx-poster-head">
               <span className="fkx-poster-title">
@@ -138,7 +139,7 @@ export function FuelKonyhaPage() {
           </button>
 
           <button type="button" className="fkx-poster is-pantry"
-            style={{ '--fkx': 'var(--amber)' } as React.CSSProperties}
+            style={{ '--fkx': 'var(--dv-amber)' } as React.CSSProperties}
             onClick={() => navigate('/fuel/kamra')}>
             <span className="fkx-poster-head">
               <span className="fkx-poster-title">

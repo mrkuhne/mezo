@@ -45,10 +45,10 @@ function isFullStock(s: NonNullable<PantryItem['stock']>): s is IngredientStock 
 
 /** Egy tétel arca: ház-hue + clay szimbólum (a prototípus `pantryStyle`-ja ház-tokenekkel). */
 const KIND_FACE: Record<string, { color: string; icon: ClayIconName }> = {
-  food: { color: 'var(--sage)', icon: 'i-gabona' },
-  supplement: { color: 'var(--lav)', icon: 'i-kiegeszito' },
-  stim: { color: 'var(--coral)', icon: 'i-lang' },
-  med: { color: 'var(--sky)', icon: 'i-injekcio' },
+  food: { color: 'var(--dv-sage)', icon: 'i-gabona' },
+  supplement: { color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
+  stim: { color: 'var(--dv-coral)', icon: 'i-lang' },
+  med: { color: 'var(--dv-sky)', icon: 'i-injekcio' },
 }
 
 // Build a complete PantryItemInput from the displayed item — prefills every
@@ -129,7 +129,7 @@ export function KamraItemDetailPage() {
   // ingredient id, not 'stash-<id>'): prefer stashRefId when present, else the backend id.
   const stackKey = item.stashRefId ?? backendId
   const catLabel = categoryMeta[item.category ?? '']?.label ?? item.category
-  const face = KIND_FACE[item.kind] ?? { color: 'var(--amber)', icon: 'i-polc' as ClayIconName }
+  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 'i-polc' as ClayIconName }
   const prov = pantryProvenance(item)
   const isFood = item.kind === 'food'
 
@@ -161,10 +161,10 @@ export function KamraItemDetailPage() {
   // A prototípus per-100 g minőség-lapkái: három tárolt tény + a feldolgozottság (NOVA).
   const nova = item.nova != null ? NOVA[item.nova] : null
   const qualityTiles: FuelNutriTile[] = [
-    { label: `Cukor · ${perLabel}`, value: item.sugarG == null ? null : hu1(item.sugarG), unit: 'g', icon: 'i-termes', color: 'var(--rose)' },
-    { label: `Só · ${perLabel}`, value: item.saltG == null ? null : hu1(item.saltG), unit: 'g', icon: 'i-kristaly', color: 'var(--sky)' },
-    { label: `Telített zsír · ${perLabel}`, value: item.saturatedFatG == null ? null : hu1(item.saturatedFatG), unit: 'g', icon: 'i-avokado', color: 'var(--amber)' },
-    { label: nova ? nova.short : 'Feldolgozottság', value: item.nova == null ? null : String(item.nova), unit: 'NOVA', icon: 'i-retegek', color: nova?.color ?? 'var(--sky)' },
+    { label: `Cukor · ${perLabel}`, value: item.sugarG == null ? null : hu1(item.sugarG), unit: 'g', icon: 'i-termes', color: 'var(--dv-rose)' },
+    { label: `Só · ${perLabel}`, value: item.saltG == null ? null : hu1(item.saltG), unit: 'g', icon: 'i-kristaly', color: 'var(--dv-sky)' },
+    { label: `Telített zsír · ${perLabel}`, value: item.saturatedFatG == null ? null : hu1(item.saturatedFatG), unit: 'g', icon: 'i-avokado', color: 'var(--dv-amber)' },
+    { label: nova ? nova.short : 'Feldolgozottság', value: item.nova == null ? null : String(item.nova), unit: 'NOVA', icon: 'i-retegek', color: nova?.color ?? 'var(--dv-sky)' },
   ]
 
   return (

@@ -105,7 +105,7 @@ export function FuelRecipesPage() {
             const face = f.id === 'all' || f.id === 'starred' ? null : recipeSlotFace(f.id)
             return (
               <button key={f.id} type="button" aria-pressed={filter === f.id}
-                style={{ '--fkx': face?.color ?? 'var(--lav)' } as React.CSSProperties}
+                style={{ '--fkx': face?.color ?? 'var(--dv-lav)' } as React.CSSProperties}
                 onClick={() => setFilter(f.id)}>
                 {face && <span aria-hidden="true"><ClayIcon name={face.icon} size={16} /></span>}
                 {f.label}<b>{n}</b>

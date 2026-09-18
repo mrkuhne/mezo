@@ -34,23 +34,23 @@ import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
 import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
 
 const TYPE_FILTERS = [
-  { id: 'all', label: 'Mind', color: 'var(--amber)', icon: null },
-  { id: 'food', label: 'Étel', color: 'var(--sage)', icon: 'i-gabona' },
-  { id: 'supplement', label: 'Supp', color: 'var(--lav)', icon: 'i-kiegeszito' },
-  { id: 'stim', label: 'Stim', color: 'var(--coral)', icon: 'i-lang' },
-  { id: 'med', label: 'Gyógyszer', color: 'var(--sky)', icon: 'i-injekcio' },
+  { id: 'all', label: 'Mind', color: 'var(--dv-amber)', icon: null },
+  { id: 'food', label: 'Étel', color: 'var(--dv-sage)', icon: 'i-gabona' },
+  { id: 'supplement', label: 'Supp', color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
+  { id: 'stim', label: 'Stim', color: 'var(--dv-coral)', icon: 'i-lang' },
+  { id: 'med', label: 'Gyógyszer', color: 'var(--dv-sky)', icon: 'i-injekcio' },
 ] as const satisfies readonly { id: string; label: string; color: string; icon: ClayIconName | null }[]
 
 /** Egy tétel arca: ház-hue + clay szimbólum (a prototípus `pantryStyle`-ja ház-tokenekkel). */
 const KIND_FACE: Record<string, { color: string; icon: ClayIconName }> = {
-  food: { color: 'var(--sage)', icon: 'i-gabona' },
-  supplement: { color: 'var(--lav)', icon: 'i-kiegeszito' },
-  stim: { color: 'var(--coral)', icon: 'i-lang' },
-  med: { color: 'var(--sky)', icon: 'i-injekcio' },
+  food: { color: 'var(--dv-sage)', icon: 'i-gabona' },
+  supplement: { color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
+  stim: { color: 'var(--dv-coral)', icon: 'i-lang' },
+  med: { color: 'var(--dv-sky)', icon: 'i-injekcio' },
 }
 
 function PantryTile({ item, onOpen }: { item: PantryItem; onOpen: () => void }) {
-  const face = KIND_FACE[item.kind] ?? { color: 'var(--amber)', icon: 'i-polc' as ClayIconName }
+  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 'i-polc' as ClayIconName }
   const prov = pantryProvenance(item)
   const kcal = item.macros?.kcal ?? null
   const protein = item.macros?.p ?? null
@@ -176,7 +176,7 @@ export function FuelKamraPage() {
                 {categoryFilter.map(key => (
                   <button key={key} type="button"
                     onClick={() => setCategoryFilter(cs => cs.filter(c => c !== key))}>
-                    <i aria-hidden="true" style={{ background: categoryMeta[key]?.color ?? 'var(--sage)' }} />
+                    <i aria-hidden="true" style={{ background: categoryMeta[key]?.color ?? 'var(--dv-sage)' }} />
                     {categoryMeta[key]?.label ?? key}<b aria-hidden="true">×</b>
                   </button>
                 ))}
