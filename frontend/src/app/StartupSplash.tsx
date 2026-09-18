@@ -15,14 +15,35 @@ import { PhoneFrame } from '@/app/PhoneFrame'
 import { ClaySpot } from '@/shared/ui/clay'
 import '@/app/StartupSplash.css'
 
+/**
+ * Harness-varrat (mezo-u1n6l): a layout-teszt minden route-ot HIDEG betöltéssel jár be, és a
+ * bevezető három másodpercig `aria-hidden`-re teszi az egész tartalmat — egy szerep-alapú
+ * lekérdezés (`getByRole`) ezért csak ~3,3 s után talál bármit. Öt domain × 3,3 s ~ 17 s a
+ * 30 s-os teszt-keretből, és CI-terhelés alatt ez borította a `navigation.spec.ts`-t
+ * (mindig a kör KÉSŐBBI doménjeinél — nem volt renderelési rés, csak elfogyott a keret).
+ *
+ * A zászló CSAK fejlesztői buildben él (`import.meta.env.DEV`), tehát a szállított appból
+ * hiányzik: a felhasználó felé a bevezető változatlanul három másodperc. A `localStorage`
+ * olvasása védett — privát ablakban dobhat, és akkor a bevezető a normál útján megy.
+ */
+function splashSkipped(): boolean {
+  if (!import.meta.env.DEV) return false
+  try {
+    return localStorage.getItem('mezo.splash.skip') === '1'
+  } catch {
+    return false
+  }
+}
+
 /** App-root lifetime: route changes and foregrounding never restart the intro. */
 export function StartupSplash({ children }: { children: ReactNode }) {
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(() => !splashSkipped())
 
   useEffect(() => {
+    if (!visible) return
     const timeout = window.setTimeout(() => setVisible(false), 3000)
     return () => window.clearTimeout(timeout)
-  }, [])
+  }, [visible])
 
   return (
     <>

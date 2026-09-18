@@ -52,3 +52,41 @@ test('the mark is the clay orb spot, and the wordmark stays "boop"', () => {
   expect(container.querySelector('.startup-splash .titan-svg')).toBeNull()
   expect(container.querySelector('.startup-splash__wordmark')!.textContent).toBe('boop')
 })
+
+// ── A harness-varrat (mezo-u1n6l) ────────────────────────────────────────────────
+// A layout-harness minden route-ot HIDEG betöltéssel jár be, és a bevezető 3 másodpercig
+// `aria-hidden`-re teszi az egész tartalmat — egy szerep-alapú lekérdezés (getByRole) ezért
+// csak 3,3 másodperc után talál bármit. Öt domain × 3,3 s = ~17 s a 30 s-os teszt-keretből,
+// és CI-terhelés alatt ez borította a navigation.spec.ts-t (mindig a KÉSŐBBI domaineknél).
+// A varrat ezt veszi le a harness válláról — és CSAK fejlesztői build alatt létezik.
+
+test('fejlesztői buildben a harness kihagyhatja a bevezetőt', () => {
+  localStorage.setItem('mezo.splash.skip', '1')
+  try {
+    render(<StartupSplash><button>Dashboard</button></StartupSplash>)
+    // nincs bevezető, és az app AZONNAL elérhető — szerep szerint is
+    expect(screen.queryByRole('status', { name: 'Boop betöltése' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument()
+  } finally {
+    localStorage.removeItem('mezo.splash.skip')
+  }
+})
+
+test('a varrat KIKAPCSOLT állapotban semmit nem változtat', () => {
+  render(<StartupSplash><button>Dashboard</button></StartupSplash>)
+  expect(screen.getByRole('status', { name: 'Boop betöltése' })).toBeInTheDocument()
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+})
+
+test('éles buildben a zászló hatástalan — a bevezető akkor is fut', () => {
+  vi.stubEnv('DEV', false)
+  localStorage.setItem('mezo.splash.skip', '1')
+  try {
+    render(<StartupSplash><button>Dashboard</button></StartupSplash>)
+    expect(screen.getByRole('status', { name: 'Boop betöltése' })).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  } finally {
+    localStorage.removeItem('mezo.splash.skip')
+    vi.unstubAllEnvs()
+  }
+})

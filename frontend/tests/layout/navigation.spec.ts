@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
+import { seedSplashSkipped } from './splashSeed'
 
 const domains = [
   ['/nap', 'Nap'], ['/train/mai', 'Edzés'], ['/fuel', 'Fuel'],
@@ -10,6 +11,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
   test(`docked menus and panel-free switcher at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await seedKalauzSeen(page)
+    await seedSplashSkipped(page)
     await page.addInitScript(() => localStorage.setItem('mezo-theme', 'dark'))
     for (const [route, name] of domains) {
       await page.goto(route)
@@ -58,6 +60,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
 test('short landscape switcher scrolls to every choice and backdrop dismisses', async ({ page }) => {
   await page.setViewportSize({ width: 500, height: 320 })
   await seedKalauzSeen(page)
+    await seedSplashSkipped(page)
   await page.goto('/train/mai')
   const opener = page.getByRole('button', { name: 'Területváltó: Edzés' })
   await opener.click()

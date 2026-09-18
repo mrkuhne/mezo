@@ -712,20 +712,24 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 ## 9. Decisions, gotchas & deferred
 
-- **Startup (`mezo-qducz`):** `main.tsx` wraps the router in `StartupSplash` once per
-  document. The existing `PhoneFrame` contains the theme-token startup canvas, so desktop
-  demos show it inside the same phone bezel as the app; real mobile/PWA stays full-bleed.
-  The Titanium artwork makes one slow 3000 ms scale pulse, with three independent light
-  flashes peaking at 480, 1380 and 2340 ms. A 300 ms fade ends at 3000 ms. Timing starts
-  after `TitanScene` renders its first frame; loading shows only the background, never a
-  transient SVG. The startup variant contains only the titanium body and gold core, without
-  orbital rings, beads, particles or the ground glow. The router mounts
-  under an inert, `aria-hidden` wrapper, so data can load without allowing early interaction.
-  The timer removes the overlay independently of CSS completion. A separate 5-second
-  loading deadline reveals the app if its artwork never becomes ready.
-  Internal navigation and background/foreground transitions never replay it; a reload does.
-  Reduced motion keeps the 3-second static mark without pulses/fade. The normal `/` entry
-  still resolves to `/nap`; explicit deep links and authentication remain router-owned.
+- **Startup (`mezo-qducz`; visszaöltöztetve `mezo-ju4j6.3`):** `main.tsx` wraps the router in
+  `StartupSplash` once per document. The existing `PhoneFrame` contains the theme-token startup
+  canvas, so desktop demos show it inside the same phone bezel as the app; real mobile/PWA stays
+  full-bleed. The mark is the **static clay orb** (`s-orb`) on an amber halo band — the Titanium
+  variant's live WebGL scene, its readiness seam and the 5-second escape hatch are all gone with
+  `TitanScene` (`mezo-ju4j6.10`): a static mark is on the first frame, so there is nothing to wait
+  for. Three seconds, then the app. The router mounts under an inert, `aria-hidden` wrapper, so
+  data can load without allowing early interaction; the timer removes the overlay independently of
+  CSS completion. Internal navigation and background/foreground transitions never replay it; a
+  reload does. The normal `/` entry still resolves to `/nap`; explicit deep links and
+  authentication remain router-owned.
+  **Harness seam (`mezo-u1n6l`):** in a DEV build only, `localStorage['mezo.splash.skip'] === '1'`
+  starts the app with the intro already finished. The layout harness reloads every route cold, and
+  that `aria-hidden` wrapper makes role-based queries wait the full 3 s per load — five domains per
+  test ate ~17 s of a 30 s budget, which is what made `navigation.spec.ts` fail under CI load
+  (always at the LATER domains, so it looked like a render gap). `tests/layout/splashSeed.ts` sets
+  the flag; `startup.spec.ts` deliberately does not use it, because it measures the intro itself.
+  The shipped bundle has no seam: `import.meta.env.DEV` is false there.
   Focused tests: `app/StartupSplash.test.tsx`; browser geometry, motion and navigation:
   `tests/layout/startup.spec.ts`.
 

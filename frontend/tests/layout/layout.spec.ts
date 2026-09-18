@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
+import { seedSplashSkipped } from './splashSeed'
 
 /**
  * Layout invariants (mezo-gllr) — non-screenshot Playwright checks in the same harness
@@ -17,7 +18,11 @@ import { seedKalauzSeen } from './kalauzSeed'
 
 // Minden kalauzt látottnak seedelünk: ezek a tesztek MÉRNEK és KATTINTANAK, egy
 // auto-open sheet pedig mindkettőt elrontja (mezo-gb1s.6 — lásd `kalauzSeed.ts`).
-test.beforeEach(async ({ page }) => { await seedKalauzSeen(page) })
+test.beforeEach(async ({ page }) => {
+  await seedKalauzSeen(page)
+  // A bevezető három másodperce route-onként elmegy a teszt keretéből (mezo-u1n6l).
+  await seedSplashSkipped(page)
+})
 
 /** Real-phone heights the goldens' 956 does not cover. */
 const PHONE_VIEWPORTS = [
