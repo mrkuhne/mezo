@@ -7,8 +7,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * mezo-q0p5a: the companion has NO write tools (ArchUnit-enforced) — every registered tool is a
@@ -19,11 +23,14 @@ import java.util.Optional;
  *
  * <p>Deterministic (a fixed term list, no LLM), accent-folded like {@link ClinicalOutputCheck}.
  * Precision over recall on purpose: the terms are complete, already-conjugated first-person
- * PAST-tense forms (e.g. "felírtam", not the stem "felír"), so an offer ("felírhatod"), an
- * instruction ("felírni"), a second-person form, or a negation that separates the verb prefix
- * ("nem írtam fel") do not contain the term and do not fire. A bounded list cannot separate every
- * Hungarian inflection from the claim it resembles; when in doubt this check stays silent rather
- * than rewriting an honest answer — see the task-2 report for the cases this trades away.
+ * PAST-tense forms (e.g. "felírtam", not the stem "felír"), matched as whole words (not a raw
+ * substring) and excluded when the immediately preceding word is a negator ("nem" / "sem" /
+ * "sosem", or the interposed "nem is") — so an offer ("felírhatod"), an instruction ("felírni"),
+ * a second-person form, a negation that separates a verb prefix ("nem írtam fel"), and a plain
+ * negation in front of a term with no separable prefix ("nem naplóztam") all fail to fire. A
+ * bounded list cannot separate every Hungarian inflection from the claim it resembles; when in
+ * doubt this check stays silent rather than rewriting an honest answer — see the task-2 report
+ * for the cases this trades away.
  */
 @Component
 @ConditionalOnProperty(
@@ -32,6 +39,17 @@ import java.util.Optional;
 public class ActionClaimCheck {
 
     static final String CHECK_NAME = "action-claim";
+
+    /**
+     * Single-word negators that, as the token immediately before a term, negate it: "nem
+     * naplóztam" / "sem törölte" / "sosem rögzítettem". "is" is a special case — it interposes
+     * between "nem" and the verb ("nem is naplóztam"), so it is only a negator when the token
+     * before IT is "nem" (handled explicitly below, not listed here).
+     */
+    private static final Set<String> SINGLE_TOKEN_NEGATORS = Set.of("nem", "sem", "sosem");
+
+    /** Word tokens (letter runs) with their start offsets, for whole-word matching. */
+    private static final Pattern WORD = Pattern.compile("\\p{L}+");
 
     private final List<String> actionClaimTerms;
 
@@ -49,7 +67,7 @@ public class ActionClaimCheck {
             return Optional.empty();
         }
         String folded = fold(answer);
-        if (actionClaimTerms.stream().anyMatch(folded::contains)) {
+        if (hasUnnegatedClaim(folded)) {
             return Optional.of(new AdvisorViolation(CHECK_NAME,
                     "A válasz múlt idejű, első személyű cselekvés-állítást tartalmaz (pl. "
                             + "\"felírtam\"), de a companion-nak nincs írási eszköze — nem hajtott "
@@ -57,6 +75,37 @@ public class ActionClaimCheck {
                             + "(pl. \"ezt te tudod felírni\"), ne kész tényként."));
         }
         return Optional.empty();
+    }
+
+    /**
+     * True if a configured term appears as a whole word in {@code folded} and is NOT immediately
+     * preceded by a negator token ("nem" / "sem" / "sosem", or the interposed "nem is"). Four of
+     * the nine configured terms have no separable verb prefix (naplóztam, rögzítettem,
+     * módosítottam, töröltem), so their negation is a plain "nem " in front rather than a split
+     * preverb — a bare {@code contains} would fire on the honest refusal "Nem naplóztam ezt…".
+     * Tokenizing catches that case AND doubles as the whole-word check that a naive
+     * {@code indexOf} would need separately (no substring-inside-another-word false positive).
+     */
+    private boolean hasUnnegatedClaim(String folded) {
+        List<String> tokens = new ArrayList<>();
+        Matcher matcher = WORD.matcher(folded);
+        while (matcher.find()) {
+            tokens.add(matcher.group());
+        }
+        for (int i = 0; i < tokens.size(); i++) {
+            String token = tokens.get(i);
+            if (!actionClaimTerms.contains(token)) {
+                continue;
+            }
+            String prev = i >= 1 ? tokens.get(i - 1) : null;
+            String prevPrev = i >= 2 ? tokens.get(i - 2) : null;
+            boolean negated = (prev != null && SINGLE_TOKEN_NEGATORS.contains(prev))
+                    || ("is".equals(prev) && "nem".equals(prevPrev));
+            if (!negated) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Lowercase + NFD accent-strip — "Felírtam" -> "felirtam", matches without diacritics. */

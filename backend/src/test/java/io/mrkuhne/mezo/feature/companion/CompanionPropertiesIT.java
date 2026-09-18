@@ -71,6 +71,9 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.advisors().enabled()).isTrue();
         assertThat(properties.advisors().maxRetries()).isEqualTo(1);
         assertThat(properties.advisors().rxTerms()).contains("retatrutid", "reta");
+        // mezo-rj214.7 / mezo-q0p5a: a typo'd YAML key would silently never bind, and the check
+        // would never fire — assert it actually loads the configured claim terms.
+        assertThat(properties.advisors().actionClaimTerms()).contains("felírtam", "naplóztam");
     }
 
     @Test
