@@ -94,6 +94,11 @@ class ConversationLimitsIT extends AbstractIntegrationTest {
         for (int i = 0; i < 10; i++) {
             assertThat(rendered.toString()).contains("Egyedi üzenet " + i);
         }
+        // Each fixture message (~515 chars) exceeds the page's message cap (~150 chars here), so
+        // the render-time truncation marker must actually show up — this is its only assertion
+        // left after the mezo-rj214.10 unification moved testEnvelope_* onto TurnProvenance's own
+        // " …(rövidítve)" marker instead.
+        assertThat(rendered.toString()).contains(ConversationHistory.CLIPPED);
     }
 
 }

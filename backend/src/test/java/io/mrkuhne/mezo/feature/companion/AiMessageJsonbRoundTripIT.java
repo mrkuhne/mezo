@@ -14,9 +14,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StreamUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -350,5 +353,64 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
             assertThat(call.why()).isNull();
         });
         assertThat(reloaded.getToolOutcomes()).isNull();
+    }
+
+    /**
+     * mezo-rj214.7 fix wave: rows written during the retired-"result" window are read-tolerant
+     * (proven above) but that is not enough — the owner's decision is that 90 days genuinely
+     * means 90 days, so the retired copy is backfilled out by a Liquibase changeset rather than
+     * left to outlive the retention scrub forever. Liquibase itself already ran (against rows that
+     * did not exist yet) by the time this test seeds one, so this pins the changeset's own SQL —
+     * read straight from the shipped .sql file, so the two cannot drift — against a row seeded
+     * with the retired shape, proving the key is gone, order is preserved, and the untouched
+     * neighbouring element (no "result" key) survives unchanged.
+     */
+    @Test
+    void testBackfill_shouldStripRetiredResultKey_whenChangesetSqlRunsAgainstARetiredShapeRow() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-backfill@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz vegyes tool_calls formátummal");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set tool_calls = ?::jsonb where id = ?",
+                "{\"calls\":[" +
+                        "{\"type\":\"read\",\"name\":\"get_recovery\",\"args\":\"scope=sleep\","
+                        + "\"result\":\"6,5 óra alvás\"}," +
+                        "{\"type\":\"read\",\"name\":\"get_meals\",\"args\":\"day=2026-09-18\"}" +
+                        "]}", id);
+        entityManager.clear();
+
+        jdbcTemplate.update(readBackfillChangesetSql());
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getToolCalls().calls()).hasSize(2);
+        assertThat(reloaded.getToolCalls().calls().get(0).name()).isEqualTo("get_recovery");
+        assertThat(reloaded.getToolCalls().calls().get(0).args()).isEqualTo("scope=sleep");
+        assertThat(reloaded.getToolCalls().calls().get(1).name()).isEqualTo("get_meals");
+        assertThat(reloaded.getToolCalls().calls().get(1).args()).isEqualTo("day=2026-09-18");
+        String storedCalls = jdbcTemplate.queryForObject(
+                "select (tool_calls -> 'calls')::text from ai_message where id = ?", String.class, id);
+        assertThat(storedCalls).doesNotContain("result").doesNotContain("6,5 óra alvás");
+    }
+
+    /** Reads the shipped changeset's own SQL so this test and the migration cannot drift apart. */
+    private static String readBackfillChangesetSql() {
+        try {
+            return StreamUtils.copyToString(
+                    new ClassPathResource(
+                            "db/changelog/1.0.0/script/202609181200_mezo-rj214.7_ai_message_tool_calls_backfill_strip_result.sql")
+                            .getInputStream(),
+                    StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 }

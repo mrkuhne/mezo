@@ -2468,9 +2468,12 @@ column, `ai_message.tool_outcomes`, and only by `TurnProvenance.build`. `tool_ca
 ASK only (`type`, `name`, `args`, `why`) and is kept forever; `tool_outcomes` is what the 90-day
 scrub NULLs. An earlier conversation-first slice briefly stored a second copy of the result text as
 a 4th `tool_calls` component, which would have silently outlived that scrub — the component is gone
-and `ToolCall` is `@JsonIgnoreProperties(ignoreUnknown = true)` so rows written in that window
-still load (their stale copy is simply not read). The two envelopes are built positionally parallel
-in one pass, which is what lets every reader zip them BY INDEX.
+and `ToolCall` is `@JsonIgnoreProperties(ignoreUnknown = true)` so rows written in that window still
+load. Read-tolerance alone was judged not enough: the owner's decision is that 90 days genuinely
+means 90 days, so a Liquibase backfill (`202609181200_mezo-rj214.7_ai_message_tool_calls_backfill_strip_result.sql`)
+strips the retired `result` key from every `tool_calls.calls[]` element that still carries one — the
+stale copy is gone, not merely unread. The two envelopes are built positionally parallel in one
+pass, which is what lets every reader zip them BY INDEX.
 
 Because there is one storage place, there is ONE budget, and it lives with its more demanding
 consumer: `mezo.companion.conversation.result-max-chars` (8000) and `results-max-chars` (40000),
