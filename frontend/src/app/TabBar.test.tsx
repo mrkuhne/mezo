@@ -21,7 +21,9 @@ function renderAt(path: string, ui: React.ReactNode) {
 
 function LocationProbe() {
   const loc = useLocation()
-  return <div data-testid="loc">{loc.pathname}</div>
+  // The hash is rendered too: the leltár row navigates with one, and a probe that drops it
+  // would let that navigation "pass" while landing at the top of the wrong section.
+  return <div data-testid="loc">{loc.pathname}{loc.hash}</div>
 }
 
 function renderFabAt(path: string) {
@@ -161,7 +163,9 @@ test('the switch mark opens the domain-switcher dialog listing the five domains'
   await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Nap' }))
   const dialog = screen.getByRole('dialog', { name: 'Területváltó' })
   expect(within(dialog).queryByRole('heading')).not.toBeInTheDocument()
-  expect(within(dialog).getAllByRole('button')).toHaveLength(5)
+  // Five domain cards + the leltár row at the bottom (mezo-ju4j6.17).
+  expect(within(dialog).getAllByRole('button')).toHaveLength(6)
+  expect(within(dialog).getByRole('button', { name: /Minden oldal/ })).toBeInTheDocument()
   expect(dialog.closest('.sheet')).toBeNull()
   for (const name of ['Nap', 'Edzés', 'Fuel', 'Mezo', 'Én']) {
     expect(within(dialog).getByText(name)).toBeInTheDocument()
@@ -177,15 +181,31 @@ test('switcher focuses the current card, contains keyboard focus and restores th
   const opener = screen.getByRole('button', { name: 'Területváltó: Én' })
   await user.click(opener)
   const dialog = screen.getByRole('dialog', { name: 'Területváltó' })
-  const cards = within(dialog).getAllByRole('button')
-  expect(cards[4]).toHaveFocus()
+  // The trap spans every button in the dialog — the five cards AND the leltár row, so
+  // the last stop before wrapping is the leltár row, not the fifth card (mezo-ju4j6.17).
+  const buttons = within(dialog).getAllByRole('button')
+  expect(buttons).toHaveLength(6)
+  expect(buttons[4]).toHaveFocus()          // Én — the current domain's card
   await user.tab()
-  expect(cards[0]).toHaveFocus()
+  expect(buttons[5]).toHaveFocus()          // Minden oldal
+  await user.tab()
+  expect(buttons[0]).toHaveFocus()          // wraps to the first card
   await user.tab({ shift: true })
-  expect(cards[4]).toHaveFocus()
+  expect(buttons[5]).toHaveFocus()
   await user.keyboard('{Escape}')
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(opener).toHaveFocus()
+})
+
+test('the leltár row opens Minden oldal anchored to the domain you came from', async () => {
+  const user = userEvent.setup()
+  renderAt('/fuel/stack', <><TabBar /><LocationProbe /></>)
+  await user.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Minden oldal/ }))
+  // The hash is the point: a ~100-item inventory that always opened at the top would make
+  // the reader hunt for the area they were already standing in.
+  expect(screen.getByTestId('loc')).toHaveTextContent('/minden#fuel')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('background is inert while choosing and tapping outside dismisses without navigating', async () => {
