@@ -55,6 +55,15 @@ class ConversationFirstIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testPrepareTurn_shouldCarryActionHonestyRule_whenSystemPromptIsRendered() {
+        UUID user = users.populateUser("free-honesty@test.local");
+        var conversation = conversations.conversation(user);
+        var turn = chatService.prepareTurn(user, conversation.getId(), request("Szia"));
+        assertThat(turn.systemPrompt()).contains("Nem tudsz naplózni, menteni, módosítani vagy bármit elvégezni",
+                "Soha ne állítsd, hogy elvégeztél valamit");
+    }
+
+    @Test
     void testSendMessage_shouldReadPersonalData_whenFollowupHasNoDomainKeywords() {
         UUID user = users.populateUser("free-followup@test.local");
         var conversation = conversations.conversation(user);
