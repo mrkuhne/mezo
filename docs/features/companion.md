@@ -535,6 +535,42 @@ platform, not in the two call sites, so the tool and the `/similar-days` endpoin
     normal empty-memory case, not an outage. A PARTIAL failure (at least one asked retriever
     answered) still returns 200 with whatever survived.
 
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — quarterly, profile and the two extractors
+read the memory platform.** Four more non-chat surfaces gained a `MemoryContextBlock` read
+beside their existing `knowledge_fact` block:
+
+| Surface | Policy | Query | Feature slug |
+|---|---|---|---|
+| `QuarterlyReviewService` | `CHARACTER_EVIDENCE` (deep) | the quarter's period-summary text | `companion_quarterly` |
+| `ProfileAssembler` | `CHARACTER_EVIDENCE` (deep) | the rollup digest + habit-node titles | `companion_profile` |
+| `LifeEventExtractionService` | `EXTRACTION` | the day's narrative | `companion_graph` |
+| `PersonExtractionService` | `EXTRACTION` | the day's narrative | `people_extraction` |
+
+Every query is capped at 800 chars. The extractors title their block
+`KORÁBBI KAPCSOLÓDÓ EMLÉKEK`, so the model can tell a RECURRING event from a new one — the whole
+point of giving an extractor memory.
+
+Three rules this wiring depends on, each learned the hard way in an earlier slice:
+
+- **The feature slug is load-bearing, and each surface keeps its OWN.** One
+  `private static final LlmCallContext CONTEXT` per service, whose `feature()` is also what goes
+  to `MemoryContextBlock.render` — so the generation label and the retrieval label cannot drift.
+  The slugs are matched literally against `mezo.llm-log.budget.throttled-features`; only
+  `companion_quarterly` is on that list, so only its retrieval is suspended from the throttle
+  step up. S8 first shipped one shared invented slug, which silently matched nothing.
+- **A retrieval must not run inside a transaction.** `ProfileAssembler.rebuild` was
+  `@Transactional`; the four retrievers each take their own pooled connection, so retrieving
+  inside it exhausted the pool and HUNG rather than failed. `rebuild` now gathers and retrieves
+  with no transaction open and writes through the self-proxied `persist`. Same treatment as the
+  two character konzíliums (see [character.md](character.md#5-integrations)). Quarterly and both
+  extractors already delegated persistence through a self-proxy, so they needed no change.
+- **`MemoryContextBlock.render` is FAIL-OPEN** — it swallows `RuntimeException` and returns
+  EMPTY. So a test asserting only "the surface still produced its row" is vacuous: it passes
+  even when the block is permanently empty (a missing `ck_memory_retrieval_run_policy` value
+  does exactly that). Every `*MemoryIT` here asserts on the rendered block's CONTENT **and** on a
+  `memory_retrieval_run` row carrying the right `consumer_policy`; each `*MemoryDisabledIT`
+  asserts the opposite pair under `enabled: false`.
+
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
 - **The second nightly cron** — `PatternDetectionJob` (02:40, switch

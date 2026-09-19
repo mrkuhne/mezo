@@ -289,8 +289,12 @@ public class MemoryContextService {
                 .toList();
         // mezo-eq85.10 fix round 2, FIX A: a retriever that cannot contribute to THIS run is not
         // submitted at all, and — the part that matters — is kept out of the success ratio below.
-        // It still gets a trace entry, marked `skipped`, so the audit row and the admin explorer
-        // show four rows as before and a reader can tell a skip from a zero-hit answer.
+        // It still gets a trace entry, marked `skipped`, so the audit row's raw trace keeps its four
+        // entries and a reader of THAT json can tell a skip from a zero-hit answer. The admin
+        // explorer cannot: AdminMemoryRunMapper.trace projects only retriever/durationMs/
+        // candidateCount/error, so a skipped retriever renders there exactly like one that was
+        // asked and found nothing. Surfacing the difference needs a `skipped` flag on
+        // AdminMemoryRetrieverTrace — deliberately not added here (bd mezo-eq85.10 re-review).
         List<MemoryRetriever> skipped =
                 ordered.stream().filter(retriever -> !retriever.appliesTo(input)).toList();
         ordered.stream()
