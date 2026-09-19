@@ -14,17 +14,23 @@ public interface MemoryItemRepository extends JpaRepository<MemoryItemEntity, UU
     /**
      * L1 embedding-count rollup (mezo-eq85.10) — {@code memory_item.source_kind} counted over a
      * LIVE serving-version {@code memory_vector} row, the exact predicate {@code DenseMemoryQuery}
-     * uses for ANN eligibility (not deleted, ready, has an embedding, on the serving generation).
-     * Replaces the retired {@code MemoryEmbeddingRepository.countByKindForUser}.
+     * uses for ANN eligibility: not deleted (both {@code @SQLRestriction}s apply, this is JPQL),
+     * item {@code state = 'active'}, vector {@code ready} with an embedding, on the serving
+     * generation, and {@code embedded_content_hash = content_hash}. All SIX matter — a suppressed
+     * or superseded item, or one whose text changed since it was embedded, will never be returned
+     * by ANN, so counting it as "vetítve" would overstate the store to the user (fix round 1,
+     * FIX 7). Replaces the retired {@code MemoryEmbeddingRepository.countByKindForUser}.
      */
     @Query("""
             select i.sourceKind as kind, count(i) as count
             from MemoryItemEntity i
             join MemoryVectorEntity v on v.memoryItemId = i.id and v.createdBy = i.createdBy
             where i.createdBy = :createdBy
+              and i.state = 'active'
               and v.embeddingVersion = :servingVersion
               and v.status = 'ready'
               and v.embedding is not null
+              and v.embeddedContentHash = i.contentHash
             group by i.sourceKind
             order by count(i) desc, i.sourceKind asc
             """)
@@ -47,9 +53,11 @@ public interface MemoryItemRepository extends JpaRepository<MemoryItemEntity, UU
             join MemoryVectorEntity v on v.memoryItemId = i.id and v.createdBy = i.createdBy
             where i.createdBy = :createdBy
               and i.sourceKind = :sourceKind
+              and i.state = 'active'
               and v.embeddingVersion = :servingVersion
               and v.status = 'ready'
               and v.embedding is not null
+              and v.embeddedContentHash = i.contentHash
             """)
     Set<UUID> findSourceIdsWithLiveVector(
             @Param("createdBy") UUID createdBy, @Param("sourceKind") String sourceKind,

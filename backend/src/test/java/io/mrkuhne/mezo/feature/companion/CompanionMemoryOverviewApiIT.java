@@ -42,11 +42,14 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
 
     /** mezo.companion.memory-platform.serving-embedding-version (application.yml). */
     private static final String SERVING_VERSION = "gemini-embedding-001-768-v1";
+    /** A well-formed sha-256 that is NOT the item's own content hash (the column is @Pattern-ed). */
+    private static final String STALE_HASH = "0".repeat(64);
 
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private MemoryItemPopulator memoryItemPopulator;
     @Autowired private MemoryVectorRepository memoryVectorRepository;
+    @Autowired private io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository memoryItemRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
@@ -261,6 +264,54 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         MemoryOverviewResponse response = overview();
 
         assertThat(response.getL1().getEmbeddings()).isEmpty();
+    }
+
+    /**
+     * mezo-eq85.10 fix round 1, FIX 7 — the counting query must carry the SAME 6-part eligibility
+     * predicate {@code DenseMemoryQuery} uses, not 4 of the 6. A suppressed or superseded item is
+     * never returned by ANN, so counting it as "vetítve" overstates the store to the user.
+     */
+    @Test
+    void testOverview_shouldIgnoreSuppressedItems_whenTheirVectorIsStillLive() {
+        UUID owner = ownerId();
+        MemoryItemEntity suppressed = liveVector(owner, "daily_summary", LocalDate.now().minusDays(1), 0);
+        suppressed.setState(MemoryItemEntity.STATE_SUPPRESSED);
+        memoryItemRepository.saveAndFlush(suppressed);
+
+        assertThat(overview().getL1().getEmbeddings()).isEmpty();
+    }
+
+    /** FIX 7 — an item whose text changed since it was embedded: the vector no longer describes
+     *  the content, {@code DenseMemoryQuery}'s {@code embedded_content_hash = content_hash} clause
+     *  excludes it, and so must the count. */
+    @Test
+    void testOverview_shouldIgnoreStaleVectors_whenTheItemTextChangedSinceEmbedding() {
+        UUID owner = ownerId();
+        MemoryItemEntity item = memoryItemPopulator.item(owner, "daily_summary", UUID.randomUUID(),
+                null, "n", LocalDate.now().minusDays(1), new String[0], new String[0],
+                MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(item, SERVING_VERSION, axisVector(0),
+                MemoryVectorEntity.STATUS_READY, null, STALE_HASH);
+
+        assertThat(overview().getL1().getEmbeddings()).isEmpty();
+    }
+
+    /** FIX 7 — a pending (never embedded) vector row and a failed one are both ANN-ineligible. */
+    @Test
+    void testOverview_shouldIgnoreNonReadyVectors_whenEmbeddingIsPendingOrFailed() {
+        UUID owner = ownerId();
+        MemoryItemEntity pending = memoryItemPopulator.item(owner, "daily_summary", UUID.randomUUID(),
+                null, "p", LocalDate.now().minusDays(1), new String[0], new String[0],
+                MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(pending, SERVING_VERSION, null,
+                MemoryVectorEntity.STATUS_PENDING, null, null);
+        MemoryItemEntity failed = memoryItemPopulator.item(owner, "chat_turn", UUID.randomUUID(),
+                null, "f", LocalDate.now().minusDays(1), new String[0], new String[0],
+                MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(failed, SERVING_VERSION, axisVector(1),
+                MemoryVectorEntity.STATUS_FAILED, "PROVIDER_ERROR", null);
+
+        assertThat(overview().getL1().getEmbeddings()).isEmpty();
     }
 
     @Test
