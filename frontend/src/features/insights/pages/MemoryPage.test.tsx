@@ -76,16 +76,15 @@ describe('MemoryPage (mock mode)', () => {
   test('search is lazy, results jump to the journal entry', async () => {
     renderPage()
     await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
-    expect(screen.queryByText('egyezés 0.81')).not.toBeInTheDocument() // lusta — még nincs találat
+    // lusta — még nincs találat, tehát az első seed-nap kivonata sem látszik
+    expect(screen.queryByText(/Pihenőnap volt, de a napzárás elmaradt/)).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'rossz alvás')
     await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
-    // a matek-chipsor: egyezés × frissesség = végső (0.78/0.81 ≈ 0.96)
-    expect(await screen.findByText('egyezés 0.81')).toBeInTheDocument()
-    expect(screen.getByText('frissesség 0.96')).toBeInTheDocument()
-    expect(screen.getByText('végső 0.78')).toBeInTheDocument()
-    // a találati kártya egyezés-gyűrűje a % címkével (új arc, mezo-d20.5.7)
-    expect(screen.getByRole('img', { name: 'egyezés 81%' })).toBeInTheDocument()
-    await userEvent.click(screen.getByText('egyezés 0.81'))
+    expect(await screen.findByText(/Pihenőnap volt, de a napzárás elmaradt/)).toBeInTheDocument()
+    // a pontszámok eltűntek (mezo-eq85.10) — a gyűrű csak a rangsor-helyet mutatja
+    expect(screen.queryByText(/egyezés/)).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '1. legjobb találat' })).toBeInTheDocument()
+    await userEvent.click(screen.getByText(/Pihenőnap volt, de a napzárás elmaradt/))
     // a koppintás a Napló szegmensre vált, a 08-09-es bejegyzés látszik
     expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
   })

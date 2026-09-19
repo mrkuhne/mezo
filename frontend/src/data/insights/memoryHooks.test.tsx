@@ -92,14 +92,19 @@ describe('useSimilarDays (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/companion/memory/similar-days`, () =>
         HttpResponse.json({
-          items: [{ date: '2026-08-09', excerpt: 'rövid alvás', similarity: 0.81, finalScore: 0.64 }],
+          items: [{
+            date: '2026-08-09', excerpt: 'rövid alvás', rank: 1,
+            memoryItemId: '11111111-1111-1111-1111-111111111111',
+          }],
+          retrievalRunId: '99999999-9999-9999-9999-999999999999',
         }),
       ),
     )
     const { result } = renderHook(() => useSimilarDays('rossz alvás'), { wrapper: makeHookWrapper() })
 
     await waitFor(() => expect(result.current.results).toHaveLength(1))
-    expect(result.current.results![0].finalScore).toBe(0.64)
+    expect(result.current.results![0].rank).toBe(1)
+    expect(result.current.results![0].memoryItemId).toBe('11111111-1111-1111-1111-111111111111')
   })
 
   test('flags degraded on 404', async () => {

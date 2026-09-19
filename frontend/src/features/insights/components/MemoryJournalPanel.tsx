@@ -13,7 +13,8 @@ function dayLabel(date: string): string {
 }
 
 /** Az L1 napló (mezo-d20.5.7) — a prototípus .daycard arca: éjjel írt nap-kártyák
- *  hónap-elválasztókkal; a sarok-pötty a beágyazott embed-jelző (zsálya = van vektor). */
+ *  hónap-elválasztókkal; a sarok-pötty a vetített (memory_item → memory_vector) jelző
+ *  (zsálya = van élő vektor, mezo-eq85.10-től a szolgáló generációra szűrve). */
 export function MemoryJournalPanel({
   summaries, focusDate,
 }: { summaries: MemorySummaryItem[]; focusDate?: string | null }) {

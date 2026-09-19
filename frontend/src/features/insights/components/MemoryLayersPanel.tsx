@@ -9,9 +9,12 @@ const STATUS_HU: Record<string, string> = {
 }
 const SOURCE_HU: Record<string, string> = { chat: 'chat', pattern: 'minta', manual: 'kézi' }
 
-/** Hungarian labels for `memory_embedding.kind` (mezo-b3pp.22). The backend sends whatever kinds
- *  are populated, and the CHECK list grows — an unknown kind falls back to its raw key rather than
- *  vanishing, so a new writer is visible here the day it ships, before this map learns about it. */
+/** Hungarian labels for the wire's `kind` field (mezo-b3pp.22) — since mezo-eq85.10 this is
+ *  `memory_item.source_kind` counted over a live serving-version `memory_vector` row, not
+ *  `memory_embedding.kind` (the field name on the wire is unchanged, only its source). The
+ *  backend sends whatever kinds are populated, and the list grows — an unknown kind falls back
+ *  to its raw key rather than vanishing, so a new writer is visible here the day it ships,
+ *  before this map learns about it. */
 const EMBEDDING_KIND_LABEL: Record<string, string> = {
   daily_summary: 'nap',
   chat_turn: 'chat',
