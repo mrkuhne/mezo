@@ -222,6 +222,10 @@ public class MemoryObservatoryService {
         // retrieveOrFail, not retrieve: a total retriever outage returns an EMPTY context, which
         // this surface would render as "nincs ilyen napod" — a lie about the user's history. An
         // honest 5xx beats a fabricated empty list, so the failure propagates to the FE.
+        // "Total" means every retriever this run ASKED (mezo-eq85.10 fix round 2, FIX A): under
+        // SIMILAR_DAYS only dense and lexical are asked at all, and while the skipped fact/graph
+        // retrievers still counted as successes this branch was unreachable — the endpoint kept
+        // answering 200 with an empty list. See MemoryRetriever#appliesTo.
         MemoryContext context = memoryContextService.retrieveOrFail(request);
         List<MemoryContextItem> dailySummaryItems = context.items().stream()
                 .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))

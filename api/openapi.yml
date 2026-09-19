@@ -5630,8 +5630,14 @@ paths:
         retrievalRunId/memoryItemId a hivatkozáshoz. Őszinte üres lista, ha
         semmi nem talál, beleértve azt is, amikor minden találat a
         nyers-koszinusz küszöb (recall.min-similarity = 0.25) alatt van: egy
-        gyenge egyezés zaj, nem emlék. Ha a keresés elbukik, 500 jön, nem üres
-        lista. A tool és a felület garantáltan ugyanazt a memóriát látja.
+        gyenge egyezés zaj, nem emlék. Ha MINDEN kereső elbukik, amit ez a futás
+        egyáltalán megkérdezett, 500 jön, nem üres lista — napot csak a dense és
+        a lexical kereső talál, a fact- és graph-kereső el sem indul
+        kind-szűkített futáson, és épp ezért nem is számít sikernek
+        (mezo-eq85.10 fix 2. kör: amíg annak számított, a totális kiesés sosem
+        tudott 500-at adni). RÉSZLEGES hiba (legalább egy megkérdezett kereső
+        válaszolt) továbbra is 200, a megmaradt kereső találataival. A tool és a
+        felület garantáltan ugyanazt a memóriát látja.
       parameters:
         - name: q
           in: query
@@ -19618,9 +19624,12 @@ components:
             A memory_retrieval_run sora (mezo-eq85.10). Akkor és csak akkor
             null, ha a SIMILAR_DAYS policy ki van kapcsolva (enabled=false):
             olyankor keresés sem fut, így nincs futás-sor, amire mutathatna, és
-            az items is üres. Ha maga a keresés bukik el, a végpont HIBÁT ad
-            (500), nem kitalált üres listát — egy üres lista ezen a felületen
-            azt állítaná, hogy nincs ilyen napod.
+            az items is üres. Ha minden megkérdezett kereső elbukik, a végpont
+            HIBÁT ad (500), nem kitalált üres listát — egy üres lista ezen a
+            felületen azt állítaná, hogy nincs ilyen napod. "Megkérdezett" = a
+            fact- és graph-kereső ilyenkor el sem indul (nem tud napot adni), és
+            nem is számít bele a sikeres keresők számába — enélkül a totális
+            kiesés sosem érte el az 500-at (mezo-eq85.10 fix 2. kör).
     SimilarDayItem:
       type: object
       required:

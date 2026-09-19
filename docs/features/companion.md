@@ -524,6 +524,16 @@ platform, not in the two call sites, so the tool and the `/similar-days` endpoin
   state, never "Nincs elég hasonló nap a memóriában"; the **chat tool** catches it and answers a
   short honest Hungarian line — deliberately NOT `ToolText.NO_DATA`, which would be the same lie —
   so one unreachable memory platform never fails the whole turn.
+  - **"Total" counts only the retrievers the run ASKED** (fix round 2, `MemoryRetriever.appliesTo`).
+    `SIMILAR_DAYS` is kind-scoped, so the fact and graph retrievers — which can never hold a
+    `daily_summary` — are skipped, and a skip is neither a success nor a failure: it is excluded
+    from both sides of the ratio and marked `skipped` in the run's `retriever_trace`. The first
+    version of this counted a skipped retriever as a success, which left `successCount == 0`
+    unreachable on every similar-days run and made the whole honesty path above dead code — the
+    endpoint kept answering 200 with an empty list while dense and lexical were both down.
+    A retriever that WAS asked and honestly found nothing still counts as a success: that is the
+    normal empty-memory case, not an outage. A PARTIAL failure (at least one asked retriever
+    answered) still returns 200 with whatever survived.
 
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
