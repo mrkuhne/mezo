@@ -23,14 +23,19 @@ public class FactMemoryRetriever implements MemoryRetriever {
     }
 
     /** A confirmed fact is never a {@code memory_item} of any source kind, so a kind-scoped run
-     *  (SIMILAR_DAYS) has nothing to find here — answer empty instead of spending a pooled JDBC
+     *  (SIMILAR_DAYS) has nothing to find here — skip it instead of spending a pooled JDBC
      *  connection and a slice of the shared deadline on a query whose every row would be
-     *  discarded downstream (mezo-eq85.10 FIX 1). */
+     *  discarded downstream (mezo-eq85.10 FIX 1). Expressed as {@code appliesTo} rather than an
+     *  early {@code return List.of()} inside {@link #retrieve} because the coordinator must be able
+     *  to tell "never asked" from "asked, found nothing" — see {@link MemoryRetriever#appliesTo}
+     *  (fix round 2, FIX A). */
+    @Override
+    public boolean appliesTo(RetrievalInput input) {
+        return input.sourceKind() == null;
+    }
+
     @Override
     public List<MemoryCandidate> retrieve(RetrievalInput input) {
-        if (input.sourceKind() != null) {
-            return List.of();
-        }
         return query.search(
                         input.request().userId(), input.query().rawQuery(),
                         input.request().asOf(), input.candidateLimit())

@@ -29,12 +29,16 @@ public class GraphMemoryRetriever implements MemoryRetriever {
     }
 
     /** A knowledge edge carries no {@code memory_item.source_kind} either — same reasoning as
-     *  {@link FactMemoryRetriever} (mezo-eq85.10 FIX 1): a kind-scoped run skips the traversal. */
+     *  {@link FactMemoryRetriever} (mezo-eq85.10 FIX 1): a kind-scoped run skips the traversal,
+     *  and the coordinator must see the skip as a SKIP, never as a success (fix round 2, FIX A —
+     *  see {@link MemoryRetriever#appliesTo}). */
+    @Override
+    public boolean appliesTo(RetrievalInput input) {
+        return input.sourceKind() == null;
+    }
+
     @Override
     public List<MemoryCandidate> retrieve(RetrievalInput input) {
-        if (input.sourceKind() != null) {
-            return List.of();
-        }
         UUID userId = input.request().userId();
         List<UUID> seeds = traversalService.seedsFor(
                 userId, input.query().rawQuery(), input.request().asOf());

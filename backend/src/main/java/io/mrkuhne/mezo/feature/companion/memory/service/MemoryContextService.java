@@ -166,7 +166,11 @@ public class MemoryContextService {
         Map<String, List<MemoryCandidate>> candidates =
                 aboveRelevanceFloor(batch.candidates(), request.consumerPolicy());
         List<FusedCandidate> ranked = fusion.fuse(candidates, query, request.asOf());
-        boolean partialFailure = batch.successCount() > 0 && batch.successCount() < retrievers.size();
+        // mezo-eq85.10 fix round 2, FIX A: the ratio is over the retrievers that were ASKED, not
+        // over every registered bean. A retriever the run skipped a priori (see
+        // MemoryRetriever#appliesTo) is neither a success nor a failure.
+        boolean partialFailure =
+                batch.successCount() > 0 && batch.successCount() < batch.attemptedCount();
         int tokenBudget = Math.max(0, boundedTokenBudget(request) - (partialFailure ? (PARTIAL_NOTICE.length() + 2) / 3 : 0));
         List<FusedCandidate> selected = selector.select(ranked, tokenBudget, request.asOf());
         boolean reranked = options.reranker()
@@ -176,10 +180,11 @@ public class MemoryContextService {
             selected = selector.select(ranked, tokenBudget, request.asOf());
         }
 
-        boolean totalFailure = batch.successCount() == 0 && !retrievers.isEmpty();
+        boolean totalFailure = batch.successCount() == 0 && batch.attemptedCount() > 0;
         String errorCode = totalFailure
                 ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "")
-                : batch.successCount() < retrievers.size() ? "MEMORY_RETRIEVAL_PARTIAL_FAILURE" : null;
+                : batch.successCount() < batch.attemptedCount()
+                        ? "MEMORY_RETRIEVAL_PARTIAL_FAILURE" : null;
         // One source for both shapes: the audit command wants a List, the outcome a Set, and a
         // candidate must never be "selected" in one and not the other (mezo-4qyt).
         List<MemoryRetrievalAuditWriter.CandidateIdentity> selectedIds = selected.stream()
@@ -279,8 +284,17 @@ public class MemoryContextService {
         UUID actor = LlmActorContext.capture();
         LlmCallContext ambient = llmCallContextHolder.get();
         LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
-        retrievers.values().stream()
+        List<MemoryRetriever> ordered = retrievers.values().stream()
                 .sorted(Comparator.comparing(MemoryRetriever::name))
+                .toList();
+        // mezo-eq85.10 fix round 2, FIX A: a retriever that cannot contribute to THIS run is not
+        // submitted at all, and — the part that matters — is kept out of the success ratio below.
+        // It still gets a trace entry, marked `skipped`, so the audit row and the admin explorer
+        // show four rows as before and a reader can tell a skip from a zero-hit answer.
+        List<MemoryRetriever> skipped =
+                ordered.stream().filter(retriever -> !retriever.appliesTo(input)).toList();
+        ordered.stream()
+                .filter(retriever -> retriever.appliesTo(input))
                 .forEach(retriever -> {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
@@ -293,9 +307,18 @@ public class MemoryContextService {
                         log.warn("Memory retriever {} could not be submitted", retriever.name(), exception);
                     }
                 });
+        int attemptedCount = tasks.size();
 
         Map<String, List<MemoryCandidate>> candidates = new LinkedHashMap<>();
         Map<String, Object> trace = new LinkedHashMap<>();
+        for (MemoryRetriever retriever : skipped) {
+            candidates.put(retriever.name(), List.of());
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("durationMs", 0L);
+            details.put("candidateCount", 0);
+            details.put("skipped", true);
+            trace.put(retriever.name(), details);
+        }
         int successCount = 0;
         for (Map.Entry<String, RetrieverTask> entry : tasks.entrySet()) {
             RetrieverOutcome outcome;
@@ -345,7 +368,8 @@ public class MemoryContextService {
             }
             trace.put(entry.getKey(), details);
         }
-        return new RetrievalBatch(Map.copyOf(candidates), Map.copyOf(trace), successCount);
+        return new RetrievalBatch(
+                Map.copyOf(candidates), Map.copyOf(trace), successCount, attemptedCount);
     }
 
     /** Re-binds the captured breadcrumbs (if any) around one retriever's work on the pool thread. */
@@ -401,10 +425,19 @@ public class MemoryContextService {
     private record RetrieverTask(Future<RetrieverOutcome> future, long deadlineNanos, String submissionError) {
     }
 
+    /**
+     * @param successCount   retrievers that were asked AND answered (an honest zero-hit answer is a
+     *                       success — that is the normal empty-memory case, not an outage).
+     * @param attemptedCount retrievers that were ASKED. Never {@code retrievers.size()}: a run that
+     *                       skips a retriever a priori ({@link MemoryRetriever#appliesTo}) must not
+     *                       get a free success out of it, or a total outage of the retrievers that
+     *                       CAN answer becomes invisible (mezo-eq85.10 fix round 2, FIX A).
+     */
     private record RetrievalBatch(
             Map<String, List<MemoryCandidate>> candidates,
             Map<String, Object> trace,
-            int successCount) {
+            int successCount,
+            int attemptedCount) {
     }
 
 }
