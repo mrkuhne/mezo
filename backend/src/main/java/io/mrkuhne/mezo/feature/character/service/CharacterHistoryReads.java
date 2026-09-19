@@ -86,6 +86,12 @@ public class CharacterHistoryReads {
 
     private static final int NARRATIVE_CAP_CHARS = 300;
 
+    /** First N chars of the text handed to memory retrieval by {@link #narrativeQueryText} — the
+     *  same bound every other Part-B memory call site uses ({@code CharacterMonthlyService},
+     *  {@code QuarterlyReviewService}, {@code ProfileAssembler}, all off the {@code
+     *  MemoirGenerator.firstChars} precedent). */
+    private static final int MEMORY_QUERY_MAX_CHARS = 800;
+
     /** Newest N CONFIRMED patterns carried into the history evidence (final-review Finding M6) —
      *  mirrors {@link #HISTORY_SUMMARY_CAP}'s treatment of narratives: a CONFIRMED pattern has no
      *  natural upper bound either, so an unbounded read here would let a heavy user's pattern set
@@ -193,15 +199,28 @@ public class CharacterHistoryReads {
      *  pooled connections never compete with a held outer one (task-10-codebase-notes.md §4
      *  HAZARD). A second small read against {@code daily_summary} is the deliberate trade-off: the
      *  alternative (deriving plain narrative text back out of {@link #gatherHistory}'s per-expert,
-     *  already-mixed-with-patterns-and-facts evidence lines) would be fragile string-parsing. */
+     *  already-mixed-with-patterns-and-facts evidence lines) would be fragile string-parsing.
+     *
+     *  <p>BOUNDED twice (mezo-eq85.10 fix round 2, FIX B), exactly the way {@link #addNarratives}
+     *  and the five sibling Part-B call sites are: each narrative at {@value #NARRATIVE_CAP_CHARS}
+     *  chars, the joined result at {@value #MEMORY_QUERY_MAX_CHARS}. It shipped uncapped, which for
+     *  a real user with 30-60 days of history is 20k-90k characters of unbounded {@code text}
+     *  handed verbatim to {@code EmbeddingPort.embedQuery} ({@code MemoryQueryPreparer} caps only
+     *  REWRITTEN queries) — over the provider's input limit, so the embed fails, {@code
+     *  MemoryQueryEmbedder} fails open, {@code DenseMemoryRetriever} throws, and the bootstrap
+     *  konzílium's memory block ends up built from lexical/fact/graph only, permanently and
+     *  silently. The same text also drives {@code LexicalMemoryQuery}, whose multi-ten-kB
+     *  tsquery/trigram scan would not survive the 200 ms retriever deadline either. */
     @Transactional(readOnly = true)
     public String narrativeQueryText(UUID owner) {
         List<DailySummaryEntity> summaries = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(owner, EPOCH_FLOOR);
         List<DailySummaryEntity> capped =
                 summaries.size() > HISTORY_SUMMARY_CAP ? summaries.subList(0, HISTORY_SUMMARY_CAP) : summaries;
-        return capped.stream().map(DailySummaryEntity::getNarrative)
-                .collect(java.util.stream.Collectors.joining(" "));
+        return cap(capped.stream()
+                        .map(summary -> cap(summary.getNarrative(), NARRATIVE_CAP_CHARS))
+                        .collect(java.util.stream.Collectors.joining(" ")),
+                MEMORY_QUERY_MAX_CHARS);
     }
 
     /** Builds one {@link ExpertEvidence} per expert that has any evidence — empty list when the

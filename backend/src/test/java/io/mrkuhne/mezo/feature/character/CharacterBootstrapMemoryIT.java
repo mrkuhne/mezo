@@ -86,6 +86,48 @@ class CharacterBootstrapMemoryIT extends AbstractIntegrationTest {
                 });
     }
 
+    /**
+     * mezo-eq85.10 fix round 2, FIX B — the bootstrap's retrieval query must be BOUNDED. It shipped
+     * joining up to 60 FULL {@code daily_summary.narrative} values (an unbounded {@code text}
+     * column) with no cap at all, and deliberately without the 300-char truncation its own sibling
+     * {@code addNarratives} applies. For a real user with 30-60 days of history that is 20k-90k
+     * characters handed verbatim to the embedding provider — over its input limit, so the embed
+     * fails, {@code MemoryQueryEmbedder} fails open, the dense retriever throws, and the konzílium's
+     * memory block is silently and permanently built from lexical/fact/graph only.
+     *
+     * <p>The pre-existing IT above seeds ONE SHORT summary, which is exactly why it could not see
+     * this. Here: five days, each narrative far past the 300-char per-day cap, asserted on the
+     * audited {@code raw_query} — the query the retrieval actually ran, not an internal.
+     */
+    @Test
+    void testRun_shouldBoundTheRetrievalQuery_whenTheUserHasManyLongNarratives() {
+        UUID owner = userPopulator.createUser("bootstrap-memory-long-history@test.local").getId();
+        for (int day = 0; day < 5; day++) {
+            dailySummaryPopulator.summary(owner, LocalDate.of(2026, 8, 1).plusDays(day),
+                    longNarrative("nap" + day));
+        }
+        item(owner, "Régen is hasonló hónapban pihentél.");
+
+        assertThat(bootstrapService.run(owner)).isNotNull();
+
+        assertThat(runRepository.findAll()).filteredOn(run -> owner.equals(run.getCreatedBy()))
+                .isNotEmpty()
+                .allSatisfy(run -> assertThat(run.getRawQuery())
+                        // CharacterHistoryReads.MEMORY_QUERY_MAX_CHARS, the bound every sibling
+                        // Part-B memory call site uses. Uncapped this would be ~2500 chars here and
+                        // tens of thousands for a real user.
+                        .hasSizeLessThanOrEqualTo(800));
+    }
+
+    /** ~500 chars of words unique to {@code stem} — comfortably past the 300-char per-day cap. */
+    private static String longNarrative(String stem) {
+        StringBuilder text = new StringBuilder();
+        for (int word = 0; word < 60; word++) {
+            text.append(stem).append('x').append(word).append(' ');
+        }
+        return text.toString();
+    }
+
     private void item(UUID owner, String content) {
         MemoryItemEntity item = memoryPopulator.item(owner, "journal_entry", UUID.randomUUID(),
                 "Napló", content, LocalDate.of(2026, 7, 29), new String[0], new String[0],
