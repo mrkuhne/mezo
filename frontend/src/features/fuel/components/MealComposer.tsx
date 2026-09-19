@@ -37,6 +37,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FuelMeal, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
+import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
 import { pct } from '@/shared/lib/pct'
 import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
@@ -249,7 +250,10 @@ export function MealComposer({
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay(logDate)
-  const { logMeal, logMealAsync, updateMeal, deleteMeal, draftMealFromAi } = useMealActions(logDate)
+  const { logMealAsync, updateMeal, deleteMeal, draftMealFromAi } = useMealActions(logDate)
+  // A naplózást LEZÁRÓ ünneplés (mezo-bqwyo): a ceremónia a shellben lakik, mert ez a
+  // szerkesztő a mentés pillanatában bezárja magát.
+  const { celebrateMeal } = useMealCeremony()
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
@@ -548,6 +552,22 @@ export function MealComposer({
       onSaved()
       return
     }
+    // A mentés VÁLASZÁBÓL ünnepelünk: a pontszám a szerveren, íráskor születik (ADR 0006),
+    // tehát a válasz már hordozza. Pontszám nélkül a provider nem nyit ceremóniát.
+    const celebrate = (meal?: { id?: string; score?: number | null; title?: string | null; kcal?: number; p?: number; c?: number } | null) => {
+      if (!meal?.id) return
+      const time = new Date(input.loggedAt ?? Date.now()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
+      celebrateMeal({
+        mealId: meal.id,
+        score: meal.score ?? null,
+        label: meal.title ?? input.title ?? 'Étkezés',
+        timeLabel: time,
+        kcal: meal.kcal ?? 0,
+        proteinG: meal.p ?? 0,
+        carbsG: meal.c ?? 0,
+        hasBreakdown: true,
+      })
+    }
     if (aiContribution && aiDraftId) {
       const draftId = aiDraftId
       const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
@@ -557,11 +577,11 @@ export function MealComposer({
       // callback form reported nothing there. A failed save reports nothing either: the draft was
       // never accepted, and the discard guard above already claimed this id.
       void logMealAsync(input).then(
-        () => reportDraftOutcome(draftId, 'meal_draft', outcome),
+        (meal) => { reportDraftOutcome(draftId, 'meal_draft', outcome); celebrate(meal as never) },
         () => undefined,
       )
     } else {
-      logMeal(input)
+      void logMealAsync(input).then((meal) => celebrate(meal as never), () => undefined)
     }
     onSaved()
   }

@@ -263,8 +263,11 @@ export const mealApi = {
       mealScoreAvg: w.mealScoreAvg ?? null,
       weightAvgKg: w.weightAvgKg ?? null,
     })),
-  create: (input: MealInput): Promise<void> =>
-    apiFetch('/api/meal', { method: 'POST', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
+  // A VÁLASZT megtartjuk (mezo-bqwyo): a pontszám a szerveren, íráskor születik (ADR 0006), és a
+  // naplózást lezáró ünneplés ebből él. Eddig `.then(() => undefined)` dobta el — egy meglévő,
+  // kifizetett adat, amit a hívó nem tudott elérni.
+  create: (input: MealInput): Promise<FuelMeal> =>
+    apiFetch<MealResponse>('/api/meal', { method: 'POST', body: JSON.stringify(toRequest(input)) }).then(fromResponse),
   update: (id: string, input: MealInput): Promise<void> =>
     apiFetch(`/api/meal/${id}`, { method: 'PUT', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   remove: (id: string): Promise<void> =>

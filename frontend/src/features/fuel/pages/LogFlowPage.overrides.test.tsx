@@ -6,14 +6,18 @@ import type { MealInput } from '@/data/types'
 
 // Single-hook override (the LogFlowPage.timestamp.test idiom): every hook stays real (mock mode),
 // only logMeal becomes a spy so we can read the outgoing payload.
-const hoisted = vi.hoisted(() => ({ logMeal: null as null | ((input: MealInput) => void) }))
+// mezo-bqwyo: a szerkesztő ÚJ étkezésnél `logMealAsync`-et hív (a naplózást lezáró ünneplés
+// a mentés VÁLASZÁBÓL él, és a per-hívás callbacket a TanStack eldobja, amikor a szerkesztő
+// a mentés pillanatában unmountol). A kimenő payload szerződése változatlan — csak a
+// belépési pont más, ezért a kém is oda költözik.
+const hoisted = vi.hoisted(() => ({ logMeal: null as null | ((input: MealInput) => Promise<unknown>) }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useMealActions: (date?: string) => ({
       ...actual.useMealActions(date),
-      ...(hoisted.logMeal ? { logMeal: hoisted.logMeal } : {}),
+      ...(hoisted.logMeal ? { logMeal: hoisted.logMeal, logMealAsync: hoisted.logMeal } : {}),
     }),
   }
 })
@@ -63,8 +67,8 @@ describe('LogFlowPage ingredient overrides', () => {
   })
 
   it('sends the changed line as an ingredientOverride and leaves the rest alone', () => {
-    const logSpy = vi.fn()
-    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const logSpy = vi.fn().mockResolvedValue(undefined)
+    hoisted.logMeal = logSpy as (input: MealInput) => Promise<unknown>
     const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
@@ -82,8 +86,8 @@ describe('LogFlowPage ingredient overrides', () => {
   })
 
   it('sends no overrides when nothing was touched', () => {
-    const logSpy = vi.fn()
-    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const logSpy = vi.fn().mockResolvedValue(undefined)
+    hoisted.logMeal = logSpy as (input: MealInput) => Promise<unknown>
     openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
@@ -95,8 +99,8 @@ describe('LogFlowPage ingredient overrides', () => {
   })
 
   it('drops the override entirely when a row is stepped back to its original amount', () => {
-    const logSpy = vi.fn()
-    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const logSpy = vi.fn().mockResolvedValue(undefined)
+    hoisted.logMeal = logSpy as (input: MealInput) => Promise<unknown>
     const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
@@ -115,8 +119,8 @@ describe('LogFlowPage ingredient overrides', () => {
   })
 
   it('reverts every change with Alaphelyzet', () => {
-    const logSpy = vi.fn()
-    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const logSpy = vi.fn().mockResolvedValue(undefined)
+    hoisted.logMeal = logSpy as (input: MealInput) => Promise<unknown>
     const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))

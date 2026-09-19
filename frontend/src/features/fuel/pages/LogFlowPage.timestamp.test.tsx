@@ -6,14 +6,18 @@ import type { MealInput } from '@/data/types'
 
 // Single-hook override (the AiLogSheet.test idiom): keep every hook real (mock mode) via
 // importOriginal and swap only logMeal for a spy, so we can read the outgoing payload.
-const hoisted = vi.hoisted(() => ({ logMeal: null as null | ((input: MealInput) => void) }))
+// mezo-bqwyo: a szerkesztő ÚJ étkezésnél `logMealAsync`-et hív (a naplózást lezáró ünneplés
+// a mentés VÁLASZÁBÓL él, és a per-hívás callbacket a TanStack eldobja, amikor a szerkesztő
+// a mentés pillanatában unmountol). A kimenő payload szerződése változatlan — csak a
+// belépési pont más, ezért a kém is oda költözik.
+const hoisted = vi.hoisted(() => ({ logMeal: null as null | ((input: MealInput) => Promise<unknown>) }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useMealActions: (date?: string) => ({
       ...actual.useMealActions(date),
-      ...(hoisted.logMeal ? { logMeal: hoisted.logMeal } : {}),
+      ...(hoisted.logMeal ? { logMeal: hoisted.logMeal, logMealAsync: hoisted.logMeal } : {}),
     }),
   }
 })
@@ -44,8 +48,8 @@ describe('LogFlowPage loggedAt', () => {
     const { qc, wrapper } = setup()
     const pantry = renderHook(() => usePantry(), { wrapper })
     const ing = pantry.result.current.ingredients[0]
-    const logSpy = vi.fn()
-    hoisted.logMeal = logSpy as (input: MealInput) => void
+    const logSpy = vi.fn().mockResolvedValue(undefined)
+    hoisted.logMeal = logSpy as (input: MealInput) => Promise<unknown>
 
     render(
       <QueryClientProvider client={qc}>
