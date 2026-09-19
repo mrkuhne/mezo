@@ -175,4 +175,38 @@ class TurnProvenanceTest {
         ToolCallsEnvelope.ToolCall ask = built.ask().calls().get(0);
         assertThat(ask.args()).isEqualTo("day=(üres)");
     }
+
+    @Test
+    void jsonEncodedToolTextIsDecodedSoTheCardShowsRealNewlines() {
+        // Spring AI serialises a String-returning tool, so the raw result arrives quoted with
+        // escaped newlines — exactly what reached a production provenance card (mezo-rj214.7).
+        String wireShape = "\"Napi étkezés-összesítők (utolsó 1 nap):\\n2026-09-19: 0/3221 kcal\"";
+
+        TurnProvenance.Built built = TurnProvenance.build(
+                List.of(new ToolCallAudit.ToolOutcome("get_fuel_log", "range=day", wireShape, "mai étkezés")),
+                DEFAULT_LIMITS);
+
+        String text = built.result().outcomes().getFirst().text();
+        assertThat(text).isEqualTo("Napi étkezés-összesítők (utolsó 1 nap):\n2026-09-19: 0/3221 kcal");
+        assertThat(text).doesNotContain("\\n").doesNotStartWith("\"");
+    }
+
+    @Test
+    void plainTextIsLeftExactlyAsItIs() {
+        TurnProvenance.Built built = TurnProvenance.build(
+                List.of(new ToolCallAudit.ToolOutcome("get_sleep", "days=3", "Kedd óta 7,2 óra átlag.", null)),
+                DEFAULT_LIMITS);
+
+        assertThat(built.result().outcomes().getFirst().text()).isEqualTo("Kedd óta 7,2 óra átlag.");
+    }
+
+    @Test
+    void aQuotedButUnparseableResultIsLeftAlone() {
+        String notJson = "\"nyitó idézőjel, de nincs lezárva rendesen \\q\"";
+
+        TurnProvenance.Built built = TurnProvenance.build(
+                List.of(new ToolCallAudit.ToolOutcome("get_x", "", notJson, null)), DEFAULT_LIMITS);
+
+        assertThat(built.result().outcomes().getFirst().text()).isEqualTo(notJson);
+    }
 }
