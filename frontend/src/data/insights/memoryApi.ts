@@ -47,7 +47,7 @@ export const memoryApi = {
       `/api/companion/memory/similar-days?q=${encodeURIComponent(q)}&k=${k}`,
     )
     return wire.items.map((i) => ({
-      date: i.date, excerpt: i.excerpt, similarity: i.similarity, finalScore: i.finalScore,
+      date: i.date, excerpt: i.excerpt, rank: i.rank, memoryItemId: i.memoryItemId ?? null,
     }))
   },
   llmUsage: async (days: number): Promise<MemoryLlmUsage> => {

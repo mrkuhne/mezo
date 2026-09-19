@@ -92,20 +92,20 @@ export const similarDaysSeed: SimilarDay[] = [
   {
     date: '2026-08-09',
     excerpt: 'Pihenőnap volt, de a napzárás elmaradt. Rövidebb alvás (6,1 óra, 2/5) követte…',
-    similarity: 0.81,
-    finalScore: 0.78,
+    rank: 1,
+    memoryItemId: '11111111-1111-1111-1111-111111111111',
   },
   {
     date: '2026-07-28',
     excerpt: 'Nehéz munkanap után 40 perces easy futás — a HR-recovery 52 s volt…',
-    similarity: 0.64,
-    finalScore: 0.54,
+    rank: 2,
+    memoryItemId: '22222222-2222-2222-2222-222222222222',
   },
   {
     date: '2026-07-21',
     excerpt: 'Deload-hét első napja. Korai lefekvés 22:10-kor, 8,1 óra alvás (5/5)…',
-    similarity: 0.52,
-    finalScore: 0.41,
+    rank: 3,
+    memoryItemId: '33333333-3333-3333-3333-333333333333',
   },
 ]
 

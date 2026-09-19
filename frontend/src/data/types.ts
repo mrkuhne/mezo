@@ -816,8 +816,9 @@ export interface MemoryOverview {
 
 export interface MemorySummaryItem { date: string; narrative: string; embedded: boolean }
 
-/** Egy hasonló-nap találat — MINDKÉT pontszám kimegy (similarity × exp(-age/τ) mechanika). */
-export interface SimilarDay { date: string; excerpt: string; similarity: number; finalScore: number }
+/** Egy hasonló-nap találat. Pontszám NINCS benne (mezo-eq85.10): a memória-platform rangsora
+ *  ordinális, a nyers RRF-szám nem 0..1 arány — a kártya `rank`-et mutat, nem százalékot. */
+export interface SimilarDay { date: string; excerpt: string; rank: number; memoryItemId: string | null }
 
 export interface LlmUsageDay {
   date: string

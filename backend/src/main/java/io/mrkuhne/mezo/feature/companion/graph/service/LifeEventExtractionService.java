@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphProposedEdge;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
@@ -82,6 +84,13 @@ public class LifeEventExtractionService {
     public static final Set<String> ALLOWED_KINDS =
         Set.of(GraphEdgeEntity.KIND_TRIGGERS, GraphEdgeEntity.KIND_PRECEDED_BY);
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): ONE constant for both the top-level {@code
+     *  extract_life_events} call AND (via {@link LlmCallContext#feature()}) the memory-retrieval
+     *  audit row in {@link #memoryBlock} — the S8/S9 idiom. Reuses the EXISTING
+     *  {@code companion_graph} slug already passed at the call site below. */
+    private static final LlmCallContext CONTEXT =
+        new LlmCallContext("companion_graph", "extract_life_events", "day", null);
+
     /** Same bound as the W2.2 structurer: the model sees a small multiple of top-K existing
      *  nodes, newest first, so prompt size stays flat as the graph grows. */
     private static final int CANDIDATE_POOL_MULTIPLIER = 3;
@@ -121,6 +130,11 @@ public class LifeEventExtractionService {
     // circularity) — see GraphPromotionService.reconcile's javadoc for why persistCandidates is
     // invoked through this proxy instead of `this`.
     private final ObjectProvider<LifeEventExtractionService> self;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on. {@code extractFor} carries no {@code @Transactional} (class
+     *  javadoc), so this retrieval never competes with the persistence path for pooled
+     *  connections. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     /** @return how many LIFE_EVENT candidates were created for {@code day} (0 on either gate, on
      *  an empty answer, on any model/parse failure, or — atomically, see {@link #persistCandidates}
@@ -139,9 +153,8 @@ public class LifeEventExtractionService {
             .stream().limit((long) topK * CANDIDATE_POOL_MULTIPLIER).toList();
         List<LifeEventSuggestion> suggestions;
         try {
-            String raw = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_graph", "extract_life_events", "day", null),
-                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(narrative, existing)));
+            String raw = llmCallContextHolder.runWith(CONTEXT,
+                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(userId, day, narrative, existing)));
             suggestions = parse(raw).stream()
                 .filter(s -> s != null && s.title() != null && !s.title().isBlank())
                 .limit(topK)
@@ -204,14 +217,36 @@ public class LifeEventExtractionService {
         }
     }
 
-    private String buildUserMessage(String narrative, List<GraphNodeEntity> existing) {
+    private String buildUserMessage(UUID userId, LocalDate day, String narrative, List<GraphNodeEntity> existing) {
         StringBuilder sb = new StringBuilder("A NAP SZÖVEGEI:\n").append(narrative).append('\n');
         sb.append("\nMEGLÉVŐ CSOMÓPONTOK:\n");
         for (int i = 0; i < existing.size(); i++) {
             GraphNodeEntity n = existing.get(i);
             sb.append(i).append(". (").append(n.getKind()).append(") ").append(n.getTitle()).append('\n');
         }
+        // Memória mindenhol S10.2 (mezo-eq85.10): the query is the day's own narrative — the SAME
+        // text gatherNarrative already built, reused rather than re-read from the tables. The
+        // extractor's own heading (KORÁBBI KAPCSOLÓDÓ EMLÉKEK) frames the block for THIS surface's
+        // purpose — telling a recurring event apart from a genuinely new one — distinct from the
+        // generic [Hosszú távú memória] framing the block itself always carries.
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, day, narrative);
+        if (!mem.block().isEmpty()) {
+            sb.append("\nKORÁBBI KAPCSOLÓDÓ EMLÉKEK:\n").append(mem.block()).append('\n');
+        }
         return sb.toString();
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this day's extraction pass, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code EXTRACTION} policy
+     *  is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself fail-open.
+     *  {@code deep = false}: {@code EXTRACTION} is configured lean and cheap (class table). */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate day, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.EXTRACTION, query, day, false,
+                CONTEXT.feature(), "extract_life_events", null);
     }
 
     /** {@code {proposedEdges: [...]}} — the spec's LIFE_EVENT meta envelope. Suggestions with an

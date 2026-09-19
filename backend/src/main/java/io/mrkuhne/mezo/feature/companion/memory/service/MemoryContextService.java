@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.companion.memory.service;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
@@ -49,6 +51,9 @@ public class MemoryContextService {
     private static final String PARTIAL_NOTICE = "[Memóriakeresés: részleges eredmény; egyes keresők nem válaszoltak. A hiányzó találat nem bizonyítja, hogy nincs adat.]\n";
 
     private static final String ALL_RETRIEVERS_FAILED = "MEMORY_RETRIEVAL_ALL_FAILED";
+
+    /** {@link DenseMemoryRetriever#name()} — the only retriever whose local score is raw cosine. */
+    private static final String DENSE_RETRIEVER = "dense";
 
     /**
      * How ONE retrieval should behave (mezo-4qyt). The four pre-existing entry points pass
@@ -98,6 +103,7 @@ public class MemoryContextService {
     private final MemoryReranker reranker;
     private final MemoryRetrievalAuditWriter auditWriter;
     private final MemoryPlatformProperties properties;
+    private final CompanionProperties companionProperties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AsyncTaskExecutor applicationTaskExecutor;
 
@@ -107,6 +113,28 @@ public class MemoryContextService {
 
     public MemoryContext retrieve(MemoryRequest request, RetrievalServingMode servingMode) {
         return execute(request, RetrieveOptions.audited(servingMode), false).context();
+    }
+
+    /**
+     * Total-outage-honest variant (mezo-eq85.10 FIX 3) for a surface where an EMPTY result is not a
+     * neutral fact but a statement about the user's history. {@link #retrieve} answers a total
+     * retriever outage with an empty context, which the "hasonló napok" search would render as
+     * "nincs ilyen napod" — a lie. Here the outage surfaces as an exception, and the caller decides:
+     * the endpoint propagates it (an honest error beats a fabricated empty), the chat tool catches
+     * it and says it could not recall right now. The audit row is written either way — the trace id
+     * on the error is the handle to it.
+     */
+    public MemoryContext retrieveOrFail(MemoryRequest request) {
+        RetrievalOutcome outcome =
+                execute(request, RetrieveOptions.audited(RetrievalServingMode.NEW), false);
+        if (outcome.errorCode() != null && outcome.errorCode().startsWith(ALL_RETRIEVERS_FAILED)) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("MEMORY_RETRIEVAL_UNAVAILABLE")
+                            .exceptionTraceId(outcome.context().traceId().toString())
+                            .build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return outcome.context();
     }
 
     /** NEW chat serving variant: an audited total retriever outage signals the legacy fallback. */
@@ -135,21 +163,28 @@ public class MemoryContextService {
         }
 
         RetrievalBatch batch = retrieveCandidates(request, query);
-        List<FusedCandidate> ranked = fusion.fuse(batch.candidates(), query, request.asOf());
-        boolean partialFailure = batch.successCount() > 0 && batch.successCount() < retrievers.size();
+        Map<String, List<MemoryCandidate>> candidates =
+                aboveRelevanceFloor(batch.candidates(), request.consumerPolicy());
+        List<FusedCandidate> ranked = fusion.fuse(candidates, query, request.asOf());
+        // mezo-eq85.10 fix round 2, FIX A: the ratio is over the retrievers that were ASKED, not
+        // over every registered bean. A retriever the run skipped a priori (see
+        // MemoryRetriever#appliesTo) is neither a success nor a failure.
+        boolean partialFailure =
+                batch.successCount() > 0 && batch.successCount() < batch.attemptedCount();
         int tokenBudget = Math.max(0, boundedTokenBudget(request) - (partialFailure ? (PARTIAL_NOTICE.length() + 2) / 3 : 0));
         List<FusedCandidate> selected = selector.select(ranked, tokenBudget, request.asOf());
         boolean reranked = options.reranker()
-                && reranker.shouldRerank(request, batch.candidates(), selected);
+                && reranker.shouldRerank(request, candidates, selected);
         if (reranked) {
             ranked = reranker.rerank(ranked);
             selected = selector.select(ranked, tokenBudget, request.asOf());
         }
 
-        boolean totalFailure = batch.successCount() == 0 && !retrievers.isEmpty();
+        boolean totalFailure = batch.successCount() == 0 && batch.attemptedCount() > 0;
         String errorCode = totalFailure
                 ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "")
-                : batch.successCount() < retrievers.size() ? "MEMORY_RETRIEVAL_PARTIAL_FAILURE" : null;
+                : batch.successCount() < batch.attemptedCount()
+                        ? "MEMORY_RETRIEVAL_PARTIAL_FAILURE" : null;
         // One source for both shapes: the audit command wants a List, the outcome a Set, and a
         // candidate must never be "selected" in one and not the other (mezo-4qyt).
         List<MemoryRetrievalAuditWriter.CandidateIdentity> selectedIds = selected.stream()
@@ -184,6 +219,32 @@ public class MemoryContextService {
     }
 
     /**
+     * The restored raw-similarity floor (mezo-eq85.10 FIX 2). The retired {@code MemoryRecallService}
+     * documented it as "an honest 'nincs adat' beats a fabricated resemblance", and the swap dropped
+     * it; without it a {@code SIMILAR_DAYS} search renders up to {@code k} ARBITRARY days as "hasonló
+     * napok", which is exactly the dishonesty this slice exists to remove.
+     *
+     * <p>Applies to DENSE candidates only, and only for {@code SIMILAR_DAYS}. The dense retriever's
+     * {@code localScore} IS raw cosine ({@code 1 - distance}), the one absolute signal the new engine
+     * has — every other retriever's local score is a relative, retriever-private number. A LEXICALLY
+     * found candidate needs no second threshold: {@code LexicalMemoryQuery} already requires
+     * {@code score > 0}, i.e. the words genuinely occur, which is its own honest floor.
+     */
+    private Map<String, List<MemoryCandidate>> aboveRelevanceFloor(
+            Map<String, List<MemoryCandidate>> candidates, ConsumerPolicy policy) {
+        if (policy != ConsumerPolicy.SIMILAR_DAYS) {
+            return candidates;
+        }
+        double floor = companionProperties.recall().minSimilarity();
+        Map<String, List<MemoryCandidate>> filtered = new LinkedHashMap<>();
+        candidates.forEach((retriever, found) -> filtered.put(retriever,
+                DENSE_RETRIEVER.equals(retriever)
+                        ? found.stream().filter(candidate -> candidate.localScore() >= floor).toList()
+                        : found));
+        return Map.copyOf(filtered);
+    }
+
+    /**
      * D1: {@code audit = false} writes nothing. The stand-in still carries a trace id (the surface
      * shows one so a support conversation has a handle) and an EMPTY {@code resultIds} map, so the
      * {@link MemoryContextItem#retrievalResultId()} of a dry-run item is null — there is no row to
@@ -205,8 +266,12 @@ public class MemoryContextService {
         // Reached only past the NO_MEMORY_NEEDED early return, so a turn that needs no memory still
         // costs no embedding call.
         float[] queryEmbedding = queryEmbedder.embed(query.denseQuery()).orElse(null);
+        // mezo-eq85.10 FIX 1: kind scoping is POLICY-derived and applied inside each retriever's
+        // query, because the fused rank is truncated to the token budget below — a caller-side
+        // filter only ever sees what survived that truncation.
         RetrievalInput input = new RetrievalInput(
-                request, query, properties.servingEmbeddingVersion(), candidateLimit, queryEmbedding);
+                request, query, properties.servingEmbeddingVersion(), candidateLimit, queryEmbedding,
+                request.consumerPolicy().scopedSourceKind());
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
         // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a
@@ -219,8 +284,21 @@ public class MemoryContextService {
         UUID actor = LlmActorContext.capture();
         LlmCallContext ambient = llmCallContextHolder.get();
         LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
-        retrievers.values().stream()
+        List<MemoryRetriever> ordered = retrievers.values().stream()
                 .sorted(Comparator.comparing(MemoryRetriever::name))
+                .toList();
+        // mezo-eq85.10 fix round 2, FIX A: a retriever that cannot contribute to THIS run is not
+        // submitted at all, and — the part that matters — is kept out of the success ratio below.
+        // It still gets a trace entry, marked `skipped`, so the audit row's raw trace keeps its four
+        // entries and a reader of THAT json can tell a skip from a zero-hit answer. The admin
+        // explorer cannot: AdminMemoryRunMapper.trace projects only retriever/durationMs/
+        // candidateCount/error, so a skipped retriever renders there exactly like one that was
+        // asked and found nothing. Surfacing the difference needs a `skipped` flag on
+        // AdminMemoryRetrieverTrace — deliberately not added here (bd mezo-eq85.10 re-review).
+        List<MemoryRetriever> skipped =
+                ordered.stream().filter(retriever -> !retriever.appliesTo(input)).toList();
+        ordered.stream()
+                .filter(retriever -> retriever.appliesTo(input))
                 .forEach(retriever -> {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
@@ -233,9 +311,18 @@ public class MemoryContextService {
                         log.warn("Memory retriever {} could not be submitted", retriever.name(), exception);
                     }
                 });
+        int attemptedCount = tasks.size();
 
         Map<String, List<MemoryCandidate>> candidates = new LinkedHashMap<>();
         Map<String, Object> trace = new LinkedHashMap<>();
+        for (MemoryRetriever retriever : skipped) {
+            candidates.put(retriever.name(), List.of());
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("durationMs", 0L);
+            details.put("candidateCount", 0);
+            details.put("skipped", true);
+            trace.put(retriever.name(), details);
+        }
         int successCount = 0;
         for (Map.Entry<String, RetrieverTask> entry : tasks.entrySet()) {
             RetrieverOutcome outcome;
@@ -285,7 +372,8 @@ public class MemoryContextService {
             }
             trace.put(entry.getKey(), details);
         }
-        return new RetrievalBatch(Map.copyOf(candidates), Map.copyOf(trace), successCount);
+        return new RetrievalBatch(
+                Map.copyOf(candidates), Map.copyOf(trace), successCount, attemptedCount);
     }
 
     /** Re-binds the captured breadcrumbs (if any) around one retriever's work on the pool thread. */
@@ -341,10 +429,19 @@ public class MemoryContextService {
     private record RetrieverTask(Future<RetrieverOutcome> future, long deadlineNanos, String submissionError) {
     }
 
+    /**
+     * @param successCount   retrievers that were asked AND answered (an honest zero-hit answer is a
+     *                       success — that is the normal empty-memory case, not an outage).
+     * @param attemptedCount retrievers that were ASKED. Never {@code retrievers.size()}: a run that
+     *                       skips a retriever a priori ({@link MemoryRetriever#appliesTo}) must not
+     *                       get a free success out of it, or a total outage of the retrievers that
+     *                       CAN answer becomes invisible (mezo-eq85.10 fix round 2, FIX A).
+     */
     private record RetrievalBatch(
             Map<String, List<MemoryCandidate>> candidates,
             Map<String, Object> trace,
-            int successCount) {
+            int successCount,
+            int attemptedCount) {
     }
 
 }

@@ -549,6 +549,39 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 
 ## 5. Integrations
 
+### Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — both konzíliums read the memory platform
+
+`CharacterBootstrapService` and `CharacterMonthlyService` each append one `[Hosszú távú memória]`
+block to every expert's evidence, retrieved through `MemoryContextBlock` under
+`ConsumerPolicy.CHARACTER_EVIDENCE` (`deep=true`, reranked, 1200-token budget). The query is the
+bootstrap's capped narrative digest (`CharacterHistoryReads.narrativeQueryText`, ≤ 800 chars —
+the cap matters, see below) and, for the monthly pass, the dimension's ACTIVE-claims text.
+
+Two things about this wiring are load-bearing:
+
+- **One `LlmCallContext CONTEXT` constant per service, whose `feature()` is also what is handed
+  to `MemoryContextBlock.render`.** Both stay `character`. The slug is matched literally against
+  `mezo.llm-log.budget.throttled-features`, so a drifted or invented label silently changes
+  whether the konzílium's retrieval is suspended on a budget-throttled account. Generation and
+  retrieval share the one constant precisely so they cannot drift.
+- **`run()` is no longer `@Transactional`.** `MemoryContextService` fans its four retrievers out
+  to `applicationTaskExecutor`, each taking its OWN pooled JDBC connection; retrieving inside the
+  old single transaction exhausted the pool, and the symptom was a HANG, not a failure. The DB
+  gather and the retrieval now run with no transaction open, and the proposal/verdict rounds plus
+  every write happen inside `runKonzilium`, reached through the self-proxy so it gets its own
+  transaction. Atomicity is unchanged — every write is still in one transaction; only reads moved
+  out. The one-run guards (`CHARACTER_BOOTSTRAP_ALREADY_RUN`, the monthly's existing-conference
+  return) now read outside that transaction, which is safe because they never protected anything
+  by themselves: the real guarantees are the partial unique indexes
+  `uq_character_conference_bootstrap` and `uq_character_conference_monthly`.
+
+The query cap is not cosmetic. Uncapped, `narrativeQueryText` joined up to 60 FULL daily
+narratives (20k–90k chars), which exceeds the embedding provider's input limit — the embed would
+fail, `MemoryQueryEmbedder` fails open, `DenseMemoryRetriever` throws, and the konzílium would
+silently get a lexical-only memory block forever. `CharacterBootstrapMemoryIT` asserts the
+audited `raw_query` stays within the cap.
+
+
 **Companion source access:** Chat can read owned character dimensions, claims, observations, portrait revisions and conference artifacts through the full-source reader, beyond the bounded character summary. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **[Companion](companion.md)** — every LLM call rides `CompanionLlm` (cheap tier for

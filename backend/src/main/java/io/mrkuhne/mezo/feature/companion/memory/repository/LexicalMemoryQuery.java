@@ -49,6 +49,10 @@ public class LexicalMemoryQuery {
                   where m.id = i.source_id and m.conversation_id = :conversationId
               ))
         """;
+    /** mezo-eq85.10 FIX 1 — the dense query's twin fragment; same reason, same placement. */
+    private static final String SOURCE_KIND = """
+              and i.source_kind = :sourceKind
+        """;
     private static final String SQL_TAIL = """
         )
         select item_id, source_id, source_kind, label, content, occurred_on, salience, score,
@@ -73,7 +77,7 @@ public class LexicalMemoryQuery {
     private final NamedParameterJdbcTemplate jdbc;
 
     public List<Hit> search(UUID userId, String rawQuery, LocalDate asOf,
-                            UUID conversationId, int candidateLimit) {
+                            UUID conversationId, int candidateLimit, String sourceKind) {
         String query = ToolText.fold(rawQuery).trim();
         if (query.isEmpty()) {
             return List.of();
@@ -87,6 +91,10 @@ public class LexicalMemoryQuery {
         if (conversationId != null) {
             params.addValue("conversationId", conversationId);
             sql.append(EXCLUDE_CONVERSATION);
+        }
+        if (sourceKind != null) {
+            params.addValue("sourceKind", sourceKind);
+            sql.append(SOURCE_KIND);
         }
         sql.append(SQL_TAIL);
         return underSavepoint(template -> template.query(sql.toString(), params, ROW_MAPPER));

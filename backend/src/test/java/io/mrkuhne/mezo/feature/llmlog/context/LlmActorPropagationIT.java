@@ -140,6 +140,7 @@ class LlmActorPropagationIT extends AbstractIntegrationTest {
     @Autowired private MemoryContextRenderer renderer;
     @Autowired private MemoryRetrievalAuditWriter auditWriter;
     @Autowired private MemoryPlatformProperties properties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
     @Autowired private LlmCallContextHolder llmCallContextHolder;
     @Autowired @Qualifier("applicationTaskExecutor") private AsyncTaskExecutor taskExecutor;
 
@@ -189,7 +190,7 @@ class LlmActorPropagationIT extends AbstractIntegrationTest {
         MemoryContextService probedService = new MemoryContextService(
                 queryPreparer, queryEmbedder, Map.of("dense", actorProbeRetriever("dense", seenInRetriever)),
                 fusion, selector, renderer, llmMemoryReranker, auditWriter, properties,
-                llmCallContextHolder, taskExecutor);
+                companionProperties, llmCallContextHolder, taskExecutor);
 
         probedService.retrieve(new MemoryRequest(user, ConsumerPolicy.CHAT_AMBIENT,
                 "Mi történt Boglárkával?", List.of(), LocalDate.of(2026, 9, 8), 1200,

@@ -2,13 +2,15 @@ package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
+import io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall;
 import io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
-import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService;
-import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService.RecalledMemory;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -21,14 +23,22 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * V2.3 episodic-recall tool over the {@code MemoryRecallService} — the "volt már ilyen napod?"
- * answer. Read-only over OUR OWN vectors (IDENT-2 holds), ownership from the ToolContext, refs
- * = the recalled days (kind {@code Memory}) so the FE chips show what got remembered.
+ * Episodic-recall tool over the memory platform (Memória mindenhol S10, mezo-eq85.10; V2.3's
+ * {@code MemoryRecallService} retired from this call site — see {@link SimilarDaysRecall}) —
+ * the "volt már ilyen napod?" answer, {@link ConsumerPolicy#SIMILAR_DAYS} — a policy that scopes
+ * the RETRIEVAL itself to {@code daily_summary} sourced items (see
+ * {@link ConsumerPolicy#scopedSourceKind()}) and keeps the raw-cosine relevance floor
+ * {@code mezo.companion.recall.min-similarity} (0.25): a day below it is not a similar day, and an
+ * honest "nincs adat" beats a fabricated resemblance. Read-only over OUR OWN vectors (IDENT-2
+ * holds), ownership from the ToolContext, refs = the recalled days (kind {@code Memory}) so the FE
+ * chips show what got remembered. No numeric score is rendered — the platform's rank is ordinal,
+ * not a 0..1 fraction (see {@code task-10-codebase-notes.md} §1).
  *
  * <p>W5.3 (mezo-b3pp.20) added {@link #comparePeriods} here too — same read-only, same
  * ToolContext ownership, but its refs are whole MONTH rungs and therefore carry their own kind
  * ({@link #REF_KIND_PERIOD}), never {@code Memory}: see {@link #renderPeriod}.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -40,7 +50,12 @@ public class MemoryTools {
 
     private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("yyyy-MM");
 
-    private final MemoryRecallService memoryRecallService;
+    /** What the tool says when the memory platform is unreachable (mezo-eq85.10 FIX 3) — an honest
+     *  "I could not look", never {@link ToolText#NO_DATA}, which asserts the day does not exist. */
+    private static final String RECALL_UNAVAILABLE = "Hasonló korábbi napok: a memóriát most nem "
+            + "sikerült elérni, ezért nem tudom megmondani, volt-e ilyen napod.";
+
+    private final SimilarDaysRecall similarDaysRecall;
     private final CompanionProperties properties;
     private final PeriodSummaryRepository periodSummaryRepository;
     private final QuarterlyProperties quarterlyProperties;
@@ -59,20 +74,32 @@ public class MemoryTools {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
         int limit = ToolText.clamp(k, 1, properties.recall().maxK(), 3);
-        List<RecalledMemory> memories = memoryRecallService.recallSimilarDays(userId, description, limit);
-        if (memories.isEmpty()) {
+        List<MemoryContextItem> days;
+        try {
+            // The SAME collaborator MemoryObservatoryService.similarDays calls — one copy of the
+            // kill switch, the SIMILAR_DAYS request, retrieveOrFail and the daily-summary filter,
+            // so "the tool and the surface see the same memory" is structural rather than two
+            // hand-synchronised copies (mezo-eq85.10 fix round 2, FIX C).
+            days = similarDaysRecall.recall(userId, description, limit).days();
+        } catch (RuntimeException failure) {
+            // Deliberately NOT ToolText.NO_DATA: "nincs adat" means "nincs ilyen napod", which would
+            // be a lie about the user's own history when the truth is that WE could not look
+            // (mezo-eq85.10 FIX 3). The turn must not fail over it either — the model can still
+            // answer everything else it was asked.
+            log.warn("find_similar_past_days could not reach the memory platform", failure);
+            return RECALL_UNAVAILABLE;
+        }
+        if (days.isEmpty()) {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
-        StringBuilder b = new StringBuilder("Hasonló korábbi napok (téma-egyezés és frissesség szerint):");
-        for (RecalledMemory memory : memories) {
-            ToolContexts.audit(toolContext).addRef("Memory", memory.occurredOn().toString());
-            int renderCap = properties.recall().renderMaxChars();
-            String content = memory.content().length() > renderCap
-                    ? memory.content().substring(0, renderCap) + "…"
-                    : memory.content();
-            b.append('\n').append(memory.occurredOn())
-                    .append(" (egyezés ").append(Math.round(memory.similarity() * 100)).append("%): ")
-                    .append(content);
+        StringBuilder b = new StringBuilder("Hasonló korábbi napok (rangsor szerint):");
+        int renderCap = properties.recall().renderMaxChars();
+        for (MemoryContextItem day : days) {
+            ToolContexts.audit(toolContext).addRef("Memory", day.occurredOn().toString());
+            String content = day.content().length() > renderCap
+                    ? day.content().substring(0, renderCap) + "…"
+                    : day.content();
+            b.append('\n').append(day.occurredOn()).append(": ").append(content);
         }
         return b.toString();
     }

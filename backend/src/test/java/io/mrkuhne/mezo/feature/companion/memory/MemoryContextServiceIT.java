@@ -78,6 +78,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
     @Autowired private LlmMemoryReranker reranker;
     @Autowired private MemoryRetrievalAuditWriter auditWriter;
     @Autowired private MemoryPlatformProperties properties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
     @Autowired private LlmCallContextHolder llmCallContextHolder;
     @Autowired @Qualifier("applicationTaskExecutor") private AsyncTaskExecutor taskExecutor;
 
@@ -185,7 +186,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = failingService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -198,6 +199,50 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 assertThat(((Map<?, ?>) trace).get("error")).isNotNull());
     }
 
+    /**
+     * mezo-eq85.10 fix round 1, FIX 3 — the honest-failure seam the similar-days surfaces use.
+     * {@link MemoryContextService#retrieve} answers a total outage with an EMPTY context (the test
+     * above), which a "hasonló napok" search would render as "nincs ilyen napod" — a lie about the
+     * user's history. {@code retrieveOrFail} raises instead, still writing the audit row, and the
+     * error carries the trace id that points at it.
+     */
+    @Test
+    void testRetrieveOrFail_shouldThrowInsteadOfAnEmptyContext_whenAllRetrieversFail() {
+        UUID owner = databasePopulator.populateUser("memory-context-or-fail@test.local");
+        Map<String, MemoryRetriever> failingRetrievers = Map.of(
+                "dense", failingRetriever("dense"),
+                "lexical", failingRetriever("lexical"),
+                "facts", failingRetriever("facts"),
+                "graph", failingRetriever("graph"));
+        MemoryContextService failingService = new MemoryContextService(
+                queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
+
+        assertThatThrownBy(() -> failingService.retrieveOrFail(
+                request(owner, "Mi történt Boglárkával?")))
+                .isInstanceOfSatisfying(SystemRuntimeErrorException.class, exception -> {
+                    assertThat(exception.getStatus().value()).isEqualTo(500);
+                    assertThat(exception.getMessages().getFirst().getCode())
+                            .isEqualTo("MEMORY_RETRIEVAL_UNAVAILABLE");
+                    assertThat(exception.getMessages().getFirst().getExceptionTraceId()).isNotBlank();
+                });
+
+        assertThat(runRepository.findAll()).filteredOn(run -> owner.equals(run.getCreatedBy()))
+                .singleElement()
+                .satisfies(run -> assertThat(run.getErrorCode()).isEqualTo("MEMORY_RETRIEVAL_ALL_FAILED"));
+    }
+
+    /** The other half: a healthy run goes through {@code retrieveOrFail} untouched. */
+    @Test
+    void testRetrieveOrFail_shouldReturnTheContext_whenAtLeastOneRetrieverAnswers() {
+        UUID owner = databasePopulator.populateUser("memory-context-or-fail-ok@test.local");
+
+        MemoryContext result = service.retrieveOrFail(
+                request(owner, "Mi történt Boglárkával?"));
+
+        assertThat(result.traceId()).isNotNull();
+    }
+
     @Test
     void testRetrieveForServing_shouldSignalLegacyFallbackAndAuditIt_whenAllRetrieversFail() {
         UUID owner = databasePopulator.populateUser("memory-context-serving-fallback@test.local");
@@ -208,7 +253,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         assertThatThrownBy(() -> failingService.retrieveForServing(
                 request(owner, "Mi történt Boglárkával?")))
@@ -236,7 +281,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", emptyRetriever("graph"));
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, queryEmbedder, retrieverSet, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -251,8 +296,8 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         AsyncTaskExecutor callerThreadExecutor = new TaskExecutorAdapter(new SyncTaskExecutor());
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, queryEmbedder, Map.of("dense", delayedEmptyRetriever("dense", 250)),
-                fusion, selector, renderer, reranker, auditWriter, properties, llmCallContextHolder,
-                callerThreadExecutor);
+                fusion, selector, renderer, reranker, auditWriter, properties, companionProperties,
+                llmCallContextHolder, callerThreadExecutor);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 

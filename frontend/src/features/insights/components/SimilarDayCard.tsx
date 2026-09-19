@@ -1,19 +1,18 @@
 import type { SimilarDay } from '@/data/types'
-import { cn } from '@/shared/lib/cn'
 
 function ageDays(date: string): number {
   return Math.max(0, Math.round((Date.now() - new Date(`${date}T00:00:00`).getTime()) / 86_400_000))
 }
 
 /**
- * Találati kártya (mezo-d20.5.7) — a prototípus .daycard + .mring arca: egyezés-gyűrű
- * (conic, % a közepén) + memoir-kivonat + a pontszám-matek chipsora (egyezés × frissesség
- * = végső). A frissesség kliens-oldalon számolt (finalScore / similarity — pontosan a
- * szerver decay-szorzója); ≥0.9 → zsálya, alatta borostyán. Kattintás/Enter/Szóköz: Napló.
+ * Találati kártya (mezo-d20.5.7; a pontszámok eltávolítva mezo-eq85.10 — lásd
+ * `task-10-codebase-notes.md` §1: a memória-platform `finalScore`-ja RRF-alapú, nem 0..1
+ * arány, a kártya korábbi `similarity`/`finalScore` mezői ezért félrevezetőek lettek volna).
+ * A gyűrű most a sorrendi helyet mutatja (1., 2., 3. …), nem egy egyezés-százalékot; a
+ * pontszám-matek chipsor törölve. Kattintás/Enter/Szóköz: Napló.
  */
 export function SimilarDayCard({ day, rank, onPick }: { day: SimilarDay; rank: number; onPick: (date: string) => void }) {
-  const freshness = day.similarity === 0 ? 0 : day.finalScore / day.similarity
-  const pct = Math.round(day.similarity * 100)
+  const place = day.rank
   return (
     <div
       className="mem-daycard np-press rise" role="button" tabIndex={0}
@@ -23,20 +22,13 @@ export function SimilarDayCard({ day, rank, onPick }: { day: SimilarDay; rank: n
     >
       <div className="mem-layrow">
         <span
-          className="mem-ring" role="img" aria-label={`egyezés ${pct}%`}
-          style={{ '--v': pct } as React.CSSProperties} data-l={`${pct}%`}
+          className="mem-ring" role="img" aria-label={`${place}. legjobb találat`}
+          style={{ '--v': 100 } as React.CSSProperties} data-l={`${place}.`}
         />
         <div className="mem-laygrow">
           <div className="mem-dl">{day.date} · {ageDays(day.date)} napja</div>
           <p className="mem-bd">{day.excerpt}</p>
         </div>
-      </div>
-      <div className="mem-scmath">
-        <span>egyezés {day.similarity.toFixed(2)}</span>
-        <span aria-hidden="true">×</span>
-        <span className={cn(freshness < 0.9 && 'is-amber')}>frissesség {freshness.toFixed(2)}</span>
-        <span aria-hidden="true">=</span>
-        <span className={cn('is-final', freshness < 0.9 && 'is-amber')}>végső {day.finalScore.toFixed(2)}</span>
       </div>
     </div>
   )

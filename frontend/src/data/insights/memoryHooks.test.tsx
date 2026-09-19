@@ -92,14 +92,33 @@ describe('useSimilarDays (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/companion/memory/similar-days`, () =>
         HttpResponse.json({
-          items: [{ date: '2026-08-09', excerpt: 'rövid alvás', similarity: 0.81, finalScore: 0.64 }],
+          items: [{
+            date: '2026-08-09', excerpt: 'rövid alvás', rank: 1,
+            memoryItemId: '11111111-1111-1111-1111-111111111111',
+          }],
+          retrievalRunId: '99999999-9999-9999-9999-999999999999',
         }),
       ),
     )
     const { result } = renderHook(() => useSimilarDays('rossz alvás'), { wrapper: makeHookWrapper() })
 
     await waitFor(() => expect(result.current.results).toHaveLength(1))
-    expect(result.current.results![0].finalScore).toBe(0.64)
+    expect(result.current.results![0].rank).toBe(1)
+    expect(result.current.results![0].memoryItemId).toBe('11111111-1111-1111-1111-111111111111')
+  })
+
+  // mezo-eq85.10 FIX 3: a FAILED search is not an empty search. The endpoint propagates a total
+  // retrieval outage rather than fabricating an empty list, so the hook must expose that as its own
+  // state — `results: null` alone is indistinguishable from "not searched yet".
+  test('flags failed (not empty) when the search itself errors', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/similar-days`, () => new HttpResponse(null, { status: 500 })),
+    )
+    const { result } = renderHook(() => useSimilarDays('bármi'), { wrapper: makeHookWrapper() })
+
+    await waitFor(() => expect(result.current.failed).toBe(true), { timeout: 5000 })
+    expect(result.current.results).toBeNull()
+    expect(result.current.degraded).toBe(false)
   })
 
   test('flags degraded on 404', async () => {

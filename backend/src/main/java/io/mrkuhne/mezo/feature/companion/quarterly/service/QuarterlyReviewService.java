@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphProposedEdge;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -75,6 +78,20 @@ public class QuarterlyReviewService {
      *  the literal in {@link GraphNodeRepository#countQuarterlyNodesOnQuarter}'s native query. */
     public static final String SOURCE_QUARTERLY = "quarterly";
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): ONE constant for both the top-level {@code
+     *  season_candidates} call AND (via {@link LlmCallContext#feature()}) the memory-retrieval
+     *  audit row in {@link #memoryBlock} — the S8/S9 idiom, so the two labels cannot drift apart.
+     *  {@code companion_quarterly} is on {@code mezo.llm-log.budget.throttled-features}, so a
+     *  throttled account's memory retrieval for this surface is suspended along with the surface
+     *  itself. Reuses the EXISTING slug already passed at the {@code runFor} call site below —
+     *  not a new one (S8's fix-round-1 lesson). */
+    private static final LlmCallContext CONTEXT =
+            new LlmCallContext("companion_quarterly", "season_candidates", "quarter", null);
+
+    /** First N chars of the query text handed to memory retrieval — the {@code MemoirGenerator}
+     *  precedent ({@code firstChars}). */
+    private static final int MEMORY_QUERY_MAX_CHARS = 800;
+
     private static final String SYSTEM_PROMPT = SEASON_MARKER + """
 
 
@@ -109,6 +126,11 @@ public class QuarterlyReviewService {
     // circularity) — see the class javadoc for why persistCandidates is invoked through this
     // proxy instead of `this`.
     private final ObjectProvider<QuarterlyReviewService> self;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on (S8/S9 defensive-symmetry idiom); {@code runFor} carries no
+     *  {@code @Transactional} (class javadoc), so this retrieval never competes with the
+     *  persistence path's own transaction for pooled connections. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
 
     /**
      * @param quarterStart the first day of the quarter being reviewed (see {@link Quarters}).
@@ -128,8 +150,7 @@ public class QuarterlyReviewService {
         List<SeasonSuggestion> suggestions;
         try {
             String prompt = promptPersona.render(userId, SYSTEM_PROMPT.formatted(properties.maxCandidates()));
-            String raw = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_quarterly", "season_candidates", "quarter", null),
+            String raw = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(prompt, buildUserMessage(userId, quarterStart, current, previous)));
             suggestions = parse(raw).stream()
                 .filter(Objects::nonNull)
@@ -198,7 +219,37 @@ public class QuarterlyReviewService {
             appendRungs(sb, previous);
         }
         appendFeedback(sb, userId);
+        // Memória mindenhol S10.2 (mezo-eq85.10): the quarter's own period-summary text (current
+        // rungs only — same "own period" reasoning MemoirGenerator uses for the memoir's week) is
+        // the query — the quarterly pass reads like the memoir does, so what it retrieves should
+        // resonate with what actually happened this quarter.
+        String memoryQuery = firstChars(current.stream()
+                .map(PeriodSummaryEntity::getSummaryText).collect(Collectors.joining(" ")),
+                MEMORY_QUERY_MAX_CHARS);
+        sb.append(memoryBlock(userId, Quarters.endOf(quarterStart), memoryQuery).block());
         return sb.toString();
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this quarter, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code CHARACTER_EVIDENCE}
+     *  policy is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself
+     *  fail-open. {@code deep = true}: nobody is waiting synchronously on this offline pass. */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate asOf, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.CHARACTER_EVIDENCE, query, asOf, true,
+                CONTEXT.feature(), "season_candidates", null);
+    }
+
+    /** First {@code maxChars} characters of {@code text} — the memory-query truncation every
+     *  Part-B surface uses ({@code MemoirGenerator.firstChars} precedent). */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 
     /**

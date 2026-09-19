@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepos
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.profile.config.ProfileProperties;
 import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
@@ -27,8 +29,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -81,6 +85,17 @@ public class ProfileAssembler {
     /** Same chars-per-token estimate as the [Emlékek]/[Összefüggések] blocks. */
     static final int CHARS_PER_TOKEN = 3;
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): ONE constant for both the top-level {@code
+     *  assemble} call AND (via {@link LlmCallContext#feature()}) the memory-retrieval audit row
+     *  in {@link #memoryBlock} — the S8/S9 idiom. Reuses the EXISTING {@code companion_profile}
+     *  slug already passed at the call site below. */
+    private static final LlmCallContext CONTEXT =
+            new LlmCallContext("companion_profile", "assemble", null, null);
+
+    /** First N chars of the query text handed to memory retrieval — the {@code MemoirGenerator}
+     *  precedent ({@code firstChars}). */
+    private static final int MEMORY_QUERY_MAX_CHARS = 800;
+
     private static final String PROMPT = PROFILE_MARKER + """
 
             Te {{NÉV}} személyes társának a tanuló rétege vagy. A lenti nyers jelekből írj EGYETLEN
@@ -103,6 +118,16 @@ public class ProfileAssembler {
      *  on this same property, or the filter and the data disagree. */
     private final FeedbackLearningProperties feedbackLearningProperties;
     private final PromptPersona promptPersona;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+    // Self-injected proxy (the LifeEventExtractionService/QuarterlyReviewService idiom): `rebuild`
+    // carries no @Transactional (the HAZARD in task-10-codebase-notes.md §4 — the memory
+    // retrieval's own connection fan-out must never compete with an outer transaction's held
+    // connection for the pooled 5), so the LLM call + graph write are pulled into `persist` and
+    // invoked through this proxy — plain `this.persist(...)` would bypass Spring AOP and get no
+    // transactional advice at all.
+    private final ObjectProvider<ProfileAssembler> self;
 
     /**
      * Rebuilds the profile for one user. Returns the node id, or empty when there was no signal
@@ -126,7 +151,6 @@ public class ProfileAssembler {
      *
      * <p>W5.3 (mezo-b3pp.20) calls this too, after the quarterly pass.
      */
-    @Transactional
     public Optional<UUID> rebuild(UUID userId, LocalDate anchorQuarter) {
         List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(
                 userId, feedbackLearningProperties.windowDays());
@@ -139,9 +163,25 @@ public class ProfileAssembler {
             log.debug("Profile skipped for user {} — no feedback, no reviewed decisions, no graph nodes", userId);
             return Optional.empty();
         }
+        // Memória mindenhol S10.2: the retrieval runs HERE, outside any transaction — `rebuild`
+        // itself carries none (see the `self` field javadoc for the HAZARD this avoids).
         String payload = renderPayload(userId, anchorQuarter, rollups, decisions, nodes);
-        String prose = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_profile", "assemble", null, null),
+        return self.getObject().persist(userId, payload, signals, decisions.size(), nodes.size());
+    }
+
+    /** The LLM call + graph write, in ONE transaction — called only through {@link #self} (see
+     *  its javadoc). Split out of {@link #rebuild} so the memory retrieval above never competes
+     *  with this transaction's held connection for the pooled 5 (task-10-codebase-notes.md §4
+     *  HAZARD). */
+    // Package-private, unlike the house precedent LifeEventExtractionService.persistCandidates
+    // (public): that is safe ONLY because Spring proxies this bean with CGLIB (class-based),
+    // which can override a package-private method in the same package. Were proxyTargetClass
+    // ever turned off, or this class given an interface, @Transactional here would silently
+    // stop applying — the retrieval above would then run inside the caller's transaction and
+    // hit the pool-exhaustion hazard. Widen to public if that ever changes (mezo-eq85.10).
+    @Transactional
+    Optional<UUID> persist(UUID userId, String payload, int signals, int decisionsCount, int nodesCount) {
+        String prose = llmCallContextHolder.runWith(CONTEXT,
                 () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Profile skipped for user {} — the model returned nothing", userId);
@@ -150,7 +190,7 @@ public class ProfileAssembler {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_INSIGHT, PROFILE_TITLE,
                 cap(prose.strip(), properties.renderMaxTokens()), SOURCE_PROFILE, userId, null,
                 new ProfileMetaEnvelope(Instant.now().truncatedTo(ChronoUnit.MICROS),
-                        signals, decisions.size(), nodes.size()).toMeta());
+                        signals, decisionsCount, nodesCount).toMeta());
         // upsertNode deliberately does not touch status (W2.2 owns its own status rules); the
         // weekly run is exactly the "reset what you think of me" recovery path spec §8.3
         // promises, so a MACHINE-archived profile comes back ACTIVE here. Routed through the
@@ -255,7 +295,43 @@ public class ProfileAssembler {
                 out.append("- ").append(n.getTitle()).append('\n');
             }
         }
+        // Memória mindenhol S10.2 (mezo-eq85.10): the rollup digest — this profile's own "what
+        // works/doesn't" signal, PLUS the habit-node titles already rendered above (the only
+        // genuinely free-text material this payload carries; the rollup lines themselves are pure
+        // arithmetic) — is the query, the MemoirGenerator "own material" precedent applied here.
+        String memoryQuery = firstChars(String.join(" ", feedbackLines) + " "
+                + nodes.stream().map(GraphNodeEntity::getTitle).collect(Collectors.joining(" ")),
+                MEMORY_QUERY_MAX_CHARS);
+        // asOf is LocalDate.now(), NOT anchorQuarter: anchorQuarter is a label for the DÖNTÉSI
+        // MINŐSÉG trend (see rebuild's javadoc) and can be a quarter well in the past relative to
+        // when this rebuild actually runs — using it as the recall decay/temporal-filter "as of"
+        // date would silently exclude every genuinely recent memory (a real-clock item dated
+        // AFTER a past anchorQuarter would read as "from the future").
+        out.append(memoryBlock(userId, LocalDate.now(), memoryQuery).block());
         return out.toString();
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this profile rebuild, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code CHARACTER_EVIDENCE}
+     *  policy is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself
+     *  fail-open. {@code deep = true}: nobody is waiting synchronously on this weekly/quarterly
+     *  rebuild. */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate asOf, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.CHARACTER_EVIDENCE, query, asOf, true,
+                CONTEXT.feature(), "assemble", null);
+    }
+
+    /** First {@code maxChars} characters of {@code text} — the memory-query truncation every
+     *  Part-B surface uses ({@code MemoirGenerator.firstChars} precedent). */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 
     /**

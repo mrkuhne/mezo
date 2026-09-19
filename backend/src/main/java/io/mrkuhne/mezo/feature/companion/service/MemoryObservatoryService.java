@@ -20,12 +20,15 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
-import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
+import io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
-import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
@@ -60,15 +63,21 @@ public class MemoryObservatoryService {
 
     private final MetricSeriesService metricSeriesService;
     private final DailySummaryRepository dailySummaryRepository;
-    private final MemoryEmbeddingRepository memoryEmbeddingRepository;
+    private final MemoryItemRepository memoryItemRepository;
     private final PatternRepository patternRepository;
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
     /** S2 (mezo-eq85.2): the nightly reflection pass owns the hypothesis schedule now. */
     private final ReflectionProperties reflectionProperties;
-    private final MemoryRecallService memoryRecallService;
+    private final SimilarDaysRecall similarDaysRecall;
+    private final MemoryPlatformProperties memoryPlatformProperties;
     private final LlmUsageService llmUsageService;
+
+    /** memory_item.source_kind for a nightly summary — used by the L1 embedded-coverage read
+     *  below. The similar-days filter on the same constant now lives in {@link SimilarDaysRecall},
+     *  the single collaborator both this surface and the chat tool read through. */
+    private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
 
     @Transactional(readOnly = true)
     public MemoryOverviewResponse overview(UUID userId) {
@@ -133,7 +142,9 @@ public class MemoryObservatoryService {
                         .summaryCount((int) dailySummaryRepository.countByCreatedBy(userId))
                         .firstDate(firstDate)
                         .lastDate(lastDate)
-                        .embeddings(memoryEmbeddingRepository.countByKindForUser(userId).stream()
+                        .embeddings(memoryItemRepository
+                                .countBySourceKindForUser(userId, memoryPlatformProperties.servingEmbeddingVersion())
+                                .stream()
                                 .map(row -> MemoryEmbeddingKindCount.builder()
                                         .kind(row.getKind())
                                         .count((int) row.getCount())
@@ -170,8 +181,8 @@ public class MemoryObservatoryService {
     public MemorySummaryListResponse summaries(UUID userId, LocalDate from, LocalDate to) {
         LocalDate lo = from != null ? from : LocalDate.of(1970, 1, 1);
         LocalDate hi = to != null ? to : LocalDate.now();
-        Set<UUID> embeddedRefs = memoryEmbeddingRepository
-                .findRefIdsByCreatedByAndKind(userId, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY);
+        Set<UUID> embeddedRefs = memoryItemRepository.findSourceIdsWithLiveVector(
+                userId, SOURCE_KIND_DAILY_SUMMARY, memoryPlatformProperties.servingEmbeddingVersion());
         List<MemorySummaryItem> items = dailySummaryRepository
                 .findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc(userId, lo, hi)
                 .stream()
@@ -185,22 +196,38 @@ public class MemoryObservatoryService {
     }
 
     /**
-     * A V2.3 recall változatlan újrahasznosítása — a kereső ugyanazt a memóriát látja, mint a
-     * {@code find_similar_past_days} tool. Szándékosan NEM @Transactional: az embed hálózati
-     * hívása alatt nem tartunk DB-kapcsolatot (a {@link MemoryRecallService} saját indoklása).
+     * Memória mindenhol S10 (mezo-eq85.10): a kereső a memória-platformot hívja
+     * {@link ConsumerPolicy#SIMILAR_DAYS} policy-vel, amely magát a LEKÉRDEZÉST szűkíti
+     * {@code daily_summary} forrásra és megtartja a nyers-koszinusz küszöböt
+     * ({@code recall.min-similarity} = 0.25: alatta nem hasonló nap, hanem zaj) — a
+     * tool ({@code find_similar_past_days}) ugyanezt az utat járja, garantáltan ugyanazt a
+     * memóriát látják. Szándékosan NEM @Transactional: az embed hálózati hívása alatt nem
+     * tartunk DB-kapcsolatot (a retiredre kerülő {@code MemoryRecallService} saját indoklása is
+     * ez volt).
      */
     public SimilarDaysResponse similarDays(UUID userId, String query, Integer k) {
         int limit = k != null ? k : 3;
         int renderCap = properties.recall().renderMaxChars();
-        List<SimilarDayItem> items = memoryRecallService.recallSimilarDays(userId, query, limit).stream()
-                .map(memory -> SimilarDayItem.builder()
-                        .date(memory.occurredOn())
-                        .excerpt(excerpt(memory.content(), renderCap))
-                        .similarity(memory.similarity())
-                        .finalScore(memory.score())
-                        .build())
-                .toList();
-        return SimilarDaysResponse.builder().items(items).build();
+        // The read itself lives in SimilarDaysRecall — the SAME collaborator the chat tool calls,
+        // so "a tool és a felület ugyanazt a memóriát látja" is structural now rather than two
+        // copies kept in step by hand (mezo-eq85.10 fix round 2, FIX C). It raises on a total
+        // outage of the retrievers the run asked (FIX A) instead of handing back an empty list
+        // this surface would render as "nincs ilyen napod"; the failure propagates to the FE.
+        SimilarDaysRecall.Recall recall = similarDaysRecall.recall(userId, query, limit);
+        List<SimilarDayItem> items = new ArrayList<>();
+        int rank = 0;
+        for (MemoryContextItem item : recall.days()) {
+            rank++;
+            items.add(SimilarDayItem.builder()
+                    .date(item.occurredOn())
+                    .excerpt(excerpt(item.content(), renderCap))
+                    .rank(rank)
+                    .memoryItemId(item.memoryItemId())
+                    .build());
+        }
+        return SimilarDaysResponse.builder().items(items)
+                // null iff the policy's kill switch is off: there is no run row to point at.
+                .retrievalRunId(recall.retrievalRunId()).build();
     }
 
     /** A tool render-vágásának párja (MemoryTools) — a stored text hosszú, a kártyára kivonat megy. */

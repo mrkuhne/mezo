@@ -478,6 +478,99 @@ Mezo: …`, ref = assistant message id).
 - **Ambient recall is always-on since W3.1 (`mezo-b3pp.12`)** — see the Phase 5 row in the status
   table below; the tool stays for deep, targeted recall on demand.
 
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) moved this tool off `MemoryRecallService`
+onto the unified memory platform** — the paragraph above documents V2.3's ORIGINAL shape;
+`MemoryRecallService` itself stays in the tree (Task 11 retires it), just unused from this call
+site. `findSimilarPastDays` now calls `MemoryContextService.retrieve` with a
+`MemoryRequest(SIMILAR_DAYS, deep=false)` and renders `"<date>: <content, capped at recall.render-max-chars>"` per
+hit — no percent, no score: the platform's `finalScore` is an RRF number (order of 0.01–0.05),
+not a 0..1 cosine fraction, so the old `"(egyezés NN%)"` line would have been a lie about what the
+number means. The `Memory`/ISO-date ref shape is unchanged. `k` still clamps via
+`properties.recall().maxK()`/`renderMaxChars()`, and **`recall.min-similarity` is still the
+honest floor** — see the two bullets below; those three fields are why
+`CompanionProperties.recall()` survives this slice.
+
+**The two honesty guards on this path (fix round 1, 2026-09-19).** Both live in the memory
+platform, not in the two call sites, so the tool and the `/similar-days` endpoint cannot drift:
+
+- **Kind scoping happens in the QUERY, not in the mapping.** `ConsumerPolicy.SIMILAR_DAYS`
+  carries `scopedSourceKind() = "daily_summary"`; `MemoryContextService` puts it on
+  `RetrievalInput`, `DenseMemoryQuery`/`LexicalMemoryQuery` append an optional
+  `and i.source_kind = :sourceKind` fragment (same idiom as their `EXCLUDE_CONVERSATION`
+  fragment), and `FactMemoryRetriever`/`GraphMemoryRetriever` — which can never yield a daily
+  summary — return empty instead of burning a pooled connection and a slice of the deadline.
+  Filtering only in the caller's mapping was a REAL defect: `MemoryContextSelector` truncates the
+  fused rank to the policy's ~600-token budget first, so non-day hits (in production
+  overwhelmingly `chat_turn`) spent the budget and the user read "Nincs elég hasonló nap a
+  memóriában" while the matching day sat in the store. The mapping filter stays as the
+  belt-and-braces second guard, and `k`/`limit` is still applied AFTER it.
+- **The raw-similarity floor survived the swap.** A DENSE candidate whose `localScore` (raw
+  cosine, `1 - distance`) is below `mezo.companion.recall.min-similarity` (**0.25**) is dropped
+  for a `SIMILAR_DAYS` run — `MemoryContextService.aboveRelevanceFloor`. It is the retired
+  engine's guarantee, restored on the only ABSOLUTE signal the new engine has: every other
+  retriever's local score is a relative, retriever-private number. A lexically found candidate
+  needs no second threshold — `LexicalMemoryQuery` already requires `score > 0`, i.e. the words
+  genuinely occur. Without this, any query returned up to `k` arbitrary days rendered as "hasonló
+  napok", which is the fabricated resemblance this slice exists to remove.
+- **The per-policy kill switch is honoured at BOTH call sites.**
+  `policies.similar-days.enabled: false` ⇒ no fan-out, no `memory_retrieval_run` row, an empty
+  list and a **null** `retrievalRunId` — the rollback-by-config promise `application.yml` makes
+  for every Part-B policy. Only `MemoryContextBlock.render` used to check it; the two similar-days
+  call sites went straight to `MemoryContextService.retrieve` and ran the whole fan-out anyway.
+- **Failure is honest, and asymmetric by design.** `MemoryContextService.retrieveOrFail` (new)
+  raises on a TOTAL retriever outage instead of answering with the empty context `retrieve`
+  returns, because on this surface an empty list means "nincs ilyen napod". The **endpoint**
+  propagates it (`MEMORY_RETRIEVAL_UNAVAILABLE`, 500) and `MemorySearchPanel` renders a FAILURE
+  state, never "Nincs elég hasonló nap a memóriában"; the **chat tool** catches it and answers a
+  short honest Hungarian line — deliberately NOT `ToolText.NO_DATA`, which would be the same lie —
+  so one unreachable memory platform never fails the whole turn.
+  - **"Total" counts only the retrievers the run ASKED** (fix round 2, `MemoryRetriever.appliesTo`).
+    `SIMILAR_DAYS` is kind-scoped, so the fact and graph retrievers — which can never hold a
+    `daily_summary` — are skipped, and a skip is neither a success nor a failure: it is excluded
+    from both sides of the ratio and marked `skipped` in the run's `retriever_trace`. The first
+    version of this counted a skipped retriever as a success, which left `successCount == 0`
+    unreachable on every similar-days run and made the whole honesty path above dead code — the
+    endpoint kept answering 200 with an empty list while dense and lexical were both down.
+    A retriever that WAS asked and honestly found nothing still counts as a success: that is the
+    normal empty-memory case, not an outage. A PARTIAL failure (at least one asked retriever
+    answered) still returns 200 with whatever survived.
+
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — quarterly, profile and the two extractors
+read the memory platform.** Four more non-chat surfaces gained a `MemoryContextBlock` read
+beside their existing `knowledge_fact` block:
+
+| Surface | Policy | Query | Feature slug |
+|---|---|---|---|
+| `QuarterlyReviewService` | `CHARACTER_EVIDENCE` (deep) | the quarter's period-summary text | `companion_quarterly` |
+| `ProfileAssembler` | `CHARACTER_EVIDENCE` (deep) | the rollup digest + habit-node titles | `companion_profile` |
+| `LifeEventExtractionService` | `EXTRACTION` | the day's narrative | `companion_graph` |
+| `PersonExtractionService` | `EXTRACTION` | the day's narrative | `people_extraction` |
+
+Every query is capped at 800 chars. The extractors title their block
+`KORÁBBI KAPCSOLÓDÓ EMLÉKEK`, so the model can tell a RECURRING event from a new one — the whole
+point of giving an extractor memory.
+
+Three rules this wiring depends on, each learned the hard way in an earlier slice:
+
+- **The feature slug is load-bearing, and each surface keeps its OWN.** One
+  `private static final LlmCallContext CONTEXT` per service, whose `feature()` is also what goes
+  to `MemoryContextBlock.render` — so the generation label and the retrieval label cannot drift.
+  The slugs are matched literally against `mezo.llm-log.budget.throttled-features`; only
+  `companion_quarterly` is on that list, so only its retrieval is suspended from the throttle
+  step up. S8 first shipped one shared invented slug, which silently matched nothing.
+- **A retrieval must not run inside a transaction.** `ProfileAssembler.rebuild` was
+  `@Transactional`; the four retrievers each take their own pooled connection, so retrieving
+  inside it exhausted the pool and HUNG rather than failed. `rebuild` now gathers and retrieves
+  with no transaction open and writes through the self-proxied `persist`. Same treatment as the
+  two character konzíliums (see [character.md](character.md#5-integrations)). Quarterly and both
+  extractors already delegated persistence through a self-proxy, so they needed no change.
+- **`MemoryContextBlock.render` is FAIL-OPEN** — it swallows `RuntimeException` and returns
+  EMPTY. So a test asserting only "the surface still produced its row" is vacuous: it passes
+  even when the block is permanently empty (a missing `ck_memory_retrieval_run_policy` value
+  does exactly that). Every `*MemoryIT` here asserts on the rendered block's CONTENT **and** on a
+  `memory_retrieval_run` row carrying the right `consumer_policy`; each `*MemoryDisabledIT`
+  asserts the opposite pair under `enabled: false`.
+
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
 - **The second nightly cron** — `PatternDetectionJob` (02:40, switch
@@ -712,21 +805,48 @@ migration** — the service composes existing data:
   cache idiom — one `MetricSeriesService.series()` call per metric via the shared `PatternGate.window`
   helper; **`MetricKey.WEEKEND` is deliberately excluded from the union** — it is a synthetic
   calendar 0/1 that never misses a day, so folding it in would always saturate the count to the
-  full window) / L1 (`daily_summary` count + first/last date + embedding counts by kind) / L2
-  (pattern `kind`×`status` rollup, computed in plain Java — a user's live pattern set is small
-  enough that a `GROUP BY` query would be overkill — plus the pending `learned_fact` candidate
-  count) / L3 (confirmed-fact counts by `source`, the sum of `reinforcement_count`, the
-  `include_in_prompt` count) / `jobs` (the three raw cron strings — summary/pattern/hypothesis, the
-  FE never parses them — plus `lastSummaryDate` and `lastDetectedAt`).
+  full window) / L1 (`daily_summary` count + first/last date + vector counts by kind — see the
+  mezo-eq85.10 note below) / L2 (pattern `kind`×`status` rollup, computed in plain Java — a user's
+  live pattern set is small enough that a `GROUP BY` query would be overkill — plus the pending
+  `learned_fact` candidate count) / L3 (confirmed-fact counts by `source`, the sum of
+  `reinforcement_count`, the `include_in_prompt` count) / `jobs` (the three raw cron strings —
+  summary/pattern/hypothesis, the FE never parses them — plus `lastSummaryDate` and
+  `lastDetectedAt`).
 - **`summary`** — the L1 journal: `daily_summary` rows date-desc over an optional `[from,to]`
   (missing bounds fall back to a wide default so there is only ever one query shape), each flagged
-  `embedded` (a live `memory_embedding` row of kind `daily_summary` exists for that day).
-- **`similar-days`** — the **V2.3 `MemoryRecallService` reused UNCHANGED**: the identical
-  embed→ANN→recency-rerank pipeline the `find_similar_past_days` tool uses, so the chat tool and
-  this UI surface can never disagree about a memory. Deliberately **NOT `@Transactional`** — the
-  embed call is a network call, and no DB connection is held across it, the same reasoning
-  `MemoryRecallService` itself documents. The excerpt is the stored narrative capped at
-  `recall.render-max-chars` (300), the same cap the tool's own render uses.
+  `embedded` — see the mezo-eq85.10 note below for what that flag reads today.
+- **`similar-days`** — the paragraph above documented V2.3's `MemoryRecallService reused
+  UNCHANGED`; **mezo-eq85.10 moved this endpoint onto the memory platform too** (same note below),
+  so the chat tool and this UI surface still can never disagree about a memory — they now share
+  ONE retrieval path instead of one recall SERVICE. Deliberately **still NOT `@Transactional`** —
+  the embed call is a network call, and no DB connection is held across it. The excerpt is the
+  stored narrative capped at `recall.render-max-chars` (300), the same cap the tool's own render
+  uses.
+
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — L1 counting and `similar-days` moved off
+`memory_embedding` onto the unified memory platform.** Two changes, one slice:
+- **L1 `embeddings` / `summary`'s `embedded` flag** now count `memory_item.source_kind` joined to
+  a LIVE serving-version `memory_vector` row (`is_deleted = false AND status = 'ready' AND
+  embedding IS NOT NULL AND embedding_version = <serving>` — the exact eligibility predicate
+  `DenseMemoryQuery` uses for chat ANN, copied rather than reinvented) instead of
+  `memory_embedding.kind`/`ref_id`. Two new `MemoryItemRepository` queries
+  (`countBySourceKindForUser`, `findSourceIdsWithLiveVector`) back this — carrying the FULL
+  six-part predicate since fix round 1 (`state = 'active'` and
+  `embedded_content_hash = content_hash` were missing, so a suppressed/superseded item, or one
+  whose text changed since it was embedded, was counted as "vetítve" though ANN will never return
+  it); the wire field names
+  (`MemoryEmbeddingKindCount.kind`, `MemorySummaryItem.embedded`) are UNCHANGED — only their
+  descriptions and their source moved, so no FE code needed to change for this half.
+- **`similar-days` and `find_similar_past_days`** both now retrieve through
+  `MemoryContextService` under `ConsumerPolicy.SIMILAR_DAYS`, which scopes the RETRIEVAL itself to
+  `sourceKind = "daily_summary"` and keeps the raw-cosine floor (see the two honesty guards above). The contract dropped `SimilarDayItem.similarity`/`finalScore`
+  (the platform's RRF-based `finalScore` is not a 0..1 cosine fraction and cannot support the old
+  percent ring or the `egyezés × frissesség = végső` chip math) and gained `rank` (1-based) +
+  nullable `memoryItemId`, plus a nullable `retrievalRunId` on `SimilarDaysResponse`. Product-owner
+  decision (2026-09-19): the cards show rank order, no numbers — see
+  `.superpowers/sdd/2026-09-06-reflection-self-discovered-patterns/task-10-codebase-notes.md` §1
+  for the full reasoning. `MemoryRecallService` and `properties.recall()` stay in the tree (Task 11
+  retires the former; `recall().maxK()`/`.renderMaxChars()` are still read by both call sites).
 - **`llm-usage`** — a new native daily rollup, `LlmLogRepository.aggregatePerDaySince` (+ the
   `LlmDailyAggregate` interface projection) over `llm_log_history` ([ADR
   0014](../decisions/0014-llm-call-audit-log.md)), wrapped by `LlmUsageService.perDay` — a sibling
@@ -5551,7 +5671,12 @@ matching the shape its two L2/L3 siblings in the same response already use
 MemoryFactSourceCount[]`) — an array absorbs an eleventh kind for free, no contract or FE change
 required. `kind` is deliberately plain `type: string` in the schema, not enum-constrained: the DB
 CHECK is the authority and it is expected to keep growing.
-`MemoryEmbeddingRepository.countByKindForUser` (`repository/MemoryEmbeddingRepository.java`) is
+**Retired by `mezo-eq85.10` (2026-09-19)** — the paragraph below describes the ORIGINAL
+`mezo-b3pp.22` shape; the count now comes from `MemoryItemRepository.countBySourceKindForUser`
+over `memory_item.source_kind` + a live serving-generation `memory_vector`, and
+`MemoryEmbeddingRepository.countByKindForUser`/`findRefIdsByCreatedByAndKind` were DELETED (zero
+callers, tests included).
+`MemoryEmbeddingRepository.countByKindForUser` was
 ONE `group by m.kind` JPQL query — `select m.kind as kind, count(m) as count from
 MemoryEmbeddingEntity m where m.createdBy = :createdBy group by m.kind order by count(m) desc,
 m.kind asc` via the `KindCount {getKind(), getCount()}` projection — rather than one
@@ -9082,7 +9207,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/RecalledMemoriesEnvelope.java` — **`mezo-b3pp.28`** the W3.1b disclosure envelope on `ai_message.recalled_memories`: `{items:[{kind, refId, occurredOn, label, gist, similarity}]}` in prompt order, with `ofOrNull(items)` so "recalled nothing" is a **null column**, not an empty envelope (the `RefsEnvelope` precedent). `refId` is persisted but never mapped onto the wire.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java` — **`mezo-al1i`** added finders for the observatory: `LearnedFactRepository.countByCreatedByAndUserDecisionIsNullAndDeletedFalse` (the L2 pending count).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/DailySummaryRepository.java` — **`mezo-al1i`** added `countByCreatedBy`, `findTop1ByCreatedByOrderBySummaryDateAsc/Desc` (L1 first/last date), `findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc` (the journal query).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above); **`mezo-b3pp.2`** added `findByKindAndRefIdIncludingDeleted` (native — `@SQLRestriction` applies to JPQL too — the revive lookup `upsert` now reads through).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — **`mezo-al1i`** added `countByCreatedByAndKind` (L1 embedding counts) + `findRefIdsByCreatedByAndKind` (the memory-observatory L1 journal's `embedded` flag lookup — the daily-summary journal, not `feature/journal`), of which **`mezo-eq85.10` DELETED `findRefIdsByCreatedByAndKind` and `countByKindForUser`** once both observatory reads moved to `MemoryItemRepository` (`countByCreatedByAndKind` stays — several ITs still assert one kind's live-vector count); **`mezo-b3pp.1`** added `findByKindAndRefId` (the journal embed pipeline's update-in-place lookup, above); **`mezo-b3pp.2`** added `findByKindAndRefIdIncludingDeleted` (native — `@SQLRestriction` applies to JPQL too — the revive lookup `upsert` now reads through).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingAnnQuery.java` — **`mezo-b3pp.12`** the W3.1 kind-set ANN search, deliberately OUTSIDE Hibernate: a `NamedParameterJdbcTemplate` query on the CALLER's connection under a hand-taken JDBC savepoint, so a failed statement never poisons the turn's transaction (§9 — not a `@Query` finder, and `PROPAGATION_NESTED` does not work on Hibernate). Returns `Hit(id, kind, refId, content, occurredOn, distance)`; `kinds` must be non-empty. The statement is COMPOSED, not picked from a menu: `SQL_HEAD` + the optional `SQL_NOT_BEFORE` (W3.2 coverage floor) + the optional `SQL_EXCLUDE_CONVERSATION` (**W3.3 / `mezo-b3pp.27`** — `ref_id not in (select m.id from ai_message m where m.conversation_id = :excludeConversationId)`, applied only to the chat_turn group) + `SQL_TAIL`; a `null` argument simply leaves its fragment out, because an `(:param is null or …)` predicate would be an untyped-parameter cast headache and a muddier plan.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records; **`mezo-b3pp.12`** added the nested `AmbientRecall` record on `mezo.companion.ambient-recall.*`; **`mezo-b3pp.14`** (W3.3) reshaped it to `(enabled, weeklyShadowDays, maxTokens, excludeCurrentConversation, dailySummary, periodSummary, journal, chatTurn, other)` where each of the five groups is a `@NotNull @Valid Group(cap @Min(0) @Max(10), minSimilarity 0..1, decayDays @Min(1) @Max(3650))` — the flat `cap-*` keys and the single `minSimilarity` are gone, and ambient recall no longer borrows `Recall.decayDays`. **`mezo-b3pp.1`** landed a `Journal` record here (`decisionReviewDays`, unused by that slice, ahead of W1.4's need); **ADR 0029** (W1.4 branch review) moved it out to `feature/journal/config/JournalProperties.java` — a journal-owned `@ConfigurationProperties` record on the SAME `mezo.companion.journal.*` prefix — to break the cycle a direct `journal → companion` import for the config record would otherwise have closed. **`mezo-ozri.2`** reshaped `Llm` into `(provider, gemini, openai, perCallKind)` with a nested `Tier(chatModel, smartModel)` — tiers per PROVIDER, because both providers stay live at once.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/LlmProvider.java` — the `GEMINI`/`OPENAI` enum that `mezo.companion.llm.provider` and `.per-call-kind` speak (mezo-ozri.2).

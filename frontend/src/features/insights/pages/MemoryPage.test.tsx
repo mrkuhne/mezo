@@ -76,16 +76,15 @@ describe('MemoryPage (mock mode)', () => {
   test('search is lazy, results jump to the journal entry', async () => {
     renderPage()
     await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
-    expect(screen.queryByText('egyezés 0.81')).not.toBeInTheDocument() // lusta — még nincs találat
+    // lusta — még nincs találat, tehát az első seed-nap kivonata sem látszik
+    expect(screen.queryByText(/Pihenőnap volt, de a napzárás elmaradt/)).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'rossz alvás')
     await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
-    // a matek-chipsor: egyezés × frissesség = végső (0.78/0.81 ≈ 0.96)
-    expect(await screen.findByText('egyezés 0.81')).toBeInTheDocument()
-    expect(screen.getByText('frissesség 0.96')).toBeInTheDocument()
-    expect(screen.getByText('végső 0.78')).toBeInTheDocument()
-    // a találati kártya egyezés-gyűrűje a % címkével (új arc, mezo-d20.5.7)
-    expect(screen.getByRole('img', { name: 'egyezés 81%' })).toBeInTheDocument()
-    await userEvent.click(screen.getByText('egyezés 0.81'))
+    expect(await screen.findByText(/Pihenőnap volt, de a napzárás elmaradt/)).toBeInTheDocument()
+    // a pontszámok eltűntek (mezo-eq85.10) — a gyűrű csak a rangsor-helyet mutatja
+    expect(screen.queryByText(/egyezés/)).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: '1. legjobb találat' })).toBeInTheDocument()
+    await userEvent.click(screen.getByText(/Pihenőnap volt, de a napzárás elmaradt/))
     // a koppintás a Napló szegmensre vált, a 08-09-es bejegyzés látszik
     expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
   })
@@ -153,6 +152,22 @@ describe('MemoryPage (real mode)', () => {
     await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'teljesen egyedi nap')
     await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
     expect(await screen.findByText('Nincs elég hasonló nap a memóriában.')).toBeInTheDocument()
+  })
+
+  // mezo-eq85.10 FIX 3: a failed query must NOT render "Nincs elég hasonló nap a memóriában" —
+  // that sentence asserts something about the user's history, and the truth is we could not look.
+  test('search renders a failure state, not the empty state, when the query errors', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/similar-days`, () => new HttpResponse(null, { status: 500 })),
+    )
+    renderPage()
+    await screen.findByText('L0 · Nyers adat')
+    await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
+    await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'rossz alvás')
+    await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+
+    expect(await screen.findByText(/A keresés nem sikerült/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.queryByText('Nincs elég hasonló nap a memóriában.')).not.toBeInTheDocument()
   })
 
   test('audit shows the honest disabled state when the llm-log switch is off', async () => {

@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbeddingEntity, UUID> {
@@ -53,7 +52,7 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
      * {@code MemoryEmbeddingWriter}'s upsert (mezo-b3pp.2).
      *
      * <p>Native by necessity: {@code @SQLRestriction("is_deleted = false")} is applied by Hibernate
-     * to every entity query — derived AND JPQL alike (see {@link #findRefIdsByCreatedByAndKind},
+     * to every entity query — derived AND JPQL alike (see {@link #findRefContentByCreatedByAndKind},
      * whose javadoc records the same) — so only a native query can see past it. It has to see past
      * it because {@code uq_memory_embedding_kind_ref_id} is a PLAIN unique constraint (no
      * {@code where is_deleted = false} partial predicate, unlike {@code uq_ritual_day_user_date}):
@@ -68,29 +67,15 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
 
-    /** Test-only single-kind vector count. Superseded for the memory observatory's L1 read by
-     *  {@link #countByKindForUser} (mezo-b3pp.22) — this method has no {@code src/main} caller
-     *  left, but stays for the several ITs that still assert one kind's live-vector count. */
+    /** Test-only single-kind vector count. It has no {@code src/main} caller left, but stays for
+     *  the several ITs that still assert one kind's live-vector count.
+     *
+     *  <p>Its former {@code src/main} peers — {@code countByKindForUser} (the observatory's L1
+     *  rollup) and {@code findRefIdsByCreatedByAndKind} (the napló embed flag) — were DELETED by
+     *  mezo-eq85.10: both reads moved to {@code MemoryItemRepository} over
+     *  {@code memory_item}/{@code memory_vector}, leaving these two with zero callers, tests
+     *  included. */
     long countByCreatedByAndKind(UUID createdBy, String kind);
-
-    /** Every populated kind for one user, with its live-vector count — the memory observatory's L1
-     *  read (mezo-b3pp.22). ONE query instead of one {@code countByCreatedByAndKind} per kind: the
-     *  {@code ck_memory_embedding_kind} CHECK has already grown from three values to ten, and the
-     *  observatory must not need a code change every time it grows again. JPQL, so
-     *  {@code @SQLRestriction("is_deleted = false")} applies — a reaped vector (mezo-b3pp.26) is
-     *  correctly absent rather than inflating the reported store size. */
-    interface KindCount {
-        String getKind();
-        long getCount();
-    }
-
-    @Query("select m.kind as kind, count(m) as count from MemoryEmbeddingEntity m "
-            + "where m.createdBy = :createdBy group by m.kind order by count(m) desc, m.kind asc")
-    List<KindCount> countByKindForUser(@Param("createdBy") UUID createdBy);
-
-    /** A napló-nézet batch embed-jelzője — a kind élő ref-id-i (a @SQLRestriction JPQL-re is áll). */
-    @Query("select m.refId from MemoryEmbeddingEntity m where m.createdBy = :createdBy and m.kind = :kind")
-    Set<UUID> findRefIdsByCreatedByAndKind(@Param("createdBy") UUID createdBy, @Param("kind") String kind);
 
     /** W1.5 lifecycle (mezo-b3pp.26) — ref-id + stored content for one user's vectors of a kind:
      *  what the nightly sweep compares against the live source text to detect drift. A projection,
