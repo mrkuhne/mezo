@@ -103,6 +103,18 @@ export function ActiveWorkoutPage() {
   // this week falls through to the review redirect below (D5).
   const [searchParams] = useSearchParams()
   const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
+  // BELÉPÉSI döntés, nem folyamatos őr (mezo-0uuy3). A lenti átirányítás arra való, hogy egy
+  // már lezárt napra ÉRKEZŐ felhasználó az értékelőn kössön ki — nem arra, hogy a futó lapot
+  // elrántsa. Márpedig pontosan ezt tette: a `finishWorkout` sikere érvényteleníti a
+  // ['train','workoutToday'] lekérdezést, az újratöltött nap `completedWorkout`-ot ad és
+  // `openWorkout: null`-t, tehát az őr UGYANABBAN a pillanatban elnavigált a záró ceremóniáról
+  // a régi összesítőre. A tulajdonos éppen ezt látta élesben: „Lezárás → egyből a régi
+  // összesítő, a csillagos képernyőt meg sem láttam."
+  //
+  // Mock módban a `completedTodayWorkout` MINDIG null (trainHooks.ts), ezért az egész
+  // jsdom-lefedettség vak volt rá — a regressziós teszt ezért valós módban fut
+  // (`ActiveWorkoutPage.realFinish.test.tsx`).
+  const entryRedirectRef = useRef<boolean | null>(null)
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
@@ -117,7 +129,11 @@ export function ActiveWorkoutPage() {
   // (spec 2026-07-15 gating — a finished day must not be re-enterable as a live session;
   // the prep screen the original wording named no longer exists at all since mezo-e1ii9).
   // Mock mode has no completedTodayWorkout (always null), so this never fires there.
-  if (completedTodayWorkout && !todaySession?.openWorkout) {
+  // A latch az ELSŐ betöltött renderen dől el, és a mount hátralévő részére érvényes marad.
+  if (entryRedirectRef.current === null) {
+    entryRedirectRef.current = Boolean(completedTodayWorkout && !todaySession?.openWorkout)
+  }
+  if (entryRedirectRef.current && completedTodayWorkout) {
     return <Navigate to={`/train/review/${completedTodayWorkout.id}`} replace />
   }
   return (
