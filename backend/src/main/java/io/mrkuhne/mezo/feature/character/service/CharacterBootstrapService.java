@@ -117,6 +117,12 @@ public class CharacterBootstrapService {
      *  {@link #self} (see its javadoc). {@code evidence} (WITHOUT the memory line) feeds the
      *  run-log's expert-key/observation-count bookkeeping, unchanged from before this slice;
      *  {@code evidenceWithMemory} is what the proposal round actually sees. */
+    // Package-private, unlike the house precedent LifeEventExtractionService.persistCandidates
+    // (public): that is safe ONLY because Spring proxies this bean with CGLIB (class-based),
+    // which can override a package-private method in the same package. Were proxyTargetClass
+    // ever turned off, or this class given an interface, @Transactional here would silently
+    // stop applying — the retrieval above would then run inside the caller's transaction and
+    // hit the pool-exhaustion hazard. Widen to public if that ever changes (mezo-eq85.10).
     @Transactional
     CharacterConferenceEntity runKonzilium(
             UUID owner, List<ExpertEvidence> evidence, List<ExpertEvidence> evidenceWithMemory) {

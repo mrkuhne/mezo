@@ -19,8 +19,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Memória mindenhol S10 (bd mezo-eq85.10): {@code find_similar_past_days} moved off the retired
- * V2.3 {@code MemoryRecallService} onto {@link io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService}
- * under the {@code SIMILAR_DAYS} policy — seeded via {@code memory_item}/{@code memory_vector}
+ * V2.3 {@code MemoryRecallService} onto {@link io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall}
+ * (fix round 2, FIX C: the one collaborator the endpoint reads through too) under the {@code
+ * SIMILAR_DAYS} policy — seeded via {@code memory_item}/{@code memory_vector}
  * only (no {@code memory_embedding} row exists), same shape {@link MemoryObservatorySimilarDaysIT}
  * exercises for the endpoint. Deliberately NOT class-level {@code @Transactional}: the retrieval
  * fans out across {@code applicationTaskExecutor}, each retriever on its own pooled JDBC
@@ -40,7 +41,6 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
     @Autowired private MemoryItemPopulator memoryItemPopulator;
     @Autowired private MemoryRetrievalRunRepository runRepository;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties memoryPlatformProperties;
     @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
     @Autowired private io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository periodSummaryRepository;
     @Autowired private io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties quarterlyProperties;
@@ -170,15 +170,16 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
      * platform is unreachable, and must NOT answer {@code ToolText.NO_DATA} either: "nincs adat"
      * means "nincs ilyen napod", which is a lie about the user's history when the truth is that we
      * could not look. The retrieval failure is staged with a throwing coordinator — the
-     * {@code ReflectionMemoryGatewayIT} idiom — because a REAL total outage of all four retrievers
-     * cannot be provoked from a healthy database.
+     * {@code ReflectionMemoryGatewayIT} idiom. Its companion test, {@code
+     * MemoryObservatorySimilarDaysOutageIT}, provokes a REAL outage through the Spring-wired
+     * retriever set (fix round 2, FIX A) — this one stays as the cheap unit-shaped guard on the
+     * tool's own catch branch.
      */
     @Test
     void testFindSimilarPastDays_shouldSayItCouldNotRecall_whenRetrievalBlowsUp() {
         UUID owner = userPopulator.createUser().getId();
-        MemoryTools throwingTools = new MemoryTools(new ThrowingMemoryContextService(),
-                memoryPlatformProperties, companionProperties, periodSummaryRepository,
-                quarterlyProperties);
+        MemoryTools throwingTools = new MemoryTools(new ThrowingSimilarDaysRecall(),
+                companionProperties, periodSummaryRepository, quarterlyProperties);
 
         String out = throwingTools.findSimilarPastDays(QUERY, 2, ctx(owner));
 
@@ -187,16 +188,15 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
     }
 
     /** Stages "the memory platform is down" without Mockito — see the test above. */
-    private static final class ThrowingMemoryContextService
-            extends io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService {
+    private static final class ThrowingSimilarDaysRecall
+            extends io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall {
 
-        private ThrowingMemoryContextService() {
-            super(null, null, Map.of(), null, null, null, null, null, null, null, null, null);
+        private ThrowingSimilarDaysRecall() {
+            super(null, null);
         }
 
         @Override
-        public io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext retrieveOrFail(
-                io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest request) {
+        public Recall recall(UUID userId, String query, int limit) {
             throw new IllegalStateException("retrieval exploded");
         }
     }

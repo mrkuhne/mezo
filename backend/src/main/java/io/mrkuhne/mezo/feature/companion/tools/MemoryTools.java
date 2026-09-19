@@ -2,12 +2,9 @@ package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
-import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
-import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
+import io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall;
 import io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
@@ -27,7 +24,7 @@ import java.util.UUID;
 
 /**
  * Episodic-recall tool over the memory platform (Memória mindenhol S10, mezo-eq85.10; V2.3's
- * {@code MemoryRecallService} retired from this call site — see {@link MemoryContextService}) —
+ * {@code MemoryRecallService} retired from this call site — see {@link SimilarDaysRecall}) —
  * the "volt már ilyen napod?" answer, {@link ConsumerPolicy#SIMILAR_DAYS} — a policy that scopes
  * the RETRIEVAL itself to {@code daily_summary} sourced items (see
  * {@link ConsumerPolicy#scopedSourceKind()}) and keeps the raw-cosine relevance floor
@@ -53,20 +50,12 @@ public class MemoryTools {
 
     private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("yyyy-MM");
 
-    /** memory_item.source_kind for a nightly summary — the ONLY kind "hasonló NAPOK" means
-     *  (Memória mindenhol S10, mezo-eq85.10). Belt-and-braces SECOND guard: the policy scopes the
-     *  retrieval query itself, which is what actually enforces "days" — a mapping-only filter runs
-     *  after the token budget has already truncated the fused rank, so it would see no day at all
-     *  once non-day hits had spent the budget. */
-    private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
-
     /** What the tool says when the memory platform is unreachable (mezo-eq85.10 FIX 3) — an honest
      *  "I could not look", never {@link ToolText#NO_DATA}, which asserts the day does not exist. */
     private static final String RECALL_UNAVAILABLE = "Hasonló korábbi napok: a memóriát most nem "
             + "sikerült elérni, ezért nem tudom megmondani, volt-e ilyen napod.";
 
-    private final MemoryContextService memoryContextService;
-    private final MemoryPlatformProperties memoryPlatformProperties;
+    private final SimilarDaysRecall similarDaysRecall;
     private final CompanionProperties properties;
     private final PeriodSummaryRepository periodSummaryRepository;
     private final QuarterlyProperties quarterlyProperties;
@@ -87,7 +76,11 @@ public class MemoryTools {
         int limit = ToolText.clamp(k, 1, properties.recall().maxK(), 3);
         List<MemoryContextItem> days;
         try {
-            days = similarDailySummaries(userId, description, limit);
+            // The SAME collaborator MemoryObservatoryService.similarDays calls — one copy of the
+            // kill switch, the SIMILAR_DAYS request, retrieveOrFail and the daily-summary filter,
+            // so "the tool and the surface see the same memory" is structural rather than two
+            // hand-synchronised copies (mezo-eq85.10 fix round 2, FIX C).
+            days = similarDaysRecall.recall(userId, description, limit).days();
         } catch (RuntimeException failure) {
             // Deliberately NOT ToolText.NO_DATA: "nincs adat" means "nincs ilyen napod", which would
             // be a lie about the user's own history when the truth is that WE could not look
@@ -109,26 +102,6 @@ public class MemoryTools {
             b.append('\n').append(day.occurredOn()).append(": ").append(content);
         }
         return b.toString();
-    }
-
-    /** Shared with {@link io.mrkuhne.mezo.feature.companion.service.MemoryObservatoryService}
-     *  (Memória mindenhol S10): the memory platform's own SIMILAR_DAYS policy, filtered to
-     *  daily-summary sourced items, limited to {@code limit} AFTER the filter. */
-    private List<MemoryContextItem> similarDailySummaries(UUID userId, String query, int limit) {
-        MemoryPlatformProperties.PolicyLimits limits =
-                memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
-        if (!limits.enabled()) {
-            // The per-policy kill switch: a disabled surface does NO fan-out and writes NO
-            // memory_retrieval_run row, so it can be rolled back purely by config (mezo-eq85.10).
-            return List.of();
-        }
-        MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
-                List.of(), LocalDate.now(), limits.maxTokens(), null, false);
-        MemoryContext context = memoryContextService.retrieveOrFail(request);
-        return context.items().stream()
-                .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
-                .limit(limit)
-                .toList();
     }
 
     @Tool(name = "compare_periods", description = "Két KORÁBBI IDŐSZAK összevetése a havi "

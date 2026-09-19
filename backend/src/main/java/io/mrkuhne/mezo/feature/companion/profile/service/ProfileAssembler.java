@@ -173,6 +173,12 @@ public class ProfileAssembler {
      *  its javadoc). Split out of {@link #rebuild} so the memory retrieval above never competes
      *  with this transaction's held connection for the pooled 5 (task-10-codebase-notes.md §4
      *  HAZARD). */
+    // Package-private, unlike the house precedent LifeEventExtractionService.persistCandidates
+    // (public): that is safe ONLY because Spring proxies this bean with CGLIB (class-based),
+    // which can override a package-private method in the same package. Were proxyTargetClass
+    // ever turned off, or this class given an interface, @Transactional here would silently
+    // stop applying — the retrieval above would then run inside the caller's transaction and
+    // hit the pool-exhaustion hazard. Widen to public if that ever changes (mezo-eq85.10).
     @Transactional
     Optional<UUID> persist(UUID userId, String payload, int signals, int decisionsCount, int nodesCount) {
         String prose = llmCallContextHolder.runWith(CONTEXT,

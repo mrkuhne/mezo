@@ -23,11 +23,9 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
-import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
-import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
+import io.mrkuhne.mezo.feature.companion.memory.service.SimilarDaysRecall;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
@@ -72,12 +70,13 @@ public class MemoryObservatoryService {
     private final CompanionProperties properties;
     /** S2 (mezo-eq85.2): the nightly reflection pass owns the hypothesis schedule now. */
     private final ReflectionProperties reflectionProperties;
-    private final MemoryContextService memoryContextService;
+    private final SimilarDaysRecall similarDaysRecall;
     private final MemoryPlatformProperties memoryPlatformProperties;
     private final LlmUsageService llmUsageService;
 
-    /** memory_item.source_kind for a nightly summary — see {@code MemoryTools}'s twin constant
-     *  for why the mapping-level filter is only the SECOND guard. */
+    /** memory_item.source_kind for a nightly summary — used by the L1 embedded-coverage read
+     *  below. The similar-days filter on the same constant now lives in {@link SimilarDaysRecall},
+     *  the single collaborator both this surface and the chat tool read through. */
     private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
 
     @Transactional(readOnly = true)
@@ -209,31 +208,15 @@ public class MemoryObservatoryService {
     public SimilarDaysResponse similarDays(UUID userId, String query, Integer k) {
         int limit = k != null ? k : 3;
         int renderCap = properties.recall().renderMaxChars();
-        MemoryPlatformProperties.PolicyLimits limits =
-                memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
-        if (!limits.enabled()) {
-            // Per-policy kill switch (mezo-eq85.10): no fan-out, no memory_retrieval_run row, so
-            // this surface can be rolled back purely by config. retrievalRunId is null precisely
-            // because there IS no run to point at.
-            return SimilarDaysResponse.builder().items(List.of()).retrievalRunId(null).build();
-        }
-        MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
-                List.of(), LocalDate.now(), limits.maxTokens(), null, false);
-        // retrieveOrFail, not retrieve: a total retriever outage returns an EMPTY context, which
-        // this surface would render as "nincs ilyen napod" — a lie about the user's history. An
-        // honest 5xx beats a fabricated empty list, so the failure propagates to the FE.
-        // "Total" means every retriever this run ASKED (mezo-eq85.10 fix round 2, FIX A): under
-        // SIMILAR_DAYS only dense and lexical are asked at all, and while the skipped fact/graph
-        // retrievers still counted as successes this branch was unreachable — the endpoint kept
-        // answering 200 with an empty list. See MemoryRetriever#appliesTo.
-        MemoryContext context = memoryContextService.retrieveOrFail(request);
-        List<MemoryContextItem> dailySummaryItems = context.items().stream()
-                .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
-                .limit(limit)
-                .toList();
+        // The read itself lives in SimilarDaysRecall — the SAME collaborator the chat tool calls,
+        // so "a tool és a felület ugyanazt a memóriát látja" is structural now rather than two
+        // copies kept in step by hand (mezo-eq85.10 fix round 2, FIX C). It raises on a total
+        // outage of the retrievers the run asked (FIX A) instead of handing back an empty list
+        // this surface would render as "nincs ilyen napod"; the failure propagates to the FE.
+        SimilarDaysRecall.Recall recall = similarDaysRecall.recall(userId, query, limit);
         List<SimilarDayItem> items = new ArrayList<>();
         int rank = 0;
-        for (MemoryContextItem item : dailySummaryItems) {
+        for (MemoryContextItem item : recall.days()) {
             rank++;
             items.add(SimilarDayItem.builder()
                     .date(item.occurredOn())
@@ -242,7 +225,9 @@ public class MemoryObservatoryService {
                     .memoryItemId(item.memoryItemId())
                     .build());
         }
-        return SimilarDaysResponse.builder().items(items).retrievalRunId(context.retrievalRunId()).build();
+        return SimilarDaysResponse.builder().items(items)
+                // null iff the policy's kill switch is off: there is no run row to point at.
+                .retrievalRunId(recall.retrievalRunId()).build();
     }
 
     /** A tool render-vágásának párja (MemoryTools) — a stored text hosszú, a kártyára kivonat megy. */
