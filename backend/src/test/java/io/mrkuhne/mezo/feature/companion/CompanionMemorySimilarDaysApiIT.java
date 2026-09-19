@@ -82,6 +82,41 @@ class CompanionMemorySimilarDaysApiIT extends ApiIntegrationTest {
         assertThat(search(AXIS0_QUERY, "").getItems()).isEmpty();
     }
 
+    /**
+     * mezo-eq85.10 fix round 1, FIX 2 — the restored
+     * {@code testSearchSimilarDays_shouldReturnEmptyList_whenNothingAboveFloor} the swap deleted.
+     * The retired engine's own words: an honest "nincs adat" beats a fabricated resemblance, and
+     * {@code companion.yml} still promises this surface an "őszinte üres lista". The day's text
+     * shares no trigram with the query, so the lexical retriever's own {@code score > 0} floor
+     * already excludes it — the raw cosine (0.20, under {@code recall.min-similarity} = 0.25) is
+     * the only thing deciding here.
+     */
+    @Test
+    void testSearchSimilarDays_shouldReturnEmptyList_whenNothingAboveFloor() {
+        item(ownerId(), "daily_summary", "Qxwj zvbk pmhg tdfl kryn.",
+                LocalDate.now().minusDays(2), cosineVector(0.20f));
+
+        assertThat(search(AXIS0_QUERY, "").getItems()).isEmpty();
+    }
+
+    /** The control: the same lexically unreachable day, just above the floor, still comes back. */
+    @Test
+    void testSearchSimilarDays_shouldReturnTheDay_whenItIsAboveTheFloor() {
+        item(ownerId(), "daily_summary", "Qxwj zvbk pmhg tdfl kryn.",
+                LocalDate.now().minusDays(2), cosineVector(0.40f));
+
+        assertThat(search(AXIS0_QUERY, "").getItems())
+                .extracting(SimilarDayItem::getExcerpt).containsExactly("Qxwj zvbk pmhg tdfl kryn.");
+    }
+
+    /** A unit vector whose cosine to the 0. axis (the query's fake embedding) is {@code cosine}. */
+    private static float[] cosineVector(float cosine) {
+        float[] vector = axisVector(1);
+        vector[0] = cosine;
+        vector[1] = (float) Math.sqrt(1.0 - (double) cosine * cosine);
+        return vector;
+    }
+
     @Test
     void testSearchSimilarDays_shouldCapExcerpt_whenNarrativeLongerThanRenderMax() {
         String longContent = "x".repeat(400);

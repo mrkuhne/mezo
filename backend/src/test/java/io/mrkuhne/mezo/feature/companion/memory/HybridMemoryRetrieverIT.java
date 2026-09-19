@@ -89,7 +89,7 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
         var query = new PreparedMemoryQuery(
                 io.mrkuhne.mezo.feature.companion.memory.dto.QueryMode.CONTEXT_DEPENDENT,
                 request.currentQuery(), "ultramaraton", Optional.empty(), Optional.empty());
-        assertThat(lexical.retrieve(new RetrievalInput(request, query, "gemini-embedding-001-768-v1", 30, null)))
+        assertThat(lexical.retrieve(new RetrievalInput(request, query, "gemini-embedding-001-768-v1", 30, null, null)))
                 .extracting(MemoryCandidate::sourceId).contains(expected);
     }
 
@@ -376,7 +376,7 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
         // mezo-iddo: the caller embeds now, never the retriever — the fake reproduces the exact
         // vector geometry the sentinels in rawQuery script, including FAIL_ANN's short vector.
         return new RetrievalInput(
-                request, query, VERSION, candidateLimit, FAKE_EMBEDDING.embedQuery(rawQuery));
+                request, query, VERSION, candidateLimit, FAKE_EMBEDDING.embedQuery(rawQuery), null);
     }
 
     /** Diagnostic only: execute the real join/filter shape without asserting planner choices. */

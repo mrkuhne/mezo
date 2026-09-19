@@ -26,7 +26,7 @@ public class LexicalMemoryRetriever implements MemoryRetriever {
     public List<MemoryCandidate> retrieve(RetrievalInput input) {
         return query.search(
                         input.request().userId(), input.query().denseQuery(), input.request().asOf(),
-                        input.request().conversationId(), input.candidateLimit())
+                        input.request().conversationId(), input.candidateLimit(), input.sourceKind())
                 .stream()
                 .map(hit -> new MemoryCandidate(
                         name(), "memory_item", hit.itemId(), hit.itemId(), hit.sourceId(),

@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.companion.memory.service;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
@@ -49,6 +51,9 @@ public class MemoryContextService {
     private static final String PARTIAL_NOTICE = "[Memóriakeresés: részleges eredmény; egyes keresők nem válaszoltak. A hiányzó találat nem bizonyítja, hogy nincs adat.]\n";
 
     private static final String ALL_RETRIEVERS_FAILED = "MEMORY_RETRIEVAL_ALL_FAILED";
+
+    /** {@link DenseMemoryRetriever#name()} — the only retriever whose local score is raw cosine. */
+    private static final String DENSE_RETRIEVER = "dense";
 
     /**
      * How ONE retrieval should behave (mezo-4qyt). The four pre-existing entry points pass
@@ -98,6 +103,7 @@ public class MemoryContextService {
     private final MemoryReranker reranker;
     private final MemoryRetrievalAuditWriter auditWriter;
     private final MemoryPlatformProperties properties;
+    private final CompanionProperties companionProperties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AsyncTaskExecutor applicationTaskExecutor;
 
@@ -135,12 +141,14 @@ public class MemoryContextService {
         }
 
         RetrievalBatch batch = retrieveCandidates(request, query);
-        List<FusedCandidate> ranked = fusion.fuse(batch.candidates(), query, request.asOf());
+        Map<String, List<MemoryCandidate>> candidates =
+                aboveRelevanceFloor(batch.candidates(), request.consumerPolicy());
+        List<FusedCandidate> ranked = fusion.fuse(candidates, query, request.asOf());
         boolean partialFailure = batch.successCount() > 0 && batch.successCount() < retrievers.size();
         int tokenBudget = Math.max(0, boundedTokenBudget(request) - (partialFailure ? (PARTIAL_NOTICE.length() + 2) / 3 : 0));
         List<FusedCandidate> selected = selector.select(ranked, tokenBudget, request.asOf());
         boolean reranked = options.reranker()
-                && reranker.shouldRerank(request, batch.candidates(), selected);
+                && reranker.shouldRerank(request, candidates, selected);
         if (reranked) {
             ranked = reranker.rerank(ranked);
             selected = selector.select(ranked, tokenBudget, request.asOf());
@@ -184,6 +192,32 @@ public class MemoryContextService {
     }
 
     /**
+     * The restored raw-similarity floor (mezo-eq85.10 FIX 2). The retired {@code MemoryRecallService}
+     * documented it as "an honest 'nincs adat' beats a fabricated resemblance", and the swap dropped
+     * it; without it a {@code SIMILAR_DAYS} search renders up to {@code k} ARBITRARY days as "hasonló
+     * napok", which is exactly the dishonesty this slice exists to remove.
+     *
+     * <p>Applies to DENSE candidates only, and only for {@code SIMILAR_DAYS}. The dense retriever's
+     * {@code localScore} IS raw cosine ({@code 1 - distance}), the one absolute signal the new engine
+     * has — every other retriever's local score is a relative, retriever-private number. A LEXICALLY
+     * found candidate needs no second threshold: {@code LexicalMemoryQuery} already requires
+     * {@code score > 0}, i.e. the words genuinely occur, which is its own honest floor.
+     */
+    private Map<String, List<MemoryCandidate>> aboveRelevanceFloor(
+            Map<String, List<MemoryCandidate>> candidates, ConsumerPolicy policy) {
+        if (policy != ConsumerPolicy.SIMILAR_DAYS) {
+            return candidates;
+        }
+        double floor = companionProperties.recall().minSimilarity();
+        Map<String, List<MemoryCandidate>> filtered = new LinkedHashMap<>();
+        candidates.forEach((retriever, found) -> filtered.put(retriever,
+                DENSE_RETRIEVER.equals(retriever)
+                        ? found.stream().filter(candidate -> candidate.localScore() >= floor).toList()
+                        : found));
+        return Map.copyOf(filtered);
+    }
+
+    /**
      * D1: {@code audit = false} writes nothing. The stand-in still carries a trace id (the surface
      * shows one so a support conversation has a handle) and an EMPTY {@code resultIds} map, so the
      * {@link MemoryContextItem#retrievalResultId()} of a dry-run item is null — there is no row to
@@ -205,8 +239,12 @@ public class MemoryContextService {
         // Reached only past the NO_MEMORY_NEEDED early return, so a turn that needs no memory still
         // costs no embedding call.
         float[] queryEmbedding = queryEmbedder.embed(query.denseQuery()).orElse(null);
+        // mezo-eq85.10 FIX 1: kind scoping is POLICY-derived and applied inside each retriever's
+        // query, because the fused rank is truncated to the token budget below — a caller-side
+        // filter only ever sees what survived that truncation.
         RetrievalInput input = new RetrievalInput(
-                request, query, properties.servingEmbeddingVersion(), candidateLimit, queryEmbedding);
+                request, query, properties.servingEmbeddingVersion(), candidateLimit, queryEmbedding,
+                request.consumerPolicy().scopedSourceKind());
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
         // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a

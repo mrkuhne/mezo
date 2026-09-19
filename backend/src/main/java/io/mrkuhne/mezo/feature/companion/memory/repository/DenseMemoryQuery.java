@@ -50,6 +50,11 @@ public class DenseMemoryQuery {
               where m.id = i.source_id and m.conversation_id = :conversationId
           ))
         """;
+    /** mezo-eq85.10 FIX 1: a kind-scoped policy (SIMILAR_DAYS) filters HERE, before the candidate
+     *  limit and the token budget — not in the caller's mapping, which only ever sees survivors. */
+    private static final String SOURCE_KIND = """
+          and i.source_kind = :sourceKind
+        """;
     private static final String SQL_TAIL = """
         order by v.embedding <=> cast(:queryVector as vector), i.occurred_on desc, i.id
         limit :candidateLimit
@@ -69,7 +74,8 @@ public class DenseMemoryQuery {
     private final NamedParameterJdbcTemplate jdbc;
 
     public List<Hit> nearest(UUID userId, String queryVector, String embeddingVersion,
-                             LocalDate asOf, UUID conversationId, int candidateLimit) {
+                             LocalDate asOf, UUID conversationId, int candidateLimit,
+                             String sourceKind) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("queryVector", queryVector)
@@ -80,6 +86,10 @@ public class DenseMemoryQuery {
         if (conversationId != null) {
             params.addValue("conversationId", conversationId);
             sql.append(EXCLUDE_CONVERSATION);
+        }
+        if (sourceKind != null) {
+            params.addValue("sourceKind", sourceKind);
+            sql.append(SOURCE_KIND);
         }
         sql.append(SQL_TAIL);
         return underSavepoint(template -> template.query(sql.toString(), params, ROW_MAPPER));

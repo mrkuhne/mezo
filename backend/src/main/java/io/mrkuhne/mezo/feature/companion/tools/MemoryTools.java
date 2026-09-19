@@ -27,11 +27,14 @@ import java.util.UUID;
 /**
  * Episodic-recall tool over the memory platform (Memória mindenhol S10, mezo-eq85.10; V2.3's
  * {@code MemoryRecallService} retired from this call site — see {@link MemoryContextService}) —
- * the "volt már ilyen napod?" answer, {@link ConsumerPolicy#SIMILAR_DAYS} filtered to
- * {@code daily_summary} sourced items. Read-only over OUR OWN vectors (IDENT-2 holds), ownership
- * from the ToolContext, refs = the recalled days (kind {@code Memory}) so the FE chips show what
- * got remembered. No numeric score is rendered — the platform's rank is ordinal, not a 0..1
- * fraction (see {@code task-10-codebase-notes.md} §1).
+ * the "volt már ilyen napod?" answer, {@link ConsumerPolicy#SIMILAR_DAYS} — a policy that scopes
+ * the RETRIEVAL itself to {@code daily_summary} sourced items (see
+ * {@link ConsumerPolicy#scopedSourceKind()}) and keeps the raw-cosine relevance floor
+ * {@code mezo.companion.recall.min-similarity} (0.25): a day below it is not a similar day, and an
+ * honest "nincs adat" beats a fabricated resemblance. Read-only over OUR OWN vectors (IDENT-2
+ * holds), ownership from the ToolContext, refs = the recalled days (kind {@code Memory}) so the FE
+ * chips show what got remembered. No numeric score is rendered — the platform's rank is ordinal,
+ * not a 0..1 fraction (see {@code task-10-codebase-notes.md} §1).
  *
  * <p>W5.3 (mezo-b3pp.20) added {@link #comparePeriods} here too — same read-only, same
  * ToolContext ownership, but its refs are whole MONTH rungs and therefore carry their own kind
@@ -49,9 +52,11 @@ public class MemoryTools {
     private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("yyyy-MM");
 
     /** memory_item.source_kind for a nightly summary — the ONLY kind "hasonló NAPOK" means
-     *  (Memória mindenhol S10, mezo-eq85.10). The policy's own forbidden-kinds list is the
-     *  second guard, not the first — this filter is what actually enforces "days". */
-    private static final String SOURCE_KIND_DAILY_SUMMARY = "daily_summary";
+     *  (Memória mindenhol S10, mezo-eq85.10). Belt-and-braces SECOND guard: the policy scopes the
+     *  retrieval query itself, which is what actually enforces "days" — a mapping-only filter runs
+     *  after the token budget has already truncated the fused rank, so it would see no day at all
+     *  once non-day hits had spent the budget. */
+    private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
 
     private final MemoryContextService memoryContextService;
     private final MemoryPlatformProperties memoryPlatformProperties;

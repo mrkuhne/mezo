@@ -76,8 +76,9 @@ public class MemoryObservatoryService {
     private final MemoryPlatformProperties memoryPlatformProperties;
     private final LlmUsageService llmUsageService;
 
-    /** memory_item.source_kind for a nightly summary — see {@code MemoryTools}'s twin constant. */
-    private static final String SOURCE_KIND_DAILY_SUMMARY = "daily_summary";
+    /** memory_item.source_kind for a nightly summary — see {@code MemoryTools}'s twin constant
+     *  for why the mapping-level filter is only the SECOND guard. */
+    private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
 
     @Transactional(readOnly = true)
     public MemoryOverviewResponse overview(UUID userId) {
@@ -197,7 +198,9 @@ public class MemoryObservatoryService {
 
     /**
      * Memória mindenhol S10 (mezo-eq85.10): a kereső a memória-platformot hívja
-     * {@link ConsumerPolicy#SIMILAR_DAYS} policy-vel, {@code daily_summary} forrásra szűrve — a
+     * {@link ConsumerPolicy#SIMILAR_DAYS} policy-vel, amely magát a LEKÉRDEZÉST szűkíti
+     * {@code daily_summary} forrásra és megtartja a nyers-koszinusz küszöböt
+     * ({@code recall.min-similarity} = 0.25: alatta nem hasonló nap, hanem zaj) — a
      * tool ({@code find_similar_past_days}) ugyanezt az utat járja, garantáltan ugyanazt a
      * memóriát látják. Szándékosan NEM @Transactional: az embed hálózati hívása alatt nem
      * tartunk DB-kapcsolatot (a retiredre kerülő {@code MemoryRecallService} saját indoklása is

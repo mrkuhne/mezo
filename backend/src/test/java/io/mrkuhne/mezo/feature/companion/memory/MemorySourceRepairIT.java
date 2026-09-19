@@ -34,9 +34,9 @@ class MemorySourceRepairIT extends AbstractIntegrationTest {
         var conversation = conversations.conversation(owner);
         messages.message(conversation, "assistant", "Kajakoztunk a folyón.");
         catchUp.run(owner, LocalDate.now());
-        assertThat(lexical.search(owner, "Kajakoztunk", LocalDate.now(), null, 30)).isNotEmpty();
+        assertThat(lexical.search(owner, "Kajakoztunk", LocalDate.now(), null, 30, null)).isNotEmpty();
         conversationRepository.delete(conversation);
-        assertThat(lexical.search(owner, "Kajakoztunk", LocalDate.now(), null, 30)).isEmpty();
+        assertThat(lexical.search(owner, "Kajakoztunk", LocalDate.now(), null, 30, null)).isEmpty();
         catchUp.run(owner, LocalDate.now());
         assertThat(items.findAll()).allSatisfy(item -> assertThat(item.getState()).isEqualTo("suppressed"));
     }
@@ -49,7 +49,7 @@ class MemorySourceRepairIT extends AbstractIntegrationTest {
         var entry = journals.createEntry(owner, date, "rutin ".repeat(450) + "ultramaraton", JournalEntryEntity.SOURCE_QUICKINPUT);
         journals.createEntry(other, date, "titkos ultramaraton", JournalEntryEntity.SOURCE_QUICKINPUT);
         catchUp.run(owner, LocalDate.now());
-        assertThat(lexical.search(owner, "ultramaraton", LocalDate.now(), null, 30))
+        assertThat(lexical.search(owner, "ultramaraton", LocalDate.now(), null, 30, null))
                 .anySatisfy(hit -> assertThat(hit.sourceId()).isEqualTo(entry.getId()));
         assertThat(items.findAll()).allSatisfy(item -> assertThat(item.getCreatedBy()).isEqualTo(owner));
         assertThat(vectors.findAll()).hasSameSizeAs(items.findAll());
@@ -57,13 +57,13 @@ class MemorySourceRepairIT extends AbstractIntegrationTest {
         entry.setText("rutin ".repeat(450) + "kajaktúra");
         journalRepository.saveAndFlush(entry);
         catchUp.run(owner, LocalDate.now());
-        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30))
+        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30, null))
                 .anySatisfy(hit -> assertThat(hit.sourceId()).isEqualTo(entry.getId()));
         assertThat(items.findAll().stream().filter(item -> "active".equals(item.getState())))
                 .noneSatisfy(item -> assertThat(item.getContent()).contains("ultramaraton"));
         journalRepository.delete(entry);
-        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30)).isEmpty();
+        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30, null)).isEmpty();
         catchUp.run(owner, LocalDate.now());
-        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30)).isEmpty();
+        assertThat(lexical.search(owner, "kajaktúra", LocalDate.now(), null, 30, null)).isEmpty();
     }
 }

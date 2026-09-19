@@ -482,14 +482,36 @@ Mezo: …`, ref = assistant message id).
 onto the unified memory platform** — the paragraph above documents V2.3's ORIGINAL shape;
 `MemoryRecallService` itself stays in the tree (Task 11 retires it), just unused from this call
 site. `findSimilarPastDays` now calls `MemoryContextService.retrieve` with a
-`MemoryRequest(SIMILAR_DAYS, deep=false)`, filters the returned `MemoryContextItem`s to
-`sourceKind = "daily_summary"` in the mapping (the policy's forbidden-kinds list is the second
-guard, not the first), and renders `"<date>: <content, capped at recall.render-max-chars>"` per
+`MemoryRequest(SIMILAR_DAYS, deep=false)` and renders `"<date>: <content, capped at recall.render-max-chars>"` per
 hit — no percent, no score: the platform's `finalScore` is an RRF number (order of 0.01–0.05),
 not a 0..1 cosine fraction, so the old `"(egyezés NN%)"` line would have been a lie about what the
 number means. The `Memory`/ISO-date ref shape is unchanged. `k` still clamps via
-`properties.recall().maxK()`/`renderMaxChars()` — those two fields are the only reason
+`properties.recall().maxK()`/`renderMaxChars()`, and **`recall.min-similarity` is still the
+honest floor** — see the two bullets below; those three fields are why
 `CompanionProperties.recall()` survives this slice.
+
+**The two honesty guards on this path (fix round 1, 2026-09-19).** Both live in the memory
+platform, not in the two call sites, so the tool and the `/similar-days` endpoint cannot drift:
+
+- **Kind scoping happens in the QUERY, not in the mapping.** `ConsumerPolicy.SIMILAR_DAYS`
+  carries `scopedSourceKind() = "daily_summary"`; `MemoryContextService` puts it on
+  `RetrievalInput`, `DenseMemoryQuery`/`LexicalMemoryQuery` append an optional
+  `and i.source_kind = :sourceKind` fragment (same idiom as their `EXCLUDE_CONVERSATION`
+  fragment), and `FactMemoryRetriever`/`GraphMemoryRetriever` — which can never yield a daily
+  summary — return empty instead of burning a pooled connection and a slice of the deadline.
+  Filtering only in the caller's mapping was a REAL defect: `MemoryContextSelector` truncates the
+  fused rank to the policy's ~600-token budget first, so non-day hits (in production
+  overwhelmingly `chat_turn`) spent the budget and the user read "Nincs elég hasonló nap a
+  memóriában" while the matching day sat in the store. The mapping filter stays as the
+  belt-and-braces second guard, and `k`/`limit` is still applied AFTER it.
+- **The raw-similarity floor survived the swap.** A DENSE candidate whose `localScore` (raw
+  cosine, `1 - distance`) is below `mezo.companion.recall.min-similarity` (**0.25**) is dropped
+  for a `SIMILAR_DAYS` run — `MemoryContextService.aboveRelevanceFloor`. It is the retired
+  engine's guarantee, restored on the only ABSOLUTE signal the new engine has: every other
+  retriever's local score is a relative, retriever-private number. A lexically found candidate
+  needs no second threshold — `LexicalMemoryQuery` already requires `score > 0`, i.e. the words
+  genuinely occur. Without this, any query returned up to `k` arbitrary days rendered as "hasonló
+  napok", which is the fabricated resemblance this slice exists to remove.
 
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
@@ -754,8 +776,8 @@ migration** — the service composes existing data:
   (`MemoryEmbeddingKindCount.kind`, `MemorySummaryItem.embedded`) are UNCHANGED — only their
   descriptions and their source moved, so no FE code needed to change for this half.
 - **`similar-days` and `find_similar_past_days`** both now retrieve through
-  `MemoryContextService` under `ConsumerPolicy.SIMILAR_DAYS`, filtered in the mapping to
-  `sourceKind = "daily_summary"`. The contract dropped `SimilarDayItem.similarity`/`finalScore`
+  `MemoryContextService` under `ConsumerPolicy.SIMILAR_DAYS`, which scopes the RETRIEVAL itself to
+  `sourceKind = "daily_summary"` and keeps the raw-cosine floor (see the two honesty guards above). The contract dropped `SimilarDayItem.similarity`/`finalScore`
   (the platform's RRF-based `finalScore` is not a 0..1 cosine fraction and cannot support the old
   percent ring or the `egyezés × frissesség = végső` chip math) and gained `rank` (1-based) +
   nullable `memoryItemId`, plus a nullable `retrievalRunId` on `SimilarDaysResponse`. Product-owner

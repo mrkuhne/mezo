@@ -93,7 +93,7 @@ class ReflectionMemoryGatewayIT extends AbstractIntegrationTest {
     private static final class ThrowingMemoryContextService extends MemoryContextService {
 
         private ThrowingMemoryContextService() {
-            super(null, null, java.util.Map.of(), null, null, null, null, null, null, null, null);
+            super(null, null, java.util.Map.of(), null, null, null, null, null, null, null, null, null);
         }
 
         @Override

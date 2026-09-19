@@ -31,6 +31,10 @@ import org.springframework.test.context.ActiveProfiles;
 class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
 
     private static final String VERSION = "gemini-embedding-001-768-v1";
+    /** The fake port maps {@code [fake-embed:1]} to the 0. axis — cosine is hand-computable. */
+    private static final String QUERY = "[fake-embed:1] rossz alvás edzés után";
+    /** Shares no trigram with {@link #QUERY}: only the dense retriever can ever reach this text. */
+    private static final String LEXICALLY_INERT = "Qxwj zvbk pmhg tdfl kryn.";
 
     @Autowired private MemoryTools memoryTools;
     @Autowired private MemoryItemPopulator memoryItemPopulator;
@@ -71,6 +75,43 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
                 .anySatisfy(run -> assertThat(run.getConsumerPolicy()).isEqualTo("SIMILAR_DAYS"));
     }
 
+    /**
+     * mezo-eq85.10 fix round 1, FIX 1 — the reviewer's proof. The retrieval itself must be scoped
+     * to {@code daily_summary}; filtering only in the mapping is too late, because
+     * {@code MemoryContextSelector} has already spent the ~600-token budget on non-day hits (in
+     * production, overwhelmingly {@code chat_turn}). Twelve long, lexically-and-densely stronger
+     * journal entries fill the budget several times over; the ONE matching day is last in the
+     * fused rank and never survives selection under the wrong order.
+     */
+    @Test
+    void testFindSimilarPastDays_shouldStillFindTheDay_whenNonDayHitsWouldFillTheWholeTokenBudget() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate day = LocalDate.now().minusDays(40);
+        // The day is deliberately the LONGEST body of the lot: the selector skips an over-budget
+        // candidate and keeps trying shorter ones, so a short day line would squeeze into the
+        // leftover slack and hide the defect. Nothing may be able to rescue it but the kind scoping.
+        item(owner, "daily_summary", body("hegyinap", 44), day, axisVector(0));
+        // Newer, same-vector, ALSO lexically matching: each one outranks the day in both retrievers,
+        // and three of them alone exhaust the SIMILAR_DAYS 600-token budget.
+        for (int i = 0; i < 12; i++) {
+            item(owner, "journal_entry", "rossz alvas edzes utan " + body("naploszo" + i, 35),
+                    LocalDate.now().minusDays(i + 1L), axisVector(0));
+        }
+
+        String out = memoryTools.findSimilarPastDays(QUERY, 2, ctx(owner));
+
+        assertThat(out).contains("hegyinapx0 ").doesNotContain("naploszo");
+    }
+
+    /** A long body of words unique to {@code stem}, so nothing near-duplicates anything else. */
+    private static String body(String stem, int words) {
+        StringBuilder text = new StringBuilder();
+        for (int word = 0; word < words; word++) {
+            text.append(stem).append('x').append(word).append(' ');
+        }
+        return text.toString();
+    }
+
     @Test
     void testFindSimilarPastDays_shouldRenderNoData_whenDescriptionMissing() {
         UUID owner = userPopulator.createUser().getId();
@@ -91,6 +132,41 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
 
         assertThat(out).isEqualTo("Hasonló korábbi napok: nincs adat");
         assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    /**
+     * mezo-eq85.10 fix round 1, FIX 2 — the restored raw-similarity floor (the equivalent of the
+     * deleted {@code testSearchSimilarDays_shouldReturnEmptyList_whenNothingAboveFloor}). The day
+     * below {@code mezo.companion.recall.min-similarity} (0.25) is a fabricated resemblance, not a
+     * memory: an honest "nincs adat" beats it. The day's text shares not one TRIGRAM with the
+     * query, so the lexical retriever's own honest {@code score > 0} floor already excludes it —
+     * the dense cosine is the only thing that can reach this row, which is what makes the test
+     * decisive about the floor rather than about lexical luck.
+     */
+    @Test
+    void testFindSimilarPastDays_shouldRenderNoData_whenTheOnlyDayIsBelowTheSimilarityFloor() {
+        UUID owner = userPopulator.createUser().getId();
+        item(owner, "daily_summary", LEXICALLY_INERT, LocalDate.now().minusDays(4), cosineVector(0.20f));
+
+        assertThat(memoryTools.findSimilarPastDays(QUERY, 2, ctx(owner)))
+                .isEqualTo("Hasonló korábbi napok: nincs adat");
+    }
+
+    /** The control for the floor test: the very same day, just above 0.25, must still come back. */
+    @Test
+    void testFindSimilarPastDays_shouldRenderTheDay_whenItIsAboveTheSimilarityFloor() {
+        UUID owner = userPopulator.createUser().getId();
+        item(owner, "daily_summary", LEXICALLY_INERT, LocalDate.now().minusDays(4), cosineVector(0.40f));
+
+        assertThat(memoryTools.findSimilarPastDays(QUERY, 2, ctx(owner))).contains(LEXICALLY_INERT);
+    }
+
+    /** A unit vector whose cosine to the 0. axis (the query vector) is exactly {@code cosine}. */
+    private static float[] cosineVector(float cosine) {
+        float[] vector = axisVector(1);
+        vector[0] = cosine;
+        vector[1] = (float) Math.sqrt(1.0 - (double) cosine * cosine);
+        return vector;
     }
 
     private void item(UUID owner, String sourceKind, String content, LocalDate occurredOn, float[] vector) {

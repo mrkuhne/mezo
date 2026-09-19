@@ -44,7 +44,8 @@ public class DenseMemoryRetriever implements MemoryRetriever {
         }
         return query.nearest(
                         input.request().userId(), vectorLiteral(embedding), input.embeddingVersion(),
-                        input.request().asOf(), input.request().conversationId(), input.candidateLimit())
+                        input.request().asOf(), input.request().conversationId(),
+                        input.candidateLimit(), input.sourceKind())
                 .stream()
                 .map(hit -> new MemoryCandidate(
                         name(), "memory_item", hit.itemId(), hit.itemId(), hit.sourceId(),

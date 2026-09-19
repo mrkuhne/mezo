@@ -78,6 +78,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
     @Autowired private LlmMemoryReranker reranker;
     @Autowired private MemoryRetrievalAuditWriter auditWriter;
     @Autowired private MemoryPlatformProperties properties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
     @Autowired private LlmCallContextHolder llmCallContextHolder;
     @Autowired @Qualifier("applicationTaskExecutor") private AsyncTaskExecutor taskExecutor;
 
@@ -185,7 +186,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = failingService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -208,7 +209,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, queryEmbedder, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         assertThatThrownBy(() -> failingService.retrieveForServing(
                 request(owner, "Mi történt Boglárkával?")))
@@ -236,7 +237,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", emptyRetriever("graph"));
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, queryEmbedder, retrieverSet, fusion, selector, renderer, reranker,
-                auditWriter, properties, llmCallContextHolder, taskExecutor);
+                auditWriter, properties, companionProperties, llmCallContextHolder, taskExecutor);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -251,8 +252,8 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         AsyncTaskExecutor callerThreadExecutor = new TaskExecutorAdapter(new SyncTaskExecutor());
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, queryEmbedder, Map.of("dense", delayedEmptyRetriever("dense", 250)),
-                fusion, selector, renderer, reranker, auditWriter, properties, llmCallContextHolder,
-                callerThreadExecutor);
+                fusion, selector, renderer, reranker, auditWriter, properties, companionProperties,
+                llmCallContextHolder, callerThreadExecutor);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 

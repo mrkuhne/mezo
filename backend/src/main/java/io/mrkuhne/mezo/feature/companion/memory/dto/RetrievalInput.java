@@ -13,5 +13,13 @@ public record RetrievalInput(
          * retrievers answer on their own. Retrievers must never embed anything themselves — the
          * per-retriever deadline is sized for a database query, not a network call.
          */
-        float[] queryEmbedding) {
+        float[] queryEmbedding,
+        /**
+         * The single {@code memory_item.source_kind} this run may retrieve, or {@code null} for an
+         * unscoped run. Derived from {@link io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy#scopedSourceKind()}
+         * — see that javadoc for why the scoping has to happen in the QUERY and not in the caller's
+         * mapping. A retriever that can never yield the scoped kind (facts, graph) must return
+         * empty rather than burn a pooled connection and a slice of the deadline (mezo-eq85.10).
+         */
+        String sourceKind) {
 }
