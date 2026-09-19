@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
@@ -133,6 +135,13 @@ public class PersonExtractionService {
      *  kiszorítva a napi sapkából a valódi, még meg sem próbált jelölteket. */
     static final String META_EDGE_STRUCTURED_ON = "edgeStructuredOn";
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): ONE constant for both the top-level {@code
+     *  enrich_and_candidates} call AND (via {@link LlmCallContext#feature()}) the memory-retrieval
+     *  audit row in {@link #memoryBlock} — the S8/S9 idiom. Reuses the EXISTING
+     *  {@code people_extraction} slug already passed at the call site below. */
+    private static final LlmCallContext CONTEXT =
+        new LlmCallContext("people_extraction", "enrich_and_candidates", "day", null);
+
     private static final Set<String> TONES = Set.of("positive", "neutral", "mixed", "negative");
     private static final Set<String> CONTEXTS = Set.of("munka", "csalad", "baratok", "edzes",
         "konfliktus", "kozos_program", "segitseg", "egyeb");
@@ -181,6 +190,11 @@ public class PersonExtractionService {
     // Self-injected proxy — lásd LifeEventExtractionService: a persistNight csak a proxyn át kap
     // tranzakciós advice-t.
     private final ObjectProvider<PersonExtractionService> self;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on. {@code extractFor} carries no {@code @Transactional} (class
+     *  javadoc), so this retrieval never competes with the persistence path for pooled
+     *  connections. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
     // ObjectProvider, nem közvetlen függés: a gráf-kapcsoló (KNOWLEDGE_GRAPH) függetlenül
     // kapcsolható a COMPANION∧PEOPLE pártól, ami ezt a szervizt élteti — kikapcsolt gráfnál
     // ezek a beanek nem léteznek, és az él-passz egyszerűen kimarad.
@@ -213,9 +227,8 @@ public class PersonExtractionService {
         List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId);
         NightAnswer answer;
         try {
-            String raw = llmCallContextHolder.runWith(
-                new LlmCallContext("people_extraction", "enrich_and_candidates", "day", null),
-                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(narrative, toneless, persons)));
+            String raw = llmCallContextHolder.runWith(CONTEXT,
+                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(userId, day, narrative, toneless, persons)));
             answer = parse(raw);
         } catch (Exception e) {
             log.warn("Person extraction failed for {} on {}", userId, day, e);
@@ -464,7 +477,7 @@ public class PersonExtractionService {
             .append('\n');
     }
 
-    private String buildUserMessage(String narrative, List<MentionEntity> toneless,
+    private String buildUserMessage(UUID userId, LocalDate day, String narrative, List<MentionEntity> toneless,
             List<PersonEntity> persons) {
         StringBuilder sb = new StringBuilder("A NAP SZÖVEGEI:\n").append(narrative).append('\n');
         sb.append("\nTÓNUS NÉLKÜLI EMLÍTÉSEK:\n");
@@ -480,7 +493,28 @@ public class PersonExtractionService {
             }
             sb.append('\n');
         }
+        // Memória mindenhol S10.2 (mezo-eq85.10): the query is the day's own narrative — the SAME
+        // text gatherNarrative already built, reused rather than re-read from the tables. The
+        // extractor's own heading (KORÁBBI KAPCSOLÓDÓ EMLÉKEK) frames the block for THIS surface's
+        // purpose — telling a recurring mention apart from a genuinely new one.
+        MemoryContextBlock.Rendered mem = memoryBlock(userId, day, narrative);
+        if (!mem.block().isEmpty()) {
+            sb.append("\nKORÁBBI KAPCSOLÓDÓ EMLÉKEK:\n").append(mem.block()).append('\n');
+        }
         return sb.toString();
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this day's extraction pass, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code EXTRACTION} policy
+     *  is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself fail-open.
+     *  {@code deep = false}: {@code EXTRACTION} is configured lean and cheap (class table). */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate day, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.EXTRACTION, query, day, false,
+                CONTEXT.feature(), "enrich_and_candidates", null);
     }
 
     private static String nameOf(List<PersonEntity> persons, UUID personId) {
