@@ -582,5 +582,36 @@
       <ellipse cx="32" cy="30" rx="9" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 32 30)"/>
     </symbol>
 
+    <!-- Edzés-verdikt + rekord (mezo-ju4j6.11): saját agyag ikonok a Titán-kori
+         szöveg-glifák (▲/▼) és az érme-korong helyére. §6.1 recept. -->
+    <radialGradient id="ig-trendup" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#D7EBC4"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#3F5A33"/></radialGradient>
+    <radialGradient id="ig-trenddown" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#FFE6BE"/><stop offset="0.5" stop-color="#E7A93F"/><stop offset="1" stop-color="#9A6B12"/></radialGradient>
+    <radialGradient id="ig-medaldisc" cx="34%" cy="26%" r="88%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#9C6C0E"/></radialGradient>
+    <radialGradient id="ig-medalcore" cx="38%" cy="30%" r="84%"><stop offset="0" stop-color="#FFFBEA"/><stop offset="0.6" stop-color="#F7D774"/><stop offset="1" stop-color="#C08F1B"/></radialGradient>
+    <linearGradient id="ig-medalband-l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#C64B26"/></linearGradient>
+    <linearGradient id="ig-medalband-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB49A"/><stop offset="1" stop-color="#D8613B"/></linearGradient>
   </defs>
+  <symbol id="i-trend-fel" viewBox="0 0 100 100">
+      <title>Erősebb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#3F5A33" opacity="0.14"/>
+      <path d="M50 12 L82 50 Q84 54 79 54 L64 54 L64 80 Q64 86 58 86 L42 86 Q36 86 36 80 L36 54 L21 54 Q16 54 18 50 Z" fill="url(#ig-trendup)"/>
+      <ellipse cx="41" cy="32" rx="8.5" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 41 32)"/>
+    </symbol>
+  
+    <symbol id="i-trend-le" viewBox="0 0 100 100">
+      <title>Gyengébb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#9A6B12" opacity="0.14"/>
+      <path d="M50 88 L82 50 Q84 46 79 46 L64 46 L64 20 Q64 14 58 14 L42 14 Q36 14 36 20 L36 46 L21 46 Q16 46 18 50 Z" fill="url(#ig-trenddown)"/>
+      <ellipse cx="41" cy="26" rx="8" ry="4.6" fill="rgba(255,255,255,0.5)" transform="rotate(-22 41 26)"/>
+    </symbol>
+  
+    <symbol id="i-erem" viewBox="0 0 100 100">
+      <title>Rekord</title>
+      <ellipse cx="50" cy="94" rx="22" ry="4" fill="#9C6C0E" opacity="0.14"/>
+      <path d="M28 8 L42 8 L54 40 L40 46 Z" fill="url(#ig-medalband-l)"/>
+      <path d="M72 8 L58 8 L46 40 L60 46 Z" fill="url(#ig-medalband-r)"/>
+      <circle cx="50" cy="62" r="27" fill="url(#ig-medaldisc)"/>
+      <circle cx="50" cy="62" r="18" fill="url(#ig-medalcore)"/>
+      <ellipse cx="39" cy="48" rx="9" ry="5.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 39 48)"/>
+    </symbol>
 </svg>

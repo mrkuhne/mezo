@@ -190,9 +190,11 @@ describe('prototype.css stays structurally intact (mezo-d20.9.1)', () => {
  * mode this whole test file exists to catch) fails HERE with a one-line pointer, not as a
  * silent missing style downstream.
  */
-describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
-  const START_MARKER = 'train mai titanium'
-  const END_MARKER = '/train mai titanium'
+describe('the train mai section is registered and re-dressed (mezo-ju4j6.11)', () => {
+  const START_MARKER = '── train mai ('
+  const END_MARKER = '── /train mai '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -202,13 +204,96 @@ describe('the train mai titanium section is registered (mezo-88iwa.6)', () => {
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train mai titanium')
+  })
+
   test('the section actually carries the tr- class family, not just the markers', () => {
+    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.tr-mus-track']) {
+      expect(section(), `${cls} missing from the train mai section`).toContain(cls)
+    }
+  })
+
+  test('no Titanium material the style bible forbids', () => {
+    const css = rules()
+    // A prototípus áttetsző fehérjei (#ffffffXX) SÖTÉT alapra készültek — világos lapon
+    // láthatatlanok. A blokkban ezért nem maradhat nyers fehér-alfa vagy fekete árnyék.
+    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+    expect(css).not.toContain('var(--surface-glass)')
+    expect(css).not.toContain('backdrop-filter')
+    expect(css).not.toContain('drop-shadow')
+  })
+
+  test('the day poster is a wash tile and the CTA is the house primary (§2.2 A, §3.1)', () => {
+    const css = rules()
+    expect(css).toContain('box-shadow: var(--mz-shadow-coral)')
+    expect(css).toContain('border: 0.5px solid rgba(43, 33, 24, 0.06)')
+    expect(css).toContain('background: var(--gradient-cta)')
+    expect(css).toContain('box-shadow: var(--shadow-cta)')
+  })
+
+  test('the kcal figure is ONE display-200 tabular numeral (§3.2)', () => {
+    const css = rules()
+    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-weight: 200;/)
+    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-variant-numeric: tabular-nums;/)
+  })
+})
+
+describe('the train session section is registered and re-dressed (mezo-ju4j6.11)', () => {
+  const START_MARKER = '── train session ('
+  const END_MARKER = '── /train session '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
+
+  test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
-    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.tr-mus-track']) {
-      expect(section, `${cls} missing from the train mai titanium section`).toContain(cls)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train session titanium')
+  })
+
+  test('the section actually carries the wo- class family, not just the markers', () => {
+    for (const cls of ['.wo-card', '.wo-rows', '.wo-field', '.wo-check', '.wo-verdict',
+      '.wo-finish', '.wo-dock', '.wo-overload']) {
+      expect(section(), `${cls} missing from the train session section`).toContain(cls)
     }
+  })
+
+  test('the dark-ground literals are gone — this screen lives in the LIGHT world now', () => {
+    const css = rules()
+    // A blokk tele volt sötét alapra tervezett beégetett színekkel (#0c1014 dokk, #090e13
+    // beviteli mező, #e6ead9 / #c8e895 világos tinták). Világos lapon ezek vagy
+    // olvashatatlanok voltak, vagy fekete csíkként ültek a krém oldalon.
+    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+    expect(css).not.toContain('#0c1014')
+    expect(css).not.toContain('#090e13')
+    expect(css).not.toContain('#c8e895')
+    expect(css).not.toContain('#e6ead9')
+    expect(css).not.toContain('backdrop-filter')
+    expect(css).not.toContain('drop-shadow')
+  })
+
+  test('the dock is a LIGHT bar with an upward lift (§7.4), not a black glass strip', () => {
+    const css = rules()
+    expect(css).toMatch(/\.wo-dock \{[^}]*background: var\(--surface-1\)/)
+    expect(css).toContain('box-shadow: 0 -17px 31px -17px rgba(43, 33, 24, 0.28)')
+  })
+
+  test('the set fields and the tick are light surfaces, and the tick is CENTRED', () => {
+    const css = rules()
+    expect(css).toMatch(/\.wo-field input \{[^}]*background: var\(--surface-1\)/)
+    // Az elcsúszott pipa oka: a doboznak nem volt rácsa (owner 2026-09-19).
+    expect(css).toMatch(/\.wo-check \{[^}]*display: grid; place-items: center;/)
+  })
+
+  test('the verdict marks have room: the clay icons render at 24px', () => {
+    const css = rules()
+    expect(css).toContain('.wo-verdict-mark svg { width: 24px; height: 24px; }')
   })
 })
 
@@ -661,9 +746,11 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
  * the glass-card interiors (menu, confirm, close, history/records), ported from the
  * prototype's `session.css`, registered exactly like the blocks above.
  */
-describe('the train session titanium section is registered (mezo-88iwa.7)', () => {
-  const START_MARKER = 'train session titanium'
-  const END_MARKER = '/train session titanium'
+describe('the train session section keeps its structural invariants (mezo-88iwa.7)', () => {
+  // A blokk NEVE a visszaöltöztetéssel megváltozott (mezo-ju4j6.11) — az anyagát a fenti
+  // re-dress describe őrzi, ez itt a SZERKEZETI kikötéseké marad.
+  const START_MARKER = '── train session ('
+  const END_MARKER = '── /train session '
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -680,7 +767,7 @@ describe('the train session titanium section is registered (mezo-88iwa.7)', () =
     for (const cls of [
       '.wo-card', '.wo-row', '.wo-dock', '.wo-finish', '.wo-menu-row', '.wo-rec',
     ]) {
-      expect(section, `${cls} missing from the train session titanium section`).toContain(cls)
+      expect(section, `${cls} missing from the train session section`).toContain(cls)
     }
   })
 
@@ -697,7 +784,7 @@ describe('the train session titanium section is registered (mezo-88iwa.7)', () =
     // grid-definition selector (a plain indexOf('.wo-row {') would match inside that
     // combined selector too, since ", .wo-row {" contains it as a substring).
     const ruleMatch = /(?:^|\n)\.wo-row \{/.exec(section)
-    expect(ruleMatch, '.wo-row standalone rule not found in the train session titanium section').not.toBeNull()
+    expect(ruleMatch, '.wo-row standalone rule not found in the train session section').not.toBeNull()
     const ruleStart = ruleMatch!.index
     const ruleEnd = section.indexOf('}', ruleStart)
     const rule = section.slice(ruleStart, ruleEnd)
