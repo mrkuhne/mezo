@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import static io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.axisVector;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.MemoryEmbeddingKindCount;
@@ -10,14 +11,16 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
-import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
-import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryVectorEntity;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryVectorRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
-import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -29,19 +32,27 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** A memória-obszervatórium áttekintés HTTP-kontraktusa (mezo-al1i) — rétegszámok, config-echo, izoláció. */
+/**
+ * A memória-obszervatórium áttekintés HTTP-kontraktusa (mezo-al1i) — rétegszámok, config-echo,
+ * izoláció. Az L1 "embeddings" számláló mezo-eq85.10-től {@code memory_item.source_kind}-ot
+ * számol egy élő szolgáló-generációs {@code memory_vector} felett, nem {@code memory_embedding}-et
+ * (a wire mezőnév maradt — lásd a kontraktus leírását).
+ */
 class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
+
+    /** mezo.companion.memory-platform.serving-embedding-version (application.yml). */
+    private static final String SERVING_VERSION = "gemini-embedding-001-768-v1";
 
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
-    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired private MemoryItemPopulator memoryItemPopulator;
+    @Autowired private MemoryVectorRepository memoryVectorRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
-    @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -50,6 +61,15 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     private MemoryOverviewResponse overview() {
         return getForBody("/api/companion/memory/overview", ownerAuthHeaders(),
                 HttpStatus.OK, MemoryOverviewResponse.class);
+    }
+
+    /** One live serving-version projection: a {@code memory_item} of {@code sourceKind}, with a
+     *  ready {@code memory_vector} at the axis-aligned vector for {@code axis}. */
+    private MemoryItemEntity liveVector(UUID owner, String sourceKind, LocalDate occurredOn, int axis) {
+        MemoryItemEntity item = memoryItemPopulator.item(owner, sourceKind, UUID.randomUUID(),
+                null, "n", occurredOn, new String[0], new String[0], MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(item, SERVING_VERSION, axisVector(axis));
+        return item;
     }
 
     @Test
@@ -82,13 +102,11 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         // L0: két alvás-nap a minta-ablakban (sleep-quality + sleep-duration széria — unió: 2 nap)
         sleepLogPopulator.createSleepLog(owner, yesterday, new BigDecimal("7.5"), 4);
         sleepLogPopulator.createSleepLog(owner, yesterday.minusDays(2), new BigDecimal("6.0"), 3);
-        // L1: két összefoglaló, az egyik vektorizálva + egy chat-turn vektor
-        DailySummaryEntity embedded = dailySummaryPopulator.summary(owner, yesterday);
+        // L1: két összefoglaló, az egyik vetítve + egy chat-turn vektor
+        dailySummaryPopulator.summary(owner, yesterday);
         dailySummaryPopulator.summary(owner, yesterday.minusDays(1));
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                embedded.getId(), "n", yesterday, MemoryEmbeddingPopulator.axisVector(0));
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN,
-                UUID.randomUUID(), "t", yesterday, MemoryEmbeddingPopulator.axisVector(1));
+        liveVector(owner, "daily_summary", yesterday, 0);
+        liveVector(owner, "chat_turn", yesterday, 1);
         // L2: két statisztikai minta + egy függő jelölt
         patternPopulator.statistical(owner, "a~b", PatternEntity.STATUS_CONFIRMED);
         patternPopulator.statistical(owner, "c~d", PatternEntity.STATUS_PROPOSED);
@@ -141,13 +159,13 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     void testOverview_shouldReportEveryPopulatedKind_whenSeveralNarrativeKindsHaveVectors() {
         UUID owner = ownerId();
         LocalDate day = LocalDate.now().minusDays(1);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 2);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 3);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 4);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, day, 5);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, day, 6);
+        liveVector(owner, "daily_summary", day, 0);
+        liveVector(owner, "daily_summary", day, 1);
+        liveVector(owner, "chat_turn", day, 2);
+        liveVector(owner, "chat_turn", day, 3);
+        liveVector(owner, "chat_turn", day, 4);
+        liveVector(owner, "journal_entry", day, 5);
+        liveVector(owner, "gratitude", day, 6);
 
         MemoryOverviewResponse response = overview();
 
@@ -166,11 +184,11 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         LocalDate day = LocalDate.now().minusDays(1);
         // chat_turn (3) leads on count desc; gratitude and journal_entry tie at 1 and must
         // break the tie alphabetically (kind asc): gratitude before journal_entry.
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 0);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 1);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 2);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, day, 3);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, day, 4);
+        liveVector(owner, "chat_turn", day, 0);
+        liveVector(owner, "chat_turn", day, 1);
+        liveVector(owner, "chat_turn", day, 2);
+        liveVector(owner, "gratitude", day, 3);
+        liveVector(owner, "journal_entry", day, 4);
 
         MemoryOverviewResponse response = overview();
 
@@ -185,14 +203,13 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     @Test
     void testOverview_shouldOmitKindsWithNoVectors_whenTheStoreIsPartiallyPopulated() {
         UUID owner = ownerId();
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                LocalDate.now().minusDays(1), 0);
+        liveVector(owner, "daily_summary", LocalDate.now().minusDays(1), 0);
 
         MemoryOverviewResponse response = overview();
 
         assertThat(response.getL1().getEmbeddings())
                 .extracting(MemoryEmbeddingKindCount::getKind)
-                .doesNotContain(MemoryEmbeddingEntity.KIND_CHAT_TURN, MemoryEmbeddingEntity.KIND_GRATITUDE);
+                .doesNotContain("chat_turn", "gratitude");
     }
 
     @Test
@@ -200,9 +217,9 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         UUID foreign = userPopulator.createUser().getId();
         LocalDate day = LocalDate.now().minusDays(1);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
-        memoryEmbeddingPopulator.embedding(foreign, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
-        memoryEmbeddingPopulator.embedding(foreign, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 2);
+        liveVector(owner, "daily_summary", day, 0);
+        liveVector(foreign, "daily_summary", day, 1);
+        liveVector(foreign, "daily_summary", day, 2);
 
         MemoryOverviewResponse response = overview();
 
@@ -215,21 +232,35 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     void testOverview_shouldIgnoreSoftDeletedVectors_whenSomeWereReaped() {
         UUID owner = ownerId();
         LocalDate day = LocalDate.now().minusDays(1);
-        MemoryEmbeddingEntity kept = memoryEmbeddingPopulator.embedding(owner,
-                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
-        MemoryEmbeddingEntity reaped = memoryEmbeddingPopulator.embedding(owner,
-                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
-        memoryEmbeddingRepository.delete(reaped);
+        liveVector(owner, "daily_summary", day, 0);
+        MemoryItemEntity reapedItem = liveVector(owner, "daily_summary", day, 1);
+        MemoryVectorEntity reapedVector = memoryVectorRepository
+                .findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, reapedItem.getId())
+                .getFirst();
+        memoryVectorRepository.delete(reapedVector);
 
         MemoryOverviewResponse response = overview();
 
         assertThat(response.getL1().getEmbeddings())
                 .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
                 .containsExactly(org.assertj.core.groups.Tuple.tuple("daily_summary", 1));
-        assertThat(memoryEmbeddingRepository
-                .findByKindAndRefIdIncludingDeleted(MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, reaped.getRefId()))
-                .isPresent();
-        assertThat(kept).isNotNull();
+        assertThat(memoryVectorRepository.findByOwnerItemAndVersionIncludingDeleted(
+                owner, reapedItem.getId(), SERVING_VERSION)).isPresent();
+    }
+
+    @Test
+    void testOverview_shouldIgnoreAnOlderGeneration_whenOnlyANonServingVectorExists() {
+        // mezo-eq85.10: the L1 count is scoped to the SERVING generation (DenseMemoryQuery's own
+        // eligibility predicate) — a vector on any other embedding_version must not inflate it.
+        UUID owner = ownerId();
+        MemoryItemEntity item = memoryItemPopulator.item(owner, "daily_summary", UUID.randomUUID(),
+                null, "n", LocalDate.now().minusDays(1), new String[0], new String[0],
+                MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(item, "some-retired-generation-v0", axisVector(0));
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings()).isEmpty();
     }
 
     @Test

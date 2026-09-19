@@ -478,6 +478,19 @@ Mezo: …`, ref = assistant message id).
 - **Ambient recall is always-on since W3.1 (`mezo-b3pp.12`)** — see the Phase 5 row in the status
   table below; the tool stays for deep, targeted recall on demand.
 
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) moved this tool off `MemoryRecallService`
+onto the unified memory platform** — the paragraph above documents V2.3's ORIGINAL shape;
+`MemoryRecallService` itself stays in the tree (Task 11 retires it), just unused from this call
+site. `findSimilarPastDays` now calls `MemoryContextService.retrieve` with a
+`MemoryRequest(SIMILAR_DAYS, deep=false)`, filters the returned `MemoryContextItem`s to
+`sourceKind = "daily_summary"` in the mapping (the policy's forbidden-kinds list is the second
+guard, not the first), and renders `"<date>: <content, capped at recall.render-max-chars>"` per
+hit — no percent, no score: the platform's `finalScore` is an RRF number (order of 0.01–0.05),
+not a 0..1 cosine fraction, so the old `"(egyezés NN%)"` line would have been a lie about what the
+number means. The `Memory`/ISO-date ref shape is unchanged. `k` still clamps via
+`properties.recall().maxK()`/`renderMaxChars()` — those two fields are the only reason
+`CompanionProperties.recall()` survives this slice.
+
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
 - **The second nightly cron** — `PatternDetectionJob` (02:40, switch
@@ -712,21 +725,44 @@ migration** — the service composes existing data:
   cache idiom — one `MetricSeriesService.series()` call per metric via the shared `PatternGate.window`
   helper; **`MetricKey.WEEKEND` is deliberately excluded from the union** — it is a synthetic
   calendar 0/1 that never misses a day, so folding it in would always saturate the count to the
-  full window) / L1 (`daily_summary` count + first/last date + embedding counts by kind) / L2
-  (pattern `kind`×`status` rollup, computed in plain Java — a user's live pattern set is small
-  enough that a `GROUP BY` query would be overkill — plus the pending `learned_fact` candidate
-  count) / L3 (confirmed-fact counts by `source`, the sum of `reinforcement_count`, the
-  `include_in_prompt` count) / `jobs` (the three raw cron strings — summary/pattern/hypothesis, the
-  FE never parses them — plus `lastSummaryDate` and `lastDetectedAt`).
+  full window) / L1 (`daily_summary` count + first/last date + vector counts by kind — see the
+  mezo-eq85.10 note below) / L2 (pattern `kind`×`status` rollup, computed in plain Java — a user's
+  live pattern set is small enough that a `GROUP BY` query would be overkill — plus the pending
+  `learned_fact` candidate count) / L3 (confirmed-fact counts by `source`, the sum of
+  `reinforcement_count`, the `include_in_prompt` count) / `jobs` (the three raw cron strings —
+  summary/pattern/hypothesis, the FE never parses them — plus `lastSummaryDate` and
+  `lastDetectedAt`).
 - **`summary`** — the L1 journal: `daily_summary` rows date-desc over an optional `[from,to]`
   (missing bounds fall back to a wide default so there is only ever one query shape), each flagged
-  `embedded` (a live `memory_embedding` row of kind `daily_summary` exists for that day).
-- **`similar-days`** — the **V2.3 `MemoryRecallService` reused UNCHANGED**: the identical
-  embed→ANN→recency-rerank pipeline the `find_similar_past_days` tool uses, so the chat tool and
-  this UI surface can never disagree about a memory. Deliberately **NOT `@Transactional`** — the
-  embed call is a network call, and no DB connection is held across it, the same reasoning
-  `MemoryRecallService` itself documents. The excerpt is the stored narrative capped at
-  `recall.render-max-chars` (300), the same cap the tool's own render uses.
+  `embedded` — see the mezo-eq85.10 note below for what that flag reads today.
+- **`similar-days`** — the paragraph above documented V2.3's `MemoryRecallService reused
+  UNCHANGED`; **mezo-eq85.10 moved this endpoint onto the memory platform too** (same note below),
+  so the chat tool and this UI surface still can never disagree about a memory — they now share
+  ONE retrieval path instead of one recall SERVICE. Deliberately **still NOT `@Transactional`** —
+  the embed call is a network call, and no DB connection is held across it. The excerpt is the
+  stored narrative capped at `recall.render-max-chars` (300), the same cap the tool's own render
+  uses.
+
+**Memória mindenhol S10 (`mezo-eq85.10`, 2026-09-19) — L1 counting and `similar-days` moved off
+`memory_embedding` onto the unified memory platform.** Two changes, one slice:
+- **L1 `embeddings` / `summary`'s `embedded` flag** now count `memory_item.source_kind` joined to
+  a LIVE serving-version `memory_vector` row (`is_deleted = false AND status = 'ready' AND
+  embedding IS NOT NULL AND embedding_version = <serving>` — the exact eligibility predicate
+  `DenseMemoryQuery` uses for chat ANN, copied rather than reinvented) instead of
+  `memory_embedding.kind`/`ref_id`. Two new `MemoryItemRepository` queries
+  (`countBySourceKindForUser`, `findSourceIdsWithLiveVector`) back this; the wire field names
+  (`MemoryEmbeddingKindCount.kind`, `MemorySummaryItem.embedded`) are UNCHANGED — only their
+  descriptions and their source moved, so no FE code needed to change for this half.
+- **`similar-days` and `find_similar_past_days`** both now retrieve through
+  `MemoryContextService` under `ConsumerPolicy.SIMILAR_DAYS`, filtered in the mapping to
+  `sourceKind = "daily_summary"`. The contract dropped `SimilarDayItem.similarity`/`finalScore`
+  (the platform's RRF-based `finalScore` is not a 0..1 cosine fraction and cannot support the old
+  percent ring or the `egyezés × frissesség = végső` chip math) and gained `rank` (1-based) +
+  nullable `memoryItemId`, plus a nullable `retrievalRunId` on `SimilarDaysResponse`. Product-owner
+  decision (2026-09-19): the cards show rank order, no numbers — see
+  `.superpowers/sdd/2026-09-06-reflection-self-discovered-patterns/task-10-codebase-notes.md` §1
+  for the full reasoning. `MemoryRecallService` and `properties.recall()` stay in the tree (Task 11
+  retires the former; `recall().maxK()`/`.renderMaxChars()` are still read by both call sites).
 - **`llm-usage`** — a new native daily rollup, `LlmLogRepository.aggregatePerDaySince` (+ the
   `LlmDailyAggregate` interface projection) over `llm_log_history` ([ADR
   0014](../decisions/0014-llm-call-audit-log.md)), wrapped by `LlmUsageService.perDay` — a sibling

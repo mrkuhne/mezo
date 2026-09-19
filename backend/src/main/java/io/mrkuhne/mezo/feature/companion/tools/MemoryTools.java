@@ -2,11 +2,15 @@ package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
+import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
 import io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
-import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService;
-import io.mrkuhne.mezo.feature.companion.service.MemoryRecallService.RecalledMemory;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -21,9 +25,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * V2.3 episodic-recall tool over the {@code MemoryRecallService} — the "volt már ilyen napod?"
- * answer. Read-only over OUR OWN vectors (IDENT-2 holds), ownership from the ToolContext, refs
- * = the recalled days (kind {@code Memory}) so the FE chips show what got remembered.
+ * Episodic-recall tool over the memory platform (Memória mindenhol S10, mezo-eq85.10; V2.3's
+ * {@code MemoryRecallService} retired from this call site — see {@link MemoryContextService}) —
+ * the "volt már ilyen napod?" answer, {@link ConsumerPolicy#SIMILAR_DAYS} filtered to
+ * {@code daily_summary} sourced items. Read-only over OUR OWN vectors (IDENT-2 holds), ownership
+ * from the ToolContext, refs = the recalled days (kind {@code Memory}) so the FE chips show what
+ * got remembered. No numeric score is rendered — the platform's rank is ordinal, not a 0..1
+ * fraction (see {@code task-10-codebase-notes.md} §1).
  *
  * <p>W5.3 (mezo-b3pp.20) added {@link #comparePeriods} here too — same read-only, same
  * ToolContext ownership, but its refs are whole MONTH rungs and therefore carry their own kind
@@ -40,7 +48,13 @@ public class MemoryTools {
 
     private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("yyyy-MM");
 
-    private final MemoryRecallService memoryRecallService;
+    /** memory_item.source_kind for a nightly summary — the ONLY kind "hasonló NAPOK" means
+     *  (Memória mindenhol S10, mezo-eq85.10). The policy's own forbidden-kinds list is the
+     *  second guard, not the first — this filter is what actually enforces "days". */
+    private static final String SOURCE_KIND_DAILY_SUMMARY = "daily_summary";
+
+    private final MemoryContextService memoryContextService;
+    private final MemoryPlatformProperties memoryPlatformProperties;
     private final CompanionProperties properties;
     private final PeriodSummaryRepository periodSummaryRepository;
     private final QuarterlyProperties quarterlyProperties;
@@ -59,22 +73,35 @@ public class MemoryTools {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
         int limit = ToolText.clamp(k, 1, properties.recall().maxK(), 3);
-        List<RecalledMemory> memories = memoryRecallService.recallSimilarDays(userId, description, limit);
-        if (memories.isEmpty()) {
+        List<MemoryContextItem> days = similarDailySummaries(userId, description, limit);
+        if (days.isEmpty()) {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
-        StringBuilder b = new StringBuilder("Hasonló korábbi napok (téma-egyezés és frissesség szerint):");
-        for (RecalledMemory memory : memories) {
-            ToolContexts.audit(toolContext).addRef("Memory", memory.occurredOn().toString());
-            int renderCap = properties.recall().renderMaxChars();
-            String content = memory.content().length() > renderCap
-                    ? memory.content().substring(0, renderCap) + "…"
-                    : memory.content();
-            b.append('\n').append(memory.occurredOn())
-                    .append(" (egyezés ").append(Math.round(memory.similarity() * 100)).append("%): ")
-                    .append(content);
+        StringBuilder b = new StringBuilder("Hasonló korábbi napok (rangsor szerint):");
+        int renderCap = properties.recall().renderMaxChars();
+        for (MemoryContextItem day : days) {
+            ToolContexts.audit(toolContext).addRef("Memory", day.occurredOn().toString());
+            String content = day.content().length() > renderCap
+                    ? day.content().substring(0, renderCap) + "…"
+                    : day.content();
+            b.append('\n').append(day.occurredOn()).append(": ").append(content);
         }
         return b.toString();
+    }
+
+    /** Shared with {@link io.mrkuhne.mezo.feature.companion.service.MemoryObservatoryService}
+     *  (Memória mindenhol S10): the memory platform's own SIMILAR_DAYS policy, filtered to
+     *  daily-summary sourced items, limited to {@code limit} AFTER the filter. */
+    private List<MemoryContextItem> similarDailySummaries(UUID userId, String query, int limit) {
+        MemoryPlatformProperties.PolicyLimits limits =
+                memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
+        MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
+                List.of(), LocalDate.now(), limits.maxTokens(), null, false);
+        MemoryContext context = memoryContextService.retrieve(request);
+        return context.items().stream()
+                .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
+                .limit(limit)
+                .toList();
     }
 
     @Tool(name = "compare_periods", description = "Két KORÁBBI IDŐSZAK összevetése a havi "

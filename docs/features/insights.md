@@ -468,7 +468,10 @@ retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
   synthetic `MetricKey.WEEKEND` series is deliberately excluded from this union** — it is a
   calendar-derived 0/1 that never misses a day, so folding it in would always saturate the count to
   the full window), **L1** (`--wash-lav`: `daily_summary` count + `dailySummary`/`chatTurn`
-  embedding counts + the first/last summary date — tappable, opens the Napló segment), **L2**
+  vector counts (wire field still `embeddings`/`kind`/`count` — since `mezo-eq85.10` counted over
+  `memory_item.source_kind` joined to a live serving-version `memory_vector`, not
+  `memory_embedding`; same numbers, different source, "vetítés" not "beágyazás" in copy) + the
+  first/last summary date — tappable, opens the Napló segment), **L2**
   (`--warning` wash: pattern rows by `kind`×`status` + the pending `learned_fact` candidate count,
   "last" stamp = `jobs.lastDetectedAt` — tappable, routes to **`/mezo`**, the hub), **L3**
   (`--success` wash: confirmed-fact counts by `source` + total `reinforcement_count` +
@@ -482,7 +485,8 @@ retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
 - **Napló (`components/MemoryJournalPanel.tsx`):** the L1 journal as `memoir-card`-styled cards
   (reusing the Memoir tab's card anatomy, §2.3), grouped under `eyebrow` month separators (client
   month-derived from `date`), each card carrying a small corner dot — solid `--success` = a live
-  `daily_summary` embedding exists (`embedded: true`), dim `--text-tertiary` = not yet vectorized —
+  serving-version `memory_vector` projection exists (`embedded: true`, `mezo-eq85.10`), dim
+  `--text-tertiary` = not yet vectorized —
   and the full narrative prose. A `focusDate` prop (set by the Kereső segment's `onPick`, §below)
   scrolls the matching card into view via `scrollIntoView({block:'center'})` in a `useEffect` keyed
   on `focusDate`, and outlines it. Empty state: an honest ghost line that the first nightly summary
@@ -491,12 +495,17 @@ retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
   search — the query fires on form `onSubmit`, never on keystroke (`useSimilarDays(query)`,
   `data/insights/memoryHooks.ts`, a raw `useQuery` — not `useDualQuery` — gated `enabled: query
   trim non-empty`; mock branch resolves the deterministic `similarDaysSeed` via `initialData`; real
-  branch calls `memoryApi.similarDays(query, 3)`, 404→`degraded`). Each **`SimilarDayCard`** renders
-  an SVG similarity ring + a mirrored bar + the excerpt + the **`egyezés × frissesség = végső`**
-  three-chip score row: `similarity` (raw cosine, the wire's own field) × a client-derived
-  **`frissesség`** (freshness — recovered as `finalScore / similarity`, i.e. exactly the server's
-  own `exp(-age/τ)` decay factor divided back out, never resent on the wire) = `finalScore` (the
-  wire's rank key); freshness colours `--success` at ≥0.9, else `--warning`. Tapping a card calls
+  branch calls `memoryApi.similarDays(query, 3)`, 404→`degraded`). Since the endpoint moved onto
+  the memory platform (`mezo-eq85.10`), each **`SimilarDayCard`** renders a decorative ring
+  showing the **1-based `rank`** (`"1."`, `"2."`, …, `aria-label` `"N. legjobb találat"`) instead
+  of a similarity percent, plus the date/age line and the excerpt — **no score is rendered**. The
+  earlier `egyezés × frissesség = végső` three-chip math (`similarity` × a client-derived
+  freshness = `finalScore`) is GONE along with the wire fields it depended on: the platform's
+  `finalScore` is an RRF number (order of 0.01–0.05), not a 0..1 cosine fraction, so neither the
+  percent ring nor the freshness division would have meant anything. Product-owner decision
+  (2026-09-19): rank order only, no numbers — see the task's codebase notes §1 for the full
+  reasoning (and the one thing that turned out NOT deliverable: labelling the source kind, since
+  results are filtered to `daily_summary` and the label would be a constant). Tapping a card calls
   `onPick(date)`, which `MemoryPage` wires to set `focusDate` **and** switch the segment to Napló —
   a cross-segment jump, not a route change.
 - **Audit (`components/MemoryAuditPanel.tsx` + `TokenColumns.tsx`):** two independently-degradable

@@ -20,12 +20,17 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
-import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContextItem;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
-import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmDailyAggregate;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmUsageService;
@@ -60,15 +65,19 @@ public class MemoryObservatoryService {
 
     private final MetricSeriesService metricSeriesService;
     private final DailySummaryRepository dailySummaryRepository;
-    private final MemoryEmbeddingRepository memoryEmbeddingRepository;
+    private final MemoryItemRepository memoryItemRepository;
     private final PatternRepository patternRepository;
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
     /** S2 (mezo-eq85.2): the nightly reflection pass owns the hypothesis schedule now. */
     private final ReflectionProperties reflectionProperties;
-    private final MemoryRecallService memoryRecallService;
+    private final MemoryContextService memoryContextService;
+    private final MemoryPlatformProperties memoryPlatformProperties;
     private final LlmUsageService llmUsageService;
+
+    /** memory_item.source_kind for a nightly summary — see {@code MemoryTools}'s twin constant. */
+    private static final String SOURCE_KIND_DAILY_SUMMARY = "daily_summary";
 
     @Transactional(readOnly = true)
     public MemoryOverviewResponse overview(UUID userId) {
@@ -133,7 +142,9 @@ public class MemoryObservatoryService {
                         .summaryCount((int) dailySummaryRepository.countByCreatedBy(userId))
                         .firstDate(firstDate)
                         .lastDate(lastDate)
-                        .embeddings(memoryEmbeddingRepository.countByKindForUser(userId).stream()
+                        .embeddings(memoryItemRepository
+                                .countBySourceKindForUser(userId, memoryPlatformProperties.servingEmbeddingVersion())
+                                .stream()
                                 .map(row -> MemoryEmbeddingKindCount.builder()
                                         .kind(row.getKind())
                                         .count((int) row.getCount())
@@ -170,8 +181,8 @@ public class MemoryObservatoryService {
     public MemorySummaryListResponse summaries(UUID userId, LocalDate from, LocalDate to) {
         LocalDate lo = from != null ? from : LocalDate.of(1970, 1, 1);
         LocalDate hi = to != null ? to : LocalDate.now();
-        Set<UUID> embeddedRefs = memoryEmbeddingRepository
-                .findRefIdsByCreatedByAndKind(userId, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY);
+        Set<UUID> embeddedRefs = memoryItemRepository.findSourceIdsWithLiveVector(
+                userId, SOURCE_KIND_DAILY_SUMMARY, memoryPlatformProperties.servingEmbeddingVersion());
         List<MemorySummaryItem> items = dailySummaryRepository
                 .findByCreatedByAndSummaryDateBetweenOrderBySummaryDateDesc(userId, lo, hi)
                 .stream()
@@ -185,22 +196,37 @@ public class MemoryObservatoryService {
     }
 
     /**
-     * A V2.3 recall változatlan újrahasznosítása — a kereső ugyanazt a memóriát látja, mint a
-     * {@code find_similar_past_days} tool. Szándékosan NEM @Transactional: az embed hálózati
-     * hívása alatt nem tartunk DB-kapcsolatot (a {@link MemoryRecallService} saját indoklása).
+     * Memória mindenhol S10 (mezo-eq85.10): a kereső a memória-platformot hívja
+     * {@link ConsumerPolicy#SIMILAR_DAYS} policy-vel, {@code daily_summary} forrásra szűrve — a
+     * tool ({@code find_similar_past_days}) ugyanezt az utat járja, garantáltan ugyanazt a
+     * memóriát látják. Szándékosan NEM @Transactional: az embed hálózati hívása alatt nem
+     * tartunk DB-kapcsolatot (a retiredre kerülő {@code MemoryRecallService} saját indoklása is
+     * ez volt).
      */
     public SimilarDaysResponse similarDays(UUID userId, String query, Integer k) {
         int limit = k != null ? k : 3;
         int renderCap = properties.recall().renderMaxChars();
-        List<SimilarDayItem> items = memoryRecallService.recallSimilarDays(userId, query, limit).stream()
-                .map(memory -> SimilarDayItem.builder()
-                        .date(memory.occurredOn())
-                        .excerpt(excerpt(memory.content(), renderCap))
-                        .similarity(memory.similarity())
-                        .finalScore(memory.score())
-                        .build())
+        MemoryPlatformProperties.PolicyLimits limits =
+                memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
+        MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
+                List.of(), LocalDate.now(), limits.maxTokens(), null, false);
+        MemoryContext context = memoryContextService.retrieve(request);
+        List<MemoryContextItem> dailySummaryItems = context.items().stream()
+                .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
+                .limit(limit)
                 .toList();
-        return SimilarDaysResponse.builder().items(items).build();
+        List<SimilarDayItem> items = new ArrayList<>();
+        int rank = 0;
+        for (MemoryContextItem item : dailySummaryItems) {
+            rank++;
+            items.add(SimilarDayItem.builder()
+                    .date(item.occurredOn())
+                    .excerpt(excerpt(item.content(), renderCap))
+                    .rank(rank)
+                    .memoryItemId(item.memoryItemId())
+                    .build());
+        }
+        return SimilarDaysResponse.builder().items(items).retrievalRunId(context.retrievalRunId()).build();
     }
 
     /** A tool render-vágásának párja (MemoryTools) — a stored text hosszú, a kártyára kivonat megy. */

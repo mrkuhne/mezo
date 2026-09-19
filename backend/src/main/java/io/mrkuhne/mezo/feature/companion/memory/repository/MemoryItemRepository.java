@@ -3,12 +3,57 @@ package io.mrkuhne.mezo.feature.companion.memory.repository;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface MemoryItemRepository extends JpaRepository<MemoryItemEntity, UUID> {
+
+    /**
+     * L1 embedding-count rollup (mezo-eq85.10) — {@code memory_item.source_kind} counted over a
+     * LIVE serving-version {@code memory_vector} row, the exact predicate {@code DenseMemoryQuery}
+     * uses for ANN eligibility (not deleted, ready, has an embedding, on the serving generation).
+     * Replaces the retired {@code MemoryEmbeddingRepository.countByKindForUser}.
+     */
+    @Query("""
+            select i.sourceKind as kind, count(i) as count
+            from MemoryItemEntity i
+            join MemoryVectorEntity v on v.memoryItemId = i.id and v.createdBy = i.createdBy
+            where i.createdBy = :createdBy
+              and v.embeddingVersion = :servingVersion
+              and v.status = 'ready'
+              and v.embedding is not null
+            group by i.sourceKind
+            order by count(i) desc, i.sourceKind asc
+            """)
+    List<KindCount> countBySourceKindForUser(
+            @Param("createdBy") UUID createdBy, @Param("servingVersion") String servingVersion);
+
+    interface KindCount {
+        String getKind();
+        long getCount();
+    }
+
+    /**
+     * The napló "embedded" flag (mezo-eq85.10) — {@code source_id}s of {@code daily_summary} items
+     * that have a live serving-version vector, same predicate as {@link #countBySourceKindForUser}.
+     * Replaces the retired {@code MemoryEmbeddingRepository.findRefIdsByCreatedByAndKind}.
+     */
+    @Query("""
+            select i.sourceId
+            from MemoryItemEntity i
+            join MemoryVectorEntity v on v.memoryItemId = i.id and v.createdBy = i.createdBy
+            where i.createdBy = :createdBy
+              and i.sourceKind = :sourceKind
+              and v.embeddingVersion = :servingVersion
+              and v.status = 'ready'
+              and v.embedding is not null
+            """)
+    Set<UUID> findSourceIdsWithLiveVector(
+            @Param("createdBy") UUID createdBy, @Param("sourceKind") String sourceKind,
+            @Param("servingVersion") String servingVersion);
 
     Optional<MemoryItemEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 

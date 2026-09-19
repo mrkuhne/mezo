@@ -1,15 +1,17 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import static io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.axisVector;
+import static io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator.blendVector;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.SimilarDayItem;
 import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
-import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
-import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,14 +20,19 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** A hasonló-nap kereső HTTP-kontraktusa (mezo-al1i) — rangsor, floor, kivonat-vágás, validáció. */
+/**
+ * A hasonló-nap kereső HTTP-kontraktusa (mezo-al1i; mezo-eq85.10-től a memória-platformot hívja
+ * SIMILAR_DAYS policy-vel, {@code memory_item}/{@code memory_vector} felett — nincs többé
+ * {@code similarity}/{@code finalScore} a válaszban, csak rangsor + kivonat-vágás + validáció).
+ */
 @ActiveProfiles("companion-fake")
 class CompanionMemorySimilarDaysApiIT extends ApiIntegrationTest {
 
     /** A query fake-embeddingje pontosan a 0. tengely — a koszinusz kézzel számolható. */
     private static final String AXIS0_QUERY = "[fake-embed:1] rossz alvás edzés után";
+    private static final String VERSION = "gemini-embedding-001-768-v1";
 
-    @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
+    @Autowired private MemoryItemPopulator memoryItemPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -38,33 +45,39 @@ class CompanionMemorySimilarDaysApiIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.OK, SimilarDaysResponse.class);
     }
 
+    private MemoryItemEntity item(UUID owner, String sourceKind, String content, LocalDate occurredOn,
+                                  float[] vector) {
+        MemoryItemEntity entity = memoryItemPopulator.item(owner, sourceKind, UUID.randomUUID(),
+                null, content, occurredOn, new String[0], new String[0], MemoryProvenanceEnvelope.empty());
+        memoryItemPopulator.vector(entity, VERSION, vector);
+        return entity;
+    }
+
     @Test
-    void testSearchSimilarDays_shouldRankBySimilarityAndDropOrthogonal_whenVectorsSeeded() {
+    void testSearchSimilarDays_shouldRankExactMatchFirst_whenVectorsSeeded() {
         UUID owner = ownerId();
         LocalDate exact = LocalDate.now().minusDays(1);
         LocalDate blend = LocalDate.now().minusDays(3);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, exact, 0);
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                UUID.randomUUID(), "kevert nap", blend, MemoryEmbeddingPopulator.blendVector(0, 1));
-        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                LocalDate.now().minusDays(5), 1); // ortogonális — a floor kiejti
+        MemoryItemEntity exactItem = item(owner, "daily_summary", "pontos nap", exact, axisVector(0));
+        MemoryItemEntity blendItem = item(owner, "daily_summary", "kevert nap", blend, blendVector(0, 1));
 
         SimilarDaysResponse response = search(AXIS0_QUERY, "&k=5");
 
         assertThat(response.getItems()).hasSize(2);
         SimilarDayItem first = response.getItems().getFirst();
         assertThat(first.getDate()).isEqualTo(exact);
-        assertThat(first.getSimilarity()).isCloseTo(1.0, within(1e-6));
-        assertThat(first.getFinalScore()).isLessThanOrEqualTo(first.getSimilarity());
+        assertThat(first.getRank()).isEqualTo(1);
+        assertThat(first.getMemoryItemId()).isEqualTo(exactItem.getId());
         SimilarDayItem second = response.getItems().get(1);
         assertThat(second.getDate()).isEqualTo(blend);
-        assertThat(second.getSimilarity()).isCloseTo(0.7071, within(1e-3));
+        assertThat(second.getRank()).isEqualTo(2);
+        assertThat(second.getMemoryItemId()).isEqualTo(blendItem.getId());
+        assertThat(response.getRetrievalRunId()).isNotNull();
     }
 
     @Test
-    void testSearchSimilarDays_shouldReturnEmptyList_whenNothingAboveFloor() {
-        memoryEmbeddingPopulator.embedding(ownerId(), MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                LocalDate.now().minusDays(2), 1);
+    void testSearchSimilarDays_shouldExcludeNonDailySummaryItems_whenOnlyOtherKindsExist() {
+        item(ownerId(), "journal_entry", "napló, nem nap", LocalDate.now().minusDays(2), axisVector(0));
 
         assertThat(search(AXIS0_QUERY, "").getItems()).isEmpty();
     }
@@ -72,9 +85,7 @@ class CompanionMemorySimilarDaysApiIT extends ApiIntegrationTest {
     @Test
     void testSearchSimilarDays_shouldCapExcerpt_whenNarrativeLongerThanRenderMax() {
         String longContent = "x".repeat(400);
-        memoryEmbeddingPopulator.embedding(ownerId(), MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
-                UUID.randomUUID(), longContent, LocalDate.now().minusDays(1),
-                MemoryEmbeddingPopulator.axisVector(0));
+        item(ownerId(), "daily_summary", longContent, LocalDate.now().minusDays(1), axisVector(0));
 
         SimilarDayItem item = search(AXIS0_QUERY, "").getItems().getFirst();
 

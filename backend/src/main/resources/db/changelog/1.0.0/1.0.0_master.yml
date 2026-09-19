@@ -1302,3 +1302,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609181200_mezo-rj214.7_ai_message_tool_calls_backfill_strip_result.sql
+  - changeSet:
+      id: "1.0.0:202609191200_mezo-eq85.10_memory_retrieval_run_similar_days_policy"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609191200_mezo-eq85.10_memory_retrieval_run_similar_days_policy.sql
