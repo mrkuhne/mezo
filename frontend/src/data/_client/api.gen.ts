@@ -2187,7 +2187,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** pgvector hasonló-nap kereső (mezo-al1i) — a V2.3 MemoryRecallService változatlan újrahasznosítása: embed query → ANN a daily_summary vektorokon → recency re-rank (similarity × exp(-age/τ)). A min-similarity küszöb alatti találat itt sem jön vissza (őszinte üres lista); a tool és a felület garantáltan ugyanazt a memóriát látja. */
+        /** Hasonló-nap kereső (mezo-al1i; mezo-eq85.10-től a memória-platformot hívja SIMILAR_DAYS policy-vel — a MemoryContextService rangsorolja, daily_summary forrásra szűrve). Nincs sem koszinusz-egyezés, sem végső pontszám a válaszban (RRF-alapú rangsor, nem 0..1 arány) — csak a sorrend és egy nullázható retrievalRunId/ memoryItemId a hivatkozáshoz. Üres találati lista, ha semmi nem talál (őszinte üres lista); a tool és a felület garantáltan ugyanazt a memóriát látja. */
         get: operations["searchSimilarDays"];
         put?: never;
         post?: never;
@@ -7813,7 +7813,7 @@ export interface components {
             embeddings: components["schemas"]["MemoryEmbeddingKindCount"][];
         };
         MemoryEmbeddingKindCount: {
-            /** @description memory_embedding.kind — a ck_memory_embedding_kind CHECK egyik értéke. */
+            /** @description memory_item.source_kind — a memória-platform kanonikus forrás-kind értéke (mezo-eq85.10-től; korábban memory_embedding.kind volt, a mezőnév maradt, hogy ne törje a klienst). */
             kind: string;
             count: number;
         };
@@ -7867,22 +7867,24 @@ export interface components {
         };
         SimilarDaysResponse: {
             items: components["schemas"]["SimilarDayItem"][];
+            /**
+             * Format: uuid
+             * @description A memory_retrieval_run sora (mezo-eq85.10) — null, ha a keresés meghiúsult vagy a SIMILAR_DAYS policy ki van kapcsolva.
+             */
+            retrievalRunId?: string | null;
         };
         SimilarDayItem: {
             /** Format: date */
             date: string;
             /** @description A napi narratíva recall.render-max-chars-ra (300) vágva. */
             excerpt: string;
+            /** @description 1-alapú helyezés a memória-platform rangsorában — nincs visszaküldött pontszám (mezo-eq85.10, product-owner döntés: a rangsor önmagában elég, a nyers RRF-szám félrevezető lenne). */
+            rank: number;
             /**
-             * Format: double
-             * @description Nyers koszinusz-egyezés (0..1) — a floor erre vonatkozik.
+             * Format: uuid
+             * @description A memory_item.id, ha a találat egy kanonikus memória-elemhez tartozik — nullázható, mert egy tény- vagy gráf-találatnak elvben nincs (a napi-összefoglaló szűrés miatt a gyakorlatban mindig van).
              */
-            similarity: number;
-            /**
-             * Format: double
-             * @description similarity × exp(-ageDays/decayDays) — a rangsor kulcsa.
-             */
-            finalScore: number;
+            memoryItemId?: string | null;
         };
         MemoryLlmUsageResponse: {
             /** @description mezo.feature.llm-log.enabled állása — false esetén a napló nem bővül és a sorok üresek. */
