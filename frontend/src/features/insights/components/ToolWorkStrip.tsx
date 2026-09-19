@@ -13,6 +13,19 @@ import type { Tool } from '@/shared/ui/ToolChip'
  *  where the old ToolChipRow sat (above the answer bubble). */
 const MAX_STACK_ICONS = 6
 
+/** A tool's report usually opens with a heading line ("Napi étkezés-összesítők (utolsó 1 nap):")
+ *  and continues with data rows. Split those apart so the heading can be set as a caption and the
+ *  rows as figures, instead of dumping one block of prose. Anything that does not have that shape
+ *  falls through as body-only — this is typography, never parsing the domain. */
+function splitReport(text: string): { caption: string | null; body: string } {
+  const [first, ...rest] = text.split('\n')
+  if (rest.length > 0 && first.trim().endsWith(':')) {
+    return { caption: first.trim().replace(/:$/, ''), body: rest.join('\n').trim() }
+  }
+  return { caption: null, body: text }
+}
+
+
 export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }) {
   const [open, setOpen] = useState(false)
   // S9.7 provenance (mezo-rj214.7): at most one row's outcome unclamped at a time per strip —
@@ -61,6 +74,9 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
                 </span>
                 <span className="col" style={{ minWidth: 0, flex: 1 }}>
                   <span className="mzc-wnm">{d.label}</span>
+                  {/* Always visible: the params are the ASK half, the one that outlives the
+                     90-day scrub. Hiding them behind the outcome's expander would erase them
+                     entirely on a scrubbed row, which has no outcome to expand. */}
                   {params && <span className="mzc-wprm">{params}</span>}
                   {t.why && <span className="mzc-wwhy">{t.why}</span>}
                   {/* Retention-scrubbed rows carry no `outcome` — the ask half above still
@@ -73,7 +89,19 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
                       aria-label={`${d.label} eredmény megnyitása`}
                       onClick={() => setOpenRow(expanded ? null : i)}
                     >
-                      {t.outcome}
+                      {(() => {
+                        const { caption, body } = splitReport(t.outcome!)
+                        return (
+                          <>
+                            {caption && <span className="mzc-wocap">{caption}</span>}
+                            <span className="mzc-wobody">
+                              {body.split('\n').map((line, li) => (
+                                <span key={li} className="mzc-woline">{line}</span>
+                              ))}
+                            </span>
+                          </>
+                        )
+                      })()}
                     </button>
                   )}
                 </span>
