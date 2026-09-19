@@ -185,6 +185,25 @@ public class CharacterHistoryReads {
         return FACT_CATEGORY_EXPERT;
     }
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): the bootstrap konzílium's memory-retrieval query —
+     *  the SAME daily-summary narratives {@link #addNarratives} routes to every expert, joined
+     *  plain-text — read in its OWN short transaction, deliberately separate from {@link
+     *  #gatherHistory}'s. {@code CharacterBootstrapService.run} calls this BEFORE the memory
+     *  retrieval fan-out and BEFORE it opens the persisting transaction, so the retrieval's four
+     *  pooled connections never compete with a held outer one (task-10-codebase-notes.md §4
+     *  HAZARD). A second small read against {@code daily_summary} is the deliberate trade-off: the
+     *  alternative (deriving plain narrative text back out of {@link #gatherHistory}'s per-expert,
+     *  already-mixed-with-patterns-and-facts evidence lines) would be fragile string-parsing. */
+    @Transactional(readOnly = true)
+    public String narrativeQueryText(UUID owner) {
+        List<DailySummaryEntity> summaries = dailySummaryRepository
+                .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(owner, EPOCH_FLOOR);
+        List<DailySummaryEntity> capped =
+                summaries.size() > HISTORY_SUMMARY_CAP ? summaries.subList(0, HISTORY_SUMMARY_CAP) : summaries;
+        return capped.stream().map(DailySummaryEntity::getNarrative)
+                .collect(java.util.stream.Collectors.joining(" "));
+    }
+
     /** Builds one {@link ExpertEvidence} per expert that has any evidence — empty list when the
      *  user has no history yet. */
     @Transactional

@@ -4,6 +4,9 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -13,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -51,6 +55,15 @@ public class CharacterBootstrapService {
      *  prompt-eligible facts), never "the week's observations", so the transcript must say so. */
     private static final String BOOTSTRAP_EVIDENCE_PHRASE = "a teljes előzmény %d bejegyzéséből";
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): the memory-retrieval feature label {@link
+     *  #memoryBlock} uses (via {@link LlmCallContext#feature()}) — the EXISTING {@code character}
+     *  slug this surface's own top-level LLM calls already carry (they route through {@link
+     *  KonziliumProposalRound}/{@link KonziliumVerdictRound}'s own {@code new
+     *  LlmCallContext("character", auditOp, ...)} call sites), never a newly invented one. Not
+     *  itself passed to {@code companionLlm} — held here only so the retrieval's label is read off
+     *  the same literal, not retyped. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("character", AUDIT_OP, null, null);
+
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterHistoryReads historyReads;
     private final KonziliumProposalRound proposalRound;
@@ -59,13 +72,23 @@ public class CharacterBootstrapService {
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
     private final CharacterRunLog runLog;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+    // Self-injected proxy (the LifeEventExtractionService idiom): `run` carries no
+    // @Transactional (the HAZARD in task-10-codebase-notes.md §4 — CharacterHistoryReads
+    // .gatherHistory and this class's own persisting work are BOTH @Transactional, so a memory
+    // retrieval fired while either is open needs 1 (outer) + 4 (retrievers) + the audit writer,
+    // at or over the test pool's 5). The retrieval below runs with NO transaction open; the
+    // actual persisting work is pulled into runKonzilium and invoked through this proxy — plain
+    // `this.runKonzilium(...)` would bypass Spring AOP and get no transactional advice at all.
+    private final ObjectProvider<CharacterBootstrapService> self;
 
     /**
      * Runs the bootstrap konzílium for {@code owner}. A live BOOTSTRAP row already existing is a
      * hard conflict (bootstrap runs at most once, ever). Returns {@code null} — no row, no LLM
      * calls — when the user has no history yet (the honest empty state).
      */
-    @Transactional
     public CharacterConferenceEntity run(UUID owner) {
         if (conferenceRepository.findFirstByCreatedByAndKindOrderByGeneratedAtDesc(owner, BOOTSTRAP).isPresent()) {
             throw new SystemRuntimeErrorException(
@@ -77,6 +100,26 @@ public class CharacterBootstrapService {
             return null;
         }
 
+        // Memória mindenhol S10.2: the retrieval runs HERE, with NO transaction open — see the
+        // `self` field javadoc for the HAZARD this avoids. The query is the SAME daily-summary
+        // narratives `gatherHistory` routes to every expert (narrativeQueryText's own javadoc
+        // explains why it re-reads rather than re-derives from the mixed evidence lines).
+        String memoryQuery = historyReads.narrativeQueryText(owner);
+        MemoryContextBlock.Rendered mem = memoryBlock(owner, LocalDate.now(), memoryQuery);
+        List<ExpertEvidence> evidenceWithMemory = mem.block().isEmpty()
+                ? evidence
+                : evidence.stream().map(e -> e.withLine(mem.block(), "memory")).toList();
+
+        return self.getObject().runKonzilium(owner, evidence, evidenceWithMemory);
+    }
+
+    /** The proposal/verdict rounds + persistence, in ONE transaction — called only through
+     *  {@link #self} (see its javadoc). {@code evidence} (WITHOUT the memory line) feeds the
+     *  run-log's expert-key/observation-count bookkeeping, unchanged from before this slice;
+     *  {@code evidenceWithMemory} is what the proposal round actually sees. */
+    @Transactional
+    CharacterConferenceEntity runKonzilium(
+            UUID owner, List<ExpertEvidence> evidence, List<ExpertEvidence> evidenceWithMemory) {
         // A user can POST here before ever GETting /api/character — without this, the proposal
         // round's NEW proposals validate fine (KonziliumProposalRound checks the STATIC CORE key
         // catalog, not the DB) and get accepted rulings, but ClaimLifecycle.applyNew then finds no
@@ -88,7 +131,7 @@ public class CharacterBootstrapService {
         characterService.ensureCoreDimensions(owner);
 
         KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
-                owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidence, BOOTSTRAP_EVIDENCE_PHRASE);
+                owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidenceWithMemory, BOOTSTRAP_EVIDENCE_PHRASE);
         KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
@@ -121,5 +164,18 @@ public class CharacterBootstrapService {
         }
 
         return conference;
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this bootstrap run, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code CHARACTER_EVIDENCE}
+     *  policy is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself
+     *  fail-open. {@code deep = true}: bootstrap is a one-time deep read, not a chat turn. */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate asOf, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.CHARACTER_EVIDENCE, query, asOf, true,
+                CONTEXT.feature(), AUDIT_OP, null);
     }
 }
