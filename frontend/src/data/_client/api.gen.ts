@@ -2187,7 +2187,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Hasonló-nap kereső (mezo-al1i; mezo-eq85.10-től a memória-platformot hívja SIMILAR_DAYS policy-vel — a MemoryContextService rangsorolja, daily_summary forrásra szűrve). Nincs sem koszinusz-egyezés, sem végső pontszám a válaszban (RRF-alapú rangsor, nem 0..1 arány) — csak a sorrend és egy nullázható retrievalRunId/ memoryItemId a hivatkozáshoz. Üres találati lista, ha semmi nem talál (őszinte üres lista); a tool és a felület garantáltan ugyanazt a memóriát látja. */
+        /** Hasonló-nap kereső (mezo-al1i; mezo-eq85.10-től a memória-platformot hívja SIMILAR_DAYS policy-vel — a MemoryContextService rangsorolja, és maga a LEKÉRDEZÉS szűkül daily_summary forrásra). Nincs sem koszinusz-egyezés, sem végső pontszám a válaszban (RRF-alapú rangsor, nem 0..1 arány) — csak a sorrend és egy nullázható retrievalRunId/memoryItemId a hivatkozáshoz. Őszinte üres lista, ha semmi nem talál, beleértve azt is, amikor minden találat a nyers-koszinusz küszöb (recall.min-similarity = 0.25) alatt van: egy gyenge egyezés zaj, nem emlék. Ha a keresés elbukik, 500 jön, nem üres lista. A tool és a felület garantáltan ugyanazt a memóriát látja. */
         get: operations["searchSimilarDays"];
         put?: never;
         post?: never;
@@ -7869,7 +7869,7 @@ export interface components {
             items: components["schemas"]["SimilarDayItem"][];
             /**
              * Format: uuid
-             * @description A memory_retrieval_run sora (mezo-eq85.10) — null, ha a keresés meghiúsult vagy a SIMILAR_DAYS policy ki van kapcsolva.
+             * @description A memory_retrieval_run sora (mezo-eq85.10). Akkor és csak akkor null, ha a SIMILAR_DAYS policy ki van kapcsolva (enabled=false): olyankor keresés sem fut, így nincs futás-sor, amire mutathatna, és az items is üres. Ha maga a keresés bukik el, a végpont HIBÁT ad (500), nem kitalált üres listát — egy üres lista ezen a felületen azt állítaná, hogy nincs ilyen napod.
              */
             retrievalRunId?: string | null;
         };
@@ -17504,7 +17504,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Hasonló napok (finalScore-desc) */
+            /** @description Hasonló napok rangsor szerint (rank-asc; 1 = a legjobb találat) */
             200: {
                 headers: {
                     [name: string]: unknown;

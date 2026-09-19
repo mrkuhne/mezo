@@ -40,6 +40,10 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
     @Autowired private MemoryItemPopulator memoryItemPopulator;
     @Autowired private MemoryRetrievalRunRepository runRepository;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties memoryPlatformProperties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository periodSummaryRepository;
+    @Autowired private io.mrkuhne.mezo.feature.companion.quarterly.config.QuarterlyProperties quarterlyProperties;
 
     private ToolCallAudit audit;
 
@@ -159,6 +163,42 @@ class MemoryToolsSimilarDaysIT extends AbstractIntegrationTest {
         item(owner, "daily_summary", LEXICALLY_INERT, LocalDate.now().minusDays(4), cosineVector(0.40f));
 
         assertThat(memoryTools.findSimilarPastDays(QUERY, 2, ctx(owner))).contains(LEXICALLY_INERT);
+    }
+
+    /**
+     * mezo-eq85.10 fix round 1, FIX 3 — the chat tool must NOT fail the whole turn when the memory
+     * platform is unreachable, and must NOT answer {@code ToolText.NO_DATA} either: "nincs adat"
+     * means "nincs ilyen napod", which is a lie about the user's history when the truth is that we
+     * could not look. The retrieval failure is staged with a throwing coordinator — the
+     * {@code ReflectionMemoryGatewayIT} idiom — because a REAL total outage of all four retrievers
+     * cannot be provoked from a healthy database.
+     */
+    @Test
+    void testFindSimilarPastDays_shouldSayItCouldNotRecall_whenRetrievalBlowsUp() {
+        UUID owner = userPopulator.createUser().getId();
+        MemoryTools throwingTools = new MemoryTools(new ThrowingMemoryContextService(),
+                memoryPlatformProperties, companionProperties, periodSummaryRepository,
+                quarterlyProperties);
+
+        String out = throwingTools.findSimilarPastDays(QUERY, 2, ctx(owner));
+
+        assertThat(out).doesNotContain("nincs adat")
+                .contains("nem sikerült elérni");
+    }
+
+    /** Stages "the memory platform is down" without Mockito — see the test above. */
+    private static final class ThrowingMemoryContextService
+            extends io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextService {
+
+        private ThrowingMemoryContextService() {
+            super(null, null, Map.of(), null, null, null, null, null, null, null, null, null);
+        }
+
+        @Override
+        public io.mrkuhne.mezo.feature.companion.memory.dto.MemoryContext retrieveOrFail(
+                io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest request) {
+            throw new IllegalStateException("retrieval exploded");
+        }
     }
 
     /** A unit vector whose cosine to the 0. axis (the query vector) is exactly {@code cosine}. */

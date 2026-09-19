@@ -211,9 +211,18 @@ public class MemoryObservatoryService {
         int renderCap = properties.recall().renderMaxChars();
         MemoryPlatformProperties.PolicyLimits limits =
                 memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
+        if (!limits.enabled()) {
+            // Per-policy kill switch (mezo-eq85.10): no fan-out, no memory_retrieval_run row, so
+            // this surface can be rolled back purely by config. retrievalRunId is null precisely
+            // because there IS no run to point at.
+            return SimilarDaysResponse.builder().items(List.of()).retrievalRunId(null).build();
+        }
         MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
                 List.of(), LocalDate.now(), limits.maxTokens(), null, false);
-        MemoryContext context = memoryContextService.retrieve(request);
+        // retrieveOrFail, not retrieve: a total retriever outage returns an EMPTY context, which
+        // this surface would render as "nincs ilyen napod" — a lie about the user's history. An
+        // honest 5xx beats a fabricated empty list, so the failure propagates to the FE.
+        MemoryContext context = memoryContextService.retrieveOrFail(request);
         List<MemoryContextItem> dailySummaryItems = context.items().stream()
                 .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
                 .limit(limit)

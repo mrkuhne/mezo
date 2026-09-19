@@ -507,7 +507,12 @@ retired Motor tab pioneered, now carried by the Patterns dashboard (§2.1).
   reasoning (and the one thing that turned out NOT deliverable: labelling the source kind, since
   results are filtered to `daily_summary` and the label would be a constant). Tapping a card calls
   `onPick(date)`, which `MemoryPage` wires to set `focusDate` **and** switch the segment to Napló —
-  a cross-segment jump, not a route change.
+  a cross-segment jump, not a route change. **Three distinct empty-ish states, never conflated
+  (`mezo-eq85.10`):** 404 ⇒ the `degraded` line ("A memória-kereső most nem elérhető."); a query
+  that genuinely matched nothing ⇒ "Nincs elég hasonló nap a memóriában."; and a query that
+  FAILED (the endpoint raises rather than fabricate an empty list when retrieval is down) ⇒ its
+  own failure `GhostState`, surfaced by the hook's new `failed` flag. The empty sentence asserts
+  something about the user's history, so a failed search must never borrow it.
 - **Audit (`components/MemoryAuditPanel.tsx` + `TokenColumns.tsx`):** two independently-degradable
   blocks. **(1) Cost** — a cost-hero (`totals.costUsd`, `$0.000` formatted, `—` when null) plus
   `TokenColumns` (a small stacked SVG bar chart, one bar per day — `--dv-lav` bottom segment =
@@ -1008,7 +1013,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`pages/WeeklyPage.tsx` is DELETED (`mezo-p2tr`)** — the 2nd sub-tab (D′ `mezo-t16y.1`) is retired; its content (score hero, growth card, tervjavaslat) moved verbatim to `/me/week` (§2.2), later split by `mezo-d20.6.10` into the `Heti` hub + view-pages ([`me.md`](me.md))
 - `pages/MemoryPage.tsx` — **`mezo-al1i`**, the 9th sub-tab (now the 8th): read-only memory-pipeline observatory (§2.9), 4 page-local segments (`useStickyTab('insights.memoria.view')`) over `useMemoryOverview`/`useMemorySummaries`, one page-level degraded card (companion 404) + per-panel `GhostState`/degraded lines in Kereső/Audit, shown in both modes
 - `components/Memory{LayerCard,LayersPanel,JournalPanel,SearchPanel,AuditPanel}.tsx` — **`mezo-al1i`**: the L0→L3 wash-tinted layer cards + cron-labelled pulsing `FlowConnector`s (Rétegek), the memoir-styled journal cards with month separators + embed dot + `focusDate` scroll (Napló), the lazy-submit search form (Kereső), and the two-block cost-hero/provenance panel (Audit) — §2.9 has the full per-panel breakdown
-- `components/SimilarDayCard.tsx` — **`mezo-al1i`** the Kereső result card: similarity ring + bar + the `egyezés × frissesség = végső` three-chip score row (freshness recovered client-side as `finalScore/similarity`); `onPick(date)` jumps the page to Napló focused on that day
+- `components/SimilarDayCard.tsx` — **`mezo-al1i`** the Kereső result card; **`mezo-eq85.10`** replaced the similarity ring + `egyezés × frissesség = végső` three-chip score row with the 1-based `rank` ring (the platform's RRF `finalScore` is not a 0..1 fraction); `onPick(date)` jumps the page to Napló focused on that day
 - `components/TokenColumns.tsx` — **`mezo-al1i`** the Audit panel's small stacked SVG bar chart (`--dv-lav` input / `--dv-sage` output tokens per day)
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)

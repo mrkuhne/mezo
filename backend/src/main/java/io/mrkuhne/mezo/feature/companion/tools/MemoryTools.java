@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -40,6 +41,7 @@ import java.util.UUID;
  * ToolContext ownership, but its refs are whole MONTH rungs and therefore carry their own kind
  * ({@link #REF_KIND_PERIOD}), never {@code Memory}: see {@link #renderPeriod}.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -57,6 +59,11 @@ public class MemoryTools {
      *  after the token budget has already truncated the fused rank, so it would see no day at all
      *  once non-day hits had spent the budget. */
     private static final String SOURCE_KIND_DAILY_SUMMARY = ConsumerPolicy.SOURCE_KIND_DAILY_SUMMARY;
+
+    /** What the tool says when the memory platform is unreachable (mezo-eq85.10 FIX 3) — an honest
+     *  "I could not look", never {@link ToolText#NO_DATA}, which asserts the day does not exist. */
+    private static final String RECALL_UNAVAILABLE = "Hasonló korábbi napok: a memóriát most nem "
+            + "sikerült elérni, ezért nem tudom megmondani, volt-e ilyen napod.";
 
     private final MemoryContextService memoryContextService;
     private final MemoryPlatformProperties memoryPlatformProperties;
@@ -78,7 +85,17 @@ public class MemoryTools {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
         int limit = ToolText.clamp(k, 1, properties.recall().maxK(), 3);
-        List<MemoryContextItem> days = similarDailySummaries(userId, description, limit);
+        List<MemoryContextItem> days;
+        try {
+            days = similarDailySummaries(userId, description, limit);
+        } catch (RuntimeException failure) {
+            // Deliberately NOT ToolText.NO_DATA: "nincs adat" means "nincs ilyen napod", which would
+            // be a lie about the user's own history when the truth is that WE could not look
+            // (mezo-eq85.10 FIX 3). The turn must not fail over it either — the model can still
+            // answer everything else it was asked.
+            log.warn("find_similar_past_days could not reach the memory platform", failure);
+            return RECALL_UNAVAILABLE;
+        }
         if (days.isEmpty()) {
             return "Hasonló korábbi napok: " + ToolText.NO_DATA;
         }
@@ -100,9 +117,14 @@ public class MemoryTools {
     private List<MemoryContextItem> similarDailySummaries(UUID userId, String query, int limit) {
         MemoryPlatformProperties.PolicyLimits limits =
                 memoryPlatformProperties.limitsFor(ConsumerPolicy.SIMILAR_DAYS);
+        if (!limits.enabled()) {
+            // The per-policy kill switch: a disabled surface does NO fan-out and writes NO
+            // memory_retrieval_run row, so it can be rolled back purely by config (mezo-eq85.10).
+            return List.of();
+        }
         MemoryRequest request = new MemoryRequest(userId, ConsumerPolicy.SIMILAR_DAYS, query,
                 List.of(), LocalDate.now(), limits.maxTokens(), null, false);
-        MemoryContext context = memoryContextService.retrieve(request);
+        MemoryContext context = memoryContextService.retrieveOrFail(request);
         return context.items().stream()
                 .filter(item -> SOURCE_KIND_DAILY_SUMMARY.equals(item.sourceKind()))
                 .limit(limit)

@@ -115,6 +115,28 @@ public class MemoryContextService {
         return execute(request, RetrieveOptions.audited(servingMode), false).context();
     }
 
+    /**
+     * Total-outage-honest variant (mezo-eq85.10 FIX 3) for a surface where an EMPTY result is not a
+     * neutral fact but a statement about the user's history. {@link #retrieve} answers a total
+     * retriever outage with an empty context, which the "hasonló napok" search would render as
+     * "nincs ilyen napod" — a lie. Here the outage surfaces as an exception, and the caller decides:
+     * the endpoint propagates it (an honest error beats a fabricated empty), the chat tool catches
+     * it and says it could not recall right now. The audit row is written either way — the trace id
+     * on the error is the handle to it.
+     */
+    public MemoryContext retrieveOrFail(MemoryRequest request) {
+        RetrievalOutcome outcome =
+                execute(request, RetrieveOptions.audited(RetrievalServingMode.NEW), false);
+        if (outcome.errorCode() != null && outcome.errorCode().startsWith(ALL_RETRIEVERS_FAILED)) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("MEMORY_RETRIEVAL_UNAVAILABLE")
+                            .exceptionTraceId(outcome.context().traceId().toString())
+                            .build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return outcome.context();
+    }
+
     /** NEW chat serving variant: an audited total retriever outage signals the legacy fallback. */
     public MemoryContext retrieveForServing(MemoryRequest request) {
         return execute(request, RetrieveOptions.audited(RetrievalServingMode.NEW), true).context();

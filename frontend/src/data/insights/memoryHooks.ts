@@ -78,6 +78,10 @@ const SEARCH_EMPTY: SimilarDaySearch = { results: null, degraded: false, mode: '
 /**
  * Lusta hasonló-nap kereső (mezo-al1i) — üres query-vel nem tüzel (a gomb indítja, nem a gépelés).
  * Mock módban determinisztikus seedet ad; 404 (companion off) ⇒ degraded.
+ *
+ * A `failed` ág (mezo-eq85.10) NEM ugyanaz, mint az üres találat: a szerver inkább hibát ad,
+ * mint kitalált üres listát, ha a memória-keresés maga esett el — a `results: null` önmagában
+ * megkülönböztethetetlen a „még nem kerestünk" állapottól, ezért kell külön jelzés.
  */
 export function useSimilarDays(query: string) {
   const mock = isMockMode()
@@ -99,7 +103,7 @@ export function useSimilarDays(query: string) {
           }
         },
   })
-  return { ...(q.data ?? SEARCH_EMPTY), isFetching: q.isFetching }
+  return { ...(q.data ?? SEARCH_EMPTY), isFetching: q.isFetching, failed: q.isError }
 }
 
 export interface MemoryLlmUsageBootstrap {

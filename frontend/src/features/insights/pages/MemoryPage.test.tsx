@@ -154,6 +154,22 @@ describe('MemoryPage (real mode)', () => {
     expect(await screen.findByText('Nincs elég hasonló nap a memóriában.')).toBeInTheDocument()
   })
 
+  // mezo-eq85.10 FIX 3: a failed query must NOT render "Nincs elég hasonló nap a memóriában" —
+  // that sentence asserts something about the user's history, and the truth is we could not look.
+  test('search renders a failure state, not the empty state, when the query errors', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/memory/similar-days`, () => new HttpResponse(null, { status: 500 })),
+    )
+    renderPage()
+    await screen.findByText('L0 · Nyers adat')
+    await userEvent.click(screen.getByRole('tab', { name: 'Kereső' }))
+    await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'rossz alvás')
+    await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+
+    expect(await screen.findByText(/A keresés nem sikerült/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.queryByText('Nincs elég hasonló nap a memóriában.')).not.toBeInTheDocument()
+  })
+
   test('audit shows the honest disabled state when the llm-log switch is off', async () => {
     renderPage()
     await screen.findByText('L0 · Nyers adat')

@@ -9,7 +9,7 @@ import { SimilarDayCard } from '@/features/insights/components/SimilarDayCard'
 export function MemorySearchPanel({ onPick }: { onPick: (date: string) => void }) {
   const [draft, setDraft] = useState('')
   const [submitted, setSubmitted] = useState('')
-  const { results, degraded, isFetching } = useSimilarDays(submitted)
+  const { results, degraded, isFetching, failed } = useSimilarDays(submitted)
 
   return (
     <div className="col gap-md">
@@ -35,7 +35,12 @@ export function MemorySearchPanel({ onPick }: { onPick: (date: string) => void }
         </p>
       )}
       {isFetching && <GhostState message="Keresés a nap-vektorok között…" lines={2} />}
-      {!isFetching && results !== null && results.length === 0 && (
+      {/* Egy elbukott keresés SOSEM az „üres találat" mondatot kapja (mezo-eq85.10): az a user
+          történetéről állítana valamit, miközben az igazság az, hogy nem tudtunk megnézni. */}
+      {!isFetching && failed && (
+        <GhostState message="A keresés nem sikerült — a memóriát most nem értük el. Próbáld újra kicsit később." lines={2} />
+      )}
+      {!isFetching && !failed && results !== null && results.length === 0 && (
         <GhostState message="Nincs elég hasonló nap a memóriában." lines={2} />
       )}
       {!isFetching && results && results.length > 0 && (

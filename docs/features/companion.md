@@ -512,6 +512,18 @@ platform, not in the two call sites, so the tool and the `/similar-days` endpoin
   needs no second threshold — `LexicalMemoryQuery` already requires `score > 0`, i.e. the words
   genuinely occur. Without this, any query returned up to `k` arbitrary days rendered as "hasonló
   napok", which is the fabricated resemblance this slice exists to remove.
+- **The per-policy kill switch is honoured at BOTH call sites.**
+  `policies.similar-days.enabled: false` ⇒ no fan-out, no `memory_retrieval_run` row, an empty
+  list and a **null** `retrievalRunId` — the rollback-by-config promise `application.yml` makes
+  for every Part-B policy. Only `MemoryContextBlock.render` used to check it; the two similar-days
+  call sites went straight to `MemoryContextService.retrieve` and ran the whole fan-out anyway.
+- **Failure is honest, and asymmetric by design.** `MemoryContextService.retrieveOrFail` (new)
+  raises on a TOTAL retriever outage instead of answering with the empty context `retrieve`
+  returns, because on this surface an empty list means "nincs ilyen napod". The **endpoint**
+  propagates it (`MEMORY_RETRIEVAL_UNAVAILABLE`, 500) and `MemorySearchPanel` renders a FAILURE
+  state, never "Nincs elég hasonló nap a memóriában"; the **chat tool** catches it and answers a
+  short honest Hungarian line — deliberately NOT `ToolText.NO_DATA`, which would be the same lie —
+  so one unreachable memory platform never fails the whole turn.
 
 **V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
 
