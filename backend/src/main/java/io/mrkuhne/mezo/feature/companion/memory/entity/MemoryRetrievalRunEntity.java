@@ -40,7 +40,7 @@ public class MemoryRetrievalRunEntity extends OwnedEntity {
 
     @NotNull
     @Size(max = 32)
-    @Pattern(regexp = "CHAT_AMBIENT|MORNING_BRIEFING|WEEKLY_MEMOIR|PREDICTION_EVIDENCE|REFLECTION|SIMILAR_DAYS")
+    @Pattern(regexp = "CHAT_AMBIENT|MORNING_BRIEFING|WEEKLY_MEMOIR|PREDICTION_EVIDENCE|REFLECTION|SIMILAR_DAYS|CHARACTER_EVIDENCE|EXTRACTION")
     @Column(name = "consumer_policy", nullable = false, length = 32)
     private String consumerPolicy;
 
