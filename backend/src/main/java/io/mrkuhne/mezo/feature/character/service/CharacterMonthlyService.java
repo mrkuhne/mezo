@@ -12,6 +12,9 @@ import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryContextBlock;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Duration;
 import java.time.Instant;
@@ -23,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +83,16 @@ public class CharacterMonthlyService {
      *  catalog has to a "no owner" catch-all for the monthly deep read. */
     private static final String CHAPTER_CLAIMS_EXPERT_KEY = "drill";
 
+    /** Memória mindenhol S10.2 (mezo-eq85.10): the memory-retrieval feature label {@link
+     *  #memoryBlock} uses (via {@link LlmCallContext#feature()}) — the EXISTING {@code character}
+     *  slug this surface's own top-level LLM calls already carry (via {@link
+     *  KonziliumProposalRound}/{@link KonziliumVerdictRound}), never a newly invented one. */
+    private static final LlmCallContext CONTEXT = new LlmCallContext("character", AUDIT_OP, null, null);
+
+    /** First N chars of the query text handed to memory retrieval — the {@code MemoirGenerator}
+     *  precedent ({@code firstChars}). */
+    private static final int MEMORY_QUERY_MAX_CHARS = 800;
+
     // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
     private final AppNotificationEmitter notificationEmitter;
     private final CharacterConferenceRepository conferenceRepository;
@@ -90,6 +105,14 @@ public class CharacterMonthlyService {
     private final CharacterService characterService;
     private final CharacterProperties properties;
     private final CharacterRunLog runLog;
+    /** Memória mindenhol S10.2: the {@code [Hosszú távú memória]} block — absent unless the
+     *  companion switch is on. */
+    private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+    // Self-injected proxy (the CharacterBootstrapService/LifeEventExtractionService idiom): `run`
+    // carries no @Transactional (the HAZARD in task-10-codebase-notes.md §4). The retrieval below
+    // runs with no transaction open; the actual persisting work is pulled into runKonzilium and
+    // invoked through this proxy — plain `this.runKonzilium(...)` would bypass Spring AOP.
+    private final ObjectProvider<CharacterMonthlyService> self;
 
     /**
      * Runs (or returns the already-run) monthly deep read for {@code owner}'s {@code monthStart}
@@ -97,7 +120,6 @@ public class CharacterMonthlyService {
      * live MONTHLY row for the month short-circuits to that row. Returns {@code null} — no row,
      * no LLM calls — when the owner has no ACTIVE claims yet (the honest empty dossier).
      */
-    @Transactional
     public CharacterConferenceEntity run(UUID owner, LocalDate monthStart) {
         Optional<CharacterConferenceEntity> existing =
                 conferenceRepository.findByCreatedByAndKindAndWeekStart(owner, MONTHLY, monthStart);
@@ -111,6 +133,33 @@ public class CharacterMonthlyService {
             return null;
         }
 
+        Map<UUID, CharacterDimensionEntity> dimensionsById = new HashMap<>();
+        for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
+            dimensionsById.put(dimension.getId(), dimension);
+        }
+        List<ExpertEvidence> evidence = buildEvidence(activeClaims, dimensionsById);
+
+        // Memória mindenhol S10.2: the retrieval runs HERE, with NO transaction open (the HAZARD
+        // in task-10-codebase-notes.md §4 — `run` used to be @Transactional itself). The query is
+        // the dimension's own claims text — reused from `activeClaims`, no extra table read.
+        String memoryQuery = firstChars(activeClaims.stream().map(CharacterClaimEntity::getText)
+                .collect(Collectors.joining(" ")), MEMORY_QUERY_MAX_CHARS);
+        MemoryContextBlock.Rendered mem = memoryBlock(owner, monthStart, memoryQuery);
+        List<ExpertEvidence> evidenceWithMemory = mem.block().isEmpty()
+                ? evidence
+                : evidence.stream().map(e -> e.withLine(mem.block(), "memory")).toList();
+
+        return self.getObject().runKonzilium(owner, monthStart, activeClaims, evidence, evidenceWithMemory);
+    }
+
+    /** The proposal/verdict rounds + persistence, in ONE transaction — called only through
+     *  {@link #self} (see its javadoc). {@code evidence} (WITHOUT the memory line) feeds the
+     *  run-log's expert-key bookkeeping; {@code evidenceWithMemory} is what the proposal round
+     *  actually sees. */
+    @Transactional
+    CharacterConferenceEntity runKonzilium(UUID owner, LocalDate monthStart,
+            List<CharacterClaimEntity> activeClaims, List<ExpertEvidence> evidence,
+            List<ExpertEvidence> evidenceWithMemory) {
         // Mirrors CharacterBootstrapService's fix-round-1 guard: a user whose dossier is otherwise
         // still empty (no dimension rows at all) must not silently drop an accepted NEW claim.
         // Seeded HERE — after the no-ACTIVE-claims return (final-review Finding M5: no CORE rows
@@ -118,19 +167,13 @@ public class CharacterMonthlyService {
         // proposal round, so an accepted claim always has somewhere to land.
         characterService.ensureCoreDimensions(owner);
 
-        Map<UUID, CharacterDimensionEntity> dimensionsById = new HashMap<>();
-        for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
-            dimensionsById.put(dimension.getId(), dimension);
-        }
-        List<ExpertEvidence> evidence = buildEvidence(activeClaims, dimensionsById);
-
         String periodLabel = "Havi mélyolvasás: " + monthStart;
         // includeActiveClaimsTrailer=false (fix round 1, mezo-1gim.6): this evidence is built
         // DIRECTLY from ACTIVE claims (buildEvidence, with age/last-movement metadata), so the
         // proposal round's own "Meglévő aktív állítások" trailer would otherwise re-render the
         // SAME claims a second time in one user message for any CORE-owning expert.
         KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
-                owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidence, false, MONTHLY_EVIDENCE_PHRASE);
+                owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidenceWithMemory, false, MONTHLY_EVIDENCE_PHRASE);
         // weekStart=null here (not monthStart): KonziliumVerdictRound only uses it to render a
         // "Hét: …" period label for the szkeptikus/integrátor prompts — a real week range would be
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path
@@ -176,6 +219,28 @@ public class CharacterMonthlyService {
 
         emitPortraitNotification(owner, monthStart, conference);
         return conference;
+    }
+
+    /** The {@code [Hosszú távú memória]} block for this monthly run, or {@link
+     *  MemoryContextBlock.Rendered#EMPTY} when the bean is absent, the {@code CHARACTER_EVIDENCE}
+     *  policy is disabled, or retrieval fails — {@link MemoryContextBlock#render} is itself
+     *  fail-open. {@code deep = true}: the monthly deep read is offline-shaped, not a chat turn. */
+    private MemoryContextBlock.Rendered memoryBlock(UUID userId, LocalDate asOf, String query) {
+        MemoryContextBlock block = memoryContextBlock.getIfAvailable();
+        if (block == null) {
+            return MemoryContextBlock.Rendered.EMPTY;
+        }
+        return block.render(userId, ConsumerPolicy.CHARACTER_EVIDENCE, query, asOf, true,
+                CONTEXT.feature(), AUDIT_OP, null);
+    }
+
+    /** First {@code maxChars} characters of {@code text} — the memory-query truncation every
+     *  Part-B surface uses ({@code MemoirGenerator.firstChars} precedent). */
+    private static String firstChars(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        return text.length() <= maxChars ? text : text.substring(0, maxChars);
     }
 
     /**
