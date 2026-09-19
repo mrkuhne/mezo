@@ -15,7 +15,8 @@ describe('MedalChip', () => {
   it('renders a clay medal glyph named in Hungarian for a RECORD medal', () => {
     render(<MedalChip medal={record} />)
     const chip = screen.getByRole('img', { name: 'Súly-rekord' })
-    expect(chip.querySelector('use')!.getAttribute('href')).toBe('#i-erme')
+    // mezo-ju4j6.11: a jel a SAJÁT agyag érem (`i-erem`), nem a korábbi érme-korong (`i-erme`)
+    expect(chip.querySelector('use')!.getAttribute('href')).toBe('#i-erem')
   })
 
   it.each([

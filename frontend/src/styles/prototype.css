@@ -2686,6 +2686,17 @@ button.itemrow { cursor: pointer; }
 .pobanner-cells .cell.now .cval { font-size:19px; }
 .pobanner-cells .cell.now .cval.up { color:var(--coral-deep); }
 .pobanner.po-rep .cell.now .cval.up { color:var(--sage-deep); }
+/* 320px: a két cella `white-space: nowrap`-es értékei egymásra csúsztak (a „MÚLT HÉT
+   102,5 × 9 · RIR 2" és a „MA A CÉL 105 × 10" egy sorban nem fér ki). Keskeny kijelzőn
+   egymás ALÁ kerülnek, és a függőleges elválasztó vízszintesre vált — a tartalom marad,
+   csak a tördelés enged (mezo-ju4j6.11). */
+@media (max-width: 360px) {
+  .pobanner-cells { flex-direction: column; }
+  .pobanner-cells .cell.now {
+    padding-left: 0; margin-left: 0; margin-top: 8px; padding-top: 8px;
+    border-left: 0; border-top: 1px solid var(--coral-deep);
+  }
+}
 
 /* ===== Napív S6 — Fuel accent vocabulary ===== */
 .pghead-np.sage .over { color: var(--sage-deep); }
@@ -13308,7 +13319,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .body-map-shape { transition: opacity 0.3s ease; }
 @media (prefers-reduced-motion: reduce) { .body-map-shape { transition: none; } }
 
-/* ── train mai titanium (mezo-88iwa.6, T5) ─────────────────────────────────
+/* ── train mai (mezo-88iwa.6 · visszaöltöztetve mezo-ju4j6.11) ─────────────
    A Mai (TrainTodayPage) Titán arca: a nap posztere a belső indító-gombbal, a „Vagy
    inkább" páros, a napi mozgás kcal-hozzájárulása és az izomhatás-kártya. Jóváhagyott
    vizuális referencia a prototípus:
@@ -13344,7 +13355,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    utility-jével (a Mai eyebrow-k szó szerinti áthúzott vonalként, 14px testszövegként
    renderelődtek volna) — innen a `tr-` prefix és a saját bázis-szabály, a `.fsx-overline`
    mintáját követve (:12570). */
-.tr-eyebrow { display: block; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--text-tertiary); }
+.tr-eyebrow { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-coral-ink); }
 
 /* — a nap posztere: van-e ma edzés, és mi az —
    Surfaces parity (mezo-fsz2r Task 3, audit §20.1 + §20.2): the prototype's poster is a
@@ -13366,21 +13377,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 4px 0 14px;
   margin-inline: 6px;
   padding: 20px 20px 18px;
-  --tr-accent: var(--tag-gym);
-  border: 1px solid #ffffff14;
-  border-radius: 26px;
-  background:
-    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, #ffffff0f, #ffffff05);
+  --tr-accent: var(--dv-coral);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border-radius: 22px;
+  box-shadow: var(--mz-shadow-coral);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tr-accent) 16%, var(--surface-card)),
+    color-mix(in srgb, var(--tr-accent) 5%, var(--surface-page)));
 }
 /* The live state is a BORDER RING in the prototype, not an inset shadow on a band. */
 .tr-day.is-live {
-  border-color: color-mix(in srgb, var(--tr-accent) 40%, transparent);
+  border-color: var(--dv-coral);
 }
 .tr-day.is-done {
-  background: linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 16%, transparent), #ffffff05);
+  background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage);
 }
-.tr-day .tr-eyebrow { color: var(--text-secondary); letter-spacing: .16em; }
+.tr-day .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
 .tr-day h2 {
   font-family: var(--ff-display); font-size: 27px; line-height: 1.06; font-weight: 700;
   letter-spacing: -.02em; margin: 8px 0 6px; max-width: 70%; color: var(--text-primary);
@@ -13389,8 +13400,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tr-day-status {
   position: absolute; top: 16px; right: 16px;
   font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  padding: 4px 9px; border-radius: 999px; color: var(--text-inverse);
-  background: color-mix(in srgb, var(--tr-accent) 85%, var(--surface-card));
+  padding: 4px 9px; border-radius: 999px; color: var(--mz-cell-coral-ink);
+  background: var(--mz-cell-coral-bg);
 }
 /* A csillagkép: egy kis MuscleChip a nap mai terhelésének minden érintett régiójából —
    nem egy nagy ikon, hanem egy sor apró, mert a poszter a NAPOT mutatja, nem egy gyakorlatot. */
@@ -13401,7 +13412,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    chip on top of it would read as a second, louder badge. The port kept only the loud
    `:first-child` rule, so production's poster pill stayed domain-filled
    (mezo-fsz2r Task 3 finding, adjudicated and ported in the Task 4 sweep). */
-.tr-day .tr-pills span:first-child { color: var(--text-secondary); border-color: #ffffff17; background: #ffffff08; }
+.tr-day .tr-pills span:first-child { color: var(--sub); border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
 
 /* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip).
    Translucent in the prototype (`#ffffff08` fill, `#ffffff17` border, train-pages.css:72):
@@ -13409,12 +13420,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    (mezo-fsz2r Task 3, audit §20.1). */
 .tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .tr-pills span {
-  font-size: 11px; letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
-  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 4px 11px; border-radius: 999px;
+  color: var(--sub); border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .tr-pills span:first-child {
-  color: var(--text-inverse); border-color: transparent;
-  background: color-mix(in srgb, var(--tr-accent) 82%, var(--surface-card));
+  color: var(--mz-cell-coral-ink); border: 0; box-shadow: none;
+  background: var(--mz-cell-coral-bg);
 }
 
 /* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében —
@@ -13428,9 +13439,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 22px;
   font: inherit; text-align: center; cursor: pointer;
-  color: var(--text-inverse);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--tr-accent, var(--sage)) 92%, var(--text-primary)), color-mix(in srgb, var(--tr-accent, var(--sage)) 70%, var(--sage-deep)));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--tr-accent, var(--sage)) 80%, transparent), 0 2px 0 #ffffff40 inset;
+  color: #fff;
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
   transition: transform var(--duration-fast, .15s) var(--ease-out, ease);
 }
 .tr-start:active { transform: scale(0.98); }
@@ -13442,14 +13453,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* The three tokenised states keep their own hues, but each regains the prototype's inner
    top highlight as its second shadow layer (mezo-fsz2r Task 3). */
 .tr-start.is-go {
-  color: var(--text-inverse);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--sage) 88%, var(--surface-card)), var(--sage-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--sage) 80%, transparent), 0 2px 0 #ffffff40 inset;
+  color: #fff;
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
 }
+/* A folytatás borostyán marad — ott a hue ÁLLAPOT (félbehagyott edzés), nem bőr. */
 .tr-start.is-resume {
-  color: var(--text-inverse);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 88%, var(--surface-card)), var(--amber-deep));
-  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--amber) 80%, transparent), 0 2px 0 #ffffff40 inset;
+  color: var(--ink);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 30%, var(--surface-card)),
+    color-mix(in srgb, var(--dv-amber) 10%, var(--surface-page)));
+  box-shadow: var(--mz-shadow-gold);
 }
 /* The reviewed state is the prototype's `.tr-start.is-done` (train-pages.css:16): a quiet
    graphite key with a BLACK lift and a fainter inner top highlight — `0 12px 26px -18px #000,
@@ -13458,10 +13471,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    finding, adjudicated in the Task 4 sweep). The house border stays: production's own quiet
    key needs an edge where the prototype's darker `#1a1b26` body supplied one. */
 .tr-start.is-review {
-  color: var(--text-primary);
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 12px 26px -18px #000, 0 1px 0 #ffffff14 inset;
+  color: var(--ink);
+  background: var(--surface-1);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -13472,8 +13485,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tr-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 16px; }
 .tr-alt button {
   display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px;
-  padding: 11px 12px; border-radius: 16px; border: 1px solid var(--border-subtle);
-  background: var(--surface-card); cursor: pointer; font: inherit; text-align: left;
+  padding: 11px 12px; border-radius: 18px; border: 0;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  cursor: pointer; font: inherit; text-align: left;
   color: var(--text-primary);
 }
 .tr-alt button small {
@@ -13490,21 +13504,24 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    They go back to transparent; giving the sections a real `.tr-card` parent is CONTENT
    work (mezo-edg42), not a surface fix. */
 .tr-energy {
-  margin: 0 0 14px;
+  margin: 0 0 14px; padding: 16px 16px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 22px;
+  background: var(--mz-wash-white); box-shadow: var(--mz-shadow);
 }
-.tr-energy .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
-.tr-energy h3 { margin: 4px 0 12px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
-.tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--tag-gym); }
-.tr-energy-main b { font-size: 22px; font-weight: 700; }
+.tr-energy .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
+.tr-energy h3 { margin: 6px 0 12px; font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--ink); }
+.tr-energy-main b { font-family: var(--ff-display); font-size: 24px; font-weight: 200; color: var(--faint); }
 .tr-energy-main strong {
-  font-family: var(--ff-display); font-size: 36px; font-weight: 700; letter-spacing: -.02em;
+  font-family: var(--ff-display); font-size: 40px; font-weight: 200; letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
 }
-.tr-energy-main small { font-size: 13px; color: var(--text-secondary); margin-left: 4px; }
+.tr-energy-main small { font-size: 18px; font-weight: 300; color: var(--faint); margin-left: 6px; }
 .tr-energy-split { display: grid; gap: 4px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
 .tr-energy-split span { display: flex; align-items: center; gap: 7px; }
 .tr-energy-split i { width: 9px; height: 9px; border-radius: 3px; }
-.tr-energy-split i.done { background: var(--tag-gym); }
-.tr-energy-split i.plan { background: color-mix(in srgb, var(--tag-gym) 28%, transparent); }
+.tr-energy-split i.done { background: var(--dv-coral); }
+.tr-energy-split i.plan { background: color-mix(in srgb, var(--dv-coral) 26%, transparent); }
 /* Őszinte üresség: nincs testsúly-adat → egy mondat, sosem hamis 0 kcal. */
 .tr-energy-empty { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
 .tr-energy-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
@@ -13512,17 +13529,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — hatás az izomzatra: a nap terhelése régiónként, szavakban —
    Same as `.tr-energy` above: no box in the prototype (train-pages.css:125). */
 .tr-mus {
-  margin: 0 0 14px;
+  margin: 0 0 14px; padding: 16px 16px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 22px;
+  background: var(--mz-wash-white); box-shadow: var(--mz-shadow);
 }
-.tr-mus .tr-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
-.tr-mus h3 { margin: 4px 0 14px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.tr-mus .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
+.tr-mus h3 { margin: 6px 0 14px; font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .tr-mus-row {
   display: grid; grid-template-columns: 30px 68px 1fr auto; align-items: center; gap: 10px;
   margin-top: 10px;
 }
 .tr-mus-row:first-of-type { margin-top: 0; }
 .tr-mus-art { width: 30px; height: 30px; display: grid; place-items: center; }
-.tr-mus-name { font-size: 13px; color: var(--text-primary); }
+.tr-mus-name { font-family: var(--ff-display); font-size: 13px; font-weight: 600; color: var(--ink); }
 /* Kétrétegű sáv: a halvány a TERVEZETT, a világos/fényes a MÁR MEGSZOLGÁLT terhelés —
    ugyanaz a `--w` szélesség-mechanika, mint a prototípusban (`.tr-mus-track i { width: var(--w) }`),
    `--mus-color` pedig soronként a `muscleColors.ts` régió-tokenje (inline style, mint a `--w`). */
@@ -13535,14 +13554,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 28%, transparent);
 }
 .tr-mus-track i.done {
-  background: var(--mus-color, var(--tag-gym));
-  box-shadow: 0 0 10px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 45%, transparent);
+  background: var(--mus-color, var(--dv-coral));
 }
 .tr-mus-word {
   font-size: 11px; color: var(--text-tertiary); justify-self: end; min-width: 74px; text-align: right;
 }
 .tr-mus-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
-/* ── /train mai titanium ───────────────────────────────────────────────────── */
+/* ── /train mai ────────────────────────────────────────────────────────────── */
 
 /* ── glassbox (mezo-88iwa.13, T12 Task 2 · re-dressed mezo-ju4j6.5) ──────────
    GlassBox (shared/ui/mozaik/GlassBox.tsx): a bottom-docked dialog card over a
@@ -13647,7 +13665,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /glassbox ──────────────────────────────────────────────────────────── */
 
-/* ── train session titanium (mezo-88iwa.7, T6 Task 2) ────────────────────────
+/* ── train session (mezo-88iwa.7 · visszaöltöztetve mezo-ju4j6.11) ───────────
    The active-workout LIST phase (ActiveWorkoutPage): a card per exercise, its
    set rows, the rest dock that never moves the page, the finish CTA, and the
    glass-card interiors (per-exercise menu, close confirmation, history +
@@ -13697,7 +13715,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    (fix wave C1): the dock is portalled to the phone frame and floats over this list, so
    without the reservation the last card and the finish CTA sat under it at max scroll. */
 .wo-list { display: flex; flex-direction: column; padding: 10px 16px 112px; }
-.wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid #c8e895; outline-offset: 2px; }
+.wo-list button:focus-visible, .wo-list input:focus-visible { outline: 2px solid var(--dv-coral); outline-offset: 2px; }
 
 /* — the day-level overload tally, at the head of the list (mezo-e1ii9 fix round 1) —
    Quiet by design: it is a caption for the stack below it, not a card competing with
@@ -13707,28 +13725,30 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-overload {
   display: flex; flex-direction: column; gap: 2px;
   margin: 0 2px 12px; padding: 9px 12px;
-  border: 1px solid #ffffff0e; border-left: 2px solid var(--amber, #e8c07d);
-  border-radius: 12px; background: #ffffff05;
+  border: 0; border-left: 3px solid var(--dv-amber);
+  border-radius: 14px; background: color-mix(in srgb, var(--dv-amber) 10%, var(--surface-card));
 }
-.wo-overload-title { font-size: 12px; font-weight: 700; color: #e6ead9; }
+.wo-overload-title { font-size: 12px; font-weight: 700; color: var(--ink); }
 /* The clay growth glyph that replaced the ⚡ emoji (mezo-e1ii9 fix wave) — inline with the
    words, baseline-nudged so it reads as part of the sentence, not as an icon slot. */
 .wo-overload-icon { vertical-align: -2px; margin-right: 5px; }
-.wo-overload-why { font-size: 10.5px; line-height: 1.4; color: #ffffff6b; }
+.wo-overload-why { font-size: 10.5px; line-height: 1.4; color: var(--sub); }
 /* The same strip carries the failed-start alert + its retry (mezo-e1ii9 fix round 1). */
-.wo-overload[role="alert"] { border-left-color: #e08a7d; }
+.wo-overload[role="alert"] { border-left-color: var(--dv-coral); }
 .wo-overload-retry {
   align-self: flex-start; margin-top: 6px; cursor: pointer;
   padding: 5px 13px; border-radius: 999px;
-  border: 1px solid #ffffff1f; background: #ffffff0c;
-  color: #e6ead9; font-size: 11px; font-weight: 700;
+  border: 0; background: var(--mz-cell-coral-bg);
+  color: var(--mz-cell-coral-ink); font-size: 11px; font-weight: 700;
 }
 .wo-overload-retry:disabled { opacity: .55; cursor: default; }
 
 /* — one card per exercise — */
 .wo-card {
-  border: 1px solid #ffffff10; border-radius: 22px; margin-bottom: 14px; padding: 14px 14px 10px;
-  background: linear-gradient(155deg, color-mix(in srgb, var(--ex-color) 7%, #ffffff07), #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 22px; margin-bottom: 14px; padding: 14px 14px 10px;
+  box-shadow: var(--mz-shadow);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--ex-color) 14%, var(--surface-card)),
+    color-mix(in srgb, var(--ex-color) 4%, var(--surface-page)));
 }
 .wo-card.is-complete { border-color: color-mix(in srgb, var(--ex-color) 34%, transparent); }
 .wo-card.is-skipped { opacity: .62; border-style: dashed; }
@@ -13736,38 +13756,40 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-card-art, .gl-card .wo-glass-head .wo-card-art {
   flex: 0 0 auto;
   width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px;
-  background: color-mix(in srgb, var(--ex-color) 13%, #ffffff06);
+  background: color-mix(in srgb, var(--ex-color) 16%, var(--surface-card));
   border: 1px solid color-mix(in srgb, var(--ex-color) 22%, transparent);
 }
 .wo-card-art .icon { width: 40px; height: 40px; }
 .wo-card-copy { display: grid; gap: 2px; min-width: 0; }
 .wo-card-copy strong { font-size: 17px; font-weight: 500; }
-.wo-card-copy small { font-size: 9px; letter-spacing: .16em; color: #ffffff5c; margin-top: 3px; }
+.wo-card-copy small { font-size: 9px; letter-spacing: .16em; color: var(--sub); margin-top: 3px; }
 .wo-card-menu {
   flex: 0 0 auto; width: 32px; height: 32px; cursor: pointer;
-  border: 1px solid #ffffff14; border-radius: 11px; background: #ffffff06;
-  color: #cdd4c2; font-size: 17px; line-height: 1;
+  border: 0; border-radius: 12px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--sub); font-size: 17px; line-height: 1;
 }
 .wo-card-log {
   margin-left: auto; width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer;
-  border: 1px solid color-mix(in srgb, var(--ex-color) 26%, #ffffff14); border-radius: 12px;
-  background: color-mix(in srgb, var(--ex-color) 9%, #ffffff05);
+  border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--border-subtle);
+  background: var(--surface-1);
 }
 .wo-card-log .icon { width: 24px; height: 24px; }
 
 .wo-note {
   display: flex; gap: 8px; align-items: flex-start; width: 100%; margin: 8px 0 0; padding: 10px 12px;
-  text-align: left; cursor: pointer; color: #ded8c6; font-size: 12px; line-height: 1.5;
-  border: 1px dashed #ffffff20; border-radius: 14px; background: #ffffff05;
+  text-align: left; cursor: pointer; color: var(--sub); font-size: 12px; line-height: 1.5;
+  border: 1.2px dashed var(--divider); border-radius: 14px; background: transparent;
 }
 .wo-note .icon { width: 18px; height: 18px; flex: 0 0 auto; }
 
 .wo-cue {
   display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 12px; padding: 11px 12px;
-  border: 1px solid #bca6f125; border-radius: 14px; background: linear-gradient(115deg, #bca6f110, #bca6f103);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 14px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 14%, var(--surface-card)), var(--surface-card));
 }
 .wo-cue .icon { width: 20px; height: 20px; flex: 0 0 auto; }
-.wo-cue p { margin: 0; font-size: 11.5px; line-height: 1.6; color: #bbb1c9; }
+.wo-cue p { margin: 0; font-size: 11.5px; line-height: 1.6; color: var(--sub); }
 
 /* — set rows —
    The header strip and EVERY row share this one grid (# · KG · REP · RIR · ✓ · verdict),
@@ -13778,7 +13800,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: grid; grid-template-columns: 24px 1fr 1fr 46px 38px 22px;
   gap: 7px; align-items: center;
 }
-.wo-rows-head { padding: 4px 2px 6px; font-size: 8px; letter-spacing: .1em; color: #6f7d77; text-align: center; }
+.wo-rows-head { padding: 4px 2px 6px; font-size: 8.5px; font-weight: 700; letter-spacing: .14em; color: var(--faint); text-align: center; }
 .wo-rows-head span:first-child { text-align: left; }
 .wo-row {
   /* A done row renders as a <button>: without an explicit width a button grid
@@ -13787,31 +13809,34 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   width: 100%; box-sizing: border-box;
   font: inherit; color: inherit; text-align: inherit;
   padding: 6px 2px; margin: 4px 0; border-radius: 12px;
-  border: 1px solid transparent; background: #ffffff03;
+  border: 0; background: transparent;
 }
 .wo-row.is-done { background: color-mix(in srgb, var(--ex-color) 9%, transparent); border-color: color-mix(in srgb, var(--ex-color) 26%, transparent); }
-.wo-idx { font-size: 12px; color: #8d9686; text-align: center; }
+.wo-idx { font-size: 12px; color: var(--faint); text-align: center; font-variant-numeric: tabular-nums; }
 
 .wo-field { display: block; }
 .wo-field input {
   /* 44px minimum: the row's kg / rep / RIR fields are the workout's primary touch
      targets, so they clear the house floor even at the prototype's column widths. */
   width: 100%; min-width: 0; min-height: 44px; appearance: textfield; text-align: center; padding: 9px 2px;
-  border: 1px solid #ffffff12; border-radius: 10px; background: #090e1366;
-  color: #edf6dc; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums;
+  border: 0; border-radius: 12px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--ink); font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
-.wo-field.small input { font-size: 13px; color: #c6cfba; }
+.wo-field.small input { font-size: 13px; color: var(--sub); }
 .wo-field input::-webkit-inner-spin-button { appearance: none; }
-.wo-row.is-done .wo-field input { color: #cad7b8; border-color: transparent; background: #ffffff05; }
+.wo-row.is-done .wo-field input { color: var(--ink); border-color: transparent; background: transparent; box-shadow: none; }
 .wo-check {
   width: 38px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 16px;
-  border: 1px solid #ffffff1c; background: #ffffff06; color: #ffffff3d;
+  display: grid; place-items: center;
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--faint);
 }
 /* A DONE row's tick is a plain span (never a pressable control), so it can't carry
    `aria-pressed` — `.is-checked` gives it the identical filled look (fix wave I5). */
 .wo-check[aria-pressed="true"], .wo-check.is-checked {
-  border-color: transparent; color: #141a0c;
-  background: color-mix(in srgb, var(--ex-color) 88%, #fff);
+  border-color: transparent; color: var(--mz-cell-sage-ink); box-shadow: none;
+  background: var(--mz-cell-sage-bg);
   box-shadow: 0 0 14px color-mix(in srgb, var(--ex-color) 40%, transparent);
 }
 /* The full-width picker row under the cursor row (side L/B/R for isolation work). The
@@ -13820,7 +13845,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-pick { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .wo-pick > .wo-check { flex: 1; min-width: 0; width: auto; min-height: 44px; padding: 0; }
 .wo-pick .wo-pick-key {
-  flex: 0 0 auto; font-size: 8px; letter-spacing: .14em; color: #6f7d77; margin-right: 2px;
+  flex: 0 0 auto; font-size: 8px; letter-spacing: .14em; color: var(--faint); margin-right: 2px;
 }
 /* `display: grid; place-items: center` is the prototype's own (session.css:103) — restored
    (mezo-fsz2r Task 3, audit §20.2). The one case the prototype never has is TWO medals in
@@ -13833,7 +13858,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-verdict .icon { width: 20px; height: 20px; }
 /* Icon-only cell (fix wave I2): one compact glyph sized to the 22px box — the sentence
    ("cél alatt" …) lives in the cell's title/aria-label, never as overflowing text. */
-.wo-verdict .wkx-stat-ok, .wo-verdict .wkx-stat-dev { font-size: 12px; line-height: 1; }
+.wo-verdict .wkx-stat-ok, .wo-verdict .wkx-stat-dev { font-size: 14px; line-height: 1; }
+/* A saját agyag verdikt-jelek (trend fel/le, érem) — 24px, mert a korábbi 10-12px-es
+   szöveg-glifa és a 18px-es korong is olvashatatlan volt ebben a cellában (owner 2026-09-19). */
+.wo-verdict-mark { display: grid; place-items: center; }
+.wo-verdict-mark svg { width: 24px; height: 24px; }
+/* Egy szett TÖBB rekordot is hozhat (súly + becsült maximum): ilyenkor a jelek egymás mellé
+   kerülnek, és 24px-en kilógnának a cellából — a párosnál eggyel kisebb méret a helyes. */
+.wo-verdict-mark:not(:only-child) svg { width: 18px; height: 18px; }
 /* A set can earn more than one RECORD medal (weight + e1RM on the same row). Two 18px
    discs don't fit a 22px cell side by side, so they STACK with an overlap — the cell
    stays exactly 22px wide and never scrolls. */
@@ -13850,36 +13882,37 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-finish-art .icon { width: 34px; height: 34px; }
 .wo-finish-glow {
   position: absolute; right: -30px; top: -46px; width: 150px; height: 150px; border-radius: 50%;
-  pointer-events: none; background: radial-gradient(circle, #ffffff1f, transparent 66%);
+  display: none;
 }
 .wo-finish .chip-sheen {
   position: absolute; inset: 0 auto 0 -40%; width: 34%; transform: skewX(-18deg);
-  background: linear-gradient(90deg, #ffffff00, #ffffff4d, #ffffff00);
+  display: none;
 }
 
 /* Nothing logged — this is a skip, and it looks like one. */
 .wo-finish.is-skip {
-  color: #b9b4c4; border-color: #ffffff1a; background: linear-gradient(135deg, #24262e, #191a21);
+  color: var(--sub); border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .wo-finish.is-skip .wo-finish-art .icon { width: 30px; height: 30px; opacity: .8; }
 .wo-finish.is-skip .chip-sheen, .wo-finish.is-skip .wo-finish-glow { display: none; }
 
 /* Partial — the gold road to the rating. */
 .wo-finish.is-partial {
-  color: #f6ecd4; border-color: #d9c39555;
-  background: radial-gradient(120% 160% at 88% 0%, #ffb34728, transparent 58%), linear-gradient(135deg, #2a2519, #1a1a22 62%, #16181f);
-  box-shadow: 0 14px 32px -20px #ff9a4a66, 0 1px 0 #ffffff1f inset;
+  color: var(--ink); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 26%, var(--surface-card)),
+    color-mix(in srgb, var(--dv-amber) 8%, var(--surface-page)));
+  box-shadow: var(--mz-shadow-gold);
 }
-.wo-finish.is-partial .wo-finish-art .icon { filter: drop-shadow(0 0 12px #ffbb5a66); }
-.wo-finish.is-partial .wo-finish-glow { background: radial-gradient(circle, #ffc76a3d, transparent 66%); }
+
+
 
 /* Everything ticked — green, and it earned it. */
 .wo-finish.is-full {
-  color: #17210c; border-color: transparent;
-  background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
-  box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
+  color: #fff; border: 0;
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
 }
-.wo-finish.is-full .wo-finish-glow { background: radial-gradient(circle, #ffffff59, transparent 66%); }
+
 
 @media (prefers-reduced-motion: no-preference) {
   .wo-finish.is-partial .chip-sheen, .wo-finish.is-full .chip-sheen { animation: wo-sheen 4.2s ease-in-out 1.6s infinite; }
@@ -13900,37 +13933,37 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   width: 100%; max-width: 428px; margin: 0 auto;
   display: flex; align-items: center; gap: 12px; height: 88px;
   padding: 0 16px calc(6px + env(safe-area-inset-bottom));
-  border-top: 1px solid #ffffff12;
-  background: linear-gradient(#0c1014cc, #0c1014f5 40%, #0c1014);
-  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--divider);
+  background: var(--surface-1);
+  box-shadow: 0 -17px 31px -17px rgba(43, 33, 24, 0.28);
 }
-.wo-dock.is-resting { border-top-color: #8ed2e83d; }
+.wo-dock.is-resting { border-top-color: color-mix(in srgb, var(--dv-sky) 45%, transparent); }
 .wo-dock-ring { position: relative; width: 44px; height: 44px; flex: 0 0 auto; }
 .wo-dock-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
 .wo-dock-ring circle { fill: none; stroke-width: 4; }
-.wo-dock-ring .track { stroke: #ffffff14; }
+.wo-dock-ring .track { stroke: var(--surface-recess); }
 .wo-dock-ring .fill {
-  stroke: #c8e895; stroke-linecap: round;
+  stroke: var(--dv-coral); stroke-linecap: round;
   stroke-dasharray: var(--ring) 100; transition: stroke-dasharray .3s linear;
 }
-.wo-dock.is-resting .wo-dock-ring .fill { stroke: #8ed2e8; }
+.wo-dock.is-resting .wo-dock-ring .fill { stroke: var(--dv-sky); }
 .wo-dock-ring b {
   position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: 13px; font-weight: 500; color: #d6e2c4;
+  font-size: 13px; font-weight: 500; color: var(--ink);
 }
 .wo-dock-copy { display: grid; gap: 2px; min-width: 0; }
-.wo-dock-copy small { font-size: 8px; letter-spacing: .14em; color: #8c9a86; }
-.wo-dock.is-resting .wo-dock-copy small { color: #8fbecd; }
-.wo-dock-copy strong { font-size: 21px; font-weight: 400; font-variant-numeric: tabular-nums; color: #e4ecd8; }
-.wo-dock.is-resting .wo-dock-copy strong { color: #d6f0f8; }
+.wo-dock-copy small { font-size: 8.5px; font-weight: 700; letter-spacing: .14em; color: var(--faint); }
+.wo-dock.is-resting .wo-dock-copy small { color: var(--mz-cell-sky-ink); }
+.wo-dock-copy strong { font-family: var(--ff-display); font-size: 22px; font-weight: 200; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.wo-dock.is-resting .wo-dock-copy strong { color: var(--mz-cell-sky-ink); }
 .wo-dock-acts { margin-left: auto; display: flex; gap: 7px; }
 .wo-dock-acts button {
-  padding: 10px 12px; font-size: 12px; cursor: pointer; color: #cfeaf3;
-  border: 1px solid #8ed2e840; border-radius: 999px; background: #8ed2e810;
+  padding: 10px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--mz-cell-sky-ink);
+  border: 0; border-radius: 999px; background: var(--mz-cell-sky-bg);
 }
 .wo-dock-finish {
-  margin-left: auto; padding: 12px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #27351b;
-  border: 0; border-radius: 999px; background: linear-gradient(135deg, #e1f8b5, #b6d881);
+  margin-left: auto; padding: 12px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #fff;
+  border: 0; border-radius: 999px; background: var(--gradient-cta); box-shadow: var(--shadow-cta);
 }
 .wo-dock-finish:disabled { opacity: .35; }
 
@@ -13986,18 +14019,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gl-card .wo-close-cta, .cer-cta .wo-close-cta {
   position: relative; display: flex; align-items: center; gap: 13px; width: 100%; overflow: hidden;
   margin: 6px 0 10px; padding: 15px 18px; text-align: left; cursor: pointer; border: 0; border-radius: 20px;
-  color: #17210c;
-  background: linear-gradient(135deg, #eaffc0 0%, #c8e895 42%, #9dc169 100%);
-  box-shadow: 0 16px 34px -18px #c8e89599, 0 0 0 1px #ffffff2e inset, 0 2px 0 #ffffff5e inset;
+  color: #fff;
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
 }
-.gl-card .wo-close-cta.is-done, .cer-cta .wo-close-cta.is-done { color: #eae6f8; background: linear-gradient(135deg, #303247, #1b1c27); box-shadow: 0 14px 30px -20px #000, 0 0 0 1px #ffffff17 inset; }
+.gl-card .wo-close-cta.is-done, .cer-cta .wo-close-cta.is-done { color: var(--sub); background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .gl-card .wo-close-cta strong, .cer-cta .wo-close-cta strong { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
 .gl-card .wo-close-cta small, .cer-cta .wo-close-cta small { display: block; font-size: 11.5px; margin-top: 2px; opacity: .72; }
 .gl-card .wo-close-art, .cer-cta .wo-close-art { flex: 0 0 auto; }
 .gl-card .wo-close-art .icon, .cer-cta .wo-close-art .icon { width: 34px; height: 34px; }
 .gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen {
   position: absolute; inset: 0 auto 0 -40%; width: 32%; transform: skewX(-18deg);
-  background: linear-gradient(90deg, #ffffff00, #ffffff5c, #ffffff00);
+  display: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .gl-card .wo-close-cta .chip-sheen, .cer-cta .wo-close-cta .chip-sheen { animation: wo-sheen 3.6s ease-in-out 1.2s infinite; }
@@ -14006,8 +14039,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* The ceremony's step two ends with the same secondary control (mezo-e1ii9): the
    prototype's `Vissza az értékeléshez` back to step one. */
 .gl-card .wo-secondary, .cer-cta .wo-secondary {
-  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 12.5px; color: #bcb2c8;
-  border: 1px solid #ffffff16; border-radius: 18px; background: #ffffff04;
+  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--sub);
+  border: 0; border-radius: 18px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 /* The glass half of the pair only (mezo-ju4j6.5) — the ceremony keeps its Titanium
    ink until Task 7c (mezo-ju4j6.13) re-dresses `.cer-*` to polished stone. */
@@ -14099,13 +14132,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .gl-card .wo-rec-track i {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
-  background: linear-gradient(90deg, #b89757, #ffe9b5);
+  background: linear-gradient(90deg, #B89757, #FFE9B5);
 }
-.gl-card .wo-rec.is-beaten .wo-rec-track i { background: linear-gradient(90deg, #ffd98a, #fff6e0); box-shadow: 0 0 10px #ffd98a70; }
+.gl-card .wo-rec.is-beaten .wo-rec-track i { background: linear-gradient(90deg, #FFD98A, #FFF6E0); }
 .gl-card .wo-rec-now { grid-column: 2 / -1; font-size: 10px; color: var(--text-secondary); }
 .gl-card .wo-rec-now:empty { display: none; }
 .gl-card .wo-rec-now b { font-size: 9px; letter-spacing: .12em; color: var(--mz-cell-amber-ink); }
-/* ── /train session titanium ─────────────────────────────────────────────── */
+/* ── /train session ──────────────────────────────────────────────────────── */
 
 /* ── train ceremony titanium (mezo-88iwa.8, T7 Task 2) ────────────────────────
    The workout-close ceremony: act one's score reveal (stars, gold-stone
@@ -14882,7 +14915,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    AMIT NEM: a prototípus beégetett `var(--domain-color)`-ját és sötét
    (#ffffffXX / #0f1218 stb.) hexeit — a ház a train-domén MEGLÉVŐ tónus-
    tokenjeit használja (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.tr-day`
-   is visel a train mai titanium blokkban), a csúcs/deload jelzésekhez a ház
+   is visel a train mai blokkban), a csúcs/deload jelzésekhez a ház
    `--amber`/`--amber-deep` szemantikus tokenjeit, az izom-specifikus
    színekhez pedig a meglévő `--mus-color` inline custom property-t
    (muscleColors.ts, ugyanaz, amit a `.tr-mus-track` is visel) — így a lapok

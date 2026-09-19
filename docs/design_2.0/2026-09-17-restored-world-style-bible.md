@@ -811,3 +811,32 @@ user came to tap. The component takes the NAV domain id (`nap` · `train` · `fu
 `me`) rather than a symbol name, and `navModel`'s `NavDomain.id` is typed to that union: a new
 domain cannot ship without a figure, which is exactly how the Én row shipped blank in the first
 integration pass (`me` vs `boop-en`).
+
+
+## Appendix C — the Train re-dress (`mezo-ju4j6.11`, Phase 7a)
+
+Train · Mai (`tr-`) and the in-workout list (`wo-`) were the most literal-bound blocks in the
+file: together they carried 133 hardcoded colours, nearly all of them translucent whites
+(`#ffffff05`…`#ffffff40`) or dark grounds (`#0c1014` dock, `#090e13` input) drawn for the
+Titanium night. On the restored light ground they were either invisible or a black strip on
+cream. Three rules came out of the pass:
+
+11. **A translucent white is not a material — it is a bet on a dark ground.** Every
+   `#ffffffXX` fill became `var(--surface-1)` (or a §2.2 A wash), every `#ffffffXX` border
+   became `inset 0 0 0 1px var(--border-subtle)` or the 0.5px hairline, and every light ink
+   (`#e6ead9`, `#c8e895`, `#edf6dc`) became `--ink`/`--sub`/`--faint`. The block guards now
+   assert no `#ffffffXX` can return.
+12. **The docked bar is lit from below.** `.wo-dock` is `var(--surface-1)` with a hairline top
+   border and an UPWARD lift (`0 -17px 31px -17px rgba(43,33,24,.28)`) — the §7.4 recipe. The
+   Titanium version was a blurred near-black glass strip; on a cream page it read as a hole.
+13. **The one big action is the house primary, not a tinted tile.** Train's start CTA, the
+   finish CTA, the dock's finish and the confirm glass's „Befejezem így" all take
+   `var(--gradient-cta)` + `var(--shadow-cta)`. A wash tile on top of a washed poster
+   disappears; the primary is the one place the restored world still shouts.
+
+**Owner-driven detail work in the same pass** (2026-09-19): the set row's verdict marks were a
+10px text glyph (`▲`/`▼`) and an 18px disc wrapping a 14px coin — unreadable in a 22px cell. They
+are now three OWN clay symbols at 24px — `i-trend-fel` (sage, up), `i-trend-le` (amber, down),
+`i-erem` (gold medal, coral ribbon), drawn to the §6.1 recipe and added to the sprite. The done
+row's tick was also mis-centred (its box had no grid); `.wo-check` centres now. Two records on one
+set drop to 18px so the pair still fits the cell.

@@ -40,6 +40,10 @@ export type ClayIconName =
   // Fuel · vércukor-válasz (mezo-6mi43): a negyedik Minőség-kártya és az üvegdoboza arca —
   // a prototípus „domb" metaforája (alapszint-tengely + válasz-görbe + csúcs-kavics).
   | 'i-vercukor'
+  // Edzés-verdikt + rekord (mezo-ju4j6.11): a szett sorának három jele. A Titán-kor szöveg-
+  // glifákat (▲/▼) és egy sárga korongot viselt itt — ezek a ház SAJÁT agyag szimbólumai,
+  // és nagyobbak: a 22px-es cellában a korábbi jel olvashatatlan volt (owner 2026-09-19).
+  | 'i-trend-fel' | 'i-trend-le' | 'i-erem'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'
