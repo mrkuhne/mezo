@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppHeader } from '@/app/AppHeader'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
@@ -7,6 +7,7 @@ import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { MealCeremonyProvider } from '@/features/fuel/MealCeremonyProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
@@ -16,6 +17,7 @@ import { useTodayScenario, useScheduleSnapshotWriter } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
 
 export function AppLayout() {
+  const navigate = useNavigate()
   const scenario = useTodayScenario()
   // App-open notification-schedule snapshot (N3, bd mezo-h4wp.6.3): AppLayout is the root
   // route element (children of `/`) and, unlike a page under the Outlet, mounts exactly once
@@ -82,6 +84,10 @@ export function AppLayout() {
       <CircadianTheme />
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
+          {/* A kaja-ünneplés EGY gazdája (mezo-bqwyo): a naplózás négy felületről indulhat, és
+              mindegyik bezárja magát a mentés pillanatában — a ceremónia ezért felettük lakik,
+              ugyanúgy, ahogy a szintlépés-réteg. A „Részletek" útvonala a shellé. */}
+          <MealCeremonyProvider onDetails={(mealId) => navigate(`/fuel/etkezes/${mealId}/ertekeles`)}>
           <LevelUpProvider>
             {/* Mezo-kalauz motor (mezo-gb1s.1): egy példány, route-váltásra dönt, a sheetet ide
                 portálja (.phone-screen). A fejléc „?" gombja és a Beállítások ugyanezt a
@@ -103,6 +109,7 @@ export function AppLayout() {
             {!hideFab && <QuickLogFab />}
             <FloatingReturnLayer />
           </LevelUpProvider>
+          </MealCeremonyProvider>
         </ToastProvider>
       </PhoneFrame>
     </ArrivalProvider>

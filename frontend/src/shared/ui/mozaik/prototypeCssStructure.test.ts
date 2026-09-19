@@ -850,3 +850,53 @@ describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', 
     expect(css).not.toContain('infinite')
   })
 })
+
+/**
+ * A kaja-ünneplés blokkja (mezo-bqwyo). A ceremónia MINTÁJA canon (ceremony-pattern doc), az
+ * ANYAGA viszont a visszaállított világé — ezért ugyanaz az őr, mint a re-dress szeleteknél:
+ * a szekció regisztrálva van, tényleg viseli az `fcx-` családot, és a Titán-anyagok nem
+ * tudnak visszaszivárogni rá.
+ */
+describe('the fuel-ceremony section is registered and wears the restored materials (mezo-bqwyo)', () => {
+  const START_MARKER = '── fuel-ceremony ('
+  const END_MARKER = '── /fuel-ceremony '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
+
+  test('both the opening and the closing comment markers are present, in order', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+  })
+
+  test('the section carries the fcx- family, not just the markers', () => {
+    for (const cls of ['.fcx-screen', '.fcx-sky', '.fcx-stars', '.fcx-bar', '.fcx-fill',
+      '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
+      expect(section(), `${cls} missing from the fuel-ceremony section`).toContain(cls)
+    }
+  })
+
+  test('no Titanium material the style bible forbids', () => {
+    const css = rules()
+    expect(css).not.toContain('var(--surface-glass)')
+    expect(css).not.toContain('backdrop-filter')
+    expect(css).not.toContain('drop-shadow')
+    expect(css).not.toContain('rgba(0, 0, 0,')
+    expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
+  })
+
+  test('the bar fill IS the polished gold stone, and no text sits on it (§5 + minta §Materials)', () => {
+    const css = rules()
+    expect(css).toContain('#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%')
+    // a kitöltés szélességét a rAF-menet írja — CSS-átmenet nélkül (a fagyott webview tanulsága)
+    expect(css).toMatch(/\.fcx-fill \{[^}]*width: calc\(var\(--p, 0\) \* 100%\)/)
+    expect(css).not.toMatch(/\.fcx-fill \{[^}]*transition/)
+  })
+
+  test('the ignition honours reduced motion', () => {
+    const css = rules()
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+})

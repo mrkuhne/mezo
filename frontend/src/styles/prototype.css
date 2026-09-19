@@ -11125,6 +11125,97 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
 .am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
 
+/* ── fuel-ceremony (mezo-bqwyo) ───────────────────────────────────────────
+   A naplózást lezáró ünneplés. A ceremónia BIRTOKOLJA a képernyőt (minta:
+   docs/design_2.0/2026-09-15-ceremony-pattern.md): teljes felület, egy koreográfia,
+   egy kiút. A minta MARAD canon, az ANYAG viszont a visszaállított világé
+   (stíluskönyv §5): csiszolt kő és arany, nem titán üveg — se hideg grafit, se
+   backdrop-filter, se emoji.
+
+   Két felvonás EGY képernyőn: (1) gyújtás — a kő-sáv fut, a számlálók pörögnek, a
+   csillagok balról jobbra gyulladnak; (2) olvasat — a verdikt, az étkezés neve és a
+   pontszám `.is-told`-dal úszik be. A `--p` haladást a komponens rAF-menete írja
+   (CSS-átmenet nem elég: háttérbe tett webview a frissen indított átmenetet 0-n
+   fagyasztja), ezért itt NINCS width-transition a sávon.
+
+   Csökkentett mozgás: a komponens menet nélkül, azonnal a végállapotot festi; a
+   `.is-told` úszás itt is kivezetve. */
+.fcx-screen { position: absolute; inset: 0; z-index: 240; display: flex; flex-direction: column;
+  justify-content: center; gap: 18px; padding: 28px 24px 30px;
+  background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 42%); }
+
+.fcx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+/* A hős atmoszférája: halo-sáv (§2.2 C), keret és árnyék nélkül — a `--p` erősíti. */
+.fcx-sky { position: absolute; inset: -12% -18% 30%; pointer-events: none; border-radius: 50%;
+  background: var(--halo-amber); opacity: calc(0.35 + var(--p, 0) * 0.65); }
+.fcx-eyebrow { position: relative; font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-cell-gold-ink); }
+
+/* Öt csillag, balról jobbra gyulladva. Kioltva halk, kigyulladva teljes — a „félállás"
+   a küszöb alatti .1-es ablak, hogy a gyújtás ne pattanjon. */
+.fcx-stars { position: relative; display: flex; gap: 10px; }
+.fcx-stars i { position: relative; display: grid; place-items: center; width: 46px; height: 46px;
+  opacity: 0.28; transform: scale(0.86); transition: opacity 0.25s ease, transform 0.25s ease; }
+.fcx-stars i.is-half { opacity: 0.6; transform: scale(0.94); }
+.fcx-stars i.is-lit { opacity: 1; transform: scale(1); }
+.fcx-aura { position: absolute; inset: -18%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--dv-amber) 45%, transparent) 0%, transparent 62%);
+  opacity: 0; transition: opacity 0.3s ease; }
+.fcx-stars i.is-lit .fcx-aura { opacity: 1; }
+
+/* Az arany „Ritmus" kő-sáv: a kitöltés a csiszolt kő receptje (minta §Materials),
+   a fej egy halk fényfolt. Szöveg SOSEM kerül a kőre. */
+.fcx-bar { position: relative; width: min(280px, 82%); height: 12px; border-radius: 999px;
+  overflow: hidden; background: var(--surface-recess);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.fcx-fill { position: absolute; inset: 0; width: calc(var(--p, 0) * 100%); border-radius: 999px;
+  background: linear-gradient(145deg, #FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%); }
+.fcx-comet { position: absolute; top: 50%; left: calc(var(--p, 0) * 100%); width: 16px; height: 16px;
+  transform: translate(-60%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 245, 214, 0.9) 0%, transparent 68%); }
+
+/* Három számláló — a menet írja a számokat, a React csak a kezdő/vég állapotot. */
+.fcx-counters { display: flex; gap: 18px; }
+.fcx-counters span { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.fcx-counters i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.fcx-counters strong { font-family: var(--ff-display); font-size: 24px; font-weight: 200;
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fcx-counters small { font-size: 10px; font-weight: 500; color: var(--sub); }
+
+/* Második felvonás: az olvasat beúszik. */
+.fcx-result { display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-align: center; opacity: 0; transform: translateY(8px); }
+.fcx-result.is-told { opacity: 1; transform: none; transition: opacity 0.5s ease, transform 0.5s ease; }
+.fcx-verdict { margin: 0; font-family: var(--ff-display); font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--ink); }
+.fcx-meal { margin: 0; font-size: 12px; font-weight: 500; color: var(--sub); }
+.fcx-score { display: inline-flex; align-items: center; gap: 10px; margin-top: 6px;
+  padding: 9px 14px; border-radius: 22px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.fcx-score-copy { display: flex; flex-direction: column; align-items: flex-start; }
+.fcx-score-copy strong { font-family: var(--ff-display); font-size: 26px; font-weight: 200;
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fcx-score-copy small { font-size: 12px; font-weight: 400; color: var(--sub); }
+
+/* A kiút a hüvelykujj mellett: egy elsődleges gomb, alatta a halk visszaút. */
+.fcx-foot { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 18px; }
+.fcx-cta { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px;
+  padding: 12px 15px; border-radius: 22px; text-align: left; color: var(--ink);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.fcx-cta-art { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.fcx-cta strong { display: block; font-family: var(--ff-display); font-size: 15px; font-weight: 600; }
+.fcx-cta small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--sub); }
+.fcx-close { min-height: 48px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fcx-stars i, .fcx-aura, .fcx-result { transition: none; }
+}
+/* ── /fuel-ceremony ───────────────────────────────────────────────────────── */
+
 /* ── boop (mezo-ju4j6.15) ────────────────────────────────────────────────
    A kabalafigura mozdulatai. A figura példányonként INLINE SVG (lásd
    `shared/ui/clay/boop/Boop.tsx`), ezért ezek a szabályok tényleg az EGYES példányra

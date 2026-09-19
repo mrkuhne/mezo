@@ -50,7 +50,12 @@ describe('useFuelDay (mock mode)', () => {
     // ing-zab per 100, kcal 372 → round(372 × 70/100) = 260
     expect(added.mealItems[0].contribution.kcal).toBe(260)
     expect(added.kcal).toBe(260)
-    expect(added.score).toBeNull()
+    // mezo-bqwyo: a mock a MENTÉSKOR pontoz, ahogy az éles (ADR 0006) — korábban `null`-t adott,
+    // vagyis egy aszinkron-értékelős világot modellezett, ami a termékben már nem létezik (a napló
+    // örökre „folyamatban" maradt, és a naplózást lezáró ünneplés demóban sosem nyílt meg).
+    // Az érték szándékosan egyszerű DEMÓ-szám a makrókból, nem az éles pontozó.
+    expect(added.score).toBeGreaterThan(0)
+    expect(added.score).toBeLessThanOrEqual(1)
   })
 
   it('deleteMeal removes a meal from the ["fuelDay"] cache', async () => {
@@ -99,7 +104,7 @@ describe('useFuelDay (mock mode)', () => {
     expect(added.mealItems[0].source).toBe('estimate')
     expect(added.mealItems[0].contribution.kcal).toBe(450)
     expect(added.kcal).toBe(450)
-    expect(added.score).toBeNull()
+    expect(added.score).toBeGreaterThan(0) // demó-pontszám íráskor (lásd fentebb, mezo-bqwyo)
   })
 })
 
@@ -137,7 +142,13 @@ describe('useFuelDay (real mode)', () => {
     let posted = false
     server.use(http.post(`${API_BASE}/api/meal`, async () => {
       posted = true
-      return HttpResponse.json({ id: 'new' }, { status: 201 })
+      // mezo-bqwyo: a POST TELJES MealResponse-t ad vissza (a kliens ebből olvassa az íráskor
+      // született pontszámot) — egy csonk `{id}` a mappelésen hasalna el, és a mutáció
+      // elutasítana, vagyis ez a teszt az invalidálást sem érné el.
+      return HttpResponse.json({
+        id: 'new', slot: 'breakfast', loggedAt: '2026-06-12T08:00:00+02:00', mealDate: '2026-06-12',
+        title: 'Teszt', macros: { kcal: 260, p: 20, c: 30, f: 5 }, score: { value: 0.8 }, items: [],
+      }, { status: 201 })
     }))
     const { result } = renderHook(() => useMealActions(), { wrapper: Wrapper })
     act(() => result.current.logMeal(newMeal))
@@ -174,7 +185,10 @@ describe('useFuelDay (real mode)', () => {
     // re-derived server-side on the next read — a meal log must nudge both, or the ✓ never appears.
     const { qc, Wrapper } = sharedWrapper()
     const spy = vi.spyOn(qc, 'invalidateQueries')
-    server.use(http.post(`${API_BASE}/api/meal`, async () => HttpResponse.json({ id: 'new' }, { status: 201 })))
+    server.use(http.post(`${API_BASE}/api/meal`, async () => HttpResponse.json({
+      id: 'new', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00+02:00', mealDate: '2026-07-02',
+      title: 'Teszt', macros: { kcal: 260, p: 20, c: 30, f: 5 }, score: { value: 0.8 }, items: [],
+    }, { status: 201 })))
     const { result } = renderHook(() => useMealActions('2026-07-02'), { wrapper: Wrapper })
     act(() => result.current.logMeal(newMeal))
     await waitFor(() => {

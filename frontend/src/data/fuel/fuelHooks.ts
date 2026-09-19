@@ -74,8 +74,9 @@ export function useMealActions(date: string = localDateString()) {
   const logM = useMutation({
     mutationFn: mock
       ? async (input: MealInput) => {
-          mockLog(qc, date, input)
+          const meal = mockLog(qc, date, input)
           awardGamificationEvent(qc, { type: 'MEAL' })
+          return meal
         }
       : (input: MealInput) => mealApi.create(input),
     onSuccess: mock ? undefined : invalidate,
@@ -281,12 +282,30 @@ function sumMacros(lines: MealItemLine[]) {
   )
 }
 
+/**
+ * A mock világ étkezés-pontszáma (mezo-bqwyo). Éles módban a pontszám a MENTÉSKOR születik,
+ * determinisztikusan (MealService.applyScore, ADR 0006) — a mock viszont eddig `null`-t adott
+ * minden frissen naplózott étkezésnek, vagyis egy olyan világot modellezett (aszinkron
+ * értékelés), ami a termékben már nem létezik: a napló örökre „folyamatban" maradt, és a
+ * naplózást lezáró ünneplés (ami pontszám nélkül nem nyílik) demóban sosem volt látható.
+ *
+ * Ez a függvény NEM az éles pontozó: egy szándékosan egyszerű, determinisztikus DEMÓ-érték a
+ * makrókból — fehérje-részarány jutalmaz, a nagyon nagy adag kissé büntet. Csak a mock ágon fut.
+ */
+function mockMealScore(macros: { kcal: number; p: number; c: number; f: number }): number | null {
+  if (macros.kcal <= 0) return null // adat nélkül nincs pontszám — kitalálni tilos
+  const proteinShare = (macros.p * 4) / macros.kcal
+  const portionPenalty = Math.min(0.12, Math.max(0, (macros.kcal - 800) / 4000))
+  const raw = 0.62 + Math.min(0.3, proteinShare * 0.9) - portionPenalty
+  return Math.round(Math.max(0.35, Math.min(0.99, raw)) * 100) / 100
+}
+
 function buildMeal(id: string, date: string, input: MealInput): FuelMeal {
   const lines = input.items.map(buildLine)
   const macros = sumMacros(lines)
   return {
     id, slot: SLOT_LABEL[input.slot], title: input.title ?? lines[0]?.name ?? 'Étkezés',
-    score: null, kcal: macros.kcal, p: macros.p, c: macros.c, f: macros.f,
+    score: mockMealScore(macros), kcal: macros.kcal, p: macros.p, c: macros.c, f: macros.f,
     mealItems: lines, items: lines.map(l => `${l.name} ${l.amount}${l.unit}`), tags: [],
     loggedAt: input.loggedAt ?? `${date}T${new Date().toTimeString().slice(0, 8)}`, mealDate: date,
   }
@@ -307,8 +326,12 @@ function patchDay(qc: ReturnType<typeof useQueryClient>, date: string, fn: (d: F
   })
   return undefined
 }
-function mockLog(qc: ReturnType<typeof useQueryClient>, date: string, input: MealInput) {
-  return patchDay(qc, date, d => [...d.meals, buildMeal(crypto.randomUUID(), date, input)])
+function mockLog(qc: ReturnType<typeof useQueryClient>, date: string, input: MealInput): FuelMeal {
+  const meal = buildMeal(crypto.randomUUID(), date, input)
+  patchDay(qc, date, d => [...d.meals, meal])
+  // A felvett étkezés VISSZAMEGY a hívónak: a naplózást lezáró ünneplés (mezo-bqwyo) a mentés
+  // válaszából él, és a mock ágnak is ugyanazt kell adnia, amit az éles (MealResponse).
+  return meal
 }
 function mockUpdate(qc: ReturnType<typeof useQueryClient>, date: string, id: string, input: MealInput) {
   return patchDay(qc, date, d => d.meals.map(m => (m.id === id ? buildMeal(id, date, input) : m)))

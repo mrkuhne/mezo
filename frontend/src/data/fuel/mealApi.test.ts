@@ -326,13 +326,19 @@ describe('mealApi', () => {
     expect(week.weightAvgKg).toBeNull()
   })
 
-  it('create POSTs the mapped body and resolves void on 201', async () => {
+  // mezo-bqwyo: a create a MENTETT étkezést adja vissza, nem `undefined`-et. A pontszám a
+  // szerveren, íráskor születik (ADR 0006) — eddig a kliens eldobta a választ, így a naplózást
+  // lezáró ünneplésnek nem volt miből élnie. A POST törzse változatlan.
+  it('create POSTs the mapped body and resolves the SAVED meal (score included)', async () => {
     let body: unknown
     server.use(http.post(`${API_BASE}/api/meal`, async ({ request }) => {
       body = await request.json()
       return HttpResponse.json(mealResponse, { status: 201 })
     }))
-    await expect(mealApi.create(input)).resolves.toBeUndefined()
+    const saved = await mealApi.create(input)
+    expect(saved.id).toBe(mealResponse.id)
+    expect(saved.score).toBe(mealResponse.score?.value ?? null)
+    expect(saved.kcal).toBe(mealResponse.macros.kcal)
     expect((body as { items: unknown[] }).items).toHaveLength(2)
   })
 
