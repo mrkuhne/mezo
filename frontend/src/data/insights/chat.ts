@@ -80,7 +80,10 @@ export const initialChat: ChatMessage[] = [
         type: 'read',
         name: 'get_medication()',
         why: 'Hogy tudjam, hol tartasz a gyógyszer-ciklusban.',
-        outcome: 'Jelenlegi ciklus: D3. Ismert hatás: étvágycsökkenés kora délután.',
+        // Multi-line on purpose: a real tool returns a small report, not one sentence — the
+        // card must keep those breaks (mezo-rj214.7).
+        outcome:
+          'Gyógyszer-ciklus (2026-05-22):\nJelenlegi nap: D3\nIsmert hatás: étvágycsökkenés kora délután\nKövetkező szünet: D7',
       },
       {
         type: 'compute',

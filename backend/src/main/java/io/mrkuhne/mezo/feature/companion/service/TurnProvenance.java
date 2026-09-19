@@ -58,7 +58,7 @@ public final class TurnProvenance {
         int spent = 0;
         for (ToolCallAudit.ToolOutcome outcome : outcomes) {
             ask.add(new ToolCallsEnvelope.ToolCall(READ, outcome.name(), compactArgs(outcome.args()), outcome.why()));
-            String raw = outcome.result() == null ? NO_OUTPUT : outcome.result();
+            String raw = outcome.result() == null ? NO_OUTPUT : decodeJsonScalar(outcome.result());
             String text;
             if (spent >= limits.resultsMaxChars()) {
                 text = OVER_BUDGET;
@@ -114,6 +114,31 @@ public final class TurnProvenance {
      * on those in Jackson 3 — a null node renders as an honest placeholder rather than a bare
      * {@code key=}, and any scalar node renders as {@code asString()} always has.
      */
+    /**
+     * The tool's own text, not its JSON wrapper. Spring AI's {@code ToolCallback} serialises a
+     * tool method's return value, so a tool that returns a plain String hands us {@code
+     * "Napi étkezés…:\n2026-09-19: …"} — quotes included, newlines escaped. Persisting that raw
+     * put the escapes on the user's provenance card (observed in production, mezo-rj214.7).
+     * Decode a JSON string scalar back to its real characters; leave anything else (already-plain
+     * text, a JSON object, our own marker constants) exactly as it is, and never throw — provenance
+     * must not be able to fail a turn.
+     *
+     * <p>NOTE: the model-facing digest still receives the escaped form; decoding there is a
+     * live-path change with its own blast radius, filed separately.
+     */
+    private static String decodeJsonScalar(String raw) {
+        String trimmed = raw.strip();
+        if (trimmed.length() < 2 || trimmed.charAt(0) != '"' || trimmed.charAt(trimmed.length() - 1) != '"') {
+            return raw;
+        }
+        try {
+            JsonNode node = MAPPER.readTree(trimmed);
+            return node.isString() ? node.asString() : raw;
+        } catch (RuntimeException e) {
+            return raw;
+        }
+    }
+
     private static String compactValue(JsonNode value) {
         if (value.isContainer()) {
             return value.toString();
