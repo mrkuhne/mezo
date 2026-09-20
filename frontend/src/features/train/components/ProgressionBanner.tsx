@@ -7,6 +7,7 @@
 // hold/deload=amber back-off. Presentational only; replaces the .aistrip strip.
 // ============================================================
 import type { LastWeekSet, ProgressionSignal } from '@/data/types'
+import { ClayIcon } from '@/shared/ui/clay'
 
 const fmt = (n: number) => n.toLocaleString('hu-HU')
 
@@ -20,9 +21,10 @@ export function progressionDeltaLabel(p: ProgressionSignal): string {
 export function ProgressionBanner({ progression, lastWeek, bare = false }: {
   progression: ProgressionSignal
   lastWeek: LastWeekSet | null
-  /** Nested inside a CollapsibleStrip (mezo-d20.3.9) — the strip header already
-      carries "⚡ Progresszió" + the delta chip, so the banner drops its own label
-      row rather than saying the same thing twice on one screen. */
+  /** Drops the label row, for a host whose own header already says „Progresszió" + the
+      delta. Shipped for a CollapsibleStrip (mezo-d20.3.9) that no longer exists, so it
+      currently has NO caller — kept because the next host that nests this banner wants
+      exactly this (noted in the visszaöltöztetés close-out, mezo-ju4j6.16). */
   bare?: boolean
 }) {
   const p = progression
@@ -32,7 +34,13 @@ export function ProgressionBanner({ progression, lastWeek, bare = false }: {
     <div className={`pobanner ${tone}${bare ? ' pobanner-bare' : ''}`}>
       {!bare && (
         <div className="pobanner-lab">
-          <span className="txt">⚡ Progresszió</span>
+          {/* Agyag-szimbólum, nem emodzsi (stíluskönyv §2.3 · §6; lezárás mezo-ju4j6.16).
+              `i-lang` a ház „energia" jele — ugyanez ül a ceremónia RPE-számlálóján —, és
+              a jelvény mellette amúgy is kimondja az IRÁNYT, tehát ez a jel a BLOKKOT
+              azonosítja, nem a haladás irányát. (A `SPORT_EMOJI` térkép ugyan még él a
+              `sportKinds.ts`-ben, de az EGYETLEN fogyasztója, a `logic/weeklyLoad.ts`,
+              maga is importáló nélküli holt modul — a képernyőre nem jut emodzsi onnan.) */}
+          <span className="txt"><ClayIcon name="i-lang" size={14} className="icon" /> Progresszió</span>
           <span className="delta">{progressionDeltaLabel(p)}</span>
         </div>
       )}

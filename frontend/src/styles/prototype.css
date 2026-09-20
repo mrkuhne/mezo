@@ -2677,7 +2677,8 @@ button.itemrow { cursor: pointer; }
 .pobanner.po-rep { background:var(--mz-cell-sage-bg); }
 .pobanner.po-hold { background:var(--mz-cell-gold-bg); }
 .pobanner-lab { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
-.pobanner-lab .txt { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mz-cell-coral-ink); font-weight:700; white-space:nowrap; }
+.pobanner-lab .txt { display:inline-flex; align-items:center; gap:5px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mz-cell-coral-ink); font-weight:700; white-space:nowrap; }
+.pobanner-lab .txt .icon { width:14px; height:14px; flex:0 0 auto; }
 .pobanner.po-rep .pobanner-lab .txt { color:var(--mz-cell-sage-ink); }
 .pobanner.po-hold .pobanner-lab .txt { color:var(--mz-cell-gold-ink); }
 /* A delta-jelvény a cellán belül PAJZS (§3.1): telített foltként a cella tetején egy
@@ -11328,8 +11329,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     radial-gradient(circle at 50% 76%, var(--aura-2, transparent) 0%, transparent 58%);
 }
 .nap-companion-mark { position: relative; z-index: 1; display: grid; place-items: center; }
-/* Horgony mód: ugyanaz a jel, csendesebbre véve — a halo visszafogott. */
-.nap-titan-quiet .nap-companion-halo { opacity: 0.45; }
+/* Horgony mód: ugyanaz a jel, csendesebbre véve — a halo visszafogott.
+   (A `.nap-titan-quiet` név a Titán-korszakból maradt, és a `nap-center*` családot
+   módosítja — átnevezve a lezárásban, mezo-ju4j6.16.) */
+.nap-center-quiet .nap-companion-halo { opacity: 0.45; }
 /* ── /nap-companion ─────────────────────────────────────────────────────── */
 
 /* ── fuel-mai (mezo-33k6; re-dressed to the restored world in mezo-ju4j6.6) ──

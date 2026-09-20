@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-21
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -84,6 +84,8 @@ Contract-first as always. A new line field = migration + `RecipeIngredientEntity
 Backend: `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`, `RecipeMapperTest`, `RecipeMapperOverrideRollupTest`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeBreakdownProseServiceTest`, `RecipeWorkshopApiIT` (+ `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`), `RecipeWorkshopValidatorTest`. FE: `recipeHooks.test.tsx`, `recipeApi.test.ts`, `recipeMacros.test.ts`, plus the four page tests. Both frontend modes must stay green (`VITE_USE_MOCK=false pnpm test` and `VITE_USE_MOCK=true pnpm test`).
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`FuelRecipesPage.tsx` + `RecipeWorkshopPage.tsx`) moved after this doc, in the Konyha family re-dress (`mezo-ju4j6.9`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **Snapshot freeze (mezo-m6uv) vs. live NOVA/category** — a deliberate split: macros/nutrients are frozen at save time so a recipe's numbers never silently drift when the pantry item's facts change, but NOVA/category are read live because they gate the fit rubric's ultra-processed-food dimension, which the design wants reactive to a pantry correction.
 - **Fit is computed at READ, not persisted** — `recipe.fit_score` is reserved but unused; recomputing on every read keeps it consistent with any live-input drift without a cache-invalidation protocol.

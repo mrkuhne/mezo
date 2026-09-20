@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-21
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -234,6 +234,8 @@ const state = ritualWindowState(new Date(), ritualDay.window)  // 'waiting' | 'o
 - **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test`; `cd backend && ./mvnw clean test -Dtest='Ritual*IT,HabitEvaluatorIT,MetricSeries*IT'` (`Ritual*IT` picks up the two W1.2 additions; `MetricSeriesExpansionIT` is what pins the companion series' closed-only reads). Visual goldens: `pnpm test:visual` (darwin) + the linux-baseline workflow.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`NapHubPage.tsx`) moved after this doc, in the Nap orbit re-dress (`mezo-izma7`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **W1.2 decisions (`mezo-b3pp.2`, spec §5.2) — the evening prose reflection:**
   - **Today-only writes, mirroring the close.** `saveReflection` reuses `close`'s date guard and its 409 `RITUAL_NOT_TODAY` rather than accepting any date: the prose is written *inside* the evening ritual, so a wider write surface would buy nothing but the ability to make past days sprout rows. The FE never sends a foreign date; the guard is there for a stale tab.

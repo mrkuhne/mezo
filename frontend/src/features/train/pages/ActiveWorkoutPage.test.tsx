@@ -2082,12 +2082,16 @@ test('each card carries its own progression banner — the reference content is 
   // exercise's OWN structured signal, not one shared strip (mezo-i8ahy round 2: the
   // banner is now the single statement of progression, the cue reserved for first-ever
   // exercises only).
+  // A címke jele AGYAG-SZIMBÓLUM, nem emodzsi (stíluskönyv §2.3; mezo-ju4j6.16) — a `⚡`
+  // helyén `<ClayIcon name="i-lang">` áll, ezért a felirat szövege önmagában „Progresszió".
   const banner1 = card(EX1).querySelector('.pobanner') as HTMLElement
-  expect(within(banner1).getByText('⚡ Progresszió')).toBeInTheDocument()
+  expect(within(banner1).getByText('Progresszió')).toBeInTheDocument()
+  expect(banner1.querySelector('use[href="#i-lang"]')).not.toBeNull()
   expect(within(banner1).getByText('+2,5 kg ↑')).toBeInTheDocument()
 
   const banner3 = card(EX3).querySelector('.pobanner') as HTMLElement
-  expect(within(banner3).getByText('⚡ Progresszió')).toBeInTheDocument()
+  expect(within(banner3).getByText('Progresszió')).toBeInTheDocument()
+  expect(banner3.querySelector('use[href="#i-lang"]')).not.toBeNull()
   expect(within(banner3).getByText('+1 rep ↑')).toBeInTheDocument()
 })
 

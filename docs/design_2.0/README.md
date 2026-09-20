@@ -16,6 +16,20 @@
 > Spec: [`docs/superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md`](../superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md) ·
 > plan: [`docs/superpowers/plans/2026-09-17-boop-visszaoltoztetes.md`](../superpowers/plans/2026-09-17-boop-visszaoltoztetes.md).
 >
+> ### ✅ 2026-09-21 — the rollback is DONE (`mezo-ju4j6` closed)
+>
+> Shell, navigation, GlassBox, all of Fuel, Nap/Mai, all of Train, the ceremonies and the Boop
+> character are in the restored world, and `mezo-ju4j6.19` ranked the surfaces app-wide per
+> style bible **§3.4**. No functionality was lost: every slice closed with a reverse parity
+> checklist on its own bead. The [coverage register](TITANIUM_FEATURE_COVERAGE_REGISTER.md)
+> carries the closure record.
+>
+> **Three surfaces the rollback did not reach**, each with its own bd issue — they are the
+> reason "done" is not "everything in the app is Mozaik":
+> the **quick-log surface** (`/nap/gyors` + the FAB grid, still `quicklog-titanium`, still on the
+> `CaptureSculpture` art family), the **level-up overlay** (`mezo-n6yqh`), and a handful of
+> **emoji** still rendered on Nap/Én surfaces, which §2.3 forbids.
+>
 > **The Titanium docs below are NOT deleted** — they are the parity sources that prove no feature
 > is lost. Read them for *what a screen must do*, never for *what it should look like*.
 
