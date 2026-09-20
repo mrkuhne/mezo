@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-21
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
@@ -191,6 +191,8 @@ Backend: `PantryCatalogMigrationIT` (standalone Liquibase run against a throwawa
 Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.use-testcontainers=true`; frontend `pnpm build && VITE_USE_MOCK=false pnpm test && VITE_USE_MOCK=true pnpm test`.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`FuelKamraPage.tsx` + `KamraItemDetailPage.tsx`) moved after this doc, in the Konyha family re-dress (`mezo-ju4j6.9`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **Auto-add happens at MATCH time, not save time.** `MealAiDraftService`/`RecipeWorkshopValidator` call `ensureItem` as soon as the LLM's mention resolves against the catalog, before the user confirms the draft — a discarded draft can still leave a new shelf row behind. Accepted trade-off (mirrors the equivalent Recipe-side note).
 - **The natural key ignores `kind`.** A food "Kreatin" and a supplement "Kreatin" collide on the same catalog row — accepted; disambiguate with a brand if this ever bites.

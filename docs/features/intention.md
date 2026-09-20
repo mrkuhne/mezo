@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-21
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -166,6 +166,8 @@ await reflect('partial')                                        // yes | partial
 - **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test`; `cd backend && ./mvnw clean test -Dtest='Intention*IT,Habit*IT,QuestApiIT,QuestCatalogIT' -DargLine=-Xmx3g`.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`NapHubPage.tsx`) moved after this doc, in the Nap orbit re-dress (`mezo-izma7`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **Decisions (spec §2 D1–D6):** standing creed + daily foci (D1); morning set + evening reflect mapping onto the two habit chains (D2); own `feature/intention` domain, not the activity log / goal identity (D3); short list, max 3, holistic single reflection, first-focus-earns (D4); **no new progression source** — HABIT + QUEST tails, skill `mindset` (D5); `IntentionBanner` on Today, five states (D6 — **the placement half was superseded by [ADR 0014](../decisions/0014-today-daypart-faces.md)**: the five states are split across a `chip` variant on the Reggel/Nap faces and a `reflect` variant on the Este face; no state was lost). Tone: ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).
 - **Gotcha — the focus cap is service-only.** `intention_focus` has no DB row-count constraint; the max-3 is enforced in `IntentionService.addFocus` (409) and echoed as `focusCap` in `getDay`. A direct insert would bypass it — intentional (spec §3).

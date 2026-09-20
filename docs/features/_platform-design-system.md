@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -24,10 +24,23 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > [`docs/design_2.0/README.md`](../design_2.0/README.md) and the
 > [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md) it points at.
 > **Functionality shipped during the Titanium period is kept in full**; only the skin is rolled
-> back, forward-fix, one area per bead. **This ledger is therefore mid-rollback:** sections
-> describing Titanium classes, tokens, icon art and the `.titan-dark` shell scope record what is
-> *currently on screen*, not what to build. Never design from them — design from the style bible.
-> Each re-dress bead rewrites its own subsection as it lands; `mezo-ju4j6.16` closes the sweep.
+> back, forward-fix, one area per bead.
+>
+> **✅ 2026-09-21 — the rollback is COMPLETE (`mezo-ju4j6` closed).** The shell, the navigation,
+> GlassBox, all of Fuel, Nap/Mai, all of Train, both ceremonies and the Boop character are in the
+> restored world, and `mezo-ju4j6.19` ranked every screen's surfaces per style bible **§3.4**. No
+> functionality was lost — each slice closed with a reverse parity checklist on its own bead.
+>
+> **How to read this ledger now:** everything below §3 is layered oldest-first, and the sections
+> describing Titanium classes, tokens and icon art are **history**, not the current screen. They
+> stay because they are the parity sources that prove no feature was dropped. Never design from
+> them — design from the [style bible](../design_2.0/2026-09-17-restored-world-style-bible.md),
+> which is canon for look, and read these only for *what a screen must do*.
+>
+> **Three surfaces the rollback did not reach**, each with its own bd issue: the **quick-log
+> surface** (`/nap/gyors` + the FAB grid — still `quicklog-titanium`, still on the
+> `CaptureSculpture` art family), the **level-up overlay** (`mezo-n6yqh`), and a few **emoji**
+> still rendered on Nap/Én surfaces (§2.3 forbids them).
 
 
 > **One-line:** mezo's mobile-first visual foundation — a single CSS-token vocabulary, the shared React primitives every screen composes, and the app shell they render on. **Status: ✅ done.** It is _platform-level_ (the `_` prefix): no route or tab of its own, living under `frontend/src/styles/`, `frontend/src/shared/ui/` and `frontend/src/app/`, consumed by all five tabs. **Since the Design 2.0 redesign (`mezo-d20`, 2026-08-29) the app's visual language is [Mozaik 2.0](../decisions/0033-mozaik-2-tile-language.md)** — a two-column mosaic of washed tiles carrying clay 3D SVG icons, with a one-shot entrance choreography and then calm. It replaces the Today-only iOS list language ([ADR 0026](../decisions/0026-today-ios-list-language.md)) **app-wide**, closing the two-row-language divergence that ADR named and tracked (`mezo-jaoy`). The IA it paints on is [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md): five domains (Nap · Edzés · Fuel · Mezo · Én), a contextual docked bar, a separate quick-log FAB, and no section shells. **Everything below §3 is a layered ledger, oldest first** — several of its families are now retired, and each such subsection says so in its own first line. The current language is §3's last subsection, *Mozaik 2.0*.
@@ -40,7 +53,7 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 
 1. a **token vocabulary** — since the **DS-migration P1 token swap** (`mezo-setx.2`, 2026-08-04) the literal source of truth is the **Mezo Edition design system** ([ADR 0018](../decisions/0018-adopt-exist-zen-design-system.md); normative reference [`docs/references/design-system-mezo.html`](../references/design-system-mezo.html)): six **5-stop ramps** (`--primary-*` coral · `--secondary-*` warm ink · `--accent-*` gold · `--success/warning/error-*`), a surface/text scale (`--surface-page/card/elevated/recess`, `--text-primary/secondary/muted/disabled`, `--divider`), the data-viz band (`--macro-*` + `--dv-*` domain accents), the one-definition CTA gradient (`--cta-g1/g2` → `--gradient-cta` + `--shadow-cta`, Rule 9), halos, the divisible-by-4 `--sp-1..9` spacing scale, the DS radius scale (`--r-sm..3xl` — old slots re-tuned 8/12/16/20/24 → 6/10/14/18/22, `--r-3xl: 28px` new), `--shadow-*`, `--duration/--ease-*` motion tokens and the `--z-*` ladder. Type is **Geist** (display + body; `--ff-mono` is now **Geist Mono**, still debug-only for `.toolchip`) + **Fraunces** (`--ff-serif`, italic meta voice) — Bricolage Grotesque and Plus Jakarta Sans are retired. **Every legacy Napív/Deep-Current name survives as a `var()` alias** onto its DS token (the proven alias-bridge technique, §3), so unmigrated call sites render in-family until the per-page sweep phases (P4–P9) retire them — all in `frontend/src/styles/prototype.css` (§3);
 2. **~31 React primitives** (`frontend/src/shared/ui/**`), each a thin wrapper over a CSS class — the **P2 primitive convergence** (`mezo-setx.3`) restyled the component classes to DS specs (card → `--r-2xl`, chip 6×12 with ramp-toned selected/status states, `.cta-primary` → `--gradient-cta`/`--shadow-cta`, sheet top radius → `--r-3xl` + 28×3 handle, `.icon-btn` → 48dp, `.eyebrow` → the 12/700/0.22em DS role, `.page-title` → h1 36/700, motion literals → `--duration/--ease-*`) and added six DS primitives with colocated tests: **`NumberInput`** (the canonical Rule-4 field: local string state, `number | null`, commit on blur, `type=text inputMode=decimal`, comma accepted), **`Spinner`** (3 sizes × 4 tones, `role=status`, reduced-motion slows to 2s), **`CoachBubble`** (Geist 200 · 22px coach voice, coral-tinted, never italic), **`AdherenceBar`** (stacked multi-segment track + legend, data-viz colors only, over-100% clamped), **`Stepper`** (dot-mode wizard progress: done/active/idle, gold milestone ring), and **`TrendChart`** (library-free SVG line/area chart, 1–3 series, null-gap aware, dashed trajectory variant) — and the P4 Today bead (`mezo-setx.5.1`) added **`StatStrip`** (the DS compact glance strip: equal cells, 20/700 values over 9/700/0.18em labels, `.statstrip*`); and
-3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone frame, circadian sky, shared header, bottom navigation and modal primitives. The navigation is a **docked, full-width graphite bar** (`mezo-0i5y6`): a companion switch mark plus the current domain's four tabs. Five domains and their existing route/icon matrix live in `app/navModel.ts`; the panel-free `DomainSwitcher` presents five independent cards over blur. Quick logging remains a separate FAB where the shell enables it. Approved design: [`sticky-domain-navigation`](../superpowers/specs/2026-09-17-sticky-domain-navigation.md).
+3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone frame, circadian sky, shared header, bottom navigation and modal primitives. The navigation is a **docked, full-width bar** (`mezo-0i5y6`): a companion switch mark plus the current domain's four tabs. Its **geometry is keep-list** (88px, the 56px switch column, the 5×4 matrix, focus management); its **material follows the theme** since `mezo-ju4j6.18` — warm sand in light, warm graphite in dark. The permanently dark dock it shipped with was a Titanium-period artefact, not a pre-Titanium decision (git archaeology in the `Docked navigation chrome` block of `prototype.css`), so the light-first rule applies to it like to every other surface. Five domains and their existing route/icon matrix live in `app/navModel.ts`; the panel-free `DomainSwitcher` presents five independent cards over blur. Quick logging remains a separate FAB where the shell enables it. Approved design: [`sticky-domain-navigation`](../superpowers/specs/2026-09-17-sticky-domain-navigation.md).
 
 **Status per layer.** This is a pure **frontend** concern. It has **no backend, no API contract, no DB, no data hook** — it sits _below_ `frontend/src/data/hooks.ts` (the FE↔data boundary) and renders identically whether a view is mock-only (Fuel/Insights/People) or real (Train/biometrics). The only stateful platform piece here is the **theme** (dark/light), persisted in `localStorage`, never in the backend. Nothing here is Phase 2 or Phase 3.
 

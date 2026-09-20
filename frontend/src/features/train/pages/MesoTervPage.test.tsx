@@ -155,12 +155,21 @@ test('every training day is a card with its FULL weekday name and its type', () 
 })
 
 test('a day card carries its boxed facts (szett / perc / gyakorlat) from dayTileData', () => {
-  setup()
-  // Hétfő: 4+3+3+3+3 = 16 working sets, round(16 * 4.4) = 70 perc, 5 exercises.
-  const monday = screen.getByRole('button', { name: 'Hétfő · Push' })
-  expect(monday).toHaveTextContent('16szett')
-  expect(monday).toHaveTextContent('70perc')
-  expect(monday).toHaveTextContent('5gyakorlat')
+  // Pinned clock, same reason as its two siblings above and below (napszak test-bomb rule):
+  // a training day that happens to BE today gets „ · ma" appended to its accessible name, so
+  // this `getByRole` failed on real Mondays — and only on Mondays, which is why it survived
+  // until one (2026-09-21, found in the visszaöltöztetés close-out, mezo-ju4j6.16). Saturday
+  // is not a fixture training day, so every name stays stable.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-18T12:00:00'))
+  try {
+    setup()
+    // Hétfő: 4+3+3+3+3 = 16 working sets, round(16 * 4.4) = 70 perc, 5 exercises.
+    const monday = screen.getByRole('button', { name: 'Hétfő · Push' })
+    expect(monday).toHaveTextContent('16szett')
+    expect(monday).toHaveTextContent('70perc')
+    expect(monday).toHaveTextContent('5gyakorlat')
+  } finally { vi.useRealTimers() }
 })
 
 test('rest and sport days are slim rows, not cards', () => {

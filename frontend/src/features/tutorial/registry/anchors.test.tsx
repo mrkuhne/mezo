@@ -9,6 +9,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import { FUEL_KALAUZ } from '@/features/tutorial/registry/fuel'
 import { TRAIN_KALAUZ } from '@/features/tutorial/registry/train'
+import { KALAUZ_REGISTRY } from '@/features/tutorial/registry'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -140,4 +141,27 @@ test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
   const anchors = TRAIN_KALAUZ.flatMap(e => e.cards.flatMap(c =>
     c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
   expect(anchors.filter(a => !covered.has(a))).toEqual([])
+})
+
+// ── Visszaöltöztetés close-out (mezo-ju4j6.16) ───────────────────────────────
+// A fenti A18/E11 fordított-lint KÉT doménre készült (Fuel, Edzés). A Nap, a Mezo és az
+// Én kalauzainak horgonyait a fájl eleji körök rendre RENDERELIK, de nem őrizte semmi,
+// hogy egy ÚJ horgony ne kerülhessen be lefedetlenül azokba a registry-kbe — ami pont
+// az a hiba-alak, amit a visszaöltöztetés során a DOM-ot cserélő szeletek okozhatnának.
+// Ez a kör az EGÉSZ registry-re néz, tehát domén hozzáadásakor sem lehet elfelejteni.
+test('a kalauz MINDEN horgonya szerepel a fenti körökben (mezo-ju4j6.16)', () => {
+  const covered = new Set([
+    // fájl eleji körök
+    'nap-hero', 'mezo-chat', 'me-idhero',
+    // S3a — Nap + Edzés aloldalak
+    'uzenetek-tabs', 'rutin-lista', 'checkin-sor', 'eletjel-gyuru',
+    'train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs', 'futas-tabs',
+    'exercises-kereso', 'medals-hero', 'mesociklus-mosaic', 'konyvtar-hero', 'session-start',
+    // S3b — Fuel aloldalak
+    'fuel-log', 'log-forrasok', 'stack-hero', 'trendek-heti', 'konyha-felvetel',
+    'receptek-tabs', 'kamra-tabs',
+  ])
+  const anchors = KALAUZ_REGISTRY.flatMap(e => e.cards.flatMap(c =>
+    c.kind === 'hogyan' && c.anchor != null ? [c.anchor] : []))
+  expect([...new Set(anchors)].filter(a => !covered.has(a))).toEqual([])
 })

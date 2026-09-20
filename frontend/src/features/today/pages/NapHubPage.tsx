@@ -42,7 +42,11 @@ export function NapHubPage() {
     { label: 'Chat', art: 'chat', icon: 'i-mezo', sub: 'Beszéljük át', run: () => navigate('/mezo/chat') },
   ]
   return (
-    <div className={`nap-hub nap-titan nap-center${scenario.anchorMode ? ' nap-titan-quiet' : ''}`}>
+    // `nap-titan` (a Titán-korszak hatókör-osztálya) SOHA nem kapott szabályt sehol, és a
+    // `nap-titan-quiet` a `nap-center*` családot módosítja — mindkét név a rollback után
+    // már csak zajt vitt a DOM-ba (mezo-ju4j6.16, lezárás). A holt osztály kiesik, a másik
+    // a családja nevét veszi fel.
+    <div className={`nap-hub nap-center${scenario.anchorMode ? ' nap-center-quiet' : ''}`}>
       <div className="nap-center-heading"><p>NAPKÖZPONT</p><h1>A napod.<br /><span>Minden kapcsolódik.</span></h1></div>
       <section className="nap-center-orbit" aria-label="Gyors műveletek" data-kalauz-anchor="nap-hero">
         <div className="nap-center-companion"><NapCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} /></div>

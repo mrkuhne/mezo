@@ -72,7 +72,7 @@
 .capture-check-orbit>.capture-sculpture{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%) scale(2.4);opacity:.2;pointer-events:none}
 .capture-check-orbit>div,.capture-check-orbit>.label-mono{position:relative}
 .capture-tone-checkin:has(.capture-check-orbit) .capture-heading>.capture-sculpture{display:none}
-:root[data-theme="dark"] .capture-sheet .cta-primary,.titan-dark .capture-sheet .cta-primary{color:var(--surface-page)}
+:root[data-theme="dark"] .capture-sheet .cta-primary{color:var(--surface-page)}
 @media(max-width:350px){.capture-sheet .sheet-handle-zone{margin-inline:-14px}}
 .capture-sheet .cta-primary{box-shadow:0 8px 24px color-mix(in srgb,var(--capture-accent) 15%,transparent)}
 .capture-sheet textarea{border-radius:14px;padding:12px;background:var(--surface-2);border:1px solid var(--divider)}
