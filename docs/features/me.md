@@ -60,6 +60,8 @@ Specs of record: **[`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.m
 
 ## 2. User-facing behavior
 
+Mock goal edits refresh the saved target in the summary immediately and after remount; unsupported engine forecasts and nutrition results are cleared rather than carried forward from the old goal. The saved guard configuration remains visible independently of evaluation results.
+
 ### Central personal settings
 
 `/settings/me` groups biometric profile, sleep and weight-goal settings. `/settings/me/goal` edits **target weight + remaining kg/week pace**; arrival date is calculated from today's local date and the displayed current weight, never independently editable. Original `startDate`, `startWeightKg`, guards and planner fields survive the full upsert. The existing engine still derives its rate over the whole original window, so the UI explicitly distinguishes that average from the remaining pace. Both original and remaining windows use `/api/goals/feasibility-preview`; real saves wait for a current successful preview and failures preserve the draft. Expired target dates leave the pace blank and require a new choice instead of inventing a one-day catch-up pace. Maintenance has no invented arrival date. Empty goals show a setup CTA, and archive/delete remain in `EditGoalSheet`.
