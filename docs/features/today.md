@@ -2,15 +2,15 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-20
-tags: [today, nap, mozaik, titanium, biometrics, frontend, data-layer, ritual, needs]
+updated: 2026-09-21
+tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
+# 8 load-bearing paths (was 10 — the three named Nap components are all under
+# `features/today/components`, which tracks them and their siblings together).
 key_files:
-  - frontend/src/features/today/pages/NapHubPage.tsx
-  - frontend/src/features/today/pages/NapGyorsPage.tsx
-  - frontend/src/features/today/components/NapCompanion.tsx
-  - frontend/src/features/today/components/NapFuelGraphic.tsx
-  - frontend/src/features/today/components/NapPersonalInsight.tsx
+  - frontend/src/features/today/pages
+  - frontend/src/features/today/components
   - frontend/src/features/today/logic
+  - frontend/src/features/quickinput
   - frontend/src/app/AppHeader.tsx
   - frontend/src/app/router.tsx
   - frontend/src/data/today
@@ -250,6 +250,16 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 **Commands:** `VITE_USE_MOCK=false pnpm test` + `VITE_USE_MOCK=true pnpm test` (unset = mock — the bare command runs mock twice and the real-mode gate is vacuous), `pnpm vitest run src/features/today` focused, `pnpm build`, `pnpm test:layout` (structural Playwright specs, `frontend/tests/layout/layout.spec.ts` — includes a `/nap` reachability check against `.nap-hub`, unchanged by the Titanium rebuild since the class survived; **not** a screenshot suite — see the goldens-retired note above).
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** Nap/Mai is in
+  the restored Mozaik/Clay world (`mezo-ju4j6.10` + the Boop integration `mezo-ju4j6.15`), and
+  the close-out dropped two Titanium-era class names from `NapHubPage` (`nap-titan`, which had
+  no rule anywhere, and `nap-titan-quiet` → `nap-center-quiet`). All skin: no route, hook,
+  contract or state machine moved. **The one surface in this domain the rollback did NOT reach
+  is the quick-log grid** — `/nap/gyors` and the FAB sheet share `QuickLogSurface`, whose root
+  class is still literally `quicklog-titanium` and whose art is still the `CaptureSculpture`
+  family, not clay. That has its own bd issue; until it lands, this domain is deliberately
+  mixed-look and §2 describes what is on screen, not what to build.
 
 - **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in
