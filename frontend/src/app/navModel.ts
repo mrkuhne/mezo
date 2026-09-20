@@ -34,7 +34,7 @@ export interface NavDomain {
    *  azonosítójából választ figurát, tehát egy ÚJ terület csak figurával együtt születhet —
    *  különben a sora némán, jel nélkül renderelne (ez történt az Én területével). */
   id: BoopDomain
-  /** The domain's display name — shown on the switch mark and in the switcher list. */
+  /** The domain's display name — accessible switch label and visible switcher list. */
   name: string
   /** Exactly four contextual tabs, in bar order (tab 1 = the domain's home). */
   tabs: [NavTab, NavTab, NavTab, NavTab]

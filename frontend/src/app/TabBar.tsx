@@ -13,7 +13,7 @@ import {
 
 // Docked navigation (mezo-jkh4; re-skinned to the restored world in mezo-ju4j6.4 —
 // style bible §7.4): the bottom bar is a domain-switch mark (the Mezo
-// companion mark + the CURRENT domain's name + a ⌃ caret) followed by that domain's
+// animated companion avatar) followed by that domain's
 // FOUR contextual tabs. The active domain is the first path segment; the active tab is
 // the longest-matching-prefix among the domain's four routes. Tapping the switch mark
 // opens the domain-switcher dialog. Replaces the always-flat five-domain bar (d20.1.1).
@@ -47,12 +47,7 @@ export function TabBar() {
           aria-label={`Területváltó: ${domain.name}`}
           onClick={() => setSwitcherOpen(true)}
         >
-          {/* A váltó jele Boop, az AKTUÁLIS terület színében (mezo-ju4j6.15) — itt
-              nyugalomban áll: a menüben egy mozgó figura elvonná a figyelmet. */}
-          <span className="tab-ico"><Boop domain={domain.id} size={27} /></span>
-          <span className="domain-switch-name">
-            {domain.name} <b aria-hidden="true">⌃</b>
-          </span>
+          <span className="tab-ico"><Boop domain={domain.id} size={40} alive /></span>
         </button>
         {domain.tabs.map((tab) => {
           const active = tab.route === activeRoute
