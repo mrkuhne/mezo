@@ -22,7 +22,7 @@ style monolith with marker-delimited sections, mozaik/clay UI kits, bd (beads) t
 in every session.
 
 **Epic:** `mezo-ju4j6`. Bead map: .1=Task 0 · .2=Task 1 · .3=Task 2 · .4=Task 3 · .5=Task 4 ·
-.6/.7/.8/.9=Task 5a–d · .10=Task 6 · .11/.12/.13=Task 7a–c · .14/.15=Task 8a–b · .16=Task 9.
+.6/.7/.8/.9=Task 5a–d · .10=Task 6 · .11/.12/.13=Task 7a–c · .14/.15=Task 8a–b · .19=Task 8.5 · .16=Task 9.
 
 ## Global Constraints
 
@@ -197,6 +197,25 @@ bottom-left corner of the shell, and as the 5 domain glyphs in TabBar/DomainSwit
 - [ ] Wire the SVG assets; blink loop honors `prefers-reduced-motion`
 - [ ] TabBar swap: domain glyphs → Boop variants; navigation.spec.ts still green
 - [ ] Tests both modes; `verify` pass across all 5 domains; commit, local gates, --no-ff merge to main (no-wait flow)
+
+### Task 8.5: Depth & focus sweep (bead: `mezo-ju4j6.19`, model:strong, ~2 sessions, blocked by 7c)
+
+> **Found during Task 7b (2026-09-20).** Every slice's first pass turned *every* surface into a
+> §2.2 A wash tile, and each time the screen read flatter than the Titanium one it replaced. The
+> owner named it on the Terv/Terhelés prototype ("something was better in Titanium"). The rule is
+> now style-bible **§3.4** and the `visszaoltoztetes` skill reads it every session; this task is the
+> retro-fit for everything re-dressed before the rule existed.
+
+**Scope:** rank the surfaces (no new materials, no DOM change) on Fuel Mai/LogFlow/MealScore/Stack/
+Trendek/Konyha, Nap/Mai, Train Mai + the in-workout list, the Gyakorlatok/sport/ceremony surfaces,
+and the shell (TabBar, DomainSwitcher, header). Terv + Terhelés (Task 7b) is the reference.
+
+**Steps (per screen):**
+- [ ] Name the ONE thing the screen says; that surface keeps the loud grade
+- [ ] Demote the rest a grade (wash → house row → cell/chip); empty/free states go §4.4 dashed
+- [ ] Give the hero's graphic real size (§3.2 numeral + its drawing), then check 320px
+- [ ] Tests both modes + layout specs; `verify` pass; reverse parity checklist into the bead
+- [ ] Commit, local gates, --no-ff merge to main (no-wait flow)
 
 ### Task 9: Close-out (bead: phase 9, model:fast, ~1 session, blocked by 5*, 6, 7*, 8*)
 
