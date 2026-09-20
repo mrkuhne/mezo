@@ -8,9 +8,7 @@
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
 // ÉLETCÉL-HERO (mezo-iizd.4: the active life goals' dimension chips + the engine's
 // ↗ / → / ↘ counters, opening /me/goals) → the 6-tile mosaic
-// with live bottom lines — Beállítások is a tile opening /me/beallitasok
-// (hub-tile-reorg: the AI tiles moved to the Mezo hub, Értesítés + AI-napló under
-// Beállítások).
+// with live bottom lines. Persistent settings live in the shared /settings center.
 // The hero used to be the WEIGHT goal's coral track (with GoalMiniCard's maintain→„tartás"
 // rule) navigating to /me/goals/weight; mezo-iizd.4 retired that face — the weight goal's
 // entry point is now the Súlycél row on the Célok hub (CelokPage), and the daily weight
@@ -26,8 +24,7 @@
 //  · a tile line vanishes while its source is unresolved/empty — no page ever
 //    shows a fabricated number.
 // ============================================================
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -35,17 +32,12 @@ import {
   useBiometricProfile, useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
   useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
-import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
-import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
-import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 import { ageFromBirthDate } from '@/features/me/logic/biometricFields'
 import { DIMENSIONS, ARROW_GLYPH } from '@/features/me/logic/lifegoalLabels'
 import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
-import { useTheme } from '@/app/ThemeProvider'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
 
-const THEME_LABEL = { light: 'világos', dark: 'sötét', auto: 'cirkadián' } as const
 
 /** Signed Hungarian 1-decimal rate — `fmtSigned`'s sign rule with `hu1`'s comma separator
  *  (the prototype writes `−0,5`, never `-0.5`). */
@@ -53,12 +45,11 @@ const huSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${hu
 
 export function EnHubPage() {
   const navigate = useNavigate()
-  const { mode: themeMode } = useTheme()
+  const location = useLocation()
   // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
   // streak/coin stats deep-link to /me/growth/kituntetesek (StreakCard + TitlesSection,
   // mezo-rmi0.1: the Growth hub's sibling route, was the ?tab=awards deep link);
   // the two standalone sheets are retired.
-  const [sheet, setSheet] = useState<'biometric' | 'energy' | null>(null)
 
   // ── identity hero ───────────────────────────────────────────────────
   const { user: profile } = useProfile()
@@ -69,10 +60,6 @@ export function EnHubPage() {
   const initial = (profile?.name ?? '').trim().charAt(0).toUpperCase()
 
   const { profile: biometric } = useBiometricProfile()
-  // Split-TDEE door (me.md §9): BiometricCard was the only Én-side entry into the
-  // shared EnergyBreakdownSheet. The row now lives inside BiometricSheet; null
-  // bootstrap (engine not run) → no row, no fabricated number.
-  const tdeeBreakdown = biometric != null ? buildTdeeBreakdown(biometric) : null
   const { weightLog, weightTrends } = useWeight()
   const latestKg = weightLog.length > 0 ? weightLog[weightLog.length - 1].value : null
   // MeBioRow's rule, verbatim: `·`-joined non-null bits, nothing at zero bits. Each bit is
@@ -244,14 +231,14 @@ export function EnHubPage() {
           </div>
           {bioBits.length > 0 ? (
             <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"
-              onClick={() => setSheet('biometric')}>
+              onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}>
               {bioBits.join(' · ')}
             </button>
           ) : (
             /* zero bits: the bio line itself vanishes (MeBioRow's contract) — but the
                biometrics write path must not vanish with it, so the hero carries
                BiometricCard's own empty-state CTA copy instead. */
-            <button type="button" className="enh-bio" onClick={() => setSheet('biometric')}>
+            <button type="button" className="enh-bio" onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}>
               Állítsd be a biometriád
             </button>
           )}
@@ -274,20 +261,11 @@ export function EnHubPage() {
             line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
           <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={330} className="enh-eb-rose"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={370} className="enh-eb-sage"
-            line={`téma: ${THEME_LABEL[themeMode]}`} onClick={() => navigate('/me/beallitasok')} aria-label="Beállítások" />
           <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={410}
             line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>
 
-      {sheet === 'biometric' && (
-        <BiometricSheet onClose={() => setSheet(null)} profile={biometric}
-          onExplainEnergy={tdeeBreakdown != null ? () => setSheet('energy') : undefined} />
-      )}
-      {sheet === 'energy' && tdeeBreakdown != null && (
-        <EnergyBreakdownSheet breakdown={tdeeBreakdown} initial="base" onClose={() => setSheet(null)} />
-      )}
     </div>
   )
 }

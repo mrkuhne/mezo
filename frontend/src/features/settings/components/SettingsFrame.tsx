@@ -7,7 +7,8 @@ export function useSettingsOrigin() {
   const { state } = useLocation()
   const candidate = (state as { from?: unknown } | null)?.from
   const from = typeof candidate === 'string' && /^\/(nap|train|fuel|mezo|me)(\/|\?|$)/.test(candidate) ? candidate : '/nap'
-  return { from, state: { from }, hasOrigin: from === candidate }
+  const hasOrigin = from === candidate
+  return { from, state: { from: hasOrigin ? from : undefined }, hasOrigin }
 }
 
 export function SettingsFrame({ title, subtitle, domain = 'mezo', parent = '/settings', children }: {

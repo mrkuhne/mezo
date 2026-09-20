@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { useBiometricProfile, useSleepGoal } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
+import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
 import { SettingsFrame, SettingsRow } from '@/features/settings/components/SettingsFrame'
 
 export function MeSettingsPage({ editor }: { editor?: 'biometrics' | 'sleep' }) {
   const { profile, isLoading, isError: profileError, refetch: retryProfile } = useBiometricProfile()
   const { goal, isPending, isError: sleepError, refetch: retrySleep } = useSleepGoal()
+  const [energyOpen, setEnergyOpen] = useState(false)
+  const energy = profile ? buildTdeeBreakdown(profile) : null
   const [open, setOpen] = useState(!!editor)
   const loading = editor === 'biometrics' ? isLoading : isPending
   const error = editor === 'biometrics' ? profileError : sleepError
@@ -18,7 +22,8 @@ export function MeSettingsPage({ editor }: { editor?: 'biometrics' | 'sleep' }) 
     <SettingsRow to="/settings/me/goal" title="Súlycél" description="Céltestsúly, vállalható tempó és számított céldátum" domain="train" />
     <SettingsRow to="/settings/me/sleep" title="Alvás és napi horgony" description={goal.isSet && !isPending ? `${goal.bedTime} lefekvés · ${goal.wakeTime} ébredés` : 'Alvásidő, ébredés és lefekvés'} />
     <SettingsRow to="/settings/mezo/about" title="Mit tud rólam Mezo?" description="Ugyanezek az adatok a személyes alaplapodon" domain="nap" />
-    {open && !loading && !error && editor === 'biometrics' && <BiometricSheet profile={profile} onClose={() => setOpen(false)} />}
+    {open && !loading && !error && editor === 'biometrics' && <BiometricSheet profile={profile} onClose={() => setOpen(false)} onExplainEnergy={energy ? () => { setOpen(false); setEnergyOpen(true) } : undefined} />}
     {open && !loading && !error && editor === 'sleep' && <SleepGoalSheet onClose={() => setOpen(false)} />}
+    {energyOpen && energy && <EnergyBreakdownSheet breakdown={energy} initial="base" onClose={() => { setEnergyOpen(false); setOpen(true) }} />}
   </SettingsFrame>
 }

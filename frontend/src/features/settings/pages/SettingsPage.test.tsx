@@ -16,3 +16,13 @@ describe('Settings center', () => {
     expect(screen.getByRole('link', { name: 'Vissza az oldalra' })).toHaveAttribute('href', '/nap')
   })
 })
+
+test('direct entry remains origin-free after visiting a settings group', async () => {
+  const { default: userEvent } = await import('@testing-library/user-event')
+  const { Routes, Route } = await import('react-router-dom')
+  const { SettingsFrame } = await import('@/features/settings/components/SettingsFrame')
+  render(<MemoryRouter initialEntries={['/settings']}><Routes><Route path="/settings" element={<SettingsPage />} /><Route path="/settings/train" element={<SettingsFrame title="Train" subtitle="Időpontok">Részletek</SettingsFrame>} /></Routes></MemoryRouter>)
+  await userEvent.click(screen.getByRole('link', { name: /Train Helyet/ }))
+  await userEvent.click(screen.getByRole('link', { name: 'Vissza a beállításokhoz' }))
+  expect(screen.queryByText('Innen érkeztél')).not.toBeInTheDocument()
+})
