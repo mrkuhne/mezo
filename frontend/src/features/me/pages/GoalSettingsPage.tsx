@@ -26,7 +26,6 @@ export function GoalSettingsPage() {
   const rate = overview?.targetRateKgPerWeek
   const rateLabel = rate == null ? '—' : `${rate < 0 ? '−' : '+'}${hu1(Math.abs(rate))} kg/hét`
   const target = overview?.targetWeightKg
-  const guardStatus = overview?.guards.status
 
   return <MozaikPage tone="rose" className="goal-detail-page goal-detail-settings-page">
     <PageHead onBack={() => navigate('/settings/me', { state: origin.state })} label="‹ Én beállításai" />
@@ -57,8 +56,8 @@ export function GoalSettingsPage() {
           <div className="goal-settings-wide"><small>Várható céldátum</small><strong>{overview.projectedTargetDate ? huMonthDay(overview.projectedTargetDate) : 'Még nincs biztos becslés'}</strong></div>
         </section>
         <div className="goal-settings-guards rise">
-          <span className={guardStatus?.strength.active ? 'is-on' : ''}>Erővédelem</span>
-          <span className={guardStatus?.muscle.active ? 'is-on' : ''}>Izomvédelem</span>
+          <span className={goalResponse?.guards.includes('strength') ? 'is-on' : ''}>Erővédelem</span>
+          <span className={goalResponse?.guards.includes('muscle') ? 'is-on' : ''}>Izomvédelem</span>
         </div>
         {goal && goalResponse && goalId && <button className="goal-settings-edit np-press rise" type="button" onClick={() => setEditing(true)}>Cél szerkesztése</button>}
       </PageBody>
