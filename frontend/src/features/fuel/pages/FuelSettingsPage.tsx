@@ -1,5 +1,7 @@
+import { UnsavedChangesGuard } from '@/features/settings/components/UnsavedChangesGuard'
+import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import type { DietSettings } from '@/data/types'
 import {
@@ -62,11 +64,14 @@ function NumberStepper({ label, actionLabel = label, value, min, max, step = 1, 
 
 export function FuelSettingsPage() {
   const navigate = useNavigate()
-  const { settings, isPending } = useFuelSettings()
+  const { state: originState } = useSettingsOrigin()
+  const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+  const { settings, isPending, isError: fuelError, refetch: retryFuel } = useFuelSettings()
   const { setSettings, pending } = useFuelSettingsActions()
-  const { settings: diet, isPending: dietPending } = useDietSettings()
+  const { settings: diet, isPending: dietPending, isError: dietError, refetch: retryDiet } = useDietSettings()
   const { setSettings: setDiet, pending: dietSaving } = useDietSettingsActions()
-  const { fuel } = useFuelDay()
+  const { fuel, isPending: dayPending, isError: dayError, refetch: retryDay } = useFuelDay()
 
   const [mealsPerDay, setMealsPerDay] = useState(settings.mealsPerDay)
   const [caffeineCutoff, setCaffeineCutoff] = useState(settings.caffeineCutoff)
@@ -101,7 +106,7 @@ export function FuelSettingsPage() {
     diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG, diet.dayTypeShiftKcal])
 
   const customSumOk = splitPreset !== 'custom' || Math.round((pPct + cPct + fPct) * 10) === 1000
-  const busy = pending || isPending || dietSaving || dietPending || !customSumOk
+  const busy = pending || isPending || dietSaving || dietPending || fuelError || dietError || !customSumOk
   // The preview follows the DRAFT, not the saved row: the server projects the draft through the
   // real goal engine (mock mode re-derives it locally), so flipping Makróprofil / protein tier
   // moves the numbers immediately instead of only after Mentés (mezo-u2pd). A custom split that
@@ -116,7 +121,7 @@ export function FuelSettingsPage() {
   const projectable = useMemo(
     () => (customSumOk ? draft : { ...draft, splitPreset: diet.splitPreset, fatPctX10: diet.fatPctX10 }),
     [customSumOk, draft, diet.splitPreset, diet.fatPctX10])
-  const { preview: draftTargets } = useDietSettingsPreview(projectable, diet, fuel.targets)
+  const { preview: draftTargets, isPending: previewPending, isError: previewError, refetch: retryPreview } = useDietSettingsPreview(projectable, diet, fuel.targets)
   const preview = useMemo(() => buildFuelSettingsMacroPreview(draftTargets), [draftTargets])
   const dietDirty = splitPreset !== diet.splitPreset
     || proteinTier !== diet.proteinTier || waterMl !== diet.waterMl || fiberG !== diet.fiberG
@@ -133,11 +138,15 @@ export function FuelSettingsPage() {
   const cutoffPoint = arcPoint(cutoffProgress)
 
   const save = async () => {
-    await Promise.all([
+    if (busy) return
+    setSaveError(false)
+    try { await Promise.all([
       setSettings({ mealsPerDay, caffeineCutoff }),
       setDiet(draft),
     ])
-    navigate('/fuel')
+    flushSync(() => setSaved(true))
+    navigate('/settings', { state: originState })
+    } catch { setSaveError(true) }
   }
 
   const saveBar = typeof document === 'undefined' ? null : createPortal(
@@ -150,11 +159,17 @@ export function FuelSettingsPage() {
     document.querySelector('.phone-screen') ?? document.body,
   )
 
+  if (fuelError || dietError) return <MozaikPage tone="sage"><UnsavedChangesGuard dirty={!saved && ((touchedDiet && dietDirty) || (touchedFuel && (mealsPerDay !== settings.mealsPerDay || caffeineCutoff !== settings.caffeineCutoff)))} /><PageHead onBack={() => navigate('/settings', { state: originState })} label="‹ Beállítások" /><PageBody><p role="alert">Nem sikerült betölteni a Fuel beállításait. A mentett értékek nem módosíthatók, amíg a betöltés nem sikerül.</p><button className="cta-primary" onClick={() => { retryFuel(); retryDiet() }}>Újrapróbálás</button></PageBody></MozaikPage>
+
   return (
     <MozaikPage tone="sage" className="fset-page">
-      <PageHead onBack={() => navigate(-1)} label="‹ Fuel">
+      <UnsavedChangesGuard dirty={!saved && ((touchedDiet && dietDirty) || (touchedFuel && (mealsPerDay !== settings.mealsPerDay || caffeineCutoff !== settings.caffeineCutoff)))} />
+      {saveError && <p role="alert">Nem sikerült minden módosítást menteni. Próbáld újra.</p>}
+      <PageHead onBack={() => navigate('/settings', { state: originState })} label="‹ Beállítások">
         <h1 className="fset-title">Fuel beállítások</h1>
       </PageHead>
+      {(isPending || dietPending) && <p role="status">Beállítások betöltése…</p>}
+      <fieldset disabled={isPending || dietPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <EntranceGroup>
       <PageBody className="fset-body">
         <section className="fset-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -214,7 +229,7 @@ export function FuelSettingsPage() {
             </select>
           </label>
 
-          {preview ? (
+          {previewError || dayError ? <p role="alert">Az előnézet nem tölthető be. <button type="button" onClick={() => { retryPreview(); retryDay() }}>Előnézet újrapróbálása</button></p> : previewPending || dayPending ? <p role="status">Előnézet számítása…</p> : preview ? (
             <div className="fset-target-preview">
               <span className="fset-target-label">{dietDirty ? 'Mai cél a beállítás szerint' : 'Mai cél alapján'}</span>
               <div className="fset-macro-preview-body">
@@ -302,7 +317,7 @@ export function FuelSettingsPage() {
 
         <button type="button" className="fset-card fset-slots np-press rise"
           style={{ '--d': '260ms' } as React.CSSProperties}
-          aria-label="Étkezési ablakok szerkesztése" onClick={() => navigate('/fuel/slots')}>
+          aria-label="Étkezési ablakok szerkesztése" onClick={() => navigate('/settings/fuel/slots', { state: originState })}>
           <span>Étkezési ablakok</span>
           <strong>szerkesztése <span aria-hidden="true">›</span></strong>
         </button>
@@ -311,6 +326,7 @@ export function FuelSettingsPage() {
         </p>
       </PageBody>
       </EntranceGroup>
+      </fieldset>
       {saveBar}
     </MozaikPage>
   )

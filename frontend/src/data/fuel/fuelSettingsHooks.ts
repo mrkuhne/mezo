@@ -8,13 +8,13 @@ import type { FuelSettings } from '@/data/types'
 export const FUEL_SETTINGS_GHOST: FuelSettings = { mealsPerDay: 4, caffeineCutoff: '14:00' }
 
 export function useFuelSettings() {
-  const { data, isPending } = useDualQuery<FuelSettings>({
+  const { data, isPending, isError, refetch } = useDualQuery<FuelSettings>({
     queryKey: ['fuelSettings'],
     mockData: FUEL_SETTINGS_GHOST,
     realFetch: fuelSettingsApi.get,
     realEmpty: FUEL_SETTINGS_GHOST,
   })
-  return { settings: data, isPending }
+  return { settings: data, isPending, isError, refetch }
 }
 
 export function useFuelSettingsActions() {

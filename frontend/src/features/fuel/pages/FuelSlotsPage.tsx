@@ -1,3 +1,6 @@
+import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
+import { flushSync } from 'react-dom'
+import { UnsavedChangesGuard } from '@/features/settings/components/UnsavedChangesGuard'
 // ============================================================
 // Mezo · FuelSlotsPage (mezo-7102 — Task 8) — "/fuel/slots" full-page editor
 // for per-day-type meal-slot templates. Sibling of the `fuel` group (mirrors
@@ -178,10 +181,13 @@ function seedRowsFromRecommendation(windows: ReturnType<typeof placeWindows>, bu
 
 export function FuelSlotsPage() {
   const navigate = useNavigate()
+  const { state: originState } = useSettingsOrigin()
+  const [saved, setSaved] = useState(false)
+  const [writeError, setWriteError] = useState(false)
   const [dayType, setDayType] = useStickyTab<SlotTemplateDayType>('fuel.slots.dayType', 'rest')
   const { blocks, budget, wake, bed, dayType: todayType, weightKg } = useFuelTimeline()
-  const { settings } = useFuelSettings()
-  const { templates, isPending: templatesPending } = useSlotTemplates()
+  const { settings, isPending: settingsPending, isError: settingsError, refetch: retrySettings } = useFuelSettings()
+  const { templates, isPending: templatesPending, isError: templatesError, refetch: retryTemplates } = useSlotTemplates()
   const { putTemplate, deleteTemplate, pending } = useSlotTemplateActions()
   const { evaluate, pending: evalPending } = useSlotTemplateEvaluation()
 
@@ -281,12 +287,15 @@ export function FuelSlotsPage() {
       return next
     })
   const save = () => {
+    if (settingsPending || templatesPending || settingsError || templatesError) return
     putTemplate({ dayType, slots: rows }).then(() => {
       clearDraft(dayType)
-      navigate(-1)
-    })
+      flushSync(() => setSaved(true))
+      navigate('/settings/fuel', { state: originState })
+    }).catch(() => setWriteError(true))
   }
   const resetToRecommended = () => {
+    if (settingsPending || templatesPending || settingsError || templatesError) return
     deleteTemplate(dayType).then(() => {
       clearDraft(dayType)
       setForked(false)
@@ -317,11 +326,17 @@ export function FuelSlotsPage() {
       .catch(() => { setVerdict(null); setEvalDegraded(true); setRowsAtEval(snapshot) })
   }
 
+  if (settingsError || templatesError) return <MozaikPage tone="sage"><UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} /><PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" /><PageBody><p role="alert">Nem sikerült betölteni az étkezési ablakok beállításait. A mentett rendet addig nem lehet felülírni.</p><button className="cta-primary" onClick={() => { retrySettings(); retryTemplates() }}>Újrapróbálás</button></PageBody></MozaikPage>
+
   return (
     <MozaikPage tone="sage">
-        <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
+        <UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} />
+        {writeError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak.</p>}
+        <PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" />
         {/* F7.3 (mezo-d20.8.3.1): the editor joins the Mozaik generation — sage shell +
             eyebrow/title block; the validation display below follows fuel-mely.html. */}
+        {(settingsPending || templatesPending) && <p role="status">Beállítások betöltése…</p>}
+        <fieldset disabled={settingsPending || templatesPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <EntranceGroup>
         <PageBody>
         <div className="rise" style={{ '--d': '0ms', padding: '2px 2px 12px' } as React.CSSProperties}>
@@ -561,6 +576,7 @@ export function FuelSlotsPage() {
         <div style={{ height: 96 }} />
         </PageBody>
         </EntranceGroup>
+        </fieldset>
 
       {/* Save bar — portaled into the phone screen (RecipeEditorPage.tsx:354-365 idiom) so it pins
           to the device viewport just above the tab bar. Only shown once there is something
@@ -568,8 +584,8 @@ export function FuelSlotsPage() {
           preview has its own primary action (Testreszabás). */}
       {editing && createPortal(
         <div className="recipe-save-bar">
-          <button className="cta-ghost" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
-          <button className="cta-primary" disabled={errors.length > 0 || pending} onClick={save} style={{ flex: 1.8 }}>
+          <button className="cta-ghost" onClick={() => navigate('/settings/fuel', { state: originState })} style={{ flex: 1 }}>Mégse</button>
+          <button className="cta-primary" disabled={errors.length > 0 || pending || settingsPending || templatesPending} onClick={save} style={{ flex: 1.8 }}>
             <Icon name="check" size={15} /> Mentés
           </button>
         </div>,
