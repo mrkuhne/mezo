@@ -38,7 +38,7 @@ const EMPTY_GOAL_OVERVIEW: GoalOverviewResponse = {
 }
 
 export function useGoalOverview(goalId: string | null) {
-  const { data, isPending } = useDualQuery<GoalOverviewResponse>({
+  const { data, isPending, isError } = useDualQuery<GoalOverviewResponse>({
     queryKey: ['goal-overview', goalId],
     enabled: goalId !== null,
     mockData: goalOverviewSeed,
@@ -48,5 +48,6 @@ export function useGoalOverview(goalId: string | null) {
   return {
     overview: goalId ? data : null,
     pending: goalId !== null && isPending,
+    isError,
   }
 }
