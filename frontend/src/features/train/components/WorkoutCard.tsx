@@ -54,9 +54,14 @@ export function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 /** The verdict cell is ICON-ONLY (prototype `verdictCell`, session.js:64): one compact
- *  glyph in a 22×22 box, with the sentence carried by title + aria-label. Pouring the
- *  words into the cell itself overflowed it (fix wave I2). */
-const VERDICT_GLYPH = { ok: '✓', below: '▼', above: '▲' } as const
+ *  mark, with the sentence carried by title + aria-label. Pouring the words into the cell
+ *  itself overflowed it (fix wave I2).
+ *
+ *  Visszaöltöztetés (mezo-ju4j6.11): a Titán-kori szöveg-glifák (`▲`/`▼`) helyén a ház SAJÁT
+ *  agyag szimbólumai állnak, 24px-en — a korábbi 10–12px-es glifa a 22px-es cellában
+ *  olvashatatlan volt (owner 2026-09-19: „az ikon mellette béna, saját ikon kell"). A `ok`
+ *  állapot marad szöveges pipa: az egy nyugalmi jel, nem esemény. */
+const VERDICT_ICON = { below: 'i-trend-le', above: 'i-trend-fel' } as const
 const VERDICT_LABEL = {
   ok: 'A javasolt rep-sávban',
   below: 'Cél alatt — a javasolt rep-sáv alatt',
@@ -255,13 +260,11 @@ export function WorkoutCard({
                     <span className={`wo-verdict is-${status}`} title={VERDICT_LABEL[status]}>
                       {medals.length > 0
                         ? medals.map((m, mi) => <MedalChip key={mi} medal={m} />)
-                        : (
-                          <span
-                            className={status === 'ok' ? 'wkx-stat-ok' : 'wkx-stat-dev'}
-                            role="img"
-                            aria-label={VERDICT_LABEL[status]}
-                          >
-                            {VERDICT_GLYPH[status]}
+                        : status === 'ok' ? (
+                          <span className="wkx-stat-ok" role="img" aria-label={VERDICT_LABEL.ok}>✓</span>
+                        ) : (
+                          <span className="wo-verdict-mark" role="img" aria-label={VERDICT_LABEL[status]}>
+                            <ClayIcon name={VERDICT_ICON[status]} size={24} />
                           </span>
                         )}
                     </span>

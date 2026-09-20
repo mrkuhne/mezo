@@ -1,3 +1,4 @@
+import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -110,6 +111,7 @@ function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx:
  *  to test before a subscription exists), and it's disabled while `push.busy`. */
 export function NotificationsPage() {
   const navigate = useNavigate()
+  const origin = useSettingsOrigin()
   const push = usePushSubscription()
   const { prefs, setPref } = useNotificationPrefs()
   const [testResult, setTestResult] = useState<string | null>(null)
@@ -185,7 +187,7 @@ export function NotificationsPage() {
       // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
       // a number about notifications that cannot happen.
       <MozaikPage tone="sky">
-        <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
+        <PageHead onBack={() => navigate('/settings', { state: origin.state })} label="‹ Beállítások" />
         <PageHero icon="i-ertesites" name="Értesítés-beállítások" />
         <PageBody>
           <EntranceGroup className="col gap-md">
@@ -227,7 +229,7 @@ export function NotificationsPage() {
 
   return (
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
+      <PageHead onBack={() => navigate('/settings', { state: origin.state })} label="‹ Beállítások" />
       {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
           qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
           forecast the card below draws), never asserted — a crowded day says so instead. */}

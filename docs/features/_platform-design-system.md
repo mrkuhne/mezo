@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -88,6 +88,8 @@ features/<domain>/
 ---
 
 ## 2. User-facing behavior
+
+The header cog opens the domain-aware `/settings` center in place of the daypart switch. Settings uses Mozaik/Clay wash surfaces, Boop figures and grouped domain accents; the contextual bottom dock and quick-log FAB are hidden throughout `/settings/*`. Validated origin route state drives highlight and return navigation. Routes are composed by `features/settings/settingsRoutes.tsx`; inventory coverage reads both route tables. See [central settings](settings.md).
 
 The design system has no "flows" of its own; it provides the chrome and the idioms every flow uses. The user-visible behaviors it owns:
 
@@ -769,7 +771,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `mozaik/mozaikCssTokens.test.ts` — every `--mz-*` token declared in **both** `:root` blocks.
 - `mozaik/prototypeCssStructure.test.ts` — stylesheet-wide brace balance, conflict markers, comment termination (`mezo-d20.9.1`).
 - `clay/index.tsx` — `ClaySprites` + `ClayIcon`/`ClaySpot` over the verbatim sprite sheets; re-synced by `frontend/scripts/sync-clay-assets.sh` from `docs/design_2.0/assets/`.
-- `frontend/src/app/TabBar.tsx` / `navModel.ts` — docked domain switch mark plus four contextual links, route ownership and last-tab memory.
+- `frontend/src/app/TabBar.tsx` / `navModel.ts` — docked avatar-only domain switch (40px, no visible domain caption/caret; accessible name retained) plus four contextual links, route ownership and last-tab memory. Both this avatar and the five 44px `DomainSwitcher` avatars use living Boop: gaze, blink, brow and breath, disabled under reduced motion. Nap uses orange and Edzés blue for Boop and navigation accents/card washes (owner request, mezo-b1ex2). Shared motion is in `styles/prototype.css`; palettes in `shared/ui/clay/boop/boop.svg`.
 - `frontend/src/app/DomainSwitcher.tsx` — panel-free, focus-contained five-card modal portal; inert background and focus restoration.
 - `frontend/src/app/QuickLogFab.tsx` — separate quick-log launcher, subject to the existing AppLayout route exceptions.
 - `frontend/tests/layout/navigation.spec.ts` — 320px/390px/desktop anchoring, card reachability, short-landscape scrolling and dismissal; behavior tests in `frontend/src/app/TabBar.test.tsx`.

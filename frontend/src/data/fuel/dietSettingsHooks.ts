@@ -12,13 +12,13 @@ export const DIET_SETTINGS_GHOST: DietSettings = {
 }
 
 export function useDietSettings() {
-  const { data, isPending } = useDualQuery<DietSettings>({
+  const { data, isPending, isError, refetch } = useDualQuery<DietSettings>({
     queryKey: ['dietSettings'],
     mockData: DIET_SETTINGS_GHOST,
     realFetch: dietSettingsApi.get,
     realEmpty: DIET_SETTINGS_GHOST,
   })
-  return { settings: data, isPending }
+  return { settings: data, isPending, isError, refetch }
 }
 
 export function useDietSettingsActions() {
@@ -53,8 +53,8 @@ export function useDietSettingsActions() {
  * Once it moves, real mode POSTs the draft to `/api/diet/settings/preview`, which runs the actual
  * goal engine read-only — the previewed numbers ARE the ones the save will produce. Mock mode has
  * no engine, so it re-derives them locally (see `projectDraftTargets` for the two documented mock
- * fictions). `keepPreviousRealData` holds the last projection on screen while a new draft
- * resolves, so the numbers never blank out mid-flip.
+ * fictions). A changed draft stays visibly pending until its own result arrives; an older
+ * projection must not be presented as the newly selected target.
  *
  * @param draft the in-progress settings
  * @param saved the persisted settings `base` was prescribed under
@@ -72,7 +72,7 @@ export function useDietSettingsPreview(
     || draft.proteinTier !== saved.proteinTier
     || draft.dayTypeShiftKcal !== saved.dayTypeShiftKcal
   const served: DietTargetsPreview = { ...base, source: 'goal' }
-  const { data, isPending } = useDualQuery<DietTargetsPreview>({
+  const { data, isPending, isError, refetch } = useDualQuery<DietTargetsPreview>({
     queryKey: ['dietSettingsPreview', draft.splitPreset, draft.fatPctX10, draft.proteinTier,
       draft.dayTypeShiftKcal],
     mockData: macroDirty
@@ -80,8 +80,7 @@ export function useDietSettingsPreview(
       : served,
     realFetch: () => dietSettingsApi.preview(draft),
     realEmpty: served,
-    keepPreviousRealData: true,
     enabled: macroDirty,
   })
-  return { preview: data, isPending }
+  return { preview: macroDirty ? data : served, isPending: macroDirty && isPending, isError: macroDirty && isError, refetch }
 }

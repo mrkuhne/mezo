@@ -82,7 +82,7 @@ describe('useGoalOverview', () => {
     const { wrapper, client } = makeHookWrapperWithClient()
     const { result } = renderHook(() => useGoalOverview(null), { wrapper })
 
-    expect(result.current).toEqual({ overview: null, pending: false })
+    expect(result.current).toMatchObject({ overview: null, pending: false, isError: false })
     expect(client.getQueryState(['goal-overview', null])?.fetchStatus).toBe('idle')
     expect(calls).toBe(0)
   })

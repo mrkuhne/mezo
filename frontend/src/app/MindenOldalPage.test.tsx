@@ -33,7 +33,7 @@ describe('Minden oldal — az oldal-leltár', () => {
   test('all five domains get a section, and the counts add up to the whole leltár', () => {
     const { container } = renderAt()
     const sections = [...container.querySelectorAll('.mno-domain')]
-    expect(sections.map((s) => s.id)).toEqual(DOMAINS.map((d) => d.id))
+    expect(sections.map((s) => s.id)).toEqual([...DOMAINS.map((d) => d.id), 'settings'])
     const counted = sections.reduce(
       (n, section) => n + section.querySelectorAll('.mno-group a').length, 0,
     )

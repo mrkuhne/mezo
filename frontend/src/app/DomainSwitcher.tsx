@@ -73,7 +73,7 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
                   onClose()
                   navigate(routeForDomain(domain.id))
                 }}>
-                <span className="domain-row-mark"><Boop domain={domain.id} size={44} /></span>
+                <span className="domain-row-mark"><Boop domain={domain.id} size={44} alive /></span>
                 <span className="domain-row-text"><strong>{domain.name}</strong><small>{summary}</small></span>
                 <b className="domain-row-end" aria-hidden="true">{current ? '✓' : '↗'}</b>
               </button>

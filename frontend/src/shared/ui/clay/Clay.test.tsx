@@ -23,9 +23,9 @@ const RESTORED_TITANIUM_ERA = [
   'i-makro', 'i-mikro', 'i-feldolgozas', 'i-vercukor', 'i-info',
 ] as const
 
-test('ClaySprites mounts all 67 icon symbols and 24 spot symbols', () => {
+test('ClaySprites mounts all 70 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(67)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(70)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
 })
 

@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-06
+updated: 2026-09-20
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -23,6 +23,8 @@ related: [_platform-api-backend, _platform-auth-security, _platform-notification
 This is the cross-cutting plumbing every feature consumes, so this doc is named with a leading `_` (a platform doc, not a single user-facing slice). Read it before wiring any new domain to the backend.
 
 ## 1. Summary
+
+Central settings consumes existing canonical domain hooks. Companion preferences/context/account mutations live in `data/companion/preferencesHooks.ts`; reads use `useDualQuery` and real mode never reconstructs prompt content from mocks. Goal, biometric and recurring schedule mock writes persist in the session QueryClient, preserving the same edit/remount behavior as real reads. Personal-context cache invalidation follows account/profile/goal/preference writes. See [settings](settings.md).
 
 `frontend/src/data/hooks.ts` is the **single integration boundary** between every React view and the data layer. Each feature imports its data exclusively as `useX()` hooks from `@/data/hooks` (~22 hooks). Every hook can run in one of two modes, switched **per call** by `isMockMode()` (`frontend/src/data/_client/mode.ts`, which reads `VITE_USE_MOCK`):
 

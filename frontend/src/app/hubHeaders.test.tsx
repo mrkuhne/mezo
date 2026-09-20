@@ -36,7 +36,7 @@ test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s tab-gyökéren PONT
 })
 
 const BASE_CONTROLS = [
-  'Napszak váltása',
+  'Beállítások',
   expect.stringMatching(/^Mezo üzenetei/),
   expect.stringMatching(/^Értesítések/),
   // mezo-idz2: a jobb szélső gomb már nem a profilra visz (azt az alsó „Én" fül adja),

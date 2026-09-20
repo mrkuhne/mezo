@@ -1,3 +1,6 @@
+import { settingsRoutes } from '@/features/settings/settingsRoutes'
+import { MezoPersonalPage } from '@/features/settings/pages/MezoPersonalPage'
+import { AccountSettingsPage } from '@/features/settings/pages/AccountSettingsPage'
 import type { ReactNode } from 'react'
 import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
@@ -56,8 +59,6 @@ import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
-import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
-import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
@@ -99,7 +100,6 @@ import { GoalDietPage } from '@/features/me/pages/GoalDietPage'
 import { GoalSegmentPage } from '@/features/me/pages/GoalSegmentPage'
 import { GoalPlansPage } from '@/features/me/pages/GoalPlansPage'
 import { GoalGuardsPage } from '@/features/me/pages/GoalGuardsPage'
-import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
 import { GoalSuggestionPage } from '@/features/me/pages/GoalSuggestionPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
@@ -113,9 +113,7 @@ import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
 import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
 import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
 import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
-import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
-import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import MindenOldalPage from '@/app/MindenOldalPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
@@ -374,8 +372,13 @@ export const routes: RouteObject[] = [
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
       // Fuel settings is a full-page sibling; its meal-window row continues to the
       // dedicated slot-template editor (mezo-7102).
-      { path: 'fuel/settings', element: <FuelSettingsPage /> },
-      { path: 'fuel/slots', element: <FuelSlotsPage /> },
+      ...settingsRoutes,
+      { path: 'settings/account', element: <AccountSettingsPage /> },
+      { path: 'settings/mezo/about', element: <MezoPersonalPage mode="about" /> },
+      { path: 'settings/mezo/communication', element: <MezoPersonalPage mode="communication" /> },
+      { path: 'settings/mezo/context', element: <MezoPersonalPage mode="context" /> },
+      { path: 'fuel/settings', element: <Navigate to="/settings/fuel" replace /> },
+      { path: 'fuel/slots', element: <Navigate to="/settings/fuel/slots" replace /> },
       // Fuel Titanium S5 (mezo-qt5q): a leváltott Fuel-útvonalak redirectjei — `FUEL_RETIRED_REDIRECTS`.
       ...fuelRetiredRedirectRoutes,
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
@@ -505,7 +508,7 @@ export const routes: RouteObject[] = [
       { path: 'me/goals/weight/segment', element: <GoalSegmentPage /> },
       { path: 'me/goals/weight/plans', element: <GoalPlansPage /> },
       { path: 'me/goals/weight/guards', element: <GoalGuardsPage /> },
-      { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
+      { path: 'me/goals/weight/settings', element: <Navigate to="/settings/me/goal" replace /> },
       { path: 'me/goals/weight/suggestions/:suggestionId', element: <GoalSuggestionPage /> },
       { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
       // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
@@ -538,10 +541,10 @@ export const routes: RouteObject[] = [
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.
       { path: 'me/ertesitesek', element: <NotificationFeedPage /> },
-      { path: 'me/ertesitesek/beallitasok', element: <NotificationsPage /> },
+      { path: 'me/ertesitesek/beallitasok', element: <Navigate to="/settings/notifications" replace /> },
       // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
-      { path: 'me/beallitasok', element: <BeallitasokPage /> },
+      { path: 'me/beallitasok', element: <Navigate to="/settings" replace /> },
       // Beta admin + AI-napló (mezo-qw37.3 / mezo-uakh) moved under /admin (mezo-d5iy.13) — both
       // were OWNER-only already, so they now live beside the rest of the owner console. These
       // two entries are pure redirects for old bookmarks/in-app navigate() calls, not pages.

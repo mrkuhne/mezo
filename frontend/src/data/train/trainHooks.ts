@@ -424,6 +424,10 @@ type TrainData = {
   workout: WorkoutPlan | null
   gymSchedule: GymSchedule | null
   gymSlots: GymScheduleSlot[]
+  schedulePending: boolean
+  scheduleError: boolean
+  saveGymScheduleAsync: (slots: GymScheduleSlotInput[]) => Promise<unknown>
+  saveSportScheduleAsync: (slots: SportScheduleSlotInput[]) => Promise<unknown>
   sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
   exerciseLibrary: ExerciseLibraryItem[]
   exerciseRecords: ExerciseRecordResponse[]
@@ -622,10 +626,11 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       : () => trainApi.sportSessions().then((rs) => ({ sessions: rs.map(toSportSession), week: deriveSportWeek(rs) })),
     initialData: mock ? { sessions: sport.sessions, week: sport.week } : undefined,
   })
-  const { data: scheduleData } = useQuery({
+  const { data: scheduleData, isPending: schedulePending, isError: scheduleError } = useQuery({
     queryKey: ['train', 'sportSchedule'],
     queryFn: mock ? async () => sport.schedule : () => trainApi.sportSchedule().then(toSportSchedule),
     initialData: mock ? sport.schedule : undefined,
+    staleTime: mock ? Infinity : undefined,
   })
   // One-off (non-recurring) sport events (mezo-e1sp). The FULL list loads — it stays small
   // and the Sport tab renders upcoming ones beyond this week; the current week's slice is
@@ -653,7 +658,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   })
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
-  const { data: gymSlotsData } = useQuery({
+  const { data: gymSlotsData, isPending: gymSchedulePending, isError: gymScheduleError } = useQuery({
     queryKey: ['train', 'gymSchedule'],
     queryFn: mock ? async () => gymScheduleMock : () => trainApi.gymSchedule().then(toGymSlots),
     initialData: mock ? gymScheduleMock : undefined,
@@ -839,7 +844,10 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
 
   const sportScheduleMutation = useMutation({
     mutationFn: mock
-      ? async (_slots: SportScheduleSlotInput[]) => undefined
+      ? async (slots: SportScheduleSlotInput[]) => {
+          qc.setQueryData(['train', 'sportSchedule'], toSportSchedule(slots.map(s => ({ ...s, kind: s.kind === 'match' ? 'match' : 'training', sport: s.sport ?? 'volleyball', id: crypto.randomUUID() }))))
+          return undefined
+        }
       : (slots: SportScheduleSlotInput[]) => trainApi.replaceSportSchedule(slots),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSchedule'] }) },
   })
@@ -873,7 +881,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   })
   const gymScheduleMutation = useMutation({
     mutationFn: mock
-      ? async (_slots: GymScheduleSlotInput[]) => undefined
+      ? async (slots: GymScheduleSlotInput[]) => { qc.setQueryData(['train', 'gymSchedule'], slots); return undefined }
       : (slots: GymScheduleSlotInput[]) => trainApi.replaceGymSchedule(slots),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'gymSchedule'] }) },
   })
@@ -1026,8 +1034,12 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     workout: mock ? trainWorkout : toWorkoutPlan(todayData),
     // Mock serves the full static weekly schedule (Phase-1 parity); real derives
     // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
-    gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso, gymSlots),
+    gymSchedule: mock ? { ...trainGymSchedule, weeklyTimes: trainGymSchedule.weeklyTimes.map((day, index) => ({ ...day, time: gymSlots.find(slot => slot.dayOfWeek === index)?.time ?? null })) } : deriveGymSchedule(realActiveMeso, gymSlots),
     gymSlots,
+    schedulePending: !mock && (schedulePending || gymSchedulePending),
+    scheduleError: scheduleError || gymScheduleError,
+    saveGymScheduleAsync: gymScheduleMutation.mutateAsync,
+    saveSportScheduleAsync: sportScheduleMutation.mutateAsync,
     todaySession: !mock && todayData?.templateSessionId
       ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
       : null,
@@ -1049,7 +1061,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // One-off events merge into the schedule in BOTH modes (mezo-e1sp); with no events
     // the base passes through untouched, so mock stays byte-identical to Phase 1.
     sport: mock
-      ? { ...sport, schedule: mergeEventsIntoSchedule(sport.schedule, eventsData ?? []), sessions: sportData?.sessions ?? [] }
+      ? { ...sport, schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), sessions: sportData?.sessions ?? [] }
       : { schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     sportEvents: eventsData ?? [],
     sportSlotSkips: sportSlotSkipsData ?? [],

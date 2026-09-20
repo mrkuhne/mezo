@@ -119,7 +119,7 @@ test('useBiometricProfile (mock mode) returns the static complete profile', asyn
   expect(result.current.isComplete).toBe(true)
 })
 
-test('useBiometricActions (mock mode) upsert is a no-op that resolves without hitting the API', async () => {
+test('useBiometricActions (mock mode) upsert resolves without hitting the API', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   // No MSW handler is needed in mock mode; resolving cleanly proves it short-circuits.
   const { result } = renderHook(() => useBiometricActions(), { wrapper: makeHookWrapper() })
@@ -127,4 +127,22 @@ test('useBiometricActions (mock mode) upsert is a no-op that resolves without hi
     await result.current.upsert({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MIXED' })
   })
   expect(result.current.pending).toBe(false)
+})
+
+test('failed profile reads are distinct from missing profiles', async () => {
+  server.use(http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 500 })))
+  const { result } = renderHook(() => useBiometricProfile(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(result.current.profile).toBeNull()
+})
+
+test('mock profile edits survive a reader remount and clear stale TDEE', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const wrapper = makeHookWrapper()
+  const editor = renderHook(() => useBiometricActions(), { wrapper })
+  await act(async () => { await editor.result.current.upsert({ sex: 'F', heightCm: 168, birthDate: '1992-05-05', activityLevel: 'MIXED' }) })
+  editor.unmount()
+  const reader = renderHook(() => useBiometricProfile(), { wrapper })
+  await waitFor(() => expect(reader.result.current.profile?.heightCm).toBe(168))
+  expect(reader.result.current.profile?.tdeeBootstrap).toBeNull()
 })

@@ -293,17 +293,13 @@ describe('NotificationsPage', () => {
     expect(master?.querySelector('svg')).not.toBeNull()
   })
 
-  // ── mezo-d20.11 (1:1 fidelity audit) ──────────────────────────────────────────────────────
-  // ADR 0032: the page had NO header at all — no title, no way back. The prototype
-  // (#page-ertesites) gives it the `‹ Értesítések` chip and a hero stating today's planned
-  // volume. mezo-nol0: the noun moved to the feed page, so this settings page's own hero/back
-  // chip now read `Értesítés-beállítások` / `‹ Értesítések` instead of the shared `Értesítések`.
+  // Central settings retains the complete notification controls and a parent breadcrumb.
   it('wears the prototype header and hero, with a way back', async () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
     const { container } = renderPage()
     expect(await screen.findByText('Értesítés-beállítások')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-    expect(screen.getByText('‹ Értesítések')).toBeInTheDocument()
+    expect(screen.getByText('‹ Beállítások')).toBeInTheDocument()
     expect(container.querySelector('.mz-bignum')).not.toBeNull()
   })
 

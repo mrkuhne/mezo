@@ -38,6 +38,13 @@
 //     (loadWeek.ts) folds the two back together honestly: 'over' is kept ONLY when
 //     `doneRows` alone already crosses the budget — the map's own caption ("ami már
 //     dolgozott") must never be inflated by tonight's still-unlogged plan.
+//
+// ---- PAGE TONE (mezo-ju4j6.12) ----------------------------------------------
+// `tone="coral"`, not the Titanium-era `tone="gold"`: every accent ON this page is
+// the Train domain's coral (the hero halo, the percent bar, the group tiles), so a
+// gold page ground made the screen carry two hues. Style bible A.2 rule 1 — the
+// domain accent wins over the Titanium one. Behaviour unchanged; `PageTone` already
+// ships `coral` and `.mz-p-coral` (prototype.css).
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -54,7 +61,6 @@ import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import {
@@ -67,7 +73,7 @@ import { muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import { growthForecast } from '@/features/train/logic/growthForecast'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
-import type { GymScheduleSlot, MesoDay, VolleyballSession } from '@/data/types'
+import type { MesoDay, VolleyballSession } from '@/data/types'
 import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 
 /** The ONE sentence the hero says — the strongest fact that is actually true right now. */
@@ -161,7 +167,7 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
 
 export function TrainWeekPage() {
   const {
-    sport, activeMeso, workoutPending, gymSlots, saveGymSchedule,
+    sport, activeMeso, workoutPending,
     workout, completedTodayWorkout,
   } = useTrain()
   const { activeRunningBlock, runningPending } = useRunning()
@@ -169,10 +175,7 @@ export function TrainWeekPage() {
   const { data: medals } = useMedals()
   const navigate = useNavigate()
   const [customOpen, setCustomOpen] = useState(false)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
-  // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots.
-  const [gymOverride, setGymOverride] = useState<GymScheduleSlot[] | null>(null)
 
   // weekLog.pending must gate too (ActiveWorkoutPage.tsx :778 precedent) — without it, real
   // mode draws a 0% hero and speaks "a hét még előtted van" while the (up to 7) per-day
@@ -182,7 +185,7 @@ export function TrainWeekPage() {
 
   if (!activeMeso) {
     return (
-      <MozaikPage tone="gold">
+      <MozaikPage tone="coral">
         <PageBody>
           <GhostState lines={3} message="A heti terhelésed itt jelenik majd meg — előbb tervezz egy mesociklust."
             ctaLabel="+ Tervezz mesociklust" onCta={() => navigate('/train/mesocycles/new')} />
@@ -229,7 +232,7 @@ export function TrainWeekPage() {
   const glassGroup = groups.find((g) => g.group === openGroup) ?? null
 
   return (
-    <MozaikPage tone="gold">
+    <MozaikPage tone="coral">
       <EntranceGroup>
         {/* The hero is a DIRECT child of .mz-page, which already pulls itself out of the
             scroller's --screen-gutter — that is the whole full-bleed recipe, no new
@@ -261,7 +264,6 @@ export function TrainWeekPage() {
             />
           </p>
           <div className="ld-hero-chips">
-            <button type="button" className="mz-pgact" onClick={() => setScheduleOpen(true)}>Időpontok</button>
             <button
               type="button"
               className="mz-pgact"
@@ -396,16 +398,6 @@ export function TrainWeekPage() {
       </EntranceGroup>
 
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
-      {scheduleOpen && (
-        <GymScheduleSheet
-          slots={gymOverride ?? gymSlots}
-          onSave={(next) => {
-            setGymOverride(next)
-            saveGymSchedule(next)
-          }}
-          onClose={() => setScheduleOpen(false)}
-        />
-      )}
       <GlassBox
         open={glassGroup !== null}
         onClose={() => setOpenGroup(null)}

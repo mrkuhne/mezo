@@ -28,3 +28,11 @@ test('an existing slot seeds its weekday input', () => {
   render(<GymScheduleSheet slots={[{ dayOfWeek: 1, time: '18:30' }]} onClose={() => {}} onSave={() => {}} />)
   expect(screen.getByLabelText('Kedd időpont')).toHaveValue('18:30')
 })
+
+test('keeps edited values visible after failed persistence', async () => {
+  render(<GymScheduleSheet slots={[]} onClose={vi.fn()} onSave={async () => { throw new Error('offline') }} />)
+  await userEvent.type(screen.getByLabelText('Kedd időpont'), '18:30')
+  await userEvent.click(screen.getByRole('button', { name: /mentés/i }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült menteni')
+  expect(screen.getByLabelText('Kedd időpont')).toHaveValue('18:30')
+})

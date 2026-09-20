@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
@@ -27,6 +27,8 @@ The engine is **heuristic + formula-based**: guards WARN, the verdict only colou
 Driving design: [`docs/superpowers/specs/2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md) — **§4** (the EWMA-spine projection model, hybrid projection D7) and **§5** (engine services, soft guards D9, feasibility gate D10, prescription assembly §5.4). The grounded numbers (NEAT bands, kcal/kg, protein g/kg, rate bands, the MET model, EWMA half-life) come from the research note [`docs/research/queries/2026-06-18-goal-engine-numbers.md`](../research/queries/2026-06-18-goal-engine-numbers.md).
 
 ## 2. User-facing behavior
+
+The central weight-goal editor (`/settings/me/goal`, [Me feature](me.md)) takes a target weight and remaining kg/week pace, derives a date from today's current-weight baseline and preserves the original stored start/history/guards. The backend's existing `rateTargetPctPerWeek` calculation remains based on the **original complete window**. The UI explicitly discloses the difference and requests feasibility for both windows before saving; it does not substitute browser-derived calorie prescriptions. Maintenance has no estimated arrival date.
 
 The engine has **no screen of its own**. Its output appears on `/me/goals/weight` (`Cél`) — moved off `/me/goals` in `mezo-iizd.1` Task 8 so that route could become the general-purpose Célok (life-goals) hub, see [`lifegoal.md`](lifegoal.md) — as the **recept card** (`GoalRecept.tsx`): a feasibility-verdict banner ("Reális" / "Reális, figyelmeztetésekkel" / "Agresszív"), per-segment recept cards (week range, label, kcal / protein g / sleep h / signed kg-per-week, HU rationale), and guard-status pills (strength e1RM trend, muscle weekly-volume floor + rate-cap, and a muted "Fehérje: Fuel-re vár" pill). When a goal has not yet been evaluated (`prescription === null`), the card shows an **"⚡ Értékeld a célt" CTA** that fires the `evaluate` action. Full UX detail and the Hungarian labels live in [`me.md`](me.md) §2 (`Recept — the G5 engine finale`).
 
@@ -296,6 +298,10 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - **Cross-domain bridges** (§5) — `sleepTargetH` → Sleep stays emitted-but-unconsumed (nothing on the Sleep side reads it back) and `restDays`/deload → Train/Today is still fully deferred; `prescription.kcal/proteinG` → Fuel is long since wired (§5). **The meso→diet bridge is dropped from this deferred list** — since Diet Plan slice 4 (`mezo-ktg8`) `MesoLifecycleSuggestionListener` + `GoalSuggestionTriggerService` (§5) close that loop live, surfaced as suggestions on the `Cél` page and the Fuel banner. Since `mezo-ricj.4`, every newly committed suggestion also appears in the in-app bell feed; only OS push stays deferred because `GOAL_SUGGESTION.familyKey` is null. **Adaptive TDEE is dropped from this deferred list too** (Diet Plan slice 5, above) — `basis="adaptive"` is live.
 
 ## 10. Key files
+
+- `frontend/src/features/me/logic/goalSettings.ts` — remaining-distance date derivation and lossless upsert mapping.
+- `frontend/src/data/me/goalSettingsHooks.ts` — both server feasibility previews and goal update; query keys isolate late responses.
+- `frontend/src/features/me/components/GoalSettingsEditor.tsx` — visible baseline, derived date and save/read failure handling.
 
 **Engine (backend, `feature/goal/engine/`):**
 - `GoalEngineProperties.java` — the `mezo.goal.*` config record (NEAT bands/kcalPerKg/protein/rate/volume/strength/ewma/**diet**; the session-kcal `met` deltas were retired in mezo-eujg — training EAT is train-owned, `mezo.train.met`). Its `Diet` subrecord (`fatShareBalanced/LowFat/LowCarb/HighCarb`, `fatFloorGPerKg`, Diet Plan slice 1 `mezo-xwgb`) is §4's newest addition.

@@ -1,5 +1,6 @@
+import { useDualQuery } from '@/data/useDualQuery'
 import { useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   biometricProfileApi,
   type BiometricProfileResponse,
@@ -15,57 +16,62 @@ import { biometricProfile as mockBiometricProfile } from '@/data/me/goals'
 // a normal "not set up" state, NOT an error, and reaches us in two shapes while
 // the backend/frontend images roll out separately (mezo-5cmq): 200 with all-null
 // fields (new) and 404 (old). Both resolve to null; any other status rethrows.
-// Mock mode returns a static complete profile so the card renders offline.
+// Mock mode seeds a complete profile and preserves edits in the query cache.
 // `isComplete` is the gate predicate: the three required fields are present.
 export function useBiometricProfile(): {
   profile: BiometricProfileResponse | null
   isComplete: boolean
   isLoading: boolean
+  isError: boolean
+  refetch: () => void
 } {
-  const mock = isMockMode()
-  const { data, isLoading } = useQuery({
+  const { data, isPending, isError, refetch } = useDualQuery<BiometricProfileResponse | null>({
     queryKey: ['biometricProfile'],
-    queryFn: mock
-      ? async () => mockBiometricProfile
-      : async (): Promise<BiometricProfileResponse | null> => {
-          try {
-            const p = await biometricProfileApi.get()
-            // mezo-5cmq: "no profile yet" is now 200 with every field null (Jackson writes the
-            // nulls — the body is NOT `{}`). `birthDate` is mandatory on every real profile, so
-            // its absence is the honest emptiness probe. Same `null` as the 404 branch below.
-            return p.birthDate ? p : null
-          } catch (err) {
-            // The pre-5cmq backend answered 404 here; still tolerated, because the two images do
-            // not switch at the same moment. Not an error either — just "not set up".
-            if (err instanceof ApiError && err.status === 404) return null
-            throw err
-          }
-        },
-    initialData: mock ? mockBiometricProfile : undefined,
+    mockData: mockBiometricProfile,
+    realEmpty: null,
+    realFetch: async (): Promise<BiometricProfileResponse | null> => {
+      try {
+        const p = await biometricProfileApi.get()
+        // mezo-5cmq: "no profile yet" is now 200 with every field null (Jackson writes the
+        // nulls — the body is NOT `{}`). `birthDate` is mandatory on every real profile, so
+        // its absence is the honest emptiness probe. Same `null` as the 404 branch below.
+        return p.birthDate ? p : null
+      } catch (err) {
+        // The pre-5cmq backend answered 404 here; still tolerated, because the two images do
+        // not switch at the same moment. Not an error either — just "not set up".
+        if (err instanceof ApiError && err.status === 404) return null
+        throw err
+      }
+    },
   })
   const profile = data ?? null
   const isComplete = !!(profile && profile.sex && profile.heightCm && profile.birthDate)
-  return { profile, isComplete, isLoading }
+  return { profile, isComplete, isLoading: isPending, isError, refetch }
 }
 
 // Biometric profile write (G6, mezo-06n). Real mode PUTs the profile then
 // invalidates ['biometricProfile'] (the card/gate re-read the fresh value) and
 // ['goals'] (the backend recomputes the active goal's tdeeBootstrap/prescription
-// on profile change — Task 3). Mock mode no-ops and resolves so the editor sheet
-// can fire-and-forget in Phase-1 parity. Returns the mutation promise so the
+// on profile change — Task 3). Mock mode saves the profile in the query cache
+// without fabricating a new TDEE calculation. Returns the mutation promise so the
 // sheet can `.then(close)` on success.
 export function useBiometricActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
   const mutation = useMutation({
     mutationFn: async (body: BiometricProfileUpsertRequest): Promise<BiometricProfileResponse | null> => {
-      if (mock) return null
+      if (mock) {
+        if (body.sex !== 'M' && body.sex !== 'F') throw new Error('Érvénytelen nem')
+        return { ...body, sex: body.sex, bodyFatPct: body.bodyFatPct ?? null, tdeeBootstrap: null }
+      }
       return biometricProfileApi.upsert(body)
     },
-    onSuccess: () => {
+    onSuccess: profile => {
+      if (mock) qc.setQueryData(['biometricProfile'], profile)
       if (!mock) {
         qc.invalidateQueries({ queryKey: ['biometricProfile'] })
         qc.invalidateQueries({ queryKey: ['goals'] })
+        qc.invalidateQueries({ queryKey: ['companion-personal-context'] })
       }
     },
   })

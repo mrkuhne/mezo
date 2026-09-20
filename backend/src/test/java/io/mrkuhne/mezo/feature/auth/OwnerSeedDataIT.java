@@ -20,6 +20,7 @@ class OwnerSeedDataIT extends AbstractIntegrationTest {
 
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerSeedData ownerSeedData;
+    @Autowired private io.mrkuhne.mezo.feature.auth.service.AuthService accounts;
     @Autowired private ApplicationContext applicationContext;
 
     @Test
@@ -61,4 +62,16 @@ class OwnerSeedDataIT extends AbstractIntegrationTest {
         assertThat(owner.getOnboardedAt()).isNotNull();
         assertThat(owner.getTimezone()).isEqualTo("Europe/Budapest");
     }
+    @Test
+    @org.springframework.transaction.annotation.Transactional
+    void testSeed_shouldPreserveCorrectedOwnerEmail_whenBootstrappedAgain() {
+        var owner = appUserRepository.findByEmail("owner@mezo.local").orElseThrow();
+        accounts.updateAccount(owner, new io.mrkuhne.mezo.api.dto.UpdateAccountRequest(
+                "Javított alapító", "corrected-owner@test.local"));
+        ownerSeedData.run();
+        assertThat(appUserRepository.count()).isEqualTo(1);
+        assertThat(appUserRepository.findByEmail("owner@mezo.local")).isEmpty();
+        assertThat(appUserRepository.findByEmail("corrected-owner@test.local")).isPresent();
+    }
+
 }

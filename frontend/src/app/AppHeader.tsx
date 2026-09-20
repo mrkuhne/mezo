@@ -1,18 +1,6 @@
-// ============================================================
-// Mezo · AppHeader — az app EGYETLEN felső fejléce (mezo-atry). Korábban mind az öt
-// tab-gyökér külön bemásolta a `.nap-head` receptet, eltérő tartalommal; itt egy helyen
-// él, és az AppLayout mountolja minden oldalra. Sorrend fixen:
-//   szekció (spot + név) · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · napi orb
-// A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
-// meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
-//
-// A napszak-feloldás a `useDayFace()`-é, az üzenet-szál a `MezoThreadProvider`-é: mindkettő
-// megosztott a Nap oldallal, hogy a fejléc és az oldal ne tudjon szétcsúszni (mezo-atry
-// fix-hullám). Fókuszkezelés (focus trap / roving tabindex) tudatosan NINCS — a
-// `docs/features/today.md` külön halasztott tételként tartja számon.
-// ============================================================
+// Global header: settings entry keeps the originating page for return navigation.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
@@ -24,17 +12,12 @@ import { timeLabel } from '@/features/notification/logic/stamp'
 import {
   NOTIFICATION_CATEGORIES, notificationCategory, type NotificationCategoryId,
 } from '@/features/notification/logic/category'
-import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { HeaderAurora } from '@/app/HeaderAurora'
 import { useCondensedHeader } from '@/app/useCondensedHeader'
-
-const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
-  reggel: 'i-hajnal', nap: 'i-nap', este: 'i-alvas',
-}
 
 /** Az értesítés-panel felső korlátja. A többi a teljes feed oldalé (`/me/ertesitesek`) — egy
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
@@ -43,12 +26,9 @@ type NtfFilter = 'all' | 'unread' | NotificationCategoryId
 
 export function AppHeader() {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
-  const [params] = useSearchParams()
+  const { pathname, search, state } = useLocation()
 
-  const { face, nowFace } = useDayFace()
-  // A `?dp=` CSAK a Nap oldalon jelent napszak-választást; máshol a valós napszak látszik.
-  const onNap = pathname === '/nap'
+  const { face } = useDayFace()
   // A bal oldal a szekciót mutatja („hol vagyok"); a pontos oldalcím a lapok PageHead-jéé.
   const condensed = useCondensedHeader()
 
@@ -72,12 +52,11 @@ export function AppHeader() {
   const kalauz = useTutorial()
   const qUnseenDot = kalauz.current !== null && kalauz.current.tier === 'T3' && kalauz.isUnseen(kalauz.current.id)
 
-  const [dpOpen, setDpOpen] = useState(false)
   const [ntfOpen, setNtfOpen] = useState(false)
   const [ntfFilter, setNtfFilter] = useState<NtfFilter>('all')
   const rootRef = useRef<HTMLElement>(null)
   // Útvonalváltáskor minden popover bezárul — a shellben élő fejléc nem remountol.
-  useEffect(() => { setDpOpen(false); setNtfOpen(false) }, [pathname])
+  useEffect(() => { setNtfOpen(false) }, [pathname])
   // A szűrő a panel ÉLETTARTAMÁIG él: egy legközelebbi nyitás megint a teljes listát mutatja,
   // nem egy fél napja otthagyott kategóriát.
   useEffect(() => { if (!ntfOpen) setNtfFilter('all') }, [ntfOpen])
@@ -111,10 +90,10 @@ export function AppHeader() {
   }, [recent, activeNtfFilter])
   // Escape és kívülre kattintás: a popover-alapszerződés, amit mind az öt korábbi másolat
   // elmulasztott. Csak nyitott menü mellett iratkozunk fel.
-  const anyOpen = dpOpen || ntfOpen
+  const anyOpen = ntfOpen
   useEffect(() => {
     if (!anyOpen) return
-    const close = () => { setDpOpen(false); setNtfOpen(false) }
+    const close = () => { setNtfOpen(false) }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
     const onDown = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) close()
@@ -126,18 +105,6 @@ export function AppHeader() {
       document.removeEventListener('mousedown', onDown)
     }
   }, [anyOpen])
-
-  const pickFace = (f: DayFace) => {
-    setDpOpen(false)
-    // A többi query-paraméter (`?day=`, `?medCycleDay=`, `?niggle=`, `?vulnerable=`,
-    // `?ritual=`) app-szintű szcenárió-kapcsoló (`useTodayScenario`) — egy napszakváltás
-    // nem söpörheti el őket. `replace`, hogy a napszak-kattintgatás ne töltse a historyt.
-    const next = new URLSearchParams(params)
-    if (f === nowFace) next.delete('dp')
-    else next.set('dp', f)
-    const qs = next.toString()
-    navigate(qs ? `/nap?${qs}` : '/nap', { replace: true })
-  }
 
   return (
     <header className={cn('nap-head app-head', condensed && 'is-cond')} ref={rootRef}>
@@ -154,33 +121,16 @@ export function AppHeader() {
       {kalauz.current && (
         <button type="button" className={cn('nap-roundbtn', 'nap-q', kalauz.openId === kalauz.current.id && 'is-open')}
           aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
-          onClick={() => { setDpOpen(false); setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
+          onClick={() => { setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
           <span className="nap-q-glyph" aria-hidden="true">?</span>
           {qUnseenDot && <span className="nap-offnow" aria-hidden="true" />}
         </button>
       )}
 
-      <div className="nap-dpwrap">
-        <button type="button" className="nap-roundbtn" aria-label="Napszak váltása"
-          aria-haspopup="menu" aria-expanded={dpOpen}
-          onClick={() => { setNtfOpen(false); setDpOpen((o) => !o) }}>
-          <ClayIcon name={FACE_ICON[face]} size={24} />
-          {onNap && face !== nowFace && <span className="nap-offnow" aria-hidden="true" />}
-        </button>
-        {dpOpen && (
-          <div className="nap-dpmenu" role="menu" aria-label="Napszak">
-            {/* menuitemRADIO: a választás nem csak vizuális (`.on`), a kisegítő technológia
-                is látja, melyik napszakon állunk. */}
-            {DAY_FACES.map((f) => (
-              <button key={f} type="button" role="menuitemradio" aria-checked={f === face}
-                aria-label={FACE_LABEL[f]}
-                className={cn(f === face && 'on')} onClick={() => pickFace(f)}>
-                <ClayIcon name={FACE_ICON[f]} size={24} />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <button type="button" className="nap-roundbtn" aria-label="Beállítások"
+        onClick={() => navigate('/settings', { state: { from: pathname.startsWith('/settings') ? state?.from : pathname + search } })}>
+        <ClayIcon name="i-beallitas" size={24} />
+      </button>
 
       <button type="button" className="nap-roundbtn"
         aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
@@ -195,7 +145,7 @@ export function AppHeader() {
       <button type="button" className={cn('nap-roundbtn', ntfOpen && 'is-open')}
         aria-haspopup="dialog" aria-expanded={ntfOpen}
         aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-        onClick={() => { setDpOpen(false); setNtfOpen((o) => !o) }}>
+        onClick={() => { setNtfOpen((o) => !o) }}>
         <ClayIcon name="i-ertesites" size={23} />
         {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
       </button>

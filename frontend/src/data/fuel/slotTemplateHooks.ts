@@ -14,13 +14,13 @@ const MOCK_SLOT_PLAN_VERDICT: SlotPlanVerdict = {
 }
 
 export function useSlotTemplates() {
-  const { data, isPending } = useDualQuery<SlotTemplate[]>({
+  const { data, isPending, isError, refetch } = useDualQuery<SlotTemplate[]>({
     queryKey: SLOT_TEMPLATES_KEY,
     mockData: [],
     realFetch: slotTemplateApi.list,
     realEmpty: [],
   })
-  return { templates: data, isPending }
+  return { templates: data, isPending, isError, refetch }
 }
 
 export function useSlotTemplateActions() {

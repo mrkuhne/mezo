@@ -21,16 +21,22 @@ function timesFrom(slots: GymScheduleSlot[]): string[] {
 
 export function GymScheduleSheet({ slots, onSave, onClose }: {
   slots: GymScheduleSlot[]
-  onSave: (slots: GymScheduleSlotInput[]) => void
+  onSave: (slots: GymScheduleSlotInput[]) => void | Promise<unknown>
   onClose: () => void
 }) {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [times, setTimes] = useState<string[]>(() => timesFrom(slots))
   const patch = (i: number, time: string) =>
     setTimes((ts) => ts.map((t, j) => (j === i ? time : t)))
 
-  const save = (close: () => void) => {
-    onSave(times.flatMap((t, i) => (t ? [{ dayOfWeek: i, time: t }] : [])))
+  const save = async (close: () => void) => {
+    setSaving(true)
+    setSaveError(false)
+    try {
+    await onSave(times.flatMap((t, i) => (t ? [{ dayOfWeek: i, time: t }] : [])))
     close()
+    } catch { setSaveError(true) } finally { setSaving(false) }
   }
 
   const inputStyle = {
@@ -81,11 +87,12 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
             ))}
           </div>
 
+          {saveError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
           {/* Footer */}
           <div className="row gap-sm mt-lg">
             <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="flex-1" onClick={() => save(close)}>
-              <Icon name="check" size={14} /> Mentés
+            <CtaPrimary className="flex-1" disabled={saving} onClick={() => save(close)}>
+              <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Mentés'}
             </CtaPrimary>
           </div>
         </>

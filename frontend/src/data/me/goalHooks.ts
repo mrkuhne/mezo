@@ -89,8 +89,9 @@ export function useGoal() {
   })
   const { data: goals, isPending: goalPending, isError: goalError } = useQuery({
     queryKey: ['goals'],
-    queryFn: mock ? async () => null : goalApi.list,
-    initialData: mock ? null : undefined,
+    queryFn: mock ? async () => [mockGoalResponse] : goalApi.list,
+    initialData: mock ? [mockGoalResponse] : undefined,
+    staleTime: mock ? Infinity : undefined,
   })
   const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? null
   const goalId = activeGoal?.id
@@ -108,8 +109,8 @@ export function useGoal() {
     // so the GoalTimeline lane component renders the same lanes/gaps it would in
     // real mode. goalId tracks the mock goal so the attach/detach hub targets it.
     return {
-      goal: mockGoal as Goal | null,
-      goalResponse: mockGoalResponse as GoalResponse | null,
+      goal: toGoal(goals?.[0] ?? mockGoalResponse, [{ value: mockGoal.currentWeight } as WeightEntry]) as Goal | null,
+      goalResponse: (goals?.[0] ?? mockGoalResponse) as GoalResponse | null,
       linkedMesocycles: mockLinkedMesocycles,
       timeline: mockTimeline as GoalTimelineResponse | null,
       goalId: mockGoal.id as string | null,

@@ -73,3 +73,46 @@ test('short landscape switcher scrolls to every choice and backdrop dismisses', 
   await expect(dialog).not.toBeVisible()
   await expect(opener).toBeFocused()
 })
+
+test('menu Boops blink and look around, with orange Nap and blue Train', async ({ page }, testInfo) => {
+  await seedKalauzSeen(page)
+  await seedSplashSkipped(page)
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/nap')
+  const opener = page.getByRole('button', { name: 'Területváltó: Nap' })
+  await expect(opener).toBeVisible()
+  await expect(opener.locator('.domain-switch-name')).toHaveCount(0)
+  const avatar = opener.locator('svg.boop')
+  // Sample real browser transforms at open/closed and centered/sideways keyframes.
+  const motion = await avatar.evaluate(el => {
+    const eye = el.querySelector('.boop-eye')!
+    const pupil = el.querySelector('.boop-pupil')!
+    const blink = eye.getAnimations()[0]
+    const gaze = pupil.getAnimations()[0]
+    if (!blink || !gaze) return null
+    blink.pause(); gaze.pause()
+    blink.currentTime = 0; gaze.currentTime = 0
+    const open = new DOMMatrix(getComputedStyle(eye).transform).d
+    const center = new DOMMatrix(getComputedStyle(pupil).transform).e
+    blink.currentTime = 2580; gaze.currentTime = 2800
+    return { open, closed: new DOMMatrix(getComputedStyle(eye).transform).d,
+      center, side: new DOMMatrix(getComputedStyle(pupil).transform).e }
+  })
+  expect(motion).not.toBeNull()
+  expect(motion!.open).toBeCloseTo(1)
+  expect(motion!.closed).toBeLessThan(.15)
+  expect(motion!.side).not.toBe(motion!.center)
+  await opener.click()
+  const dialog = page.getByRole('dialog', { name: 'Területváltó', exact: true })
+  await expect(dialog.locator('svg.boop.is-alive')).toHaveCount(5)
+  for (const [domain, color] of [['nap', '#FF7A55'], ['train', '#6BA6D6']]) {
+    await expect(dialog.locator(`[data-domain="${domain}"] radialGradient[id$="-body"] stop[offset="0.5"]`))
+      .toHaveAttribute('stop-color', color)
+  }
+  for (const eye of await dialog.locator('.boop-eye').all()) {
+    expect(await eye.evaluate(el => el.getAnimations().length)).toBeGreaterThan(0)
+  }
+  await page.screenshot({ path: testInfo.outputPath('boop-menu.png') })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  expect(await dialog.locator('svg.boop').evaluateAll(avatars => avatars.flatMap(el => el.getAnimations({ subtree: true })).length)).toBe(0)
+})

@@ -38,6 +38,8 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 
 ### Domain docs
 
+- [Central settings](settings.md): domain preferences and inspectable personal companion context.
+
 | Doc | Area | Status | One-line |
 |---|---|---|---|
 | [`today.md`](today.md) | Today (`/today`, "Ma") | 🔶 mock-only (one real seam: check-in save) | Daily morning-briefing aggregation surface; every section mock except the `POST /api/biometrics/checkin` write. Includes AnchorMode + the "Heartbeat" 4×/day check-in. |

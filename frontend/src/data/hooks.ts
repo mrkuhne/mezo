@@ -108,3 +108,5 @@ export {
   useCharacterRuns,
   useCharacterRun,
 } from '@/data/character/characterHooks'
+export { useGoalSettings } from '@/data/me/goalSettingsHooks'
+export { useCompanionPreferences, usePersonalContext, useAccountSettings } from '@/data/companion/preferencesHooks'

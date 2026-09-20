@@ -40,7 +40,7 @@ function renderFabAt(path: string) {
 
 // Titanium navigation (mezo-jkh4): the bottom bar is a domain-switch mark + the CURRENT
 // domain's four contextual tabs — not the always-flat five-domain bar. The switch mark
-// carries the Mezo companion mark, the current domain's name and a ⌃ caret; tapping it
+// carries only the animated companion avatar; tapping it
 // opens the domain-switcher dialog.
 
 test('the bar shows the switch mark + the current domain (Nap) and its four tabs', () => {
@@ -274,4 +274,16 @@ test.each([
   const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
   expect(within(bar).getByRole('link', { name: new RegExp(tab) }))
     .toHaveAttribute('aria-current', 'page')
+})
+
+
+test('navigation uses living Boops and an avatar-only corner button', async () => {
+  renderAt('/nap', <TabBar />)
+  const opener = screen.getByRole('button', { name: 'Területváltó: Nap' })
+  expect(opener.querySelector('svg.boop')).toHaveClass('is-alive')
+  expect(opener.querySelector('.domain-switch-name')).toBeNull()
+  await userEvent.click(opener)
+  const avatars = screen.getByRole('dialog').querySelectorAll('svg.boop')
+  expect(avatars).toHaveLength(5)
+  for (const avatar of avatars) expect(avatar).toHaveClass('is-alive')
 })

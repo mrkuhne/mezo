@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: done
-updated: 2026-09-08
+updated: 2026-09-20
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -35,6 +35,12 @@ Driving design: [`docs/superpowers/specs/2026-09-02-multi-user-accounts-design.m
 ---
 
 ## 2. User-facing behavior
+
+The central account editor corrects the canonical account name and email through PUT
+`/api/auth/me`. The changed name is also the source for companion persona and personal-context
+preview. Identity, role, status and existing bearer token remain unchanged; there is no parallel
+name stored in companion preferences.
+
 
 There **is** a login screen now — S1 replaces the invisible owner auto-login with a real boot state machine.
 
@@ -164,6 +170,7 @@ Entity: `…/feature/auth/entity/InviteEntity.java` (`isUsed()`/`isExpired(now)`
 **Endpoints** (auth feature) — contract source: [`api/feature/auth/auth.yml`](../../api/feature/auth/auth.yml) (tag `Auth`, "Multi-user auth — invite-code registration, login, current-user profile").
 | Verb | Path | Auth | Body → Response | Errors |
 |---|---|---|---|---|
+| PUT | `/api/auth/me` | Bearer | `UpdateAccountRequest{name,email}` → `MeResponse` | 400 validation, 401 missing/invalid token, 409 `AUTH_EMAIL_TAKEN` |
 | POST | `/api/auth/login` | `security: []` (public) | `LoginRequest{email, password}` → `TokenResponse{token}` | 400 field (`VALIDATION_INVALID_EMAIL`, `VALIDATION_INVALID_VALUE`), 401 `AUTH_LOGIN_INVALID_CREDENTIALS`, 403 `AUTH_ACCOUNT_DISABLED` |
 | POST | `/api/auth/register` | `security: []` (public) | `RegisterRequest{inviteCode, email, password, name}` → `TokenResponse{token}` | 400 field, 409 `AUTH_INVITE_INVALID` \| `AUTH_EMAIL_TAKEN` |
 | GET | `/api/auth/me` | Bearer | — → `MeResponse{id, email, name, role, onboarded, mustChangePassword, timezone}` | 401 `AUTH_TOKEN_MISSING`, 403 `AUTH_ACCOUNT_DISABLED` |
@@ -183,6 +190,16 @@ Entity: `…/feature/auth/entity/InviteEntity.java` (`isUsed()`/`isExpired(now)`
 | GET | `/api/admin/users` | — → `AdminUserResponse[]` | oldest-first; carries `role/status/onboardedAt/lastSeenAt` |
 | POST | `/api/admin/users/{id}/reset-password` | — → `ResetPasswordResponse{temporaryPassword}` | generates a 12-char temp password (readable alphabet), sets `mustChangePassword=true`, and stamps `tokensValidFrom = now()` (truncated to seconds — JWT `iat` has second granularity) so the target's *existing* sessions die immediately, the same revocation lever `AuthService.changePassword` uses (mezo-qw37.3 review, Finding 1) — the clear-text password exists only in this one response |
 | PUT | `/api/admin/users/{id}/status` | `SetUserStatusRequest{status}` → 204 | 409 `ADMIN_SELF_STATUS` — the owner cannot disable their own account; otherwise sets `ACTIVE`/`DISABLED` (the `CurrentUser` per-request check on §3 does the rest) |
+
+**Account correction:** `AuthService.updateAccount` trims and rejects blank names, normalizes email
+with the registration rule, and rejects duplicate normalized addresses. A targeted repository
+update writes only name/email, preserving concurrently updated passwords, roles and status.
+The database uniqueness constraint also protects racing edits. The response is re-read canonical
+account data; JWT identity remains the UUID and does not need re-issuing.
+The founder bootstrap also checks for an existing OWNER role: a corrected owner email must not
+recreate the configured old-email founder on restart. The optional `demofixtures` seeders still
+use `MEZO_OWNER_EMAIL` as their fixture target; set that configuration to the corrected owner
+address before enabling those seeders. Normal production `demodata` bootstrap needs no such change.
 
 ### PromptPersona, PersonaContext & UserFanOut (S6, `mezo-qw37.6`)
 
@@ -351,6 +368,11 @@ Remember `CurrentUser`'s usage contract from §3: call it from the controller la
 
 ## 8. Testing
 
+`AccountUpdateIT` covers canonical correction, email normalization/uniqueness, retained token and
+identity, second-user isolation, anonymous access and invalid fields. Companion
+`PersonalContextAssemblerIT` also verifies that a corrected account name reaches the preview.
+
+
 **Backend (integration-first, real Postgres):**
 - `…/feature/auth/AuthControllerIT` (extends `ApiIntegrationTest`): valid login → non-blank token; wrong password → 401 `AUTH_LOGIN_INVALID_CREDENTIALS`; disabled account → 403 `AUTH_ACCOUNT_DISABLED`; malformed email / empty password → 400 field errors (`VALIDATION_INVALID_EMAIL` + `VALIDATION_INVALID_VALUE`); **protected path w/o token → 401** ("security filter precedes routing — 401 even without a matching endpoint"); `ownerAuthHeaders()` → 200 on `/api/biometrics/weight`.
 - `…/feature/auth/AuthRegisterIT`: valid invite → 200 + token; used/expired/unknown invite → 409 `AUTH_INVITE_INVALID`; duplicate email (pre-check and DB-race path) → 409 `AUTH_EMAIL_TAKEN`; password over the 72-byte BCrypt limit → 400 `VALIDATION_INVALID_VALUE`.
@@ -427,7 +449,7 @@ The full multi-user epic (`mezo-qw37`, S1–S6) is now complete; see [ADR 0035](
 - `entity/InviteEntity.java` — `invite` (one-shot registration code).
 - `repository/AppUserRepository.java` — `findByEmail`, `existsByEmail`.
 - `repository/InviteRepository.java` — `existsByCode`, `findByCodeForUpdate`.
-- `service/AuthService.java` — login/register/me/changePassword/completeOnboarding + JWT issuance (HS256, 30d, sub=userId).
+- `service/AuthService.java` — login/register/me/updateAccount/changePassword/completeOnboarding + JWT issuance (HS256, 30d, sub=userId).
 - `service/InviteService.java` — invite `create`/`consume` (row-lock race handling).
 - `service/CurrentUser.java` — per-request account load, DISABLED→403, `last_seen_at` stamp, `requireOwner()`.
 - `service/AdminService.java` (S3) — invite CRUD + user list/reset-password/status for the OWNER surface.

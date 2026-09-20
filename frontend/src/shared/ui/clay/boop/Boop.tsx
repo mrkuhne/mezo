@@ -4,16 +4,15 @@
 // MIÉRT INLINE, és nem `<use>` a sprite-ból (ahogy a ClayIcon teszi)? Mert a figura MOZOG,
 // és a CSS egy `<use>` árnyék-fájába nem lát be: a szabályok a `<symbol>` FORRÁS elemeire
 // illeszkednek, tehát minden példány EGYSZERRE mozogna, és egy példányt sem lehetne külön
-// állítani (a menü-ikon nyugalomban áll, a Nap közepén viszont él). Példányonként befűzött
+// állítani (a navigációban és a Nap közepén is él). Példányonként befűzött
 // markupnál a `.boop-pupil` / `.boop-brow` / `.boop-body` fogók a saját példányukhoz tartoznak.
 //
 // A gradiens-azonosítók példányonként ELŐTAGOT kapnak (`useId`): két különböző domain Boopja
 // egyszerre van a képernyőn (menü = aktuális terület, Nap közepe = levendula), és azonos id
 // esetén az SVG a DOKUMENTUM első találatát használná — a két figura egymás színét viselné.
 //
-// A mozdulatok (tekintet · szemöldök · lélegzet) a `prototype.css` `boop` blokkjában élnek,
-// `prefers-reduced-motion: no-preference` ág alatt. Pislogás SZÁNDÉKOSAN nincs (owner
-// 2026-09-18) — a stíluskönyv §6.4 rögzíti.
+// A mozdulatok (pislogás · tekintet · szemöldök · lélegzet) a `prototype.css` `boop` blokkjában élnek,
+// `prefers-reduced-motion: no-preference` ág alatt.
 // ============================================================
 import { useId, useMemo } from 'react'
 import boopRaw from './boop.svg?raw'
@@ -50,7 +49,7 @@ function defsFor(symbolId: string): string {
 export function Boop({ domain, size = 44, alive = false, className }: {
   domain: BoopDomain
   size?: number
-  /** Él-e a figura: tekintet + szemöldök + lélegzet. Alapban NEM — a menü-ikon nyugodt. */
+  /** Él-e a figura: pislogás + tekintet + szemöldök + lélegzet. */
   alive?: boolean
   className?: string
 }) {

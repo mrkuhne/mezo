@@ -45,7 +45,7 @@ export const ME_KALAUZ: KalauzEntry[] = [
           { to: '/me/weight', label: 'Súly', icon: 'i-suly' },
           { to: '/me/sleep', label: 'Alvás', icon: 'i-alvas', effect: 'a napszakok horgonya' },
           { to: '/me/growth', label: 'Growth', icon: 'i-growth' },
-          { to: '/me/beallitasok', label: 'Beállítások', icon: 'i-beallitas' },
+          { to: '/settings', label: 'Beállítások', icon: 'i-beallitas' },
         ],
       },
     ],
