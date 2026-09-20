@@ -10,6 +10,7 @@
 //   renders a default verdict that nobody gave.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
+import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { confidenceWord } from '@/data/character/characterApi'
@@ -141,6 +142,7 @@ function ChainStep({ expertKey, who, chip, chipTone, children }: {
 const STANCE_TONE: Record<string, ChipTone> = SHARED_STANCE_TONE
 
 function ItemChain({ item, experts }: { item: ConferenceItem; experts: CharacterExpertDto[] }) {
+  const [replyOpen, setReplyOpen] = useState(false)
   const badge = outcomeBadge(item)
   const confidence = item.chair?.accepted === true && item.chair.confidence != null
     ? ` · ${confidenceWord(item.chair.confidence)}`
@@ -188,6 +190,8 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
             ? NOTHING_TO_ADD
             : `${chairDetail(item.chair)}${item.chair.reason}`}
       </ChainStep>
+      {item.claimId && <button type="button" className="kr-quick-reply" onClick={() => setReplyOpen(value => !value)} aria-expanded={replyOpen}>Te hogy látod? Válasz erre az állításra</button>}
+      {item.claimId && replyOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: item.claimId, sourceIndex: 0 }} initialOpen />}
     </div>
   )
 }

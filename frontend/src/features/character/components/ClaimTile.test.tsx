@@ -1,8 +1,10 @@
+import { QueryWrapper } from '@/test/queryWrapper'
+import type { ReactNode } from 'react'
 // ClaimTile — the three feedback flows (mezo-1gim.13, Task 4). Mode-agnostic: `useClaimFeedback`
 // is stubbed at the `@/data/hooks` boundary (the KarakterHubPage.test.tsx idiom), so this file
 // pins the COMPONENT's local-state contract (thanks/retired/textarea), not the hook's dual-mode
 // behavior — that lives in characterHooks.test.tsx.
-import { render, screen } from '@testing-library/react'
+import { render as rtlRender, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ClaimTile } from './ClaimTile'
@@ -12,13 +14,14 @@ const hoisted = vi.hoisted(() => ({ submitSpy: vi.fn().mockResolvedValue(undefin
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
-  return { ...actual, useClaimFeedback: () => ({ submit: hoisted.submitSpy, pending: hoisted.pending }) }
+  return { ...actual, useClaimFeedback: () => ({ submit: hoisted.submitSpy, pending: hoisted.pending }), useCharacterReplies: () => ({ replies: [], pending: hoisted.pending, send: hoisted.submitSpy, retry: vi.fn(), isLoading: false, isError: false }) }
 })
 vi.mock('@/shared/ui/ToastProvider', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/shared/ui/ToastProvider')>()
   return { ...actual, useToast: () => ({ show: hoisted.showSpy }) }
 })
 
+const render = (ui: ReactNode) => rtlRender(<QueryWrapper>{ui}</QueryWrapper>)
 const claim: CharacterClaimDto = {
   id: 'physical-claim-0',
   text: 'A testzsírszázalék lassan csökken, miközben a testsúly stagnál.',
@@ -69,10 +72,10 @@ describe('ClaimTile', () => {
     const textarea = screen.getByPlaceholderText('Mit pontosítanál?')
     await userEvent.type(textarea, 'nem pontos')
     await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
-    expect(hoisted.submitSpy).toHaveBeenCalledWith('physical-claim-0', 'PONTOSITOM', 'nem pontos')
-    expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'info', text: 'Elküldve — a következő konzíliumon foglalkozik vele a csapat' })
+    expect(hoisted.submitSpy).toHaveBeenCalledWith('nem pontos', expect.any(String))
+    expect(screen.getByText(/Válaszod mentve/)).toBeInTheDocument()
     expect(screen.getByText(claim.text)).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Mit pontosítanál?')).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Mit pontosítanál?')).toHaveValue('')
   })
 
   // Fix round 1 (reviewer finding #2): a rejected mutation must never show a success face —
@@ -106,7 +109,7 @@ describe('ClaimTile', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
       expect(screen.getByPlaceholderText('Mit pontosítanál?')).toHaveValue('nem pontos')
       expect(hoisted.showSpy).not.toHaveBeenCalledWith({ kind: 'info', text: 'Elküldve — a következő konzíliumon foglalkozik vele a csapat' })
-      expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
+      expect(screen.getByRole('alert')).toHaveTextContent('Nem sikerült menteni')
     })
   })
 })

@@ -92,7 +92,7 @@ describe('DimensionPage (real mode)', () => {
     })
 
     test('pontosítom: 500 keeps the textarea open with the typed correction, no second GET', async () => {
-      server.use(http.post(`${API_BASE}/api/character/claim/physical-claim-0/feedback`, () => new HttpResponse(null, { status: 500 })))
+      server.use(http.get(`${API_BASE}/api/character/replies`, () => HttpResponse.json([])), http.post(`${API_BASE}/api/character/replies`, () => new HttpResponse(null, { status: 500 })))
       render(<QueryWrapper><DimensionPage /></QueryWrapper>)
       await screen.findByText('A testzsírszázalék csökken.')
 
@@ -106,4 +106,27 @@ describe('DimensionPage (real mode)', () => {
       expect(dimensionFetchCount).toBe(1)
     })
   })
+})
+
+test('a withdrawn claim retains its contextual reply and outcome after the real refresh', async () => {
+  let withdrawn = false
+  let savedReply: object | null = null
+  server.use(
+    http.get(`${API_BASE}/api/character/dimension/physical`, () => HttpResponse.json({ ...DIMENSION_V1, claims: withdrawn ? [] : [CLAIM] })),
+    http.get(`${API_BASE}/api/character/replies`, () => HttpResponse.json(savedReply ? [savedReply] : [])),
+    http.post(`${API_BASE}/api/character/replies`, async ({ request }) => {
+      const body = await request.json() as { text: string }
+      withdrawn = true
+      savedReply = { id: 'withdrawn-reply', sourceType: 'CLAIM', sourceId: CLAIM.id, sourceIndex: 0, sourceText: CLAIM.text, text: body.text, authorName: 'Te', createdAt: '2026-09-20T10:00:00Z', status: 'COMPLETED', outcome: 'WITHDRAWN', outcomeText: 'Visszavontam az állítást a pontosításod alapján.' }
+      return HttpResponse.json(savedReply)
+    }),
+  )
+  render(<QueryWrapper><DimensionPage /></QueryWrapper>)
+  await screen.findByText(CLAIM.text)
+  await userEvent.click(screen.getByRole('button', { name: 'Pontosítom' }))
+  await userEvent.type(screen.getByRole('textbox'), 'Ez már nem igaz rám.')
+  await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
+  expect(await screen.findByText('nyugdíjazva — a csapat nem viszi tovább')).toBeInTheDocument()
+  expect(await screen.findByText('Visszavontam az állítást a pontosításod alapján.')).toBeInTheDocument()
+  expect(screen.getByText('Ez már nem igaz rám.')).toBeInTheDocument()
 })

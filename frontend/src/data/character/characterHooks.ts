@@ -78,15 +78,15 @@ export function useCharacterDimension(key: string): { dimension: CharacterDimens
 }
 
 /** Recent expert observations + conference-change diffs. `[]` is the honest empty state. */
-export function useCharacterFeed(limit?: number): { items: CharacterFeedItem[]; isLoading: boolean } {
-  const { data, isPending } = useDualQuery<CharacterFeedItem[]>({
+export function useCharacterFeed(limit?: number): { items: CharacterFeedItem[]; isLoading: boolean; isError: boolean; refetch: () => void } {
+  const { data, isPending, isError, refetch } = useDualQuery<CharacterFeedItem[]>({
     queryKey: [...FEED_KEY, limit ?? null],
     mockData: limit != null ? MOCK_FEED.slice(0, limit) : MOCK_FEED,
     realFetch: () => characterApi.feed(limit),
     realEmpty: [],
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
-  return { items: data, isLoading: isPending }
+  return { items: data, isLoading: isPending, isError, refetch }
 }
 
 /** The profiling team catalog — always available (a pure static read, character-switch only). */

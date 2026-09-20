@@ -20,9 +20,8 @@
 //    both fields as two subtitle lines would show the identical sentence twice, so this page
 //    renders ONE subtitle line off `role` for CHAIR (equal in value to `voiceLine`, never both).
 // ============================================================
-import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
-import { PageHead } from '@/shared/ui/mozaik'
+import { CharacterHeader } from '@/features/character/components/CharacterHeader'
 import { useCharacterExperts } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
@@ -34,17 +33,16 @@ function watchLine(expert: CharacterExpertDto): string | null {
 }
 
 export function CsapatPage() {
-  const navigate = useNavigate()
   const { experts, isLoading } = useCharacterExperts()
 
   if (isLoading) return null
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
+    <div className="kr-hub kr-social">
+      <CharacterHeader active="team" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Csapat</div>
-        <div className="mz-hero-sb">Mezo belső tanácsa — ők dolgoznak a karakteren</div>
+        <div className="mz-hero-sb">Különböző nézőpontok, egy közös kép rólad.</div>
       </div>
       <div className="mz-page-body">
         {experts.map((e, i) => {

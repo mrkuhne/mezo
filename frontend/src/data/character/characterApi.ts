@@ -34,9 +34,16 @@ export function confidenceWord(confidence: number): 'biztos' | 'valószínű' | 
   return 'figyeljük'
 }
 
+export type CharacterReplyResponse = components['schemas']['CharacterReplyResponse']
+export type CharacterReplyCreateRequest = components['schemas']['CharacterReplyCreateRequest']
+export type CharacterReplySource = Pick<CharacterReplyCreateRequest, 'sourceType' | 'sourceId' | 'sourceIndex'>
+
 const BASE = '/api/character'
 
 export const characterApi = {
+  replies: (source: CharacterReplySource): Promise<CharacterReplyResponse[]> => apiFetch(`${BASE}/replies?${new URLSearchParams({ sourceType: source.sourceType, sourceId: source.sourceId, sourceIndex: String(source.sourceIndex) })}`),
+  reply: (body: CharacterReplyCreateRequest): Promise<CharacterReplyResponse> => apiFetch(`${BASE}/replies`, { method: 'POST', body: JSON.stringify(body satisfies CharacterReplyCreateRequest) }),
+  retryReply: (id: string): Promise<CharacterReplyResponse> => apiFetch(`${BASE}/replies/${id}/retry`, { method: 'POST' }),
   overview: (): Promise<CharacterOverviewResponse> => apiFetch<CharacterOverviewResponse>(BASE),
   dimension: (key: string): Promise<CharacterDimensionResponse> =>
     apiFetch<CharacterDimensionResponse>(`${BASE}/dimension/${key}`),
