@@ -906,3 +906,54 @@ breathing glow and five accent glows left with them. Four decisions are worth ca
 
 **Owner-facing decision in the same pass:** `TrainWeekPage` wore `tone="gold"` while every accent on
 it was Train coral. Changed to `tone="coral"` — the one markup edit in the slice (A.2 rule 1).
+
+### C.2 Phase 7c addenda (`mezo-ju4j6.13`) — Gyakorlatok + sport + ceremony
+
+The last three Titanium blocks in Train (`train gyakorlatok` `.gy-*`, `train sport` `.sp-*`,
+`train ceremony` `.cer-*`) came off together. This was the **first slice to run §3.4 the way
+§3.4 asks** — the ranking was named, drawn in a before/after lab and approved by the owner
+*before* any CSS moved — and it is the reference for how a re-dress slice should open. Five
+things are worth carrying forward:
+
+18. **A list is not a set of heroes.** The catalogue's forty rows, the vitrine's medals and the
+   ceremony's muscle rows all dropped to the **house row** (`--surface-1` + `inset 0 0 0 1px
+   var(--border-subtle)`), because each screen already had a louder surface above them — the
+   poster, the section head, the kcal tile. What survives of the per-item colour is a **3px
+   rail** in the row's own `box-shadow` inset. A row is allowed exactly one coloured mark.
+19. **One hero, then a pair.** Three equal stat cards is the flat pass wearing a different
+   layout. `.gy-recs` became a 2-column grid where `:first-child` spans both — a wash tile with
+   the §3.2 numeral at 44px/200 — and the two lesser records sit beside each other one grade
+   down. The page now reads **1-2**; it used to read 1-1-1. With a `@media (max-width: 360px)`
+   step back to one column and a 44 → 38px numeral (A.2 rule 5).
+20. **A runtime-hue formula must NOT be hoisted into a shared custom property.** A custom
+   property's own `var()`s are substituted **on the element that declares it**, so a
+   `--tile-wash: linear-gradient(… var(--mus-color, var(--dv-coral)) …)` declared on a common
+   ancestor freezes at its *fallback* hue, and every tile beneath it comes out coral regardless
+   of the hue it sets on itself. Measured in the lab, where the sage minutes tile rendered
+   salmon. Write the §2.2 A wash + lift formula out **per rule** — which C.1 rule 17 already
+   wanted for a different reason.
+21. **A colour vocabulary is not a skin when the art is identical.** The sport picker's eleven
+   tiles were the one place A.5 rule 10 ("a door gets a shield") would have made things *worse*:
+   every sport's `art` is the same clay ball (`sports.ts` `i-sport`), so the hue is the only
+   thing that tells Foci from Úszás. They became §2.2 **B cells** — flat colour, no shadow, no
+   gradient — one grade under a wash and one over a shield, with the screen's question as the
+   only loud element. The eleven hues themselves moved off the Titanium neon set onto the
+   restored palette (owner, 2026-09-20); eleven is more than the six `--dv-*` accents, so the
+   deeper clay stops (`#4E6B42`, `#E05535`, `#9C5F33`, `#8C7F72`, `#2E6E96`) fill the rest.
+22. **A selector with no consumer is a page with no style.** `.sp-foot`'s „Naplózom" CTA was
+   reached by neither `.gl-card .wo-close-cta` nor `.cer-cta .wo-close-cta`, so once Phase 2
+   stripped the dark scope it rendered as a **bare unstyled button** — and nothing caught it,
+   because every guard asked what the CSS *says*, not what the page *gets*. It is the third arm
+   of that rule now. When a slice inherits a scoped rule, grep every consumer of the class for
+   ancestors the scope does not cover.
+
+**The ceremony's material, restored.** §5 in full: a `--mz-tone-gold → --canvas` ground, the
+`--halo-amber` band behind the hero, the Ritmus stone bar **unchanged** (it was already the right
+material) minus its two neon glows, counters demoted to icon-shield + numeral, and the kcal tile
+in **sage** — it is Fuel's number, and A.2 rule 1 says the same quantity wears the same hue
+everywhere. The two ceremonies in the app (`fuel-ceremony` `.fcx-*` and this one) are now
+deliberately one material.
+
+**Open, not this slice's:** the gym close ceremony still cannot be driven to its end in mock
+(`mezo-p30l2`), so only the *sport* ceremony was verified live; and all eleven sports share one
+clay ball for art, which is why the hue has to work as hard as it does (`mezo-ju4j6.16` territory).
