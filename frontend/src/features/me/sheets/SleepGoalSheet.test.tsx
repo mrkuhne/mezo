@@ -59,3 +59,22 @@ describe('SleepGoalSheet', () => {
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 })
+
+it('waits for persisted sleep preferences before constructing the draft', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/sleep/goal`, () => HttpResponse.json({ isSet: true, targetMinutes: 540, anchor: 'BED', anchorTime: '21:00', bedTime: '21:00', wakeTime: '06:00', regularityBandMin: 20 })))
+  renderSheet()
+  expect(await screen.findByLabelText('Rögzített időpont')).toHaveValue('21:00')
+  expect(screen.getByLabelText('Cél időtartam')).toHaveTextContent('9.0 ó')
+})
+
+it('keeps the draft open when a save fails', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/sleep/goal`, () => HttpResponse.json({ isSet: true, targetMinutes: 540, anchor: 'BED', anchorTime: '21:00', bedTime: '21:00', wakeTime: '06:00', regularityBandMin: 20 })), http.put(`${API_BASE}/api/sleep/goal`, () => new HttpResponse(null, { status: 500 })))
+  const close = renderSheet()
+  await screen.findByLabelText('Rögzített időpont')
+  await userEvent.click(screen.getByRole('button', { name: /Cél mentése/ }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('A mentés nem sikerült')
+  expect(close).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Rögzített időpont')).toHaveValue('21:00')
+})

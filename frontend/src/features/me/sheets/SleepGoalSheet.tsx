@@ -1,3 +1,4 @@
+import type { SleepGoal } from '@/data/types'
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
@@ -13,7 +14,13 @@ const MAX_TARGET = 720
 
 /** Sleep-goal editor (spec §5): duration stepper + fixed-end toggle + live-derived other end. */
 export function SleepGoalSheet({ onClose }: { onClose: () => void }) {
-  const { goal } = useSleepGoal()
+  const { goal, isPending, isError, refetch } = useSleepGoal()
+  if (isPending || isError) return <Sheet onClose={onClose} labelledBy="sleep-goal-title"><div className="col gap-md" style={{ padding: 16 }}><h2 id="sleep-goal-title">Alvás-cél</h2>{isError ? <><p role="alert">Az alváscél nem tölthető be.</p><button onClick={refetch}>Újra</button></> : <p role="status">Alváscél betöltése…</p>}</div></Sheet>
+  return <SleepGoalForm goal={goal} onClose={onClose} />
+}
+
+function SleepGoalForm({ goal, onClose }: { goal: SleepGoal; onClose: () => void }) {
+  const [error, setError] = useState(false)
   const { setGoal, pending } = useSleepGoalActions()
   const [targetMinutes, setTargetMinutes] = useState(goal.targetMinutes)
   const [anchor, setAnchor] = useState<'WAKE' | 'BED'>(goal.anchor)
@@ -23,7 +30,7 @@ export function SleepGoalSheet({ onClose }: { onClose: () => void }) {
   const hours = (targetMinutes / 60).toFixed(1)
 
   const save = (close: () => void) =>
-    setGoal({ targetMinutes, anchor, anchorTime, regularityBandMin: goal.regularityBandMin }).then(close)
+    setGoal({ targetMinutes, anchor, anchorTime, regularityBandMin: goal.regularityBandMin }).then(close).catch(() => setError(true))
 
   return (
     <Sheet onClose={onClose} labelledBy="sleep-goal-title">
@@ -85,6 +92,7 @@ export function SleepGoalSheet({ onClose }: { onClose: () => void }) {
             {anchor === 'WAKE' ? `Lefekvés ebből: ${derived.bedTime}` : `Ébredés ebből: ${derived.wakeTime}`}
           </span>
 
+          <p role={error ? "alert" : undefined}>{error ? "A mentés nem sikerült. A módosításaid megmaradtak, próbáld újra." : ""}</p>
           <button type="button" className="cta-primary" disabled={pending}
             style={{ opacity: pending ? 0.5 : 1 }} onClick={() => save(close)}>
             <Icon name="check" size={14} /> Cél mentése

@@ -54,13 +54,13 @@ export function useSleep() {
 }
 
 export function useSleepGoal() {
-  const { data, isPending } = useDualQuery<SleepGoal>({
+  const { data, isPending, isError, refetch } = useDualQuery<SleepGoal>({
     queryKey: ['sleepGoal'],
     mockData: mockSleepGoal,
     realFetch: sleepGoalApi.get,
     realEmpty: SLEEP_GOAL_GHOST, // backend never 404s; the ghost is the honest pre-resolve value
   })
-  return { goal: data, isPending }
+  return { goal: data, isPending, isError, refetch }
 }
 
 export function useSleepGoalActions() {
