@@ -22,10 +22,15 @@ export const LIVE_QUESTIONS: DiagnosisQuestion[] = [
     blurb:
       'Az alvásod két hete a viselkedési oldal ellen fut: késői étkezés, esti stressz, terhelés, lefekvés-szórás — a Mezo megnézi, melyik viszi el.',
   },
+  {
+    phenomenon: 'weight',
+    question: 'Miért mozog a súlyom?',
+    blurb:
+      'Egy kiválasztott hét súly-mozgása számvetéssel: mennyi lehet szövet, mennyi víz — és a víz-részhez rangsorolt gyanúsítottak.',
+  },
 ]
 
 export const UPCOMING_QUESTIONS: string[] = [
-  'Miért nem mozdul a súlyom?',
   'Kell most deload?',
   'Havi Mezo Riport',
 ]

@@ -12,7 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useDiagnosis, useDiagnosisActions } from '@/data/hooks'
-import { confidenceLine, deltaLabel, generatedLabel, strengthLabel, windowLine } from '@/features/insights/logic/diagnosisCopy'
+import { anchoredWindowLine, confidenceLine, deltaLabel, generatedLabel, strengthLabel, windowLine } from '@/features/insights/logic/diagnosisCopy'
 import { questionOf } from '@/features/insights/logic/diagnosisCatalog'
 import type { Diagnosis, DiagnosisSuspect } from '@/data/types'
 
@@ -20,7 +20,9 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
   d: Diagnosis; s: DiagnosisSuspect; live: boolean; started: boolean
   onProbe: () => void; delayMs: number
 }) {
-  const rows = s.evidenceIndexes.map((i) => d.evidence[i]).filter((e) => e != null)
+  // Derived (Számvetés) rows are indexable for a suspect's citation but render only once, in
+  // the Számvetés card above — never duplicated inside a suspect's own evidence rows.
+  const rows = s.evidenceIndexes.map((i) => d.evidence[i]).filter((e) => e != null && e.kind !== 'derived')
   return (
     <div className={s.rank === 1 ? 'mzp-pred propcard rise' : 'mzp-pred lav rise'}
       style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
@@ -68,6 +70,26 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
   )
 }
 
+/** The code-computed weight decomposition (mezo-85x5r) — rendered ABOVE the verdict card
+ *  whenever any evidence item is `kind: 'derived'`. One `.mzp-evrow` per derived item, in
+ *  evidence order; these items are the ONLY place they render (suspects cite them by index
+ *  but exclude them from their own evidence rows — see `SuspectCard`). */
+function SzamvetesCard({ derived }: { derived: Diagnosis['evidence'] }) {
+  return (
+    <div className="mzp-pred lav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>SZÁMVETÉS</span>
+      <div style={{ marginTop: 8 }}>
+        {derived.map((e, i) => (
+          <div key={i} className="mzp-evrow">
+            <span className="lb">{e.label}</span>
+            {e.detail != null && <span className="vl">{e.detail}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function DiagnosisDetailPage() {
   const navigate = useNavigate()
   const { id = '' } = useParams()
@@ -96,12 +118,18 @@ export function DiagnosisDetailPage() {
     )
   }
 
+  const derived = diagnosis.evidence.filter((e) => e.kind === 'derived')
+  const heroSub = diagnosis.anchorStart != null
+    ? anchoredWindowLine(diagnosis.anchorStart, diagnosis.evidence)
+    : windowLine(diagnosis.generatedAt, diagnosis.windowDays)
+
   return (
     <MozaikPage tone="lav">
       <PageHead onBack={() => navigate('/mezo/diagnozis')} label="‹ Diagnózis" />
-      <PageHero name={questionOf(diagnosis.phenomenon)} sub={windowLine(diagnosis.generatedAt, diagnosis.windowDays)} />
+      <PageHero name={questionOf(diagnosis.phenomenon)} sub={heroSub} />
       <PageBody>
         <EntranceGroup className="col gap-md">
+          {derived.length > 0 && <SzamvetesCard derived={derived} />}
           <div className="mzp-pred lav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className="mzp-stch pend">{confidenceLine(diagnosis.confidence)}</span>

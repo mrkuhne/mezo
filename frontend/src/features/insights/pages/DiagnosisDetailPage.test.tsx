@@ -45,3 +45,44 @@ describe('DiagnosisDetailPage (mock mode)', () => {
     expect(screen.getByText('Ez a riport nincs meg — lehet, hogy törölted.')).toBeInTheDocument()
   })
 })
+
+// mezo-85x5r: the anchored weight row — Számvetés card above the verdict, derived rows
+// excluded from the suspects' own evidence rows (they stay indexable, just not re-rendered).
+describe('DiagnosisDetailPage — Számvetés (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const weightDiag = mockDiagnoses.find((d) => d.phenomenon === 'weight')!
+
+  test('renders the Számvetés card with all 4 derived rows above the verdict card', () => {
+    const { container } = renderAt(weightDiag.id)
+    expect(screen.getByText('SZÁMVETÉS')).toBeInTheDocument()
+    expect(screen.getByText('valódi delta')).toBeInTheDocument()
+    expect(screen.getByText('szövet-plafon')).toBeInTheDocument()
+    expect(screen.getByText('cél-sáv')).toBeInTheDocument()
+    expect(screen.getByText('erő-trend')).toBeInTheDocument()
+    expect(screen.getAllByText(/heti átlag 82,4/).length).toBeGreaterThan(0)
+
+    // above the verdict card in DOM order
+    const cards = container.querySelectorAll('.mzp-pred')
+    const szamvetesCard = screen.getByText('SZÁMVETÉS').closest('.mzp-pred')
+    expect(cards[0]).toBe(szamvetesCard)
+
+    // house classes only
+    expect(container.querySelectorAll('.mzp-evrow').length).toBeGreaterThanOrEqual(4)
+  })
+
+  test('a suspect citing a derived index does not re-render it inside its own evidence rows', () => {
+    renderAt(weightDiag.id)
+    // 'szövet-plafon' is cited by suspect rank 1 (evidenceIndexes [1, 5]) but must render
+    // exactly once — inside the Számvetés card, never duplicated in the suspect's own rows
+    expect(screen.getAllByText('szövet-plafon')).toHaveLength(1)
+    // the suspect's OWN (non-derived) metric evidence still renders normally
+    expect(screen.getByText('nátrium')).toBeInTheDocument()
+  })
+
+  test('the hero sub is the anchored week range with the mérés count', () => {
+    renderAt(weightDiag.id)
+    expect(screen.getByText(/Aug 31–Szep 6 · 5 mérés/)).toBeInTheDocument()
+  })
+})

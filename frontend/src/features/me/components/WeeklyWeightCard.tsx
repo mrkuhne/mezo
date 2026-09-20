@@ -6,11 +6,16 @@
 // (improvement) or amber (not) — never red/error (handoff §2;
 // the prototype's own `.deltap.up` is amber, not red).
 // ============================================================
+import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import type { GoalKind } from '@/data/types'
 import { isImprovement, fmtSigned, type WeekAggregate, type DayRow } from '@/features/me/logic/weightStats'
+import { isMockMode } from '@/data/_client/mode'
+import { useDiagnoses, useDiagnosisActions, useDiagnosisForWeek } from '@/data/hooks'
+
+const INSUFFICIENT_COPY = 'Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.'
 
 const DIR_LABEL: Record<WeekAggregate['direction'], string> = { down: '↓ lefelé', up: '↑ felfelé', flat: '→ stabil' }
 
@@ -41,6 +46,25 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
   const deltaFlat = week.delta === null || Math.abs(week.delta) < 0.005
   const dirGood = week.direction !== 'flat' && isImprovement(week.direction === 'down' ? -1 : 1, goalKind)
   const sp = spark(week.sparkPoints)
+
+  const navigate = useNavigate()
+  const live = !isMockMode()
+  const found = useDiagnosisForWeek(week.startIso)
+  // The open-or-generate lookup needs the list loaded first — clicking before it resolves
+  // would always miss and burn a generation even when a report already exists for this week.
+  const { isPending: listPending } = useDiagnoses()
+  const { generateAsync, generating, error } = useDiagnosisActions()
+  const busy = generating || (live && listPending)
+
+  const onDiagnose = async () => {
+    if (!live || busy) return
+    if (found) {
+      navigate(`/mezo/diagnozis/${found.id}`)
+      return
+    }
+    const fresh = await generateAsync('weight', week.startIso).catch(() => null)
+    if (fresh) navigate(`/mezo/diagnozis/${fresh.id}`)
+  }
 
   return (
     <div className="wt-week rise" style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}>
@@ -95,6 +119,20 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
             )
           })}
         </div>
+      )}
+
+      <div className="mzp-decrow" style={{ marginTop: 10 }}>
+        <button type="button" className="mzp-cta" disabled={!live || busy} onClick={onDiagnose}>
+          {generating ? '… a hét adatait olvasom' : '✦ Mi történt ezen a héten?'}
+        </button>
+      </div>
+      {error === 'insufficient' && (
+        <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)', marginTop: 4 }}>{INSUFFICIENT_COPY}</p>
+      )}
+      {!live && (
+        <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--mz-ink-mut)', marginTop: 4 }}>
+          demo — a kérdezés az élő appban fut
+        </p>
       )}
     </div>
   )

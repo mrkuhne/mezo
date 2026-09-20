@@ -57,6 +57,18 @@ export function useDiagnosis(id: string): DiagnosisView {
   return { diagnosis: q.data ?? null, mode: 'live', isPending: q.isPending, notFound }
 }
 
+/**
+ * Selector over `useDiagnoses` — the newest weight-phenomenon row anchored to `weekStart`
+ * (ISO Monday), or null. Open-or-generate on the FE is exactly this lookup: a hit means the
+ * card navigates straight to the existing report, a miss means it generates one (mezo-85x5r).
+ */
+export function useDiagnosisForWeek(weekStart: string): Diagnosis | null {
+  const { diagnoses } = useDiagnoses()
+  const matches = diagnoses.filter((d) => d.phenomenon === 'weight' && d.anchorStart === weekStart)
+  if (matches.length === 0) return null
+  return matches.reduce((newest, d) => (d.generatedAt > newest.generatedAt ? d : newest))
+}
+
 export type DiagnosisErrorKind = 'insufficient' | 'quota' | 'failed' | null
 
 /**
@@ -80,9 +92,9 @@ export function useDiagnosisActions() {
   }
 
   const generateMutation = useMutation({
-    mutationFn: async (phenomenon: string) => {
+    mutationFn: async (vars: { phenomenon: string; anchorStart?: string }) => {
       if (mock) return null
-      return diagnosisApi.generate(phenomenon)
+      return diagnosisApi.generate(vars.phenomenon, vars.anchorStart)
     },
     onMutate: () => setError(null),
     onSuccess: mock ? undefined : invalidate,
@@ -106,9 +118,10 @@ export function useDiagnosisActions() {
   })
 
   return {
-    generate: (phenomenon: string) => generateMutation.mutate(phenomenon),
-    /** Resolves with the fresh diagnosis (or null in mock) — the list page navigates to it. */
-    generateAsync: (phenomenon: string) => generateMutation.mutateAsync(phenomenon),
+    generate: (phenomenon: string, anchorStart?: string) => generateMutation.mutate({ phenomenon, anchorStart }),
+    /** Resolves with the fresh diagnosis (or null in mock) — the list/card navigates to it. */
+    generateAsync: (phenomenon: string, anchorStart?: string) =>
+      generateMutation.mutateAsync({ phenomenon, anchorStart }),
     startExperiment: (id: string, rank: number) => experimentMutation.mutate({ id, rank }),
     pending: generateMutation.isPending || experimentMutation.isPending,
     generating: generateMutation.isPending,

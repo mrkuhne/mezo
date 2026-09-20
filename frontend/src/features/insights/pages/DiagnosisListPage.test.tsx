@@ -15,24 +15,29 @@ describe('DiagnosisListPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders BOTH live ask cards, the upcoming catalog and the seeded report', () => {
+  test('renders all THREE live ask cards, the upcoming catalog and the seeded reports', () => {
     renderPage()
     expect(screen.getByText('Diagnózis')).toBeInTheDocument()
-    // two live questions since mezo-po3y — the fatigue title also heads the seeded past tile
+    // three live questions since mezo-85x5r (weight joined fatigue+sleep) — the fatigue title
+    // also heads a seeded past tile
     expect(screen.getAllByText('Miért vagyok fáradt?').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Miért alszom rosszul?')).toBeInTheDocument()
+    // the weight title also heads the seeded weight past tile, same as fatigue above
+    expect(screen.getAllByText('Miért mozog a súlyom?').length).toBeGreaterThanOrEqual(1)
     // generate is inert in mock — it costs a real SMART call — on EVERY live card
     const asks = screen.getAllByRole('button', { name: 'Kérdezd meg most' })
-    expect(asks).toHaveLength(2)
+    expect(asks).toHaveLength(3)
     // the ask CTA is the house pill button, not an unstyled bare 'cta' (the live-app regression)
     asks.forEach((b) => expect(b).toHaveClass('mzp-cta'))
     asks.forEach((b) => expect(b).toBeDisabled())
     expect(screen.getByText('demo — a kérdezés az élő appban fut')).toBeInTheDocument()
-    // the upcoming grid: sleep LEFT it by going live
-    expect(screen.getByText('Miért nem mozdul a súlyom?')).toBeInTheDocument()
+    // the upcoming grid: sleep+weight LEFT it by going live; weight's old title is gone
+    expect(screen.queryByText('Miért nem mozdul a súlyom?')).not.toBeInTheDocument()
+    expect(screen.getByText('Kell most deload?')).toBeInTheDocument()
     expect(screen.getByText('Havi Mezo Riport')).toBeInTheDocument()
-    // the seeded past report with its strongest suspect
+    // the seeded past reports with their strongest suspect
     expect(screen.getByText(/a legerősebb: Alváshiány \(erős\)/)).toBeInTheDocument()
+    expect(screen.getByText(/a legerősebb: Vízvisszatartás — só és szénhidrát \(erős\)/)).toBeInTheDocument()
   })
 })
 
@@ -65,7 +70,7 @@ describe('DiagnosisListPage — emoji→ikon (mezo-hq44)', () => {
     expect(ask.querySelector('svg')).toBeTruthy()
     expect(ask.textContent).not.toMatch(/✦/)
     const ctas = screen.getAllByRole('button', { name: 'Kérdezd meg most' })
-    expect(ctas).toHaveLength(2)
+    expect(ctas).toHaveLength(3)
     ctas.forEach((b) => {
       expect(b.querySelector('svg')).toBeTruthy()
       expect(b.textContent).not.toMatch(/✦/)

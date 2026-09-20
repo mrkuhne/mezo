@@ -17,6 +17,7 @@ import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
 import { confidenceLine, generatedLabel, strengthLabel } from '@/features/insights/logic/diagnosisCopy'
 import { LIVE_QUESTIONS, UPCOMING_QUESTIONS, questionOf } from '@/features/insights/logic/diagnosisCatalog'
+import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 
 
 const ERROR_COPY: Record<string, string> = {
@@ -34,7 +35,9 @@ export function DiagnosisListPage() {
 
   const onAsk = async (phenomenon: string) => {
     if (!live || generating) return
-    const fresh = await generateAsync(phenomenon).catch(() => null)
+    // weight is week-anchored (mezo-85x5r) — the catalog card always diagnoses the current week.
+    const anchorStart = phenomenon === 'weight' ? mondayIso() : undefined
+    const fresh = await generateAsync(phenomenon, anchorStart).catch(() => null)
     if (fresh) navigate(`/mezo/diagnozis/${fresh.id}`)
   }
 

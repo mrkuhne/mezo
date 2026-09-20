@@ -14,6 +14,7 @@ export function toDiagnosis(wire: DiagnosisWire): Diagnosis {
     id: wire.id,
     phenomenon: wire.phenomenon,
     windowDays: wire.windowDays,
+    anchorStart: wire.anchorStart ?? undefined,
     verdict: wire.verdict,
     confidence: wire.confidence as DiagnosisConfidence,
     evidence: wire.evidence.map(
@@ -53,11 +54,12 @@ export const diagnosisApi = {
       .then((rows) => rows.map(toDiagnosis)),
   get: (id: string) =>
     apiFetch<DiagnosisWire>(`/api/proactive/diagnosis/${id}`).then(toDiagnosis),
-  /** Costs a real SMART-tier call and one of the day's generations — live only. */
-  generate: (phenomenon: string) =>
+  /** Costs a real SMART-tier call and one of the day's generations — live only.
+   *  `anchorStart` (ISO Monday) is required for phenomenon=weight, rejected otherwise. */
+  generate: (phenomenon: string, anchorStart?: string) =>
     apiFetch<DiagnosisWire>('/api/proactive/diagnosis', {
       method: 'POST',
-      body: JSON.stringify({ phenomenon }),
+      body: JSON.stringify({ phenomenon, anchorStart }),
     }).then(toDiagnosis),
   /** The tap IS the acceptance — this creates a real, active experiment. */
   startExperiment: (id: string, rank: number) =>

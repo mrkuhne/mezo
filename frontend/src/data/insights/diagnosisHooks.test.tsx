@@ -1,9 +1,9 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useDiagnoses, useDiagnosisActions } from '@/data/insights/diagnosisHooks'
+import { useDiagnoses, useDiagnosisActions, useDiagnosisForWeek } from '@/data/insights/diagnosisHooks'
 import { mockDiagnoses } from '@/data/insights/diagnosisMock'
-import { API_BASE } from '@/test/msw/handlers'
+import { API_BASE, diagnosisWeightWireStub } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
@@ -72,6 +72,57 @@ describe('useDiagnoses (real mode)', () => {
     const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
     result.current.generate('fatigue')
     await waitFor(() => expect(result.current.error).toBe('insufficient'))
+  })
+
+  // mezo-85x5r: the weight-specific 409 code maps onto the SAME 'insufficient' kind — the
+  // mapping only looks at the HTTP status, so a new code never needs a new branch.
+  test('a 409 DIAGNOSIS_INSUFFICIENT_WEIGHINS on generate also maps to insufficient', async () => {
+    server.use(
+      http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+        HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_WEIGHINS', message: 'too few weigh-ins' }], { status: 409 })),
+    )
+    const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
+    result.current.generate('weight', '2026-08-31')
+    await waitFor(() => expect(result.current.error).toBe('insufficient'))
+  })
+
+  test('generateAsync plumbs anchorStart onto the POST body', async () => {
+    let sentBody: unknown
+    server.use(
+      http.post(`${API_BASE}/api/proactive/diagnosis`, async ({ request }) => {
+        sentBody = await request.json()
+        return HttpResponse.json(diagnosisWeightWireStub('2026-08-31'))
+      }),
+    )
+    const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
+    const fresh = await result.current.generateAsync('weight', '2026-08-31')
+    expect(sentBody).toEqual({ phenomenon: 'weight', anchorStart: '2026-08-31' })
+    expect(fresh?.anchorStart).toBe('2026-08-31')
+    expect(fresh?.evidence.some((e) => e.kind === 'derived')).toBe(true)
+  })
+})
+
+describe('useDiagnosisForWeek (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('hit: returns the newest weight row anchored to the given week', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/diagnosis`, () =>
+        HttpResponse.json([
+          diagnosisWeightWireStub('2026-08-31', 'older'),
+          { ...diagnosisWeightWireStub('2026-08-31', 'newer'), generatedAt: '2026-09-07T07:00:00Z' },
+          diagnosisWeightWireStub('2026-08-24', 'other-week'),
+        ])),
+    )
+    const { result } = renderHook(() => useDiagnosisForWeek('2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current?.id).toBe('newer'))
+  })
+
+  test('miss: no matching anchored row returns null', async () => {
+    server.use(http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])))
+    const { result } = renderHook(() => useDiagnosisForWeek('2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current).toBeNull())
   })
 })
 
