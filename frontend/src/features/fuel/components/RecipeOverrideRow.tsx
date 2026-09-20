@@ -4,8 +4,9 @@
 // amount + this line's kcal + a per-row reset. Amounts are in the RECIPE's own unit, with
 // decimals (a half banana is 0,5 db); 0 means "left it out". The parent owns the value.
 // ============================================================
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
+import { useCommitOnOutsideTap } from '@/shared/hooks/useCommitOnOutsideTap'
 
 /** ±10 for mass/volume (matching the pantry stepper), ±0,5 for discrete units. */
 export function stepFor(unit: string): number {
@@ -49,6 +50,10 @@ export function RecipeOverrideRow({ name, unit, originalAmount, amount, kcal, on
     setEditing(false)
     if (parsed !== null && parsed !== amount) onChange(parsed)
   }
+  // The field does not focus itself (the „no self-opening keyboard" rule), so an
+  // untouched one would never blur — a tap outside closes it in blur's stead.
+  const inputRef = useRef<HTMLInputElement>(null)
+  useCommitOnOutsideTap(editing, inputRef, commit)
 
   return (
     <div className="row" style={{ alignItems: 'center', gap: 7, padding: '7px 0',
@@ -74,7 +79,7 @@ export function RecipeOverrideRow({ name, unit, originalAmount, amount, kcal, on
           style={{ width: 19, height: 22, display: 'grid', placeItems: 'center', color: 'var(--coral)' }}>−</button>
         {editing ? (
           <input
-            autoFocus type="text" inputMode="decimal" value={draft}
+            ref={inputRef} type="text" inputMode="decimal" value={draft}
             aria-label={`${name} mennyiség`}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 
 function row(over: Partial<React.ComponentProps<typeof RecipeOverrideRow>> = {}) {
@@ -88,5 +89,23 @@ describe('RecipeOverrideRow', () => {
   it('shows no MÓD chip when the amount is unchanged', () => {
     row()
     expect(screen.queryByText(/mód/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('RecipeOverrideRow · „no self-opening keyboard" (owner decision, 2026-09-19)', () => {
+  it('does not focus the amount field when it opens', async () => {
+    row()
+    await userEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
+    expect(screen.getByRole('textbox', { name: /banán mennyiség/i })).not.toHaveFocus()
+  })
+
+  it('commits and closes on a tap outside, even when the field was never focused', async () => {
+    const { onChange } = row()
+    await userEvent.click(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i }))
+    const input = screen.getByRole('textbox', { name: /banán mennyiség/i })
+    fireEvent.change(input, { target: { value: '0,25' } })
+    await userEvent.click(document.body)
+    expect(onChange).toHaveBeenCalledWith(0.25)
+    expect(screen.getByRole('button', { name: /banán mennyiség szerkesztése/i })).toBeInTheDocument()
   })
 })

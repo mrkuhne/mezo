@@ -77,3 +77,22 @@ test('integer stepper accepts an exact typed rep count', async () => {
   await userEvent.tab()
   expect(onChange).toHaveBeenCalledWith(12)
 })
+
+// ---- „no self-opening keyboard" (owner decision, 2026-09-19) ----
+
+test('the opened edit field does not focus itself — the keyboard waits for a tap', async () => {
+  render(<SetStepper label="Súly" value={95} step={2.5} unit="kg" min={0} max={999} onChange={vi.fn()} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Súly pontos megadása' }))
+  expect(screen.getByLabelText('Súly')).not.toHaveFocus()
+})
+
+test('a tap outside closes an edit field the user never focused', async () => {
+  const onChange = vi.fn()
+  render(<SetStepper label="Súly" value={95} step={2.5} unit="kg" min={0} max={999} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Súly pontos megadása' }))
+  expect(screen.getByLabelText('Súly')).toBeInTheDocument()
+  // Without this the unfocused input would never blur, so the row would stay in edit mode.
+  await userEvent.click(document.body)
+  expect(screen.getByRole('button', { name: 'Súly pontos megadása' })).toBeInTheDocument()
+  expect(onChange).not.toHaveBeenCalled() // nothing was typed → nothing to commit
+})

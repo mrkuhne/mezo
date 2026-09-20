@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
+import { useCommitOnOutsideTap } from '@/shared/hooks/useCommitOnOutsideTap'
 
 /**
  * Napív giant stepper (spec §4.5 mockup .stepper) — the active-workout logging pair.
@@ -10,6 +11,8 @@ import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
  * The value line is tap-to-edit (mezo-o7ds): tapping it swaps in an input backed
  * by useEditableNumber, so exact non-±step values (microplates, odd dumbbells —
  * weightKg has no multipleOf in the contract) stay reachable; commit on blur/Enter.
+ * The input does NOT focus itself (the „no self-opening keyboard" rule) — the user
+ * taps it to type — so a tap outside closes it in blur's stead.
  */
 export function SetStepper({ label, value, step, onChange, unit, integer, min = 0, max = 999, disabled = false }: {
   label: string
@@ -25,6 +28,11 @@ export function SetStepper({ label, value, step, onChange, unit, integer, min = 
   const clamp = (v: number) => Math.min(max, Math.max(min, v))
   const [editing, setEditing] = useState(false)
   const editable = useEditableNumber({ value, onChange, min, max, integer })
+  const inputRef = useRef<HTMLInputElement>(null)
+  useCommitOnOutsideTap(editing, inputRef, () => {
+    editable.onBlur()
+    setEditing(false)
+  })
   const display = integer ? String(value) : value.toLocaleString('hu-HU')
   return (
     <div className="stepper">
@@ -33,7 +41,7 @@ export function SetStepper({ label, value, step, onChange, unit, integer, min = 
         <div className="n">
           <input
             {...editable}
-            autoFocus
+            ref={inputRef}
             aria-label={label}
             style={{ width: `${Math.max(editable.value.length, 1)}ch` }}
             onBlur={() => {
