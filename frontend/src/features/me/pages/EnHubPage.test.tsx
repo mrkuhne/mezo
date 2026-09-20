@@ -119,12 +119,13 @@ test('the identity hero carries the XP ring, the name, the title chip and the Lv
   expect(document.querySelector('.enh-titlech')).not.toBeNull()
 })
 
-test('the bio line renders only the filled bits and opens the BiometricSheet', async () => {
+test('the bio line opens the canonical biometric settings editor', async () => {
   renderHub()
   const bio = await screen.findByRole('button', { name: 'Biometria szerkesztése' })
   expect(bio).toHaveTextContent('180 cm · 78,6 kg · 15% testzsír')
   await userEvent.click(bio)
-  expect(screen.getByText('A motor ebből számol')).toBeInTheDocument()
+  expect(screen.getByTestId('loc')).toHaveTextContent('/settings/me/biometrics')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('with nothing measured the bio line vanishes — the hero offers the biometrics CTA instead', async () => {
@@ -157,7 +158,6 @@ test('renders the six small tiles plus the wide Rutin tile, each opening its own
     ['Growth', '/me/growth'],
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
-    ['Beállítások', '/me/beallitasok'],
     ['Rutin', '/me/rutin'],
   ]
   for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
@@ -176,7 +176,6 @@ test('a hét csempe mindegyike a saját oldalára navigál', async () => {
     ['Growth', '/me/growth'],
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
-    ['Beállítások', '/me/beallitasok'],
     ['Rutin', '/me/rutin'],
   ]
   for (const [label, path] of TILES) {
@@ -217,12 +216,9 @@ test('a tile whose source has nothing to say carries no fabricated line', async 
   expect(suly.querySelector('.mz-tile-line')).toBeNull()
 })
 
-test('a Beállítások csempe a témát mutatja és a Beállítások oldalra navigál', async () => {
+test('a beállítások közös fejléc-bejárata mellett nincs helyi csempe', () => {
   renderHub()
-  const tile = await screen.findByRole('button', { name: 'Beállítások' })
-  expect(tile).toHaveTextContent('téma: világos')
-  await userEvent.click(tile)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/beallitasok')
+  expect(screen.queryByRole('button', { name: 'Beállítások' })).toBeNull()
 })
 
 // ── the progression's HOME (F7.4, mezo-d20.8.4.1) ──

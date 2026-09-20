@@ -11,7 +11,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/** Seeds the founder account (role OWNER, already onboarded). Idempotent by email. */
+/** Seeds the founder account (role OWNER, already onboarded). An existing OWNER remains authoritative after account correction. */
 @Component
 @Profile("demodata")
 @Order(0) // seeds the owner that later runners (e.g. TrainSeedData) depend on
@@ -28,7 +28,10 @@ public class OwnerSeedData implements CommandLineRunner {
         // owner the same way so an uppercase MEZO_OWNER_EMAIL never locks the owner out (mezo-qw37.1
         // review finding 4).
         String email = normalizeEmail(ownerProperties.ownerEmail());
-        if (appUserRepository.existsByEmail(email)) return;
+        // The account editor may change the founder's address. Never recreate the configured
+        // old-email account (and its OWNER privilege) when that founder already exists.
+        if (appUserRepository.existsByRole(AppUserEntity.UserRole.OWNER)
+                || appUserRepository.existsByEmail(email)) return;
         AppUserEntity owner = new AppUserEntity();
         owner.setEmail(email);
         owner.setName(ownerProperties.ownerName());

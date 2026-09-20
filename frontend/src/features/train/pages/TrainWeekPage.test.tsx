@@ -284,15 +284,10 @@ test('the medál count of the week rides in the hero row (mezo-88iwa.13)', () =>
   expect(within(container.querySelector('.ld-hero') as HTMLElement).getByText(/medál e héten/)).toBeInTheDocument()
 })
 
-test('the Időpontok chip opens the schedule sheet and reflects a save via local override', async () => {
+test('weekly load has no duplicate schedule editor after central settings migration', () => {
   renderPage()
-  fireEvent.click(screen.getByRole('button', { name: /Időpontok/ }))
-  expect(screen.getByRole('heading', { name: 'Heti gym-időpontok' })).toBeInTheDocument()
-  fireEvent.change(screen.getByLabelText('Hét időpont'), { target: { value: '06:30' } })
-  fireEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Heti gym-időpontok' })).toBeNull())
-  fireEvent.click(screen.getByRole('button', { name: /Időpontok/ }))
-  expect((screen.getByLabelText('Hét időpont') as HTMLInputElement).value).toBe('06:30')
+  expect(screen.queryByRole('button', { name: /Időpontok/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Heti gym-időpontok' })).not.toBeInTheDocument()
 })
 
 test('keeps the provenance note and the Saját edzés footer', () => {

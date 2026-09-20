@@ -22,7 +22,6 @@ import { useNavigate } from 'react-router-dom'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useTrain } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { isMockMode } from '@/data/_client/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
@@ -38,7 +37,6 @@ import type { SportEventResponse } from '@/data/train/trainApi'
 import { SportSessionCard } from '@/features/train/components/SportSessionCard'
 import { CrossLoadRow } from '@/features/train/components/CrossLoadRow'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
-import { SportScheduleSheet } from '@/features/train/sheets/SportScheduleSheet'
 import { SportEventSheet } from '@/features/train/sheets/SportEventSheet'
 import SportSkeleton from '@/features/train/pages/SportSkeleton'
 import { sportOf, SPORT_TAGS, SPORT_TONE, type SportKind } from '@/features/train/logic/sportKinds'
@@ -56,14 +54,13 @@ const d1 = (n: number) => (Math.round(n * 10) / 10).toString().replace('.', ',')
 
 export function SportPage() {
   const navigate = useNavigate()
-  const { sport, sportEvents, logSportSession, saveSportSchedule, addSportEvent, deleteSportEvent, sportPending } =
+  const { sport, sportEvents, logSportSession, addSportEvent, deleteSportEvent, sportPending } =
     useTrain()
   const { showLevelUp } = useLevelUp()
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
   const [logInitialSport, setLogInitialSport] = useState<SportKind | undefined>(undefined)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [eventOpen, setEventOpen] = useState(false)
   const openLog = (initial?: SportKind) => {
     setLogInitialSport(initial)
@@ -148,7 +145,6 @@ export function SportPage() {
               {volleyball ? (
                 <SportWeekView
                   schedule={volleyball}
-                  onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
                   onLogSlot={openLog}
                 />
               ) : (
@@ -157,7 +153,7 @@ export function SportPage() {
                     lines={2}
                     message="A heti rended itt jelenik majd meg."
                     ctaLabel="+ Állítsd be a heti rended"
-                    onCta={() => setScheduleOpen(true)}
+                    onCta={() => navigate('/settings/train/sport')}
                   />
                 </div>
               )}
@@ -185,13 +181,6 @@ export function SportPage() {
           initialSport={logInitialSport}
           onClose={() => setLogOpen(false)}
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
-        />
-      )}
-      {scheduleOpen && (
-        <SportScheduleSheet
-          initial={volleyball?.sessions.filter((s) => !s.oneOff) ?? []}
-          onSave={saveSportSchedule}
-          onClose={() => setScheduleOpen(false)}
         />
       )}
       {eventOpen && (

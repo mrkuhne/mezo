@@ -121,6 +121,10 @@ export default function MindenOldalPage() {
             </section>
           )
         })}
+        <section id="settings" className="mno-domain" data-wash="lav">
+          <div className="mno-domain-head"><ClayIcon name="i-beallitas" size={34} /><strong>Beállítások</strong><small>{PAGE_INDEX.filter(p => p.route.startsWith('/settings')).length} oldal</small></div>
+          <div className="mno-group"><h2>Közös beállítások</h2><ul>{PAGE_INDEX.filter(p => p.route.startsWith('/settings')).map(page => <li key={page.route}><Link to={page.route}><b>{page.label}</b><small>{page.hint}</small></Link></li>)}</ul></div>
+        </section>
       </PageBody>
     </MozaikPage>
   )

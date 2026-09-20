@@ -1,35 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { useBiometricProfile } from '@/data/hooks'
-import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 
 // Goal-creation hard gate (G6, mezo-06n — Task 7). The engine derives the
 // calorie target from the biometric profile (sex · height · birth date), so a
 // goal cannot be created without a complete one. Both "Új cél" entries in
 // GoalsPage route through this gate: when the profile is complete the caller
 // navigates straight to the wizard; when it is NOT, GoalsPage renders this
-// interstitial instead of navigating (mockup: hard-gate.html). Its CTA opens
-// the BiometricSheet; once the saved profile is complete (the upsert
-// invalidates ['biometricProfile'] → useBiometricProfile re-reads it) we
-// continue into the wizard via onComplete.
+// interstitial instead of navigating. Its repair CTA opens the canonical biometric
+// settings editor. The return origin leads back to weight goals after correction.
 const MISSING_LABEL = { sex: 'nem', heightCm: 'magasság', birthDate: 'szül.dátum' } as const
 
 export function GoalGate({ onClose, onComplete }: { onClose: () => void; onComplete: () => void }) {
   const { profile, isComplete } = useBiometricProfile()
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Which of the three required fields are still missing → the warning chips.
   const missing = (Object.keys(MISSING_LABEL) as (keyof typeof MISSING_LABEL)[]).filter(
     k => !(profile && profile[k]),
   )
 
-  // After the sheet saves a complete profile, the ['biometricProfile'] refetch
-  // flips isComplete → continue into the wizard. Guard on sheetOpen so we only
-  // advance after the user actually edited (not on an already-complete profile,
-  // which never opens the gate anyway).
   useEffect(() => {
-    if (isComplete && sheetOpen) onComplete()
-  }, [isComplete, sheetOpen, onComplete])
+    if (isComplete) onComplete()
+  }, [isComplete, onComplete])
 
   return (
     <div
@@ -123,7 +118,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         <button
           type="button"
           className="cta-primary"
-          onClick={() => setSheetOpen(true)}
+          onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}
           style={{ marginTop: 22, width: '100%', maxWidth: 280 }}
         >
           Biometria beállítása →
@@ -136,7 +131,6 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         </span>
       </div>
 
-      {sheetOpen && <BiometricSheet onClose={() => setSheetOpen(false)} profile={profile} />}
     </div>
   )
 }

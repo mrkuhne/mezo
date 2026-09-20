@@ -53,22 +53,7 @@ export function NotificationFeedPage() {
 
   return (
     <MozaikPage tone="sky" className="nf-page">
-      {/* Fix célpont, nem `navigate(-1)`: a beállítások vissza gombja ide (`/me/ertesitesek`) mutat,
-          tehát egy history-alapú vissza a feedről oda-vissza hurkot csinált a két lappal, és az Én
-          hub csak a tab-sávról volt elérhető. A Me-allap idióma (GoalsPage, GrowthPage, WeekHubPage)
-          fix `/me` + kiírt `‹ Én` címke — így a létra beállítások → feed → hub kifelé vezet. */}
-      <PageHead onBack={() => navigate('/me')} label="‹ Én">
-        {/* A `marginLeft` szándékosan inline, ne „rendezd" vissza az osztályra: a
-            `.mz-page-head .mzc-pgact:first-of-type { margin-left: auto }` (prototype.css) SOSEM
-            illeszkedik, mert a `:first-of-type` az első <button> testvért jelenti, azt pedig a
-            `PageHead` saját `.mz-backbtn`-je foglalja. Ez a repó uralkodó idiómája is
-            (GoalsPage, FuelRecipesPage, FuelStackPage). A szelektor javítása külön ügy (mezo-wd02). */}
-        <button type="button" className="mzc-pgact" aria-label="Beállítások"
-          style={{ marginLeft: 'auto' }}
-          onClick={() => navigate('/me/ertesitesek/beallitasok')}>
-          Beállítások ›
-        </button>
-      </PageHead>
+      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
       {/* A `big`/`sub` az ÉLŐ `items`-ből olvasna 0-t a real-módú hideg-fetch alatt, ami a
           „nincs értesítésed" hazugságot ismételné a fejlécben is — pending alatt egyiket sem
           mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1).

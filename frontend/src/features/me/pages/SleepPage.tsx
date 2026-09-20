@@ -16,7 +16,7 @@
 // tartás contract) — only the chrome changed.
 // ============================================================
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
@@ -42,7 +42,6 @@ import { NightArcCard } from '@/features/me/components/NightArcCard'
 import { PhaseAverageCard } from '@/features/me/components/PhaseAverageCard'
 import { RemDurationCard } from '@/features/me/components/RemDurationCard'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
-import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
 import { SleepStatsSheet } from '@/features/me/sheets/SleepStatsSheet'
 import { evaluateEscalation, isSnoozed, snooze } from '@/features/me/logic/sleepEscalation'
 import { localDateString } from '@/shared/lib/dates'
@@ -52,11 +51,11 @@ const PERIODS: Period[] = ['7d', '14d']
 
 export function SleepPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { sleepLog, lastNight, logSleep } = useSleep()
   const { goal } = useSleepGoal()
   const [period, setPeriod] = useState<Period>('14d')
   const [logOpen, setLogOpen] = useState(false)
-  const [goalOpen, setGoalOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [snoozed, setSnoozed] = useState(() => isSnoozed(localDateString()))
   const escalation = evaluateEscalation(sleepLog, localDateString())
@@ -101,7 +100,7 @@ export function SleepPage() {
           <div className="mzalv-goal rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span className="mz-eyebrow" style={{ color: 'var(--lav-deep)' }}>Alvás-cél</span>
-              <button type="button" className="chip" onClick={() => setGoalOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}>
+              <button type="button" className="chip" onClick={() => navigate('/settings/me/sleep', { state: { from: location.pathname + location.search } })} style={{ fontSize: 9, padding: '3px 8px' }}>
                 {goal.isSet ? 'szerkeszt' : 'beállítom'}
               </button>
             </div>
@@ -345,7 +344,6 @@ export function SleepPage() {
       </EntranceGroup>
 
       {logOpen && <SleepLogSheet onClose={() => setLogOpen(false)} onSave={logSleep} />}
-      {goalOpen && <SleepGoalSheet onClose={() => setGoalOpen(false)} />}
       {statsOpen && (
         <SleepStatsSheet
           escalation={showEscalation ? escalation.reason : null}

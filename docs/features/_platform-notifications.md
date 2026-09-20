@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-07
+updated: 2026-09-20
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -131,6 +131,8 @@ shipped; the epic is complete.
   `/me/ertesitesek` (`NotificationFeedPage.tsx`, mezo-nol0, §2a).
 
 ## 2. User-facing behavior
+
+Notification preferences now live at `/settings/notifications`, reached through the global header settings center. The old `/me/ertesitesek/beallitasok` URL redirects; the settings back action preserves origin state and returns to `/settings`. The feed retains its read/unread lifecycle but no duplicate settings button. Header → center → notifications → center → originating page is covered in `app/notificationRoutes.test.tsx`.
 
 **In-app toast action contract (`mezo-ubxd`).** The global host also supports an optional action on a simple toast: `SimpleToast.action?: { label: string; onClick: () => void | Promise<void> }`. Stack uses this for the intake confirmation's **Visszavonás** button. It remains a simple success toast — the `RewardToast` shape and progression presentation are unchanged. Invoking the action dismisses that toast immediately; if its Promise rejects, the global TanStack `MutationCache.onError` emits the normal error toast. Queue capacity, kind-specific timers, newest-first order, per-item `role="status"`, close control and live-region behavior are unchanged.
 
@@ -1207,8 +1209,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   injected, no `new Date()` inside).
 - `features/me/pages/NotificationFeedPage.test.tsx` — the hero shows the open-time unread count (not
   a live 0), items land in Ma vs. dated older groups, a row tap navigates to its `deeplink`,
-  open-time-unread rows stay highlighted for the rest of the page's life, the Beállítások button
-  goes to `/me/ertesitesek/beallitasok`.
+  open-time-unread rows stay highlighted for the rest of the page's life; the global header owns the settings entry.
 - `features/me/pages/NotificationFeedPage.empty.test.tsx` — genuinely empty feed shows the ghost
   state with no day-label header; a real-mode cold fetch (`isPending: true`, `items: []`) shows
   neither the ghost text nor a false empty state.

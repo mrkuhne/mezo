@@ -190,35 +190,16 @@ test('real mode renders the weekly plan from the schedule endpoint', async () =>
   // 5 BVSC fixture slots (msw default) -> derived weekly hours 8 and the Mon row time
   expect(await screen.findByText(/Heti ritmus · 8 ó/)).toBeInTheDocument()
   expect(screen.getAllByText(/18:15/).length).toBeGreaterThan(0)
-  expect(screen.getByRole('button', { name: 'Szerkesztés' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Szerkesztés' })).not.toBeInTheDocument()
 })
 
-test('real mode editor saves the full slot list via PUT', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const put: unknown[] = []
-  server.use(
-    http.put(`${API_BASE}/api/train/sport-schedule`, async ({ request }) => {
-      put.push(await request.json())
-      return HttpResponse.json([])
-    }),
-  )
-  renderView()
-  await userEvent.click(await screen.findByRole('button', { name: 'Szerkesztés' }))
-  expect(await screen.findByRole('heading', { name: 'Heti rend' })).toBeInTheDocument()
-  // add a Csü slot (the day is empty in the BVSC week) and save
-  await userEvent.click(screen.getByRole('button', { name: 'Csütörtök sport hozzáadása' }))
-  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  await waitFor(() => expect(put).toHaveLength(1))
-  const slots = put[0] as Array<{ dayOfWeek: number }>
-  expect(slots.map((s) => s.dayOfWeek)).toEqual([0, 1, 2, 3, 4, 5])
-})
-
-test('real mode ghost CTA opens the editor when no schedule exists', async () => {
+test('real mode setup CTA leads to the canonical settings editor', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])))
   renderView()
   await userEvent.click(await screen.findByRole('button', { name: /Állítsd be a heti rended/ }))
-  expect(await screen.findByRole('heading', { name: 'Heti rend' })).toBeInTheDocument()
+  expect(mockNavigate).toHaveBeenCalledWith('/settings/train/sport')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('real mode: a day with TRX + volleyball slots renders both rows with sport tags', async () => {

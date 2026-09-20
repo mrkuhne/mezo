@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
@@ -33,6 +33,8 @@ Fuel is mezo's nutrition domain: five sub-views under the bottom-nav route `/fue
 Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)** (Slice C · Fuel: `food_item`/`meal`/`meal_item`/`recipe`/`supplement_intake`/`medication(_dose)`/`nutrition_targets` + a fuel-timeline **view**, wiring these same nine hooks). Fuel is sequenced **after** Train deliberately because Train de-risks the typed-jsonb provenance-envelope pattern (`@JdbcTypeCode(SqlTypes.JSON)`) that Fuel's meal `score` will reuse. Roadmap: **[`docs/milestones/roadmap.md`](../milestones/roadmap.md)**.
 
 ## 2. User-facing behavior
+
+Persistent preferences live at `/settings/fuel` and `/settings/fuel/slots`; the header cog is the only general settings entry. The former Fuel day-navigation cog is removed, old URLs redirect. Existing calorie/macro previews and all nutrition/slot controls remain; water and fiber are compact rows. Full-page drafts guard navigation, and returning through nested settings preserves the originating domain. Failed or pending settings/template reads disable writes and offer retry; pending or failed nutrition previews do not present an older target as the current draft result. See [central settings](settings.md).
 
 **Water capture appearance (`mezo-62xey`).** `WaterLogSheet` uses the shared Titanium capture header and a liquid graphic whose accessible output reflects the selected amount, never a fabricated daily reading. The graphic is empty until a 250/400/500 ml chip or valid manual amount is chosen; manual input still replaces the chip and the existing Mentés action performs the write. Current/target water totals remain hook-owned. The rest of the meal and stack routes keep their existing Titanium implementations.
 

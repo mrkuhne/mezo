@@ -19,7 +19,6 @@ import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter.ChatMemoryPayload;
-import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionPromptBlock;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionReplyRecorder;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
@@ -185,8 +184,6 @@ public class ChatService {
     private final KnowledgeFactService knowledgeFactService;
     /** Shared OLD/SHADOW/NEW boundary used identically by synchronous and streamed turns. */
     private final ChatMemoryContextAdapter chatMemoryContextAdapter;
-    /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
-    private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     /** mezo-p2tr — anchored conversations' [Heti adatok] block; "" for a plain conversation. */
@@ -213,7 +210,7 @@ public class ChatService {
     private final ConversationTurnService conversationTurnService;
     private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
     private final ConversationHistory conversationHistory;
-    private final PersonalBaselineContext personalBaselineContext;
+    private final PersonalContextAssembler personalContextAssembler;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -506,9 +503,8 @@ public class ChatService {
     private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today) {
         return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
                 + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
-                + personalBaselineContext.render(userId, today)
-                + profileBlock(userId)
-                + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()));
+                + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()))
+                + personalContextAssembler.render(userId, today);
     }
 
     /**
@@ -775,9 +771,9 @@ public class ChatService {
                 + factsBlock
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + reflectionBlock(userId)
-                + characterBlock(userId)
-                + profileBlock(userId)
-                + memoriesBlock
+                + characterBlock(userId))
+                + personalContextAssembler.render(userId, today)
+                + promptPersona.render(userId, memoriesBlock
                 + graphBlock
                 + TONE_REMINDER);
     }
@@ -788,9 +784,8 @@ public class ChatService {
      * graph — a turn that needs none of the user's data should not pay to carry all of it.
      */
     private String chatGearContext(UUID userId, LocalDate today) {
-        return promptPersona.render(userId, "\n\nMa: " + today + "\n"
-                + profileBlock(userId)
-                + TONE_REMINDER);
+        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + TONE_REMINDER)
+                + personalContextAssembler.render(userId, today);
     }
 
     /** mezo-p2tr: "" for a plain conversation (no anchor); the [Heti adatok] block otherwise. */
@@ -828,12 +823,6 @@ public class ChatService {
     private String reflectionBlock(UUID userId) {
         ReflectionPromptBlock block = reflectionPromptBlock.getIfAvailable();
         return block == null ? "" : block.render(userId);
-    }
-
-    /** W4.3: the profile's contribution — "" when the bean is absent or nothing is stored. */
-    private String profileBlock(UUID userId) {
-        ProfilePromptAssembler assembler = profilePromptAssembler.getIfAvailable();
-        return assembler == null ? "" : assembler.render(userId);
     }
 
     /** mezo-1gim.8: the [Karakter] dossier's contribution — "" when the bean is absent (either

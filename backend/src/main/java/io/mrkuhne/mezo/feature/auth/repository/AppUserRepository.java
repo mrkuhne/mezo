@@ -14,6 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public interface AppUserRepository extends JpaRepository<AppUserEntity, UUID> {
     Optional<AppUserEntity> findByEmail(String email);
     boolean existsByEmail(String email);
+    boolean existsByRole(AppUserEntity.UserRole role);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update AppUserEntity u set u.name = :name, u.email = :email where u.id = :id")
+    void updateAccount(@Param("id") UUID id, @Param("name") String name, @Param("email") String email);
 
     /** The cron fan-out set (spec L1): ACTIVE and onboarded. Disabled or half-registered accounts get no jobs. */
     List<AppUserEntity> findByStatusAndOnboardedAtIsNotNull(AppUserEntity.UserStatus status);

@@ -8,7 +8,10 @@ import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
 
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  server.use(http.get(`${API_BASE}/api/diet/settings`, () => HttpResponse.json({ splitPreset: 'balanced', proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0 })))
+})
 afterEach(() => vi.unstubAllEnvs())
 
 function LocationProbe() {
@@ -20,11 +23,11 @@ function renderPage() {
   const { wrapper: Wrapper, client } = makeHookWrapperWithClient()
   const view = render(
     <Wrapper>
-      <MemoryRouter initialEntries={['/fuel', '/fuel/settings']} initialIndex={1}>
+      <MemoryRouter initialEntries={['/settings', '/settings/fuel']} initialIndex={1}>
         <Routes>
-          <Route path="/fuel" element={<LocationProbe />} />
-          <Route path="/fuel/settings" element={<><FuelSettingsPage /><LocationProbe /></>} />
-          <Route path="/fuel/slots" element={<LocationProbe />} />
+          <Route path="/settings" element={<LocationProbe />} />
+          <Route path="/settings/fuel" element={<><FuelSettingsPage /><LocationProbe /></>} />
+          <Route path="/settings/fuel/slots" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </Wrapper>,
@@ -93,7 +96,7 @@ describe('FuelSettingsPage', () => {
 
     await user.click(screen.getByRole('button', { name: /Mentés/ }))
 
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/fuel'))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/settings'))
     expect(client.getQueryData(['fuelSettings'])).toEqual({ mealsPerDay: 5, caffeineCutoff: '13:00' })
     expect(client.getQueryData(['dietSettings'])).toEqual({
       splitPreset: 'low_carb', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
@@ -106,7 +109,7 @@ describe('FuelSettingsPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Étkezési ablakok szerkesztése' }))
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/fuel/slots')
+    expect(screen.getByTestId('location')).toHaveTextContent('/settings/fuel/slots')
   })
 
   test('composes the rhythm hero before the floating settings cards', () => {
@@ -248,9 +251,28 @@ describe('FuelSettingsPage — real-mode draft preview', () => {
     )
     renderPage()
 
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toBeEnabled())
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_fat')
 
     await waitFor(() => expect(screen.getByText('2 600 kcal')).toBeInTheDocument())
     expect(seen.at(-1)).toMatchObject({ splitPreset: 'low_fat', proteinTier: 'moderate' })
   })
+})
+
+test.each(['/api/fuel/settings', '/api/diet/settings'])('failed %s cannot be overwritten with ghost defaults', async path => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}${path}`, () => new HttpResponse(null, { status: 500 })))
+  renderPage()
+  expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült betölteni')
+  expect(screen.queryByRole('button', { name: 'Mentés' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Újrapróbálás' })).toBeInTheDocument()
+})
+test('failed draft preview is not presented as the new prescribed target', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.post(`${API_BASE}/api/diet/settings/preview`, () => new HttpResponse(null, { status: 500 })))
+  renderPage()
+  await waitFor(() => expect(screen.getByLabelText('Makróprofil')).toBeEnabled())
+  await userEvent.selectOptions(screen.getByLabelText('Makróprofil'), 'low_carb')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Az előnézet nem tölthető be')
+  expect(screen.queryByText('Mai cél a beállítás szerint')).not.toBeInTheDocument()
 })

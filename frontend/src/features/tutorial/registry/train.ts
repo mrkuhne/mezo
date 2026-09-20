@@ -98,7 +98,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'A hét két szélén.',
-        voice: 'Hét elején a terv, hét végén a mérleg. Közben akkor, ha átrendeznél — az Időpontok gombbal.',
+        voice: 'Hét elején a terv, hét végén a mérleg. Közben akkor, ha átrendeznél — a fejléc Beállítások gombján át, a Train részben.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

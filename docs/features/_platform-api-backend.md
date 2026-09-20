@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-06
+updated: 2026-09-20
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -118,6 +118,8 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 ---
 
 ## 4. Data model & API
+
+Central settings adds generated `CompanionPreferencesApi` operations in the companion fragment (GET/PUT preferences and GET exact personal context), plus `AuthApi` PUT `/api/auth/me`. Preferences remain owner-scoped domain storage; the settings frontend composes these APIs with existing domain contracts instead of adding a second settings aggregate. Preview and all chat paths share one personal-context assembler. See [settings](settings.md), [companion](companion.md) and [auth](_platform-auth-security.md).
 
 ### 4a. The contract layer (`api/`)
 

@@ -49,9 +49,11 @@ function draftsFrom(sessions: VolleyballSession[]): SlotDraft[][] {
 
 export function SportScheduleSheet({ initial, onSave, onClose }: {
   initial: VolleyballSession[]
-  onSave?: (slots: SportScheduleSlotInput[]) => void
+  onSave?: (slots: SportScheduleSlotInput[]) => void | Promise<unknown>
   onClose: () => void
 }) {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [days, setDays] = useState<SlotDraft[][]>(() => draftsFrom(initial))
   const patch = (di: number, si: number, p: Partial<SlotDraft>) =>
     setDays((ds) => ds.map((slots, j) => (j === di ? slots.map((s, k) => (k === si ? { ...s, ...p } : s)) : slots)))
@@ -59,13 +61,18 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
   const removeSlot = (di: number, si: number) =>
     setDays((ds) => ds.map((slots, j) => (j === di ? slots.filter((_, k) => k !== si) : slots)))
 
-  const save = () => {
-    onSave?.(days.flatMap((slots, i) => slots.map((d) => ({
+  const save = async (close: () => void) => {
+    setSaving(true)
+    setSaveError(false)
+    try {
+    await onSave?.(days.flatMap((slots, i) => slots.map((d) => ({
       dayOfWeek: i, time: d.time, durationMin: d.durationMin,
       sport: d.sport, kind: d.sport === 'volleyball' ? d.kind : 'training',
       ...(d.location.trim() ? { location: d.location.trim() } : {}),
       ...(d.intensityLabel.trim() ? { intensityLabel: d.intensityLabel.trim() } : {}),
     }))))
+    close()
+    } catch { setSaveError(true) } finally { setSaving(false) }
   }
 
   const inputStyle = {
@@ -212,11 +219,12 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
             ))}
           </div>
 
+          {saveError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
           {/* Footer */}
           <div className="row gap-sm mt-lg">
             <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="flex-1" onClick={() => { save(); close() }}>
-              <Icon name="check" size={14} /> Mentés
+            <CtaPrimary className="flex-1" disabled={saving} onClick={() => save(close)}>
+              <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Mentés'}
             </CtaPrimary>
           </div>
         </>

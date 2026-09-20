@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -46,6 +46,8 @@ Train is the largest mezo domain: the area for planning and executing strength w
 ---
 
 ## 2. User-facing behavior
+
+Recurring gym and sport schedules are edited at `/settings/train/gym` and `/settings/train/sport`. TrainWeek no longer carries the Időpontok chip; the sport empty-state setup CTA opens the canonical editor. Existing workout logging, plan and one-off event editing stay here. Schedule sheets await persistence, retain drafts on errors, and mock changes propagate through the shared cache. See [central settings](settings.md).
 
 **Quick sport capture appearance (`mezo-62xey`).** `SportLogSheet` shares the Titanium capture header, metallic sport sculpture and two-row numeric selectors. Its three supported sport branches, editable duration/count controls, RPE, volleyball shoulder load, note and mutation payload remain unchanged. The fabricated volleyball-only advice block is removed. The full `/train/sport/log` flow and the workout-session routes are unchanged.
 

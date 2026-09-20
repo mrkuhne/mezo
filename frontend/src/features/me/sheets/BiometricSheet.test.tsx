@@ -102,3 +102,19 @@ test('no tdeeBootstrap (engine not run) renders no row — never a fabricated nu
   expect(screen.queryByText('Fenntartó energia')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Energia-bontás magyarázata' })).not.toBeInTheDocument()
 })
+
+test('does not invent a birth date for a new profile', () => {
+  renderSheet(null)
+  expect(screen.getByLabelText('Születési dátum')).toHaveValue('')
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
+})
+
+test('failed save preserves biometric values and keeps the sheet open', async () => {
+  vi.spyOn(biometricProfileApi, 'upsert').mockRejectedValue(new Error('offline'))
+  const close = vi.fn()
+  renderSheet(mockProfile, close)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('A mentés nem sikerült')
+  expect(close).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Magasság')).toHaveValue(180)
+})

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, it, test, vi } from 'vitest'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -49,10 +49,11 @@ afterEach(() => {
 })
 
 // SleepPage renders a <Link> (night-mode entry row), so a router context is required.
+function LocationProbe() { return <div data-testid="settings-location">{useLocation().pathname}</div> }
 const renderPage = () =>
   render(
-    <MemoryRouter>
-      <SleepPage />
+    <MemoryRouter initialEntries={['/me/sleep']}>
+      <SleepPage /><LocationProbe />
     </MemoryRouter>,
     { wrapper: QueryWrapper },
   )
@@ -96,8 +97,8 @@ test('real mode with an empty sleep log renders the placeholder instead of crash
   server.use(http.get(`${API_BASE}/api/biometrics/sleep`, () => HttpResponse.json([])))
 
   render(
-    <MemoryRouter>
-      <SleepPage />
+    <MemoryRouter initialEntries={['/me/sleep']}>
+      <SleepPage /><LocationProbe />
     </MemoryRouter>,
     { wrapper: makeHookWrapper() },
   )
@@ -116,8 +117,8 @@ test('an unset goal (config-default ghost) says so instead of posing as the user
   })))
 
   render(
-    <MemoryRouter>
-      <SleepPage />
+    <MemoryRouter initialEntries={['/me/sleep']}>
+      <SleepPage /><LocationProbe />
     </MemoryRouter>,
     { wrapper: makeHookWrapper() },
   )
@@ -147,10 +148,11 @@ it('renders the two score rings with computed values', () => {
   expect(screen.getByText('cél ≥ 85%')).toBeInTheDocument()
 })
 
-it('opens the SleepGoalSheet from the szerkeszt button', async () => {
+it('opens canonical sleep settings from the edit shortcut', async () => {
   renderPage()
   await userEvent.click(screen.getByRole('button', { name: /szerkeszt/i }))
-  expect(screen.getByRole('dialog', { name: 'Alvás-cél' })).toBeInTheDocument()
+  expect(screen.getByTestId('settings-location')).toHaveTextContent('/settings/me/sleep')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 it('shows the bed-delta stat on the hero', () => {
@@ -262,8 +264,8 @@ test('omits the night-arc heading when the last night has no hypnogram (no stray
   )
 
   render(
-    <MemoryRouter>
-      <SleepPage />
+    <MemoryRouter initialEntries={['/me/sleep']}>
+      <SleepPage /><LocationProbe />
     </MemoryRouter>,
     { wrapper: makeHookWrapper() },
   )

@@ -28,10 +28,11 @@ export function BiometricSheet({
    *  and the card lost its host — this is the replacement (me.md §9). */
   onExplainEnergy?: () => void
 }) {
+  const [error, setError] = useState(false)
   const { upsert, pending } = useBiometricActions()
   const [sex, setSex] = useState<'M' | 'F'>(profile?.sex ?? 'M')
   const [heightCm, setHeightCm] = useState<number>(profile?.heightCm ?? 180)
-  const [birthDateIso, setBirthDateIso] = useState<string>(profile?.birthDate ?? '1991-03-01')
+  const [birthDateIso, setBirthDateIso] = useState<string>(profile?.birthDate ?? '')
   const [bodyFat, setBodyFat] = useState<number | ''>(profile?.bodyFatPct ?? '')
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
     (profile?.activityLevel as ActivityLevel | null | undefined) ?? 'MIXED',
@@ -45,7 +46,7 @@ export function BiometricSheet({
       activityLevel,
       ...(bodyFat !== '' ? { bodyFatPct: Number(bodyFat) } : {}),
     }
-    upsert(body).then(close)
+    upsert(body).then(close).catch(() => setError(true))
   }
 
   const field = (label: ReactNode, input: ReactNode) => (
@@ -74,6 +75,7 @@ export function BiometricSheet({
             </button>
           </div>
 
+          {!profile && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Még nincs saját profilod. Az előre kitöltött értékek példák: ellenőrizd őket és add meg a születési dátumodat.</p>}
           <div className="col gap-md">
             <div className="col gap-sm">
               <span style={SECTION_LABEL}>Nem</span>
@@ -199,13 +201,14 @@ export function BiometricSheet({
             </div>
           )}
 
+          {error && <p role="alert">A mentés nem sikerült. A módosításaid megmaradtak, próbáld újra.</p>}
           <div className="row gap-sm mt-lg">
             <button className="cta-ghost flex-1" onClick={close}>
               Mégse
             </button>
             <button
               className="cta-primary flex-1"
-              disabled={pending}
+              disabled={pending || !birthDateIso || heightCm <= 0}
               onClick={() => save(close)}
             >
               <Icon name="check" size={14} /> Mentés

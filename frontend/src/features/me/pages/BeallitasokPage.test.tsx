@@ -29,10 +29,10 @@ function renderPage() {
   return render(
     <QueryWrapper>
       <ThemeProvider>
-        <MemoryRouter initialEntries={['/me/beallitasok']}>
+        <MemoryRouter initialEntries={['/settings/general']}>
           <TutorialProvider>
             <Routes>
-              <Route path="/me/beallitasok" element={<BeallitasokPage />} />
+              <Route path="/settings/general" element={<BeallitasokPage />} />
               <Route path="*" element={null} />
             </Routes>
             <LocationProbe />
@@ -55,7 +55,7 @@ test('a Téma választó helyben él az oldalon és átbillenti a data-theme-et'
 test('az Értesítések sor a kapcsolók oldalára navigál', async () => {
   renderPage()
   await userEvent.click(await screen.findByRole('button', { name: 'Értesítések' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/ertesitesek/beallitasok')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/settings/notifications')
 })
 
 test('az AI-napló sor az AI-napló oldalra navigál', async () => {
@@ -64,10 +64,10 @@ test('az AI-napló sor az AI-napló oldalra navigál', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent('/admin/cost')
 })
 
-test('a vissza-chip az Én hubra visz', async () => {
+test('a visszalépés a közös beállításokhoz visz', async () => {
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent(/^\/me$/)
+  await userEvent.click(screen.getByRole('link', { name: 'Vissza a beállításokhoz' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent(/^\/settings$/)
 })
 
 test('mock mode (owner): az Admin sor látszik és az admin hubra visz', async () => {

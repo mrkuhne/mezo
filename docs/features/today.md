@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-17
+updated: 2026-09-20
 tags: [today, nap, mozaik, titanium, biometrics, frontend, data-layer, ritual, needs]
 key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
@@ -61,6 +61,8 @@ Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the 
 The page scrolls. Rough-day mode quiets the decorative motion while preserving the same five entry points. Reduced-motion preferences stop CSS motion and select the existing static companion fallback. Shell header/navigation remain independently owned.
 
 ## 2. User-facing behavior
+
+The global header uses a Beállítások cog instead of the daypart picker. Day-face resolution and existing `/nap?dp=` deep links still work; the aurora and day orb retain their existing behavior. `/settings/nap` links shared sleep anchors, Fuel cadence and notification preferences instead of storing duplicate daily-rhythm values. See [central settings](settings.md).
 
 **Titanium quick capture (`mezo-62xey`).** `/nap/gyors` has one heading and the same nine fixed-position actions as the FAB launcher. `QuickLogSurface.css` and the domain-free `CaptureSculpture` provide colored metallic graphics; every subtitle still comes from existing hooks. Water, weight, sport, check-in, journal/activity/gratitude and sleep share `CaptureHeader` + scoped `capture-sheet` styling. Check-in retains its four numeric steps, skip/back, unlimited note and async error/retry; it no longer renders the fabricated instant observation. Activity continues to display actual classification/XP responses. Dedicated meal/stack/training/chat routes remain unchanged. All 1–10 capture scales use two rows of five touch targets. The [approved design](../superpowers/specs/2026-09-17-titanium-quick-log.md) explains the boundary.
 

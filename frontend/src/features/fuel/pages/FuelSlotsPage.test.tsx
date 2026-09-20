@@ -23,10 +23,10 @@ const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false 
 function renderPage(qc: QueryClient) {
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/fuel', '/fuel/slots']} initialIndex={1}>
+      <MemoryRouter initialEntries={['/settings/fuel', '/settings/fuel/slots']} initialIndex={1}>
         <Routes>
-          <Route path="/fuel/slots" element={<FuelSlotsPage />} />
-          <Route path="/fuel" element={<LocationProbe />} />
+          <Route path="/settings/fuel/slots" element={<FuelSlotsPage />} />
+          <Route path="/settings/fuel" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -391,4 +391,13 @@ test('real mode: Mentés PUTs the flattened wire body (fixed anchor)', async () 
     )
     expect(slot).not.toHaveProperty('offsetMin')
   }
+})
+
+test.each(['/api/fuel/settings', '/api/fuel/slot-templates'])('failed %s prevents replacing unknown saved slots', async path => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}${path}`, () => new HttpResponse(null, { status: 500 })))
+  renderPage(newQc())
+  expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült betölteni')
+  expect(screen.queryByRole('button', { name: /Saját|Mentés/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Újrapróbálás' })).toBeInTheDocument()
 })
