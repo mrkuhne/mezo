@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DiagnosisPopulator;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +40,18 @@ class DiagnosisControllerIT extends ApiIntegrationTest {
         DiagnosisGenerateRequest request = new DiagnosisGenerateRequest();
         request.setPhenomenon("fatigue");
         return request;
+    }
+
+    private static DiagnosisGenerateRequest weightRequest(LocalDate anchorStart) {
+        DiagnosisGenerateRequest request = new DiagnosisGenerateRequest();
+        request.setPhenomenon("weight");
+        request.setAnchorStart(anchorStart);
+        return request;
+    }
+
+    private static LocalDate someMonday() {
+        LocalDate date = LocalDate.now();
+        return date.minusDays(date.getDayOfWeek().getValue() - 1L);
     }
 
     @Test
@@ -96,5 +109,28 @@ class DiagnosisControllerIT extends ApiIntegrationTest {
     void generateIs409WhenNoUsableDiagnosisComesBack() {
         postForBody("/api/proactive/diagnosis", fatigueRequest(),
                 ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+    }
+
+    @Test
+    void weightGenerateIs400WithoutAnAnchor() {
+        postForBody("/api/proactive/diagnosis", weightRequest(null),
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void weightGenerateIs400WithANonMondayAnchor() {
+        LocalDate tuesday = someMonday().plusDays(1);
+
+        postForBody("/api/proactive/diagnosis", weightRequest(tuesday),
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void fatigueGenerateIs400WhenAnAnchorIsSent() {
+        DiagnosisGenerateRequest request = fatigueRequest();
+        request.setAnchorStart(someMonday());
+
+        postForBody("/api/proactive/diagnosis", request,
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
     }
 }

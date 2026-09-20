@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,7 @@ public class DiagnosisEntity extends OwnedEntity {
 
     public static final String PHENOMENON_FATIGUE = "fatigue";
     public static final String PHENOMENON_SLEEP = "sleep";
+    public static final String PHENOMENON_WEIGHT = "weight";
 
     @Id
     @GeneratedValue
@@ -39,13 +41,18 @@ public class DiagnosisEntity extends OwnedEntity {
     private UUID id;
 
     @NotNull
-    @Pattern(regexp = "fatigue|sleep")
+    @Pattern(regexp = "fatigue|sleep|weight")
     @Column(nullable = false, length = 30)
     private String phenomenon = PHENOMENON_FATIGUE;
 
     @NotNull
     @Column(name = "window_days", nullable = false)
     private Integer windowDays;
+
+    /** The week's ISO Monday for the WEEK-ANCHORED {@code weight} phenomenon — null for the
+     *  rolling phenomena ({@code fatigue}/{@code sleep}). */
+    @Column(name = "anchor_start")
+    private LocalDate anchorStart;
 
     /** The 1-2 sentence Hungarian answer. */
     @NotNull

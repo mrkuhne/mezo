@@ -104,12 +104,33 @@ public class DiagnosisGenerator {
 
     @Transactional
     public DiagnosisEntity generate(UUID userId, LocalDate today, String phenomenon) {
+        return generate(userId, today, phenomenon, null);
+    }
+
+    /**
+     * @param anchorStart the WEEK-ANCHORED {@code weight} phenomenon's ISO Monday — the window
+     *                    becomes {@code [anchorStart, min(anchorStart+6, today)]} instead of the
+     *                    rolling {@code properties.windowDays()} window. {@code null} for the
+     *                    rolling phenomena (fatigue/sleep) — unchanged behavior.
+     */
+    @Transactional
+    public DiagnosisEntity generate(UUID userId, LocalDate today, String phenomenon, LocalDate anchorStart) {
         DiagnosisRecipe recipe = DiagnosisRecipe.byPhenomenon(phenomenon);
         if (recipe == null) {
             log.warn("Unknown diagnosis phenomenon '{}' for {} — no row", phenomenon, userId);
             return null;
         }
-        FatigueEvidenceCollector.FatigueGather gather = collector.gather(userId, today, recipe);
+        FatigueEvidenceCollector.FatigueGather gather;
+        LocalDate windowFrom = null;
+        LocalDate windowTo = null;
+        if (anchorStart != null) {
+            windowFrom = anchorStart;
+            LocalDate anchorEnd = anchorStart.plusDays(6);
+            windowTo = anchorEnd.isBefore(today) ? anchorEnd : today;
+            gather = collector.gather(userId, windowFrom, windowTo, recipe);
+        } else {
+            gather = collector.gather(userId, today, recipe);
+        }
         if (gather == null) {
             log.debug("Not enough data for a fatigue diagnosis for {}", userId);
             return null;
@@ -130,7 +151,10 @@ public class DiagnosisGenerator {
         DiagnosisEntity diagnosis = new DiagnosisEntity();
         diagnosis.setCreatedBy(userId);
         diagnosis.setPhenomenon(recipe.phenomenon());
-        diagnosis.setWindowDays(properties.windowDays());
+        diagnosis.setWindowDays(anchorStart != null
+                ? (int) (ChronoUnit.DAYS.between(windowFrom, windowTo) + 1)
+                : properties.windowDays());
+        diagnosis.setAnchorStart(anchorStart);
         diagnosis.setVerdict(truncate(parsed.verdict().strip()));
         diagnosis.setConfidence(parsed.confidence());
         diagnosis.setEvidence(new DiagnosisEvidenceEnvelope(gather.candidates()));

@@ -9653,7 +9653,7 @@ paths:
           required: false
           schema:
             type: string
-            pattern: ^(fatigue|sleep)$
+            pattern: ^(fatigue|sleep|weight)$
             default: fatigue
       responses:
         '200':
@@ -24194,7 +24194,14 @@ components:
       properties:
         phenomenon:
           type: string
-          pattern: ^(fatigue|sleep)$
+          pattern: ^(fatigue|sleep|weight)$
+        anchorStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            The ISO Monday of the diagnosed week — required (and must be a
+            Monday) for phenomenon=weight, rejected for fatigue/sleep.
     DiagnosisEvidenceItem:
       type: object
       required:
@@ -24283,6 +24290,10 @@ components:
           type: string
         windowDays:
           type: integer
+        anchorStart:
+          type: string
+          format: date
+          nullable: true
         verdict:
           type: string
         confidence:

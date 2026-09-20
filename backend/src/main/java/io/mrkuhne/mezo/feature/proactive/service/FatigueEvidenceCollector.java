@@ -91,10 +91,12 @@ public class FatigueEvidenceCollector {
 
         List<EvidenceItem> candidates = new ArrayList<>();
         Set<String> domains = new LinkedHashSet<>();
+        int minCoverageDays = recipe.minCoverageDays() != null
+                ? recipe.minCoverageDays() : properties.minCoverageDays();
 
         for (MetricKey metric : recipe.metrics()) {
             Map<LocalDate, Double> window = metricSeriesService.series(userId, metric, windowFrom, windowTo);
-            if (window.size() < properties.minCoverageDays()) {
+            if (window.size() < minCoverageDays) {
                 continue;
             }
             double value = round(mean(window.values()));
