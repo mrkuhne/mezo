@@ -43,3 +43,17 @@ test('mock save remains visible to the canonical goal reader after remount', asy
   expect(reader.result.current.goalResponse?.targetDate).toBe('2027-01-07')
   expect(reader.result.current.goalResponse?.targetWeightKg).toBe(78)
 })
+
+test('changing the target invalidates preview readiness and ignores a late old response', async () => {
+  let resolveOld!: (value: { derivedRatePctPerWeek: number; withinSafeBand: boolean; verdict: 'feasible' }) => void
+  const old = new Promise<{ derivedRatePctPerWeek: number; withinSafeBand: boolean; verdict: 'feasible' }>(resolve => { resolveOld = resolve })
+  vi.spyOn(goalApi, 'feasibilityPreview').mockImplementation(body => body.targetWeightKg === 78 ? old : Promise.resolve({ derivedRatePctPerWeek: .8, withinSafeBand: true, verdict: 'feasible' }))
+  const { wrapper } = setup()
+  const { result, rerender } = renderHook(({ target }) => useGoalSettings(goalResponse, { ...request, targetWeightKg: target }, { ...remaining, targetWeightKg: target }), { wrapper, initialProps: { target: 78 } })
+  expect(result.current.previewPending).toBe(true)
+  rerender({ target: 77 })
+  expect(result.current.preview).toBeNull()
+  await waitFor(() => expect(result.current.preview?.[0].derivedRatePctPerWeek).toBe(.8))
+  await act(async () => { resolveOld({ derivedRatePctPerWeek: .4, withinSafeBand: true, verdict: 'feasible' }); await old })
+  expect(result.current.preview?.[0].derivedRatePctPerWeek).toBe(.8)
+})

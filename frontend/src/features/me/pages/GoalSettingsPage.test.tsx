@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
 
@@ -70,4 +70,22 @@ test('does not save while server feasibility is unavailable', async () => {
   await userEvent.clear(screen.getByLabelText('Célsúly (kg)'))
   await userEvent.type(screen.getByLabelText('Célsúly (kg)'), '77')
   expect(screen.getByRole('button', { name: 'Súlycél mentése' })).toBeDisabled()
+})
+
+function OriginProbe() {
+  const location = useLocation()
+  return <output data-testid="goal-origin">{location.pathname}:{location.state?.from}</output>
+}
+
+test('back to personal settings preserves the original domain', async () => {
+  render(<MemoryRouter initialEntries={[{ pathname: '/settings/me/goal', state: { from: '/fuel?day=yesterday' } }]}><GoalSettingsPage /><OriginProbe /></MemoryRouter>)
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('goal-origin')).toHaveTextContent('/settings/me:/fuel?day=yesterday')
+})
+
+test('prevents editing during save so the completed write cannot clear a newer dirty draft', () => {
+  mocks.settings.mockReturnValue({ mock: true, save: mocks.save, saving: true })
+  renderPage()
+  expect(screen.getByLabelText('Célsúly (kg)')).toBeDisabled()
+  expect(screen.getByLabelText('Hátralévő céltempó (kg/hét)')).toBeDisabled()
 })

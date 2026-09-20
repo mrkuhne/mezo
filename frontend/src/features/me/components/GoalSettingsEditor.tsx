@@ -27,8 +27,8 @@ export function GoalSettingsEditor({ goal, currentWeight }: { goal: GoalResponse
     <UnsavedChangesGuard dirty={dirty} /><span className="eyebrow">A te tempódban</span><h2>Célból dátum</h2>
     <p>Számítási alap: {hu1(currentWeight)} kg · {today}. A tempó a még hátralévő útra vonatkozik.</p>
     <div className="goal-pace-fields">
-      <label>Célsúly (kg)<input type="number" min="20" max="500" step="0.1" value={target} onChange={e => { setTarget(e.target.value); setDirty(true); setSaved(false) }} /></label>
-      <label>Hátralévő céltempó (kg/hét)<input type="number" min="0.1" max="5" step="0.1" value={pace} onChange={e => { setPace(e.target.value); setDirty(true); setSaved(false) }} /></label>
+      <label>Célsúly (kg)<input disabled={state.saving} type="number" min="20" max="500" step="0.1" value={target} onChange={e => { setTarget(e.target.value); setDirty(true); setSaved(false) }} /></label>
+      <label>Hátralévő céltempó (kg/hét)<input disabled={state.saving} type="number" min="0.1" max="5" step="0.1" value={pace} onChange={e => { setPace(e.target.value); setDirty(true); setSaved(false) }} /></label>
     </div>
     <div className="goal-pace-arrival"><span>Becsült céldátum · számított</span><output>{date ?? 'Ellenőrizd a célsúlyt és a tempót'}</output></div>
     <p>A kezdősúly és a kezdődátum változatlan: {hu1(goal.startWeightKg)} kg · {goal.startDate}. A célmotor a teljes időszak átlagtempójával számol; ez eltérhet a hátralévő tempótól.</p>
