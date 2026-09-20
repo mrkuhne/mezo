@@ -69,7 +69,15 @@ export function useDiagnosisForWeek(weekStart: string): Diagnosis | null {
   return matches.reduce((newest, d) => (d.generatedAt > newest.generatedAt ? d : newest))
 }
 
-export type DiagnosisErrorKind = 'insufficient' | 'quota' | 'failed' | null
+/**
+ * `insufficientWeighins`: the weight phenomenon's own weigh-in floor (< 3 in the anchor week,
+ * `DIAGNOSIS_INSUFFICIENT_WEIGHINS`) — "log more weigh-ins" copy. `insufficientData`: the
+ * generic few-domains floor any phenomenon can hit (`DIAGNOSIS_INSUFFICIENT_DATA`) — "too few
+ * tracked areas" copy. Both are 409s but mean different things to the user, so the SystemMessage
+ * `code` on the response — not just the HTTP status — decides which kind a 409 maps to
+ * (mezo-85x5r final-review wave: a status-only mapping showed the weigh-in copy for every 409).
+ */
+export type DiagnosisErrorKind = 'insufficientWeighins' | 'insufficientData' | 'quota' | 'failed' | null
 
 /**
  * Generate + probe→experiment (mezo-hqfi.4). BOTH cost real state (an LLM call / an active
@@ -86,7 +94,11 @@ export function useDiagnosisActions() {
   const toKind = (e: unknown): DiagnosisErrorKind => {
     if (e instanceof ApiError) {
       if (e.status === 429) return 'quota'
-      if (e.status === 409) return 'insufficient'
+      if (e.status === 409) {
+        return e.messages.some((m) => m.code === 'DIAGNOSIS_INSUFFICIENT_DATA')
+          ? 'insufficientData'
+          : 'insufficientWeighins'
+      }
     }
     return 'failed'
   }

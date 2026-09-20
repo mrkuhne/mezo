@@ -81,8 +81,15 @@ describe('DiagnosisDetailPage — Számvetés (mock mode)', () => {
     expect(screen.getByText('nátrium')).toBeInTheDocument()
   })
 
-  test('the hero sub is the anchored week range with the mérés count', () => {
+  test('the hero sub is the anchored week range, with no separately-derived mérés count', () => {
     renderAt(weightDiag.id)
-    expect(screen.getByText(/Aug 31–Szep 6 · 5 mérés/)).toBeInTheDocument()
+    expect(screen.getByText('Aug 31–Szep 6')).toBeInTheDocument()
+  })
+
+  // mezo-85x5r final-review wave: the mérés count renders ONCE, honestly, on the backend-computed
+  // 'valódi delta' Számvetés row — not duplicated (and not mismatched) on the hero sub.
+  test('the mérés count renders on the valódi delta Számvetés row', () => {
+    renderAt(weightDiag.id)
+    expect(screen.getAllByText(/heti átlag 82,4.*5 mérés/).length).toBeGreaterThan(0)
   })
 })

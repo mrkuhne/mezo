@@ -1,7 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { DiagnosisListPage } from '@/features/insights/pages/DiagnosisListPage'
+import { API_BASE } from '@/test/msw/handlers'
+import { server } from '@/test/msw/server'
 
 const renderPage = () =>
   render(
@@ -53,6 +56,42 @@ describe('DiagnosisListPage (real mode)', () => {
     expect(screen.queryByText(/Alváshiány/)).not.toBeInTheDocument()
     screen.getAllByRole('button', { name: 'Kérdezd meg most' }).forEach((b) => expect(b).toBeEnabled())
     expect(screen.getByText('napi 3 kérdés · a megnyitás mindig ingyen')).toBeInTheDocument()
+  })
+
+  // mezo-85x5r final-review wave: the two 409 codes render DIFFERENT copy here too (the catalog
+  // asks weight as well as fatigue/sleep, so both codes are reachable from this page).
+  test('409 DIAGNOSIS_INSUFFICIENT_DATA renders the few-domains copy', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+      http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+        HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'thin' }], { status: 409 })),
+    )
+    renderPage()
+    const [fatigueAsk] = await screen.findAllByRole('button', { name: 'Kérdezd meg most' })
+    fireEvent.click(fatigueAsk)
+    await waitFor(() =>
+      expect(screen.getByText('Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.'))
+        .toBeInTheDocument(),
+    )
+  })
+
+  test('409 DIAGNOSIS_INSUFFICIENT_WEIGHINS renders the weigh-in copy, not the few-domains copy', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+      http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+        HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_WEIGHINS', message: 'too few weigh-ins' }], { status: 409 })),
+    )
+    renderPage()
+    const asks = await screen.findAllByRole('button', { name: 'Kérdezd meg most' })
+    // the third live question is 'weight' (see LIVE_QUESTIONS) — the one that actually hits the
+    // weigh-in gate on the real backend.
+    fireEvent.click(asks[2])
+    await waitFor(() =>
+      expect(screen.getByText('Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.')).toBeInTheDocument(),
+    )
+    expect(
+      screen.queryByText('Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.'),
+    ).not.toBeInTheDocument()
   })
 })
 

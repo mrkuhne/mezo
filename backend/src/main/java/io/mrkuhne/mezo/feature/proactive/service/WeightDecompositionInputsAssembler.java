@@ -31,10 +31,17 @@ import org.springframework.stereotype.Service;
  * WeightTrendQuery} PORT (not {@code WeightTrendService} directly — Preflight, mezo-85x5r Task 4
  * brief). The active goal via {@link GoalRepository}. The kcal surplus is
  * {@code Σ DAILY_KCAL} (via {@link MetricSeriesService}) minus the active prescription's TDEE
- * side for the covering segment ({@code segment.kcal() - segment.dailyEnergyBalanceKcal()},
- * scaled to the window's day count) — missing either side (no logged kcal, no active goal, no
- * covering segment, or a pre-slice-1 segment without {@code dailyEnergyBalanceKcal}) yields a
- * {@code null} surplus, which {@link WeightDecomposition} renders as an omitted ceiling row.
+ * side for the covering segment, scaled to the number of days ACTUALLY logged in the window
+ * (never the window's calendar length — a partial week must not be compared against a full
+ * week's TDEE) — missing either side (fewer than 4 logged days, no active goal, no covering
+ * segment, or a pre-slice-1 segment without {@code dailyEnergyBalanceKcal}) yields a {@code null}
+ * surplus, which {@link WeightDecomposition} renders as an omitted ceiling row.
+ *
+ * <p>{@code trendDeltaKgPerWeek} and {@code e1rmTopDeltaPct} are honest-omission fields (mezo-85x5r
+ * final-review wave): both narrate what happened DURING the anchored window, so they are only
+ * populated when that window is still current (its clamped end has reached today, i.e. the
+ * running or just-closing week) — for a fully-past week they stay {@code null} rather than
+ * silently reporting today's trend/e1RM as if it belonged to that week.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,16 +66,21 @@ class WeightDecompositionInputsAssembler {
         LocalDate prevFrom = prevTo.minusDays(ChronoUnit.DAYS.between(windowFrom, windowTo));
         Double prevWeekAvgKg = mean(latestPerDay(userId, prevFrom, prevTo).values());
 
+        // The window is CURRENT (running or just-closing) when its clamped end has reached
+        // today — windowTo is never after today (callers clamp it), so this is really "has the
+        // week fully elapsed yet". Only then do trend/e1RM narrate THIS window; a past week gets
+        // null rather than today's numbers passed off as its own (mezo-85x5r final-review wave).
+        boolean windowIsCurrent = !windowTo.isBefore(LocalDate.now());
+
+        // WeightTrendQuery#computeTrend is documented to always return a non-null response (an
+        // empty/single-day history yields dataSufficiency=none with zero rates) rather than
+        // throwing, so no defensive catch is needed here (mezo-85x5r final-review wave).
         Double trendDeltaKgPerWeek = null;
-        try {
+        if (windowIsCurrent) {
             var trend = weightTrendQuery.computeTrend(userId);
             if (trend != null && trend.getWeeklyRateKgPerWeek() != null) {
                 trendDeltaKgPerWeek = trend.getWeeklyRateKgPerWeek().doubleValue();
             }
-        } catch (RuntimeException e) {
-            // Insufficient weight history for a trend read (e.g. not enough EWMA points) — the
-            // row simply omits the trend segment rather than failing the whole diagnosis.
-            trendDeltaKgPerWeek = null;
         }
 
         Double bodyweightKg = weekAvgKg;
@@ -83,7 +95,7 @@ class WeightDecompositionInputsAssembler {
 
         Double weekKcalSurplus = kcalSurplus(userId, activeGoal, windowFrom, windowTo);
 
-        Double e1rmTopDeltaPct = e1rmTopDeltaPct(userId);
+        Double e1rmTopDeltaPct = windowIsCurrent ? e1rmTopDeltaPct(userId, windowFrom, windowTo) : null;
 
         return new WeightDecomposition.Inputs(
                 weekAvgKg, prevWeekAvgKg, weighInCount,
@@ -113,10 +125,16 @@ class WeightDecompositionInputsAssembler {
         return values.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0.0);
     }
 
+    /** Below this many logged days the week is too thin to compare against a full week's TDEE —
+     *  the ceiling row is omitted (returns {@code null}) rather than scaled off a sparse sample. */
+    private static final int MIN_LOGGED_DAYS_FOR_SURPLUS = 4;
+
     private Double kcalSurplus(UUID userId, GoalEntity activeGoal, LocalDate windowFrom, LocalDate windowTo) {
         Map<LocalDate, Double> kcalSeries =
                 metricSeriesService.series(userId, MetricKey.DAILY_KCAL, windowFrom, windowTo);
-        if (kcalSeries.isEmpty() || activeGoal == null || activeGoal.getStartDate() == null) {
+        int loggedDayCount = kcalSeries.size();
+        if (loggedDayCount < MIN_LOGGED_DAYS_FOR_SURPLUS
+                || activeGoal == null || activeGoal.getStartDate() == null) {
             return null;
         }
         long week = ChronoUnit.DAYS.between(activeGoal.getStartDate(), windowFrom) / 7 + 1;
@@ -126,36 +144,45 @@ class WeightDecompositionInputsAssembler {
             return null;
         }
         double tdeePerDay = segment.kcal() - segment.dailyEnergyBalanceKcal();
-        long windowDays = ChronoUnit.DAYS.between(windowFrom, windowTo) + 1;
+        // Scale the TDEE side to the days ACTUALLY logged, not the window's calendar length — a
+        // partial week (e.g. 3 of 7 days logged) must not be compared against a full week's TDEE,
+        // which fabricates a phantom deficit/surplus for the unlogged days (mezo-85x5r wave).
         double loggedSum = kcalSeries.values().stream().mapToDouble(Double::doubleValue).sum();
-        return loggedSum - (tdeePerDay * windowDays);
+        return loggedSum - (tdeePerDay * loggedDayCount);
     }
 
     /**
-     * The top-tracked exercise's e1RM story-curve delta (mezo-85x5r §2.4): the most recent
-     * eligible point vs the one a week earlier, on whichever exercise has the most sessions
-     * (the list is already sorted that way by {@link ExerciseRecordService#list}). {@code null}
-     * when there is no such record or fewer than two points in its curve.
+     * The TOP-tracked exercise's e1RM story-curve delta for the anchored window (mezo-85x5r §2.4,
+     * final-review wave, ledger T4): "top" means the exercise with the HIGHEST recorded e1RM
+     * value — picked explicitly by {@code max(bestE1rm)}, never by list order ({@link
+     * ExerciseRecordService#list} sorts by session count, which is a different axis). The delta
+     * compares that exercise's last point IN the window against its last point BEFORE the
+     * window, both DATE-CHECKED against {@code [windowFrom, windowTo]} rather than blindly taking
+     * "the last two points" of the curve. {@code null} when there is no e1RM record at all, or
+     * either side of the comparison is missing.
      */
-    private Double e1rmTopDeltaPct(UUID userId) {
+    private Double e1rmTopDeltaPct(UUID userId, LocalDate windowFrom, LocalDate windowTo) {
         List<io.mrkuhne.mezo.api.dto.ExerciseRecordResponse> records = exerciseRecordService.list(userId);
-        if (records.isEmpty()) {
+        io.mrkuhne.mezo.api.dto.ExerciseRecordResponse top = records.stream()
+                .filter(r -> r.getBestE1rm() != null && r.getBestE1rm().getValue() != null)
+                .max(Comparator.comparing(r -> r.getBestE1rm().getValue()))
+                .orElse(null);
+        if (top == null || top.getE1rmSeries() == null) {
             return null;
         }
-        var series = records.get(0).getE1rmSeries();
-        if (series == null || series.size() < 2) {
+        io.mrkuhne.mezo.api.dto.E1rmPoint inWindow = top.getE1rmSeries().stream()
+                .filter(p -> p.getE1rm() != null && p.getDate() != null
+                        && !p.getDate().isBefore(windowFrom) && !p.getDate().isAfter(windowTo))
+                .max(Comparator.comparing(io.mrkuhne.mezo.api.dto.E1rmPoint::getDate))
+                .orElse(null);
+        io.mrkuhne.mezo.api.dto.E1rmPoint beforeWindow = top.getE1rmSeries().stream()
+                .filter(p -> p.getE1rm() != null && p.getDate() != null && p.getDate().isBefore(windowFrom))
+                .max(Comparator.comparing(io.mrkuhne.mezo.api.dto.E1rmPoint::getDate))
+                .orElse(null);
+        if (inWindow == null || beforeWindow == null || beforeWindow.getE1rm().doubleValue() == 0) {
             return null;
         }
-        var sorted = series.stream()
-                .sorted(Comparator.comparing(io.mrkuhne.mezo.api.dto.E1rmPoint::getDate))
-                .toList();
-        var latest = sorted.get(sorted.size() - 1);
-        var previous = sorted.get(sorted.size() - 2);
-        if (latest.getE1rm() == null || previous.getE1rm() == null
-                || previous.getE1rm().doubleValue() == 0) {
-            return null;
-        }
-        return (latest.getE1rm().doubleValue() - previous.getE1rm().doubleValue())
-                / previous.getE1rm().doubleValue() * 100.0;
+        return (inWindow.getE1rm().doubleValue() - beforeWindow.getE1rm().doubleValue())
+                / beforeWindow.getE1rm().doubleValue() * 100.0;
     }
 }

@@ -114,4 +114,25 @@ describe('WeeklyWeightCard (real mode) — diagnose button', () => {
     )
     expect(screen.queryByText(/diagnózis oldal/)).not.toBeInTheDocument()
   })
+
+  // mezo-85x5r final-review wave: a 409 with the DIFFERENT code (few tracked domains, not the
+  // weigh-in floor) must show the few-domains copy, not the weigh-in copy — the two 409s mean
+  // different things and must not share a message.
+  test('409 DIAGNOSIS_INSUFFICIENT_DATA renders the few-domains copy, not the weigh-in copy', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+      http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+        HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'thin' }], { status: 409 })),
+    )
+    renderCard()
+    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
+    await waitFor(() => expect(btn).toBeEnabled())
+    fireEvent.click(btn)
+    await waitFor(() =>
+      expect(screen.getByText('Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.'))
+        .toBeInTheDocument(),
+    )
+    expect(screen.queryByText('Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.')).not.toBeInTheDocument()
+    expect(screen.queryByText(/diagnózis oldal/)).not.toBeInTheDocument()
+  })
 })

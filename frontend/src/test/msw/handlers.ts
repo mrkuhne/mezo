@@ -258,7 +258,7 @@ export function diagnosisWeightWireStub(anchorStart: string, id = 'diag-weight-w
     verdict: 'A heti delta nagyobb része víz, nem zsír.',
     confidence: 'moderate',
     evidence: [
-      { kind: 'derived', label: 'valódi delta', detail: 'heti átlag 82,4 · trend Δ -0,7 kg/hét', sourceHu: 'számvetés' },
+      { kind: 'derived', label: 'valódi delta', detail: 'heti átlag 82,4 · trend Δ -0,7 kg/hét · 5 mérés', sourceHu: 'számvetés' },
       { kind: 'derived', label: 'szövet-plafon', detail: 'többlet ≈ -3900 kcal → max 0,51 kg zsír', sourceHu: 'számvetés' },
       { kind: 'derived', label: 'cél-sáv', detail: 'terven (sáv: -1,0 – -0,25 %/hét)', sourceHu: 'számvetés' },
       { kind: 'derived', label: 'erő-trend', detail: 'top-gyakorlatok e1RM Δ +1,8%', sourceHu: 'számvetés' },

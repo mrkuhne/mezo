@@ -74,6 +74,9 @@ public record WeightDecomposition(List<EvidenceItem> derivedItems) {
             detail.append(" · nyers ").append(round(in.rawMinKg())).append("→").append(round(in.rawMaxKg()))
                     .append(" ZAJ-ként jelölve");
         }
+        if (in.weighInCount() != null) {
+            detail.append(" · ").append(in.weighInCount()).append(" mérés");
+        }
         return new EvidenceItem("derived", "valódi delta", detail.toString(), SOURCE_HU,
                 null, null, null, null, null);
     }

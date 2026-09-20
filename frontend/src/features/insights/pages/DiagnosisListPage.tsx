@@ -21,7 +21,8 @@ import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 
 
 const ERROR_COPY: Record<string, string> = {
-  insufficient: 'Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.',
+  insufficientData: 'Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.',
+  insufficientWeighins: 'Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.',
   quota: 'Ma már elfogyott a napi kereted — holnap újra kérdezhetsz.',
   failed: 'Most nem sikerült — próbáld újra kicsit később.',
 }

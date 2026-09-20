@@ -64,26 +64,27 @@ describe('useDiagnoses (real mode)', () => {
     await waitFor(() => expect(result.current.error).toBe('quota'))
   })
 
-  test('a 409 on generate maps to the insufficient error kind', async () => {
+  test('a 409 DIAGNOSIS_INSUFFICIENT_DATA on generate maps to the insufficientData error kind', async () => {
     server.use(
       http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
         HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'thin' }], { status: 409 })),
     )
     const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
     result.current.generate('fatigue')
-    await waitFor(() => expect(result.current.error).toBe('insufficient'))
+    await waitFor(() => expect(result.current.error).toBe('insufficientData'))
   })
 
-  // mezo-85x5r: the weight-specific 409 code maps onto the SAME 'insufficient' kind — the
-  // mapping only looks at the HTTP status, so a new code never needs a new branch.
-  test('a 409 DIAGNOSIS_INSUFFICIENT_WEIGHINS on generate also maps to insufficient', async () => {
+  // mezo-85x5r final-review wave: the two 409 codes now map to DIFFERENT kinds (by SystemMessage
+  // `code`, not just HTTP status) — the weigh-in floor gets its own weigh-in-specific copy rather
+  // than reusing the few-domains copy.
+  test('a 409 DIAGNOSIS_INSUFFICIENT_WEIGHINS on generate maps to the insufficientWeighins error kind', async () => {
     server.use(
       http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
         HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_WEIGHINS', message: 'too few weigh-ins' }], { status: 409 })),
     )
     const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
     result.current.generate('weight', '2026-08-31')
-    await waitFor(() => expect(result.current.error).toBe('insufficient'))
+    await waitFor(() => expect(result.current.error).toBe('insufficientWeighins'))
   })
 
   test('generateAsync plumbs anchorStart onto the POST body', async () => {

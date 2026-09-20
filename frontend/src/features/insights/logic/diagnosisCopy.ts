@@ -1,5 +1,5 @@
 import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
-import type { DiagnosisConfidence, DiagnosisEvidence } from '@/data/types'
+import type { DiagnosisConfidence } from '@/data/types'
 
 /** strong|moderate|weak → the chip word the prototype uses. */
 export function strengthLabel(s: DiagnosisConfidence): string {
@@ -33,21 +33,22 @@ export function windowLine(generatedAt: string, windowDays: number): string {
 }
 
 /**
- * The hero sub for an anchored (weight) row — 'Szep 14–20 · 5 mérés · a hét még nyitott'.
- * The mérés count comes ONLY from the WEIGHT_DELTA_KG evidence item's coverageDays — if that
- * evidence is absent the segment is omitted rather than invented. The last segment appears
- * only while the anchored week has not yet fully elapsed (anchorStart+6 ≥ today).
+ * The hero sub for an anchored (weight) row — 'Szep 14–20 · a hét még nyitott'.
+ * The mérés (weigh-in) count is NOT repeated here — it already renders once, honestly, on the
+ * backend-computed 'valódi delta' Számvetés row (which folds every same-day weigh-in to its
+ * count, unlike the WEIGHT_DELTA_KG evidence item's coverageDays, which only counts CONSECUTIVE
+ * days of the delta series and silently undercounts a week with a gap — mezo-85x5r final-review
+ * wave). The last segment appears only while the anchored week has not yet fully elapsed
+ * (anchorStart+6 ≥ today).
  */
-export function anchoredWindowLine(anchorStart: string, evidence: DiagnosisEvidence[], now: Date = new Date()): string {
+export function anchoredWindowLine(anchorStart: string, now: Date = new Date()): string {
   const end = addDays(anchorStart, 6)
   const sameMonth = anchorStart.slice(5, 7) === end.slice(5, 7)
   const range = sameMonth
     ? `${huMonthDay(anchorStart)}–${Number(end.slice(8, 10))}`
     : `${huMonthDay(anchorStart)}–${huMonthDay(end)}`
-  const weighInRow = evidence.find((e) => e.metricKey === 'WEIGHT_DELTA_KG')
-  const countSeg = weighInRow?.coverageDays != null ? ` · ${weighInRow.coverageDays} mérés` : ''
   const openSeg = end >= localDateString(now) ? ' · a hét még nyitott' : ''
-  return `${range}${countSeg}${openSeg}`
+  return `${range}${openSeg}`
 }
 
 /** Signed delta → '↑ 0,32' / '↓ 1,2' with the Hungarian decimal comma; null-safe. */

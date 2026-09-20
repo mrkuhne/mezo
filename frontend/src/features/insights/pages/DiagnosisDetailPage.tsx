@@ -120,7 +120,7 @@ export function DiagnosisDetailPage() {
 
   const derived = diagnosis.evidence.filter((e) => e.kind === 'derived')
   const heroSub = diagnosis.anchorStart != null
-    ? anchoredWindowLine(diagnosis.anchorStart, diagnosis.evidence)
+    ? anchoredWindowLine(diagnosis.anchorStart)
     : windowLine(diagnosis.generatedAt, diagnosis.windowDays)
 
   return (

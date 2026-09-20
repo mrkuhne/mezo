@@ -125,6 +125,17 @@ class DiagnosisControllerIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
     }
 
+    /** mezo-85x5r final-review wave: a FUTURE Monday has no weigh-ins BY DEFINITION — a 409
+     *  "too few weigh-ins" would misleadingly imply the week could still clear the floor. A 400
+     *  says plainly the request doesn't make sense yet (DIAGNOSIS_ANCHOR_IN_FUTURE). */
+    @Test
+    void weightGenerateIs400WithAFutureMondayAnchor() {
+        LocalDate futureMonday = someMonday().plusWeeks(2);
+
+        postForBody("/api/proactive/diagnosis", weightRequest(futureMonday),
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+    }
+
     @Test
     void fatigueGenerateIs400WhenAnAnchorIsSent() {
         DiagnosisGenerateRequest request = fatigueRequest();

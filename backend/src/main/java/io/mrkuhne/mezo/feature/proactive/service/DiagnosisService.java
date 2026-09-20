@@ -76,6 +76,13 @@ public class DiagnosisService {
                 throw new SystemRuntimeErrorException(
                         SystemMessage.error("DIAGNOSIS_ANCHOR_NOT_MONDAY").build(), HttpStatus.BAD_REQUEST);
             }
+            // A FUTURE week has no weigh-ins by definition — 409 "too few weigh-ins" would be a
+            // misleading answer (it implies the week could still clear the floor); 400 says
+            // plainly that the request itself doesn't make sense yet.
+            if (anchorStart.isAfter(today)) {
+                throw new SystemRuntimeErrorException(
+                        SystemMessage.error("DIAGNOSIS_ANCHOR_IN_FUTURE").build(), HttpStatus.BAD_REQUEST);
+            }
         } else if (anchorStart != null) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("DIAGNOSIS_ANCHOR_NOT_SUPPORTED").build(), HttpStatus.BAD_REQUEST);
@@ -93,8 +100,7 @@ public class DiagnosisService {
                 return withStale(userId, existing);
             }
 
-            LocalDate anchorEnd = anchorStart.plusDays(6);
-            LocalDate windowTo = anchorEnd.isBefore(today) ? anchorEnd : today;
+            LocalDate windowTo = AnchoredWeek.windowTo(anchorStart, today);
             long weighInDays = weightLogRepository
                     .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(
                             userId, anchorStart, windowTo)
@@ -167,9 +173,7 @@ public class DiagnosisService {
         LocalDate to;
         if (entity.getAnchorStart() != null) {
             from = entity.getAnchorStart();
-            LocalDate anchorEnd = from.plusDays(6);
-            LocalDate today = LocalDate.now();
-            to = anchorEnd.isBefore(today) ? anchorEnd : today;
+            to = AnchoredWeek.windowTo(from, LocalDate.now());
         } else {
             to = LocalDate.now();
             from = to.minusDays(entity.getWindowDays() - 1L);

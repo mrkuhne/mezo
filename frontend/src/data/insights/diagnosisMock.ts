@@ -97,7 +97,7 @@ export const mockDiagnoses: Diagnosis[] = [
       {
         kind: 'derived',
         label: 'valódi delta',
-        detail: 'heti átlag 82,4 · előző hét 83,1 · trend Δ -0,7 kg/hét',
+        detail: 'heti átlag 82,4 · előző hét 83,1 · trend Δ -0,7 kg/hét · 5 mérés',
         sourceHu: 'számvetés',
       },
       {

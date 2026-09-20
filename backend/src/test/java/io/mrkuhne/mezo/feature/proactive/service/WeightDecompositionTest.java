@@ -38,7 +38,7 @@ class WeightDecompositionTest {
         assertThat(row.kind()).isEqualTo("derived");
         assertThat(row.sourceHu()).isEqualTo("számvetés");
         assertThat(row.detail()).isEqualTo(
-                "heti átlag 79.5 · előző hét 80.0 · trend Δ -0.5 kg/hét · nyers 79.0→80.2 ZAJ-ként jelölve");
+                "heti átlag 79.5 · előző hét 80.0 · trend Δ -0.5 kg/hét · nyers 79.0→80.2 ZAJ-ként jelölve · 5 mérés");
         assertThat(row.metricKey()).isNull();
         assertThat(row.value()).isNull();
     }
@@ -57,7 +57,7 @@ class WeightDecompositionTest {
         List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
 
         assertThat(find(items, "valódi delta").orElseThrow().detail())
-                .isEqualTo("heti átlag 79.5 · trend Δ -0.5 kg/hét · nyers 79.0→80.2 ZAJ-ként jelölve");
+                .isEqualTo("heti átlag 79.5 · trend Δ -0.5 kg/hét · nyers 79.0→80.2 ZAJ-ként jelölve · 5 mérés");
     }
 
     @Test
@@ -66,7 +66,16 @@ class WeightDecompositionTest {
         List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
 
         assertThat(find(items, "valódi delta").orElseThrow().detail())
-                .isEqualTo("heti átlag 79.5 · előző hét 80.0 · trend Δ -0.5 kg/hét");
+                .isEqualTo("heti átlag 79.5 · előző hét 80.0 · trend Δ -0.5 kg/hét · 5 mérés");
+    }
+
+    @Test
+    void realDeltaRowOmitsTheWeighInCountSegmentWhenTheCountIsMissing() {
+        Inputs in = new Inputs(79.5, 80.0, null, 79.0, 80.2, -0.5, 3850.0, 80.0, null, null, null);
+        List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
+
+        assertThat(find(items, "valódi delta").orElseThrow().detail())
+                .isEqualTo("heti átlag 79.5 · előző hét 80.0 · trend Δ -0.5 kg/hét · nyers 79.0→80.2 ZAJ-ként jelölve");
     }
 
     @Test

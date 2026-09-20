@@ -16,6 +16,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { useDiagnoses, useDiagnosisActions, useDiagnosisForWeek } from '@/data/hooks'
 
 const INSUFFICIENT_COPY = 'Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.'
+const INSUFFICIENT_DATA_COPY = 'Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.'
 
 const DIR_LABEL: Record<WeekAggregate['direction'], string> = { down: '↓ lefelé', up: '↑ felfelé', flat: '→ stabil' }
 
@@ -126,8 +127,11 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
           {generating ? '… a hét adatait olvasom' : '✦ Mi történt ezen a héten?'}
         </button>
       </div>
-      {error === 'insufficient' && (
+      {error === 'insufficientWeighins' && (
         <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)', marginTop: 4 }}>{INSUFFICIENT_COPY}</p>
+      )}
+      {error === 'insufficientData' && (
+        <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)', marginTop: 4 }}>{INSUFFICIENT_DATA_COPY}</p>
       )}
       {!live && (
         <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--mz-ink-mut)', marginTop: 4 }}>

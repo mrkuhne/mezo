@@ -138,8 +138,7 @@ public class DiagnosisGenerator {
         LocalDate windowTo = null;
         if (anchorStart != null) {
             windowFrom = anchorStart;
-            LocalDate anchorEnd = anchorStart.plusDays(6);
-            windowTo = anchorEnd.isBefore(today) ? anchorEnd : today;
+            windowTo = AnchoredWeek.windowTo(anchorStart, today);
             List<EvidenceItem> prepended = DiagnosisRecipe.WEIGHT.equals(recipe)
                     ? WeightDecomposition.compute(weightDecompositionInputsAssembler
                             .assemble(userId, windowFrom, windowTo)).derivedItems()
