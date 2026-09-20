@@ -2667,23 +2667,35 @@ button.itemrow { cursor: pointer; }
 /* Progressive-overload signal banner (mezo-5pfe) — replaces .aistrip in the
    active-workout screen whenever the engine emits a structured progression.
    Three visual states by lever: weight=coral, rep=sage, hold/deload=amber. */
-.pobanner { border:1px solid var(--coral-deep); border-radius:12px; padding:11px 12px; margin:8px 24px; background:color-mix(in srgb, var(--coral) 8%, var(--surface-1)); }
-.pobanner.po-hold { border-color:var(--amber-deep); background:color-mix(in srgb, var(--amber) 8%, var(--surface-1)); }
+/* §3.4 (mezo-ju4j6.19): ez a sáv a gyakorlat-kártyán BELÜL él. Bekeretezett, tónusos
+   dobozként egy mosott csempén ült egy másik mosott csempe — a stíluskönyv §3.4 szerint
+   pont az a felállás, amiben mindkettő eltűnik. Most §2.2 B CELLA: lapos tónus + tinta,
+   keret és árnyék nélkül, a ház `--mz-cell-*` párjaival (így a sötét téma is követi; a
+   régi `--coral`/`--sage-deep`/`--amber-deep` a `--dv-` előtti palettáról jött, A.4 7.
+   szabály). A HUE marad: ő mondja meg, melyik kart mozdítja a progresszió. */
+.pobanner { border:0; border-radius:14px; padding:11px 12px; margin:8px 24px; box-shadow:none; background:var(--mz-cell-coral-bg); }
+.pobanner.po-rep { background:var(--mz-cell-sage-bg); }
+.pobanner.po-hold { background:var(--mz-cell-gold-bg); }
 .pobanner-lab { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
-.pobanner-lab .txt { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--coral-deep); font-weight:700; white-space:nowrap; }
-.pobanner.po-rep .pobanner-lab .txt { color:var(--sage-deep); }
-.pobanner.po-hold .pobanner-lab .txt { color:var(--amber-deep); }
-.pobanner-lab .delta { margin-left:auto; background:var(--coral); color:var(--surface-1); padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
-.pobanner.po-rep .pobanner-lab .delta { background:var(--sage); }
-.pobanner.po-hold .pobanner-lab .delta { background:transparent; border:1px solid var(--amber-deep); color:var(--amber-deep); }
+.pobanner-lab .txt { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--mz-cell-coral-ink); font-weight:700; white-space:nowrap; }
+.pobanner.po-rep .pobanner-lab .txt { color:var(--mz-cell-sage-ink); }
+.pobanner.po-hold .pobanner-lab .txt { color:var(--mz-cell-gold-ink); }
+/* A delta-jelvény a cellán belül PAJZS (§3.1): telített foltként a cella tetején egy
+   harmadik fokozatot nyitott volna. */
+.pobanner-lab .delta { margin-left:auto; border:0; background:var(--surface-1); box-shadow:inset 0 0 0 1px var(--border-subtle); color:var(--mz-cell-coral-ink); padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+.pobanner.po-rep .pobanner-lab .delta { color:var(--mz-cell-sage-ink); }
+.pobanner.po-hold .pobanner-lab .delta { color:var(--mz-cell-gold-ink); }
 .pobanner-cells { display:flex; align-items:stretch; }
 .pobanner-cells .cell { flex:1; min-width:0; }
-.pobanner-cells .cell.now { padding-left:12px; border-left:1px solid var(--coral-deep); margin-left:12px; }
-.pobanner-cells .clab { font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-tertiary); }
+.pobanner-cells .cell.now { padding-left:12px; border-left:1px solid color-mix(in srgb, var(--mz-cell-coral-ink) 28%, transparent); margin-left:12px; }
+.pobanner.po-rep .cell.now { border-left-color: color-mix(in srgb, var(--mz-cell-sage-ink) 28%, transparent); }
+.pobanner.po-hold .cell.now { border-left-color: color-mix(in srgb, var(--mz-cell-gold-ink) 28%, transparent); }
+.pobanner-cells .clab { font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--sub); }
 .pobanner-cells .cval { font-size:15px; font-weight:650; margin-top:3px; white-space:nowrap; }
 .pobanner-cells .cell.now .cval { font-size:19px; }
-.pobanner-cells .cell.now .cval.up { color:var(--coral-deep); }
-.pobanner.po-rep .cell.now .cval.up { color:var(--sage-deep); }
+.pobanner-cells .cell.now .cval.up { color:var(--mz-cell-coral-ink); }
+.pobanner.po-rep .cell.now .cval.up { color:var(--mz-cell-sage-ink); }
+.pobanner.po-hold .cell.now .cval.up { color:var(--mz-cell-gold-ink); }
 /* 320px: a két cella `white-space: nowrap`-es értékei egymásra csúsztak (a „MÚLT HÉT
    102,5 × 9 · RIR 2" és a „MA A CÉL 105 × 10" egy sorban nem fér ki). Keskeny kijelzőn
    egymás ALÁ kerülnek, és a függőleges elválasztó vízszintesre vált — a tartalom marad,
@@ -2692,8 +2704,10 @@ button.itemrow { cursor: pointer; }
   .pobanner-cells { flex-direction: column; }
   .pobanner-cells .cell.now {
     padding-left: 0; margin-left: 0; margin-top: 8px; padding-top: 8px;
-    border-left: 0; border-top: 1px solid var(--coral-deep);
+    border-left: 0; border-top: 1px solid color-mix(in srgb, var(--mz-cell-coral-ink) 28%, transparent);
   }
+  .pobanner.po-rep .pobanner-cells .cell.now { border-top-color: color-mix(in srgb, var(--mz-cell-sage-ink) 28%, transparent); }
+  .pobanner.po-hold .pobanner-cells .cell.now { border-top-color: color-mix(in srgb, var(--mz-cell-gold-ink) 28%, transparent); }
 }
 
 /* ===== Napív S6 — Fuel accent vocabulary ===== */
@@ -11916,14 +11930,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-transform: uppercase; color: var(--mz-cell-sage-ink); }
 .fmx-subhead-end { margin-left: auto; font-size: 11px; color: var(--sub); white-space: nowrap; }
 
-/* Dimenzió-mozaik: minden szempont saját hue-ban, KOPPINTÁSRA nyílik (nem lenyíló). */
+/* Dimenzió-mozaik: minden szempont saját hue-ban, KOPPINTÁSRA nyílik (nem lenyíló).
+   §3.4 RANGSOR (mezo-ju4j6.19): a lap EGY dolgot mond — a pontszámot a halo-sávban, 9,2-t
+   hős-méretben. Az alatta álló hat szempont a BONTÁSA, nem hat másik hős: ezért lapos
+   §2.2 B cella lett belőlük (tónus + tinta, árnyék és gradiens nélkül). Mosott csempeként
+   mind a hat ugyanolyan hangos volt, mint a hős, és a lap laposabbra olvasott, mint a
+   Titán-változat. A hue marad — ott JELENTÉS (melyik szempont). */
 .fmx-dims { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 6px; }
 .fmx-dim { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0;
   padding: 12px 12px 11px; border-radius: 18px; font-family: inherit; text-align: left; color: var(--ink);
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--dim-color) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--dim-color) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); }
+  border: 0; box-shadow: none;
+  background: color-mix(in srgb, var(--dim-color) 14%, var(--surface-card)); }
 .fmx-dim-top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .fmx-dim-art svg { width: 34px; height: 34px; }
 .fmx-dim-top strong { font-family: var(--ff-display); font-size: 28px; font-weight: 200;
@@ -12283,16 +12300,35 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-transform: uppercase; color: var(--mz-cell-sage-ink); }
 .fsx-done { display: flex; align-items: center; gap: 9px; margin: 9px 0 0; font-size: 11.5px;
   line-height: 1.5; color: var(--sub); }
+/* A.2 5. szabály — 320px. A hős két eleme (112px-es gyűrű + a KÖVETKEZIK sor) egymás
+   mellett keskeny kijelzőn összenyomta a készítmény nevét („Omega-3" három sorba tört).
+   Ott egymás ALÁ kerülnek: a gyűrű marad valódi méretben (§3.4 3. lépés), a sor pedig
+   teljes szélességet kap (mezo-ju4j6.19). */
+@media (max-width: 360px) {
+  .fsx-hero { flex-direction: column; align-items: stretch; gap: 12px; }
+  .fsx-ring { align-self: center; }
+  .fsx-hero-copy { text-align: center; }
+}
 
-/* Idősáv-csempe: mosott csempe a sáv tónusából + clay-szimbólum + készültség. A most esedékes
-   sáv KIEMELT (§4.4 MOST), de a többi nem tűnik el (owner). */
+/* Idősáv: ház-sor a sáv saját tónus-jegyeivel (clay-szimbólum + készültség). A most esedékes
+   sáv KIEMELT (§4.4 MOST), de a többi nem tűnik el (owner).
+
+   §3.4 RANGSOR (mezo-ju4j6.19): a lap EGY dolgot mond — mi jön MOST. A hős a halo-sáv
+   (gyűrű + a KÖVETKEZIK mosott csempéje). A négy idősáv korábban mind mosott csempe volt,
+   ami a hőssel azonos fokozatra emelte őket, és a képernyő négy egyforma dobozra esett
+   szét. Most egy fokkal lejjebb ülnek, és a mosás CSAK az esedékes sávon marad — ott
+   jelent valamit. A tónus a fejléc szimbólumában és a számlálóban él tovább. */
 .fsx-band { margin: 0; padding: 12px 12px 4px; border-radius: 22px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
+/* §4.4 — a kész sáv nem halványul el: a régi világ SOHA nem opacitással mond „kevésbé
+   fontosat". A készültséget a számláló és a pipák mondják. */
+.fsx-band.is-complete { opacity: 1; }
+.fsx-band.is-due {
+  border: 1px solid var(--dv-coral);
   background: linear-gradient(150deg, color-mix(in srgb, var(--fsx-band-color) 16%, var(--surface-card)),
     color-mix(in srgb, var(--fsx-band-color) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); }
-.fsx-band.is-complete { opacity: 0.88; }
-.fsx-band.is-due { border: 1px solid var(--dv-coral); box-shadow: var(--mz-shadow-coral); }
+  box-shadow: var(--mz-shadow-coral); }
 .fsx-band-head { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
 .fsx-band-art { flex: 0 0 auto; }
 .fsx-band-head strong { font-family: var(--ff-display); font-size: 17px; font-weight: 700;
@@ -12725,15 +12761,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ftx-hint { position: relative; margin: 8px 0 0; font-size: 9px; font-weight: 800;
   letter-spacing: 0.16em; text-transform: uppercase; text-align: center; color: var(--faint); }
 
-/* A három mutató-csempe — mosott csempék a saját tónusukból (§2.2 A). */
+/* A három mutató-csempe — §2.2 B CELLA a saját tónusukból.
+   §3.4 RANGSOR (mezo-ju4j6.19): a hét képe a hős (halo-sáv + a napok oszlopai + az
+   „5 / 7 naplózott nap" számjegy). Ez a három a hős MELLÉ tett pillantás-sor, a ház
+   StatStrip-idióma — mosott csempeként három további hőst csinált belőlük. */
 .ftx-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px;
   margin: 4px 0; }
 .ftx-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
   min-width: 0; padding: 12px 11px; border-radius: 22px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--ftx-tile-color) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--ftx-tile-color) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); text-align: left; color: var(--ink); }
+  border: 0; box-shadow: none;
+  background: color-mix(in srgb, var(--ftx-tile-color) 14%, var(--surface-card));
+  text-align: left; color: var(--ink); }
 .ftx-tile-art { line-height: 0; }
 .ftx-tile strong { font-family: var(--ff-display); font-size: 26px; font-weight: 200;
   letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums;
@@ -12751,14 +12789,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ftx-section { margin: 6px 0 0; font-family: var(--ff-display); font-size: 24px;
   font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 
-/* Hétköznap vs hétvége — a hét fő üzenete, kitöltődő sávval. */
+/* Hétköznap vs hétvége — kitöltődő sávval. §3.4: ház-sor, mert a hős fent van, és a
+   két sor ÖSSZEHASONLÍTÁS — a mondandójuk a két sáv hossza közti különbség, nem a
+   dobozuk. A hue a sávban és a százalékban marad (mezo-ju4j6.19). */
 .ftx-split { display: grid; gap: 9px; }
 .ftx-splitrow { display: flex; align-items: center; gap: 11px; min-height: 44px;
   padding: 11px 12px; border-radius: 18px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--ftx-split-color) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--ftx-split-color) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); }
+  border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .ftx-split-art { line-height: 0; flex: 0 0 auto; }
 .ftx-split-copy { flex: 1; min-width: 0; }
 .ftx-split-copy strong { display: block; font-size: 15px; font-weight: 700; line-height: 1.3;
@@ -12802,13 +12840,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ftx-glass-honest small { display: block; margin-bottom: 3px; font-size: 9px; font-weight: 800;
   letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
 
-/* A dimenzió-blokkok — SORONKÉNT tálalt tények (owner: legyen olvasható). */
+/* A dimenzió-blokkok — SORONKÉNT tálalt tények (owner: legyen olvasható). §3.4: az
+   üvegdoboz hőse a saját 40px-es számjegye fent; ezek a sorok a bontása, ezért ház-sor
+   (mezo-ju4j6.19). A tónus a sávban és a sor számában él. */
 .ftx-dims { display: grid; gap: 9px; }
 .ftx-dim { padding: 11px 12px; border-radius: 18px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--ftx-dim-color) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--ftx-dim-color) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); }
+  border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .ftx-dim.is-degraded { border: 1.2px dashed rgba(43, 33, 24, 0.2); box-shadow: none;
   background: transparent; }
 .ftx-dim-head { display: flex; align-items: center; gap: 10px; }
@@ -12970,14 +13008,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-page .mz-page-body { padding-top: 4px; }
 .fkx-body { display: grid; gap: 12px; }
 
-/* A két rögzítő művelet — ezért jön ide a felhasználó (owner). Mosott csempe. */
+/* A két rögzítő művelet — ezért jön ide a felhasználó (owner). §3.1 PAJZS.
+   §3.4 RANGSOR (mezo-ju4j6.19): a Konyha öt egyforma mosott csempe volt — öt hős, azaz
+   egy sem. A lap EGY dolgot mond: „főzzünk ki valamit" (a Receptműhely). Ez a két doboz
+   AJTÓ egy rögzítéshez, nem plakát: A.5 10. szabály szerint pajzs jár nekik. */
 .fkx-captures { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .fkx-capture { position: relative; display: flex; flex-direction: column; align-items: flex-start;
   gap: 3px; min-width: 0; min-height: 44px; padding: 14px 13px 13px; border-radius: 22px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--fkx) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--fkx) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow);
+  border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
   text-align: left; color: var(--ink); }
 .fkx-plus { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; display: grid;
   place-items: center; border-radius: 50%; font-size: 17px; font-weight: 300; color: var(--sub);
@@ -12989,12 +13028,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* Poszter-anatómia (§3.2): kiskapitális eyebrow + spot-grafika + EGY nagy szám.
    Nem lista (owner). A hue itt szerzéskor rögzített, ezért járhat neki hue-árnyék. */
 .fkx-poster { display: grid; gap: 9px; width: 100%; min-height: 44px; padding: 14px 15px;
-  border-radius: 22px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border-radius: 22px; border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); text-align: left; color: var(--ink); }
+/* §3.4: a RECEPTMŰHELY a lap egyetlen hangos felülete — ő az, amit a Konyha kínál. A
+   Receptek és a Kamra KÖNYVTÁR-ajtók: megtartják a nagy számukat, de egy fokkal lejjebb
+   ülnek (ház-kártya), különben három plakát verseng egymással (mezo-ju4j6.19). */
+.fkx-poster.is-workshop {
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
   background: linear-gradient(150deg, color-mix(in srgb, var(--fkx) 16%, var(--surface-card)),
     color-mix(in srgb, var(--fkx) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow); text-align: left; color: var(--ink); }
-.fkx-poster.is-workshop, .fkx-poster.is-recipes { box-shadow: var(--mz-shadow-lav); }
-.fkx-poster.is-pantry { box-shadow: var(--mz-shadow-gold); }
+  box-shadow: var(--mz-shadow-lav); }
 .fkx-poster-head { display: flex; align-items: center; justify-content: space-between; }
 .fkx-poster-title { display: flex; align-items: center; gap: 9px; }
 .fkx-poster-title > span { display: grid; place-items: center; width: 34px; height: 34px;
@@ -13031,7 +13074,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border-top: 1px solid var(--divider); font-size: 11.5px; font-weight: 500; line-height: 1.45;
   color: var(--sub); }
 .fkx-poster-foot b { font-weight: 700; color: var(--mz-cell-lav-ink); }
-.fkx-ws-copy strong { display: block; font-family: var(--ff-display); font-size: 20px;
+/* §3.4 3. lépés: a hős mondata VALÓDI méretben — §3.3 kártyacím-fokozat (24px/700),
+   nem a szomszéd könyvtár-ajtókéval azonos 20px (mezo-ju4j6.19). */
+.fkx-ws-copy strong { display: block; font-family: var(--ff-display); font-size: 24px;
   font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
 .fkx-ws-copy small { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 500;
   line-height: 1.5; color: var(--sub); }
@@ -13748,8 +13793,24 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: linear-gradient(150deg, color-mix(in srgb, var(--ex-color) 14%, var(--surface-card)),
     color-mix(in srgb, var(--ex-color) 4%, var(--surface-page)));
 }
-.wo-card.is-complete { border-color: color-mix(in srgb, var(--ex-color) 34%, transparent); }
-.wo-card.is-skipped { opacity: .62; border-style: dashed; }
+/* §3.4 RANGSOR (mezo-ju4j6.19): öt egyforma mosott csempe egymás alatt öt hős, azaz egy
+   sem. A hierarchia itt NEM egy kitüntetett gyakorlat — mindegyik kártya a saját kurzorát
+   hordja —, hanem az IDŐ: a még hátralévő munka mosott csempe marad, az elvégzett egy
+   fokkal lejjebb ül. A lap így menet közben rendeződik: ahogy fogynak a szettek, egyre
+   kevesebb felület hangos, és ami marad, az a dolgod. */
+.wo-card.is-complete {
+  border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle); }
+/* A kész kártyán a progresszió-sáv is egy fokkal lejjebb ül: az előírás igaz marad (a
+   tinta megy tovább), de a tónusa már nem versenyez a még hátralévő munkával. */
+.wo-card.is-complete .pobanner {
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+/* §4.4 — a kihagyott gyakorlat szaggatott BOROSTYÁN keret, árnyék nélkül; se opacitás,
+   se piros. Egy kihagyott gyakorlat nem kudarc, és a régi világ nem halványítással
+   mond „kevésbé fontosat". */
+.wo-card.is-skipped {
+  opacity: 1; border: 1.2px dashed color-mix(in srgb, var(--dv-amber) 55%, transparent);
+  background: none; box-shadow: none; }
 .wo-card-head { display: flex; align-items: center; gap: 11px; }
 .wo-card-art, .gl-card .wo-glass-head .wo-card-art {
   flex: 0 0 auto;
@@ -15956,19 +16017,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .domain-row {
   display: flex; align-items: center; gap: 14px;
   width: 100%; min-height: 80px; padding: 16px; text-align: left;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  border-radius: 21px; cursor: pointer;
-  background: var(--mz-wash-sand);
-  box-shadow: var(--mz-shadow-lav);
+  border: 0; border-radius: 21px; cursor: pointer;
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.domain-row[data-domain="nap"]   { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
-.domain-row[data-domain="train"] { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
-.domain-row[data-domain="fuel"]  { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
-.domain-row[data-domain="mezo"]  { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
-.domain-row[data-domain="me"]    { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
-/* „Itt állsz" is said by the sage check (§7.4) + a hairline of the domain's own accent —
-   not by a second, louder tile, so the five cards keep one material grade between them. */
-.domain-row.current { border: 1px solid color-mix(in srgb, var(--dv-sage) 55%, transparent); }
+/* §3.4 RANGSOR (mezo-ju4j6.19). A 3. fázis ezt a váltót öt EGYFORMA mosott csempeként
+   hagyta, azzal az indokkal, hogy az „itt állsz" a pipa dolga, és így az öt kártya egy
+   anyagfokozaton marad. A §3.4 azóta pont az ellenkezőjét mondja: az egy fokozat AZ,
+   ami laposra olvassa a lapot, és a pipát könnyű elnézni. A váltó EGY dolgot mond —
+   hol állsz MOST —, ezért abból az egyből lesz mosott csempe a saját doménszínében, a
+   másik négy pedig ház-sor. A szín nem vész el: a Boop-figura viszi tovább mind az
+   ötön, és ő a tényleges útjelző. */
+.domain-row.current { border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-lav); }
+.domain-row.current[data-domain="nap"]   { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.domain-row.current[data-domain="train"] { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
+.domain-row.current[data-domain="fuel"]  { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
+.domain-row.current[data-domain="mezo"]  { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
+.domain-row.current[data-domain="me"]    { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
 .domain-row-mark { display: grid; place-items: center; flex: none; }
 .domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .domain-row-text strong { font: 500 16px var(--ff-body); color: var(--text-primary); }
