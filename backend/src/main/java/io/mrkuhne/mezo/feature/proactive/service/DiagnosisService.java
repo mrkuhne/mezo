@@ -82,6 +82,17 @@ public class DiagnosisService {
         }
 
         if (isWeight) {
+            // Reuse FIRST, before the weigh-in gate: opening an existing, still-valid report must
+            // never 409, even if the live weigh-in count has since dropped below the floor (a
+            // weigh-in edited/deleted after generation) — reads are free (spec §3.5).
+            DiagnosisEntity existing = diagnosisRepository
+                    .findFirstByCreatedByAndPhenomenonAndAnchorStartAndDeletedFalseOrderByGeneratedAtDesc(
+                            userId, phenomenon, anchorStart)
+                    .orElse(null);
+            if (existing != null && !isStale(userId, existing)) {
+                return withStale(userId, existing);
+            }
+
             LocalDate anchorEnd = anchorStart.plusDays(6);
             LocalDate windowTo = anchorEnd.isBefore(today) ? anchorEnd : today;
             long weighInDays = weightLogRepository
@@ -91,14 +102,6 @@ public class DiagnosisService {
             if (weighInDays < MIN_WEIGHINS) {
                 throw new SystemRuntimeErrorException(
                         SystemMessage.error("DIAGNOSIS_INSUFFICIENT_WEIGHINS").build(), HttpStatus.CONFLICT);
-            }
-
-            DiagnosisEntity existing = diagnosisRepository
-                    .findFirstByCreatedByAndPhenomenonAndAnchorStartAndDeletedFalse(
-                            userId, phenomenon, anchorStart)
-                    .orElse(null);
-            if (existing != null && !isStale(userId, existing)) {
-                return withStale(userId, existing);
             }
         }
 

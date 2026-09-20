@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.proactive.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.DiagnosisRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -32,6 +34,7 @@ class WeightDiagnosisIT extends AbstractIntegrationTest {
     @Autowired private DiagnosisRepository diagnosisRepository;
     @Autowired private DiagnosisPopulator diagnosisPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
+    @Autowired private WeightLogRepository weightLogRepository;
     @Autowired private UserPopulator userPopulator;
 
     private static LocalDate someMonday() {
@@ -64,6 +67,36 @@ class WeightDiagnosisIT extends AbstractIntegrationTest {
         // The existing row was generated AFTER the last weigh-in went in — nothing newer landed.
         Instant generatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
         DiagnosisEntity existing = diagnosisPopulator.weightDiagnosis(user, monday, generatedAt);
+
+        Instant dayStart = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+        Instant dayEnd = LocalDate.now().plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
+        long quotaBefore = diagnosisRepository.countGeneratedOn(user, dayStart, dayEnd);
+
+        var response = diagnosisService.generate(user, DiagnosisEntity.PHENOMENON_WEIGHT, monday);
+
+        assertThat(response.getId()).isEqualTo(existing.getId());
+        long quotaAfter = diagnosisRepository.countGeneratedOn(user, dayStart, dayEnd);
+        assertThat(quotaAfter).isEqualTo(quotaBefore);
+    }
+
+    /** Reuse must win over the weigh-in gate: a non-stale row already exists for the anchor week,
+     *  but a weigh-in that counted toward the {@code >=3} floor at generation time was later
+     *  edited/deleted, dropping the LIVE window count below 3. Re-opening the report must still
+     *  return the existing row, not 409 — reads are free (spec §3.5). */
+    @Test
+    void anExistingNonStaleAnchorRowIsReusedEvenIfLiveWeighInsNowFallBelowThree() {
+        UUID user = userPopulator.createUser("weight-diag-reuse-below-floor@test.local").getId();
+        LocalDate monday = someMonday();
+        weightLogPopulator.createWeightLog(user, monday, new BigDecimal("80.0"));
+        weightLogPopulator.createWeightLog(user, monday.plusDays(1), new BigDecimal("79.8"));
+        WeightLogEntity thirdWeighIn =
+                weightLogPopulator.createWeightLog(user, monday.plusDays(2), new BigDecimal("79.6"));
+        // The existing row was generated AFTER all three weigh-ins went in — nothing newer landed.
+        Instant generatedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        DiagnosisEntity existing = diagnosisPopulator.weightDiagnosis(user, monday, generatedAt);
+
+        // A weigh-in log gets edited/deleted after generation — the live window now has only 2.
+        weightLogRepository.delete(thirdWeighIn);
 
         Instant dayStart = LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
         Instant dayEnd = LocalDate.now().plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant();
