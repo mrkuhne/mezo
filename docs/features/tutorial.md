@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-03
+updated: 2026-09-20
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -66,6 +66,8 @@ pager, not a bottom sheet) and its registry entry
 `KALAUZ_REGISTRY` — see §2 below.
 
 ## 2. User-facing behavior
+
+The registry points persistent preferences to the central `/settings` menu. Train schedule guidance describes the header settings entry and Train group; the former local Időpontok chip is absent. General settings retains tutorial reset through the same TutorialProvider.
 
 - **Auto-open**: on a route with a `T1`/`T2` registry entry not yet seen (by registry `version`),
   the guide opens itself ~600 ms after the route settles (0 ms under `prefers-reduced-motion`),

@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -88,6 +88,8 @@ features/<domain>/
 ---
 
 ## 2. User-facing behavior
+
+The header cog opens the domain-aware `/settings` center in place of the daypart switch. Settings uses Mozaik/Clay wash surfaces, Boop figures and grouped domain accents; the contextual bottom dock and quick-log FAB are hidden throughout `/settings/*`. Validated origin route state drives highlight and return navigation. Routes are composed by `features/settings/settingsRoutes.tsx`; inventory coverage reads both route tables. See [central settings](settings.md).
 
 The design system has no "flows" of its own; it provides the chrome and the idioms every flow uses. The user-visible behaviors it owns:
 
