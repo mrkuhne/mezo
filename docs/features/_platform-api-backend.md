@@ -258,7 +258,7 @@ The delivery-infra counterpart to the proactive epic (§ `Proactive` row above):
 
 ## 5. Integrations
 
-**Karakter contextual replies** (`mezo-njcgs`) add owner-scoped GET/POST `/api/character/replies` and POST `/api/character/replies/{replyId}/retry` to the existing Character contract. A committed self-report drives asynchronous claim/portrait evaluation and the companion memory projection; persisted leases and idempotency keys protect retries. The frontend reads generated types through the character data module and public hook barrel. See [character.md](character.md#social-navigation-and-contextual-replies-mezo-njcgs) and [ADR 0047](../decisions/0047-character-contextual-replies.md).
+**Karakter contextual replies** (`mezo-njcgs`) add owner-scoped GET/POST `/api/character/replies` and POST `/api/character/replies/{replyId}/retry` to the existing Character contract. A committed self-report drives asynchronous claim/portrait evaluation and the companion memory projection; persisted leases and idempotency keys protect retries. The recovery bean is gated by `FeaturesConfiguration.CHARACTER_REPLY_JOB_SWITCH` (`mezo.techcore.cron.character-reply-job.enabled`) and respects the global scheduling switch. The frontend reads generated types through the character data module and public hook barrel. See [character.md](character.md#social-navigation-and-contextual-replies-mezo-njcgs) and [ADR 0047](../decisions/0047-character-contextual-replies.md).
 
 This is the most load-bearing section — every seam, bidirectionally, with the crossing type.
 
