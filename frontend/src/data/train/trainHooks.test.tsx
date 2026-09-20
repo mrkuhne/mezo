@@ -549,3 +549,13 @@ test('useTrain (real mode) maps the catalog-resolved demo stills onto workout ex
   expect(first).toHaveProperty('imageStartUrl')
   expect(first).toHaveProperty('imageEndUrl')
 })
+
+test('mock schedule replacements persist in the shared query cache', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await result.current.saveGymScheduleAsync([{ dayOfWeek: 2, time: '09:00' }])
+  await result.current.saveSportScheduleAsync([{ dayOfWeek: 4, time: '17:00', durationMin: 60, sport: 'trx', kind: 'training' }])
+  await waitFor(() => expect(result.current.gymSlots).toEqual([{ dayOfWeek: 2, time: '09:00' }]))
+  expect(result.current.gymSchedule?.weeklyTimes.find(d => d.day === 'Sze')?.time).toBe('09:00')
+  await waitFor(() => expect(result.current.sport.schedule?.volleyball.sessions).toEqual([expect.objectContaining({ day: 'Pén', time: '17:00', sport: 'trx' })]))
+})
