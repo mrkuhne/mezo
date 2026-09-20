@@ -34,7 +34,7 @@ Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`]
 
 ## 2. User-facing behavior
 
-Persistent preferences live at `/settings/fuel` and `/settings/fuel/slots`; the header cog is the only general settings entry. The former Fuel day-navigation cog is removed, old URLs redirect. Existing calorie/macro previews and all nutrition/slot controls remain; water and fiber are compact rows. Full-page drafts guard navigation, and returning through nested settings preserves the originating domain. See [central settings](settings.md).
+Persistent preferences live at `/settings/fuel` and `/settings/fuel/slots`; the header cog is the only general settings entry. The former Fuel day-navigation cog is removed, old URLs redirect. Existing calorie/macro previews and all nutrition/slot controls remain; water and fiber are compact rows. Full-page drafts guard navigation, and returning through nested settings preserves the originating domain. Failed or pending settings/template reads disable writes and offer retry; pending or failed nutrition previews do not present an older target as the current draft result. See [central settings](settings.md).
 
 **Water capture appearance (`mezo-62xey`).** `WaterLogSheet` uses the shared Titanium capture header and a liquid graphic whose accessible output reflects the selected amount, never a fabricated daily reading. The graphic is empty until a 250/400/500 ml chip or valid manual amount is chosen; manual input still replaces the chip and the existing Mentés action performs the write. Current/target water totals remain hook-owned. The rest of the meal and stack routes keep their existing Titanium implementations.
 
