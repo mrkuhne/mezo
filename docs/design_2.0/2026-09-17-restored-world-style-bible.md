@@ -177,6 +177,36 @@ Then, optionally: a **chip row** (§2.2 B, `gap: 6px`, centered, wrapping) and/o
 - The **serif italic meta voice** (`--ff-serif`, Fraunces) is reserved for the companion's voice and
   reflective copy — never for data.
 
+### 3.4 Depth and focus — mix the grades, don't pick one
+
+**A wash tile is loud only next to something that isn't one.** This is the most-repeated mistake of
+the re-dress: every re-dressed screen's first pass made *every* surface a §2.2 A wash tile, and each
+time the result read **flatter than the Titanium version it replaced** — the owner felt it on the
+Terv/Terhelés prototype before he could name it ("something was better in Titanium, I don't know
+what"). Titanium bought its depth cheaply, with a dark ground and a glow. The restored world buys it
+with **contrast between the three material grades**, and that only works if all three are on screen.
+
+Per screen, in this order:
+
+1. **Name the ONE thing the screen says.** That gets the loud treatment — the wash tile, or the
+   `--gradient-cta` primary if it is an action (Appendix C/13).
+2. **Demote everything else by one grade.** Wash tile → house row (`--surface-1` +
+   `inset 0 0 0 1px var(--border-subtle)`) → cell/chip (§2.2 B). Empty and free states take the
+   §4.4 dashed neutral outline and no shadow at all.
+3. **Let the hero's graphic be genuinely big.** The §3.2 numeral at weight 200 *and* its drawing at
+   real size — a body figure, a ring, a curve. A hero whose art is decoration-sized reads as a
+   header, not a hero.
+4. **Check 320px** after any step-up in size or weight (A.2 rule 5).
+
+Worked example (Phase 7b): on the plan library ONLY the running block is a wash tile — queued and
+closed runs are house rows, the blank slot is dashed. On the day list the wash marks a *training*
+day; the rest day is dashed, not dimmed. On Terhelés the muscle-group tiles are washed and the two
+doorway cards sit one grade below them. Nothing about the materials changed — only which surface got
+which one.
+
+**Retro-fit:** the screens re-dressed before this rule existed (Fuel 5a–5d, Nap/Mai 6, Train Mai 7a,
+the shell 3–4) still wear the flat all-wash pass. `mezo-ju4j6.19` is the sweep that ranks them.
+
 ---
 
 ## 4. Data drawn as graphics
@@ -862,13 +892,11 @@ breathing glow and five accent glows left with them. Four decisions are worth ca
    The „now" state therefore takes the 7a exemplar's **border ring** (`.tr-day.is-live`), not the
    pulse. Anywhere an element already carries `.rise`, add motion on a CHILD or a pseudo-element.
 
-16. **Hierarchy comes from mixing the three grades, not from using one everywhere.** The first pass
-   made every surface a §2.2 A wash tile and the screens read flatter than Titanium did — the owner
-   felt it before he could name it. The fix is to spend the wash where it means something and leave
-   the rest quiet: on the library, ONLY the running block is a wash tile (queued/closed runs are
-   `--surface-1` rows); on the day list the wash marks a training day and the rest day is a dashed
-   outline; on Terhelés the group tiles are washed and the two doorways sit one grade below.
-   The same lesson in one line: **a wash tile is loud only next to something that isn't one.**
+16. **Hierarchy comes from mixing the three grades, not from using one everywhere.** This lesson
+   was general enough that it was promoted out of this appendix into the main body — see **§3.4**,
+   which carries the rule, the four-step ranking and this slice as its worked example. Recorded here
+   because this is where it was found, and because `mezo-ju4j6.19` (the app-wide ranking sweep)
+   exists as its consequence.
 
 17. **The rule-local lift is not a `--mz-` token.** The §2.2 A shadow formula generalised over a
    runtime hue (`--mus-color` / `--ex-color` / `--mm-color`) belongs in the rule that uses it, as
