@@ -17,7 +17,7 @@ function setup() {
 beforeEach(() => { vi.restoreAllMocks(); mode.mock = false })
 test('checks both historical and remaining windows and saves full request', async () => {
   const preview = vi.spyOn(goalApi, 'feasibilityPreview').mockResolvedValue({ derivedRatePctPerWeek: .4, withinSafeBand: true, verdict: 'feasible' })
-  const update = vi.spyOn(goalApi, 'update').mockResolvedValue({ ...goalResponse, ...request })
+  const update = vi.spyOn(goalApi, 'update').mockResolvedValue({ ...goalResponse, targetDate: request.targetDate, targetWeightKg: request.targetWeightKg })
   const { wrapper } = setup()
   const { result } = renderHook(() => useGoalSettings(goalResponse, request, remaining), { wrapper })
   await waitFor(() => expect(result.current.preview).toHaveLength(2))
