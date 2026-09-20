@@ -840,3 +840,41 @@ are now three OWN clay symbols at 24px — `i-trend-fel` (sage, up), `i-trend-le
 `i-erem` (gold medal, coral ribbon), drawn to the §6.1 recipe and added to the sprite. The done
 row's tick was also mis-centred (its box had no grid); `.wo-check` centres now. Two records on one
 set drop to 18px so the pair still fits the cell.
+
+### C.1 Phase 7b addenda (`mezo-ju4j6.12`) — Terv + Terhelés
+
+Three sections came off Titanium together: `terv` (`.pl-*`, the whole Terv tab — landing poster,
+day list, day hero, exercise cells, muscle gauge, library, templates), `train terheles` (`.ld-*`)
+and `train izomjel` (`.mm-*`). 60+ `#ffffffXX` films, four infinite spins, a brushed-metal sheen, a
+breathing glow and five accent glows left with them. Four decisions are worth carrying forward:
+
+14. **Train gets its own halo (`--halo-coral`).** The domain had none, because the Titanium era drew
+   every Train hero as a dark bordered poster — the one thing §2.3 forbids outright. The new token
+   sits beside `--halo-amber`/`--halo-blue` and is deliberately **deeper** than its siblings (.34
+   against .30–.32): the two bands it grounds each carry one big numeral and a body figure, and a
+   fainter halo left them floating. `.pl-poster`, `.pl-dhero` and `.ld-hero` all take it; the
+   decorative glow/sheen/wash nodes stay in the DOM with `display: none` (A.2 rule 3).
+
+15. **A second `animation` on a `.rise` element silently cancels the entrance.** The §4.4 now-pulse
+   was the obvious treatment for „today" on the day list — and it made the tile *invisible*:
+   `.rise` sets `opacity: 0` and relies on its own animation to bring it back, so a higher-specificity
+   `animation` shorthand replaces it and the tile never fades in. Measured in the before/after lab.
+   The „now" state therefore takes the 7a exemplar's **border ring** (`.tr-day.is-live`), not the
+   pulse. Anywhere an element already carries `.rise`, add motion on a CHILD or a pseudo-element.
+
+16. **Hierarchy comes from mixing the three grades, not from using one everywhere.** The first pass
+   made every surface a §2.2 A wash tile and the screens read flatter than Titanium did — the owner
+   felt it before he could name it. The fix is to spend the wash where it means something and leave
+   the rest quiet: on the library, ONLY the running block is a wash tile (queued/closed runs are
+   `--surface-1` rows); on the day list the wash marks a training day and the rest day is a dashed
+   outline; on Terhelés the group tiles are washed and the two doorways sit one grade below.
+   The same lesson in one line: **a wash tile is loud only next to something that isn't one.**
+
+17. **The rule-local lift is not a `--mz-` token.** The §2.2 A shadow formula generalised over a
+   runtime hue (`--mus-color` / `--ex-color` / `--mm-color`) belongs in the rule that uses it, as
+   `--tile-lift`. Naming it `--mz-shadow-mus` put it in the house namespace and tripped
+   `mozaikCssTokens.test.ts`, which requires every `--mz-*` the stylesheet reads to be declared in
+   BOTH `:root` blocks — correctly, since a `--mz-` name is a promise that dark mode follows.
+
+**Owner-facing decision in the same pass:** `TrainWeekPage` wore `tone="gold"` while every accent on
+it was Train coral. Changed to `tone="coral"` — the one markup edit in the slice (A.2 rule 1).

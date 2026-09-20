@@ -95,6 +95,11 @@
   --halo-rose:   radial-gradient(ellipse at 50% 30%, rgba(231,134,110,0.20) 0%, rgba(251,246,239,0) 55%);
   --halo-blue:   radial-gradient(ellipse at 50% 30%, rgba(107,176,209,0.30) 0%, rgba(251,246,239,0) 60%);
   --halo-violet: radial-gradient(ellipse at 50% 30%, rgba(154,95,196,0.24) 0%, rgba(251,246,239,0) 60%);
+  /* Train's own halo (mezo-ju4j6.12): the domain had none — the Titanium era drew its
+     Train heroes as dark bordered posters instead. Deeper than its siblings on purpose:
+     the two hero bands it grounds (Terv poszter, Terhelés hős) each carry ONE big numeral
+     and a body figure, and a fainter halo left them floating on the page (style bible §2.2 C). */
+  --halo-coral:  radial-gradient(ellipse at 50% 24%, rgba(255,107,74,0.34) 0%, rgba(212,168,83,0.12) 32%, rgba(251,246,239,0) 64%);
 
   /* ─── Spacing — every step divisible by 4 (MOBILE_UX §4.1) ─── */
   --sp-1: 4px;
@@ -14375,194 +14380,188 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /train ceremony titanium ────────────────────────────────────────────── */
 
-/* ── train terheles titanium (mezo-88iwa.13, T12 Task 3) ─────────────────────
-   A Terhelés (TrainWeekPage) Titán arca: a heti munka RAJZOLT aránya a full-bleed
-   hősben, a test-térkép ajtaja, az izomcsoport-kártyák növő sávval, a sport-kártya
-   és a „Minden mozgásod" ajtó. Jóváhagyott vizuális referencia a prototípus:
-   docs/design_2.0/prototypes/companion-titanium/load.css `.ld-hero` (:3),
-   `.ld-group*` (:56), `.ld-glass*` (:76), `.ld-sport*` (:88) és `.ld-map-card` (:112)
-   családjai + load-pages.js `loadHero`/`groupCards`/`mapCard`/`groupGlass`.
+/* ── train terheles (mezo-88iwa.13, T12 Task 3 · visszaöltöztetve mezo-ju4j6.12) ─
+   A Terhelés (TrainWeekPage) arca: a heti munka RAJZOLT aránya a hősben, a
+   test-térkép ajtaja, az izomcsoport-kártyák növő sávval, a sport-kártya és a
+   „Minden mozgásod" ajtó. A geometria és az anatómia változatlan — a Titán
+   korszakból CSAK a bőr kerül le (stíluskönyv: docs/design_2.0/2026-09-17-restored-
+   world-style-bible.md; before/after labor: prototypes/redress/2026-09-20-terv-
+   terheles-before-after.html).
 
-   AMIT ÁTVESZÜNK 1:1: a hős anatómiája (körbe-forgó szaggatott gyűrűk a kis
-   anatómia-figura körül, nagy vékony százalék + `%`, egy alsáv, egy mondat), a sáv
-   `--w` custom-property mechanikája, a csoport-kártya háromsoros ritmusa, az
-   üvegdoboz soranatómiája (ikon · név+alcím · sáv/XP).
-   AMIT NEM: a prototípus beégetett hideg hexeit (#0f1218, #ffffffXX) — a lap a
-   `.titan-dark` hatókörben renderel (AppLayout, mezo-88iwa.5), tehát a ház
-   `--surface-card`/`--text-*`/`--border-subtle` tokenjei MÁR hideg grafitot adnak,
-   a doménszín pedig a meglévő `--tag-gym`/`--wash-gym` páros. Így a lap a világos
-   témában is olvasható marad, saját scope-felülírás nélkül.
-   A `.ld-glass*` család korábban fehér-alfákat viselt, azzal az indoklással, hogy
-   KIZÁRÓLAG a `.gl-card` belsejében él (GlassBox, Task 2), „ami MINDIG sötét".
-   Ez a feltevés a visszaöltöztetés 4. fázisában (mezo-ju4j6.5) megszűnt: a
-   GlassBox a ház lap-anyagát viseli, ami világos témában VILÁGOS — a fehér-alfák
-   ott olvashatatlanná váltak. Ezért a család is tokenre váltott, a többi ld-
-   szabállyal együtt.
+   AMI MARAD: a hős anatómiája (a kis test-figura két pálya-gyűrűvel, nagy vékony
+   százalék + `%`, egy alsáv, egy mondat), a sáv `--w` custom-property mechanikája,
+   a csoport-kártya háromsoros ritmusa, az üvegdoboz soranatómiája (ikon · név +
+   alcím · sáv/XP), minden működés és minden DOM-csomópont.
+
+   AMI LEKERÜL (a stíluskönyv tiltólistája, §2.3):
+   · a hideg-grafit hős-rámpa → `--halo-coral` fény-sáv, keret és doboz nélkül (§2.2 C);
+   · minden `#ffffffXX` fólia → `--mz-wash-*` mosott csempe vagy `--surface-1` + hajszálkeret;
+   · a neon sáv-fények (`box-shadow: 0 0 16px …`) és a gyűrűk végtelen forgása →
+     sík doménszín, illetve EGY fordulat érkezéskor, aztán nyugalom (§8.6);
+   · a doménszín `--tag-gym`/`--wash-gym` (Titán-akcens) → `--dv-coral`, a ház
+     Edzés-akcense (A.2 1. szabály). A sport `--tag-sport` HELYETT `--dv-rose`,
+     a futás `--dv-sky` — ott a hue JELENTÉST hordoz, nem bőr.
+
+   A korábbi „THE HAIRLINE RULING" és „THE HERO-BODY RULING" bekezdések ezzel
+   tárgytalanok: mindkettő azt indokolta, hogy a Train-lapok MINDIG a `titanDark`
+   hatókörben renderelnek, ezért a prototípus saját sötét literáljai biztonságosak.
+   A hatókör a 2. fázisban (mezo-ju4j6.3) megszűnt — a literálok helyére tokenek
+   kerültek, a ház mindkét témájában olvashatóan.
 
    Prefix: `ld-` és semmi rövidebb — a T5 `.overline` tanulsága (a Tailwind v4
-   egyszavas utility-jei csendben ütköznek), ezért a hős szemöldöke is `.ld-eyebrow`,
-   nem `.overline`.
+   egyszavas utility-jei csendben ütköznek), ezért a hős szemöldöke is `.ld-eyebrow`.
 
    Full-bleed: a hős a `.mz-page` KÖZVETLEN gyermeke, az pedig már kihúzza magát a
-   scroller `--screen-gutter` paddingjából (:4558) — nincs szükség új negatív margó-
-   receptre, csak a hős saját belső paddingjára.
+   scroller `--screen-gutter` paddingjából (:4558) — nincs szükség új negatív
+   margó-receptre, csak a hős saját belső paddingjára.
 
    Mozgás: a sávok a ház `.mz-play` egyszeri-belépő idiómáját öröklik (a `.gr-tbar`
-   minta, :6559) — az ALAPÁLLAPOT a kész, teljes szélesség, és csak az ARMED
-   `.mz-play` belsejében indul a `ld-fill` növés. Így az üvegdoboz (ami a
-   `.mz-play` fán KÍVÜL portálozódik) és a visszatérő „pop" érkezés is kész sávot
-   mutat, sosem 0-t. Csökkentett mozgás mellett minden animáció kivezetve. */
+   minta) — az ALAPÁLLAPOT a kész, teljes szélesség, és csak az ARMED `.mz-play`
+   belsejében indul a `ld-fill` növés. Így az üvegdoboz (ami a `.mz-play` fán KÍVÜL
+   portálozódik) és a visszatérő „pop" érkezés is kész sávot mutat, sosem 0-t.
+   Csökkentett mozgás mellett minden animáció kivezetve. */
 
-/* THE HAIRLINE RULING (mezo-fsz2r Task 4 sweep) — amends the „AMIT NEM" paragraph above
-   for BORDERS ONLY. The ports replaced every near-transparent hairline literal with
-   `var(--border-subtle)` (and raised the domain-tinted ones to a flat 24%). Measured over
-   the canvas `rgb(11,13,18)`, most of those land within ΔE76 1.4–2.7 — at or just above the
-   ~2.3 just-noticeable threshold on a 1px line, i.e. invisible in practice. But ONE member
-   is not noise:
-   `.ld-sport`/`.ld-move-card` went `#78cfe72b` (α .17) → 24%, which measures **ΔE76 5.90**
-   — a visible thickening of the sport card's outline. Since the group cannot be called
-   uniformly-invisible, it is adjudicated as ONE decision the other way: every hairline in
-   the audit's §20.1 border list goes back to the prototype's own literal/alpha
-   (`#ffffff0d/0f/10/12/14/17/20`, and 17% / 22% for the tinted ones). Safe because every
-   one of these families is Train-scoped and therefore always renders inside `titanDark`
-   (the plan's safety insight) — the surrounding fills are already prototype literals after
-   Tasks 1–3, so the borders now match their own fills' provenance.
-   Applies to: `.ld-group` `.ld-map-card` `.ld-move-card` `.ld-sport` `.ld-move-box`
-   `.ld-wait-row` `.gy-card` `.gy-curve-box` `.mm-cell` `.pl-item` `.pl-row` `.pl-day`
-   `.pl-day-tag` `.pl-day-facts i` `.pl-ex-grid span` `.pl-add` `.pl-mstats span`
-   `.pl-lib-card` `.pl-lib-musrow` `.pl-tpl-exs` `.tr-pills span` `.pl-poster-foot span`
-   `.pl-dhero-pills span` + the `.pl-ex`/`.pl-dest` color-mix targets. */
-
-/* THE HERO-BODY RULING (mezo-fsz2r Task 4 sweep; Tasks 1+2 carried it here). The prototype's
-   hero body is an OPAQUE ramp whose first stop mixes the domain colour INTO the graphite card
-   (`color-mix(--domain-color 12%, #1b2029)`, load.css:7 / plan.css:10 / plan.css:261) — the
-   ground never shows through it. `.ld-hero` and `.pl-poster` instead started the ramp on a
-   TRANSLUCENT `--wash-*` token over the page, which (a) measures ΔE76 **11.29** against the
-   prototype's stop at the same hue — far above the visible threshold, on the largest surface
-   in the domain — and (b) is internally inconsistent: `--wash-gym` is a hotter orange than the
-   `--tag-gym` the same hero's radial uses, so the hero carried two oranges. `.pl-dhero` already
-   shipped the prototype's recipe, so the ruling follows the sibling that was already right:
-   all three heroes take `color-mix(<accent> N%, var(--surface-card))` as stop 0, on the
-   prototype's own N (12 / 11 / 13).
-   BOUNDARY: only stop 0 moves. The ramp's later stops and angle stay the ported house ones
-   (`--surface-card` then `--canvas`) — measured ΔE76 2.5 / 2.3 against the prototype's
-   `#14181f`/`#0f1218`, i.e. the house canvas IS the prototype's canvas to within noise, and
-   both apps' heroes fade into their own page ground. Recorded as an accepted house deviation
-   in the matrix rather than pinned to untokenised literals. This is why this ruling and THE
-   HAIRLINE RULING above are consistent, not in tension: the later stops' tokens already
-   resolve to the prototype's own values within noise (ΔE76 2.5 / 2.3), so "accept" here means
-   there is nothing left to restore — not a drift being tolerated the way a border's alpha
-   might be. */
-
-/* — a hős: milyen mélyen vagy a hétben — */
+/* — a hős: milyen mélyen vagy a hétben —
+   Halo-sáv (§2.2 C): keret, rádiusz és doboz nélküli meleg derengés a lap SAJÁT
+   alapján. A Titán változat egy hideg, keretes poszter volt; világos alapon az
+   „egy nagy sötét téglalap" a stíluskönyv kifejezett tiltása. */
 .ld-hero {
   position: relative; overflow: hidden;
-  padding: 24px 20px 26px;
-  --ld-accent: var(--tag-gym);
-  background:
-    radial-gradient(110% 100% at 85% 4%, color-mix(in srgb, var(--ld-accent) 22%, transparent), transparent 64%),
-    linear-gradient(168deg, color-mix(in srgb, var(--ld-accent) 12%, var(--surface-card)), var(--surface-card) 62%, var(--canvas) 100%);
+  padding: 20px 20px 24px;
+  --ld-accent: var(--dv-coral);
+  background: var(--halo-coral);
 }
-.ld-hero-wash {
-  position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ld-accent) 20%, transparent), transparent 66%);
-}
-.ld-hero-art { position: absolute; right: 10px; top: 20px; width: 112px; height: 112px; pointer-events: none; }
-.ld-hero-body { position: absolute; inset: 6px; width: 100px; height: 100px; }
+/* A dekor-korong a DOM-ban marad (a komponens rajzolja), de anyag nélkül: a halo
+   maga a hős atmoszférája, egy második radiális fólia csak összemosná (A.2 3. szabály). */
+.ld-hero-wash { display: none; }
+/* A hős-ábra MEGNŐ: a test az egyetlen nagy rajzolt grafika ezen a lapon (§4 — „amit
+   érezni kell, az grafika"), ezért 112 → 148px, meleg kontakt-árnyékkal. A Titán
+   változat 100px-en rajzolta, két neon pálya-gyűrű mögé. */
+.ld-hero-art { position: absolute; right: 6px; top: 14px; width: 148px; height: 148px; pointer-events: none; }
+.ld-hero-body { position: absolute; inset: 12px; }
+.ld-hero-body .body-map-figure { filter: drop-shadow(0 10px 20px rgba(216, 72, 31, 0.22)); }
+/* A pálya-gyűrűk megmaradnak — ők a hős kompozíciója —, de csendes hajszálvonalként,
+   és EGYET fordulnak érkezéskor, majd megállnak (§8.6 „egy lendület, aztán nyugalom").
+   A végtelen `ld-spin` a Titán-korszak tech-motívuma volt. */
 .ld-hero-art i {
   position: absolute; inset: 0; border-radius: 50%;
-  border: 1px dashed color-mix(in srgb, var(--ld-accent) 38%, transparent);
-  animation: ld-spin 28s linear infinite;
+  border: 1px dashed color-mix(in srgb, var(--ld-accent) 30%, transparent);
 }
-.ld-hero-art i:nth-of-type(2) { inset: -9px; rotate: 58deg; opacity: .5; animation-duration: 20s; animation-direction: reverse; }
+.ld-hero-art i:nth-of-type(2) { inset: -9px; rotate: 58deg; opacity: .45; }
+.mz-play .ld-hero-art i { animation: ld-onceturn 1.5s cubic-bezier(.22, .9, .25, 1) both; }
+.mz-play .ld-hero-art i:nth-of-type(2) { animation-duration: 1.9s; animation-direction: reverse; }
+@keyframes ld-onceturn { from { rotate: -46deg; opacity: 0; } }
+/* `ld-spin` marad, amíg a Gyakorlatok (`.gy-hero-art`, 7c fázis) használja — az ő
+   visszaöltöztetése viszi majd el vele együtt. */
+@keyframes ld-spin { to { rotate: 360deg; } }
 .ld-eyebrow {
-  display: block; font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--text-secondary);
+  display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--mz-cell-coral-ink);
 }
 .ld-hero .ld-eyebrow { position: relative; }
 .ld-hero-pct {
   position: relative; display: flex; align-items: baseline; gap: 3px; margin: 9px 0 2px;
   color: var(--text-primary);
 }
+/* §3.2 3. ütem: EGY nagy számjegy, 200-as vastagság, `--ink`; a mértékegység halkan
+   mellette. A Titán változat 52px/300-at vitt, és a `%`-ot az akcensre festette —
+   két hangsúly egy számon. */
 .ld-hero-pct b {
-  font-family: var(--ff-display); font-size: 52px; font-weight: 300; letter-spacing: -.04em; line-height: 1;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--ff-display); font-size: 56px; font-weight: 200; letter-spacing: -.04em; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--ink);
 }
-.ld-hero-pct em { font-style: normal; font-size: 23px; font-weight: 600; color: var(--ld-accent); }
-.ld-hero-sub { position: relative; margin: 0 0 13px; font-size: 12px; color: var(--text-secondary); max-width: 30ch; }
-.ld-hero-sub b { color: var(--text-primary); font-weight: 600; }
+.ld-hero-pct em { font-style: normal; font-size: 18px; font-weight: 300; color: var(--faint); }
+.ld-hero-sub { position: relative; margin: 0 0 13px; font-size: 12px; color: var(--sub); max-width: 30ch; }
+.ld-hero-sub b { color: var(--mz-cell-coral-ink); font-weight: 700; }
 .ld-hero-bar {
-  position: relative; height: 12px; margin: 0 0 13px; max-width: 320px; border-radius: 999px;
+  position: relative; height: 10px; margin: 0 0 13px; max-width: 320px; border-radius: 999px;
   background: var(--surface-recess); overflow: hidden;
 }
+/* Sík doménszín a mélyedés-sávon. A Titán változat egy átlátszóból induló rámpát vitt
+   16px-es neon szórással — a stíluskönyv §2.3 tiltja az akcens-izzásokat. */
 .ld-hero-bar i {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transform-origin: left;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--ld-accent) 45%, transparent), var(--ld-accent));
-  box-shadow: 0 0 16px color-mix(in srgb, var(--ld-accent) 40%, transparent);
+  background: var(--ld-accent);
 }
-.ld-hero-say { position: relative; margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
+.ld-hero-say { position: relative; margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--sub); max-width: 34ch; }
 .ld-hero-chips { position: relative; display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
 .ld-hero-medal {
   display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; color: var(--text-secondary);
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  font-size: 12px; font-weight: 600; color: var(--sub);
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
+/* A nagy szám egy ütemmel a saját sávja UTÁN emelkedik be (§8.6). */
+.mz-play .ld-hero-pct { animation: mz-num-in .55s cubic-bezier(.22, .9, .32, 1.15) both; animation-delay: .18s; }
+@keyframes mz-num-in { from { opacity: 0; transform: translateY(10px); } }
+/* Az izomterhelés belefakul a testbe, nem ráfestve érkezik. SZŰKEN a Terhelés két
+   térképére kötve — a `BodyMap` a Terv nap-hősében és a Main is ott van, azokat ez a
+   szelet nem öltözteti. */
+.mz-play .ld-hero-body .body-map-shape,
+.mz-play .ld-map-mini .body-map-shape { animation: mz-heat-in .9s ease-out both; animation-delay: .35s; }
+@keyframes mz-heat-in { from { opacity: 0; } }
 
 /* — a szakasz-fejek — */
-/* `display:flex` + the 7px gap match `.pl-h3` (:14900) so a trailing `.pl-info` sits
-   beside the heading text on the Terhelés screens too (mezo-b516k). */
-.ld-h3 { margin: 22px 2px 10px; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
+/* `display:flex` + the 7px gap match `.pl-h3` so a trailing `.pl-info` sits beside the
+   heading text on the Terhelés screens too (mezo-b516k). */
+.ld-h3 { margin: 22px 2px 10px; font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 7px; }
 .ld-h3:first-child { margin-top: 6px; }
 
-/* — a két ajtó: a test térképe és az összes mozgás — */
+/* — a két ajtó: a test térképe és az összes mozgás —
+   Mosott csempe (§2.2 A): domén-mosás + hajszálkeret + hue-színezett emelés + a fehér
+   belső felső él. A gym korall, a mozgás-ajtó a sport rózsája. */
 .ld-map-card, .ld-move-card {
   display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 14px; cursor: pointer;
   text-align: left; font: inherit; color: var(--text-primary);
-  border: 1px solid #ffffff12; border-radius: 20px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 8%, transparent), #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
 }
 .ld-move-card {
   margin-top: 16px;
-  border-color: color-mix(in srgb, var(--tag-sport) 17%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 7%, transparent), color-mix(in srgb, var(--tag-sport) 1.6%, transparent));
+  background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose);
 }
 .ld-map-mini { width: 96px; height: 78px; flex: 0 0 auto; overflow: hidden; }
 .ld-map-copy { flex: 1; min-width: 0; }
-.ld-map-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
-.ld-map-copy small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-tertiary); line-height: 1.45; }
-.ld-map-card > b, .ld-move-card > b { color: var(--text-quaternary); font-size: 15px; }
+.ld-map-copy strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.ld-map-copy small { display: block; margin-top: 2px; font-size: 11px; color: var(--sub); line-height: 1.45; }
+.ld-map-card > b, .ld-move-card > b { color: var(--faint); font-size: 15px; }
 
-/* — az izomcsoportok — */
-.ld-groups { display: grid; gap: 8px; }
+/* — az izomcsoportok —
+   A §2.2 A recept a csoport SAJÁT futásidejű hue-jával: `--mus-color` viszi a mosást
+   ÉS az emelés színét, úgyhogy a képlet egy szabály-helyi property-be fér (`--tile-lift`, NEM `--mz-` token: rule-local, nem házszintű). */
+.ld-groups { display: grid; gap: 12px; }
 .ld-group {
-  display: grid; gap: 9px; width: 100%; padding: 12px 13px; cursor: pointer; text-align: left;
+  --tile-lift: 0 17px 31px -17px color-mix(in srgb, var(--mus-color, var(--dv-coral)) 45%, transparent),
+    0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  display: grid; gap: 9px; width: 100%; padding: 13px 14px; cursor: pointer; text-align: left;
   font: inherit; color: var(--text-primary);
-  border: 1px solid #ffffff10; border-radius: 18px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 7%, transparent), #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 17%, var(--surface-card)),
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 5%, var(--surface-page)));
+  box-shadow: var(--tile-lift);
 }
 .ld-group-head { display: flex; align-items: center; gap: 9px; }
-.ld-group-head strong { font-size: 14px; font-weight: 600; }
+.ld-group-head strong { font-size: 14px; font-weight: 700; color: var(--ink); }
 .ld-group-head b {
   margin-left: auto; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
-  color: var(--mus-color, var(--tag-gym));
+  color: var(--ink);
 }
-.ld-group-head b small { font-size: 10px; font-weight: 500; color: var(--text-tertiary); }
-/* Sok-jel: a ház borostyánja (a T5 `.tr-start.is-resume` szemantikája), sosem piros
-   vészjelzés — a heti terv bőségét jelzi, nem hibát. */
+.ld-group-head b small { font-size: 10px; font-weight: 500; color: var(--sub); }
+/* Sok-jel: a ház borostyán cella-párja (§2.2 B, §4.4 „borostyán, sosem piros") — a heti
+   terv bőségét jelzi, nem hibát. */
 .ld-group-much {
   font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px;
-  color: var(--amber-deep); background: color-mix(in srgb, var(--amber) 22%, transparent);
+  color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg);
 }
 .ld-group-bar {
-  position: relative; display: block; height: 10px; border-radius: 999px;
+  position: relative; display: block; height: 9px; border-radius: 999px;
   background: var(--surface-recess); overflow: hidden;
 }
 .ld-group-bar i {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transform-origin: left;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 55%, transparent), var(--mus-color, var(--tag-gym)));
+  background: var(--mus-color, var(--dv-coral));
 }
-.ld-group-note { font-size: 10.5px; color: var(--text-tertiary); }
+.ld-group-note { font-size: 10.5px; color: var(--sub); }
 
 /* — a sáv-növés: csak az ARMED belépő-csoport belsejében — */
 .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i {
@@ -14570,59 +14569,59 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   animation-delay: var(--d, 120ms);
 }
 @keyframes ld-fill { from { transform: scaleX(0); } to { transform: none; } }
-@keyframes ld-spin { to { rotate: 360deg; } }
 
 /* — a sport-kártya — */
 .ld-sport {
-  display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--tag-sport) 8%, transparent), color-mix(in srgb, var(--tag-sport) 2%, transparent));
+  display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 21px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose);
 }
+/* §3.1 ikon-pajzs: 50×50, 16-os rádiusz, ház-felület, hajszál-inset. */
 .ld-sport-art {
-  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; flex: 0 0 auto;
-  background: color-mix(in srgb, var(--tag-sport) 16%, transparent);
+  display: grid; place-items: center; width: 50px; height: 50px; border-radius: 16px; flex: 0 0 auto;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .ld-sport-copy { flex: 1; min-width: 0; }
-.ld-sport-copy strong { display: block; font-size: 13.5px; font-weight: 600; }
-.ld-sport-copy small { font-size: 11px; color: var(--text-tertiary); line-height: 1.5; }
-.ld-sport-copy em { display: block; margin-top: 3px; font-style: normal; font-size: 10px; color: var(--text-quaternary); }
+.ld-sport-copy strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.ld-sport-copy small { font-size: 11px; color: var(--sub); line-height: 1.5; }
+.ld-sport-copy em { display: block; margin-top: 3px; font-style: normal; font-size: 10px; color: var(--faint); }
 
 /* — a záró jegyzet: honnan jön a két ütemterv — */
 .ld-note {
   margin: 16px 0 0; padding: 14px 15px; border-radius: 18px;
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.ld-note p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); }
+.ld-note p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
 
-/* — az üvegdoboz tartalma (a GlassBox `.gl-card` belsejében, MINDIG sötét) — */
+/* — az üvegdoboz tartalma (a GlassBox `.gl-card` belsejében) —
+   A 4. fázisban (mezo-ju4j6.5) a GlassBox a ház lap-anyagát vette fel, ami világos
+   témában VILÁGOS: a család ezért tokeneken él, nem fehér-alfákon. */
 .ld-glass { display: grid; gap: 10px; text-align: left; }
 .ld-glass-hero { display: flex; align-items: baseline; gap: 5px; }
-.ld-glass-hero strong { font-family: var(--ff-display); font-size: 34px; font-weight: 300; line-height: 1; color: var(--mus-color, var(--text-primary)); }
-.ld-glass-hero small { font-size: 12px; color: var(--text-secondary); }
-.ld-glass-word { margin: -4px 0 2px; font-size: 11.5px; color: var(--text-secondary); }
+.ld-glass-hero strong { font-family: var(--ff-display); font-size: 34px; font-weight: 200; line-height: 1; color: var(--mus-color, var(--ink)); }
+.ld-glass-hero small { font-size: 12px; color: var(--sub); }
+.ld-glass-word { margin: -4px 0 2px; font-size: 11.5px; color: var(--sub); }
 .ld-glass-rows { display: grid; gap: 8px; }
 .ld-glass-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; }
-.ld-glass-name strong { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
-.ld-glass-name small { font-size: 10.5px; color: var(--text-secondary); }
+.ld-glass-name strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.ld-glass-name small { font-size: 10.5px; color: var(--sub); }
 .ld-glass-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .ld-glass-chips span {
   font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
-  color: var(--text-secondary); background: var(--mz-chipbg);
+  color: var(--sub); background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.ld-glass-xp { font-size: 11.5px; font-weight: 800; color: color-mix(in srgb, var(--mus-color, var(--text-primary)) 78%, var(--text-primary)); }
-.ld-glass-foot { margin: 6px 0 0; font-size: 10px; line-height: 1.5; color: var(--text-tertiary); }
-.ld-glass-empty { margin: 0; font-size: 11.5px; color: var(--text-secondary); }
+.ld-glass-xp { font-size: 11.5px; font-weight: 800; color: color-mix(in srgb, var(--mus-color, var(--ink)) 78%, var(--ink)); }
+.ld-glass-foot { margin: 6px 0 0; font-size: 10px; line-height: 1.5; color: var(--faint); }
+.ld-glass-empty { margin: 0; font-size: 11.5px; color: var(--sub); }
 
 /* — a két aloldal (Izomtérkép / Minden mozgásod, T12 Task 4) — vékony, teli-
    szélességű hős, a vissza-pill BEDOKKOLVA a hősbe (prototípus `.pl-back.is-
-   inhero` mintája, train-pages.css :179 — „option A: the back pill lives
-   inside the poster"). A pill maga a ház `.mz-backbtn` (PageHead), csak a
-   helyzete más: a hős SAJÁT gyermeke, nem egy fölötte lévő külön sor. */
+   inhero` mintája — „option A: the back pill lives inside the poster"). A pill maga
+   a ház `.mz-backbtn` (PageHead), csak a helyzete más: a hős SAJÁT gyermeke. */
 .ld-hero.is-slim { padding-top: 56px; padding-bottom: 16px; }
 .ld-hero .ld-back {
   position: absolute; left: 14px; top: 14px; z-index: 2;
-  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .ld-hero.is-slim .ld-hero-say { margin-top: 8px; }
 
@@ -14632,12 +14631,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* — a nagy test-térkép + jelmagyarázat (Izomtérkép) — */
 .ld-map-stage { padding: 6px 4px 0; }
-.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .25)); }
+/* Meleg tinta-árnyék a figura alatt, nem fekete: a világos lapon a fekete lyukat üt
+   (a `.pl-dhero-art .body-map` idióma, ugyanaz a recept). */
+.ld-map-big { width: min(100%, 340px); margin: 0 auto; display: flex; filter: drop-shadow(0 14px 24px rgba(43, 33, 24, .18)); }
 .ld-map-sides { display: flex; justify-content: space-around; margin: 6px 0 12px; }
-.ld-map-sides span { font-size: 9.5px; letter-spacing: .12em; color: var(--text-quaternary); text-transform: uppercase; }
+.ld-map-sides span { font-size: 9.5px; letter-spacing: .12em; color: var(--faint); text-transform: uppercase; }
 .ld-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 0 0 6px; }
-.ld-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-tertiary); }
-.ld-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--ld-accent, var(--tag-gym)); }
+.ld-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--sub); }
+.ld-legend i { width: 12px; height: 12px; border-radius: 4px; background: var(--ld-accent, var(--dv-coral)); }
 .ld-legend .is-none i { opacity: .14; outline: 1px solid var(--border-subtle); }
 .ld-legend .is-below i { opacity: .42; }
 .ld-legend .is-in i { opacity: .72; }
@@ -14648,109 +14649,116 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ld-wait { display: grid; gap: 7px; margin-top: 4px; }
 .ld-wait-row {
   display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-radius: 15px;
-  border: 1px solid #ffffff10;
-  background: #ffffff04;
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.ld-wait-row strong { font-size: 13px; font-weight: 600; }
-.ld-wait-row small { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
-.ld-wait-done { margin: 4px 2px 0; font-size: 12px; color: var(--text-tertiary); }
+.ld-wait-row strong { font-size: 13px; font-weight: 700; color: var(--ink); }
+.ld-wait-row small { margin-left: auto; font-size: 10.5px; color: var(--sub); }
+.ld-wait-done { margin: 4px 2px 0; font-size: 12px; color: var(--sub); }
 
 /* — a sport-érintés jegyzet a térkép-oldalon — */
 .ld-sport-note {
   display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; padding: 12px 13px;
-  font-size: 11.5px; line-height: 1.55; color: var(--text-tertiary);
-  border: 1px solid color-mix(in srgb, var(--tag-sport) 17%, transparent); border-radius: 15px;
-  background: color-mix(in srgb, var(--tag-sport) 5%, transparent);
+  font-size: 11.5px; line-height: 1.55; color: var(--sub);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 15px;
+  background: var(--mz-wash-rose);
 }
-.ld-sport-note em { font-style: normal; display: block; color: var(--text-quaternary); }
+.ld-sport-note em { font-style: normal; display: block; color: var(--faint); }
 
 /* — Minden mozgásod: gym/sport két doboz, SOSEM összemosva — */
 .ld-move-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 6px; }
 .ld-move-box {
-  display: grid; gap: 4px; padding: 13px 14px; border-radius: 18px; text-align: left;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 22%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 10%, transparent), #ffffff03);
+  --tile-lift: 0 17px 31px -17px color-mix(in srgb, var(--mus-color, var(--dv-coral)) 45%, transparent),
+    0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  display: grid; gap: 4px; padding: 13px 14px; border-radius: 21px; text-align: left;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 17%, var(--surface-card)),
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 5%, var(--surface-page)));
+  box-shadow: var(--tile-lift);
 }
-.ld-move-box strong { font-size: 17px; font-weight: 700; }
-.ld-move-box small { font-size: 10.5px; color: var(--text-tertiary); }
-.ld-move-box em { font-style: normal; font-size: 9.5px; color: var(--text-quaternary); }
+.ld-move-box strong { font-size: 17px; font-weight: 700; color: var(--ink); }
+.ld-move-box small { font-size: 10.5px; color: var(--sub); }
+.ld-move-box em { font-style: normal; font-size: 9.5px; color: var(--faint); }
 
 /* — a mozgás-oldal izomcsoport-sorai: lapos (nem koppintható), sport-jellel — */
 .ld-group.is-flat { cursor: default; }
 .ld-sport-chip {
   display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em;
-  padding: 4px 10px 4px 6px; border-radius: 999px; color: var(--tag-sport);
-  border: 1px solid color-mix(in srgb, var(--tag-sport) 20%, transparent);
-  background: color-mix(in srgb, var(--tag-sport) 7%, transparent);
+  padding: 4px 10px 4px 6px; border-radius: 999px;
+  color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg);
 }
 
 /* — a heti sport/futás események listája: mozgás-oldal, clay-only kártyák — */
 .ld-events { display: grid; gap: 8px; }
 .ld-event {
-  border-radius: 16px; padding: 12px 14px;
-  border: 1px solid var(--border-subtle);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-sport) 8%, var(--surface-card)), var(--surface-card) 72%);
+  border-radius: 18px; padding: 12px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose);
 }
 .ld-event-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .ld-event-tag {
   font-size: 9px; font-weight: 800; letter-spacing: .06em; padding: 3px 8px; border-radius: 999px;
-  color: var(--mus-color, var(--tag-sport)); background: color-mix(in srgb, var(--mus-color, var(--tag-sport)) 18%, transparent);
+  color: var(--mz-cell-rose-ink); background: color-mix(in srgb, var(--mus-color, var(--dv-rose)) 18%, var(--surface-card));
 }
-.ld-event-title { font-size: 12.5px; font-weight: 600; }
-.ld-event-when { margin-left: auto; font-size: 10.5px; color: var(--text-tertiary); }
+.ld-event-title { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.ld-event-when { margin-left: auto; font-size: 10.5px; color: var(--sub); }
 .ld-event-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
 .ld-event-chip { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
-.ld-events-empty { font-size: 11px; color: var(--text-tertiary); margin: 0; }
-.ld-events-note { font-size: 9.5px; color: var(--text-quaternary); margin: 10px 2px 0; text-align: center; }
+.ld-events-empty { font-size: 11px; color: var(--sub); margin: 0; }
+.ld-events-note { font-size: 9.5px; color: var(--faint); margin: 10px 2px 0; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ld-hero-art i { animation: none; }
+  .mz-play .ld-hero-art i { animation: none; rotate: none; opacity: 1; }
   .mz-play .ld-hero-bar i, .mz-play .ld-group-bar i { animation: none; transform: none; }
+  .mz-play .ld-hero-pct { animation: none; transform: none; opacity: 1; }
+  .mz-play .ld-hero-body .body-map-shape,
+  .mz-play .ld-map-mini .body-map-shape { animation: none; }
 }
-/* ── /train terheles titanium ─────────────────────────────────────────────── */
+/* ── /train terheles ───────────────────────────────────────────────────────── */
 
-/* ── train izomjel titanium (mezo-lf3cv, P2 Task 1) ─────────────────────────
+/* ── train izomjel (mezo-lf3cv, P2 Task 1 · visszaöltöztetve mezo-ju4j6.12) ──
    A „Minden izomjel" aloldal (`TrainWeekJelekPage`) — a 21 izom régiónként,
-   mindegyik a SAJÁT clay sziluettjével. Jóváhagyott vizuális referencia:
-   docs/design_2.0/prototypes/companion-titanium/train-pages.css `.mm-*` (:154)
-   + muscles.js `muscleMapHtml` (:9).
+   mindegyik a SAJÁT clay sziluettjével.
 
-   AMIT ÁTVESZÜNK 1:1: a fej anatómiája (szemöldök · vastag sor · vezérmondat),
-   a régió-doboz (címke + `N izom` számláló a jobb szélen), a 3-oszlopos rács, a
-   cella anatómiája (40px sziluett fölött apró címke) és a `--mm-color` régiószín
-   mechanikája, amivel az AKTÍV (a héten már megdolgoztatott) cella kigyúl.
-   AMIT NEM: a prototípus beégetett fehér-alfáit — a `.ld-` szekció fenti szabálya
-   itt is áll, tehát `--surface-card`/`--text-*`/`--border-subtle` tokeneken ülünk,
-   a régiószínt pedig a lap adja be (`muscleColors` `regionColor().rail`), így a
-   világos téma sem törik el. */
+   AMI MARAD: a fej anatómiája (szemöldök · vastag sor · vezérmondat), a régió-doboz
+   (címke + `N izom` számláló a jobb szélen), a 3-oszlopos rács, a cella anatómiája
+   (40px sziluett fölött apró címke) és a `--mm-color` régiószín mechanikája, amivel
+   az AKTÍV (a héten már megdolgoztatott) cella kigyúl.
+   AMI LEKERÜL: a `#ffffffXX` fóliák és a fekete ikon-árnyék. A régió-doboz a §2.2 A
+   mosott csempéje lett a saját régió-hue-jával, a cella a ház sor-anyaga (felület +
+   hajszál-inset), az aktív cella pedig a régió cella-párját kapja (§2.2 B). */
 .mm { display: block; }
 .mm-head { margin-bottom: 16px; }
-.mm-head .ld-eyebrow { color: var(--tag-gym); letter-spacing: .16em; }
-.mm-head strong { display: block; font-size: 20px; font-weight: 400; margin: 5px 0 4px; color: var(--text-primary); }
-.mm-head small { display: block; font-size: 11.5px; line-height: 1.6; color: var(--text-tertiary); }
+.mm-head .ld-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
+.mm-head strong { display: block; font-size: 20px; font-weight: 700; margin: 5px 0 4px; color: var(--ink); }
+.mm-head small { display: block; font-size: 11.5px; line-height: 1.6; color: var(--sub); }
 .mm-region {
-  margin-bottom: 10px; padding: 13px 14px; border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--mm-color, var(--tag-gym)) 24%, transparent);
-  background:
-    radial-gradient(110% 80% at 90% 0%, color-mix(in srgb, var(--mm-color, var(--tag-gym)) 12%, transparent), transparent 65%),
-    #ffffff04;
+  --tile-lift: 0 17px 31px -17px color-mix(in srgb, var(--mm-color, var(--dv-coral)) 45%, transparent),
+    0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  margin-bottom: 12px; padding: 13px 14px; border-radius: 21px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--mm-color, var(--dv-coral)) 17%, var(--surface-card)),
+    color-mix(in srgb, var(--mm-color, var(--dv-coral)) 5%, var(--surface-page)));
+  box-shadow: var(--tile-lift);
 }
 .mm-region-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.mm-region-head strong { font-size: 15px; font-weight: 500; color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 72%, var(--text-primary)); }
-.mm-region-head span { font-size: 9px; letter-spacing: .12em; color: var(--text-quaternary); }
+.mm-region-head strong { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mm-region-head span { font-size: 9px; letter-spacing: .12em; color: var(--faint); }
 .mm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mm-cell {
-  display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px;
-  border: 1px solid #ffffff0d; border-radius: 15px; background: var(--surface-recess);
+  display: grid; justify-items: center; gap: 5px; padding: 10px 4px 9px; border-radius: 15px;
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .mm-cell.is-live {
-  border-color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 55%, transparent);
-  background: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 10%, var(--surface-card));
+  background: color-mix(in srgb, var(--mm-color, var(--dv-coral)) 14%, var(--surface-1));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mm-color, var(--dv-coral)) 40%, transparent);
 }
-.mm-cell .muscle-chip { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5)); }
-.mm-cell small { font-size: 9px; line-height: 1.3; text-align: center; color: var(--text-tertiary); }
-.mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color, var(--tag-gym)) 70%, var(--text-primary)); }
-/* ── /train izomjel titanium ───────────────────────────────────────────────── */
+/* Meleg tinta-vetés, nem fekete: a világos cellán a `rgba(0,0,0,.5)` lyukat üt. */
+.mm-cell .muscle-chip { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(43, 33, 24, .16)); }
+.mm-cell small { font-size: 9px; line-height: 1.3; text-align: center; color: var(--sub); }
+.mm-cell.is-live small { color: color-mix(in srgb, var(--mm-color, var(--dv-coral)) 70%, var(--ink)); }
+/* ── /train izomjel ────────────────────────────────────────────────────────── */
 
 /* ── train gyakorlatok titanium (mezo-lf3cv, P2 Task 3) ────────────────────
    The Gyakorlatok tab: the exercise catalogue rows, an exercise's own story
@@ -14776,7 +14784,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Nincs `.gy` gyökér: a prototípus `.gy .gy-search`/`.gy .pl-row` szabályait
    a house nem viszi át — a termelésben nincs oldal-gyökér (`.screen-content`
    alatt render), a keresőmező sora `.gy-search`-ként class-only, a `.pl-row`
-   felülbírálás pedig már megvan a terv titanium szekció `.pl-sub .pl-row`
+   felülbírálás pedig már megvan a terv szekció `.pl-sub .pl-row`
    szabályában (azonos érték), így duplázás nélkül elég az a MEGLÉVŐ sor.
    Az eyebrow a MEGLÉVŐ `.tr-eyebrow` osztályt viseli (nem egy saját `.gy-
    eyebrow`) — a T5 lecke (`.overline` ütközne a Tailwind v4 egyszavas
@@ -14900,7 +14908,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gy-medal-date { margin-left: auto; }
 /* ── /train gyakorlatok titanium ───────────────────────────────────────────── */
 
-/* ── terv titanium (mezo-88iwa.10, T9) ─────────────────────────────────────
+/* ── terv (mezo-88iwa.10, T9 · visszaöltöztetve mezo-ju4j6.12) ─────────────
    The Terv tab's core pages (mesocycle landing poster, day-by-day week list,
    a day's own hero + exercise cells, and the muscle detail's "where you
    stand" gauge) as poster-anatomy cards, ported from the prototype:
@@ -14910,18 +14918,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `.pl-scale-wrap`/`.pl-scale-bar*`/`.pl-scale-legend` (:407) and
    `.pl-versus*` (:441).
 
-   AMIT ÁTVESZÜNK 1:1: a geometria — rádiuszok, rács-oszlopok, betűméretek,
-   a `--w` szélesség- és `--at`/`--nudge` pozíció-mechanika a sávokon/pinen.
-   AMIT NEM: a prototípus beégetett `var(--domain-color)`-ját és sötét
-   (#ffffffXX / #0f1218 stb.) hexeit — a ház a train-domén MEGLÉVŐ tónus-
-   tokenjeit használja (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.tr-day`
-   is visel a train mai blokkban), a csúcs/deload jelzésekhez a ház
-   `--amber`/`--amber-deep` szemantikus tokenjeit, az izom-specifikus
-   színekhez pedig a meglévő `--mus-color` inline custom property-t
-   (muscleColors.ts, ugyanaz, amit a `.tr-mus-track` is visel) — így a lapok
-   a világos ÉS a sötét témában is olvashatók maradnak. KIVÉTEL a hajszálvékony
-   kereteknél: lásd THE HAIRLINE RULING-ot fentebb (:14281) — a `.pl-item`/
-   `.pl-row`/`.pl-day`* és rokonai ott a prototípus saját literáljára mennek vissza.
+   AMI MARAD: a geometria — rádiuszok, rács-oszlopok, betűméretek, a `--w`
+   szélesség- és `--at`/`--nudge` pozíció-mechanika a sávokon/pinen —, az
+   izom-specifikus `--mus-color` inline custom property (muscleColors.ts),
+   minden működés és minden DOM-csomópont.
+
+   AMI LEKERÜL (stíluskönyv: docs/design_2.0/2026-09-17-restored-world-style-
+   bible.md; before/after labor: prototypes/redress/2026-09-20-terv-terheles-
+   before-after.html):
+   · a hideg-grafit poszter-rámpa → `--halo-coral` fény-sáv, keret és doboz
+     nélkül (§2.2 C) — a „nagy sötét téglalap" a §2.3 kifejezett tiltása;
+   · minden `#ffffffXX` fólia → `--mz-wash-*` mosott csempe (§2.2 A) vagy
+     `--surface-1` + hajszál-inset;
+   · a fém-csillanás (`.pl-poster-sheen`), a lélegző fény (`.pl-poster-glow`),
+     a gyűrű neon `drop-shadow`-ja és a sávok 16px-es szórása → sík doménszín;
+   · a végtelen gyűrű-forgás (`pl-spin`, `pl-ring-spin`) → EGY fordulat
+     érkezéskor, aztán nyugalom (§8.6);
+   · a `--tag-gym` Titán-akcens → `--dv-coral`, a ház Edzés-akcense (A.2 1.
+     szabály); a csúcs/pihenőhét jelzés a ház `--mz-cell-*` pár-rendszere.
+
+   A korábbi „THE HAIRLINE RULING" itt is tárgytalan: azt indokolta, hogy a
+   Train-lapok MINDIG a `titanDark` hatókörben renderelnek, ezért a prototípus
+   saját sötét literáljai biztonságosak. A hatókör a 2. fázisban (mezo-ju4j6.3)
+   megszűnt.
 
    Az eyebrow-sorok a MEGLÉVŐ `.tr-eyebrow` osztályt viselik (nem egy saját
    `.pl-eyebrow`-t) — a T5 lecke (`.overline` ütközne a Tailwind v4
@@ -14934,79 +14953,71 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    poszter gyűrűjének ívbehúzása pedig a ház meglévő `.mz-play`-armed
    mintáját követi (lásd `.mz-play .lg-ring .arc` :9132, `.mz-play .ad-ring
    .arc` :11149) — ugyanaz az arming osztály, amit az EntranceGroup már
-   minden más lapon karbantart, nincs új belépő-mechanika. A poszter fénye
-   (`.pl-poster-sheen`) és a gyűrű lélegző fénye (`.pl-poster-glow`) ambiens,
-   hurkolt animáció — nem belépő-effekt —, a `.fmx-chip-sheen` mintáját
-   követve (:11814) `prefers-reduced-motion: no-preference` mögé zárva. */
+   minden más lapon karbantart, nincs új belépő-mechanika. A hurkolt ambiens
+   animációk (poszter-csillanás, lélegző fény) megszűntek: a §8.6 szerint az
+   egyetlen engedett hurok a „most"-pulzus és a companion-orb lélegzése. */
 
-/* — the block poster: week numeral, progress ring, sheen, week arc —
-   Surfaces parity (mezo-fsz2r Task 2): the prototype's poster carries NO shadow and NO
-   border-bottom (plan.css:5) — it fades into the page through its own `::after` scrim, and
-   a rule + a lift under it read as a toolbar band instead. Padding is the prototype's own
-   `22px 20px 26px`: the hero is full-bleed (`margin-inline: -gutter`), so a LITERAL 20px
-   puts its content exactly 20px from the screen edge, the way the prototype renders it —
-   the ported `calc(var(--screen-gutter) + 6px)` measured 18px against the house's 12px
-   gutter, so the two are NOT equivalent here. */
+/* — the block poster: week numeral, progress ring, week arc —
+   Halo-sáv (§2.2 C): keret, rádiusz, árnyék és doboz nélküli meleg derengés a lap
+   SAJÁT alapján, teli szélességben. A poszter marad full-bleed (`margin-inline:
+   -gutter`), így a LITERÁLIS 20px pontosan 20px-re teszi a tartalmát a képernyő
+   szélétől — a ported `calc(var(--screen-gutter) + 6px)` 18px-et mért a ház 12px-es
+   gutterén, tehát a kettő NEM egyenértékű itt (mezo-fsz2r Task 2). */
 .pl-poster {
   position: relative; overflow: hidden;
   margin: 4px 0 16px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 22px 20px 26px;
+  padding: 18px 20px 26px;
   border: 0; border-radius: 0;
-  --tr-accent: var(--tag-gym);
-  background:
-    radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--tr-accent) 20%, transparent), transparent 62%),
-    linear-gradient(155deg, color-mix(in srgb, var(--tr-accent) 11%, var(--surface-card)), var(--surface-card) 68%);
+  --tr-accent: var(--dv-coral);
+  background: var(--halo-coral);
 }
-.pl-poster-glow {
-  position: absolute; right: -40px; top: -60px; width: 190px; height: 190px; border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--tr-accent) 22%, transparent), transparent 68%);
-  pointer-events: none;
-}
-.pl-poster-sheen {
-  position: absolute; inset: 0 auto 0 -50%; width: 38%; transform: skewX(-16deg); pointer-events: none;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
-}
+/* A két dekor-csomópont a DOM-ban marad (a lap rajzolja), de anyag nélkül: a lélegző
+   fény és a fém-csillanás a §2.3 tiltólistáján van, a halo pedig maga az atmoszféra
+   (A.2 3. szabály — anyagot ölünk, nem elemet). */
+.pl-poster-glow, .pl-poster-sheen { display: none; }
 .pl-poster-top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+/* §2.2 B: lapos cella-chip pár, sosem akcens-töltésű jelvény a poszter fölött. */
 .pl-phase {
-  position: relative; font-size: 9px; letter-spacing: .14em; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
-  color: var(--text-inverse); background: color-mix(in srgb, var(--tr-accent) 85%, var(--surface-card));
+  position: relative; font-size: 9.5px; font-weight: 700; letter-spacing: .12em;
+  padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  color: var(--mz-cell-coral-ink); background: var(--mz-cell-coral-bg);
 }
-.pl-phase.is-peak { background: linear-gradient(120deg, var(--amber), var(--amber-deep)); }
-.pl-phase.is-deload { color: var(--text-secondary); background: var(--surface-recess); }
+.pl-phase.is-peak { color: var(--mz-cell-gold-ink); background: var(--mz-cell-gold-bg); }
+.pl-phase.is-deload { color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); }
+/* §3.3 cím-típus: display, 700, -.02em. */
 .pl-poster h2 {
-  position: relative; font-family: var(--ff-display); font-size: 29px; font-weight: 300;
-  letter-spacing: -.03em; margin: 14px 0 6px; color: var(--text-primary);
+  position: relative; font-family: var(--ff-display); font-size: 26px; font-weight: 700;
+  letter-spacing: -.02em; margin: 12px 0 6px; color: var(--ink);
 }
-.pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); max-width: 34ch; }
+.pl-poster p { position: relative; margin: 0 0 16px; font-size: 12.5px; line-height: 1.6; color: var(--sub); max-width: 34ch; }
 .pl-poster-foot { position: relative; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-/* The foot pills are near-transparent in the prototype (`#ffffff08`, plan.css:32) — on the
-   poster's own dark ground an opaque `--surface-card` fill turned them into chips that
-   compete with the numeral (mezo-fsz2r Task 2, audit §20.1). Train renders inside
-   `titanDark`, so the literal is safe here. */
+/* A `.tr-pills span` anyaga (a 7a etalon): ház-felület + hajszál-inset, nem fehér fólia. */
 .pl-poster-foot span {
-  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid #ffffff17; background: #ffffff08;
+  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--sub);
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 /* A foot fact that is also a doorway (the Gyakorlatok poster's medal count → the medal
-   vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>` so it can carry its
-   own click handler and accessible name without disturbing the plain-text siblings. */
+   vitrine, mezo-lf3cv fix round 1): same pill, but a real `<button>`. */
 .pl-poster-foot-link {
   font: inherit; font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
-  color: var(--text-secondary); border: 1px solid #ffffff17; background: #ffffff08;
+  color: var(--sub); border: 0; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
 /* — the week numeral + progress ring, sharing the poster's top row — */
 .pl-week { position: relative; display: flex; align-items: baseline; gap: 2px; }
-.pl-week strong { font-family: var(--ff-display); font-size: 48px; font-weight: 200; letter-spacing: -.05em; line-height: 1; color: var(--tr-accent); }
-.pl-week small { font-size: 16px; color: var(--tr-accent); }
-.pl-week i { font-style: normal; font-size: 13px; color: var(--text-tertiary); margin-left: 7px; }
+/* §3.2 3. ütem: EGY nagy számjegy `--ink`-ben; a mértékegység halkan mellette. A Titán
+   változat mindhármat az akcensre festette — három hangsúly egy sorban. */
+.pl-week strong { font-family: var(--ff-display); font-size: 46px; font-weight: 200; letter-spacing: -.04em; line-height: 1; color: var(--ink); }
+.pl-week small { font-size: 18px; font-weight: 300; color: var(--faint); }
+.pl-week i { font-style: normal; font-size: 13px; color: var(--faint); margin-left: 7px; }
 .pl-ring { position: relative; width: 68px; height: 68px; flex: 0 0 auto; }
 .pl-ring svg { width: 68px; height: 68px; transform: rotate(-90deg); }
 .pl-ring circle { fill: none; stroke-width: 5; }
 .pl-ring .t { stroke: var(--surface-recess); }
+/* §4.1: a gyűrű megtartja a geometriáját és a behúzását; a neon `drop-shadow` lekerül (§2.3). */
 .pl-ring .f {
   stroke: var(--tr-accent); stroke-linecap: round; stroke-dasharray: 0 100;
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--tr-accent) 55%, transparent));
 }
 .mz-play .pl-ring .f { animation: pl-arcin .9s cubic-bezier(.22, .9, .25, 1) forwards; animation-delay: var(--d, 150ms); }
 .pl-ring b { position: absolute; inset: 0; display: grid; place-items: center; }
@@ -15019,29 +15030,36 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   position: relative; flex: 1; height: max(8%, var(--h)); border-radius: 7px 7px 4px 4px;
   background: var(--surface-recess); display: block;
 }
-.pl-arc i.is-past { background: color-mix(in srgb, var(--tr-accent) 34%, transparent); }
-.pl-arc i.is-now {
-  background: linear-gradient(color-mix(in srgb, var(--sage) 70%, white), var(--tr-accent));
-  box-shadow: 0 0 16px color-mix(in srgb, var(--tr-accent) 45%, transparent);
-}
+/* Sík kitöltés, izzás nélkül. A pihenőhét megtartja a sraffozását — az ÁLLAPOT, nem bőr. */
+.pl-arc i.is-past { background: color-mix(in srgb, var(--tr-accent) 34%, var(--surface-recess)); }
+.pl-arc i.is-now { background: var(--tr-accent); }
 .pl-arc i.is-deload {
   background: repeating-linear-gradient(135deg,
-    color-mix(in srgb, var(--text-primary) 12%, transparent) 0 4px,
-    color-mix(in srgb, var(--text-primary) 5%, transparent) 4px 8px);
+    rgba(43, 33, 24, .14) 0 4px,
+    rgba(43, 33, 24, .05) 4px 8px);
 }
-.pl-arc i b { position: absolute; left: 0; right: 0; bottom: -16px; text-align: center; font-size: 8.5px; font-weight: 400; color: var(--text-tertiary); }
-.pl-arc i.is-now b { color: var(--tr-accent); }
+.pl-arc i b { position: absolute; left: 0; right: 0; bottom: -16px; text-align: center; font-size: 8.5px; font-weight: 400; color: var(--sub); }
+.pl-arc i.is-now b { color: var(--mz-cell-coral-ink); font-weight: 700; }
+/* §8.6: a heti ív alaptól nő, egyik oszlop a másik után — az érkezés rajzolja meg,
+   nem készen csöppen oda. */
+.mz-play .pl-arc i { transform-origin: bottom; animation: pl-bar-grow .62s cubic-bezier(.22, .9, .25, 1) both; }
+.mz-play .pl-arc i:nth-child(1) { animation-delay: .20s; }
+.mz-play .pl-arc i:nth-child(2) { animation-delay: .28s; }
+.mz-play .pl-arc i:nth-child(3) { animation-delay: .36s; }
+.mz-play .pl-arc i:nth-child(4) { animation-delay: .44s; }
+.mz-play .pl-arc i:nth-child(5) { animation-delay: .52s; }
+.mz-play .pl-arc i:nth-child(n+6) { animation-delay: .60s; }
+@keyframes pl-bar-grow { from { transform: scaleY(0); } to { transform: none; } }
+/* A nagy heti szám egy ütemmel a poszter után emelkedik be. */
+.mz-play .pl-week { animation: mz-num-in .55s cubic-bezier(.22, .9, .32, 1.15) both; animation-delay: .18s; }
 .pl-poster .pl-arc { margin-bottom: 18px; }
 
-@media (prefers-reduced-motion: no-preference) {
-  .pl-poster-sheen { animation: pl-sheen 6s ease-in-out 1s infinite; }
-  .pl-poster-glow { animation: pl-breathe 5s ease-in-out infinite; }
-}
 @media (prefers-reduced-motion: reduce) {
   .mz-play .pl-ring .f { animation: none; stroke-dasharray: var(--p, 0) 100; }
+  .mz-play .pl-arc i, .mz-play .pl-day-bars i { animation: none; transform: none; }
+  .mz-play .pl-week { animation: none; transform: none; opacity: 1; }
+  .mz-play .pl-dhero-art i { animation: none; rotate: revert; }
 }
-@keyframes pl-sheen { 0%, 70% { left: -50%; } 100% { left: 130%; } }
-@keyframes pl-breathe { 0%, 100% { opacity: .75; scale: 1; } 50% { opacity: 1; scale: 1.1; } }
 
 /* — one day per row: full name, MA chip, boxed facts, muscle bars — */
 /* The prototype's day list pays its own 20px gutter inside a container that has none
@@ -15050,44 +15068,59 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `margin-inline` cancel — the same trick `.pl-poster`/`.pl-dhero` already use here — lets
    the list keep the prototype's OWN declaration and land its cards exactly 20px from the
    screen edge, which is what the prototype renders (mezo-fsz2r Task 2). */
-.pl-days { display: grid; gap: 8px; padding: 0 20px; margin-inline: calc(-1 * var(--screen-gutter)); }
-/* Translucent in the prototype (`#ffffff08`→`#ffffff03`, plan.css:177) and unshadowed: the
-   day rows are quiet washes on the dark ground, not lifted cards (audit §20.1/§20.2). */
+/* A mosott csempének levegő kell: a 8px-es Titán listaköz a §3.1 12–16px-es sávjába megy. */
+.pl-days { display: grid; gap: 12px; padding: 0 20px; margin-inline: calc(-1 * var(--screen-gutter)); }
+/* §2.2 A — a nap egy mosott csempe: korall mosás, hajszálkeret, hue-színezett emelés és a
+   fehér belső felső él. A Titán változat két fehér fólia volt a sötét alapon. */
 .pl-day {
   display: grid; gap: 12px; width: 100%; padding: 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid #ffffff10; border-radius: 18px;
-  background: linear-gradient(150deg, #ffffff08, #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
 }
 .pl-day-head { display: flex; align-items: center; gap: 9px; }
-.pl-day-head strong { font-size: 16px; font-weight: 500; color: var(--text-primary); }
-.pl-day-head b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-day-head strong { font-size: 16px; font-weight: 600; color: var(--ink); }
+.pl-day-head b { margin-left: auto; color: var(--faint); font-size: 15px; font-weight: 400; }
+/* A „MA" marad az EGYETLEN hangos jel a csempén — tömör akcens-chip, a §4.2 most-jelölő
+   idiómája. Egy `--mz-cell-coral` pár eltűnne a csempe saját korall mosásában. */
 .pl-today {
-  font-size: 9px; letter-spacing: .12em; font-weight: 700; padding: 3px 7px; border-radius: 999px;
-  color: var(--text-inverse); background: color-mix(in srgb, var(--tr-accent, var(--tag-gym)) 85%, var(--surface-card));
+  font-size: 9px; letter-spacing: .12em; font-weight: 800; padding: 3px 7px; border-radius: 999px;
+  color: #fff; background: var(--dv-coral);
 }
 .pl-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+/* §3.1 ikon-pajzs anyag: ház-felület + hajszál-inset. */
 .pl-day-facts i {
   display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-style: normal; min-width: 0;
-  border: 1px solid #ffffff0d; border-radius: 12px; background: var(--surface-recess);
+  border: 0; border-radius: 14px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .pl-day-facts .icon { width: 22px; height: 22px; flex: 0 0 auto; }
-.pl-day-facts b { font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
-.pl-day-facts small { font-size: 9.5px; color: var(--text-tertiary); }
+.pl-day-facts b { font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.pl-day-facts small { font-size: 9.5px; color: var(--sub); }
+/* §4.4 „most" — korall GYŰRŰ, pontosan a 7a etalon `.tr-day.is-live` mozdulata.
+   Szándékosan NEM a §4.4 pulzus: a csempék már viszik a `.rise` belépőt, és egy második
+   `animation` ugyanazon az elemen csendben kioltja azt (a csempe akkor sosem úszik be,
+   és 0 opacitáson ragad — a before/after laborban mérve). */
 .pl-day.is-now {
-  border-color: color-mix(in srgb, var(--tag-gym) 46%, transparent);
-  background:
-    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--tag-gym) 16%, transparent), transparent 62%),
-    linear-gradient(150deg, #ffffff0a, #ffffff03);
+  border: 1px solid var(--dv-coral);
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
 }
+/* §2.2 B: a nap-címke chip, nem keretes doboz. */
 .pl-day-tag {
-  display: inline-grid; place-items: center; height: 28px; padding: 0 11px; border-radius: 10px;
-  font-size: 11px; color: var(--text-secondary); border: 1px solid #ffffff14; background: var(--surface-recess);
+  display: inline-grid; place-items: center; padding: 5px 11px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; color: var(--sub);
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.pl-day.is-now .pl-day-tag { color: var(--text-primary); border-color: color-mix(in srgb, var(--tag-gym) 40%, transparent); }
 .pl-day-bars { display: flex; gap: 4px; }
-.pl-day-bars i { height: 5px; width: calc(var(--w) * .34); min-width: 12px; border-radius: 999px; background: var(--mus-color); }
-.pl-day.is-rest { display: flex; align-items: center; gap: 9px; opacity: .45; cursor: default; padding: 11px 14px; }
-.pl-day-rest { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--text-secondary); }
+.pl-day-bars i { height: 5px; width: calc(var(--w) * .34); min-width: 12px; border-radius: 999px; background: var(--mus-color); transform-origin: left; }
+/* A nap izomsávjai a saját csempéjükkel együtt rajzolódnak be (§8.6). */
+.mz-play .pl-day-bars i { animation: ld-fill .55s cubic-bezier(.22, .9, .25, 1) both; animation-delay: .35s; }
+/* §4.4 „szabad/üres": szaggatott semleges keret — SOSEM 45%-ra halványított sor. A
+   pihenőnap nem kudarc, és a régi világ nem opacitással mond „kevésbé fontosat". */
+.pl-day.is-rest {
+  display: flex; align-items: center; gap: 9px; cursor: default; padding: 11px 14px;
+  border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; box-shadow: none;
+}
+.pl-day-rest { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--sub); }
 .pl-day-rest .icon { width: 22px; height: 22px; }
 
 /* — the two destination tiles (muscle-detail / plans doorways) — */
@@ -15097,58 +15130,60 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   padding: 22px 20px 10px; margin-inline: calc(-1 * var(--screen-gutter));
 }
-/* A tile, not a card: the prototype paints a domain wash over a 4%→1% white film
-   (plan.css:217), and the port's opaque `--surface-card` body boxed it (audit §20.1). */
+/* §2.2 A mosott csempe a saját hue-jában — a hue itt JELENTÉST visz (melyik ajtó hová
+   nyílik), ezért marad (A.2 1. szabály). */
 .pl-dest {
   position: relative; overflow: hidden; display: grid; justify-items: start; gap: 3px;
   padding: 16px 14px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid color-mix(in srgb, var(--wash, var(--tag-gym)) 30%, #ffffff10); border-radius: 22px;
-  background:
-    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--wash, var(--tag-gym)) 22%, transparent), transparent 64%),
-    linear-gradient(155deg, #ffffff0a, #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky);
 }
-.pl-dest.is-muscle { --wash: var(--sky); }
-.pl-dest.is-plans { --wash: var(--lav); }
-.pl-dest.is-done { --wash: var(--amber); }
+.pl-dest.is-muscle { background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.pl-dest.is-plans { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.pl-dest.is-done { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
 .pl-dest-art { margin-bottom: 7px; }
 .pl-dest-art .icon { width: 40px; height: 40px; }
-.pl-dest strong { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text-primary); }
-.pl-dest small { font-size: 10.5px; color: var(--text-secondary); line-height: 1.35; }
+.pl-dest strong { font-size: 14px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.pl-dest small { font-size: 10.5px; color: var(--sub); line-height: 1.35; }
+/* A sarok-jel a csempe SAJÁT cella-párja (§2.2 B), nem inverz tinta akcens-korongon. */
 .pl-dest b {
   position: absolute; top: 13px; right: 13px; width: 26px; height: 26px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 13px; color: var(--text-inverse);
-  background: color-mix(in srgb, var(--wash, var(--tag-gym)) 80%, var(--surface-card));
+  display: grid; place-items: center; font-size: 13px;
+  color: var(--mz-cell-sky-ink); background: var(--mz-cell-sky-bg);
 }
+.pl-dest.is-plans b { color: var(--mz-cell-lav-ink); background: var(--mz-cell-lav-bg); }
+.pl-dest.is-done b { color: var(--mz-cell-gold-ink); background: var(--mz-cell-gold-bg); }
 
 /* — the day, as a poster: eyebrow, one spot graphic, one dominant numeral —
    Like `.pl-poster`: no shadow, no border-bottom, and the prototype's own
    `22px 20px 26px` (plan.css:256) — see the gutter note there (mezo-fsz2r Task 2). The
    `.pl-lhero:has(> .mz-backbtn)` 58px padding-top override still applies on top of it,
    mirroring the prototype's own `:has(> .pl-back.is-inhero)` rule. */
+/* A nap/izom hőse ugyanazt a mozdulatot teszi, mint a poszter: halo-sáv (§2.2 C), a
+   nap SAJÁT izomszínéből kikeverve, hogy a domén hue-ja megmaradjon. */
 .pl-dhero {
   position: relative; overflow: hidden; min-height: 220px;
   margin: 4px 0 14px; margin-inline: calc(-1 * var(--screen-gutter));
-  padding: 22px 20px 26px;
+  padding: 20px 20px 26px;
   border: 0; border-radius: 0;
-  background:
-    radial-gradient(120% 90% at 85% 6%, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 24%, transparent), transparent 64%),
-    linear-gradient(155deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 13%, var(--surface-card)), var(--surface-card) 68%);
+  background: radial-gradient(ellipse at 50% 24%,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 30%, transparent) 0%,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 9%, transparent) 32%,
+    transparent 64%);
 }
-.pl-dhero-wash {
-  position: absolute; right: -50px; top: -60px; width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 26%, transparent), transparent 66%);
-}
+.pl-dhero-wash { display: none; }
 .pl-dhero-art {
   position: absolute; right: 10px; top: 26px; width: 128px; height: 128px; display: grid; place-items: center;
   pointer-events: none;
 }
+/* Meleg kontakt-árnyék a rajz alatt (nem akcens-glória az ikonon, §2.3). */
 .pl-dhero-art .icon {
   width: 108px; height: 108px; position: relative; z-index: 1;
-  filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 40%, transparent));
+  filter: drop-shadow(0 10px 20px rgba(43, 33, 24, 0.18));
 }
 .pl-dhero-art i {
   position: absolute; width: 118px; height: 118px; border-radius: 34px;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 30%, transparent); rotate: 28deg;
+  border: 1px solid color-mix(in srgb, var(--mus-color, var(--dv-coral)) 26%, transparent); rotate: 28deg;
 }
 .pl-dhero-art i:nth-of-type(2) { width: 138px; height: 138px; rotate: 56deg; opacity: .55; }
 .pl-dhero-art i:nth-of-type(3) { width: 158px; height: 158px; rotate: 84deg; opacity: .25; }
@@ -15164,21 +15199,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    in for the prototype's `#fff` (mezo-fsz2r Task 2). */
 .pl-dhero-number strong {
   font-family: var(--ff-display); font-size: 58px; font-weight: 200; letter-spacing: -.05em; line-height: 1;
-  background: linear-gradient(var(--text-primary), color-mix(in srgb, var(--mus-color, var(--tag-gym)) 80%, var(--text-primary)));
+  background: linear-gradient(var(--ink), color-mix(in srgb, var(--mus-color, var(--dv-coral)) 80%, var(--ink)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .pl-dhero-number small { font-size: 13px; color: var(--text-secondary); }
 .pl-dhero-pills { position: relative; display: flex; flex-wrap: wrap; gap: 6px; }
-/* Same near-transparent pill as `.pl-poster-foot span` (plan.css:300). */
+/* Same pill material as `.pl-poster-foot span`. */
 .pl-dhero-pills span {
-  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--text-secondary);
-  border: 1px solid #ffffff17; background: #ffffff08;
+  font-size: 10.5px; padding: 5px 10px; border-radius: 999px; color: var(--sub);
+  border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
 /* — the body-map slot the day/muscle heroes carry — */
-.pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 40%, transparent)); }
+.pl-dhero-art .body-map { position: relative; z-index: 1; filter: drop-shadow(0 10px 20px rgba(43, 33, 24, 0.18)); }
 .pl-dhero-art.is-wide { width: 128px; right: 8px; }
-.pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--mus-color, var(--tag-gym)) 36%, transparent)); }
+.pl-dhero-art.is-wide .body-map { filter: drop-shadow(0 10px 18px rgba(43, 33, 24, 0.16)); }
 
 /* — a pill that's a graphic, not a bare percent: a mini bar + words — */
 .pl-dhero-pills .pl-share { display: inline-flex; align-items: center; gap: 6px; }
@@ -15188,21 +15223,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .pl-dhero-pills .pl-share i b {
   display: block; height: 100%; width: var(--w); border-radius: 999px;
-  background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 85%, transparent);
+  background: color-mix(in srgb, var(--mus-color, var(--dv-coral)) 85%, transparent);
 }
 
+/* §8.6: egy lendület, aztán nyugalom. A keretek EGYET fordulnak érkezéskor (a Titán
+   verzió 22/30/40 másodperces végtelen forgást vitt), a rajz pedig kipattan. */
 @media (prefers-reduced-motion: no-preference) {
-  .pl-dhero-wash { animation: pl-breathe 5.5s ease-in-out infinite; }
   .pl-dhero-art .icon, .pl-dhero-art .body-map { animation: pl-pop .8s cubic-bezier(.2, .9, .25, 1); }
-  .pl-dhero-art i { animation: pl-ring-spin 22s linear infinite; }
-  .pl-dhero-art i:nth-of-type(2) { animation-duration: 30s; animation-direction: reverse; }
-  .pl-dhero-art i:nth-of-type(3) { animation-duration: 40s; }
+  .pl-dhero-art i { animation: pl-once-turn 1.6s cubic-bezier(.22, .9, .25, 1) both; }
+  .pl-dhero-art i:nth-of-type(2) { animation-duration: 1.9s; animation-direction: reverse; }
+  .pl-dhero-art i:nth-of-type(3) { animation-duration: 2.2s; }
 }
 @keyframes pl-pop { from { scale: .82; opacity: 0; } }
-@keyframes pl-ring-spin { to { rotate: 388deg; } }
+@keyframes pl-once-turn { from { rotate: -34deg; opacity: 0; } }
 
 /* — a section header, shared by the muscle breakdown and the exercise cells — */
-.pl-h3 { font-size: 13px; font-weight: 500; letter-spacing: .02em; color: var(--text-tertiary); margin: 26px 0 10px; display: flex; align-items: center; gap: 7px; }
+.pl-h3 { font-size: 14px; font-weight: 700; letter-spacing: .02em; color: var(--ink); margin: 26px 0 10px; display: flex; align-items: center; gap: 7px; }
 
 /* — the per-muscle breakdown: icon, name, a bar to the shared 8-set marker, count — */
 .pl-mrows { display: grid; gap: 6px; }
@@ -15214,72 +15250,85 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-mrow {
   display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 10px; row-gap: 4px;
   padding: 9px 12px;
-  border: 1px solid color-mix(in srgb, var(--mus-color, var(--tag-gym)) 16%, #ffffff0c); border-radius: 14px;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--mus-color, var(--tag-gym)) 8%, #ffffff05), #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 15px;
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 14%, var(--surface-card)),
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 4%, var(--surface-page)));
 }
-.pl-mrow-name { font-size: 12.5px; color: var(--text-secondary); }
+.pl-mrow-name { font-size: 12.5px; color: var(--sub); }
 .pl-mrow-bar { grid-column: 2; position: relative; height: 5px; border-radius: 999px; background: var(--surface-recess); }
 .pl-mrow-bar i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; background: var(--mus-color); transition: width .3s ease; }
-.pl-mrow-bar u { position: absolute; top: -3px; bottom: -3px; left: var(--at); width: 2px; background: color-mix(in srgb, var(--text-primary) 24%, transparent); }
-.pl-mrow-count { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--mus-color) 78%, var(--text-primary)); white-space: nowrap; }
-.pl-mrow-count i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
+.pl-mrow-bar u { position: absolute; top: -3px; bottom: -3px; left: var(--at); width: 2px; background: rgba(43, 33, 24, 0.24); }
+.pl-mrow-count { font-size: 17px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.pl-mrow-count i { font-style: normal; font-size: 9.5px; color: var(--sub); margin-left: 4px; }
 
 /* — the exercise view cells: a header line, then a 4-cell prescription grid — */
 .pl-exs { display: grid; gap: 9px; }
 .pl-ex {
+  --tile-lift: 0 17px 31px -17px color-mix(in srgb, var(--ex-color, var(--dv-coral)) 40%, transparent),
+    0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   position: relative; overflow: hidden; display: grid; grid-template-columns: 22px 38px 1fr auto;
   align-items: center; column-gap: 10px; row-gap: 12px; padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--ex-color, var(--tag-gym)) 18%, #ffffff0c); border-radius: 16px;
-  background:
-    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--ex-color, var(--tag-gym)) 13%, transparent), transparent 58%),
-    linear-gradient(155deg, #ffffff08, #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 18px;
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--ex-color, var(--dv-coral)) 15%, var(--surface-card)),
+    color-mix(in srgb, var(--ex-color, var(--dv-coral)) 4%, var(--surface-page)));
+  box-shadow: var(--tile-lift);
 }
-.pl-ex-index { font-size: 11px; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 65%, var(--text-primary)); }
+.pl-ex-index { font-size: 11px; color: var(--sub); }
 .pl-ex-art .icon { width: 38px; height: 38px; }
 .pl-ex-copy { min-width: 0; }
-.pl-ex-copy strong { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
-.pl-ex-copy small { display: block; font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; }
+.pl-ex-copy strong { display: block; font-size: 15px; font-weight: 700; color: var(--ink); }
+.pl-ex-copy small { display: block; font-size: 10.5px; color: var(--sub); margin-top: 2px; }
 .pl-ex-grid { grid-column: 1 / -1; display: grid; grid-template-columns: 1.55fr 1fr 1fr 1fr; gap: 6px; }
 .pl-ex-grid span {
-  padding: 9px 6px; text-align: center; border: 1px solid #ffffff0f; border-radius: 12px; background: var(--surface-recess);
+  padding: 9px 6px; text-align: center; border: 0; border-radius: 14px;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.pl-ex-grid b { display: block; font-size: 15px; font-weight: 500; color: var(--text-primary); }
-.pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: var(--text-tertiary); margin-top: 4px; }
-.pl-ex-grid .is-main { border-color: transparent; background: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 80%, var(--surface-card)); }
-.pl-ex-grid .is-main b { color: var(--text-inverse); font-weight: 700; }
-.pl-ex-grid .is-main i { color: color-mix(in srgb, var(--text-inverse) 55%, transparent); }
+.pl-ex-grid b { display: block; font-size: 15px; font-weight: 600; color: var(--ink); }
+.pl-ex-grid i { display: block; font-style: normal; font-size: 8px; letter-spacing: .06em; color: var(--sub); margin-top: 4px; }
+/* A vezércella az EGY hangos cella a rácsban — a §2.2 B cella-pár a gyakorlat hue-jából. */
+.pl-ex-grid .is-main {
+  box-shadow: none;
+  background: color-mix(in srgb, var(--ex-color, var(--dv-coral)) 22%, var(--surface-1));
+}
+.pl-ex-grid .is-main b { color: var(--ink); font-weight: 800; }
+.pl-ex-grid .is-main i { color: var(--sub); }
 .pl-ex.is-link { grid-template-columns: 34px 34px 1fr auto; cursor: pointer; }
-.pl-ex-sets { font-size: 17px; font-weight: 400; color: color-mix(in srgb, var(--ex-color, var(--tag-gym)) 78%, var(--text-primary)); white-space: nowrap; }
-.pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--text-tertiary); margin-left: 4px; }
+.pl-ex-sets { font-size: 17px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.pl-ex-sets i { font-style: normal; font-size: 9.5px; color: var(--sub); margin-left: 4px; }
 
 /* — the day page's tail (Train parity P1 Task 4, mezo-e1ii9): the prototype's dashed
      `.pl-add` (plan.css:362) end-of-screen CTA, plus the quiet link to the day's own
      editor route — the day page itself no longer carries an editor. — */
 .pl-dayfoot { display: grid; gap: 8px; margin-top: 12px; }
+/* §4.4 „szabad/üres": szaggatott semleges keret, árnyék nélkül. */
 .pl-add {
-  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--text-secondary);
-  border: 1px dashed #ffffff20; border-radius: 18px; background: var(--surface-recess);
+  display: block; width: 100%; padding: 15px; cursor: pointer; font-size: 13px; color: var(--sub);
+  border: 1.2px dashed rgba(43, 33, 24, 0.2); border-radius: 18px; background: none;
 }
 .pl-editlink {
-  display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--text-tertiary);
+  display: block; width: 100%; padding: 4px; cursor: pointer; font-size: 12px; color: var(--sub);
   border: 0; background: none; text-align: center;
 }
 
 /* — the ranked list: name, number, bar, verdict — */
 .pl-list { display: grid; gap: 7px; }
+/* Sor, nem csempe: ház-felület + hajszál-inset (§3.1 sor-anyag). */
 .pl-item {
   display: grid; grid-template-columns: 32px 1fr auto 14px; align-items: center; column-gap: 11px; row-gap: 6px;
   width: 100%; padding: 13px 14px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid #ffffff0f; border-radius: 16px; background: #ffffff05;
+  border: 0; border-radius: 16px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .pl-item-art .icon { width: 32px; height: 32px; }
-.pl-item-name { font-size: 15px; font-weight: 500; color: var(--text-primary); }
-.pl-item-count { font-size: 20px; font-weight: 400; color: var(--mus-color, var(--text-primary)); white-space: nowrap; }
-.pl-item-count i { font-style: normal; font-size: 10px; color: var(--text-tertiary); margin-left: 4px; }
+.pl-item-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+.pl-item-count { font-size: 20px; font-weight: 600; color: var(--mus-color, var(--ink)); white-space: nowrap; }
+.pl-item-count i { font-style: normal; font-size: 10px; color: var(--sub); margin-left: 4px; }
 .pl-item-bar { grid-column: 2 / 4; height: 6px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .pl-item-bar i { display: block; height: 100%; width: var(--w); border-radius: 999px; background: var(--mus-color); transition: width .3s ease; }
-.pl-item-say { grid-column: 2 / 4; font-size: 12px; color: var(--text-secondary); }
-.pl-item > b { grid-row: 1 / -1; grid-column: 4; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-item-say { grid-column: 2 / 4; font-size: 12px; color: var(--sub); }
+.pl-item > b { grid-row: 1 / -1; grid-column: 4; color: var(--faint); font-size: 15px; font-weight: 400; }
 .pl-item.is-flat { grid-template-columns: 1fr auto 14px; }
 .pl-item.is-flat .pl-item-say { grid-column: 1 / 2; }
 .pl-item.is-flat .pl-item-count { grid-column: 2; grid-row: 1 / -1; }
@@ -15287,31 +15336,31 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* — the muscle gauge: current → ceiling, MEV/MAV/MRV landmarks, a labelled pin — */
 .pl-scale-wrap { padding-top: 20px; }
 .pl-scale-bar { position: relative; display: block; height: 16px; border-radius: 999px; background: var(--surface-recess); }
+/* Sík doménszín, neon szórás nélkül (§2.3). */
 .pl-scale-bar .fill {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; transition: width .3s ease;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 55%, transparent), var(--mus-color));
-  box-shadow: 0 0 16px color-mix(in srgb, var(--mus-color) 40%, transparent);
+  background: var(--mus-color);
 }
-.pl-scale-bar .mark { position: absolute; top: -4px; bottom: -4px; left: var(--at); width: 2px; background: color-mix(in srgb, var(--text-primary) 24%, transparent); }
-.pl-scale-bar .mark.is-top { background: var(--text-primary); opacity: .8; }
+.pl-scale-bar .mark { position: absolute; top: -4px; bottom: -4px; left: var(--at); width: 2px; background: rgba(43, 33, 24, 0.24); }
+.pl-scale-bar .mark.is-top { background: var(--ink); opacity: .8; }
 /* The pin's own left anchor is `--at`; `--nudge` (a translate-X override, e.g. `-100%`/`0%`)
    pulls it back onto the track when `--at` sits near either edge (mirrors the prototype's
    `translate: var(--nudge, -50%) 0` clamp — component-supplied per pin, not a CSS default). */
 .pl-scale-bar .pin {
   position: absolute; bottom: 22px; left: var(--at); translate: var(--nudge, -50%) 0; padding: 4px 10px; border-radius: 999px;
-  font-size: 13px; font-weight: 600; color: var(--text-inverse); white-space: nowrap;
-  background: color-mix(in srgb, var(--mus-color) 85%, var(--text-inverse));
+  font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap;
+  background: var(--mus-color);
 }
 .pl-scale-bar .pin::after {
   content: ''; position: absolute; left: calc(50% - (var(--nudge, -50%) + 50%)); bottom: -4px; translate: -50% 0; width: 8px; height: 8px; rotate: 45deg;
-  background: color-mix(in srgb, var(--mus-color) 85%, var(--text-inverse));
+  background: var(--mus-color);
 }
 .pl-scale-legend { position: relative; display: block; height: 34px; margin-top: 9px; }
 .pl-scale-legend i {
   position: absolute; left: var(--at); translate: var(--nudge, -50%) 0; text-align: center; font-style: normal;
-  font-size: 13px; font-weight: 500; color: var(--text-secondary); white-space: nowrap;
+  font-size: 13px; font-weight: 600; color: var(--sub); white-space: nowrap;
 }
-.pl-scale-legend i small { display: block; font-size: 9px; color: var(--text-tertiary); margin-top: 2px; }
+.pl-scale-legend i small { display: block; font-size: 9px; color: var(--faint); margin-top: 2px; }
 
 /* — versus bars: this week against last week, per muscle — */
 .pl-versus-title { margin: 0 0 9px; font-size: 11.5px; color: var(--text-tertiary); }
@@ -15319,10 +15368,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-versus-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 11px; }
 .pl-versus-row > span:first-child { font-size: 11px; color: var(--text-tertiary); }
 .pl-versus-bar { height: 10px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
-.pl-versus-bar i { display: block; height: 100%; width: var(--w); border-radius: 999px; background: color-mix(in srgb, var(--text-primary) 16%, transparent); transition: width .3s ease; }
+.pl-versus-bar i { display: block; height: 100%; width: var(--w); border-radius: 999px; background: rgba(43, 33, 24, 0.16); transition: width .3s ease; }
 .pl-versus-row.is-now .pl-versus-bar i { background: var(--mus-color); }
-.pl-versus-row b { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
-.pl-versus-row.is-now b { color: color-mix(in srgb, var(--mus-color) 78%, var(--text-primary)); }
+.pl-versus-row b { font-size: 12.5px; font-weight: 600; color: var(--sub); }
+.pl-versus-row.is-now b { color: var(--ink); }
 
 /* — the sentence IS the page; the numbers only back it up (T9 Task 5, plan.css :111-113).
      Ported onto the house ink tokens — the prototype's #eef2e6/#ffffff8c hexes are
@@ -15331,27 +15380,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
      ABOVE the hero's absolutely-positioned wash/body-map, never under it. — */
 .pl-say {
   position: relative; margin: 10px 0 0; max-width: 88%;
-  font-size: 17px; line-height: 1.45; font-weight: 400; letter-spacing: -.01em; color: var(--text-primary);
+  font-size: 17px; line-height: 1.45; font-weight: 400; letter-spacing: -.01em; color: var(--ink);
 }
-.pl-sub-say { position: relative; margin: 8px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); }
-.pl-foot-say { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-tertiary); }
+.pl-sub-say { position: relative; margin: 8px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--sub); }
+.pl-foot-say { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--sub); }
 
 /* — the muscle page's three plain facts (plan.css :402-405) — */
 .pl-mstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
 .pl-mstats span {
-  padding: 12px 4px; text-align: center; border: 1px solid #ffffff0f;
-  border-radius: 15px; background: var(--surface-recess);
+  padding: 12px 4px; text-align: center; border: 0;
+  border-radius: 15px; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .pl-mstats strong {
-  display: block; font-size: 25px; font-weight: 300; letter-spacing: -.03em;
-  color: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 76%, var(--text-primary));
+  display: block; font-size: 25px; font-weight: 200; letter-spacing: -.03em; color: var(--ink);
 }
-.pl-mstats small { display: block; font-size: 9px; color: var(--text-tertiary); margin-top: 4px; }
+.pl-mstats small { display: block; font-size: 9px; color: var(--sub); margin-top: 4px; }
 
 /* — the per-week set counts under the arc (plan.css :433-435) — */
 .pl-weekvals { display: flex; gap: 6px; margin: 4px 0 0; }
-.pl-weekvals i { flex: 1; text-align: center; font-style: normal; font-size: 11px; color: var(--text-tertiary); }
-.pl-weekvals i.is-now { color: var(--mus-color, var(--tag-gym)); font-weight: 600; }
+.pl-weekvals i { flex: 1; text-align: center; font-style: normal; font-size: 11px; color: var(--sub); }
+.pl-weekvals i.is-now { color: var(--mus-color, var(--mz-cell-coral-ink)); font-weight: 700; }
 
 /* ── T10 · terv library (mezo-88iwa.11) ────────────────────────────────────
    The library families the T9 port stopped short of — the library hero's ring/
@@ -15370,16 +15418,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    port the rest of the wizard (a later slice's job — only the template
    detail reuses the load-bar grammar here).
 
-   Same token convention as the T9 preamble above: `var(--domain-color)` →
-   the section's existing `var(--tag-gym)` (used directly, not via `--tr-
-   accent`, since library cards live outside `.pl-poster`'s scope where that
-   custom property is set), the prototype's dark #ffffffXX inks/surfaces →
-   the house `--text-*`/`--surface-*`/`--border-subtle` tokens, `var(--mus-
-   color)` kept as the existing inline custom property. The "start something
-   new" CTA's lavender/sky wash uses the house `--lav`/`--sky` tokens (the
-   same pair `--mz-goal-hero-segment` already mixes, :572); its "from a
-   closed run" stamp variant uses `--sage`, mirroring `.pl-dest.is-done`'s
-   `--amber` above (:14910). */
+   Same convention as the re-dressed T9 preamble above (mezo-ju4j6.12):
+   `var(--domain-color)` → `var(--dv-coral)`, minden `#ffffffXX` fólia →
+   `--mz-wash-*` mosott csempe vagy `--surface-1` + hajszál-inset,
+   `var(--mus-color)` marad a meglévő inline custom property. A „kezdj
+   valami újat" CTA a ház `--lav`, a „lezárt futamból" bélyeg a `--sage`
+   mosását viseli — a hue ott JELENTÉST visz, nem bőr. */
 
 .pl-lhero { min-height: 0; }
 /* Option A back pill (T10 Task 2, mezo-88iwa.11): the „vissza" pill lives INSIDE the
@@ -15390,20 +15434,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    other `.pl-lhero` variant (the slim list heroes) untouched. */
 .pl-lhero > .mz-backbtn {
   position: absolute; left: 14px; top: 14px; z-index: 2;
-  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .pl-lhero:has(> .mz-backbtn) { padding-top: 58px; }
 .pl-lhero .pl-poster-foot { position: relative; margin-top: 12px; }
 .pl-lhero-art { position: absolute; right: 6px; top: 14px; width: 96px; height: 96px; pointer-events: none; }
-.pl-lhero-art .icon { position: absolute; inset: 18px; width: 60px; height: 60px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4)); }
+/* Meleg kontakt-árnyék, nem fekete: a fekete a világos lapon lyukat üt. */
+.pl-lhero-art .icon { position: absolute; inset: 18px; width: 60px; height: 60px; filter: drop-shadow(0 10px 18px rgba(43, 33, 24, 0.18)); }
+/* §8.6: EGY fordulat érkezéskor, nem végtelen `pl-spin`. */
 .pl-lhero-art i {
-  position: absolute; inset: 0; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--mus-color) 38%, transparent);
-  animation: pl-spin 26s linear infinite;
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--mus-color, var(--dv-coral)) 30%, transparent);
+  animation: pl-once-turn 1.6s cubic-bezier(.22, .9, .25, 1) both;
 }
-.pl-lhero-art i:nth-of-type(2) { inset: 9px; rotate: 58deg; opacity: .55; animation-duration: 19s; animation-direction: reverse; }
+.pl-lhero-art i:nth-of-type(2) { inset: 9px; rotate: 58deg; opacity: .5; animation-duration: 1.9s; animation-direction: reverse; }
 .pl-lhero-map { position: absolute; right: 2px; top: 10px; pointer-events: none; }
-.pl-lhero-body { width: 104px; height: 104px; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4)); }
+.pl-lhero-body { width: 104px; height: 104px; filter: drop-shadow(0 10px 18px rgba(43, 33, 24, 0.18)); }
 .pl-lhero-stars { position: relative; margin: 4px 0 10px; }
 .pl-lhero-stars .icon { width: 30px; height: 30px; }
 .pl-lhero.is-closed h2 { margin-bottom: 2px; }
@@ -15423,37 +15469,39 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-stars i.is-half .icon { opacity: .45; filter: grayscale(.4); }
 .pl-stars i.is-lit .icon { opacity: 1; filter: none; }
 
-@keyframes pl-spin { to { rotate: 360deg; } }
-@media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pl-lhero-art i { animation: none; rotate: revert; } }
 
 
-/* one card grammar for the running, queued, template and closed rows */
+/* one card grammar for the running, queued, template and closed rows — a QUIET row by
+   default (ház-felület + hajszál-inset), so the ONE running block can be the loud one. */
 .pl-lib-card {
-  display: grid; gap: 10px; width: 100%; margin: 0 0 8px; padding: 13px 14px; cursor: pointer; text-align: left;
-  border: 1px solid #ffffff12; border-radius: 20px;
-  background: linear-gradient(150deg, #ffffff09, #ffffff03);
+  display: grid; gap: 10px; width: 100%; margin: 0 0 12px; padding: 13px 14px; cursor: pointer; text-align: left;
+  border: 0; border-radius: 20px;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 /* The running run is a DOMAIN WASH over the same film, one layer, no radial — the port
    added a radial and an opaque body (plan.css:484, audit §20.1; mezo-fsz2r Task 2). */
+/* A futó blokk az EGYETLEN mosott csempe a listában (§2.2 A) — egy pillantással
+   megkülönböztethető a sorban álló és a lezárt futamoktól. */
 .pl-lib-card.is-now {
-  border-color: color-mix(in srgb, var(--tag-gym) 34%, transparent);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tag-gym) 13%, transparent), #ffffff03);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
 }
 .pl-lib-card.is-now .pl-arc { height: 44px; margin: 0 0 14px; }
 .pl-lib-card.is-open { cursor: default; }
-.pl-lib-card.is-blank { border-style: dashed; border-color: var(--border-subtle); }
+.pl-lib-card.is-blank { border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; box-shadow: none; }
 .pl-lib-head { display: flex; align-items: baseline; gap: 9px; }
-.pl-lib-head strong { font-size: 15.5px; font-weight: 500; color: var(--text-primary); }
-.pl-lib-head em { font-style: normal; font-size: 11px; color: var(--text-tertiary); }
-.pl-lib-head b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; font-weight: 400; }
+.pl-lib-head strong { font-size: 15.5px; font-weight: 700; color: var(--ink); }
+.pl-lib-head em { font-style: normal; font-size: 11px; color: var(--sub); }
+.pl-lib-head b { margin-left: auto; color: var(--faint); font-size: 15px; font-weight: 400; }
 .pl-lib-card .pl-day-facts { min-width: 0; }
 .pl-lib-card .pl-day-facts i { min-width: 0; }
 .pl-lib-card .pl-day-facts b.is-word { font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pl-lib-note { font-size: 10.5px; color: var(--text-tertiary); }
+.pl-lib-note { font-size: 10.5px; color: var(--sub); }
 .pl-lib-mus { display: flex; flex-wrap: wrap; gap: 4px; }
 .pl-lib-mus i {
   display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px;
-  background: color-mix(in srgb, var(--mus-color) 12%, transparent);
+  background: color-mix(in srgb, var(--mus-color, var(--dv-coral)) 14%, var(--surface-1));
 }
 .pl-lib-mus .icon { width: 21px; height: 21px; }
 .pl-lib-closed-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -15468,62 +15516,61 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
   border-top: 1px solid var(--border-subtle); padding-top: 9px;
 }
+/* §4.4 „most": korall gyűrű — ugyanaz a mozdulat, amit a mai nap csempéje tesz. */
 .pl-lib-card.is-picked {
-  border-color: color-mix(in srgb, var(--coral) 45%, transparent);
-  background:
-    radial-gradient(120% 130% at 0% 50%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 62%),
-    linear-gradient(150deg, var(--surface-card), color-mix(in srgb, var(--surface-card) 60%, var(--surface-recess)));
+  border: 1px solid var(--dv-coral);
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
 }
-.pl-lib-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+.pl-lib-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--sub); }
 .pl-lib-meta .icon { width: 16px; height: 16px; }
 
 /* the one loud button: making something new */
 .pl-lib-new {
   display: flex; align-items: center; gap: 12px; width: 100%; margin: 18px 0 4px; padding: 14px 16px; cursor: pointer;
-  text-align: left; border: 1px solid color-mix(in srgb, var(--lav) 24%, transparent); border-radius: 22px;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--lav) 13%, transparent), color-mix(in srgb, var(--lav) 4%, transparent) 55%, color-mix(in srgb, var(--sky) 7%, transparent));
-  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--lav) 67%, transparent);
+  text-align: left; border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 21px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
 }
 /* The library pages (`.pl-lib`) run the CTA tighter under the list; the `.is-start`
    modifier below must still win over it, so it sits BEFORE the modifiers. */
 .pl-lib .pl-lib-new { margin-top: 14px; }
-.pl-lib-new-art { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: color-mix(in srgb, var(--lav) 12%, transparent); flex: 0 0 auto; }
-.pl-lib-new-art .icon { width: 30px; height: 30px; }
-.pl-lib-new strong { display: block; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
-.pl-lib-new small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
-.pl-lib-new b { margin-left: auto; font-size: 19px; color: var(--lav-deep); }
-.pl-lib-new.is-start { margin-top: 22px; }
-.pl-lib-new.is-stamp {
-  border-color: color-mix(in srgb, var(--sage) 33%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--sage) 15%, transparent), color-mix(in srgb, var(--sage) 5%, transparent) 55%, color-mix(in srgb, var(--sky) 7%, transparent));
-  box-shadow: 0 10px 26px -18px color-mix(in srgb, var(--sage) 67%, transparent);
+/* §3.1 ikon-pajzs: 50×50, 16-os rádiusz, ház-felület, hajszál-inset. */
+.pl-lib-new-art {
+  display: grid; place-items: center; width: 50px; height: 50px; border-radius: 16px; flex: 0 0 auto;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.pl-lib-new.is-stamp .pl-lib-new-art { background: color-mix(in srgb, var(--sage) 12%, transparent); }
+.pl-lib-new-art .icon { width: 30px; height: 30px; }
+.pl-lib-new strong { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.pl-lib-new small { display: block; margin-top: 2px; font-size: 11px; color: var(--sub); }
+.pl-lib-new b { margin-left: auto; font-size: 19px; color: var(--mz-cell-lav-ink); }
+.pl-lib-new.is-start { margin-top: 22px; }
+.pl-lib-new.is-stamp { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.pl-lib-new.is-stamp b { color: var(--mz-cell-sage-ink); }
 
 /* muscle rows: plain on the template page, with a journey bar on the closed one */
 .pl-lib-muslist { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .pl-lib-muslist.is-bars { grid-template-columns: 1fr; }
 .pl-lib-musrow {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
+  border: 0; border-radius: 16px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .pl-lib-musrow > .icon { width: 26px; height: 26px; flex: 0 0 auto; }
-.pl-lib-musrow strong { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.pl-lib-musrow strong { font-size: 13px; font-weight: 700; color: var(--ink); }
 .pl-lib-mustext { display: grid; gap: 1px; min-width: 108px; }
-.pl-lib-mustext small { font-size: 10px; color: var(--text-tertiary); }
+.pl-lib-mustext small { font-size: 10px; color: var(--sub); }
 .pl-lib-musbar { position: relative; flex: 1; height: 10px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .pl-lib-musbar i {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 34%, transparent) var(--a), var(--mus-color));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--mus-color) 34%, var(--surface-recess)) var(--a), var(--mus-color));
 }
-.pl-lib-musrow b { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
+.pl-lib-musrow b { font-size: 11.5px; font-weight: 600; color: var(--sub); white-space: nowrap; }
 [data-reveal] .pl-lib-musbar i { width: 0; }
 [data-reveal].is-in .pl-lib-musbar i { width: var(--w); transition: width .9s cubic-bezier(.22, .9, .25, 1) .12s; }
 
 /* the then-vs-now pairs on the closed page */
 .pl-lib-versus { gap: 14px; }
 .pl-versus-pair { display: grid; gap: 6px; }
-.pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-primary); }
+.pl-versus-name { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
 .pl-versus-name .icon { width: 20px; height: 20px; }
 
 /* — the library's two doorways and its slim list heroes —
@@ -15535,12 +15582,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-lib-dests { padding: 22px 20px 4px; margin-inline: 0; }
 
 /* — a template's week, spelled out — */
-.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid #ffffff0d; padding-top: 10px; }
+.pl-tpl-exs { display: grid; gap: 6px; border-top: 1px solid var(--border-subtle); padding-top: 10px; }
 .pl-tpl-ex { display: grid; grid-template-columns: 24px 1fr auto auto; align-items: center; gap: 9px; }
 .pl-tpl-ex .icon { width: 24px; height: 24px; }
-.pl-tpl-ex strong { font-size: 12.5px; font-weight: 500; min-width: 0; line-height: 1.3; color: var(--text-primary); }
-.pl-tpl-ex b { font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--mus-color) 75%, var(--text-primary)); white-space: nowrap; }
-.pl-tpl-ex small { font-size: 10.5px; color: var(--text-tertiary); white-space: nowrap; min-width: 74px; text-align: right; }
+.pl-tpl-ex strong { font-size: 12.5px; font-weight: 700; min-width: 0; line-height: 1.3; color: var(--ink); }
+.pl-tpl-ex b { font-size: 11.5px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.pl-tpl-ex small { font-size: 10.5px; color: var(--sub); white-space: nowrap; min-width: 74px; text-align: right; }
 .pl-tpl-load { margin-bottom: 4px; }
 
 /* the template's per-muscle load bars, ported from the wizard's own `.wz-load*`
@@ -15549,20 +15596,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pl-wload { display: grid; gap: 7px; }
 .pl-wload-row { display: grid; grid-template-columns: 22px 92px 1fr auto; align-items: center; gap: 9px; }
 .pl-wload-row .icon { width: 22px; height: 22px; }
-.pl-wload-row small { font-size: 10.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-wload-row small { font-size: 10.5px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-wload-row i { position: relative; height: 9px; border-radius: 999px; background: var(--surface-recess); overflow: hidden; }
 .pl-wload-row i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; background: var(--mus-color); }
-.pl-wload-row b { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+.pl-wload-row b { font-size: 11.5px; font-weight: 600; color: var(--sub); }
 
 /* — quiet rows instead of decorated cards (plan.css :140) — */
 .pl-row {
   display: flex; align-items: center; gap: 12px; width: calc(100% - 40px); margin: 0 20px 8px;
   padding: 14px 16px; text-align: left; cursor: pointer; color: inherit;
-  border: 1px solid #ffffff10; border-radius: 16px; background: var(--surface-recess);
+  border: 0; border-radius: 16px; background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.pl-row strong { display: block; font-size: 14.5px; font-weight: 500; color: var(--text-primary); }
-.pl-row small { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
-.pl-row b { margin-left: auto; color: var(--text-tertiary); font-size: 15px; }
+.pl-row strong { display: block; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.pl-row small { display: block; font-size: 11px; color: var(--sub); margin-top: 2px; }
+.pl-row b { margin-left: auto; color: var(--faint); font-size: 15px; }
 .pl-row.is-quiet { opacity: .68; }
 .pl-sub .pl-row { width: 100%; margin: 0 0 8px; }
 
@@ -15573,8 +15621,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `.pl-row-cancel` let the row carry TWO taps (the confirm and its „Mégsem" escape) while
    keeping every `.pl-row strong/small/b` rule above working through the extra nesting. */
 .pl-row.is-danger {
-  opacity: 1; border-color: color-mix(in srgb, var(--error) 55%, transparent);
-  background: color-mix(in srgb, var(--error) 10%, var(--surface-recess));
+  opacity: 1; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--error) 55%, transparent);
+  background: color-mix(in srgb, var(--error) 10%, var(--surface-1));
 }
 .pl-row.is-danger strong { color: var(--error); }
 .pl-row-main {
@@ -15598,7 +15646,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    way `.pl-item > b` already spans its row via `grid-row: 1 / -1` (:15069). */
 .pl-mrow-art {
   grid-row: 1 / -1; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px;
-  background: color-mix(in srgb, var(--mus-color) 13%, var(--surface-recess));
+  background: color-mix(in srgb, var(--mus-color) 13%, var(--surface-1));
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 /* — the ⓘ explain layer (mezo-b516k, Task 1; header anatomy moved into GlassBox
    itself fix round 1) —
@@ -15626,9 +15675,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   content: ''; position: absolute; left: 0; top: 50%;
   width: 44px; height: 44px; transform: translateY(-50%);
 }
-.pl-info-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: #d6d2e2; }
+.pl-info-copy { margin: 2px 4px 6px; font-size: 13px; line-height: 1.7; color: var(--sub); }
 
-/* ── /terv titanium ────────────────────────────────────────────────────── */
+/* ── /terv ─────────────────────────────────────────────────────────────── */
 
 /* ── train sport titanium (mezo-88iwa.9, T8 Task 3) ────────────────────────
    The sport-logging flow's own screen: the sport picker (grid of tiles), the

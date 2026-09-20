@@ -573,13 +573,18 @@ describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () 
 })
 
 /**
- * Section registration (mezo-88iwa.13, T12 Task 3): the Terhelés (TrainWeekPage) face's
- * `.ld-*` section — the full-bleed hero, the two doorway cards, the group cards and the
- * group-glass body — registered exactly like the two blocks above.
+ * Section registration (mezo-88iwa.13, T12 Task 3 · re-dressed mezo-ju4j6.12): the
+ * Terhelés (TrainWeekPage) face's `.ld-*` section — the hero halo band, the two doorway
+ * cards, the group cards and the group-glass body. The marker lost its `titanium` suffix
+ * with the re-dress and this describe moved in the SAME commit, as the house rule requires.
+ * It also carries the banished-material guards (style bible A.2 rule 4), so the dark-ground
+ * literals and the accent glows this pass removed cannot creep back onto this slice.
  */
-describe('the train terheles titanium section is registered (mezo-88iwa.13)', () => {
-  const START_MARKER = 'train terheles titanium'
-  const END_MARKER = '/train terheles titanium'
+describe('the train terheles section is registered and re-dressed (mezo-ju4j6.12)', () => {
+  const START_MARKER = '── train terheles ('
+  const END_MARKER = '── /train terheles '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -589,16 +594,43 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train terheles titanium')
+  })
+
   test('the section actually carries the ld- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.ld-hero', '.ld-hero-bar', '.ld-hero-pct', '.ld-eyebrow', '.ld-map-card',
       '.ld-move-card', '.ld-groups', '.ld-group-bar', '.ld-group-note', '.ld-sport', '.ld-glass-rows',
     ]) {
-      expect(section, `${cls} missing from the train terheles titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the train terheles section`).toContain(cls)
     }
+  })
+
+  // A blokk 13 `#ffffffXX` fóliát vitt — mindet egy SÖTÉT alapra tervezve. A `.titan-dark`
+  // hatókör a 2. fázisban megszűnt, úgyhogy ezek világos lapon vagy láthatatlanok, vagy
+  // szürke hártyát húznak a mosott csempére. Kommentek nélkül nézzük: a blokk saját prózája
+  // NEVEZI a száműzött anyagokat.
+  test('the white-film literals are gone — this screen lives in the LIGHT world now', () => {
+    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+  })
+
+  // §2.3: nincs akcens-izzás. A hős sávja 16px-es neon szórást vitt, a Titán gyűrűk pedig
+  // végtelenül forogtak — mindkettő a rossz irány jellegzetes jele.
+  test('no accent glow and no infinite spin survive on this slice', () => {
+    const css = rules()
+    expect(css).not.toMatch(/box-shadow:\s*0 0 \d+px/)
+    expect(css).not.toMatch(/animation:[^;]*ld-spin[^;]*infinite/)
+  })
+
+  // A doménszín a ház Edzés-akcense, nem a Titán nav-lime (`--tag-gym`) — A.2 1. szabály.
+  test('the domain accent is --dv-coral, not the Titanium --tag-gym', () => {
+    expect(rules()).toContain('--ld-accent: var(--dv-coral)')
+  })
+
+  // A hős a stíluskönyv §2.2 C halo-sávja: keret és doboz nélküli atmoszféra.
+  test('the hero is a halo band, not a bordered poster', () => {
+    expect(rules()).toMatch(/\.ld-hero \{[^}]*background: var\(--halo-coral\)/)
   })
 
   // The bars are drawn-on-reveal: the FINAL width is the base rule (so the portaled
@@ -609,16 +641,28 @@ describe('the train terheles titanium section is registered (mezo-88iwa.13)', ()
     expect(rawCss).toContain('.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i')
     expect(rawCss).toMatch(/@keyframes ld-fill \{ from \{ transform: scaleX\(0\); \}/)
   })
+
+  // §8.6 „egy lendület, aztán nyugalom": minden, amit ez a szelet animál, kap egy
+  // csökkentett-mozgás ágat ugyanabban a blokkban.
+  test('every added animation has a reduced-motion branch', () => {
+    const css = rules()
+    const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
+    for (const sel of ['.ld-hero-art i', '.ld-hero-pct', '.body-map-shape']) {
+      expect(reduced, `${sel} has no reduced-motion branch`).toContain(sel)
+    }
+  })
 })
 
 /**
- * Section registration (mezo-lf3cv, P2 Task 1): the „Minden izomjel" subpage's `.mm-*`
- * section — the head, the six region boxes, their 3-wide grid and the muscle cells,
- * ported from the prototype's `train-pages.css` `.mm-*` family.
+ * Section registration (mezo-lf3cv, P2 Task 1 · re-dressed mezo-ju4j6.12): the „Minden
+ * izomjel" subpage's `.mm-*` section — the head, the six region boxes, their 3-wide grid
+ * and the muscle cells. Re-dressed with its Terhelés parent, so it carries the same guard.
  */
-describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => {
-  const START_MARKER = 'train izomjel titanium'
-  const END_MARKER = '/train izomjel titanium'
+describe('the train izomjel section is registered and re-dressed (mezo-ju4j6.12)', () => {
+  const START_MARKER = '── train izomjel ('
+  const END_MARKER = '── /train izomjel '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -628,13 +672,20 @@ describe('the train izomjel titanium section is registered (mezo-lf3cv)', () => 
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train izomjel titanium')
+  })
+
   test('the section actually carries the mm- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of ['.mm-head', '.mm-region', '.mm-grid', '.mm-cell']) {
-      expect(section, `${cls} missing from the train izomjel titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the train izomjel section`).toContain(cls)
     }
+  })
+
+  test('the white-film literal and the black icon shadow are gone', () => {
+    const css = rules()
+    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+    expect(css).not.toMatch(/rgba\(0, ?0, ?0/)
   })
 })
 
@@ -669,13 +720,17 @@ describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', ()
 })
 
 /**
- * Same registration guard (mezo-88iwa.10, T9) for the Terv tab's `.pl-*` Titanium section —
- * the mesocycle landing poster, the day-by-day week list, a day's own hero + exercise cells,
- * and the muscle detail's gauge, ported from the prototype's `plan.css`.
+ * Same registration guard (mezo-88iwa.10, T9 · re-dressed mezo-ju4j6.12) for the Terv
+ * tab's `.pl-*` section — the mesocycle landing poster, the day-by-day week list, a day's
+ * own hero + exercise cells, and the muscle detail's gauge. The marker lost its `titanium`
+ * suffix with the re-dress and this describe moved in the SAME commit, as the house rule
+ * requires; it also carries the banished-material guards (style bible A.2 rule 4).
  */
-describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
-  const START_MARKER = 'terv titanium'
-  const END_MARKER = '/terv titanium'
+describe('the terv section is registered and re-dressed (mezo-ju4j6.12)', () => {
+  const START_MARKER = '── terv ('
+  const END_MARKER = '── /terv '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -685,15 +740,16 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('terv titanium')
+  })
+
   test('the section actually carries the pl- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.pl-poster', '.pl-ring', '.pl-arc', '.pl-day', '.pl-dest', '.pl-dhero',
       '.pl-ex', '.pl-item', '.pl-scale-bar', '.pl-versus',
     ]) {
-      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the terv section`).toContain(cls)
     }
   })
 
@@ -701,25 +757,57 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
   // hero/cards, the star rating, the template-detail exercise rows, the wizard's load
   // bars (ported renamed to .pl-wload/.pl-wload-row) and the small quiet-row idiom.
   test('the T10 library sub-block carries its own class family', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.pl-lib-card', '.pl-lhero', '.pl-stars', '.pl-tpl-ex', '.pl-wload', '.pl-row',
     ]) {
-      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the terv section`).toContain(cls)
     }
+  })
+
+  // A blokk 40 fölötti `#ffffffXX` fóliát vitt, mind SÖTÉT alapra tervezve. A `.titan-dark`
+  // hatókör a 2. fázisban megszűnt; világos lapon ezek vagy láthatatlanok, vagy szürke
+  // hártyát húznak a mosott csempére.
+  test('the white-film literals are gone — this tab lives in the LIGHT world now', () => {
+    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+  })
+
+  // §2.3: nincs fém-csillanás, nincs akcens-izzás, és nincs végtelen hurok (§8.6 — az
+  // egyetlen engedett hurok a „most"-pulzus és a companion-orb lélegzése).
+  test('the sheen, the accent glows and the infinite spins are gone', () => {
+    const css = rules()
+    expect(css).not.toMatch(/box-shadow: 0 0 \d+px/)
+    expect(css).not.toMatch(/filter: drop-shadow\(0 0 /)
+    expect(css).not.toContain('infinite')
+    expect(css).not.toContain('pl-sheen')
+  })
+
+  // A doménszín a ház Edzés-akcense, nem a Titán `--tag-gym` (A.2 1. szabály).
+  test('the domain accent is --dv-coral, not the Titanium --tag-gym', () => {
+    const css = rules()
+    expect(css).toContain('--tr-accent: var(--dv-coral)')
+    expect(css).not.toContain('--tag-gym')
+  })
+
+  // A poszter a stíluskönyv §2.2 C halo-sávja: keret és doboz nélküli atmoszféra.
+  test('the poster is a halo band, not a bordered poster', () => {
+    expect(rules()).toMatch(/\.pl-poster \{[^}]*background: var\(--halo-coral\)/)
+  })
+
+  // §4.4: a pihenőnap SZAGGATOTT keretet kap, nem 45%-ra halványítást — a régi világ nem
+  // opacitással mond „kevésbé fontosat".
+  test('the rest day is dashed, never dimmed', () => {
+    const rest = /\.pl-day\.is-rest \{([^}]*)\}/.exec(rules())
+    expect(rest, '.pl-day.is-rest rule not found').not.toBeNull()
+    expect(rest![1]).toContain('dashed')
+    expect(rest![1]).not.toContain('opacity: .45')
   })
 
   // mezo-b516k Task 1: the ⓘ explain layer's own sub-block — the 22px icon-only
   // button (ported from plan.css:313-314) and the glass copy paragraph (ported from
   // load.css:179's `.info-glass-copy`, renamed with the house `pl-` prefix).
   test('the explain-layer sub-block carries .pl-info and .pl-info-copy', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of ['.pl-info', '.pl-info-copy']) {
-      expect(section, `${cls} missing from the terv titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the terv section`).toContain(cls)
     }
   })
 
@@ -728,13 +816,10 @@ describe('the terv titanium section is registered (mezo-88iwa.10)', () => {
   // "simplifies" it back to a bare 22px control fails here instead of shipping a
   // 22px touch target.
   test('.pl-info keeps the 22px glyph but carries a 44px hit box', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
-    const ruleMatch = /(?:^|\n)\.pl-info \{([^}]*)\}/.exec(section)
-    expect(ruleMatch, '.pl-info standalone rule not found in the terv titanium section').not.toBeNull()
+    const ruleMatch = /(?:^|\n)\.pl-info \{([^}]*)\}/.exec(section())
+    expect(ruleMatch, '.pl-info standalone rule not found in the terv section').not.toBeNull()
     expect(ruleMatch![1]).toContain('width: 22px')
-    const hit = /(?:^|\n)\.pl-info::after \{([^}]*)\}/.exec(section)
+    const hit = /(?:^|\n)\.pl-info::after \{([^}]*)\}/.exec(section())
     expect(hit, '.pl-info::after hit box not found — the 44px tap target is gone').not.toBeNull()
     expect(hit![1]).toContain('44px')
   })
