@@ -16,18 +16,17 @@ import java.util.List;
  * delta}/{@code coverageDays}) stay {@code null} — these are code-computed facts, not a raw
  * {@link io.mrkuhne.mezo.feature.companion.service.MetricKey} series.
  *
- * <p>Row 3 ("cél-sáv") band: ±20% of the active goal's {@code rateTargetPctPerWeek} — the same
- * tolerance idiom the goal engine uses elsewhere for "on track" — compared against the actual
- * weekly rate derived from {@code trendDeltaKgPerWeek/bodyweightKg}. This band formula is this
- * task's own design choice (not dictated by an existing goal-engine seam); see
- * {@code WeightDecompositionTest} for the exercised cases.
+ * <p>Row 3 ("cél-sáv") band: the spec's FIXED %bodyweight/week bands per trajectory — cut
+ * [-1.0, -0.25], bulk [0.1, 0.25], maintain [-0.1, 0.1] — compared against the actual weekly rate
+ * derived from {@code trendDeltaKgPerWeek/bodyweightKg × 100}. When the actual rate is not
+ * computable (either input missing), the status is {@code "sáv nem számítható"} — never a
+ * fabricated "terven"; see {@code WeightDecompositionTest} for the exercised cases.
  */
 public record WeightDecomposition(List<EvidenceItem> derivedItems) {
 
     private static final String SOURCE_HU = "számvetés";
     private static final double KCAL_PER_KG_FAT = 7700.0;
     private static final double NON_TISSUE_SIGNAL_PCT_BW = 0.01;
-    private static final double BAND_TOLERANCE = 0.20;
 
     public record Inputs(
             Double weekAvgKg, Double prevWeekAvgKg, Integer weighInCount,
@@ -103,23 +102,56 @@ public record WeightDecomposition(List<EvidenceItem> derivedItems) {
             return new EvidenceItem("derived", "cél-sáv", "nincs aktív cél — sáv nélkül", SOURCE_HU,
                     null, null, null, null, null);
         }
-        double target = in.goalRatePctPerWeek();
-        double bandA = round(Math.min(target * (1 - BAND_TOLERANCE), target * (1 + BAND_TOLERANCE)));
-        double bandB = round(Math.max(target * (1 - BAND_TOLERANCE), target * (1 + BAND_TOLERANCE)));
         Double actual = actualPctPerWeek(in);
+        String bandLabel;
         String status;
-        if (actual == null) {
-            status = "terven";
-        } else if (actual < bandA) {
-            status = "terv alatt";
-        } else if (actual > bandB) {
-            status = "terv fölött";
-        } else {
-            status = "terven";
+        switch (in.goalTrajectory()) {
+            case "cut" -> {
+                bandLabel = huPct(-1.0) + " – " + huPct(-0.25);
+                if (actual == null) {
+                    status = "sáv nem számítható";
+                } else if (actual < -1.0) {
+                    status = "terv alatt · túl gyors";
+                } else if (actual > -0.25) {
+                    status = "terv fölött";
+                } else {
+                    status = "terven";
+                }
+            }
+            case "bulk" -> {
+                bandLabel = huPct(0.1) + " – " + huPct(0.25);
+                if (actual == null) {
+                    status = "sáv nem számítható";
+                } else if (actual < 0.1) {
+                    status = "terv alatt";
+                } else if (actual > 0.25) {
+                    status = "terv fölött";
+                } else {
+                    status = "terven";
+                }
+            }
+            case "maintain" -> {
+                bandLabel = "±" + huPct(0.1);
+                if (actual == null) {
+                    status = "sáv nem számítható";
+                } else if (Math.abs(actual) <= 0.1) {
+                    status = "terven";
+                } else if (actual > 0.1) {
+                    status = "terv fölött";
+                } else {
+                    status = "terv alatt";
+                }
+            }
+            default -> throw new IllegalStateException("unknown goalTrajectory: " + in.goalTrajectory());
         }
-        String detail = status + " (sáv: " + bandA + "–" + bandB + " %/hét)";
+        String detail = status + " (sáv: " + bandLabel + " %/hét) · cél: " + huPct(in.goalRatePctPerWeek()) + " %/hét";
         return new EvidenceItem("derived", "cél-sáv", detail, SOURCE_HU,
                 null, null, null, null, null);
+    }
+
+    /** Hungarian-locale decimal (comma separator) for the fixed %BW/week band labels. */
+    private static String huPct(double value) {
+        return String.valueOf(round(value)).replace('.', ',');
     }
 
     private static Double actualPctPerWeek(Inputs in) {

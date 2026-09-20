@@ -112,21 +112,53 @@ class WeightDecompositionTest {
     }
 
     @Test
-    void goalBandClassifiesACutTrajectoryWithinToleranceAsOnPlan() {
-        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, -0.55, 3850.0, 100.0, "cut", -0.5, null);
+    void goalBandClassifiesACutTrajectoryInsideTheFixedBandAsOnPlan() {
+        // actualPct = -0.5/100*100 = -0.5, inside the fixed cut band [-1.0, -0.25].
+        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, -0.5, 3850.0, 100.0, "cut", 0.5, null);
         List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
 
         assertThat(find(items, "cél-sáv").orElseThrow().detail())
-                .isEqualTo("terven (sáv: -0.6–-0.4 %/hét)");
+                .isEqualTo("terven (sáv: -1,0 – -0,25 %/hét) · cél: 0,5 %/hét");
     }
 
     @Test
-    void goalBandClassifiesABulkTrajectoryAboveToleranceAsAheadOfPlan() {
-        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, 1.0, 3850.0, 100.0, "bulk", 0.3, null);
+    void goalBandClassifiesACutTrajectoryTooSlowAsAheadOfPlan() {
+        // actualPct = -0.1/100*100 = -0.1, above (i.e. less negative than) the cut band's -0.25 edge.
+        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, -0.1, 3850.0, 100.0, "cut", 0.5, null);
         List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
 
         assertThat(find(items, "cél-sáv").orElseThrow().detail())
-                .isEqualTo("terv fölött (sáv: 0.24–0.36 %/hét)");
+                .isEqualTo("terv fölött (sáv: -1,0 – -0,25 %/hét) · cél: 0,5 %/hét");
+    }
+
+    @Test
+    void goalBandClassifiesABulkTrajectoryBelowTheFixedBandAsBehindPlan() {
+        // actualPct = 0.05/100*100 = 0.05, below the bulk band's 0.1 floor.
+        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, 0.05, 3850.0, 100.0, "bulk", 0.2, null);
+        List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
+
+        assertThat(find(items, "cél-sáv").orElseThrow().detail())
+                .isEqualTo("terv alatt (sáv: 0,1 – 0,25 %/hét) · cél: 0,2 %/hét");
+    }
+
+    @Test
+    void goalBandClassifiesAMaintainTrajectoryWithinTheFixedBandAsOnPlan() {
+        // actualPct = 0.05/100*100 = 0.05, within the maintain band [-0.1, 0.1].
+        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, 0.05, 3850.0, 100.0, "maintain", 0.0, null);
+        List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
+
+        assertThat(find(items, "cél-sáv").orElseThrow().detail())
+                .isEqualTo("terven (sáv: ±0,1 %/hét) · cél: 0,0 %/hét");
+    }
+
+    @Test
+    void goalBandNeverFabricatesOnPlanWhenTheActualRateIsNotComputable() {
+        // trendDeltaKgPerWeek is null -> actualPct can't be derived; must never default to "terven".
+        Inputs in = new Inputs(79.5, 80.0, 5, 79.0, 80.2, null, 3850.0, 100.0, "cut", 0.5, null);
+        List<EvidenceItem> items = WeightDecomposition.compute(in).derivedItems();
+
+        assertThat(find(items, "cél-sáv").orElseThrow().detail())
+                .isEqualTo("sáv nem számítható (sáv: -1,0 – -0,25 %/hét) · cél: 0,5 %/hét");
     }
 
     @Test
