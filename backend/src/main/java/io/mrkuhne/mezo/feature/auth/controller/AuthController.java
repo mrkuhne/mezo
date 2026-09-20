@@ -30,6 +30,11 @@ public class AuthController implements AuthApi {
     }
 
     @Override
+    public MeResponse updateAccount(io.mrkuhne.mezo.api.dto.UpdateAccountRequest request) {
+        return authService.updateAccount(currentUser.get(), request);
+    }
+
+    @Override
     public MeResponse me() {
         return authService.me(currentUser.get());
     }

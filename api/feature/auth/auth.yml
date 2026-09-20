@@ -75,6 +75,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
   /api/auth/me:
+    put:
+      tags: [Auth]
+      operationId: updateAccount
+      summary: Correct the authenticated user's canonical name and email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAccountRequest' }
+      responses:
+        '200':
+          description: Updated current account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+        '400':
+          description: Invalid account fields
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: Email already used (AUTH_EMAIL_TAKEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
     get:
       tags: [Auth]
       operationId: me
@@ -140,6 +170,12 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
 components:
   schemas:
+    UpdateAccountRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email, minLength: 1, maxLength: 255 }
     LoginRequest:
       type: object
       required:

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1697,6 +1697,18 @@ gather `DiagnosisGenerator` delegates to) — all four gaining the same lazy
 
 ## 2. User-facing behavior
 
+### Editable personal context
+
+The central Mezo settings separate **Rólam**, **Így beszélj velem** and **Ezt kapja meg Mezo**.
+The preview shows the exact personal blocks assembled for the next chat turn, their sources,
+and whether each block is included. It is not the entire system prompt or retrieved memory.
+Canonical name, biometrics, latest dated weight and current goal stay at their original sources;
+corrections link back to settings. User-written introduction and explicit communication instructions
+are stored separately from the weekly learned profile. Background learning never overwrites them.
+The learned profile can be excluded independently; explicit style requests take priority over it
+within application rules. Empty fields deliberately clear the saved text.
+
+
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
 companion surface since V0.4, dual-mode:
 
@@ -2171,8 +2183,8 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
                       + contextSnapshotAssembler.render(userId, today)             ── V0.3 ──
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
                       + knowledgeFactService.renderNewPatternFactsBlock(userId)     ── V3.3 ──
-                      + profileBlock(userId)  ── W4.3: the [Rólad tanultam] block ("" when the
-                        profile is archived/absent or the graph switch is off) ──
+                      + personalContextAssembler.render(userId, today) ── canonical facts, own text and
+                        optional active learned profile (omitted when excluded/absent) ──
                       + memoriesBlock  ── W3.1: the [Emlékek] block ("" when nothing was recalled) ──
                       + graphBlock  ── W2.4: the [Összefüggések] block ("" when the graph switch is
                         off or nothing matched) ──
@@ -3717,6 +3729,28 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
 
 ## 4. Data model & API
 
+### Personal preferences and exact context preview
+
+`companion_preferences` is an owned, soft-deleted singleton with a partial unique index on live
+`created_by`; `about_me` and `custom_instructions` are non-null strings bounded to 4000 characters,
+`use_learned_profile` defaults to true. Writes atomically upsert the owner row, so racing first
+saves cannot create duplicates. No second account name or biometric copy is stored here.
+
+The `CompanionPreferences` contract tag exposes authenticated GET/PUT `/api/companion/preferences`
+and GET `/api/companion/personal-context`. PUT requires all three fields. The preview returns
+`renderedText` and four ordered source sections (`core`, `about`, `instructions`, `learned`), each
+with title/text/source/included/editPath. Excluded learned prose remains inspectable in its section
+but is absent from `renderedText`.
+
+`PersonalContextAssembler` is the single renderer for preview and chat. It composes canonical
+`PromptPersona` name + `PersonalBaselineContext`, user-owned prose and the bounded active learned
+profile. User-authored text is JSON-quoted under provenance and instruction-priority headers, after
+persona-token substitution, so literal `{{NÉV}}` and line breaks remain unchanged between preview
+and model input. `ChatService` uses it in conversation-first, rollback CHAT and rollback data paths;
+sync and SSE share those paths. Edits take effect on the next turn. Extraction/job prompts retain
+their existing independent contracts.
+
+
 ### Backend tables (V0.2, ✅)
 
 Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registered in
@@ -5201,8 +5235,8 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   `@Min(50)` → `@Min(200)` by `mezo-b3pp.35` item 5) caps the
   prose at STORE time (`ProfileAssembler.cap`, `CHARS_PER_TOKEN = 3`, same estimate as
   `[Emlékek]`/`[Összefüggések]`) and again, redundantly, at RENDER time
-  (`ProfilePromptAssembler.render`) — so Tudástár's "Rólad tanultam" card can never show more prose
-  than the model was actually given, even if the config value changes between a write and a read.
+  (`ProfilePromptAssembler.render`) — the central personal-context preview uses this same bounded
+  text, even if the config value changes between a write and a read.
   The cut lands on a word boundary with a trailing `…`. **The floor moved because the header alone
   costs tokens**: `ProfilePromptAssembler.PROFILE_HEADER` is 142 chars ÷ `CHARS_PER_TOKEN` (3) ≈ 48
   tokens ceiling-rounded, so the old floor of 50 left just 2 tokens for actual prose — not a
@@ -5236,7 +5270,7 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   the ACTIVE node only (an archived one renders `""`, the explicit "forget what you think of me"
   lever), is capped, and **never throws** (IDENT-3): a `RuntimeException` logs a warn and yields
   `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
-  (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `ChatService` holds it via `ObjectProvider`,
+  (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `PersonalContextAssembler` holds it via `ObjectProvider`,
   the `GraphPromptAssembler` idiom). **The never-throws contract now has a failure-path IT**
   (`mezo-b3pp.35`, item 2, `ProfilePromptAssemblerFailureIT
   .testRender_shouldReturnEmptyBlock_whenTheProfileReadFails` — its own IT class, same
@@ -8877,6 +8911,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 ## 10. Key files
 
+**Editable personal context (`mezo-txunr.1`)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PersonalContextAssembler.java` — exact preview and prompt renderer; canonical name/baseline, bounded own prose, optional learned profile.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/{controller/CompanionPreferencesController,service/CompanionPreferencesService,entity/CompanionPreferencesEntity,repository/CompanionPreferencesRepository}.java` — owner boundary, persisted singleton and atomic upsert.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/CompanionPreferencesApiIT.java` and `service/{PersonalContextAssemblerIT,PersonalContextConversationIT}.java` — auth, isolation, limits/clearing and exact preview equivalence on both sync/SSE chat paths.
+
+
 **Complete personal evidence (`mezo-rj214.10`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/PersonalRecordSource.java` — explicit source/column/date/containment catalogue.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/PersonalRecordQuery.java` — bound owner-scoped projections.
@@ -8990,7 +9031,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfileAssemblerJob.java` — the weekly sweep (Monday 03:45, after the 03:10 rollups and 03:30 consolidation rung), per-user try/catch, `PROFILE_ASSEMBLER_JOB_SWITCH`-gated. Calls `ProfileAssembler.rebuild(userId, Quarters.startOf(LocalDate.now()))` — the same method W5.3 (`mezo-b3pp.20`) reuses after the quarterly pass with a DIFFERENT anchor, and the bean whose presence W5.3 reads as this switch (§4).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/profile/service/ProfilePromptAssembler.java` — the `[Rólad tanultam]` block: `render(userId)` reads the ACTIVE node, caps it again at render time, never throws (IDENT-3), `""` when the bean is absent or nothing is stored.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — shared personal context on every sync/SSE routing path; rollback data mode retains the learned profile position before `[Emlékek]`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
 - **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 

@@ -68,6 +68,8 @@ tags:
       @ConditionalOnProperty-gated independently while FuelController
       (slot-template CRUD) stays unconditional. Stateless: nothing is persisted,
       the request is only auth-gated.
+  - name: CompanionPreferences
+    description: Editable personal context and communication preferences
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
   - name: CompanionStream
@@ -253,6 +255,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
   /api/auth/me:
+    put:
+      tags:
+        - Auth
+      operationId: updateAccount
+      summary: Correct the authenticated user's canonical name and email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+      responses:
+        '200':
+          description: Updated current account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '400':
+          description: Invalid account fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Email already used (AUTH_EMAIL_TAKEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     get:
       tags:
         - Auth
@@ -4792,6 +4830,74 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '503':
           description: AI evaluation unavailable (slot-template-ai/companion switch off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/preferences:
+    get:
+      tags:
+        - CompanionPreferences
+      operationId: getCompanionPreferences
+      summary: getCompanionPreferences
+      responses:
+        '200':
+          description: Current personal context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanionPreferencesResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - CompanionPreferences
+      operationId: updateCompanionPreferences
+      summary: updateCompanionPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanionPreferencesRequest'
+      responses:
+        '200':
+          description: Current personal context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanionPreferencesResponse'
+        '400':
+          description: Invalid preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/personal-context:
+    get:
+      tags:
+        - CompanionPreferences
+      operationId: getCompanionPersonalContext
+      summary: getCompanionPersonalContext
+      responses:
+        '200':
+          description: Current personal context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanionPersonalContextResponse'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -11396,6 +11502,21 @@ components:
           pattern: '^[DLRA]+$'
           maxLength: 200
           description: 'One letter per bucket, chronological from bedtime'
+    UpdateAccountRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
     LoginRequest:
       type: object
       required:
@@ -18270,6 +18391,70 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SlotPlanSuggestion'
+    CompanionPreferencesRequest:
+      type: object
+      required:
+        - aboutMe
+        - customInstructions
+        - useLearnedProfile
+      properties:
+        aboutMe:
+          type: string
+          maxLength: 4000
+        customInstructions:
+          type: string
+          maxLength: 4000
+        useLearnedProfile:
+          type: boolean
+    CompanionPreferencesResponse:
+      type: object
+      required:
+        - aboutMe
+        - customInstructions
+        - useLearnedProfile
+      properties:
+        aboutMe:
+          type: string
+          maxLength: 4000
+        customInstructions:
+          type: string
+          maxLength: 4000
+        useLearnedProfile:
+          type: boolean
+          default: true
+    CompanionPersonalContextResponse:
+      type: object
+      required:
+        - renderedText
+        - sections
+      properties:
+        renderedText:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanionPersonalContextSection'
+    CompanionPersonalContextSection:
+      type: object
+      required:
+        - id
+        - title
+        - text
+        - source
+        - included
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        text:
+          type: string
+        source:
+          type: string
+        included:
+          type: boolean
+        editPath:
+          type: string
     TranscriptionResponse:
       type: object
       required:

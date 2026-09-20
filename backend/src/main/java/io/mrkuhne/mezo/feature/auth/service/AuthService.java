@@ -85,6 +85,26 @@ public class AuthService {
             user.isOnboarded(), user.isMustChangePassword(), user.getTimezone());
     }
 
+    @Transactional
+    public MeResponse updateAccount(AppUserEntity user, io.mrkuhne.mezo.api.dto.UpdateAccountRequest request) {
+        String name = request.getName().strip();
+        if (name.isBlank()) {
+            throw new SystemRuntimeErrorException(SystemMessage.field("VALIDATION_REQUIRED_FIELD", "name").build());
+        }
+        String email = normalizeEmail(request.getEmail());
+        if (appUserRepository.findByEmail(email).filter(other -> !other.getId().equals(user.getId())).isPresent()) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("AUTH_EMAIL_TAKEN").build(), HttpStatus.CONFLICT);
+        }
+        try {
+            // A targeted update preserves concurrently changed role, password and status columns.
+            appUserRepository.updateAccount(user.getId(), name, email);
+        } catch (DataIntegrityViolationException e) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("AUTH_EMAIL_TAKEN").build(), HttpStatus.CONFLICT);
+        }
+        return me(appUserRepository.findById(user.getId()).orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("AUTH_TOKEN_MISSING").build(), HttpStatus.UNAUTHORIZED)));
+    }
+
     /**
      * Deviation from the brief: re-reads the account by id inside this transaction instead of
      * mutating the {@code user} argument directly. {@code CurrentUser.get()} hands back a

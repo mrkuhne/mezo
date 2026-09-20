@@ -47,7 +47,8 @@ export interface paths {
         };
         /** The authenticated user's account profile */
         get: operations["me"];
-        put?: never;
+        /** Correct the authenticated user's canonical name and email */
+        put: operations["updateAccount"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1836,6 +1837,41 @@ export interface paths {
         put?: never;
         /** Gated LLM judgement of a (draft) slot split against the goal balance + training placement */
         post: operations["evaluateSlotPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getCompanionPreferences */
+        get: operations["getCompanionPreferences"];
+        /** updateCompanionPreferences */
+        put: operations["updateCompanionPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/personal-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getCompanionPersonalContext */
+        get: operations["getCompanionPersonalContext"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4729,6 +4765,11 @@ export interface components {
             /** @description One letter per bucket, chronological from bedtime */
             stages: string;
         };
+        UpdateAccountRequest: {
+            name: string;
+            /** Format: email */
+            email: string;
+        };
         LoginRequest: {
             /**
              * Format: email
@@ -7300,6 +7341,29 @@ export interface components {
             verdict: "ok" | "adjust";
             summary: string;
             suggestions: components["schemas"]["SlotPlanSuggestion"][];
+        };
+        CompanionPreferencesRequest: {
+            aboutMe: string;
+            customInstructions: string;
+            useLearnedProfile: boolean;
+        };
+        CompanionPreferencesResponse: {
+            aboutMe: string;
+            customInstructions: string;
+            /** @default true */
+            useLearnedProfile: boolean;
+        };
+        CompanionPersonalContextResponse: {
+            renderedText: string;
+            sections: components["schemas"]["CompanionPersonalContextSection"][];
+        };
+        CompanionPersonalContextSection: {
+            id: string;
+            title: string;
+            text: string;
+            source: string;
+            included: boolean;
+            editPath?: string;
         };
         TranscriptionResponse: {
             /** @description The transcript in the speaker's own language; empty string when the recording carried no speech. */
@@ -10984,6 +11048,57 @@ export interface operations {
             };
             /** @description Account disabled (AUTH_ACCOUNT_DISABLED) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated current account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Invalid account fields */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Email already used (AUTH_EMAIL_TAKEN) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16562,6 +16677,106 @@ export interface operations {
             };
             /** @description AI evaluation unavailable (slot-template-ai/companion switch off) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCompanionPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current personal context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanionPreferencesResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateCompanionPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanionPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Current personal context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanionPreferencesResponse"];
+                };
+            };
+            /** @description Invalid preferences */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCompanionPersonalContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current personal context */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanionPersonalContextResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
