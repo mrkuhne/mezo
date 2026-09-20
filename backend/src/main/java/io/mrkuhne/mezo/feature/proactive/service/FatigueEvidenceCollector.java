@@ -86,10 +86,23 @@ public class FatigueEvidenceCollector {
     /** Null when fewer than {@code minDomains} domains clear the coverage threshold. */
     @Transactional(readOnly = true)
     public FatigueGather gather(UUID userId, LocalDate windowFrom, LocalDate windowTo, DiagnosisRecipe recipe) {
+        return gather(userId, windowFrom, windowTo, recipe, List.of());
+    }
+
+    /**
+     * @param prependedItems code-computed candidates (the WEIGHT phenomenon's {@code
+     *                       WeightDecomposition} rows, mezo-85x5r §2) placed FIRST, ahead of the
+     *                       recipe's own metric candidates — their indexes are stable-first in
+     *                       both the persisted evidence and the rendered numbered payload list.
+     *                       Empty for the rolling phenomena (fatigue/sleep).
+     */
+    @Transactional(readOnly = true)
+    public FatigueGather gather(UUID userId, LocalDate windowFrom, LocalDate windowTo, DiagnosisRecipe recipe,
+            List<EvidenceItem> prependedItems) {
         LocalDate baselineTo = windowFrom.minusDays(1);
         LocalDate baselineFrom = baselineTo.minusDays(properties.baselineDays() - 1L);
 
-        List<EvidenceItem> candidates = new ArrayList<>();
+        List<EvidenceItem> candidates = new ArrayList<>(prependedItems);
         Set<String> domains = new LinkedHashSet<>();
         int minCoverageDays = recipe.minCoverageDays() != null
                 ? recipe.minCoverageDays() : properties.minCoverageDays();

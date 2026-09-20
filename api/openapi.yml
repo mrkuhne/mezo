@@ -24210,7 +24210,7 @@ components:
       properties:
         kind:
           type: string
-          pattern: ^(metric|pattern|fact)$
+          pattern: ^(metric|pattern|fact|derived)$
         label:
           type: string
         detail:

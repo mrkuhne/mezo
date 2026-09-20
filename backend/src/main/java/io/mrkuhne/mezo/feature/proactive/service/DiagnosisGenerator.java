@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope.Suspect;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope.EvidenceItem;
 import io.mrkuhne.mezo.feature.proactive.repository.DiagnosisRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
@@ -78,6 +79,17 @@ public class DiagnosisGenerator {
             + "\"strength\": \"strong|moderate|weak\", \"probe\": {\"text\": \"...\", "
             + "\"metricKey\": \"...\", \"expectedDirection\": \"up|down|stable\", \"totalDays\": 7}}]}";
 
+    /** WEIGHT-only prompt block (mezo-85x5r §2): the SZÁMVETÉS rows are code-computed facts the
+     *  model must not contradict; the suspects stay confined to the VÍZ side. Appended after the
+     *  recipe's question sentence, verbatim (Task 4 brief). */
+    private static final String WEIGHT_PROMPT_BLOCK =
+            "A SZÁMVETÉS sorai kód által számolt tények — nem mondhatsz nekik ellent, és a plafon fölé "
+            + "nem tulajdoníthatsz szövetet. A gyanúsítottak a VÍZ-részre vonatkoznak: CH-ugrás (1 g CH "
+            + "3–4 g vizet köt glikogénként), só-ugrás, terhelés-ugrás (izomjavítási vízvisszatartás), "
+            + "alváshiány/stressz (kortizol), késői nagy étkezés a mérés előtt, gyógyszer-ciklus "
+            + "étvágy-hatás, kreatin/supplement-váltás. 2–3 hét konzisztens trend előtt tartós "
+            + "irányváltást kimondani tilos.";
+
     private final DiagnosisRepository diagnosisRepository;
     private final FatigueEvidenceCollector collector;
     private final CompanionLlm companionLlm;
@@ -85,6 +97,7 @@ public class DiagnosisGenerator {
     private final DiagnosisProperties properties;
     private final ObjectMapper objectMapper;
     private final PromptPersona promptPersona;
+    private final WeightDecompositionInputsAssembler weightDecompositionInputsAssembler;
 
     record ParsedProbe(String text, String metricKey, String expectedDirection, Integer totalDays) {
     }
@@ -127,7 +140,11 @@ public class DiagnosisGenerator {
             windowFrom = anchorStart;
             LocalDate anchorEnd = anchorStart.plusDays(6);
             windowTo = anchorEnd.isBefore(today) ? anchorEnd : today;
-            gather = collector.gather(userId, windowFrom, windowTo, recipe);
+            List<EvidenceItem> prepended = DiagnosisRecipe.WEIGHT.equals(recipe)
+                    ? WeightDecomposition.compute(weightDecompositionInputsAssembler
+                            .assemble(userId, windowFrom, windowTo)).derivedItems()
+                    : List.of();
+            gather = collector.gather(userId, windowFrom, windowTo, recipe, prepended);
         } else {
             gather = collector.gather(userId, today, recipe);
         }
@@ -164,7 +181,8 @@ public class DiagnosisGenerator {
     }
 
     private static String prompt(DiagnosisRecipe recipe) {
-        return DIAGNOSIS_MARKER + "\n" + recipe.questionHu() + " " + PROMPT_RULES;
+        String weightBlock = DiagnosisRecipe.WEIGHT.equals(recipe) ? " " + WEIGHT_PROMPT_BLOCK : "";
+        return DIAGNOSIS_MARKER + "\n" + recipe.questionHu() + weightBlock + " " + PROMPT_RULES;
     }
 
     private ParsedDiagnosis parse(String answer) {

@@ -9,9 +9,11 @@ import java.util.List;
  * the numbers it actually reasoned from — weeks later, a recomputed window would put different
  * values next to the same conclusion.
  *
- * <p>{@code kind} is one of {@code metric|pattern|fact}. The metric-only fields
+ * <p>{@code kind} is one of {@code metric|pattern|fact|derived}. The metric-only fields
  * ({@code metricKey}, {@code value}, {@code baselineValue}, {@code delta}, {@code coverageDays})
- * are null for pattern and fact items.
+ * are null for pattern, fact, and derived items. {@code derived} rows (mezo-85x5r §2) are
+ * code-computed facts — {@link io.mrkuhne.mezo.feature.proactive.service.WeightDecomposition}'s
+ * "számvetés" rows for the WEIGHT phenomenon — not a raw metric series.
  */
 public record DiagnosisEvidenceEnvelope(List<EvidenceItem> items) {
 

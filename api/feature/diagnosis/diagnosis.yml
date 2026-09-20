@@ -132,7 +132,7 @@ components:
       type: object
       required: [kind, label]
       properties:
-        kind: { type: string, pattern: '^(metric|pattern|fact)$' }
+        kind: { type: string, pattern: '^(metric|pattern|fact|derived)$' }
         label: { type: string }
         detail: { type: string, nullable: true }
         sourceHu: { type: string, nullable: true, description: 'Hungarian provenance, e.g. Alvás-napló' }
