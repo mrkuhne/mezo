@@ -1,6 +1,6 @@
 .personal-sources { margin-bottom: 26px; }
 .personal-editor { padding: 24px 20px; border-radius: 28px 12px 28px 28px; background: var(--mz-wash-lav); margin-bottom: 24px; }
-.personal-editor h2, .personal-learned h2, .personal-context-section h2 { font-family: var(--font-display); font-size: 23px; font-weight: 500; margin: 8px 0; }
+.personal-editor h2, .personal-learned h2, .personal-context-section h2 { font-family: var(--ff-serif); font-size: 23px; font-weight: 500; margin: 8px 0; }
 .personal-editor p, .personal-scope, .personal-learned p { font-size: 13px; line-height: 1.65; color: var(--text-secondary); }
 .personal-editor textarea { width: 100%; box-sizing: border-box; padding: 15px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 15px; line-height: 1.65; resize: vertical; margin-top: 10px; }
 .personal-field-foot { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin: 8px 0 20px; }
@@ -19,5 +19,5 @@
 .settings-account label { display: grid; gap: 8px; margin-bottom: 20px; font-size: 13px; }
 .settings-account input { width: 100%; box-sizing: border-box; padding: 13px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 16px; }
 .personal-core { padding: 20px; border-radius: 12px 28px 28px 28px; background: var(--mz-wash-rose); margin-bottom: 24px; }
-.personal-core h2 { font-family: var(--font-display); font-size: 22px; font-weight: 500; }
+.personal-core h2 { font-family: var(--ff-serif); font-size: 22px; font-weight: 500; }
 .personal-core p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.65; }
