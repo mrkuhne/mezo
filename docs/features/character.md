@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -22,13 +22,7 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > personas + a Szkeptikus, chaired by Mezo. **Status: backend ✅ S1–S7 (schema/reads, detectors +
 > nightly pass, weekly konzílium, bootstrap + monthly deep read, `[Karakter]` prompt block on
 > all four narrative surfaces, claim feedback loop, widened bootstrap corpus, detector polish);
-> FE ✅ shipped (`mezo-1gim.13`, the Design 2.0 Karakter FE slice, Tasks 1–5): a Karakter hub on
-> the Én tab (maturity-ring hero + a 4-tile mosaic — Dimenziók, Feed, Csapat, Konzílium) with full
-> `/me/karakter/*` page siblings for each tile, claim feedback wired to the real endpoint, the
-> bootstrap ceremony, and the konzílium transcript view. **Gépterem ✅ shipped**
-> (`mezo-1gim.14`, S9): a `character_run` honesty-spine table + writers on all four pipelines, two
-> read endpoints, and a 5-page FE sub-hub (Gépterem, Futások, run detail, Adatforrások,
-> Detektorok) exposing per-run signal chains, called experts, and the data-source inventory.
+> FE: `/mezo/karakter` opens on **Üzenőfal**, with **Rólad** and **Csapat** as the other primary destinations. The social feed uses actual authors, stored reactions and persistent contextual replies. Evidence opens a GlassBox. **Hogyan működik?** retains run/source/detector detail; existing subpage URLs remain valid. See [ADR 0047](../decisions/0047-character-contextual-replies.md).
 > **`mezo-1gim.15` round 1 ("Edzés & test") ✅ shipped**: eight new detectors
 > (`rir-calibration`, `niggle-map`, `sport-interference`, `meso-adherence`,
 > `progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`)
@@ -105,7 +99,7 @@ opinion about the user, dimension by dimension, claim by claim.
   split exists to keep apart. (A proposal that moves an existing claim does name that one claim's
   current text and confidence word — a verdict on an unnamed move would be meaningless — but that
   is not the dossier: no other claim, no history, no user feedback.) IDENT-1 is preserved —
-  experts never message the user directly; the user only *reads* the team's work (feed, konzílium
+  experts do not start direct conversations; the user can now answer their work through contextual replies, evaluated by Mezo (feed, konzílium
   transcript).
 - **Unit of truth**: the **claim** — confidence, evidence refs, a status
   (`ACTIVE`/`RETIRED`), a lifecycle. Dimension portrait prose is written FROM claims, never the
@@ -156,25 +150,23 @@ the state-change-gate idiom
 further still: seven of its twelve detectors carry **no** new-data pre-filter at all, because for
 them absence IS the signal (see §9's round-3 gate rule).
 
+### Social navigation and contextual replies (mezo-njcgs)
+
+The primary reading order is Üzenőfal → a post's evidence/conversation → optional personal reply → processing outcome → Rólad. The user cannot create a new post. Feed cards retain real author identity (including **Te** for self-report), show stored conference peer reactions only when their claim matches, and offer **Miből látszik?** through `CharacterEvidenceSheet`. The interface uses existing Clay orbs and theme-aware Mozaik materials, with reduced-motion-aware transitions. Technical history and archived councils remain available.
+
+`CharacterReplyThread` persists replies through `useCharacterReplies`; failed saves retain both the draft and idempotency key. Saved/processing replies poll while mounted. Failed or stalled processing can retry the saved reply. Updated/withdrawn outcomes earn the **Közösen pontosítva** marker; unchanged or clarification outcomes do not claim a profile change. `Pontosítom` on claims uses this same durable flow; **Talál** and **Nem igaz** retain the existing feedback endpoint.
+
+Reply sources are `OBSERVATION`, `CLAIM`, or `CONFERENCE_CHANGE` with owner-resolved source ID and index. `POST /api/character/replies` records an immutable context snapshot, a user-authored observation and client request ID before dispatching processing. Contextual-reply observations remain knowledge inputs but are excluded from the top-level feed, so replies stay in their original thread. `GET /api/character/replies` returns the owned thread; `POST /api/character/replies/{replyId}/retry` reuses the same reply. Status is `SAVED`, `PROCESSING`, `FAILED`, `NEEDS_CLARIFICATION` or `COMPLETED`; outcome is separately `UPDATED`, `WITHDRAWN`, `UNCHANGED` or `NEEDS_CLARIFICATION`.
+
+Mezo evaluates the original topic with the original expert's domain context and earlier thread history. The processing lease prevents stale workers from committing twice. Claim lifecycle and portrait changes are committed together with the reasoned outcome. Self-report reaches character prompts and the existing memory projection, independently of evaluation success; it is explicitly attributed rather than treated as a measured fact. No reply writes underlying health logs or plans. AI unavailability retains the saved reply and exposes failure/retry honestly. A recovery job revisits saved or expired processing rows every 60 seconds through `UserFanOut`; failed replies require an explicit retry. `mezo.character.reply.lease-seconds` defaults to 300 and `history-limit` to 20. Same-source replies process in order and inherit any claim created by an earlier reply. Weekly lifecycle writes and immediate feedback refresh locked claims, while portrait writes serialize by dimension to preserve concurrent corrections.
+
 ## 2. User-facing behavior
 
 The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width, like the hub's `Diagnózis` tile, bottom line = the average CORE-band maturity gated by `isDossierEmpty` — that opens `/me/karakter`, the dossier hub. **The dossier's entry point moved here from the Én hub in the hub-tile-reorg** (`mezo-o486`, 2026-09-01, spec [`2026-09-01-hub-tile-reorg-design.md`](../superpowers/specs/2026-09-01-hub-tile-reorg-design.md); guiding principle: *Mezo = everything AI-derived, Én = personal data* — the character dossier is companion-derived, [insights.md §2.0](insights.md)) — the route itself did not move, only the tile. `/me/karakter` and everything under it is
-Design 2.0's Mozaik idiom throughout: a hero + a compact tile mosaic, full-page siblings for each
-tile rather than in-page accordions.
+The social surface follows the approved Clay/Mozaik v3 prototype: warm author-led feed cards, compact topic rows and a shared glass evidence popup.
 
-- **Hub** (`/me/karakter`, `KarakterHubPage`): a 7-segment maturity ring (one arc per CORE
-  dimension, expert domain color, arc length = maturity, center count-up %) above a 4-tile
-  mosaic — **Dimenziók** (avg maturity + a dimension-count line, "7 dimenzió" + " + önvizsgálat"
-  once the META dimension exists, round 4), **Feed** (latest observation preview),
-  **Csapat** (9-persona orb cluster), **Konzílium** (latest conference date, a gold dot when one
-  landed in the last 3 days). A pre-bootstrap dossier (all CORE dims at maturity 0, no claims —
-  `isDossierEmpty`) shows the bootstrap intro face instead of the mosaic; `POST
-  /api/character/bootstrap` drives a staggered progress face, then a reveal ("A dossziéd
-  elkészült") whose CTA opens the first konzílium's transcript. The switch-off/degraded state
-  (overview `404`) is a quiet card, never a crash — the same tone `ChatPage` uses.
-- **Dimenziók** (`/me/karakter/dimenziok`, `DimensionsPage`): all 7 CORE + the 1 META (round 4) +
-  the 1 CHAPTER dimension as tiles — CHAPTER gets a dashed variant, META its own solid,
-  differently-bordered variant (`.kr-dimtile.meta`), neither confused with the plain CORE tile;
+- **Karakter** (`/mezo/karakter`, `KarakterHubPage`): populated dossiers open the feed. An empty dossier (`isDossierEmpty`) retains bootstrap intro/progress/reveal; its CTA opens the first council. Feature-off remains a quiet degraded card.
+- **Rólad** (`/mezo/karakter/dimenziok`, `DimensionsPage`): all current CORE/META/CHAPTER dimensions as compact topic rows;
   each opens its own dimension page
   (`/me/karakter/dimenzio/:key`, `DimensionPage`) — a tinted hero (persona orb + maturity
   count-up, the `self-audit` dimension's subtitle reading "a társ önvizsgálata · Szkeptikus"), the
@@ -182,13 +174,10 @@ tile rather than in-page accordions.
   a confidence-word chip (`biztos`/`valószínű`/`figyeljük`, never a raw number), the claim text
   (an ÉRZÉKENY frame for `sensitive` claims), and the three feedback pills — **Talál** (thanks
   microcopy, disables), **Nem igaz** (a locally-retired dashed face + toast — the API serves
-  ACTIVE claims only, so a "nem igaz" verdict removes the claim from the live cache; the tile
-  keeps rendering its own retired face from local state so the interaction doesn't yank the row
-  out from under the user mid-click), **Pontosítom** (an inline textarea → `Küldés`). A
+  ACTIVE claims only, so a "nem igaz" verdict removes the claim from the live cache; the dimension consumes the refreshed active-claim list, so completed contextual replies cannot leave stale claims onscreen), **Pontosítom** (an inline textarea → `Küldés`). A
   "Beszélgess erről Mezóval" chip hands off to `/mezo/chat` (plain navigation — no anchored
   chat-context idiom exists yet for a claim/dimension).
-- **Feed** (`/me/karakter/feed`, `CharacterFeedPage`): day-grouped observation rows (persona orb
-  + text) plus konzílium-diff rows (a coral pill linking to `/me/karakter/konzilium`).
+- **Üzenőfal** (`/mezo/karakter/feed`, `CharacterFeedPage`): chronological author-led cards, filters for observations/outcomes, progressive display of the loaded feed, GlassBox evidence and persisted contextual reply threads. Conference changes link to their exact conference and show matching stored peer reactions.
 - **Csapat** (`/me/karakter/csapat`, `CsapatPage`): the 9 persona cards straight off
   `GET /api/character/experts` — 7 EXPERT cards (domain-color orb, voiceLine subtitle, "mit
   figyel:" watch line, a role chip), the Szkeptikus (graphite gradient card), and Mezo (the
@@ -287,7 +276,7 @@ tile rather than in-page accordions.
   beszélgetés...") makes explicit that the transcript is the real exchange, never re-dramatized.
 
 - **Gépterem** (`/me/karakter/gepterem`, `GeptermPage`) — the geek-transparency sub-hub, reached
-  from a thin full-width row below the hub's 4-tile mosaic (v4.2, NOT a 5th grid tile — its own
+  from the feed's Hogyan működik? link (its own
   graphite/slate-green technical tone marks it as a different info layer). A hero line renders
   the current week's last run in plain language (`runLabels.lastRunLine`), above a 4-tile mosaic:
   - **Futások** (`/me/karakter/gepterem/futasok`, `FutasokPage`) — a `?start=` ISO-Monday
@@ -334,18 +323,9 @@ tile rather than in-page accordions.
     `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
     in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
     szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
-  - The Feed's (`CharacterFeedPage`) observation rows each carry a ⚙ that resolves the matching
-    NIGHTLY run by the observation's own calendar day (via `useCharacterRuns` over the feed's
-    date span) and navigates to `RunPage` for it; when no NIGHTLY row exists for that day the ⚙
-    is simply absent (no dead button). `CONFERENCE_CHANGE` rows are unaffected — they keep
-    linking to `/me/karakter/konzilium`.
+  - The social feed exposes evidence directly in GlassBox and links to exact conferences. Run/source/detector detail stays accessible through Hogyan működik?; the old guessed date-to-run association is no longer displayed as a source link.
 
-The claim-level `TALAL`/`NEM_IGAZ`/`PONTOSITOM` feedback UI POSTs to
-`POST /api/character/claim/{id}/feedback` (`CharacterFeedbackService`) for real; nothing else in
-the pipeline changed — a submitted correction still only shows up at the next konzílium, exactly
-as the backend already worked before the FE existed. Beyond that, the indirect effect from before
-still holds: claims that clear the prompt-injection threshold (§8 below) shape what Mezo says in
-chat, in the weekly Memoir, in Predictions, and in the weekly review.
+The claim-level **Talál / Nem igaz** UI uses `POST /api/character/claim/{id}/feedback`. **Pontosítom** uses the persistent reply endpoint and immediate targeted evaluation described above. The legacy `PONTOSITOM` feedback API remains compatible and still enters weekly evidence; new UI corrections do not wait for that weekly pass. Accepted claims continue to influence character-prompt consumers.
 
 **Deliberately deferred / out of v1** (see §9): the "Történet" portrait-revision timeline, the
 hero's self-portrait bio line (no backend field to source it from), and a konzílium
@@ -981,7 +961,7 @@ investigating.
   "the konzílium's own, higher 0.95 ceiling". User "talál" feedback only ever adds `+0.05`
   capped at a still-lower **0.85** — a self-confirmation from the user alone can never saturate
   a claim to near-certainty without independent evidence (`CharacterFeedbackService`). "nem
-  igaz" is immediate `RETIRED`, no konzílium round-trip needed. "pontosítom" never moves
+  igaz" is immediate `RETIRED`, no konzílium round-trip needed. The legacy `PONTOSITOM` feedback endpoint never moves
   confidence directly — the free text is logged as a top-salience `user` observation and left
   for the owning expert(s) to weigh at the
   next konzílium; an unaddressed correction is logged (WARN), not silently dropped
@@ -1138,6 +1118,9 @@ investigating.
 
 ## 10. Key files
 
+Social additions: `service/CharacterReplyService.java` (owned save/list/retry), `CharacterReplySourceResolver.java` (source snapshots), `CharacterReplyProcessing.java` (leased atomic outcome), `CharacterReplyEvaluation.java` (audited targeted evaluation), `CharacterReplyWorker.java` (async/recovery), `CharacterReplyMemorySource.java` (memory source); `entity/CharacterReplyEntity.java`, `repository/CharacterReplyRepository.java`, `config/CharacterReplyProperties.java`. Frontend: `data/character/characterReplyHooks.ts`, `components/CharacterPostCard.tsx`, `CharacterReplyThread.tsx`, `CharacterHeader.tsx`, `sheets/CharacterEvidenceSheet.tsx`. Tests: `CharacterReplyApiIT.java`, `characterReplyHooks.test.tsx`, `CharacterReplyThread.test.tsx` and social feed/navigation tests.
+
+
 **Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
 - `controller/CharacterController.java` — the 9 endpoints (the original 7 + the 2 Gépterem run
@@ -1269,12 +1252,9 @@ non-empty, falling back to the existing prose-block rendering otherwise. See §2
   `characterHooks.test.tsx` untouched by any round)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
-- `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces +
-  the thin full-width Gépterem row, S9)
-- `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — the 9-tile list (7 CORE + 1 META + 1
-  CHAPTER, round 4) + one dimension's claims
-- `pages/CharacterFeedPage.tsx` — the day-grouped observation feed (each observation row's ⚙
-  retarget to its matching run page, S9)
+- `pages/KarakterHubPage.tsx` — bootstrap ceremony or direct populated social feed
+- `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — current topic rows and one topic's fresh claims; removed claims remain locally archived while their reply outcome is visible
+- `pages/CharacterFeedPage.tsx` — social post stream, filters and progressive display
 - `pages/CsapatPage.tsx` — the 9 persona cards
 - `pages/KonziliumPage.tsx` (`mezo-sp9w`) — the decision-first conference page: no separate
   list route, `?id=` optional (defaults to the most recent conference), header stepper +

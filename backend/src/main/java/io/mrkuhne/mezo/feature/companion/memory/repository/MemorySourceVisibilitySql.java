@@ -29,6 +29,8 @@ public final class MemorySourceVisibilitySql {
           or ({item}.source_kind='checkin_note' and exists (select 1 from check_in s
             where s.id={item}.source_id and s.created_by={owner}
               and (s.is_deleted or coalesce(s.note,'') ~ '^[[:space:]]*$')))
+          or ({item}.source_kind='character_reply' and exists (select 1 from character_reply s
+            where s.id={item}.source_id and s.created_by={owner} and s.is_deleted))
           or ({item}.source_kind='chat_turn' and exists (select 1 from ai_message s
             left join ai_conversation c on c.id=s.conversation_id and c.created_by={owner}
             where s.id={item}.source_id and s.created_by={owner}

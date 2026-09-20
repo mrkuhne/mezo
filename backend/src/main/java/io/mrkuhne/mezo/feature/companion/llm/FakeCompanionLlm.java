@@ -767,6 +767,17 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
         }
+        // Literal marker preserves the character -> companion dependency direction.
+        if (systemPrompt.startsWith("KARAKTER-VALASZ-FELADAT")) {
+            if (userMessage.contains("[fake-reply-invalid]")) return "not JSON";
+            if (userMessage.contains("[fake-reply-clarify]"))
+                return "{\"outcome\":\"NEEDS_CLARIFICATION\",\"reason\":\"Melyik napokon?\",\"revisedText\":null}";
+            if (userMessage.contains("[fake-reply-withdraw]"))
+                return "{\"outcome\":\"WITHDRAWN\",\"reason\":\"A korábbi állítás nem tartható.\",\"revisedText\":null}";
+            if (userMessage.contains("[fake-reply-unchanged]"))
+                return "{\"outcome\":\"UNCHANGED\",\"reason\":\"Nem közöltél új körülményt.\",\"revisedText\":null}";
+            return "{\"outcome\":\"UPDATED\",\"reason\":\"A saját beszámolód pontosította az állítást.\",\"revisedText\":\"Saját beszámolód szerint hétvégén edzel.\"}";
+        }
         if (systemPrompt.startsWith(PORTRAIT_MARKER_MIRROR)) {
             Matcher m = CHAR_PORTRAIT_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;

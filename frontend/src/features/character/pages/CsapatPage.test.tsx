@@ -68,7 +68,7 @@ describe('CsapatPage', () => {
 
   test('a back chip returns to the Karakter hub', async () => {
     render(<CsapatPage />)
-    await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Üzenőfal' }))
     expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter')
   })
 })

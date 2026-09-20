@@ -1,5 +1,9 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import jakarta.persistence.LockModeType;
+
+import jakarta.persistence.EntityManager;
+
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
@@ -103,6 +107,7 @@ public class CharacterFeedbackService {
     }
 
     private final CharacterClaimRepository claimRepository;
+    private final EntityManager entityManager;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterObservationRepository observationRepository;
 
@@ -116,9 +121,10 @@ public class CharacterFeedbackService {
     public CharacterClaimEntity apply(UUID owner, UUID claimId, String kind, String text) {
         validateText(kind, text);
 
-        CharacterClaimEntity claim = claimRepository.findByIdAndCreatedBy(claimId, owner)
+        CharacterClaimEntity claim = claimRepository.lockOwned(claimId, owner)
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("CHARACTER_CLAIM_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        entityManager.refresh(claim, LockModeType.PESSIMISTIC_WRITE);
         if (RETIRED.equals(claim.getStatus())) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("CHARACTER_CLAIM_ALREADY_RETIRED").build(), HttpStatus.CONFLICT);
