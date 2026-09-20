@@ -59,8 +59,8 @@ test('a nyitáskor olvasatlan sorok kiemelve maradnak az oldalon', async () => {
   expect(container.querySelectorAll('.nf-dot')).toHaveLength(4)
 })
 
-test('a Beállítások gomb a beállítások aloldalra visz', async () => {
+test('the feed does not duplicate the global settings entry', async () => {
   renderPage()
-  await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/ertesitesek/beallitasok')
+  await screen.findByText('Ma')
+  expect(screen.queryByRole('button', { name: 'Beállítások' })).not.toBeInTheDocument()
 })
