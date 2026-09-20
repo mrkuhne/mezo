@@ -89,3 +89,13 @@ test('prevents editing during save so the completed write cannot clear a newer d
   expect(screen.getByLabelText('Célsúly (kg)')).toBeDisabled()
   expect(screen.getByLabelText('Hátralévő céltempó (kg/hét)')).toBeDisabled()
 })
+
+test('expired goals require a new pace instead of dividing remaining weight by one day', async () => {
+  mocks.useGoal.mockReturnValue({ goal, goalResponse: { ...goalResponse, targetDate: '2000-01-01' }, goalId: 'g1', pending: false })
+  renderPage()
+  expect(screen.getByLabelText('Hátralévő céltempó (kg/hét)')).toHaveValue(null)
+  expect(screen.getByText(/A korábbi céldátum már elmúlt/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Súlycél mentése' })).toBeDisabled()
+  await userEvent.type(screen.getByLabelText('Hátralévő céltempó (kg/hét)'), '0.4')
+  expect(screen.getByRole('button', { name: 'Súlycél mentése' })).toBeEnabled()
+})

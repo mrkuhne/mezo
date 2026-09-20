@@ -9,10 +9,11 @@ import '@/features/me/components/goalSettingsEditor.css'
 
 export function GoalSettingsEditor({ goal, currentWeight }: { goal: GoalResponse; currentWeight: number }) {
   const today = localDateString()
-  const daysLeft = Math.max(1, (Date.parse(goal.targetDate) - Date.parse(today)) / 86400000)
-  const initialPace = Math.max(.1, Math.round(Math.abs(currentWeight - (goal.targetWeightKg ?? currentWeight)) / daysLeft * 70) / 10)
+  const daysLeft = (Date.parse(goal.targetDate) - Date.parse(today)) / 86400000
+  const expired = !Number.isFinite(daysLeft) || daysLeft <= 0
+  const initialPace = expired ? null : Math.max(.1, Math.round(Math.abs(currentWeight - (goal.targetWeightKg ?? currentWeight)) / daysLeft * 70) / 10)
   const [target, setTarget] = useState(String(goal.targetWeightKg ?? currentWeight))
-  const [pace, setPace] = useState(String(initialPace))
+  const [pace, setPace] = useState(expired ? '' : String(initialPace))
   const [dirty, setDirty] = useState(false)
   const [saved, setSaved] = useState(false)
   const date = deriveGoalTargetDate(today, currentWeight, Number(target), Number(pace), goal.trajectory)
@@ -26,6 +27,7 @@ export function GoalSettingsEditor({ goal, currentWeight }: { goal: GoalResponse
   return <section className="goal-pace-editor" aria-label="Súlycél módosítása">
     <UnsavedChangesGuard dirty={dirty} /><span className="eyebrow">A te tempódban</span><h2>Célból dátum</h2>
     <p>Számítási alap: {hu1(currentWeight)} kg · {today}. A tempó a még hátralévő útra vonatkozik.</p>
+    <>{expired && <p>A korábbi céldátum már elmúlt. Adj meg új, vállalható heti tempót; ebből számoljuk az új becsült dátumot.</p>}</>
     <div className="goal-pace-fields">
       <label>Célsúly (kg)<input disabled={state.saving} type="number" min="20" max="500" step="0.1" value={target} onChange={e => { setTarget(e.target.value); setDirty(true); setSaved(false) }} /></label>
       <label>Hátralévő céltempó (kg/hét)<input disabled={state.saving} type="number" min="0.1" max="5" step="0.1" value={pace} onChange={e => { setPace(e.target.value); setDirty(true); setSaved(false) }} /></label>
