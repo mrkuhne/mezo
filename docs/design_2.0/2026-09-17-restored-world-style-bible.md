@@ -957,3 +957,52 @@ deliberately one material.
 **Open, not this slice's:** the gym close ceremony still cannot be driven to its end in mock
 (`mezo-p30l2`), so only the *sport* ceremony was verified live; and all eleven sports share one
 clay ball for art, which is why the hue has to work as hard as it does (`mezo-ju4j6.16` territory).
+
+---
+
+## Appendix D — the depth & focus sweep (`mezo-ju4j6.19`)
+
+The §3.4 retro-fit across every screen re-dressed **before** §3.4 existed. No new materials, no
+DOM change: each screen's surfaces were re-ranked inside the existing three grades. What it
+settled, screen by screen — and, just as usefully, what it deliberately left alone.
+
+| Screen | The ONE thing it says (stays loud) | Demoted, and to what |
+| --- | --- | --- |
+| Fuel · étkezés-értékelés | the score, on its halo | the six dimension tiles → §2.2 **B cells** |
+| Fuel · Kiegészítők | the ring + KÖVETKEZIK | the four time bands → **house rows**; the wash returns on the one band that is *due* |
+| Fuel · Trendek | the week picture (halo + day bars) | the three glance tiles → **cells**; the weekday/weekend rows and the day-glass dimension rows → **house rows** |
+| Fuel · Konyha | the Receptműhely | the two captures → **shields**; Receptek + Kamra → **house cards** (their numerals stay) |
+| Train · in-workout list | the work still ahead | `.wo-card.is-complete` → **house card**, its progression banner with it |
+| Train · progression banner | — | `.pobanner` → §2.2 **B cell** everywhere (it lives *inside* a wash tile) |
+| Shell · DomainSwitcher | where you are standing now | the other four domains → **house rows** |
+
+Four rules came out of it:
+
+23. **The hierarchy can be a state, not a place.** The in-workout list has no privileged
+   exercise — every card carries its own cursor — so there was nothing to promote. The axis
+   that *does* exist is **time**: work still ahead keeps the wash, finished work drops a grade.
+   The page then re-ranks itself as the session goes, and what stays loud is always what is
+   left to do. Same move on Fuel · Kiegészítők, where the wash marks the band that is *due*.
+   When a screen has no hero, look for the state that separates its items and rank by that.
+24. **A wash tile inside a wash tile makes both disappear.** `.pobanner` sat bordered and
+   tinted on top of `.wo-card`'s wash. Anything nested inside a §2.2 A surface is a **cell** or
+   a **shield** — never a second washed, bordered box. (§3.4 says this about screens; it is
+   just as true about one card.)
+25. **Re-ranking edits the guard that froze the old ranking.** Two slice guards asserted the
+   flat pass as a *requirement* — 5c pinned `.fsx-band.is-due`'s exact one-line rule, and 5d
+   demanded that every Konyha tile carry a `--mz-shadow-*` lift. A ranking sweep must rewrite
+   those in the same commit, or a guard written before the rule outranks the rule. Both now
+   assert the *ranking* (one lifted tile, the rest below it) instead of the uniformity.
+26. **An explicit owner decision outranks the sweep — say so, don't silently reverse it.**
+   Fuel · Mai's meal blocks are five wash tiles, and the `fuel-mai` block records *why*: the
+   owner rejected an earlier pass for not separating them ("saját mosás, saját árnyék, 16px
+   hézag"). The screen already has three grades on it (halo hero → washed blocks → shield
+   door), so it was left as it is. The sweep reports that; it does not overrule it.
+
+**Also fixed in passing** (A.2 rule 5, found by the 320px check the sweep mandates): Fuel ·
+Kiegészítők' hero put a 112px ring and the KÖVETKEZIK row side by side, which crushed the
+product name onto three lines at 320px. They stack there now, the ring keeping its real size.
+
+**Left for `mezo-ju4j6.16`:** `ProgressionBanner` still writes a literal „⚡" into its label
+(§2.3: no emoji, ever), and the level-up overlay is still full of them. Both are DOM edits, and
+this task is a CSS ranking sweep.
