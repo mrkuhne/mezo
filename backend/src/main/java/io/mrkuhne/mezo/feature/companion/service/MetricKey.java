@@ -50,7 +50,12 @@ public enum MetricKey {
     TEXT_STRESS("feszültség (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
     /** bd mezo-dqzm: NEM korrelálható — a „társas nap" kérdésre a {@link #SOCIAL_MENTIONS} felel. */
     TEXT_SOCIAL_CONTACT("társas nap (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND,
-            MetricValueKind.BINARY, false);
+            MetricValueKind.BINARY, false),
+    DAILY_CARBS_G("napi szénhidrát", "Étkezés-napló", MetricDomain.FUEL),
+    DAILY_FAT_G("napi zsír", "Étkezés-napló", MetricDomain.FUEL),
+    DAILY_SUGAR_G("napi cukor", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL),
+    DAILY_SALT_G("napi só", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL),
+    DAILY_FIBER_G("napi rost", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL);
 
     private final String labelHu;
     private final String sourceHu;
