@@ -175,10 +175,15 @@ function FieldRow({ spec, value, onChange }: {
   value: number | string
   onChange: (next: number | string) => void
 }) {
+  // `data-sp-key` is a STYLE hook only (prototype.css `train sport`): the restored form
+  // gives the minutes stepper the §2.2 A wash tile and the §3.2 numeral, and leaves every
+  // other number field a shield, so the page has a first read. It carries no behaviour —
+  // the field order differs per sport (Kerékpár and Úszás ask distance first), so
+  // „the first stepper" is not the minutes one and a positional selector would be wrong.
   const id = `sp-${spec.key}`
   if (spec.type === 'chips') {
     return (
-      <div className="sp-field">
+      <div className="sp-field" data-sp-key={spec.key}>
         {/* A chip row is a group of buttons, not a labelable control — the accessible name
             rides the group, not a dangling `for`. */}
         <label>{spec.label}</label>
@@ -194,7 +199,7 @@ function FieldRow({ spec, value, onChange }: {
   }
   if (spec.type === 'range') {
     return (
-      <div className="sp-field">
+      <div className="sp-field" data-sp-key={spec.key}>
         <label htmlFor={id}>{spec.label}<b>{value} {spec.unit}</b></label>
         <input
           id={id} className="sp-range" type="range" min={spec.min} max={spec.max} step={1}
@@ -205,7 +210,7 @@ function FieldRow({ spec, value, onChange }: {
   }
   if (spec.type === 'text') {
     return (
-      <div className="sp-field">
+      <div className="sp-field" data-sp-key={spec.key}>
         <label htmlFor={id}>{spec.label}</label>
         <input
           id={id} className="sp-text" type="text" maxLength={40} placeholder={spec.placeholder}
@@ -221,7 +226,7 @@ function FieldRow({ spec, value, onChange }: {
   const stepBy = (delta: number) =>
     onChange(Math.min(spec.max, Math.max(spec.min, Number(value) + delta)))
   return (
-    <div className="sp-field">
+    <div className="sp-field" data-sp-key={spec.key}>
       <label htmlFor={id}>{spec.label}</label>
       <div className="sp-number">
         <button type="button" aria-label={`${spec.label} csökkentése`} onClick={() => stepBy(-spec.step)}>−</button>
