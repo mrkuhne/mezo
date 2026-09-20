@@ -1073,20 +1073,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .tab-item:not(.active) .tab-ico svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
 .tab-item svg { transition: filter var(--duration-normal) var(--ease-out); }
 
-/* Titanium nav (mezo-jkh4): the domain-switch mark leads the bar — the Mezo companion
-   mark + the current domain's name + a ⌃ caret. Styled as a tab-item column, but the
-   Mezo mark stays full-colour (it is the identity, not a muted tab). */
+/* Avatar-only domain switch: keep the companion in full colour. */
 .tab-item.domain-switch {
   border: none; background: none; cursor: pointer; padding: 0;
   font: inherit;
 }
 .tab-item.domain-switch .tab-ico svg { filter: none; }
-.domain-switch-name {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-family: var(--ff-body); font-size: 11px; font-weight: 700;
-  color: var(--text-primary);
-}
-.domain-switch-name b { font-size: 9px; opacity: 0.6; line-height: 1; }
+
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
@@ -11248,22 +11241,22 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `shared/ui/clay/boop/Boop.tsx`), ezért ezek a szabályok tényleg az EGYES példányra
    hatnak — egy `<use>` klónnál minden figura egyszerre mozogna.
 
-   Csak az `.is-alive` példány él (ma: a Nap/Mai középpontja). A menü és a területváltó
-   Boopja nyugalomban áll: ott a figyelem a navigációé.
-
-   Három mozdulat, mind a `no-preference` ág alatt: a tekintet (a pupilla vízszintes
-   eltolása), a szemöldök (rövid felhúzás) és a lélegzet (max 2% skála a lábfejektől).
-   PISLOGÁS NINCS (owner 2026-09-18, stíluskönyv §6.4). Csökkentett mozgás mellett a
-   figura statikus — és teljes értékű. */
+   Az `.is-alive` példány pislog, nézelődik, szemöldököt emel és lélegzik,
+   a navigációban is. Csökkentett mozgás mellett statikus. */
 .boop { display: block; }
-.boop .boop-pupil, .boop .boop-brow, .boop .boop-body { transform-box: fill-box; }
-.boop .boop-pupil, .boop .boop-brow { transform-origin: center; }
+.boop .boop-eye, .boop .boop-pupil, .boop .boop-brow, .boop .boop-body { transform-box: fill-box; }
+.boop .boop-eye, .boop .boop-pupil, .boop .boop-brow { transform-origin: center; }
 .boop .boop-body { transform-origin: 50% 96%; }
 
 @media (prefers-reduced-motion: no-preference) {
+  .boop.is-alive .boop-eye { animation: boop-blink 6s infinite; }
   .boop.is-alive .boop-pupil { animation: boop-look 9s infinite; }
   .boop.is-alive .boop-brow { animation: boop-brow 9s infinite; }
   .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out infinite; }
+}
+@keyframes boop-blink {
+  0%, 41%, 45%, 100% { transform: scaleY(1); }
+  43% { transform: scaleY(.08); }
 }
 @keyframes boop-look {
   0%, 20% { transform: translateX(0); }
@@ -15851,8 +15844,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   --nav-highlight: rgba(255, 255, 255, 0.75);
   /* On a light bar the §2.1 accents must be the READABLE `--mz-cell-*-ink` halves —
      the lifted pastels below are calibrated for graphite and vanish here. */
-  --nav-nap: var(--mz-cell-amber-ink);
-  --nav-train: var(--mz-cell-coral-ink);
+  --nav-nap: var(--mz-cell-coral-ink);
+  --nav-train: var(--mz-cell-sky-ink);
   --nav-fuel: var(--mz-cell-sage-ink);
   --nav-mezo: var(--mz-cell-lav-ink);
   --nav-me: var(--mz-cell-rose-ink);
@@ -15869,8 +15862,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   --nav-shadow: rgba(43, 33, 24, 0.10);
   --nav-highlight: rgba(255, 255, 255, 0.05);
   /* The §2.1 --dv- domain ramp, lifted for contrast against the graphite bar. */
-  --nav-nap: #FFC46B;
-  --nav-train: #FF8A6A;
+  --nav-nap: #FF8A6A;
+  --nav-train: #8ABCE6;
   --nav-fuel: #9DC4AC;
   --nav-mezo: #B7ABDD;
   --nav-me: #EE9AA8;
@@ -15899,7 +15892,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tab-bar[data-domain] .domain-switch {
   flex: 0 0 56px; border-right: 1px solid var(--nav-line); padding-right: 5px;
 }
-.tab-bar[data-domain] .domain-switch-name { font-size: 10px; font-weight: 500; color: var(--nav-accent); }
+.tab-bar[data-domain] .domain-switch .tab-ico { width: 40px; height: 40px; }
 .phone-screen:has(.tab-bar[data-domain]) > .home-indicator { background: var(--nav-ink); }
 .tab-bar[data-domain] .tab-item:focus-visible {
   outline: 2px solid var(--nav-ink); outline-offset: -2px; border-radius: 8px;
@@ -15929,8 +15922,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: var(--mz-wash-sand);
   box-shadow: var(--mz-shadow-lav);
 }
-.domain-row[data-domain="nap"]   { background: var(--mz-wash-gold);  box-shadow: var(--mz-shadow-gold); }
-.domain-row[data-domain="train"] { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.domain-row[data-domain="nap"]   { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.domain-row[data-domain="train"] { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
 .domain-row[data-domain="fuel"]  { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
 .domain-row[data-domain="mezo"]  { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
 .domain-row[data-domain="me"]    { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
@@ -15974,7 +15967,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .tab-bar[data-domain] { height: calc(76px + env(safe-area-inset-bottom)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 360px) {
-  .tab-bar[data-domain] .tab-item, .tab-bar[data-domain] .domain-switch-name { font-size: 9px; }
+  .tab-bar[data-domain] .tab-item { font-size: 9px; }
   .tab-bar[data-domain] .domain-switch { flex-basis: 48px; }
   .domain-switcher-overlay { padding-left: 16px; padding-right: 16px; }
   .domain-row { gap: 10px; padding: 14px 12px; }
