@@ -690,14 +690,19 @@ describe('the train izomjel section is registered and re-dressed (mezo-ju4j6.12)
 })
 
 /**
- * Section registration (mezo-lf3cv, P2 Task 3): the Gyakorlatok tab's own `.gy-*`
- * section — the catalogue rows, the detail hero, the record stat cards, the `.gy-
- * next` nudge, the strength-curve graphic and the medal rows — ported from the
- * prototype's `gyak.css`, registered exactly like the blocks above.
+/**
+ * Section registration (mezo-lf3cv, P2 Task 3 · re-dressed mezo-ju4j6.13): the Gyakorlatok
+ * tab's own `.gy-*` section — the catalogue rows, the detail hero, the record stat cards,
+ * the `.gy-next` nudge, the strength-curve graphic and the medal rows. The marker lost its
+ * `titanium` suffix with the re-dress and this describe moved in the SAME commit, as the
+ * house rule requires; it also carries the banished-material guards (style bible A.2 rule 4)
+ * and the §3.4 ranking this slice was actually about.
  */
-describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', () => {
-  const START_MARKER = 'train gyakorlatok titanium'
-  const END_MARKER = '/train gyakorlatok titanium'
+describe('the train gyakorlatok section is registered and re-dressed (mezo-ju4j6.13)', () => {
+  const START_MARKER = '── train gyakorlatok ('
+  const END_MARKER = '── /train gyakorlatok '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -707,15 +712,62 @@ describe('the train gyakorlatok titanium section is registered (mezo-lf3cv)', ()
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train gyakorlatok titanium')
+  })
+
   test('the section actually carries the gy- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.gy-card', '.gy-rec', '.gy-curve', '.gy-medal', '.gy-next', '.gy-hero',
     ]) {
-      expect(section, `${cls} missing from the train gyakorlatok titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the train gyakorlatok section`).toContain(cls)
     }
+  })
+
+  // A blokk a prototípus fehér-alfáit hozta, mind SÖTÉT alapra tervezve. A `.titan-dark`
+  // hatókör a 2. fázisban megszűnt; világos lapon ezek vagy láthatatlanok, vagy szürke
+  // hártyát húznak a lapra (C 11. szabály).
+  test('the white-film literals are gone — this tab lives in the LIGHT world now', () => {
+    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+  })
+
+  // §8.6: a hős mögötti két végtelen szaggatott pörgés volt az utolsó hurok a blokkban,
+  // és az `ld-spin` keyframe vele együtt ment (A.3 6. szabály: a re-dress nem hagy maga
+  // után halott `@keyframes`-t).
+  test('the infinite spins are gone, and so is the keyframe they orphaned', () => {
+    expect(rules()).not.toContain('infinite')
+    expect(rawCss).not.toContain('@keyframes ld-spin')
+  })
+
+  // A.2 1. szabály: a doménszín a ház akcense, nem a Titán `--tag-gym`.
+  test('the runtime hue falls back to --dv-coral, not the Titanium --tag-gym', () => {
+    const css = rules()
+    expect(css).toContain('var(--mus-color, var(--dv-coral))')
+    expect(css).not.toContain('--tag-gym')
+  })
+
+  // §3.4 — EZ a szelet lényege. A katalógus sora ház-sor (a poszter a hangos felület),
+  // a becsült maximum viszont mosott csempe a §3.2 számjeggyel.
+  test('the catalogue row is a house row, not a wash tile', () => {
+    const card = /\.gy-card \{([^}]*)\}/.exec(rules())
+    expect(card, '.gy-card rule not found').not.toBeNull()
+    expect(card![1]).toContain('background: var(--surface-1)')
+    expect(card![1]).toContain('inset 0 0 0 1px var(--border-subtle)')
+  })
+
+  test('the estimated 1RM is the hero: a wash tile with the §3.2 numeral', () => {
+    const css = rules()
+    expect(css).toMatch(/\.gy-rec:first-child \{[^}]*linear-gradient\(150deg/)
+    expect(css).toMatch(/\.gy-rec:first-child strong \{[^}]*font-weight: 200;/)
+    expect(css).toMatch(/\.gy-rec:first-child strong \{[^}]*font-variant-numeric: tabular-nums;/)
+    // …and the two lesser records sit a grade below it, side by side.
+    expect(css).toMatch(/\.gy-recs \{[^}]*grid-template-columns: 1fr 1fr;/)
+    expect(css).toMatch(/\.gy-rec:nth-child\(n \+ 2\) \{[^}]*background: var\(--surface-1\)/)
+  })
+
+  // A.2 5. szabály: minden méret-lépés után 320px-ellenőrzés, és a lépcső a blokkon belül.
+  test('the two-up record cells step back to one column on a narrow phone', () => {
+    expect(rules()).toMatch(/@media \(max-width: 360px\) \{[^@]*\.gy-recs \{ grid-template-columns: 1fr; \}/)
   })
 })
 
@@ -878,14 +930,18 @@ describe('the train session section keeps its structural invariants (mezo-88iwa.
 })
 
 /**
- * Section registration (mezo-88iwa.8, T7 Task 2): the workout-close ceremony's
- * `.cer-*` section — the score reveal, the settled result, and the details/recap
- * screen (muscle-group star rows, the kcal-won tile), ported from the prototype's
- * session.css, registered exactly like the blocks above.
+/**
+ * Section registration (mezo-88iwa.8, T7 Task 2 · re-dressed mezo-ju4j6.13): the workout-
+ * close ceremony's `.cer-*` section — the score reveal, the settled result, and the
+ * details/recap screen. The ceremony PATTERN stays canon (`docs/design_2.0/
+ * 2026-09-15-ceremony-pattern.md`); only the material went back to polished stone and gold
+ * (style bible §5). Marker renamed and this describe moved in the SAME commit.
  */
-describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () => {
-  const START_MARKER = 'train ceremony titanium'
-  const END_MARKER = '/train ceremony titanium'
+describe('the train ceremony section is registered and wears the restored materials (mezo-ju4j6.13)', () => {
+  const START_MARKER = '── train ceremony ('
+  const END_MARKER = '── /train ceremony '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -895,29 +951,74 @@ describe('the train ceremony titanium section is registered (mezo-88iwa.8)', () 
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train ceremony titanium')
+  })
+
   test('the section actually carries the cer- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
     ]) {
-      expect(section, `${cls} missing from the train ceremony titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the train ceremony section`).toContain(cls)
     }
+  })
+
+  test('the white-film literals are gone — the ceremony is lit, not tinted glass', () => {
+    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+  })
+
+  // §5: arany tónus-sáv a talajon, §2.2 C halo a hős mögött — se sötét poszter, se
+  // `backdrop-filter`.
+  test('the ground is a gold tone band and the hero sits on a halo', () => {
+    const css = rules()
+    expect(css).toContain('var(--mz-tone-gold)')
+    expect(css).toMatch(/\.cer-sky \{[^}]*background: var\(--halo-amber\)/)
+    expect(css).not.toContain('backdrop-filter')
+  })
+
+  // A „Ritmus" csiszolt kő MARAD (az eleve a helyes anyag volt); ami ment, az a két
+  // neon-glow körülötte és a szám-feliratra vágott arany színátmenet (§2.3).
+  test('the Ritmus stone survives, its neon glow and the clipped-gradient numerals do not', () => {
+    const css = rules()
+    expect(css).toMatch(/\.cer-fill \{[^}]*#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0/)
+    expect(css).not.toMatch(/box-shadow: 0 0 \d+px/)
+    expect(css).not.toContain('background-clip: text')
+    expect(css).not.toContain('filter: grayscale')
+  })
+
+  // §3.4 — a rangsor: a számlálók és a statisztika ház-anyag, az ÚJ REKORD az egyetlen
+  // arany mosott csempe, a megnyert kalória pedig ZSÁLYA (A.2 1. szabály: az az Fuel
+  // száma), nem a Titán-kori cián.
+  test('the ranking holds: counters quiet, the record gold, the kcal sage', () => {
+    const css = rules()
+    expect(css).toMatch(/\.cer-counters span \{[^}]*background: none;/)
+    expect(css).toMatch(/\.cer-record \{[^}]*background: var\(--mz-wash-gold\)/)
+    expect(css).toMatch(/\.cer-kcal \{[^}]*background: var\(--mz-wash-sage\)/)
+    expect(css).toMatch(/\.cer-kcal-line strong \{[^}]*font-weight: 200;/)
+  })
+
+  // Egylövetű koreográfia, végtelen hurok nélkül (§8.6) — a `no-preference`/`reduce`
+  // ágpár marad, mert a ceremónia MINTÁJA az.
+  test('the choreography stays one-shot, with its reduced-motion branch', () => {
+    const css = rules()
+    expect(css).not.toContain('infinite')
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
   })
 })
 
 /**
- * Section registration (mezo-88iwa.9, T8 Task 3): the sport-logging flow's own `.sp-*`
- * section — the sport picker grid/tiles, the per-sport form (mode toggle, numeric
- * stepper, chip picker, free text, range, the kcal estimate tile), ported from the
- * prototype's sport.css, registered exactly like the blocks above. The ceremony
- * families (`.sp-cer`, `.sp-keep`, `.sp-details`) are NOT re-ported here — T7's
- * `.cer-*` section already serves the shared close ceremony.
+/**
+ * Section registration (mezo-88iwa.9, T8 Task 3 · re-dressed mezo-ju4j6.13): the sport-
+ * logging flow's own `.sp-*` section — the picker grid/tiles and the per-sport form. The
+ * ceremony families are NOT here: the shared `.cer-*` section serves that. Marker renamed
+ * and this describe moved in the SAME commit.
  */
-describe('the train sport titanium section is registered (mezo-88iwa.9)', () => {
-  const START_MARKER = 'train sport titanium'
-  const END_MARKER = '/train sport titanium'
+describe('the train sport section is registered and re-dressed (mezo-ju4j6.13)', () => {
+  const START_MARKER = '── train sport ('
+  const END_MARKER = '── /train sport '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -927,15 +1028,58 @@ describe('the train sport titanium section is registered (mezo-88iwa.9)', () => 
     expect(end).toBeGreaterThan(start)
   })
 
+  test('the Titanium-era marker name is gone — one block, renamed', () => {
+    expect(rawCss).not.toContain('train sport titanium')
+  })
+
   test('the section actually carries the sp- class family, not just the markers', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
     for (const cls of [
       '.sp-grid', '.sp-tile', '.sp-field', '.sp-chips', '.sp-kcal', '.sp-note',
     ]) {
-      expect(section, `${cls} missing from the train sport titanium section`).toContain(cls)
+      expect(section(), `${cls} missing from the train sport section`).toContain(cls)
     }
+  })
+
+  test('the white films and the dark input grounds are gone', () => {
+    const css = rules()
+    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
+    // `#090e1366` — the prototype's near-black field, a black strip on a cream page.
+    expect(css).not.toMatch(/#090e13/i)
+  })
+
+  // §3.4 + A.5 10. szabály: a tizenegy csempe §2.2 B CELLA (lapos színfolt, árnyék
+  // nélkül), nem mosott csempe — de nem is csupasz pajzs, mert minden sport ábrája
+  // ugyanaz az agyaggömb, és a szín az egyetlen megkülönböztető jel.
+  test('the picker tiles are flat colour cells, not wash tiles', () => {
+    const tile = /\.sp-tile \{([^}]*)\}/.exec(rules())
+    expect(tile, '.sp-tile rule not found').not.toBeNull()
+    expect(tile![1]).toContain('box-shadow: none')
+    expect(tile![1]).toContain('color-mix(in srgb, var(--sp-color) 18%, var(--surface-card))')
+  })
+
+  // A lap hőse a PERC: §2.2 A mosás + §3.2 számjegy, `[data-sp-key]` horgonyon
+  // (SportLogPage `FieldRow`) — a mezősorrend sportonként más, ezért pozíciós szelektor
+  // rossz választ adna.
+  test('the minutes stepper is the one wash tile on the form', () => {
+    const css = rules()
+    expect(css).toMatch(/\.sp-field\[data-sp-key="minutes"\] \.sp-number \{[^}]*linear-gradient\(150deg/)
+    expect(css).toMatch(/\.sp-field\[data-sp-key="minutes"\] \.sp-number input \{[^}]*font-size: 40px/)
+    expect(css).toMatch(/\.sp-number \{[^}]*background: var\(--surface-1\)/)
+  })
+})
+
+/**
+ * C rule 13, found while re-dressing the sport form (mezo-ju4j6.13): `.sp-foot`'s
+ * „Naplózom" CTA was reached by NEITHER `.gl-card .wo-close-cta` nor `.cer-cta
+ * .wo-close-cta`, so on the restored light page it rendered as a bare, unstyled button.
+ * It is the third arm of that rule now — the one big action is the house primary.
+ */
+describe('the sport form CTA is the house primary (mezo-ju4j6.13)', () => {
+  test('.sp-foot joins the .wo-close-cta rule and takes --gradient-cta', () => {
+    const rule = /\.gl-card \.wo-close-cta, \.cer-cta \.wo-close-cta, \.sp-foot \.wo-close-cta \{([^}]*)\}/.exec(rawCss)
+    expect(rule, 'the three-armed .wo-close-cta rule not found').not.toBeNull()
+    expect(rule![1]).toContain('background: var(--gradient-cta)')
+    expect(rule![1]).toContain('box-shadow: var(--shadow-cta)')
   })
 })
 
