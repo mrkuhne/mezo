@@ -1,0 +1,23 @@
+.personal-sources { margin-bottom: 26px; }
+.personal-editor { padding: 24px 20px; border-radius: 28px 12px 28px 28px; background: var(--mz-wash-lav); margin-bottom: 24px; }
+.personal-editor h2, .personal-learned h2, .personal-context-section h2 { font-family: var(--font-display); font-size: 23px; font-weight: 500; margin: 8px 0; }
+.personal-editor p, .personal-scope, .personal-learned p { font-size: 13px; line-height: 1.65; color: var(--text-secondary); }
+.personal-editor textarea { width: 100%; box-sizing: border-box; padding: 15px; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 15px; line-height: 1.65; resize: vertical; margin-top: 10px; }
+.personal-field-foot { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin: 8px 0 20px; }
+.personal-switch { display: flex; align-items: center; gap: 18px; padding: 18px 0; border-top: 1px solid var(--border-subtle); margin-bottom: 18px; }
+.personal-switch small { display: block; margin-top: 7px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.personal-switch input { width: 24px; height: 24px; flex-shrink: 0; accent-color: var(--lav-deep); }
+.personal-learned { margin-bottom: 24px; }
+.personal-context-section { padding: 20px 0; border-bottom: 1px solid var(--border-subtle); }
+.personal-context-section header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.personal-context-section header span { font-size: 10px; flex-shrink: 0; padding: 6px 8px; border-radius: 20px; background: var(--mz-wash-sage); }
+.personal-context-section small { color: var(--text-tertiary); }
+.personal-context-section p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; }
+.personal-context-section a { color: var(--lav-deep); font-size: 13px; }
+.personal-raw { margin-top: 24px; padding: 18px; border-radius: 20px; background: var(--surface-2); }
+.personal-raw pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; }
+.settings-account label { display: grid; gap: 8px; margin-bottom: 20px; font-size: 13px; }
+.settings-account input { width: 100%; box-sizing: border-box; padding: 13px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-page); color: var(--text-primary); font: inherit; font-size: 16px; }
+.personal-core { padding: 20px; border-radius: 12px 28px 28px 28px; background: var(--mz-wash-rose); margin-bottom: 24px; }
+.personal-core h2 { font-family: var(--font-display); font-size: 22px; font-weight: 500; }
+.personal-core p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.65; }
