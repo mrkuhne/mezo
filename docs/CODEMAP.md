@@ -45,7 +45,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [proactive](#proactive) | ✓ | 2 | · | · | [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [quickinput](#quickinput) | · | · | · | ✓ | · |
+| [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
@@ -196,7 +196,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-20, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -1254,7 +1254,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: **none — no HOW doc exists for this feature yet**
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
@@ -1341,7 +1341,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/needs.md](features/needs.md) (updated 2026-09-18, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-18, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-21, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-20, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1596,5 +1596,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `quickinput`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
