@@ -1323,3 +1323,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609200928_mezo-txunr.1_companion_preferences.sql
+  - changeSet:
+      id: "1.0.0:202609201120_mezo-njcgs_create_character_reply"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609201120_mezo-njcgs_create_character_reply.sql

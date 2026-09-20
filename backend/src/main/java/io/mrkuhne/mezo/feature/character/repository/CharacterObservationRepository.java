@@ -8,6 +8,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CharacterObservationRepository extends JpaRepository<CharacterObservationEntity, UUID> {
+    /** Reply evidence remains available to conferences, but does not become a user-authored post.
+     * Filter BEFORE pagination so a busy thread cannot crowd its source out of the feed. */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select * from character_observation
+            where created_by = :owner and is_deleted = false
+              and not (signals @> cast('{"signals":[{"detectorKey":"contextual-reply"}]}' as jsonb))
+            order by day desc, created_at desc
+            """, nativeQuery = true)
+    List<CharacterObservationEntity> findFeed(UUID owner, Pageable pageable);
+
+
+    java.util.Optional<CharacterObservationEntity> findByIdAndCreatedBy(UUID id, UUID owner);
+
 
     List<CharacterObservationEntity> findByCreatedByOrderByDayDescCreatedAtDesc(UUID createdBy, Pageable pageable);
 

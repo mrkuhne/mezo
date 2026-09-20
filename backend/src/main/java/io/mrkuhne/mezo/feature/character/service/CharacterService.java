@@ -1,5 +1,11 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.api.dto.CharacterPortraitRevisionDto;
+
+import io.mrkuhne.mezo.api.dto.CharacterFeedItemEvidenceInner;
+
+import io.mrkuhne.mezo.feature.character.service.CharacterFeedbackService;
+
 import io.mrkuhne.mezo.api.dto.CharacterClaimDto;
 import io.mrkuhne.mezo.api.dto.CharacterClaimDtoEvidenceInner;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
@@ -223,9 +229,11 @@ public class CharacterService {
         List<CharacterFeedItem> items = new ArrayList<>();
 
         for (CharacterObservationEntity obs : observationRepository
-                .findByCreatedByOrderByDayDescCreatedAtDesc(owner, PageRequest.of(0, limit))) {
+                .findFeed(owner, PageRequest.of(0, limit))) {
             items.add(CharacterFeedItem.builder()
                     .kind(CharacterFeedItem.KindEnum.OBSERVATION)
+                    .sourceType(CharacterFeedItem.SourceTypeEnum.OBSERVATION).sourceId(obs.getId()).sourceIndex(0)
+                    .evidence(obs.getSignals().signals().stream().map(signal -> CharacterFeedItemEvidenceInner.builder().kind(signal.detectorKey()).label(signal.summary()).refId(signal.refIds().stream().findFirst().orElse(null)).build()).toList())
                     .at(toOffset(obs.getCreatedAt()))
                     .expertKey(obs.getExpertKey())
                     .dimensionKeys(obs.getDimensionKeys().keys())
@@ -234,9 +242,11 @@ public class CharacterService {
         }
 
         conferenceRepository.findFirstByCreatedByOrderByGeneratedAtDesc(owner).ifPresent(conf -> {
+            int changeIndex = 0;
             for (ConferenceOutcomeEnvelope.Change change : conf.getOutcome().changes()) {
                 items.add(CharacterFeedItem.builder()
                         .kind(CharacterFeedItem.KindEnum.CONFERENCE_CHANGE)
+                        .sourceType(CharacterFeedItem.SourceTypeEnum.CONFERENCE_CHANGE).sourceId(conf.getId()).sourceIndex(changeIndex++)
                         .at(toOffset(conf.getGeneratedAt()))
                         .expertKey(null)
                         .dimensionKeys(change.dimensionKey() != null ? List.of(change.dimensionKey()) : List.of())
@@ -306,6 +316,7 @@ public class CharacterService {
                 .toList();
         List<CharacterConferenceResponseChangesInner> changes = conf.getOutcome().changes().stream()
                 .map(change -> CharacterConferenceResponseChangesInner.builder()
+                        .claimId(change.claimId())
                         .kind(change.kind())
                         .dimensionKey(change.dimensionKey())
                         .summary(change.summary())
@@ -472,7 +483,7 @@ public class CharacterService {
     }
 
     /** Entity→DTO mapping for one claim — also called by {@code CharacterController} to render
-     *  the row {@link io.mrkuhne.mezo.feature.character.service.CharacterFeedbackService#apply}
+     *  the row {@link CharacterFeedbackService#apply}
      *  hands back (mezo-1gim.10), so it stays reused rather than duplicated. */
     public CharacterClaimDto toClaimDto(CharacterClaimEntity claim) {
         List<CharacterClaimDtoEvidenceInner> evidence = claim.getEvidence().refs().stream()
@@ -492,8 +503,8 @@ public class CharacterService {
                 .build();
     }
 
-    private io.mrkuhne.mezo.api.dto.CharacterPortraitRevisionDto toRevisionDto(CharacterPortraitRevisionEntity rev) {
-        return io.mrkuhne.mezo.api.dto.CharacterPortraitRevisionDto.builder()
+    private CharacterPortraitRevisionDto toRevisionDto(CharacterPortraitRevisionEntity rev) {
+        return CharacterPortraitRevisionDto.builder()
                 .version(rev.getVersion())
                 .portrait(rev.getPortrait())
                 .createdAt(toOffset(rev.getCreatedAt()))

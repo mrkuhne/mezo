@@ -8,6 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CharacterClaimRepository extends JpaRepository<CharacterClaimEntity, UUID> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select c from CharacterClaimEntity c where c.id = :id and c.createdBy = :owner")
+    Optional<CharacterClaimEntity> lockOwned(UUID id, UUID owner);
+
     List<CharacterClaimEntity> findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
             UUID createdBy, UUID dimensionId, String status);
 

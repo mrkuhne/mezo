@@ -72,13 +72,12 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     private final CharacterClaimRepository claimRepository;
     private final CharacterProperties properties;
     private final PromptPersona promptPersona;
+    private final io.mrkuhne.mezo.feature.character.repository.CharacterReplyRepository replies;
 
     @Override
     public String render(UUID userId) {
         List<CharacterDimensionEntity> dimensions = orderedDimensions(userId);
-        if (dimensions.isEmpty()) {
-            return "";
-        }
+
         CharacterProperties.Prompt config = properties.prompt();
         Instant now = Instant.now();
         List<String> blocks = new ArrayList<>();
@@ -98,6 +97,11 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
                 continue;
             }
             result.append(block);
+        }
+        for (var reply : replies.findTop5ByCreatedByOrderByCreatedAtDesc(userId)) {
+            String line = "- Felhasználói önbeszámoló (" + oneLine(reply.getSourceText(), 160) + "): "
+                    + oneLine(reply.getText(), 500) + "\n";
+            if (result.length() + line.length() <= config.maxTotalChars()) result.append(line);
         }
         return result.length() == header.length() ? "" : result.toString();
     }

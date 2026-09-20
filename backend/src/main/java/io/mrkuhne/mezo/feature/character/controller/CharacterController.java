@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.character.controller;
 
 import io.mrkuhne.mezo.api.controller.CharacterApi;
 import io.mrkuhne.mezo.api.dto.CharacterClaimDto;
+import io.mrkuhne.mezo.api.dto.CharacterReplyResponse;
+import io.mrkuhne.mezo.api.dto.CharacterReplyCreateRequest;
+import io.mrkuhne.mezo.feature.character.service.CharacterReplyService;
 import io.mrkuhne.mezo.api.dto.CharacterClaimFeedbackRequest;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
@@ -38,6 +41,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CharacterController implements CharacterApi {
 
     private final CharacterService characterService;
+    private final CharacterReplyService replyService;
     /**
      * {@link CharacterBootstrapService} is {@code @ConditionalOnProperty} on BOTH
      * {@code CHARACTER_SWITCH} and {@code COMPANION_SWITCH} (it runs an LLM konzílium), while this
@@ -128,5 +132,19 @@ public class CharacterController implements CharacterApi {
         CharacterClaimEntity claim = characterFeedbackService.apply(currentUserId.get(), claimId,
                 request.getKind().getValue(), request.getText());
         return characterService.toClaimDto(claim);
+    }
+    @Override
+    public List<CharacterReplyResponse> listCharacterReplies(String sourceType, UUID sourceId, Integer sourceIndex) {
+        return replyService.list(currentUserId.get(), sourceType, sourceId, sourceIndex == null ? 0 : sourceIndex);
+    }
+
+    @Override
+    public CharacterReplyResponse createCharacterReply(CharacterReplyCreateRequest request) {
+        return replyService.create(currentUserId.get(), request);
+    }
+
+    @Override
+    public CharacterReplyResponse retryCharacterReply(UUID replyId) {
+        return replyService.retry(currentUserId.get(), replyId);
     }
 }

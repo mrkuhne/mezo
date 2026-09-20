@@ -1,5 +1,11 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import jakarta.persistence.LockModeType;
+
+import jakarta.persistence.EntityManager;
+
+import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
+
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
@@ -55,6 +61,8 @@ public class PortraitWriter {
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
+    private final CharacterClaimRepository claimRepository;
+    private final EntityManager entityManager;
 
     /**
      * Rewrites {@code dimension}'s portrait from {@code activeClaims}. Returns {@code false} (and
@@ -68,18 +76,38 @@ public class PortraitWriter {
     @Transactional
     public boolean rewrite(UUID owner, CharacterDimensionEntity dimension, List<CharacterClaimEntity> activeClaims,
                            UUID conferenceId) {
+        return rewriteWithOrigin(owner, dimension, activeClaims, conferenceId, null);
+    }
+
+    @Transactional
+    public boolean rewriteForReply(UUID owner, CharacterDimensionEntity dimension,
+                                   List<CharacterClaimEntity> activeClaims, UUID replyId) {
+        return rewriteWithOrigin(owner, dimension, activeClaims, null, replyId);
+    }
+
+    private boolean rewriteWithOrigin(UUID owner, CharacterDimensionEntity dimension,
+                                      List<CharacterClaimEntity> activeClaims, UUID conferenceId, UUID replyId) {
+        CharacterDimensionEntity suppliedDimension = dimension;
+        dimension = entityManager.find(CharacterDimensionEntity.class, dimension.getId(),
+                LockModeType.PESSIMISTIC_WRITE);
+        entityManager.refresh(dimension, LockModeType.PESSIMISTIC_WRITE);
+        entityManager.flush();
+        activeClaims = claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
+                owner, dimension.getId(), "ACTIVE");
+        activeClaims.forEach(entityManager::refresh);
+        final UUID dimensionId = dimension.getId();
         String systemPrompt = promptPersona.render(owner, PORTRAIT_MARKER + "\n" + persona(dimension) + "\n" + contract());
         String userMessage = promptPersona.render(owner, userMessage(dimension, activeClaims));
         String raw;
         try {
             raw = llmCallContextHolder.runWith(
-                    new LlmCallContext("character", "portrait", "dimension", dimension.getId()),
+                    new LlmCallContext("character", "portrait", "dimension", dimensionId),
                     () -> companionLlm.completeSmart(systemPrompt, userMessage));
         } catch (Exception e) {
             log.warn("Portrait rewrite failed for owner {} dimension {}", owner, dimension.getKey(), e);
             return false;
         }
-        if (raw == null || raw.isBlank()) {
+        if (raw == null || raw.isBlank() || raw.length() > 6000) {
             log.warn("Portrait answer was blank for owner {} dimension {}", owner, dimension.getKey());
             return false;
         }
@@ -98,8 +126,14 @@ public class PortraitWriter {
         revision.setVersion(newVersion);
         revision.setPortrait(portrait);
         revision.setConferenceId(conferenceId);
+        revision.setReplyId(replyId);
         portraitRevisionRepository.save(revision);
 
+        // Preserve the public writer's historical in/out object contract for detached callers.
+        suppliedDimension.setVersion(dimension.getVersion());
+        suppliedDimension.setPortrait(dimension.getPortrait());
+        suppliedDimension.setUpdatedAt(dimension.getUpdatedAt());
+        suppliedDimension.setMaturity(dimension.getMaturity());
         return true;
     }
 
