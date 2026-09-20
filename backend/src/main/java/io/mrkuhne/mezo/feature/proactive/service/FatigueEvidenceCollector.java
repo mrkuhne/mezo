@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -78,6 +79,13 @@ public class FatigueEvidenceCollector {
     @Transactional(readOnly = true)
     public FatigueGather gather(UUID userId, LocalDate today, DiagnosisRecipe recipe) {
         LocalDate windowFrom = today.minusDays(properties.windowDays() - 1L);
+        LocalDate windowTo = today;
+        return gather(userId, windowFrom, windowTo, recipe);
+    }
+
+    /** Null when fewer than {@code minDomains} domains clear the coverage threshold. */
+    @Transactional(readOnly = true)
+    public FatigueGather gather(UUID userId, LocalDate windowFrom, LocalDate windowTo, DiagnosisRecipe recipe) {
         LocalDate baselineTo = windowFrom.minusDays(1);
         LocalDate baselineFrom = baselineTo.minusDays(properties.baselineDays() - 1L);
 
@@ -85,7 +93,7 @@ public class FatigueEvidenceCollector {
         Set<String> domains = new LinkedHashSet<>();
 
         for (MetricKey metric : recipe.metrics()) {
-            Map<LocalDate, Double> window = metricSeriesService.series(userId, metric, windowFrom, today);
+            Map<LocalDate, Double> window = metricSeriesService.series(userId, metric, windowFrom, windowTo);
             if (window.size() < properties.minCoverageDays()) {
                 continue;
             }
@@ -128,16 +136,17 @@ public class FatigueEvidenceCollector {
                         null, null, null, null, null)));
 
         return new FatigueGather(
-                render(userId, recipe, candidates, windowFrom, today, baselineFrom, baselineTo),
+                render(userId, recipe, candidates, windowFrom, windowTo, baselineFrom, baselineTo),
                 candidates, domains.size());
     }
 
     private String render(UUID userId, DiagnosisRecipe recipe, List<EvidenceItem> candidates,
-            LocalDate windowFrom, LocalDate today, LocalDate baselineFrom, LocalDate baselineTo) {
+            LocalDate windowFrom, LocalDate windowTo, LocalDate baselineFrom, LocalDate baselineTo) {
         StringBuilder payload = new StringBuilder();
+        long dayCount = ChronoUnit.DAYS.between(windowFrom, windowTo) + 1;
         payload.append("JELENSÉG: ").append(recipe.labelHu()).append('\n')
-                .append("ABLAK: ").append(windowFrom).append(" – ").append(today)
-                .append(" (").append(properties.windowDays()).append(" nap)\n")
+                .append("ABLAK: ").append(windowFrom).append(" – ").append(windowTo)
+                .append(" (").append(dayCount).append(" nap)\n")
                 .append("BÁZIS: ").append(baselineFrom).append(" – ").append(baselineTo)
                 .append(" (").append(properties.baselineDays()).append(" nap)\n\n")
                 .append("EVIDENCIA-JELÖLTEK (az evidenceIndexes ezekre mutat):\n");
@@ -157,7 +166,7 @@ public class FatigueEvidenceCollector {
         // task-9 brief's phrase), built purely from the `candidates` this gather already has, no
         // new read. deep=true (unlike the other three Part-B surfaces): diagnosis is DiagnosisGenerator's
         // offline SMART-tier pass, nobody is waiting on it (see DiagnosisGenerator#CONTEXT).
-        payload.append(memoryBlock(userId, today, memoryQuery(candidates)).block());
+        payload.append(memoryBlock(userId, windowTo, memoryQuery(candidates)).block());
         appendPriorExperiments(userId, payload);
         return payload.toString();
     }
