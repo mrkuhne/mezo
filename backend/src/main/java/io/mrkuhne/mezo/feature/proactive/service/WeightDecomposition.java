@@ -2,8 +2,11 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope.EvidenceItem;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 
 /**
  * Pure decomposition of one anchored week (mezo-85x5r §2). All inputs nullable-friendly: an
@@ -142,7 +145,9 @@ public record WeightDecomposition(List<EvidenceItem> derivedItems) {
                     status = "terv alatt";
                 }
             }
-            default -> throw new IllegalStateException("unknown goalTrajectory: " + in.goalTrajectory());
+            default -> throw new SystemRuntimeErrorException(
+                    SystemMessage.error("INTERNAL_ERROR").build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
         String detail = status + " (sáv: " + bandLabel + " %/hét) · cél: " + huPct(in.goalRatePctPerWeek()) + " %/hét";
         return new EvidenceItem("derived", "cél-sáv", detail, SOURCE_HU,
