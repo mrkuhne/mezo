@@ -1,19 +1,8 @@
-// ============================================================
-// Mezo · BeallitasokPage — Beállítások (hub-tile-reorg spec, mezo-o486)
-// A korábbi téma-only SettingsSheet utódja: az Én hub Beállítások csempéje
-// nyitja. Csoportosított lista (Android settings-guideline minta): Téma
-// választó helyben (useTheme — az egyetlen perzisztált beállítás) + a ritkán
-// használt felületek sorai (Értesítések kapcsolói, AI-napló). Nincs saját
-// design_2.0 prototípus — a Mozaik oldal-primitívekből épül.
-// Honest states: a sor-alsósor eltűnik, amíg a forrása nem mond semmit.
-// ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { SettingsFrame, useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { isMockMode } from '@/data/_client/mode'
 import { useAuthActions, useLlmUsageSummary, useMe, useNotificationPrefs } from '@/data/hooks'
 import { ChangePasswordSheet } from '@/features/auth/sheets/ChangePasswordSheet'
@@ -30,6 +19,7 @@ const THEME_OPTIONS: { key: ThemeMode; icon: 'sun' | 'moon' | 'sparkle'; label: 
 
 export function BeallitasokPage() {
   const navigate = useNavigate()
+  const { state: originState } = useSettingsOrigin()
   const { mode, setMode } = useTheme()
 
   // Row bottom lines — the exact derivations the Én hub tiles carried (honest states).
@@ -70,98 +60,42 @@ export function BeallitasokPage() {
     : 'Az első indítás és az oldal-kalauzok újra megjelennek'
 
   const row = (icon: 'i-ertesites' | 'i-erme' | 'i-emberek', label: string, line: string | undefined, to: string) => (
-    <button type="button" className="card row" aria-label={label} onClick={() => navigate(to)}
-      style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
-      <div className="row gap-md" style={{ alignItems: 'center' }}>
-        <ClayIcon name={icon} size={28} />
-        <div className="col">
-          <span>{label}</span>
-          {line != null && <span style={SECTION_LABEL}>{line}</span>}
-        </div>
-      </div>
-      <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>›</span>
-    </button>
-  )
-
-  const kalauzRow = (
-    <button type="button" className="card row" aria-label="Kalauzok újranézése"
-      disabled={kalauzState === 'busy'}
-      onClick={() => {
-        setKalauzState('busy')
-        resetAll().then(() => setKalauzState('done')).catch(() => setKalauzState('error'))
-      }}
-      style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
-      <div className="row gap-md" style={{ alignItems: 'center' }}>
-        <ClayIcon name="i-tudas" size={28} />
-        <div className="col">
-          <span>Kalauzok újranézése</span>
-          <span style={SECTION_LABEL}>{kalauzLine}</span>
-        </div>
-      </div>
-      <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>↺</span>
+    <button type="button" className="settings-row" aria-label={label} onClick={() => navigate(to, { state: originState })}>
+      <span className="settings-row-art"><ClayIcon name={icon} size={30} /></span>
+      <span className="settings-row-copy"><strong>{label}</strong>{line && <small>{line}</small>}</span>
+      <span aria-hidden="true">›</span>
     </button>
   )
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
-      <PageHero icon="i-beallitas" name="Beállítások" sub="téma · fiók · értesítések · AI-napló · admin" />
-      <PageBody>
-        <EntranceGroup className="col gap-lg">
-          <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-            <span style={SECTION_LABEL}>Téma</span>
-            <div className="col gap-sm">
-              {THEME_OPTIONS.map((o) => (
-                <button key={o.key} className="card row" aria-pressed={mode === o.key}
-                  onClick={() => setMode(o.key)}
-                  style={{
-                    justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left',
-                    borderColor: mode === o.key ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                    background: mode === o.key ? 'var(--wash-lav)' : undefined,
-                  }}>
-                  <div className="row gap-md" style={{ alignItems: 'flex-start' }}>
-                    <span style={{ width: 36, height: 36, borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, background: mode === o.key ? 'var(--wash-lav)' : 'var(--surface-2)' }}>
-                      <Icon name={o.icon} size={16} color={mode === o.key ? 'var(--lav-deep)' : 'var(--text-tertiary)'} />
-                    </span>
-                    <div className="col">
-                      <span>{o.label}</span>
-                      <span style={SECTION_LABEL}>{o.desc}</span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+    <SettingsFrame title="Otthon az appban." subtitle="Ugyanaz a világ. A saját fényeiddel és szokásaiddal.">
+      <h2 className="settings-section-label">Téma</h2>
+      <div className="settings-theme-options">
+        {THEME_OPTIONS.map(o => <button key={o.key} className={`settings-theme-choice settings-theme-${o.key}`} aria-pressed={mode === o.key} onClick={() => setMode(o.key)}>
+          <span className="settings-theme-scene" aria-hidden="true"><Icon name={o.icon} size={23} /><i /><i /><i /></span>
+          <strong>{o.label}</strong><span className="settings-theme-selected" aria-hidden="true">{mode === o.key ? '✓' : '○'}</span>
+        </button>)}
+      </div>
+      <p className="settings-theme-description">{THEME_OPTIONS.find(o => o.key === mode)?.desc}</p>
+      <section className="settings-wash settings-fuel settings-theme-note"><p className="settings-editorial">Jó itt lenni.<br />Nappal és este is.</p><p>A megjelenés ezen az eszközön érvényes. A cirkadián mód a saját alváscélodat követi.</p></section>
 
-          <div className="col gap-sm rise" style={{ '--d': '80ms' } as React.CSSProperties}>
-            <span style={SECTION_LABEL}>Fiók</span>
-            <div className="card col" style={{ padding: 14, gap: 2 }}>
-              <span>{me?.name ?? '—'}</span>
-              <span style={SECTION_LABEL}>{me?.email ?? '—'}</span>
-            </div>
-            <button type="button" className="card row" aria-label="Jelszó módosítása" onClick={() => setSheet('password')}
-              style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
-              <span>Jelszó módosítása</span>
-              <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>›</span>
-            </button>
-            {canLogout && (
-              <button type="button" className="card row" aria-label="Kijelentkezés" onClick={logout}
-                style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left', color: 'var(--coral-deep)' }}>
-                <span>Kijelentkezés</span>
-              </button>
-            )}
-          </div>
+      <h2 className="settings-section-label">Fiók</h2>
+      <button type="button" aria-label="Fiókadatok szerkesztése" onClick={() => navigate('/settings/account', { state: originState })} className="settings-account-wash settings-me">
+        <ClayIcon name="i-emberek" size={44} /><span><strong>{me?.name ?? '—'}</strong><small>{me?.email ?? '—'}</small></span><span aria-hidden="true">↗</span>
+      </button>
+      <button type="button" className="settings-row" aria-label="Jelszó módosítása" onClick={() => setSheet('password')}><span className="settings-row-copy"><strong>Jelszó módosítása</strong><small>A belépésed maradjon a tiéd</small></span><span aria-hidden="true">›</span></button>
+      {canLogout && <button type="button" className="settings-row settings-logout" aria-label="Kijelentkezés" onClick={logout}><span className="settings-row-copy"><strong>Kijelentkezés</strong></span><span aria-hidden="true">↗</span></button>}
 
-          <div className="col gap-sm rise" style={{ '--d': '160ms' } as React.CSSProperties}>
-            <span style={SECTION_LABEL}>Felületek</span>
-            {row('i-ertesites', 'Értesítések', ertesitesLine, '/me/ertesitesek/beallitasok')}
-            {isOwner && row('i-erme', 'AI-napló', aiLine, '/admin/cost')}
-            {kalauzRow}
-            {isOwner && row('i-emberek', 'Admin', 'meghívók · felhasználók', '/admin')}
-          </div>
-        </EntranceGroup>
-      </PageBody>
+      <h2 className="settings-section-label">Ami körülvesz</h2>
+      {row('i-ertesites', 'Értesítések', ertesitesLine, '/settings/notifications')}
+      <button type="button" className="settings-row settings-nap" aria-label="Kalauzok újranézése" disabled={kalauzState === 'busy'} onClick={() => {
+        setKalauzState('busy')
+        resetAll().then(() => setKalauzState('done')).catch(() => setKalauzState('error'))
+      }}>
+        <span className="settings-row-art"><ClayIcon name="i-tudas" size={30} /></span><span className="settings-row-copy"><strong>Kalauzok újranézése</strong><small role="status">{kalauzLine}</small></span><span aria-hidden="true">↺</span>
+      </button>
+      {isOwner && <><h2 className="settings-section-label">Tulajdonosi eszközök</h2>{row('i-erme', 'AI-napló', aiLine, '/admin/cost')}{row('i-emberek', 'Admin', 'Meghívók · felhasználók', '/admin')}</>}
       {sheet === 'password' && <ChangePasswordSheet onClose={() => setSheet(null)} />}
-    </MozaikPage>
+    </SettingsFrame>
   )
 }
