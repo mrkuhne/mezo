@@ -152,13 +152,6 @@ export function FuelMaiPage() {
         <div className="fmx-daynav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <DayNavigator date={date} onChange={goDay} maxDate={today}
             minDate={earliestBackfillDate(today)} eyebrow />
-          {/* A16 (owner, mezo-jb84): a beállítás a lap ALJÁN gyakorlatilag megtalálhatatlan volt
-              — 2107 px-es lapon az 1929-esnél kezdődött. A dátumsor a lap vezérlő-sávja, ide
-              tartozik. Csendes marad: ikon felirat nélkül, a hero mérete nem mozdul. */}
-          <button type="button" className="fmx-daynav-set np-press"
-            aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
-            <ClayIcon name="i-beallitas" size={19} />
-          </button>
         </div>
 
         {emptyPast ? (

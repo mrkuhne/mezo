@@ -437,24 +437,10 @@ test('a Mai nem hoz csempe-sávot', () => {
 // (2107 px-es lapon az 1929-esnél). mezo-jb84: a dátumsor jobb szélére költözött, ikonként.
 // Csendes maradt, csak már látszik is.
 
-test('the Fuel settings entry navigates to its own page', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Fuel-beállítások' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
-})
-
-test('a beállítás a dátumsorban, csendesen, de láthatóan érhető el', async () => {
+test('Fuel uses the global header settings entry without a local cog', () => {
   const { container } = renderView()
-  const daynav = container.querySelector('.fmx-daynav') as HTMLElement
-  const gear = within(daynav).getByRole('button', { name: 'Fuel-beállítások' })
-  // Se csempe, se mosott sáv — a két hangsúlyos forma, amit az owner kizárt.
-  expect(gear.className).not.toContain('mz-tile')
-  expect(container.querySelector('.fh-band')).toBeNull()
-  // A lap TETEJÉN: a blokkok előtt, tehát görgetés nélkül elérhető.
-  const blocks = container.querySelector('.fmx-blocks')!
-  expect(daynav.compareDocumentPosition(blocks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  await userEvent.click(gear)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
+  expect(screen.queryByRole('button', { name: 'Fuel-beállítások' })).toBeNull()
+  expect(container.querySelector('.fmx-daynav')).toBeInTheDocument()
 })
 
 test('the hero carries no settings entry of its own — Fuel-beállítások lives only on the band', () => {
