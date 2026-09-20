@@ -482,7 +482,10 @@ describe('the fuel-stack section is registered and re-dressed (mezo-ju4j6.8)', (
 
   test('the due band wears the §4.4 now-state, and it is the only infinite loop (§8.6)', () => {
     const css = rules()
-    expect(css).toContain('.fsx-band.is-due { border: 1px solid var(--dv-coral); box-shadow: var(--mz-shadow-coral); }')
+    // The rule grew in the depth & focus sweep (mezo-ju4j6.19): the other three bands
+    // dropped to the house grade, so the due one carries the wash as well as the ring.
+    expect(css).toMatch(/\.fsx-band\.is-due \{[^}]*border: 1px solid var\(--dv-coral\)/)
+    expect(css).toMatch(/\.fsx-band\.is-due \{[^}]*box-shadow: var\(--mz-shadow-coral\)/)
     expect(css).toContain('fsx-now-pulse')
     // the decorative hero-glow loop and its keyframes are gone with the material
     expect(css).not.toContain('fsx-glow 5s')
@@ -1130,13 +1133,17 @@ describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', 
     expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
   })
 
-  test('the tiles are wash tiles: hairline border + --mz-shadow* lift (§2.2 A)', () => {
+  // Narrowed by the depth & focus sweep (mezo-ju4j6.19). The 5a–5d pass had made ALL five
+  // Konyha surfaces §2.2 A wash tiles, and the page read flat: §3.4 says a wash tile is loud
+  // only next to something that isn't one. The Receptműhely is now the page's single lifted
+  // tile, so this guard checks THAT — a hue-token lift on the hero and the hairline idiom
+  // still in use — rather than demanding every tile be lifted.
+  test('the Receptműhely is the block\'s one lifted wash tile (§2.2 A + §3.4)', () => {
     const css = rules()
     expect(css.match(/border: 0\.5px solid rgba\(43, 33, 24, 0\.06\)/g) ?? []).not.toHaveLength(0)
-    for (const token of ['var(--mz-shadow)', 'var(--mz-shadow-lav)', 'var(--mz-shadow-gold)',
-      'var(--mz-shadow-sage)']) {
-      expect(css, `${token} missing — a tile in this block is not lifted by a token`).toContain(token)
-    }
+    expect(css).toMatch(/\.fkx-poster\.is-workshop \{[^}]*box-shadow: var\(--mz-shadow-lav\)/)
+    expect(css, 'a lifted tile must be lifted by a TOKEN, never a raw shadow').not.toMatch(
+      /box-shadow: 0 \d+px [^;]*rgba\(0, 0, 0/)
   })
 
   test('the poster wears the §3.2 anatomy: kiskapitális eyebrow + one display-200 numeral', () => {
@@ -1214,5 +1221,93 @@ describe('the fuel-ceremony section is registered and wears the restored materia
   test('the ignition honours reduced motion', () => {
     const css = rules()
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+  })
+})
+
+/**
+ * Depth & focus sweep (`mezo-ju4j6.19`) — the retro-fit of style bible §3.4 across the
+ * screens re-dressed BEFORE the rule existed. Every slice's first pass had turned each
+ * surface into a §2.2 A wash tile, and each time the screen read flatter than the Titanium
+ * one it replaced: a wash tile is loud only next to something that isn't one.
+ *
+ * These are RANKING guards, not material guards — they assert that a named surface sits at
+ * the grade its screen's hierarchy needs, so a later slice cannot quietly promote it back.
+ * Each one names the screen's hero in its own message.
+ */
+describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.19)', () => {
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const m = new RegExp(`(?:^|\\n)${escaped} \\{([^}]*)\\}`).exec(stripComments(rawCss))
+    expect(m, `${selector} rule not found in prototype.css`).not.toBeNull()
+    return m![1]
+  }
+  /** A demoted surface: the house row/card material — flat --surface-1 under a hairline. */
+  const expectHouseGrade = (selector: string, hero: string) => {
+    const body = rule(selector)
+    expect(body, `${selector} must sit below "${hero}" — it needs the --surface-1 house grade`)
+      .toContain('background: var(--surface-1)')
+    expect(body, `${selector} must sit below "${hero}" — hairline inset, never a lift shadow`)
+      .toContain('inset 0 0 0 1px var(--border-subtle)')
+    expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
+  }
+  /** A demoted surface that keeps its own hue: the §2.2 B cell — flat tint, no shadow. */
+  const expectCellGrade = (selector: string, hue: string, hero: string) => {
+    const body = rule(selector)
+    expect(body, `${selector} must sit below "${hero}" as a §2.2 B cell`).toContain('box-shadow: none')
+    expect(body, `${selector} keeps its own hue, flat`).toContain(`color-mix(in srgb, var(${hue})`)
+    expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
+  }
+
+  test('Fuel · étkezés-értékelés: the score is the hero, the six dimensions are cells', () => {
+    expectCellGrade('.fmx-dim', '--dim-color', 'a 9,2 pontszám a halo-sávban')
+  })
+
+  test('Fuel · Kiegészítők: the ring + KÖVETKEZIK is the hero, the time bands are house rows', () => {
+    expectHouseGrade('.fsx-band', 'a napi gyűrű és a KÖVETKEZIK sor')
+    // …and the wash comes back on exactly one band: the one that is due now (§4.4).
+    expect(stripComments(rawCss)).toMatch(/\.fsx-band\.is-due \{[^}]*linear-gradient\(150deg/)
+    // §4.4: a finished band is never dimmed away.
+    expect(rule('.fsx-band.is-complete')).toContain('opacity: 1')
+  })
+
+  test('Fuel · Trendek: the week picture is the hero, the glance tiles and split rows drop', () => {
+    expectCellGrade('.ftx-tile', '--ftx-tile-color', 'a hét képe — halo-sáv + napi oszlopok')
+    expectHouseGrade('.ftx-splitrow', 'a hét képe — halo-sáv + napi oszlopok')
+    expectHouseGrade('.ftx-dim', 'az üvegdoboz saját 40px-es számjegye')
+  })
+
+  test('Fuel · Konyha: only the Receptműhely stays a wash tile', () => {
+    expectHouseGrade('.fkx-capture', 'a Receptműhely')
+    expectHouseGrade('.fkx-poster', 'a Receptműhely')
+    expect(stripComments(rawCss)).toMatch(/\.fkx-poster\.is-workshop \{[^}]*linear-gradient\(150deg/)
+    // §3.3: the hero's own promise wears the card-title ramp, not the neighbours' size.
+    expect(rule('.fkx-ws-copy strong')).toContain('font-size: 24px')
+  })
+
+  test('Train · in-workout list: finished work recedes, the remaining work stays washed', () => {
+    expectHouseGrade('.wo-card.is-complete', 'a még hátralévő gyakorlatok')
+    // The live card itself keeps the §2.2 A wash — the demotion is state-driven, not global.
+    expect(rule('.wo-card')).toContain('linear-gradient(150deg')
+    // §4.4: skipped is dashed amber with no shadow — never opacity, never red.
+    const skipped = rule('.wo-card.is-skipped')
+    expect(skipped).toContain('opacity: 1')
+    expect(skipped).toContain('dashed')
+    expect(skipped).toContain('box-shadow: none')
+  })
+
+  test('Train · progression banner: a cell inside a card, not a second poster', () => {
+    const body = rule('.pobanner')
+    expect(body, 'a wash tile on top of a wash tile makes both disappear (§3.4)').toContain('box-shadow:none')
+    expect(body).toContain('var(--mz-cell-coral-bg)')
+    // A.4 rule 7: off the pre-`--dv-` palette, onto the house cell pairs, so dark mode follows.
+    const block = stripComments(rawCss).slice(stripComments(rawCss).indexOf('.pobanner {'))
+    const banner = block.slice(0, block.indexOf('.pobanner-cells .cval'))
+    expect(banner).not.toMatch(/var\(--(coral|sage|amber)-deep\)/)
+  })
+
+  test('the shell: the domain switcher marks WHERE YOU ARE with the only wash tile', () => {
+    expectHouseGrade('.domain-row', 'az a terület, ahol éppen állsz')
+    expect(stripComments(rawCss)).toMatch(/\.domain-row\.current \{[^}]*background: var\(--mz-wash-sand\)/)
+    expect(stripComments(rawCss)).toMatch(/\.domain-row\.current\[data-domain="fuel"\]\s*\{[^}]*var\(--mz-wash-sage\)/)
   })
 })
