@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
@@ -12,7 +12,6 @@ import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { FactsView } from '@/features/insights/components/FactsView'
 import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseView'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
-import { ProfileView } from '@/features/insights/components/ProfileView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
 import { NodeDetailSheet } from '@/features/insights/sheets/NodeDetailSheet'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
@@ -170,6 +169,8 @@ export function KnowledgeListPage() {
   // read as "genuinely empty" below WITHOUT this guard — a fabricated „0 tény / 0 megy a chatbe"
   // header would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class,
   // PatternsPage.tsx örököse).
+  if (requestedView === 'profil') return <Navigate to="/settings/mezo/communication" replace />
+
   if (isPending) {
     return <TudasFrame><GhostState message="A tudástár betöltése…" /></TudasFrame>
   }
@@ -247,17 +248,6 @@ export function KnowledgeListPage() {
     )
   }
 
-  if (view === 'profil') {
-    // `profileNode` is guaranteed non-null here — the fallback-to-base computed above already
-    // handled the missing-node case.
-    return (
-      <TudasFrame view="profil">
-        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
-          <ProfileView node={profileNode!} onArchive={() => archive(profileNode!.id)} />
-        </EntranceGroup>
-      </TudasFrame>
-    )
-  }
 
   if (view === 'hogyan') {
     return (

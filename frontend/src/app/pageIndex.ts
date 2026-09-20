@@ -36,6 +36,24 @@ export interface IndexedPage {
  * not enumerated; see `NOT_INDEXED` for the rule and every named exception.
  */
 export const PAGE_INDEX: IndexedPage[] = [
+  { route: '/settings', label: 'Beállítások', hint: 'Minden terület és a fiókod egy helyen.' },
+  { route: '/settings/fuel', label: 'Fuel beállítások', hint: 'Táplálkozási célok, makrók és ritmus.' },
+  { route: '/settings/fuel/slots', label: 'Étkezési ablakok', hint: 'A három naptípus étkezési sablonjai.' },
+  { route: '/settings/train', label: 'Edzés beállításai', hint: 'A rendszeres mozgás időpontjai.' },
+  { route: '/settings/train/gym', label: 'Gym időpontok', hint: 'Heti edzőtermi rend.' },
+  { route: '/settings/train/sport', label: 'Sport időpontok', hint: 'Sportágak és rendszeres alkalmak.' },
+  { route: '/settings/me', label: 'Személyes alapadatok', hint: 'Testadatok, súlycél és alvás.' },
+  { route: '/settings/me/biometrics', label: 'Testprofil', hint: 'Mért testadatok és aktivitás.' },
+  { route: '/settings/me/sleep', label: 'Alváscél', hint: 'Alvásidő és napi horgony.' },
+  { route: '/settings/me/goal', label: 'Súlycél beállításai', hint: 'Célsúly és tempó, számított céldátummal.' },
+  { route: '/settings/mezo', label: 'Mezo beállításai', hint: 'Személyes háttér és kommunikáció.' },
+  { route: '/settings/mezo/about', label: 'Rólam', hint: 'Saját bemutatkozás és javítható források.' },
+  { route: '/settings/mezo/communication', label: 'Így beszélj velem', hint: 'Saját instrukció és tanult profil.' },
+  { route: '/settings/mezo/context', label: 'Személyes prompt', hint: 'A ténylegesen összeállított személyes blokkok.' },
+  { route: '/settings/nap', label: 'Napi ritmus', hint: 'Megosztott alvás- és étkezési horgonyok.' },
+  { route: '/settings/general', label: 'Megjelenés és alkalmazás', hint: 'Téma, fiók, kalauz és tulajdonosi funkciók.' },
+  { route: '/settings/notifications', label: 'Értesítés-beállítások', hint: 'Kategóriák, időpontok és csendes órák.' },
+  { route: '/settings/account', label: 'Fiókadatok', hint: 'A neved és az e-mail-címed javítása.' },
   // ── Nap ──────────────────────────────────────────────────────────────────
   { route: '/nap', label: 'Mai', hint: 'A napod központja: mit csináltál, mi van hátra, hogy vagy.' },
   { route: '/nap/uzenetek', label: 'Beszélgetés', hint: 'Boop üzenetei és a válaszaid egy szálon.' },
@@ -79,8 +97,6 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel/stack/protocol', label: 'Protokoll', hint: 'Mit mikor és mihez veszel be.' },
   { route: '/fuel/stack/manage/add', label: 'Új kiegészítő', hint: 'Termék felvitele és az adagja beállítása.' },
   { route: '/fuel/gyogyszer', label: 'Gyógyszer', hint: 'A gyógyszereid külön nyilvántartva.' },
-  { route: '/fuel/slots', label: 'Étkezési ablakok', hint: 'Mikor eszel — a napi ablakaid szerkesztése.' },
-  { route: '/fuel/settings', label: 'Fuel beállítások', hint: 'A tápérték-keretek és a ritmus beállításai.' },
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
   { route: '/mezo', label: 'Felfedezések', hint: 'Amit Boop észrevett rólad.' },
@@ -126,7 +142,6 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/me/goals/weight/segment', label: 'Aktuális szakasz', hint: 'A célod jelenlegi szakasza és a tempó.' },
   { route: '/me/goals/weight/plans', label: 'Tervkapcsolatok', hint: 'Hogyan kapcsolódik a célod az edzés- és étrendtervhez.' },
   { route: '/me/goals/weight/guards', label: 'Védőkorlátok', hint: 'A határok, amiket a cél nem léphet át.' },
-  { route: '/me/goals/weight/settings', label: 'Cél beállításai', hint: 'A súlycélod finomhangolása.' },
   { route: '/me/rutin', label: 'Rutinok', hint: 'A szokás-láncaid központja.' },
   { route: '/me/rutin/uj', label: 'Új rutin', hint: 'Szokás-lánc összeállítása.' },
   { route: '/me/rutin/szokasok', label: 'Szokásaid', hint: 'Minden szokásod egy listán.' },
@@ -140,8 +155,6 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/me/people/emlitesek', label: 'Említések', hint: 'Kit mikor említettél.' },
   { route: '/me/people/heti', label: 'Heti kép', hint: 'A kapcsolataid heti pillanatképe.' },
   { route: '/me/ertesitesek', label: 'Értesítések', hint: 'Minden értesítésed egy helyen.' },
-  { route: '/me/ertesitesek/beallitasok', label: 'Értesítés-beállítások', hint: 'Mit és mikor küldjön.' },
-  { route: '/me/beallitasok', label: 'Beállítások', hint: 'A fiókod és az app beállításai.' },
 ]
 
 /**

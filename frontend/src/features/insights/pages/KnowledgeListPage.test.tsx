@@ -22,7 +22,7 @@ const renderPage = (path = '/') =>
 // mert itt kifejezetten a query-string alakja a kérdés (marad-e rajta más param).
 function LocationProbe() {
   const location = useLocation()
-  return <div data-testid="loc-probe">{location.search}</div>
+  return <><div data-testid="loc-probe">{location.search}</div><div data-testid="path-probe">{location.pathname}</div></>
 }
 
 const renderPageWithProbe = (path = '/') =>
@@ -54,7 +54,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     renderPage()
     expect(screen.getByRole('button', { name: 'Tények' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Így beszélj velem' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Így beszélj velem' })).toBeNull()
     expect(screen.queryByLabelText('Keresés a tények között')).not.toBeInTheDocument()
   })
 
@@ -203,13 +203,9 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.queryByText('Késői evés → kiváltja → Rossz alvás · erős')).not.toBeInTheDocument()
   })
 
-  test('(T7-e) ?view=profil → „Így beszélj velem" cím + „Rólad tanultam" kártya + Archivál', () => {
-    renderPage('/?view=profil')
-    expect(screen.getByText('Így beszélj velem')).toBeInTheDocument()
-    expect(screen.getByText('Rólad tanultam')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Archivál' })).toBeInTheDocument()
-    // the retired word never appears user-visible
-    expect(screen.queryByText('Profil')).not.toBeInTheDocument()
+  test('legacy communication profile redirects to central settings', async () => {
+    renderPageWithProbe('/?view=profil')
+    await waitFor(() => expect(screen.getByTestId('path-probe')).toHaveTextContent('/settings/mezo/communication'))
   })
 
   test('(T7-f) ?view=hogyan → mind a 6 kérdés-cím látszik', () => {
@@ -517,21 +513,7 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(container.querySelector('.mz-hero-sb')?.textContent).not.toMatch(/kapcsolat/)
   })
 
-  test('profileLine csak akkor tesz „…"-ot a profil-összegzés mögé, ha 40 karakternél hosszabb (review fix, mezo-ms9a)', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/companion/graph/node`, () =>
-        HttpResponse.json([
-          {
-            id: 'gn-profile', kind: 'INSIGHT', title: 'Rólad tanultam', summary: 'Rövid összegzés.',
-            status: 'active', createdAt: '2026-08-15T07:00:00Z', updatedAt: '2026-08-15T07:00:00Z',
-            proposedEdgeCount: 0, topEdges: [], sourceKind: 'profile',
-          },
-        ])),
-    )
-    renderPage()
-    expect(await screen.findByText('Rövid összegzés. · heti frissítés')).toBeInTheDocument()
-    expect(screen.queryByText(/…/)).not.toBeInTheDocument()
-  })
+
 
   test('accepting a candidate POSTs the decision and refetches without it', async () => {
     // stateful override: the pending list empties once the decision lands

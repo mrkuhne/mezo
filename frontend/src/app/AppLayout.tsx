@@ -52,7 +52,8 @@ export function AppLayout() {
   // mezo-7flr: a companion-first `/nap` alsó szövegmezője birtokolja a hüvelykujj-zónát (ugyanaz
   // a helyzet, mint a chat/`/fuel/log/uj` composerénél, mezo-vdf4/bq2t) — a korall FAB rálógna a
   // küldés gombra, ezért itt is elmarad; a gyors-naplózó a navigációból érhető el.
-  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap'].includes(location.pathname)
+  const inSettings = location.pathname.startsWith('/settings')
+  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.
@@ -103,7 +104,7 @@ export function AppLayout() {
                   nem mountol ott, ahol egyik sincs. */}
               {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
             </TutorialProvider>
-            {!hideChrome && <TabBar />}
+            {!hideChrome && !inSettings && <TabBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
             {!hideFab && <QuickLogFab />}

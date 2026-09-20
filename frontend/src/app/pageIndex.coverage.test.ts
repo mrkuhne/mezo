@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import routerSource from '@/app/router.tsx?raw'
+import appRouterSource from '@/app/router.tsx?raw'
+import settingsRouterSource from '@/features/settings/settingsRoutes.tsx?raw'
+const routerSource = appRouterSource + '\n' + settingsRouterSource
 import { PAGE_INDEX, NOT_INDEXED } from '@/app/pageIndex'
 
 /**

@@ -54,7 +54,6 @@ import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import {
@@ -67,7 +66,7 @@ import { muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import { growthForecast } from '@/features/train/logic/growthForecast'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
-import type { GymScheduleSlot, MesoDay, VolleyballSession } from '@/data/types'
+import type { MesoDay, VolleyballSession } from '@/data/types'
 import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 
 /** The ONE sentence the hero says — the strongest fact that is actually true right now. */
@@ -161,7 +160,7 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
 
 export function TrainWeekPage() {
   const {
-    sport, activeMeso, workoutPending, gymSlots, saveGymSchedule,
+    sport, activeMeso, workoutPending,
     workout, completedTodayWorkout,
   } = useTrain()
   const { activeRunningBlock, runningPending } = useRunning()
@@ -169,10 +168,7 @@ export function TrainWeekPage() {
   const { data: medals } = useMedals()
   const navigate = useNavigate()
   const [customOpen, setCustomOpen] = useState(false)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
-  // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots.
-  const [gymOverride, setGymOverride] = useState<GymScheduleSlot[] | null>(null)
 
   // weekLog.pending must gate too (ActiveWorkoutPage.tsx :778 precedent) — without it, real
   // mode draws a 0% hero and speaks "a hét még előtted van" while the (up to 7) per-day
@@ -261,7 +257,6 @@ export function TrainWeekPage() {
             />
           </p>
           <div className="ld-hero-chips">
-            <button type="button" className="mz-pgact" onClick={() => setScheduleOpen(true)}>Időpontok</button>
             <button
               type="button"
               className="mz-pgact"
@@ -396,16 +391,6 @@ export function TrainWeekPage() {
       </EntranceGroup>
 
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
-      {scheduleOpen && (
-        <GymScheduleSheet
-          slots={gymOverride ?? gymSlots}
-          onSave={(next) => {
-            setGymOverride(next)
-            saveGymSchedule(next)
-          }}
-          onClose={() => setScheduleOpen(false)}
-        />
-      )}
       <GlassBox
         open={glassGroup !== null}
         onClose={() => setOpenGroup(null)}

@@ -43,7 +43,7 @@ export function KnowledgeBaseView(props: {
 }) {
   const {
     degraded, candidates, onDecideCandidate, onToggleConflict, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
-    onDecideLifeEvent, facts, buckets, kindCount, kategLine, profileNode, profileLine, onNavigate,
+    onDecideLifeEvent, facts, buckets, kindCount, kategLine, onNavigate,
   } = props
 
   return (
@@ -114,12 +114,6 @@ export function KnowledgeBaseView(props: {
           wash="lav" icon="i-retegek" eyebrow="Kategóriák" badge={kindCount}
           line={kategLine} onClick={() => onNavigate('kategoriak')} delayMs={130}
         />
-        {profileNode && (
-          <Tile
-            wash="rose" icon="i-checkin" eyebrow="Így beszélj velem" className="mz-tile-wide"
-            line={profileLine} onClick={() => onNavigate('profil')} delayMs={160}
-          />
-        )}
       </Mosaic>
     </>
   )

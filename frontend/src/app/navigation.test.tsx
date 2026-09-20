@@ -27,7 +27,7 @@ function renderApp(path = '/') {
 test('redirects / to Today', async () => {
   renderApp('/')
   // The Nap hub's daypart switch is the face-INDEPENDENT landmark (mezo-d20.2.1).
-  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
 })
 test('switches domains via the switcher, then between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
@@ -55,6 +55,7 @@ test('Me screen theme selector flips data-theme', async () => {
   localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
   await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
+  await userEvent.click(screen.getByRole('link', { name: /Megjelenés és alkalmazás/ }))
   // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
@@ -72,7 +73,7 @@ test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20
   renderApp('/fuel')
   // mezo-jb84 (owner): a csempe-sáv lekerült a Mai-ról, a beállítás pedig a dátumsorba
   // költözött. A face-független horgony így a beállítás-ikon és a nap blokkjai.
-  expect(await screen.findByRole('button', { name: 'Fuel-beállítások' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Receptek' })).not.toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).not.toBeInTheDocument()
 })
@@ -291,12 +292,12 @@ test('a shell NEM mountol saját clay sprite-példányt (mezo-ju4j6.3)', () => {
 test('/nap renders the day spine (Today content) and /today redirects to it', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/nap')
   cleanup()
   const legacy = createMemoryRouter(routes, { initialEntries: ['/today'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={legacy} /></ThemeProvider></QueryWrapper>)
-  await screen.findByRole('button', { name: 'Napszak váltása' })
+  await screen.findByRole('button', { name: 'Beállítások' })
   expect(legacy.state.location.pathname).toBe('/nap')
 })
 
@@ -361,7 +362,7 @@ test('the sticky header keeps its compact aurora without covering content or dou
   const nap = renderApp('/nap')
   const napHeader = nap.container.querySelector('.app-head')!
   expect.soft(napHeader.querySelector('.app-head-wordmark')?.textContent).toBe('boop')
-  expect.soft(screen.getByLabelText('Napszak váltása').querySelector('svg')).toHaveAttribute('width', '24')
+  expect.soft(screen.getByLabelText('Beállítások').querySelector('svg')).toHaveAttribute('width', '24')
   expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
   expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')
   expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '42')

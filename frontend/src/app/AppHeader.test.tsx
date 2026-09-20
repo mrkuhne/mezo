@@ -36,7 +36,7 @@ afterEach(() => {
 /** Kiírja az élő URL-t, hogy a navigációk megfigyelhetők legyenek. */
 function LocationProbe() {
   const loc = useLocation()
-  return <div data-testid="loc">{loc.pathname}{loc.search}</div>
+  return <div data-testid="loc">{loc.pathname}{loc.search}<span data-testid="origin">{loc.state?.from}</span></div>
 }
 
 /** A fejléc a shellben ül, a mezo-szál providere alatt (AppLayout) — a tesztek ugyanezt a
@@ -56,14 +56,13 @@ const renderAt = (path: string, children?: React.ReactNode) =>
     </QueryWrapper>,
   )
 
-const dpItem = (name: string) => screen.getByRole('menuitemradio', { name })
 
 test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal', async () => {
   const { container } = renderAt('/fuel')
   expect(await screen.findByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeInTheDocument()
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
   expect(labels[0]).toBe('Kalauz ehhez az oldalhoz')
-  expect(labels[1]).toBe('Napszak váltása')
+  expect(labels[1]).toBe('Beállítások')
   expect(labels[2]).toMatch(/^Mezo üzenetei/)
   expect(labels[3]).toMatch(/^Értesítések/)
   expect(labels[4]).toMatch(/^A mai napod/)
@@ -74,10 +73,10 @@ test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal'
 // fejléc-teszt így is őszintén rákérdezhet).
 test('kalauz nélküli oldalon nincs „?" gomb — a négy kontroll a régi sorrendben', async () => {
   const { container } = renderAt('/me/sleep/night')
-  await screen.findByRole('button', { name: 'Napszak váltása' })
+  await screen.findByRole('button', { name: 'Beállítások' })
   expect(screen.queryByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeNull()
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
-  expect(labels[0]).toBe('Napszak váltása')
+  expect(labels[0]).toBe('Beállítások')
   expect(labels[3]).toMatch(/^A mai napod/)
 })
 
@@ -90,51 +89,11 @@ test('a „?" megnyitja az oldal kalauzát, és nyitva az is-open osztályt vise
   expect(q).toHaveClass('is-open')
 })
 
-test('a napszakváltó a /fuel oldalról a valóstól eltérő napszakra dp paraméterrel dob', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/fuel')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  await user.click(dpItem('Este'))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/nap?dp=este')
-})
 
-test('a napszakváltó a jelenlegi (valós) napszak választásakor sima /nap-ra dob, dp nélkül', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/fuel')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  await user.click(dpItem('Nap')) // 13:00 → nowFace === 'nap'
-  const loc = screen.getByTestId('loc')
-  expect(loc).toHaveTextContent('/nap')
-  expect(loc.textContent).toBe('/nap')
-})
 
-test('a napszakváltó menüje bezárul a választás után', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/fuel')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  const menu = screen.getByRole('menu')
-  await user.click(dpItem('Reggel'))
-  expect(menu).not.toBeInTheDocument()
-})
 
-test('/nap-on kívül a dp paraméter figyelmen kívül marad és nincs eltérés-pötty', async () => {
-  const { container } = renderAt('/fuel?dp=este')
-  await screen.findByRole('button', { name: 'Napszak váltása' })
-  expect(container.querySelector('.nap-offnow')).toBeNull()
-})
 
-test('/nap?dp=este esetén az alvás-ikon és az eltérés-pötty látszik', async () => {
-  const { container } = renderAt('/nap?dp=este')
-  await screen.findByRole('button', { name: 'Napszak váltása' })
-  expect(container.querySelector('.nap-head use[href="#i-alvas"]')).not.toBeNull()
-  expect(container.querySelector('.nap-offnow')).not.toBeNull()
-})
 
-test('/nap?dp=nap esetén nincs eltérés-pötty, mert ez a jelenlegi napszak', async () => {
-  const { container } = renderAt('/nap?dp=nap')
-  await screen.findByRole('button', { name: 'Napszak váltása' })
-  expect(container.querySelector('.nap-offnow')).toBeNull()
-})
 
 test('az Üzenetek karika a /nap/uzenetek oldalra navigál', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -183,15 +142,6 @@ test('az értesítés-dropdown a /me/ertesitesek oldalra visz a lábléceről', 
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/ertesitesek')
 })
 
-test('a két dropdown kölcsönösen kizárja egymást', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  const { container } = renderAt('/nap')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: /^Értesítések/ }))
-  expect(container.querySelector('.nap-dpmenu')).toBeNull()
-  expect(container.querySelector('.nap-ntfpanel')).not.toBeNull()
-})
 
 // mezo-idz2: a jobb szélső orb a mai nap-oldalra visz; a profil az alsó „Én" fülön van.
 test('a nap-orb a mai nap-oldalára visz', async () => {
@@ -226,14 +176,6 @@ test('nincs többé dátum-eyebrow a fejlécben', async () => {
 })
 
 // ── item 5: popover-elvárások ───────────────────────────────────────────────
-test('a napszak-menü Escape-re bezárul', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  const { container } = renderAt('/fuel')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
-  await user.keyboard('{Escape}')
-  expect(container.querySelector('.nap-dpmenu')).toBeNull()
-})
 
 test('az értesítés-menü kívülre kattintásra bezárul', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -244,17 +186,6 @@ test('az értesítés-menü kívülre kattintásra bezárul', async () => {
   expect(container.querySelector('.nap-ntfpanel')).toBeNull()
 })
 
-test('a napszak-menü elemei rádió-menüelemek, a jelenlegi napszak bejelölve', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/nap?dp=este')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  expect(dpItem('Este')).toHaveAttribute('aria-checked', 'true')
-  expect(dpItem('Nap')).toHaveAttribute('aria-checked', 'false')
-  expect(screen.getByRole('button', { name: 'Napszak váltása' })).toHaveAttribute('aria-haspopup', 'menu')
-  // A csengő panelje `dialog` (szűrő-chipek + „Mind olvasott" gomb van benne), a napszak-váltó
-  // maradt igazi menü (mezo-g9fz).
-  expect(screen.getByRole('button', { name: /^Értesítések/ })).toHaveAttribute('aria-haspopup', 'dialog')
-})
 
 test('a fejléc gyökere <header> elem, a nap-head app-head osztályokkal', async () => {
   const { container } = renderAt('/fuel')
@@ -264,35 +195,8 @@ test('a fejléc gyökere <header> elem, a nap-head app-head osztályokkal', asyn
 })
 
 // ── item 7: a popoverek útvonalváltásra záródnak ────────────────────────────
-test('a nyitott popover bezárul, amikor a fejléc máshová navigál', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  const { container } = renderAt('/nap')
-  await user.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  expect(container.querySelector('.nap-ntfpanel')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
-  await user.click(screen.getByRole('button', { name: 'Napszak váltása' }))
-  expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: /^A mai napod/ }))
-  expect(container.querySelector('.nap-dpmenu')).toBeNull()
-})
 
 // ── item 2: a napszakválasztás megőrzi a szcenárió-paramétereket ────────────
-test('a napszakváltás megőrzi a többi query-paramétert és nem tol history-bejegyzést', async () => {
-  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  renderAt('/fuel?day=rough&vulnerable=on')
-  await user.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  await user.click(dpItem('Este'))
-  const loc = screen.getByTestId('loc')
-  expect(loc.textContent).toContain('/nap?')
-  expect(loc.textContent).toContain('day=rough')
-  expect(loc.textContent).toContain('vulnerable=on')
-  expect(loc.textContent).toContain('dp=este')
-  // `replace`: a napszakválasztás nem hagy history-bejegyzést, tehát a Vissza a
-  // kiinduló belépésre ugrik vissza (itt: nincs hova, a bejegyzés le lett cserélve).
-  await user.click(screen.getByRole('button', { name: 'Napszak váltása' }))
-  await user.click(dpItem('Nap')) // nowFace → dp lekerül, a többi marad
-  expect(screen.getByTestId('loc').textContent).toBe('/nap?day=rough&vulnerable=on')
-})
 
 // ── item 1: az üzenet-badge a látogatás után eltűnik ────────────────────────
 test('a Mezo-badge a /nap/uzenetek meglátogatása és elhagyása után eltűnik', async () => {
@@ -320,4 +224,13 @@ test('a Mezo-badge a /nap/uzenetek meglátogatása és elhagyása után eltűnik
   const after = screen.getByRole('button', { name: /^Mezo üzenetei/ })
   expect(after.getAttribute('aria-label')).toBe('Mezo üzenetei')
   expect(after.querySelector('.nap-badge')).toBeNull()
+})
+
+test('settings replaces daypart picker and preserves originating page', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/fuel?day=rough')
+  expect(screen.queryByRole('button', { name: 'Napszak váltása' })).toBeNull()
+  await user.click(await screen.findByRole('button', { name: 'Beállítások' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/settings')
+  expect(screen.getByTestId('origin')).toHaveTextContent('/fuel?day=rough')
 })

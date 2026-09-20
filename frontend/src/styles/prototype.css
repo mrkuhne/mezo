@@ -9849,12 +9849,12 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fset-custom input { width: 100%; margin-top: 4px; padding: 0 7px; text-align: center; }
 .fset-card .fset-error { color: var(--error-hover); font-weight: 700; }
 
-.fset-goalgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.fset-goalgrid .fset-card { display: grid; gap: 8px; background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
-.fset-goalgrid .fset-card:last-child { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.fset-goalgrid { display: grid; gap: 0; border-radius: 22px; padding: 4px 16px; background: var(--mz-wash-sky); }
+.fset-goalgrid .fset-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.fset-goalgrid .fset-card:last-child { border-top: 1px solid var(--border-subtle); }
 .fset-goalgrid input {
-  width: 100%; min-width: 0; padding: 0 9px; border-color: transparent;
-  background: var(--mz-chipbg); text-align: right; font-size: 21px; font-weight: 350;
+  width: 98px; min-width: 0; padding: 0 9px; border-color: transparent;
+  background: var(--mz-chipbg); text-align: right; font-size: 18px; font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 .fset-segments { display: flex; gap: 6px; }
