@@ -124,7 +124,7 @@ export function RunPage() {
           <>
             <div className="kr-quietnote">{QUIET_MSG}</div>
             <div className="kr-runsubttl">Hívott szakértők</div>
-            <p className="kr-sectnote">{NOT_CALLED_LINE}</p>
+            {summary.status === 'SUCCESS' && <p className="kr-sectnote">{NOT_CALLED_LINE}</p>}
           </>
         )}
 
@@ -149,7 +149,7 @@ export function RunPage() {
                 </div>
               ))}
             </div>
-            <p className="kr-sectnote">{NOT_CALLED_LINE}</p>
+            {summary.status === 'SUCCESS' && <p className="kr-sectnote">{NOT_CALLED_LINE}</p>}
           </>
         )}
 

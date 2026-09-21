@@ -34,6 +34,9 @@ import java.util.UUID;
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
 public class CharacterReplyProcessing {
     private final CharacterReplyRepository replies;
+    private final CharacterFollowupService followups;
+    private final io.mrkuhne.mezo.feature.character.config.CharacterCouncilProperties councilProperties;
+    private final CharacterMutationLock mutationLock;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher events;
     private final CharacterDimensionRepository dimensions;
@@ -43,6 +46,7 @@ public class CharacterReplyProcessing {
 
     @Transactional
     public CharacterReplyEntity claim(UUID owner, UUID id) {
+        mutationLock.lock(owner);
         entityManager.find(AppUserEntity.class, owner, LockModeType.PESSIMISTIC_WRITE);
         var r = replies.lockOwned(id, owner).orElse(null);
         if (r == null || !"SAVED".equals(r.getStatus())) return null;
@@ -68,6 +72,7 @@ public class CharacterReplyProcessing {
 
     @Transactional
     public void failed(UUID owner, UUID id, UUID token) {
+        mutationLock.lock(owner);
         replies.lockOwned(id, owner)
                 .filter(
                         r ->
@@ -86,12 +91,15 @@ public class CharacterReplyProcessing {
     @Transactional
     public void complete(
             CharacterReplyEntity leased, CharacterReplyEvaluation.Evaluation evaluation) {
+        mutationLock.lock(leased.getCreatedBy());
         var r = replies.lockOwned(leased.getId(), leased.getCreatedBy()).orElseThrow();
+        entityManager.refresh(r, LockModeType.PESSIMISTIC_WRITE);
         if (!leased.getProcessingToken().equals(r.getProcessingToken())
                 || !"PROCESSING".equals(r.getStatus())) return;
         var verdict = evaluation.verdict();
         if (r.getClaimId() != null) {
             var target = claims.lockOwned(r.getClaimId(), r.getCreatedBy()).orElseThrow();
+            entityManager.refresh(target, LockModeType.PESSIMISTIC_WRITE);
             if (!Objects.equals(target.getText(), evaluation.expectedClaimText())
                     || !Objects.equals(target.getStatus(), evaluation.expectedClaimStatus())
                     || !Objects.equals(target.getUpdatedAt(), evaluation.expectedClaimUpdatedAt()))
@@ -111,7 +119,12 @@ public class CharacterReplyProcessing {
                 throw new SystemRuntimeErrorException(
                         SystemMessage.error("CHARACTER_REPLY_PORTRAIT_UNAVAILABLE").build());
         }
+        if ("CONFERENCE_ITEM".equals(r.getSourceType()) && !"NEEDS_CLARIFICATION".equals(verdict.outcome())) {
+            followups.closeAnswered(r.getCreatedBy(), r.getSourceId(), r.getSourceIndex(),
+                    java.time.LocalDate.now(java.time.ZoneId.of(councilProperties.zone())));
+        }
         r.setOutcome(verdict.outcome());
+        r.setDiscussion(evaluation.discussion());
         r.setOutcomeText(verdict.reason());
         r.setStatus(
                 "NEEDS_CLARIFICATION".equals(verdict.outcome())

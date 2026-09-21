@@ -55,6 +55,45 @@ public class CharacterController implements CharacterApi {
     private final ObjectProvider<CharacterBootstrapService> characterBootstrapService;
     private final CharacterFeedbackService characterFeedbackService;
     private final CurrentUserId currentUserId;
+    private final io.mrkuhne.mezo.feature.character.service.CharacterCouncilProcessing council;
+    private final io.mrkuhne.mezo.feature.character.config.CharacterCouncilProperties councilProperties;
+    private final io.mrkuhne.mezo.feature.character.service.CharacterClaimRevisionService revisions;
+
+    @Override
+    public io.mrkuhne.mezo.api.dto.CharacterCouncilStatusResponse getCharacterCouncilStatus() {
+        return council.status(currentUserId.get(), LocalDate.now(java.time.ZoneId.of(councilProperties.zone())));
+    }
+
+    @Override
+    public List<io.mrkuhne.mezo.api.dto.CharacterClaimRevisionDto> getCharacterClaimRevisions(UUID claimId) {
+        return revisions.list(currentUserId.get(), claimId).stream().map(this::revisionDto).toList();
+    }
+
+    @Override
+    public io.mrkuhne.mezo.api.dto.CharacterClaimRevisionDto undoCharacterClaimRevision(UUID revisionId) {
+        return revisionDto(revisions.undo(currentUserId.get(), revisionId));
+    }
+
+    private io.mrkuhne.mezo.api.dto.CharacterClaimRevisionDto revisionDto(
+            io.mrkuhne.mezo.feature.character.entity.CharacterClaimRevisionEntity r) {
+        var before = r.getBeforeSnapshot();
+        var after = r.getAfterSnapshot();
+        return io.mrkuhne.mezo.api.dto.CharacterClaimRevisionDto.builder()
+                .id(r.getId()).claimId(r.getClaimId()).operation(r.getOperation())
+                .beforeText(r.getBeforeSnapshot() == null ? null : r.getBeforeSnapshot().text())
+                .afterText(r.getAfterSnapshot().text()).reason(r.getReason())
+                .beforeConfidence(before == null ? null : before.confidence()).afterConfidence(after.confidence())
+                .beforeStatus(before == null ? null : before.status()).afterStatus(after.status())
+                .beforeDimensionKey(before == null ? null : revisions.dimensionKey(r.getCreatedBy(), before.dimensionId()))
+                .afterDimensionKey(revisions.dimensionKey(r.getCreatedBy(), after.dimensionId()))
+                .beforeObservedFrom(before == null ? null : before.observedFrom()).afterObservedFrom(after.observedFrom())
+                .beforeObservedTo(before == null ? null : before.observedTo()).afterObservedTo(after.observedTo())
+                .beforeValidFrom(before == null ? null : before.validFrom()).afterValidFrom(after.validFrom())
+                .beforeValidTo(before == null ? null : before.validTo()).afterValidTo(after.validTo())
+                .createdAt(r.getCreatedAt().atOffset(java.time.ZoneOffset.UTC))
+                .undoneAt(r.getUndoneAt() == null ? null : r.getUndoneAt().atOffset(java.time.ZoneOffset.UTC))
+                .canUndo(revisions.canUndo(r)).build();
+    }
 
     /**
      * The generated {@code CharacterApi} fixes {@code bootstrapCharacter()} to a single

@@ -63,6 +63,7 @@ public class PortraitWriter {
     private final PromptPersona promptPersona;
     private final CharacterClaimRepository claimRepository;
     private final EntityManager entityManager;
+    private final io.mrkuhne.mezo.feature.character.config.CharacterProperties properties;
 
     /**
      * Rewrites {@code dimension}'s portrait from {@code activeClaims}. Returns {@code false} (and
@@ -99,13 +100,24 @@ public class PortraitWriter {
         String systemPrompt = promptPersona.render(owner, PORTRAIT_MARKER + "\n" + persona(dimension) + "\n" + contract());
         String userMessage = promptPersona.render(owner, userMessage(dimension, activeClaims));
         String raw;
-        try {
-            raw = llmCallContextHolder.runWith(
-                    new LlmCallContext("character", "portrait", "dimension", dimensionId),
-                    () -> companionLlm.completeSmart(systemPrompt, userMessage));
-        } catch (Exception e) {
-            log.warn("Portrait rewrite failed for owner {} dimension {}", owner, dimension.getKey(), e);
-            return false;
+        if (!io.mrkuhne.mezo.feature.llmlog.context.LlmCallQuota.canRun(false, 0)) {
+            // A bounded cycle may finish its claim changes without room for another narrative.
+            // Show a literal excerpt of stored claims, never retain an obsolete portrait.
+            raw = activeClaims.isEmpty() ? "Jelenleg nincs aktív megállapítás ebben a témában."
+                    : "Rögzített megállapítások:\n" + activeClaims.stream()
+                            .limit(properties.prompt().maxClaimsPerDimension())
+                            .map(CharacterClaimEntity::getText).collect(java.util.stream.Collectors.joining("\n"));
+        } else {
+            boolean smart = io.mrkuhne.mezo.feature.llmlog.context.LlmCallQuota.canRun(true, 0);
+            try {
+                raw = llmCallContextHolder.runWith(
+                        new LlmCallContext("character", "portrait", "dimension", dimensionId), smart,
+                        () -> smart ? companionLlm.completeSmart(systemPrompt, userMessage)
+                                : companionLlm.complete(systemPrompt, userMessage));
+            } catch (Exception e) {
+                log.warn("Portrait rewrite failed for owner {} dimension {}", owner, dimension.getKey(), e);
+                return false;
+            }
         }
         if (raw == null || raw.isBlank() || raw.length() > 6000) {
             log.warn("Portrait answer was blank for owner {} dimension {}", owner, dimension.getKey());

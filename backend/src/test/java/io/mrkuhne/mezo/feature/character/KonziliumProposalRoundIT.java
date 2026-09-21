@@ -33,6 +33,40 @@ class KonziliumProposalRoundIT extends ApiIntegrationTest {
     @Autowired private KonziliumProposalRound proposalRound;
     @Autowired private CharacterObservationRepository observationRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private io.mrkuhne.mezo.support.populator.CharacterReplyPopulator characterPopulator;
+
+    @Test
+    void testRun_shouldValidateAndKeepObservationWindow_whenDatesAreExplicit() {
+        UUID owner = ownerId();
+        String scripted = "[fake-char-proposals:["
+                + "{\"kind\":\"NEW\",\"dimensionKey\":\"discipline\",\"text\":\"Heti megfigyelés.\",\"confidence\":0.6,\"observedFrom\":\"2026-08-24\",\"observedTo\":\"2026-08-30\",\"validTo\":\"2026-09-01\"},"
+                + "{\"kind\":\"NEW\",\"dimensionKey\":\"discipline\",\"text\":\"Fordított ablak.\",\"confidence\":0.6,\"observedFrom\":\"2026-08-30\",\"observedTo\":\"2026-08-24\"}]]";
+        seedObservation(owner, "drill", WEEK_START.plusDays(1), scripted, (short) 4);
+        var result = proposalRound.run(owner, WEEK_START,
+                observationRepository.findByCreatedByAndDayBetweenAndConsumedByConferenceIdIsNullOrderByDayAscCreatedAtAsc(
+                        owner, WEEK_START, WEEK_START.plusDays(6)));
+        assertThat(result.proposals()).singleElement().satisfies(proposal -> {
+            assertThat(proposal.observedFrom()).isEqualTo(WEEK_START);
+            assertThat(proposal.observedTo()).isEqualTo(WEEK_START.plusDays(6));
+            assertThat(proposal.validTo()).isEqualTo(LocalDate.of(2026, 9, 1));
+        });
+    }
+
+    @Test
+    void testRun_shouldAcceptRevisionAndOwnedMove_whenTargetClaimAndDimensionExist() {
+        UUID owner = ownerId();
+        var claim = characterPopulator.claim(owner);
+        String scripted = "[fake-char-proposals:["
+                + "{\"kind\":\"REVISE\",\"claimId\":\"" + claim.getId() + "\",\"text\":\"Kedden edz.\",\"confidence\":0.6},"
+                + "{\"kind\":\"MOVE\",\"dimensionKey\":\"discipline\",\"claimId\":\"" + claim.getId() + "\",\"text\":\"Kedden edz.\",\"confidence\":0.6},"
+                + "{\"kind\":\"MOVE\",\"claimId\":\"" + claim.getId() + "\",\"text\":\"Hiányzó cél.\",\"confidence\":0.6}]]";
+        seedObservation(owner, "drill", WEEK_START.plusDays(1), scripted, (short) 4);
+        var result = proposalRound.run(owner, WEEK_START,
+                observationRepository.findByCreatedByAndDayBetweenAndConsumedByConferenceIdIsNullOrderByDayAscCreatedAtAsc(
+                        owner, WEEK_START, WEEK_START.plusDays(6)));
+        assertThat(result.proposals()).extracting(ClaimProposal::kind).containsExactly("REVISE", "MOVE");
+        assertThat(result.proposals().get(1).dimensionKey()).isEqualTo("discipline");
+    }
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());

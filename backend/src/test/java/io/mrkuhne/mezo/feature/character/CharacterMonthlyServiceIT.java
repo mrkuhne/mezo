@@ -132,7 +132,7 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
         // I4 (mezo-xlvr final review): the monthly konzílium STORES its structure too — without
         // it the row would be re-derived from its own prose on every read, losing chapter
-        // membership, kind and claim id. It has no cross-talk round, so reactions stay empty.
+        // membership, kind and claim id, including the shared debate round.
         ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
         assertThat(deliberation).isNotNull();
         assertThat(deliberation.threads()).isNotEmpty();
@@ -141,7 +141,7 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
                 .allSatisfy(item -> {
                     assertThat(item.kind()).isNotBlank();
                     assertThat(item.expertKey()).isNotBlank();
-                    assertThat(item.reactions()).isEmpty();
+                    assertThat(item.reactions()).isNotEmpty();
                     assertThat(item.chair()).isNotNull();
                 });
 

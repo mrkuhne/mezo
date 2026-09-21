@@ -241,7 +241,18 @@ public class CharacterService {
                     .build());
         }
 
-        conferenceRepository.findFirstByCreatedByOrderByGeneratedAtDesc(owner).ifPresent(conf -> {
+        conferenceRepository.findByCreatedByOrderByGeneratedAtDesc(owner, PageRequest.of(0, limit)).forEach(conf -> {
+            if (conf.getDeliberation() != null) {
+                for (var thread : conf.getDeliberation().threads()) {
+                    for (var item : thread.items()) {
+                        items.add(CharacterFeedItem.builder().kind(CharacterFeedItem.KindEnum.CONFERENCE_POST)
+                                .sourceType(CharacterFeedItem.SourceTypeEnum.CONFERENCE_ITEM)
+                                .sourceId(conf.getId()).sourceIndex(item.index()).at(toOffset(conf.getGeneratedAt()))
+                                .expertKey(item.expertKey()).text(item.text())
+                                .dimensionKeys(thread.dimensionKey() == null ? List.of() : List.of(thread.dimensionKey())).build());
+                    }
+                }
+            }
             int changeIndex = 0;
             for (ConferenceOutcomeEnvelope.Change change : conf.getOutcome().changes()) {
                 items.add(CharacterFeedItem.builder()
@@ -325,7 +336,7 @@ public class CharacterService {
 
         boolean stored = conf.getDeliberation() != null;
         ConferenceDeliberationEnvelope deliberation = stored
-                ? conf.getDeliberation()
+                ? DeliberationAssembler.forRead(conf, claimId -> claimRepository.findByIdAndCreatedBy(claimId, owner).isPresent())
                 : LegacyTranscriptParser.parse(conf.getTranscript().turns());
         List<ConferenceThread> threads = deliberation == null ? null : deliberation.threads().stream()
                 .map(CharacterService::toThreadDto)
@@ -345,6 +356,12 @@ public class CharacterService {
                 .deliberation(threads)
                 .deliberationSource(source)
                 .changes(changes)
+                .followups(conf.getFollowups() == null ? List.of() : conf.getFollowups().items().stream()
+                        .map(item -> io.mrkuhne.mezo.api.dto.CharacterFollowup.builder()
+                                .id(item.id()).sourceIndex(item.sourceIndex()).kind(io.mrkuhne.mezo.api.dto.CharacterFollowup.KindEnum.fromValue(item.kind()))
+                                .expertKey(item.expertKey()).question(item.question()).requiredEvidence(item.requiredEvidence())
+                                .dueOn(item.dueOn()).status(io.mrkuhne.mezo.api.dto.CharacterFollowup.StatusEnum.fromValue(item.status()))
+                                .lastCheckedOn(item.lastCheckedOn()).resolvedByConferenceId(item.resolvedByConferenceId()).build()).toList())
                 .build();
     }
 
@@ -369,6 +386,8 @@ public class CharacterService {
                                 .expertKey(reaction.expertKey())
                                 .stance(ConferencePeerReaction.StanceEnum.fromValue(reaction.stance()))
                                 .argument(reaction.argument())
+                                .round(reaction.round()).replyToExpert(reaction.replyToExpert())
+                                .participationReason(reaction.participationReason()).toolNames(reaction.toolNames())
                                 .build())
                         .toList())
                 .skeptic(item.skeptic() == null ? null : ConferenceSkepticVerdict.builder()
@@ -452,6 +471,7 @@ public class CharacterService {
                 .id(run.getId())
                 .kind(CharacterRunSummary.KindEnum.fromValue(run.getKind()))
                 .day(run.getDay())
+                .status(run.getStatus()).failureCount(run.getFailureCount())
                 .observationCount(run.getObservationCount())
                 .callCount(run.getCallCount())
                 .detectorKeys(run.getDetectorKeys().keys())

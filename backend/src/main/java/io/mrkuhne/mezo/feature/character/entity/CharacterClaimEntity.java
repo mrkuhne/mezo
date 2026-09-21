@@ -7,8 +7,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.AssertTrue;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -83,4 +85,32 @@ public class CharacterClaimEntity extends OwnedEntity {
     @NotNull
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
+
+    /** Inclusive source-data period; null means not specified by the evidence. */
+    @Column(name = "observed_from")
+    private LocalDate observedFrom;
+
+    @Column(name = "observed_to")
+    private LocalDate observedTo;
+
+    /** Inclusive applicability period; an omitted endpoint is open-ended. */
+    @Column(name = "valid_from")
+    private LocalDate validFrom;
+
+    @Column(name = "valid_to")
+    private LocalDate validTo;
+
+    @AssertTrue
+    public boolean isObservedPeriodValid() {
+        return observedFrom == null || observedTo == null || !observedFrom.isAfter(observedTo);
+    }
+
+    @AssertTrue
+    public boolean isValidityPeriodValid() {
+        return validFrom == null || validTo == null || !validFrom.isAfter(validTo);
+    }
+
+    public boolean appliesOn(LocalDate day) {
+        return (validFrom == null || !day.isBefore(validFrom)) && (validTo == null || !day.isAfter(validTo));
+    }
 }

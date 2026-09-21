@@ -17,6 +17,7 @@ vi.mock('@/data/hooks', async (original) => ({
   useCharacterConferences: () => ({ conferences: [], isLoading: false }),
   useCharacterConference: () => ({ conference: null, isLoading: false }),
   useCharacterReplies: () => ({ replies: [], isLoading: false, isError: false, pending: false }),
+  useCharacterCouncilStatus: () => ({ status: null, isLoading: false, isError: false }),
 }))
 beforeEach(() => {
   state.items = MOCK_FEED
@@ -61,4 +62,15 @@ test('failed loading is not presented as an empty feed', () => {
   show()
   expect(screen.getByRole('alert')).toHaveTextContent('Nem sikerült betölteni')
   expect(screen.queryByText(/nincs friss megfigyelés/)).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'A csapat kiemelt története' })).not.toBeInTheDocument()
+})
+
+test('the featured story returns to its real post even after filtering it out', () => {
+  state.items = [{ kind: 'OBSERVATION', sourceType: 'OBSERVATION', sourceId: 'story', expertKey: 'edzo', at: '2026-09-20T08:00:00Z', text: 'A valós kiemelt megfigyelés.' }]
+  show()
+  fireEvent.click(screen.getByRole('button', { name: 'Következtetések' }))
+  expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Megnézem a bejegyzést/ }))
+  expect(screen.getByRole('button', { name: 'Minden' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('article')).toHaveTextContent('A valós kiemelt megfigyelés.')
 })

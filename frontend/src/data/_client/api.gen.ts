@@ -4045,6 +4045,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/council": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest owned daily preparation status, without starting model work */
+        get: operations["getCharacterCouncilStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/claims/{claimId}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Actual audited changes of an owned claim, newest first */
+        get: operations["getCharacterClaimRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/revisions/{revisionId}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compensate an owned change if the claim has not changed since; repeated undo is idempotent */
+        post: operations["undoCharacterClaimRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/diagnosis": {
         parameters: {
             query?: never;
@@ -9634,9 +9685,58 @@ export interface components {
             }[];
             dimensions: components["schemas"]["DayDimension"][];
         };
+        CharacterCouncilStatusResponse: {
+            /** Format: date */
+            day: string;
+            /** @enum {string} */
+            status: "WAITING" | "PROCESSING" | "COMPLETED" | "QUIET" | "FAILED";
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: uuid */
+            conferenceId?: string | null;
+            /** Format: date */
+            sourceThrough?: string | null;
+        };
+        CharacterClaimRevisionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            claimId: string;
+            operation: string;
+            beforeText?: string | null;
+            afterText: string;
+            beforeConfidence?: number | null;
+            afterConfidence?: number | null;
+            beforeStatus?: string | null;
+            afterStatus?: string | null;
+            beforeDimensionKey?: string | null;
+            afterDimensionKey?: string | null;
+            /** Format: date */
+            beforeObservedFrom?: string | null;
+            /** Format: date */
+            afterObservedFrom?: string | null;
+            /** Format: date */
+            beforeObservedTo?: string | null;
+            /** Format: date */
+            afterObservedTo?: string | null;
+            /** Format: date */
+            beforeValidFrom?: string | null;
+            /** Format: date */
+            afterValidFrom?: string | null;
+            /** Format: date */
+            beforeValidTo?: string | null;
+            /** Format: date */
+            afterValidTo?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            undoneAt?: string | null;
+            canUndo: boolean;
+            reason: string;
+        };
         CharacterReplyCreateRequest: {
             /** @enum {string} */
-            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE" | "CONFERENCE_ITEM";
             /** Format: uuid */
             sourceId: string;
             /** @default 0 */
@@ -9647,7 +9747,7 @@ export interface components {
         };
         CharacterReplyResponse: {
             /** @enum {string} */
-            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE" | "CONFERENCE_ITEM";
             /** Format: uuid */
             sourceId: string;
             /** @default 0 */
@@ -9665,6 +9765,7 @@ export interface components {
             /** @enum {string|null} */
             outcome?: "UPDATED" | "WITHDRAWN" | "UNCHANGED" | "NEEDS_CLARIFICATION" | null;
             outcomeText?: string | null;
+            discussion?: components["schemas"]["ConferencePeerReaction"][];
         };
         CharacterClaimDto: {
             /** Format: uuid */
@@ -9741,12 +9842,12 @@ export interface components {
                 refId?: string | null;
             }[];
             /** @enum {string} */
-            sourceType?: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            sourceType?: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE" | "CONFERENCE_ITEM";
             /** Format: uuid */
             sourceId?: string;
             sourceIndex?: number;
             /** @enum {string} */
-            kind: "OBSERVATION" | "CONFERENCE_CHANGE";
+            kind: "OBSERVATION" | "CONFERENCE_CHANGE" | "CONFERENCE_POST";
             /** Format: date-time */
             at: string;
             /** @description null for CONFERENCE_CHANGE items */
@@ -9769,7 +9870,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY" | "DAILY";
             /** Format: date */
             weekStart?: string | null;
             /** Format: date-time */
@@ -9786,6 +9887,10 @@ export interface components {
             /** @enum {string} */
             stance: "SUPPORT" | "CHALLENGE" | "NUANCE";
             argument: string;
+            round?: number | null;
+            replyToExpert?: string | null;
+            participationReason?: string | null;
+            toolNames?: string[];
         };
         ConferenceSkepticVerdict: {
             /** @enum {string} */
@@ -9820,11 +9925,29 @@ export interface components {
             title: string;
             items: components["schemas"]["ConferenceItem"][];
         };
+        CharacterFollowup: {
+            /** Format: uuid */
+            id: string;
+            sourceIndex: number;
+            /** @enum {string} */
+            kind: "QUESTION" | "HYPOTHESIS";
+            expertKey: string;
+            question: string;
+            requiredEvidence: string;
+            /** Format: date */
+            dueOn: string;
+            /** @enum {string} */
+            status: "WAITING" | "REVISITED" | "CLOSED";
+            /** Format: date */
+            lastCheckedOn?: string | null;
+            /** Format: uuid */
+            resolvedByConferenceId?: string | null;
+        };
         CharacterConferenceResponse: {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY" | "DAILY";
             /** Format: date */
             weekStart?: string | null;
             /** Format: date-time */
@@ -9837,6 +9960,7 @@ export interface components {
              * @enum {string|null}
              */
             deliberationSource?: "STORED" | "DERIVED" | null;
+            followups?: components["schemas"]["CharacterFollowup"][];
             changes: {
                 claimId?: string | null;
                 kind: string;
@@ -9854,6 +9978,9 @@ export interface components {
              * @description The anchor day — the observed day for NIGHTLY, week_start for WEEKLY, the month's first day for MONTHLY, the run date for BOOTSTRAP
              */
             day: string;
+            /** @description SUCCESS means verified completion; FAILED requires retry; UNKNOWN is an unverified historical run. */
+            status?: string;
+            failureCount?: number;
             observationCount: number;
             /** @description Honest only for NIGHTLY (one call per fired expert); always 0 for WEEKLY/MONTHLY/ BOOTSTRAP rows — no reliable call count is derivable there, so the FE should omit or relabel this cell for non-NIGHTLY kinds. The AI-napló is the call-level truth. */
             callCount: number;
@@ -22490,7 +22617,7 @@ export interface operations {
     listCharacterReplies: {
         parameters: {
             query: {
-                sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+                sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE" | "CONFERENCE_ITEM";
                 sourceId: string;
                 sourceIndex?: number;
             };
@@ -22620,6 +22747,124 @@ export interface operations {
             };
             /** @description Unknown or foreign source or reply */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterCouncilStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daily preparation state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterCouncilStatusResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterClaimRevisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterClaimRevisionDto"][];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or foreign claim */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoCharacterClaimRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                revisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compensated revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterClaimRevisionDto"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or foreign revision */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Later claim change prevents safe compensation */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

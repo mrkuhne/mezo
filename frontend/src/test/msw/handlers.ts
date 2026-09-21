@@ -1892,6 +1892,8 @@ export const handlers = [
   }),
   http.get(`${API_BASE}/api/character/experts`, () => HttpResponse.json({ experts: MOCK_EXPERTS })),
   http.get(`${API_BASE}/api/character/feed`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/character/council`, () => HttpResponse.json({ day: new Date().toISOString().slice(0, 10), status: 'WAITING' })),
+  http.get(`${API_BASE}/api/character/claims/:claimId/revisions`, () => HttpResponse.json([])),
   http.get(`${API_BASE}/api/character/conference`, () => HttpResponse.json([])),
   // Gépterem (mezo-1gim.14): the run-log timeline writer runs on CHARACTER_SWITCH alone, not on
   // the dossier's bootstrap state (Task 1's writer wiring runs from the nightly/weekly/monthly/

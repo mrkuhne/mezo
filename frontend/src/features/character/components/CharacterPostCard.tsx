@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCharacterConference } from '@/data/hooks'
+import { useCharacterConference, useClaimFeedback } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { CharacterEvidenceSheet } from '@/features/character/sheets/CharacterEvidenceSheet'
 import { feedDayLabel } from '@/features/character/feedDayLabel'
-import { STANCE_LABEL, displayName } from '@/features/character/deliberationLabels'
+import { SKEPTIC_LABEL, displayName } from '@/features/character/deliberationLabels'
+import { CharacterExpertComment } from '@/features/character/components/CharacterExpertComment'
+import { conferencePostItem } from '@/features/character/logic/conferencePostItem'
+import { CharacterRevisionSheet } from '@/features/character/sheets/CharacterRevisionSheet'
 import type {
   CharacterExpertDto,
   CharacterFeedItem,
@@ -49,12 +52,12 @@ export function CharacterPostCard({
           </small>
         </div>
         <span className="kr-post-kind">
-          {item.kind === 'CONFERENCE_CHANGE' ? 'Összegzés' : 'Megfigyelés'}
+          {item.kind === 'CONFERENCE_CHANGE' ? 'Összegzés' : item.kind === 'CONFERENCE_POST' ? 'Megbeszéljük' : 'Megfigyelés'}
         </span>
       </header>
       <p className="kr-post-text">{item.text}</p>
-      {source?.sourceType === 'CONFERENCE_CHANGE' && (
-        <ConferencePostContext source={source} experts={experts} />
+      {(source?.sourceType === 'CONFERENCE_CHANGE' || source?.sourceType === 'CONFERENCE_ITEM') && (
+        <ConferencePostContext source={source} experts={experts} onReply={reply} />
       )}
       <div className="kr-post-actions">
         <button type="button" onClick={() => setEvidence(true)}>
@@ -65,7 +68,7 @@ export function CharacterPostCard({
             Válaszolok
           </button>
         )}
-        {item.kind === 'CONFERENCE_CHANGE' && (
+        {(item.kind === 'CONFERENCE_CHANGE' || item.kind === 'CONFERENCE_POST') && (
           <button
             type="button"
             onClick={() => navigate(`/mezo/karakter/konzilium${source ? `?id=${source.sourceId}` : ''}`)}
@@ -92,16 +95,22 @@ export function CharacterPostCard({
 function ConferencePostContext({
   source,
   experts,
+  onReply,
 }: {
   source: CharacterReplySource
   experts: CharacterExpertDto[]
+  onReply: () => void
 }) {
-  const { conference } = useCharacterConference(source.sourceId)
-  const claimId = conference?.changes[source.sourceIndex]?.claimId
-  const proposal = claimId
-    ? conference?.deliberation?.flatMap((thread) => thread.items).find((item) => item.claimId === claimId)
-    : undefined
-  if (!proposal || !proposal.reactions.length || conference?.deliberationSource !== 'STORED') return null
+  const { conference, isLoading, isError, refetch } = useCharacterConference(source.sourceId)
+  const [history, setHistory] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const proposal = conferencePostItem(conference, source)
+  if (isLoading) return <p role="status" className="kr-peer-context">A beszélgetés betöltése…</p>
+  if (isError) return <p role="alert" className="kr-peer-context">A beszélgetés nem töltődött be. <button type="button" onClick={refetch}>Újratöltés</button></p>
+  if (!proposal) return null
+  const comments = proposal.reactions.length + Number(Boolean(proposal.skeptic)) + Number(Boolean(proposal.chair))
+  const followups = conference?.followups?.filter(entry => entry.sourceIndex === proposal.index) ?? []
+  if (!comments && followups.length === 0) return null
   return (
     <div className="kr-peer-thread">
       <div className="kr-reaction-summary">
@@ -110,19 +119,57 @@ function ConferencePostContext({
             <PersonaOrb key={`${reaction.expertKey}-${i}`} expertKey={reaction.expertKey} size={24} />
           ))}
         </span>
-        <span>{proposal.reactions.length} szakértői hozzászólás</span>
+        <span>{comments} szakértői hozzászólás</span>
       </div>
-      {proposal.reactions.map((reaction, i) => (
-        <div className="kr-social-comment" key={i}>
-          <PersonaOrb expertKey={reaction.expertKey} size={28} />
-          <div>
-            <strong>
-              {displayName(experts, reaction.expertKey)} <small>{STANCE_LABEL[reaction.stance]}</small>
-            </strong>
-            <p>{reaction.argument}</p>
-          </div>
+      {proposal.reactions.slice(0, expanded ? undefined : 2).map((reaction, i) => <CharacterExpertComment key={i} reaction={reaction} experts={experts} />)}
+      {proposal.reactions.length > 2 && <button type="button" className="kr-claim-evidence" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+        {expanded ? 'Kevesebb hozzászólás' : `További ${proposal.reactions.length - 2} szakértői hozzászólás`}
+      </button>}
+      {proposal.skeptic && <div className="kr-social-comment">
+        <PersonaOrb expertKey="szkeptikus" size={28} />
+        <div><strong>Szkeptikus <small>{SKEPTIC_LABEL[proposal.skeptic.verdict]}</small></strong><p>{proposal.skeptic.argument}</p></div>
+      </div>}
+      {proposal.chair && <div className="kr-social-comment is-mezo">
+        <PersonaOrb expertKey="mezo" size={28} />
+        <div><strong>Mezo <small>{proposal.chair.accepted ? 'Elfogadott javaslat' : 'Ezt a javaslatot nem fogadta el'}</small></strong><p>{proposal.chair.reason}</p>
+          {proposal.claimId && <button type="button" className="kr-claim-evidence" onClick={() => setHistory(true)}>Mi változott?</button>}
         </div>
-      ))}
+      </div>}
+      {proposal.claimId && <ClaimPostFeedback claimId={proposal.claimId} />}
+      {followups.map(entry => <div className="kr-social-comment is-followup" key={entry.id}>
+        <PersonaOrb expertKey={entry.expertKey} size={28} />
+        <div>
+          <strong>{entry.status === 'CLOSED' ? 'Ezt a kérdést lezártuk' : entry.status === 'REVISITED' ? 'Újra megnéztük' : entry.kind === 'QUESTION' ? 'A válaszodra várunk' : 'Ekkor nézzük újra'}</strong>
+          <p>{entry.question}</p>
+          <small>{entry.requiredEvidence}</small>
+          {entry.status === 'WAITING' && <p><time dateTime={entry.dueOn}>{new Date(`${entry.dueOn}T12:00:00`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}</time></p>}
+          {entry.status === 'WAITING' && entry.kind === 'QUESTION' && <button type="button" className="kr-claim-evidence" onClick={onReply}>Válaszolok a kérdésre</button>}
+          {entry.resolvedByConferenceId && <a className="kr-claim-evidence" href={`/mezo/karakter/konzilium?id=${entry.resolvedByConferenceId}`}>Megnézem, mire jutottunk ›</a>}
+        </div>
+      </div>)}
+      {history && proposal.claimId && <CharacterRevisionSheet claimId={proposal.claimId} onClose={() => setHistory(false)} />}
     </div>
   )
+}
+
+function ClaimPostFeedback({ claimId }: { claimId: string }) {
+  const { submit, pending } = useClaimFeedback()
+  const [result, setResult] = useState<'success' | 'error' | null>(null)
+  async function send(feedback: 'TALAL' | 'NEM_IGAZ') {
+    setResult(null)
+    try {
+      await submit(claimId, feedback)
+      setResult('success')
+    } catch {
+      setResult('error')
+    }
+  }
+  return <div>
+    <div className="kr-post-actions" aria-label="Visszajelzés a következtetésről">
+      <button type="button" disabled={pending} onClick={() => void send('TALAL')}>Hasznos</button>
+      <button type="button" disabled={pending} onClick={() => void send('NEM_IGAZ')}>Nem így érzem</button>
+    </div>
+    {result === 'success' && <p role="status" className="kr-peer-context">Köszönjük a visszajelzést.</p>}
+    {result === 'error' && <p role="alert" className="kr-peer-context">A visszajelzés mentését nem tudtuk megerősíteni. Próbáld újra.</p>}
+  </div>
 }

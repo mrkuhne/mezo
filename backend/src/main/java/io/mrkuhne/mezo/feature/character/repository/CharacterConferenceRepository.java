@@ -10,6 +10,18 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CharacterConferenceRepository extends JpaRepository<CharacterConferenceEntity, UUID> {
+    /** JSON array due-date predicate cannot be expressed by a derived finder. */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select c.* from character_conference c where c.created_by = :owner and c.is_deleted = false
+              and exists (select 1 from jsonb_array_elements(c.followups->'items') f
+                where f->>'status' = 'WAITING' and (f->>'dueOn')::date <= :day)
+            order by c.generated_at asc limit :limit
+            """, nativeQuery = true)
+    List<CharacterConferenceEntity> findDueFollowups(@org.springframework.data.repository.query.Param("owner") UUID owner,
+            @org.springframework.data.repository.query.Param("day") LocalDate day,
+            @org.springframework.data.repository.query.Param("limit") int limit);
+
+    List<CharacterConferenceEntity> findByCreatedByOrderByGeneratedAtDesc(UUID createdBy, org.springframework.data.domain.Pageable pageable);
 
     List<Summary> findByCreatedByOrderByGeneratedAtDesc(UUID createdBy);
 

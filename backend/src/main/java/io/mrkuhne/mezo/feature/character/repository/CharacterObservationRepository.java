@@ -8,6 +8,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CharacterObservationRepository extends JpaRepository<CharacterObservationEntity, UUID> {
+    /** Edition catch-up bounds dates of publication, never the lifetime of unprocessed evidence. */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select * from character_observation
+            where created_by = :owner and is_deleted = false and day <= :through
+              and consumed_by_conference_id is null
+              and not (coalesce(signals, '{}'::jsonb) @> cast('{"signals":[{"detectorKey":"contextual-reply"}]}' as jsonb))
+            order by day asc, salience desc, created_at asc, id asc
+            """, nativeQuery = true)
+    List<CharacterObservationEntity> findPending(UUID owner, LocalDate through, Pageable pageable);
+
     /** Reply evidence remains available to conferences, but does not become a user-authored post.
      * Filter BEFORE pagination so a busy thread cannot crowd its source out of the feed. */
     @org.springframework.data.jpa.repository.Query(value = """

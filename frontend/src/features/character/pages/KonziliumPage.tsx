@@ -25,6 +25,7 @@ import { expertColor } from '@/features/character/expertColors'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
 
 const KIND_WORD: Record<CharacterConferenceSummary['kind'], string> = {
+  DAILY: 'napi beszélgetés',
   WEEKLY: 'heti',
   MONTHLY: 'havi',
   BOOTSTRAP: 'első beolvasás',
@@ -148,15 +149,9 @@ export function KonziliumPage() {
   }
 
   const summary = index >= 0 ? conferences[index] : null
-  // C1 (mezo-sp9w branch-review): two conditions, kept apart on purpose. Only a WEEKLY meeting
-  // ever runs a cross-talk round at all — CharacterBootstrapService and CharacterMonthlyService
-  // both assemble their stored envelope with an honestly empty reaction list, because neither
-  // kind has this round. `deliberationSource === 'STORED'` alone answers a different question
-  // (are these threads the meeting's own, not read back out of an old prose transcript) and a
-  // MONTHLY/BOOTSTRAP row can be `STORED` too — so `deliberationSource` alone would tell those
-  // two kinds a round happened and produced nothing, when the truth is the round never existed
-  // for them.
-  const hasCrossTalkRound = conference?.kind === 'WEEKLY'
+  // Daily and weekly editions run peer discussion. Stored provenance remains a separate
+  // condition: a legacy-derived transcript cannot prove that a peer round happened.
+  const hasCrossTalkRound = conference?.kind === 'WEEKLY' || conference?.kind === 'DAILY'
   const threadsAreOwn = conference?.deliberationSource === 'STORED'
   const crossTalkRan = hasCrossTalkRound && threadsAreOwn
   // Fix round 1 (mezo-sp9w, review finding 1): an empty-but-present thread envelope is a real,

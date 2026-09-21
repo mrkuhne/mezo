@@ -61,6 +61,10 @@ public class CharacterConferenceEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private ConferenceDeliberationEnvelope deliberation;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private CharacterFollowupsEnvelope followups;
+
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;

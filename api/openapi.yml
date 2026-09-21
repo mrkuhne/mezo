@@ -9763,6 +9763,7 @@ paths:
               - OBSERVATION
               - CLAIM
               - CONFERENCE_CHANGE
+              - CONFERENCE_ITEM
         - name: sourceId
           in: query
           required: true
@@ -9869,6 +9870,99 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Unknown or foreign source or reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/council:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterCouncilStatus
+      summary: 'Latest owned daily preparation status, without starting model work'
+      responses:
+        '200':
+          description: Daily preparation state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterCouncilStatusResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/claims/{claimId}/revisions':
+    get:
+      tags:
+        - Character
+      operationId: getCharacterClaimRevisions
+      summary: 'Actual audited changes of an owned claim, newest first'
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Revisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterClaimRevisionDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Missing or foreign claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/revisions/{revisionId}/undo':
+    post:
+      tags:
+        - Character
+      operationId: undoCharacterClaimRevision
+      summary: >-
+        Compensate an owned change if the claim has not changed since; repeated
+        undo is idempotent
+      parameters:
+        - name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Compensated revision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterClaimRevisionDto'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Missing or foreign revision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Later claim change prevents safe compensation
           content:
             application/json:
               schema:
@@ -23932,6 +24026,120 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DayDimension'
+    CharacterCouncilStatusResponse:
+      type: object
+      required:
+        - day
+        - status
+      properties:
+        day:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - WAITING
+            - PROCESSING
+            - COMPLETED
+            - QUIET
+            - FAILED
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        conferenceId:
+          type: string
+          format: uuid
+          nullable: true
+        sourceThrough:
+          type: string
+          format: date
+          nullable: true
+    CharacterClaimRevisionDto:
+      type: object
+      required:
+        - id
+        - claimId
+        - operation
+        - afterText
+        - createdAt
+        - canUndo
+        - reason
+      properties:
+        id:
+          type: string
+          format: uuid
+        claimId:
+          type: string
+          format: uuid
+        operation:
+          type: string
+        beforeText:
+          type: string
+          nullable: true
+        afterText:
+          type: string
+        beforeConfidence:
+          type: number
+          nullable: true
+        afterConfidence:
+          type: number
+          nullable: true
+        beforeStatus:
+          type: string
+          nullable: true
+        afterStatus:
+          type: string
+          nullable: true
+        beforeDimensionKey:
+          type: string
+          nullable: true
+        afterDimensionKey:
+          type: string
+          nullable: true
+        beforeObservedFrom:
+          type: string
+          format: date
+          nullable: true
+        afterObservedFrom:
+          type: string
+          format: date
+          nullable: true
+        beforeObservedTo:
+          type: string
+          format: date
+          nullable: true
+        afterObservedTo:
+          type: string
+          format: date
+          nullable: true
+        beforeValidFrom:
+          type: string
+          format: date
+          nullable: true
+        afterValidFrom:
+          type: string
+          format: date
+          nullable: true
+        beforeValidTo:
+          type: string
+          format: date
+          nullable: true
+        afterValidTo:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        undoneAt:
+          type: string
+          format: date-time
+          nullable: true
+        canUndo:
+          type: boolean
+        reason:
+          type: string
     CharacterReplyCreateRequest:
       type: object
       required:
@@ -23946,6 +24154,7 @@ components:
             - OBSERVATION
             - CLAIM
             - CONFERENCE_CHANGE
+            - CONFERENCE_ITEM
         sourceId:
           type: string
           format: uuid
@@ -23980,6 +24189,7 @@ components:
             - OBSERVATION
             - CLAIM
             - CONFERENCE_CHANGE
+            - CONFERENCE_ITEM
         sourceId:
           type: string
           format: uuid
@@ -24022,6 +24232,10 @@ components:
         outcomeText:
           type: string
           nullable: true
+        discussion:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferencePeerReaction'
     CharacterClaimDto:
       type: object
       required:
@@ -24240,6 +24454,7 @@ components:
             - OBSERVATION
             - CLAIM
             - CONFERENCE_CHANGE
+            - CONFERENCE_ITEM
         sourceId:
           type: string
           format: uuid
@@ -24252,6 +24467,7 @@ components:
           enum:
             - OBSERVATION
             - CONFERENCE_CHANGE
+            - CONFERENCE_POST
         at:
           type: string
           format: date-time
@@ -24307,6 +24523,7 @@ components:
             - BOOTSTRAP
             - WEEKLY
             - MONTHLY
+            - DAILY
         weekStart:
           type: string
           format: date
@@ -24347,6 +24564,19 @@ components:
             - NUANCE
         argument:
           type: string
+        round:
+          type: integer
+          nullable: true
+        replyToExpert:
+          type: string
+          nullable: true
+        participationReason:
+          type: string
+          nullable: true
+        toolNames:
+          type: array
+          items:
+            type: string
     ConferenceSkepticVerdict:
       type: object
       required:
@@ -24443,6 +24673,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ConferenceItem'
+    CharacterFollowup:
+      type: object
+      required:
+        - id
+        - sourceIndex
+        - kind
+        - expertKey
+        - question
+        - requiredEvidence
+        - dueOn
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceIndex:
+          type: integer
+        kind:
+          type: string
+          enum:
+            - QUESTION
+            - HYPOTHESIS
+        expertKey:
+          type: string
+        question:
+          type: string
+        requiredEvidence:
+          type: string
+        dueOn:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - WAITING
+            - REVISITED
+            - CLOSED
+        lastCheckedOn:
+          type: string
+          format: date
+          nullable: true
+        resolvedByConferenceId:
+          type: string
+          format: uuid
+          nullable: true
     CharacterConferenceResponse:
       type: object
       required:
@@ -24461,6 +24736,7 @@ components:
             - BOOTSTRAP
             - WEEKLY
             - MONTHLY
+            - DAILY
         weekStart:
           type: string
           format: date
@@ -24495,6 +24771,10 @@ components:
             - STORED
             - DERIVED
           nullable: true
+        followups:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterFollowup'
         changes:
           type: array
           items:
@@ -24541,6 +24821,15 @@ components:
             The anchor day — the observed day for NIGHTLY, week_start for
             WEEKLY, the month's first day for MONTHLY, the run date for
             BOOTSTRAP
+        status:
+          type: string
+          description: >-
+            SUCCESS means verified completion; FAILED requires retry; UNKNOWN is
+            an unverified historical run.
+          pattern: ^(UNKNOWN|SUCCESS|FAILED)$
+        failureCount:
+          type: integer
+          minimum: 0
         observationCount:
           type: integer
         callCount:

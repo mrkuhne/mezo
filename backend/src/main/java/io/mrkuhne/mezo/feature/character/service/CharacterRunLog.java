@@ -10,6 +10,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -45,6 +48,49 @@ import org.springframework.transaction.annotation.Transactional;
 public class CharacterRunLog {
 
     private final CharacterRunRepository runRepository;
+    private final EntityManager entityManager;
+
+    public boolean observationSucceeded(UUID owner, LocalDate day) {
+        return runRepository.findByCreatedByAndKindAndDay(owner, "NIGHTLY", day)
+                .map(run -> "SUCCESS".equals(run.getStatus())).orElse(false);
+    }
+
+    /** Observation rows and readiness commit together; never publish success before its data. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordObservation(UUID owner, LocalDate day, int observationCount, int callCount,
+                                  List<String> detectorKeys, List<String> expertKeys, boolean success) {
+        writeObservation(owner, day, observationCount, callCount, detectorKeys, expertKeys, success);
+    }
+
+    /** A gather/detector exception can abort its transaction, so retain that failure separately. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordObservationFailure(UUID owner, LocalDate day) {
+        writeObservation(owner, day, 0, 0, List.of(), List.of(), false);
+    }
+
+    private void writeObservation(UUID owner, LocalDate day, int observations, int calls,
+                                  List<String> detectorKeys, List<String> expertKeys, boolean success) {
+        var existing = runRepository.findByCreatedByAndKindAndDay(owner, "NIGHTLY", day);
+        var run = existing.orElseGet(CharacterRunEntity::new);
+        if (existing.isPresent()) {
+            entityManager.refresh(run, LockModeType.PESSIMISTIC_WRITE);
+            if ("SUCCESS".equals(run.getStatus())) return;
+        } else {
+            run.setCreatedBy(owner);
+            run.setKind("NIGHTLY");
+            run.setDay(day);
+            run.setDetectorKeys(new RunDetectorKeysEnvelope(List.of()));
+            run.setExpertKeys(new RunExpertKeysEnvelope(List.of()));
+        }
+        run.setStatus(success ? "SUCCESS" : "FAILED");
+        if (!success) run.setFailureCount(run.getFailureCount() + 1);
+        run.setObservationCount(run.getObservationCount() + observations);
+        run.setCallCount(run.getCallCount() + calls);
+        run.setDetectorKeys(new RunDetectorKeysEnvelope(Stream.concat(run.getDetectorKeys().keys().stream(), detectorKeys.stream()).distinct().toList()));
+        run.setExpertKeys(new RunExpertKeysEnvelope(Stream.concat(run.getExpertKeys().keys().stream(), expertKeys.stream()).distinct().toList()));
+        run.setGeneratedAt(Instant.now());
+        runRepository.saveAndFlush(run);
+    }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(UUID owner, String kind, LocalDate day, int observationCount, int callCount,
@@ -58,6 +104,7 @@ public class CharacterRunLog {
             CharacterRunEntity entity = new CharacterRunEntity();
             entity.setCreatedBy(owner);
             entity.setKind(kind);
+            entity.setStatus("SUCCESS");
             entity.setDay(day);
             entity.setObservationCount(observationCount);
             entity.setCallCount(callCount);

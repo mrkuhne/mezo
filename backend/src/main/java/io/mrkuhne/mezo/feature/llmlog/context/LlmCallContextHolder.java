@@ -81,8 +81,13 @@ public class LlmCallContextHolder {
      * request caller gets 429.
      */
     public <T> T runWith(LlmCallContext context, Supplier<T> body) {
+        return runWith(context, false, body);
+    }
+
+    public <T> T runWith(LlmCallContext context, boolean smart, Supplier<T> body) {
         LlmBudgetLevel level = llmBudgetGate.levelFor(context.feature());
         refuseIfOverBudget(context.feature(), level);
+        LlmCallQuota.charge(smart);
 
         LlmCallContext previousContext = CONTEXT.get();
         LlmBudgetLevel previousLevel = BUDGET.get();

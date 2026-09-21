@@ -63,7 +63,7 @@ public class KonziliumProposalRound {
     private static final BigDecimal MAX_CONFIDENCE = BigDecimal.ONE;
     private static final BigDecimal DEFAULT_CONFIDENCE = new BigDecimal("0.50");
     private static final String ACTIVE = "ACTIVE";
-    private static final Set<String> VALID_KINDS = Set.of("NEW", "UP", "DOWN", "RETIRE");
+    private static final Set<String> VALID_KINDS = Set.of("NEW", "UP", "DOWN", "RETIRE", "REVISE", "MOVE");
 
     /** CORE + META (round-4 spec §4.2) — the self-audit dimension routes and validates exactly
      *  like a CORE dimension, just owned by the Szkeptikus instead of a domain expert. */
@@ -99,7 +99,8 @@ public class KonziliumProposalRound {
 
     /** One drafted proposal as the LLM returns it, before validation/clamping. */
     record Draft(String kind, String dimensionKey, String claimId, String text, BigDecimal confidence,
-                 Boolean sensitive, String rationale) {}
+                 Boolean sensitive, String rationale, LocalDate observedFrom, LocalDate observedTo,
+                 LocalDate validFrom, LocalDate validTo) {}
 
     /** The round's output: every surviving proposal, one transcript turn per expert that answered,
      *  and every input observation's id (the conference consumes them all — including a failed
@@ -109,6 +110,32 @@ public class KonziliumProposalRound {
 
     @Transactional
     public Result run(UUID owner, LocalDate weekStart, List<CharacterObservationEntity> weekObservations) {
+        return run(owner, weekStart, weekObservations, List.of());
+    }
+
+    @Transactional
+    public Result run(UUID owner, LocalDate weekStart, List<CharacterObservationEntity> weekObservations,
+                      List<ExpertEvidence> dailyDiscussions) {
+        return runPeriod(owner, "Hét: " + weekStart + " – " + weekStart.plusDays(6), weekObservations,
+                dailyDiscussions, dailyDiscussions.isEmpty() ? WEEKLY_EVIDENCE_PHRASE : "a hét %d megfigyeléséből és korábbi beszélgetési összesítéséből");
+    }
+
+    @Transactional
+    public Result runDaily(UUID owner, LocalDate editionDay, List<CharacterObservationEntity> observations) {
+        return runDaily(owner, editionDay, observations, List.of());
+    }
+
+    @Transactional
+    public Result runDaily(UUID owner, LocalDate editionDay, List<CharacterObservationEntity> observations,
+                           List<ExpertEvidence> supplemental) {
+        var from = observations.stream().map(CharacterObservationEntity::getDay).min(LocalDate::compareTo).orElse(editionDay);
+        var to = observations.stream().map(CharacterObservationEntity::getDay).max(LocalDate::compareTo).orElse(editionDay);
+        return runPeriod(owner, "Napi kiadás: " + editionDay + "; megfigyelések eseményideje: " + from + " – " + to,
+                observations, supplemental, "%d napi forrásból és utánkövetésből");
+    }
+
+    private Result runPeriod(UUID owner, String periodLabel, List<CharacterObservationEntity> weekObservations,
+                             List<ExpertEvidence> supplemental, String evidencePhrase) {
         Map<String, List<CharacterObservationEntity>> byExpert = new LinkedHashMap<>();
         for (CharacterObservationEntity observation : weekObservations) {
             for (String expertKey : routeToExperts(observation)) {
@@ -138,9 +165,21 @@ public class KonziliumProposalRound {
             evidence.add(new ExpertEvidence(entry.getKey(), lines, refIds));
         }
 
-        String periodLabel = "Hét: " + weekStart + " – " + weekStart.plusDays(6);
+        for (var extra : supplemental) {
+            int position = -1;
+            for (int i = 0; i < evidence.size(); i++) {
+                if (evidence.get(i).expertKey().equals(extra.expertKey())) { position = i; break; }
+            }
+            if (position < 0) evidence.add(extra);
+            else {
+                var existing = evidence.get(position);
+                var lines = new ArrayList<>(existing.lines()); lines.addAll(extra.lines());
+                var refs = new ArrayList<>(existing.refIds()); refs.addAll(extra.refIds());
+                evidence.set(position, new ExpertEvidence(extra.expertKey(), lines, refs));
+            }
+        }
         Result evidenceResult =
-                runOnEvidence(owner, periodLabel, PROPOSAL_MARKER, "propose", evidence, true, WEEKLY_EVIDENCE_PHRASE);
+                runOnEvidence(owner, periodLabel, PROPOSAL_MARKER, "propose", evidence, true, evidencePhrase);
 
         List<UUID> observationIds = weekObservations.stream().map(CharacterObservationEntity::getId).toList();
         return new Result(evidenceResult.proposals(), evidenceResult.turns(), observationIds);
@@ -254,8 +293,10 @@ public class KonziliumProposalRound {
         }
 
         List<Draft> drafts = parse(raw, owner, expertKey, periodLabel);
+        if (drafts == null) return null;
         List<ClaimProposal> expertProposals = new ArrayList<>();
         for (Draft draft : drafts) {
+            if (draft == null) continue;
             if (expertProposals.size() >= MAX_PROPOSALS_PER_EXPERT) {
                 break;
             }
@@ -312,6 +353,8 @@ public class KonziliumProposalRound {
 
     private static ClaimProposal validate(Draft draft, String expertKey, Set<String> knownDimensionKeys,
                                            Set<UUID> activeClaimIds) {
+        if ((draft.observedFrom() != null && draft.observedTo() != null && draft.observedFrom().isAfter(draft.observedTo()))
+                || (draft.validFrom() != null && draft.validTo() != null && draft.validFrom().isAfter(draft.validTo()))) return null;
         if (draft.text() == null || draft.text().isBlank()) {
             return null;
         }
@@ -325,14 +368,16 @@ public class KonziliumProposalRound {
                 return null;
             }
             return new ClaimProposal(expertKey, draft.kind(), draft.dimensionKey(), null, draft.text(),
-                    confidence, sensitive, draft.rationale());
+                    confidence, sensitive, draft.rationale(), draft.observedFrom(), draft.observedTo(), draft.validFrom(), draft.validTo());
         }
         UUID claimId = parseUuid(draft.claimId());
         if (claimId == null || !activeClaimIds.contains(claimId)) {
             return null;
         }
-        return new ClaimProposal(expertKey, draft.kind(), null, claimId, draft.text(), confidence, sensitive,
-                draft.rationale());
+        if ("MOVE".equals(draft.kind())
+                && (draft.dimensionKey() == null || !knownDimensionKeys.contains(draft.dimensionKey()))) return null;
+        return new ClaimProposal(expertKey, draft.kind(), "MOVE".equals(draft.kind()) ? draft.dimensionKey() : null, claimId, draft.text(), confidence, sensitive,
+                draft.rationale(), draft.observedFrom(), draft.observedTo(), draft.validFrom(), draft.validTo());
     }
 
     private static UUID parseUuid(String value) {
@@ -372,14 +417,14 @@ public class KonziliumProposalRound {
     private static String outputContract() {
         return """
                 Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat és formázás nélkül, pontosan ebben \
-                a formában: [{"kind":"NEW|UP|DOWN|RETIRE","dimensionKey":"...","claimId":"...",\
-                "text":"...","confidence":0.0-1.0,"sensitive":true|false,"rationale":"..."}]. 0–3 \
-                javaslatot adj. NEW típushoz dimensionKey kötelező; UP/DOWN/RETIRE típushoz a \
+                a formában: [{"kind":"NEW|UP|DOWN|RETIRE|REVISE|MOVE","dimensionKey":"...","claimId":"...",\
+                "text":"...","confidence":0.0-1.0,"sensitive":true|false,"rationale":"...","observedFrom":"YYYY-MM-DD","observedTo":"YYYY-MM-DD","validFrom":"YYYY-MM-DD","validTo":"YYYY-MM-DD"}]. 0–3 \
+                javaslatot adj. NEW és MOVE típushoz létező dimensionKey kötelező; UP/DOWN/RETIRE/REVISE/MOVE típushoz a \
                 felsorolt aktív állítások egyikének claimId-ja kötelező. Minden javaslatot KIZÁRÓLAG \
                 a felsorolt megfigyelésekre alapozz — ne találj ki számot vagy tényt. Jelöld \
                 sensitive=true-val az önértékelési, elutasítás-mintázati vagy gyógyszerciklus \
                 jellegű állításokat. A "FELHASZNÁLÓ VÁLASZA —" jelöléssel kezdődő sorok a felhasználó ({{NÉV}}) saját \
-                válaszai — ezek FELÜLÍRJÁK az érzékelt jeleket, és a sor elején álló [claimId] \
+                válaszai — ezeket önbeszámolóként kezeld, és különítsd el a mért jelektől, és a sor elején álló [claimId] \
                 jelöli, melyik állításra vonatkoznak — ezt az azonosítót használd a claimId \
                 mezőben, ha UP/DOWN/RETIRE javaslatot teszel rá. Egy önmagában álló "talál" \
                 megerősítés NEM számít új bizonyítéknak UP javaslathoz — a bizalom emelése már \
@@ -388,8 +433,8 @@ public class KonziliumProposalRound {
                 nyugdíjazott (nem szerepel az aktív állítások közt) — itt a feladat eldönteni, \
                 szükséges-e egy azt felváltó, javított NEW állítás; RETIRE rá nem javasolható. Egy \
                 pontosítást ("pontosítom") viszont még AKTÍV állításra kell címezni: kötelező \
-                kezelni (DOWN vagy RETIRE javaslattal a megadott claimId-ra, vagy azt felváltó NEW \
-                javaslattal), sosem szabad figyelmen kívül hagyni.""";
+                kezelni (REVISE, DOWN vagy RETIRE javaslattal a megadott claimId-ra, vagy azt felváltó NEW \
+                javaslattal), sosem szabad figyelmen kívül hagyni. REVISE ténylegesen átírja a meglévő állítás szövegét: a text legyen a teljes új szöveg, az önbeszámolót továbbra is jelöld. Az observedFrom/observedTo kizárólag a forrásban ténylegesen jelölt időablak; ne következtesd ki pusztán a futás dátumából. A validFrom/validTo az állítás alkalmazhatósága: csak indokolt határt adj, különben null. A dátumhatárok inkluzívak; az ismeretlen dátum JSON null, nem idézőjeles szöveg. Eltérő időablakok különböző eredménye nem önmagában ellentmondás. UP/DOWN kizárólag bizalmat változtat, sosem szöveget. MOVE kizárólag fejezetet változtat, a szöveget megtartja.""";
     }
 
     /**
@@ -432,7 +477,7 @@ public class KonziliumProposalRound {
         } catch (Exception e) {
             log.warn("Proposal answer was not parseable JSON for owner {} expert {} period {} — dropping: {}",
                     owner, expertKey, periodLabel, raw, e);
-            return List.of();
+            return null;
         }
     }
 

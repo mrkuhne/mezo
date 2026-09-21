@@ -6,6 +6,10 @@ import { MOCK_CONFERENCE_DETAIL } from '@/data/character/characterMock'
 const THREADS = MOCK_CONFERENCE_DETAIL.w2.deliberation!
 
 describe('KonziliumWhatIs', () => {
+  test('daily conversations describe the daily cadence', () => {
+    render(<KonziliumWhatIs kind="DAILY" />)
+    expect(screen.getByText(/^Naponta/)).toBeInTheDocument()
+  })
   test('a heti konzílium szövege a hetente szóval kezdődik', () => {
     render(<KonziliumWhatIs kind="WEEKLY" />)
     expect(screen.getByText(/^Hetente/)).toBeInTheDocument()

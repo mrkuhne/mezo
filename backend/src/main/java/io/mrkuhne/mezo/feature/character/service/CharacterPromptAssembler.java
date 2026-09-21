@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
+import io.mrkuhne.mezo.feature.character.config.CharacterCouncilProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -10,6 +11,8 @@ import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -71,6 +74,7 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final CharacterProperties properties;
+    private final CharacterCouncilProperties councilProperties;
     private final PromptPersona promptPersona;
     private final io.mrkuhne.mezo.feature.character.repository.CharacterReplyRepository replies;
 
@@ -127,8 +131,14 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     /** Null when this dimension has nothing worth rendering (no digest AND no qualifying claim). */
     private String renderDimensionBlock(UUID userId, CharacterDimensionEntity dimension,
                                          CharacterProperties.Prompt config, Instant now) {
-        String digest = portraitDigest(dimension, config.portraitMinMaturity());
-        List<CharacterClaimEntity> claims = qualifyingClaims(userId, dimension, config, now);
+        LocalDate today = now.atZone(ZoneId.of(councilProperties.zone())).toLocalDate();
+        var active = claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
+                userId, dimension.getId(), ACTIVE_STATUS);
+        // A stored portrait may summarize a now-expired or not-yet-applicable claim. Omit the
+        // digest conservatively until a rebuild; current qualifying claims remain usable.
+        String digest = active.stream().allMatch(claim -> claim.appliesOn(today))
+                ? portraitDigest(dimension, config.portraitMinMaturity()) : null;
+        List<CharacterClaimEntity> claims = qualifyingClaims(active, config, now, today);
         if (digest == null && claims.isEmpty()) {
             return null;
         }
@@ -174,11 +184,10 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         return flat.length() > maxChars ? flat.substring(0, maxChars) + "…" : flat;
     }
 
-    private List<CharacterClaimEntity> qualifyingClaims(UUID userId, CharacterDimensionEntity dimension,
-                                                          CharacterProperties.Prompt config, Instant now) {
-        return claimRepository
-                .findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(userId, dimension.getId(), ACTIVE_STATUS)
-                .stream()
+    private List<CharacterClaimEntity> qualifyingClaims(List<CharacterClaimEntity> active,
+                                                          CharacterProperties.Prompt config, Instant now, LocalDate today) {
+        return active.stream()
+                .filter(claim -> claim.appliesOn(today))
                 .filter(claim -> claim.getConfidence().compareTo(config.minConfidence()) >= 0)
                 .sorted(Comparator.comparingDouble((CharacterClaimEntity claim) -> recencyScore(claim, now)).reversed())
                 .limit(config.maxClaimsPerDimension())

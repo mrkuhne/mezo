@@ -107,6 +107,7 @@ public class CharacterFeedbackService {
     }
 
     private final CharacterClaimRepository claimRepository;
+    private final CharacterMutationLock mutationLock;
     private final EntityManager entityManager;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterObservationRepository observationRepository;
@@ -119,6 +120,7 @@ public class CharacterFeedbackService {
      */
     @Transactional
     public CharacterClaimEntity apply(UUID owner, UUID claimId, String kind, String text) {
+        mutationLock.lock(owner);
         validateText(kind, text);
 
         CharacterClaimEntity claim = claimRepository.lockOwned(claimId, owner)

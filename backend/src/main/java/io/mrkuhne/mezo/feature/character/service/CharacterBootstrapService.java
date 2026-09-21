@@ -64,10 +64,14 @@ public class CharacterBootstrapService {
      *  the same literal, not retyped. */
     private static final LlmCallContext CONTEXT = new LlmCallContext("character", AUDIT_OP, null, null);
 
+    private final CharacterCouncilBudget budget;
+    private final CharacterMutationLock mutationLock;
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterHistoryReads historyReads;
     private final KonziliumProposalRound proposalRound;
     private final KonziliumVerdictRound verdictRound;
+    private final KonziliumCrossTalkRound crossTalkRound;
+    private final CharacterCouncilEvidenceTools evidenceTools;
     private final KonziliumChapterResolver chapterResolver;
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
@@ -90,6 +94,10 @@ public class CharacterBootstrapService {
      * calls — when the user has no history yet (the honest empty state).
      */
     public CharacterConferenceEntity run(UUID owner) {
+        return budget.run(owner, false, () -> runWithinBudget(owner));
+    }
+
+    private CharacterConferenceEntity runWithinBudget(UUID owner) {
         if (conferenceRepository.findFirstByCreatedByAndKindOrderByGeneratedAtDesc(owner, BOOTSTRAP).isPresent()) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("CHARACTER_BOOTSTRAP_ALREADY_RUN").build(), HttpStatus.CONFLICT);
@@ -126,6 +134,7 @@ public class CharacterBootstrapService {
     @Transactional
     CharacterConferenceEntity runKonzilium(
             UUID owner, List<ExpertEvidence> evidence, List<ExpertEvidence> evidenceWithMemory) {
+        mutationLock.lock(owner);
         // A user can POST here before ever GETting /api/character — without this, the proposal
         // round's NEW proposals validate fine (KonziliumProposalRound checks the STATIC CORE key
         // catalog, not the DB) and get accepted rulings, but ClaimLifecycle.applyNew then finds no
@@ -138,21 +147,24 @@ public class CharacterBootstrapService {
 
         KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
                 owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidenceWithMemory, BOOTSTRAP_EVIDENCE_PHRASE);
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
+        var evidenceSession = evidenceTools.open(owner);
+        var discussion = crossTalkRound.run(owner, null, proposalResult.proposals(), evidenceSession);
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(),
+                discussion.reactions(), evidenceSession);
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
         // The structure is assembled and STORED here too (mezo-xlvr final review, I4): without
         // it a brand-new row would be re-derived from its own prose on every read, throwing away
-        // chapter membership, kind and claim id. This konzílium has no cross-talk round, so the
-        // reaction list is honestly empty.
+        // chapter membership, kind and claim id. The same bounded debate is stored for every run kind.
         ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
-                proposalResult.proposals(), List.of(), verdictResult.verdicts(),
+                proposalResult.proposals(), discussion.reactions(), verdictResult.verdicts(),
                 verdictResult.shownRulings(), chapterResolver.resolve(owner, proposalResult.proposals()));
 
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, BOOTSTRAP,
                 null, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);
+        conference.setFollowups(verdictResult.followups());
 
         // BOOTSTRAP run-row (Karakter S9 Gépterem, mezo-1gim.14) — day is the run date (bootstrap
         // is one-time-EVER per owner, not period-keyed like WEEKLY/MONTHLY, so there is no anchor
