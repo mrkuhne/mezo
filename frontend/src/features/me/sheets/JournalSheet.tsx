@@ -157,7 +157,7 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
               </p>
             )}
 
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}>
+            <div className="row capture-field-row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px' }}>
               <span style={SECTION_LABEL}>{mode === 'decision' ? 'Döntés napja' : 'Dátum'}</span>
               <input
                 type="date"

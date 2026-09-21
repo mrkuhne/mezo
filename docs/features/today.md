@@ -257,8 +257,9 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
   no rule anywhere, and `nap-titan-quiet` → `nap-center-quiet`). All skin: no route, hook,
   contract or state machine moved. The quick-log grid (`/nap/gyors` + the FAB sheet, one
   `QuickLogSurface`) followed in `mezo-reocc` (2026-09-21): `quicklog-titanium` is gone, the art
-  is clay, the tiles are coloured raised washes with titles only. **What is still Titanium-era
-  here is the capture-sheet bodies** those tiles open (`mezo-luik9`).
+  is clay, the tiles are coloured raised washes with titles only. The capture sheets those
+  tiles open followed the same day (`mezo-luik9`): one loud value per sheet, Mentés as the house
+  primary, flat colour cells for the scales.
 
 - **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in

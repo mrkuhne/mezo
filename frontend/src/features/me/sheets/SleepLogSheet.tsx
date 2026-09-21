@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { ClayIcon } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Icon } from '@/shared/ui/Icon'
@@ -146,12 +147,7 @@ export function SleepLogSheet({
             {(['manual', 'shot'] as const).map((m) => (
               <button key={m} className="chip" aria-pressed={mode === m}
                 onClick={() => { setMode(m); setShotPhase('pick'); setShotError(null) }}
-                style={{
-                  flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
-                  background: mode === m ? 'var(--wash-lav)' : 'transparent',
-                  borderColor: mode === m ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                  color: mode === m ? 'var(--lav-deep)' : 'var(--text-tertiary)',
-                }}>
+                style={{ flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0' }}>
                 {m === 'manual' ? 'Kézi' : 'Screenshot'}
               </button>
             ))}
@@ -187,11 +183,11 @@ export function SleepLogSheet({
           {showInputs && (
             <>
               {/* The saved duration remains the hero in manual and screenshot review modes. */}
-              <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+              <div className="card capture-hero" style={{ padding: 18, marginBottom: 14 }}>
                 <div className="capture-night-arc" aria-hidden="true" />
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{durationH}</span>
-                  <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>
+                  <span className="capture-hero-value">{durationH}</span>
+                  <span className="capture-hero-unit">h</span>
                 </div>
                 <div className="row gap-lg mt-lg" style={{ justifyContent: 'center' }}>
                   <TimePicker label="Lefekvés" val={bedtime} onChange={setBedtime} />
@@ -200,7 +196,7 @@ export function SleepLogSheet({
               </div>
 
               {isShot && (
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', marginBottom: 14, background: 'var(--surface-2)' }}>
+                <div className="row capture-field-row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', marginBottom: 14 }}>
                   <span style={SECTION_LABEL}>Alvásidő (óra)</span>
                   <input type="number" inputMode="decimal" step={0.1} min={0} aria-label="Alvásidő (óra)"
                     value={durationInput} onChange={(e) => setDurationInput(e.target.value)}
@@ -216,12 +212,8 @@ export function SleepLogSheet({
                 <div className="capture-rating-scale" style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 3 }}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                     <button key={n} onClick={() => setQuality(n)} aria-pressed={quality === n}
-                      style={{ padding: '8px 0',
-                        background: quality === n ? 'var(--lav-deep)' : quality >= n ? 'var(--wash-lav)' : 'var(--surface-2)',
-                        border: '1px solid ' + (quality === n ? 'var(--lav-deep)' : 'var(--border-subtle)'),
-                        color: quality === n ? 'var(--text-inverse)' : quality >= n ? 'var(--lav-deep)' : 'var(--text-tertiary)',
-                        fontFamily: 'var(--ff-display)', fontSize: 11, fontWeight: 600,
-                        clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)' }}>{n}</button>
+                      className="capture-scale-cell" data-state={quality === n ? 'active' : quality >= n ? 'filled' : undefined}
+                      style={{ '--cell-hue': 'var(--dv-lav)' } as CSSProperties}>{n}</button>
                   ))}
                 </div>
               </div>
@@ -237,25 +229,21 @@ export function SleepLogSheet({
                     return (
                       <button key={n} onClick={() => setAwakenings(val)} className="flex-1 chip"
                         aria-pressed={awakenings === val}
-                        style={{ padding: '10px',
-                          background: awakenings === val ? 'var(--wash-lav)' : 'var(--surface-1)',
-                          borderColor: awakenings === val ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                          color: awakenings === val ? 'var(--lav-deep)' : 'var(--text-secondary)',
-                          fontFamily: 'var(--ff-display)', fontSize: 13, justifyContent: 'center' }}>{n}</button>
+                        style={{ padding: '10px', fontFamily: 'var(--ff-display)', fontSize: 13, justifyContent: 'center' }}>{n}</button>
                     )
                   })}
                 </div>
                 {nightTrace && (
-                  <div className="row gap-sm" style={{ alignItems: 'flex-start', background: 'var(--wash-lav)', borderRadius: 14, padding: '11px 13px' }}>
-                    <span aria-hidden="true" style={{ fontSize: 13 }}>🌙</span>
-                    <span style={{ fontSize: 11.5, lineHeight: 1.55, color: 'var(--lav-deep)', flex: 1 }}>
+                  <div className="row gap-sm" style={{ alignItems: 'flex-start', background: 'var(--mz-cell-lav-bg)', borderRadius: 14, padding: '11px 13px' }}>
+                    <ClayIcon name="i-hold" size={18} />
+                    <span style={{ fontSize: 11.5, lineHeight: 1.55, color: 'var(--mz-cell-lav-ink)', flex: 1 }}>
                       Az éjjel {nightTrace.count}× jártál az éjszakai módban — előtöltöttem. Írd felül, ha máshogy emlékszel.
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}>
+              <div className="row mt-lg capture-field-row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px' }}>
                 <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
                   Ágyban összesen (perc)
                 </span>
@@ -281,10 +269,10 @@ export function SleepLogSheet({
 
               {isShot && (
                 <>
-                  <div className="row mt-sm" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}>
+                  <div className="row mt-sm capture-field-row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px' }}>
                     <span style={SECTION_LABEL}>Dátum</span>
                     <input type="date" aria-label="Dátum" value={date} onChange={(e) => e.target.value && setDate(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, colorScheme: 'dark' }} />
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13 }} />
                   </div>
                   {sleepLog.some((s) => s.date === date) && (
                     <span style={{ fontSize: 10, color: 'var(--warning)' }}>Erre a napra már van bejegyzés — mentéskor új sor készül.</span>

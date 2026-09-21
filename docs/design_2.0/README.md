@@ -24,12 +24,11 @@
 > checklist on its own bead. The [coverage register](TITANIUM_FEATURE_COVERAGE_REGISTER.md)
 > carries the closure record.
 >
-> **Three surfaces the rollback did not reach**, each with its own bd issue — they are the
-> reason "done" is not "everything in the app is Mozaik":
-> the **capture-sheet bodies** (`mezo-luik9` — the quick-log grid itself and every capture sheet's
-> shell + header came off Titanium in `mezo-reocc`, 2026-09-21; the bodies below the header did
-> not), the **level-up overlay** (`mezo-n6yqh`), and a handful of **emoji** still rendered on
-> Nap/Én surfaces, which §2.3 forbids.
+> **Two surfaces the rollback did not reach**, each with its own bd issue — they are the
+> reason "done" is not "everything in the app is Mozaik": the **level-up overlay**
+> (`mezo-n6yqh`) and a handful of **emoji** still rendered on Nap/Én surfaces, which §2.3
+> forbids. (The quick-log surface and all seven capture sheets followed on 2026-09-21 —
+> `mezo-reocc` + `mezo-luik9`, style bible Appendix E.)
 >
 > **The Titanium docs below are NOT deleted** — they are the parity sources that prove no feature
 > is lost. Read them for *what a screen must do*, never for *what it should look like*.

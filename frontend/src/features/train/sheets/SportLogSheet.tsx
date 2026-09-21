@@ -5,7 +5,7 @@
 // -> POST /api/train/sport-sessions; date/time default to now server-side).
 // Ported from prototype sport.jsx: SportLogSheet + NumberStep + ScaleRow.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
@@ -127,17 +127,9 @@ export function ScaleRow({
             aria-label={`${label} ${n}`}
             aria-pressed={val === n}
             onClick={() => onChange(n)}
-            style={{
-              minHeight: 44,
-              padding: '8px 0',
-              background: val === n ? color : val >= n ? `color-mix(in srgb, ${color} 20%, transparent)` : 'var(--surface-2)',
-              border: '1px solid ' + (val === n ? color : 'var(--border-subtle)'),
-              color: val === n ? 'var(--text-inverse)' : val >= n ? color : 'var(--text-tertiary)',
-              fontFamily: 'var(--ff-display)',
-              fontSize: 11,
-              fontWeight: 600,
-              clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)',
-            }}
+            className="capture-scale-cell"
+            data-state={val === n ? 'active' : val >= n ? 'filled' : undefined}
+            style={{ '--cell-hue': color } as CSSProperties}
           >
             {n}
           </button>
@@ -187,12 +179,9 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setKind(k)}
-                  className="flex-1 rad-12"
+                  className="flex-1 rad-12 capture-seg"
                   style={{
                     padding: '10px',
-                    background: active ? 'color-mix(in srgb, var(--rose) 8%, transparent)' : 'var(--surface-1)',
-                    border: `1px solid ${active ? 'color-mix(in srgb, var(--rose) 40%, transparent)' : 'var(--border-subtle)'}`,
-                    color: active ? 'var(--rose)' : 'var(--text-secondary)',
                     fontSize: 10,
                     fontWeight: 600,
                     letterSpacing: '0.14em',
@@ -211,7 +200,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
             {isVolleyball
               ? <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
               : <NumberStep label="Körök · összesen" val={rounds} step={1} min={1} max={50} onChange={setRounds} />}
-            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--coral)" />
+            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--dv-coral)" />
             {isVolleyball && (
               <ScaleRow
                 label="Váll terhelés"
@@ -233,9 +222,6 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                 placeholder="Hogy érezted magad, mi ment jól, mi fájt…"
                 style={{
                   width: '100%',
-                  background: 'var(--surface-2)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--text-primary)',
                   fontSize: 13,
                   lineHeight: 1.5,
                   padding: '10px 12px',

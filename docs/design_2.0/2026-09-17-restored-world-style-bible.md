@@ -1035,4 +1035,28 @@ The last Titanium screen outside the programme: `/nap/gyors` and the FAB sheet (
    content decision, not a skin one — it was his call, and the unit suite now asserts the
    accessible name is exactly the label, so a subline cannot creep back unnoticed.
 
-**Left for `mezo-luik9`:** the capture-sheet *bodies* — `capture.css` below its `BODY` marker.
+### E.1 The capture-sheet bodies (`mezo-luik9`)
+
+The seven sheets the grid opens (water, weight, sleep, sport, journal, activity, check-in).
+Owner-approved from real before/after screenshots
+(`prototypes/redress/2026-09-21-rogzito-lapok-before-after.html`).
+
+31. **One loud value per sheet, the same primary on every sheet.** What the user is logging (ml ·
+   kg · hours · the check-in number) is the hero: a §2.2 A wash in the sheet's `--capture-accent`
+   with the numeral at 64px/200 (`.capture-hero`, the water hero, and the check-in orbit as a
+   §2.2 C halo in the step's own hue). Mentés is `--gradient-cta` everywhere — the Titanium
+   per-accent tinted CTA made the primary a different colour on each sheet. Sheets with no single
+   number (sport, journal, activity) have no hero: the CTA is their loud element.
+32. **Scales are cells, and state is a data attribute.** Three sheets drew their 1–10 scales with
+   inline styles (a runtime hue, `clipPath` corners, glows), which no stylesheet could reach. They
+   now render `.capture-scale-cell` with the hue as an inline `--cell-hue` and the state as
+   `data-state="filled|active"`: recess → the hue's cell tint → the hue solid, no border, no
+   shadow. A runtime colour belongs in a custom property on the element, never in a style literal.
+33. **Inside the hero, a field is a shield.** The sleep hero's time selects carried the shared
+   `TimePicker` inline beige; inside a wash they become house shields (App. D rule 24). The
+   `!important` is scoped to `.capture-hero select` because the inline style is shared with the Én
+   sleep page, which this slice does not touch.
+34. **When a surface is mostly inline styles, the lab is real screenshots.** Cloning seven sheets'
+   inline-styled markup into a `<template>` would not have been "the same markup" in any honest
+   sense. A throwaway Playwright spec under `tests/layout` (seeds + dev server for free) shot every
+   sheet on `main` and again on the branch, light and dark; the owner judged those before merge.

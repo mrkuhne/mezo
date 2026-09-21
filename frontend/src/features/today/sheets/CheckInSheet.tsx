@@ -3,7 +3,7 @@
 // 4×/nap dimenziók: Energia · Stressz · Testi · Mentális tisztaság
 // + opcionális voice/free note
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
@@ -126,10 +126,9 @@ export function CheckInSheet({
       <div className="row gap-xs" style={{ margin: '16px 0 18px' }}>
         {[0, 1, 2, 3, 4].map(i => (
           <div key={i} style={{
-            flex: 1, height: 3,
+            flex: 1, height: 4, borderRadius: 2,
             background: i <= step ? 'var(--primary-base)' : 'var(--surface-recess)',
             transition: 'background 0.3s ease',
-            boxShadow: i === step ? '0 0 6px var(--primary-base)' : 'none',
           }} />
         ))}
       </div>
@@ -159,7 +158,6 @@ export function CheckInSheet({
               fontFamily: 'var(--ff-display)',
               fontSize: 56, fontWeight: 200, letterSpacing: '-0.04em',
               lineHeight: 1, color: dim.color,
-              textShadow: `0 0 24px color-mix(in srgb, ${dim.color} 25%, transparent)`,
               transition: 'color var(--duration-normal) var(--ease-out)',
             }}>
               {values[dim.id]}
@@ -183,18 +181,9 @@ export function CheckInSheet({
                   <button
                     key={n}
                     onClick={() => handleSetValue(n)}
-                    style={{
-                      padding: '14px 0', minHeight: 44,
-                      background: active ? dim.color : filled ? `color-mix(in srgb, ${dim.color} 20%, transparent)` : 'var(--surface-recess)',
-                      border: '1px solid ' + (active ? dim.color : filled ? `color-mix(in srgb, ${dim.color} 35%, transparent)` : 'var(--divider)'),
-                      color: active ? 'var(--text-inverse)' : filled ? dim.color : 'var(--text-muted)',
-                      fontFamily: 'var(--ff-display)',
-                      fontSize: 13, fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all var(--duration-fast) var(--ease-out)',
-                      borderRadius: 'var(--r-sm)',
-                      boxShadow: active ? `0 0 12px color-mix(in srgb, ${dim.color} 50%, transparent)` : 'none',
-                    }}
+                    className="capture-scale-cell"
+                    data-state={active ? 'active' : filled ? 'filled' : undefined}
+                    style={{ '--cell-hue': dim.color, padding: '14px 0', fontSize: 13 } as CSSProperties}
                   >
                     {n}
                   </button>

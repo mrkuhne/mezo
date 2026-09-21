@@ -72,7 +72,6 @@ a flag and fails.
 
 | Bead | Surface | Shape of the work |
 | --- | --- | --- |
-| `mezo-luik9` (P2) | the capture-sheet **bodies** (water, weight, sleep, sport, journal, activity, check-in) — the quick-log grid + every sheet's shell/header were done in `mezo-reocc` (2026-09-21) | A real re-dress of `capture.css` below its `BODY` marker: per-accent CTA gradient instead of `--gradient-cta`, legacy hues on the water wave / ruler / night arc / check-in orbit, the check-in numeral's `textShadow` glow. The clay art decision is already made (owner: clay everywhere). The `2026-09-21-gyors-logolas-before-after.html` lab already clones a Víz sheet. |
 | `mezo-z5lov` (P2) | emoji still rendered on Nap/Én surfaces (`Island`, `ChainEditSheet`, `GoalRecept`, the needs/itemIcon maps) | §2.3 says every glyph is a clay symbol. The needs map is the hard part: six needs, and there the **colour already carries meaning**. |
 | `mezo-17vnf` (P3) | dead module `features/train/logic/weeklyLoad.ts` | Pure cleanup; no design pass. Confirm no importer, then delete it with `SPORT_EMOJI` and the two comments that name it. |
 
@@ -107,6 +106,10 @@ piece of work with its own decision, not as a re-dress slice.
    script, which makes identical markup structural rather than a promise. The "most" column
    gets **no special ground** — what ships today is Titanium CSS on the restored light page,
    and that is the honest comparison.
+   **If the surface is mostly inline styles** (the capture sheets were), cloned markup is not an
+   honest comparison: shoot real screenshots of `main` and of the branch instead, with a
+   throwaway spec under `frontend/tests/layout` (bible E.1 rule 34), and get the owner's yes
+   before the merge.
    Four traps, each of which cost a round:
    - `prototype.css` locks the document scroller (`html, body { overflow: hidden }`) — the lab
      must unlock it or the page cannot scroll at all.
@@ -135,8 +138,7 @@ piece of work with its own decision, not as a re-dress slice.
 
 ## Model guidance
 
-The remaining beads carry no `model:` label. `mezo-luik9` is **design judgment** (seven sheets,
-one ranking each) — Opus/Fable. `mezo-z5lov` is mostly pattern work, but
+The remaining beads carry no `model:` label. `mezo-z5lov` is mostly pattern work, but
 the needs-symbol set needs drawing to the §6.1 recipe. `mezo-17vnf` is a chore any model can do.
 If the running model is weaker than the work asks, say so to the owner before starting.
 

@@ -28,10 +28,10 @@ export function WeightLogSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <CaptureHeader id="weight-log-title" kind="weight" title="Mi a számunk ma?"
             subtitle="Egy mérés a napodban." onClose={close} />
-          <div className="card" style={{ padding: 18, marginBottom: 14 }}>
+          <div className="card capture-hero" style={{ padding: 18, marginBottom: 14 }}>
             <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{val.toFixed(1)}</span>
-              <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>kg</span>
+              <span className="capture-hero-value">{val.toFixed(1)}</span>
+              <span className="capture-hero-unit">kg</span>
             </div>
             <div className="capture-ruler" aria-hidden="true" />
             <div className="row gap-sm mt-lg" style={{ justifyContent: 'center' }}>
