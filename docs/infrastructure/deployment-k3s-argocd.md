@@ -349,3 +349,19 @@ curl -sk "https://<host>$B" | grep -c '<the expected public key>'   # must print
 - ~~Observability~~ — DONE 2026-09-06, ADR 0037.
 
 (Backups automation DONE 2026-07-05 — ADR 0009; a CloudNativePG move would supersede it.)
+
+
+## Daily Karakter preparation
+
+`CharacterCouncilJob` runs in the backend scheduler, not as a separate Kubernetes workload.
+`mezo.character.council` pins `Europe/Budapest`, opens processing at 05:15 and checks every
+15 minutes. It catches up two editions and verifies successful nightly observation input;
+failed prerequisites retry up to three times. The separate `character-council-job` switch
+can suspend autonomous preparation while existing feed/replies remain readable.
+
+Edition leases last 60 minutes and carry a worker token; expired workers cannot publish.
+Failed inputs remain unconsumed. Inspect owned council status and Gépterem run status/failure
+count to distinguish missing input from a successful quiet day. The application quota ledger
+reserves calls independently of profile transactions (90 autonomous/120 total per owner/day,
+14 per cycle, four smart, 32-day retention); central USD/token limits remain in force.
+See [Karakter](../features/character.md) and [ADR 0048](../decisions/0048-daily-character-council.md).

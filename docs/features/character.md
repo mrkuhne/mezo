@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -152,13 +152,74 @@ them absence IS the signal (see §9's round-3 gate rule).
 
 ### Social navigation and contextual replies (mezo-njcgs)
 
-The primary reading order is Üzenőfal → a post's evidence/conversation → optional personal reply → processing outcome → Rólad. The user cannot create a new post. Feed cards retain real author identity (including **Te** for self-report), show stored conference peer reactions only when their claim matches, and offer **Miből látszik?** through `CharacterEvidenceSheet`. The interface uses existing Clay orbs and theme-aware Mozaik materials, with reduced-motion-aware transitions. Technical history and archived councils remain available.
+The primary reading order is Üzenőfal → a post's evidence/conversation → optional personal reply → processing outcome → Rólad. The user cannot create a new post. Feed cards retain real author identity (including **Te** for self-report), show stored conference peer reactions only when their claim matches, and offer **Miből látszik?** through `CharacterEvidenceSheet`. The interface uses the menu’s original Boop avatar family (five hues shared across nine role-marked personas) and theme-aware Clay/Mozaik materials, with reduced-motion-aware transitions. A single editorial morning scene previews an actual post and links to that same conversation; it does not create a second list of invented highlights. Technical history and archived councils remain available.
 
 `CharacterReplyThread` persists replies through `useCharacterReplies`; failed saves retain both the draft and idempotency key. Saved/processing replies poll while mounted. Failed or stalled processing can retry the saved reply. Updated/withdrawn outcomes earn the **Közösen pontosítva** marker; unchanged or clarification outcomes do not claim a profile change. `Pontosítom` on claims uses this same durable flow; **Talál** and **Nem igaz** retain the existing feedback endpoint.
 
-Reply sources are `OBSERVATION`, `CLAIM`, or `CONFERENCE_CHANGE` with owner-resolved source ID and index. `POST /api/character/replies` records an immutable context snapshot, a user-authored observation and client request ID before dispatching processing. Contextual-reply observations remain knowledge inputs but are excluded from the top-level feed, so replies stay in their original thread. `GET /api/character/replies` returns the owned thread; `POST /api/character/replies/{replyId}/retry` reuses the same reply. Status is `SAVED`, `PROCESSING`, `FAILED`, `NEEDS_CLARIFICATION` or `COMPLETED`; outcome is separately `UPDATED`, `WITHDRAWN`, `UNCHANGED` or `NEEDS_CLARIFICATION`.
+Reply sources are `OBSERVATION`, `CLAIM`, `CONFERENCE_CHANGE`, or `CONFERENCE_ITEM` with owner-resolved source ID and index. `POST /api/character/replies` records an immutable context snapshot, a user-authored observation and client request ID before dispatching processing. Contextual-reply observations remain knowledge inputs but are excluded from the top-level feed, so replies stay in their original thread. `GET /api/character/replies` returns the owned thread; `POST /api/character/replies/{replyId}/retry` reuses the same reply. Status is `SAVED`, `PROCESSING`, `FAILED`, `NEEDS_CLARIFICATION` or `COMPLETED`; outcome is separately `UPDATED`, `WITHDRAWN`, `UNCHANGED` or `NEEDS_CLARIFICATION`.
 
-Mezo evaluates the original topic with the original expert's domain context and earlier thread history. The processing lease prevents stale workers from committing twice. Claim lifecycle and portrait changes are committed together with the reasoned outcome. Self-report reaches character prompts and the existing memory projection, independently of evaluation success; it is explicitly attributed rather than treated as a measured fact. No reply writes underlying health logs or plans. AI unavailability retains the saved reply and exposes failure/retry honestly. A recovery job revisits saved or expired processing rows every 60 seconds through `UserFanOut`; failed replies require an explicit retry. `mezo.character.reply.lease-seconds` defaults to 300 and `history-limit` to 20. Same-source replies process in order and inherit any claim created by an earlier reply. Weekly lifecycle writes and immediate feedback refresh locked claims, while portrait writes serialize by dimension to preserve concurrent corrections.
+Two relevant experts can answer a saved reply before Mezo evaluates the original topic with the original expert’s domain context and earlier thread history. Their validated comments persist on the reply and appear between the user’s message and the final outcome; older replies have no fabricated discussion. The processing lease prevents stale workers from committing twice. Claim lifecycle and portrait changes are committed together with the reasoned outcome. Self-report reaches character prompts and the existing memory projection, independently of evaluation success; it is explicitly attributed rather than treated as a measured fact. No reply writes underlying health logs or plans. AI unavailability retains the saved reply and exposes failure/retry honestly. A recovery job revisits saved or expired processing rows every 60 seconds through `UserFanOut`; failed replies require an explicit retry. `mezo.character.reply.lease-seconds` defaults to 300 and `history-limit` to 20. Same-source replies process in order and inherit any claim created by an earlier reply. Weekly lifecycle writes and immediate feedback refresh locked claims, while portrait writes serialize by dimension to preserve concurrent corrections.
+
+### Daily council, evidence tools and reversible profile changes (mezo-zwy6v)
+
+The daily council publishes `DAILY` conferences into the same social feed. Each persisted proposal
+is addressed by `CONFERENCE_ITEM` + conference UUID + original item index, so even rejected
+proposals retain their actual discussion and reply target. The UI loads that conference rather
+than attaching the latest meeting’s comments to unrelated posts. Failed loading exposes retry.
+
+`CharacterCouncilProcessing` persists an owner/day lease and processing token; only its current
+worker can publish. Model work precedes the publication transaction. `CharacterCouncilService`
+checks claim versions and unconsumed inputs before atomically storing discussion, profile writes
+and consumption. The owned `GET /api/character/council` distinguishes waiting, processing,
+completed, quiet and failed. A quiet edition requires successful (`character_run.status=SUCCESS`) nightly input and either no
+pending evidence or a valid, complete expert review with no proposed change. The latter stores
+its transcript and consumes the checked inputs so they do not replay indefinitely. Invalid/failed observations persist FAILED with failure count; valid empty
+model output is distinct. Fifteen-minute prerequisite retries stop after three failed attempts.
+Historical run rows are UNKNOWN until a fresh successful evaluation. Weekly synthesis reads the
+week’s stored daily discussions/outcomes as prior interpretation alongside unconsumed evidence;
+repetition is never labelled new independent data.
+
+`KonziliumCrossTalkRound` invites relevant experts across dimensions, retains recipient, round
+and participation reason, and permits author responses. Defaults cap debate at three rounds,
+four participants and six calls. Daily, weekly, monthly, bootstrap and contextual replies share
+the evidence-tool catalogue: owned personal records and deterministic period comparison for
+recorded sleep and completed gym sessions. Comparison includes inclusive windows, measured
+coverage and source fingerprints; missing logs are unknown, not proof of inactivity. Successful
+tool names accompany comments; raw tool responses remain transient. Eight tool calls bound a session; personal-record retrieval caps registered references at 24, while period comparison bounds its source rows by the configured date window. The chair uses the smart tier for sensitive, challenged or substantial
+revision work; ordinary agreement follows the cheaper route and existing central budget controls.
+`CharacterCouncilBudget` additionally charges each tagged call and conservative tool continuation:
+14 units/4 smart calls per cycle, 90 autonomous and 120 total per user/Budapest day, leaving 30
+units reserved for user replies. Reservations persist across failures and profile rollbacks;
+32-day counter retention bounds storage. Debate reserves closing capacity; unavailable portrait
+capacity falls back to a literal excerpt of current active claims, saved through the normal portrait revision path. Daily profile mutations and undo invalidate stale portraits until synthesis refreshes them.
+
+`ClaimLifecycle` implements `NEW`, `UP`, `DOWN`, `RETIRE`, `REVISE` and `MOVE`. UP/DOWN outcome
+text stays equal to the persisted claim; REVISE changes text and optional observation/validity
+periods; MOVE changes the real dimension. NEW deduplicates normalized text in the same dimension
+and observation window. Explicit self-report attribution survives revision. Inclusive validity
+bounds exclude future/expired claims from the prompt; a potentially outdated portrait cannot
+mask the filtered claims. Omitting dates preserves known bounds.
+
+Owner-scoped transaction advisory locks serialize all profile mutation entrypoints before row
+locks; the daily publisher additionally validates the pre-model active-claim ID/version snapshot.
+Actual applied outcomes bind newly created claim IDs back to proposal indices, so a subsequent
+reply targets the saved claim. A uniquely matching legacy outcome can provide the same binding;
+ambiguous or foreign references remain unbound.
+
+Every actual lifecycle/reply mutation records a complete before/after `character_claim_revision`.
+The revision GlassBox shows text, confidence, status, chapter and period differences, including
+changes with identical text. `GET /claims/{id}/revisions` lists owned history and
+`POST /revisions/{id}/undo` compensates only an unchanged latest snapshot (409 on conflict).
+Undo is idempotent, restores all recorded fields and invalidates affected portraits; undoing a
+creation retires it. Its exact text/dimension/observation window is blocked from automatic recreation. No profile action writes a workout, routine or goal.
+
+`CharacterFollowupService` stores questions and hypotheses in the conference's typed `followups`
+JSONB, tied to the original proposal index. The feed shows the question, required evidence and
+next check date. Due items accompany the next daily discussion; a successful revisit links its
+new conference. Without fresh pending input, the same item remains WAITING and is rescheduled,
+never automatically refuted. A completed contextual answer closes that post's QUESTION items;
+HYPOTHESIS items remain for evidence review. Defaults are three due items, a three-day recheck
+and a thirty-day maximum horizon. `ConferenceResponse.followups` exposes this owned state.
 
 ## 2. User-facing behavior
 
@@ -1020,10 +1081,9 @@ investigating.
 - **`MONTHLY` conferences reuse the `week_start` column** to store the month's first day
   (`CharacterMonthlyService`) rather than adding a new column — a deliberate reuse, not a bug;
   don't be surprised reading raw rows.
-- **Monthly cron fires every Sunday but only acts on the first one of the month**
-  (`CharacterMonthlyJob.isDeepReadDay`, `dayOfMonth <= 7`) — Spring's cron syntax can't AND a
-  day-of-month with a day-of-week, so the narrowing lives in code, not the cron expression
-  (`mezo.character.monthly.cron = "0 0 20 * * SUN"`). Every other Sunday is a silent no-op.
+- **Monthly cron checks every Sunday from the first Sunday onward.** A missed first-Sunday
+  execution is recovered on a later tick; the owned month record prevents rerunning a completed
+  synthesis. `mezo.character.monthly.cron = "0 0 20 * * SUN"`.
 - **Chapter retirement is implemented** (monthly pass, `CharacterMonthlyService.retireStaleChapters`):
   a `CHAPTER` dimension with zero ACTIVE claims and `updated_at` older than
   `mezo.character.monthly.stale-chapter-days` (90d default) is soft-deleted, appending a
@@ -1218,15 +1278,28 @@ non-empty, falling back to the existing prose-block rendering otherwise. See §2
 `202609070900_mezo-xlvr_conference_deliberation.sql` (adds the nullable
 `character_conference.deliberation jsonb` column, [ADR 0037](../decisions/0037-konzilium-cross-talk-round.md))
 
+**Daily council files:** `service/CharacterCouncilJob`, `CharacterCouncilService`,
+`CharacterCouncilProcessing`, `CharacterCouncilEvidenceTools`, `CharacterCouncilPeriodTools`,
+`CharacterClaimRevisionService`, `CharacterFollowupService`, `CharacterCouncilBudget`,
+`CharacterCouncilQuotaLedger`, `CharacterMutationLock`; entities/repositories `CharacterCouncilEdition` and
+`CharacterClaimRevision`, plus `CharacterFollowupsEnvelope`; frontend `CharacterMorningStory`, `CharacterExpertComment`,
+`CharacterCouncilStatus`, `CharacterRevisionSheet`, and `data/character/characterCouncilHooks`.
+The API fragment remains `api/feature/character/character.yml`.
+
 **Switches/crons** (`backend/src/main/resources/application.yml`):
 - `mezo.feature.character.enabled: true` — the feature switch (`CHARACTER_SWITCH`); LLM-calling
   beans additionally require `mezo.feature.companion.enabled`
 - `mezo.techcore.cron.character-observation-job.enabled: true`,
   `character-conference-job.enabled: true`, `character-monthly-job.enabled: true` — per-job
   backstop switches
+- `mezo.techcore.cron.character-council-job.enabled: true`; `mezo.character.council.cron:
+  "0 */15 * * * *"`, `zone: Europe/Budapest`, `ready-at: "05:15"`, `catch-up-days: 2`,
+  `max-topics: 6`, `lease-minutes: 60`, `max-attempts: 3`
+- `mezo.character.council-debate`: `max-rounds: 3`, `max-participants: 4`, `max-calls: 6`,
+  `max-tool-calls: 8`, `max-refs: 24`, `max-comparison-days: 90`
 - `mezo.character.observation.cron: "0 50 2 * * *"`, `observation.catch-up-days: 3`
 - `mezo.character.conference.cron: "0 30 19 * * SUN"`, `conference.catch-up-weeks: 2`
-- `mezo.character.monthly.cron: "0 0 20 * * SUN"` (narrowed to the first Sunday in code),
+- `mezo.character.monthly.cron: "0 0 20 * * SUN"` (due from the first Sunday; later ticks recover missed work),
   `monthly.stale-chapter-days: 90`
 - `mezo.character.prompt.min-confidence: 0.45`, `prompt.max-claims-per-dimension: 3`,
   `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
