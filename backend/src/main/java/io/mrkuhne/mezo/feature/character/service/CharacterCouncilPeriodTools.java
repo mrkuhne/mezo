@@ -96,7 +96,8 @@ public class CharacterCouncilPeriodTools {
             return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
                     .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         } catch (java.security.NoSuchAlgorithmException unavailable) {
-            throw new IllegalStateException(unavailable);
+            throw new io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException(
+                    io.mrkuhne.mezo.techcore.exception.SystemMessage.error("CHARACTER_COUNCIL_FINGERPRINT_UNAVAILABLE").build());
         }
     }
 
