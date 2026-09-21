@@ -64,7 +64,7 @@ The page scrolls. Rough-day mode quiets the decorative motion while preserving t
 
 The global header uses a Beállítások cog instead of the daypart picker. Day-face resolution and existing `/nap?dp=` deep links still work; the aurora and day orb retain their existing behavior. `/settings/nap` links shared sleep anchors, Fuel cadence and notification preferences instead of storing duplicate daily-rhythm values. See [central settings](settings.md).
 
-**Titanium quick capture (`mezo-62xey`).** `/nap/gyors` has one heading and the same nine fixed-position actions as the FAB launcher. `QuickLogSurface.css` and the domain-free `CaptureSculpture` provide colored metallic graphics; every subtitle still comes from existing hooks. Water, weight, sport, check-in, journal/activity/gratitude and sleep share `CaptureHeader` + scoped `capture-sheet` styling. Check-in retains its four numeric steps, skip/back, unlimited note and async error/retry; it no longer renders the fabricated instant observation. Activity continues to display actual classification/XP responses. Dedicated meal/stack/training/chat routes remain unchanged. All 1–10 capture scales use two rows of five touch targets. The [approved design](../superpowers/specs/2026-09-17-titanium-quick-log.md) explains the boundary.
+**Quick capture (`mezo-62xey`; re-dressed `mezo-reocc`, 2026-09-21).** `/nap/gyors` has one heading and the same nine fixed-position actions as the FAB launcher. Each tile is a coloured, raised wash tile carrying its clay symbol and **its title only** — the live sublines (eating window, water ml, weight kg, today's sport, next check-in, today's session) were removed by owner decision; the tiles' targets still come from the same hooks. The „Mondd el Mezónak" row is the house primary with Boop in it. Water, weight, sport, check-in, journal/activity/gratitude and sleep share `CaptureHeader` + scoped `capture-sheet` styling. Check-in retains its four numeric steps, skip/back, unlimited note and async error/retry; it no longer renders the fabricated instant observation. Activity continues to display actual classification/XP responses. Dedicated meal/stack/training/chat routes remain unchanged. All 1–10 capture scales use two rows of five touch targets. The [approved design](../superpowers/specs/2026-09-17-titanium-quick-log.md) explains the boundary.
 
 
 - **Open the app →** lands on `/nap` (`router.tsx`'s index `Navigate`); mock renders synchronously. A bookmarked `/today`, `/today?dp=este`, `/today/anything` lands on `/nap` with its query string intact — `LegacyPathRedirect` does a `pathname.replace(prefix, to) + search`, `replace`d so the back button doesn't bounce.
@@ -255,11 +255,10 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
   the restored Mozaik/Clay world (`mezo-ju4j6.10` + the Boop integration `mezo-ju4j6.15`), and
   the close-out dropped two Titanium-era class names from `NapHubPage` (`nap-titan`, which had
   no rule anywhere, and `nap-titan-quiet` → `nap-center-quiet`). All skin: no route, hook,
-  contract or state machine moved. **The one surface in this domain the rollback did NOT reach
-  is the quick-log grid** — `/nap/gyors` and the FAB sheet share `QuickLogSurface`, whose root
-  class is still literally `quicklog-titanium` and whose art is still the `CaptureSculpture`
-  family, not clay. That has its own bd issue; until it lands, this domain is deliberately
-  mixed-look and §2 describes what is on screen, not what to build.
+  contract or state machine moved. The quick-log grid (`/nap/gyors` + the FAB sheet, one
+  `QuickLogSurface`) followed in `mezo-reocc` (2026-09-21): `quicklog-titanium` is gone, the art
+  is clay, the tiles are coloured raised washes with titles only. **What is still Titanium-era
+  here is the capture-sheet bodies** those tiles open (`mezo-luik9`).
 
 - **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in

@@ -164,8 +164,10 @@ The epic's own closure record, so this file states its own ending rather than tr
 **Known surfaces the rollback did NOT reach**, recorded here so the gap is not mistaken for
 completeness — each has its own bd issue:
 
-- the quick-log surface (`/nap/gyors` + the FAB grid) and the `CaptureSculpture` art family it
-  shares with the capture sheets — still Titanium-era, still named `quicklog-titanium`;
+- the capture-sheet **bodies** (`mezo-luik9`) — the quick-log surface (`/nap/gyors` + the FAB
+  grid) and every capture sheet's shell + header were re-dressed in `mezo-reocc` (2026-09-21), and
+  the `CaptureSculpture` metal art family was retired for clay (`CaptureArt`); what sits below
+  the header is still Titanium-era;
 - the level-up overlay (`mezo-n6yqh`) — still Titanium type, still emoji-based;
 - emoji still rendered on a few Nap/Én surfaces (`Island`, `ChainEditSheet`, `GoalRecept`),
   which style bible §2.3 forbids.

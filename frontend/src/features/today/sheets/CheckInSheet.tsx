@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { CaptureSculpture } from '@/shared/ui/CaptureSculpture'
+import { CaptureArt } from '@/shared/ui/CaptureArt'
 import type { CheckinSlot, CheckinValues } from '@/data/types'
 
 type DimId = keyof CheckinValues
@@ -154,7 +154,7 @@ export function CheckInSheet({
 
           {/* Selected value display */}
           <div className="capture-check-orbit" data-step={dim.id} style={{ color: dim.color }}>
-            <CaptureSculpture kind="checkin" />
+            <CaptureArt kind="checkin" />
             <div style={{
               fontFamily: 'var(--ff-display)',
               fontSize: 56, fontWeight: 200, letterSpacing: '-0.04em',

@@ -1,5 +1,5 @@
 import { Icon } from '@/shared/ui/Icon'
-import { CaptureSculpture, type CaptureKind } from '@/shared/ui/CaptureSculpture'
+import { CaptureArt, type CaptureKind } from '@/shared/ui/CaptureArt'
 
 /** Common capture-sheet anatomy; the domain owns its inputs, state and save action. */
 export function CaptureHeader({ id, title, subtitle, eyebrow = 'Gyors rögzítés', kind, onClose, onBack }: {
@@ -14,7 +14,7 @@ export function CaptureHeader({ id, title, subtitle, eyebrow = 'Gyors rögzíté
         <button type="button" className="capture-dismiss" onClick={onClose} aria-label="Bezárás"><Icon name="x" size={18} /></button>
       </div>
       <div className="capture-heading">
-        <CaptureSculpture kind={kind} />
+        <CaptureArt kind={kind} />
         <div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
       </div>
     </header>
