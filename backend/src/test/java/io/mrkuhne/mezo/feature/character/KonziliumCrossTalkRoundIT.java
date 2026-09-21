@@ -80,7 +80,7 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
     }
 
     @Test
-    void run_singleExpertPerChapter_makesNoCall() {
+    void testRun_shouldInviteRelatedExperts_whenEachChapterHasOneProposer() {
         UUID owner = ownerId();
         int before = fakeCompanionLlm.completeCallCount();
 
@@ -88,8 +88,12 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
                 newProposal("szomnologus", "recovery", "Romlik az alvás."),
                 newProposal("drill", "discipline", "Kimarad a napló.")));
 
-        assertThat(result.reactions()).isEmpty();
-        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(before);
+        assertThat(result.reactions()).isNotEmpty();
+        assertThat(result.reactions()).anySatisfy(reaction -> {
+            assertThat(reaction.expertKey()).isEqualTo("edzo");
+            assertThat(reaction.index()).isZero();
+        });
+        assertThat(fakeCompanionLlm.completeCallCount()).isGreaterThan(before);
     }
 
     @Test
@@ -191,4 +195,21 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
         assertThat(fakeCompanionLlm.completeCallCount() - before)
                 .isEqualTo(KonziliumCrossTalkRound.MAX_CROSS_TALK_CALLS);
     }
+    @Test
+    void testRun_shouldLetAuthorRespondAndStopAtThreeRounds_whenPeerChallenges() {
+        UUID owner = ownerId();
+        String challenge = " [fake-char-crosstalk:[{\"index\":0,\"stance\":\"CHALLENGE\",\"argument\":\"Kevés az adat.\"}]]";
+        var result = crossTalkRound.run(owner, WEEK_START, List.of(
+                newProposal("szomnologus", "recovery", "Romlik az alvás." + challenge)));
+        assertThat(result.reactions()).anySatisfy(reaction -> {
+            assertThat(reaction.expertKey()).isEqualTo("szomnologus");
+            assertThat(reaction.round()).isEqualTo(2);
+            assertThat(reaction.replyToExpert()).isEqualTo("edzo");
+        });
+        assertThat(result.reactions()).allSatisfy(reaction -> {
+            assertThat(reaction.round()).isBetween(1, 3);
+            assertThat(reaction.toolNames()).isEmpty();
+        });
+    }
+
 }

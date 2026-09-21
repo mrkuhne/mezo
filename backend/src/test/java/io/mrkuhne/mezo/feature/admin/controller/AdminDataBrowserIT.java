@@ -251,7 +251,7 @@ class AdminDataBrowserIT extends ApiIntegrationTest {
             .containsExactlyInAnyOrderElementsOf(tablesRequiringReset);
     }
 
-    /** Parses the single TRUNCATE TABLE statement string out of ResetDatabase.java's source —
+    /** Parses all TRUNCATE TABLE statement strings out of ResetDatabase.java's source —
      *  there is no public List to import (task-7 judgement call 3), so this reads the ground
      *  truth straight from the file the growth rule lives on. */
     private static Set<String> parseResetDatabaseTruncateList() throws IOException {
@@ -269,10 +269,14 @@ class AdminDataBrowserIT extends ApiIntegrationTest {
         // The statement is one Java string literal split across several concatenated ("+")
         // fragments for readability — strip the quote/plus/newline seams the concatenation
         // leaves behind before splitting on the real, SQL-level commas.
-        String tableCsv = matcher.group(1).replaceAll("[\"+]", " ");
-        return Arrays.stream(tableCsv.split(","))
-            .map(String::strip)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+        Set<String> tables = new java.util.HashSet<>();
+        do {
+            String tableCsv = matcher.group(1).replaceAll("[\"+]", " ");
+            Arrays.stream(tableCsv.split(","))
+                .map(String::strip)
+                .filter(s -> !s.isEmpty())
+                .forEach(tables::add);
+        } while (matcher.find());
+        return tables;
     }
 }

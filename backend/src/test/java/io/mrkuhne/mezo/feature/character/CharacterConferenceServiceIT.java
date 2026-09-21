@@ -404,4 +404,21 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
     private static String escape(String raw) {
         return raw.replace("\\", "\\\\").replace("\"", "\\\"");
     }
+    @Test
+    void testRunWeekly_shouldPreserveInput_whenProposalCannotBeParsed() {
+        UUID owner = ownerId();
+        var observation = seedObservation(owner, "drill", WEEK_START, "[fake-char-proposals:[not-json]]", (short) 3);
+        assertThat(conferenceService.runWeekly(owner, WEEK_START)).isNull();
+        assertThat(observationRepository.findById(observation.getId()).orElseThrow().getConsumedByConferenceId()).isNull();
+    }
+
+    @Test
+    void testRunWeekly_shouldPreserveInput_whenChairCannotBeParsed() {
+        UUID owner = ownerId();
+        var observation = seedObservation(owner, "drill", WEEK_START,
+                "[fake-char-proposals:[{\"kind\":\"NEW\",\"dimensionKey\":\"discipline\",\"text\":\"[fake-char-integrator:{not-json}]\",\"confidence\":0.5,\"sensitive\":false,\"rationale\":\"test\"}]]", (short) 3);
+        assertThat(conferenceService.runWeekly(owner, WEEK_START)).isNull();
+        assertThat(observationRepository.findById(observation.getId()).orElseThrow().getConsumedByConferenceId()).isNull();
+    }
+
 }

@@ -6,3 +6,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609172320_mezo-rj214.10_memory_chunks.sql
+  - changeSet:
+      id: "1.1.0:202609211040_mezo-zwy6v_daily_council"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609211040_mezo-zwy6v_daily_council.sql

@@ -33,8 +33,16 @@ public class ResetDatabase {
 
     private final OwnerProperties ownerProperties;
 
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+
     @Transactional
     public void resetExceptMasterData() {
+        // Quotas reserve in REQUIRES_NEW. Holding their TRUNCATE lock in a test's outer
+        // rollback transaction would deadlock the independent reservation connection.
+        var quotaReset = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        quotaReset.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        quotaReset.executeWithoutResult(status -> jdbc.execute("TRUNCATE TABLE character_council_quota CASCADE"));
         // TRUNCATE CASCADE handles FK dependencies between owned domain tables.
         entityManager.createNativeQuery(
             "TRUNCATE TABLE companion_preferences, invite, llm_log_history, screen_event, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, diagnosis, experiment, prediction, weekly_review, weekly_score, day_review, memoir, weekly_suggestion, companion_message, text_signal, pattern_event, pattern, daily_summary, period_summary, memory_retrieval_feedback, memory_retrieval_result, memory_retrieval_run, memory_vector, memory_item, memory_embedding, message_feedback, feedback_rollup, ai_draft_outcome, companion_flag_log, companion_flag_trace, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, diet_settings, tutorial_progress, "
@@ -45,7 +53,7 @@ public class ResetDatabase {
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "life_goal_pillar_day, life_goal_pillar, life_goal, "
                 + "goal_suggestion, goal_plan_link, goal, biometric_profile, "
-                + "character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
+                + "character_council_edition, character_claim_revision, character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
         // Hybrid catalog (S4, mezo-qw37.4): user-authored definitions go, loader master rows
         // (created_by IS NULL) survive. MUST run before the app_user delete — the FK is ON DELETE

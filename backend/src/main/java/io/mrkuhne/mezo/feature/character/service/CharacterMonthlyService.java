@@ -94,12 +94,16 @@ public class CharacterMonthlyService {
     private static final int MEMORY_QUERY_MAX_CHARS = 800;
 
     // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final CharacterCouncilBudget budget;
+    private final CharacterMutationLock mutationLock;
     private final AppNotificationEmitter notificationEmitter;
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final KonziliumProposalRound proposalRound;
     private final KonziliumVerdictRound verdictRound;
+    private final KonziliumCrossTalkRound crossTalkRound;
+    private final CharacterCouncilEvidenceTools evidenceTools;
     private final KonziliumChapterResolver chapterResolver;
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
@@ -121,6 +125,10 @@ public class CharacterMonthlyService {
      * no LLM calls — when the owner has no ACTIVE claims yet (the honest empty dossier).
      */
     public CharacterConferenceEntity run(UUID owner, LocalDate monthStart) {
+        return budget.run(owner, false, () -> runWithinBudget(owner, monthStart));
+    }
+
+    private CharacterConferenceEntity runWithinBudget(UUID owner, LocalDate monthStart) {
         Optional<CharacterConferenceEntity> existing =
                 conferenceRepository.findByCreatedByAndKindAndWeekStart(owner, MONTHLY, monthStart);
         if (existing.isPresent()) {
@@ -166,6 +174,7 @@ public class CharacterMonthlyService {
     CharacterConferenceEntity runKonzilium(UUID owner, LocalDate monthStart,
             List<CharacterClaimEntity> activeClaims, List<ExpertEvidence> evidence,
             List<ExpertEvidence> evidenceWithMemory) {
+        mutationLock.lock(owner);
         // Mirrors CharacterBootstrapService's fix-round-1 guard: a user whose dossier is otherwise
         // still empty (no dimension rows at all) must not silently drop an accepted NEW claim.
         // Seeded HERE — after the no-ACTIVE-claims return (final-review Finding M5: no CORE rows
@@ -185,21 +194,24 @@ public class CharacterMonthlyService {
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path
         // CharacterBootstrapService uses ("Teljes eddigi történet"). The conference row's OWN
         // weekStart (monthStart) is set below, independently, by persistConferenceAndApplyOutcome.
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
+        var evidenceSession = evidenceTools.open(owner);
+        var discussion = crossTalkRound.run(owner, null, proposalResult.proposals(), evidenceSession);
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(),
+                discussion.reactions(), evidenceSession);
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
         // The structure is assembled and STORED here too (mezo-xlvr final review, I4): without
         // it a brand-new row would be re-derived from its own prose on every read, throwing away
-        // chapter membership, kind and claim id. This konzílium has no cross-talk round, so the
-        // reaction list is honestly empty.
+        // chapter membership, kind and claim id. The same bounded debate is stored for every run kind.
         ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
-                proposalResult.proposals(), List.of(), verdictResult.verdicts(),
+                proposalResult.proposals(), discussion.reactions(), verdictResult.verdicts(),
                 verdictResult.shownRulings(), chapterResolver.resolve(owner, proposalResult.proposals()));
 
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, MONTHLY,
                 monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);
+        conference.setFollowups(verdictResult.followups());
 
         List<ConferenceOutcomeEnvelope.Change> retirementChanges = retireStaleChapters(owner);
         if (!retirementChanges.isEmpty()) {

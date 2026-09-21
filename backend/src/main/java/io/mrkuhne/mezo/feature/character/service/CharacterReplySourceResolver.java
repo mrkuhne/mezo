@@ -34,7 +34,7 @@ public class CharacterReplySourceResolver {
 
     @Transactional(readOnly = true)
     public Source resolve(UUID owner, String type, UUID id, int index) {
-        if (index < 0 || index > 9999 || (!"CONFERENCE_CHANGE".equals(type) && index != 0))
+        if (index < 0 || index > 9999 || (!java.util.List.of("CONFERENCE_CHANGE", "CONFERENCE_ITEM").contains(type) && index != 0))
             throw missing();
         return switch (type) {
             case "CLAIM" ->
@@ -54,6 +54,22 @@ public class CharacterReplySourceResolver {
                         o.getExpertKey(),
                         key,
                         null);
+            }
+            case "CONFERENCE_ITEM" -> {
+                var c = conferences.findByIdAndCreatedBy(id, owner).orElseThrow(CharacterReplySourceResolver::missing);
+                var deliberation = DeliberationAssembler.forRead(c, claimId -> claims.findByIdAndCreatedBy(claimId, owner).isPresent());
+                if (deliberation == null) throw missing();
+                var thread = deliberation.threads().stream()
+                        .filter(t -> t.items().stream().anyMatch(i -> i.index() == index)).findFirst().orElseThrow(CharacterReplySourceResolver::missing);
+                var item = thread.items().stream().filter(i -> i.index() == index).findFirst().orElseThrow();
+                UUID claimId = null;
+                if (item.claimId() != null) {
+                    try {
+                        var parsed = UUID.fromString(item.claimId());
+                        if (claims.findByIdAndCreatedBy(parsed, owner).isPresent()) claimId = parsed;
+                    } catch (IllegalArgumentException ignored) { /* Legacy external ref remains context only. */ }
+                }
+                yield new Source(item.text(), mapper.writeValueAsString(item), item.expertKey(), thread.dimensionKey(), claimId);
             }
             case "CONFERENCE_CHANGE" -> {
                 var c =

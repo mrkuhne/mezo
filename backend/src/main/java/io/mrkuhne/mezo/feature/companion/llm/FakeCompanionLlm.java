@@ -760,12 +760,18 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1) : crossTalkCannedAnswer(userMessage);
         }
         if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
+            toolEchoes(userMessage, tools, toolContext);
             Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : skepticCannedAnswer(userMessage);
         }
         if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
             Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith("KARAKTER-VALASZ-BESZELGETES")) {
+            if (userMessage.contains("[fake-reply-discussion-invalid]")) return "not JSON";
+            toolEchoes(userMessage, tools, toolContext);
+            return "{\"stance\":\"NUANCE\",\"argument\":\"A saját beszámoló pontosítja az eredeti megfigyelést.\"}";
         }
         // Literal marker preserves the character -> companion dependency direction.
         if (systemPrompt.startsWith("KARAKTER-VALASZ-FELADAT")) {

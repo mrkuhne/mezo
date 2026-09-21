@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 /** Central registry of feature-switch property keys (consumed via @ConditionalOnProperty). */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FeaturesConfiguration {
+    public static final String CHARACTER_COUNCIL_JOB_SWITCH = "mezo.techcore.cron.character-council-job.enabled";
 
     /**
      * Spring's scheduling INFRASTRUCTURE ({@code @EnableScheduling}) — one level above the

@@ -16,6 +16,13 @@ import org.junit.jupiter.api.Test;
 class CharacterMonthlyScheduleTest {
 
     @Test
+    void testDeepReadDue_shouldCatchUpMissedFirstSunday_whenLaterTickArrives() {
+        assertThat(CharacterMonthlyJob.isDeepReadDue(LocalDate.of(2026, 9, 5))).isFalse();
+        assertThat(CharacterMonthlyJob.isDeepReadDue(LocalDate.of(2026, 9, 6))).isTrue();
+        assertThat(CharacterMonthlyJob.isDeepReadDue(LocalDate.of(2026, 9, 13))).isTrue();
+    }
+
+    @Test
     void isDeepReadDay_firstSundayOfMonth_isTrue() {
         assertThat(CharacterMonthlyJob.isDeepReadDay(LocalDate.of(2026, 9, 6))).isTrue();
     }

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.api.dto.CharacterReplyCreateRequest;
 import io.mrkuhne.mezo.api.dto.CharacterReplyResponse;
+import io.mrkuhne.mezo.api.dto.ConferencePeerReaction;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.character.config.CharacterReplyProperties;
@@ -162,6 +163,18 @@ public class CharacterReplyService {
                                 ? null
                                 : CharacterReplyResponse.OutcomeEnum.fromValue(r.getOutcome()))
                 .outcomeText(r.getOutcomeText())
+                .discussion(r.getDiscussion() == null ? List.of() : r.getDiscussion().comments().stream()
+                        .map(comment -> {
+                            var dto = new ConferencePeerReaction();
+                            dto.setExpertKey(comment.expertKey());
+                            dto.setStance(ConferencePeerReaction.StanceEnum.fromValue(comment.stance()));
+                            dto.setArgument(comment.argument());
+                            dto.setRound(comment.round());
+                            dto.setReplyToExpert(comment.replyToExpert());
+                            dto.setParticipationReason(comment.participationReason());
+                            dto.setToolNames(comment.toolNames() == null ? List.of() : comment.toolNames());
+                            return dto;
+                        }).toList())
                 .build();
     }
 

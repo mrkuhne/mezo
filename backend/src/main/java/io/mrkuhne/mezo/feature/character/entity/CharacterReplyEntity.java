@@ -13,6 +13,8 @@ import lombok.Setter;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -70,6 +72,10 @@ public class CharacterReplyEntity extends OwnedEntity {
 
     @Column(name = "outcome_text", columnDefinition = "varchar(2000)")
     private String outcomeText;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "discussion", columnDefinition = "jsonb")
+    private CharacterReplyDiscussionEnvelope discussion;
 
     @Column(name = "processing_token", columnDefinition = "uuid")
     private UUID processingToken;

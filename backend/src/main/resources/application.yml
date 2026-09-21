@@ -489,6 +489,8 @@ mezo:
         enabled: true
       # Karakter weekly konzílium pass (mezo-1gim.5, schedule: mezo.character.conference.cron);
       # off = the CharacterConferenceJob bean does not exist
+      character-council-job:
+        enabled: true
       character-conference-job:
         enabled: true
       # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
@@ -2029,6 +2031,34 @@ mezo:
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
   character:
+    council:
+      # Local preparation time and retry tick; never run before ready-at.
+      cron: "0 */15 * * * *"
+      zone: Europe/Budapest
+      ready-at: "05:15"
+      # Recover two recent editions; bound topics and abandoned lease duration.
+      catch-up-days: 2
+      max-topics: 6
+      lease-minutes: 60
+      max-attempts: 3
+    followup:
+      max-due: 3
+      recheck-days: 3
+      max-horizon-days: 30
+    council-budget:
+      cycle-calls: 14
+      cycle-smart-calls: 4
+      autonomous-daily-calls: 90
+      total-daily-calls: 120
+      retention-days: 32
+    council-debate:
+      # Shared per-cycle domain discussion and evidence limits.
+      max-rounds: 3
+      max-participants: 4
+      max-calls: 6
+      max-tool-calls: 8
+      max-comparison-days: 90
+      max-refs: 24
     reply:
       recovery-delay-ms: 60000
       lease-seconds: 300

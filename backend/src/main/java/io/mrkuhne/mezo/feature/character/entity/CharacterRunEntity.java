@@ -7,6 +7,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -72,4 +75,13 @@ public class CharacterRunEntity extends OwnedEntity {
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
+
+    @NotNull @Size(max = 10) @Pattern(regexp = "UNKNOWN|SUCCESS|FAILED")
+    @Column(nullable = false, length = 10)
+    private String status = "UNKNOWN";
+
+    /** Failed attempts remain visible after a later successful retry. */
+    @NotNull @Min(0)
+    @Column(name = "failure_count", nullable = false)
+    private Integer failureCount = 0;
 }

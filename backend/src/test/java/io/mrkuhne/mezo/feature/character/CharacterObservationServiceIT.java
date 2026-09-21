@@ -41,6 +41,28 @@ class CharacterObservationServiceIT extends ApiIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired private io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository runs;
+    @Autowired private io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository journalEntries;
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"[fake-char-obs:[invalid]]", "[fake-char-obs:[{\"text\":\"\"}]]", "[fake-fail]"})
+    void testGenerateForDay_shouldPersistFailureAndRetry_whenExpertOutputIsUnusable(String broken) {
+        UUID owner = owner();
+        var journal = journalPopulator.createEntry(owner, DAY, broken, "quickinput");
+        observationService.generateForDay(owner, DAY);
+        var failed = runs.findByCreatedByAndKindAndDay(owner, "NIGHTLY", DAY).orElseThrow();
+        assertThat(failed.getStatus()).isEqualTo("FAILED");
+        assertThat(failed.getFailureCount()).isEqualTo(1);
+        journal.setText("[fake-char-obs:[]]");
+        journalEntries.saveAndFlush(journal);
+        observationService.generateForDay(owner, DAY);
+        var retried = runs.findByCreatedByAndKindAndDay(owner, "NIGHTLY", DAY).orElseThrow();
+        assertThat(retried.getStatus()).isEqualTo("SUCCESS");
+        assertThat(retried.getFailureCount()).isEqualTo(1);
+        int calls = fakeCompanionLlm.completeCallCount();
+        observationService.generateForDay(owner, DAY);
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(calls);
+    }
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -70,6 +92,7 @@ class CharacterObservationServiceIT extends ApiIntegrationTest {
         int written = observationService.generateForDay(owner, DAY);
 
         assertThat(written).isZero();
+        assertThat(runs.findByCreatedByAndKindAndDay(owner, "NIGHTLY", DAY).orElseThrow().getStatus()).isEqualTo("SUCCESS");
         assertThat(observationRepository.findByCreatedByOrderByDayDescCreatedAtDesc(
                 owner, org.springframework.data.domain.Pageable.unpaged())).isEmpty();
         // mezo-1gim.4 item 5: the zero-cost claim must be pinned on the LLM call count, not just

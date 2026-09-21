@@ -1,6 +1,11 @@
 package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,6 +30,56 @@ public final class DeliberationAssembler {
     private DeliberationAssembler() {
     }
 
+    /** Read-only repair for old NEW items, never guesses between matching proposals/outcomes. */
+    public static ConferenceDeliberationEnvelope forRead(CharacterConferenceEntity conference, Predicate<UUID> ownedClaim) {
+        var source = conference.getDeliberation();
+        if (source == null || conference.getOutcome() == null || conference.getOutcome().changes() == null) return source;
+        return new ConferenceDeliberationEnvelope(source.threads().stream().map(thread ->
+                new ConferenceDeliberationEnvelope.Thread(thread.dimensionKey(), thread.title(),
+                        thread.items().stream().map(item -> {
+                            if (!"NEW".equals(item.kind()) || item.claimId() != null) return item;
+                            long matchingItems = source.threads().stream()
+                                    .filter(candidate -> Objects.equals(candidate.dimensionKey(), thread.dimensionKey()))
+                                    .flatMap(candidate -> candidate.items().stream())
+                                    .filter(candidate -> "NEW".equals(candidate.kind()) && Objects.equals(candidate.text(), item.text())).count();
+                            if (matchingItems != 1) return item;
+                            var matches = conference.getOutcome().changes().stream()
+                                    .filter(change -> "CLAIM_ACCEPTED".equals(change.kind())
+                                            && Objects.equals(change.dimensionKey(), thread.dimensionKey())
+                                            && Objects.equals(change.summary(), item.text())).toList();
+                            if (matches.size() != 1 || matches.getFirst().claimId() == null) return item;
+                            UUID claimId;
+                            try {
+                                claimId = UUID.fromString(matches.getFirst().claimId());
+                            } catch (IllegalArgumentException invalid) {
+                                return item;
+                            }
+                            if (!ownedClaim.test(claimId)) return item;
+                            return new ConferenceDeliberationEnvelope.Item(item.index(), item.expertKey(), item.text(),
+                                    item.kind(), claimId.toString(), item.sensitive(), item.reactions(), item.skeptic(), item.chair());
+                        }).toList())).toList());
+    }
+
+    /** Exact proposal-index binding; duplicate text cannot accidentally bind two proposals. */
+    public static ConferenceDeliberationEnvelope bindApplied(ConferenceDeliberationEnvelope source,
+            Map<Integer, ConferenceOutcomeEnvelope.Change> applied) {
+        if (source == null) return null;
+        return new ConferenceDeliberationEnvelope(source.threads().stream().map(thread ->
+                new ConferenceDeliberationEnvelope.Thread(thread.dimensionKey(), thread.title(),
+                        thread.items().stream().map(item -> {
+                            var change = applied.get(item.index());
+                            var chair = item.chair();
+                            if (change == null && chair != null && chair.accepted()) {
+                                chair = new ConferenceDeliberationEnvelope.ChairRuling(false, null,
+                                        "Végül nem történt adatváltozás: a mentés feltételei nem teljesültek, vagy az állítás már szerepel.",
+                                        chair.dissent(), chair.note(), chair.suggestedDimensionKey());
+                            }
+                            return new ConferenceDeliberationEnvelope.Item(item.index(), item.expertKey(),
+                                    item.text(), item.kind(), change == null ? item.claimId() : change.claimId(),
+                                    item.sensitive(), item.reactions(), item.skeptic(), chair);
+                        }).toList())).toList());
+    }
+
     public static ConferenceDeliberationEnvelope assemble(
             List<ClaimProposal> proposals,
             List<KonziliumCrossTalkRound.Reaction> reactions,
@@ -37,7 +92,8 @@ public final class DeliberationAssembler {
             reactionsByIndex
                     .computeIfAbsent(reaction.index(), index -> new ArrayList<>())
                     .add(new ConferenceDeliberationEnvelope.PeerReaction(
-                            reaction.expertKey(), reaction.stance(), reaction.argument()));
+                            reaction.expertKey(), reaction.stance(), reaction.argument(), reaction.round(),
+                            reaction.replyToExpert(), reaction.participationReason(), reaction.toolNames()));
         }
 
         Map<Integer, ConferenceDeliberationEnvelope.SkepticVerdict> verdictByIndex = new LinkedHashMap<>();

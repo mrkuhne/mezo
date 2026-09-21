@@ -93,6 +93,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
+    io.mrkuhne.mezo.support.populator.CharacterReplyPopulator.class,
+    io.mrkuhne.mezo.support.populator.CharacterCouncilPopulator.class,
+    io.mrkuhne.mezo.support.populator.CharacterClaimRevisionPopulator.class,
     io.mrkuhne.mezo.support.populator.CompanionPreferencesPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,

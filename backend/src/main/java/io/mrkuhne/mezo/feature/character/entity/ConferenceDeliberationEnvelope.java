@@ -33,7 +33,11 @@ public record ConferenceDeliberationEnvelope(List<Thread> threads) {
 
     /** One peer expert's stance on somebody else's proposal: {@code SUPPORT}, {@code CHALLENGE}
      *  or {@code NUANCE}. */
-    public record PeerReaction(String expertKey, String stance, String argument) {
+    public record PeerReaction(String expertKey, String stance, String argument, Integer round,
+                               String replyToExpert, String participationReason, List<String> toolNames) {
+        public PeerReaction(String expertKey, String stance, String argument) {
+            this(expertKey, stance, argument, 1, null, null, List.of());
+        }
     }
 
     /** {@code verdict} is {@code KEEP}, {@code WEAKEN} or {@code KILL}. {@code suggestedConfidence}

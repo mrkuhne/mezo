@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,7 @@ public class CharacterObservationService {
             .map(CharacterCoreCatalog.CoreDimension::key)
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
+    private final CharacterCouncilBudget budget;
     private final DetectorRegistry detectorRegistry;
     private final CharacterSignalReads signalReads;
     private final CharacterObservationRepository observationRepository;
@@ -64,10 +67,25 @@ public class CharacterObservationService {
     /** One drafted observation as the LLM returns it, before validation/clamping. */
     record Draft(String text, Integer salience, List<String> dimensionKeys) {}
 
+    private record ExpertResult(int written, boolean success) {}
+
     /** Runs the nightly pass for one owner/day; returns the number of observation rows written. */
     @Transactional
     public int generateForDay(UUID owner, LocalDate day) {
-        List<DetectorSignal> signals = detectorRegistry.runAll(signalReads.gather(owner, day));
+        return budget.run(owner, false, () -> generateForDayWithinBudget(owner, day));
+    }
+
+    private int generateForDayWithinBudget(UUID owner, LocalDate day) {
+        if (runLog.observationSucceeded(owner, day)) return 0;
+        List<DetectorSignal> signals;
+        try {
+            signals = detectorRegistry.runAll(signalReads.gather(owner, day));
+        } catch (RuntimeException failure) {
+            runLog.recordObservationFailure(owner, day);
+            log.warn("Observation input gathering failed for owner {} day {}", owner, day, failure);
+            return 0;
+        }
+        boolean successful = true;
 
         int written = 0;
         List<String> detectorKeys = List.of();
@@ -87,31 +105,21 @@ public class CharacterObservationService {
                     continue; // idempotent catch-up re-run
                 }
                 called.add(expertKey);
-                written += generateForExpert(owner, day, expertKey, entry.getValue());
+                var result = generateForExpert(owner, day, expertKey, entry.getValue());
+                written += result.written();
+                successful &= result.success();
             }
             calledExpertKeys = called;
         }
 
-        // NIGHTLY run-row, recorded BEFORE the (now removed) quiet-day early return used to sit
-        // (Karakter S9 Gépterem, mezo-1gim.14): a zero-signal day is a REAL run that found
-        // nothing, and recording (0, 0, [], []) IS the "csendes éjszaka" the Gépterem view
-        // celebrates — distinct from a day this pipeline never ran at all (no row at all).
-        // record() is itself idempotent per (created_by, kind, day), so a catch-up re-run of an
-        // already-logged day is a no-op here regardless of what the per-expert exists-checks above
-        // decided at the observation level. Own try/catch (defense in depth on top of record()'s
-        // internal one — the DailySummaryJob isolation idiom) so a run-log failure can never break
-        // this pipeline.
-        try {
-            runLog.record(owner, "NIGHTLY", day, written, calledExpertKeys.size(),
-                    detectorKeys, calledExpertKeys, null);
-        } catch (Exception e) {
-            log.warn("NIGHTLY run-log record call failed for owner {} day {}", owner, day, e);
-        }
+        // Valid [] and zero detector signals are quiet SUCCESS; parse/provider failures are
+        // FAILED even when another expert produced useful rows. Readiness shares this commit.
+        runLog.recordObservation(owner, day, written, calledExpertKeys.size(), detectorKeys, calledExpertKeys, successful);
 
         return written;
     }
 
-    private int generateForExpert(UUID owner, LocalDate day, String expertKey, List<DetectorSignal> expertSignals) {
+    private ExpertResult generateForExpert(UUID owner, LocalDate day, String expertKey, List<DetectorSignal> expertSignals) {
         CharacterExpertCatalog.Expert expert;
         String raw;
         try {
@@ -127,13 +135,13 @@ public class CharacterObservationService {
                     () -> companionLlm.complete(systemPrompt, userMessage));
         } catch (Exception e) {
             log.warn("Observation generation failed for owner {} expert {} day {}", owner, expertKey, day, e);
-            return 0;
+            return new ExpertResult(0, false);
         }
 
-        List<Draft> drafts = parse(raw, owner, expertKey, day);
-        if (drafts.isEmpty()) {
-            return 0;
-        }
+        Optional<List<Draft>> parsed = parse(raw, owner, expertKey, day);
+        if (parsed.isEmpty()) return new ExpertResult(0, false);
+        List<Draft> drafts = parsed.get();
+        if (drafts.isEmpty()) return new ExpertResult(0, true);
 
         ObservationSignalsEnvelope signalsEnvelope = new ObservationSignalsEnvelope(expertSignals.stream()
                 .map(s -> new ObservationSignalsEnvelope.Signal(s.detectorKey(), s.summary(), List.of()))
@@ -144,7 +152,7 @@ public class CharacterObservationService {
             if (written >= MAX_DRAFTS_PER_EXPERT) {
                 break;
             }
-            if (draft.text() == null || draft.text().isBlank()) {
+            if (draft == null || draft.text() == null || draft.text().isBlank()) {
                 continue;
             }
             CharacterObservationEntity entity = new CharacterObservationEntity();
@@ -159,7 +167,7 @@ public class CharacterObservationService {
             observationRepository.save(entity);
             written++;
         }
-        return written;
+        return new ExpertResult(written, written > 0);
     }
 
     private static String outputContract() {
@@ -180,18 +188,18 @@ public class CharacterObservationService {
         return sb.toString();
     }
 
-    private List<Draft> parse(String raw, UUID owner, String expertKey, LocalDate day) {
+    private Optional<List<Draft>> parse(String raw, UUID owner, String expertKey, LocalDate day) {
         if (raw == null || raw.isBlank()) {
             log.warn("Observation answer was blank for owner {} expert {} day {}", owner, expertKey, day);
-            return List.of();
+            return Optional.empty();
         }
         String cleaned = stripFences(raw);
         try {
-            return objectMapper.readValue(cleaned, new TypeReference<List<Draft>>() {});
+            return Optional.ofNullable(objectMapper.readValue(cleaned, new TypeReference<List<Draft>>() {}));
         } catch (Exception e) {
             log.warn("Observation answer was not parseable JSON for owner {} expert {} day {} — dropping: {}",
                     owner, expertKey, day, raw, e);
-            return List.of();
+            return Optional.empty();
         }
     }
 
@@ -218,7 +226,7 @@ public class CharacterObservationService {
 
     private static List<String> resolveDimensionKeys(Draft draft, CharacterExpertCatalog.Expert expert) {
         List<String> filtered = draft.dimensionKeys() == null ? List.of() : draft.dimensionKeys().stream()
-                .filter(KNOWN_DIMENSION_KEYS::contains)
+                .filter(Objects::nonNull).filter(KNOWN_DIMENSION_KEYS::contains)
                 .toList();
         return filtered.isEmpty() ? List.of(expert.primaryDimensionKey()) : filtered;
     }

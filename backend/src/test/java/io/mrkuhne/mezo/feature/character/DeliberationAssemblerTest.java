@@ -17,6 +17,23 @@ import org.junit.jupiter.api.Test;
 
 class DeliberationAssemblerTest {
 
+    @Test
+    void testForRead_shouldBindOnlyUniqueOwnedExactOutcome_whenLegacyNewItemHasNoClaimId() {
+        var proposal = newProposal("drill", "discipline", "Pontos szöveg.");
+        var conf = new io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity();
+        conf.setDeliberation(DeliberationAssembler.assemble(List.of(proposal), List.of(), List.of(),
+                List.of(new ClaimRuling(proposal, true, null, "Elfogadva")),
+                new KonziliumChapters(Map.of("discipline", "Fegyelem"), Map.of())));
+        var id = UUID.randomUUID();
+        var change = new io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope.Change(
+                "CLAIM_ACCEPTED", "discipline", id.toString(), "Pontos szöveg.");
+        conf.setOutcome(new io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope(List.of(change)));
+        assertThat(DeliberationAssembler.forRead(conf, id::equals).threads().getFirst().items().getFirst().claimId()).isEqualTo(id.toString());
+        assertThat(DeliberationAssembler.forRead(conf, ignored -> false).threads().getFirst().items().getFirst().claimId()).isNull();
+        conf.setOutcome(new io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope(List.of(change, change)));
+        assertThat(DeliberationAssembler.forRead(conf, id::equals).threads().getFirst().items().getFirst().claimId()).isNull();
+    }
+
     private static ClaimProposal newProposal(String expertKey, String dimensionKey, String text) {
         return new ClaimProposal(expertKey, "NEW", dimensionKey, null, text,
                 new BigDecimal("0.50"), false, "Indoklás.");

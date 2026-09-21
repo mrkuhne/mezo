@@ -43,7 +43,7 @@ public class CharacterMonthlyJob {
     @Scheduled(cron = "${mezo.character.monthly.cron}")
     public void run() {
         LocalDate today = LocalDate.now();
-        if (!isDeepReadDay(today)) {
+        if (!isDeepReadDue(today)) {
             return;
         }
         LocalDate monthStart = today.withDayOfMonth(1);
@@ -58,6 +58,13 @@ public class CharacterMonthlyJob {
             }
         });
         log.info("Character monthly run for month {}: {} konzílium(s) held", monthStart, held.get());
+    }
+
+    /** Every later scheduler tick can recover the current month's missed first-Sunday run. */
+    public static boolean isDeepReadDue(LocalDate today) {
+        LocalDate firstSunday = today.withDayOfMonth(1)
+                .with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        return !today.isBefore(firstSunday);
     }
 
     /**

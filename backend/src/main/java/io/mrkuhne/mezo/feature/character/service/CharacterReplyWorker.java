@@ -21,6 +21,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
 public class CharacterReplyWorker {
     private final CharacterReplyProcessing processing;
+    private final CharacterCouncilBudget budget;
     private final ObjectProvider<CharacterReplyEvaluation> evaluator;
     private final ObjectProvider<MemoryEmbeddingWriter> memory;
 
@@ -41,8 +42,12 @@ public class CharacterReplyWorker {
                                 .syncNote(
                                         MemoryEmbeddingEntity.KIND_CHARACTER_REPLY,
                                         CharacterReplyMemorySource.note(reply));
-                        var verdict = evaluator.getObject().evaluate(reply);
-                        processing.complete(reply, verdict);
+                        budget.run(event.owner(), true, () -> {
+                            var verdict = evaluator.getObject().evaluate(reply);
+                            io.mrkuhne.mezo.feature.llmlog.context.LlmCallQuota.capture().verify();
+                            processing.complete(reply, verdict);
+                            return null;
+                        });
                     } catch (Exception e) {
                         log.warn(
                                 "Character reply processing failed for reply {}", reply.getId(), e);
