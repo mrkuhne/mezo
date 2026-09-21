@@ -1,34 +1,47 @@
 ---
 name: visszaoltoztetes
-description: Session driver for the Boop visszaöltöztetés program (Titanium visual rollback, functionality kept). Use when the user invokes /visszaoltoztetes or asks to continue the visszaöltöztetés / Titanium rollback work — picks the next unblocked bead of the boop-visszaoltoztetes epic, loads its context, and executes it through the house gates.
+description: Session driver for the surfaces the Boop visszaöltöztetés (Titanium visual rollback) did not reach. The epic mezo-ju4j6 itself CLOSED 2026-09-21 — this skill now drives the leftover re-dress beads labelled epic:boop-visszaoltoztetes. Use when the user invokes /visszaoltoztetes or asks to continue the visszaöltöztetés / Titanium rollback work.
 ---
 
-# Visszaöltöztetés session driver
+# Visszaöltöztetés session driver — the remaining surfaces
 
-You are continuing a multi-session program: re-dress the app from the rejected Titanium skin
-back to the pre-Titanium design_2.0 (Mozaik/Clay) world while keeping ALL functionality
-shipped during the Titanium period. Forward-fix only — never revert functional code.
+> **The programme is finished; the app is not uniformly finished.** Epic `mezo-ju4j6`
+> (19 beads, 2026-09-17 → 2026-09-21) closed: shell, navigation, GlassBox, all of Fuel,
+> Nap/Mai, all of Train, both ceremonies, the Boop character, and the app-wide §3.4 ranking
+> sweep are in the restored Mozaik/Clay world, with no functionality lost. **Do not re-run the
+> programme, and do not re-close the epic.**
+>
+> What is left is a short list of surfaces that were never in any slice's scope. This skill
+> drives those, under the same rules that made the programme work.
+
+Re-dress means: move a surface off the rejected Titanium skin onto the restored pre-Titanium
+design_2.0 (Mozaik/Clay) world, **keeping every piece of functionality**. Forward-fix only —
+never revert functional code, never `git revert` a Titanium-period commit.
 
 ## Canon (read in this order, every session)
 
-1. Spec: `docs/superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md` (keep-list /
-   kill-list / traps)
-2. Program plan: `docs/superpowers/plans/2026-09-17-boop-visszaoltoztetes.md` (your task's
-   section = your instructions)
-3. Style bible (once Task 1 has merged):
-   `docs/design_2.0/2026-09-17-restored-world-style-bible.md` — the ONLY styling reference
-   for re-dress work. Do not restyle from memory or from Titanium docs.
-   **Read §3.4 ("Depth and focus") before every design pass** — see the rule below.
+1. **Style bible: `docs/design_2.0/2026-09-17-restored-world-style-bible.md`** — the ONLY
+   styling reference. Never restyle from memory, and never from a Titanium doc.
+   **Read §3.4 ("Depth and focus") before every design pass** — the rule below.
+   Appendices **A–D** are the accumulated slice lessons (A = Fuel, B = Nap, C/C.1/C.2 = Train,
+   D = the ranking sweep). Read the appendix nearest your surface: each one exists because a
+   slice paid for it.
+2. **Spec: `docs/superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md`** — the
+   keep-list / kill-list / traps. Still the authority on *what must not be lost*.
+3. **`docs/design_2.0/README.md`** — the index: which docs are living canon and which are
+   history-only parity sources. It also names the surfaces the rollback did not reach.
 
-## The one rule every slice has got wrong (§3.4)
+**The programme plan (`docs/superpowers/plans/2026-09-17-boop-visszaoltoztetes.md`) is DONE.**
+Read it for precedent, never for instructions: your instructions are in the bead.
+
+## The one rule every slice got wrong (§3.4)
 
 **A wash tile is loud only next to something that isn't one.**
 
-Every re-dress slice so far made the same first-pass mistake: turning *every* surface into a
-§2.2 A wash tile. The result reads **flatter than the Titanium screen it replaced**, every
-time. Titanium bought depth cheaply, with a dark ground and a glow; the restored world buys it
-with **contrast between the three material grades** — which only works when all three are on
-screen at once.
+Every re-dress slice's first pass made the same mistake: turning *every* surface into a §2.2 A
+wash tile. The result read **flatter than the Titanium screen it replaced**, every time.
+Titanium bought depth cheaply, with a dark ground and a glow; the restored world buys it with
+**contrast between the three material grades** — which only works when all three are on screen.
 
 So the design pass ALWAYS starts by ranking, not by styling:
 
@@ -41,54 +54,110 @@ So the design pass ALWAYS starts by ranking, not by styling:
    at real size. Decoration-sized art makes a hero read as a header.
 4. Check 320px after any size or weight step-up (A.2 rule 5).
 
-If a slice's before/after shows the new version reading flatter or quieter than the Titanium
-one, this is why — do not reach for a darker ground, re-rank the surfaces.
+If your before/after shows the new version reading flatter or quieter than the Titanium one,
+this is why — do not reach for a darker ground, re-rank the surfaces.
 
-Screens re-dressed BEFORE this rule existed still wear the flat all-wash pass; `mezo-ju4j6.19`
-is the sweep that ranks them. Do not silently fix them inside another slice — note them there.
+**Two corollaries from the sweep** (Appendix D rules 23–24), both likely on the surfaces that
+are left:
+
+- **The hierarchy can be a state, not a place.** When a screen has no privileged item (a list
+  of equal things), rank by the state that separates them — done vs. still ahead, due vs. later.
+- **A wash tile nested inside a wash tile makes both disappear.** Anything inside a §2.2 A
+  surface is a cell or a shield, never a second washed, bordered box.
+
+## What is left (the beads this skill drives)
+
+`bd list --label epic:boop-visszaoltoztetes` — note **`--label`, singular**; `--labels` is not
+a flag and fails.
+
+| Bead | Surface | Shape of the work |
+| --- | --- | --- |
+| `mezo-reocc` (P1) | the quick-log surface — `/nap/gyors` + the FAB grid, one component (`QuickLogSurface`) in two shells | A real re-dress: root class is literally `quicklog-titanium`, nine tiles carry `blur(24px)` accent glows (§2.3), pre-`--dv-` hue tokens (A.4/7), and `CaptureSculpture` gradient art instead of clay. **Needs an owner decision** on `CaptureSculpture` (3 consumers, shared with the capture sheets) before any code. |
+| `mezo-z5lov` (P2) | emoji still rendered on Nap/Én surfaces (`Island`, `ChainEditSheet`, `GoalRecept`, the needs/itemIcon maps) | §2.3 says every glyph is a clay symbol. The needs map is the hard part: six needs, and there the **colour already carries meaning**. |
+| `mezo-17vnf` (P3) | dead module `features/train/logic/weeklyLoad.ts` | Pure cleanup; no design pass. Confirm no importer, then delete it with `SPORT_EMOJI` and the two comments that name it. |
+
+**Related but NOT this skill's:** `mezo-n6yqh` (P0) — the level-up overlay and the pre-workout
+prep mosaic. Its fix direction changes **behaviour** (fold the level-up content into the
+ceremony, retire the prep screen), and this skill's rule is that behaviour is frozen. Its emoji
+are a symptom, not the job. If the owner raises it, say so plainly and treat it as its own
+piece of work with its own decision, not as a re-dress slice.
 
 ## Procedure
 
-1. The epic is `mezo-ju4j6` (children `mezo-ju4j6.1`–`.19`; fallback lookup:
-   `bd list --labels epic:boop-visszaoltoztetes`).
-   Run `bd ready` and pick the epic child the plan's dependency order marks next; if several
-   are unblocked, take the lowest phase number. `bd show <id>` for its instructions.
-2. If NO child is unblocked but open children exist, report which bead blocks progress and
-   stop. If ALL children are closed, run the plan's Task 9 close-out checks and close the epic.
-3. `bd update <id> --claim`. Work in an isolated worktree on `feat/<topic>` (superpowers:using-git-worktrees).
-4. Execute the plan section for that task with superpowers:executing-plans discipline. Re-dress
-   tasks start with the in-session design pass (which opens with the §3.4 ranking above, not
-   with styling); behavior is frozen — visual changes only.
-   **Offer the owner a before/after prototype before writing code** when the slice changes how
-   a screen reads — one HTML page, the SAME markup cloned into a "now" and a "proposed"
-   column, so the comparison can only be about the skin. `docs/design_2.0/prototypes/redress/`
-   holds them; `2026-09-20-terv-terheles-before-after.html` is the working pattern (it reads
-   the real `prototype.css` and the real `bodyGeometry.gen.ts`, so what he sees is what ships).
-   Two traps that cost a round each: `prototype.css` locks the document scroller
-   (`html, body { overflow: hidden }`) — the lab has to unlock it or the page cannot scroll;
-   and the clay sprite must be hidden with `position:absolute;width:0;height:0` rather than
-   `display:none`, or its gradient fills never resolve.
-5. Gates (house rules, non-negotiable): FE tests in both modes (`VITE_USE_MOCK` unset = mock,
-   `=false` = real, `CI=true`), affected `frontend/tests/layout` specs, `verify`-skill runtime
-   pass, reverse parity checklist pasted into the bd issue (re-dress tasks), CSS section +
-   `prototypeCssStructure.test.ts` moved in the same commit, CODEMAP regen after moves and
-   after every merge. Then merge per the **"no-wait, net stays"** flow (AGENTS.md §Git
-   Workflow): local gates → `--no-ff` merge to main → push; no PR, no CI wait. CI runs on
-   main as the safety net — if main is red at session start, fixing it comes first.
-6. Close the bead with a result summary. Session close: `node scripts/check-beads-backup.mjs --fix`,
-   `bd dolt push`, `git push`, `git status` up to date.
-7. Report to the owner IN HUNGARIAN, business language (CLAUDE.md §Communication): what got
-   done in user-visible terms, what comes next, roughly how many steps remain.
+1. `bd list --label epic:boop-visszaoltoztetes` — **that listing is the authority**, not
+   `bd ready`, which hides `chore`-type beads and would silently drop `mezo-17vnf`. Take the
+   lowest-priority-number open bead unless the owner named one. `bd show <id>` —
+   **the bead carries the instructions**, the old programme plan does not.
+2. **If nothing is open:** the work this skill covers is done. Say so in one or two sentences,
+   name `mezo-n6yqh` if it is still open, and stop. Do **not** invent a slice, re-audit finished
+   screens, or reopen the epic.
+3. `bd update <id> --claim`. Work in an isolated worktree on `feat/<topic>`
+   (superpowers:using-git-worktrees). Check `gh run list --branch main --limit 1` first —
+   **a red main outranks everything** and is fixed before new work.
+4. Execute with superpowers:executing-plans discipline. A re-dress starts with the in-session
+   design pass, which opens with the §3.4 **ranking**, not with styling. **Behaviour is frozen:
+   visual changes only.** A class rename or a `data-*` styling hook is fine; a changed route,
+   hook, contract, mutation or state machine is not — if the bead seems to need one, stop and
+   ask the owner.
+5. **Offer the owner a before/after lab before writing code**, whenever the slice changes how a
+   screen reads. One HTML page under `docs/design_2.0/prototypes/redress/`, the **same markup
+   cloned** into a "most" and a "javasolt" column so the comparison can only be about the skin.
+   `2026-09-20-gyakorlatok-sport-ceremonia-before-after.html` is the pattern to copy: it keeps
+   the markup in `<template>` elements and clones them into both columns with a three-line
+   script, which makes identical markup structural rather than a promise. The "most" column
+   gets **no special ground** — what ships today is Titanium CSS on the restored light page,
+   and that is the honest comparison.
+   Four traps, each of which cost a round:
+   - `prototype.css` locks the document scroller (`html, body { overflow: hidden }`) — the lab
+     must unlock it or the page cannot scroll at all.
+   - The clay sprite must be hidden with `position:absolute;width:0;height:0`, never
+     `display:none`, or its gradient fills never resolve.
+   - The in-app preview renders a `file://` page as a **snapshot and drops the `<link>` to
+     `prototype.css`** — the lab then shows unstyled markup. Verify it over a local HTTP server
+     from the repo root instead (`python3 -m http.server`), which resolves the relative link.
+   - Check the real class a component renders (`cn('muscle-chip', className)`) before hand-
+     writing markup into the lab; a missing class silently changes the size of the thing you
+     are asking the owner to judge.
+6. Gates (house rules, non-negotiable): FE tests in **both** modes (`VITE_USE_MOCK` unset =
+   mock, `=false` = real, `CI=true`), affected `frontend/tests/layout` specs, `verify`-skill
+   runtime pass **in light AND dark**, reverse parity checklist pasted into the bd issue, CSS
+   section + `prototypeCssStructure.test.ts` moved in the same commit, `node scripts/gen-codemap.mjs`
+   after moves **and after every merge** (the merge silently drops entries). If a slice touches
+   docs, `node scripts/lint-docs.mjs` must stay at 0 stale / 0 error. Then merge per the
+   **"no-wait, net stays"** flow (AGENTS.md §Git Workflow): local gates → `--no-ff` merge to
+   main → push; no PR, no CI wait.
+7. Close the bead with a result summary. Session close:
+   `node scripts/check-beads-backup.mjs --fix`, `bd dolt push`, `git push`, `git status` clean.
+8. Report to the owner **in Hungarian**, business language (CLAUDE.md §Communication): what got
+   done in user-visible terms, what is next, how much is left. Say plainly what you did **not**
+   do and why — the programme's own close-out named its three gaps rather than claiming
+   completeness, and that is the standard.
 
 ## Model guidance
 
-Beads are labeled `model:strong` (Opus/Fable — design judgment, first-of-kind exemplars) or
-`model:fast` (Sonnet — repeating an established pattern). If the running session's model is
-weaker than the label asks, say so to the owner before starting instead of silently proceeding.
+The remaining beads carry no `model:` label. `mezo-reocc` is **design judgment** (a whole screen
+plus an owner decision on an art family) — Opus/Fable. `mezo-z5lov` is mostly pattern work, but
+the needs-symbol set needs drawing to the §6.1 recipe. `mezo-17vnf` is a chore any model can do.
+If the running model is weaker than the work asks, say so to the owner before starting.
 
-## Traps (short list — full list in the spec)
+## Traps (short list — full list in the spec, and the bible's appendices)
 
 - Never restore whole directories from git history; GlassBox (keep!) lives in the mozaik kit.
-- prototype.css line anchors drift — locate by section markers.
-- Tutorial registry anchors the DOM you are changing — grep it per touched page.
+- prototype.css line anchors drift — locate by section markers, never by line number.
+- The tutorial registry anchors the DOM you are changing. `anchors.test.tsx` now carries a
+  registry-wide reverse lint, so an orphaned anchor fails the suite — but grep the registry for
+  the page you touch anyway, so you learn it before the test does.
 - The old Fuel/Train page code exists only in git history (≤ v2.243) — reference, not restore.
+- **A runtime-hue wash/lift formula must not be hoisted into a shared custom property** (bible
+  C.2/20): a custom property's own `var()`s are substituted on the element that *declares* it,
+  so the hue freezes at its fallback and every tile below comes out coral. Write the formula
+  per rule.
+- **A selector with no consumer is a page with no style** (C.2/22): `.sp-foot`'s CTA was scoped
+  out of every `.wo-close-cta` arm and rendered as a bare button, and no guard caught it because
+  every guard asked what the CSS *says*, not what the page *gets*. When your surface inherits a
+  scoped rule, grep its consumers for ancestors the scope does not cover.
+- **A guard can outrank the rule.** Two slice guards had frozen the flat all-wash pass as a
+  *requirement*. If a demotion fails an existing test, read the test: it may be asserting the
+  mistake. Rewrite it to assert the ranking, in the same commit.
+- **Never `git checkout -- .` to tidy a worktree.** It silently discards uncommitted work;
+  commit first, then clean. (Learned here, by losing this file once.)
