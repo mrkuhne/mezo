@@ -5,7 +5,7 @@ import { seedSplashSkipped } from './splashSeed'
 for (const width of [320, 390, 430]) {
   for (const theme of ['light', 'dark']) {
     for (const label of ['Víz', 'Súly', 'Sport', 'Check-in', 'Napló', 'Alvás']) {
-    test(`Titanium ${label} remains reachable at ${width}px in ${theme}`, async ({ page }, testInfo) => {
+    test(`the ${label} capture sheet remains reachable at ${width}px in ${theme}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 852 })
       await page.clock.setFixedTime(new Date('2026-05-21T13:42:00+02:00'))
       await seedKalauzSeen(page)
@@ -15,8 +15,8 @@ for (const width of [320, 390, 430]) {
         if (theme === 'light') await page.getByRole('button', { name: 'Gyors logolás', exact: true }).click()
         if (theme === 'dark') await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
         else await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
-        await page.locator('.quicklog-titanium').getByRole('button', { name: new RegExp(`^${label}`) }).click()
-        if (label === 'Napló') await page.locator('.quicklog-titanium').getByRole('button', { name: /^Napló/ }).click()
+        await page.locator('.quicklog').getByRole('button', { name: new RegExp(`^${label}`) }).click()
+        if (label === 'Napló') await page.locator('.quicklog').getByRole('button', { name: /^Napló/ }).click()
         const dialog = page.getByRole('dialog')
         await expect(dialog).toBeVisible()
         await expect(dialog.getByRole('button', { name: 'Bezárás', exact: true })).toBeVisible()

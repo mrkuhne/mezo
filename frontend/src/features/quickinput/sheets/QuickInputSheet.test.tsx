@@ -142,12 +142,29 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 
 // ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
-test('category sculptures are decorative and do not replace the named tile buttons', () => {
+test('each tile carries its own decorative clay symbol, not a Titanium sculpture (mezo-reocc)', () => {
   renderSheet()
-  for (const label of ['Súly', 'Alvás', 'Napló', 'Étkezés', 'Edzés', 'Stack', 'Víz', 'Sport', 'Check-in']) {
-    const button = screen.getByRole('button', { name: new RegExp(`^${label}`) })
-    expect(button.querySelector('.capture-sculpture')).toHaveAttribute('aria-hidden', 'true')
+  const art: Record<string, string> = {
+    'Étkezés': 'i-fuel', 'Víz': 'i-viz', 'Stack': 'i-stack', 'Edzés': 'i-edzes', 'Sport': 'i-sport',
+    'Súly': 'i-suly', 'Check-in': 'i-checkin', 'Napló': 'i-naplo', 'Alvás': 'i-alvas',
   }
+  for (const [label, symbol] of Object.entries(art)) {
+    const button = screen.getByRole('button', { name: label })
+    const svg = button.querySelector('svg.quicklog-art')
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(svg!.querySelector('use')).toHaveAttribute('href', `#${symbol}`)
+  }
+  expect(document.querySelector('.capture-sculpture')).toBeNull()
+})
+
+// Owner decision 2026-09-21 (mezo-reocc): the tiles carry their title and nothing else — the
+// live sublines (window, ml, kg, today's session, next check-in) were removed. The accessible
+// name is therefore EXACTLY the label; a subline sneaking back would extend it.
+test('the tiles carry their title only, no sublines', () => {
+  renderSheet()
+  expect(document.querySelector('.quicklog-sub-line')).toBeNull()
+  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
+    expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
 })
 
 test('the Étkezés tile routes to the active window’s log page', async () => {
@@ -163,22 +180,15 @@ test('without a now-window the Étkezés tile routes to free-item logging', asyn
   fuelPreviewMock.useFuelPreview.mockReturnValue({ visible: [], nextStack: undefined, plan: { slots: [] } })
   const onClose = vi.fn()
   renderSheet(onClose)
-  expect(screen.getByText('ablakon kívül is')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
   expect(screen.getByTestId('search').textContent).toBe('')
 })
 
-test('the Étkezés tile’s subline names the active window', () => {
-  renderSheet()
-  expect(screen.getByText('MOST · Ebéd-ablak')).toBeInTheDocument()
-})
-
 test('the Víz tile opens the amount picker in place and the log lands', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  expect(screen.getByText('1850 ml')).toBeInTheDocument() // hu-HU leaves 4-digit numbers ungrouped
   await userEvent.click(screen.getByRole('button', { name: /Víz/ }))
   expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
@@ -202,11 +212,6 @@ test('the Súly tile opens the weight log sheet in place', async () => {
   expect(onClose).not.toHaveBeenCalled()
 })
 
-test('live sublines: Edzés reads the day plan, Súly the latest weight', () => {
-  renderSheet()
-  expect(screen.getByText(/17:00 · Pull Day/)).toBeInTheDocument()
-  expect(screen.getByText(/78,6/)).toBeInTheDocument()
-})
 test('the Mezo row closes the sheet and navigates to the companion chat', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
@@ -274,14 +279,6 @@ test('the Sport tile swaps the menu for the sport log sheet, without closing', a
   expect(await screen.findByText(/Sport log ·/)).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
-})
-
-test('the Sport tile’s subline reads today’s last session only', () => {
-  renderSheet()
-  // s3 (today, last-logged, array head) wins over s2 (today, but earlier) and s1 (past day).
-  expect(screen.getByText('Röpi · 45p')).toBeInTheDocument()
-  expect(screen.queryByText('Röpi · 90p')).not.toBeInTheDocument()
-  expect(screen.queryByText('Röpi · 60p')).not.toBeInTheDocument()
 })
 
 test('the Check-in tile swaps the menu for the check-in sheet on the next fillable slot', async () => {

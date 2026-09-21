@@ -2220,15 +2220,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border: 1px solid var(--divider); background: var(--surface-page); cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
 }
-/* ── quick-log v2 (mezo-7lst): lapos 3×3 rács, élő sublinekkal ── */
-.quicklog-sub-line { font-size: 11px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
-.quicklog-sub-line.done { color: var(--success-deep); font-weight: 700; }
-.quicklog-tile.tone-sky { background: var(--mz-wash-sky); border-color: transparent; }
-.quicklog-tile.tone-lav { background: var(--mz-wash-lav); border-color: transparent; }
-.quicklog-tile.tone-sage { background: var(--mz-wash-sage); border-color: transparent; }
-.quicklog-tile.tone-coral { background: var(--mz-wash-coral); border-color: transparent; }
-.quicklog-tile.tone-gold { background: var(--mz-wash-gold); border-color: transparent; }
-.quicklog-tile.tone-rose { background: var(--mz-wash-rose); border-color: transparent; }
+/* quick-log v2 (mezo-7lst) → the tile material + hues live in QuickLogSurface.css (mezo-reocc) */
 .quicklog-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
 /* The one non-logging entry, lifted out of the grid so the companion chat stops hiding (mezo-967c) */
 .quicklog-chat {
@@ -2236,10 +2228,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   display: flex; align-items: center; gap: 12px; text-align: left;
   border: none; border-radius: var(--r-2xl); cursor: pointer; font-family: inherit;
   background: var(--gradient-cta); color: #fff; box-shadow: var(--shadow-cta);
-}
-.quicklog-chat-emoji {
-  width: 44px; height: 44px; border-radius: 50%; flex: none; font-size: 19px;
-  background: rgba(255, 255, 255, 0.22); display: flex; align-items: center; justify-content: center;
 }
 .quicklog-chat-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .quicklog-chat-label { font-size: 15px; font-weight: 700; }

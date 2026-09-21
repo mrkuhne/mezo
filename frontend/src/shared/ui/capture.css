@@ -1,20 +1,30 @@
-/* Titanium capture family: local to these sheets; colors follow light/dark/circadian tokens. */
-.capture-tone-food,.capture-tone-training{--capture-accent:var(--coral)}
-.capture-tone-water,.capture-tone-weight{--capture-accent:var(--sky)}
-.capture-tone-stack,.capture-tone-chat{--capture-accent:var(--amber)}
-.capture-tone-sport,.capture-tone-journal{--capture-accent:var(--sage)}
-.capture-tone-checkin{--capture-accent:var(--rose)}
-.capture-tone-sleep{--capture-accent:var(--lav)}
-.capture-sheet.sheet{border-radius:30px 30px 0 0;background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--capture-accent) 16%,transparent),transparent 48%),var(--surface-1);border:1px solid var(--divider);padding-inline:20px;isolation:isolate}
-.capture-header{width:100%;margin-bottom:22px;text-align:left}
+/* Capture family — the quick-log sheets (water, weight, sleep, sport, journal, activity, check-in).
+   SHELL + HEADER: restored Mozaik/Clay world (mezo-reocc, owner 2026-09-21): the house sheet
+   ground, the §3.1 icon-shield dismiss, a §3.2 eyebrow and the clay capture art (CaptureArt.tsx).
+   BODY (below the header marker): still the Titanium-era capture skin — its re-dress is a
+   separate follow-up; do not add more of it. */
+.capture-sheet.sheet{padding-inline:20px;isolation:isolate}
+.capture-header{width:100%;margin-bottom:20px;text-align:left}
 .capture-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .capture-toolbar>span:first-child:empty{width:44px}
-.capture-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary);text-align:center}
-.capture-dismiss{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:1px solid var(--divider);border-radius:50%;background:var(--surface-2);color:var(--ink);cursor:pointer}
-.capture-heading{display:flex;align-items:center;gap:18px;margin-top:20px}
-.capture-heading>.capture-sculpture{flex-shrink:0;transform:scale(1.18);margin:0 6px}
-.capture-heading h2{font:600 27px/1.15 var(--ff-display);letter-spacing:-.035em;margin:0;color:var(--ink)}
-.capture-heading p{font-size:13px;line-height:1.55;color:var(--text-secondary);margin:8px 0 0}
+.capture-eyebrow{font:800 9.5px/1 var(--ff-body);letter-spacing:.16em;text-transform:uppercase;color:var(--sub);text-align:center}
+.capture-dismiss{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:0;border-radius:50%;background:var(--surface-1);box-shadow:inset 0 0 0 1px var(--border-subtle);color:var(--ink);cursor:pointer}
+.capture-heading{display:flex;align-items:center;gap:14px;margin-top:16px}
+.capture-heading>.capture-art{flex-shrink:0}
+.capture-heading>div{min-width:0}
+.capture-heading h2{font:700 24px/1.2 var(--ff-display);letter-spacing:-.02em;margin:0;color:var(--ink)}
+.capture-heading p{font-size:13px;line-height:1.5;color:var(--sub);margin:6px 0 0}
+@media(max-width:350px){.capture-sheet.sheet{padding-inline:14px}.capture-heading{gap:12px}.capture-heading>.capture-art{width:56px;height:56px}}
+/* the check-in orbit's watermark: the clay mark, big and faint, behind the value */
+.capture-check-orbit>.capture-art{position:absolute;inset:50% auto auto 50%;width:150px;height:150px;transform:translate(-50%,-50%);opacity:.2;pointer-events:none}
+.capture-tone-checkin:has(.capture-check-orbit) .capture-heading>.capture-art{display:none}
+/* ── BODY — Titanium-era, not yet re-dressed ── */
+.capture-tone-food,.capture-tone-training{--capture-accent:var(--dv-coral)}
+.capture-tone-water,.capture-tone-weight{--capture-accent:var(--dv-sky)}
+.capture-tone-stack,.capture-tone-chat{--capture-accent:var(--dv-amber)}
+.capture-tone-sport,.capture-tone-journal{--capture-accent:var(--dv-sage)}
+.capture-tone-checkin{--capture-accent:var(--dv-rose)}
+.capture-tone-sleep{--capture-accent:var(--dv-lav)}
 .capture-sheet :is(.chip,.cta-primary,.cta-ghost){clip-path:none;border-radius:14px;min-height:44px}
 .capture-sheet .cta-primary{background:linear-gradient(120deg,color-mix(in srgb,var(--capture-accent) 80%,var(--surface-card)),var(--capture-accent));color:var(--text-primary);border:1px solid var(--divider);border-radius:17px;min-height:50px}
 .capture-sheet .cta-primary:disabled{opacity:.4}
@@ -33,45 +43,10 @@
 .capture-ruler::after{content:'';position:absolute;left:50%;height:100%;width:3px;background:var(--capture-accent)}
 .capture-night-arc{height:58px;margin:12px 25px 0;border-top:2px solid color-mix(in srgb,var(--lav) 65%,transparent);border-radius:50% 50% 0 0;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--lav) 18%,transparent),transparent 70%)}
 .capture-check-orbit{width:115px;height:115px;margin:8px auto 18px;display:grid;place-items:center;border-radius:50%;border:1px solid color-mix(in srgb,var(--rose) 25%,transparent);background:radial-gradient(circle,color-mix(in srgb,var(--rose) 16%,transparent),transparent 70%)}
-.capture-check-orbit .capture-sculpture{transform:scale(1.65)}
-.capture-sculpture{--metal:var(--capture-accent,var(--lav));--metal-light:color-mix(in srgb,var(--metal) 40%,var(--text-primary));--metal-dark:color-mix(in srgb,var(--metal) 28%,var(--surface-page));position:relative;display:block;width:58px;height:58px;perspective:180px;flex-shrink:0;filter:drop-shadow(0 7px 6px color-mix(in srgb,var(--surface-page) 55%,transparent))}
-.capture-sculpture :is(i,b){position:absolute;display:block;font-weight:400;background:linear-gradient(125deg,var(--metal-light),var(--metal) 25%,var(--metal-dark) 58%,var(--metal) 85%);box-shadow:inset 1px 1px color-mix(in srgb,var(--text-primary) 30%,transparent)}
-.capture-art-food i:first-child{left:4px;top:30px;width:51px;height:23px;border-radius:5% 5% 50% 50%;--metal:var(--sky)}
-.capture-art-food b,.capture-art-food i:last-child{left:13px;top:15px;width:25px;height:18px;border-radius:80% 5% 80% 10%;transform:rotate(-20deg);--metal:var(--sage)}
-.capture-art-food i:last-child{left:29px;top:20px;transform:rotate(70deg);--metal:var(--amber)}
-.capture-art-water i:first-child{left:14px;top:6px;width:32px;height:43px;transform:rotate(45deg);border-radius:6% 55% 60% 55%;--metal:var(--sky);animation:capture-drop 5s ease-in-out infinite alternate}
-.capture-art-water b{left:8px;bottom:0;width:44px;height:10px;border-radius:50%;border:1px solid color-mix(in srgb,var(--sky) 30%,transparent);background:none;box-shadow:none}
-.capture-art-stack i{left:15px;top:5px;width:25px;height:46px;border-radius:20px;transform:rotate(27deg);--metal:var(--lav)}
-.capture-art-stack i:last-child{left:32px;top:20px;width:20px;height:34px;transform:rotate(-26deg);--metal:var(--amber)}
-.capture-art-training{transform:rotate(-25deg)}
-.capture-art-training b{left:8px;top:25px;width:42px;height:8px;border-radius:5px;--metal:var(--sky)}
-.capture-art-training i{left:8px;top:12px;width:14px;height:34px;border-radius:6px;--metal:var(--sage)}
-.capture-art-training i:last-child{left:36px}
-.capture-art-sport i{inset:7px;border:6px solid var(--sky);border-top-color:var(--metal-light);border-bottom-color:var(--metal-dark);border-radius:50%;transform:rotateY(43deg) rotate(20deg);background:none}
-.capture-art-sport i:last-child{border-color:var(--sage);border-bottom-color:var(--metal-dark);transform:rotateY(-35deg) rotateX(48deg)}
-.capture-art-sport b{inset:23px;border-radius:50%}
-.capture-art-weight i:first-child{left:8px;top:11px;width:43px;height:39px;border-radius:12px;transform:rotate(-8deg);--metal:var(--sky)}
-.capture-art-weight b{left:20px;top:20px;width:19px;height:10px;border-radius:15px 15px 3px 3px;background:var(--surface-page);transform:rotate(-8deg)}
-.capture-art-weight i:last-child{left:29px;top:21px;width:2px;height:7px;transform:rotate(25deg);background:var(--amber)}
-.capture-art-checkin i:first-child{inset:6px;border-radius:38% 62% 66% 34%/53% 35% 65% 47%;--metal:var(--rose);animation:capture-morph 8s ease-in-out infinite alternate}
-.capture-art-checkin b{inset:21px;border-radius:50%;--metal:var(--lav)}
-.capture-art-journal :is(i,b){left:12px;top:10px;width:31px;height:37px;border-radius:3px 8px 4px 3px;transform:rotate(-16deg);--metal:var(--sage)}
-.capture-art-journal b{transform:translate(5px,-3px) rotate(-2deg);--metal:var(--lav)}
-.capture-art-journal i:last-child{transform:translate(10px,-5px) rotate(13deg)}
-.capture-art-sleep i:first-child{inset:6px;border-radius:50%;--metal:var(--lav);mask-image:radial-gradient(circle at 75% 25%,transparent 0 42%,var(--ink) 44%)}
-.capture-art-sleep b{right:2px;top:5px;width:12px;height:12px;--metal:var(--amber);clip-path:polygon(50% 0,62% 35%,100% 50%,65% 63%,50% 100%,37% 65%,0 50%,36% 35%)}
-.capture-art-chat :is(i,b){top:15px;left:13px;width:7px;height:27px;border-radius:7px;--metal:var(--amber);animation:capture-wave 3s ease-in-out infinite alternate}
-.capture-art-chat b{left:26px;top:7px;height:43px;animation-delay:-1s}
-.capture-art-chat i:last-child{left:39px;top:19px;height:20px;animation-delay:-2s}
-@keyframes capture-drop{to{transform:rotate(45deg) translate(-2px,-2px)}}
-@keyframes capture-morph{to{border-radius:60% 40% 34% 66%/36% 54% 46% 64%;transform:rotate(9deg)}}
-@keyframes capture-wave{to{transform:scaleY(.65)}}
-@media(prefers-reduced-motion:reduce){.capture-sculpture *{animation:none!important}.capture-water-hero::before{transition:none}}
-@media(max-width:350px){.capture-sheet.sheet{padding-inline:14px}.capture-heading{gap:12px}.capture-heading h2{font-size:24px}.capture-heading>.capture-sculpture{margin-inline:2px}}
+@media(prefers-reduced-motion:reduce){.capture-water-hero::before{transition:none}}
+
 .capture-check-orbit{position:relative;width:160px;height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center}
-.capture-check-orbit>.capture-sculpture{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%) scale(2.4);opacity:.2;pointer-events:none}
 .capture-check-orbit>div,.capture-check-orbit>.label-mono{position:relative}
-.capture-tone-checkin:has(.capture-check-orbit) .capture-heading>.capture-sculpture{display:none}
 :root[data-theme="dark"] .capture-sheet .cta-primary{color:var(--surface-page)}
 @media(max-width:350px){.capture-sheet .sheet-handle-zone{margin-inline:-14px}}
 .capture-sheet .cta-primary{box-shadow:0 8px 24px color-mix(in srgb,var(--capture-accent) 15%,transparent)}
@@ -80,4 +55,3 @@
 .capture-sheet .capture-rating-scale button{min-height:44px;border-radius:12px!important;clip-path:none!important}
 .capture-sheet .mz-sheet-hero{border:1px solid var(--divider);box-shadow:none!important;border-radius:22px}
 .capture-sheet select{border-radius:10px;min-height:40px}
-.capture-heading>div{min-width:0}

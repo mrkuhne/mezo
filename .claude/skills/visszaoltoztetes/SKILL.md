@@ -23,8 +23,8 @@ never revert functional code, never `git revert` a Titanium-period commit.
 1. **Style bible: `docs/design_2.0/2026-09-17-restored-world-style-bible.md`** — the ONLY
    styling reference. Never restyle from memory, and never from a Titanium doc.
    **Read §3.4 ("Depth and focus") before every design pass** — the rule below.
-   Appendices **A–D** are the accumulated slice lessons (A = Fuel, B = Nap, C/C.1/C.2 = Train,
-   D = the ranking sweep). Read the appendix nearest your surface: each one exists because a
+   Appendices **A–E** are the accumulated slice lessons (A = Fuel, B = Nap, C/C.1/C.2 = Train,
+   D = the ranking sweep, E = the quick-log surface). Read the appendix nearest your surface: each one exists because a
    slice paid for it.
 2. **Spec: `docs/superpowers/specs/2026-09-17-boop-visszaoltoztetes-design.md`** — the
    keep-list / kill-list / traps. Still the authority on *what must not be lost*.
@@ -72,7 +72,7 @@ a flag and fails.
 
 | Bead | Surface | Shape of the work |
 | --- | --- | --- |
-| `mezo-reocc` (P1) | the quick-log surface — `/nap/gyors` + the FAB grid, one component (`QuickLogSurface`) in two shells | A real re-dress: root class is literally `quicklog-titanium`, nine tiles carry `blur(24px)` accent glows (§2.3), pre-`--dv-` hue tokens (A.4/7), and `CaptureSculpture` gradient art instead of clay. **Needs an owner decision** on `CaptureSculpture` (3 consumers, shared with the capture sheets) before any code. |
+| `mezo-luik9` (P2) | the capture-sheet **bodies** (water, weight, sleep, sport, journal, activity, check-in) — the quick-log grid + every sheet's shell/header were done in `mezo-reocc` (2026-09-21) | A real re-dress of `capture.css` below its `BODY` marker: per-accent CTA gradient instead of `--gradient-cta`, legacy hues on the water wave / ruler / night arc / check-in orbit, the check-in numeral's `textShadow` glow. The clay art decision is already made (owner: clay everywhere). The `2026-09-21-gyors-logolas-before-after.html` lab already clones a Víz sheet. |
 | `mezo-z5lov` (P2) | emoji still rendered on Nap/Én surfaces (`Island`, `ChainEditSheet`, `GoalRecept`, the needs/itemIcon maps) | §2.3 says every glyph is a clay symbol. The needs map is the hard part: six needs, and there the **colour already carries meaning**. |
 | `mezo-17vnf` (P3) | dead module `features/train/logic/weeklyLoad.ts` | Pure cleanup; no design pass. Confirm no importer, then delete it with `SPORT_EMOJI` and the two comments that name it. |
 
@@ -135,8 +135,8 @@ piece of work with its own decision, not as a re-dress slice.
 
 ## Model guidance
 
-The remaining beads carry no `model:` label. `mezo-reocc` is **design judgment** (a whole screen
-plus an owner decision on an art family) — Opus/Fable. `mezo-z5lov` is mostly pattern work, but
+The remaining beads carry no `model:` label. `mezo-luik9` is **design judgment** (seven sheets,
+one ranking each) — Opus/Fable. `mezo-z5lov` is mostly pattern work, but
 the needs-symbol set needs drawing to the §6.1 recipe. `mezo-17vnf` is a chore any model can do.
 If the running model is weaker than the work asks, say so to the owner before starting.
 

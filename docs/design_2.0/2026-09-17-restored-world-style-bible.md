@@ -1006,3 +1006,33 @@ product name onto three lines at 320px. They stack there now, the ring keeping i
 **Left for `mezo-ju4j6.16`:** `ProgressionBanner` still writes a literal „⚡" into its label
 (§2.3: no emoji, ever), and the level-up overlay is still full of them. Both are DOM edits, and
 this task is a CSS ranking sweep.
+
+---
+
+## Appendix E — the quick-log surface (`mezo-reocc`, 2026-09-21)
+
+The last Titanium screen outside the programme: `/nap/gyors` and the FAB sheet (one
+`QuickLogSurface`), plus the shell and header of every capture sheet it opens. Lab:
+`prototypes/redress/2026-09-21-gyors-logolas-before-after.html`.
+
+27. **The ranking the bible predicts is not always the one the owner buys — and his wins.** The
+   §3.4 / A.5 rule 10 pass demoted the nine equal doors to house shields under one loud
+   `--gradient-cta` row. The owner rejected it in the lab: "not 3D enough", and he wanted the
+   colours of the Titanium version back. The tiles are therefore **coloured, raised §2.2 A wash
+   tiles in their own hue** — one step deeper than the stock `--mz-wash-*` (30% / 9% `color-mix`),
+   a hue-tinted lift, the white inset top edge and a faint hue-tinted lower edge. What keeps the
+   screen ranked is that the loud element is a *different grade entirely* (the CTA primary), so
+   nine washes under it still read as a set of doors, not nine heroes. Record the decision in the
+   CSS block, per Appendix D rule 26.
+28. **A retired art family is retired at its component, not at each consumer.** The metal
+   `CaptureSculpture` had three consumers (the grid, `CaptureHeader` → seven sheets, the check-in
+   orbit). It became `CaptureArt`, a kind → clay-symbol map over `ClayIcon`, so every capture
+   header flipped in one edit and a tile and the sheet it opens now wear the same mark.
+29. **Mezo's row wears Mezo.** The chat entry sits on the coral primary, where the clay `i-mezo`
+   orb disappeared; Boop (`domain="mezo"`, still) in a light 50px icon shield keeps her lavender
+   readable on the coral.
+30. **Titles only** (owner, 2026-09-21): the live sublines on the tiles were removed. That is a
+   content decision, not a skin one — it was his call, and the unit suite now asserts the
+   accessible name is exactly the label, so a subline cannot creep back unnoticed.
+
+**Left for `mezo-luik9`:** the capture-sheet *bodies* — `capture.css` below its `BODY` marker.
