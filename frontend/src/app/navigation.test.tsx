@@ -139,7 +139,7 @@ test('/mezo/karakter/dimenziok is the Dimenziók list — a stable full-page sib
   renderApp('/mezo/karakter/dimenziok')
   // Mock mode starts pre-bootstrap (MOCK_OVERVIEW_EMPTY — 7 CORE dims only, no CHAPTER yet),
   // so the derived count here is 7, not the fully-seeded dossier's 8.
-  expect(await screen.findByText('7 dimenzió, egy helyen')).toBeInTheDocument()
+  expect(await screen.findByText('7 témakör · mindegyik pontosítható')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
 })
 
@@ -151,12 +151,12 @@ test('/mezo/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, 
 
 test('/mezo/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
   renderApp('/mezo/karakter/feed')
-  expect(await screen.findByText('Amit mostanában megtudtam rólad')).toBeInTheDocument()
+  expect(await screen.findByText('A csapat gondolatai. A te történeted.')).toBeInTheDocument()
 })
 
 test('/mezo/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
   renderApp('/mezo/karakter/csapat')
-  expect(await screen.findByText('Mezo belső tanácsa — ők dolgoznak a karakteren')).toBeInTheDocument()
+  expect(await screen.findByText('Különböző nézőpontok, egy közös kép rólad.')).toBeInTheDocument()
   expect(screen.getByText('Doki')).toBeInTheDocument()
   expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
 })

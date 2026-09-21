@@ -42,7 +42,9 @@ public class CharacterPortraitRevisionEntity extends OwnedEntity {
     @Column(nullable = false, columnDefinition = "text")
     private String portrait;
 
-    @NotNull
-    @Column(name = "conference_id", nullable = false, columnDefinition = "uuid")
+    @Column(name = "conference_id", columnDefinition = "uuid")
     private UUID conferenceId;
+
+    @Column(name = "reply_id", columnDefinition = "uuid")
+    private UUID replyId;
 }

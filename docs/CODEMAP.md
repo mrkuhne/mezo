@@ -45,7 +45,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [proactive](#proactive) | ✓ | 2 | · | · | [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [quickinput](#quickinput) | · | · | · | ✓ | · |
+| [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [settings](#settings) | · | · | · | ✓ | [settings](features/settings.md) |
@@ -81,7 +81,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-09, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
@@ -164,7 +164,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-09, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -196,7 +196,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-20, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -236,25 +236,28 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-18, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-20, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
   - **entities→tables:** `CharacterClaimEntity`→`character_claim`, `CharacterConferenceEntity`→`character_conference`,
     `CharacterDimensionEntity`→`character_dimension`, `CharacterObservationEntity`→`character_observation`,
-    `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterRunEntity`→`character_run`
+    `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
+    `CharacterRunEntity`→`character_run`
   - **repositories:** `CharacterClaimRepository`, `CharacterConferenceRepository`, `CharacterDimensionRepository`,
-    `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterRunRepository`
+    `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`,
+    `CharacterRunRepository`
   - **services:** `CharacterBootstrapService`, `CharacterConferenceJob`, `CharacterConferenceService`,
     `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterExpertCatalog`, `CharacterFeedbackService`,
     `CharacterHistoryReads`, `CharacterMetaReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`,
-    `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`,
-    `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`,
-    `DeliberationAssembler`, `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`,
-    `KonziliumCrossTalkRound`, `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`,
-    `ObservationText`, `PortraitWriter`
+    `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterReplyEvaluation`,
+    `CharacterReplyMemorySource`, `CharacterReplyProcessing`, `CharacterReplyRecoveryJob`, `CharacterReplyService`,
+    `CharacterReplySourceResolver`, `CharacterReplyWorker`, `CharacterRunLog`, `CharacterService`,
+    `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `DeliberationAssembler`,
+    `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`, `KonziliumCrossTalkRound`,
+    `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`, `ObservationText`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
-  - **config:** `CharacterProperties`
+  - **config:** `CharacterProperties`, `CharacterReplyProperties`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `ChatToolDomains`, `ChatTopicShiftDetector`,
     `CheckinGapDetector`, `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`,
     `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceDeliberationEnvelope`,
@@ -271,43 +274,48 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
     `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
     `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 10 operations
+- **Contract** `api/feature/character/character.yml` — 13 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
     POST /api/character/conference · GET /api/character/runs · GET /api/character/run/{runId} ·
-    GET /api/character/conference/{conferenceId}
+    GET /api/character/conference/{conferenceId} · GET /api/character/replies · POST /api/character/replies ·
+    POST /api/character/replies/{replyId}/retry
 - **FE data** `frontend/src/data/character`
-  - **modules:** characterApi.ts, characterHooks.ts, characterMock.ts
+  - **hooks (via `@/data/hooks`):** `useCharacterReplies`, `useCharacterReplyDraft`
+  - **modules:** characterApi.ts, characterHooks.ts, characterMock.ts, characterReplyHooks.ts
 - **FE ui** `frontend/src/features/character`
   - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, CsapatPage.tsx, DetektorokPage.tsx, DimensionPage.tsx,
     DimensionsPage.tsx, FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx,
     RunPage.tsx
-  - **components:** ClaimTile.tsx, ConferenceArchiveSheet.tsx, ConferenceThreadCard.tsx, KonziliumConversationView.tsx,
-    KonziliumRoundMap.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx, TranscriptTurn.tsx
+  - **sheets:** CharacterEvidenceSheet.tsx
+  - **components:** CharacterHeader.tsx, CharacterPostCard.tsx, CharacterReplyThread.tsx, ClaimTile.tsx,
+    ConferenceArchiveSheet.tsx, ConferenceThreadCard.tsx, KonziliumConversationView.tsx, KonziliumRoundMap.tsx,
+    MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx, TranscriptTurn.tsx
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 30 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 33 IT + 8 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterConferenceJobIT`,
     `CharacterConferenceListIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
     `CharacterMetaReadsIT`, `CharacterMonthlyMemoryDisabledIT`, `CharacterMonthlyMemoryIT`,
     `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
-    `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
-    `ConferenceDeliberationEnvelopeIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
-    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
-  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
-    `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
-    `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,
-    `MedicationPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
-    `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PersonPopulator`, `PredictionPopulator`,
-    `ProtocolPopulator`, `QuestPopulator`, `RunningPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`,
-    `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
+    `CharacterPromptWiringIT`, `CharacterReplyApiIT`, `CharacterReplyCompanionOffIT`, `CharacterReplyRecoveryIT`,
+    `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
+    `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`,
+    `PortraitWriterNameIT`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CharacterReplyPopulator`,
+    `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`,
+    `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`,
+    `MedicationDosePopulator`, `MedicationPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`,
+    `MentionPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PersonPopulator`,
+    `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`, `RunningPopulator`, `SleepLogPopulator`,
+    `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
 
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-18, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-20, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-18, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
@@ -539,8 +547,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### fuel
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-18, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-18, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-21, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-20, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done)
 
@@ -748,7 +756,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### intention
 
-*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-09-18, done)
+*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-09-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/intention`
   - **entities→tables:** `DailyIntentionEntity`→`daily_intention`, `IntentionCreedEntity`→`intention_creed`,
@@ -838,7 +846,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-09, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
@@ -1053,7 +1061,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### pantry
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-18, done)
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
@@ -1248,7 +1256,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: **none — no HOW doc exists for this feature yet**
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
@@ -1256,7 +1264,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-18, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1276,7 +1284,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### ritual
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-09-18, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-09-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1330,12 +1338,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### today
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-18, done) ·
-  [docs/features/intention.md](features/intention.md) (updated 2026-09-18, done) ·
+  [docs/features/intention.md](features/intention.md) (updated 2026-09-21, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-18, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-20, complete) ·
-  [docs/features/ritual.md](features/ritual.md) (updated 2026-09-18, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-20, mixed)
+  [docs/features/ritual.md](features/ritual.md) (updated 2026-09-21, done) ·
+  [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1359,7 +1367,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-20, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-09-21, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1540,10 +1548,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
-  `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CheckInPopulator`,
-  `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`, `DailySummaryPopulator`,
-  `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
-  `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
+  `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CharacterReplyPopulator`,
+  `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `CreatedAtBackdater`,
+  `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`,
+  `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
   `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
   `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
   `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
@@ -1556,26 +1564,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`,
   `WorkoutDayAdjustmentPopulator`
-- **`ResetDatabase` TRUNCATE list** — 112 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 113 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_draft_outcome`, `ai_message`, `app_notification`,
     `biometric_profile`, `challenge`, `character_claim`, `character_conference`, `character_dimension`,
-    `character_observation`, `character_portrait_revision`, `character_run`, `check_in`, `coin_event`,
-    `companion_flag_log`, `companion_flag_trace`, `companion_message`, `companion_preferences`, `daily_intention`,
-    `daily_quest`, `daily_summary`, `day_review`, `decision_entry`, `diagnosis`, `diet_settings`, `exercise`,
-    `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`,
-    `goal`, `goal_plan_link`, `goal_suggestion`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`,
-    `habit_def`, `intention_creed`, `intention_focus`, `invite`, `journal_entry`, `knowledge_edge`, `knowledge_fact`,
-    `knowledge_node`, `learned_fact`, `level_up_event`, `life_goal`, `life_goal_pillar`, `life_goal_pillar_day`,
-    `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`, `medication_dose`, `memoir`,
-    `memory_embedding`, `memory_item`, `memory_retrieval_feedback`, `memory_retrieval_result`, `memory_retrieval_run`,
-    `memory_vector`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`, `message_feedback`,
-    `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`, `owned_title`,
-    `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`, `person`,
-    `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`, `recipe_ingredient`,
-    `ritual_day`, `run_session_log`, `running_block`, `screen_event`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `sport_slot_skip`, `supplement_intake`, `text_signal`,
-    `tutorial_progress`, `water_log`, `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`,
-    `workout_day_adjustment`, `workout_session`, `workout_timing_profile`
+    `character_observation`, `character_portrait_revision`, `character_reply`, `character_run`, `check_in`,
+    `coin_event`, `companion_flag_log`, `companion_flag_trace`, `companion_message`, `companion_preferences`,
+    `daily_intention`, `daily_quest`, `daily_summary`, `day_review`, `decision_entry`, `diagnosis`, `diet_settings`,
+    `exercise`, `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`,
+    `gamification_profile`, `goal`, `goal_plan_link`, `goal_suggestion`, `gratitude_entry`, `gym_schedule_slot`,
+    `habit_chain`, `habit_day`, `habit_def`, `intention_creed`, `intention_focus`, `invite`, `journal_entry`,
+    `knowledge_edge`, `knowledge_fact`, `knowledge_node`, `learned_fact`, `level_up_event`, `life_goal`,
+    `life_goal_pillar`, `life_goal_pillar_day`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`,
+    `medication`, `medication_dose`, `memoir`, `memory_embedding`, `memory_item`, `memory_retrieval_feedback`,
+    `memory_retrieval_result`, `memory_retrieval_run`, `memory_vector`, `mention`, `meso_template`, `mesocycle`,
+    `mesocycle_report`, `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`,
+    `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`,
+    `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
+    `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
+    `screen_event`, `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
+    `sport_slot_skip`, `supplement_intake`, `text_signal`, `tutorial_progress`, `water_log`, `weekly_review`,
+    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`,
+    `workout_timing_profile`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
@@ -1589,5 +1598,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `quickinput`, `telemetry`
+- **Features with no `docs/features/` doc:** `aidraft`, `medication`, `telemetry`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

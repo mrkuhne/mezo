@@ -483,6 +483,8 @@ mezo:
         enabled: true
       # Karakter nightly observation pass (mezo-1gim.3, schedule: mezo.character.observation.cron);
       # off = the CharacterObservationJob bean does not exist
+      character-reply-job:
+        enabled: true
       character-observation-job:
         enabled: true
       # Karakter weekly konzílium pass (mezo-1gim.5, schedule: mezo.character.conference.cron);
@@ -2027,6 +2029,10 @@ mezo:
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
   character:
+    reply:
+      recovery-delay-ms: 60000
+      lease-seconds: 300
+      history-limit: 20
     observation:
       # 02:50 — the brief's suggested 02:40 collides with mezo.companion.patterns.cron (line
       # above); free dawn slots taken so far: 02:20 summary, 02:40 patterns, 03:00 SUN hypotheses,

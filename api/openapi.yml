@@ -9747,6 +9747,132 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/replies:
+    get:
+      tags:
+        - Character
+      operationId: listCharacterReplies
+      summary: 'Owned contextual reply thread, oldest first'
+      parameters:
+        - name: sourceType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - OBSERVATION
+              - CLAIM
+              - CONFERENCE_CHANGE
+        - name: sourceId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sourceIndex
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9999
+            default: 0
+      responses:
+        '200':
+          description: Durable replies including processing outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterReplyResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown or foreign source or reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Character
+      operationId: createCharacterReply
+      summary: >-
+        Save a reply before asynchronous evaluation; clientRequestId
+        deduplicates retries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterReplyCreateRequest'
+      responses:
+        '200':
+          description: Saved or existing reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterReplyResponse'
+        '400':
+          description: Invalid text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown or foreign source or reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Idempotency key reused for different content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/replies/{replyId}/retry':
+    post:
+      tags:
+        - Character
+      operationId: retryCharacterReply
+      summary: Retry failed or interrupted processing without duplicating the reply
+      parameters:
+        - name: replyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Same durable reply; completed replies remain unchanged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterReplyResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown or foreign source or reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/diagnosis:
     get:
       tags:
@@ -23806,6 +23932,96 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DayDimension'
+    CharacterReplyCreateRequest:
+      type: object
+      required:
+        - sourceType
+        - sourceId
+        - text
+        - clientRequestId
+      properties:
+        sourceType:
+          type: string
+          enum:
+            - OBSERVATION
+            - CLAIM
+            - CONFERENCE_CHANGE
+        sourceId:
+          type: string
+          format: uuid
+        sourceIndex:
+          type: integer
+          minimum: 0
+          maximum: 9999
+          default: 0
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        clientRequestId:
+          type: string
+          format: uuid
+    CharacterReplyResponse:
+      type: object
+      required:
+        - id
+        - sourceType
+        - sourceId
+        - sourceIndex
+        - sourceText
+        - text
+        - createdAt
+        - status
+        - authorName
+      properties:
+        sourceType:
+          type: string
+          enum:
+            - OBSERVATION
+            - CLAIM
+            - CONFERENCE_CHANGE
+        sourceId:
+          type: string
+          format: uuid
+        sourceIndex:
+          type: integer
+          minimum: 0
+          maximum: 9999
+          default: 0
+        id:
+          type: string
+          format: uuid
+        sourceText:
+          type: string
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        authorName:
+          type: string
+        expertKey:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - SAVED
+            - PROCESSING
+            - FAILED
+            - NEEDS_CLARIFICATION
+            - COMPLETED
+        outcome:
+          type: string
+          enum:
+            - UPDATED
+            - WITHDRAWN
+            - UNCHANGED
+            - NEEDS_CLARIFICATION
+          nullable: true
+        outcomeText:
+          type: string
+          nullable: true
     CharacterClaimDto:
       type: object
       required:
@@ -24003,6 +24219,34 @@ components:
         - at
         - text
       properties:
+        evidence:
+          type: array
+          items:
+            type: object
+            required:
+              - kind
+              - label
+            properties:
+              kind:
+                type: string
+              label:
+                type: string
+              refId:
+                type: string
+                nullable: true
+        sourceType:
+          type: string
+          enum:
+            - OBSERVATION
+            - CLAIM
+            - CONFERENCE_CHANGE
+        sourceId:
+          type: string
+          format: uuid
+        sourceIndex:
+          type: integer
+          minimum: 0
+          maximum: 9999
         kind:
           type: string
           enum:
@@ -24259,6 +24503,9 @@ components:
               - kind
               - summary
             properties:
+              claimId:
+                type: string
+                nullable: true
               kind:
                 type: string
               dimensionKey:

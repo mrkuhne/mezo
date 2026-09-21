@@ -1,5 +1,15 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import jakarta.persistence.LockModeType;
+
+import jakarta.persistence.EntityManager;
+
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+
+import io.mrkuhne.mezo.feature.character.entity.CharacterReplyEntity;
+
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
@@ -52,6 +62,43 @@ public class ClaimLifecycle {
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
+    private final EntityManager entityManager;
+
+    /** A targeted user correction changes only its server-resolved claim/dimension. Evidence is
+     * explicitly self-report and the reply worker commits this with its outcome exactly once. */
+    @Transactional
+    public void applyReply(CharacterReplyEntity reply,
+                           CharacterReplyEvaluation.Verdict verdict) {
+        var dimension = dimensionRepository.findByCreatedByAndKey(reply.getCreatedBy(), reply.getDimensionKey()).orElseThrow();
+        CharacterClaimEntity claim;
+        if (reply.getClaimId() != null) {
+            claim = claimRepository.findByIdAndCreatedBy(reply.getClaimId(), reply.getCreatedBy()).orElseThrow();
+            if (!ACTIVE.equals(claim.getStatus())) throw new SystemRuntimeErrorException(SystemMessage.error("CHARACTER_REPLY_SOURCE_CHANGED").build());
+        } else {
+            claim = new CharacterClaimEntity();
+            claim.setCreatedBy(reply.getCreatedBy()); claim.setDimensionId(dimension.getId());
+            claim.setConfidence(new BigDecimal("0.50")); claim.setStatus(ACTIVE);
+            claim.setProposedBy("user"); claim.setSensitive(true);
+            claim.setEvidence(new ClaimEvidenceEnvelope(List.of()));
+            claim.setUserFeedback(new ClaimFeedbackEnvelope(List.of()));
+            claim.setConfidenceHistory(new ClaimConfidenceHistoryEnvelope(List.of()));
+        }
+        Instant now = Instant.now();
+        if ("WITHDRAWN".equals(verdict.outcome())) claim.setStatus(RETIRED);
+        else claim.setText("Saját beszámolód szerint: " + CharacterReplyService.flat(verdict.revisedText())
+                .replaceFirst("^Saját beszámolód szerint[: ,]*", ""));
+        var evidence = new ArrayList<>(claim.getEvidence().refs());
+        evidence.add(new ClaimEvidenceEnvelope.Ref("character_reply", reply.getId().toString(), "felhasználói önbeszámoló"));
+        claim.setEvidence(new ClaimEvidenceEnvelope(evidence));
+        var feedback = new ArrayList<>(claim.getUserFeedback().events());
+        feedback.add(new ClaimFeedbackEnvelope.Event("PONTOSITOM", reply.getText(), now));
+        claim.setUserFeedback(new ClaimFeedbackEnvelope(feedback));
+        claim.setConfidenceHistory(appendHistory(claim.getConfidenceHistory(), claim.getConfidence(),
+                "felhasználói pontosítás: " + verdict.reason(), now));
+        claim.setUpdatedAt(now);
+        claimRepository.saveAndFlush(claim);
+        reply.setClaimId(claim.getId());
+    }
 
     /** Applies every ACCEPTED ruling as a row change; rejected rulings leave no trace. */
     @Transactional
@@ -132,7 +179,7 @@ public class ClaimLifecycle {
     private ConferenceOutcomeEnvelope.Change applyMove(UUID owner, ClaimRuling ruling, boolean up) {
         ClaimProposal proposal = ruling.proposal();
         Optional<CharacterClaimEntity> found =
-                claimRepository.findByIdAndCreatedByAndStatus(proposal.claimId(), owner, ACTIVE);
+                lockActiveClaim(proposal.claimId(), owner);
         if (found.isEmpty()) {
             log.warn("{} claim skipped for owner {} — unknown/foreign claim {}",
                     up ? "UP" : "DOWN", owner, proposal.claimId());
@@ -158,7 +205,7 @@ public class ClaimLifecycle {
     private ConferenceOutcomeEnvelope.Change applyRetire(UUID owner, ClaimRuling ruling) {
         ClaimProposal proposal = ruling.proposal();
         Optional<CharacterClaimEntity> found =
-                claimRepository.findByIdAndCreatedByAndStatus(proposal.claimId(), owner, ACTIVE);
+                lockActiveClaim(proposal.claimId(), owner);
         if (found.isEmpty()) {
             log.warn("RETIRE claim skipped for owner {} — unknown/foreign claim {}", owner, proposal.claimId());
             return null;
@@ -173,6 +220,12 @@ public class ClaimLifecycle {
         String dimensionKey = dimensionKeyOf(entity);
         return new ConferenceOutcomeEnvelope.Change("CLAIM_RETIRED", dimensionKey,
                 entity.getId().toString(), proposal.text());
+    }
+
+    private Optional<CharacterClaimEntity> lockActiveClaim(UUID id, UUID owner) {
+        var found = claimRepository.lockOwned(id, owner);
+        found.ifPresent(claim -> entityManager.refresh(claim, LockModeType.PESSIMISTIC_WRITE));
+        return found.filter(claim -> ACTIVE.equals(claim.getStatus()));
     }
 
     private String dimensionKeyOf(CharacterClaimEntity claim) {

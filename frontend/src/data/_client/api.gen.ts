@@ -4010,6 +4010,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Owned contextual reply thread, oldest first */
+        get: operations["listCharacterReplies"];
+        put?: never;
+        /** Save a reply before asynchronous evaluation; clientRequestId deduplicates retries */
+        post: operations["createCharacterReply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/replies/{replyId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry failed or interrupted processing without duplicating the reply */
+        post: operations["retryCharacterReply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/diagnosis": {
         parameters: {
             query?: never;
@@ -9599,6 +9634,38 @@ export interface components {
             }[];
             dimensions: components["schemas"]["DayDimension"][];
         };
+        CharacterReplyCreateRequest: {
+            /** @enum {string} */
+            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            /** Format: uuid */
+            sourceId: string;
+            /** @default 0 */
+            sourceIndex: number;
+            text: string;
+            /** Format: uuid */
+            clientRequestId: string;
+        };
+        CharacterReplyResponse: {
+            /** @enum {string} */
+            sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            /** Format: uuid */
+            sourceId: string;
+            /** @default 0 */
+            sourceIndex: number;
+            /** Format: uuid */
+            id: string;
+            sourceText: string;
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+            authorName: string;
+            expertKey?: string | null;
+            /** @enum {string} */
+            status: "SAVED" | "PROCESSING" | "FAILED" | "NEEDS_CLARIFICATION" | "COMPLETED";
+            /** @enum {string|null} */
+            outcome?: "UPDATED" | "WITHDRAWN" | "UNCHANGED" | "NEEDS_CLARIFICATION" | null;
+            outcomeText?: string | null;
+        };
         CharacterClaimDto: {
             /** Format: uuid */
             id: string;
@@ -9668,6 +9735,16 @@ export interface components {
             revisions: components["schemas"]["CharacterPortraitRevisionDto"][];
         };
         CharacterFeedItem: {
+            evidence?: {
+                kind: string;
+                label: string;
+                refId?: string | null;
+            }[];
+            /** @enum {string} */
+            sourceType?: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+            /** Format: uuid */
+            sourceId?: string;
+            sourceIndex?: number;
             /** @enum {string} */
             kind: "OBSERVATION" | "CONFERENCE_CHANGE";
             /** Format: date-time */
@@ -9761,6 +9838,7 @@ export interface components {
              */
             deliberationSource?: "STORED" | "DERIVED" | null;
             changes: {
+                claimId?: string | null;
                 kind: string;
                 dimensionKey?: string | null;
                 summary: string;
@@ -22399,6 +22477,148 @@ export interface operations {
                 };
             };
             /** @description No such conference for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listCharacterReplies: {
+        parameters: {
+            query: {
+                sourceType: "OBSERVATION" | "CLAIM" | "CONFERENCE_CHANGE";
+                sourceId: string;
+                sourceIndex?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable replies including processing outcomes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterReplyResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown or foreign source or reply */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createCharacterReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterReplyCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved or existing reply */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterReplyResponse"];
+                };
+            };
+            /** @description Invalid text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown or foreign source or reply */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Idempotency key reused for different content */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    retryCharacterReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Same durable reply; completed replies remain unchanged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterReplyResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown or foreign source or reply */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -1,5 +1,19 @@
 # Titanium production rebuild — feature coverage register
 
+> **CLOSED 2026-09-21 — the direction this register served was reversed.** The Titanium skin
+> was rejected on 2026-09-17 (owner decision, epic `mezo-ju4j6`), and the visszaöltöztetés
+> returned the app to the restored Mozaik/Clay world. **The FUNCTIONALITY this register
+> guarded was kept in full** — that was the whole point of the rollback, and every re-dress
+> slice closed with a reverse parity checklist proving it, pasted into its own bd issue.
+>
+> **What this file is now:** a *parity source*, not a plan. Read it to check that a feature
+> shipped during the Titanium period (2026-09-09 → 2026-09-17) still has a home — never to
+> decide what something should look like. For looks, the canon is
+> [`2026-09-17-restored-world-style-bible.md`](2026-09-17-restored-world-style-bible.md).
+>
+> **Do not add rows.** The `UNKNOWN` baselines below were never resolved and never will be:
+> they belonged to a rebuild that stopped. A new feature area gets its own spec, not a row here.
+
 This is the master discovery register for page-by-page production redesign. It is product coverage
 evidence, not the implementation task tracker; bd owns tasks and dependencies. The list is seeded
 from every feature block in `docs/CODEMAP.md` on 2026-09-10 and must be refreshed from the generated
@@ -132,3 +146,26 @@ Before prototype work, append a short record to the page-specific document:
 
 Prototype approval freezes these decisions for implementation. New evidence can reopen a row, but
 Claude must surface the contradiction rather than silently changing scope.
+
+---
+
+## Reversal outcome (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21)
+
+The epic's own closure record, so this file states its own ending rather than trailing off.
+
+| Check | Outcome |
+| --- | --- |
+| Skin | **Rolled back.** Every `*-titanium` prototype.css section is re-dressed or renamed; `grep -in titan frontend/src/styles/prototype.css` returns prose/provenance only. |
+| Functionality | **Kept in full.** Nothing shipped in the Titanium period was reverted — the epic's rule was forward-fix only. Per-slice reverse parity checklists live on beads `mezo-ju4j6.3`–`.19`. |
+| Scope class | Skin + naming + docs. No API, data, route or behaviour change in any slice. |
+| Guard | Each re-dressed block carries a `prototypeCssStructure.test.ts` describe asserting its section markers, its class family and the materials it banished; `mezo-ju4j6.19` added the §3.4 ranking guards on top. |
+| Coverage of this register's rows | Not re-decided. The rows stayed `UNKNOWN` because the rebuild they scoped was abandoned, not completed. |
+
+**Known surfaces the rollback did NOT reach**, recorded here so the gap is not mistaken for
+completeness — each has its own bd issue:
+
+- the quick-log surface (`/nap/gyors` + the FAB grid) and the `CaptureSculpture` art family it
+  shares with the capture sheets — still Titanium-era, still named `quicklog-titanium`;
+- the level-up overlay (`mezo-n6yqh`) — still Titanium type, still emoji-based;
+- emoji still rendered on a few Nap/Én surfaces (`Island`, `ChainEditSheet`, `GoalRecept`),
+  which style bible §2.3 forbids.

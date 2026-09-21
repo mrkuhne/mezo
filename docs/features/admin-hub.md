@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-09
+updated: 2026-09-21
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -443,6 +443,8 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 (`node scripts/gen-codemap.mjs`), visual goldens for the desktop mosaic surfaces.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`features/admin`) moved after this doc, in the shell strip re-dress (`mezo-ju4j6.3`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **Read-only, no export, no new role** — see [ADR 0038](../decisions/0038-admin-hub-cross-user-reads.md)
   for the full rationale and the rejected alternatives (per-feature admin aggregator services,

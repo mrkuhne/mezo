@@ -906,3 +906,103 @@ breathing glow and five accent glows left with them. Four decisions are worth ca
 
 **Owner-facing decision in the same pass:** `TrainWeekPage` wore `tone="gold"` while every accent on
 it was Train coral. Changed to `tone="coral"` — the one markup edit in the slice (A.2 rule 1).
+
+### C.2 Phase 7c addenda (`mezo-ju4j6.13`) — Gyakorlatok + sport + ceremony
+
+The last three Titanium blocks in Train (`train gyakorlatok` `.gy-*`, `train sport` `.sp-*`,
+`train ceremony` `.cer-*`) came off together. This was the **first slice to run §3.4 the way
+§3.4 asks** — the ranking was named, drawn in a before/after lab and approved by the owner
+*before* any CSS moved — and it is the reference for how a re-dress slice should open. Five
+things are worth carrying forward:
+
+18. **A list is not a set of heroes.** The catalogue's forty rows, the vitrine's medals and the
+   ceremony's muscle rows all dropped to the **house row** (`--surface-1` + `inset 0 0 0 1px
+   var(--border-subtle)`), because each screen already had a louder surface above them — the
+   poster, the section head, the kcal tile. What survives of the per-item colour is a **3px
+   rail** in the row's own `box-shadow` inset. A row is allowed exactly one coloured mark.
+19. **One hero, then a pair.** Three equal stat cards is the flat pass wearing a different
+   layout. `.gy-recs` became a 2-column grid where `:first-child` spans both — a wash tile with
+   the §3.2 numeral at 44px/200 — and the two lesser records sit beside each other one grade
+   down. The page now reads **1-2**; it used to read 1-1-1. With a `@media (max-width: 360px)`
+   step back to one column and a 44 → 38px numeral (A.2 rule 5).
+20. **A runtime-hue formula must NOT be hoisted into a shared custom property.** A custom
+   property's own `var()`s are substituted **on the element that declares it**, so a
+   `--tile-wash: linear-gradient(… var(--mus-color, var(--dv-coral)) …)` declared on a common
+   ancestor freezes at its *fallback* hue, and every tile beneath it comes out coral regardless
+   of the hue it sets on itself. Measured in the lab, where the sage minutes tile rendered
+   salmon. Write the §2.2 A wash + lift formula out **per rule** — which C.1 rule 17 already
+   wanted for a different reason.
+21. **A colour vocabulary is not a skin when the art is identical.** The sport picker's eleven
+   tiles were the one place A.5 rule 10 ("a door gets a shield") would have made things *worse*:
+   every sport's `art` is the same clay ball (`sports.ts` `i-sport`), so the hue is the only
+   thing that tells Foci from Úszás. They became §2.2 **B cells** — flat colour, no shadow, no
+   gradient — one grade under a wash and one over a shield, with the screen's question as the
+   only loud element. The eleven hues themselves moved off the Titanium neon set onto the
+   restored palette (owner, 2026-09-20); eleven is more than the six `--dv-*` accents, so the
+   deeper clay stops (`#4E6B42`, `#E05535`, `#9C5F33`, `#8C7F72`, `#2E6E96`) fill the rest.
+22. **A selector with no consumer is a page with no style.** `.sp-foot`'s „Naplózom" CTA was
+   reached by neither `.gl-card .wo-close-cta` nor `.cer-cta .wo-close-cta`, so once Phase 2
+   stripped the dark scope it rendered as a **bare unstyled button** — and nothing caught it,
+   because every guard asked what the CSS *says*, not what the page *gets*. It is the third arm
+   of that rule now. When a slice inherits a scoped rule, grep every consumer of the class for
+   ancestors the scope does not cover.
+
+**The ceremony's material, restored.** §5 in full: a `--mz-tone-gold → --canvas` ground, the
+`--halo-amber` band behind the hero, the Ritmus stone bar **unchanged** (it was already the right
+material) minus its two neon glows, counters demoted to icon-shield + numeral, and the kcal tile
+in **sage** — it is Fuel's number, and A.2 rule 1 says the same quantity wears the same hue
+everywhere. The two ceremonies in the app (`fuel-ceremony` `.fcx-*` and this one) are now
+deliberately one material.
+
+**Open, not this slice's:** the gym close ceremony still cannot be driven to its end in mock
+(`mezo-p30l2`), so only the *sport* ceremony was verified live; and all eleven sports share one
+clay ball for art, which is why the hue has to work as hard as it does (`mezo-ju4j6.16` territory).
+
+---
+
+## Appendix D — the depth & focus sweep (`mezo-ju4j6.19`)
+
+The §3.4 retro-fit across every screen re-dressed **before** §3.4 existed. No new materials, no
+DOM change: each screen's surfaces were re-ranked inside the existing three grades. What it
+settled, screen by screen — and, just as usefully, what it deliberately left alone.
+
+| Screen | The ONE thing it says (stays loud) | Demoted, and to what |
+| --- | --- | --- |
+| Fuel · étkezés-értékelés | the score, on its halo | the six dimension tiles → §2.2 **B cells** |
+| Fuel · Kiegészítők | the ring + KÖVETKEZIK | the four time bands → **house rows**; the wash returns on the one band that is *due* |
+| Fuel · Trendek | the week picture (halo + day bars) | the three glance tiles → **cells**; the weekday/weekend rows and the day-glass dimension rows → **house rows** |
+| Fuel · Konyha | the Receptműhely | the two captures → **shields**; Receptek + Kamra → **house cards** (their numerals stay) |
+| Train · in-workout list | the work still ahead | `.wo-card.is-complete` → **house card**, its progression banner with it |
+| Train · progression banner | — | `.pobanner` → §2.2 **B cell** everywhere (it lives *inside* a wash tile) |
+| Shell · DomainSwitcher | where you are standing now | the other four domains → **house rows** |
+
+Four rules came out of it:
+
+23. **The hierarchy can be a state, not a place.** The in-workout list has no privileged
+   exercise — every card carries its own cursor — so there was nothing to promote. The axis
+   that *does* exist is **time**: work still ahead keeps the wash, finished work drops a grade.
+   The page then re-ranks itself as the session goes, and what stays loud is always what is
+   left to do. Same move on Fuel · Kiegészítők, where the wash marks the band that is *due*.
+   When a screen has no hero, look for the state that separates its items and rank by that.
+24. **A wash tile inside a wash tile makes both disappear.** `.pobanner` sat bordered and
+   tinted on top of `.wo-card`'s wash. Anything nested inside a §2.2 A surface is a **cell** or
+   a **shield** — never a second washed, bordered box. (§3.4 says this about screens; it is
+   just as true about one card.)
+25. **Re-ranking edits the guard that froze the old ranking.** Two slice guards asserted the
+   flat pass as a *requirement* — 5c pinned `.fsx-band.is-due`'s exact one-line rule, and 5d
+   demanded that every Konyha tile carry a `--mz-shadow-*` lift. A ranking sweep must rewrite
+   those in the same commit, or a guard written before the rule outranks the rule. Both now
+   assert the *ranking* (one lifted tile, the rest below it) instead of the uniformity.
+26. **An explicit owner decision outranks the sweep — say so, don't silently reverse it.**
+   Fuel · Mai's meal blocks are five wash tiles, and the `fuel-mai` block records *why*: the
+   owner rejected an earlier pass for not separating them ("saját mosás, saját árnyék, 16px
+   hézag"). The screen already has three grades on it (halo hero → washed blocks → shield
+   door), so it was left as it is. The sweep reports that; it does not overrule it.
+
+**Also fixed in passing** (A.2 rule 5, found by the 320px check the sweep mandates): Fuel ·
+Kiegészítők' hero put a 112px ring and the KÖVETKEZIK row side by side, which crushed the
+product name onto three lines at 320px. They stack there now, the ring keeping its real size.
+
+**Left for `mezo-ju4j6.16`:** `ProgressionBanner` still writes a literal „⚡" into its label
+(§2.3: no emoji, ever), and the level-up overlay is still full of them. Both are DOM edits, and
+this task is a CSS ranking sweep.

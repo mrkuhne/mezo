@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -18,7 +18,7 @@ related: [_platform-data-layer, _platform-design-system, today, fuel]
 
 # Train — Feature Documentation
 
-> The strength + conditioning area (plan, execute, log, analyze). **Status: ✅ done (FE mock + FE real + Spring Boot backend)** — the only gaps are clearly-flagged Phase-3 AI/analysis features. Lives under the **`Edzés`** domain in the Titanium bottom `TabBar` (`app/navModel.ts`'s `train` row) — **four owner-approved tabs (2026-09-12, Train Titanium T4, `mezo-88iwa.5`)**: `Mai` (`/train/mai`) · `Terv` (`/train/mesocycles`) · `Terhelés` (`/train/week`) · `Gyakorlatok` (`/train/exercises`). **The six-tile Mozaik hub is retired** — `/train` itself has no face of its own any more; it index-redirects to `Mai` (below). The nine-tab `SubNavDropdown` shell and its `tabs.ts` were already gone before this ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md), [ADR 0033](../decisions/0033-mozaik-2-tile-language.md)); Train Titanium T4 retired the hub that replaced them.
+> The strength + conditioning area (plan, execute, log, analyze). **Status: ✅ done (FE mock + FE real + Spring Boot backend)** — the only gaps are clearly-flagged Phase-3 AI/analysis features. Lives under the **`Edzés`** domain in the docked bottom `TabBar` (`app/navModel.ts`'s `train` row) — **four owner-approved tabs (2026-09-12, Train Titanium T4, `mezo-88iwa.5`)**: `Mai` (`/train/mai`) · `Terv` (`/train/mesocycles`) · `Terhelés` (`/train/week`) · `Gyakorlatok` (`/train/exercises`). **The six-tile Mozaik hub is retired** — `/train` itself has no face of its own any more; it index-redirects to `Mai` (below). The nine-tab `SubNavDropdown` shell and its `tabs.ts` were already gone before this ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md), [ADR 0033](../decisions/0033-mozaik-2-tile-language.md)); Train Titanium T4 retired the hub that replaced them.
 
 ---
 
@@ -49,7 +49,7 @@ Train is the largest mezo domain: the area for planning and executing strength w
 
 Recurring gym and sport schedules are edited at `/settings/train/gym` and `/settings/train/sport`. TrainWeek no longer carries the Időpontok chip; the sport empty-state setup CTA opens the canonical editor. Existing workout logging, plan and one-off event editing stay here. Schedule sheets await persistence, retain drafts on errors, and mock changes propagate through the shared cache. See [central settings](settings.md).
 
-**Quick sport capture appearance (`mezo-62xey`).** `SportLogSheet` shares the Titanium capture header, metallic sport sculpture and two-row numeric selectors. Its three supported sport branches, editable duration/count controls, RPE, volleyball shoulder load, note and mutation payload remain unchanged. The fabricated volleyball-only advice block is removed. The full `/train/sport/log` flow and the workout-session routes are unchanged.
+**Quick sport capture appearance (`mezo-62xey`).** `SportLogSheet` shares the capture header, its sport sculpture and two-row numeric selectors. (That capture family is one of the three surfaces the 2026-09-17 rollback did not reach — it still wears Titanium-era art; see the design_2.0 index.) Its three supported sport branches, editable duration/count controls, RPE, volleyball shoulder load, note and mutation payload remain unchanged. The fabricated volleyball-only advice block is removed. The full `/train/sport/log` flow and the workout-session routes are unchanged.
 
 
 ### The four-tab navigation (`app/navModel.ts`'s `train` row, `/train` redirect, Train Titanium T4, `mezo-88iwa.5`)
@@ -69,7 +69,9 @@ Recurring gym and sport schedules are edited at `/settings/train/gym` and `/sett
 
 **Only `/train/session` stays outside the tab bar** (`hideChrome` in `AppLayout.tsx`) — the active-workout flow is the domain's one genuinely chrome-free surface. Every other deep route listed above (`/train/review/:workoutId`, `/train/mesocycles/new`, `/train/mesocycles/:id` the run page, `/train/mesocycles/:id/days/:day`, `/train/mesocycles/:id/week` and `.../week/:muscle`, `/train/mesocycles/:id/overview` (redirects to `.../week`), `/train/mesocycles/:id/report`, `/train/mesocycles/compare`, `/train/mesocycles/templates/:id`, `/train/futas/:id`, `/train/custom/{new,:id}`, `/train/sport`, `/train/medals`) DOES show the `TabBar` — which is exactly why each of them needs (and, per the entry rows added below, now has) a reachable `owns`-covered entry point from its owning tab's face: a page a user can land on with the tab bar showing but no way back to it is a dead end, not a full-screen sibling.
 
-**Titan-dark scope extended over the whole domain** (`AppLayout.tsx`'s `titanDark` gate, same slice): every `/train/*` route now carries the prototype's dark-graphite skin, alongside the two Nap routes and the whole Fuel domain — `titanDark = […] || pathname.startsWith('/train')`. The gate sits on the shell (header + `TabBar` + portaled sheets), not on individual pages, so nothing inside the domain — including `hideChrome` screens like `/train/session`, which stays dark while running — can flash back to light; `AppLayout.titanDark.test.tsx`'s containment rule ("egyetlen más útvonalra sem szabad átszivárognia") asserts `/mezo` and `/me` stay unaffected.
+**Titan-dark scope — GONE** (`mezo-ju4j6.3`, 2026-09-17). The Titanium period put a `titanDark` gate on `AppLayout.tsx` that forced the prototype's dark-graphite skin over every `/train/*` route (plus two Nap routes and all of Fuel). The design direction was reversed on 2026-09-17 and the scope class was stripped in Phase 2 of the rollback: the domain is **light-first and theme-aware** again, like every other surface. `AppLayout.titanDark.test.tsx` was replaced by its inverse, `AppLayout.lightFirst.test.tsx`, which asserts the class cannot come back. The `hideChrome` rule for `/train/session` above is unaffected — that is geometry, not skin.
+
+**The whole domain is re-dressed to the restored Mozaik/Clay world** (`mezo-ju4j6.11`/`.12`/`.13`, 2026-09-19 → 09-20, then ranked app-wide by `mezo-ju4j6.19`): Mai + the in-workout list, Terv + Terhelés, and Gyakorlatok + the sport flow + both ceremonies. **Behaviour was frozen in every one of those slices** — they are skin, naming and CSS-ranking changes only, each closed with a reverse parity checklist on its bead. Everything this document says about what Train *does* therefore still holds; what it says about how Train *looks* is the style bible's business ([`docs/design_2.0/2026-09-17-restored-world-style-bible.md`](../design_2.0/2026-09-17-restored-world-style-bible.md), Appendix C + C.1 + C.2 cover this domain).
 
 **`GymPage` is a thin alias, deliberately kept** (`pages/GymPage.tsx`, `mezo-d20.3.2` + `mezo-d20.9.1`). Gym's content folded into `Heti` (below); the file survives as `export function GymPage() { return <TrainWeekPage /> }` — rendering `TrainWeekPage` directly, **not** a client `navigate`, so the URL is untouched while the content is unified. It exists because `/train/gym` is still a **live navigation target** for three real callers — `MesoStartSheet`'s post-start redirect, `MesocyclePlannerPage`'s post-create redirect, and `CustomWorkoutBuilderPage`'s `useBackNav` fallback — plus any PWA bookmark. Removing the alias means rewriting those three call sites, which the F8 cleanup deliberately left alone.
 

@@ -8,7 +8,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
-import { PageHead } from '@/shared/ui/mozaik'
+import { CharacterHeader } from '@/features/character/components/CharacterHeader'
 import { useCharacterOverview } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
@@ -21,7 +21,7 @@ export function DimensionsPage() {
 
   if (overview == null) {
     return (
-      <div className="kr-hub">
+      <div className="kr-hub kr-social">
         <div className="kr-degraded">
           A karakter-dosszié jelenleg nem elérhető — ez nem hiba, csak a funkció ki van kapcsolva.
         </div>
@@ -30,14 +30,14 @@ export function DimensionsPage() {
   }
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
+    <div className="kr-hub kr-social">
+      <CharacterHeader active="profile" />
       <div className="mz-page-hero">
-        <div className="mz-hero-nm">Dimenziók</div>
+        <div className="mz-hero-nm">Amit eddig tudunk rólad</div>
         {/* I3 (final review): CHAPTER dimensions open/retire dynamically — "mind a nyolc" was a
            hardcoded lie the moment the chapter count moved off 1. Derived from the live
            overview instead. */}
-        <div className="mz-hero-sb">{overview.dimensions.length} dimenzió, egy helyen</div>
+        <div className="mz-hero-sb">{overview.dimensions.length} témakör · mindegyik pontosítható</div>
       </div>
       <div className="kr-dimlist">
         {overview.dimensions.map((d, i) => {

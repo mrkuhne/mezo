@@ -392,16 +392,16 @@ export const MOCK_DIMENSIONS: Record<string, CharacterDimensionResponse> = Objec
 // exercised against a real write-lag. CONFERENCE_CHANGE items are untouched — their `at` is a
 // conference's own `generatedAt`, a different real timestamp with no such lag.
 export const MOCK_FEED: CharacterFeedItem[] = [
-  { kind: 'OBSERVATION', at: '2026-08-31T02:52:00Z', expertKey: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' }, // observed Aug 30
-  { kind: 'OBSERVATION', at: '2026-08-31T02:50:00Z', expertKey: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' }, // observed Aug 30
-  { kind: 'CONFERENCE_CHANGE', at: '2026-08-30T07:00:00Z', expertKey: null, dimensionKeys: [], text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva' },
-  { kind: 'OBSERVATION', at: '2026-08-30T02:52:00Z', expertKey: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' }, // observed Aug 29
-  { kind: 'OBSERVATION', at: '2026-08-30T02:50:00Z', expertKey: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' }, // observed Aug 29
-  { kind: 'OBSERVATION', at: '2026-08-28T02:52:00Z', expertKey: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' }, // observed Aug 27
-  { kind: 'OBSERVATION', at: '2026-08-28T02:50:00Z', expertKey: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' }, // observed Aug 27
-  { kind: 'CONFERENCE_CHANGE', at: '2026-08-27T07:00:00Z', expertKey: null, dimensionKeys: ['recovery'], text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.' },
-  { kind: 'OBSERVATION', at: '2026-08-25T02:52:00Z', expertKey: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' }, // observed Aug 24
-  { kind: 'OBSERVATION', at: '2026-08-25T02:50:00Z', expertKey: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }, // observed Aug 24
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000001', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-31T02:52:00Z', expertKey: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' }, // observed Aug 30
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000002', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-31T02:50:00Z', expertKey: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' }, // observed Aug 30
+  { sourceType: 'CONFERENCE_CHANGE', sourceId: 'w2', sourceIndex: 0, kind: 'CONFERENCE_CHANGE', at: '2026-08-30T07:00:00Z', expertKey: null, dimensionKeys: [], text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva' },
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000004', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-30T02:52:00Z', expertKey: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' }, // observed Aug 29
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000005', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-30T02:50:00Z', expertKey: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' }, // observed Aug 29
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000006', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-28T02:52:00Z', expertKey: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' }, // observed Aug 27
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000007', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-28T02:50:00Z', expertKey: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' }, // observed Aug 27
+  { sourceType: 'CONFERENCE_CHANGE', sourceId: 'w2', sourceIndex: 1, kind: 'CONFERENCE_CHANGE', at: '2026-08-27T07:00:00Z', expertKey: null, dimensionKeys: ['recovery'], text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.' },
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000009', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-25T02:52:00Z', expertKey: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' }, // observed Aug 24
+  { sourceType: 'OBSERVATION', sourceId: '00000000-0000-0000-0000-000000000010', sourceIndex: 0, kind: 'OBSERVATION', at: '2026-08-25T02:50:00Z', expertKey: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }, // observed Aug 24
 ]
 
 // KONZ (prototype's `var KONZ`) — conference summaries, newest first.

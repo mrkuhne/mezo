@@ -39,6 +39,7 @@ public class FeaturesConfiguration {
     public static final String DAILY_SUMMARY_JOB_SWITCH = "mezo.techcore.cron.daily-summary-job.enabled";
 
     /** Karakter nightly observation pass (mezo-1gim.3) — the expert-team cron (spec §6). */
+    public static final String CHARACTER_REPLY_JOB_SWITCH = "mezo.techcore.cron.character-reply-job.enabled";
     public static final String CHARACTER_OBSERVATION_JOB_SWITCH =
             "mezo.techcore.cron.character-observation-job.enabled";
 
