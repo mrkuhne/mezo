@@ -149,9 +149,10 @@ test('/mezo/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, 
   expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
 })
 
-test('/mezo/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
+test('/mezo/karakter/feed opens the social feed navigation and filters', async () => {
   renderApp('/mezo/karakter/feed')
-  expect(await screen.findByText('A csapat gondolatai. A te történeted.')).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('button', { name: 'Beszélgetések' })).toBeInTheDocument()
 })
 
 test('/mezo/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {

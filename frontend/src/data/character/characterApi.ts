@@ -21,6 +21,8 @@ export type CharacterRunSummary = components['schemas']['CharacterRunSummary']
 export type CharacterRunObservationSignal = components['schemas']['CharacterRunObservationSignal']
 export type CharacterRunObservation = components['schemas']['CharacterRunObservation']
 export type CharacterRunResponse = components['schemas']['CharacterRunResponse']
+export type CharacterCouncilStatusResponse = components['schemas']['CharacterCouncilStatusResponse']
+export type CharacterClaimRevisionDto = components['schemas']['CharacterClaimRevisionDto']
 
 /**
  * The one shared confidence -> human-word mapping, mirrored 1:1 from the backend's
@@ -41,6 +43,9 @@ export type CharacterReplySource = Pick<CharacterReplyCreateRequest, 'sourceType
 const BASE = '/api/character'
 
 export const characterApi = {
+  councilStatus: (): Promise<CharacterCouncilStatusResponse> => apiFetch(`${BASE}/council`),
+  claimRevisions: (claimId: string): Promise<CharacterClaimRevisionDto[]> => apiFetch(`${BASE}/claims/${encodeURIComponent(claimId)}/revisions`),
+  undoRevision: (id: string): Promise<CharacterClaimRevisionDto> => apiFetch(`${BASE}/revisions/${encodeURIComponent(id)}/undo`, { method: 'POST' }),
   replies: (source: CharacterReplySource): Promise<CharacterReplyResponse[]> => apiFetch(`${BASE}/replies?${new URLSearchParams({ sourceType: source.sourceType, sourceId: source.sourceId, sourceIndex: String(source.sourceIndex) })}`),
   reply: (body: CharacterReplyCreateRequest): Promise<CharacterReplyResponse> => apiFetch(`${BASE}/replies`, { method: 'POST', body: JSON.stringify(body satisfies CharacterReplyCreateRequest) }),
   retryReply: (id: string): Promise<CharacterReplyResponse> => apiFetch(`${BASE}/replies/${id}/retry`, { method: 'POST' }),

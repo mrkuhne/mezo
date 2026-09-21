@@ -62,7 +62,7 @@ export function CsapatPage() {
                 className={`kr-pdisc${isChair ? ' orb' : ''}`}
                 style={!isSkeptic && !isChair ? ({ '--pc': color } as React.CSSProperties) : undefined}
               >
-                <PersonaOrb expertKey={e.key} size={36} />
+                <PersonaOrb expertKey={e.key} size={64} />
               </div>
               <div className="kr-pinfo">
                 <div className="kr-pnm">{e.displayName}</div>

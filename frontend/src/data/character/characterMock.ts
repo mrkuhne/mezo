@@ -5,6 +5,7 @@
 // displayed word through confidenceWord()'s 0.75/0.5 thresholds — never the word itself.
 import type {
   CharacterClaimDto,
+  CharacterClaimRevisionDto,
   CharacterConferenceResponse,
   CharacterConferenceSummary,
   CharacterDimensionResponse,
@@ -1294,6 +1295,8 @@ function nightlyRun(day: number): CharacterRunSummary {
     return {
       id: `ejsz-${day}`,
       kind: 'NIGHTLY',
+      status: 'SUCCESS',
+      failureCount: 0,
       day: iso,
       observationCount: 0,
       callCount: 0,
@@ -1306,6 +1309,8 @@ function nightlyRun(day: number): CharacterRunSummary {
   return {
     id: `ejsz-${day}`,
     kind: 'NIGHTLY',
+    status: 'SUCCESS',
+    failureCount: 0,
     day: iso,
     observationCount: chains.length,
     // One LLM call per fired expert (the DTO's "honest only for NIGHTLY" callCount rule) —
@@ -1432,4 +1437,32 @@ export const MOCK_RUN_DETAIL: Record<string, CharacterRunResponse> = {
   'run-w2': WEEKLY_DETAIL,
   'run-m1': MONTHLY_DETAIL,
   'run-b0': BOOTSTRAP_DETAIL,
+}
+
+// The social fixture reuses an existing stored debate, with its exact author and comments.
+// Its own daily edition makes this the newest mock story without redating historical rows.
+const SOCIAL_CLAIM = MOCK_DIMENSIONS.recovery.claims[0]
+const SOCIAL_PROPOSAL = { ...DELIBERATION_W2[0].items[0], text: SOCIAL_CLAIM.text }
+const SOCIAL_EDITION: CharacterConferenceResponse = {
+  id: 'daily-social', kind: 'DAILY', generatedAt: '2026-08-31T07:00:00Z', transcript: [],
+  deliberationSource: 'STORED',
+  deliberation: [{ ...DELIBERATION_W2[0], items: [{ ...SOCIAL_PROPOSAL, claimId: SOCIAL_CLAIM.id }] }],
+  changes: [{ claimId: SOCIAL_CLAIM.id, kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: SOCIAL_PROPOSAL.text }],
+}
+MOCK_CONFERENCE_DETAIL[SOCIAL_EDITION.id] = SOCIAL_EDITION
+MOCK_FEED.unshift({ kind: 'CONFERENCE_POST', sourceType: 'CONFERENCE_ITEM', sourceId: SOCIAL_EDITION.id, sourceIndex: SOCIAL_PROPOSAL.index, at: SOCIAL_EDITION.generatedAt, expertKey: SOCIAL_PROPOSAL.expertKey, dimensionKeys: ['recovery'], text: SOCIAL_PROPOSAL.text })
+
+/** Read-only historical change for visual QA; mock mode never offers a real undo mutation. */
+export const MOCK_CLAIM_REVISIONS: Record<string, CharacterClaimRevisionDto[]> = {
+  [SOCIAL_CLAIM.id]: [{
+    id: 'social-revision', claimId: SOCIAL_CLAIM.id, operation: 'UP',
+    beforeText: SOCIAL_CLAIM.text, afterText: SOCIAL_CLAIM.text,
+    beforeConfidence: .6, afterConfidence: SOCIAL_CLAIM.confidence,
+    beforeStatus: 'ACTIVE', afterStatus: 'ACTIVE',
+    beforeDimensionKey: 'recovery', afterDimensionKey: 'recovery',
+    beforeObservedFrom: '2026-07-27', beforeObservedTo: '2026-08-23',
+    afterObservedFrom: '2026-07-27', afterObservedTo: '2026-08-30',
+    createdAt: SOCIAL_EDITION.generatedAt, canUndo: false,
+    reason: SOCIAL_PROPOSAL.chair?.reason ?? '',
+  }],
 }

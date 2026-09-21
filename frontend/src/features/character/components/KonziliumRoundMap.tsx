@@ -9,14 +9,15 @@
 // lefutott és senki nem szólt hozzá.
 // ============================================================
 import { deliberationStats } from '@/features/character/deliberationStats'
-import type { ConferenceThread } from '@/data/character/characterApi'
+import type { ConferenceThread, CharacterConferenceSummary } from '@/data/character/characterApi'
 
-// C1 (mezo-sp9w branch-review): only WEEKLY runs a cross-talk round — MONTHLY and BOOTSTRAP
+// Daily and weekly editions run a cross-talk round — MONTHLY and BOOTSTRAP
 // never do (CharacterMonthlyService / CharacterBootstrapService both assemble their stored
 // envelope with an honestly empty reaction list, exactly because there is no such round for
 // them). The WEEKLY copy is the only one allowed to say the team "megvitatja egymás
 // felvetéseit" — the other two must not promise a debate that never happens.
-const WHAT_IS: Record<'WEEKLY' | 'MONTHLY' | 'BOOTSTRAP', string> = {
+const WHAT_IS: Record<CharacterConferenceSummary['kind'], string> = {
+  DAILY: 'Naponta a csapat átnézi az új megfigyeléseket, megbeszéli a felvetéseket, és jelzi, mire jutott. Ha nincs érdemi újdonság, nem készít új történetet.',
   WEEKLY: 'Hetente a szakértői csapat átnézi az adataidat, megvitatja egymás felvetéseit, '
     + 'a Szkeptikus kikérdezi őket, és Mezo dönt arról, mi kerül be a rólad szóló dossziéba.',
   MONTHLY: 'Havonta a szakértői csapat átnézi a hónap egészét, felvetéseit a Szkeptikus '
@@ -26,7 +27,7 @@ const WHAT_IS: Record<'WEEKLY' | 'MONTHLY' | 'BOOTSTRAP', string> = {
     + 'dossziéba.',
 }
 
-export function KonziliumWhatIs({ kind }: { kind: 'WEEKLY' | 'MONTHLY' | 'BOOTSTRAP' }) {
+export function KonziliumWhatIs({ kind }: { kind: CharacterConferenceSummary['kind'] }) {
   return (
     <div className="kr-konzcard">
       <div className="kr-konzcap">Mi ez</div>

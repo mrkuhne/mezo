@@ -1,5 +1,6 @@
 import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { CharacterEvidenceSheet } from '@/features/character/sheets/CharacterEvidenceSheet'
+import { CharacterRevisionSheet } from '@/features/character/sheets/CharacterRevisionSheet'
 import { useState, type CSSProperties } from 'react'
 import { useClaimFeedback } from '@/data/hooks'
 import { useToast } from '@/shared/ui/ToastProvider'
@@ -19,6 +20,7 @@ export function ClaimTile({ claim, delayMs, withdrawn = false }: { claim: Charac
   const [status, setStatus] = useState<LocalStatus>('idle')
   const [pontOpen, setPontOpen] = useState(false)
   const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const [revisionsOpen, setRevisionsOpen] = useState(false)
 
   const word = confidenceWord(claim.confidence)
   const style = delayMs != null ? ({ '--d': `${delayMs}ms` } as CSSProperties) : undefined
@@ -48,6 +50,8 @@ export function ClaimTile({ claim, delayMs, withdrawn = false }: { claim: Charac
         <span className={`kr-confchip ${CONF_CLASS[word]}`}>{word}</span>
         <div className="kr-claim-text">{claim.text}</div>
         <div className="kr-retiredlbl">nyugdíjazva — a csapat nem viszi tovább</div>
+        <button type="button" className="kr-claim-evidence" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+        {revisionsOpen && <CharacterRevisionSheet claimId={claim.id} onClose={() => setRevisionsOpen(false)} />}
         {pontOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: claim.id, sourceIndex: 0 }} initialOpen />}
       </div>
     )
@@ -67,6 +71,8 @@ export function ClaimTile({ claim, delayMs, withdrawn = false }: { claim: Charac
         </div>
       )}
       <button type="button" className="kr-claim-evidence" onClick={() => setEvidenceOpen(true)}>Miből látszik?</button>
+      <button type="button" className="kr-claim-evidence" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+      {revisionsOpen && <CharacterRevisionSheet claimId={claim.id} onClose={() => setRevisionsOpen(false)} />}
       {pontOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: claim.id, sourceIndex: 0 }} initialOpen />}
       {evidenceOpen && <CharacterEvidenceSheet text={claim.text} expertKey={claim.proposedBy} evidence={claim.evidence.map(item => ({ sourceKind: item.kind, snippet: item.label }))} onClose={() => setEvidenceOpen(false)} onReply={() => { setEvidenceOpen(false); setPontOpen(true) }} />}
     </div>

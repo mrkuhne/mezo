@@ -1,37 +1,50 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { useCharacterExperts, useCharacterFeed } from '@/data/hooks'
 import { CharacterHeader } from '@/features/character/components/CharacterHeader'
-import { PersonaOrb } from '@/features/character/components/PersonaOrb'
+import { CharacterMorningStory } from '@/features/character/components/CharacterMorningStory'
 import { CharacterPostCard } from '@/features/character/components/CharacterPostCard'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { CharacterCouncilStatus } from '@/features/character/components/CharacterCouncilStatus'
 
 export function CharacterFeedPage() {
   const navigate = useNavigate()
   const { items, isLoading, isError, refetch } = useCharacterFeed(60)
   const { experts } = useCharacterExperts()
   const [count, setCount] = useState(12)
-  const [filter, setFilter] = useState<'all' | 'observations' | 'outcomes'>('all')
+  const [filter, setFilter] = useState<'all' | 'observations' | 'outcomes' | 'discussions'>('all')
+  const [openStory, setOpenStory] = useState(0)
+  const storyPost = useRef<HTMLDivElement>(null)
+  const reducedMotion = useReducedMotion()
+  const featured = items.find(item => item.expertKey !== 'user' && item.sourceId && item.sourceType)
+  useEffect(() => {
+    if (!openStory) return
+    storyPost.current?.focus({ preventScroll: true })
+    storyPost.current?.scrollIntoView?.({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' })
+  }, [openStory, reducedMotion])
   const visible = items.filter(
     (item) =>
       filter === 'all' ||
-      (filter === 'observations' ? item.kind === 'OBSERVATION' : item.kind === 'CONFERENCE_CHANGE'),
+      (filter === 'observations' ? item.kind === 'OBSERVATION' : filter === 'discussions' ? item.kind === 'CONFERENCE_POST' : item.kind === 'CONFERENCE_CHANGE'),
   )
   return (
     <div className="kr-hub kr-social">
       <CharacterHeader active="feed" />
-      <div className="kr-social-welcome">
-        <PersonaOrb expertKey="mezo" size={42} />
-        <div>
-          <strong>A csapat gondolatai. A te történeted.</strong>
-          <p>Olvasd el, szólj hozzá — együtt pontosítjuk, amit rólad tudunk.</p>
-        </div>
-      </div>
+      <CharacterCouncilStatus />
+      {!isLoading && !isError && featured && (
+        <CharacterMorningStory item={featured} experts={experts} onOpen={() => {
+          setFilter('all')
+          setCount(value => Math.max(value, items.indexOf(featured) + 1))
+          setOpenStory(value => value + 1)
+        }} />
+      )}
       <div className="kr-feed-tools" aria-label="Bejegyzések szűrése">
         {(
           [
             { value: 'all', text: 'Minden' },
             { value: 'observations', text: 'Megfigyelések' },
+            { value: 'discussions', text: 'Beszélgetések' },
             { value: 'outcomes', text: 'Következtetések' },
           ] as const
         ).map((option) => (
@@ -61,15 +74,18 @@ export function CharacterFeedPage() {
       ) : (
         <div className="kr-social-posts">
           {visible.slice(0, count).map((item, index) => (
-            <CharacterPostCard
+            <div
               key={
                 item.sourceId
                   ? `${item.sourceType}-${item.sourceId}-${item.sourceIndex}`
                   : `${item.at}-${index}`
               }
-              item={item}
-              experts={experts}
-            />
+              ref={item === featured ? storyPost : undefined}
+              tabIndex={-1}
+              className="kr-story-target"
+            >
+              <CharacterPostCard item={item} experts={experts} />
+            </div>
           ))}
         </div>
       )}

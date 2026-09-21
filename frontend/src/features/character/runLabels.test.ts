@@ -12,11 +12,18 @@ function run(overrides: Partial<CharacterRunSummary>): CharacterRunSummary {
     detectorKeys: [],
     expertKeys: [],
     conferenceId: null,
+    status: 'SUCCESS',
     ...overrides,
   }
 }
 
 describe('runHeroLede', () => {
+  test('failed and legacy unknown zero-count runs never claim a quiet successful night', () => {
+    expect(runHeroLede(run({ status: 'FAILED', failureCount: 2 }))).toContain('nem fejeződött be')
+    expect(runRowSubline(run({ status: 'FAILED', failureCount: 2 }))).toContain('hiányos')
+    expect(runHeroLede(run({ status: 'UNKNOWN' }))).toContain('nem igazolható')
+    expect(runRowSubline(run({ status: undefined }))).not.toContain('csendes')
+  })
   test('a quiet nightly run gets the proud QUIET_LEDE, never a fabricated sentence', () => {
     expect(runHeroLede(run({ kind: 'NIGHTLY', observationCount: 0 }))).toBe(QUIET_LEDE)
   })

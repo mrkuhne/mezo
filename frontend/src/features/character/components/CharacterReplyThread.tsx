@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { useCharacterReplies, useCharacterReplyDraft } from '@/data/hooks'
+import { useCharacterReplies, useCharacterReplyDraft, useCharacterExperts } from '@/data/hooks'
 import type { CharacterReplySource } from '@/data/character/characterApi'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
+import { CharacterExpertComment } from '@/features/character/components/CharacterExpertComment'
 
 const STATUS_LABEL = {
   SAVED: 'Válaszod mentve · feldolgozásra vár',
@@ -20,6 +21,7 @@ export function CharacterReplyThread({
   openSignal?: number
 }) {
   const { replies, pending, isLoading, isError, refetch, send, retry } = useCharacterReplies(source)
+  const { experts } = useCharacterExperts()
   const [open, setOpen] = useState(initialOpen)
   const { draft, setDraft, requestId, clearDraft } = useCharacterReplyDraft(source)
   const [error, setError] = useState('')
@@ -79,6 +81,7 @@ export function CharacterReplyThread({
               </small>
             </div>
           </div>
+          {reply.discussion?.map((reaction, index) => <CharacterExpertComment key={`${reply.id}-${index}`} reaction={reaction} experts={experts} />)}
           {reply.outcomeText && (
             <div className="kr-social-comment is-mezo">
               <PersonaOrb expertKey="mezo" size={28} />

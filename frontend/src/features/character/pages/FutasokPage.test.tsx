@@ -41,10 +41,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 
 const NIGHTLY_QUIET = (day: string): CharacterRunSummary => ({
   id: `ejsz-${day}`, kind: 'NIGHTLY', day: `2026-08-${day}`, observationCount: 0, callCount: 0,
+  status: 'SUCCESS',
   detectorKeys: [], expertKeys: [], conferenceId: null,
 })
 const NIGHTLY_SIGNAL: CharacterRunSummary = {
   id: 'ejsz-27', kind: 'NIGHTLY', day: '2026-08-27', observationCount: 2, callCount: 2,
+  status: 'SUCCESS',
   detectorKeys: ['journal-note'], expertKeys: ['pszichologus', 'taplalkozo'], conferenceId: null,
 }
 const WEEKLY: CharacterRunSummary = {

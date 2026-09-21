@@ -47,13 +47,13 @@ export const FUTURE_DAY_LINE = 'még nem jött el'
  *  is not enough (see CATCHUP_MSG above); shared here so the narrative hero, the run-detail page,
  *  and the Futások list row can never drift from each other. */
 export function isQuietNightly(run: CharacterRunSummary): boolean {
-  return run.kind === 'NIGHTLY' && run.observationCount === 0 && run.detectorKeys.length === 0
+  return run.kind === 'NIGHTLY' && run.status === 'SUCCESS' && run.observationCount === 0 && run.detectorKeys.length === 0
 }
 
 /** The catch-up counterpart of {@link isQuietNightly}: detectors fired but no observation came
  *  out of this run (see CATCHUP_MSG). */
 export function isCatchUpNightly(run: CharacterRunSummary): boolean {
-  return run.kind === 'NIGHTLY' && run.observationCount === 0 && run.detectorKeys.length > 0
+  return run.kind === 'NIGHTLY' && run.status === 'SUCCESS' && run.observationCount === 0 && run.detectorKeys.length > 0
 }
 
 // index = Date#getDay() (0=Sunday). Hungarian weekday ADJECTIVE forms ("hétfői napodat") —
@@ -71,6 +71,8 @@ function dowAdjective(iso: string): string {
  *  defaults to the raw key so this stays usable before the catalog has loaded. */
 export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) => string = (k) => k): string {
   if (run.kind === 'NIGHTLY') {
+    if (run.status === 'FAILED') return `Az éjszakai feldolgozás nem fejeződött be${run.failureCount ? ` (${run.failureCount} hiba)` : ''}. A megfigyelések hiányosak lehetnek; a napi csapatbeszélgetés a teljes feldolgozásra vár.`
+    if (run.status !== 'SUCCESS') return `Ennek a korábbi futásnak a sikeres befejezése nem igazolható. ${run.observationCount} megfigyelés maradt fenn; a hiányzó eredményből nem következtetünk csendes éjszakára.`
     if (isQuietNightly(run)) return QUIET_LEDE
     if (isCatchUpNightly(run)) {
       return `Átnéztük a ${dowAdjective(run.day)} napodat — ${CATCHUP_MSG}`
@@ -99,6 +101,8 @@ export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) 
  *  call-level truth for those kinds). */
 export function runRowSubline(run: CharacterRunSummary): string {
   if (run.kind === 'NIGHTLY') {
+    if (run.status === 'FAILED') return `hiányos feldolgozás · ${run.observationCount} megfigyelés`
+    if (run.status !== 'SUCCESS') return `${run.observationCount} megfigyelés · a befejezés nem igazolható`
     if (isQuietNightly(run)) return 'csendes nap · 0 hívás'
     if (isCatchUpNightly(run)) return 'jelek korábban feldolgozva'
     return `${run.observationCount} megfigyelés · ${run.expertKeys.length} szakértő hívva`

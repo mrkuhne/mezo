@@ -59,6 +59,7 @@ describe('RunPage', () => {
     hoisted.run = {
       summary: {
         id: 'catchup', kind: 'NIGHTLY', day: '2026-08-27', observationCount: 0, callCount: 0,
+        status: 'SUCCESS',
         detectorKeys: ['logging-gap'], expertKeys: [], conferenceId: null,
       } satisfies CharacterRunSummary,
       observations: [],

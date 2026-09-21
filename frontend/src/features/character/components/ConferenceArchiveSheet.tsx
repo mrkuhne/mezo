@@ -17,6 +17,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import type { CharacterConferenceSummary } from '@/data/character/characterApi'
 
 const KIND_BADGE: Record<CharacterConferenceSummary['kind'], string> = {
+  DAILY: 'NAPI BESZÉLGETÉS',
   WEEKLY: 'HETI',
   MONTHLY: 'HAVI',
   BOOTSTRAP: 'BOOTSTRAP',

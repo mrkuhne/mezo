@@ -114,8 +114,8 @@ export function useCharacterConferences(): { conferences: CharacterConferenceSum
 }
 
 /** One konzílium's full transcript. `id === null` (nothing selected yet) never fetches. */
-export function useCharacterConference(id: string | null): { conference: CharacterConferenceResponse | null; isLoading: boolean } {
-  const { data, isPending } = useDualQuery<CharacterConferenceResponse | null>({
+export function useCharacterConference(id: string | null): { conference: CharacterConferenceResponse | null; isLoading: boolean; isError: boolean; refetch: () => void } {
+  const { data, isPending, isError, refetch } = useDualQuery<CharacterConferenceResponse | null>({
     queryKey: ['characterConference', id ?? 'none'],
     mockData: id != null ? MOCK_CONFERENCE_DETAIL[id] ?? null : null,
     realFetch: async () => {
@@ -130,7 +130,7 @@ export function useCharacterConference(id: string | null): { conference: Charact
     realEmpty: null,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
-  return { conference: data, isLoading: isPending }
+  return { conference: data, isLoading: isPending, isError, refetch }
 }
 
 type FeedbackKind = CharacterClaimFeedbackRequest['kind']
