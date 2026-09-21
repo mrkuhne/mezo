@@ -16,7 +16,7 @@ paths:
         - name: phenomenon
           in: query
           required: false
-          schema: { type: string, pattern: '^(fatigue|sleep)$', default: fatigue }
+          schema: { type: string, pattern: '^(fatigue|sleep|weight)$', default: fatigue }
       responses:
         '200':
           description: The user's diagnoses
@@ -120,12 +120,19 @@ components:
       type: object
       required: [phenomenon]
       properties:
-        phenomenon: { type: string, pattern: '^(fatigue|sleep)$' }
+        phenomenon: { type: string, pattern: '^(fatigue|sleep|weight)$' }
+        anchorStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            The ISO Monday of the diagnosed week — required (and must be a Monday) for
+            phenomenon=weight, rejected for fatigue/sleep.
     DiagnosisEvidenceItem:
       type: object
       required: [kind, label]
       properties:
-        kind: { type: string, pattern: '^(metric|pattern|fact)$' }
+        kind: { type: string, pattern: '^(metric|pattern|fact|derived)$' }
         label: { type: string }
         detail: { type: string, nullable: true }
         sourceHu: { type: string, nullable: true, description: 'Hungarian provenance, e.g. Alvás-napló' }
@@ -154,6 +161,7 @@ components:
         id: { type: string, format: uuid }
         phenomenon: { type: string }
         windowDays: { type: integer }
+        anchorStart: { type: string, format: date, nullable: true }
         verdict: { type: string }
         confidence: { type: string, pattern: '^(strong|moderate|weak)$' }
         evidence: { type: array, items: { $ref: '#/components/schemas/DiagnosisEvidenceItem' } }

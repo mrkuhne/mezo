@@ -35,7 +35,8 @@ public class DiagnosisController implements DiagnosisApi {
 
     @Override
     public DiagnosisResponse generateDiagnosis(DiagnosisGenerateRequest request) {
-        return diagnosisService.generate(currentUserId.get(), request.getPhenomenon());
+        return diagnosisService.generate(
+                currentUserId.get(), request.getPhenomenon(), request.getAnchorStart());
     }
 
     @Override

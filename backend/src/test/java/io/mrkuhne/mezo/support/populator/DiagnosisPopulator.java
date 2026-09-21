@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope.Suspect;
 import io.mrkuhne.mezo.feature.proactive.repository.DiagnosisRepository;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +39,26 @@ public class DiagnosisPopulator {
                 1, "Alváshiány", "Két hete napi másfél órával kevesebbet alszol.",
                 List.of(0), "strong", "Feküdj le 7 napig 23:00 előtt.",
                 "SLEEP_DURATION_H", "up", 7))));
+        entity.setGeneratedAt(generatedAt);
+        return diagnosisRepository.saveAndFlush(entity);
+    }
+
+    /** The WEEK-ANCHORED {@code weight} phenomenon row (mezo-85x5r) — the reuse test's fixture. */
+    public DiagnosisEntity weightDiagnosis(UUID createdBy, LocalDate anchorStart, Instant generatedAt) {
+        DiagnosisEntity entity = new DiagnosisEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setPhenomenon(DiagnosisEntity.PHENOMENON_WEIGHT);
+        entity.setWindowDays(7);
+        entity.setAnchorStart(anchorStart);
+        entity.setVerdict("Teszt súly-diagnózis.");
+        entity.setConfidence("moderate");
+        entity.setEvidence(new DiagnosisEvidenceEnvelope(List.of(new EvidenceItem(
+                "metric", "súlyváltozás", "átlag -0.3 · 7 mért nap",
+                "Reggeli mérlegelés", "WEIGHT_DELTA_KG", -0.3, null, null, 7))));
+        entity.setSuspects(new DiagnosisSuspectsEnvelope(List.of(new Suspect(
+                1, "Napi só", "A hét folyamán a sóbevitel megugrott.",
+                List.of(0), "moderate", "Csökkentsd a sót 7 napig.",
+                "DAILY_SALT_G", "down", 7))));
         entity.setGeneratedAt(generatedAt);
         return diagnosisRepository.saveAndFlush(entity);
     }

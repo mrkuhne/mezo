@@ -1123,7 +1123,7 @@ export type DiagnosisConfidence = 'strong' | 'moderate' | 'weak'
 /** One code-collected evidence candidate, FROZEN at generation time (mezo-hqfi).
  *  `kind` decides which fields carry: metric rows have the numbers, pattern/fact rows do not. */
 export interface DiagnosisEvidence {
-  kind: 'metric' | 'pattern' | 'fact'
+  kind: 'metric' | 'pattern' | 'fact' | 'derived'
   label: string
   detail?: string
   /** Hungarian provenance — „Alvás-napló", „Minták", „Tudástár". Shown to the user. */
@@ -1153,6 +1153,8 @@ export interface Diagnosis {
   id: string
   phenomenon: string
   windowDays: number
+  /** ISO Monday of the diagnosed week — set only for anchored phenomena (weight, mezo-85x5r). */
+  anchorStart?: string
   verdict: string
   confidence: DiagnosisConfidence
   evidence: DiagnosisEvidence[]

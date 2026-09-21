@@ -57,7 +57,27 @@ export function useDiagnosis(id: string): DiagnosisView {
   return { diagnosis: q.data ?? null, mode: 'live', isPending: q.isPending, notFound }
 }
 
-export type DiagnosisErrorKind = 'insufficient' | 'quota' | 'failed' | null
+/**
+ * Selector over `useDiagnoses` — the newest weight-phenomenon row anchored to `weekStart`
+ * (ISO Monday), or null. Open-or-generate on the FE is exactly this lookup: a hit means the
+ * card navigates straight to the existing report, a miss means it generates one (mezo-85x5r).
+ */
+export function useDiagnosisForWeek(weekStart: string): Diagnosis | null {
+  const { diagnoses } = useDiagnoses()
+  const matches = diagnoses.filter((d) => d.phenomenon === 'weight' && d.anchorStart === weekStart)
+  if (matches.length === 0) return null
+  return matches.reduce((newest, d) => (d.generatedAt > newest.generatedAt ? d : newest))
+}
+
+/**
+ * `insufficientWeighins`: the weight phenomenon's own weigh-in floor (< 3 in the anchor week,
+ * `DIAGNOSIS_INSUFFICIENT_WEIGHINS`) — "log more weigh-ins" copy. `insufficientData`: the
+ * generic few-domains floor any phenomenon can hit (`DIAGNOSIS_INSUFFICIENT_DATA`) — "too few
+ * tracked areas" copy. Both are 409s but mean different things to the user, so the SystemMessage
+ * `code` on the response — not just the HTTP status — decides which kind a 409 maps to
+ * (mezo-85x5r final-review wave: a status-only mapping showed the weigh-in copy for every 409).
+ */
+export type DiagnosisErrorKind = 'insufficientWeighins' | 'insufficientData' | 'quota' | 'failed' | null
 
 /**
  * Generate + probe→experiment (mezo-hqfi.4). BOTH cost real state (an LLM call / an active
@@ -74,15 +94,19 @@ export function useDiagnosisActions() {
   const toKind = (e: unknown): DiagnosisErrorKind => {
     if (e instanceof ApiError) {
       if (e.status === 429) return 'quota'
-      if (e.status === 409) return 'insufficient'
+      if (e.status === 409) {
+        return e.messages.some((m) => m.code === 'DIAGNOSIS_INSUFFICIENT_DATA')
+          ? 'insufficientData'
+          : 'insufficientWeighins'
+      }
     }
     return 'failed'
   }
 
   const generateMutation = useMutation({
-    mutationFn: async (phenomenon: string) => {
+    mutationFn: async (vars: { phenomenon: string; anchorStart?: string }) => {
       if (mock) return null
-      return diagnosisApi.generate(phenomenon)
+      return diagnosisApi.generate(vars.phenomenon, vars.anchorStart)
     },
     onMutate: () => setError(null),
     onSuccess: mock ? undefined : invalidate,
@@ -106,9 +130,10 @@ export function useDiagnosisActions() {
   })
 
   return {
-    generate: (phenomenon: string) => generateMutation.mutate(phenomenon),
-    /** Resolves with the fresh diagnosis (or null in mock) — the list page navigates to it. */
-    generateAsync: (phenomenon: string) => generateMutation.mutateAsync(phenomenon),
+    generate: (phenomenon: string, anchorStart?: string) => generateMutation.mutate({ phenomenon, anchorStart }),
+    /** Resolves with the fresh diagnosis (or null in mock) — the list/card navigates to it. */
+    generateAsync: (phenomenon: string, anchorStart?: string) =>
+      generateMutation.mutateAsync({ phenomenon, anchorStart }),
     startExperiment: (id: string, rank: number) => experimentMutation.mutate({ id, rank }),
     pending: generateMutation.isPending || experimentMutation.isPending,
     generating: generateMutation.isPending,

@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -52,6 +53,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -111,6 +113,11 @@ public class MetricSeriesService {
             case LATE_MEAL_HOUR -> lateMealHour(userId, from, to);
             case DAILY_KCAL -> fuelRollup(userId, from, to, MacroSet::getKcal);
             case DAILY_PROTEIN_G -> fuelRollup(userId, from, to, MacroSet::getP);
+            case DAILY_CARBS_G -> fuelRollup(userId, from, to, MacroSet::getC);
+            case DAILY_FAT_G -> fuelRollup(userId, from, to, MacroSet::getF);
+            case DAILY_SUGAR_G -> nutrientRollup(userId, from, to, MealItemEntity::getSnapshotSugarG);
+            case DAILY_SALT_G -> nutrientRollup(userId, from, to, MealItemEntity::getSnapshotSaltG);
+            case DAILY_FIBER_G -> nutrientRollup(userId, from, to, MealItemEntity::getSnapshotFiberG);
             case MEAL_SCORE -> mealScore(userId, from, to);
             case MEDICATION_DOSE_MG -> medicationDose(userId, from, to);
             case MEDICATION_CYCLE_DAY -> medicationCycleDay(userId, from, to);
@@ -266,6 +273,23 @@ public class MetricSeriesService {
 
     private interface FuelValue {
         BigDecimal value(MacroSet consumed);
+    }
+
+    /** Per-day sum of a frozen meal-item nutrient snapshot (mezo-85x5r). null = unknown:
+     *  a null item contributes nothing, and a day where NO item carries the nutrient yields
+     *  no point — never zero. */
+    private Map<LocalDate, Double> nutrientRollup(UUID userId, LocalDate from, LocalDate to,
+            Function<MealItemEntity, BigDecimal> extractor) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (MealEntity meal : mealRepository.findAllOwned(userId)) {
+            LocalDate day = meal.getMealDate();
+            if (day.isBefore(from) || day.isAfter(to)) continue;
+            for (MealItemEntity item : meal.getItems()) {
+                BigDecimal v = extractor.apply(item);
+                if (v != null) series.merge(day, v.doubleValue(), Double::sum);
+            }
+        }
+        return series;
     }
 
     /** Napi fuel-rollup — csak étkezéses napok (a DAILY_KCAL eredeti mintája, mezőre paraméterezve). */

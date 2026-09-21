@@ -6110,6 +6110,15 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   what the diagnosis can blame**, and renaming one breaks already-persisted `diagnosis.suspects`
   rows, which store the enum name. See [`proactive.md`](proactive.md) §4 → Diagnosis.
   Note the accessors are record-style (`labelHu()`, `sourceHu()`, `domain()`), not Lombok getters.
+  **5 more `MetricKey`s (38 → 43) for the WEIGHT diagnosis recipe (`mezo-85x5r`):**
+  `DAILY_CARBS_G`/`DAILY_FAT_G` are one more `fuelRollup` field each (same `MacroSet` this rollup
+  already reads for `DAILY_KCAL`/`DAILY_PROTEIN_G`); `DAILY_SUGAR_G`/`DAILY_SALT_G`/`DAILY_FIBER_G`
+  are the first metrics fed by a NEW rollup shape, `MetricSeriesService#nutrientRollup` — a per-day
+  sum over each `MealItemEntity`'s frozen `snapshotSugarG`/`snapshotSaltG`/`snapshotFiberG`
+  (label-scan nutrients that never made it into `MacroSet`), null-safe per item: a day where no
+  logged item carries the nutrient yields no point, never a zero. All five stay `MetricDomain.FUEL`.
+  The proactive **Diagnózis** WEIGHT recipe consumes all five alongside the existing FUEL keys —
+  see [`proactive.md`](proactive.md) §4 → Diagnosis for the recipe's full metric list.
 - `mezo.companion.patterns.load-gym-kg-per-min` = **100** (`@Min(1) @Max(10000)`) — V3.4: the
   ACWR/monotony daily-load common scale (this many kg of gym volume ≙ one sport minute).
 - `mezo.companion.summary.note-max-chars` = **200** (`@Min(0) @Max(1000)`) — V3.4: per-field cap

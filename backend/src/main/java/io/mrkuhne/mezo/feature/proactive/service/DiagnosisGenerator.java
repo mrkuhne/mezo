@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope.Suspect;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope.EvidenceItem;
 import io.mrkuhne.mezo.feature.proactive.repository.DiagnosisRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
@@ -78,6 +79,17 @@ public class DiagnosisGenerator {
             + "\"strength\": \"strong|moderate|weak\", \"probe\": {\"text\": \"...\", "
             + "\"metricKey\": \"...\", \"expectedDirection\": \"up|down|stable\", \"totalDays\": 7}}]}";
 
+    /** WEIGHT-only prompt block (mezo-85x5r §2): the SZÁMVETÉS rows are code-computed facts the
+     *  model must not contradict; the suspects stay confined to the VÍZ side. Appended after the
+     *  recipe's question sentence, verbatim (Task 4 brief). */
+    private static final String WEIGHT_PROMPT_BLOCK =
+            "A SZÁMVETÉS sorai kód által számolt tények — nem mondhatsz nekik ellent, és a plafon fölé "
+            + "nem tulajdoníthatsz szövetet. A gyanúsítottak a VÍZ-részre vonatkoznak: CH-ugrás (1 g CH "
+            + "3–4 g vizet köt glikogénként), só-ugrás, terhelés-ugrás (izomjavítási vízvisszatartás), "
+            + "alváshiány/stressz (kortizol), késői nagy étkezés a mérés előtt, gyógyszer-ciklus "
+            + "étvágy-hatás, kreatin/supplement-váltás. 2–3 hét konzisztens trend előtt tartós "
+            + "irányváltást kimondani tilos.";
+
     private final DiagnosisRepository diagnosisRepository;
     private final FatigueEvidenceCollector collector;
     private final CompanionLlm companionLlm;
@@ -85,6 +97,7 @@ public class DiagnosisGenerator {
     private final DiagnosisProperties properties;
     private final ObjectMapper objectMapper;
     private final PromptPersona promptPersona;
+    private final WeightDecompositionInputsAssembler weightDecompositionInputsAssembler;
 
     record ParsedProbe(String text, String metricKey, String expectedDirection, Integer totalDays) {
     }
@@ -104,12 +117,36 @@ public class DiagnosisGenerator {
 
     @Transactional
     public DiagnosisEntity generate(UUID userId, LocalDate today, String phenomenon) {
+        return generate(userId, today, phenomenon, null);
+    }
+
+    /**
+     * @param anchorStart the WEEK-ANCHORED {@code weight} phenomenon's ISO Monday — the window
+     *                    becomes {@code [anchorStart, min(anchorStart+6, today)]} instead of the
+     *                    rolling {@code properties.windowDays()} window. {@code null} for the
+     *                    rolling phenomena (fatigue/sleep) — unchanged behavior.
+     */
+    @Transactional
+    public DiagnosisEntity generate(UUID userId, LocalDate today, String phenomenon, LocalDate anchorStart) {
         DiagnosisRecipe recipe = DiagnosisRecipe.byPhenomenon(phenomenon);
         if (recipe == null) {
             log.warn("Unknown diagnosis phenomenon '{}' for {} — no row", phenomenon, userId);
             return null;
         }
-        FatigueEvidenceCollector.FatigueGather gather = collector.gather(userId, today, recipe);
+        FatigueEvidenceCollector.FatigueGather gather;
+        LocalDate windowFrom = null;
+        LocalDate windowTo = null;
+        if (anchorStart != null) {
+            windowFrom = anchorStart;
+            windowTo = AnchoredWeek.windowTo(anchorStart, today);
+            List<EvidenceItem> prepended = DiagnosisRecipe.WEIGHT.equals(recipe)
+                    ? WeightDecomposition.compute(weightDecompositionInputsAssembler
+                            .assemble(userId, windowFrom, windowTo)).derivedItems()
+                    : List.of();
+            gather = collector.gather(userId, windowFrom, windowTo, recipe, prepended);
+        } else {
+            gather = collector.gather(userId, today, recipe);
+        }
         if (gather == null) {
             log.debug("Not enough data for a fatigue diagnosis for {}", userId);
             return null;
@@ -130,7 +167,10 @@ public class DiagnosisGenerator {
         DiagnosisEntity diagnosis = new DiagnosisEntity();
         diagnosis.setCreatedBy(userId);
         diagnosis.setPhenomenon(recipe.phenomenon());
-        diagnosis.setWindowDays(properties.windowDays());
+        diagnosis.setWindowDays(anchorStart != null
+                ? (int) (ChronoUnit.DAYS.between(windowFrom, windowTo) + 1)
+                : properties.windowDays());
+        diagnosis.setAnchorStart(anchorStart);
         diagnosis.setVerdict(truncate(parsed.verdict().strip()));
         diagnosis.setConfidence(parsed.confidence());
         diagnosis.setEvidence(new DiagnosisEvidenceEnvelope(gather.candidates()));
@@ -140,7 +180,8 @@ public class DiagnosisGenerator {
     }
 
     private static String prompt(DiagnosisRecipe recipe) {
-        return DIAGNOSIS_MARKER + "\n" + recipe.questionHu() + " " + PROMPT_RULES;
+        String weightBlock = DiagnosisRecipe.WEIGHT.equals(recipe) ? " " + WEIGHT_PROMPT_BLOCK : "";
+        return DIAGNOSIS_MARKER + "\n" + recipe.questionHu() + weightBlock + " " + PROMPT_RULES;
     }
 
     private ParsedDiagnosis parse(String answer) {

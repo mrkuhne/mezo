@@ -9886,6 +9886,11 @@ export interface components {
         };
         DiagnosisGenerateRequest: {
             phenomenon: string;
+            /**
+             * Format: date
+             * @description The ISO Monday of the diagnosed week — required (and must be a Monday) for phenomenon=weight, rejected for fatigue/sleep.
+             */
+            anchorStart?: string | null;
         };
         DiagnosisEvidenceItem: {
             kind: string;
@@ -9915,6 +9920,8 @@ export interface components {
             id: string;
             phenomenon: string;
             windowDays: number;
+            /** Format: date */
+            anchorStart?: string | null;
             verdict: string;
             confidence: string;
             evidence: components["schemas"]["DiagnosisEvidenceItem"][];

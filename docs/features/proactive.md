@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-18
+updated: 2026-09-20
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -1777,7 +1777,7 @@ DERIVED in code** from the structured target fields (via `ChallengeDisplay` stat
 mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` nullable on the wire
 (`confidence` null ⇒ the FE renders „tanulom").
 
-### Diagnosis (on-demand report, `mezo-hqfi`; second phenomenon `mezo-po3y`)
+### Diagnosis (on-demand report, `mezo-hqfi`; second phenomenon `mezo-po3y`; third phenomenon `mezo-85x5r`)
 
 Migration `202608311200_mezo-hqfi_create_diagnosis.sql` creates `diagnosis` — `id`, `created_by`,
 `is_deleted`, `created_at`, `phenomenon` (ck: `fatigue`), `window_days`, `verdict`, `confidence`
@@ -1787,26 +1787,77 @@ Migration `202608311200_mezo-hqfi_create_diagnosis.sql` creates `diagnosis` — 
 Migration `202608311210_mezo-hqfi_experiment_source_diagnosis.sql` widens `experiment` with
 `source` (ck: `proposal|diagnosis`, default `proposal` so pre-existing rows stay honest) and
 `source_diagnosis_id` (FK `on delete set null`, partial index) — the `source_pattern_id`
-(`mezo-tk88.2`) pattern applied a second time.
+(`mezo-tk88.2`) pattern applied a second time. Migration
+`202609201200_mezo-85x5r_diagnosis_weight_anchor.sql` adds `anchor_start date` (nullable — the ISO
+Monday of the diagnosed week, `null` for the two rolling phenomena) and widens the ck (drop +
+re-add, the `mezo-po3y` precedent) to `fatigue|sleep|weight`.
 
 `DiagnosisEntity` (`entity/DiagnosisEntity.java`) `extends OwnedEntity`; `evidence` and `suspects`
 map as typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto `DiagnosisEvidenceEnvelope`
 (`record EvidenceItem(kind, label, detail, sourceHu, metricKey, value, baselineValue, delta,
-coverageDays)` — `kind ∈ metric|pattern|fact`, the metric-only fields null for the other two) and
+coverageDays)` — `kind ∈ metric|pattern|fact|derived` (`derived` added `mezo-85x5r`, see the
+WEIGHT decomposition below), the metric-only fields null for the other three) and
 `DiagnosisSuspectsEnvelope` (`record Suspect(rank, title, claim, evidenceIndexes, strength,
 probeText, metricKey, expectedDirection, totalDays)` — the probe fields map **1:1 onto
 `ExperimentEntity`**, so the hand-off needs no translation layer). **Evidence is persisted, not
 recomputed on read:** the report must show the numbers it actually reasoned from, or weeks later a
 recomputed window would put different values next to the same conclusion.
 
-**Two phenomena since `mezo-po3y`** — `fatigue` and `sleep`. Everything phenomenon-specific
-lives in ONE record, `service/DiagnosisRecipe.java` (wire value, HU label, the prompt's question
-sentence, the `MetricKey` subset); the collector and generator take a recipe, the old 2-arg entry
-points alias FATIGUE. A third question = one `DiagnosisRecipe` entry + one ck-widening migration
-(`202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql` is the template). The FE mirror is
+**Three phenomena since `mezo-85x5r`** — `fatigue`, `sleep` and `weight`. Everything
+phenomenon-specific lives in ONE record, `service/DiagnosisRecipe.java` (wire value, HU label, the
+prompt's question sentence, the `MetricKey` subset, an optional `minCoverageDays` override); the
+collector and generator take a recipe, the old 2-arg entry points alias FATIGUE. A fourth question
+= one `DiagnosisRecipe` entry + one ck-widening migration
+(`202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql` is the rolling-window template,
+`202609201200_mezo-85x5r_diagnosis_weight_anchor.sql` the anchored one). The FE mirror is
 `features/insights/logic/diagnosisCatalog.ts` (`LIVE_QUESTIONS`/`UPCOMING_QUESTIONS`) — a
 question goes live by moving between the two lists. The daily quota stays GLOBAL across
 phenomena.
+
+**`WEIGHT` is WEEK-ANCHORED, not rolling** — the one point of divergence from the fatigue/sleep
+shape. `DiagnosisRecipe.WEIGHT` carries 22 `MetricKey`s (`WEIGHT_DELTA_KG`/`WEIGHT_TREND_PCT_WK`
+first, then the five nutrition series — `DAILY_KCAL`/`DAILY_CARBS_G`/`DAILY_FAT_G`/
+`DAILY_SUGAR_G`/`DAILY_SALT_G`/`DAILY_FIBER_G`/`DAILY_PROTEIN_G` — then water/meal-timing/training
+load/sleep/stress/medication) and `minCoverageDays = 3` — the global default (7) would drop nearly
+every metric inside a 7-day anchor week, so this ONE recipe overrides
+`DiagnosisProperties.minCoverageDays()`. `DiagnosisService#generate` takes an optional
+`anchorStart` (`LocalDate`): **required and MUST be a Monday** for `phenomenon=weight` (400
+`DIAGNOSIS_ANCHOR_NOT_MONDAY` otherwise) and **rejected** for `fatigue`/`sleep` (400
+`DIAGNOSIS_ANCHOR_NOT_SUPPORTED` if supplied). The window is `[anchorStart, min(anchorStart+6,
+today)]` — a week not yet finished is diagnosed up to today, not padded with future dates.
+**Reuse-FIRST** (`dd4119d61`): before anything else, an existing non-stale row for the SAME
+`(userId, phenomenon, anchorStart)` is returned as-is, no quota burn — re-opening the same week's
+report is always free, even if today's live weigh-in count has since dropped below the floor (a
+log edited/deleted after generation). Only past that reuse check does the **weigh-in gate** apply:
+fewer than 3 distinct weigh-in days (by `WeightLogEntity.getDate()`) inside the window ⇒ 409
+`DIAGNOSIS_INSUFFICIENT_WEIGHINS` — a floor `FatigueEvidenceCollector`'s generic ≥2-domain
+coverage gate doesn't express, because a week with plenty of OTHER data but one weigh-in still
+can't answer "why did MY WEIGHT move".
+
+**The számvetés layer (`WeightDecomposition` + `WeightDecompositionInputsAssembler`,
+`service/`)** — PURE CODE, no LLM, runs only for `WEIGHT` and PREPENDS its output to the evidence
+candidate list ahead of `FatigueEvidenceCollector`'s usual numbered items (so its own indexes
+shift). Four `kind = "derived"`, `sourceHu = "számvetés"` rows, each omitted (not zeroed) when its
+inputs are missing:
+  1. **valódi delta** — the week's average weigh-in vs. the preceding week's average, the
+     regression trend Δkg/week, and the raw min→max range labelled ZAJ (noise) — separates the
+     week's real signal from day-to-day water noise.
+  2. **szövet-plafon** — the week's kcal surplus ÷ **7700 kcal/kg** = the maximum fat tissue the
+     surplus could physically explain; the rest of any observed delta is water/glycogen/gut
+     content by elimination. Flags `>1% bodyweight/week` of actual movement as a non-tissue signal
+     (that much real mass change in a week is not fat).
+  3. **cél-sáv** — compares the actual weekly rate (`trendDeltaKgPerWeek / bodyweightKg × 100`)
+     against the FIXED %bodyweight/week band for the active goal's trajectory: `cut` **[-1.0,
+     -0.25]**, `bulk` **[0.1, 0.25]**, `maintain` **±0.1**. No active goal ⇒ "nincs aktív cél —
+     sáv nélkül"; either input missing ⇒ the honest **"sáv nem számítható"** status, never a
+     fabricated "terven" (`a29c37d08` — the original cut fixed a version that guessed).
+  4. **erő-trend** — top-lift e1RM Δ% as a glycogen/muscle-fill vs. fatigue/water tell (omitted
+     with no e1RM signal).
+  The prompt's `WEIGHT_PROMPT_BLOCK` (appended only for this phenomenon) tells the model the
+  számvetés rows are code-computed facts it must not contradict and may not attribute tissue to
+  anything above the plafon; the suspects it's allowed to propose stay confined to the water side
+  (carb/sodium/training-load/sleep-stress/late-meal/medication/creatine-supplement swings), and a
+  sustained-direction claim needs 2–3 consistent weeks, not one.
 
 The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 
@@ -1856,9 +1907,9 @@ The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
-| `GET /api/proactive/diagnosis?phenomenon=` | `DiagnosisResponse[]` | 200 · 401 | Newest first. **`200 []` = honest empty, never 404.** |
-| `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag. 404 = not-found/foreign. |
-| `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 401 · **409** · **429** | 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
+| `GET /api/proactive/diagnosis?phenomenon=` | `DiagnosisResponse[]` | 200 · 401 | Newest first. **`200 []` = honest empty, never 404.** `phenomenon` pattern widened to `fatigue\|sleep\|weight`. |
+| `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag (for `weight`, computed over the row's own `anchorStart`..min(+6,today) window, not `windowDays`). `anchorStart` on the response is `null` for `fatigue`/`sleep`. 404 = not-found/foreign. |
+| `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 400 · 401 · **409** · **429** | Body `{phenomenon, anchorStart?}` — `anchorStart` (ISO Monday) is **required** for `phenomenon=weight` and **rejected** for the rolling phenomena: 400 `DIAGNOSIS_ANCHOR_NOT_MONDAY` / `DIAGNOSIS_ANCHOR_NOT_SUPPORTED`. 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived) or, `weight` only, `DIAGNOSIS_INSUFFICIENT_WEIGHINS` (<3 distinct weigh-in days in the anchor window — checked AFTER the reuse-first read, never on a still-valid existing report); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
 | `POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment` | `ExperimentResponse` | 201 · 401 · 404 | **The tap IS the acceptance** — creates `status=active`, `startDate=today`, probe fields copied verbatim; NOT routed through `proposed`. Idempotent per metric: an open experiment on the same `metricKey` is returned as-is. |
 
 **Frontend (`mezo-hqfi.4`, ✅)** — `features/insights/pages/DiagnosisListPage.tsx` (the
@@ -1869,6 +1920,16 @@ acknowledgement), on `/mezo/diagnozis[/:id]` (Hungarian slug per the spec). Data
 `data/insights/diagnosisApi.ts` + `diagnosisHooks.ts` (dual-mode; 409/429 map to
 `insufficient`/`quota` error kinds rendered as product copy) + `diagnosisMock.ts`. The Mezo hub
 carries a full-width question tile. Visual goldens `mezo-diagnozis` + `mezo-diagnozis-riport`.
+
+**WEIGHT frontend (`mezo-85x5r`)** — `diagnosisCatalog.ts` moves 'Miért mozog a súlyom?' into
+`LIVE_QUESTIONS`. Its own launch surface is the weekly weigh-in card,
+`features/me/components/WeeklyWeightCard.tsx`: an **'✦ Mi történt ezen a héten?'** action that
+either opens the current ISO week's existing report or generates one (open-or-generate, mirroring
+the service's reuse-first read), passing that week's Monday as `anchorStart`. The generated report
+renders on `DiagnosisDetailPage.tsx` with a dedicated **Számvetés** card ahead of the usual ranked
+suspects — the four `kind: 'derived'` evidence rows from `WeightDecomposition`, rendered as their
+own block rather than mixed into the numbered evidence list, since they're code facts, not
+model-cited candidates.
 
 **`LogFreshnessProbe`** (`service/`, `mezo-hqfi.1`) — extracted from `WeeklyReviewService#isStale`
 and generalised from an ISO week to an arbitrary `[from, to]`; both the weekly review and the

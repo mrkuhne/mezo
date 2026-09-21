@@ -243,6 +243,42 @@ function lifeGoalEcho(g: Record<string, unknown>) {
   }
 }
 
+/**
+ * Full anchored-weight `DiagnosisResponse` wire row for tests overriding the happy
+ * generate/get paths (mezo-85x5r) — anchorStart passthrough plus `kind: 'derived'` evidence,
+ * shaped like the real `WeightDecomposition` output (számvetés rows above two suspects that
+ * cite a mix of derived + metric indexes).
+ */
+export function diagnosisWeightWireStub(anchorStart: string, id = 'diag-weight-wire-1') {
+  return {
+    id,
+    phenomenon: 'weight',
+    windowDays: 7,
+    anchorStart,
+    verdict: 'A heti delta nagyobb része víz, nem zsír.',
+    confidence: 'moderate',
+    evidence: [
+      { kind: 'derived', label: 'valódi delta', detail: 'heti átlag 82,4 · trend Δ -0,7 kg/hét · 5 mérés', sourceHu: 'számvetés' },
+      { kind: 'derived', label: 'szövet-plafon', detail: 'többlet ≈ -3900 kcal → max 0,51 kg zsír', sourceHu: 'számvetés' },
+      { kind: 'derived', label: 'cél-sáv', detail: 'terven (sáv: -1,0 – -0,25 %/hét)', sourceHu: 'számvetés' },
+      { kind: 'derived', label: 'erő-trend', detail: 'top-gyakorlatok e1RM Δ +1,8%', sourceHu: 'számvetés' },
+      {
+        kind: 'metric', label: 'súly-delta', detail: 'átlag -0.7 · 5 mért nap', sourceHu: 'Súly-napló',
+        metricKey: 'WEIGHT_DELTA_KG', value: -0.7, baselineValue: 0, delta: -0.7, coverageDays: 5,
+      },
+    ],
+    suspects: [
+      {
+        rank: 1, title: 'Vízvisszatartás', claim: 'A só-bevitel vizet tart vissza.', evidenceIndexes: [1, 4],
+        strength: 'strong', probeText: 'Tartsd a nátriumot alacsonyan egy héten át.', metricKey: 'DAILY_SALT_G',
+        expectedDirection: 'down', totalDays: 7,
+      },
+    ],
+    generatedAt: `${anchorStart}T07:00:00Z`,
+    stale: false,
+  }
+}
+
 /** Minimális, de a szerződés szerint ÉRVÉNYES `PatternResponse` a chip-válasz feleletéhez
  *  (Reflexió S5, mezo-eq85.5). A `PatternReplyResponse.pattern` kötelező és nem null a dróton,
  *  ezért a `null` alapérték hazug szerződést örökített volna minden jövőbeli suite-ra. */
