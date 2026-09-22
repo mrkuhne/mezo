@@ -110,16 +110,45 @@ test('the pass drives --p, the counters and the star classes, then reveals the r
   const { container } = render(<WorkoutCeremony {...props({ reducedMotion: false })} />)
   const stage = container.querySelector('.cer') as HTMLElement
   expect(stage.style.getPropertyValue('--p')).toBe('0')
-  // Halfway through the 2400 ms pass: cubic ease-out 1-(1-.5)^3 = .875 of the ratio.
-  frames.shift()?.(1200)
+  // Halfway through the 1700 ms star phase: cubic ease-out 1-(1-.5)^3 = .875 of the ratio.
+  frames.shift()?.(850)
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.7, 5)
-  expect(container.querySelector('.cer-screen')).not.toHaveClass('is-told')
-  // The final frame lands on the real values and tells the reading.
-  act(() => { frames.shift()?.(2400) })
+  const root = container.querySelector('.cer-screen') as HTMLElement
+  expect(root).not.toHaveClass('is-b1')
+  expect(root).not.toHaveClass('is-told')
+  // 2100 ms: the verdict (beat 1) and the card (beat 2) are in, the record stamp is not yet.
+  frames.shift()?.(2100)
+  expect(root).toHaveClass('is-b1')
+  expect(root).toHaveClass('is-b2')
+  expect(root).not.toHaveClass('is-b3')
+  expect(root).not.toHaveClass('is-told')
+  // The final frame (2700 ms) lands on the real values and tells the reading.
+  act(() => { frames.shift()?.(2700) })
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.8, 5)
   expect(container.querySelector('[data-cer-count="sets"]')).toHaveTextContent('9')
   expect(container.querySelectorAll('.cer-stars i.is-lit')).toHaveLength(4)
   expect(container.querySelector('.cer-screen')).toHaveClass('is-told')
+})
+
+test('step one writes no star numeral — the stars themselves are the reward', () => {
+  const { container } = render(<WorkoutCeremony {...props({ score: { ...SCORE, ratio: 0.9, stars: 4.5 } })} />)
+  expect(screen.queryByText(/\/\s*5/)).not.toBeInTheDocument()
+  const stage = container.querySelector('.cer') as HTMLElement
+  expect(stage.textContent).not.toMatch(/4,5|\b4\b/)
+})
+
+test('the tally, the stats and the record live in ONE card under the verdict', () => {
+  const { container } = render(<WorkoutCeremony {...props({
+    minutes: 47, xpGained: 240, records: [{ name: 'Chest Supported Row', value: '80 kg × 10' }],
+  })} />)
+  const card = container.querySelector('.cer-result .cer-card') as HTMLElement
+  expect(card).not.toBeNull()
+  expect(card.querySelector('.cer-record')).not.toBeNull()
+  expect(card.querySelector('.cer-stats')).not.toBeNull()
+  expect(card.querySelector('[data-cer-count="sets"]')).toHaveTextContent('9')
+  // The counters left the stage: the hero is stars + fuse only.
+  expect(container.querySelector('.cer [data-cer-count]')).toBeNull()
+  expect(container.querySelector('.cer-verdict')).toHaveTextContent('Erős nap.')
 })
 
 test('settled skips the pass entirely and marks the stage settled', () => {
@@ -200,6 +229,31 @@ test('a 0-ratio muscle row lights no stars — the CSS default must stay dim, no
   const row = container.querySelector('.cer-mstar') as HTMLElement
   expect(row.querySelectorAll('.cer-starrow.mini i.is-lit')).toHaveLength(0)
   expect(row.querySelectorAll('.cer-starrow.mini i.is-half')).toHaveLength(0)
+})
+
+test('step two opens on a recap chip, then the kcal hero, then the muscle card', async () => {
+  const user = userEvent.setup()
+  const { container } = render(<WorkoutCeremony {...props({ kcal: { value: 420, known: true } })} />)
+  await goToDetails(user)
+  const screenEl = container.querySelector('.cer-details-screen') as HTMLElement
+  const order = [...screenEl.querySelectorAll('.cer-recap-chip, .cer-kcal, .cer-muscles')].map((el) => el.className.split(' ')[0])
+  expect(order).toEqual(['cer-recap-chip', 'cer-kcal', 'cer-muscles'])
+  const chip = screenEl.querySelector('.cer-recap-chip') as HTMLElement
+  expect(chip).toHaveTextContent('Erős nap.')
+  expect(chip.querySelectorAll('.cer-starrow.mini i')).toHaveLength(5)
+  expect(chip.querySelectorAll('.cer-starrow.mini i.is-lit')).toHaveLength(4)
+})
+
+test('each muscle row carries its MuscleMap crop, tinted in the row colour', async () => {
+  const user = userEvent.setup()
+  const { container } = render(<WorkoutCeremony {...props()} />)
+  await goToDetails(user)
+  const rows = container.querySelectorAll<HTMLElement>('.cer-mstar')
+  expect(rows).toHaveLength(2)
+  rows.forEach((row) => {
+    expect(row.querySelector('.cer-mstar-art')).not.toBeNull()
+    expect(row.style.getPropertyValue('--ex-color')).not.toBe('')
+  })
 })
 
 test('the kcal tile is hidden when unknown — no 0 kcal anywhere', async () => {

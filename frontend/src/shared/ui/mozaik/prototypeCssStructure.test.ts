@@ -961,6 +961,7 @@ describe('the train ceremony section is registered and wears the restored materi
   test('the section actually carries the cer- class family, not just the markers', () => {
     for (const cls of [
       '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
+      '.cer-card', '.cer-tally', '.cer-verdict', '.cer-recap-chip',
     ]) {
       expect(section(), `${cls} missing from the train ceremony section`).toContain(cls)
     }
@@ -979,11 +980,13 @@ describe('the train ceremony section is registered and wears the restored materi
     expect(css).not.toContain('backdrop-filter')
   })
 
-  // A „Ritmus" csiszolt kő MARAD (az eleve a helyes anyag volt); ami ment, az a két
-  // neon-glow körülötte és a szám-feliratra vágott arany színátmenet (§2.3).
-  test('the Ritmus stone survives, its neon glow and the clipped-gradient numerals do not', () => {
+  // A „Ritmus" kő a stíluskönyv §5 meleg, 3-stopos radiális receptje (mezo-p2777): a
+  // Titán-kori 4-stopos lineáris sötét `#322A29` sávja piszkos csíkként olvasott a
+  // visszaállított világos talajon. Neon-glow és vágott arany számjegy továbbra sincs.
+  test('the Ritmus stone is the warm §5 radial; no neon glow, no clipped-gradient numerals', () => {
     const css = rules()
-    expect(css).toMatch(/\.cer-fill \{[^}]*#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0/)
+    expect(css).toMatch(/\.cer-fill \{[^}]*radial-gradient\(85% 160% at 36% 30%, #FFE9A8 0%, #E0AC2F 55%, #A9770F 100%\)/)
+    expect(css).not.toContain('#322A29')
     expect(css).not.toMatch(/box-shadow: 0 0 \d+px/)
     expect(css).not.toContain('background-clip: text')
     expect(css).not.toContain('filter: grayscale')
