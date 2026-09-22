@@ -956,6 +956,11 @@ test('mock mode: clearing the note via the editor removes the pill', async () =>
   await user.type(textarea, 'Lassú excentrikus')
   await user.click(screen.getByText('Mentés'))
   expect(await screen.findByLabelText('Gyakorlat-jegyzet')).toHaveTextContent('Lassú excentrikus')
+  // The editor is a <Sheet> with an animated close: it stays mounted until its exit fallback
+  // timer fires. Reopening before it is gone lets the next findBy grab the CLOSING textarea,
+  // which then detaches mid-clear — the CI-only flake of mezo-h4366 ("could not be focused" /
+  // the pill surviving). Wait for the first editor to leave before reopening.
+  await waitFor(() => expect(screen.queryByLabelText('Gyakorlat-jegyzet szerkesztése')).not.toBeInTheDocument())
   // 2. reopen the editor (the row's hint now reads "Megírt jegyzet szerkesztése"), empty it, save.
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Megírt jegyzet szerkesztése'))
