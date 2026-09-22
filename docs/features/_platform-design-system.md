@@ -31,6 +31,11 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > restored world, and `mezo-ju4j6.19` ranked every screen's surfaces per style bible **§3.4**. No
 > functionality was lost — each slice closed with a reverse parity checklist on its own bead.
 >
+> **2026-09-22 — the reward family (`mezo-p2777`).** The two ceremonies were re-composed into one
+> family with two weight classes (workout close = the full staged ceremony, meal log = a ~1 s
+> sheet), and the ceremony stone moved to the §5 warm radial everywhere (style bible C.3, rules
+> 23–25; spec `docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md`).
+>
 > **How to read this ledger now:** everything below §3 is layered oldest-first, and the sections
 > describing Titanium classes, tokens and icon art are **history**, not the current screen. They
 > stay because they are the parity sources that prove no feature was dropped. Never design from
