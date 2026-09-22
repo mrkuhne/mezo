@@ -5,7 +5,6 @@ status: mixed
 updated: 2026-09-22
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
-  - frontend/src/features/insights/pages/BoopWorldPage.tsx
   - frontend/src/features/insights
   - frontend/src/data/insights/insights.ts
   - frontend/src/data/insights/knowledge.ts
