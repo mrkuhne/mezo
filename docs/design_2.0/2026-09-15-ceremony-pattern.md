@@ -7,6 +7,24 @@ source: [companion-titanium](prototypes/companion-titanium/) — `food.js` (meal
 `fuel-pages.js` (`showStackCeremony`), `session.js` on the redesign branch (workout close),
 shared styles in `food.css` (`fcer-`/`scx-` blocks) and `session.css` (`cer-` block).
 
+> **Update 2026-09-22 — jutalomoldalak (`mezo-p2777`, owner-approved).** The *pattern* below
+> holds; five things changed and override the sections further down where they disagree
+> (spec: [`docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md`](../superpowers/specs/2026-09-22-jutalomoldalak-design.md),
+> prototype: [`prototypes/redress/2026-09-21-jutalom-oldalak.html`](prototypes/redress/2026-09-21-jutalom-oldalak.html)):
+>
+> 1. **Two weight classes, one family.** Workout close = the full multi-beat ceremony (~2.7 s:
+>    star arc + fuse → verdict → one card → CTA). Meal log = the *small* moment: a bottom sheet
+>    over the day, ~1 s, one beat (it fires 3–5× a day and must not wear out).
+> 2. **No star numeral** on the workout ceremony — the stars are the reward. The meal's Mezo
+>    score (`x,y / 10`) stays, on a medal whose ring is the stone.
+> 3. **One card** holds every secondary number (record strip, minutes + XP, the quiet
+>    szett/ismétlés/kg×rep tally) — the counters no longer compete with the stars.
+> 4. **The stone is the warm §5 radial** `#FFE9A8 → #E0AC2F 55% → #A9770F` (style bible §5); the
+>    4-stop linear with the dark `#322a29` band below is retired — it read as a dirty stripe on
+>    the restored light ground.
+> 5. The meal moment shows **fat** too; the details step's muscle rows carry their **MuscleMap**
+>    crops in one card, after a recap chip and the kcal hero.
+
 ## What a ceremony is
 
 A ceremony is the full-screen celebratory moment that OWNS the screen right after the user
