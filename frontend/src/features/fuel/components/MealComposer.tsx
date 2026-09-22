@@ -554,7 +554,7 @@ export function MealComposer({
     }
     // A mentés VÁLASZÁBÓL ünnepelünk: a pontszám a szerveren, íráskor születik (ADR 0006),
     // tehát a válasz már hordozza. Pontszám nélkül a provider nem nyit ceremóniát.
-    const celebrate = (meal?: { id?: string; score?: number | null; title?: string | null; kcal?: number; p?: number; c?: number } | null) => {
+    const celebrate = (meal?: { id?: string; score?: number | null; title?: string | null; kcal?: number; p?: number; c?: number; f?: number } | null) => {
       if (!meal?.id) return
       const time = new Date(input.loggedAt ?? Date.now()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
       celebrateMeal({
@@ -565,6 +565,7 @@ export function MealComposer({
         kcal: meal.kcal ?? 0,
         proteinG: meal.p ?? 0,
         carbsG: meal.c ?? 0,
+        fatG: meal.f ?? 0,
         hasBreakdown: true,
       })
     }

@@ -1198,8 +1198,8 @@ describe('the fuel-ceremony section is registered and wears the restored materia
   })
 
   test('the section carries the fcx- family, not just the markers', () => {
-    for (const cls of ['.fcx-screen', '.fcx-sky', '.fcx-stars', '.fcx-bar', '.fcx-fill',
-      '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
+    for (const cls of ['.fcx-screen', '.fcx-scrim', '.fcx-sheet', '.fcx-sky', '.fcx-stars',
+      '.fcx-ring', '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
       expect(section(), `${cls} missing from the fuel-ceremony section`).toContain(cls)
     }
   })
@@ -1213,12 +1213,14 @@ describe('the fuel-ceremony section is registered and wears the restored materia
     expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
   })
 
-  test('the bar fill IS the polished gold stone, and no text sits on it (§5 + minta §Materials)', () => {
+  // mezo-p2777: a kő a §5 meleg radiális receptje — a pont-gyűrű SVG-gradienseként a
+  // komponensben él (FuelMealCeremony.test őrzi a stopokat), a lap felcsúszását pedig a rAF-menet írja a `--rise`-on
+  // át — CSS-átmenet nélkül, mert a háttérbe tett webview azt a képernyőn KÍVÜL fagyasztaná.
+  test('no Titanium stone band, and the sheet rises by the frame-driven --rise', () => {
     const css = rules()
-    expect(css).toContain('#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%')
-    // a kitöltés szélességét a rAF-menet írja — CSS-átmenet nélkül (a fagyott webview tanulsága)
-    expect(css).toMatch(/\.fcx-fill \{[^}]*width: calc\(var\(--p, 0\) \* 100%\)/)
-    expect(css).not.toMatch(/\.fcx-fill \{[^}]*transition/)
+    expect(css).not.toContain('#322A29')
+    expect(css).toMatch(/\.fcx-sheet \{[^}]*transform: translateY\(calc\(var\(--rise, 0\) \* 105%\)\)/)
+    expect(css).not.toMatch(/\.fcx-sheet \{[^}]*transition/)
   })
 
   test('the ignition honours reduced motion', () => {
