@@ -1,3 +1,8 @@
+import { BoopMemoriesPage } from '@/features/insights/pages/BoopMemoriesPage'
+import { MemoryDayPage } from '@/features/insights/pages/MemoryDayPage'
+import { KnowledgeNodePage } from '@/features/insights/pages/KnowledgeNodePage'
+import { PredictionDetailPage } from '@/features/insights/pages/PredictionDetailPage'
+import { ExperimentDetailPage } from '@/features/insights/pages/ExperimentDetailPage'
 import { settingsRoutes } from '@/features/settings/settingsRoutes'
 import { MezoPersonalPage } from '@/features/settings/pages/MezoPersonalPage'
 import { AccountSettingsPage } from '@/features/settings/pages/AccountSettingsPage'
@@ -59,7 +64,9 @@ import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
-import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
+import { BoopWorldPage } from '@/features/insights/pages/BoopWorldPage'
+import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
+import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
@@ -390,7 +397,14 @@ export const routes: RouteObject[] = [
       // sub-tabs are FULL-PAGE SIBLINGS on their stable paths (they render their own
       // MozaikPage scaffolds as their F4 slices land). Minták — previously the /mezo
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
-      { path: 'mezo', element: <MezoHubPage /> },
+      { path: 'mezo', element: <BoopWorldPage /> },
+      { path: 'mezo/emlekek', element: <BoopMemoriesPage /> },
+      { path: 'mezo/emlekek/:date', element: <MemoryDayPage /> },
+      { path: 'mezo/knowledge/node/:id', element: <KnowledgeNodePage /> },
+      { path: 'mezo/predictions/:id', element: <PredictionDetailPage /> },
+      { path: 'mezo/experiments/:id', element: <ExperimentDetailPage /> },
+      { path: 'mezo/menu', element: <BoopMenuPage /> },
+      { path: 'mezo/rolad', element: <BoopAboutPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
       // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
       // score hero, the growth card and the weekly tervjavaslat prose. The route survives as

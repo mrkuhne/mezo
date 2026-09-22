@@ -1,8 +1,8 @@
 # 0049 — Közös Boop-témák és social AI-felület
 
-- **Status:** Proposed
+- **Status:** Accepted (UI); backend topic model pending
 - **Date:** 2026-09-21
-- **Driver:** mezo-7fduk
+- **Driver:** mezo-7fduk / mezo-dcuyw
 
 ## Context
 
@@ -13,13 +13,11 @@ közös social feedjére szeretné építeni, a jelenlegi agyagdesign megtartás
 
 ## Decision
 
-Jóváhagyásra javasolt: közös tématörténetek a meglévő típusos eredmények fölött;
-Üzenőfal, Folyamatban, Rólad, Emlékek navigáció; egy közös Gépterem. A felhasználó
-hozzászólása forrásként követhető, az új tudás jóváhagyása egyetlen döntési helyen
-él. A meglévő szakmotorok és a napi konzílium bővülnek, nem kapnak párhuzamos másolatot.
+A jóváhagyott V3 navigáció: **Üzenőfal, Menü, Rólad, Emlékek**. A Menü az eredeti Minták, Előrejelzések, Diagnózis, Kísérletek és Heti neveket mutatja; a tartalmi részletek önálló oldalak, saját visszaúttal. A valódi Mozaik/Clay elemek és az alsó dokk maradnak. A konzílium meglévő kommentjei, reakciói és bizonyítékai adják a social belépőt. A tudásdöntés és ténylista egyetlen kanonikus felületen él.
 
-Ez még tervezési javaslat. Termékkód és adatok nem változnak a vizuális jóváhagyásig.
-Részletek és ellenőrzött leltár: [audit és prototípus](../superpowers/specs/2026-09-21-boop-social-ai-audit.md).
+A UI implementáció a meglévő rekordokat és műveleteket kapcsolja össze. A közös, minden AI-motort összefogó tématörténet és annak válaszfeldolgozása külön backend kiterjesztés: a UI nem állítja, hogy ez már létezik. Nincs új API, kitalált szakértői poszt, mérőszám vagy egyetértést jutalmazó pontozás.
+
+Jóváhagyás: 2026-09-22. [V3 terv](../superpowers/specs/2026-09-21-boop-social-ai-v3-navigation.md), [implementáció](../superpowers/plans/2026-09-22-boop-v3-implementation.md), [eredeti audit](../superpowers/specs/2026-09-21-boop-social-ai-audit.md).
 
 ## Consequences
 

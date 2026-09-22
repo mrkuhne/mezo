@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
@@ -33,38 +33,40 @@ describe('mezo nav (real mode default)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('the hub tiles reach Minták / Memoár / Előrejelzések / Kísérletek as full pages', async () => {
-    const router = renderApp('/mezo')
+  test('the direct menu reaches Minták / Memoár / Előrejelzések / Kísérletek as full pages', async () => {
+    const router = renderApp('/mezo/menu')
     // The hub replaces the dropdown shell — no subnav button any more.
     expect(screen.queryByLabelText('Insights alnavigáció')).not.toBeInTheDocument()
 
     // Minták is a sibling page now (the hub owns the /mezo index).
-    await userEvent.click(await screen.findByRole('button', { name: 'Minták' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Minták' }))
     expect(router.state.location.pathname).toBe('/mezo/patterns')
     expect(await screen.findByText('A motor állapota')).toBeInTheDocument()
 
     // Memoár — un-ghosted at W2, navigates to the honest placeholder.
-    router.navigate('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Memoár' }))
+    await act(async () => { await router.navigate('/mezo/menu') })
+    await userEvent.click(await screen.findAllByRole('link', { name: 'Emlékek' }).then(links => links[0]))
+    await userEvent.click(await screen.findByRole('link', { name: /Memoár olvasása/ }))
     expect(await screen.findByText('Az első memoár a hét zárásakor készül el.')).toBeInTheDocument()
 
     // Előrejelzések — the honest still-learning state.
-    router.navigate('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Előrejelzések' }))
+    await act(async () => { await router.navigate('/mezo/menu') })
+    await userEvent.click(await screen.findByRole('link', { name: 'Előrejelzések' }))
     expect(
       await screen.findByText('Az első predikciók a megerősített mintákból készülnek — a minta-motor még tanul.'),
     ).toBeInTheDocument()
 
     // Kísérletek — its null-state.
-    router.navigate('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Kísérletek' }))
+    await act(async () => { await router.navigate('/mezo/menu') })
+    await userEvent.click(await screen.findByRole('link', { name: 'Kísérletek' }))
     expect(
       await screen.findByText('Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.'),
     ).toBeInTheDocument()
 
     // Memória — reached through the L0→L3 memory band, not a tile.
-    router.navigate('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Memória-rétegek' }))
+    await act(async () => { await router.navigate('/mezo/menu') })
+    await userEvent.click(await screen.findByRole('link', { name: 'Gépterem' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Memória/ }))
     expect(router.state.location.pathname).toBe('/mezo/memoria')
     expect(await screen.findByText('L0 · Nyers adat')).toBeInTheDocument()
   })
@@ -73,18 +75,18 @@ describe('mezo nav (real mode default)', () => {
   // WITHOUT a PageHead, so a user who tapped a tile could only leave via the tab bar. Every
   // sibling now owns the prototype's `‹ Mezo` chip.
   test.each([
-    ['/mezo/patterns', '‹ Mezo'],
+    ['/mezo/patterns', '‹ Menü'],
     ['/mezo/memoir', '‹ Mezo'],
     ['/mezo/knowledge', '‹ Mezo'],
-    ['/mezo/predictions', '‹ Mezo'],
-    ['/mezo/experiments', '‹ Mezo'],
+    ['/mezo/predictions', '‹ Menü'],
+    ['/mezo/experiments', '‹ Menü'],
     ['/mezo/memoria', '‹ Mezo'],
   ])('%s owns a back chip that returns to the hub', async (path, label) => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
     expect(back).toHaveTextContent(label)
     await userEvent.click(back)
-    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
+    await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Menü' ? '/mezo/menu' : '/mezo'))
   })
 
   // /mezo/chat dropped the shared PageHead for its own orb-led header (mezo-vdf4) — the back
@@ -107,8 +109,8 @@ describe('mezo nav (real mode default)', () => {
   })
 
   test('the Heti tile crosses to /me/week', async () => {
-    const router = renderApp('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Heti' }))
+    const router = renderApp('/mezo/menu')
+    await userEvent.click(await screen.findByRole('link', { name: 'Heti' }))
     expect(router.state.location.pathname).toBe('/me/week')
   })
 
@@ -118,12 +120,12 @@ describe('mezo nav (real mode default)', () => {
   })
 
   test('the coaching tile opens the hub, and the hub opens both surfaces', async () => {
-    const router = renderApp('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Proaktív coaching' }))
+    const router = renderApp('/mezo/menu')
+    await userEvent.click(await screen.findByRole('link', { name: 'Coaching' }))
     expect(router.state.location.pathname).toBe('/mezo/coaching')
     await userEvent.click(await screen.findByRole('button', { name: 'Megfigyelő' }))
     expect(router.state.location.pathname).toBe('/mezo/coaching/megfigyelo')
-    router.navigate('/mezo/coaching')
+    await act(async () => { await router.navigate('/mezo/coaching') })
     await userEvent.click(await screen.findByRole('button', { name: 'A napi kártya' }))
     expect(router.state.location.pathname).toBe('/mezo/coaching/kartya')
   })
@@ -133,9 +135,10 @@ describe('mezo nav (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('Memoár tile navigation renders the demo memoir', async () => {
-    renderApp('/mezo')
-    await userEvent.click(await screen.findByRole('button', { name: 'Memoár' }))
+  test('Emlékek to Memoár navigation renders the demo memoir', async () => {
+    renderApp('/mezo/menu')
+    await userEvent.click(await screen.findAllByRole('link', { name: 'Emlékek' }).then(links => links[0]))
+    await userEvent.click(await screen.findByRole('link', { name: /Memoár olvasása/ }))
     expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
   })
 

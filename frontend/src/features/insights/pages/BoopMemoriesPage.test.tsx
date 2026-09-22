@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi, test, expect, afterEach } from 'vitest'
@@ -11,7 +12,7 @@ vi.mock('@/data/hooks', () => ({
   useMemoir: () => ({ memoir: null }),
   useMemoirArchive: () => ({ data: [], isPending: false, isError: false }),
   useMemorySummaries: () => ({ summaries: [{ date: '2026-09-19', narrative: 'Egy valódi nap története.', embedded: true }], isPending: state.pending, isError: state.error, degraded: false }),
-  useSimilarDays: () => ({ results: null, isFetching: false, failed: false, degraded: false }),
+  useSimilarDays: (query: string) => ({ results: query ? [{ date: '2026-09-19', excerpt: 'Egy keresési találat.', rank: 1 }] : null, isFetching: false, failed: false, degraded: false }),
 }))
 
 test('daily memories and search are reachable without a memory overview or memoir', () => {
@@ -40,4 +41,18 @@ test('hub keeps memoir and search available when summaries fail', () => {
   expect(screen.getByText('Nem sikerült betölteni a napi emlékeket.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /Memoár olvasása/ })).toHaveAttribute('href', '/mezo/memoir')
   expect(screen.getByLabelText('Hasonló nap keresése')).toBeInTheDocument()
+})
+
+
+test('search survives opening a result and returning to the memories list', async () => {
+  render(<MemoryRouter initialEntries={['/mezo/emlekek']}><Routes>
+    <Route path="/mezo/emlekek" element={<BoopMemoriesPage />} />
+    <Route path="/mezo/emlekek/:date" element={<MemoryDayPage />} />
+  </Routes></MemoryRouter>)
+  await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'nyugodt este')
+  await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+  await userEvent.click(screen.getByRole('button', { name: /Egy keresési találat/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByLabelText('Hasonló nap keresése')).toHaveValue('nyugodt este')
+  expect(screen.getByRole('button', { name: /Egy keresési találat/ })).toBeInTheDocument()
 })

@@ -13,7 +13,7 @@ export const MEZO_KALAUZ: KalauzEntry[] = [
     id: 'mezo',
     route: '/mezo',
     tier: 'T1',
-    version: 1,
+    version: 2,
     label: 'Mezo',
     cards: [
       {
@@ -30,12 +30,12 @@ export const MEZO_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-mikrofon', orb: 's-orb-figyel', anchor: 'mezo-chat',
         title: 'Kérdezz, ahogy egy embertől.',
-        voice: 'A felső sáv egy sima beszélgetés-indító: írd be, ami eszedbe jut, vagy mondd fel hangosan. Mezo ismeri a mai napodat, nem a nulláról indul.',
+        voice: 'A Beszélgetés Booppal gomb a közvetlen chatet nyitja. Az üzenőfalon egy bejegyzésre válaszolhatsz, a chatben saját kérdést is indíthatsz.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Amikor elakadsz, vagy csak kíváncsi vagy.',
-        voice: 'Nincs napi adag belőle. Hetente egyszer viszont megéri ránézni a mintákra és a memoárra — abból látszik a nagyobb ív.',
+        voice: 'Az üzenőfalon követheted a csapat új beszélgetéseit. A Menüben a Minták, Előrejelzések, Diagnózis, Kísérletek és Heti a saját nevükön várnak.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

@@ -42,8 +42,8 @@ export function GeptermPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
-      <PageHero icon="i-retegek" iconSize={34} name="Gépterem" sub="mi táplálja a dossziét — nyíltan">
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHero icon="i-retegek" iconSize={34} name="Gépterem" sub="Boop működése · források, memória és futások">
         {lastRun != null && <p className="kr-runlede">{lastRunLine(lastRun)}</p>}
       </PageHero>
       <PageBody principle={PRINCIPLE}>
@@ -76,6 +76,10 @@ export function GeptermPage() {
             line="az aktív katalógus"
             onClick={() => navigate('/mezo/karakter/gepterem/detektorok')}
           />
+          <Tile icon="i-retegek" eyebrow="Memória" delayMs={220}
+            line="rétegek, eredet és költségek" onClick={() => navigate('/mezo/memoria')} />
+          <Tile icon="i-minta" eyebrow="Megfigyelők" delayMs={260}
+            line="a coaching javaslatainak háttere" onClick={() => navigate('/mezo/coaching/megfigyelo')} />
         </Mosaic>
       </PageBody>
     </div>

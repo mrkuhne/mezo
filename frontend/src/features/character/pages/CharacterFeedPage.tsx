@@ -8,7 +8,7 @@ import { CharacterPostCard } from '@/features/character/components/CharacterPost
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { CharacterCouncilStatus } from '@/features/character/components/CharacterCouncilStatus'
 
-export function CharacterFeedPage() {
+export function CharacterFeedPage({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate()
   const { items, isLoading, isError, refetch } = useCharacterFeed(60)
   const { experts } = useCharacterExperts()
@@ -30,7 +30,7 @@ export function CharacterFeedPage() {
   )
   return (
     <div className="kr-hub kr-social">
-      <CharacterHeader active="feed" />
+      {!embedded && <CharacterHeader active="feed" />}
       <CharacterCouncilStatus />
       {!isLoading && !isError && featured && (
         <CharacterMorningStory item={featured} experts={experts} onOpen={() => {

@@ -37,13 +37,11 @@ test('switches domains via the switcher, then between tabs by clicking the botto
   await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
   const switcher = await screen.findByRole('dialog')
   await userEvent.click(within(switcher).getByRole('button', { name: /^Mezo/ }))
-  expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
-  expect(screen.queryByLabelText('Insights alnavigáció')).not.toBeInTheDocument()
-  // Now on the Mezo domain, the bar carries Mezo's four contextual tabs — clicking one
-  // (Előrejelzések → /mezo/predictions) navigates within the domain.
-  await userEvent.click(screen.getByRole('link', { name: /Előrejelzések/ }))
-  expect(screen.getByRole('link', { name: /Előrejelzések/ }).className).toContain('active')
+  expect(await screen.findByRole('link', { name: 'Beszélgetés Booppal' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: 'Összes funkció' }))
+  await userEvent.click(screen.getByRole('link', { name: 'Előrejelzések' }))
+  expect(screen.getByRole('link', { name: 'Menü' }).className).toContain('active')
+  expect(screen.getByRole('navigation', { name: 'Boop funkciók' })).toBeInTheDocument()
 })
 test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
@@ -96,10 +94,10 @@ test('/mezo/karakter is the Karakter dossier hub — reachable as a stable route
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
-test('the Mezo hub links to the Karakter dossier hub (hub-tile-reorg)', async () => {
-  renderApp('/mezo')
-  await userEvent.click(await screen.findByRole('button', { name: 'Karakter' }))
-  expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+test('the Boop menu links directly to the original Karakter dimensions', async () => {
+  renderApp('/mezo/menu')
+  await userEvent.click(await screen.findByRole('link', { name: 'Karakter' }))
+  expect(await screen.findByText('Amit eddig tudunk rólad')).toBeInTheDocument()
 })
 
 // Karakter moved to the Mezo domain (mezo-jkh4): legacy `/me/karakter/*` links (old
@@ -173,7 +171,7 @@ test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w,
 
 test('/mezo/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
   renderApp('/mezo/karakter/gepterem')
-  expect(await screen.findByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
+  expect(await screen.findByText('Boop működése · források, memória és futások')).toBeInTheDocument()
   // Fix round 1 (a11y): the Futások tile carries no `aria-label` any more — its accessible
   // name is its own text content (eyebrow + the live line), so the query matches on that.
   expect(screen.getByRole('button', { name: /Futások/ })).toBeInTheDocument()
