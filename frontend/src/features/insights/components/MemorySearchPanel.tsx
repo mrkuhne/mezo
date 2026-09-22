@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSimilarDays } from '@/data/hooks'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -6,16 +6,21 @@ import { SimilarDayCard } from '@/features/insights/components/SimilarDayCard'
 
 /** Lusta kereső — a query a gombbal (submit) indul, nem gépelésre tüzel (spec §6).
  *  Az arc a prototípus .sfield pill-mezője (mezo-d20.5.7). */
-export function MemorySearchPanel({ onPick }: { onPick: (date: string) => void }) {
-  const [draft, setDraft] = useState('')
-  const [submitted, setSubmitted] = useState('')
+export function MemorySearchPanel({ onPick, initialQuery = '', onSearch }: {
+  onPick: (date: string) => void
+  initialQuery?: string
+  onSearch?: (query: string) => void
+}) {
+  const [draft, setDraft] = useState(initialQuery)
+  const [submitted, setSubmitted] = useState(initialQuery)
+  useEffect(() => { setDraft(initialQuery); setSubmitted(initialQuery) }, [initialQuery])
   const { results, degraded, isFetching, failed } = useSimilarDays(submitted)
 
   return (
     <div className="col gap-md">
       <form
         className="row gap-sm"
-        onSubmit={(e) => { e.preventDefault(); setSubmitted(draft.trim()) }}
+        onSubmit={(e) => { e.preventDefault(); setSubmitted(draft.trim()); onSearch?.(draft.trim()) }}
       >
         <div className="mem-sfield">
           <span aria-hidden="true">⌕</span>

@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -66,6 +66,8 @@ pager, not a bottom sheet) and its registry entry
 `KALAUZ_REGISTRY` — see §2 below.
 
 ## 2. User-facing behavior
+
+The Mezo tour uses registry version 2: the social feed/replies and direct original-name menu replace the old mosaic-hub description. The `mezo-chat` anchor is on `BoopWorldPage`'s actual chat link.
 
 The registry points persistent preferences to the central `/settings` menu. Train schedule guidance describes the header settings entry and Train group; the former local Időpontok chip is absent. General settings retains tutorial reset through the same TutorialProvider.
 
@@ -207,7 +209,7 @@ Gated by the switch `mezo.feature.tutorial.enabled`
   - `train-hero` — all six `.eh-hero` variants in
     `frontend/src/features/train/pages/EdzesHubPage.tsx`.
   - `mezo-chat` — the composer-shaped chat opener, one node, in
-    `frontend/src/features/insights/pages/MezoHubPage.tsx` (the `Mezo` tab's page module still
+    `frontend/src/features/insights/pages/BoopWorldPage.tsx` (the `Mezo` tab's page module still
     lives under `features/insights` — see [`insights.md`](insights.md) for the tab-rename
     history).
   - `me-idhero` — the identity hero, one node, in `frontend/src/features/me/pages/EnHubPage.tsx`.
@@ -447,7 +449,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   (one per daypart face).
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6
   (one per hero variant).
-- `frontend/src/features/insights/pages/MezoHubPage.tsx` — `data-kalauz-anchor="mezo-chat"`.
+- `frontend/src/features/insights/pages/BoopWorldPage.tsx` — `data-kalauz-anchor="mezo-chat"`.
 - `frontend/src/features/me/pages/EnHubPage.tsx` — `data-kalauz-anchor="me-idhero"`.
 
 **Frontend — data layer**

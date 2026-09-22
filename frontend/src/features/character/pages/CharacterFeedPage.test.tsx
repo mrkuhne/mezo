@@ -74,3 +74,10 @@ test('the featured story returns to its real post even after filtering it out', 
   expect(screen.getByRole('button', { name: 'Minden' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByRole('article')).toHaveTextContent('A valós kiemelt megfigyelés.')
 })
+
+test('embedding keeps the real posts and evidence but omits duplicate section navigation', () => {
+  render(<QueryWrapper><CharacterFeedPage embedded /></QueryWrapper>)
+  expect(screen.queryByRole('navigation', { name: 'Karakter nézetek' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('article')).toHaveLength(MOCK_FEED.length)
+  expect(screen.getAllByRole('button', { name: 'Miből látszik?' }).length).toBeGreaterThan(0)
+})

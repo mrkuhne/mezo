@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-21
+updated: 2026-09-22
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -222,6 +222,8 @@ HYPOTHESIS items remain for evidence review. Defaults are three due items, a thr
 and a thirty-day maximum horizon. `ConferenceResponse.followups` exposes this owned state.
 
 ## 2. User-facing behavior
+
+The main `/mezo` social entry embeds `KarakterHubPage`/`CharacterFeedPage`; `/mezo/rolad` embeds `DimensionsPage`. Their optional `embedded` prop removes only the duplicate character navigation. Legacy `/mezo/karakter/*` URLs and all real reply/reaction/evidence flows remain. `GeptermPage` is the common engine entrance and links to memory layers/costs and coaching observers alongside character runs/sources/detectors and AI call audit.
 
 The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width, like the hub's `Diagnózis` tile, bottom line = the average CORE-band maturity gated by `isDossierEmpty` — that opens `/me/karakter`, the dossier hub. **The dossier's entry point moved here from the Én hub in the hub-tile-reorg** (`mezo-o486`, 2026-09-01, spec [`2026-09-01-hub-tile-reorg-design.md`](../superpowers/specs/2026-09-01-hub-tile-reorg-design.md); guiding principle: *Mezo = everything AI-derived, Én = personal data* — the character dossier is companion-derived, [insights.md §2.0](insights.md)) — the route itself did not move, only the tile. `/me/karakter` and everything under it is
 The social surface follows the approved Clay/Mozaik v3 prototype: warm author-led feed cards, compact topic rows and a shared glass evidence popup.

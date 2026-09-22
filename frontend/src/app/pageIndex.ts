@@ -99,7 +99,10 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel/gyogyszer', label: 'Gyógyszer', hint: 'A gyógyszereid külön nyilvántartva.' },
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
-  { route: '/mezo', label: 'Felfedezések', hint: 'Amit Boop észrevett rólad.' },
+  { route: '/mezo/menu', label: 'Menü', hint: 'Minden Boop-funkció a saját nevén, közvetlenül.' },
+  { route: '/mezo/rolad', label: 'Rólad', hint: 'Karakter, tudástár és saját kommunikációs kérések.' },
+  { route: '/mezo', label: 'Üzenőfal', hint: 'A csapat beszélgetései, válaszaid és kapcsolódó felfedezések.' },
+  { route: '/mezo/emlekek', label: 'Emlékek', hint: 'Napi emlékek, heti memoár és hasonló napok keresése.' },
   { route: '/mezo/patterns', label: 'Minták', hint: 'Az ismétlődő összefüggések a napjaidban.' },
   { route: '/mezo/predictions', label: 'Előrejelzések', hint: 'Mire számíthatsz a jelenlegi irány mellett.' },
   { route: '/mezo/karakter', label: 'Karakter', hint: 'Amit Boop rólad összerakott — a dosszié.' },

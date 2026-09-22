@@ -95,10 +95,10 @@ export const DOMAINS: NavDomain[] = [
     id: 'mezo',
     name: 'Mezo',
     tabs: [
-      { label: 'Felfedezések', route: '/mezo', icon: 'i-minta' },
-      { label: 'Előrejelzések', route: '/mezo/predictions', icon: 'i-hajnal' },
-      { label: 'Karakter', route: '/mezo/karakter', icon: 'i-kristaly' },
-      { label: 'Tudástár', route: '/mezo/knowledge', icon: 'i-tudas' },
+      { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo', owns: ['/mezo/karakter/feed'] },
+      { label: 'Menü', route: '/mezo/menu', icon: 'i-minta', owns: ['/mezo/patterns', '/mezo/predictions', '/mezo/diagnozis', '/mezo/experiments', '/mezo/coaching', '/mezo/karakter/gepterem', '/mezo/karakter/konzilium', '/mezo/karakter/csapat', '/mezo/memoria', '/mezo/chat'] },
+      { label: 'Rólad', route: '/mezo/rolad', icon: 'i-kristaly', owns: ['/mezo/knowledge', '/mezo/karakter'] },
+      { label: 'Emlékek', route: '/mezo/emlekek', icon: 'i-memoar', owns: ['/mezo/memoir'] },
     ],
   },
   {
@@ -169,6 +169,12 @@ const navMemory = new Map<string, string>()
  * too. A path matching no tab route leaves memory untouched.
  */
 export function rememberRoute(pathname: string): void {
+  const currentDomain = domainById(activeDomainId(pathname))
+  const ownedRoute = currentDomain ? activeTabRoute(currentDomain, pathname) : null
+  if (currentDomain && ownedRoute) {
+    navMemory.set(currentDomain.id, ownedRoute)
+    return
+  }
   let bestDomain: string | null = null
   let bestRoute: string | null = null
   for (const domain of DOMAINS) {

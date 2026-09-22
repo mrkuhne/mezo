@@ -1,0 +1,1289 @@
+<style>
+#boop-world .v3-intro{display:flex;align-items:center;gap:14px;margin-bottom:20px}#boop-world .v3-intro .bw-avatar{width:64px;height:64px}#boop-world .v3-intro p{margin:4px 0;color:#756556;font-size:12px}#boop-world .v3-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}#boop-world .v3-tile{position:relative;min-height:140px;padding:16px;text-align:left;border:.5px solid #2b211810;border-radius:22px;background:linear-gradient(145deg,var(--tile,#ede6f8),#fffaf4);box-shadow:0 14px 23px -19px #84708c,0 1px 3px #2b211809,inset 0 1px #fff;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;align-items:flex-start}#boop-world .v3-tile:hover{transform:translateY(-4px);box-shadow:0 20px 24px -19px #84708c}#boop-world .v3-tile:active{transform:scale(.97)}#boop-world .v3-tile .bw-clay{width:43px;height:43px;transition:transform .3s}#boop-world .v3-tile:hover .bw-clay{transform:rotate(-9deg) scale(1.12)}#boop-world .v3-tile b{font-size:16px;margin:10px 0 4px}#boop-world .v3-tile small{font-size:11px;color:#746455;line-height:1.4}#boop-world .v3-tile em{position:absolute;right:12px;top:13px;font:500 10px Geist,sans-serif;color:#60516b;background:#fffcf5bb;padding:4px 7px;border-radius:9px}#boop-world .v3-section-title{font-size:17px;margin:25px 0 12px}#boop-world .bw-overlay.v3-page{inset:80px 0 88px;padding:0;background:#fbf7f0;backdrop-filter:none;display:block;z-index:24}#boop-world .bw-overlay.v3-page[hidden]{display:none}#boop-world .v3-page .bw-glass{height:100%;max-height:100%;border-radius:0;background:#fbf7f0;padding:0 24px 35px;box-shadow:none;box-sizing:border-box}#boop-world .v3-page .bw-glass:before{display:none}#boop-world .v3-page .bw-modal-head{top:0;padding:12px 0;background:#fbf7f0;display:flex;flex-wrap:wrap;gap:10px}#boop-world .v3-page .bw-modal-head h2{font:700 27px Fraunces,serif;order:2;flex-basis:100%;margin:0}#boop-world .v3-page .bw-close{order:0;width:auto;border-radius:12px;padding:9px 12px;font-size:12px}#boop-world .v3-home{order:1;margin-left:auto;font-size:12px;color:#6a5594}#boop-world .v3-crumb{width:100%;font-size:11px;color:#877966;order:1}#boop-world .v3-subnav{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 17px}#boop-world .v3-subnav button{font-size:11px;border:1px solid #e7dfd3;padding:7px 9px;border-radius:10px;background:#fffcf8}#boop-world .v3-subnav button[aria-current=page]{background:#e8e0f4;border-color:#d2c3e6;color:#634b8a}#boop-world .v3-hero{background:linear-gradient(145deg,var(--tile,#ece5f7),#fff9f1);padding:20px;border-radius:22px;margin:2px 0 20px;box-shadow:0 14px 26px -22px #886e8e;position:relative}#boop-world .v3-hero .bw-clay{width:54px;height:54px;float:right;margin:0 0 10px 12px}#boop-world .v3-hero h3{font-size:22px;line-height:1.15;margin:5px 0 12px}#boop-world .v3-hero p{font-size:13px;color:#746357;line-height:1.6}#boop-world .v3-row{display:block;width:100%;padding:16px 0;border-bottom:1px solid #e8dfd3;text-align:left;background:transparent}#boop-world .v3-row strong{display:block;font-size:15px;margin-bottom:6px}#boop-world .v3-row small{display:block;font-size:12px;color:#7b6e60;line-height:1.5}#boop-world .v3-row .bw-state{margin-top:9px}#boop-world .v3-bars{display:flex;align-items:flex-end;gap:10px;height:114px;margin:20px 0 8px}#boop-world .v3-bars button{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:7px;font-size:11px}#boop-world .v3-bars i{display:block;width:100%;height:var(--bar);background:linear-gradient(#c6b4e7,#e9def5);border-radius:8px 8px 4px 4px;transform-origin:bottom;animation:v3-grow .55s ease-out both}#boop-world .v3-bars button:hover i{background:linear-gradient(#ee9c79,#f7d3bc)}#boop-world .v3-medal{display:flex;gap:12px;align-items:center;padding:16px;background:#eaf0df;border-radius:18px;margin:18px 0}#boop-world .v3-medal .bw-clay{width:38px;height:38px}#boop-world .v3-medal strong{display:block;font-size:14px}#boop-world .v3-medal small{font-size:12px;color:#5d7051}#boop-world .v3-page #bw-dialog-content{animation:v3-arrive .22s ease-out}#boop-world .bw-dock{z-index:28}#boop-world .bw-overlay:not(.v3-page){z-index:40}#boop-world .bw-fab{z-index:29}#boop-world:has(.v3-page:not([hidden])) .bw-fab{display:none}@keyframes v3-arrive{from{transform:translateX(9px);opacity:.4}to{transform:none;opacity:1}}@keyframes v3-grow{from{transform:scaleY(.1)}to{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){#boop-world *{animation:none!important;transition:none!important}}@media(max-width:360px){#boop-world .v3-page .bw-glass{padding-left:16px;padding-right:16px}#boop-world .v3-tile{padding:13px;min-height:130px}#boop-world .v3-tile b{font-size:14px}}
+</style>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=Geist:wght@400;500;600;650;700;750&display=swap');
+#boop-world{--bw-ink:#2B2118;--bw-muted:#5F5346;--bw-lav:#5D4FA0;--bw-line:#2b21181a;--bw-color:#EBE6F8;max-width:460px;margin:auto;background:#FBF6EF;color:var(--bw-ink);font:400 14px/1.6 Geist,system-ui,sans-serif;border-radius:28px;isolation:isolate;position:relative;overflow:clip;text-align:left;color-scheme:light;box-shadow:0 14px 60px #2b211816}
+#boop-world *{box-sizing:border-box}#boop-world [hidden]{display:none!important}#boop-world button,#boop-world input,#boop-world textarea{font:inherit;color:inherit}#boop-world button{cursor:pointer;border:0;background:none;padding:8px;border-radius:12px;transition:transform .18s,background .18s}#boop-world button:active{transform:scale(.97)}#boop-world button:focus-visible{outline:2px solid var(--bw-lav);outline-offset:3px}#boop-world button:hover{background:#ffffff70}#boop-world h1,#boop-world h2,#boop-world h3{font-family:Fraunces,Georgia,serif;font-weight:500;line-height:1.18}#boop-world h1{font-size:30px;margin:0}#boop-world h2{font-size:25px;margin:0 0 12px}#boop-world h3{font-size:22px;margin:8px 0 12px}#boop-world p{margin:0 0 12px}#boop-world small{font-size:11px;color:var(--bw-muted);display:block;line-height:1.5}#boop-world i,#boop-world button>svg{width:18px;height:18px}#boop-world .bw-top{display:flex;align-items:center;gap:8px;padding:15px 18px 10px;background:radial-gradient(ellipse at 20% 0,#f3c56f55,transparent 80%)}#boop-world .bw-brand{font-size:25px;font-weight:750;letter-spacing:-1.4px;margin-right:auto}#boop-world .bw-top button{min-width:36px;min-height:36px;display:grid;place-items:center}#boop-world .bw-day{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:conic-gradient(#b5a776 43%,#e7dfcc 0);box-shadow:inset 0 1px 3px #fff;font-size:11px}#boop-world .bw-day span{background:#fbf6ef;border-radius:50%;width:23px;height:23px;display:grid;place-items:center}
+#boop-world .bw-head{padding:13px 20px 14px;display:flex;align-items:center;gap:12px}#boop-world .bw-head>div{flex:1}#boop-world .bw-kicker{color:var(--bw-muted);font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}#boop-world .bw-hero-orb{width:57px;height:57px}#boop-world .bw-nav{display:flex;margin:0 14px 14px;padding:4px;border-radius:18px;background:#2b211809;gap:2px}#boop-world .bw-nav button{flex:1;font-size:12px;font-weight:600;padding:10px 2px;border-radius:14px}#boop-world .bw-nav button[aria-selected=true]{background:#fffdf9;box-shadow:0 3px 8px #604c2814;color:var(--bw-lav)}#boop-world .bw-cast{display:flex;justify-content:space-between;padding:0 16px 12px;gap:2px}#boop-world .bw-cast button{flex:1;min-width:0;padding:2px;text-align:center;font-size:11px;line-height:1.5}#boop-world .bw-cast .bw-avatar{width:55px;height:55px;margin:auto;display:flex}#boop-world .bw-cast .bw-avatar:after{content:'';position:absolute;inset:-2px;border:2px solid #cabfe3;border-radius:50%;border-bottom-color:transparent;transform:rotate(-25deg)}#boop-world .bw-avatar{position:relative;display:inline-flex;flex:none;width:45px;height:45px;vertical-align:middle}#boop-world .bw-avatar>svg{width:100%;height:100%;overflow:visible}#boop-world .bw-avatar.tiny{width:31px;height:31px}#boop-world .bw-avatar.large{width:78px;height:78px}#boop-world .bw-mark{position:absolute;bottom:-1px;right:-1px;display:grid;place-items:center;width:17px;height:17px;background:#fffaf4;border:1px solid white;border-radius:6px;box-shadow:0 2px 4px #2b211822;z-index:1}#boop-world .bw-mark svg{width:11px;height:11px}#boop-world .bw-strip{display:flex;align-items:center;gap:8px;margin:0 16px 14px;padding:9px 12px;background:#EDE7F6;border-radius:14px;font-size:12px}#boop-world .bw-strip>span{flex:1}#boop-world .bw-strip button{font-size:12px;font-weight:650;color:var(--bw-lav);padding:3px}
+#boop-world .bw-filters{display:flex;gap:4px;margin:0 15px 12px;flex-wrap:wrap}#boop-world .bw-filters button{padding:7px 10px;font-size:11px;border-radius:99px;color:var(--bw-muted)}#boop-world .bw-filters button[aria-pressed=true]{background:var(--bw-color);color:var(--bw-lav);font-weight:650}#boop-world .bw-post{background:linear-gradient(135deg,#FFF1D9,#FFFBF5);border:1px solid #fff9;border-radius:24px;margin:0 12px 16px;padding:16px;box-shadow:0 14px 26px -19px #aa771e66,inset 0 1px 0 white}#boop-world .bw-post.lav{background:linear-gradient(145deg,var(--bw-color),#F9F6FE);box-shadow:0 14px 26px -19px #5d4fa066}#boop-world .bw-post.sage{background:linear-gradient(145deg,#E9F1E2,#F7FBF3);box-shadow:0 14px 26px -19px #6e8b5e66}#boop-world .bw-author{display:flex;align-items:center;gap:9px;margin-bottom:13px}#boop-world .bw-author>div{flex:1;min-width:0}#boop-world .bw-author strong{display:block;font-size:13px}#boop-world .bw-author button{padding:0;flex:none}#boop-world .bw-tag{display:inline-block;font-size:11px;color:var(--bw-lav);background:#ffffff90;border-radius:7px;padding:3px 7px}#boop-world .bw-post>p{font-size:15px;line-height:1.65}#boop-world .bw-topic{display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:9px 10px!important;font-size:12px!important;background:#ffffff90!important;margin:10px 0;border-radius:12px!important}#boop-world .bw-topic span{flex:1}#boop-world .bw-evidence{font-size:11px!important;color:var(--bw-lav)!important;padding:4px 0!important;display:flex;align-items:center;gap:6px}#boop-world .bw-social{display:flex;gap:3px;align-items:center;margin:10px 0 4px;font-size:11px;color:var(--bw-muted)}#boop-world .bw-social .bw-avatar{margin-right:-8px}#boop-world .bw-social>span:last-child{margin-left:12px}#boop-world .bw-actions{display:flex;gap:3px;border-top:1px solid var(--bw-line);padding-top:4px}#boop-world .bw-actions button{flex:1;font-size:11px;display:flex;justify-content:center;align-items:center;gap:5px;min-height:40px;padding:6px 2px}#boop-world .bw-actions button[aria-pressed=true]{color:var(--bw-lav);background:#e8dff4}#boop-world .bw-comment{display:flex;align-items:flex-start;gap:7px;margin-top:11px}#boop-world .bw-bubble{min-width:0;flex:1;border-radius:4px 15px 15px 15px;padding:10px 12px;background:#ffffffb8}#boop-world .bw-bubble strong{font-size:12px;color:var(--bw-lav)}#boop-world .bw-bubble p{font-size:12px;line-height:1.65;margin:4px 0}#boop-world .bw-mention{color:var(--bw-lav);font-weight:600}#boop-world .bw-comment-actions{display:flex;gap:8px}#boop-world .bw-comment-actions button{font-size:11px;padding:3px 0;color:var(--bw-muted)}#boop-world .bw-reply{display:flex;align-items:center;gap:8px;width:100%;background:#fff9!important;border:1px solid var(--bw-line)!important;border-radius:99px!important;font-size:12px!important;text-align:left;margin-top:13px;padding:8px 10px!important;color:var(--bw-muted)!important}#boop-world .bw-self{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#e2d7ec;color:var(--bw-lav);font-size:11px;flex:none}#boop-world .bw-primary{background:#FF5B36!important;color:white!important;padding:11px 15px!important;border-radius:14px!important;font-size:12px!important;font-weight:650;box-shadow:0 6px 13px -6px #a5372080}#boop-world .bw-outline{background:#fff9!important;border:1px solid var(--bw-line)!important;padding:10px 13px!important;font-size:12px!important}#boop-world .bw-full{width:100%;margin-top:10px}#boop-world .bw-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#boop-world .bw-row>*{min-width:0}#boop-world .bw-muted{color:var(--bw-muted);font-size:12px}#boop-world .bw-caught{margin:22px;text-align:center;color:var(--bw-muted);font-size:12px}#boop-world .bw-caught .bw-avatar{display:flex;margin:0 auto 5px}#boop-world .bw-content{padding:4px 20px 18px}#boop-world .bw-section-title{font:500 24px/1.2 Fraunces,Georgia,serif;margin:15px 0 10px}#boop-world .bw-case{display:block;width:100%;padding:17px 0!important;border-bottom:1px solid var(--bw-line)!important;border-radius:0!important;text-align:left}#boop-world .bw-case strong{display:block;margin:5px 0;font-size:15px}#boop-world .bw-case .bw-row{justify-content:space-between}#boop-world .bw-state{font-size:11px;padding:3px 7px;border-radius:8px;background:#ece4f4;color:var(--bw-lav)}#boop-world .bw-state.green{background:#e4eddd;color:#4e6b42}#boop-world .bw-progress{height:5px;border-radius:9px;background:#2b211810;margin:9px 0}#boop-world .bw-progress span{display:block;height:100%;border-radius:9px;background:#9b8fc4}#boop-world .bw-fact{padding:16px 0;border-bottom:1px solid var(--bw-line)}#boop-world .bw-fact p{margin:6px 0;font-size:14px}#boop-world .bw-book{margin:8px 0 20px;padding:22px;border-radius:8px 25px 25px 8px;background:linear-gradient(110deg,#ded3ed 0,#f4eaf8 5%,#e9e0f3 100%);box-shadow:inset 5px 0 0 #b7a4c440,0 14px 25px -17px #51426350}#boop-world .bw-book h3{font-size:29px}#boop-world .bw-search{display:flex;align-items:center;gap:7px;background:#fffaf4;border:1px solid var(--bw-line);border-radius:14px;padding:9px 12px;margin-bottom:15px}#boop-world input,#boop-world textarea{background:#fffaf4;border:1px solid var(--bw-line);padding:12px;border-radius:12px;width:100%;font-size:16px}#boop-world .bw-search input{border:0;background:transparent;padding:2px;min-width:0}#boop-world textarea{min-height:90px;resize:vertical;display:block;margin:8px 0 12px}#boop-world .bw-memory{padding:15px 0;border-bottom:1px solid var(--bw-line)}#boop-world .bw-memory button{padding:5px 0;color:var(--bw-lav);font-size:12px}#boop-world .bw-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 20px;background:#f5efe7;border-top:1px solid var(--bw-line);font-size:11px;color:var(--bw-muted)}#boop-world .bw-foot button{font-size:11px;padding:4px}#boop-world .bw-demo{padding:7px;text-align:center;font-size:11px;color:var(--bw-muted)}
+#boop-world .bw-overlay{position:absolute;inset:0;z-index:20;background:#46344f2a;backdrop-filter:blur(9px);padding:12px;display:flex;align-items:flex-start;justify-content:center}#boop-world .bw-glass{position:relative;width:100%;background:linear-gradient(145deg,#fffcf7f5,#eee7f7f5);border:1px solid #fff;border-radius:26px;padding:22px;box-shadow:0 26px 70px #38234c44,inset 0 1px 0 white;animation:bw-pop .25s ease-out}#boop-world .bw-modal-head{display:flex;gap:8px;align-items:center;margin-bottom:13px}#boop-world .bw-modal-head h2{flex:1;margin:0;font-size:25px}#boop-world .bw-close{width:36px;height:36px;flex:none}#boop-world .bw-glass p{font-size:13px;line-height:1.7}#boop-world .bw-evidence-row{border-top:1px solid var(--bw-line);padding:12px 0;font-size:13px}#boop-world .bw-evidence-row strong{display:block}#boop-world .bw-note{font-size:12px;padding:12px;border-radius:14px;background:#ebe4f4;margin:14px 0}#boop-world .bw-step{border-left:2px solid #c5b4df;padding:0 0 17px 14px;margin-left:7px;font-size:13px}#boop-world .bw-step strong{display:block}#boop-world .bw-reward{display:flex;gap:10px;align-items:center;border-radius:15px;padding:13px;background:#E7EFDf;color:#425e37;margin:12px 0;animation:bw-pop .35s}#boop-world .bw-reward strong{display:block}#boop-world .bw-result{font-size:12px}#boop-world .bw-toast{position:sticky;bottom:10px;z-index:25;margin:10px 16px;padding:11px 13px;border-radius:14px;background:#4e6b42;color:white;font-size:12px;box-shadow:0 5px 20px #0002}#boop-world .bw-avatar .boop-eye,#boop-world .bw-avatar .boop-pupil,#boop-world .bw-avatar .boop-body{transform-box:fill-box;transform-origin:center}#boop-world .bw-avatar .boop-body{transform-origin:50% 96%}
+@media(prefers-reduced-motion:no-preference){#boop-world.alive .boop-eye{animation:bw-blink 6s infinite;animation-delay:var(--delay,0s)}#boop-world.alive .boop-pupil{animation:bw-look 9s infinite;animation-delay:var(--delay,0s)}#boop-world.alive .boop-body{animation:bw-breathe 4.2s ease-in-out infinite;animation-delay:var(--delay,0s)}}@keyframes bw-blink{0%,41%,45%,100%{transform:scaleY(1)}43%{transform:scaleY(.08)}}@keyframes bw-look{0%,20%,66%,100%{transform:translateX(0)}26%,38%{transform:translateX(-2px)}46%,58%{transform:translateX(2px)}}@keyframes bw-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}@keyframes bw-pop{from{opacity:.2;transform:translateY(9px) scale(.98)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){#boop-world *,#boop-world *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(max-width:360px){#boop-world .bw-post{padding:13px}#boop-world .bw-cast .bw-avatar{width:45px;height:45px}#boop-world .bw-nav button{font-size:11px}#boop-world .bw-glass{padding:17px}}@media(pointer:coarse){#boop-world button{min-height:44px}}
+</style>
+<style>
+/* Geometry and materials: production TabBar/AppHeader + restored-world style bible. */
+#boop-world{max-width:416px;height:680px;max-height:900px;border-radius:24px;background:#FBF6EF;font-family:Geist,system-ui,sans-serif;box-shadow:0 20px 60px #2b211820;overflow:hidden}
+#boop-world .bw-scroll{position:absolute;inset:0 0 88px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding-bottom:70px}#boop-world .bw-scroll::-webkit-scrollbar{display:none}
+#boop-world .bw-top{position:sticky;top:0;z-index:8;min-height:64px;padding:10px 12px 6px;gap:6px;background:linear-gradient(155deg,#B9DCF0 0%,#D3E9F6 55%,#EAF4FA 100%);margin-bottom:16px;box-shadow:0 10px 16px #eaf4fa80}#boop-world .bw-brand{font-size:25px;font-weight:700;letter-spacing:-.045em}#boop-world .bw-top button{width:36px;height:36px;min-width:36px;border-radius:50%;background:#fffcf7c7;border:.5px solid #2b211810;padding:5px;box-shadow:0 3px 7px #2b21180b}#boop-world .bw-top button:last-child{width:42px;height:42px;background:none;box-shadow:none;border:0;padding:0}#boop-world .bw-top button>svg,#boop-world .bw-top .bw-clay{width:24px;height:24px}#boop-world .bw-top:after{content:"";position:absolute;left:0;right:0;top:100%;height:16px;pointer-events:none;background:linear-gradient(#E3F0F8,#FBF6EF)}#boop-world .bw-top button:last-child>svg{width:42px;height:42px}#boop-world .dayorb-base{filter:grayscale(1) brightness(1.28) contrast(.55);opacity:.55}
+#boop-world .bw-head{padding:0 30px 19px}#boop-world .bw-head h1{font-size:30px;letter-spacing:-.02em}#boop-world .bw-head .bw-kicker{font-size:9px;letter-spacing:.12em;margin-bottom:6px}#boop-world .bw-head button{padding:0}#boop-world .bw-post{margin:0 24px 16px;padding:16px;border-radius:22px;border:.5px solid #2b21180f}#boop-world .bw-cast{padding:0 24px 16px}#boop-world .bw-strip{margin:0 24px 14px}#boop-world .bw-filters{margin-left:24px;margin-right:24px}#boop-world .bw-post>p{font-size:14px}#boop-world .bw-post .bw-tag{font-size:10px}#boop-world .bw-content{padding:0 24px 16px}#boop-world .bw-primary{background:linear-gradient(135deg,#FF7A55,#FF5B36)!important}#boop-world .bw-foot{padding:15px 24px;background:none;border-top:0}#boop-world .bw-demo{font-size:10px;padding:8px 24px}
+#boop-world .bw-dock{position:absolute;left:0;right:0;bottom:0;height:88px;padding:12px 8px 24px;gap:3px;display:flex;align-items:stretch;border-top:1px solid #2b211814;background:linear-gradient(180deg,#FFFDF9,#F7F2E9 80%);box-shadow:0 -10px 24px -14px #2b21181a,inset 0 1px 0 #ffffffbf;z-index:10}#boop-world .bw-dock button{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0;min-height:44px;gap:3px;padding:0;font-size:10px;font-weight:500;color:#5F5346;border-radius:0;background:none}#boop-world .bw-dock button>span{white-space:nowrap}#boop-world .bw-dock .bw-clay{width:27px;height:27px;display:block}#boop-world .bw-dock [aria-selected=false] .bw-clay{filter:grayscale(1) brightness(1.04) opacity(.48)}#boop-world .bw-dock [aria-selected=true]{color:#5D4FA0}#boop-world .bw-dock .bw-domain{flex:0 0 56px;border-right:1px solid #2b211814;padding-right:5px}#boop-world .bw-domain .bw-avatar{width:40px;height:40px}#boop-world .bw-domain .bw-mark{display:none}#boop-world .bw-home-line{position:absolute;width:110px;height:4px;border-radius:9px;background:#2B2118;bottom:8px;left:50%;transform:translateX(-50%);opacity:.7;pointer-events:none;z-index:11}#boop-world .bw-fab{position:absolute;right:18px;bottom:105px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FF976F,#F36343);color:white;font-size:30px;box-shadow:0 9px 24px #cb563940;z-index:9;display:grid;place-items:center;padding:0}
+#boop-world .bw-overlay{padding:14px;background:#2b21182e;backdrop-filter:blur(14px);align-items:flex-end;z-index:30}#boop-world .bw-glass{margin:0!important;max-height:calc(100% - 28px);overflow-y:auto;border-radius:26px;background:linear-gradient(145deg,#fffcf7f7,#f1ecf9f7);padding:22px;scrollbar-width:thin}#boop-world .bw-glass:before{content:'';display:block;width:30px;height:3px;border-radius:4px;background:#bdb3a6;margin:-9px auto 17px}#boop-world .bw-modal-head{position:sticky;top:-22px;padding-top:4px;z-index:1}#boop-world .bw-modal-head h2{font-size:23px}#boop-world .bw-toast{position:absolute;bottom:96px;left:0;right:0;margin:10px 16px;z-index:40}
+#boop-world .v2-hero{position:relative;padding:19px;border-radius:22px;background:linear-gradient(150deg,#EBE6F8,#F9F6FE);border:.5px solid #2b21180f;box-shadow:0 17px 31px -17px #5d4fa073,0 2px 6px #2b21180a,inset 0 1px 0 #ffffffb3;margin-bottom:21px}#boop-world .v2-hero.sage{background:linear-gradient(150deg,#E9F1E2,#F7FBF3);box-shadow:0 17px 31px -17px #6e8b5e73,inset 0 1px 0 white}#boop-world .v2-hero.rose{background:linear-gradient(150deg,#FAE3ED,#FFFAFC);box-shadow:0 17px 31px -17px #a35b7c60,inset 0 1px 0 white}#boop-world .v2-hero h2{font:700 24px/1.18 Geist,system-ui,sans-serif;letter-spacing:-.02em;max-width:245px;margin:11px 0}#boop-world .v2-hero p{font-size:12px;line-height:1.7}#boop-world .v2-hero .bw-avatar{width:66px;height:66px}#boop-world .v2-kicker{font-size:9px;font-weight:700;letter-spacing:.13em;color:#5D4FA0;text-transform:uppercase}#boop-world .v2-hero-head{display:flex;align-items:center;justify-content:space-between;gap:10px}#boop-world .v2-hero-head .bw-avatar+.bw-avatar{margin-left:-21px}#boop-world .v2-cast{display:flex;align-items:center}#boop-world .v2-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:17px 0;font-size:9px;text-align:center;color:#685b50}#boop-world .v2-steps span:before{content:'';display:block;height:5px;border-radius:3px;background:#d4c9e7;margin-bottom:6px}#boop-world .v2-steps .done:before{background:#9b8fc4}#boop-world .v2-steps .now:before{background:#ff7a55}#boop-world .v2-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:21px 0 11px}#boop-world .v2-title h2{font:700 17px/1.25 Geist,system-ui,sans-serif;margin:0}#boop-world .v2-title button{font-size:11px;color:#5D4FA0;padding:4px 0}#boop-world .v2-row{display:flex;align-items:center;gap:11px;padding:15px 0;border-bottom:1px solid #2b211810;width:100%;text-align:left!important;border-radius:0!important}#boop-world .v2-row .bw-clay{width:43px;height:43px;flex:none}#boop-world .v2-row>span:nth-last-child(2){flex:1;min-width:0}#boop-world .v2-row strong{display:block;font-size:13px}#boop-world .v2-row small{font-size:11px;margin-top:4px}#boop-world .v2-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}#boop-world .v2-cell{padding:15px;border-radius:17px;background:#FFFDF9;box-shadow:inset 0 0 0 1px #2b21180b;text-align:left;font-size:12px}#boop-world .v2-cell .bw-clay{width:45px;height:45px;display:block;margin-bottom:8px}#boop-world .v2-cell b{display:block}#boop-world .v2-cell .v2-num{font:200 34px/1.2 Geist,sans-serif;letter-spacing:-.04em}#boop-world .v2-days{display:flex;justify-content:space-between;gap:4px;margin:16px 0 10px}#boop-world .v2-days span{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px dashed #9ca891;color:#607052;font-size:11px}#boop-world .v2-days .done{background:#7fa06c;color:white;border:0}#boop-world .v2-days .now{border:2px solid #ff7a55;background:#fff9}#boop-world .v2-segments{display:flex;gap:4px;margin:10px 0}#boop-world .v2-segments span{height:8px;flex:1;border-radius:3px;background:#e4d9d0}#boop-world .v2-segments .hit{background:#7fa06c}#boop-world .v2-quote{font:400 italic 21px/1.4 Fraunces,Georgia,serif!important;margin:13px 0!important}#boop-world .v2-chips{display:flex;gap:5px;flex-wrap:wrap}#boop-world .v2-chips button{font-size:11px;border-radius:99px;padding:7px 10px;background:#fffaf4;box-shadow:inset 0 0 0 1px #2b211810}#boop-world .v2-chips button[aria-pressed=true]{background:#ebe6f8;color:#5d4fa0}#boop-world .v2-dimensions{display:grid;grid-template-columns:1fr 1fr;gap:8px}#boop-world .v2-dimensions button{background:#fffcf8;box-shadow:inset 0 0 0 1px #2b21180d;border-radius:16px;padding:12px;text-align:left;display:flex;gap:8px;align-items:center}#boop-world .v2-dimensions .bw-clay{width:34px;height:34px;flex:none}#boop-world .v2-dimensions b{font-size:11px;display:block}#boop-world .v2-dimensions small{font-size:10px}#boop-world .v2-dimensions button:last-child{grid-column:1/-1}#boop-world .v2-book-scene{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}#boop-world .v2-book-scene .bw-clay{width:110px;height:110px}#boop-world .v2-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:14px 0}#boop-world .v2-calendar button{padding:7px 0;font-size:11px;line-height:1.4;background:#f0e8dd;border-radius:13px}#boop-world .v2-calendar button.on{background:#ded3ed;color:#5D4FA0;box-shadow:inset 0 0 0 1px #bfaed8}#boop-world .v2-calendar b{display:block;font-size:14px}#boop-world .v2-calendar i{display:block;width:4px;height:4px;border-radius:99px;background:#9b8fc4;margin:5px auto 0}#boop-world .v2-memory{border-left:2px solid #d4c9e7;padding:3px 0 17px 15px;margin:16px 0 0 5px}#boop-world .v2-memory h3{font-size:22px;margin:8px 0}#boop-world .v2-memory p{font-size:12px}#boop-world .v2-pills{display:flex;gap:5px;flex-wrap:wrap}#boop-world .v2-pills span{font-size:10px;border-radius:7px;background:#eee8df;padding:4px 7px}#boop-world .v2-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;margin:12px 0}#boop-world .v2-switch input{width:18px;height:18px;accent-color:#7fa06c;flex:none}#boop-world .v2-status{padding:10px 12px;background:#e9f1e2;border-radius:12px;font-size:12px;margin:10px 0}#boop-world .v2-chart{width:100%;height:auto;margin:12px 0}#boop-world .v2-chart text{font:11px Geist,sans-serif;fill:#5f5346}#boop-world .v2-empty{padding:16px;border:1px dashed #b6a999;border-radius:17px;font-size:12px;color:#5f5346}#boop-world .v2-domain-row{display:flex;align-items:center;gap:13px;background:#fffaf4;box-shadow:inset 0 0 0 1px #2b21180f;border-radius:21px;padding:14px;width:100%;text-align:left;margin-bottom:10px}#boop-world .v2-domain-row .bw-avatar{width:54px;height:54px}#boop-world .v2-domain-row .bw-mark{display:none}#boop-world .v2-domain-row.selected{background:linear-gradient(150deg,#ebe6f8,#f9f6fe);box-shadow:0 17px 31px -17px #5d4fa055}#boop-world .v2-domain-row b{font-size:15px}
+@media(max-width:360px){#boop-world .bw-content{padding-left:16px;padding-right:16px}#boop-world .bw-post{margin-left:16px;margin-right:16px}#boop-world .bw-head{padding-left:20px;padding-right:20px}#boop-world .bw-dock .bw-domain{flex-basis:48px}#boop-world .bw-dock button{font-size:9px}#boop-world .bw-cast{padding-left:16px;padding-right:16px}#boop-world .v2-hero{padding:15px}#boop-world .bw-top{gap:4px}#boop-world .bw-top button{width:34px;min-width:34px}}
+</style>
+
+<div id="boop-world" class="alive" aria-label="Boop AI világ · V3 · valós dockkal és részletes főnézetekkel">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!--
+    Boop — a ház saját kabalafigurája, agyag anyagban (visszaöltöztetés, mezo-ju4j6.14).
+
+    EREDET: a figura SAJÁT rajz, a stíluskönyv §6.1 agyag-receptje szerint (viewBox 0 0 100 100,
+    objektumonként saját 3-stop radiális gradiens, EGY fehér csúcsfény bal felül, körvonal és
+    drop-shadow nélkül). A `bible-strong-avatar-lab` (AGPL-3.0) ötletadóként szerepelt a tervben;
+    innen sem kód, sem exportált ábra nem került át, így licenc-kérdés sem keletkezik.
+
+    VÁLTOZATOK: Edzés kék, Fuel zsálya, Nap narancssárga, Boop levendula, Én rózsa.
+    MOZDULAT-FOGÓK: boop-eye = pislogás, boop-pupil = tekintet,
+    boop-brow = szemöldök, boop-body = lélegzet; CSS, reduced-motion védelemmel.
+  -->
+  <defs>
+    <radialGradient id="bg-boop-train-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.5" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-train-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-train-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.55" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-fuel-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-fuel-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-fuel-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.55" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-nap-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-nap-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-nap-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.55" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-mezo-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.5" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-mezo-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-mezo-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.55" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-en-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.5" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-en-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-en-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.55" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+  </defs>
+  <symbol id="boop-train" viewBox="0 0 100 100">
+    <title>Boop — Edzés · kék</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#356FA0" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-fuel" viewBox="0 0 100 100">
+    <title>Boop — Fuel · zsálya</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#4E6B42" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-fuel-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-nap" viewBox="0 0 100 100">
+    <title>Boop — Nap · narancssárga</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#D8481F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-nap-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-mezo" viewBox="0 0 100 100">
+    <title>Boop — Boop · levendula</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#5D4FA0" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-mezo-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-en" viewBox="0 0 100 100">
+    <title>Boop — Én · rózsa</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#8E3F6F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-en-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+</svg>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+
+    <!-- ============================================================
+         Titanium-only symbols, redrawn in the clay material (mezo-ju4j6.3).
+         These 13 have NO pre-Titanium ancestor — they were authored during the
+         Titanium period (Fuel fülsor, makró-identitás, értékelés-dimenziók,
+         vércukor-válasz, ⓘ). The subject of each is kept 1:1 with its Titanium
+         version; only the MATERIAL changes, per the style bible §6.1 recipe:
+         viewBox 0 0 100 100, per-object named gradient off the closed clay
+         palette, one upper-left white specular, no ig-shadow filter, no strokes.
+         Hue assignments: style bible §6.2 table.
+         ============================================================ -->
+    <radialGradient id="ig-info" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#EFEAFB"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+
+    <symbol id="i-tanyer" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="53" rx="39" ry="36" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="23" fill="#FFB597"/>
+      <path d="M36 54c2-9 11-14 18-10 7 4 9 12 4 17-6 7-19 6-22-1Z" fill="url(#ig-bowl)"/>
+      <circle cx="63" cy="45" r="6.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="33" cy="32" rx="10" ry="5.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 33 32)"/>
+    </symbol>
+
+    <symbol id="i-kiegeszito" viewBox="0 0 100 100">
+      <rect x="31" y="10" width="38" height="13" rx="6.5" fill="url(#ig-stone2)"/>
+      <rect x="24" y="22" width="52" height="68" rx="15" fill="url(#ig-caps)"/>
+      <rect x="33" y="40" width="34" height="33" rx="9" fill="#EAF2E0"/>
+      <g transform="rotate(-32 50 56)">
+        <rect x="35" y="49" width="30" height="15" rx="7.5" fill="url(#ig-bowl)"/>
+        <path d="M50 49v15" stroke="#EAF2E0" stroke-width="2"/>
+      </g>
+      <ellipse cx="35" cy="32" rx="7" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 35 32)"/>
+    </symbol>
+
+    <symbol id="i-trend" viewBox="0 0 100 100">
+      <rect x="9" y="16" width="82" height="69" rx="18" fill="url(#ig-stone2)"/>
+      <rect x="18" y="25" width="64" height="51" rx="12" fill="#F6F1E8"/>
+      <path d="M26 66 44 48 57 56 76 33" fill="none" stroke="url(#ig-drop)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="76" cy="33" r="7.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="31" cy="23" rx="10" ry="3.6" fill="rgba(255,255,255,0.55)"/>
+    </symbol>
+
+    <symbol id="i-fazek" viewBox="0 0 100 100">
+      <path d="M34 8c-4 7 4 10 1 17M50 4c-4 8 4 11 1 18M66 9c-4 7 4 10 1 17" fill="none" stroke="#C9E6F5" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+      <rect x="43" y="26" width="14" height="10" rx="5" fill="url(#ig-wood)"/>
+      <rect x="12" y="34" width="76" height="11" rx="5.5" fill="url(#ig-stone2)"/>
+      <path d="M8 53h12a5 5 0 0 1 0 10H8a5 5 0 0 1 0-10Z" fill="url(#ig-wood)"/>
+      <path d="M80 53h12a5 5 0 0 1 0 10H80a5 5 0 0 1 0-10Z" fill="url(#ig-wood)"/>
+      <path d="M19 47h62l-5 35a8 8 0 0 1-8 7H32a8 8 0 0 1-8-7Z" fill="url(#ig-bowl)"/>
+      <ellipse cx="36" cy="59" rx="6.5" ry="11" fill="rgba(255,255,255,0.4)" transform="rotate(10 36 59)"/>
+      <ellipse cx="30" cy="38" rx="9" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-hus" viewBox="0 0 100 100">
+      <path d="M21 63a8 8 0 1 1 6-13 8 8 0 1 1 10 10l-5 5a8 8 0 1 1-10 10 8 8 0 1 1-6-12Z" fill="url(#ig-stone2)"/>
+      <path d="M38 32c19-11 44-6 50 9 6 16-6 34-25 39-17 5-31-3-34-17-3-13 2-25 9-31Z" fill="url(#ig-orb)"/>
+      <path d="M47 41c14-8 30-5 34 6 5 11-4 23-17 27-12 3-22-2-24-11-2-9 2-18 7-22Z" fill="#D8481F" opacity="0.4"/>
+      <ellipse cx="46" cy="38" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 46 38)"/>
+    </symbol>
+
+    <symbol id="i-gabona" viewBox="0 0 100 100">
+      <path d="M50 93V36" stroke="url(#ig-shelf)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 22C56 12 66 10 72 15C70 24 60 29 50 27C40 29 30 24 28 15C34 10 44 12 50 22Z" fill="url(#ig-harvest)"/>
+      <path d="M50 46C59 36 72 36 76 43C71 53 59 56 50 49C41 56 29 53 24 43C28 36 41 36 50 46Z" fill="url(#ig-harvest)"/>
+      <path d="M50 70C59 60 72 60 76 67C71 77 59 80 50 73C41 80 29 77 24 67C28 60 41 60 50 70Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="38" cy="42" rx="7" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-28 38 42)"/>
+    </symbol>
+
+    <symbol id="i-avokado" viewBox="0 0 100 100">
+      <path d="M50 6c15 0 27 15 27 34C77 64 64 94 50 94S23 64 23 40C23 21 35 6 50 6Z" fill="url(#ig-bowl)"/>
+      <path d="M50 13c11 0 20 12 20 27C70 62 60 87 50 87S30 62 30 40C30 25 39 13 50 13Z" fill="#E9DDA6"/>
+      <ellipse cx="50" cy="52" rx="15" ry="17" fill="url(#ig-wood)"/>
+      <ellipse cx="45" cy="45" rx="5" ry="3.2" fill="rgba(255,255,255,0.45)" transform="rotate(-24 45 45)"/>
+      <ellipse cx="37" cy="26" rx="5.5" ry="9" fill="rgba(255,255,255,0.45)" transform="rotate(12 37 26)"/>
+    </symbol>
+
+    <symbol id="i-noveny" viewBox="0 0 100 100">
+      <path d="M50 93V66" stroke="url(#ig-leaf)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M78 15C44 15 19 38 19 68c0 9 3 16 6 19C28 62 44 44 66 34 48 50 37 66 34 86c6 3 16 3 24 0 23-9 32-36 20-71Z" fill="url(#ig-leaf)"/>
+      <path d="M34 86C37 66 48 50 66 34" fill="none" stroke="#DCEBCE" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+      <ellipse cx="42" cy="42" rx="8" ry="4.5" fill="rgba(255,255,255,0.4)" transform="rotate(-38 42 42)"/>
+    </symbol>
+
+    <symbol id="i-makro" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="39" fill="url(#ig-plate)"/>
+      <path d="M50 50 50 18A32 32 0 0 1 77.7 66Z" fill="url(#ig-orb)"/>
+      <path d="M50 50 77.7 66A32 32 0 0 1 22.3 66Z" fill="url(#ig-harvest)"/>
+      <path d="M50 50 22.3 66A32 32 0 0 1 50 18Z" fill="url(#ig-bowl)"/>
+      <circle cx="50" cy="50" r="11" fill="url(#ig-plate)"/>
+      <ellipse cx="32" cy="29" rx="9" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 32 29)"/>
+    </symbol>
+
+    <symbol id="i-mikro" viewBox="0 0 100 100">
+      <path d="M50 46 25 24M50 46 78 28M50 46 53 80" stroke="url(#ig-nlav)" stroke-width="5" stroke-linecap="round" opacity="0.65"/>
+      <circle cx="50" cy="46" r="17" fill="url(#ig-nlav)"/>
+      <circle cx="25" cy="24" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="78" cy="28" r="9" fill="url(#ig-nlav)"/>
+      <circle cx="53" cy="80" r="10" fill="url(#ig-nlav)"/>
+      <ellipse cx="43" cy="39" rx="6.5" ry="3.6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 43 39)"/>
+      <ellipse cx="21" cy="20" rx="4" ry="2.4" fill="rgba(255,255,255,0.5)" transform="rotate(-24 21 20)"/>
+    </symbol>
+
+    <symbol id="i-feldolgozas" viewBox="0 0 100 100">
+      <path d="M16 20h68L60 54v26a10 10 0 0 1-20 0V54Z" fill="url(#ig-stone2)"/>
+      <path d="M28 28h44L56 55v25a6 6 0 0 1-12 0V55Z" fill="#F6F1E8"/>
+      <circle cx="39" cy="37" r="5" fill="url(#ig-bowl)"/>
+      <circle cx="54" cy="34" r="4" fill="url(#ig-harvest)"/>
+      <circle cx="61" cy="41" r="3.4" fill="url(#ig-bowl)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="3.4" fill="rgba(255,255,255,0.55)"/>
+    </symbol>
+
+    <symbol id="i-vercukor" viewBox="0 0 100 100">
+      <path d="M20 78C33 76 33 22 50 22 70 22 68 68 92 76V84H20Z" fill="url(#ig-drop)" opacity="0.32"/>
+      <path d="M20 78C33 76 33 22 50 22 70 22 68 68 92 76" fill="none" stroke="url(#ig-drop)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 10V84H92" fill="none" stroke="url(#ig-shelf)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="50" cy="22" r="8.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="46" cy="19" rx="4" ry="2.4" fill="rgba(255,255,255,0.55)" transform="rotate(-24 46 19)"/>
+    </symbol>
+
+    <symbol id="i-info" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="39" fill="url(#ig-info)"/>
+      <circle cx="50" cy="32" r="5.5" fill="#F4F0FD"/>
+      <rect x="44.5" y="44" width="11" height="27" rx="5.5" fill="#F4F0FD"/>
+      <ellipse cx="32" cy="30" rx="9" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 32 30)"/>
+    </symbol>
+
+    <!-- Edzés-verdikt + rekord (mezo-ju4j6.11): saját agyag ikonok a Titán-kori
+         szöveg-glifák (▲/▼) és az érme-korong helyére. §6.1 recept. -->
+    <radialGradient id="ig-trendup" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#D7EBC4"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#3F5A33"/></radialGradient>
+    <radialGradient id="ig-trenddown" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#FFE6BE"/><stop offset="0.5" stop-color="#E7A93F"/><stop offset="1" stop-color="#9A6B12"/></radialGradient>
+    <radialGradient id="ig-medaldisc" cx="34%" cy="26%" r="88%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#9C6C0E"/></radialGradient>
+    <radialGradient id="ig-medalcore" cx="38%" cy="30%" r="84%"><stop offset="0" stop-color="#FFFBEA"/><stop offset="0.6" stop-color="#F7D774"/><stop offset="1" stop-color="#C08F1B"/></radialGradient>
+    <linearGradient id="ig-medalband-l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#C64B26"/></linearGradient>
+    <linearGradient id="ig-medalband-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB49A"/><stop offset="1" stop-color="#D8613B"/></linearGradient>
+  </defs>
+  <symbol id="i-trend-fel" viewBox="0 0 100 100">
+      <title>Erősebb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#3F5A33" opacity="0.14"/>
+      <path d="M50 12 L82 50 Q84 54 79 54 L64 54 L64 80 Q64 86 58 86 L42 86 Q36 86 36 80 L36 54 L21 54 Q16 54 18 50 Z" fill="url(#ig-trendup)"/>
+      <ellipse cx="41" cy="32" rx="8.5" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 41 32)"/>
+    </symbol>
+  
+    <symbol id="i-trend-le" viewBox="0 0 100 100">
+      <title>Gyengébb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#9A6B12" opacity="0.14"/>
+      <path d="M50 88 L82 50 Q84 46 79 46 L64 46 L64 20 Q64 14 58 14 L42 14 Q36 14 36 20 L36 46 L21 46 Q16 46 18 50 Z" fill="url(#ig-trenddown)"/>
+      <ellipse cx="41" cy="26" rx="8" ry="4.6" fill="rgba(255,255,255,0.5)" transform="rotate(-22 41 26)"/>
+    </symbol>
+  
+    <symbol id="i-erem" viewBox="0 0 100 100">
+      <title>Rekord</title>
+      <ellipse cx="50" cy="94" rx="22" ry="4" fill="#9C6C0E" opacity="0.14"/>
+      <path d="M28 8 L42 8 L54 40 L40 46 Z" fill="url(#ig-medalband-l)"/>
+      <path d="M72 8 L58 8 L46 40 L60 46 Z" fill="url(#ig-medalband-r)"/>
+      <circle cx="50" cy="62" r="27" fill="url(#ig-medaldisc)"/>
+      <circle cx="50" cy="62" r="18" fill="url(#ig-medalcore)"/>
+      <ellipse cx="39" cy="48" rx="9" ry="5.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 39 48)"/>
+    </symbol>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+
+    <!-- mezo-8az6 · Fuel szekció — az i-fuel tál-motívuma, gőzpárával -->
+    <symbol id="s-fuel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="28" ry="5.5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M37 27c0-7 6-7 6-14M57 27c0-7 6-7 6-14" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+      <path d="M14 48a36 33 0 0 0 72 0Z" fill="url(#sg-bowl)"/>
+      <rect x="10" y="42" width="80" height="10" rx="5" fill="#A8C494"/>
+      <ellipse cx="32" cy="61" rx="9" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 61)"/>
+    </symbol>
+
+    <!-- mezo-8az6 · Én szekció — az i-emberek alakja egy személyre sűrítve -->
+    <symbol id="s-en" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(196,75,38,0.25)"/>
+      <circle cx="50" cy="33" r="19" fill="url(#sg-person)"/>
+      <path d="M18 88a32 27 0 0 1 64 0Z" fill="url(#sg-person)"/>
+      <ellipse cx="42" cy="25" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 42 25)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient>
+    <!-- mezo-8az6 · a fejléc szekció-spotjaihoz -->
+    <radialGradient id="sg-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="sg-person" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="0.5" stop-color="#E0704A"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+  </defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+
+<div class="bw-scroll"><header class="bw-top"><span class="bw-brand">boop</span><button data-modal="settings" aria-label="Beállítások"><span data-clay="i-beallitas"></span></button><button data-modal="notifications" aria-label="Mezo üzenetei"><span data-clay="i-level"></span></button><button data-modal="notifications" aria-label="Értesítések"><span data-clay="i-ertesites"></span></button><button data-modal="day" aria-label="A mai napod · 3 a 7 jelből megvan"><svg viewBox="0 0 100 100" width="42" height="42" aria-hidden="true" class="dayorb"><defs><clipPath id="v2-dayorb-fill"><rect x="0" y="52.76" width="100" height="47.24"/></clipPath><clipPath id="v2-dayorb-body"><circle cx="50" cy="48" r="34"/></clipPath><radialGradient id="v2-dayorb-grad" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#f9d3c1"/><stop offset="0.45" stop-color="#f19c80"/><stop offset="1" stop-color="#cf7254"/></radialGradient></defs><use href="#s-orb" class="dayorb-base"/><g clip-path="url(#v2-dayorb-fill)"><ellipse cx="50" cy="90" rx="26" ry="6" fill="#cf7254" opacity="0.28"/><circle cx="50" cy="48" r="34" fill="url(#v2-dayorb-grad)"/><ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 32)"/><path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="4" stroke-linecap="round"/></g><g clip-path="url(#v2-dayorb-body)"><rect x="8" y="51.76" width="84" height="2" rx="1" fill="#cf7254" opacity="0.7"/></g></svg></button></header>
+
+<div class="bw-head"><div><div class="bw-kicker" id="bw-eyebrow">Hétfő, szeptember 21.</div><h1 id="bw-page-title">A te kis csapatod.</h1></div><button data-modal="team" aria-label="Ismerd meg a Boopokat"><span data-avatar="mezo" class="bw-hero-orb"></span></button></div>
+
+<section id="bw-wall" role="tabpanel" aria-labelledby="bw-tab-wall">
+<div class="bw-cast"><button data-person="szomnologus"><span data-avatar="szomnologus"></span>Alvás</button><button data-person="edzo"><span data-avatar="edzo"></span>Mozgás</button><button data-person="taplalkozo"><span data-avatar="taplalkozo"></span>Étkezés</button><button data-person="pszichologus"><span data-avatar="pszichologus"></span>Közérzet</button><button data-modal="team"><span data-avatar="mezo"></span>A csapat</button></div>
+<div class="bw-strip"><i data-lucide="message-circle" aria-hidden="true"></i><span><strong id="bw-waiting-count">2 beszélgetésben várnak rád.</strong></span><button data-filter-jump="waiting">Megnézem</button></div>
+<div class="bw-filters" aria-label="Bejegyzések szűrése"><button data-filter="all" aria-pressed="true">Neked</button><button data-filter="waiting" aria-pressed="false">Válaszodra vár</button><button data-filter="following" aria-pressed="false">Követed</button></div>
+<article class="bw-post lav" data-category="waiting following">
+<div class="bw-author"><button data-person="szomnologus" aria-label="Szomnológus profilja"><span data-avatar="szomnologus"></span></button><div><strong>Szomnológus</strong><small>07:12 · bevonta az Edzőt és a Szkeptikust</small></div><span class="bw-tag">Új nyom</span></div>
+<p><strong>Lehet, hogy nem az edzés tolja el az estédet.</strong> A késői lefekvések inkább a későn befejezett napok mellé esnek. <span class="bw-mention">@Edző</span>, te mit látsz?</p>
+<button class="bw-topic" data-modal="case"><i data-lucide="git-branch" aria-hidden="true"></i><span>Mi tolja későbbre a lefekvésem?</span>›</button>
+<button class="bw-evidence" data-modal="evidence"><i data-lucide="scan-eye" aria-hidden="true"></i>Miből látszik? · 14 nap, még kevés adat</button>
+<div class="bw-social"><span data-avatar="edzo" data-small="true"></span><span data-avatar="szkeptikus" data-small="true"></span><span>Edző hasznosnak találta · 3 hozzászólás</span></div>
+<div class="bw-actions"><button data-vote="up" aria-pressed="false"><i data-lucide="thumbs-up" aria-hidden="true"></i>Hasznos</button><button data-vote="down" aria-pressed="false"><i data-lucide="thumbs-down" aria-hidden="true"></i>Nem talál</button><button data-modal="discussion"><i data-lucide="message-circle" aria-hidden="true"></i>Beszélgetés</button></div>
+<div class="bw-comment"><span data-avatar="edzo" data-small="true"></span><div class="bw-bubble"><strong>Edző</strong><p>A korábbi edzések után is volt késői este. Egyelőre nem módosítanám az edzéstervet.</p><div class="bw-comment-actions"><button data-comment-like aria-pressed="false">Hasznos · 1</button><button data-modal="reply">Válasz</button></div></div></div>
+<div class="bw-comment"><span data-avatar="szkeptikus" data-small="true"></span><div class="bw-bubble"><strong>Szkeptikus</strong><p>A munka végét nem látjuk a naplóból. Te meg tudod mondani, mi tartott fenn?</p><div class="bw-comment-actions"><button data-comment-like aria-pressed="false">Hasznos · 2</button><button data-modal="reply">Válasz</button></div></div></div>
+<div id="bw-inline-reply" hidden></div><button class="bw-reply" data-modal="reply"><span class="bw-self">Te</span><span>Hozzáteszed, amit csak te tudsz?</span><i data-lucide="send" aria-hidden="true"></i></button>
+</article>
+<article class="bw-post" data-category="waiting">
+<div class="bw-author"><button data-person="taplalkozo" aria-label="Táplálkozó profilja"><span data-avatar="taplalkozo"></span></button><div><strong>Táplálkozó</strong><small>06:48 · a tegnapi válaszod nyomán</small></div><span class="bw-tag">Pontosítás</span></div>
+<p>Azt írtad, <strong>hétvégén néha utólag naplózol</strong>. Így az üres délelőttből nem következik, hogy nem ettél.</p><div class="bw-note"><small>EZT JEGYEZNÉNK MEG RÓLAD</small><span id="bw-proposal">„Hétvégén előfordul, hogy az étkezéseimet később rögzítem.”</span></div>
+<div id="bw-knowledge-action" class="bw-row"><button class="bw-primary" data-modal="knowledge">Igen, jegyezd meg</button><button class="bw-outline" data-modal="correct">Pontosítom</button><button data-reject>Most ne</button></div><div id="bw-knowledge-result" hidden class="bw-result"></div><button class="bw-evidence" data-modal="knowledge-origin">Hol használnátok ezt?</button>
+</article>
+<article class="bw-post sage" data-category="following">
+<div class="bw-author"><button data-person="edzo" aria-label="Edző profilja"><span data-avatar="edzo"></span></button><div><strong>Edző</strong><small>Tegnap · lezárt előrejelzés</small></div><span class="bw-tag">Visszanéztük</span></div>
+<p><strong>Ez most nem jött be.</strong> Könnyebbnek vártuk a következő edzést, te ugyanolyannak érezted. Ez is számít: legközelebb óvatosabban következtetünk ebből a jelből.</p><button class="bw-topic" data-modal="prediction"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Előrejelzés és tényleges eredmény</span>›</button><div class="bw-actions"><button data-vote="up" aria-pressed="false"><i data-lucide="thumbs-up" aria-hidden="true"></i>Hasznos</button><button data-vote="down" aria-pressed="false"><i data-lucide="thumbs-down" aria-hidden="true"></i>Nem talál</button><button data-modal="prediction"><i data-lucide="message-circle" aria-hidden="true"></i>Megnézem</button></div>
+</article>
+<div class="bw-caught"><span data-avatar="mezo" data-small="true"></span><strong>Ennyi új történet érkezett.</strong><br>A folyamatban lévő témákat közben tovább figyeljük.<br><button data-tab-link="cases">Mit figyeltek most? →</button></div>
+</section>
+<section id="bw-cases" role="tabpanel" aria-labelledby="bw-tab-cases" hidden><div class="bw-content">
+<div class="v2-hero"><div class="v2-hero-head"><span class="v2-kicker">Nyitott kérdés · alvás</span><span class="v2-cast"><span data-avatar="szomnologus"></span><span data-avatar="szkeptikus"></span></span></div><h2>Mi tolja későbbre<br>az estédet?</h2><p>A csapat már összevetette a napokat. Most a te tapasztalatod hiányzik.</p><div class="v2-steps"><span class="done">Észrevettük</span><span class="done">Megvitattuk</span><span class="now">Te következel</span><span>Továbbnézzük</span></div><button class="bw-primary" data-modal="case">Megnyitom a témát →</button></div>
+<div class="v2-title"><h2>Amit most figyelünk</h2><button data-modal="investigate">+ Saját kérdés</button></div><div class="v2-chips"><button data-case-filter="all" aria-pressed="true">Minden</button><button data-case-filter="pattern" aria-pressed="false">Minták</button><button data-case-filter="trial" aria-pressed="false">Próbák</button><button data-case-filter="prediction" aria-pressed="false">Előrejelzések</button></div>
+<div data-case-kind="trial" class="v2-hero sage" style="margin-top:16px"><div class="v2-hero-head"><span class="v2-kicker" style="color:#4e6b42">A saját próbád</span><span data-clay="i-noveny"></span></div><h2>Ebéd után<br>egy kis levegő.</h2><p>Napi rövid séta, és egy mondat arról, milyen lett a délutánod.</p><div class="v2-days" aria-label="4 rögzített nap a 7 napos próbából"><span class="done">Cs</span><span class="done">P</span><span class="done">Szo</span><span class="done">V</span><span class="now">H</span><span>K</span><span>Sze</span></div><small>4 / 7 nap · az eredményt együtt nézzük meg.</small><button class="bw-topic" data-modal="trial"><span>Tapasztalatok és a próba menete</span>›</button></div>
+<button data-case-kind="pattern" class="v2-row" data-modal="pattern"><span data-clay="i-minta"></span><span><strong>Korábbi vacsora, nyugodtabb este?</strong><small>Új minta · döntésre vár · 18 összevethető nap</small></span><span>›</span></button>
+<button data-case-kind="pattern" class="v2-row" data-modal="lifecycle"><span data-clay="i-retegek"></span><span><strong>Minden megfigyelés</strong><small>Döntésre vár · figyeljük · megerősített · még gyűlik · nincs kapcsolat · elvetett</small></span><span>›</span></button>
+<div data-case-kind="prediction"><div class="v2-title"><h2>Visszanézzük, eltaláltuk-e.</h2><span data-clay="i-hajnal"></span></div><div class="v2-pair"><button class="v2-cell" data-modal="prediction"><span class="v2-num">2 / 7</span><small>értékelhető jóslat vált be</small><div class="v2-segments" aria-hidden="true"><span class="hit"></span><span class="hit"></span><span></span><span></span><span></span><span></span><span></span></div></button><button class="v2-cell" data-modal="prediction-pending"><span class="v2-num">2</span><small>még adatot vár<br>Nem találat és nem hiba.</small></button></div><button class="v2-row" data-modal="prediction"><span data-avatar="edzo" data-small="true"></span><span><strong>Ez most nem jött be.</strong><small>A könnyebb edzésre vonatkozó jóslat · lezárva</small></span><span>›</span></button></div>
+<div class="v2-title"><h2>Visszatérnél valamire?</h2></div><button class="v2-row" data-modal="archive"><span data-clay="i-naplo"></span><span><strong>Lezárt történetek</strong><small>Korábbi vizsgálatok, próbák és következtetések</small></span><span>›</span></button><button class="v2-row" data-modal="coaching"><span data-clay="i-nap"></span><span><strong>Miért ezt javasolta ma Boop?</strong><small>A mai javaslat és a mögötte álló jelek</small></span><span>›</span></button>
+</div></section>
+
+<section id="bw-you" role="tabpanel" aria-labelledby="bw-tab-you" hidden><div class="bw-content">
+<div class="v2-chips" style="margin-bottom:16px"><button data-you="character" aria-pressed="true">Karakter</button><button data-you="facts" aria-pressed="false">Tudástár</button><button data-you="connections" aria-pressed="false">Kapcsolatok</button></div>
+<div data-you-panel="character"><div class="v2-hero rose"><div class="v2-hero-head"><span class="v2-kicker" style="color:#8e3f6f">A közös képet te is alakítod</span><span data-avatar="pszichologus"></span></div><p class="v2-quote">„Szereted látni,<br>mi miből következik.”</p><p>Így fogalmaz most rólad a csapat. Ez egy javítható benyomás, nem végleges címke.</p><div class="bw-row"><button class="bw-primary" data-modal="character">Talál / pontosítom</button><button class="bw-outline" data-modal="character-evidence">Miből látszik?</button></div></div>
+<div class="v2-title"><h2>Hét oldalad, egy történet.</h2><button data-modal="character-history">Mi változott?</button></div><div class="v2-dimensions"><button data-dimension="Fizikai" data-person-key="doki"><span data-clay="i-eletjel"></span><span><b>Fizikai</b><small>Test és közérzet</small></span></button><button data-dimension="Sportolói" data-person-key="edzo"><span data-clay="i-edzes"></span><span><b>Sportolói</b><small>Terhelés és mozgás</small></span></button><button data-dimension="Táplálkozási" data-person-key="taplalkozo"><span data-clay="i-noveny"></span><span><b>Táplálkozási</b><small>Ritmus és szokások</small></span></button><button data-dimension="Alvás & regeneráció" data-person-key="szomnologus"><span data-clay="i-alvas"></span><span><b>Alvás</b><small>Pihenés és regeneráció</small></span></button><button data-dimension="Mentális & érzelmi" data-person-key="pszichologus"><span data-clay="i-kristaly"></span><span><b>Mentális & érzelmi</b><small>Megélt helyzetek</small></span></button><button data-dimension="Motiváció & fegyelem" data-person-key="drill"><span data-clay="i-cel"></span><span><b>Motiváció</b><small>Vállalás és megvalósítás</small></span></button><button data-dimension="Élet & kapcsolatok" data-person-key="antropologus"><span data-clay="i-emberek"></span><span><b>Élet & kapcsolatok</b><small>Az a világ, amiben mindez történik</small></span></button></div>
+<div class="v2-title"><h2>A csapat legutóbbi pontosítása</h2></div><div class="bw-comment"><span data-avatar="mezo" data-small="true"></span><div class="bw-bubble"><strong>Boop</strong><p>Az üres étkezési napló nem feltétlenül kimaradt étkezés. A saját válaszod alapján pontosítunk.</p><button class="bw-evidence" data-modal="knowledge-origin">A teljes történet →</button></div></div><button class="v2-row" data-modal="conference"><span data-clay="i-mezo"></span><span><strong>Konzílium és korábbi viták</strong><small>Ki mit gondolt? Miben értettek egyet?</small></span><span>›</span></button><button class="v2-row" data-modal="communication"><span data-clay="i-beallitas"></span><span><strong>Így beszélj velem</strong><small>Saját instrukció és tanult stílus</small></span><span>›</span></button></div>
+<div data-you-panel="facts" hidden><div class="v2-hero"><div class="v2-hero-head"><span class="v2-kicker">Egyetlen közös tudástár</span><span data-clay="i-tudas"></span></div><h2>Nem minden gondolat<br>válik ténnyé.</h2><p>Itt azt látod, amit megőrzünk rólad — forrással, kapcsolóval, a saját pontosításaiddal.</p><button class="bw-outline" data-modal="inbox">Döntésre váró jelöltek →</button></div><label class="bw-search"><i data-lucide="search" aria-hidden="true"></i><input id="v2-fact-search" aria-label="Keresés a tények között" placeholder="Keress a tudásban…"></label><div class="v2-chips"><button data-fact-bucket="all" aria-pressed="true">Mind</button><button data-fact-bucket="active" aria-pressed="false">Használható</button><button data-fact-bucket="off" aria-pressed="false">Kikapcsolt</button></div><div class="bw-fact" data-fact-row data-active="true"><small>TŐLED · SAJÁT KÉRÉS</small><p>Szeretnéd érteni a javaslatok indoklását.</p><label class="v2-switch">Felhasználható a beszélgetésben<input type="checkbox" checked data-fact-toggle aria-label="Indoklás iránti igény használata"></label><button class="bw-evidence" data-modal="fact">Forrás és felhasználás →</button></div><div class="bw-fact" id="bw-saved-fact" hidden data-fact-row data-active="true"><small>MEGERŐSÍTETTED · A BESZÉLGETÉSBŐL</small><p id="bw-saved-text"></p><label class="v2-switch">Felhasználható<input type="checkbox" checked data-fact-toggle aria-label="Naplózási szokás használata"></label><button class="bw-evidence" data-modal="knowledge-origin">Forrás és felhasználás →</button></div><p class="bw-muted" style="margin-top:14px">A bekapcsolt tényekből az adott beszélgetéshez válogatunk. A kikapcsolás nem törli az eredetet.</p><button class="v2-row" data-modal="context"><span data-clay="i-info"></span><span><strong>Mit kap meg most Boop?</strong><small>Személyes háttér és a bevont tudás</small></span><span>›</span></button></div>
+<div data-you-panel="connections" hidden><div class="v2-kicker">A kapcsolatok térképe</div><h2 style="margin-top:9px">Ami összekapcsolódik.</h2><p class="bw-muted">Koppints egy témára. A vonal kapcsolatot jelöl, nem bizonyított okot.</p><svg class="v2-chart" viewBox="0 0 330 215" role="img" aria-label="Példakapcsolatok: esti időbeosztás, alvás, edzés és munka"><path d="M165 105L70 45M165 105L270 55M165 105L85 178M165 105L263 168" fill="none" stroke="#c8badc" stroke-width="1.5"/><circle cx="165" cy="105" r="38" fill="#ebe6f8"/><circle cx="70" cy="45" r="26" fill="#dfedf5"/><circle cx="270" cy="55" r="26" fill="#fae3ed"/><circle cx="85" cy="178" r="26" fill="#e9f1e2"/><circle cx="263" cy="168" r="26" fill="#fff1d6"/><text x="165" y="101" text-anchor="middle">Esti</text><text x="165" y="116" text-anchor="middle">időbeosztás</text><text x="70" y="49" text-anchor="middle">Edzés</text><text x="270" y="59" text-anchor="middle">Munka</text><text x="85" y="182" text-anchor="middle">Alvás</text><text x="263" y="172" text-anchor="middle">Napló</text></svg><div class="v2-chips"><button data-modal="case">Esti időbeosztás</button><button data-modal="evidence">Alvás és edzés</button><button data-modal="knowledge-origin">Naplózás</button></div><div class="v2-title"><h2>A tudás különböző fajtái</h2></div><div class="v2-pair"><button class="v2-cell" data-modal="graph-category"><span data-clay="i-minta"></span><b>Minták és belátások</b><small>Megfigyelések kapcsolatai</small></button><button class="v2-cell" data-modal="life-events"><span data-clay="i-emberek"></span><b>Emberek és események</b><small>A történeted szereplői</small></button><button class="v2-cell" data-modal="graph-goals"><span data-clay="i-cel"></span><b>Célok és preferenciák</b><small>Ami neked fontos</small></button><button class="v2-cell" data-modal="graph-seasons"><span data-clay="i-naplo"></span><b>Életszakaszok</b><small>Hosszabb történetek</small></button></div></div>
+</div></section>
+
+<section id="bw-memories" role="tabpanel" aria-labelledby="bw-tab-memories" hidden><div class="bw-content"><label class="bw-search"><i data-lucide="search" aria-hidden="true"></i><input id="bw-memory-search" aria-label="Keresés az emlékekben" placeholder="Mikor éreztem már így magam?"></label><div class="bw-book" data-memory="hét történet fordulat séta"><div class="v2-kicker">A heted története · szeptember 14–20.</div><div class="v2-book-scene"><h3>Apró<br>fordulatok.</h3><span data-clay="i-naplo"></span></div><p>Nem egy nagy elhatározás. Egy séta, egy korábban lezárt este, egy mondat, amit végre leírtál.</p><button class="bw-primary" data-modal="memoir">Olvasom a hetünket →</button><small style="margin-top:12px">Boop meséli · a napi emlékeidből</small></div><div class="v2-title"><h2>A napjaid, megőrizve.</h2><button data-modal="memory-archive">Korábbi hetek</button></div><div class="v2-calendar" aria-label="Napi emlékek"><button data-memory-day="14">H<b>14</b><i></i></button><button data-memory-day="15">K<b>15</b><i></i></button><button data-memory-day="16">Sze<b>16</b><i></i></button><button data-memory-day="17">Cs<b>17</b><i></i></button><button data-memory-day="18">P<b>18</b><i></i></button><button data-memory-day="19">Szo<b>19</b><i></i></button><button data-memory-day="20" class="on">V<b>20</b><i></i></button></div><div class="v2-memory" data-memory="vasárnap séta csend"><small>VASÁRNAP · SZEPTEMBER 20.</small><h3>Hagytál egy kis helyet.</h3><p>Séta, nyugodtabb délután és egy esti gondolat, amit jó lesz később visszaolvasni.</p><div class="v2-pills"><span>Mozgásnapló</span><span>Check-in</span><span>Esti bejegyzés</span></div><button class="bw-evidence" data-modal="day-memory">A nap története és a források →</button></div><div class="v2-memory" data-memory="szombat edzés mozgás"><small>SZOMBAT · SZEPTEMBER 19.</small><h3>Mozgás után lelassult a nap.</h3><p>Egy edzés, aztán hely maradt másra is.</p><button class="bw-evidence" data-modal="day-memory-saturday">A nap története →</button></div><p id="bw-search-empty" class="bw-muted" hidden>Nincs ilyen emlék a demóban.</p><div class="v2-title"><h2>Ismerős ez az érzés?</h2></div><button class="v2-row" data-modal="similar-days"><span data-clay="i-minta"></span><span><strong>Keressünk hasonló napokat</strong><small>Mi történt akkor, amikor legutóbb így éreztél?</small></span><span>›</span></button><div class="v2-pair"><button class="v2-cell" data-modal="memory-archive"><span data-clay="i-retegek"></span><b>A közös könyvünk</b><small>Minden heti fejezet</small></button><button class="v2-cell" data-modal="weekly"><span data-clay="i-meso"></span><b>A heted számokban</b><small>Én · heti értékelés</small></button></div></div></section>
+
+<footer class="bw-foot"><span>A te Boop-világod</span><button data-modal="machine">Működés és adatforrások</button></footer><div class="bw-demo">V3 · szemléltetett adatok · nem ment az appba</div></div><nav class="bw-dock" aria-label="Boop menü" role="tablist"><button class="bw-domain" data-modal="switcher" aria-label="Területváltó: Boop" aria-haspopup="dialog"><span data-avatar="mezo"></span></button><button id="bw-tab-wall" data-tab="wall" role="tab" aria-selected="true" aria-controls="bw-wall"><span data-clay="i-mezo"></span><span>Üzenőfal</span></button><button id="bw-tab-cases" data-tab="cases" role="tab" aria-selected="false" aria-controls="bw-cases"><span data-clay="i-minta"></span><span>Folyamatban</span></button><button id="bw-tab-you" data-tab="you" role="tab" aria-selected="false" aria-controls="bw-you"><span data-clay="i-kristaly"></span><span>Rólad</span></button><button id="bw-tab-memories" data-tab="memories" role="tab" aria-selected="false" aria-controls="bw-memories"><span data-clay="i-naplo"></span><span>Emlékek</span></button></nav><span class="bw-home-line" aria-hidden="true"></span><button class="bw-fab" data-modal="quicklog" aria-label="Gyors logolás">+</button>
+<div class="bw-toast" role="status" hidden></div>
+<div class="bw-overlay" hidden><section class="bw-glass" role="dialog" aria-modal="true" aria-labelledby="bw-dialog-title"><div class="bw-modal-head"><h2 id="bw-dialog-title"></h2><button class="bw-close" aria-label="Bezárás"><i data-lucide="x" aria-hidden="true"></i></button></div><div id="bw-dialog-content"></div></section></div>
+</div>
+<style>
+#boop-world .bw-glass .v3-row{border:0;border-bottom:1px solid #e8dfd3;border-radius:0;box-shadow:none;width:100%;display:block;padding:16px 0;text-align:left;background:transparent}#boop-world .bw-glass .v3-row strong{font-family:Geist,sans-serif}#boop-world .v3-page .bw-modal-head{gap:4px;padding:8px 0 12px}#boop-world .v3-page .bw-modal-head h2{margin:5px 0 0;line-height:1.2}#boop-world .v3-page .bw-glass .v3-subnav{margin:0;padding-bottom:10px}#boop-world .v3-page .bw-glass .v3-hero{margin:4px 0 16px;padding:17px}#boop-world .v3-page .bw-glass .v3-hero h3{margin:0 0 9px;font-size:21px}#boop-world .v3-page .bw-glass .v3-hero p{margin:0;line-height:1.55}#boop-world .v3-page .bw-glass .v3-bars button{border:0;box-shadow:none;border-radius:0;padding:0;background:transparent}#boop-world .v3-tile{min-height:125px}#boop-world .v3-intro{margin-bottom:14px}#boop-world .v3-intro .bw-avatar{width:50px;height:50px}
+</style>
+
+<script>
+(()=>{const root=document.getElementById('boop-world'),q=s=>root.querySelector(s),qa=s=>[...root.querySelectorAll(s)];let sequence=0,opener=null,timer;const people={mezo:['mezo','Boop','Összeköti a témákat, összefoglal és visszakérdez.','sparkles'],szomnologus:['mezo','Szomnológus','Az alvás és a napirend nyomait vizsgálja.','moon'],edzo:['train','Edző','A mozgást, terhelést és a regenerációt figyeli.','dumbbell'],taplalkozo:['fuel','Táplálkozó','Az étkezési mintákat és a rögzítés hiányait vizsgálja.','leaf'],pszichologus:['en','Pszichológus','A közérzeted és a megélt helyzetek összefüggéseire figyel.','heart'],szkeptikus:['mezo','Szkeptikus','Ellenpéldát keres, és rákérdez arra, amit még nem tudunk.','search'],doki:['nap','Doki','Az egészséghez kapcsolódó jeleket helyezi összefüggésbe.','activity'],drill:['train','Drill','A vállalások és a megvalósítás közötti eltéréseket figyeli.','target'],antropologus:['en','Antropológus','Az élethelyzet és a szokások változásait keresi.','users']};const defs=q('#bg-boop-train-body').parentElement.innerHTML;function avatar(key,tiny=false){const p=people[key]||people.mezo,prefix='bw'+(++sequence)+'-';return '<span class="bw-avatar '+(tiny?'tiny':'')+'" style="--delay:-'+sequence%7+'s"><svg viewBox="0 0 100 100" aria-hidden="true"><defs>'+defs.replaceAll('bg-boop-',prefix)+'</defs>'+q('#boop-'+p[0]).innerHTML.replaceAll('bg-boop-',prefix)+'</svg><span class="bw-mark">'+clay(({mezo:"i-mezo",szomnologus:"i-hold",edzo:"i-edzes",taplalkozo:"i-noveny",pszichologus:"i-kristaly",szkeptikus:"i-tudas",doki:"i-eletjel",drill:"i-cel",antropologus:"i-emberek"})[key]||"i-mezo",12)+'</span></span>'}function icons(){qa('[data-clay]').forEach(el=>{el.innerHTML=clay(el.dataset.clay);el.removeAttribute('data-clay')});if(typeof lucide!=='undefined')lucide.createIcons({attrs:{width:18,height:18}})}function avatars(){qa('[data-avatar]').forEach(el=>{el.innerHTML=avatar(el.dataset.avatar,el.dataset.small==='true');el.removeAttribute('data-avatar')});icons()}avatars();
+const state={saved:false,proposal:'Hétvégén előfordul, hogy az étkezéseimet később rögzítem.',reply:'',following:true,decided:false,instructions:'Légy tömör, de mondd el, miből következtetsz. Kérdezz, ha valamit csak én tudhatok.'};
+const dialogs={
+evidence:['Miből látszik?','<span class="bw-tag">Megfigyelés · nem bizonyított ok</span><h3>Mi tolja későbbre az estét?</h3><div class="bw-evidence-row"><strong>14 napból 9 összevethető</strong>5 napon hiányzik az edzés vége vagy a lefekvés ideje.</div><div class="bw-evidence-row"><strong>Amit látunk</strong>A 4 későn zárult nap közül 3 után későbbi lefekvést rögzítettél.</div><div class="bw-evidence-row"><strong>Ami ellene szól</strong>Volt korábbi edzés utáni késői este is. A munka végét nem ismerjük.</div><div class="bw-note">A számok nem mondják meg az okot. A válaszoddal a következő összehasonlítást pontosítjuk.</div><button class="bw-primary bw-full" data-modal="reply">Hozzáteszem a saját részem</button>'],
+case:['Mi tolja későbbre az estét?','<div class="bw-row">'+avatar('szomnologus')+avatar('edzo')+avatar('szkeptikus')+'<span class="bw-state">A válaszodra vár</span></div><p>Egy téma, minden nyomával és beszélgetésével.</p><div class="bw-step"><small>SZEPTEMBER 18.</small><strong>Észrevettünk egy együttjárást</strong>Későn záruló napok és későbbi lefekvések.</div><div class="bw-step"><small>MA · 07:12</small><strong>A csapat más magyarázatot is keres</strong>Az Edző ellenpéldát hozott. A Szkeptikus a munka végére kérdezett rá.</div><div class="bw-step"><small>KÖVETKEZŐ LÉPÉS</small><strong>Pontosítunk veled</strong>Előbb megértjük a helyzetet. Utána javasolhatunk próbát.</div><div class="bw-row"><button class="bw-primary" data-modal="reply">Válaszolok</button><button class="bw-outline" data-modal="evidence">Bizonyítékok</button><button data-follow>Követés kikapcsolása</button></div><button class="bw-topic" data-modal="discussion">A teljes beszélgetés →</button>'],
+discussion:['A beszélgetés', '<small>Mi tolja későbbre a lefekvésem? · ma</small>'+comment('szomnologus','A késői esték okát keressük. @Edző, látsz erre magyarázatot a terhelésben?')+comment('edzo','Az edzés nem elég magyarázat. Korai edzésnap után is volt késői lefekvés.')+comment('szkeptikus','A munka vége hiányzik. Kérdezzük meg, mielőtt szokást tulajdonítunk neki.')+comment('mezo','A következtetés nyitva marad. A te válaszod után ugyanitt folytatjuk.')+'<button class="bw-primary bw-full" data-modal="reply">Válaszolok a csapatnak</button>'],
+reply:['A te részed a történetben','<p>Mi tartott fenn azokon az estéken?</p><form id="bw-reply-form"><label for="bw-reply-input">Válaszod a csapatnak</label><textarea id="bw-reply-input" placeholder="Például: két este későig dolgoztam…" required></textarea><small>A válasz ehhez a témához kerül. Új tartós tudást külön tudsz jóváhagyni.</small><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+prediction:['Ezt vártuk. Ez történt.','<span class="bw-state">Lezárva · nem vált be</span><h3>Könnyebb lesz a következő edzés?</h3><div class="bw-evidence-row"><strong>Várakozás</strong>Azonos program mellett kisebb megélt terhelés.</div><div class="bw-evidence-row"><strong>Tényleges eredmény</strong>Ugyanolyan nehéznek jelezted.</div><div class="bw-evidence-row"><strong>Mi következik ebből?</strong>Ez a jel önmagában nem adott jó becslést. Nem írunk át rólad mentett tényt.</div><div class="bw-note"><strong>2 / 7 értékelhető előrejelzés vált be</strong><br>2 másikhoz nem volt elég utólagos adat. Ezek nem számítanak találatnak vagy hibának.</div><button class="bw-outline bw-full" data-modal="prediction-reply">Hozzáteszek valamit</button>'],
+'prediction-reply':['Mi történt másképp?','<form id="bw-generic-form"><label for="bw-other-reply">Válasz az Edzőnek</label><textarea id="bw-other-reply" required placeholder="Volt valami szokatlan az edzésen?"></textarea><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+trial:['Ebéd után egy rövid séta','<span class="bw-state green">Saját próba · 4 / 7 nap</span><h3>Van különbség a délutánodban?</h3><p>A te általad elindított próbában az ebéd utáni közérzetet nézzük. Még 3 nap van hátra.</p><div class="bw-step"><strong>Előtte</strong>A korábbi összevethető délutánok.</div><div class="bw-step"><strong>Most</strong>A séta mellett rögzített közérzet. Hiányzó napot nem pótolunk becsléssel.</div><div class="bw-step"><strong>Csütörtökön</strong>Közös értékelés; ha nincs elég adat, ezt mondjuk ki.</div><button class="bw-outline bw-full" data-modal="trial-reply">Elmondom, milyen volt</button>'],
+ 'trial-reply':['Hogy ment a próba?','<form id="bw-generic-form"><label for="bw-other-reply">Tapasztalatod a sétáról</label><textarea id="bw-other-reply" required></textarea><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+knowledge:['Ezt jegyezzük meg?','<small>ÚJ TUDÁS · TŐLED SZÁRMAZIK</small><h3 id="bw-confirm-copy"></h3><p>A rögzítési szokásod értelmezéséhez használjuk. Ebből nem következtetünk arra, hogy mit vagy mennyit ettél.</p><div class="bw-note">Egyetlen mentett tény lesz a Tudástárban. Ez a bejegyzés ugyanarra hivatkozik.</div><button class="bw-primary bw-full" data-save-knowledge>Mentés a Tudástárba · demó</button>'],
+correct:['Mondd a saját szavaiddal','<form id="bw-correct-form"><label for="bw-correct-input">Mit jegyezzünk meg pontosan?</label><textarea id="bw-correct-input" required></textarea><button class="bw-primary bw-full" type="submit">Pontosítás áttekintése</button></form>'],
+'knowledge-origin':['Hol használjuk ezt?','<div class="bw-evidence-row"><strong>Forrás</strong>A saját válaszod a Táplálkozó bejegyzése alatt.</div><div class="bw-evidence-row"><strong>Hatása</strong>Segít elkülöníteni az üres naplót a kimaradt étkezéstől a beszélgetésekben és a megfigyelésekben.</div><div class="bw-evidence-row"><strong>Amit nem változtat</strong>Nem pótol étkezést, nem ír át kalóriát és nem módosít étrendet.</div><button class="bw-outline bw-full" data-tab-link="you">Megnézem a Tudástárban</button>'],
+fact:['Egy tény, egy forrás','<h3>Szeretnéd érteni a javaslatok indoklását.</h3><div class="bw-evidence-row"><strong>Tőled származik</strong>A saját kommunikációs kérésed.</div><div class="bw-evidence-row"><strong>Felhasználás</strong>A következő beszélgetések személyes hátterében.</div><button class="bw-primary bw-full" data-modal="communication">Saját kérésem szerkesztése</button>'],
+communication:['Így beszélj velem','<form id="bw-preferences-form"><label for="bw-instructions">Saját instrukció</label><textarea id="bw-instructions">Légy tömör, de mondd el, miből következtetsz. Kérdezz, ha valamit csak én tudhatok.</textarea><label class="bw-row"><input style="width:auto" type="checkbox" checked> A tanult stílus használata</label><small>A saját kérésed elsőbbséget kap. A megvalósítás a meglévő Beállítások-adatot használná.</small><button class="bw-primary bw-full" type="submit">Mentés · demó</button></form>'],
+character:['A karaktered, javíthatóan','<p>A 7 dimenzióban a csapat következtetéseit látod, a forrásokkal és a korábbi változásokkal együtt.</p><div class="bw-note">A „talál” karakter-visszajelzés. Nem jelent automatikus egészségügyi vagy személyiségtény-mentést.</div><button class="bw-primary bw-full" data-modal="reply-character">Pontosítom ezt a benyomást</button>'],
+'reply-character':['Pontosítsuk a képet','<form id="bw-generic-form"><label for="bw-other-reply">Miben más ez nálad?</label><textarea id="bw-other-reply" required></textarea><button class="bw-primary bw-full" type="submit">Pontosítás küldése · demó</button></form>'],
+investigate:['Járjunk utána','<p>Melyik kérdésre keressünk választ a saját adataidban?</p><button class="bw-topic" data-question="Mi tolja későbbre a lefekvésem?">Mi tolja későbbre a lefekvésem? →</button><button class="bw-topic" data-question="Mikor jobb a délutáni közérzetem?">Mikor jobb a délutáni közérzetem? →</button><small>Vizsgálat indulna saját beszélgetéssel. Előbb az elérhető adatokat nézzük meg, utána az alternatív magyarázatokat.</small>'],
+archive:['Korábbi történetek','<button class="bw-case" data-modal="prediction"><strong>A könnyebb edzés előrejelzése</strong><small>Lezárt · a várakozás nem vált be</small></button><button class="bw-case" data-modal="memoir"><strong>Apró fordulatok</strong><small>A múlt hét története</small></button>'],
+memoir:['Apró fordulatok','<small>HETI EMLÉK · SZEPTEMBER 14–20.</small><h3>Egy kicsivel több hely.</h3><p>Nem egy nagy elhatározás változtatta meg ezt a hetet. Inkább a kis megszakítások: egy séta, egy korábban lezárt este, egy mondat, amit végre leírtál.</p><p>A vasárnapi bejegyzésben már a nyugodtabb délutánt emelted ki. Ezt érdemes megőrizni akkor is, ha még nem tudjuk, pontosan mi segített.</p><button class="bw-topic" data-modal="day-memory">Forrás: a vasárnap emléke →</button><small>Szemléltetett szöveg. A heti történet a napi emlékekből épül, nem hoz létre külön ténylistát.</small>'],
+'day-memory':['Vasárnap emléke','<small>SZEPTEMBER 20. · NAPI ÖSSZEGZÉS</small><h3>Hagytál egy kis helyet.</h3><p>A délutáni séta után nyugodtabbnak írtad le az estédet. Ezt a saját bejegyzésedből őrizzük; az okát még nem tudjuk.</p><div class="bw-evidence-row"><strong>Források</strong>Mozgásnapló · délutáni check-in · esti bejegyzés</div><button class="bw-topic" data-modal="trial">Kapcsolódik: az ebéd utáni séta próbája →</button><button class="bw-outline bw-full" data-modal="weekly">Napi értékelés az Én területen</button>'],
+'day-memory-saturday':['Szombat emléke','<small>SZEPTEMBER 19. · NAPI ÖSSZEGZÉS</small><h3>Mozgás után lelassult a nap.</h3><p>A rögzített edzés után nyugodtabb estéről írtál. A megélt tapasztalatot őrizzük, nem következtetünk belőle általános szabályra.</p><div class="bw-evidence-row"><strong>Források</strong>Edzésnapló · esti bejegyzés</div>'],
+weekly:['A heted számokban','<p>A heti pontszám, a napi értékelések és a rögzített adatok az Én területen maradnak.</p><p>A Boop-újdonságok innen a közös beszélgetésre nyílnak. Nem lesz még egy tanulság-postaláda.</p><small>Az app másik területére vezető átmenet előnézete.</small>'],
+machine:['A közös gépterem','<p>A teljes Boop-világ működése egy helyen.</p><div class="bw-evidence-row"><strong>Mai feldolgozás</strong>Napi emlék → megfigyelések → releváns csapatbeszélgetések.</div><div class="bw-evidence-row"><strong>Adatforrások és hiányok</strong>Mi érhető el, melyik témához mi hiányzik?</div><div class="bw-evidence-row"><strong>Futások és költségek</strong>Időpont, eredmény, modell, hibák és megismétlés.</div><div class="bw-evidence-row"><strong>Memóriarétegek</strong>Napi és időszaki összegzések, visszakeresés, tények eredete.</div><small>A prototípus nem mutat kitalált élő futásállapotot vagy költséget.</small>'],
+chat:['Beszélgetés Booppal','<div class="bw-author">'+avatar('mezo')+'<div><strong>Itt marad a közvetlen beszélgetés.</strong><small>Szöveg, hang, korábbi beszélgetések.</small></div></div><p>A feedben egy bejegyzésre válaszolsz. A chatben bármit elindíthatsz, és ugyanazokra az emlékekre, tényekre és témákra hivatkozhatunk.</p><small>Ebben a tervben a chat csak kapcsolódási pontként szerepel.</small>'],
+notifications:['Ami új a csapatnál','<button class="bw-case" data-modal="discussion"><strong>A Szkeptikus kérdezett tőled</strong><small>A lefekvés témájában</small></button><button class="bw-case" data-modal="knowledge"><strong>Egy pontosításod mentésre vár</strong><small>Az étkezések rögzítéséről</small></button>'],
+day:['A mai napod','<p>A meglévő napi egységek és pontszám fejlécfunkciója megmarad.</p><small>A prototípusban jelölt kapcsolódási pont; a jelenlegi részletes felületét nem tervezzük át.</small>'],
+settings:['Boop beállításai','<button class="bw-topic" data-modal="communication">Így beszélj velem →</button><button class="bw-topic" data-modal="machine">Működés és adatforrások →</button><button class="bw-topic" data-modal="team">A kis csapat →</button>']};
+function clay(id,size=42){return '<svg class="bw-clay" viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true"><use href="#'+id+'"/></svg>'}
+Object.assign(dialogs,{
+ switcher:['Merre menjünk?', [['nap','Nap','Mai · Beszélgetés · Rutin · Napzárás','doki'],['train','Edzés','Mai · Terv · Terhelés · Gyakorlatok','edzo'],['fuel','Fuel','Mai · Kiegészítők · Trendek · Konyha','taplalkozo'],['mezo','Boop','Üzenőfal · Folyamatban · Rólad · Emlékek','mezo'],['me','Én','Áttekintés · Súly · Alvás · Napló','pszichologus']].map(([id,name,sub,person])=>'<button class="v2-domain-row '+(id==='mezo'?'selected':'')+'" '+(id==='mezo'?'data-return-boop':'data-outside="'+name+'"')+'>'+avatar(person)+'<span><b>'+name+'</b><small>'+sub+'</small></span></button>').join('')+'<button class="bw-outline bw-full" data-modal="directory">Összes Boop-funkció</button>'],
+ pattern:['Korábbi vacsora, nyugodtabb este?','<span class="bw-tag">Minta · döntésre vár</span><h3>Az együttjárást látjuk.<br>Az okát még nem.</h3><p>18 összevethető napból a korábbi vacsorák mellett többször jeleztél nyugodtabb estét. Más tényező is közrejátszhat.</p><svg class="v2-chart" viewBox="0 0 310 140" role="img" aria-label="Szemléltetett közérzet 1 és 5 között, korábbi vacsora 3,8, későbbi 3,2"><text x="0" y="24">Közérzet · 1–5</text><text x="0" y="57">Korábbi</text><rect x="78" y="40" width="152" height="22" rx="6" fill="#a5ba91"/><text x="240" y="56">3,8</text><text x="0" y="98">Későbbi</text><rect x="78" y="81" width="128" height="22" rx="6" fill="#c5b8df"/><text x="216" y="97">3,2</text><text x="78" y="130">Szemléltetett értékek · nem oksági bizonyíték</text></svg><button class="bw-evidence" data-modal="pattern-evidence">Adatok, ellenpéldák, eredet →</button><div class="bw-row" id="v2-pattern-actions"><button class="bw-primary" data-pattern-decision="Megerősítetted">Talál, megerősítem</button><button class="bw-outline" data-pattern-decision="Tovább figyeljük">Figyeljük tovább</button><button data-pattern-decision="Elvetetted">Nem így látom</button></div><p id="v2-pattern-result" role="status"></p><button class="bw-topic" data-modal="trial-proposal">Próbáljuk ki tudatosan →</button><button class="bw-topic" data-modal="pattern-history">A minta története és laborfüzete →</button>'],
+ 'pattern-evidence':['A minta bizonyítékai','<div class="bw-evidence-row"><strong>18 összevethető nap</strong>10 korábbi és 8 későbbi vacsora. A hiányos napok nem kerültek a számításba.</div><div class="bw-evidence-row"><strong>Lehetséges más magyarázat</strong>A nyugodtabb munkanapokon a vacsora is korábbra kerülhetett.</div><div class="bw-evidence-row"><strong>Mit jelent az eredmény?</strong>Együttjárás. A két csoport nem véletlenszerűen alakult ki.</div><button class="bw-topic" data-modal="pattern-history">Mikor változott a bizonyíték? →</button>'],
+ 'pattern-history':['A minta története','<div class="bw-step"><small>SZEPTEMBER 12.</small><strong>Első jelzés</strong>Még nem volt elég összevethető nap.</div><div class="bw-step"><small>SZEPTEMBER 18.</small><strong>Több adat, több ellenpélda</strong>A csapat az esti terhelést is bevonta.</div><div class="bw-step"><small>MOST</small><strong>Döntésre vár</strong>A személyes tapasztalatod segít értelmezni a jelzést.</div><button class="bw-primary bw-full" data-modal="pattern">Vissza a döntéshez</button>'],
+ lifecycle:['Minden minta, minden állapot','<div class="v2-chips">'+['Döntésre vár','Figyeljük','Megerősített','Még gyűlik','Nincs kapcsolat','Elvetett'].map((x,i)=>'<button data-lifecycle="'+x+'" aria-pressed="'+(i===0)+'">'+x+'</button>').join('')+'</div><div id="v2-lifecycle-results"><button class="v2-row" data-modal="pattern">'+clay('i-minta')+'<span><strong>Korábbi vacsora, nyugodtabb este?</strong><small>18 összevethető nap · még nincs döntésed</small></span><span>›</span></button></div><button class="bw-topic" data-modal="sources">Miből látunk eleget, miből keveset? →</button>'],
+ trial:['Ebéd után egy rövid séta','<span class="bw-state green">Saját próba · 4 / 7 nap</span><h3>Mit változtat a délutánodon?</h3><div class="v2-days"><span class="done">Cs</span><span class="done">P</span><span class="done">Szo</span><span class="done">V</span><span class="now">H</span><span>K</span><span>Sze</span></div><p>A próbában napi rövid séta után a délutáni közérzetedet jelölöd. Az eddigi 4 nap alapján még nem mondunk eredményt.</p><div class="bw-evidence-row"><strong>Amihez összevetjük</strong>A korábbi, hasonló és elegendően naplózott délutánok.</div><button class="bw-primary bw-full" data-modal="trial-reply">Elmondom, milyen volt</button><button class="bw-topic" data-modal="trial-outcome">Milyen lesz a közös értékelés? →</button>'],
+ 'trial-proposal':['Saját próba, a te döntéseddel','<span class="bw-tag">Javaslat · még nem indult el</span><h3>Hét nap megfigyelés.</h3><p>A választott szokás és az esti közérzet kapcsolatát követnénk. Előbb azt tisztázzuk, pontosan mit és mikor szeretnél kipróbálni.</p><div class="bw-note">A próba elfogadása nem módosít automatikusan étrendet vagy edzéstervet.</div><button class="bw-primary bw-full" data-demo-action="A demóban elfogadtad a próbajavaslatot. Az appban semmi sem indult el.">Elfogadom a próbajavaslatot</button><button class="bw-outline bw-full" data-demo-action="Ezt a próbát most nem indítjuk el.">Most nem szeretném</button>'],
+ 'trial-outcome':['Mit tanultunk a próbából?','<div class="v2-hero sage"><span class="v2-kicker">Lezárt próba — eredmény előnézete</span><h2>Volt változás.<br>Még keressük a magyarázatát.</h2><p>A rögzített közérzet javult, de a munkaterhelés is kisebb volt. Nem tudjuk különválasztani a kettőt.</p></div><div class="bw-row"><button class="bw-outline" data-demo-action="Újabb megfigyelési körre jelölted a próbát.">Figyeljük tovább</button><button data-modal="trial-reply">Hozzáteszem a tapasztalatom</button></div>'],
+ 'prediction-pending':['Még nem tudjuk értékelni','<div class="v2-empty"><strong>Az alvásidő várható változása</strong><p>A vizsgált időszak már véget ért, de nincs elég rögzített éjszaka.</p><small>Nem értékelhető — nem számít bele a 2/7 találati arányba.</small></div><button class="bw-topic" data-modal="prediction">Egy lezárt jóslat részlete →</button>'],
+ investigate:['Minek járjunk utána?','<p>Válassz egy kérdést. Először az adatokat és a lehetséges magyarázatokat nézzük meg.</p><button class="v2-row" data-investigation="Miért fáradok el mostanában?">'+clay('i-eletjel')+'<span><strong>Miért fáradok el?</strong><small>Alvás, terhelés, napirend és saját tapasztalat</small></span><span>›</span></button><button class="v2-row" data-investigation="Mi változott az alvásomban?">'+clay('i-alvas')+'<span><strong>Mi változott az alvásomban?</strong><small>Összevethető éjszakák és esti szokások</small></span><span>›</span></button><button class="v2-row" data-investigation="Mi állhat a súlyváltozás mögött?">'+clay('i-suly')+'<span><strong>Mi állhat a súlyváltozás mögött?</strong><small>A rögzített trend és a körülmények</small></span><span>›</span></button><button class="bw-topic" data-modal="investigation-archive">Korábbi vizsgálatok →</button>'],
+ 'investigation-archive':['Korábbi vizsgálatok','<button class="v2-row" data-modal="case">'+clay('i-alvas')+'<span><strong>Mi tolja későbbre az estét?</strong><small>Nyitott kérdés · Szomnológus, Edző, Szkeptikus</small></span><span>›</span></button><div class="bw-note">A jelentések megőrzik a vizsgált időszakot és a forrásokat. A friss adatok új értékelést indíthatnak.</div>'],
+ coaching:['Miért ezt javasolta ma?','<div class="v2-hero"><div class="v2-hero-head"><span class="v2-kicker">Boop · mai javaslat</span>'+avatar('mezo')+'</div><h2>Ma kérdezzünk többet.</h2><p>Kevés a friss check-in. Most egy saját mondatod többet segít, mint egy újabb következtetés.</p></div><button class="bw-primary bw-full" data-modal="chat">Elmondom, milyen a napom</button><button class="bw-topic" data-modal="observers">Mi alapján választotta ezt? →</button>'],
+ inbox:['A te döntésedre vár','<button class="v2-row" data-modal="knowledge">'+clay('i-tudas')+'<span><strong>Ezt jegyeznénk meg rólad</strong><small>Étkezések utólagos rögzítése · tényjelölt</small></span><span>›</span></button><button class="v2-row" data-modal="life-candidate">'+clay('i-emberek')+'<span><strong>Új ritmus a hétköznapjaidban</strong><small>Életesemény-jelölt · külön jóváhagyást kér</small></span><span>›</span></button><small>Ugyanazok a jelöltek, amelyekre a feed hivatkozik.</small>'],
+ 'life-candidate':['Megőrizzük ezt az eseményt?','<span class="bw-tag">Életesemény-jelölt</span><h3>Új ritmus a hétköznapokban.</h3><p>A példabeli beszélgetésed szerint új munkarendet próbálsz. Szeretnéd, hogy ezt a történeted részeként megőrizzük?</p><div class="bw-row"><button class="bw-primary" data-demo-action="A demóban jóváhagytad az életeseményt.">Megőrizhetjük</button><button class="bw-outline" data-modal="life-refine">Pontosítom</button><button data-demo-action="Az esemény nem kerül az emlékeid közé.">Ne mentsük</button></div>'],
+ 'life-refine':['Az esemény, a saját szavaiddal','<form id="bw-generic-form"><label for="bw-other-reply">Mit őrizzünk meg?</label><textarea id="bw-other-reply" required>Új munkarendet próbálok ki.</textarea><button class="bw-primary bw-full" type="submit">Pontosítás · demó</button></form>'],
+ 'character-evidence':['Miből áll össze a portré?','<div class="bw-evidence-row"><strong>A saját kérésed</strong>Szeretnéd érteni a javaslatok indoklását.</div><div class="bw-evidence-row"><strong>A csapat benyomása</strong>Többször rákérdeztél a következtetések alapjára.</div><div class="bw-note">A saját kérés tény. Az ebből levont általános jellemzés javítható benyomás.</div><button class="bw-topic" data-modal="character-history">A karakterállítás változásai →</button>'],
+ character:['Talál ez a benyomás?','<p class="v2-quote">„Szereted látni, mi miből következik.”</p><div class="bw-row"><button class="bw-primary" data-demo-action="Jelezted, hogy talál. Ez karakter-visszajelzés, nem új tény.">Talál</button><button class="bw-outline" data-modal="reply-character">Pontosítom</button><button data-demo-action="Jelezted, hogy ez a benyomás nem talál. A csapat felülvizsgálná.">Nem igaz rám</button></div><button class="bw-topic" data-modal="character-evidence">Bizonyíték és eredet →</button>'],
+ 'character-history':['Mi változott a képben?','<div class="bw-step"><strong>Korábbi benyomás</strong>„Mindig részletes magyarázatot kér.”</div><div class="bw-step"><strong>A saját pontosításod</strong>Rövid válasz is jó, ha az indoklás visszakereshető.</div><div class="bw-step"><strong>Új megfogalmazás</strong>„Szereti érteni, mi miből következik.”</div><button class="bw-outline bw-full" data-demo-action="A demóban visszavontad ezt a módosítást. A korábbi változat visszakereshető marad.">Módosítás visszavonása</button>'],
+ context:['Ezt kapja meg Boop','<div class="bw-evidence-row"><strong>Saját instrukció</strong>Légy tömör, és mutasd meg az indoklást.</div><div class="bw-evidence-row"><strong>Bekapcsolt tudás</strong>A témához kiválasztott megerősített tények.</div><div class="bw-evidence-row"><strong>Előhívott emlékek</strong>Az aktuális kérdéshez kapcsolódó napok és történetek.</div><button class="bw-topic" data-modal="communication">Saját instrukció szerkesztése →</button>'],
+ 'graph-category':['Minták és belátások','<button class="v2-row" data-modal="pattern">'+clay('i-minta')+'<span><strong>Vacsora és esti közérzet</strong><small>Minta · két kapcsolódó adatforrás</small></span><span>›</span></button><button class="v2-row" data-modal="graph-node">'+clay('i-kristaly')+'<span><strong>Helyet hagyni a délutánban</strong><small>Belátás · egy napi emlékhez kapcsolódik</small></span><span>›</span></button>'],
+ 'graph-node':['Helyet hagyni a délutánban','<span class="bw-tag">Belátás</span><p>A példabeli esti bejegyzésben a kötetlenebb délután fontos élményként szerepel.</p><button class="bw-topic" data-modal="day-memory">Forrás: a vasárnap emléke →</button><button class="bw-outline bw-full" data-demo-action="A példabeli csomópontot archiváltad. Az eredeti napló megmarad.">Archiválom ezt a csomópontot</button>'],
+ 'life-events':['Emberek és életesemények','<button class="v2-row" data-modal="life-candidate">'+clay('i-emberek')+'<span><strong>Új munkarend</strong><small>Jóváhagyásra váró esemény</small></span><span>›</span></button><div class="v2-empty">A kapcsolódó személyek az Emberek területen maradnak szerkeszthetők; itt a történethez vezető kapcsolataik jelennek meg.</div>'],
+ 'graph-goals':['Célok és preferenciák','<button class="v2-row" data-modal="communication">'+clay('i-beallitas')+'<span><strong>Rövid válasz, visszakereshető indoklás</strong><small>Saját kommunikációs kérés</small></span><span>›</span></button><button class="v2-row" data-outside="Én · célok">'+clay('i-cel')+'<span><strong>A saját céljaid</strong><small>Az Én területen szerkeszthetők</small></span><span>›</span></button>'],
+ 'graph-seasons':['Életszakaszok','<div class="v2-empty"><strong>Még nem neveznénk el egy korszakot.</strong><p>Ehhez hosszabb történet és elég saját jelzés kell. A csapat nem tölti ki találgatással.</p></div>'],
+ 'memory-archive':['A közös könyvünk','<button class="v2-row" data-modal="memoir">'+clay('i-naplo')+'<span><strong>Apró fordulatok</strong><small>Szeptember 14–20. · heti fejezet</small></span><span>›</span></button><button class="v2-row" data-modal="memoir-previous">'+clay('i-retegek')+'<span><strong>Egy ritmus kezdete</strong><small>Szeptember 7–13. · heti fejezet</small></span><span>›</span></button>'],
+ 'memoir-previous':['Egy ritmus kezdete','<small>SZEPTEMBER 7–13. · SZEMLÉLTETETT FEJEZET</small><h3>Valami ismétlődni kezdett.</h3><p>A héten többször is megálltál egy pillanatra a délután közepén. Nem minden nap sikerült, de a saját bejegyzéseidben már megjelent, hogy ez jól esett.</p><button class="bw-outline bw-full" data-demo-action="Visszajeleztél a heti történetről.">Ez a történet talál</button>'],
+ 'similar-days':['Mikor volt már ilyen?','<label class="bw-search"><input id="v2-similar-query" aria-label="Hasonló napok keresése" placeholder="Pl. sok munka után nyugodt este"></label><button class="bw-primary bw-full" data-similar-search>Hasonló emlékek keresése</button><div id="v2-similar-result" hidden><div class="bw-note">A demóban egy szemléltetett találatot mutatunk; ez nem szemantikus keresés.</div><button class="v2-row" data-modal="day-memory"><span><strong>Hagytál egy kis helyet.</strong><small>Szeptember 20. · napló és saját megfogalmazás</small></span><span>›</span></button></div>'],
+ conference:['A csapat beszélgetései','<div class="v2-hero"><span class="v2-kicker">Legutóbbi téma</span><h2>Mi tolja későbbre<br>a lefekvést?</h2><div class="v2-cast">'+avatar('szomnologus')+avatar('edzo')+avatar('szkeptikus')+'</div><p>Három nézőpont, egy nyitott kérdés. A következtetés még nem végleges.</p><button class="bw-primary" data-modal="discussion">A teljes vita →</button></div><button class="v2-row" data-modal="archive">'+clay('i-naplo')+'<span><strong>Korábbi tanácskozások</strong><small>Téma, résztvevők és kimenetek szerint</small></span><span>›</span></button><button class="bw-topic" data-modal="team">Kik a csapat tagjai? →</button>'],
+ machine:['Működés és adatforrások','<div class="v2-hero"><span class="v2-kicker">Közös gépterem</span><h2>Lásd, mi történik<br>a háttérben.</h2><p>Futások, források, memóriarétegek és költségek — Boop egész világához.</p></div>'+[['runs','i-retegek','Futások','Mi készült el, mi vár, mi hibázott?'],['sources','i-eletjel','Adatforrások','Bekötött források és hiányzó adatok'],['observers','i-minta','Megfigyelők','Szabályok és szakértői jelzések'],['memory-layers','i-tudas','Memória és felhasználás','Napi emlék, időszaki tömörítés, tudás'],['cost','i-meso','Költség és hívások','Időszak, modellek, felhasználás']].map(([id,icon,title,desc])=>'<button class="v2-row" data-modal="'+id+'">'+clay(icon)+'<span><strong>'+title+'</strong><small>'+desc+'</small></span><span>›</span></button>').join('')],
+ runs:['Futások','<span class="bw-tag">Szemléltetett futásnapló</span><button class="v2-row" data-modal="run-detail"><span><strong>Reggeli csapatbeszélgetés</strong><small>Kész · a tegnapig feldolgozott adatokból</small></span><span>›</span></button><button class="v2-row" data-modal="run-failure"><span><strong>Egy korábbi feldolgozás</strong><small>Hiba · a korábbi eredmények megmaradtak</small></span><span>›</span></button>'],
+ 'run-detail':['Egy futás története','<div class="bw-step"><strong>Adatok összegyűjtve</strong>Naplók, megfigyelések és nyitott témák.</div><div class="bw-step"><strong>A csapat átnézte</strong>Szomnológus, Edző és Szkeptikus.</div><div class="bw-step"><strong>Kimenet</strong>Egy nyitott kérdés. Nem mentettünk új tényt.</div><button class="bw-topic" data-modal="discussion">A létrejött beszélgetés →</button>'],
+ 'run-failure':['Ez a feldolgozás elakadt','<div class="v2-empty"><strong>A korábbi tartalmak továbbra is olvashatók.</strong><p>A rendszer újra megpróbálhatja a feldolgozást. A már elküldött válasz nem vész el.</p></div><button class="bw-primary bw-full" data-demo-action="A demóban újrapróbálásra jelölted. Nem fut valódi feldolgozás.">Újrapróbálás · demó</button>'],
+ sources:['Miből figyel a csapat?','<div class="v2-chips"><button data-source-view="connected" aria-pressed="true">Bekötve</button><button data-source-view="planned" aria-pressed="false">Tervezett</button></div><div id="v2-source-list"><div class="bw-evidence-row"><strong>Mozgás és terhelés</strong>Edzésnaplók, sport, saját megélt nehézség.</div><div class="bw-evidence-row"><strong>Alvás és étkezés</strong>A rögzített napok és a hiányok külön jelennek meg.</div><div class="bw-evidence-row"><strong>Check-in, napló, beszélgetés</strong>Saját közlésként, forráshivatkozással.</div></div><button class="bw-topic" data-modal="coverage">Mennyi adatunk van ehhez a témához? →</button>'],
+ coverage:['Elég adatot látunk?','<div class="bw-evidence-row"><strong>Alvás + esti időbeosztás</strong>14 napból 9 összevethető a példában.</div><div class="bw-evidence-row"><strong>Ami hiányzik</strong>A munka befejezése és néhány nap lefekvési ideje.</div><div class="bw-note">Az adathiány nem rossz eredmény. Csak azt jelzi, miből nem következtethetünk.</div><button class="bw-topic" data-modal="evidence">A konkrét megfigyelés bizonyítékai →</button>'],
+ observers:['Megfigyelők és napi szabályok','<button class="v2-row" data-modal="observer-detail">'+clay('i-minta')+'<span><strong>Rögzítési hiány</strong><small>Jelzett · a mai javaslathoz kapcsolódik</small></span><span>›</span></button><button class="v2-row" data-modal="coverage">'+clay('i-alvas')+'<span><strong>Alvás és teljesítmény</strong><small>Még gyűlik · nem elég minden összehasonlításhoz</small></span><span>›</span></button><button class="bw-topic" data-modal="detectors">Szakértői detektorok katalógusa →</button>'],
+ 'observer-detail':['Miért ez a jelzés?','<div class="bw-evidence-row"><strong>Feltétel</strong>A friss saját visszajelzés hiánya korlátozza az értékelést.</div><div class="bw-evidence-row"><strong>Döntés</strong>Új következtetés helyett kérdés.</div><div class="bw-evidence-row"><strong>Ismétlésvédelem</strong>Ha nemrég szóltunk, nem jelenik meg újra ugyanaz a felszólítás.</div><button class="bw-topic" data-modal="coaching">A kapcsolódó napi javaslat →</button>'],
+ detectors:['Szakértői detektorok','<div class="bw-evidence-row"><strong>Alvás–teljesítmény jel</strong>Az időben összekapcsolható napokból dolgozik.</div><div class="bw-evidence-row"><strong>Utólagos rögzítés</strong>A naplózás ideje és az esemény ideje közötti különbséget figyeli.</div><div class="bw-evidence-row"><strong>Előrejelzések beválása</strong>A lezárható jóslatokat összeveti a tényleges adatokkal.</div><small>Katalógusrészlet a prototípusban. Az éles katalógus teljes detektorlistája megmarad.</small>'],
+ 'memory-layers':['A memória rétegei','<div class="bw-step"><strong>Napi emlék</strong>A napod visszaolvasható összegzése.</div><div class="bw-step"><strong>Heti és havi tömörítés</strong>A hosszú távú visszakeresést segíti.</div><div class="bw-step"><strong>Tudás és kapcsolatok</strong>Jóváhagyott tények és a hozzájuk kötött eredet.</div><button class="bw-topic" data-tab-link="memories">Olvasom az emlékeimet →</button><button class="bw-topic" data-modal="context">Mit használ fel egy beszélgetés? →</button>'],
+ cost:['Költség és hívások','<div class="v2-chips"><button aria-pressed="true">30 nap</button></div><div class="v2-empty"><strong>Ebben a prototípusban nincs élő költségadat.</strong><p>Az éles nézet a hívások számát, a bemeneti/kimeneti tokeneket és a becsült USD-költséget mutatja, napokra és futásokra bontva.</p></div><button class="bw-topic" data-modal="runs">Kapcsolódó futások →</button>'],
+ quicklog:['Mit szeretnél rögzíteni?','<div class="v2-pair">'+[['Étkezés','i-tanyer'],['Alvás','i-alvas'],['Közérzet','i-eletjel'],['Napló','i-naplo'],['Mozgás','i-edzes'],['Súly','i-suly']].map(([label,id])=>'<button class="v2-cell" data-outside="Gyors logolás · '+label+'">'+clay(id)+'<b>'+label+'</b></button>').join('')+'</div><small>A meglévő gyorsrögzítési felületekhez vezető ajtók megmaradnak.</small>']
+});
+const directory=[['Megfigyelések és döntések','pattern'],['Minták összes állapota','lifecycle'],['Minta bizonyíték és laborfüzet','pattern-history'],['Vizsgálat indítása','investigate'],['Korábbi diagnózisok','investigation-archive'],['Aktív és javasolt próbák','trial'],['Próbaeredmények','trial-outcome'],['Előrejelzések és pontosság','prediction'],['Napi javaslat','coaching'],['Karakter — 7 dimenzió','character'],['Állítás eredete és javítása','character-evidence'],['Változásnapló és visszavonás','character-history'],['Konzílium és archívum','conference'],['A 9 szakértő','team'],['Tudás és esemény postaláda','inbox'],['Tény eredete és felhasználás','fact'],['Tudásgráf kategóriák','graph-category'],['Kommunikáció szerkesztése','communication'],['Személyes kontextus','context'],['Napi emlék','day-memory'],['Memoár és archívum','memory-archive'],['Hasonló napok keresése','similar-days'],['Gépterem — futások','runs'],['Adatforrások és hiányok','sources'],['Szabályok és detektorok','observers'],['Memóriarétegek','memory-layers'],['Költségek','cost'],['Chat és hang','chat'],['Én — heti és napi értékelés','weekly'],['Napi fejlécjelző','day']];dialogs.directory=['Minden Boop-funkció',directory.map(([name,key])=>'<button class="bw-topic" data-modal="'+key+'"><span>'+name+'</span>›</button>').join('')];
+root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-return-boop'))close();if(b.dataset.outside){dialogs.outside=[b.dataset.outside,'<div class="v2-empty"><strong>A meglévő appfelület marad a helyén.</strong><p>Ez a prototípus a Boop területét tervezi át. Az ide vezető navigációt megőrizzük; ezt a külső oldalt nem másoljuk le.</p></div><button class="bw-outline bw-full" data-return-boop>Vissza a Boop-világba</button>'];open('outside',b)}if(b.dataset.demoAction){q('#bw-dialog-content').innerHTML='<div class="v2-status" role="status"></div><button class="bw-outline bw-full" data-return-boop>Rendben</button>';q('.v2-status').textContent=b.dataset.demoAction}if(b.dataset.patternDecision){q('#v2-pattern-result').textContent=b.dataset.patternDecision+' · demó';q('#v2-pattern-actions').hidden=true}if(b.dataset.lifecycle){qa('[data-lifecycle]').forEach(x=>x.setAttribute('aria-pressed',x===b));q('#v2-lifecycle-results').innerHTML=b.dataset.lifecycle==='Döntésre vár'?'<button class="bw-topic" data-modal="pattern">Korábbi vacsora, nyugodtabb este? →</button>':'<div class="v2-empty">Ebben a szemléltetett adatkészletben nincs további minta ebben az állapotban. Az éles listából nem tűnik el ez a kategória.</div>'}if(b.dataset.investigation){dialogs.investigation=['A vizsgálat előnézete','<h3></h3><div class="bw-step"><strong>1. Megnézzük, miből tudunk dolgozni</strong>Elérhető naplók, összehasonlítható napok, adathiányok.</div><div class="bw-step"><strong>2. Több magyarázatot vizsgálunk</strong>A releváns Boopok ellenpéldát is keresnek.</div><div class="bw-step"><strong>3. Egy következő lépést választunk</strong>Kérdés hozzád, további megfigyelés vagy jóváhagyható próba.</div><button class="bw-primary bw-full" data-demo-action="A példában elindítottad a vizsgálatot. Valódi AI-hívás nem történt.">Indulhat a vizsgálat · demó</button>'];open('investigation',b);q('#bw-dialog-content h3').textContent=b.dataset.investigation}if(b.dataset.dimension){const d=b.dataset.dimension;dialogs.dimension=[d,'<div class="v2-hero-head">'+avatar(b.dataset.personKey)+'<span class="bw-tag">Szakértői nézőpont</span></div><p>A konkrét megfigyelések, a belőlük levont benyomások és a saját javításaid külön látszanak.</p><button class="v2-row" data-modal="character"><span><strong>Egy állítás részlete</strong><small>Talál / nem igaz / pontosítom</small></span><span>›</span></button><button class="v2-row" data-modal="character-evidence"><span><strong>Miből következtetett?</strong><small>Források és bizonyítékok</small></span><span>›</span></button><button class="v2-row" data-modal="character-history"><span><strong>Hogyan változott?</strong><small>Korábbi változatok és visszavonás</small></span><span>›</span></button>'];open('dimension',b)}if(b.dataset.memoryDay){qa('[data-memory-day]').forEach(x=>x.classList.toggle('on',x===b));if(b.dataset.memoryDay==='19')open('day-memory-saturday',b);else if(b.dataset.memoryDay==='20')open('day-memory',b);else{dialogs.dayempty=['Szeptember '+b.dataset.memoryDay+'.','<div class="v2-empty">Ehhez a naphoz nincs kidolgozott emlékszöveg a demóban. Az éles nézet itt mutatná a napi összegzést, az eredetet és az Én napi értékeléséhez vezető linket.</div>'];open('dayempty',b)}}if(b.hasAttribute('data-similar-search'))q('#v2-similar-result').hidden=false;if(b.dataset.sourceView){qa('[data-source-view]').forEach(x=>x.setAttribute('aria-pressed',x===b));q('#v2-source-list').innerHTML=b.dataset.sourceView==='planned'?'<div class="v2-empty">A tervezett források nem jelenhetnek meg bekötött képességként. Az éles katalógusban külön körökre bontva maradnak visszakereshetők.</div>':dialogs.sources[1].split('<div id="v2-source-list">')[1].split('</div><button class="bw-topic"')[0]+'</div>'}if(b.dataset.factBucket){qa('[data-fact-bucket]').forEach(x=>x.setAttribute('aria-pressed',x===b));factFilter()}});
+function factFilter(){const term=q('#v2-fact-search').value.toLocaleLowerCase('hu'),bucket=q('[data-fact-bucket][aria-pressed="true"]').dataset.factBucket;qa('[data-fact-row]').forEach(el=>el.hidden=(el.id==='bw-saved-fact'&&!state.saved)||!el.textContent.toLocaleLowerCase('hu').includes(term)||(bucket!=='all'&&el.dataset.active!==(bucket==='active'?'true':'false')))}
+root.addEventListener('input',e=>{if(e.target.id==='v2-fact-search')factFilter()});root.addEventListener('change',e=>{if(e.target.hasAttribute('data-fact-toggle')){e.target.closest('[data-fact-row]').dataset.active=String(e.target.checked);toast(e.target.checked?'Újra felhasználható · demó':'Kikapcsoltad a felhasználását · demó');factFilter()}});
+
+function comment(key,text){return '<div class="bw-comment">'+avatar(key,true)+'<div class="bw-bubble"><strong>'+people[key][1]+'</strong><p>'+text+'</p></div></div>'}
+function open(key,button){opener=button||opener;let d=dialogs[key];if(key==='team')d=['A kis Boopok',Object.entries(people).map(([id,p])=>'<button class="bw-case" data-person="'+id+'"><div class="bw-author">'+avatar(id)+'<div><strong>'+p[1]+'</strong><small>'+p[2]+'</small></div></div></button>').join('')];if(!d)return;q('#bw-dialog-title').textContent=d[0];q('#bw-dialog-content').innerHTML=d[1];q('.bw-overlay').hidden=false;q('.bw-glass').scrollTop=0;const top=Math.max(12,Math.min(-root.getBoundingClientRect().top+16,root.offsetHeight-250));q('.bw-glass').style.marginTop=top+'px';if(key==='knowledge')q('#bw-confirm-copy').textContent=state.proposal;if(key==='correct')q('#bw-correct-input').value=state.proposal;if(key==='reply')q('#bw-reply-input').value=state.reply;if(key==='communication')q('#bw-instructions').value=state.instructions;if(key==='case')q('[data-follow]').textContent=state.following?'Követés kikapcsolása':'Követem ezt a témát';icons();sizeDialog();q('.bw-close').focus()}
+function sizeDialog(){q('.bw-glass').style.marginTop='0px'}function close(){q('.bw-overlay').hidden=true;root.style.minHeight='';opener?.focus()}function toast(t){q('.bw-toast').textContent=t;q('.bw-toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>q('.bw-toast').hidden=true,5000)}function tab(name){close();q('.bw-scroll').scrollTop=0;qa('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));['wall','cases','you','memories'].forEach(n=>q('#bw-'+n).hidden=n!==name);q('#bw-page-title').textContent={wall:'A te kis csapatod.',cases:'Folyamatban',you:'Rólad',memories:'Emlékek'}[name];q('#bw-eyebrow').textContent={wall:'Hétfő, szeptember 21.',cases:'Nyomokból megértés',you:'Te alakítod a képet',memories:'Napok, amikből összeállsz'}[name]}
+function counts(){q('#bw-waiting-count').textContent=(state.decided?'1 beszélgetésben várnak rád.':'2 beszélgetésben várnak rád.');q('#bw-knowledge-action').closest('article').dataset.category=state.decided?'':'waiting';const active=q('[data-filter][aria-pressed="true"]');if(active)filter(active.dataset.filter)}function filter(value){qa('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filter===value));qa('[data-category]').forEach(p=>p.hidden=value!=='all'&&(!p.dataset.category.split(' ').includes(value)||(value==='following'&&!state.following&&p===q('[data-category]'))));q('.bw-caught').hidden=value!=='all'}
+root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.type==='submit'&&b.closest('form')){e.preventDefault();handleForm(b.closest('form'));return}if(b.dataset.modal)open(b.dataset.modal,b);if(b.classList.contains('bw-close'))close();if(b.dataset.tab)tab(b.dataset.tab);if(b.dataset.tabLink){tab(b.dataset.tabLink);if(b.dataset.tabLink==='you'){qa('[data-you]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.you==='facts'));qa('[data-you-panel]').forEach(x=>x.hidden=x.dataset.youPanel!=='facts')}}if(b.dataset.filter)filter(b.dataset.filter);if(b.dataset.filterJump)filter(b.dataset.filterJump);if(b.dataset.person){const p=people[b.dataset.person];dialogs.person=[p[1],'<div class="bw-author">'+avatar(b.dataset.person)+'<p>'+p[2]+'</p></div><div class="bw-note">Ugyanaz az öt Boop-alak, névvel és szerepjelvénnyel. A szerepek közös témákon dolgoznak.</div><button class="bw-outline bw-full" data-modal="discussion">Egy beszélgetés a csapatból</button>'];open('person',b)}if(b.dataset.vote){const was=b.getAttribute('aria-pressed')==='true';b.closest('.bw-actions').querySelectorAll('[data-vote]').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed',String(!was));if(!was)toast(b.dataset.vote==='up'?'Hasznosnak jelölted. Ez visszajelzés, nem tényjóváhagyás.':'Jelezted, hogy nem talál. A tapasztalatodat válaszban is leírhatod.')}if(b.hasAttribute('data-comment-like')){const on=b.getAttribute('aria-pressed')==='true';b.setAttribute('aria-pressed',String(!on));b.textContent=on?'Hasznos':'Hasznosnak jelölted'}if(b.dataset.caseFilter){qa('[data-case-filter]').forEach(x=>x.setAttribute('aria-pressed',x===b));qa('[data-case-kind]').forEach(x=>x.hidden=b.dataset.caseFilter!=='all'&&x.dataset.caseKind!==b.dataset.caseFilter)}if(b.dataset.you){qa('[data-you]').forEach(x=>x.setAttribute('aria-pressed',x===b));qa('[data-you-panel]').forEach(x=>x.hidden=x.dataset.youPanel!==b.dataset.you)}if(b.hasAttribute('data-save-knowledge')){state.saved=true;state.decided=true;counts();q('#bw-saved-fact').hidden=false;q('#bw-saved-text').textContent=state.proposal;q('#bw-knowledge-action').hidden=true;q('#bw-knowledge-result').hidden=false;q('#bw-knowledge-result').innerHTML='<div class="bw-reward"><i data-lucide="sprout" aria-hidden="true"></i><span><strong>Pontosabb lett a közös kép.</strong>Egy tény a Tudástárban. Ugyanitt visszakereshető.</span></div><button class="bw-evidence" data-tab-link="you">Megnézem a mentett tudást →</button><button data-undo>Visszavonom</button>';close();icons();toast('A példában mentve. Az éles app adatai nem változtak.')}if(b.hasAttribute('data-undo')){state.saved=false;state.decided=false;counts();q('#bw-saved-fact').hidden=true;q('#bw-knowledge-action').hidden=false;q('#bw-knowledge-result').hidden=true;toast('A demó mentését visszavontad.')}if(b.hasAttribute('data-reject')){state.decided=true;counts();q('#bw-knowledge-action').hidden=true;q('#bw-knowledge-result').hidden=false;q('#bw-knowledge-result').innerHTML='Most nem kerül a Tudástárba. <button data-undo>Mégis átnézem</button>'}if(b.hasAttribute('data-follow')){state.following=!state.following;b.textContent=state.following?'Követés kikapcsolása':'Követem ezt a témát';toast(state.following?'A téma frissítéseit követed.':'A téma továbbra is megtalálható a Folyamatban oldalon.')}if(b.dataset.question){dialogs.question=['Ezzel indulna a vizsgálat','<h3></h3><p>A csapat először az elérhető naplókat és az ellenpéldákat nézné meg. Külön témát nyitna, követhető eredménnyel.</p><button class="bw-primary bw-full" data-start-investigation>Vizsgálat indítása · demó</button>'];open('question',b);q('#bw-dialog-content h3').textContent=b.dataset.question}if(b.hasAttribute('data-start-investigation')){q('#bw-dialog-content').innerHTML='<div class="bw-note"><strong>A vizsgálat itt indulna el.</strong><br>A prototípus nem futtat AI-t. A valós felületen itt jelenne meg a várakozás, majd a forrásokra épülő beszélgetés.</div>';}});
+function handleForm(form){if(form.id==='bw-reply-form'){state.reply=q('#bw-reply-input').value.trim();if(!state.reply)return;const c=q('#bw-inline-reply');c.hidden=false;c.innerHTML='<div class="bw-comment"><span class="bw-self">Te</span><div class="bw-bubble"><strong>Te</strong><p></p><small>Tőled származó információ · a témához csatolva</small></div></div>';c.querySelector('p').textContent=state.reply;q('#bw-dialog-title').textContent='A válaszod innen folytatódik';q('#bw-dialog-content').innerHTML='<div class="bw-reward"><i data-lucide="sprout" aria-hidden="true"></i><span><strong>Hozzátettél a közös képhez.</strong><small>Ezért jár a kis visszajelzés: segítettél pontosítani.</small></span></div><div class="bw-step"><strong>1. A válaszod megmarad a témánál</strong>A saját tapasztalatodként, megjelölt forrással.</div><div class="bw-step"><strong>2. A csapat újraértékel</strong>Megnézi, melyik magyarázatot erősíti vagy gyengíti. Ezt itt tudod majd elolvasni.</div><div class="bw-step"><strong>3. Ha új tudás születik</strong>Külön megmutatjuk, mit jegyeznénk meg. Te pontosíthatod vagy elvetheted.</div><small>Folyamatelőnézet: nem generáltunk AI-választ a begépelt szövegre.</small><button class="bw-primary bw-full bw-close-action">Vissza a beszélgetéshez</button>';q('.bw-close-action').onclick=close;icons()}if(form.id==='bw-correct-form'){state.proposal=q('#bw-correct-input').value.trim();if(state.proposal){q('#bw-proposal').textContent=state.proposal;open('knowledge')}}if(form.id==='bw-preferences-form'){state.instructions=q('#bw-instructions').value;close();toast('A demóban elmentve. A saját instrukcióid az appban nem változtak.')}if(form.id==='bw-generic-form'){if(q('#bw-other-reply').value.trim()){q('#bw-dialog-content').innerHTML='<div class="bw-note">A válasz ehhez a témához kerülne, és új értékelést indíthatna. A demó nem futtat AI-t és nem ment az appba.</div>';toast('Válaszfolyamat bemutatva.')}}sizeDialog()}root.addEventListener('submit',e=>{e.preventDefault();handleForm(e.target)});
+q('#bw-memory-search').addEventListener('input',e=>{const value=e.target.value.toLocaleLowerCase('hu').trim();qa('[data-memory]').forEach(el=>el.hidden=!el.textContent.toLocaleLowerCase('hu').includes(value)&&!el.dataset.memory.includes(value));q('#bw-search-empty').hidden=qa('[data-memory]').some(el=>!el.hidden)});
+root.addEventListener('keydown',e=>{if(q('.bw-overlay').hidden)return;if(e.key==='Escape'){e.preventDefault();close()}if(e.key==='Tab'&&!q('.bw-overlay').classList.contains('v3-page')){const els=[...q('.bw-glass').querySelectorAll('button,input,textarea,a')].filter(x=>!x.disabled);const first=els[0],last=els[els.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+const design={motion:true,tone:'Színes agyag'};function apply(){root.classList.toggle('alive',design.motion);root.style.setProperty('--bw-color',design.tone==='Színes agyag'?'#EBE6F8':'#F0EBF4')}if(globalThis.Tweak){const t=new Tweak({container:root,onChange:apply});t.addToggle(design,'motion',{label:'Élő Boop-mozgás'});t.addSelect(design,'tone',{label:'Felületek színereje',options:['Színes agyag','Visszafogottabb']})}apply();
+const v3Sections=[['Minták','patterns','i-minta','#e7ddf5','1 döntés vár','Amit újra és újra észreveszünk'],['Előrejelzések','predictions','i-kristaly','#dcebf4','2 / 7 bevált','Mit vártunk, és mi történt?'],['Diagnózis','diagnoses','i-muhely','#f8e7d1','3 kérdés','Keressünk magyarázatot együtt'],['Kísérletek','experiments','i-lombik','#e5eddb','4 / 7 nap','Kis változtatás, követhető eredmény'],['Heti','weekly','i-heti','#f4dfe8','Szept. 14–20.','Értékelés és a napjaid'],['Karakter','character-hub','i-emberek','#e9dff4','7 dimenzió','Ahogyan a csapat lát téged'],['Tudástár','knowledge-hub','i-tudas','#e3eada','1 jelölt','Tények, események, kapcsolatok'],['Emlékek','memories-hub','i-naplo','#e6e0f4','Napi és heti','Napló, memoár és visszakeresés'],['Konzílium','conference','i-mezo','#ddebf3','A csapat','Beszélgetések és korábbi ülések'],['Coaching','coaching','i-cel','#f6e4d3','Napi javaslat','Miért ezt javasoltuk ma?'],['Beszélgetés','chat','i-level','#f3e3ed','Booppal','Szöveg, hang és előzmények'],['Gépterem','machine','i-beallitas','#e7e6e0','Működés','Futások, források és memória']];
+function v3Row(title,sub,key,status=''){return '<button class="v3-row" data-modal="'+key+'"><strong>'+title+' →</strong><small>'+sub+'</small>'+(status?'<span class="bw-state">'+status+'</span>':'')+'</button>'}
+function v3Hero(icon,title,copy,color='#e9e0f5'){return '<div class="v3-hero" style="--tile:'+color+'">'+clay(icon)+'<h3>'+title+'</h3><p>'+copy+'</p></div>'}
+function v3Tiles(items){return '<div class="v3-grid">'+items.map(([name,key,icon,color,badge,copy])=>'<button class="v3-tile" data-modal="'+key+'" style="--tile:'+color+'">'+clay(icon)+'<em>'+badge+'</em><b>'+name+'</b><small>'+copy+'</small></button>').join('')+'</div>'}
+q('#bw-cases .bw-content').innerHTML='<div class="v3-intro">'+avatar('mezo')+'<div><strong>Merre nézzünk ma?</strong><p>Minden ismerős eszközöd egy helyen.</p></div></div>'+v3Tiles(v3Sections.slice(0,6))+'<h2 class="v3-section-title">Tudás, történetek és a csapat</h2>'+v3Tiles(v3Sections.slice(6));
+Object.assign(dialogs,{
+patterns:['Minták',v3Hero('i-minta','Együtt észrevesszük.','Az ismétlődés még nem magyarázat. Nézd meg a bizonyítékot, és mondd el, nálad hogyan van.')+'<div class="v2-chips">'+['Döntésre vár','Figyeljük','Megerősített','Kísérletben','Elvetett','Archív'].map((x,i)=>'<button data-v3-filter="'+x+'" aria-pressed="'+(i===0)+'">'+x+'</button>').join('')+'<div id="v3-filter-result">'+v3Row('Korábbi vacsora, nyugodtabb este?','14 megfigyelt nap · Táplálkozó és Szomnológus','pattern','Döntésre vár')+v3Row('Mi tolja későbbre az estédet?','A Szkeptikus egy hiányzó körülményre kérdez rá.','case','Válaszodra vár')+'</div>'+v3Row('Az adataid lefedettsége','Melyik jelből látunk eleget a következtetéshez?','coverage')],
+predictions:['Előrejelzések',v3Hero('i-kristaly','Visszanézzük, igazunk volt-e.','2 a 7 értékelhető előrejelzésből bevált. Két további becsléshez még nincs elég adat.','#dcebf4')+'<div class="v2-chips"><button data-v3-pred="all" aria-pressed="true">Mind</button><button data-v3-pred="pending">Folyamatban</button><button data-v3-pred="closed">Lezárt</button></div><div data-pred-kind="pending">'+v3Row('Nyugodtabb lesz a mai délután?','Holnap nézzük vissza a közérzet-bejegyzésed alapján.','prediction-pending','Folyamatban')+'</div><div data-pred-kind="closed">'+v3Row('Könnyebb lesz a következő edzés?','A várakozás és a saját visszajelzésed különbsége.','prediction','Nem vált be')+v3Row('Miért nincs még eredmény?','A hiányzó adat nem számít hibás előrejelzésnek.','prediction-unassessable','Nem értékelhető')+'</div>'],
+'prediction-pending':['Nyugodtabb délután?',v3Hero('i-kristaly','Ezt várjuk holnapig.','A déli séta után nyugodtabb délutánról számolsz be. Ez egy ellenőrizendő becslés.','#dcebf4')+'<div class="bw-step"><strong>Mi alapján?</strong>A korábbi napok bejegyzései és az aktív kísérleted.</div><div class="bw-step"><strong>Miből derül ki?</strong>A saját délutáni közérzet-jelzésedből.</div><div class="bw-step"><strong>Ha nincs bejegyzés</strong>Nem értékelhető marad; nem találgatunk eredményt.</div>'+v3Row('A kapcsolódó kísérlet','Ebéd utáni séta · 4. nap','trial')],
+diagnoses:['Diagnózis',v3Hero('i-muhely','Mi lehet mögötte?','Válassz kérdést. A csapat összeveti a naplókat, több lehetséges magyarázatot keres, és megmutatja a hiányzó adatokat.','#f7e4cb')+'<button class="bw-primary bw-full" data-modal="investigate">Új diagnózis indítása</button><h3 class="v3-section-title">Korábbi vizsgálatok</h3>'+v3Row('Mitől fáradok délután?','Két lehetséges magyarázat · egy javasolt kísérlet','diagnosis-result','Átnézhető')+v3Row('Mi tolja későbbre az estédet?','A csapat tőled vár egy pontosítást.','case','Válaszodra vár')],
+'diagnosis-result':['Mitől fáradok délután?',v3Hero('i-muhely','Két nyomot érdemes követni.','A napok nem egyformák. A magyarázatok egyelőre feltevések, nem orvosi diagnózis.','#f7e4cb')+'<div class="bw-step"><strong>1. A nap közbeni megszakítások</strong>A jobb délutánokon gyakrabban volt rövid séta. Ez együttjárás, és nem bizonyítja a hatást.</div><div class="bw-step"><strong>2. Az előző éjszaka</strong>Néhány fáradtabb nap előtt rövidebb alvást rögzítettél. Az esti körülményeket még nem ismerjük.</div><div class="bw-note">A csapat kérdése: azokon a napokon is sikerült szünetet tartanod, amikor nem naplóztál mozgást?</div>'+v3Row('A bizonyíték és az ellenpéldák','Mely napok hasonlíthatók össze?','evidence')+v3Row('Javasolt kísérlet','Ebéd után egy rövid séta','trial-proposal')],
+experiments:['Kísérletek',v3Hero('i-lombik','Egy apró változtatás.','Amit kipróbálsz, azt később közösen visszanézzük. A csapat nem indít helyetted kísérletet.','#e4ecd9')+'<div class="v2-days"><span class="done">Cs</span><span class="done">P</span><span class="done">Szo</span><span class="done">V</span><span class="now">H</span><span>K</span><span>Sze</span></div>'+v3Row('Ebéd után egy rövid séta','4 / 7 nap · Szerdáig figyeljük a közérzeted.','trial','Aktív')+'<h3 class="v3-section-title">Javaslatok</h3>'+v3Row('Korábban záruló este','Egy változtatás, néhány összehasonlítható nap.','trial-proposal','Te döntesz az indításról')+'<h3 class="v3-section-title">Lezárt kísérletek</h3>'+v3Row('Mit tudtunk meg a sétából?','A közös értékelés példája.','trial-outcome')],
+weekly:['Heti',v3Hero('i-heti','A heted egyben.','Szeptember 14–20. · A rögzített napjaid, az értékelés és a csapat észrevételei.','#f4e0e8')+'<div class="v2-chips"><button data-modal="week-previous">← Előző hét</button><button aria-pressed="true">Szept. 14–20.</button><button data-modal="week-current">Aktuális hét →</button></div><h3 class="v3-section-title">A napjaid</h3><div class="v3-bars" aria-label="Példa: a napi naplózási jelek száma, maximum hét">'+['H','K','Sze','Cs','P','Szo','V'].map((d,i)=>'<button data-modal="week-day-'+i+'" aria-label="'+(14+i)+'. napi értékelés"><span>'+[4,5,3,6,4,5,6][i]+'/7</span><i style="--bar:'+[48,62,36,76,48,62,76][i]+'px"></i>'+d+'</button>').join('')+'</div><small>Naplózási jelek · szemléltetett adatok</small>'+v3Row('Heti értékelés','Mi ment könnyebben, és hol hiányoznak adatok?','week-analysis')+v3Row('Heti felfedezések','A héten megjelent minták és lezárt előrejelzések.','week-discoveries')+v3Row('Heti tanulságok','Ugyanazok a jelöltek, a hétre szűrve.','inbox')+v3Row('A heted története','Apró fordulatok · memoár','memoir')],
+'week-analysis':['Heti értékelés',v3Hero('i-naplo','Több napodról van közös kép.','A hét második felében több esti bejegyzés segített megérteni a napjaidat. Ez a naplózás teljessége, nem teljesítményminősítés.','#f4e0e8')+'<div class="bw-step"><strong>Mozgás és közérzet</strong>A sétás délutánokon többször írtál nyugodtabb estéről. A kísérlet még fut.</div><div class="bw-step"><strong>Amit még nem látunk</strong>A munka vége és az esti terhelés nincs minden napon rögzítve.</div>'+v3Row('Nézzük a kapcsolódó kísérletet','Ebéd utáni séta','trial')],
+'week-discoveries':['Heti felfedezések',v3Row('Egy nyitott minta','Korábbi vacsora, nyugodtabb este?','pattern')+v3Row('Egy visszanézett előrejelzés','A könnyebb edzés most nem igazolódott.','prediction')+v3Row('Egy pontosítás tőled','Hétvégi naplózási szokás','knowledge')],
+'week-previous':['Előző hét','<small>SZEPTEMBER 7–13.</small>'+v3Hero('i-naplo','Az első közös nyomok.','Ezen a példahéten még kevesebb összehasonlítható napunk volt. A bizonytalanság megmarad az értékelésben.')+v3Row('Heti emlék olvasása','A korábbi hét története','memoir-previous')],
+'week-current':['Aktuális hét',v3Hero('i-naplo','Még alakul.','Szeptember 21–27. · Hétfőn még nincs lezárt heti értékelés. A mai napot és a futó témákat már megnézheted.')+v3Row('Futó kísérlet','Ebéd utáni séta','trial')+v3Row('Mai előrejelzés','Nyugodtabb lesz a délután?','prediction-pending')],
+'character-hub':['Karakter',v3Hero('i-emberek','A képet együtt alakítjuk.','Hét nézőpont, javítható állítások és visszakövethető változások.','#f3e0e9')+['Fizikai','Sportolói','Táplálkozási','Alvás & regeneráció','Mentális & érzelmi','Motiváció & fegyelem','Élet & kapcsolatok'].map((d,i)=>v3Row(d,'Megfigyelés, állítás és a saját visszajelzésed','dimension-v3-'+i)).join('')+v3Row('Változásnapló','Mi változott és miért?','character-history')],
+'knowledge-hub':['Tudástár',v3Hero('i-tudas','Amit megőrzünk rólad.','A forrás, az állapot és a felhasználás minden tudáselem mellett követhető.','#e3eada')+v3Row('Tények','Keresés és aktív / kikapcsolt tudás','facts-page')+v3Row('Postaláda','Tény- és életesemény-jelöltek','inbox')+v3Row('Kapcsolatok','Témák, célok, emberek és életszakaszok','graph-category')+v3Row('Így beszélj velem','Saját instrukció és tanult stílus','communication')],
+'memories-hub':['Emlékek',v3Hero('i-naplo','A napjaidból történet lesz.','A napi emlékek és a heti memoár ugyanabból a megélt történetből épülnek.')+v3Row('Napi emlékek','Szeptember 20. és a korábbi napok','day-memory')+v3Row('Heti memoár','Apró fordulatok','memoir')+v3Row('Memoárarchívum','Korábbi fejezetek','memory-archive')+v3Row('Hasonló napok keresése','Mikor éreztem már így magam?','similar-days')]
+});
+for(let i=0;i<7;i++){dialogs['week-day-'+i]=['Szeptember '+(14+i)+'.',v3Hero('i-naplo',['Lendületes kezdés','Sűrű nap','Kevesebb nyom','Egy kis szünet','Változó ritmus','Mozgás után','Lassabb délután'][i],'A nap összegzése a rögzített adatokból. A hiányzó részeket nem egészítjük ki becsléssel.','#f2e0e8')+'<div class="bw-step"><strong>Rögzített jelek</strong>'+[4,5,3,6,4,5,6][i]+' a 7 jelből · szemléltetett nap.</div><div class="bw-step"><strong>A nap értelmezése</strong>'+['A reggeli bejegyzés több energiáról szólt.','A terhelésről van adat, az esti lezárásról kevesebb.','Kevés összehasonlítható adatból nem állítunk trendet.','A séta után nyugodtabb délutánt jeleztél.','Az esti körülmények pontosítása segítene.','Az edzés utáni esti bejegyzés nyugodtabb napról szólt.','A saját bejegyzésedben a délutáni szünetet emelted ki.'][i]+'</div>'+v3Row('Kapcsolódó emlék','A napi történet és forrásai',i===5?'day-memory-saturday':'day-memory')];dialogs['dimension-v3-'+i]=[['Fizikai','Sportolói','Táplálkozási','Alvás & regeneráció','Mentális & érzelmi','Motiváció & fegyelem','Élet & kapcsolatok'][i],v3Hero('i-emberek',['Figyeled a tested jelzéseit.','Szereted követni a terhelést.','Az étkezés ritmusa is számít.','A pihenés körülményei számítanak.','Fontos neked az érthető magyarázat.','Kis vállalásokból építkezel.','A napod a kapcsolataiddal együtt érthető.'][i],'Szemléltetett karakterállítás, amit szabadon pontosíthatsz.','#f3e1eb')+v3Row('Talál / nem igaz / pontosítom','A saját tapasztalatod a mérvadó.','character')+v3Row('Forrás és változástörténet','Mi alapján született, és hogyan változott?','character-history')];}
+let v3Trail=[];let v3Restoring=false;
+dialogs['prediction-unassessable']=['Nem értékelhető',v3Hero('i-kristaly','Hiányzik a visszajelzés.','Ehhez az előrejelzéshez nincs összevethető utólagos adat. A beválási arányba nem számít bele.')];
+const v3SheetKeys=new Set(['evidence','character-evidence','knowledge','correct','reply','reply-character','trial-reply','prediction-reply','quicklog']);
+const v3OldOpen=open,v3OldClose=close,v3OldTab=tab;
+open=function(key,button){const old=q('.bw-overlay');if(!v3Restoring){if(!old.hidden&&v3SheetKeys.has(old.dataset.key)&&v3SheetKeys.has(key))v3Trail.pop();v3Trail.push({key,html:old.hidden?null:q('#bw-dialog-content').innerHTML,prev:old.dataset.key||'',scroll:q('.bw-glass').scrollTop})}old.dataset.key=key;q('.bw-scroll').inert=true;v3OldOpen(key,button);const sheet=v3SheetKeys.has(key);old.classList.toggle('v3-page',!sheet);q('.bw-glass').setAttribute('role',sheet?'dialog':'region');q('.bw-glass').setAttribute('aria-modal',String(sheet));q('.bw-close').textContent=sheet?'Bezárás':'← Vissza';q('.bw-close').setAttribute('aria-label',sheet?'Bezárás':'Vissza');qa('.v3-home,.v3-crumb').forEach(x=>x.remove());if(!sheet){const head=q('.bw-modal-head');head.insertAdjacentHTML('beforeend','<button class="v3-home" data-v3-menu>Összes funkció</button><div class="v3-crumb">Boop / '+(v3Sections.find(x=>x[1]===key)?.[0]||v3Sections.find(x=>x[1]===v3Trail[0]?.key)?.[0]||'Részletek')+'</div>');q('#bw-dialog-content').insertAdjacentHTML('afterbegin','<nav class="v3-subnav" aria-label="Közvetlen funkciók">'+v3Sections.slice(0,5).map(([name,k])=>'<button data-v3-direct="'+k+'"'+(key===k?' aria-current="page"':'')+'>'+name+'</button>').join('')+'</nav>')}q('.bw-close').textContent=sheet?'Bezárás':'← Vissza';icons();};
+close=function(){if(v3Trail.length>1){const leaving=v3Trail.pop();const prev=v3Trail[v3Trail.length-1];v3Restoring=true;open(prev.key);if(leaving.html){q('#bw-dialog-content').innerHTML=leaving.html;q('.bw-glass').scrollTop=leaving.scroll;icons()}v3Restoring=false;}else{v3Trail=[];q('.bw-scroll').inert=false;v3OldClose();q('.bw-overlay').classList.remove('v3-page')}};
+tab=function(name){q('.bw-scroll').inert=false;v3Trail=[];v3OldClose();v3OldTab(name);if(name==='cases'){q('#bw-page-title').textContent='Menü';q('#bw-eyebrow').textContent='A TE BOOP-VILÁGOD'}};
+root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-v3-menu'))tab('cases');if(b.dataset.v3Direct){v3Trail=[];open(b.dataset.v3Direct,b)}if(b.dataset.v3Filter){qa('[data-v3-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));q('#v3-filter-result').innerHTML=v3Row({ 'Döntésre vár':'Korábbi vacsora, nyugodtabb este?','Figyeljük':'A késői esték körülményei','Megerősített':'Hétvégi naplózási szokás','Kísérletben':'Ebéd utáni séta','Elvetett':'Az edzés mindig késői estét okoz','Archív':'Egy korábbi megfigyelés'}[b.dataset.v3Filter],'Szemléltetett életciklusállapot · forrás és történet','pattern',b.dataset.v3Filter)}if(b.dataset.v3Pred){qa('[data-v3-pred]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));qa('[data-pred-kind]').forEach(x=>x.hidden=b.dataset.v3Pred!=='all'&&x.dataset.predKind!==b.dataset.v3Pred)}});
+q('#bw-tab-cases span:last-child').textContent='Menü';
+// Keep facts interactive in the canonical Rólad panel rather than duplicating its DOM ids.
+dialogs['facts-page']=['Tények','<p>A tények egyetlen szerkeszthető listája.</p><button class="bw-primary bw-full" data-tab-link="you">Ténylista megnyitása</button>'];
+dialogs.conference[0]='Konzílium';dialogs.coaching[0]='Coaching';dialogs.machine[0]='Gépterem';
+tab('cases');icons();
+
+})();
+</script>

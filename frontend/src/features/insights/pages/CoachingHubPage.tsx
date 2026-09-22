@@ -23,7 +23,7 @@ export function CoachingHubPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <PageHero spot="s-orb-figyel" iconSize={54} name="Proaktív coaching"
         big={split.total === 0 ? undefined : flagged}
         sub={split.total === 0 ? 'a motor döntése, ahogy megszületett' : `${split.total} szabály · ma ennyi jelzett`}>

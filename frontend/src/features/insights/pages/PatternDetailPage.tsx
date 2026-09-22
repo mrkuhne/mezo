@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { usePatternActions, usePatternMonitor, usePatternPairDetail, usePatterns } from '@/data/hooks'
@@ -25,9 +25,10 @@ function lastRunLabel(lastRunAt: string | null | undefined): string {
 
 function DetailFrame({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const [search] = useSearchParams()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo/patterns')} label="‹ Minták" />
+      <PageHead onBack={() => navigate(`/mezo/patterns${search.size ? `?${search}` : ''}`)} label="‹ Minták" />
       <div className="mz-page-hero"><div className="mz-hero-nm">Minta részletei</div></div>
       <PageBody><div className="pdt-page">{children}</div></PageBody>
     </MozaikPage>

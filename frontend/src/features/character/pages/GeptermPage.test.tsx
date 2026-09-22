@@ -3,7 +3,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { GeptermPage } from './GeptermPage'
+import { GeptermPage } from '@/features/character/pages/GeptermPage'
 import type { CharacterRunSummary } from '@/data/character/characterApi'
 
 const mockNavigate = vi.fn()
@@ -100,4 +100,10 @@ describe('GeptermPage', () => {
     // NIGHTLY_QUIET(0) + NIGHTLY_SIGNAL(2) = 2 — MONTHLY_RUN's 23 must NOT be folded in.
     expect(screen.getByText(/e héten 3 futás · 2 megfigyelés/)).toBeInTheDocument()
   })
+})
+
+test.each([['Memória', '/mezo/memoria'], ['Megfigyelők', '/mezo/coaching/megfigyelo']])('common engine door %s opens its existing page', async (label, path) => {
+  renderHub()
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(label) }))
+  expect(mockNavigate).toHaveBeenCalledWith(path)
 })

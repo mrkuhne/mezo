@@ -23,7 +23,7 @@ const BOOT_LINES = [
 
 type Ceremony = 'idle' | 'reveal' | 'empty'
 
-export function KarakterHubPage() {
+export function KarakterHubPage({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate()
   const { overview, isLoading } = useCharacterOverview()
   const bootstrap = useCharacterBootstrap()
@@ -144,5 +144,5 @@ export function KarakterHubPage() {
     )
   }
 
-  return <CharacterFeedPage />
+  return <CharacterFeedPage embedded={embedded} />
 }

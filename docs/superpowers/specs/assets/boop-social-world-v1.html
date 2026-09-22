@@ -1,0 +1,330 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=Geist:wght@400;500;600;650;700;750&display=swap');
+#boop-world{--bw-ink:#2B2118;--bw-muted:#5F5346;--bw-lav:#5D4FA0;--bw-line:#2b21181a;--bw-color:#EBE6F8;max-width:460px;margin:auto;background:#FBF6EF;color:var(--bw-ink);font:400 14px/1.6 Geist,system-ui,sans-serif;border-radius:28px;isolation:isolate;position:relative;overflow:clip;text-align:left;color-scheme:light;box-shadow:0 14px 60px #2b211816}
+#boop-world *{box-sizing:border-box}#boop-world [hidden]{display:none!important}#boop-world button,#boop-world input,#boop-world textarea{font:inherit;color:inherit}#boop-world button{cursor:pointer;border:0;background:none;padding:8px;border-radius:12px;transition:transform .18s,background .18s}#boop-world button:active{transform:scale(.97)}#boop-world button:focus-visible{outline:2px solid var(--bw-lav);outline-offset:3px}#boop-world button:hover{background:#ffffff70}#boop-world h1,#boop-world h2,#boop-world h3{font-family:Fraunces,Georgia,serif;font-weight:500;line-height:1.18}#boop-world h1{font-size:30px;margin:0}#boop-world h2{font-size:25px;margin:0 0 12px}#boop-world h3{font-size:22px;margin:8px 0 12px}#boop-world p{margin:0 0 12px}#boop-world small{font-size:11px;color:var(--bw-muted);display:block;line-height:1.5}#boop-world i,#boop-world button>svg{width:18px;height:18px}#boop-world .bw-top{display:flex;align-items:center;gap:8px;padding:15px 18px 10px;background:radial-gradient(ellipse at 20% 0,#f3c56f55,transparent 80%)}#boop-world .bw-brand{font-size:25px;font-weight:750;letter-spacing:-1.4px;margin-right:auto}#boop-world .bw-top button{min-width:36px;min-height:36px;display:grid;place-items:center}#boop-world .bw-day{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:conic-gradient(#b5a776 43%,#e7dfcc 0);box-shadow:inset 0 1px 3px #fff;font-size:11px}#boop-world .bw-day span{background:#fbf6ef;border-radius:50%;width:23px;height:23px;display:grid;place-items:center}
+#boop-world .bw-head{padding:13px 20px 14px;display:flex;align-items:center;gap:12px}#boop-world .bw-head>div{flex:1}#boop-world .bw-kicker{color:var(--bw-muted);font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}#boop-world .bw-hero-orb{width:57px;height:57px}#boop-world .bw-nav{display:flex;margin:0 14px 14px;padding:4px;border-radius:18px;background:#2b211809;gap:2px}#boop-world .bw-nav button{flex:1;font-size:12px;font-weight:600;padding:10px 2px;border-radius:14px}#boop-world .bw-nav button[aria-selected=true]{background:#fffdf9;box-shadow:0 3px 8px #604c2814;color:var(--bw-lav)}#boop-world .bw-cast{display:flex;justify-content:space-between;padding:0 16px 12px;gap:2px}#boop-world .bw-cast button{flex:1;min-width:0;padding:2px;text-align:center;font-size:11px;line-height:1.5}#boop-world .bw-cast .bw-avatar{width:55px;height:55px;margin:auto;display:flex}#boop-world .bw-cast .bw-avatar:after{content:'';position:absolute;inset:-2px;border:2px solid #cabfe3;border-radius:50%;border-bottom-color:transparent;transform:rotate(-25deg)}#boop-world .bw-avatar{position:relative;display:inline-flex;flex:none;width:45px;height:45px;vertical-align:middle}#boop-world .bw-avatar>svg{width:100%;height:100%;overflow:visible}#boop-world .bw-avatar.tiny{width:31px;height:31px}#boop-world .bw-avatar.large{width:78px;height:78px}#boop-world .bw-mark{position:absolute;bottom:-1px;right:-1px;display:grid;place-items:center;width:17px;height:17px;background:#fffaf4;border:1px solid white;border-radius:6px;box-shadow:0 2px 4px #2b211822;z-index:1}#boop-world .bw-mark svg{width:11px;height:11px}#boop-world .bw-strip{display:flex;align-items:center;gap:8px;margin:0 16px 14px;padding:9px 12px;background:#EDE7F6;border-radius:14px;font-size:12px}#boop-world .bw-strip>span{flex:1}#boop-world .bw-strip button{font-size:12px;font-weight:650;color:var(--bw-lav);padding:3px}
+#boop-world .bw-filters{display:flex;gap:4px;margin:0 15px 12px;flex-wrap:wrap}#boop-world .bw-filters button{padding:7px 10px;font-size:11px;border-radius:99px;color:var(--bw-muted)}#boop-world .bw-filters button[aria-pressed=true]{background:var(--bw-color);color:var(--bw-lav);font-weight:650}#boop-world .bw-post{background:linear-gradient(135deg,#FFF1D9,#FFFBF5);border:1px solid #fff9;border-radius:24px;margin:0 12px 16px;padding:16px;box-shadow:0 14px 26px -19px #aa771e66,inset 0 1px 0 white}#boop-world .bw-post.lav{background:linear-gradient(145deg,var(--bw-color),#F9F6FE);box-shadow:0 14px 26px -19px #5d4fa066}#boop-world .bw-post.sage{background:linear-gradient(145deg,#E9F1E2,#F7FBF3);box-shadow:0 14px 26px -19px #6e8b5e66}#boop-world .bw-author{display:flex;align-items:center;gap:9px;margin-bottom:13px}#boop-world .bw-author>div{flex:1;min-width:0}#boop-world .bw-author strong{display:block;font-size:13px}#boop-world .bw-author button{padding:0;flex:none}#boop-world .bw-tag{display:inline-block;font-size:11px;color:var(--bw-lav);background:#ffffff90;border-radius:7px;padding:3px 7px}#boop-world .bw-post>p{font-size:15px;line-height:1.65}#boop-world .bw-topic{display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:9px 10px!important;font-size:12px!important;background:#ffffff90!important;margin:10px 0;border-radius:12px!important}#boop-world .bw-topic span{flex:1}#boop-world .bw-evidence{font-size:11px!important;color:var(--bw-lav)!important;padding:4px 0!important;display:flex;align-items:center;gap:6px}#boop-world .bw-social{display:flex;gap:3px;align-items:center;margin:10px 0 4px;font-size:11px;color:var(--bw-muted)}#boop-world .bw-social .bw-avatar{margin-right:-8px}#boop-world .bw-social>span:last-child{margin-left:12px}#boop-world .bw-actions{display:flex;gap:3px;border-top:1px solid var(--bw-line);padding-top:4px}#boop-world .bw-actions button{flex:1;font-size:11px;display:flex;justify-content:center;align-items:center;gap:5px;min-height:40px;padding:6px 2px}#boop-world .bw-actions button[aria-pressed=true]{color:var(--bw-lav);background:#e8dff4}#boop-world .bw-comment{display:flex;align-items:flex-start;gap:7px;margin-top:11px}#boop-world .bw-bubble{min-width:0;flex:1;border-radius:4px 15px 15px 15px;padding:10px 12px;background:#ffffffb8}#boop-world .bw-bubble strong{font-size:12px;color:var(--bw-lav)}#boop-world .bw-bubble p{font-size:12px;line-height:1.65;margin:4px 0}#boop-world .bw-mention{color:var(--bw-lav);font-weight:600}#boop-world .bw-comment-actions{display:flex;gap:8px}#boop-world .bw-comment-actions button{font-size:11px;padding:3px 0;color:var(--bw-muted)}#boop-world .bw-reply{display:flex;align-items:center;gap:8px;width:100%;background:#fff9!important;border:1px solid var(--bw-line)!important;border-radius:99px!important;font-size:12px!important;text-align:left;margin-top:13px;padding:8px 10px!important;color:var(--bw-muted)!important}#boop-world .bw-self{width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:#e2d7ec;color:var(--bw-lav);font-size:11px;flex:none}#boop-world .bw-primary{background:#FF5B36!important;color:white!important;padding:11px 15px!important;border-radius:14px!important;font-size:12px!important;font-weight:650;box-shadow:0 6px 13px -6px #a5372080}#boop-world .bw-outline{background:#fff9!important;border:1px solid var(--bw-line)!important;padding:10px 13px!important;font-size:12px!important}#boop-world .bw-full{width:100%;margin-top:10px}#boop-world .bw-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#boop-world .bw-row>*{min-width:0}#boop-world .bw-muted{color:var(--bw-muted);font-size:12px}#boop-world .bw-caught{margin:22px;text-align:center;color:var(--bw-muted);font-size:12px}#boop-world .bw-caught .bw-avatar{display:flex;margin:0 auto 5px}#boop-world .bw-content{padding:4px 20px 18px}#boop-world .bw-section-title{font:500 24px/1.2 Fraunces,Georgia,serif;margin:15px 0 10px}#boop-world .bw-case{display:block;width:100%;padding:17px 0!important;border-bottom:1px solid var(--bw-line)!important;border-radius:0!important;text-align:left}#boop-world .bw-case strong{display:block;margin:5px 0;font-size:15px}#boop-world .bw-case .bw-row{justify-content:space-between}#boop-world .bw-state{font-size:11px;padding:3px 7px;border-radius:8px;background:#ece4f4;color:var(--bw-lav)}#boop-world .bw-state.green{background:#e4eddd;color:#4e6b42}#boop-world .bw-progress{height:5px;border-radius:9px;background:#2b211810;margin:9px 0}#boop-world .bw-progress span{display:block;height:100%;border-radius:9px;background:#9b8fc4}#boop-world .bw-fact{padding:16px 0;border-bottom:1px solid var(--bw-line)}#boop-world .bw-fact p{margin:6px 0;font-size:14px}#boop-world .bw-book{margin:8px 0 20px;padding:22px;border-radius:8px 25px 25px 8px;background:linear-gradient(110deg,#ded3ed 0,#f4eaf8 5%,#e9e0f3 100%);box-shadow:inset 5px 0 0 #b7a4c440,0 14px 25px -17px #51426350}#boop-world .bw-book h3{font-size:29px}#boop-world .bw-search{display:flex;align-items:center;gap:7px;background:#fffaf4;border:1px solid var(--bw-line);border-radius:14px;padding:9px 12px;margin-bottom:15px}#boop-world input,#boop-world textarea{background:#fffaf4;border:1px solid var(--bw-line);padding:12px;border-radius:12px;width:100%;font-size:16px}#boop-world .bw-search input{border:0;background:transparent;padding:2px;min-width:0}#boop-world textarea{min-height:90px;resize:vertical;display:block;margin:8px 0 12px}#boop-world .bw-memory{padding:15px 0;border-bottom:1px solid var(--bw-line)}#boop-world .bw-memory button{padding:5px 0;color:var(--bw-lav);font-size:12px}#boop-world .bw-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 20px;background:#f5efe7;border-top:1px solid var(--bw-line);font-size:11px;color:var(--bw-muted)}#boop-world .bw-foot button{font-size:11px;padding:4px}#boop-world .bw-demo{padding:7px;text-align:center;font-size:11px;color:var(--bw-muted)}
+#boop-world .bw-overlay{position:absolute;inset:0;z-index:20;background:#46344f2a;backdrop-filter:blur(9px);padding:12px;display:flex;align-items:flex-start;justify-content:center}#boop-world .bw-glass{position:relative;width:100%;background:linear-gradient(145deg,#fffcf7f5,#eee7f7f5);border:1px solid #fff;border-radius:26px;padding:22px;box-shadow:0 26px 70px #38234c44,inset 0 1px 0 white;animation:bw-pop .25s ease-out}#boop-world .bw-modal-head{display:flex;gap:8px;align-items:center;margin-bottom:13px}#boop-world .bw-modal-head h2{flex:1;margin:0;font-size:25px}#boop-world .bw-close{width:36px;height:36px;flex:none}#boop-world .bw-glass p{font-size:13px;line-height:1.7}#boop-world .bw-evidence-row{border-top:1px solid var(--bw-line);padding:12px 0;font-size:13px}#boop-world .bw-evidence-row strong{display:block}#boop-world .bw-note{font-size:12px;padding:12px;border-radius:14px;background:#ebe4f4;margin:14px 0}#boop-world .bw-step{border-left:2px solid #c5b4df;padding:0 0 17px 14px;margin-left:7px;font-size:13px}#boop-world .bw-step strong{display:block}#boop-world .bw-reward{display:flex;gap:10px;align-items:center;border-radius:15px;padding:13px;background:#E7EFDf;color:#425e37;margin:12px 0;animation:bw-pop .35s}#boop-world .bw-reward strong{display:block}#boop-world .bw-result{font-size:12px}#boop-world .bw-toast{position:sticky;bottom:10px;z-index:25;margin:10px 16px;padding:11px 13px;border-radius:14px;background:#4e6b42;color:white;font-size:12px;box-shadow:0 5px 20px #0002}#boop-world .bw-avatar .boop-eye,#boop-world .bw-avatar .boop-pupil,#boop-world .bw-avatar .boop-body{transform-box:fill-box;transform-origin:center}#boop-world .bw-avatar .boop-body{transform-origin:50% 96%}
+@media(prefers-reduced-motion:no-preference){#boop-world.alive .boop-eye{animation:bw-blink 6s infinite;animation-delay:var(--delay,0s)}#boop-world.alive .boop-pupil{animation:bw-look 9s infinite;animation-delay:var(--delay,0s)}#boop-world.alive .boop-body{animation:bw-breathe 4.2s ease-in-out infinite;animation-delay:var(--delay,0s)}}@keyframes bw-blink{0%,41%,45%,100%{transform:scaleY(1)}43%{transform:scaleY(.08)}}@keyframes bw-look{0%,20%,66%,100%{transform:translateX(0)}26%,38%{transform:translateX(-2px)}46%,58%{transform:translateX(2px)}}@keyframes bw-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}@keyframes bw-pop{from{opacity:.2;transform:translateY(9px) scale(.98)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){#boop-world *,#boop-world *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(max-width:360px){#boop-world .bw-post{padding:13px}#boop-world .bw-cast .bw-avatar{width:45px;height:45px}#boop-world .bw-nav button{font-size:11px}#boop-world .bw-glass{padding:17px}}@media(pointer:coarse){#boop-world button{min-height:44px}}
+</style>
+<div id="boop-world" class="alive" aria-label="Boop közös AI világ — tervezési prototípus">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!--
+    Boop — a ház saját kabalafigurája, agyag anyagban (visszaöltöztetés, mezo-ju4j6.14).
+
+    EREDET: a figura SAJÁT rajz, a stíluskönyv §6.1 agyag-receptje szerint (viewBox 0 0 100 100,
+    objektumonként saját 3-stop radiális gradiens, EGY fehér csúcsfény bal felül, körvonal és
+    drop-shadow nélkül). A `bible-strong-avatar-lab` (AGPL-3.0) ötletadóként szerepelt a tervben;
+    innen sem kód, sem exportált ábra nem került át, így licenc-kérdés sem keletkezik.
+
+    VÁLTOZATOK: Edzés kék, Fuel zsálya, Nap narancssárga, Boop levendula, Én rózsa.
+    MOZDULAT-FOGÓK: boop-eye = pislogás, boop-pupil = tekintet,
+    boop-brow = szemöldök, boop-body = lélegzet; CSS, reduced-motion védelemmel.
+  -->
+  <defs>
+    <radialGradient id="bg-boop-train-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.5" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-train-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-train-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.55" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-fuel-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-fuel-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-fuel-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.55" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-nap-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-nap-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-nap-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.55" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-mezo-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.5" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-mezo-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-mezo-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.55" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-en-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.5" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-en-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-en-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.55" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+  </defs>
+  <symbol id="boop-train" viewBox="0 0 100 100">
+    <title>Boop — Edzés · kék</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#356FA0" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-fuel" viewBox="0 0 100 100">
+    <title>Boop — Fuel · zsálya</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#4E6B42" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-fuel-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-nap" viewBox="0 0 100 100">
+    <title>Boop — Nap · narancssárga</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#D8481F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-nap-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-mezo" viewBox="0 0 100 100">
+    <title>Boop — Boop · levendula</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#5D4FA0" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-mezo-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-en" viewBox="0 0 100 100">
+    <title>Boop — Én · rózsa</title>
+    <!-- talaj-árnyék: a figura ÜL valamin, nem lebeg (agyag-recept: nincs drop-shadow szűrő) -->
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#8E3F6F" opacity="0.16"/>
+    <!-- fülek: a FEJ felső harmadán, kifelé döntve (owner 2026-09-18: lejjebb kézre hasonlítottak) -->
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(24 78 28)"/>
+    <!-- lábak -->
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <!-- törzs -->
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-en-body)"/>
+      <!-- egyetlen fehér csúcsfény, bal felül, ~-22 fokkal döntve -->
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      <!-- szemek: fehér mandula + pupilla + csillanás; a szemcsoport együtt pislog -->
+      <!-- szemöldök: apró ív a szem fölött, a mozdulat (felhúzás) fogója a `.boop-brow` -->
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <!-- A pupilla + csillanás együtt nézelődik; a külső szemcsoport pislog. -->
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+</svg>
+
+<header class="bw-top"><span class="bw-brand">boop</span><button data-modal="settings" aria-label="Beállítások"><i data-lucide="settings-2" aria-hidden="true"></i></button><button data-modal="chat" aria-label="Beszélgetés Booppal"><i data-lucide="messages-square" aria-hidden="true"></i></button><button data-modal="notifications" aria-label="Értesítések"><i data-lucide="bell" aria-hidden="true"></i></button><button data-modal="day" aria-label="A mai napod — meglévő fejlécfunkció"><span class="bw-day"><span>3/7</span></span></button></header>
+<div class="bw-head"><div><div class="bw-kicker" id="bw-eyebrow">Hétfő, szeptember 21.</div><h1 id="bw-page-title">A te kis csapatod.</h1></div><button data-modal="team" aria-label="Ismerd meg a Boopokat"><span data-avatar="mezo" class="bw-hero-orb"></span></button></div>
+<nav class="bw-nav" aria-label="Boop menü" role="tablist"><button id="bw-tab-wall" data-tab="wall" role="tab" aria-selected="true" aria-controls="bw-wall">Üzenőfal</button><button id="bw-tab-cases" data-tab="cases" role="tab" aria-selected="false" aria-controls="bw-cases">Folyamatban</button><button id="bw-tab-you" data-tab="you" role="tab" aria-selected="false" aria-controls="bw-you">Rólad</button><button id="bw-tab-memories" data-tab="memories" role="tab" aria-selected="false" aria-controls="bw-memories">Emlékek</button></nav>
+<section id="bw-wall" role="tabpanel" aria-labelledby="bw-tab-wall">
+<div class="bw-cast"><button data-person="szomnologus"><span data-avatar="szomnologus"></span>Alvás</button><button data-person="edzo"><span data-avatar="edzo"></span>Mozgás</button><button data-person="taplalkozo"><span data-avatar="taplalkozo"></span>Étkezés</button><button data-person="pszichologus"><span data-avatar="pszichologus"></span>Közérzet</button><button data-modal="team"><span data-avatar="mezo"></span>A csapat</button></div>
+<div class="bw-strip"><i data-lucide="message-circle" aria-hidden="true"></i><span><strong id="bw-waiting-count">2 beszélgetésben várnak rád.</strong></span><button data-filter-jump="waiting">Megnézem</button></div>
+<div class="bw-filters" aria-label="Bejegyzések szűrése"><button data-filter="all" aria-pressed="true">Neked</button><button data-filter="waiting" aria-pressed="false">Válaszodra vár</button><button data-filter="following" aria-pressed="false">Követed</button></div>
+<article class="bw-post lav" data-category="waiting following">
+<div class="bw-author"><button data-person="szomnologus" aria-label="Szomnológus profilja"><span data-avatar="szomnologus"></span></button><div><strong>Szomnológus</strong><small>07:12 · bevonta az Edzőt és a Szkeptikust</small></div><span class="bw-tag">Új nyom</span></div>
+<p><strong>Lehet, hogy nem az edzés tolja el az estédet.</strong> A késői lefekvések inkább a későn befejezett napok mellé esnek. <span class="bw-mention">@Edző</span>, te mit látsz?</p>
+<button class="bw-topic" data-modal="case"><i data-lucide="git-branch" aria-hidden="true"></i><span>Mi tolja későbbre a lefekvésem?</span>›</button>
+<button class="bw-evidence" data-modal="evidence"><i data-lucide="scan-eye" aria-hidden="true"></i>Miből látszik? · 14 nap, még kevés adat</button>
+<div class="bw-social"><span data-avatar="edzo" data-small="true"></span><span data-avatar="szkeptikus" data-small="true"></span><span>Edző hasznosnak találta · 3 hozzászólás</span></div>
+<div class="bw-actions"><button data-vote="up" aria-pressed="false"><i data-lucide="thumbs-up" aria-hidden="true"></i>Hasznos</button><button data-vote="down" aria-pressed="false"><i data-lucide="thumbs-down" aria-hidden="true"></i>Nem talál</button><button data-modal="discussion"><i data-lucide="message-circle" aria-hidden="true"></i>Beszélgetés</button></div>
+<div class="bw-comment"><span data-avatar="edzo" data-small="true"></span><div class="bw-bubble"><strong>Edző</strong><p>A korábbi edzések után is volt késői este. Egyelőre nem módosítanám az edzéstervet.</p><div class="bw-comment-actions"><button data-comment-like aria-pressed="false">Hasznos · 1</button><button data-modal="reply">Válasz</button></div></div></div>
+<div class="bw-comment"><span data-avatar="szkeptikus" data-small="true"></span><div class="bw-bubble"><strong>Szkeptikus</strong><p>A munka végét nem látjuk a naplóból. Te meg tudod mondani, mi tartott fenn?</p><div class="bw-comment-actions"><button data-comment-like aria-pressed="false">Hasznos · 2</button><button data-modal="reply">Válasz</button></div></div></div>
+<div id="bw-inline-reply" hidden></div><button class="bw-reply" data-modal="reply"><span class="bw-self">Te</span><span>Hozzáteszed, amit csak te tudsz?</span><i data-lucide="send" aria-hidden="true"></i></button>
+</article>
+<article class="bw-post" data-category="waiting">
+<div class="bw-author"><button data-person="taplalkozo" aria-label="Táplálkozó profilja"><span data-avatar="taplalkozo"></span></button><div><strong>Táplálkozó</strong><small>06:48 · a tegnapi válaszod nyomán</small></div><span class="bw-tag">Pontosítás</span></div>
+<p>Azt írtad, <strong>hétvégén néha utólag naplózol</strong>. Így az üres délelőttből nem következik, hogy nem ettél.</p><div class="bw-note"><small>EZT JEGYEZNÉNK MEG RÓLAD</small><span id="bw-proposal">„Hétvégén előfordul, hogy az étkezéseimet később rögzítem.”</span></div>
+<div id="bw-knowledge-action" class="bw-row"><button class="bw-primary" data-modal="knowledge">Igen, jegyezd meg</button><button class="bw-outline" data-modal="correct">Pontosítom</button><button data-reject>Most ne</button></div><div id="bw-knowledge-result" hidden class="bw-result"></div><button class="bw-evidence" data-modal="knowledge-origin">Hol használnátok ezt?</button>
+</article>
+<article class="bw-post sage" data-category="following">
+<div class="bw-author"><button data-person="edzo" aria-label="Edző profilja"><span data-avatar="edzo"></span></button><div><strong>Edző</strong><small>Tegnap · lezárt előrejelzés</small></div><span class="bw-tag">Visszanéztük</span></div>
+<p><strong>Ez most nem jött be.</strong> Könnyebbnek vártuk a következő edzést, te ugyanolyannak érezted. Ez is számít: legközelebb óvatosabban következtetünk ebből a jelből.</p><button class="bw-topic" data-modal="prediction"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i><span>Előrejelzés és tényleges eredmény</span>›</button><div class="bw-actions"><button data-vote="up" aria-pressed="false"><i data-lucide="thumbs-up" aria-hidden="true"></i>Hasznos</button><button data-vote="down" aria-pressed="false"><i data-lucide="thumbs-down" aria-hidden="true"></i>Nem talál</button><button data-modal="prediction"><i data-lucide="message-circle" aria-hidden="true"></i>Megnézem</button></div>
+</article>
+<div class="bw-caught"><span data-avatar="mezo" data-small="true"></span><strong>Ennyi új történet érkezett.</strong><br>A folyamatban lévő témákat közben tovább figyeljük.<br><button data-tab-link="cases">Mit figyeltek most? →</button></div>
+</section>
+<section id="bw-cases" role="tabpanel" aria-labelledby="bw-tab-cases" hidden><div class="bw-content"><p class="bw-muted">A beszélgetések mögötti ügyek. Itt mindig látod, hol tartunk és mi a következő lépés.</p><button class="bw-primary bw-full" data-modal="investigate">Járjunk utána valaminek</button><div class="bw-filters" style="margin:16px 0 0"><button data-case-filter="all" aria-pressed="true">Minden</button><button data-case-filter="pattern" aria-pressed="false">Minták</button><button data-case-filter="trial" aria-pressed="false">Próbák</button><button data-case-filter="prediction" aria-pressed="false">Előrejelzések</button></div>
+<button class="bw-case" data-case-kind="pattern" data-modal="case"><div class="bw-row"><span class="bw-kicker">Alvás · 3 Boop figyeli</span><span class="bw-state">Kérdezünk</span></div><strong>Mi tolja későbbre a lefekvésem?</strong><small>14 napból 9 összevethető · a munka végét még nem ismerjük.</small><small>Következő lépés: a te tapasztalatod →</small></button>
+<button class="bw-case" data-case-kind="trial" data-modal="trial"><div class="bw-row"><span class="bw-kicker">Saját próba</span><span class="bw-state green">4 / 7 nap</span></div><strong>Ebéd után egy rövid séta</strong><small>4 nap rögzítve. Eredményt még nem mondunk.</small><div class="bw-progress"><span style="width:57%;background:#7fa06c"></span></div><small>Következő lépés: csütörtökön együtt értékeljük →</small></button>
+<button class="bw-case" data-case-kind="prediction" data-modal="prediction"><div class="bw-row"><span class="bw-kicker">Előrejelzés · lezárt</span><span class="bw-state">Nem vált be</span></div><strong>Könnyebb lesz a következő edzés?</strong><small>A várakozás és a tapasztalat eltért. Megnéztük, miből indultunk.</small></button><button class="bw-full bw-outline" data-modal="archive">Lezárt témák és korábbi beszélgetések</button></div></section>
+<section id="bw-you" role="tabpanel" aria-labelledby="bw-tab-you" hidden><div class="bw-content"><p class="bw-muted">Amit te mondtál, amit együtt megerősítettünk, és amiben még csak ismerkedünk veled.</p><div class="bw-filters" style="margin:0 0 15px"><button data-you="facts" aria-pressed="true">Tudástár</button><button data-you="character" aria-pressed="false">Karakter</button><button data-you="connections" aria-pressed="false">Kapcsolatok</button></div><div data-you-panel="facts"><div class="bw-section-title">Amit megjegyeztünk</div><div class="bw-fact"><small>TŐLED · SAJÁT KÉRÉS</small><p>Szeretnéd érteni a javaslatok indoklását.</p><button class="bw-evidence" data-modal="fact">Forrás és felhasználás →</button></div><div class="bw-fact" id="bw-saved-fact" hidden><small>MEGERŐSÍTETTED · A BESZÉLGETÉSBŐL</small><p id="bw-saved-text"></p><button class="bw-evidence" data-modal="knowledge-origin">Forrás és felhasználás →</button></div><button class="bw-topic" data-modal="communication"><i data-lucide="sliders-horizontal" aria-hidden="true"></i><span>Így beszélj velem<br><small>A saját instrukcióid és a tanult stílus</small></span>›</button></div><div data-you-panel="character" hidden><div class="bw-author"><span data-avatar="pszichologus"></span><div><strong>Így lát most a csapat</strong><small>Javítható benyomások, nem személyiségteszt.</small></div></div><h3>Szereted látni, mi miből következik.</h3><p>A csapat ezt a közös beszélgetésekből következtette. Más helyzetben máshogy is működhetsz.</p><div class="bw-row"><button class="bw-primary" data-modal="character">Talál</button><button class="bw-outline" data-modal="character">Pontosítom</button></div><button class="bw-topic" data-modal="character">7 dimenzió és a változások története →</button></div><div data-you-panel="connections" hidden><h3>Hogyan kapcsolódnak össze?</h3><div class="bw-note">Alvás ↔ esti időbeosztás ↔ edzés<br><small>3 összekötött téma · szemléltetett kapcsolatok</small></div><button class="bw-case" data-modal="case"><strong>Esti időbeosztás</strong><small>Nyitott kérdés · a lefekvés témájában</small></button><button class="bw-case" data-modal="fact"><strong>Indoklás iránti igény</strong><small>Saját kérés · a kommunikációhoz kapcsolódik</small></button><small>A kapcsolatok is a forrásukra nyílnak. A rajz nem állít okságot.</small></div></div></section>
+<section id="bw-memories" role="tabpanel" aria-labelledby="bw-tab-memories" hidden><div class="bw-content"><label class="bw-search"><i data-lucide="search" aria-hidden="true"></i><input id="bw-memory-search" aria-label="Keresés az emlékekben" placeholder="Mikor volt már ilyen napom?"></label><div class="bw-book" data-memory="hét történet fordulat"><div class="bw-kicker">A heted története · szeptember 14–20.</div><h3>Apró fordulatok.</h3><p>Nem egy nagy elhatározás változtatta meg ezt a hetet. Inkább a kis megszakítások: egy séta, egy korábban lezárt este, egy mondat, amit végre leírtál.</p><button class="bw-outline" data-modal="memoir">Olvasom a fejezetet →</button></div><div class="bw-section-title">Napról napra</div><div class="bw-memory" data-memory="vasárnap séta csend"><small>TEGNAP · VASÁRNAP</small><strong>A nap, amikor hagytál egy kis helyet.</strong><p class="bw-muted">Séta, nyugodtabb délután és egy esti gondolat.</p><button data-modal="day-memory">A nap emléke →</button></div><div class="bw-memory" data-memory="szombat edzés mozgás"><small>SZEPTEMBER 19. · SZOMBAT</small><strong>Mozgás után lelassult a nap.</strong><p class="bw-muted">Egy edzés és egy olyan este, amit jó visszaolvasni.</p><button data-modal="day-memory-saturday">A nap emléke →</button></div><p id="bw-search-empty" class="bw-muted" hidden>Nincs ilyen emlék a demóban.</p><button class="bw-topic" data-modal="weekly"><i data-lucide="calendar-days" aria-hidden="true"></i><span>A heted számokban<br><small>Heti értékelés az Én területen</small></span>›</button></div></section>
+<footer class="bw-foot"><span>A te Boop-világod</span><button data-modal="machine">Működés és adatforrások</button></footer><div class="bw-demo">Interaktív terv · kitalált példák · nem ment az appba</div><div class="bw-toast" role="status" hidden></div>
+<div class="bw-overlay" hidden><section class="bw-glass" role="dialog" aria-modal="true" aria-labelledby="bw-dialog-title"><div class="bw-modal-head"><h2 id="bw-dialog-title"></h2><button class="bw-close" aria-label="Bezárás"><i data-lucide="x" aria-hidden="true"></i></button></div><div id="bw-dialog-content"></div></section></div>
+</div>
+<script>
+(()=>{const root=document.getElementById('boop-world'),q=s=>root.querySelector(s),qa=s=>[...root.querySelectorAll(s)];let sequence=0,opener=null,timer;const people={mezo:['mezo','Boop','Összeköti a témákat, összefoglal és visszakérdez.','sparkles'],szomnologus:['mezo','Szomnológus','Az alvás és a napirend nyomait vizsgálja.','moon'],edzo:['train','Edző','A mozgást, terhelést és a regenerációt figyeli.','dumbbell'],taplalkozo:['fuel','Táplálkozó','Az étkezési mintákat és a rögzítés hiányait vizsgálja.','leaf'],pszichologus:['en','Pszichológus','A közérzeted és a megélt helyzetek összefüggéseire figyel.','heart'],szkeptikus:['mezo','Szkeptikus','Ellenpéldát keres, és rákérdez arra, amit még nem tudunk.','search'],doki:['nap','Doki','Az egészséghez kapcsolódó jeleket helyezi összefüggésbe.','activity'],drill:['train','Drill','A vállalások és a megvalósítás közötti eltéréseket figyeli.','target'],antropologus:['en','Antropológus','Az élethelyzet és a szokások változásait keresi.','users']};const defs=q('#bg-boop-train-body').parentElement.innerHTML;function avatar(key,tiny=false){const p=people[key]||people.mezo,prefix='bw'+(++sequence)+'-';return '<span class="bw-avatar '+(tiny?'tiny':'')+'" style="--delay:-'+sequence%7+'s"><svg viewBox="0 0 100 100" aria-hidden="true"><defs>'+defs.replaceAll('bg-boop-',prefix)+'</defs>'+q('#boop-'+p[0]).innerHTML.replaceAll('bg-boop-',prefix)+'</svg><span class="bw-mark"><i data-lucide="'+p[3]+'" aria-hidden="true"></i></span></span>'}function icons(){if(typeof lucide!=='undefined')lucide.createIcons({attrs:{width:18,height:18}})}function avatars(){qa('[data-avatar]').forEach(el=>{el.innerHTML=avatar(el.dataset.avatar,el.dataset.small==='true');el.removeAttribute('data-avatar')});icons()}avatars();
+const state={saved:false,proposal:'Hétvégén előfordul, hogy az étkezéseimet később rögzítem.',reply:'',following:true,decided:false,instructions:'Légy tömör, de mondd el, miből következtetsz. Kérdezz, ha valamit csak én tudhatok.'};
+const dialogs={
+evidence:['Miből látszik?','<span class="bw-tag">Megfigyelés · nem bizonyított ok</span><h3>Mi tolja későbbre az estét?</h3><div class="bw-evidence-row"><strong>14 napból 9 összevethető</strong>5 napon hiányzik az edzés vége vagy a lefekvés ideje.</div><div class="bw-evidence-row"><strong>Amit látunk</strong>A 4 későn zárult nap közül 3 után későbbi lefekvést rögzítettél.</div><div class="bw-evidence-row"><strong>Ami ellene szól</strong>Volt korábbi edzés utáni késői este is. A munka végét nem ismerjük.</div><div class="bw-note">A számok nem mondják meg az okot. A válaszoddal a következő összehasonlítást pontosítjuk.</div><button class="bw-primary bw-full" data-modal="reply">Hozzáteszem a saját részem</button>'],
+case:['Mi tolja későbbre az estét?','<div class="bw-row">'+avatar('szomnologus')+avatar('edzo')+avatar('szkeptikus')+'<span class="bw-state">A válaszodra vár</span></div><p>Egy téma, minden nyomával és beszélgetésével.</p><div class="bw-step"><small>SZEPTEMBER 18.</small><strong>Észrevettünk egy együttjárást</strong>Későn záruló napok és későbbi lefekvések.</div><div class="bw-step"><small>MA · 07:12</small><strong>A csapat más magyarázatot is keres</strong>Az Edző ellenpéldát hozott. A Szkeptikus a munka végére kérdezett rá.</div><div class="bw-step"><small>KÖVETKEZŐ LÉPÉS</small><strong>Pontosítunk veled</strong>Előbb megértjük a helyzetet. Utána javasolhatunk próbát.</div><div class="bw-row"><button class="bw-primary" data-modal="reply">Válaszolok</button><button class="bw-outline" data-modal="evidence">Bizonyítékok</button><button data-follow>Követés kikapcsolása</button></div><button class="bw-topic" data-modal="discussion">A teljes beszélgetés →</button>'],
+discussion:['A beszélgetés', '<small>Mi tolja későbbre a lefekvésem? · ma</small>'+comment('szomnologus','A késői esték okát keressük. @Edző, látsz erre magyarázatot a terhelésben?')+comment('edzo','Az edzés nem elég magyarázat. Korai edzésnap után is volt késői lefekvés.')+comment('szkeptikus','A munka vége hiányzik. Kérdezzük meg, mielőtt szokást tulajdonítunk neki.')+comment('mezo','A következtetés nyitva marad. A te válaszod után ugyanitt folytatjuk.')+'<button class="bw-primary bw-full" data-modal="reply">Válaszolok a csapatnak</button>'],
+reply:['A te részed a történetben','<p>Mi tartott fenn azokon az estéken?</p><form id="bw-reply-form"><label for="bw-reply-input">Válaszod a csapatnak</label><textarea id="bw-reply-input" placeholder="Például: két este későig dolgoztam…" required></textarea><small>A válasz ehhez a témához kerül. Új tartós tudást külön tudsz jóváhagyni.</small><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+prediction:['Ezt vártuk. Ez történt.','<span class="bw-state">Lezárva · nem vált be</span><h3>Könnyebb lesz a következő edzés?</h3><div class="bw-evidence-row"><strong>Várakozás</strong>Azonos program mellett kisebb megélt terhelés.</div><div class="bw-evidence-row"><strong>Tényleges eredmény</strong>Ugyanolyan nehéznek jelezted.</div><div class="bw-evidence-row"><strong>Mi következik ebből?</strong>Ez a jel önmagában nem adott jó becslést. Nem írunk át rólad mentett tényt.</div><div class="bw-note"><strong>2 / 7 értékelhető előrejelzés vált be</strong><br>2 másikhoz nem volt elég utólagos adat. Ezek nem számítanak találatnak vagy hibának.</div><button class="bw-outline bw-full" data-modal="prediction-reply">Hozzáteszek valamit</button>'],
+'prediction-reply':['Mi történt másképp?','<form id="bw-generic-form"><label for="bw-other-reply">Válasz az Edzőnek</label><textarea id="bw-other-reply" required placeholder="Volt valami szokatlan az edzésen?"></textarea><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+trial:['Ebéd után egy rövid séta','<span class="bw-state green">Saját próba · 4 / 7 nap</span><h3>Van különbség a délutánodban?</h3><p>A te általad elindított próbában az ebéd utáni közérzetet nézzük. Még 3 nap van hátra.</p><div class="bw-step"><strong>Előtte</strong>A korábbi összevethető délutánok.</div><div class="bw-step"><strong>Most</strong>A séta mellett rögzített közérzet. Hiányzó napot nem pótolunk becsléssel.</div><div class="bw-step"><strong>Csütörtökön</strong>Közös értékelés; ha nincs elég adat, ezt mondjuk ki.</div><button class="bw-outline bw-full" data-modal="trial-reply">Elmondom, milyen volt</button>'],
+ 'trial-reply':['Hogy ment a próba?','<form id="bw-generic-form"><label for="bw-other-reply">Tapasztalatod a sétáról</label><textarea id="bw-other-reply" required></textarea><button class="bw-primary bw-full" type="submit">Válasz küldése · demó</button></form>'],
+knowledge:['Ezt jegyezzük meg?','<small>ÚJ TUDÁS · TŐLED SZÁRMAZIK</small><h3 id="bw-confirm-copy"></h3><p>A rögzítési szokásod értelmezéséhez használjuk. Ebből nem következtetünk arra, hogy mit vagy mennyit ettél.</p><div class="bw-note">Egyetlen mentett tény lesz a Tudástárban. Ez a bejegyzés ugyanarra hivatkozik.</div><button class="bw-primary bw-full" data-save-knowledge>Mentés a Tudástárba · demó</button>'],
+correct:['Mondd a saját szavaiddal','<form id="bw-correct-form"><label for="bw-correct-input">Mit jegyezzünk meg pontosan?</label><textarea id="bw-correct-input" required></textarea><button class="bw-primary bw-full" type="submit">Pontosítás áttekintése</button></form>'],
+'knowledge-origin':['Hol használjuk ezt?','<div class="bw-evidence-row"><strong>Forrás</strong>A saját válaszod a Táplálkozó bejegyzése alatt.</div><div class="bw-evidence-row"><strong>Hatása</strong>Segít elkülöníteni az üres naplót a kimaradt étkezéstől a beszélgetésekben és a megfigyelésekben.</div><div class="bw-evidence-row"><strong>Amit nem változtat</strong>Nem pótol étkezést, nem ír át kalóriát és nem módosít étrendet.</div><button class="bw-outline bw-full" data-tab-link="you">Megnézem a Tudástárban</button>'],
+fact:['Egy tény, egy forrás','<h3>Szeretnéd érteni a javaslatok indoklását.</h3><div class="bw-evidence-row"><strong>Tőled származik</strong>A saját kommunikációs kérésed.</div><div class="bw-evidence-row"><strong>Felhasználás</strong>A következő beszélgetések személyes hátterében.</div><button class="bw-primary bw-full" data-modal="communication">Saját kérésem szerkesztése</button>'],
+communication:['Így beszélj velem','<form id="bw-preferences-form"><label for="bw-instructions">Saját instrukció</label><textarea id="bw-instructions">Légy tömör, de mondd el, miből következtetsz. Kérdezz, ha valamit csak én tudhatok.</textarea><label class="bw-row"><input style="width:auto" type="checkbox" checked> A tanult stílus használata</label><small>A saját kérésed elsőbbséget kap. A megvalósítás a meglévő Beállítások-adatot használná.</small><button class="bw-primary bw-full" type="submit">Mentés · demó</button></form>'],
+character:['A karaktered, javíthatóan','<p>A 7 dimenzióban a csapat következtetéseit látod, a forrásokkal és a korábbi változásokkal együtt.</p><div class="bw-note">A „talál” karakter-visszajelzés. Nem jelent automatikus egészségügyi vagy személyiségtény-mentést.</div><button class="bw-primary bw-full" data-modal="reply-character">Pontosítom ezt a benyomást</button>'],
+'reply-character':['Pontosítsuk a képet','<form id="bw-generic-form"><label for="bw-other-reply">Miben más ez nálad?</label><textarea id="bw-other-reply" required></textarea><button class="bw-primary bw-full" type="submit">Pontosítás küldése · demó</button></form>'],
+investigate:['Járjunk utána','<p>Melyik kérdésre keressünk választ a saját adataidban?</p><button class="bw-topic" data-question="Mi tolja későbbre a lefekvésem?">Mi tolja későbbre a lefekvésem? →</button><button class="bw-topic" data-question="Mikor jobb a délutáni közérzetem?">Mikor jobb a délutáni közérzetem? →</button><small>Vizsgálat indulna saját beszélgetéssel. Előbb az elérhető adatokat nézzük meg, utána az alternatív magyarázatokat.</small>'],
+archive:['Korábbi történetek','<button class="bw-case" data-modal="prediction"><strong>A könnyebb edzés előrejelzése</strong><small>Lezárt · a várakozás nem vált be</small></button><button class="bw-case" data-modal="memoir"><strong>Apró fordulatok</strong><small>A múlt hét története</small></button>'],
+memoir:['Apró fordulatok','<small>HETI EMLÉK · SZEPTEMBER 14–20.</small><h3>Egy kicsivel több hely.</h3><p>Nem egy nagy elhatározás változtatta meg ezt a hetet. Inkább a kis megszakítások: egy séta, egy korábban lezárt este, egy mondat, amit végre leírtál.</p><p>A vasárnapi bejegyzésben már a nyugodtabb délutánt emelted ki. Ezt érdemes megőrizni akkor is, ha még nem tudjuk, pontosan mi segített.</p><button class="bw-topic" data-modal="day-memory">Forrás: a vasárnap emléke →</button><small>Szemléltetett szöveg. A heti történet a napi emlékekből épül, nem hoz létre külön ténylistát.</small>'],
+'day-memory':['Vasárnap emléke','<small>SZEPTEMBER 20. · NAPI ÖSSZEGZÉS</small><h3>Hagytál egy kis helyet.</h3><p>A délutáni séta után nyugodtabbnak írtad le az estédet. Ezt a saját bejegyzésedből őrizzük; az okát még nem tudjuk.</p><div class="bw-evidence-row"><strong>Források</strong>Mozgásnapló · délutáni check-in · esti bejegyzés</div><button class="bw-topic" data-modal="trial">Kapcsolódik: az ebéd utáni séta próbája →</button><button class="bw-outline bw-full" data-modal="weekly">Napi értékelés az Én területen</button>'],
+'day-memory-saturday':['Szombat emléke','<small>SZEPTEMBER 19. · NAPI ÖSSZEGZÉS</small><h3>Mozgás után lelassult a nap.</h3><p>A rögzített edzés után nyugodtabb estéről írtál. A megélt tapasztalatot őrizzük, nem következtetünk belőle általános szabályra.</p><div class="bw-evidence-row"><strong>Források</strong>Edzésnapló · esti bejegyzés</div>'],
+weekly:['A heted számokban','<p>A heti pontszám, a napi értékelések és a rögzített adatok az Én területen maradnak.</p><p>A Boop-újdonságok innen a közös beszélgetésre nyílnak. Nem lesz még egy tanulság-postaláda.</p><small>Az app másik területére vezető átmenet előnézete.</small>'],
+machine:['A közös gépterem','<p>A teljes Boop-világ működése egy helyen.</p><div class="bw-evidence-row"><strong>Mai feldolgozás</strong>Napi emlék → megfigyelések → releváns csapatbeszélgetések.</div><div class="bw-evidence-row"><strong>Adatforrások és hiányok</strong>Mi érhető el, melyik témához mi hiányzik?</div><div class="bw-evidence-row"><strong>Futások és költségek</strong>Időpont, eredmény, modell, hibák és megismétlés.</div><div class="bw-evidence-row"><strong>Memóriarétegek</strong>Napi és időszaki összegzések, visszakeresés, tények eredete.</div><small>A prototípus nem mutat kitalált élő futásállapotot vagy költséget.</small>'],
+chat:['Beszélgetés Booppal','<div class="bw-author">'+avatar('mezo')+'<div><strong>Itt marad a közvetlen beszélgetés.</strong><small>Szöveg, hang, korábbi beszélgetések.</small></div></div><p>A feedben egy bejegyzésre válaszolsz. A chatben bármit elindíthatsz, és ugyanazokra az emlékekre, tényekre és témákra hivatkozhatunk.</p><small>Ebben a tervben a chat csak kapcsolódási pontként szerepel.</small>'],
+notifications:['Ami új a csapatnál','<button class="bw-case" data-modal="discussion"><strong>A Szkeptikus kérdezett tőled</strong><small>A lefekvés témájában</small></button><button class="bw-case" data-modal="knowledge"><strong>Egy pontosításod mentésre vár</strong><small>Az étkezések rögzítéséről</small></button>'],
+day:['A mai napod','<p>A meglévő napi egységek és pontszám fejlécfunkciója megmarad.</p><small>A prototípusban jelölt kapcsolódási pont; a jelenlegi részletes felületét nem tervezzük át.</small>'],
+settings:['Boop beállításai','<button class="bw-topic" data-modal="communication">Így beszélj velem →</button><button class="bw-topic" data-modal="machine">Működés és adatforrások →</button><button class="bw-topic" data-modal="team">A kis csapat →</button>']};
+function comment(key,text){return '<div class="bw-comment">'+avatar(key,true)+'<div class="bw-bubble"><strong>'+people[key][1]+'</strong><p>'+text+'</p></div></div>'}
+function open(key,button){opener=button||opener;let d=dialogs[key];if(key==='team')d=['A kis Boopok',Object.entries(people).map(([id,p])=>'<button class="bw-case" data-person="'+id+'"><div class="bw-author">'+avatar(id)+'<div><strong>'+p[1]+'</strong><small>'+p[2]+'</small></div></div></button>').join('')];if(!d)return;q('#bw-dialog-title').textContent=d[0];q('#bw-dialog-content').innerHTML=d[1];q('.bw-overlay').hidden=false;const top=Math.max(12,Math.min(-root.getBoundingClientRect().top+16,root.offsetHeight-250));q('.bw-glass').style.marginTop=top+'px';if(key==='knowledge')q('#bw-confirm-copy').textContent=state.proposal;if(key==='correct')q('#bw-correct-input').value=state.proposal;if(key==='reply')q('#bw-reply-input').value=state.reply;if(key==='communication')q('#bw-instructions').value=state.instructions;if(key==='case')q('[data-follow]').textContent=state.following?'Követés kikapcsolása':'Követem ezt a témát';icons();sizeDialog();q('.bw-close').focus()}
+function sizeDialog(){if(!q('.bw-overlay').hidden)root.style.minHeight=(parseFloat(q('.bw-glass').style.marginTop||'0')+q('.bw-glass').offsetHeight+36)+'px'}function close(){q('.bw-overlay').hidden=true;root.style.minHeight='';opener?.focus()}function toast(t){q('.bw-toast').textContent=t;q('.bw-toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>q('.bw-toast').hidden=true,5000)}function tab(name){close();qa('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));['wall','cases','you','memories'].forEach(n=>q('#bw-'+n).hidden=n!==name);q('#bw-page-title').textContent={wall:'A te kis csapatod.',cases:'Amit együtt figyelünk.',you:'Egyre jobban ismerünk.',memories:'A közös történetünk.'}[name];q('#bw-eyebrow').textContent={wall:'Hétfő, szeptember 21.',cases:'Nyomokból megértés',you:'Te alakítod a képet',memories:'Napok, amikből összeállsz'}[name]}
+function counts(){q('#bw-waiting-count').textContent=(state.decided?'1 beszélgetésben várnak rád.':'2 beszélgetésben várnak rád.');q('#bw-knowledge-action').closest('article').dataset.category=state.decided?'':'waiting';const active=q('[data-filter][aria-pressed="true"]');if(active)filter(active.dataset.filter)}function filter(value){qa('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filter===value));qa('[data-category]').forEach(p=>p.hidden=value!=='all'&&(!p.dataset.category.split(' ').includes(value)||(value==='following'&&!state.following&&p===q('[data-category]'))));q('.bw-caught').hidden=value!=='all'}
+root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.type==='submit'&&b.closest('form')){e.preventDefault();handleForm(b.closest('form'));return}if(b.dataset.modal)open(b.dataset.modal,b);if(b.classList.contains('bw-close'))close();if(b.dataset.tab)tab(b.dataset.tab);if(b.dataset.tabLink)tab(b.dataset.tabLink);if(b.dataset.filter)filter(b.dataset.filter);if(b.dataset.filterJump)filter(b.dataset.filterJump);if(b.dataset.person){const p=people[b.dataset.person];dialogs.person=[p[1],'<div class="bw-author">'+avatar(b.dataset.person)+'<p>'+p[2]+'</p></div><div class="bw-note">Ugyanaz az öt Boop-alak, névvel és szerepjelvénnyel. A szerepek közös témákon dolgoznak.</div><button class="bw-outline bw-full" data-modal="discussion">Egy beszélgetés a csapatból</button>'];open('person',b)}if(b.dataset.vote){const was=b.getAttribute('aria-pressed')==='true';b.closest('.bw-actions').querySelectorAll('[data-vote]').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed',String(!was));if(!was)toast(b.dataset.vote==='up'?'Hasznosnak jelölted. Ez visszajelzés, nem tényjóváhagyás.':'Jelezted, hogy nem talál. A tapasztalatodat válaszban is leírhatod.')}if(b.hasAttribute('data-comment-like')){const on=b.getAttribute('aria-pressed')==='true';b.setAttribute('aria-pressed',String(!on));b.textContent=on?'Hasznos':'Hasznosnak jelölted'}if(b.dataset.caseFilter){qa('[data-case-filter]').forEach(x=>x.setAttribute('aria-pressed',x===b));qa('[data-case-kind]').forEach(x=>x.hidden=b.dataset.caseFilter!=='all'&&x.dataset.caseKind!==b.dataset.caseFilter)}if(b.dataset.you){qa('[data-you]').forEach(x=>x.setAttribute('aria-pressed',x===b));qa('[data-you-panel]').forEach(x=>x.hidden=x.dataset.youPanel!==b.dataset.you)}if(b.hasAttribute('data-save-knowledge')){state.saved=true;state.decided=true;counts();q('#bw-saved-fact').hidden=false;q('#bw-saved-text').textContent=state.proposal;q('#bw-knowledge-action').hidden=true;q('#bw-knowledge-result').hidden=false;q('#bw-knowledge-result').innerHTML='<div class="bw-reward"><i data-lucide="sprout" aria-hidden="true"></i><span><strong>Pontosabb lett a közös kép.</strong>Egy tény a Tudástárban. Ugyanitt visszakereshető.</span></div><button class="bw-evidence" data-tab-link="you">Megnézem a mentett tudást →</button><button data-undo>Visszavonom</button>';close();icons();toast('A példában mentve. Az éles app adatai nem változtak.')}if(b.hasAttribute('data-undo')){state.saved=false;state.decided=false;counts();q('#bw-saved-fact').hidden=true;q('#bw-knowledge-action').hidden=false;q('#bw-knowledge-result').hidden=true;toast('A demó mentését visszavontad.')}if(b.hasAttribute('data-reject')){state.decided=true;counts();q('#bw-knowledge-action').hidden=true;q('#bw-knowledge-result').hidden=false;q('#bw-knowledge-result').innerHTML='Most nem kerül a Tudástárba. <button data-undo>Mégis átnézem</button>'}if(b.hasAttribute('data-follow')){state.following=!state.following;b.textContent=state.following?'Követés kikapcsolása':'Követem ezt a témát';toast(state.following?'A téma frissítéseit követed.':'A téma továbbra is megtalálható a Folyamatban oldalon.')}if(b.dataset.question){dialogs.question=['Ezzel indulna a vizsgálat','<h3></h3><p>A csapat először az elérhető naplókat és az ellenpéldákat nézné meg. Külön témát nyitna, követhető eredménnyel.</p><button class="bw-primary bw-full" data-start-investigation>Vizsgálat indítása · demó</button>'];open('question',b);q('#bw-dialog-content h3').textContent=b.dataset.question}if(b.hasAttribute('data-start-investigation')){q('#bw-dialog-content').innerHTML='<div class="bw-note"><strong>A vizsgálat itt indulna el.</strong><br>A prototípus nem futtat AI-t. A valós felületen itt jelenne meg a várakozás, majd a forrásokra épülő beszélgetés.</div>';}});
+function handleForm(form){if(form.id==='bw-reply-form'){state.reply=q('#bw-reply-input').value.trim();if(!state.reply)return;const c=q('#bw-inline-reply');c.hidden=false;c.innerHTML='<div class="bw-comment"><span class="bw-self">Te</span><div class="bw-bubble"><strong>Te</strong><p></p><small>Tőled származó információ · a témához csatolva</small></div></div>';c.querySelector('p').textContent=state.reply;q('#bw-dialog-title').textContent='A válaszod innen folytatódik';q('#bw-dialog-content').innerHTML='<div class="bw-reward"><i data-lucide="sprout" aria-hidden="true"></i><span><strong>Hozzátettél a közös képhez.</strong><small>Ezért jár a kis visszajelzés: segítettél pontosítani.</small></span></div><div class="bw-step"><strong>1. A válaszod megmarad a témánál</strong>A saját tapasztalatodként, megjelölt forrással.</div><div class="bw-step"><strong>2. A csapat újraértékel</strong>Megnézi, melyik magyarázatot erősíti vagy gyengíti. Ezt itt tudod majd elolvasni.</div><div class="bw-step"><strong>3. Ha új tudás születik</strong>Külön megmutatjuk, mit jegyeznénk meg. Te pontosíthatod vagy elvetheted.</div><small>Folyamatelőnézet: nem generáltunk AI-választ a begépelt szövegre.</small><button class="bw-primary bw-full bw-close-action">Vissza a beszélgetéshez</button>';q('.bw-close-action').onclick=close;icons()}if(form.id==='bw-correct-form'){state.proposal=q('#bw-correct-input').value.trim();if(state.proposal){q('#bw-proposal').textContent=state.proposal;open('knowledge')}}if(form.id==='bw-preferences-form'){state.instructions=q('#bw-instructions').value;close();toast('A demóban elmentve. A saját instrukcióid az appban nem változtak.')}if(form.id==='bw-generic-form'){if(q('#bw-other-reply').value.trim()){q('#bw-dialog-content').innerHTML='<div class="bw-note">A válasz ehhez a témához kerülne, és új értékelést indíthatna. A demó nem futtat AI-t és nem ment az appba.</div>';toast('Válaszfolyamat bemutatva.')}}sizeDialog()}root.addEventListener('submit',e=>{e.preventDefault();handleForm(e.target)});
+q('#bw-memory-search').addEventListener('input',e=>{const value=e.target.value.toLocaleLowerCase('hu').trim();qa('[data-memory]').forEach(el=>el.hidden=!el.textContent.toLocaleLowerCase('hu').includes(value)&&!el.dataset.memory.includes(value));q('#bw-search-empty').hidden=qa('[data-memory]').some(el=>!el.hidden)});
+root.addEventListener('keydown',e=>{if(q('.bw-overlay').hidden)return;if(e.key==='Escape'){e.preventDefault();close()}if(e.key==='Tab'){const els=[...q('.bw-glass').querySelectorAll('button,input,textarea,a')].filter(x=>!x.disabled);const first=els[0],last=els[els.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+const design={motion:true,tone:'Színes agyag'};function apply(){root.classList.toggle('alive',design.motion);root.style.setProperty('--bw-color',design.tone==='Színes agyag'?'#EBE6F8':'#F0EBF4')}if(globalThis.Tweak){const t=new Tweak({container:root,onChange:apply});t.addToggle(design,'motion',{label:'Élő Boop-mozgás'});t.addSelect(design,'tone',{label:'Felületek színereje',options:['Színes agyag','Visszafogottabb']})}apply();})();
+</script>

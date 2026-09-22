@@ -40,7 +40,7 @@ import {
 } from '@/features/insights/logic/patternCatalog'
 import { confidenceMeta, findingSentence } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
-import type { MetricDomain, PatternMonitorPair, PatternStatus } from '@/data/types'
+import type { PatternMonitorPair, PatternStatus } from '@/data/types'
 
 /** A mini-tile címe: a pár (élő) kérdés-mondata, vagy — pár híján — a minta saját címe. */
 function rowTitle(entry: LifecycleEntry): string {
@@ -93,7 +93,7 @@ function tileChip(entry: LifecycleEntry, tone: 'sage' | 'lav'): ReactNode {
 }
 
 /** Egy életciklus-csempe — pár-backed csempe linkel a részletoldalra (mezo-tk88.5 guard). */
-function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
+function PatternTile({ entry, skin, chip, sb, barPct, delayMs, search }: {
   entry: LifecycleEntry
   skin: 'sage' | 'lav' | 'dashed' | 'mute'
   chip?: ReactNode
@@ -101,6 +101,7 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
   /** 0..1 — az animált bizonyíték-sáv szélessége; null/undefined = nincs sáv */
   barPct?: number | null
   delayMs: number
+  search: string
 }) {
   const inner = (
     <>
@@ -120,7 +121,7 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
   const cls = cn('mnt-ptile', skin !== 'mute' && skin, 'rise')
   const style = { '--d': `${delayMs}ms` } as React.CSSProperties
   return (
-    <Link to={`/mezo/patterns/${entry.key}`} className={cls} style={style}>
+    <Link to={`/mezo/patterns/${entry.key}?${search}`} className={cls} style={style}>
       {inner}
     </Link>
   )
@@ -145,7 +146,7 @@ function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }
   const navigate = useNavigate()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Minták</div>
         <div className="mz-hero-row">
@@ -175,11 +176,22 @@ export function PatternsPage() {
     refetch: monitorRefetch,
   } = usePatternMonitor()
   const { decide } = usePatternActions()
-  const [params] = useSearchParams()
-  const [selectedBucket, setSelectedBucket] = useState<LifecycleBucket | null>(null)
-  const [activeDomain, setActiveDomain] = useState<MetricDomain | null>(null)
-  const [sort, setSort] = useState<PatternCatalogSort>('progress')
-  const [page, setPage] = useState(0)
+  const [params, setParams] = useSearchParams()
+  const selectedBucket = BUCKET_ORDER.find((bucket) => bucket === params.get('bucket')) ?? null
+  const activeDomain = DOMAIN_ORDER.find((domain) => domain === params.get('domain')) ?? null
+  const sort: PatternCatalogSort = params.get('sort') === 'domain' ? 'domain' : 'progress'
+  const requestedPage = Number(params.get('page') ?? 0)
+  const page = Number.isSafeInteger(requestedPage) && requestedPage >= 0 ? requestedPage : 0
+  const updateCatalog = (values: Record<string, string | null>) => {
+    setParams((current) => {
+      const next = new URLSearchParams(current)
+      for (const [key, value] of Object.entries(values)) {
+        if (value == null) next.delete(key)
+        else next.set(key, value)
+      }
+      return next
+    }, { replace: true })
+  }
   const [filterOpen, setFilterOpen] = useState(false)
   // Zsálya-nyugtázások (prototípus decdone) — a döntés a régi mutáción megy, a kártya helyén
   // a nyugtázó sor marad, miközben az adat a kosarak közt költözik.
@@ -196,7 +208,11 @@ export function PatternsPage() {
   // A Motor „Minta megnyitása →" / a régi inbox `?pair=` horgonya (mezo-18bx örököse): a
   // részletoldalra irányít — a lista maga már nem highlightol semmit, a részlet a cél.
   const targetPairKey = params.get('pair')
-  if (targetPairKey) return <Navigate to={`/mezo/patterns/${targetPairKey}`} replace />
+  if (targetPairKey) {
+    const remaining = new URLSearchParams(params)
+    remaining.delete('pair')
+    return <Navigate to={`/mezo/patterns/${targetPairKey}${remaining.size ? `?${remaining}` : ''}`} replace />
+  }
 
   const isPending = patternsPending || monitorPending
 
@@ -246,6 +262,9 @@ export function PatternsPage() {
   const activeBucket = selectedBucket ?? initialBucket(buckets)
   const filteredEntries = filterSortEntries(buckets.get(activeBucket)!, activeDomain, sort)
   const pagedEntries = pageEntries(filteredEntries, page)
+  const detailParams = new URLSearchParams(params)
+  detailParams.set('bucket', activeBucket)
+  const detailSearch = detailParams.toString()
 
   const coverageByKey = new Map((monitor?.metrics ?? []).map((m) => [m.key, m]))
   const bottleneckCoveredDays = (pair: PatternMonitorPair) =>
@@ -288,8 +307,7 @@ export function PatternsPage() {
                 aria-pressed={activeBucket === bucket}
                 className={cn('mnt-lcel', hot ? 'hot' : meta.skin, activeBucket === bucket && 'is-selected')}
                 onClick={() => {
-                  setSelectedBucket(bucket)
-                  setPage(0)
+                  updateCatalog({ bucket, page: null })
                 }}
               >
                 <b>{counts[bucket]}</b>
@@ -327,6 +345,7 @@ export function PatternsPage() {
                 onDecide={(d: PatternStatus) => onDecide(entry, d)}
                 showExplainer={i === 0}
                 showDetailLink
+                detailSearch={detailSearch}
               />
             </div>
           ))}
@@ -340,7 +359,7 @@ export function PatternsPage() {
             count={filteredEntries.length} countTestId="mnt-cnt-confirmed" delayMs={140} />
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
-              <PatternTile key={entry.key} entry={entry} skin="sage" chip={tileChip(entry, 'sage')}
+              <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="sage" chip={tileChip(entry, 'sage')}
                 sb={entry.pair?.n != null ? `${entry.pair.n} közös nap` : 'megerősítve'} delayMs={170 + i * 30} />
             ))}
           </div>
@@ -357,7 +376,7 @@ export function PatternsPage() {
           <Lsec title={<><Icon name="eye" size={12} /> Megfigyelés alatt</>} ink="var(--mz-cell-lav-ink)" count={filteredEntries.length} delayMs={220} />
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
-              <PatternTile
+              <PatternTile search={detailSearch}
                 key={entry.key}
                 entry={entry}
                 skin="lav"
@@ -385,7 +404,7 @@ export function PatternsPage() {
           <Lsec title={<><Icon name="trend-up" size={12} /> Még gyűlik az adat</>} ink="var(--mz-cell-amber-ink)" count={filteredEntries.length} delayMs={280} />
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
-              <PatternTile key={entry.key} entry={entry} skin="dashed"
+              <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="dashed"
                 sb={engineStatusCopy(entry.pattern?.status)
                   ?? (entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : '')}
                 delayMs={310 + i * 30} />
@@ -404,7 +423,7 @@ export function PatternsPage() {
             count={filteredEntries.length} delayMs={360} />
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
-              <PatternTile key={entry.key} entry={entry} skin="mute"
+              <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="mute"
                 sb={engineStatusCopy(entry.pattern?.status)
                   ?? findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''} delayMs={390 + i * 30} />
             ))}
@@ -421,7 +440,7 @@ export function PatternsPage() {
           <Lsec title={<><Icon name="x" size={12} /> Elvetve</>} ink="var(--mz-ink-mut)" count={filteredEntries.length} delayMs={440} />
           <div className="mnt-mosaic">
             {pagedEntries.items.map((entry, i) => (
-              <PatternTile key={entry.key} entry={entry} skin="mute"
+              <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="mute"
                 sb={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : 'elvetve'}
                 delayMs={470 + i * 30} />
             ))}
@@ -439,7 +458,7 @@ export function PatternsPage() {
       {pagedEntries.pageCount > 1 && (
         <nav className="mnt-pager rise" aria-label="Minták lapozása">
           <button type="button" aria-label="Előző oldal" disabled={pagedEntries.page === 0}
-            onClick={() => setPage(pagedEntries.page - 1)}>
+            onClick={() => updateCatalog({ page: String(pagedEntries.page - 1) })}>
             <Icon name="chevron-left" size={16} />
           </button>
           <span>
@@ -447,7 +466,7 @@ export function PatternsPage() {
           </span>
           <button type="button" aria-label="Következő oldal"
             disabled={pagedEntries.page === pagedEntries.pageCount - 1}
-            onClick={() => setPage(pagedEntries.page + 1)}>
+            onClick={() => updateCatalog({ page: String(pagedEntries.page + 1) })}>
             <Icon name="chevron-right" size={16} />
           </button>
         </nav>
@@ -490,9 +509,7 @@ export function PatternsPage() {
           sort={sort}
           availableDomains={presentDomains}
           onApply={(next) => {
-            setActiveDomain(next.domain)
-            setSort(next.sort)
-            setPage(0)
+            updateCatalog({ bucket: activeBucket, domain: next.domain, sort: next.sort, page: null })
           }}
           onClose={() => setFilterOpen(false)}
         />

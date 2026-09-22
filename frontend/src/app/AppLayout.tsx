@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { BoopNavigation } from '@/features/insights/components/BoopNavigation'
 import { AppHeader } from '@/app/AppHeader'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
@@ -76,6 +77,7 @@ export function AppLayout() {
       {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
           (TabBar) stays usable and navigating away (resetKey) recovers. */}
       <ErrorBoundary resetKey={location.pathname}>
+        <BoopNavigation />
         <Outlet />
       </ErrorBoundary>
     </ScreenContent>

@@ -44,7 +44,7 @@ export function DiagnosisListPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <PageHero icon="i-eletjel" name="Diagnózis" big={heroCount}
         sub="kérdések a Mezónak → gyanúsítottak evidenciával → próba" />
       <PageBody>

@@ -89,25 +89,15 @@ describe('MemoryPage (mock mode)', () => {
     expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
   })
 
-  test('audit renders the cost hero and the source-grouped provenance', async () => {
+  test('audit renders cost and links to the canonical fact provenance', async () => {
     renderPage()
     await userEvent.click(screen.getByRole('tab', { name: 'Audit' }))
     // 1 · költség-hero
     expect(screen.getByText('$0.125')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Napi LLM token-oszlopok' })).toBeInTheDocument()
     expect(screen.getByText(/54 hívás · bemenet 248\.3k · kimenet 38\.7k/)).toBeInTheDocument()
-    // 2 · tintázott tény-eredet mini-cellák (a seed elosztása: 12 chat · 1 pattern · 2 manual)
-    expect(screen.getByText('Honnan tudom, amit tudok')).toBeInTheDocument()
-    expect(screen.getByText('chatből').previousElementSibling).toHaveTextContent('12')
-    expect(screen.getByText('mintából').previousElementSibling).toHaveTextContent('1')
-    expect(screen.getByText('kézzel').previousElementSibling).toHaveTextContent('2')
-    // 3 · forrás-csoportok
-    expect(screen.getByText('Chatből tanulta')).toBeInTheDocument()
-    expect(screen.getByText('Mintából promótálva')).toBeInTheDocument()
-    expect(screen.getByText('Kézzel rögzítve')).toBeInTheDocument()
-    expect(screen.getByText('×23 megerősítve')).toBeInTheDocument() // f2
-    expect(screen.getByText('⧉ minta: Késői étkezés ↔ rákövetkező alvásminőség')).toBeInTheDocument()
-    expect(screen.getAllByText('még nem erősítette meg újra').length).toBeGreaterThan(0) // null lastReinforcedAt sorok
+    expect(screen.getByRole('link', { name: /Tudástár · tények és eredetük/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
+    expect(screen.queryByText('×23 megerősítve')).not.toBeInTheDocument()
   })
 })
 

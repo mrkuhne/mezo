@@ -195,7 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed) ·
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-21, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
@@ -236,7 +236,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-21, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-22, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -332,11 +332,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-21, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-22, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-18, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-09-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -555,7 +555,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-20, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -662,7 +662,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -733,7 +733,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-20, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
@@ -752,24 +752,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     observationsHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
     patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
-  - **pages:** ChatPage.tsx, CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx,
-    DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, MemoirArchivePage.tsx,
-    MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx, MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx,
-    PredictionsPage.tsx
+  - **pages:** BoopAboutPage.tsx, BoopMemoriesPage.tsx, BoopMenuPage.tsx, BoopWorldPage.tsx, ChatPage.tsx,
+    CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
+    DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
+    MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
-  - **components:** CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx, FactCandidateCard.tsx,
-    FactsView.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, KategoriakView.tsx,
-    KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx,
-    LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx,
-    MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
-    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
-    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
-    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, TestPlanTiles.tsx, TokenColumns.tsx,
-    ToolWorkStrip.tsx, VerdictArc.tsx
-  - **logic:** chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts,
-    findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
-    patternEvidence.ts, patternHistory.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts,
-    verdicts.ts
+  - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
+    FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx,
+    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
+    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
+    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
+    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
+    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
+    SimilarDayCard.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx
+  - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
+    factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
+    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts,
+    useVoiceInput.ts, verdicts.ts
+  - **root:** boop-world.css
 
 ### intention
 
@@ -901,7 +903,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-09-18, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-18, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-20, mixed)
 
@@ -1108,7 +1110,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-20, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -1515,7 +1517,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### tutorial
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-20, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-22, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
   - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`

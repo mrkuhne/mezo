@@ -1,12 +1,13 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter, useLocation, Routes, Route } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { GRAPH_KIND_GROUPS } from '@/data/insights/graph'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
+import { KnowledgeNodePage } from '@/features/insights/pages/KnowledgeNodePage'
 import { candidateSeed } from '@/data/insights/knowledge'
 
 const renderPage = (path = '/') =>
@@ -193,14 +194,31 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText('‹ Tudástár')).toBeInTheDocument()
   })
 
-  test('(T7-d) sor-klikk → sheet nyílik, Archivál → node eltűnik + sheet záródik', async () => {
-    renderPage('/?view=kategoriak&kind=PATTERN')
+  test('(T7-d) category row opens a full page with return context; archive removes the node', async () => {
+    render(<MemoryRouter initialEntries={['/mezo/knowledge?view=kategoriak&kind=PATTERN&start=2026-09-14']}>
+      <LocationProbe />
+      <Routes>
+        <Route path="/mezo/knowledge" element={<KnowledgeListPage />} />
+        <Route path="/mezo/knowledge/node/:id" element={<KnowledgeNodePage />} />
+      </Routes>
+    </MemoryRouter>, { wrapper: QueryWrapper })
     await userEvent.click(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ }))
+    expect(screen.getByTestId('path-probe')).toHaveTextContent('/mezo/knowledge/node/gn-1')
+    expect(screen.getByTestId('loc-probe')).toHaveTextContent('view=kategoriak&kind=PATTERN&start=2026-09-14')
     expect(await screen.findByText('Késői evés → kiváltja → Rossz alvás · erős')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Archivál' }))
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument())
-    expect(screen.queryByText('Késői evés → kiváltja → Rossz alvás · erős')).not.toBeInTheDocument()
+    expect(await screen.findByText('Ez a kapcsolat már nem szerepel az aktív tudástárban.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: /Tudástár · vissza/ }))
+    expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument()
+  })
+
+  test('week context survives entry into facts and back to the canonical inbox', async () => {
+    renderPageWithProbe('/?start=2026-09-14')
+    await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
+    expect(screen.getByTestId('loc-probe')).toHaveTextContent('start=2026-09-14')
+    await userEvent.click(screen.getByText('‹ Tudástár'))
+    expect(screen.getByRole('link', { name: /Vissza ehhez a héthez/ })).toHaveAttribute('href', '/me/week?start=2026-09-14')
   })
 
   test('legacy communication profile redirects to central settings', async () => {

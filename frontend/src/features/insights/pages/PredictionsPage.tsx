@@ -16,22 +16,15 @@
 // read for the whole list, FeedbackChips on every card in both modes.
 // ============================================================
 import { useMemo, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useFeedback, usePredictions } from '@/data/hooks'
+import { PREDICTION_STATUS } from '@/features/insights/logic/predictionStatus'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
-import type { Prediction, PredictionStatus } from '@/data/types'
-
-/** Hungarian status chips (prototype .stch) — localizing the shipped English ones.
- *  `missed` has no prototype card; it wears the muted chip, never red (guardrail). */
-const STATUS: Record<PredictionStatus, { label: string; chip: string; wash?: string }> = {
-  pending: { label: '◐ Folyamatban', chip: 'pend', wash: 'lav' },
-  validated: { label: '✓ Bevált', chip: 'ok', wash: 'sage' },
-  missed: { label: '◯ Nem jött be', chip: 'mut' },
-}
+import type { Prediction } from '@/data/types'
 
 /** The hero's honest accuracy pair: mock keeps the Phase-1 literal (localized view-side);
  *  live derives from CLOSED rows only — null while none exist, so the hero shows NO number
@@ -49,7 +42,7 @@ function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; chil
   const navigate = useNavigate()
   return (
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <PageHero icon="i-kristaly" name="Előrejelzések" big={big} sub={sub} />
       <PageBody>{children}</PageBody>
     </MozaikPage>
@@ -57,7 +50,10 @@ function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; chil
 }
 
 export function PredictionsPage() {
-  const { predictions, mode } = usePredictions()
+  const { predictions, mode, isPending, isError, refetch } = usePredictions()
+  const [search, setSearch] = useSearchParams()
+  const filter = search.get('status') ?? 'all'
+  const visible = predictions.filter((p) => filter === 'pending' ? p.status === 'pending' : filter === 'closed' ? p.status !== 'pending' : true)
   const accuracy = accuracyOf(predictions, mode === 'mock')
   // The hero number spins up (prototype hero big numbers animate) — useCountUp is itself
   // reduced-motion aware. Hook order stays above every early return.
@@ -68,6 +64,8 @@ export function PredictionsPage() {
   const predictionIds = useMemo(() => predictions.map((p) => p.id), [predictions])
   const feedback = useFeedback('prediction', predictionIds)
 
+  if (isPending) return <PredFrame><p role="status">Betöltés…</p></PredFrame>
+  if (isError) return <PredFrame><div role="alert"><p>Nem sikerült betölteni az előrejelzéseket.</p><button className="mzp-cta" onClick={refetch}>Újrapróbálom</button></div></PredFrame>
   if (predictions.length === 0) {
     return (
       <PredFrame>
@@ -89,8 +87,12 @@ export function PredictionsPage() {
       <EntranceGroup className="col gap-md">
         <span className="mz-eyebrow">Aktív predikciók</span>
 
-        {predictions.map((p, i) => {
-          const meta = STATUS[p.status]
+        <div className="row gap-sm" role="group" aria-label="Előrejelzések szűrése">
+          {([['all', 'Mind'], ['pending', 'Folyamatban'], ['closed', 'Lezárt']] as const).map(([value, label]) => <button key={value} type="button" className={cn('chip', filter === value && 'active')} aria-pressed={filter === value} onClick={() => setSearch({ status: value }, { replace: true })}>{label}</button>)}
+        </div>
+        {visible.length === 0 && <p>Ebben az állapotban még nincs előrejelzés.</p>}
+        {visible.map((p, i) => {
+          const meta = PREDICTION_STATUS[p.status]
           return (
             <div key={p.id} className={cn('mzp-pred', meta.wash, 'rise')} style={{ '--d': `${i * 70}ms` } as React.CSSProperties}>
               <div className="mzp-top">
@@ -99,7 +101,7 @@ export function PredictionsPage() {
                 <span className="mzp-date">{p.date}</span>
               </div>
 
-              <div className="mzp-title">{p.title}</div>
+              <Link className="mzp-title" to={`/mezo/predictions/${encodeURIComponent(p.id)}?${search}`}>{p.title}</Link>
 
               {p.status === 'pending' && (
                 <div className="mzp-conf">
@@ -118,7 +120,7 @@ export function PredictionsPage() {
 
               {p.basis && <p className="mzp-basis">{p.basis}</p>}
 
-              {p.actual && <div className="mzp-actual">✓ Bejött: {p.actual}</div>}
+              {p.actual && <div className="mzp-actual">{p.status === 'validated' ? '✓ Bejött: ' : 'Megfigyelt eredmény: '}{p.actual}</div>}
 
               {/* Both modes — a prediction is an AI artifact wherever it comes from. Keyed by the
                   prediction id (as the card itself is), so React never reuses one card's
