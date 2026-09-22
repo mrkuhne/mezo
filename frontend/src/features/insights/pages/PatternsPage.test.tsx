@@ -4,6 +4,7 @@ import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 
 const renderPage = () =>
@@ -130,7 +131,7 @@ describe('PatternsPage (mock mode)', () => {
     // so a "/insights/patterns/hyp-3fa1c2d9" link would guarantee "Nincs ilyen minta.".
     const card = screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc').closest('.card') as HTMLElement
     expect(within(card).getByRole('link', { name: /Részletek és előzmények/ })).toHaveAttribute(
-      'href', '/mezo/patterns/hyp-3fa1c2d9',
+      'href', '/mezo/patterns/hyp-3fa1c2d9?bucket=decide',
     )
     // a pair-backed decide card in the SAME bucket still gets its link.
     const pairBackedCard = screen.getByText('Rosszabbul alszol, ha későn eszel?').closest('.card') as HTMLElement
@@ -143,7 +144,46 @@ describe('PatternsPage (mock mode)', () => {
     // p1 (status: confirmed, pairKey "sport-load~next-sleep-quality") has no matching monitor pair
     // either — the confirmed bucket's mini-row falls back to the pattern's own title and must not link out.
     const title = screen.getByText('Magas sportterhelés → rákövetkező éjjel mélyebb alvás')
-    expect(title.closest('a')).toHaveAttribute('href', '/mezo/patterns/sport-load~next-sleep-quality')
+    expect(title.closest('a')).toHaveAttribute('href', '/mezo/patterns/sport-load~next-sleep-quality?bucket=confirmed')
+  })
+
+  test('monitoring selection survives detail navigation and the explicit back button', async () => {
+    render(<MemoryRouter initialEntries={['/mezo/patterns']}><Routes>
+      <Route path="/mezo/patterns" element={<PatternsPage />} />
+      <Route path="/mezo/patterns/:pairKey" element={<PatternDetailPage />} />
+    </Routes></MemoryRouter>, { wrapper: QueryWrapper })
+    fireEvent.click(screen.getAllByRole('button', { name: /Figyeljük/ })[0])
+    await waitFor(() => expect(screen.getByRole('button', { name: /megfigyelés/i })).toHaveTextContent('1'))
+    fireEvent.click(screen.getByRole('button', { name: /megfigyelés/i }))
+    fireEvent.click(screen.getByRole('link', { name: /Rosszabbul alszol/ }))
+    expect(await screen.findByText('Minta részletei')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(screen.getByRole('button', { name: /megfigyelés/i })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('a bookmarked catalog restores bucket, domain, ordering and page through detail', async () => {
+    const { container } = render(<MemoryRouter initialEntries={['/mezo/patterns?bucket=gathering&sort=domain&page=1']}><Routes>
+      <Route path="/mezo/patterns" element={<PatternsPage />} />
+      <Route path="/mezo/patterns/:pairKey" element={<PatternDetailPage />} />
+    </Routes></MemoryRouter>, { wrapper: QueryWrapper })
+    expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
+    const tile = container.querySelector('.mnt-ptile') as HTMLAnchorElement
+    expect(tile.search).toContain('sort=domain')
+    fireEvent.click(tile)
+    await screen.findByText('Minta részletei')
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Szűrés/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Táplálkozás/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Alkalmazom' }))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Szűrés' })).not.toBeInTheDocument())
+    const filtered = container.querySelector('.mnt-ptile') as HTMLAnchorElement
+    expect(filtered.search).toContain('domain=fuel')
+    fireEvent.click(filtered)
+    await screen.findByText('Minta részletei')
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(screen.getByText('Táplálkozás')).toBeInTheDocument()
+    expect(screen.queryByText('6–8 / 8')).not.toBeInTheDocument()
   })
 
   test('?pair= redirects to the detail page', () => {

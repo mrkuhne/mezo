@@ -24,6 +24,7 @@ export function PatternDecisionCard({
   showExplainer = false,
   titleSize = 17,
   showDetailLink = true,
+  detailSearch,
 }: {
   pattern: Pattern
   pair: PatternMonitorPair | null
@@ -35,6 +36,7 @@ export function PatternDecisionCard({
   /** hamis a részlet-oldalon (mezo-tk88.5 review fix) — a „Részletek és előzmények →" link
    *  önmagára mutatna, ha a kártya már a részlet-oldal fejléce */
   showDetailLink?: boolean
+  detailSearch?: string
 }) {
   const railColor = patternCategoryColor(pattern.category)
   const status = pattern.status ?? 'proposed'
@@ -167,7 +169,7 @@ export function PatternDecisionCard({
       {showDetailLink && !(pattern.kind === 'reflection' && pattern.testPlan == null) && (
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
           {/* Direct to the sibling leaf — `/insights/…` only reached it via LegacyPathRedirect. */}
-          <Link to={`/mezo/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+          <Link to={`/mezo/patterns/${pattern.pairKey}${detailSearch ? `?${detailSearch}` : ''}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
             Részletek és előzmények →
           </Link>
         </div>
