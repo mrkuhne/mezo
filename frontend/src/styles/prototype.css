@@ -11148,94 +11148,108 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
 .am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
 
-/* ── fuel-ceremony (mezo-bqwyo) ───────────────────────────────────────────
-   A naplózást lezáró ünneplés. A ceremónia BIRTOKOLJA a képernyőt (minta:
-   docs/design_2.0/2026-09-15-ceremony-pattern.md): teljes felület, egy koreográfia,
-   egy kiút. A minta MARAD canon, az ANYAG viszont a visszaállított világé
-   (stíluskönyv §5): csiszolt kő és arany, nem titán üveg — se hideg grafit, se
-   backdrop-filter, se emoji.
+/* ── fuel-ceremony (mezo-bqwyo · jutalomoldalak mezo-p2777) ─────────────────
+   A naplózást lezáró ünneplés — a jutalom-család KIS pillanata (spec
+   docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md, tulajdonos 2026-09-22):
+   az étkezést naponta 3–5-ször rögzíti, ezért ~1 mp, alulról felcsúszó lap a nap fölött —
+   nem a teljes képernyős edzés-ünneplés. A minta (docs/design_2.0/2026-09-15-ceremony-
+   pattern.md) marad: a ceremónia birtokolja a képernyőt (modális dialógus + fátyol), egy
+   koreográfia, világos kiút. Az ANYAG a visszaállított világé (stíluskönyv §5): arany
+   tónus-talaj, halo, és a pont-gyűrű a meleg radiális „Ritmus" kő (SVG-gradiensként a
+   komponensben) — se titán üveg, se backdrop-filter, se emoji.
 
-   Két felvonás EGY képernyőn: (1) gyújtás — a kő-sáv fut, a számlálók pörögnek, a
-   csillagok balról jobbra gyulladnak; (2) olvasat — a verdikt, az étkezés neve és a
-   pontszám `.is-told`-dal úszik be. A `--p` haladást a komponens rAF-menete írja
-   (CSS-átmenet nem elég: háttérbe tett webview a frissen indított átmenetet 0-n
-   fagyasztja), ezért itt NINCS width-transition a sávon.
+   A lap mozgását (`--rise`), a gyújtást (`--p`) és az ütemeket (`is-b1` verdikt +
+   makrók, `is-b2` gombok) a komponens rAF-menete írja. A lapon és a gyűrűn NINCS
+   transition: háttérbe tett webview-ban a frissen indított átmenet a kezdőértéken
+   fagy, és a lap a képernyőn KÍVÜL ragadna. Csökkentett mozgás: nincs menet, az első
+   render a végállapot. */
+.fcx-screen { position: absolute; inset: 0; z-index: 240; display: flex; flex-direction: column; justify-content: flex-end; }
+.fcx-scrim { position: absolute; inset: 0; background: rgba(43, 33, 24, 0.34); opacity: calc(1 - var(--rise, 0)); }
+:root[data-theme="dark"] .fcx-scrim { background: rgba(12, 10, 9, 0.6); }
 
-   Csökkentett mozgás: a komponens menet nélkül, azonnal a végállapotot festi; a
-   `.is-told` úszás itt is kivezetve. */
-.fcx-screen { position: absolute; inset: 0; z-index: 240; display: flex; flex-direction: column;
-  justify-content: center; gap: 18px; padding: 28px 24px 30px;
-  background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 42%); }
-
-.fcx { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.fcx-sheet {
+  position: relative; overflow: hidden; padding: 10px 18px 22px; border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 55%);
+  box-shadow: 0 -18px 40px -20px rgba(43, 33, 24, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(calc(var(--rise, 0) * 105%));
+}
 /* A hős atmoszférája: halo-sáv (§2.2 C), keret és árnyék nélkül — a `--p` erősíti. */
-.fcx-sky { position: absolute; inset: -12% -18% 30%; pointer-events: none; border-radius: 50%;
-  background: var(--halo-amber); opacity: calc(0.35 + var(--p, 0) * 0.65); }
-.fcx-eyebrow { position: relative; font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;
+.fcx-sky { position: absolute; left: 50%; top: -120px; width: 520px; height: 420px; translate: -50% 0;
+  pointer-events: none; background: var(--halo-amber); opacity: calc(0.3 + var(--p, 0) * 0.7); }
+.fcx-grab { position: relative; display: block; width: 40px; height: 5px; margin: 0 auto 12px;
+  border-radius: 999px; background: var(--divider); }
+
+.fcx { position: relative; display: flex; align-items: center; gap: 16px; padding: 4px 4px 0; }
+.fcx-head { flex: 1; min-width: 0; }
+.fcx-eyebrow { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--mz-cell-gold-ink); }
+.fcx-meal { margin: 4px 0 0; font-family: var(--ff-display); font-size: 20px; font-weight: 700;
+  letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); }
+.fcx-when { display: block; margin-top: 1px; font-size: 11.5px; color: var(--sub); }
 
-/* Öt csillag, balról jobbra gyulladva. Kioltva halk, kigyulladva teljes — a „félállás"
-   a küszöb alatti .1-es ablak, hogy a gyújtás ne pattanjon. */
-.fcx-stars { position: relative; display: flex; gap: 10px; }
-.fcx-stars i { position: relative; display: grid; place-items: center; width: 46px; height: 46px;
-  opacity: 0.28; transform: scale(0.86); transition: opacity 0.25s ease, transform 0.25s ease; }
-.fcx-stars i.is-half { opacity: 0.6; transform: scale(0.94); }
-.fcx-stars i.is-lit { opacity: 1; transform: scale(1); }
-.fcx-aura { position: absolute; inset: -18%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--dv-amber) 45%, transparent) 0%, transparent 62%);
-  opacity: 0; transition: opacity 0.3s ease; }
-.fcx-stars i.is-lit .fcx-aura { opacity: 1; }
+/* Öt csillag — ugyanaz a gyújtás, mint az edzés ívén, csak kisebben. */
+.fcx-stars { display: flex; gap: 4px; margin-top: 10px; }
+.fcx-stars i { position: relative; display: grid; place-items: center; width: 30px; height: 30px; }
+.fcx-stars i svg { width: 30px; height: 30px; opacity: 0.22; }
+.fcx-stars i.is-lit svg { opacity: 1; animation: fcx-pop 0.5s cubic-bezier(.2, 1.7, .35, 1); }
+.fcx-aura { position: absolute; inset: -35%; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--dv-amber) 55%, transparent) 0%, transparent 62%); }
+.fcx-stars i.is-lit .fcx-aura { animation: fcx-aura 0.7s ease-out; }
+@keyframes fcx-pop { 0% { scale: .35; rotate: -22deg; } 58% { scale: 1.22; rotate: 5deg; } 100% { scale: 1; rotate: 0deg; } }
+@keyframes fcx-aura { 0% { opacity: 1; scale: .3; } 100% { opacity: 0; scale: 1.8; } }
 
-/* Az arany „Ritmus" kő-sáv: a kitöltés a csiszolt kő receptje (minta §Materials),
-   a fej egy halk fényfolt. Szöveg SOSEM kerül a kőre. */
-.fcx-bar { position: relative; width: min(280px, 82%); height: 12px; border-radius: 999px;
-  overflow: hidden; background: var(--surface-recess);
-  box-shadow: inset 0 0 0 1px var(--border-subtle); }
-.fcx-fill { position: absolute; inset: 0; width: calc(var(--p, 0) * 100%); border-radius: 999px;
-  background: linear-gradient(145deg, #FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%); }
-.fcx-comet { position: absolute; top: 50%; left: calc(var(--p, 0) * 100%); width: 16px; height: 16px;
-  transform: translate(-60%, -50%); border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 245, 214, 0.9) 0%, transparent 68%); }
+/* A Mezo pontja egy érmén: a kő a GYŰRŰ, a szám a korongon — szöveg sosem kerül a kőre. */
+.fcx-score { position: relative; flex: 0 0 auto; display: grid; justify-items: center; }
+.fcx-medal { position: relative; display: grid; place-items: center; width: 92px; height: 92px;
+  border-radius: 50%; background: var(--surface-1); box-shadow: var(--mz-shadow-dec); }
+.fcx-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fcx-ring-track { fill: none; stroke: var(--surface-recess); stroke-width: 8; }
+.fcx-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p, 0) * var(--score, 0) * 100); }
+.fcx-medal strong { position: relative; font-family: var(--ff-display); font-size: 34px; font-weight: 200;
+  letter-spacing: -0.05em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fcx-score small { margin-top: 6px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--sub); }
 
-/* Három számláló — a menet írja a számokat, a React csak a kezdő/vég állapotot. */
-.fcx-counters { display: flex; gap: 18px; }
-.fcx-counters span { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.fcx-counters i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px;
-  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
-.fcx-counters strong { font-family: var(--ff-display); font-size: 24px; font-weight: 200;
+.fcx-result { position: relative; margin: 12px 4px 0; }
+.fcx-verdict { margin: 0; font-family: var(--ff-display); font-size: 17px; font-weight: 600;
+  letter-spacing: -0.01em; color: var(--ink); }
+
+/* A négy makró EGY kártyában — a kalória zsálya tintát visel, mert az a Fuel száma. */
+.fcx-counters { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px;
+  padding: 12px 2px; border-radius: 20px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--surface-1); box-shadow: var(--mz-shadow); }
+.fcx-counters span { display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.fcx-counters span + span { box-shadow: inset 1px 0 0 var(--divider); }
+.fcx-counters svg { width: 24px; height: 24px; }
+.fcx-counters strong { font-family: var(--ff-display); font-size: 22px; font-weight: 200;
   letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.fcx-counters small { font-size: 10px; font-weight: 500; color: var(--sub); }
+.fcx-counters span:first-child strong { color: var(--mz-cell-sage-ink); }
+.fcx-counters small { font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--sub); white-space: nowrap; }
 
-/* Második felvonás: az olvasat beúszik. */
-.fcx-result { display: flex; flex-direction: column; align-items: center; gap: 6px;
-  text-align: center; opacity: 0; transform: translateY(8px); }
-.fcx-result.is-told { opacity: 1; transform: none; transition: opacity 0.5s ease, transform 0.5s ease; }
-.fcx-verdict { margin: 0; font-family: var(--ff-display); font-size: 24px; font-weight: 700;
-  letter-spacing: -0.02em; color: var(--ink); }
-.fcx-meal { margin: 0; font-size: 12px; font-weight: 500; color: var(--sub); }
-.fcx-score { display: inline-flex; align-items: center; gap: 10px; margin-top: 6px;
-  padding: 9px 14px; border-radius: 22px; border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
-.fcx-score-copy { display: flex; flex-direction: column; align-items: flex-start; }
-.fcx-score-copy strong { font-family: var(--ff-display); font-size: 26px; font-weight: 200;
-  letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.fcx-score-copy small { font-size: 12px; font-weight: 400; color: var(--sub); }
-
-/* A kiút a hüvelykujj mellett: egy elsődleges gomb, alatta a halk visszaút. */
-.fcx-foot { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 18px; }
-.fcx-cta { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px;
-  padding: 12px 15px; border-radius: 22px; text-align: left; color: var(--ink);
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
-.fcx-cta-art { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px;
+/* A két kiút: a halk vissza a naphoz, és a ház elsődleges gombja — ugyanaz, mint az edzésnél. */
+.fcx-foot { position: relative; display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; margin-top: 14px; }
+.fcx-foot.is-single { grid-template-columns: 1fr; }
+.fcx-close { min-height: 56px; padding: 0 12px; border: 0; border-radius: 18px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--sub);
   background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
-.fcx-cta strong { display: block; font-family: var(--ff-display); font-size: 15px; font-weight: 600; }
-.fcx-cta small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--sub); }
-.fcx-close { min-height: 48px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 600;
-  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); }
+.fcx-cta { display: flex; align-items: center; gap: 9px; min-height: 56px; padding: 11px 14px;
+  border: 0; border-radius: 20px; text-align: left; cursor: pointer; color: #fff;
+  background: var(--gradient-cta); box-shadow: var(--shadow-cta); }
+.fcx-cta strong { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.fcx-cta small { display: block; margin-top: 1px; font-size: 11px; opacity: 0.78; }
+
+/* Az ütemek — egyszer, a menet kapcsolja őket. */
+.fcx-result, .fcx-counters, .fcx-foot { opacity: 0; translate: 0 12px; }
+.fcx-screen.is-b1 .fcx-result, .fcx-screen.is-b1 .fcx-counters,
+.fcx-screen.is-b2 .fcx-foot {
+  opacity: 1; translate: 0 0; transition: opacity 0.4s ease, translate 0.45s cubic-bezier(.2, .8, .2, 1);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .fcx-stars i, .fcx-aura, .fcx-result { transition: none; }
+  .fcx-stars i.is-lit svg, .fcx-stars i.is-lit .fcx-aura { animation: none; }
+  .fcx-result, .fcx-counters, .fcx-foot { opacity: 1; translate: none; transition: none; }
 }
 /* ── /fuel-ceremony ───────────────────────────────────────────────────────── */
 
@@ -14219,7 +14233,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
      ÚJ REKORD az egyetlen §2.2 A mosott csempe a lapon, arany — mert az ünneplés.
    · RÉSZLETEK: a hős a MEGNYERT KALÓRIA, és az Fuel száma, ezért ZSÁLYA a mosása
      (A.2 1. szabály: ugyanaz a mennyiség mindenhol ugyanazt a színt viseli), nem a
-     Titán-kori cián. Az izomcsoport-sorok ház-sorok. */
+     Titán-kori cián. Az izomcsoport-sorok ház-sorok.
+
+   JUTALOMOLDALAK (mezo-p2777, tulajdonosi jóváhagyás 2026-09-22 — spec
+   docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md): a Titán KOMPOZÍCIÓJA
+   visszajön, a világ anyagában. Az első lapon EGY hős: öt csillag ÍVBEN (a középső a
+   legnagyobb) a kő-GYÚJTÓZSINÓR fölött — csillag-számjegy NINCS (D3: a csillag maga a
+   jutalom). Minden más szám EGY kártyában (`.cer-card`): a rekord-sáv (az egyetlen arany),
+   a perc + XP pár, és halkan a szett/ismétlés/kg×rep sor (`.cer-tally`). Ütemek:
+   `is-b1` a verdikt, `is-b2` a kártya, `is-b3` a rekord-pecsét, `is-told` a gomb — a
+   komponens rAF-menete kapcsolja őket (`.is-staged` alatt; a Sport-ceremónia nem visel
+   `.is-staged`-et, az ő két felvonása a régi `is-told` szabályon marad). A kő a §5
+   meleg, 3-stopos radiális receptje — a Titán-kori 4-stopos lineáris sötét sávja
+   piszkos csíkként olvasott. A részletek lap egy összefoglaló-csippel nyit, a kalória a
+   hős, az izomsorok EGY kártyában, mindegyik a saját MuscleMap-kivágatával. */
 
 .cer-screen { display: flex; flex-direction: column; min-height: 100%; padding: 0 4px; }
 .cer-screen .cer { margin-top: auto; }
@@ -14244,9 +14271,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-eyebrow { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); }
 .cer > .cer-eyebrow { position: relative; }
 
-.cer-stars { position: relative; display: flex; justify-content: center; gap: 12px; }
-.cer-stars i { position: relative; width: 42px; height: 42px; display: grid; place-items: center; }
-.cer-stars i .icon { width: 42px; height: 42px; opacity: .3; filter: none; transition: none; }
+.cer-stars {
+  position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 100px;
+}
+/* Az ív: a középső csillag a legnagyobb, a szélsők lejjebb ülnek. */
+.cer-stars i { position: relative; width: 46px; height: 46px; margin-bottom: 20px; display: grid; place-items: center; }
+.cer-stars i:nth-child(2), .cer-stars i:nth-child(4) { width: 56px; height: 56px; margin-bottom: 7px; }
+.cer-stars i:nth-child(3) { width: 68px; height: 68px; margin-bottom: 0; }
+.cer-stars i .icon { width: 100%; height: 100%; opacity: .22; filter: none; transition: none; }
 .cer-stars i.is-half .icon { opacity: .62; }
 .cer-stars i.is-lit .icon {
   opacity: 1;
@@ -14260,16 +14292,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @keyframes cer-pop { 0% { scale: .3; rotate: -25deg; } 60% { scale: 1.25; rotate: 6deg; } 100% { scale: 1; rotate: 0deg; } }
 @keyframes cer-aura { 0% { opacity: .95; scale: .3; } 100% { opacity: 0; scale: 1.9; } }
 
+/* A gyújtózsinór: öt szakasz, szakaszonként egy csillag — a hézag a talaj színe. */
 .cer-bar {
-  position: relative; width: 100%; max-width: 320px; height: 12px; border-radius: 999px;
+  position: relative; width: 100%; max-width: 250px; height: 8px; border-radius: 999px;
   background: var(--surface-recess); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
-.cer-bar u { position: absolute; top: 3px; bottom: 3px; left: var(--at); width: 1px; background: rgba(43, 33, 24, 0.14); }
-/* A „Ritmus" csiszolt kő — a minta §Materials receptje, változatlanul. Ami elment
-   mellőle: a két neon-glow. */
+.cer-bar u { position: absolute; z-index: 1; top: 0; bottom: 0; left: var(--at); width: 2px; margin-left: -1px; background: var(--canvas); }
+/* A „Ritmus" kő — stíluskönyv §5: meleg, 3-stopos radiális + fehér felső él. */
 .cer-fill {
   position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); border-radius: 999px;
-  background: linear-gradient(145deg, #FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%);
+  background: radial-gradient(85% 160% at 36% 30%, #FFE9A8 0%, #E0AC2F 55%, #A9770F 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .cer-comet {
   position: absolute; top: 50%; left: calc(var(--p) * 100%); width: 22px; height: 22px; translate: -50% -50%;
@@ -14335,6 +14368,69 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-record strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .cer-record small { display: block; font-size: 10.5px; color: var(--sub); margin-top: 2px; }
 
+/* — jutalomoldalak (mezo-p2777): az ütemezett első lap — */
+.cer-screen.is-staged { padding: 0 2px; overflow: hidden; }
+.cer-screen.is-staged .cer { margin-top: 0; padding: 30px 16px 0; gap: 18px; overflow: visible; }
+.cer-screen.is-staged .cer-sky { top: 0; width: 620px; height: 520px; translate: -50% -38%; }
+.cer-screen.is-staged .cer-result { opacity: 1; translate: 0 0; pointer-events: auto; padding: 18px 2px 4px; }
+.cer-verdict {
+  margin: 0; font-family: var(--ff-display); font-size: 26px; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--ink);
+}
+.cer-card {
+  margin-top: 20px; padding: 6px; border-radius: 24px; text-align: left;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--surface-1); box-shadow: var(--mz-shadow);
+}
+.cer-card .cer-record {
+  grid-template-columns: 40px 1fr; margin-top: 0; padding: 11px 12px; border-radius: 19px;
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-dec);
+}
+.cer-card .cer-record .icon { width: 38px; height: 38px; }
+.cer-card .cer-stats { grid-template-columns: 1fr 1fr; gap: 0; padding: 12px 6px 4px; }
+.cer-card .cer-stats span {
+  display: grid; grid-template-columns: 30px 1fr; align-items: center; column-gap: 9px;
+  padding: 0 8px; border-radius: 0; background: none; box-shadow: none;
+}
+.cer-card .cer-stats span + span { box-shadow: inset 1px 0 0 var(--divider); }
+.cer-card .cer-stats .icon { grid-row: span 2; width: 30px; height: 30px; }
+.cer-card .cer-stats strong { font-size: 30px; line-height: 1.05; }
+.cer-card .cer-stats small { margin-top: 0; font-size: 8.5px; letter-spacing: .12em; }
+.cer-tally {
+  display: flex; justify-content: space-between; gap: 6px; margin: 8px 6px 2px; padding: 10px 6px 6px;
+  box-shadow: inset 0 1px 0 var(--divider);
+}
+.cer-card .cer-record + .cer-tally { box-shadow: none; }
+.cer-tally span { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.cer-tally .icon { flex: 0 0 auto; width: 20px; height: 20px; }
+.cer-tally b {
+  font-family: var(--ff-display); font-size: 16px; font-weight: 300; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.cer-tally small { font-size: 8.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--sub); white-space: nowrap; }
+.cer-screen.is-staged .cer-result > .cer-recap-note { text-align: center; }
+
+/* Az ütemek: egyszer, sorban — a menet kapcsolja őket (lásd a fejléc-kommentet). */
+.cer-screen.is-staged .cer-verdict,
+.cer-screen.is-staged .cer-card,
+.cer-screen.is-staged .cer-result > .cer-recap-note { opacity: 0; translate: 0 14px; }
+.cer-screen.is-staged .cer-card .cer-record { opacity: 0; scale: .94; }
+.cer-screen.is-staged.is-b1 .cer-verdict,
+.cer-screen.is-staged.is-b2 .cer-card,
+.cer-screen.is-staged.is-b2 .cer-result > .cer-recap-note {
+  opacity: 1; translate: 0 0; transition: opacity .5s ease, translate .55s cubic-bezier(.2, .8, .2, 1);
+}
+.cer-screen.is-staged.is-b3 .cer-card .cer-record {
+  opacity: 1; scale: 1; transition: opacity .45s ease, scale .6s cubic-bezier(.2, 1.6, .4, 1);
+}
+
+/* — részletek: az összefoglaló-csip köti az első laphoz — */
+.cer-recap-chip {
+  display: flex; align-items: center; justify-content: center; gap: 9px; width: fit-content;
+  margin: 4px auto 14px; padding: 7px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink);
+}
+.cer-recap-chip .cer-starrow.mini i { width: 14px; height: 14px; }
+
 /* The challenge-outcome rows (.cer-chals/.cer-chal*, T7 Task 4, mezo-88iwa.8) are gone
    with their last consumer: the prototype's closing ceremony carries no challenge block,
    and P1 (mezo-e1ii9) moved challenges to the workout header's ⋯ glass. */
@@ -14349,18 +14445,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   letter-spacing: -0.02em; color: var(--ink); outline: none;
 }
 
-.cer-mstars { display: grid; gap: 8px; margin-bottom: 10px; }
+.cer-mstars {
+  display: grid; margin-bottom: 14px; padding: 2px 12px; border-radius: 22px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--surface-1); box-shadow: var(--mz-shadow);
+}
 /* Ház-sorok: annyi, ahány izomcsoportot az edzés érintett — egyik sem poszter. */
 .cer-mstar {
-  display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px;
-  padding: 11px 13px; border: 0; border-radius: 16px;
-  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  display: grid; grid-template-columns: 44px 1fr auto; align-items: center; column-gap: 11px; row-gap: 8px;
+  padding: 11px 0 12px; border: 0; border-radius: 0; background: none; box-shadow: none;
 }
-.cer-mstar-art .icon { width: 34px; height: 34px; }
+.cer-mstar + .cer-mstar { border-top: 1px solid var(--divider); }
+/* A MuscleMap-kivágat a sor saját színének halvány tónusán (D4). */
+.cer-mstar-art {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px;
+  background: color-mix(in srgb, var(--ex-color) 12%, var(--surface-1));
+}
+.cer-mstar-art .icon, .cer-mstar-art .muscle-chip { width: 40px; height: 40px; }
 .cer-mstar-copy strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .cer-mstar-copy small { display: block; font-size: 10.5px; color: var(--sub); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .cer-mstar-track {
-  grid-column: 1 / -1; position: relative; height: 7px; border-radius: 999px; overflow: hidden;
+  grid-column: 2 / -1; position: relative; height: 7px; border-radius: 999px; overflow: hidden;
   background: var(--surface-recess); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .cer-mstar-track .zone { position: absolute; inset: 0 auto 0 var(--a); width: calc(var(--b) - var(--a)); background: rgba(43, 33, 24, 0.07); }
@@ -14410,6 +14514,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   }
   .cer-mstar-track .fill { width: var(--w); }
   .cer { min-height: 0; }
+  .cer-screen.is-staged .cer-verdict, .cer-screen.is-staged .cer-card,
+  .cer-screen.is-staged .cer-result > .cer-recap-note, .cer-screen.is-staged .cer-card .cer-record {
+    opacity: 1; translate: none; scale: none; transition: none;
+  }
 }
 
 /* Step two plays its own one-shot: bars grow, stars land, row after row. */

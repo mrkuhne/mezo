@@ -960,6 +960,23 @@ clay ball for art, which is why the hue has to work as hard as it does (`mezo-ju
 
 ---
 
+### C.3 Jutalomoldalak addenda (`mezo-p2777`, 2026-09-22) — the reward family
+
+The owner asked for the Titanium ceremony's *composition* back, in this world's material. Three
+rules came out of it, and they override §5 where they disagree:
+
+23. **The stone is the §5 radial, everywhere.** C.2 kept the Titanium 4-stop linear
+   (`#FFF0C8 → #AF9371 → #322A29 → #DBC4A0`) as "already the right material"; on the restored light
+   ground its dark band read as a dirty stripe. Both ceremonies now use
+   `radial-gradient(85% 160% at 36% 30%, #FFE9A8 0%, #E0AC2F 55%, #A9770F 100%)` (the meal ring as
+   an SVG `radialGradient` with the same stops) — stone and clay star are one material.
+24. **A reward has one hero, and it may be the graphic alone.** §5's "Numeral 56–64px" does NOT
+   apply to the workout ceremony: the owner ruled the stars themselves are the reward. Every other
+   number moves into ONE card below the verdict; the record is that card's only gold wash.
+25. **Weight follows frequency.** A ceremony that fires several times a day (meal log) is the
+   *small* moment — a sheet over the day, ~1 s, one beat; the full multi-beat stage is for rare,
+   earned closes (workout). Same stone, same stars, same CTA pair: one family.
+
 ## Appendix D — the depth & focus sweep (`mezo-ju4j6.19`)
 
 The §3.4 retro-fit across every screen re-dressed **before** §3.4 existed. No new materials, no

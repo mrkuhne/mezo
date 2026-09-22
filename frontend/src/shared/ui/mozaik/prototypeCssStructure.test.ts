@@ -961,6 +961,7 @@ describe('the train ceremony section is registered and wears the restored materi
   test('the section actually carries the cer- class family, not just the markers', () => {
     for (const cls of [
       '.cer-stars', '.cer-bar', '.cer-counters', '.cer-mstar', '.cer-kcal', '.cer-starrow',
+      '.cer-card', '.cer-tally', '.cer-verdict', '.cer-recap-chip',
     ]) {
       expect(section(), `${cls} missing from the train ceremony section`).toContain(cls)
     }
@@ -979,11 +980,13 @@ describe('the train ceremony section is registered and wears the restored materi
     expect(css).not.toContain('backdrop-filter')
   })
 
-  // A „Ritmus" csiszolt kő MARAD (az eleve a helyes anyag volt); ami ment, az a két
-  // neon-glow körülötte és a szám-feliratra vágott arany színátmenet (§2.3).
-  test('the Ritmus stone survives, its neon glow and the clipped-gradient numerals do not', () => {
+  // A „Ritmus" kő a stíluskönyv §5 meleg, 3-stopos radiális receptje (mezo-p2777): a
+  // Titán-kori 4-stopos lineáris sötét `#322A29` sávja piszkos csíkként olvasott a
+  // visszaállított világos talajon. Neon-glow és vágott arany számjegy továbbra sincs.
+  test('the Ritmus stone is the warm §5 radial; no neon glow, no clipped-gradient numerals', () => {
     const css = rules()
-    expect(css).toMatch(/\.cer-fill \{[^}]*#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0/)
+    expect(css).toMatch(/\.cer-fill \{[^}]*radial-gradient\(85% 160% at 36% 30%, #FFE9A8 0%, #E0AC2F 55%, #A9770F 100%\)/)
+    expect(css).not.toContain('#322A29')
     expect(css).not.toMatch(/box-shadow: 0 0 \d+px/)
     expect(css).not.toContain('background-clip: text')
     expect(css).not.toContain('filter: grayscale')
@@ -1195,8 +1198,8 @@ describe('the fuel-ceremony section is registered and wears the restored materia
   })
 
   test('the section carries the fcx- family, not just the markers', () => {
-    for (const cls of ['.fcx-screen', '.fcx-sky', '.fcx-stars', '.fcx-bar', '.fcx-fill',
-      '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
+    for (const cls of ['.fcx-screen', '.fcx-scrim', '.fcx-sheet', '.fcx-sky', '.fcx-stars',
+      '.fcx-ring', '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
       expect(section(), `${cls} missing from the fuel-ceremony section`).toContain(cls)
     }
   })
@@ -1210,12 +1213,14 @@ describe('the fuel-ceremony section is registered and wears the restored materia
     expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
   })
 
-  test('the bar fill IS the polished gold stone, and no text sits on it (§5 + minta §Materials)', () => {
+  // mezo-p2777: a kő a §5 meleg radiális receptje — a pont-gyűrű SVG-gradienseként a
+  // komponensben él (FuelMealCeremony.test őrzi a stopokat), a lap felcsúszását pedig a rAF-menet írja a `--rise`-on
+  // át — CSS-átmenet nélkül, mert a háttérbe tett webview azt a képernyőn KÍVÜL fagyasztaná.
+  test('no Titanium stone band, and the sheet rises by the frame-driven --rise', () => {
     const css = rules()
-    expect(css).toContain('#FFF0C8 0%, #AF9371 24%, #322A29 52%, #DBC4A0 100%')
-    // a kitöltés szélességét a rAF-menet írja — CSS-átmenet nélkül (a fagyott webview tanulsága)
-    expect(css).toMatch(/\.fcx-fill \{[^}]*width: calc\(var\(--p, 0\) \* 100%\)/)
-    expect(css).not.toMatch(/\.fcx-fill \{[^}]*transition/)
+    expect(css).not.toContain('#322A29')
+    expect(css).toMatch(/\.fcx-sheet \{[^}]*transform: translateY\(calc\(var\(--rise, 0\) \* 105%\)\)/)
+    expect(css).not.toMatch(/\.fcx-sheet \{[^}]*transition/)
   })
 
   test('the ignition honours reduced motion', () => {

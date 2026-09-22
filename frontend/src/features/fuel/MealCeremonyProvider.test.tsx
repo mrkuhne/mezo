@@ -4,14 +4,14 @@
 // Amit őrizünk: a mentés MEGNYITJA a ceremóniát (ez a feature lényege), pontszám nélkül
 // viszont NEM (őszinte-null), és a kiút tényleg leszedi a képernyőről.
 // ============================================================
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi } from 'vitest'
 import { MealCeremonyProvider, useMealCeremony, type MealCelebration } from './MealCeremonyProvider'
 
 const MEAL: MealCelebration = {
   mealId: 'm-1', score: 0.83, label: 'Túrós zabkása', timeLabel: '07:15',
-  kcal: 689, proteinG: 49, carbsG: 74, hasBreakdown: true,
+  kcal: 689, proteinG: 49, carbsG: 74, fatG: 21, hasBreakdown: true,
 }
 
 function Saver({ meal }: { meal: MealCelebration }) {
@@ -27,9 +27,11 @@ describe('MealCeremonyProvider', () => {
 
     await user.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(screen.getByRole('dialog', { name: 'Az étkezésed elkészült' })).toBeInTheDocument()
-    // a 0..1-es drót-pontszám a /10 skálán jelenik meg
-    expect(document.querySelector('.fcx-score')).toHaveTextContent('8,3')
-    expect(screen.getByText('Túrós zabkása · 07:15')).toBeInTheDocument()
+    // a 0..1-es drót-pontszám a /10 skálán jelenik meg — a ~1 mp-es menet végén landol
+    await waitFor(() => expect(document.querySelector('.fcx-score')).toHaveTextContent('8,3'), { timeout: 2500 })
+    expect(screen.getByText('Túrós zabkása')).toBeInTheDocument()
+    expect(screen.getByText('07:15')).toBeInTheDocument()
+    expect(document.querySelector('[data-fcx-count="f"]')).toHaveTextContent('21')
 
     await user.click(screen.getByRole('button', { name: 'Vissza a naphoz' }))
     expect(screen.queryByRole('dialog', { name: 'Az étkezésed elkészült' })).toBeNull()

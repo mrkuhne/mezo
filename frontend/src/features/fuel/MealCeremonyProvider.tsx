@@ -27,6 +27,7 @@ export interface MealCelebration {
   kcal: number
   proteinG: number
   carbsG: number
+  fatG: number
   /** Van-e hova vinnie a „Részletek"-nek (bontás nélkül nincs pontlap). */
   hasBreakdown?: boolean
 }
@@ -61,6 +62,7 @@ export function MealCeremonyProvider({ children, onDetails }: {
           kcal={celebration.kcal}
           proteinG={celebration.proteinG}
           carbsG={celebration.carbsG}
+          fatG={celebration.fatG}
           onClose={() => setCelebration(null)}
           onDetails={celebration.hasBreakdown && onDetails
             ? () => { const id = celebration.mealId; setCelebration(null); onDetails(id) }

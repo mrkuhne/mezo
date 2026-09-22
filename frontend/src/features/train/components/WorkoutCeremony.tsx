@@ -6,15 +6,19 @@
 // page citing the ceremony-pattern doc; the owner's directive is 1:1 with the prototype, so
 // the split is restored here and the doc corrected to match what ships.
 //
-//   Step 1 `.cer-screen` — the sky, five stars, the gold-stone bar and the three counters,
-//     all driven by ONE rAF pass (cubic ease-out 1-(1-t)^3, 2400 ms) to `score.ratio`; then
-//     the sr-only star heading, the verdict, the honest stat tiles (percs + XP), the records
-//     strip, the pending-sets line, and exactly ONE way on: `Részletek`.
-//   Step 2 `.cer-details-screen` — `Izomcsoportok fejlődése a mai edzésen` (the per-muscle
-//     rows, each with its mini-stars and its OWN done/plan fill bar — `ZoneTrack` and the
-//     weekly zone it drew are gone from the app entirely, this bar is the row's completion
-//     share and nothing else), the kcal tile, the closing note, the close
-//     CTA, `Vissza az értékeléshez` back to step 1, and the star footnote.
+//   Step 1 `.cer-screen.is-staged` (jutalomoldalak, mezo-p2777 — spec
+//     docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md) — ONE hero: the five-star
+//     ARC over the stone FUSE (no star numeral — owner D3: the stars are the reward). Then,
+//     beat by beat, the verdict, ONE card (the record strip, the honest minutes + XP pair,
+//     the quiet szett/ismétlés/kg×rep tally), the pending-sets line and exactly ONE way on:
+//     `Részletek`. One rAF pass (2700 ms) burns the fuse and lights the stars over the first
+//     1700 ms, toggles the beat classes `is-b1/2/3`, and runs the card's tally at the end.
+//   Step 2 `.cer-details-screen` — a recap chip (mini stars + verdict) tying it to step one,
+//     the kcal hero, then `Izomcsoportok fejlődése a mai edzésen` as ONE card of rows (each
+//     with its MuscleMap crop, mini-stars and its OWN done/plan fill bar — `ZoneTrack` and
+//     the weekly zone it drew are gone from the app entirely, this bar is the row's
+//     completion share and nothing else), the closing note, the close CTA,
+//     `Vissza az értékeléshez` back to step 1, and the star footnote.
 //
 // Fills and counters are FRAME-driven (a throttled/hidden webview freezes a just-started CSS
 // transition at 0), so the pass writes `--p`, the counter textContents and the star
@@ -65,8 +69,15 @@ export interface WorkoutCeremonyProps {
   reducedMotion?: boolean
 }
 
-const DURATION_MS = 2400
+/** The whole step-one pass; the stars/fuse burn over the first STARS_MS of it. */
+const DURATION_MS = 2700
+const STARS_MS = 1700
+/** When each beat lands: verdict (b1), the card + its tally (b2), the record stamp (b3). */
+const BEATS = { b1: 1750, b2: 2050, b3: 2350 } as const
 const STAR_SLOTS = [0, 1, 2, 3, 4]
+const ALL_BEATS = ' is-b1 is-b2 is-b3'
+
+const ease = (t: number) => 1 - (1 - t) ** 3
 
 /** hu-HU grouping, with the locale's thin spaces normalised (the ExerciseRecordSheet idiom). */
 function huNumber(n: number): string {
@@ -102,6 +113,7 @@ export function WorkoutCeremony({
   const [told, setTold] = useState(instant)
   const [step, setStep] = useState<'summary' | 'details'>('summary')
   const [detailsTold, setDetailsTold] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const detailsHeadingRef = useRef<HTMLHeadingElement>(null)
@@ -134,32 +146,38 @@ export function WorkoutCeremony({
     // cleanup that would cancel the only scheduled pass).
     if (ranRef.current || instant) return
     ranRef.current = true
+    const root = rootRef.current
     const stage = stageRef.current
-    if (!stage) return
+    if (!root || !stage) return
     const started = performance.now()
-    const paint = (progress: number) => {
-      const progressed = progress * score.ratio
+    const counts: Record<string, number> = {
+      sets: score.done.sets, reps: score.done.reps, volume: score.done.volume,
+    }
+    const paint = (ms: number) => {
+      const progressed = ease(Math.min(1, ms / STARS_MS)) * score.ratio
       stage.style.setProperty('--p', String(progressed))
-      const counts: Record<string, number> = {
-        sets: score.done.sets, reps: score.done.reps, volume: score.done.volume,
-      }
-      stage.querySelectorAll<HTMLElement>('[data-cer-count]').forEach((el) => {
-        const field = el.dataset.cerCount ?? ''
-        const value = (counts[field] ?? 0) * progress
-        el.textContent = field === 'volume' ? huNumber(value) : String(Math.round(value))
-      })
       stage.querySelectorAll<HTMLElement>('[data-cer-star]').forEach((star) => {
         const cls = starClass(Number(star.dataset.cerStar), progressed)
         star.classList.toggle('is-lit', cls === 'is-lit')
         star.classList.toggle('is-half', cls === 'is-half')
       })
+      // The card's tally runs while the card is up (beat 2 → the end of the pass).
+      const tally = ease(Math.max(0, Math.min(1, (ms - BEATS.b2) / (DURATION_MS - BEATS.b2))))
+      root.querySelectorAll<HTMLElement>('[data-cer-count]').forEach((el) => {
+        const field = el.dataset.cerCount ?? ''
+        const value = (counts[field] ?? 0) * tally
+        el.textContent = field === 'volume' ? huNumber(value) : String(Math.round(value))
+      })
+      root.classList.toggle('is-b1', ms >= BEATS.b1)
+      root.classList.toggle('is-b2', ms >= BEATS.b2)
+      root.classList.toggle('is-b3', ms >= BEATS.b3)
     }
     const frame = (now: number) => {
       // Fix round 1 (mezo-88iwa.8): a rAF timestamp can land before `started` (observed
       // -3 ismétlés mid-pass), so clamp both ends rather than just the top.
-      const t = Math.max(0, Math.min(1, (now - started) / DURATION_MS))
-      paint(1 - (1 - t) ** 3)
-      if (t < 1 && stage.isConnected) requestAnimationFrame(frame)
+      const ms = Math.max(0, Math.min(DURATION_MS, now - started))
+      paint(ms)
+      if (ms < DURATION_MS && stage.isConnected) requestAnimationFrame(frame)
       // `told` is set even when the stage left the DOM mid-pass (a tap on `Részletek`
       // before it landed): step one is re-entered from step two, and React must paint the
       // FINAL numbers there — the pass that owned those nodes is gone and never re-runs.
@@ -187,6 +205,30 @@ export function WorkoutCeremony({
         <h2 className="sr-only" tabIndex={-1} ref={detailsHeadingRef}>
           Az edzés részletei
         </h2>
+        {/* The recap chip: step one's verdict in one line, so step two reads as its sequel. */}
+        <div className="cer-recap-chip">
+          <span className="cer-starrow mini" aria-hidden="true">
+            {STAR_SLOTS.map((s) => (
+              <i key={s} className={starClass(s, score.ratio)}>
+                <ClayIcon name="i-termes" size={15} className="icon" />
+              </i>
+            ))}
+          </span>
+          <span>{verdictFor(score.stars)}</span>
+        </div>
+
+        {kcal && (
+          <button type="button" className="cer-kcal" onClick={onGoFuel}>
+            <span className="cer-kcal-line">
+              <ClayIcon name="i-fuel" size={62} className="icon" />
+              <b>+</b><strong>{huNumber(kcal.value)}</strong><small>kcal</small>
+            </span>
+            <span className="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
+            <span className="cer-recap-note">Becslés, nem mérés</span>
+            <i className="cer-kcal-go">›</i>
+          </button>
+        )}
+
         {muscles.length > 0 && (
           <section className="cer-muscles">
             <div className="cer-section">
@@ -199,7 +241,7 @@ export function WorkoutCeremony({
                   className="cer-mstar"
                   style={{ '--ex-color': muscleColor(row.muscle).rail, '--i': i } as CSSProperties}
                 >
-                  <span className="cer-mstar-art"><MuscleChip token={row.muscle} size={34} /></span>
+                  <span className="cer-mstar-art"><MuscleChip token={row.muscle} size={40} /></span>
                   <span className="cer-mstar-copy">
                     <strong>{row.label}</strong>
                     <small>{row.done} / {row.plan} szett</small>
@@ -220,18 +262,6 @@ export function WorkoutCeremony({
               ))}
             </div>
           </section>
-        )}
-
-        {kcal && (
-          <button type="button" className="cer-kcal" onClick={onGoFuel}>
-            <span className="cer-kcal-line">
-              <ClayIcon name="i-fuel" size={62} className="icon" />
-              <b>+</b><strong>{huNumber(kcal.value)}</strong><small>kcal</small>
-            </span>
-            <span className="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
-            <span className="cer-recap-note">Becslés, nem mérés</span>
-            <i className="cer-kcal-go">›</i>
-          </button>
         )}
 
         {/* The closing note (mezo-d20.8.2.2) travels with the way out — the draft is the
@@ -272,7 +302,11 @@ export function WorkoutCeremony({
 
   // ---------- step one: the ceremony owns the screen, and ends with the way on ----------
   return (
-    <div key="summary" className={`cer-screen${told ? ' is-told' : ''}`}>
+    <div
+      key="summary"
+      ref={rootRef}
+      className={`cer-screen is-staged${told ? `${ALL_BEATS} is-told` : ''}`}
+    >
       <section
         ref={stageRef}
         className={`cer${settled ? ' is-settled' : ''}`}
@@ -280,35 +314,20 @@ export function WorkoutCeremony({
       >
         <span className="cer-sky" aria-hidden="true" />
         <span className="cer-eyebrow">{eyebrow}</span>
+        {/* The hero: five stars on an arc, the middle one largest (sizes live in the CSS). */}
         <div className="cer-stars" aria-hidden="true">
           {STAR_SLOTS.map((i) => (
             <i key={i} data-cer-star={i} className={told ? starClass(i, progressed) : undefined}>
               <b className="cer-aura" />
-              <ClayIcon name="i-termes" size={42} className="icon" />
+              <ClayIcon name="i-termes" size={56} className="icon" />
             </i>
           ))}
         </div>
+        {/* The fuse: the stone bar, five segments — one per star. */}
         <div className="cer-bar" aria-hidden="true">
           <i className="cer-fill" />
           <span className="cer-comet" />
           {[1, 2, 3, 4].map((i) => <u key={i} style={{ '--at': `${i * 20}%` } as CSSProperties} />)}
-        </div>
-        <div className="cer-counters">
-          <span>
-            <i><ClayIcon name="i-suly" size={22} className="icon" /></i>
-            <strong data-cer-count="sets">{counterValue(score.done.sets)}</strong>
-            <small>szett</small>
-          </span>
-          <span>
-            <i><ClayIcon name="i-edzes" size={22} className="icon" /></i>
-            <strong data-cer-count="reps">{counterValue(score.done.reps)}</strong>
-            <small>ismétlés</small>
-          </span>
-          <span>
-            <i><ClayIcon name="i-stack" size={22} className="icon" /></i>
-            <strong data-cer-count="volume">{counterValue(score.done.volume, true)}</strong>
-            <small>kg × rep</small>
-          </span>
         </div>
       </section>
 
@@ -316,26 +335,52 @@ export function WorkoutCeremony({
         <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
           {huStars(score.stars)} csillag az ötből
         </h1>
-        <p>{verdictFor(score.stars)}</p>
-        {minutes != null || xpGained != null ? (
-          <div className="cer-stats">
-            {minutes != null && (
-              <span><strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small></span>
-            )}
-            {xpGained != null && (
-              <span><strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small></span>
-            )}
-          </div>
-        ) : null}
-        {records.length > 0 && (
-          <div className="cer-record">
-            <ClayIcon name="i-erme" size={32} className="icon" />
+        <p className="cer-verdict">{verdictFor(score.stars)}</p>
+        {/* ONE card for every secondary number — never a scatter of peer tiles. */}
+        <div className="cer-card">
+          {records.length > 0 && (
+            <div className="cer-record">
+              <ClayIcon name="i-erme" size={38} className="icon" />
+              <span>
+                <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
+                <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
+              </span>
+            </div>
+          )}
+          {minutes != null || xpGained != null ? (
+            <div className="cer-stats">
+              {minutes != null && (
+                <span>
+                  <ClayIcon name="i-idozito" size={30} className="icon" />
+                  <strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small>
+                </span>
+              )}
+              {xpGained != null && (
+                <span>
+                  <ClayIcon name="i-kristaly" size={30} className="icon" />
+                  <strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small>
+                </span>
+              )}
+            </div>
+          ) : null}
+          <div className="cer-tally">
             <span>
-              <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
-              <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
+              <ClayIcon name="i-suly" size={20} className="icon" />
+              <b data-cer-count="sets">{counterValue(score.done.sets)}</b>
+              <small>szett</small>
+            </span>
+            <span>
+              <ClayIcon name="i-edzes" size={20} className="icon" />
+              <b data-cer-count="reps">{counterValue(score.done.reps)}</b>
+              <small>ismétlés</small>
+            </span>
+            <span>
+              <ClayIcon name="i-stack" size={20} className="icon" />
+              <b data-cer-count="volume">{counterValue(score.done.volume, true)}</b>
+              <small>kg × rep</small>
             </span>
           </div>
-        )}
+        </div>
         {/* The honest tail: the close did not tick everything (prototype recap()). */}
         {pendingSets > 0 && (
           <p className="cer-recap-note">{pendingSets} szett kihagyott státusszal zárult.</p>
