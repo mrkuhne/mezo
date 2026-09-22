@@ -11,54 +11,38 @@
 // disabled while pending, the propose CTA inert in mock (byte-parity).
 // ============================================================
 import type { ReactNode } from 'react'
-import { Icon } from '@/shared/ui/Icon'
-import { useNavigate } from 'react-router-dom'
+import { experimentChipOf } from '@/features/insights/components/experimentStatus'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useExperiments, useExperimentActions } from '@/data/hooks'
-import type { Experiment } from '@/data/types'
 
 /** The page frame every branch renders inside — the way back must exist on all of them. */
 function ExpFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
   const navigate = useNavigate()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <PageHero icon="i-lombik" name="N=1 kísérletek" big={big} sub="a saját testeden bizonyítjuk" />
       <PageBody>{children}</PageBody>
     </MozaikPage>
   )
 }
 
-/** Hungarian status chips (prototype .stch classes). */
-function chipOf(e: Experiment): { label: ReactNode; chip: string; wash?: string } {
-  switch (e.status) {
-    case 'proposed':
-      return { label: '◇ Javaslat', chip: 'prop' }
-    case 'active':
-      return { label: '◐ Aktív', chip: 'act', wash: 'amber' }
-    case 'dismissed':
-      // mezo-hq44: az elvetés x-ikont kap; a ✓ Megerősítve marad glifa (házi pipa-idióma).
-      return { label: <><Icon name="x" size={11} /> Elvetve</>, chip: 'mut' }
-    default:
-      // completed: good / not-good / inconclusive (outcomeGood undefined) — never red
-      return e.outcomeGood === true
-        ? { label: '✓ Megerősítve', chip: 'ok', wash: 'sage' }
-        : e.outcomeGood === false
-          ? { label: '◯ Nem igazolódott', chip: 'mut' }
-          : { label: '◌ Nem értékelhető', chip: 'mut' }
-  }
-}
-
 export function ExperimentsPage() {
-  const { experiments, mode } = useExperiments()
+  const { experiments, mode, isPending, isError, refetch } = useExperiments()
+  const [search, setSearch] = useSearchParams()
+  const filter = search.get('status') ?? 'all'
+  const visible = experiments.filter((e) => filter === 'active' ? e.status === 'active' : filter === 'proposed' ? e.status === 'proposed' : filter === 'closed' ? e.status === 'completed' || e.status === 'dismissed' : true)
   const { decide, propose, pending } = useExperimentActions()
   const live = mode === 'live'
   // Prototype hero big number (#kisBig) — spins up, reduced-motion aware in the hook itself.
   const heroCount = useCountUp(experiments.length)
 
+  if (isPending) return <ExpFrame><p role="status">Betöltés…</p></ExpFrame>
+  if (isError) return <ExpFrame><div role="alert"><p>Nem sikerült betölteni a kísérleteket.</p><button className="mzp-cta" onClick={refetch}>Újrapróbálom</button></div></ExpFrame>
   if (experiments.length === 0) {
     return (
       <ExpFrame>
@@ -75,8 +59,12 @@ export function ExperimentsPage() {
   return (
     <ExpFrame big={heroCount}>
     <EntranceGroup className="col gap-md">
-      {experiments.map((e, i) => {
-        const meta = chipOf(e)
+      <div className="row gap-sm" style={{ flexWrap: 'wrap' }} role="group" aria-label="Kísérletek szűrése">
+        {([['all', 'Mind'], ['active', 'Aktív'], ['proposed', 'Javaslat'], ['closed', 'Lezárt']] as const).map(([value, label]) => <button key={value} type="button" className={cn('chip', filter === value && 'active')} aria-pressed={filter === value} onClick={() => setSearch({ status: value }, { replace: true })}>{label}</button>)}
+      </div>
+      {visible.length === 0 && <p>Ebben az állapotban még nincs kísérlet.</p>}
+      {visible.map((e, i) => {
+        const meta = experimentChipOf(e)
         return (
           <div
             key={e.id}
@@ -89,7 +77,7 @@ export function ExperimentsPage() {
               {e.status !== 'proposed' && <span className="mzp-date">{e.day}/{e.total} nap</span>}
             </div>
 
-            <div className="mzp-title">{e.title}</div>
+            <Link className="mzp-title" to={`/mezo/experiments/${encodeURIComponent(e.id)}?${search}`}>{e.title}</Link>
             <p className="mzp-basis">{e.hypothesis}</p>
 
             {e.status === 'active' && (

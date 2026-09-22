@@ -145,7 +145,7 @@ function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }
   const navigate = useNavigate()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Minták</div>
         <div className="mz-hero-row">

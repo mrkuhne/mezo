@@ -9,6 +9,9 @@ const EXPERIMENTS_KEY = ['experiments']
 export interface ExperimentsView {
   experiments: Experiment[]
   mode: 'mock' | 'live'
+  isPending: boolean
+  isError: boolean
+  refetch: () => void
 }
 
 /**
@@ -26,9 +29,9 @@ export function useExperiments(): ExperimentsView {
     retry: false,
   })
   if (mock) {
-    return { experiments: mockExperiments, mode: 'mock' }
+    return { experiments: mockExperiments, mode: 'mock', isPending: false, isError: false, refetch: () => { void q.refetch() } }
   }
-  return { experiments: q.data ?? [], mode: 'live' }
+  return { experiments: q.data ?? [], mode: 'live', isPending: q.isPending, isError: q.isError, refetch: () => { void q.refetch() } }
 }
 
 /**
