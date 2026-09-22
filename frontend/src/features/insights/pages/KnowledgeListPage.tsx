@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import {
   useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions,
-  useKnowledgeGraphNodes, useGraphEdgeCount, useKnowledgeGraphActions,
+  useKnowledgeGraphNodes, useGraphEdgeCount,
 } from '@/data/hooks'
 import { PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
@@ -13,7 +13,6 @@ import { FactsView } from '@/features/insights/components/FactsView'
 import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseView'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
-import { NodeDetailSheet } from '@/features/insights/sheets/NodeDetailSheet'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
 import type { GraphNodeKind, LifeEventCandidate } from '@/data/types'
 
@@ -22,6 +21,11 @@ import type { GraphNodeKind, LifeEventCandidate } from '@/data/types'
 type KnowledgeView = 'base' | 'tenyek' | 'kategoriak' | 'profil' | 'hogyan'
 const VIEWS = new Set(['tenyek', 'kategoriak', 'profil', 'hogyan'])
 const KIND_LABELS = new Map(GRAPH_KIND_GROUPS)
+
+function withWeek(next: Record<string, string>, current: URLSearchParams) {
+  const start = current.get('start')
+  return start ? { ...next, start } : next
+}
 
 const VIEW_TONE: Record<KnowledgeView, PageTone> = {
   base: 'sage', tenyek: 'sage', kategoriak: 'lav', profil: 'rose', hogyan: 'gold',
@@ -50,14 +54,14 @@ function TudasFrame({
   children: ReactNode
 }) {
   const navigate = useNavigate()
-  const [, setParams] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const isBase = view === 'base'
   const inKindDrill = view === 'kategoriak' && kind !== null
   const onBack = isBase
     ? () => navigate('/mezo')
     : inKindDrill
-      ? () => setParams({ view: 'kategoriak' }, { replace: true })
-      : () => setParams({}, { replace: true })
+      ? () => setParams(withWeek({ view: 'kategoriak' }, params), { replace: true })
+      : () => setParams(withWeek({}, params), { replace: true })
   const label = isBase ? '‹ Mezo' : inKindDrill ? '‹ Kategóriák' : '‹ Tudástár'
   return (
     <MozaikPage tone={VIEW_TONE[view]}>
@@ -68,7 +72,7 @@ function TudasFrame({
             type="button"
             className="tud-help"
             aria-label="Hogyan működik?"
-            onClick={() => setParams({ view: 'hogyan' })}
+            onClick={() => setParams(withWeek({ view: 'hogyan' }, params))}
           >
             ?
           </button>
@@ -80,6 +84,7 @@ function TudasFrame({
 }
 
 export function KnowledgeListPage() {
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const rawView = params.get('view')
   const requestedView: KnowledgeView = rawView && VIEWS.has(rawView) ? (rawView as KnowledgeView) : 'base'
@@ -102,7 +107,6 @@ export function KnowledgeListPage() {
   const { decide: decideLifeEvent } = useLifeEventActions()
   const { nodes } = useKnowledgeGraphNodes()
   const { count: edgeCount } = useGraphEdgeCount()
-  const { archive } = useKnowledgeGraphActions()
 
   // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
   // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9), MOST MÁR
@@ -110,11 +114,6 @@ export function KnowledgeListPage() {
   const [acceptedEvents, setAcceptedEvents] = useState<
     { id: string; kind: LifeEventCandidate['kind']; title: string; edgeCount: number }[]
   >([])
-
-  // A kategóriák-nézet kind-láncának sheet-je (a mai `KnowledgePage` idiómája, mezo-2243/ni86):
-  // pusztán derivált state a kiválasztott node felett, nincs külön "nyitva van-e" flag — az
-  // archiválás után a node eltűnik a listából, `selected` `null`-ra esik, a sheet magától záródik.
-  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
   // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
@@ -128,7 +127,6 @@ export function KnowledgeListPage() {
 
   const profileNode = nodes.find((n) => n.sourceKind === PROFILE_SOURCE_KIND) ?? null
   const graphNodes = nodes.filter((n) => n.sourceKind !== PROFILE_SOURCE_KIND)
-  const selectedNode = selectedId ? graphNodes.find((n) => n.id === selectedId) ?? null : null
 
   // `?view=profil` requires a profile-node to show anything (ProfileView has no "nincs profil"
   // state) — without one it reads as an unresolved/invalid view, same as a bad `?view=` value.
@@ -226,25 +224,16 @@ export function KnowledgeListPage() {
 
   if (view === 'kategoriak') {
     return (
-      <>
         <TudasFrame view="kategoriak" kind={kind}>
           <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
             <KategoriakView
               nodes={graphNodes}
               kind={kind}
-              onOpenKind={(k) => setParams({ view: 'kategoriak', kind: k })}
-              onOpenNode={(n) => setSelectedId(n.id)}
+              onOpenKind={(k) => setParams(withWeek({ view: 'kategoriak', kind: k }, params))}
+              onOpenNode={(n) => navigate(`/mezo/knowledge/node/${n.id}?${params}`)}
             />
           </EntranceGroup>
         </TudasFrame>
-        {selectedNode && (
-          <NodeDetailSheet
-            node={selectedNode}
-            onArchive={() => archive(selectedNode.id)}
-            onClose={() => setSelectedId(null)}
-          />
-        )}
-      </>
     )
   }
 
@@ -265,6 +254,10 @@ export function KnowledgeListPage() {
   return (
     <TudasFrame view="base" big={heroBig} sub={heroSub} help>
       <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+        {params.get('start') && /^\d{4}-\d{2}-\d{2}$/.test(params.get('start')!) && <div className="mz-qcard">
+          <p>Heti áttekintés · {params.get('start')}. A postaláda minden nyitott javaslatot mutat.</p>
+          <Link to={`/me/week?start=${params.get('start')}`}>Vissza ehhez a héthez →</Link>
+        </div>}
         <KnowledgeBaseView
           degraded={degraded}
           candidates={candidates}
@@ -285,7 +278,7 @@ export function KnowledgeListPage() {
           kategLine={kategLine}
           profileNode={profileNode}
           profileLine={profileLine}
-          onNavigate={(v) => setParams({ view: v })}
+          onNavigate={(v) => setParams(withWeek({ view: v }, params))}
         />
       </EntranceGroup>
     </TudasFrame>
