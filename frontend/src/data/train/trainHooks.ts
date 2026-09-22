@@ -839,7 +839,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
           return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
         }
       : (v: { id: string; note?: string | null }) => trainApi.finishWorkout(v.id, v.note),
-    onSuccess: () => { invalidateToday(); invalidateProgression(); invalidateHabitAndQuests() },
+    onSuccess: () => {
+      invalidateToday(); invalidateProgression(); invalidateHabitAndQuests()
+      // The finished instance joins the performed-workout lists: Mai's template-keyed
+      // gym done-state and the Napzárás day story read them (mezo-z9kft).
+      if (!mock) {
+        qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
+        qc.invalidateQueries({ queryKey: ['train', 'dayWorkouts'] })
+      }
+    },
   })
 
   const sportScheduleMutation = useMutation({

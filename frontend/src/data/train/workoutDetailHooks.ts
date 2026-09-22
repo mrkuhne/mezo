@@ -58,6 +58,22 @@ export function useWeekWorkouts() {
   return { workouts: q.data ?? [] }
 }
 
+/**
+ * Workouts PERFORMED on one calendar day (completed instances whose `date` is `date` —
+ * meso and custom alike), for the Napzárás day story (mezo-z9kft). A day's plan is not
+ * what was done that day: yesterday's plan finished today belongs to today's story.
+ * Mock mode has no persisted instances → an honest empty day.
+ */
+export function useDayWorkouts(date: string) {
+  const mock = isMockMode()
+  const q = useQuery<WorkoutSummaryResponse[]>({
+    queryKey: ['train', 'dayWorkouts', date],
+    queryFn: mock ? async () => [] : () => trainApi.listWorkouts(date, date),
+    initialData: mock ? [] : undefined,
+  })
+  return { workouts: q.data ?? [] }
+}
+
 /** How far back the template-day chain is searched. Half a year covers any realistic mesocycle
  *  plus a skipped block; past that, "the previous same day" stops being a useful reference. */
 const CHAIN_WINDOW_DAYS = 183

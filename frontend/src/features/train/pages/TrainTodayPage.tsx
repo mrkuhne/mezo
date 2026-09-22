@@ -250,6 +250,17 @@ export function TrainTodayPage() {
   // footer stands down while the pair is there so exactly ONE one-off-workout entry exists
   // (the same mutual exclusion the rest-day card already had with the footer, mezo-eahv).
   const gymPosterShown = isTodayShown && Boolean(workout) && orderedToday.some((it) => it.kind === 'gym')
+  // A gym DAY's done-state is keyed by its TEMPLATE, not by the date a workout was
+  // performed (mezo-z9kft): yesterday's plan finished today is stamped with today's
+  // date, so the date-keyed `gymDoneDates` left the planned day ELMARADT and flipped
+  // today's chip to done instead. `weekWorkouts` (this week's completed instances)
+  // carries the template id — the same key `gymDayTarget` already routes by. Mock mode
+  // has no persisted instances, so it keeps its date-keyed Phase-1 signal.
+  const gymDayDone = (dayLabel: string, iso: string | undefined) => {
+    if (isMockMode()) return Boolean(iso) && gymDoneDates.includes(iso!)
+    const md = activeMeso.days?.find((d) => d.day === dayLabel)
+    return Boolean(md?.id) && weekWorkouts.some((w) => w.templateSessionId === md!.id)
+  }
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
   const loggedSportOn = (iso: string, k: SportKind) =>
@@ -410,7 +421,7 @@ export function TrainTodayPage() {
       <DayStrip
         kalauzAnchor="mai-napsav"
         items={dayStripItems(agenda, (d, item) => {
-          if (item.kind === 'gym') return Boolean(d.date) && gymDoneDates.includes(d.date!)
+          if (item.kind === 'gym') return gymDayDone(d.day, d.date)
           if (item.kind === 'sport') return sportDoneOn(d.date, sportOf(item.sport))
           // A `custom` item only ever exists for a COMPLETED saját instance.
           if (item.kind === 'custom') return true
@@ -525,8 +536,12 @@ export function TrainTodayPage() {
           // Non-today gym day: the /today endpoint only describes today, so title +
           // exercise count come from the meso template (mezo-9bbc).
           const md = activeMeso.days?.find((d) => d.day === shownDay!.day)
-          const target = md ? gymDayTarget(md, weekWorkouts) : null
-          const done = Boolean(shownDay?.date && gymDoneDates.includes(shownDay.date))
+          const done = gymDayDone(shownDay!.day, shownDay?.date)
+          // The open instance belongs to THIS day's template (started from here, then
+          // left): resume it instead of offering a fresh start (mezo-z9kft). The plain
+          // /today resolves to the open instance's template, so `todaySession` names it.
+          const resumable = !done && Boolean(md?.id && todaySession?.openWorkout && todaySession.templateSessionId === md.id)
+          const target = resumable ? `/train/session?day=${md!.id}` : md ? gymDayTarget(md, weekWorkouts) : null
           return (
             <TodaySessionCard
               key="hero-gym"
@@ -538,8 +553,8 @@ export function TrainTodayPage() {
               facts={[md ? `${md.exerciseCount} gyakorlat` : null, gym.duration ? `${gym.duration} perc` : null]}
               logged={done}
               loggedSummary={done ? 'Kész' : undefined}
-              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownDay!.date!, todayIso, timeOfDay: gym.time })]}
-              ctaLabel={target ? 'Kezdjük el' : undefined}
+              stateLabel={resumable ? 'FOLYAMATBAN' : SESSION_STATE_LABEL[sessionState({ dayIso: shownDay!.date!, todayIso, timeOfDay: gym.time })]}
+              ctaLabel={target ? (resumable ? 'Folytassuk' : 'Kezdjük el') : undefined}
               onLog={target ? () => navigate(target) : undefined}
             />
           )

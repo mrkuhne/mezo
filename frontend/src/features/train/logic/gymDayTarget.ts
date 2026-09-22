@@ -6,5 +6,7 @@ export function gymDayTarget(day: MesoDay, weekWorkouts: WorkoutSummaryResponse[
   if (day.exerciseCount === 0) return null
   const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === day.id)
   if (done) return `/train/review/${done.id}`
-  return day.current || !day.id ? '/train/session' : `/train/session?day=${day.id}`
+  // Always pin the template (mezo-z9kft): `current` is a template-row status, not "today",
+  // and today's own `?day=` resolves exactly like the plain route.
+  return day.id ? `/train/session?day=${day.id}` : '/train/session'
 }

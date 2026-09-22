@@ -426,8 +426,68 @@ test('real mode: a non-today gym day completed this week (pulled forward) routes
   )
   renderView()
   fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) }))
-  fireEvent.click(await screen.findByRole('button', { name: /Kezdjük el/ }))
+  // The day reads done (template-keyed, mezo-z9kft) — its DoneBar opens the review; a
+  // completed day no longer offers „Kezdjük el” at all.
+  fireEvent.click(await screen.findByRole('button', { name: /logolt session megnyitása/ }))
+  expect(screen.queryByRole('button', { name: /Kezdjük el/ })).not.toBeInTheDocument()
   expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
+})
+
+// ---- mezo-z9kft: a cross-day workout (yesterday's plan, done today) ----
+// The instance is stamped with the date it was PERFORMED (today), so the date-keyed
+// `weekDoneDates` said "today is done" and left the planned day ELMARADT; and the
+// off-day card never looked at the open instance, so leaving the session left no
+// „Folytassuk” on the day the owner started it from.
+const crossDayHandlers = (otherDayLabel: string, today: object) => [
+  http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
+  http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json(today)),
+]
+
+test('real mode: an open instance of an off-day template offers Folytassuk on that day', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const otherDayLabel = DAY_ORDER[((new Date().getDay() + 6) % 7 + 6) % 7]
+  server.use(
+    ...crossDayHandlers(otherDayLabel, {
+      templateSessionId: 'd-1', dayLabel: otherDayLabel, title: 'Pull Day', durationEst: 0,
+      exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', type: 'compound', workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1 }],
+      openWorkout: {
+        id: 'w-open', templateSessionId: 'd-1', date: localDateString(), status: 'active',
+        sets: [{ id: 's-1', exerciseId: 'e-1', setIndex: 0, weightKg: 60, reps: 8, skipped: false }],
+      },
+      weekDoneDates: [],
+    }),
+    http.get(`${API_BASE}/api/train/workouts`, () => HttpResponse.json([])),
+  )
+  renderView()
+  fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) }))
+  const resume = await screen.findByRole('button', { name: /Folytassuk/ })
+  expect(screen.getByText('FOLYAMATBAN')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Kezdjük el/ })).not.toBeInTheDocument()
+  fireEvent.click(resume)
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session?day=d-1')
+})
+
+test('real mode: an off-day template completed today marks THAT day done, not today', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const otherDayLabel = DAY_ORDER[((new Date().getDay() + 6) % 7 + 6) % 7]
+  server.use(
+    // no open instance any more; today resolves to nothing planned
+    ...crossDayHandlers(otherDayLabel, { weekDoneDates: [localDateString()] }),
+    http.get(`${API_BASE}/api/train/workouts`, () =>
+      HttpResponse.json([
+        { id: 'w-done', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
+      ]),
+    ),
+  )
+  renderView()
+  const chip = await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) })
+  await waitFor(() => expect(chip).toHaveAccessibleName(/1\/1 kész$/))
+  fireEvent.click(chip)
+  const card = (await screen.findByText('Pull Day', { selector: '.todaycard-title' })).closest('.todaycard')!
+  expect(card.className).toContain('logged')
 })
 
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {
