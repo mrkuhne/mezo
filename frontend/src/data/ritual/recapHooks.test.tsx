@@ -29,6 +29,9 @@ describe('useDayRecap (real mode)', () => {
           completedWorkout: { id: 'w-done', templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010', date: DATE, status: 'completed', sets: [] },
         }),
       ),
+      // pin the schedule empty — since mezo-z9kft a planned sport slot shows on gym days too,
+      // and the default fixture's `today` flag depends on the real weekday
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/biometrics/weight`, () =>
         HttpResponse.json([{ id: 'w1', date: DATE, value: 79.4, note: null }]),
       ),
@@ -201,6 +204,67 @@ describe('useDayRecap (real mode)', () => {
       const sportEvent = result.current.events.find((e) => e.icon === 'i-sport')
       expect(sportEvent).toEqual({ icon: 'i-sport', label: 'Röplabda', meta: '17:00', done: false })
     })
+  })
+})
+
+// mezo-z9kft: the day story is what was DONE on the day — not today's plan row alone.
+describe('useDayRecap (real mode) — training actually performed on the day', () => {
+  const PULL = 'a1f3a0e2-0000-4000-8000-000000000010'
+  const todayPlan = () =>
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000099', dayLabel: 'Szo', title: 'Leg Day', durationEst: 60,
+        exercises: [{ id: 'c1', name: 'Squat', muscle: 'quad', type: 'compound', warmupSets: 0, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, anchorWeightKg: null, prescribedSets: [], lastWeek: null }],
+        openWorkout: null,
+      }),
+    )
+
+  test('another day’s plan finished on the day is a done row; today’s untouched plan is not claimed', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      todayPlan(),
+      http.get(`${API_BASE}/api/train/workouts`, ({ request }) => {
+        const u = new URL(request.url)
+        return HttpResponse.json(u.searchParams.get('from') === DATE && u.searchParams.get('to') === DATE
+          ? [{ id: 'w-x', templateSessionId: PULL, date: DATE, status: 'completed', origin: 'meso', title: 'Pull Day' }]
+          : [])
+      }),
+    )
+    const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-edzes' && e.done)).toBe(true))
+    const gym = result.current.events.filter((e) => e.icon === 'i-edzes')
+    expect(gym).toEqual([{ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: true }])
+  })
+
+  test('logged sport sessions and runs on the day are done rows, next to the gym', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      todayPlan(),
+      http.get(`${API_BASE}/api/train/workouts`, () =>
+        HttpResponse.json([{ id: 'w-x', templateSessionId: PULL, date: DATE, status: 'completed', origin: 'meso', title: 'Pull Day' }]),
+      ),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+        HttpResponse.json([
+          { id: 's1', sport: 'volleyball', date: DATE, time: '19:00', duration: 120, setsPlayed: 5, intensity: 7, rpe: 7, shoulderStrain: 5, jumpCount: 40 },
+          { id: 's2', sport: 'trx', date: DATE, time: '07:00', duration: 30, setsPlayed: null, intensity: 5, rpe: 5, shoulderStrain: null, jumpCount: null },
+          { id: 's3', sport: 'volleyball', date: '2026-07-10', time: '19:00', duration: 90, setsPlayed: 4, intensity: 7, rpe: 7, shoulderStrain: 5, jumpCount: 30 },
+        ]),
+      ),
+      http.get(`${API_BASE}/api/train/run-sessions`, () =>
+        HttpResponse.json([{ id: 'r1', blockId: 'b1', weekNumber: 1, sessionKey: 'k', date: DATE, durationMin: 25 }]),
+      ),
+    )
+    const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-futas')).toBe(true))
+    await waitFor(() => expect(result.current.events.filter((e) => e.icon === 'i-sport')).toHaveLength(2))
+    const movement = result.current.events.filter((e) => ['i-edzes', 'i-sport', 'i-futas'].includes(e.icon))
+    expect(movement).toEqual([
+      { icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: true },
+      { icon: 'i-sport', label: 'Röplabda', meta: '120 perc', done: true },
+      { icon: 'i-sport', label: 'TRX', meta: '30 perc', done: true },
+      { icon: 'i-futas', label: 'Futás', meta: '25 perc', done: true },
+    ])
   })
 })
 

@@ -102,7 +102,24 @@ export function ActiveWorkoutPage() {
   // link while another workout runs resumes the running one, and a day already completed
   // this week falls through to the review redirect below (D5).
   const [searchParams] = useSearchParams()
-  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: searchParams.get('day') })
+  // Day PIN (mezo-z9kft). The resume paths (floating button, Mai poster/card) open this
+  // route WITHOUT `?day=`, and the param-less /today describes the open instance only
+  // while it IS open: once `finishWorkout` refetches it, nothing is open and the server
+  // falls back to TODAY's weekday template — so a resumed off-day workout closed on
+  // today's plan (ceremony muscles, `mergePlan`), or bounced to /train on a rest day.
+  // The first resolved template is latched and every later read asks for THAT day.
+  // The pinned key is seeded from the param-less cache (same server answer: open > param)
+  // so the switch neither refetches into a skeleton nor remounts the session.
+  const qc = useQueryClient()
+  const dayParam = searchParams.get('day')
+  const [pinnedDay, setPinnedDay] = useState<string | null>(null)
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: dayParam ?? pinnedDay })
+  const resolvedTemplate = todaySession?.templateSessionId ?? null
+  useEffect(() => {
+    if (dayParam || pinnedDay || !resolvedTemplate) return
+    qc.setQueryData(['train', 'workoutToday', resolvedTemplate], qc.getQueryData(['train', 'workoutToday', null]))
+    setPinnedDay(resolvedTemplate)
+  }, [dayParam, pinnedDay, resolvedTemplate, qc])
   // BELÉPÉSI döntés, nem folyamatos őr (mezo-0uuy3). A lenti átirányítás arra való, hogy egy
   // már lezárt napra ÉRKEZŐ felhasználó az értékelőn kössön ki — nem arra, hogy a futó lapot
   // elrántsa. Márpedig pontosan ezt tette: a `finishWorkout` sikere érvényteleníti a

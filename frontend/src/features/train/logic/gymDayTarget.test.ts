@@ -19,9 +19,15 @@ test('a template day completed this week (by templateSessionId) routes to its re
   expect(gymDayTarget(target, weekWorkouts)).toBe('/train/review/w42')
 })
 
-test('today (current) or a day with no template id starts the plain session', () => {
-  expect(gymDayTarget(day({ id: 'd3', current: true }), [])).toBe('/train/session')
+test('a day with no template id starts the plain session', () => {
   expect(gymDayTarget(day({ id: undefined, current: false }), [])).toBe('/train/session')
+})
+
+// `current` is the backend's template-row status ('active'), NOT "today" (mezo-z9kft):
+// the demo seed marks Csü active, so a Csü tap on any other weekday used to open the
+// plain session — which, with nothing open, starts TODAY's template instead.
+test('a `current` day still pins its own template', () => {
+  expect(gymDayTarget(day({ id: 'd3', current: true }), [])).toBe('/train/session?day=d3')
 })
 
 test('another not-yet-done day pins the template via ?day=', () => {
