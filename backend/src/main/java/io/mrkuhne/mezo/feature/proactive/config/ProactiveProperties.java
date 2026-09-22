@@ -76,8 +76,13 @@ public record ProactiveProperties(
         @Min(1) @Max(60) int maxDays
     ) {}
 
-    /** Workout challenges — daily outcome-eval backstop + per-workout proposal cap. */
+    /** Workout challenges — midnight pre-generation + daily outcome-eval backstop + per-workout proposal cap. */
     public record Challenge(
+        /** Midnight pre-generation schedule (server zone, Europe/Budapest in prod) — proposes today's
+         *  planned-day challenges before the user opens the workout (mezo-n8nas). */
+        @NotBlank String generateCron,
+        /** The pre-generation only spends LLM calls on users seen (last_seen_at) in this window. */
+        @Min(1) int presenceDays,
         /** Daily outcome-evaluation schedule (server zone) — resolves accepted challenges whose day passed. */
         @NotBlank String outcomeCron,
         /** Cap on challenges proposed per workout session/day. */

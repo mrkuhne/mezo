@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -526,8 +526,9 @@ evaluator**. Design of record:
   NULLABLE** = „tanulom", typed-jsonb `refs`, `outcome text` + **`outcome_good boolean` NULLABLE**
   (null = inconclusive). A **plain** `idx_challenge_session_date` on `(created_by,
   template_session_id, workout_date)` — NOT unique (several challenges per session/day).
-- **`ChallengeGenerator`** (smart tier) — **lazy on the prep-read** for **today's** planned session
-  (no generation cron): pure-code `gather` (template exercises + per-exercise last-week set / PR
+- **`ChallengeGenerator`** (smart tier) — **pre-generated just after midnight** for **today's**
+  planned session (`ChallengeJob.runPregenerate`, `mezo-n8nas`), with the **lazy prep-read** as the
+  fallback (rest days, custom workouts, job misses): pure-code `gather` (template exercises + per-exercise last-week set / PR
   history / volume-vs-plan; **drop exercises with no history** = the grounding gate; none left ⇒ `[]`).
   **Since `mezo-q7o6` the grounding history is resolved by exercise IDENTITY** (catalog id, else
   exact name — the `ExerciseRecordService` idiom via `findIdentityRowsIncludingDeleted`), not by the
@@ -567,9 +568,16 @@ evaluator**. Design of record:
   challenges are generated implicitly by the prep-read). `ChallengeResponse` carries the structured
   targets on the wire — `targetWeightKg?`/`targetReps?`/`targetSets?`/`targetRir?` (additive nullable,
   `mezo-cd8s`), MapStruct-mapped by name from the entity — feeding the FE pre-finish outcome preview.
-- **One cron** — `ChallengeJob.runOutcome` (`challenge.outcome-cron`, daily 06:25) is an **outcome
-  backstop only** (resolves accepted challenges whose day passed even if the user never re-opened);
-  third switch `CHALLENGE_JOB_SWITCH = mezo.techcore.cron.challenge-job.enabled`. No propose cron.
+- **Two crons** (third switch `CHALLENGE_JOB_SWITCH = mezo.techcore.cron.challenge-job.enabled`):
+  - `ChallengeJob.runPregenerate` (`challenge.generate-cron`, daily **00:05** server/Budapest time,
+    `mezo-n8nas`) — for every user seen within `challenge.presence-days` (7, `last_seen_at` — the
+    QuestJob presence rule, never the job's own rows), `ProactiveChallengeService.pregenerateToday`
+    resolves the owner-local today's planned meso day (`WorkoutService.findPlannedTemplateForDate`)
+    and runs the SAME `getChallenges` path the lazy GET takes (LLM + overload, idempotent,
+    completed-instance + grounding gates). Opening the workout no longer waits on the LLM
+    (`ChallengeGenerationLoader` now only shows on the fallback path). Rest day ⇒ nothing.
+  - `ChallengeJob.runOutcome` (`challenge.outcome-cron`, daily 06:25) — **outcome backstop**
+    (resolves accepted challenges whose day passed even if the user never re-opened).
 - **Fake sentinel** — `[fake-challenge:{…}]` (GREEDY — nested payload) dispatched on
   `CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT"` (§9 gotcha a), planted via a check-in note.
 - **The FE surface (`ActiveWorkoutPage` challenge carousel un-mocks)** — `useChallenges()` +
@@ -801,7 +809,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 | Frontend (Insights Predictions tab un-ghost) | 🟢 P1 | `usePredictions()` real (list, `[]` on error); `predictions` left `PHASE3_TAB_IDS`, `PredictionsPage` ghost dropped; renders real cards („tanulom" on null confidence, `✗ Missed` state, accuracy header derived from closed rows), else the honest „still learning" null-state; mock keeps the Phase-1 seed + literal header. |
 | Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
-| Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
+| Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); `ChallengeGenerator` (00:05 pre-generate cron for the planned day, lazy-on-prep fallback); deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` 00:05 pre-generate + outcome-cron backstop (three-switch). |
 | Weekly review (table + generator + Monday-06:50 backward job + read/regenerate/digest) | 🟢 WR (`mezo-p2tr`) | `weekly_review` table (ISO-Monday identity, partial unique, jsonb day-notes + highlights); smart-tier `WeeklyReviewGenerator` (gather = `MeWeekService` day lines + confirmed patterns + new facts + life events + memoir + predictions → ONE `completeSmart`, model-selected highlights, honest-empty); `WeeklyReviewJob` (Mon 06:50, backward — the JUST-FINISHED week, three-switch); `GET/POST` read/regenerate/digest (never lazy on the primary GET, 409 while the week is in progress). `WEEKLY_REVIEW_READY` app-notification + `WEEKLY_REVIEW` Monday-10:00 push (retires the old `WEEKLY` category, kept `@Deprecated`). |
 | Anchored chat conversations (`ai_conversation.context_kind/.context_date`) | 🟢 WR (`mezo-p2tr`) | Companion-owned: `WeekContextRenderer`'s `[Heti adatok]` block (via the `WeekReviewSource` port this doc's `WeekReviewSourceAdapter` implements) + `ChatService.openingTurn`'s assistant-only server-generated first turn. Full detail: [companion.md](companion.md). |
 | Frontend (`/me/week`'s `WeekReviewCard`/`WeekDiscoveries`, chat handoff) | 🟢 WR (`mezo-p2tr`) | `useWeeklyReview()` (review + digest + regenerate) + `useChatHandoff()`; RETIRES the old Insights „Heti" tab (`/insights/weekly` → `/me/week` redirect) rather than un-ghosting a new one. Full anatomy: [me.md](me.md) `Heti` §2. |
