@@ -1132,7 +1132,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-20, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-22, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1176,24 +1176,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 98 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 99 IT + 8 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
-    `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `CompanionMessageAdvicePersistenceIT`,
-    `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`, `CompanionMessageGeneratorMemoryIT`,
-    `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`,
-    `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`, `CompanionMessagePersistenceIT`,
-    `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`, `ContextSnapshotOwnerZoneIT`,
-    `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `DiagnosisGeneratorMemoryDisabledIT`,
-    `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`,
-    `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `ExperimentProposalGeneratorMemoryDisabledIT`,
-    `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
-    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
-    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
-    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`, `MemoirGeneratorMemoryIT`,
-    `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OneTimeQuestionServiceIT`,
-    `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
-    `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
+    `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
+    `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
+    `CompanionMessageGeneratorMemoryIT`, `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`,
+    `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
+    `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
+    `ContextSnapshotOwnerZoneIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
+    `DiagnosisGeneratorMemoryDisabledIT`, `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
+    `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
+    `ExperimentProposalGeneratorMemoryDisabledIT`, `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`,
+    `FeatureAbandonmentDetectorIT`, `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
+    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
+    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`,
+    `MemoirGeneratorMemoryIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
+    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
+    `PredictionGeneratorIT`, `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
     `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
     `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
@@ -1360,7 +1360,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/intention.md](features/intention.md) (updated 2026-09-21, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-18, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-20, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-22, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-22, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-22, mixed)
 

@@ -570,8 +570,9 @@ mezo:
       # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves)
       experiment-job:
         enabled: true
-      # Workout challenges daily outcome backstop (schedule: mezo.proactive.challenge.outcome-cron);
-      # off = the ChallengeJob bean does not exist (the write-path still serves)
+      # Workout challenges midnight pre-generation + daily outcome backstop (schedules:
+      # mezo.proactive.challenge.generate-cron / outcome-cron); off = the ChallengeJob bean does not
+      # exist (the lazy GET still generates on workout open)
       challenge-job:
         enabled: true
       # Daily-quest crons: morning generate backstop + nightly finalize (schedules: mezo.quest.*-cron);
@@ -2140,6 +2141,12 @@ mezo:
       min-days: 3
       max-days: 28
     challenge:
+      # Midnight pre-generation (mezo-n8nas): today's planned meso day gets its challenges before the
+      # workout is opened — the prep Küldetések glass no longer waits on the LLM. 00:05, not 00:00, so
+      # the owner-local day has safely rolled over. The lazy GET stays the fallback.
+      generate-cron: "0 5 0 * * *"
+      # Only users seen (last_seen_at) in this window get the nightly LLM call.
+      presence-days: 7
       # Daily outcome backstop (after the experiment outcome run)
       outcome-cron: "0 25 6 * * *"
       max-per-workout: 3

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -42,6 +43,23 @@ public class ProactiveChallengeService {
     private final ChallengeOutcomeEvaluator outcomeEvaluator;
     private final ProactiveMapper mapper;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final WorkoutService workoutService;
+
+    /**
+     * Midnight pre-generation (mezo-n8nas, driven by {@link ChallengeJob#runPregenerate}): proposes
+     * the challenges of the owner-local today's PLANNED meso day through the very same path the
+     * lazy GET takes — idempotent, completed-instance and grounding gates included — so opening the
+     * workout finds them ready. Rest days (no planned day) and custom workouts stay lazy.
+     *
+     * @return how many (non-dismissed) challenges today's planned day now carries
+     */
+    @Transactional
+    public int pregenerateToday(UUID userId) {
+        LocalDate today = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
+        return workoutService.findPlannedTemplateForDate(userId, today)
+                .map(day -> getChallenges(userId, day.getId(), today).size())
+                .orElse(0);
+    }
 
     @Transactional
     public List<ChallengeResponse> getChallenges(UUID userId, UUID templateSessionId, LocalDate date) {
