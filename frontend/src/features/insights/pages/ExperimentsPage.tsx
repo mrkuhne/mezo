@@ -18,13 +18,14 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useExperiments, useExperimentActions } from '@/data/hooks'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 /** The page frame every branch renders inside — the way back must exist on all of them. */
 function ExpFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
   const navigate = useNavigate()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
       <PageHero icon="i-lombik" name="N=1 kísérletek" big={big} sub="a saját testeden bizonyítjuk" />
       <PageBody>{children}</PageBody>
     </MozaikPage>

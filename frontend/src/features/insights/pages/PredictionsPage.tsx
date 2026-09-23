@@ -25,6 +25,7 @@ import { useFeedback, usePredictions } from '@/data/hooks'
 import { PREDICTION_STATUS } from '@/features/insights/logic/predictionStatus'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { Prediction } from '@/data/types'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 /** The hero's honest accuracy pair: mock keeps the Phase-1 literal (localized view-side);
  *  live derives from CLOSED rows only — null while none exist, so the hero shows NO number
@@ -42,7 +43,7 @@ function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; chil
   const navigate = useNavigate()
   return (
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
       <PageHero icon="i-kristaly" name="Előrejelzések" big={big} sub={sub} />
       <PageBody>{children}</PageBody>
     </MozaikPage>

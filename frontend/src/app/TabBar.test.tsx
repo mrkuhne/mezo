@@ -172,7 +172,7 @@ test('the switch mark opens the domain-switcher dialog listing the five domains'
   }
   // Each domain lists its four tab labels joined by " · ".
   expect(within(dialog).getByText('Mai · Beszélgetés · Rutin · Napzárás')).toBeInTheDocument()
-  expect(within(dialog).getByText('Üzenőfal · Menü · Rólad · Emlékek')).toBeInTheDocument()
+  expect(within(dialog).getByText('Üzenőfal · A csapat · Rólad · Emlékek')).toBeInTheDocument()
 })
 
 test('switcher focuses the current card, contains keyboard focus and restores the opener', async () => {

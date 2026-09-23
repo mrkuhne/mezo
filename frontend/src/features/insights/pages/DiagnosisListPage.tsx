@@ -18,6 +18,7 @@ import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
 import { confidenceLine, generatedLabel, strengthLabel } from '@/features/insights/logic/diagnosisCopy'
 import { LIVE_QUESTIONS, UPCOMING_QUESTIONS, questionOf } from '@/features/insights/logic/diagnosisCatalog'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 
 const ERROR_COPY: Record<string, string> = {
@@ -44,7 +45,7 @@ export function DiagnosisListPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
       <PageHero icon="i-eletjel" name="Diagnózis" big={heroCount}
         sub="kérdések a Mezónak → gyanúsítottak evidenciával → próba" />
       <PageBody>

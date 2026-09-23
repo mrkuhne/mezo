@@ -41,6 +41,7 @@ import {
 import { confidenceMeta, findingSentence } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { PatternMonitorPair, PatternStatus } from '@/data/types'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 /** A mini-tile címe: a pár (élő) kérdés-mondata, vagy — pár híján — a minta saját címe. */
 function rowTitle(entry: LifecycleEntry): string {
@@ -146,7 +147,7 @@ function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }
   const navigate = useNavigate()
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Minták</div>
         <div className="mz-hero-row">

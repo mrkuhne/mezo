@@ -3,14 +3,22 @@ import { BOOP_DESTINATIONS } from '@/features/insights/logic/boopNavigation'
 
 describe('approved Boop navigation', () => {
   const domain = DOMAINS.find(item => item.id === 'mezo')!
-  it('keeps the feed, direct menu, personal view and memories on the dock', () => {
-    expect(domain.tabs.map(tab => tab.label)).toEqual(['Üzenőfal', 'Menü', 'Rólad', 'Emlékek'])
+  it('docks the wall, the team, the personal view and memories (spec §2.5, mezo-a9bo7.10)', () => {
+    expect(domain.tabs.map(tab => [tab.label, tab.route])).toEqual([
+      ['Üzenőfal', '/mezo'], ['A csapat', '/mezo/csapat'], ['Rólad', '/mezo/rolad'], ['Emlékek', '/mezo/emlekek'],
+    ])
   })
   it.each([
-    ['/mezo/patterns/sleep', '/mezo/menu'], ['/mezo/predictions/id', '/mezo/menu'],
-    ['/mezo/diagnozis/id', '/mezo/menu'], ['/mezo/experiments/id', '/mezo/menu'],
+    // a post's deep pages stay under the wall — „a kijelölés nem ugrál”
+    ['/mezo/patterns/sleep', '/mezo'], ['/mezo/predictions/id', '/mezo'],
+    ['/mezo/diagnozis/id', '/mezo'], ['/mezo/experiments/id', '/mezo'],
+    ['/mezo/coaching/kartya', '/mezo'], ['/mezo/chat', '/mezo'], ['/mezo/karakter/feed', '/mezo'],
+    // the rooms and the machinery behind them stay under the team
+    ['/mezo/csapat/szunya', '/mezo/csapat'], ['/mezo/karakter/konzilium', '/mezo/csapat'],
+    ['/mezo/karakter/gepterem/futasok', '/mezo/csapat'], ['/mezo/karakter/gepterem/osszes', '/mezo/csapat'],
+    ['/mezo/memoria', '/mezo/csapat'],
     ['/mezo/knowledge/node/id', '/mezo/rolad'], ['/mezo/karakter/dimenzio/sleep', '/mezo/rolad'],
-    ['/mezo/memoir/2026-09-14', '/mezo/emlekek'], ['/mezo/karakter/feed', '/mezo'],
+    ['/mezo/memoir/2026-09-14', '/mezo/emlekek'], ['/mezo/emlekek/2026-09-14', '/mezo/emlekek'],
   ])('owns %s without losing the active dock tab', (path, expected) => {
     expect(activeTabRoute(domain, path)).toBe(expected)
   })
@@ -23,8 +31,10 @@ describe('approved Boop navigation', () => {
   })
 })
 
-it('remembers the owning menu tab after visiting a deep feature page', () => {
+it('remembers the owning dock tab after visiting a deep page', () => {
   resetNavMemory()
+  rememberRoute('/mezo/karakter/gepterem/futasok')
+  expect(routeForDomain('mezo')).toBe('/mezo/csapat')
   rememberRoute('/mezo/predictions/record')
-  expect(routeForDomain('mezo')).toBe('/mezo/menu')
+  expect(routeForDomain('mezo')).toBe('/mezo')
 })

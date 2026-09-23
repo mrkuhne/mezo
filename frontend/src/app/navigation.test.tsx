@@ -33,14 +33,18 @@ test('switches domains via the switcher, then between tabs by clicking the botto
   renderApp('/today')
   // Titanium nav (mezo-jkh4): the bar is contextual — Nap's tabs, no cross-domain links.
   // Reaching another world goes through the domain switcher, which jumps to that domain's
-  // last-visited tab (here, first-visit → Mezo tab 1 = /mezo, the hub Mozaik face).
+  // last-visited tab (here, first-visit → Mezo tab 1 = /mezo, the csapat-üzenőfal).
   await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
   const switcher = await screen.findByRole('dialog')
   await userEvent.click(within(switcher).getByRole('button', { name: /^Mezo/ }))
-  expect(await screen.findByRole('link', { name: 'Beszélgetés Booppal' })).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('link', { name: 'Összes funkció' }))
-  await userEvent.click(screen.getByRole('link', { name: 'Előrejelzések' }))
-  expect(screen.getByRole('link', { name: 'Menü' }).className).toContain('active')
+  expect(await screen.findByRole('heading', { name: 'Üzenőfal' })).toBeInTheDocument()
+  // A csapat → the Gépterem door → the old grid („Összes funkció”) → a list page: the list
+  // page is a post's deep page, so the wall's tab lights (spec §2.5, mezo-a9bo7.10).
+  await userEvent.click(screen.getByRole('link', { name: 'A csapat' }))
+  await userEvent.click(await screen.findByRole('link', { name: /Gépterem · Összes funkció/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Összes funkció/ }))
+  await userEvent.click(await screen.findByRole('link', { name: 'Előrejelzések' }))
+  expect(screen.getByRole('link', { name: 'Üzenőfal' }).className).toContain('active')
   expect(screen.getByRole('navigation', { name: 'Boop funkciók' })).toBeInTheDocument()
 })
 // Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the settings page has no theme
@@ -89,8 +93,9 @@ test('/mezo/karakter is the Karakter dossier hub — reachable as a stable route
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
-test('the Boop menu links directly to the original Karakter dimensions', async () => {
+test('a saved /mezo/menu link lands on the „Összes funkció” grid, which reaches the Karakter dimensions', async () => {
   renderApp('/mezo/menu')
+  expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
   await userEvent.click(await screen.findByRole('link', { name: 'Karakter' }))
   expect(await screen.findByText('Amit eddig tudunk rólad')).toBeInTheDocument()
 })

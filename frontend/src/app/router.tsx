@@ -64,10 +64,11 @@ import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
-import { BoopWorldPage } from '@/features/insights/pages/BoopWorldPage'
+import { TeamFeedPage } from '@/features/insights/pages/TeamFeedPage'
 import { TeamPage } from '@/features/insights/pages/TeamPage'
 import { CharacterRoomPage } from '@/features/insights/pages/CharacterRoomPage'
 import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
@@ -399,7 +400,8 @@ export const routes: RouteObject[] = [
       // sub-tabs are FULL-PAGE SIBLINGS on their stable paths (they render their own
       // MozaikPage scaffolds as their F4 slices land). Minták — previously the /mezo
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
-      { path: 'mezo', element: <BoopWorldPage /> },
+      // Csapat-üzenőfal (mezo-a9bo7.10): the wall IS the Mezo home.
+      { path: 'mezo', element: <TeamFeedPage /> },
       { path: 'mezo/csapat', element: <TeamPage /> },
       { path: 'mezo/csapat/:id', element: <CharacterRoomPage /> },
       { path: 'mezo/emlekek', element: <BoopMemoriesPage /> },
@@ -407,7 +409,9 @@ export const routes: RouteObject[] = [
       { path: 'mezo/knowledge/node/:id', element: <KnowledgeNodePage /> },
       { path: 'mezo/predictions/:id', element: <PredictionDetailPage /> },
       { path: 'mezo/experiments/:id', element: <ExperimentDetailPage /> },
-      { path: 'mezo/menu', element: <BoopMenuPage /> },
+      // The old 12-tile menu is the Gépterem's „Összes funkció” dev-menu now (spec §2.4);
+      // a saved `/mezo/menu` link lands on the same grid.
+      { path: 'mezo/menu', element: <Navigate to={ALL_FEATURES_ROUTE} replace /> },
       { path: 'mezo/rolad', element: <BoopAboutPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
       // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
@@ -455,6 +459,7 @@ export const routes: RouteObject[] = [
       // Gépterem (mezo-1gim.14, Task 4) — the geek-transparency hub + its Futások timeline +
       // the generic run-detail page every row (and, from Task 5, every Feed ⚙) opens into.
       { path: 'mezo/karakter/gepterem', element: <GeptermPage /> },
+      { path: 'mezo/karakter/gepterem/osszes', element: <BoopMenuPage /> },
       { path: 'mezo/karakter/gepterem/futasok', element: <FutasokPage /> },
       { path: 'mezo/karakter/gepterem/futas/:id', element: <RunPage /> },
       // Adatforrások/kör/Detektorok (Task 5) — the kör mini-pages are discrete indexed items
