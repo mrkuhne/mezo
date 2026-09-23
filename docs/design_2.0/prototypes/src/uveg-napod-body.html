@@ -1,0 +1,449 @@
+<style>
+/* ══ A napod · Üveg — napi nézet + Mai-kártya (brainstorm prototípus, 2026-09-24) ══ */
+.eb{display:block;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.voice{font-family:var(--serif);font-style:italic}
+.flat{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);white-space:nowrap}
+.flat .icon{width:18px;height:18px;filter:none}
+.backrow{display:flex;align-items:center;gap:10px;padding:4px 16px 0}
+.backbtn{--c:#8A7A6A;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 11px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--sub)}
+.backbtn b{font-size:19px;font-weight:400;line-height:1;margin-top:-2px}
+.backrow .eb{margin-left:auto}
+
+/* élő pötty */
+.live{display:inline-flex;align-items:center;gap:6px;color:#FFB39C}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--coral);box-shadow:0 0 8px var(--coral)}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .live i{animation:pulse 1.8s ease-in-out infinite}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
+
+/* heti sáv */
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:12px 14px 2px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 0 6px;border-radius:14px;font-size:10px;font-weight:600;color:var(--faint);min-width:0}
+.wd b{font-size:14px;font-weight:600;color:var(--sub);letter-spacing:-.3px}
+.wd i{width:22px;height:4px;border-radius:2px;background:rgba(245,239,230,.08)}
+.wd.sc i{background:linear-gradient(90deg,#C9BDF0,#E9C48A);box-shadow:0 0 6px rgba(201,189,240,.5)}
+.wd.th i{background:repeating-linear-gradient(90deg,rgba(245,239,230,.35) 0 3px,transparent 3px 6px)}
+.wd.today i{background:var(--coral);box-shadow:0 0 8px var(--coral)}
+.wd.fut{opacity:.4}
+.wd.on{background:radial-gradient(80% 100% at 50% 0%,rgba(245,239,230,.10),transparent 75%);box-shadow:inset 0 0 0 1px rgba(245,239,230,.14)}
+.wd.on b{color:var(--ink)}
+
+/* hős: 6 szeletes gyűrű */
+.dhero{position:relative;overflow-x:clip;text-align:center;padding:8px 18px 4px}
+.dhero::before{content:'';position:absolute;left:50%;top:44%;width:360px;height:300px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--c) 30%,transparent),color-mix(in srgb,var(--c2) 12%,transparent) 42%,transparent 68%)}
+.dhero h1{font-size:22px;font-weight:600;letter-spacing:-.6px}
+.dhero h1 span{color:var(--sub);font-weight:400}
+.dhero .sub{margin-top:4px;font-size:11px}
+.segring{position:relative;width:212px;height:212px;margin:10px auto 0}
+.segring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.segring .t{fill:none;stroke:rgba(245,239,230,.07);stroke-width:12;stroke-linecap:round}
+.segring .p{fill:none;stroke:var(--c);stroke-width:12;stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 60%,transparent));transition:stroke-dasharray .9s var(--ease)}
+.core{position:absolute;inset:36px;border-radius:50%;display:grid;place-items:center;text-align:center;
+  background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18);box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -12px 22px -12px color-mix(in srgb,var(--c) 55%,transparent),0 14px 26px -14px #000}
+.core strong{display:block;font-size:46px;font-weight:300;letter-spacing:-2.6px;line-height:1}
+.core strong small{font-size:20px;color:var(--faint);letter-spacing:-.5px}
+.core em{display:block;font-style:normal;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint);margin-top:5px}
+.core .grad{background:linear-gradient(135deg,#C9BDF0 0%,#E6DDFF 45%,#E9C48A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:64px;letter-spacing:-4px;filter:drop-shadow(0 6px 16px rgba(155,143,196,.35))}
+.reading{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.4;color:var(--ink);max-width:320px;margin:12px auto 0}
+.upd{display:block;margin-top:8px;font-size:10.5px;color:var(--faint)}
+
+/* most érdemes (napszak-kártya) */
+.lead{--c:var(--gold);display:flex;gap:12px;align-items:center;margin:16px 16px 0;padding:14px}
+.lead .icon{width:44px;height:44px}
+.lead .grow{flex:1;min-width:0}
+.lead .eb{color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.lead strong{display:block;font-size:15px;font-weight:600;letter-spacing:-.3px;margin-top:3px;line-height:1.3}
+.lead small{display:block;font-size:11.5px;color:var(--sub);margin-top:3px}
+.lead .go{flex:0 0 auto;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600;color:#FFD99A;background:rgba(255,190,96,.10);box-shadow:inset 0 0 0 1px rgba(255,190,96,.35)}
+
+.sec{display:flex;align-items:baseline;justify-content:space-between;padding:22px 18px 10px}
+.sec h2{font-size:18px;font-weight:600;letter-spacing:-.5px}
+
+/* A változat: 2×3 csempe */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.tile{display:flex;flex-direction:column;gap:6px;padding:13px 13px 12px;border-radius:20px;width:100%;min-width:0}
+.tile-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.tile-top .icon{width:36px;height:36px}
+.tile-top strong{font-size:26px;font-weight:500;letter-spacing:-1.2px;line-height:1;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.tile-top strong small{font-size:12px;color:var(--faint);letter-spacing:0;margin-left:1px}
+.tile .l{font-size:13.5px;font-weight:600;letter-spacing:-.2px}
+.tile .v{font-size:11px;color:var(--sub);line-height:1.35;min-height:30px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:600;letter-spacing:1px;color:var(--faint)}
+.st .icon{width:14px;height:14px;filter:none!important}
+.st.ok{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.bar{position:relative;display:block;height:6px;border-radius:3px;background:rgba(245,239,230,.07)}
+.bar b{position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:3px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c));box-shadow:0 0 8px color-mix(in srgb,var(--c) 60%,transparent);transition:width .9s var(--ease)}
+.bar u{position:absolute;top:-3px;bottom:-3px;left:var(--g);width:2px;border-radius:1px;background:rgba(245,239,230,.55)}
+.tile.open{background:rgba(245,239,230,.025);border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent);box-shadow:none;backdrop-filter:none}
+.tile.open::before,.tile.open::after{display:none}
+
+/* B változat: sávos sorok */
+.rows{display:grid;gap:10px;padding:0 16px}
+.drow{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px 12px 12px;border-radius:20px;width:100%}
+.well{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:radial-gradient(circle at 35% 28%,#3A332D,color-mix(in srgb,var(--c) 14%,#1E1B18));box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -6px 12px -8px color-mix(in srgb,var(--c) 70%,transparent),0 0 14px -4px color-mix(in srgb,var(--c) 50%,transparent)}
+.well .icon{width:32px;height:32px}
+.drow .mid{min-width:0}
+.drow .mid strong{display:block;font-size:15px;font-weight:600;letter-spacing:-.3px}
+.drow .mid small{display:block;font-size:11px;color:var(--sub);margin:2px 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .end{text-align:right}
+.drow .end b{display:block;font-size:22px;font-weight:500;letter-spacing:-.9px;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.drow .end b small{font-size:11px;color:var(--faint);letter-spacing:0;margin-left:1px}
+.drow.open{background:rgba(245,239,230,.025);border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent);box-shadow:none;backdrop-filter:none}
+.drow.open::before,.drow.open::after{display:none}
+
+/* Mezo jegyzete (lezárt nap) */
+.mnote{--c:var(--lav);margin:16px 16px 0;padding:16px}
+.mnote .hrow{display:flex;align-items:center;gap:10px}
+.mnote .hrow .icon{width:34px;height:34px}
+.mnote .eb{color:#C9BDF0}
+.mnote p{font-family:var(--serif);font-style:italic;font-size:15.5px;line-height:1.5;margin-top:10px}
+.mnote .fb{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--hair);font-size:12px;color:var(--sub)}
+.mnote .fb button{margin-left:auto;width:38px;height:34px;border-radius:12px;display:grid;place-items:center;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.mnote .fb button+button{margin-left:0}
+.mnote .fb .icon{width:22px;height:22px;filter:none}
+.corr{display:inline-flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--sub)}
+.corr b{color:#C9BDF0}
+.foot{padding:18px 26px 0;font-size:11px;color:var(--faint);text-align:center;line-height:1.5}
+
+/* nincs elég adat */
+.nodata{--c:var(--sky);margin:16px;padding:18px;border-radius:22px;border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent);background:rgba(245,239,230,.025);text-align:center}
+.nodata .icon{width:56px;height:56px;margin:0 auto 6px;opacity:.9}
+.nodata strong{display:block;font-size:16px;font-weight:600}
+.nodata p{font-size:12.5px;color:var(--sub);line-height:1.5;margin-top:6px}
+
+/* ── Mai oldal ── */
+.hubhead{padding:6px 20px 0}
+.hubhead .eb{color:color-mix(in srgb,var(--gold) 80%,var(--ink))}
+.hubhead h1{font-size:30px;font-weight:600;letter-spacing:-1.1px;line-height:1.1;margin-top:6px}
+.hubhead h1 span{color:#C9BDF0}
+.rest{margin:16px 16px 0;padding:22px 16px;border-radius:22px;border:1.5px dashed rgba(245,239,230,.12);text-align:center;color:var(--faint);font-size:12px;line-height:1.5}
+.rest .boop{width:74px;height:74px;margin:0 auto 6px;opacity:.75;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+
+/* „A napod" kártya (Mai tetején) */
+.napod{margin:14px 16px 0;padding:15px 14px 14px;width:calc(100% - 32px);display:block;text-align:left}
+.napod .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.napod .top .eb{color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.napod .body{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;margin-top:10px}
+.mini{position:relative;width:104px;height:104px}
+.mini svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.mini .t{fill:none;stroke:rgba(245,239,230,.07);stroke-width:9;stroke-linecap:round}
+.mini .p{fill:none;stroke:var(--c);stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--c) 60%,transparent));transition:stroke-dasharray .9s var(--ease)}
+.mini .core{inset:20px}
+.mini .core strong{font-size:26px;letter-spacing:-1.3px}
+.mini .core strong small{font-size:13px}
+.mini .core em{font-size:8px;margin-top:3px}
+.mini .core .grad{font-size:36px;letter-spacing:-2px}
+.kv{display:grid;gap:7px;min-width:0}
+.kv div{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub);min-width:0}
+.kv .icon{width:22px;height:22px;flex:0 0 auto;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))!important}
+.kv span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kv b small{color:var(--faint);font-weight:500}
+.napod .say{font-family:var(--serif);font-style:italic;font-size:15px;line-height:1.4;margin-top:12px}
+.napod .cta{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:11px;border-top:1px solid var(--hair);font-size:12.5px;font-weight:600;color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.napod .cta small{font-weight:500;color:var(--faint)}
+.bars6{display:grid;gap:6px;min-width:0}
+.bars6 div{display:grid;grid-template-columns:62px 1fr 24px;gap:8px;align-items:center;font-size:11px;color:var(--sub)}
+.bars6 .bar{height:5px}
+.bars6 em{font-style:normal;text-align:right;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* friss érték villanása élő frissítéskor */
+@media (prefers-reduced-motion:no-preference){body:not(.still) .fresh{animation:fresh 1.6s var(--ease)}}
+@keyframes fresh{0%{box-shadow:0 0 0 0 rgba(255,126,92,0)}25%{box-shadow:0 0 0 2px rgba(255,126,92,.55),0 0 26px rgba(255,126,92,.45)}100%{box-shadow:0 0 0 0 rgba(255,126,92,0)}}
+.kv div.fresh,.drow.fresh,.tile.fresh{border-radius:14px}
+
+/* gyors logolás lap */
+.qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.qb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px 12px;border-radius:18px;font-size:12.5px;font-weight:600;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.qb .icon{width:44px;height:44px;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 40%,transparent))}
+.qb small{font-weight:500;font-size:10.5px;color:var(--faint)}
+.sheet h3{font-size:19px;font-weight:600;letter-spacing:-.5px}
+.sheet .sub{font-size:12px;color:var(--sub);margin-top:3px}
+
+/* jegyzet-panel kapcsolói */
+.opt{display:grid;gap:6px;margin:6px 0 18px}
+.opt small{font-size:10px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.seg button.on{background:var(--c,#AB9FD2);color:#191614;box-shadow:0 0 12px color-mix(in srgb,var(--c,#AB9FD2) 50%,transparent)}
+.notes .desc{font-size:12.5px;line-height:1.5;color:var(--sub);margin:-2px 0 0}
+.stage{flex-wrap:wrap;justify-content:center}
+@media(max-width:780px){.notes{display:block;width:100%;max-width:420px;padding:22px 18px 40px}}
+@media (max-width:360px){.topbar{gap:5px;padding:14px 10px 10px}.rbtn{width:36px;height:36px}.orb{width:42px;height:42px}.orb svg{inset:3px;width:36px;height:36px}.wordmark{font-size:23px}.segring{width:190px;height:190px}.napod .body{grid-template-columns:1fr;justify-items:center}.kv{width:100%}}
+</style>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="aurora"><i></i><i></i><i></i><i></i></div>
+    <div class="scroll" id="scroll"></div>
+    <button class="fab glass" id="fab" aria-label="Gyors logolás" data-sheet>＋</button>
+    <nav class="tabbar glass" style="--c:var(--gold)" id="tabbar"></nav>
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet glass" id="sheet" style="--c:var(--lav)"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <aside class="notes">
+    <span class="ov">A NAPOD · ÜVEG · PROTOTÍPUS</span>
+    <h1>A napod, élőben</h1>
+    <p>Kattintható terv. A jobb felső töltődő kör és a Mai oldal kártyája is ide visz. Próbáld ki a <b>＋</b> gombot: amit beírsz, az azonnal megjelenik a kártyán és a napi oldalon.</p>
+
+    <div class="opt"><small>HOL ÉL A NAPI NÉZET?</small>
+      <div class="seg" data-opt="place" style="--c:var(--gold)">
+        <button data-v="A">A · Kártya a Mai tetején</button><button data-v="B">B · Maga a Mai oldal</button><button data-v="C">C · Saját fül lent</button>
+      </div>
+      <p class="desc" id="placeDesc"></p>
+    </div>
+
+    <div class="opt"><small>A NAPI OLDAL ELRENDEZÉSE</small>
+      <div class="seg" data-opt="lay" style="--c:var(--rose)">
+        <button data-v="A">1 · Gyűrű + csempék</button><button data-v="B">2 · Gyűrű + sávos sorok</button>
+      </div>
+      <p class="desc" id="layDesc"></p>
+    </div>
+
+    <div class="opt"><small>NAPSZAK A MAI KÁRTYÁN</small>
+      <div class="seg" data-opt="phase" style="--c:var(--lav)">
+        <button data-v="morning">Reggel · tegnap még nem nézted</button><button data-v="day">Napközben</button>
+      </div>
+    </div>
+
+    <nav id="jump">
+      <a href="#mai" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Mai oldal</a>
+      <a href="#nap/2026-09-24" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-orb"/></svg>Ma, élőben (csütörtök)</a>
+      <a href="#nap/2026-09-23" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Tegnap, lezárva (szerda)</a>
+      <a href="#nap/2026-09-21" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>Kevés adat (hétfő)</a>
+    </nav>
+    <ul>
+      <li>Eltűnt az oldal tetejéről az „Összes funkció” gombsor, és alulról a + gombbal ütköző csempesor.</li>
+      <li>A „‹ Napok” lista helyett felül egy heti sáv van: bármelyik napra egy koppintás.</li>
+      <li>Lezárt napon a Mezo jegyzete kerül előre. Hajnali 3-kor készül el, így reggel már nem kell rá várni.</li>
+      <li>Napközben egy mondat mondja el, hogy áll a napod. Ezt egyszerű szabályok írják, nem a mesterséges intelligencia.</li>
+    </ul>
+    <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
+  </aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
+const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
+const bar=(w,c,g)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%"></b>${g!=null?`<u style="--g:${g}%"></u>`:''}</span>`;
+const hu=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const S={place:'A',lay:'A',phase:'morning',seen:false,fresh:new Set()};
+
+/* ── adatok ─────────────────────────────────────────────── */
+const T={kcal:2060,kcalG:2782,prot:148,protG:166,nova:68,micro:80,work:0,workG:1,sleepMin:436,sleepQ:7,ck:2,ckG:4,rhythm:74,updated:'14:20'};
+const DIM=[ // kulcs, címke, ikon, szín
+  ['nutrition','Tápanyag','bowl','var(--sage)'],['quality','Minőség','sprout','var(--gold)'],['training','Edzés','dumbbell','var(--coral)'],
+  ['sleep','Alvás','sleep','var(--lav)'],['logging','Logolás','checkin','var(--sky)'],['rhythm','Ritmus','chain','var(--rose)']];
+function todayDims(){
+  const nut=Math.round((Math.min(1,T.kcal/T.kcalG)+Math.min(1,T.prot/T.protG))/2*100);
+  return {
+    nutrition:{pct:nut,big:hu(T.kcal),unit:'kcal',v:`${hu(T.kcal)} / ${hu(T.kcalG)} kcal · fehérje ${T.prot} / ${T.protG} g`,st:nut>=95?'kész':'úton',goal:100},
+    quality:{pct:Math.round((T.nova+T.micro)/2),big:Math.round((T.nova+T.micro)/2),unit:'%',v:`feldolgozatlan ${T.nova}% · mikro ${T.micro}%`,st:'úton'},
+    training:{pct:T.work/T.workG*100,big:`${T.work}/${T.workG}`,unit:'',v:T.work?'a mai edzés megvolt':'a mai edzés még hátravan',st:T.work>=T.workG?'kész':'nyitva',open:!T.work},
+    sleep:{pct:86,big:`${Math.floor(T.sleepMin/60)}ó ${T.sleepMin%60}p`,unit:'',v:`minőség ${T.sleepQ}/10 · az éjszaka lezárult`,st:'kész'},
+    logging:{pct:T.ck/T.ckG*100,big:`${T.ck}/${T.ckG}`,unit:'',v:'check-in · a nap négy pillanata',st:T.ck>=T.ckG?'kész':'úton'},
+    rhythm:{pct:T.rhythm,big:T.rhythm,unit:'',v:'a heted eddigi üteme',st:'kész'}};
+}
+const doneCount=d=>Object.values(d).filter(x=>x.st==='kész').length;
+function reading(){
+  const need=Math.max(0,T.protG-T.prot);
+  if(!T.work&&need>0)return `Fehérjéből már csak ${need} g hiányzik, az edzés még hátravan.`;
+  if(!T.work)return 'A tányér rendben van, már csak az edzés maradt a mai napból.';
+  if(T.ck<T.ckG)return 'Az edzés megvolt. Egy esti check-in, és kerek a nap.';
+  return 'Minden a helyén. Ma este nyugodtan zárhatod a napot.';
+}
+function leadCard(){
+  if(!T.work)return ['dumbbell','var(--coral)','MOST ÉRDEMES · DÉLUTÁN','17:30-ra be van írva az edzés','Utána egy fehérjés vacsora, és a tápanyag is kész.','Edzés'];
+  if(T.ck<T.ckG)return ['checkin','var(--sky)','MOST ÉRDEMES · ESTE','Egy esti check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
+  return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Készen állsz a napzárásra','Hajnalban megírom, milyen napod volt.','Napzárás'];
+}
+const Y={score:82,base:79,corr:3,label:'Erős nap',
+  dims:{nutrition:[88,'2 690 / 2 782 kcal · fehérje 171 g'],quality:[71,'feldolgozatlan 64% · mikro 78%'],training:[100,'1/1 edzés · felsőtest'],sleep:[76,'6ó 44p · minőség 7/10'],logging:[75,'3/4 check-in'],rhythm:[80,'a heted üteme']},
+  prose:['Erős, kiegyensúlyozott nap volt. A fehérjét az ebéd és a vacsora hozta, az edzés végig megvolt, és ami a legtöbbet számított: nem csúszott el az este.','Egy dolog maradt nyitva. A késői vacsora után rövidebb lett az alvás, ezért ma érdemes egy órával korábban enni.']};
+const WEEK=[['2026-09-21','H',21,'th'],['2026-09-22','K',22,'sc'],['2026-09-23','Sze',23,'sc'],['2026-09-24','Cs',24,'today'],['2026-09-25','P',25,'fut'],['2026-09-26','Szo',26,'fut'],['2026-09-27','V',27,'fut']];
+const DAYNAME={'2026-09-21':['Hétfő','szep 21'],'2026-09-22':['Kedd','szep 22'],'2026-09-23':['Szerda','szep 23'],'2026-09-24':['Csütörtök','szep 24']};
+
+/* ── gyűrűk ─────────────────────────────────────────────── */
+function segRing(vals,cls='segring',center=''){ // vals: [pct,color] × 6
+  const n=vals.length,gap=3.2,seg=100/n-gap;
+  const arcs=vals.map(([p,c],i)=>{const off=-(i*100/n+gap/2);
+    return `<circle class="t" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="${seg} ${100-seg}" stroke-dashoffset="${off}"/>`+
+      `<circle class="p" style="--c:${c}" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="${Math.max(.01,seg*Math.min(1,p/100))} ${100-seg*Math.min(1,p/100)}" stroke-dashoffset="${off}"/>`}).join('');
+  return `<div class="${cls}" style="--c:var(--coral)"><svg viewBox="0 0 100 100" aria-hidden="true">${arcs}</svg><div class="core">${center}</div></div>`;
+}
+
+/* ── fejléc + keret ─────────────────────────────────────── */
+function topbar(){
+  const d=todayDims(),filled=Math.round(Object.values(d).reduce((a,x)=>a+Math.min(100,x.pct),0)/6);
+  const lvl=34-filled*.28;
+  return `<header class="topbar"><span class="wordmark">boop</span>
+  <button class="rbtn q glass" data-toast="Kalauz ehhez az oldalhoz">?<i class="dot"></i></button>
+  <button class="rbtn glass" data-toast="Beállítások">${C('beallitas')}</button>
+  <button class="rbtn glass" style="--c:var(--lav)" data-toast="Mezo üzenetei">${C('level')}<b class="badge">2</b></button>
+  <button class="rbtn glass" style="--c:var(--sky)" data-toast="Értesítések">${C('ertesites')}<b class="badge">3</b></button>
+  <button class="orb glass" aria-label="A mai napod · ${filled}%" data-go="#nap/2026-09-24"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 ${lvl} Q2 ${lvl-3} 8 ${lvl} T20 ${lvl} T32 ${lvl} T44 ${lvl} T56 ${lvl} V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+</header>`}
+function tabbar(active){
+  const tabs=[['Mai','nap','#mai'],['Beszélgetés','mezo',''],['Rutin','rend',''],['Napzárás','hold','']];
+  if(S.place==='C')tabs.splice(1,0,['A napom','heti','#nap/2026-09-24']);
+  $('#tabbar').innerHTML=`<button class="tb-boop" aria-label="Területváltó">${B('nap')}</button>`+
+    tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" ${go?`data-go="${go}"`:`data-toast="${l} — nem része ennek a tervnek"`}>${C(ic)}<span>${l}</span></button>`).join('');
+}
+const fr=k=>S.fresh.has(k)?'fresh':'';
+
+/* ── A NAPOD kártya (Mai tetején) ───────────────────────── */
+function napodCard(){
+  if(S.phase==='morning'&&!S.seen){
+    return `<button class="napod glass rise" style="--c:var(--lav);--i:1" data-go="#nap/2026-09-23">
+      <div class="top"><span class="eb">TEGNAP · SZERDA · LEZÁRVA</span><span class="flat">${I('scroll')}Mezo jegyzete</span></div>
+      <div class="body">${segRing(DIM.map(([k,,,c])=>[Y.dims[k][0],c]),'mini',`<span><strong class="grad">${Y.score}</strong><em>ERŐS NAP</em></span>`)}
+        <div class="bars6">${DIM.map(([k,l,,c])=>`<div><span>${l}</span>${bar(Y.dims[k][0],c)}<em>${Y.dims[k][0]}</em></div>`).join('')}</div></div>
+      <p class="say">„Erős, kiegyensúlyozott nap: az este sem csúszott el.”</p>
+      <div class="cta"><span>Átnézem a tegnapot ›</span><small>utána a mai napod jön ide</small></div>
+    </button>`;
+  }
+  const d=todayDims();
+  return `<button class="napod glass rise" style="--c:var(--coral);--i:1" data-go="#nap/2026-09-24">
+    <div class="top"><span class="eb">A NAPOD · CSÜTÖRTÖK</span><span class="eb live"><i></i>ÉLŐ · ${T.updated}</span></div>
+    <div class="body">${segRing(DIM.map(([k,,,c])=>[d[k].pct,c]),'mini',`<span><strong>${doneCount(d)}<small>/6</small></strong><em>KÉSZ</em></span>`)}
+      <div class="kv">
+        <div class="${fr('kcal')}">${I('bowl')}<span>Kalória</span><b>${hu(T.kcal)} <small>/ ${hu(T.kcalG)}</small></b></div>
+        <div class="${fr('kcal')}">${I('meat')}<span>Fehérje</span><b>${T.prot} <small>/ ${T.protG} g</small></b></div>
+        <div class="${fr('work')}">${I('dumbbell')}<span>Edzés</span><b>${T.work} <small>/ ${T.workG}</small></b></div>
+        <div class="${fr('ck')}">${I('checkin')}<span>Check-in</span><b>${T.ck} <small>/ ${T.ckG}</small></b></div>
+      </div></div>
+    <p class="say">${reading()}</p>
+    <div class="cta"><span>A napom részletesen ›</span><small>tegnap: ${Y.score} · erős nap</small></div>
+  </button>`;
+}
+function mai(){
+  const card=S.place==='A'?napodCard():'';
+  if(S.place==='B')return `${topbar()}<div class="hubhead rise"><span class="eb">NAPKÖZPONT · A NAPOD</span></div>${dayBody('2026-09-24',true)}
+    <div class="rest">${B('mezo')}Alatta a Napközpont többi része: a Boop és a körülötte lévő gombok (Check-in, Gyors logolás, Napló…), az üzemanyag-kártya, a Mezo észrevétele és a mai pillanatok.<br><b>Ezek mind lejjebb csúsznak.</b></div>`;
+  return `${topbar()}
+  <div class="hubhead rise"><span class="eb">NAPKÖZPONT</span><h1>A napod.<br><span>Minden kapcsolódik.</span></h1></div>
+  ${card}
+  <div class="rest">${B('mezo')}Itt folytatódik a Napközpont úgy, ahogy most van: a Boop és a körülötte lévő gombok, az üzemanyag-kártya, a Mezo észrevétele és a mai pillanatok.${S.place==='C'?'<br><b>A C változatban itt nincs kártya: a napi nézet a lenti „A napom” fülön él.</b>':''}</div>`;
+}
+
+/* ── NAPI NÉZET ─────────────────────────────────────────── */
+function week(sel){
+  return `<div class="week rise" style="--i:1">${WEEK.map(([iso,n,d,st])=>`<button class="wd ${st} ${iso===sel?'on':''}" ${st==='fut'?'data-toast="Még előtted"':`data-go="#nap/${iso}"`}>${n}<b>${d}</b><i></i></button>`).join('')}</div>`;
+}
+function dimsToday(){
+  const d=todayDims();
+  if(S.lay==='A')return `<div class="tiles">${DIM.map(([k,l,ic,c],i)=>{const x=d[k];
+    return `<div class="tile ${x.open?'open':'glass'} rise ${fr(k)}" style="--c:${c};--i:${i+3}">
+      <div class="tile-top">${I(ic)}<strong>${x.big}${x.unit?`<small>${x.unit==='%'?'%':''}</small>`:''}</strong></div>
+      <span class="l">${l}</span><span class="v">${x.v}</span>${x.open?'':bar(x.pct,c)}
+      <span class="st ${x.st==='kész'?'ok':''}">${x.st==='kész'?I('tick'):''}${x.st.toUpperCase()}</span></div>`}).join('')}</div>`;
+  return `<div class="rows">${DIM.map(([k,l,ic,c],i)=>{const x=d[k];
+    return `<div class="drow ${x.open?'open':'glass'} rise ${fr(k)}" style="--c:${c};--i:${i+3}">
+      <span class="well">${I(ic)}</span>
+      <span class="mid"><strong>${l}</strong><small>${x.v}</small>${bar(x.pct,c,k==='nutrition'?100:null)}</span>
+      <span class="end"><b>${x.big}${x.unit==='%'?'<small>%</small>':''}</b><span class="st ${x.st==='kész'?'ok':''}">${x.st.toUpperCase()}</span></span></div>`}).join('')}</div>`;
+}
+function dimsClosed(){
+  if(S.lay==='A')return `<div class="tiles">${DIM.map(([k,l,ic,c],i)=>{const [s,v]=Y.dims[k];
+    return `<div class="tile glass rise" style="--c:${c};--i:${i+4}"><div class="tile-top">${I(ic)}<strong>${s}</strong></div><span class="l">${l}</span><span class="v">${v}</span>${bar(s,c)}</div>`}).join('')}</div>`;
+  return `<div class="rows">${DIM.map(([k,l,ic,c],i)=>{const [s,v]=Y.dims[k];
+    return `<div class="drow glass rise" style="--c:${c};--i:${i+4}"><span class="well">${I(ic)}</span><span class="mid"><strong>${l}</strong><small>${v}</small>${bar(s,c)}</span><span class="end"><b>${s}</b></span></div>`}).join('')}</div>`;
+}
+function dayBody(iso,embedded){
+  const [dn,dd]=DAYNAME[iso]||['',''];
+  if(iso==='2026-09-24'){
+    const d=todayDims(),[lic,lc,leb,lt,ls,lgo]=leadCard();
+    return `${embedded?'':''}
+    <section class="dhero rise" style="--c:var(--coral);--c2:var(--gold);--i:2">
+      <h1>${dn} <span>· ${dd}</span></h1><span class="sub eb live"><i></i>ÉLŐ · FRISSÜLT ${T.updated}-KOR</span>
+      ${segRing(DIM.map(([k,,,c])=>[d[k].pct,c]),'segring',`<span><strong>${doneCount(d)}<small>/6</small></strong><em>TERÜLET KÉSZ</em></span>`)}
+      <p class="reading">${reading()}</p>
+      <span class="upd">Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</span>
+    </section>
+    <div class="lead glass rise" style="--c:${lc};--i:3">${I(lic)}<span class="grow"><span class="eb">${leb}</span><strong>${lt}</strong><small>${ls}</small></span><button class="go" data-toast="${lgo} megnyitása">${lgo} ›</button></div>
+    <div class="sec rise" style="--i:3"><h2>Ma eddig</h2><span class="eb">6 TERÜLET</span></div>
+    ${dimsToday()}`;
+  }
+  if(iso==='2026-09-21'){
+    return `<section class="dhero rise" style="--c:var(--sky);--c2:var(--lav);--i:2"><h1>${dn} <span>· ${dd}</span></h1><span class="sub eb">LEZÁRVA · HAJNALI 3:02</span></section>
+    <div class="nodata rise" style="--i:3">${I('journal')}<strong>Erre a napra kevés az adat</strong><p>Csak egy területről van adat (egy alvás), ezért nem adok pontszámot: kitalálni nem fogok. A hét pontszámába ez a nap nem számít bele.</p></div>
+    <div class="rows" style="margin-top:6px">${DIM.map(([k,l,ic,c],i)=>`<div class="drow ${k==='sleep'?'glass':'open'} rise" style="--c:${c};--i:${i+4}"><span class="well">${I(ic)}</span><span class="mid"><strong>${l}</strong><small>${k==='sleep'?'7ó 02p · minőség 6/10':'nincs adat'}</small></span><span class="end"><b>${k==='sleep'?'70':'–'}</b></span></div>`).join('')}</div>`;
+  }
+  // lezárt, pontozott nap (szerda; a kedd ugyanígy nézne ki)
+  return `<section class="dhero rise" style="--c:var(--lav);--c2:var(--gold);--i:2">
+      <h1>${dn} <span>· ${dd}</span></h1><span class="sub eb">LEZÁRVA · HAJNALI 3:04</span>
+      ${segRing(DIM.map(([k,,,c])=>[Y.dims[k][0],c]),'segring',`<span><strong class="grad">${Y.score}</strong><em>${Y.label.toUpperCase()}</em></span>`)}
+      <span class="corr">alap ${Y.base} · a Mezo szerint <b>+${Y.corr}</b></span>
+    </section>
+    <div class="mnote glass rise" style="--i:3"><div class="hrow">${I('scroll')}<span><span class="eb">MEZO JEGYZETE</span></span></div>
+      ${Y.prose.map(p=>`<p>${p}</p>`).join('')}
+      <div class="fb">Stimmel?<button data-toast="Köszönöm, jegyzem">${I('thumb-up')}</button><button data-toast="Mi nem stimmel? (itt jönnének az okok)">${I('thumb-down')}</button></div></div>
+    <div class="sec rise" style="--i:4"><h2>A hat terület</h2><span class="eb">PONT / 100</span></div>
+    ${dimsClosed()}
+    <p class="foot">Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>`;
+}
+function nap(iso){
+  if(iso==='2026-09-23')S.seen=true;
+  const from=S.place==='C'?'':`<div class="backrow rise"><button class="backbtn glass" data-go="#mai"><b>‹</b>Mai</button><span class="eb">SZEP 21 – 27</span></div>`;
+  return `${topbar()}${from}${week(iso)}${dayBody(iso)}`;
+}
+
+/* ── gyors logolás (élő frissítés bemutató) ─────────────── */
+function openSheet(){
+  $('#sheet').innerHTML=`<div class="grab"></div><h3>Mit írsz be?</h3><p class="sub">Próbáld ki: a kártya és a napi oldal azonnal frissül.</p>
+  <div class="qgrid">
+    <button class="qb" style="--c:var(--sage)" data-log="meal">${I('bowl')}Uzsonna<small>+420 kcal · +18 g</small></button>
+    <button class="qb" style="--c:var(--coral)" data-log="work" ${T.work?'disabled style="opacity:.4"':''}>${I('dumbbell')}Edzés kész<small>1 edzés</small></button>
+    <button class="qb" style="--c:var(--sky)" data-log="ck" ${T.ck>=T.ckG?'disabled style="opacity:.4"':''}>${I('checkin')}Check-in<small>+1</small></button>
+  </div>`;
+  $('#scrim').classList.add('on');$('#sheet').classList.add('on');
+}
+function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on')}
+let clock=[14,20];
+function tick(){clock[1]+=17;if(clock[1]>=60){clock[0]++;clock[1]-=60}T.updated=`${clock[0]}:${String(clock[1]).padStart(2,'0')}`}
+function log(k){
+  tick();S.fresh=new Set();
+  if(k==='meal'){T.kcal+=420;T.prot+=18;S.fresh.add('kcal').add('nutrition').add('quality');T.nova=Math.min(90,T.nova+3)}
+  if(k==='work'){T.work=1;S.fresh.add('work').add('training')}
+  if(k==='ck'){T.ck++;S.fresh.add('ck').add('logging')}
+  closeSheet();soft();toast('Beírva · a napod frissült');setTimeout(()=>{S.fresh=new Set()},1700);
+}
+
+/* ── router ─────────────────────────────────────────────── */
+const DESC={
+  place:{A:'Az Áttekintés helyett a Mai oldal tetején ül egy „A napod” kártya. Reggel a tegnapot mutatja, utána a mai napot élőben. Ez az, amit választottál.',
+    B:'A Mai oldal első képernyője maga a mai nap. A Napközpont többi része (a Boop és a körülötte lévő gombok, az üzemanyag) lejjebb csúszik.',
+    C:'A lenti menü kap egy ötödik fület „A napom” néven. Figyeld meg, mennyire összeszorul a menü.'},
+  lay:{A:'Gyűrű, egy mondat, egy „most érdemes” kártya, alatta a hat terület 2×3-as csempékben. Egy pillantásra áttekinthető.',
+    B:'Ugyanez a teteje, de a hat terület egymás alatti sorokban van, hosszabb szöveggel és sávval. Több részlet, több görgetés.'}};
+function render(){
+  const h=location.hash||'#mai',[r,id]=h.slice(1).split('/');
+  const onDay=r==='nap';
+  $('#scroll').innerHTML=onDay?nap(id||'2026-09-24'):mai();
+  $('#scroll').scrollTop=0;closeSheet();
+  tabbar(onDay?(S.place==='C'&&id==='2026-09-24'?'A napom':'Mai'):'Mai');
+  document.querySelectorAll('[data-opt]').forEach(g=>g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S[g.dataset.opt])));
+  $('#placeDesc').textContent=DESC.place[S.place];$('#layDesc').textContent=DESC.lay[S.lay];
+  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')===(h==='#nap'?'#nap/2026-09-24':h))));
+}
+function soft(){const y=$('#scroll').scrollTop;render();$('#scroll').scrollTop=y}
+let toastT;function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
+document.addEventListener('click',e=>{
+  const t=e.target;
+  const op=t.closest('[data-opt] button');if(op){S[op.parentNode.dataset.opt]=op.dataset.v;if(op.parentNode.dataset.opt==='phase')S.seen=false;soft();return}
+  const lg=t.closest('[data-log]');if(lg){if(!lg.disabled)log(lg.dataset.log);return}
+  if(t.closest('[data-sheet]')){openSheet();return}
+  const go=t.closest('[data-go]');if(go){e.preventDefault();if(location.hash===go.dataset.go)render();else location.hash=go.dataset.go;return}
+  const tt=t.closest('[data-toast]');if(tt){e.preventDefault();toast(tt.dataset.toast);return}
+  if(t.id==='scrim')closeSheet();
+});
+addEventListener('hashchange',render);
+$('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
+if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
+render();
+</script>
+</body>
+</html>
