@@ -758,11 +758,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     observationsHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
     patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
-  - **pages:** BoopAboutPage.tsx, BoopMemoriesPage.tsx, BoopMenuPage.tsx, BoopWorldPage.tsx, ChatPage.tsx,
-    CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
+  - **pages:** BoopAboutPage.tsx, BoopMemoriesPage.tsx, BoopMenuPage.tsx, BoopWorldPage.tsx, CharacterRoomPage.tsx,
+    ChatPage.tsx, CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
     DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
-    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx,
+    TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
     FactCandidateCard.tsx, FactsView.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx,
@@ -772,12 +773,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
     PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
     PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
-    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx,
-    TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts
+    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx,
+    TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts,
+    useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
     patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamFeed.fixtures.ts,
-    teamFeed.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css
 
 ### intention
