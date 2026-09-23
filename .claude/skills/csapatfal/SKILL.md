@@ -66,8 +66,13 @@ A2 depends on A1; T5+T8 merge to main together). Execute with
 superpowers:subagent-driven-development or superpowers:executing-plans over the plan's
 tasks for that slice, then the plan's gates (T10 applies at A4).
 
-After Act I ships: Act II ("A hang") gets its own spec-refinement + plan (cross-engine
-témaszál, esti kurátor, hypothesis-critic retune, Derű adat-éhség, Falat napi három szólam).
+**Act I is DONE (A4 merged 2026-09-24).** **Act II ("A hang" — az esti kiadás), slices H1–H5
+(`mezo-a9bo7.12`–`.16`):** spec **`docs/superpowers/specs/2026-09-24-csapatfal-act2-esti-kiadas-design.md`**
+(owner decisions 2026-09-24: the daily council extended into a 21:00 evening edition, 3–6 posts from
+every source, honest gyűlik/kérés fill, final names Szunya·Mocor·Falat·Derű·Mezo), plan
+**`docs/superpowers/plans/2026-09-24-csapatfal-act2.md`**. One fresh session = one slice, in order
+H1 → H2 → H3 → H4 → H5 (H5 needs only H1). The hypothesis-critic retune is NOT ours — `mezo-hben1`
+ships it. Name trap: `character_council_edition` is the council lease row; ours is `team_edition*`.
 Coordinate with `mezo-me75u` U8/U9: those slices re-dress the EXISTING deep pages using this
 prototype as parity — never build the same screen twice.
 
