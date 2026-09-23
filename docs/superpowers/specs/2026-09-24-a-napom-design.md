@@ -64,7 +64,7 @@ the day view's evening "most érdemes" card.
 - Routes: `/nap/napom` shows today, `/nap/napom/:date` shows a given day. `/me/week/napok/:date`
   redirects to `/nap/napom/:date` so push deep links and Heti tiles keep working. The Heti hub
   and the days mosaic stay under Én and link to the new route.
-- The header day orb navigates to `/nap/napom`.
+- The header day orb navigates to `/nap/napom/<today>`. The orb *is* today, so it skips morning mode; the tab is the entry that honours morning mode.
 - **Morning mode.** Morning mode is on when yesterday's evaluation is `scored` and carries a
   `reviewId`, and the user has not opened it yet (a per-device `localStorage` key
   `napom.seen.<date>`, read and written inside try/catch). In morning mode:
