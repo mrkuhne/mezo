@@ -33,7 +33,18 @@ public record CompanionMessageEnvelope(String eyebrow, List<String> body, List<R
                                        String interventionKey, String setupKey,
                                        String adviceKey, List<String> facts,
                                        List<String> suggestions,
-                                       List<Action> actions, Applied applied) {
+                                       List<Action> actions, Applied applied, FeedGenerationTrace trace) {
+
+    public CompanionMessageEnvelope(String eyebrow, List<String> body, List<Ref> refs,
+            String interventionKey, String setupKey, String adviceKey, List<String> facts,
+            List<String> suggestions, List<Action> actions, Applied applied) {
+        this(eyebrow, body, refs, interventionKey, setupKey, adviceKey, facts, suggestions, actions, applied, null);
+    }
+
+    public CompanionMessageEnvelope withTrace(FeedGenerationTrace trace) {
+        return new CompanionMessageEnvelope(eyebrow, body, refs, interventionKey, setupKey,
+                adviceKey, facts, suggestions, actions, applied, trace);
+    }
 
     /** The pre-W5.2 shape — every prose-kind writer stays on this. */
     public CompanionMessageEnvelope(String eyebrow, List<String> body, List<Ref> refs) {

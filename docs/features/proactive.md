@@ -2621,20 +2621,20 @@ dual-mode.
 
 ### Contextual feed foundation (mezo-7nron.2)
 
-The optional `mezo.feature.contextual-feed.enabled` seam is off by default. It currently
-assembles input only; existing message generators still use their established paths.
-`FeedContextAssembler` combines fresh event evidence, `FeedContinuityService`, the chat's
-`PersonalContextAssembler`, the current snapshot and the shared dated memory block.
-No undated knowledge-fact dump is added by this seam. Prior messages are labelled as previous
-interpretations, with their source IDs, business dates and generation timestamps.
+The optional `mezo.feature.contextual-feed.enabled` seam is off by default. Existing writers
+are unchanged until integration. `FeedContextAssembler` combines fresh evidence, bounded dated
+`FeedContinuityService` history, chat personal context, snapshot and shared RAG. History defaults
+to 14 days, 12 messages (six same-kind reserved), 8000 characters total and 800 per excerpt.
+`FeedGenerationService` uses the existing companion LLM tool loop and shared read-only registry
+(six calls, twelve refs); it can search memory and read original sources without a conversation ID.
+Source chips are accepted only when their `(kind,id)` exists in collected evidence or tool refs;
+this pair-based selection also supports sources discovered after the initial prompt was built.
+Malformed/failed generation returns null to the caller's existing fallback policy. The internal
+nullable JSONB `trace` records the context cutoff, prior message/retrieval IDs, executed tool calls,
+collected source refs and degraded reason. No raw tool results or public DTO changes are added.
+Async sleep/weight listeners bind the event owner through `LlmActorContext.runAs`, restoring it
+when generation ends. `ContextualFeedProperties` owns all history/evidence/tool budgets.
 
-Continuity reads at most two bounded pages for one owner in the last 14 inclusive calendar
-days, strictly before `asOf`. Six of twelve slots are reserved for same-kind messages; other
-kinds fill the remaining slots, followed by any additional same-kind history. The final
-selection is chronological, with UUID tie-breaking. Rendered history is bounded to 8,000
-characters and individual excerpts to 800; truncated excerpts carry a source-readable ID.
-The new `mezo.proactive.contextual-feed` validated properties also declare the future event
-window/tool budgets. The switch gates all new context services and does not alter delivery.
 
 
 - **`mezo-gst9` shipped (companion feed: 5 kinds, 2 triggers, 1 table) — the current extension
@@ -3704,6 +3704,9 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   a wider "one owner zone for every job-minted today" sweep is out of this slice's scope.
 
 ## 10. Key files
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedGenerationService.java` — structured contextual generation, source validation and audit.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/FeedGenerationTrace.java` — optional internal provenance in the existing JSONB envelope.
 
 **Contextual feed foundation (disabled by default)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedEvidenceAssembler.java` — dated raw weight/sleep evidence and explicitly scoped trend rates.

@@ -37,6 +37,15 @@ public class CompanionToolRegistry {
     private final CompanionProperties properties;
     private final ConversationContextTools conversationContextTools;
     private final PersonalRecordTools personalRecordTools;
+    private final FeedContextTools feedContextTools;
+
+    /** Same owned source readers, without a fabricated current conversation. */
+    public List<ToolCallback> feedCallbacks(ToolCallAudit audit) {
+        var all = new java.util.ArrayList<>(callbacks(audit));
+        Arrays.stream(ToolCallbacks.from(personalRecordTools, feedContextTools))
+                .map(cb -> new RecordingToolCallback(cb, audit)).forEach(all::add);
+        return List.copyOf(all);
+    }
 
     /** Full catalogue available on EVERY conversation-first turn, independent of topic. */
     public List<ToolCallback> conversationCallbacks(ToolCallAudit audit) {

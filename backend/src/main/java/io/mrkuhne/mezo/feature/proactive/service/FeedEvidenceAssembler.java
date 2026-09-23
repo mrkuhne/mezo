@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.ArrayList;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -40,6 +42,20 @@ public class FeedEvidenceAssembler {
             case "sleep" -> sleep(userId, date);
             default -> "";
         };
+    }
+
+    public List<RefsEnvelope.Ref> refs(UUID userId, LocalDate date, String kind) {
+        var refs = new java.util.ArrayList<RefsEnvelope.Ref>();
+        if ("weight".equals(kind)) {
+            weights.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(userId,
+                    date.minusDays(properties.weightDays() - 1L), date).reversed().forEach(r -> refs.add(
+                    new RefsEnvelope.Ref("weight_log", r.getId().toString(), "Súlymérés " + r.getDate())));
+        } else if ("sleep".equals(kind)) {
+            sleeps.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId,
+                    date.minusDays(properties.sleepDays() - 1L), date).forEach(r -> refs.add(
+                    new RefsEnvelope.Ref("sleep_log", r.getId().toString(), "Alvás " + r.getDate())));
+        }
+        return List.copyOf(refs);
     }
 
     private String weight(UUID userId, LocalDate date) {

@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepLogSavedEvent;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightLogSavedEvent;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,7 +39,7 @@ public class CompanionMessageEventListener {
             return;
         }
         try {
-            generator.generateSleepReaction(event.userId(), today);
+            LlmActorContext.runAs(event.userId(), () -> generator.generateSleepReaction(event.userId(), today));
         } catch (Exception e) {
             log.warn("Sleep-reaction generation failed for {}", event.userId(), e);
         }
@@ -52,7 +53,7 @@ public class CompanionMessageEventListener {
             return;
         }
         try {
-            generator.generateWeightReaction(event.userId(), today);
+            LlmActorContext.runAs(event.userId(), () -> generator.generateWeightReaction(event.userId(), today));
         } catch (Exception e) {
             log.warn("Weight-reaction generation failed for {}", event.userId(), e);
         }

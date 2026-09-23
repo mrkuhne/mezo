@@ -36,6 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("companion-fake")
 class CompanionMessageEventIT extends ApiIntegrationTest {
 
+    @Autowired private io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm fake;
     @Autowired private CompanionMessageRepository companionMessageRepository;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private AppUserRepository appUserRepository;
@@ -62,6 +63,7 @@ class CompanionMessageEventIT extends ApiIntegrationTest {
                 .findByCreatedByAndMessageDateAndKind(
                         ownerId(), LocalDate.now(), CompanionMessageEntity.KIND_SLEEP))
                 .hasValueSatisfying(m -> {
+                    assertThat(fake.feedActor("sleep")).isEqualTo(ownerId());
                     assertThat(m.getContent().eyebrow()).isEqualTo("Jó alvás");
                     assertThat(m.getContent().body()).containsExactly("Pihenten kelsz.");
                 }));
@@ -101,6 +103,7 @@ class CompanionMessageEventIT extends ApiIntegrationTest {
                 .findByCreatedByAndMessageDateAndKind(
                         ownerId(), LocalDate.now(), CompanionMessageEntity.KIND_WEIGHT))
                 .hasValueSatisfying(m -> {
+                    assertThat(fake.feedActor("weight")).isEqualTo(ownerId());
                     assertThat(m.getContent().eyebrow()).isEqualTo("Mérés kész");
                     assertThat(m.getContent().body()).containsExactly("Stabil úton vagy.");
                 }));
